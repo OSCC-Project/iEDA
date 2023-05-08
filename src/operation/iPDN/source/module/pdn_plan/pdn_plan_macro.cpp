@@ -168,7 +168,7 @@ void PdnPlan::connectMacroToPdnGrid(idb::IdbInstance* macro, std::vector<std::st
 
 /**
  * @brief
- * smic110工艺中的macro，引脚的port由很多个矩形块构成；规律是每两个相邻的矩形块会构成一个大的矩形块。
+ * 110工艺中的macro，引脚的port由很多个矩形块构成；规律是每两个相邻的矩形块会构成一个大的矩形块。
  * 该函数会将有重叠或是紧密相连的金属块进行合并，生成新的大矩形块
  *
  * @param macro
