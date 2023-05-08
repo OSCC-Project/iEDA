@@ -1,0 +1,32 @@
+{
+    "file_path": {
+        "design_work_space": "path",
+        "sdc_file": "path",
+        "lib_files": [
+            "path1",
+            "path2"
+        ],
+        "lef_files": [
+            "path1",
+            "path2"
+        ],
+        "def_file": "path",
+        "output_def": "path",
+        "report_file": "path",
+        "gds_file": "path"
+    },
+    "setup_slack_margin": 0.0,
+    "hold_slack_margin": 0.5,
+    "max_buffer_percent": 0.2,
+    "max_utilization": 0.8,
+    "fix_fanout": false,
+    "optimize_drv": false,
+    "optimize_hold": false,
+    "optimize_setup": true,
+    "DRV_insert_buffers": ["LVT_BUFHDV8"],
+    "setup_insert_buffers": [],
+    "hold_insert_buffers": ["DEL3HDV1", "DEL2HDV1", "DEL1HDV1"],
+    "number_passes_allowed_decreasing_slack": 50,
+    "rebuffer_max_fanout": 20,
+    "split_load_min_fanout": 8
+}

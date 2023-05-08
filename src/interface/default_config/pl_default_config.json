@@ -1,0 +1,50 @@
+{
+    "PL": {
+        "is_max_length_opt": 0,
+        "max_length_constraint": 900,
+        "GP": {
+            "Wirelength": {
+                "init_wirelength_coef": 0.25,
+                "reference_hpwl": 446000000,
+                "min_wirelength_force_bar": -300
+            },
+            "Density": {
+                "target_density": 0.4,
+                "bin_cnt_x": 512,
+                "bin_cnt_y": 512
+            },
+            "Nesterov": {
+                "max_iter": 2000,
+                "max_backtrack": 10,
+                "init_density_penalty": 0.00008,
+                "target_overflow": 0.1,
+                "initial_prev_coordi_update_coef": 100,
+                "min_precondition": 1.0,
+                "min_phi_coef": 0.95,
+                "max_phi_coef": 1.05
+            }
+        },
+        "LG": {
+            "global_right_padding": 1
+        },
+        "DP": {
+            "global_right_padding": 1
+        },
+        "Filler": {
+            "first_iter": [
+                "HVT_FDCAPHD64",
+                "HVT_FDCAPHD32",
+                "HVT_FDCAPHD16",
+                "HVT_FDCAPHD8",
+                "HVT_FDCAPHD4"
+            ],
+            "second_iter": [
+                "HVT_F_FILLHD16",
+                "HVT_F_FILLHD8",
+                "HVT_F_FILLHD4",
+                "HVT_F_FILLHD2",
+                "HVT_F_FILLHD1"
+            ]
+        }
+    }
+}

@@ -1,0 +1,33 @@
+1.5.3
+  - Fixed some bugs introduced with 1.5.1
+  - Added an option in khmetis and HMETIS_PartKway to directly optimize 
+    the sum of external degrees.
+
+1.5.2
+  - Fixed a bug related to the interface of HMETIS_PartRecursive 
+
+1.5.1
+  - Various run-time improvements (20% - 30% speedup).
+
+1.5.0
+  - Improved the quality of the multilevel k-way recursive bisection 
+    algorithm. 
+  - Added a new k-way partitioning code that is based on the multilevel
+    k-way partitioning paradigm. It supports more meaningful balancing 
+    constraints when k is relatively large. This is still an experimental
+    feature.
+  - Added support for partitioning with `fixed' vertices. The partitioning
+    algorithm can now force user-specified sets of vertices to be placed to 
+    user-specified partitions.
+
+1.0.3
+  - Improved support for hypergraphs with widely varying vertex weights
+
+1.0.2
+  - Fixed numerous problems related to fine-grain partitioning.
+    This should eliminate most of the core dumps, especially for hypergraphs
+    with no hyperedges.
+  - Modified the I/O routines to handle hypergraphs with many large hyperedges
+
+1.0.1
+  - Added additional quality measures that are reported for k-way partitioning

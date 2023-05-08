@@ -1,0 +1,482 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="dbgDLL|x64">
+      <Configuration>dbgDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="optDLL|x64">
+      <Configuration>optDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <Keyword>Win64Proj</Keyword>
+    <ProjectGuid>{4ED94076-30EB-1000-C0F6-B63842DEFA7D}</ProjectGuid>
+    <ProjectName>def</ProjectName>
+    <RootNamespace>def</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'" Label="Configuration">
+    <CharacterSet>MultiByte</CharacterSet>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'" Label="Configuration">
+    <CharacterSet>MultiByte</CharacterSet>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\dep.vc14props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\site.vc14props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\dep.vc14props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\site.vc14props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\lib\$(TargetName)\x64\dbg\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\lib\$(TargetName)\x64\opt\</IntDir>
+    <LibDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\lib\x64\dbg\</LibDir>
+    <LibDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\lib\x64\opt\</LibDir>
+    <LocalDebuggerEnvironment Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Path=$(Path);$(OA_BUILD_ROOT)\bin\x64\dbg</LocalDebuggerEnvironment>
+    <LocalDebuggerEnvironment Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Path=$(Path);$(OA_BUILD_ROOT)\bin\x64\opt</LocalDebuggerEnvironment>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\lib\x64\dbg\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\lib\x64\opt\</OutDir>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">
+    <ClCompile>
+      <AdditionalOptions>/bigobj /wd4127 /wd4244 /wd4245 /wd4505 /wd4512 /wd4702 /wd4706 /wd4062 /wd4265 /wd4548 /wd4640 /wd4826 /wd4619 /wd4626 /wd4625 /wd4623 /wd4820 /wd4365 /wd4668 /wd4710 /wd4061 /wd4242 /wd4571 /wd4514 /wd4701 %(AdditionalOptions)</AdditionalOptions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4267;4244;4313;4996;4231;4251;4355;4100;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <MinimalRebuild>false</MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PreprocessorDefinitions>_WIN64;WIN32;_DEBUG;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level4</WarningLevel>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">
+    <ClCompile>
+      <AdditionalOptions>/bigobj /wd4127 /wd4244 /wd4245 /wd4505 /wd4512 /wd4702 /wd4706 /wd4062 /wd4265 /wd4548 /wd4640 /wd4826 /wd4619 /wd4626 /wd4625 /wd4623 /wd4820 /wd4365 /wd4668 /wd4710 /wd4061 /wd4242 /wd4571 /wd4514 /wd4701 %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4267;4244;4313;4996;4231;4251;4355;4100;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PreprocessorDefinitions>_WIN64;WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_SECURE_ATL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <StringPooling>true</StringPooling>
+      <WarningLevel>Level4</WarningLevel>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="def.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">4127;4065;4102;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">4127;4065;4102;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClInclude Include="def.tab.h" />
+    <CustomBuild Include="def.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">set PATH=$(BISON_HOME)\bin%3b$(PATH)
+    bison --name-prefix=%(Filename)yy --defines=%(Filename).tab.h --file-prefix=%(Filename) --report=itemset --verbose --output=%(Filename).cpp %(Filename).y"
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">set PATH=$(BISON_HOME)\bin%3b$(PATH)
+    bison --name-prefix=%(Filename)yy --defines=%(Filename).tab.h --file-prefix=%(Filename) --report=itemset --verbose --output=%(Filename).cpp %(Filename).y"
+    </Command>
+      <FileType>Document</FileType>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Building parser with $(BISON_HOME)\bin\bison</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Building parser with $(BISON_HOME)\bin\bison</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">%(Filename).cpp;%(Filename).tab.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">%(Filename).cpp;%(Filename).tab.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="def_keywords.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">4127;4065;4102;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">4127;4065;4102;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="defiAlias.cpp" />
+    <CustomBuild Include="defiAlias.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiAssertion.cpp" />
+    <CustomBuild Include="defiAssertion.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiBlockage.cpp" />
+    <CustomBuild Include="defiBlockage.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiComponent.cpp" />
+    <CustomBuild Include="defiComponent.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiDebug.cpp" />
+    <CustomBuild Include="defiDebug.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="defiDefs.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiFill.cpp" />
+    <CustomBuild Include="defiFill.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiFPC.cpp" />
+    <CustomBuild Include="defiFPC.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiGroup.cpp" />
+    <CustomBuild Include="defiGroup.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiIOTiming.cpp" />
+    <CustomBuild Include="defiIOTiming.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="defiKRDefs.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiMisc.cpp" />
+    <CustomBuild Include="defiMisc.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiNet.cpp" />
+    <CustomBuild Include="defiNet.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiNonDefault.cpp" />
+    <CustomBuild Include="defiNonDefault.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiPartition.cpp" />
+    <CustomBuild Include="defiPartition.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiPath.cpp" />
+    <CustomBuild Include="defiPath.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiPinCap.cpp" />
+    <CustomBuild Include="defiPinCap.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiPinProp.cpp" />
+    <CustomBuild Include="defiPinProp.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiProp.cpp" />
+    <CustomBuild Include="defiProp.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiPropType.cpp" />
+    <CustomBuild Include="defiPropType.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiRegion.cpp" />
+    <CustomBuild Include="defiRegion.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiRowTrack.cpp" />
+    <CustomBuild Include="defiRowTrack.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiScanchain.cpp" />
+    <CustomBuild Include="defiScanchain.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiSite.cpp" />
+    <CustomBuild Include="defiSite.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiSlot.cpp" />
+    <CustomBuild Include="defiSlot.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiTimingDisable.cpp" />
+    <CustomBuild Include="defiTimingDisable.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="defiUser.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiUtil.cpp" />
+    <CustomBuild Include="defiUtil.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defiVia.cpp" />
+    <CustomBuild Include="defiVia.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defrCallbacks.cpp" />
+    <ClInclude Include="defrCallBacks.hpp" />
+    <ClCompile Include="defrData.cpp" />
+    <ClInclude Include="defrData.hpp" />
+    <ClCompile Include="defrReader.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">4191;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">4191;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Async</ExceptionHandling>
+      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Async</ExceptionHandling>
+    </ClCompile>
+    <CustomBuild Include="defrReader.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defrSettings.cpp" />
+    <ClInclude Include="defrSettings.hpp" />
+    <ClCompile Include="defwWriter.cpp" />
+    <CustomBuild Include="defwWriter.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClCompile Include="defwWriterCalls.cpp" />
+    <CustomBuild Include="defwWriterCalls.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <ClInclude Include="lex.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,9 @@
+*.gds
+*.gz
+*.lef
+*.tlef
+*.lib
+*.v
+*.def
+*.txt
+*.sdc

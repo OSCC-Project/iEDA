@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="dbgDLL|x64">
+      <Configuration>dbgDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="optDLL|x64">
+      <Configuration>optDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <Keyword>Win64Proj</Keyword>
+    <ProjectGuid>{69945E68-72C0-25EF-4096-E9D12D82B073}</ProjectGuid>
+    <ProjectName>cdefzlib</ProjectName>
+    <RootNamespace>cdefzlib</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'" Label="Configuration">
+    <CharacterSet>MultiByte</CharacterSet>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'" Label="Configuration">
+    <CharacterSet>MultiByte</CharacterSet>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\dep.vc14props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\site.vc14props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\dep.vc14props" />
+    <Import Project="$(OA_BUILD_ROOT)\build\MSVS\site.vc14props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\lib\$(TargetName)\x64\dbg\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\lib\$(TargetName)\x64\opt\</IntDir>
+    <LibDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\lib\x64\dbg\</LibDir>
+    <LibDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\lib\x64\opt\</LibDir>
+    <LocalDebuggerEnvironment Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Path=$(Path);$(OA_BUILD_ROOT)\bin\x64\dbg</LocalDebuggerEnvironment>
+    <LocalDebuggerEnvironment Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Path=$(Path);$(OA_BUILD_ROOT)\bin\x64\opt</LocalDebuggerEnvironment>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\lib\x64\dbg\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\lib\x64\opt\</OutDir>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">
+    <ClCompile>
+      <AdditionalOptions>/bigobj /wd4127 /wd4244 /wd4245 /wd4505 /wd4512 /wd4702 /wd4706 /wd4062 /wd4265 /wd4548 /wd4640 /wd4826 /wd4619 /wd4626 /wd4625 /wd4623 /wd4820 /wd4365 /wd4668 /wd4710 /wd4061 /wd4242 /wd4571 /wd4514 /wd4701 %(AdditionalOptions)</AdditionalOptions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4251;4355;4100;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <MinimalRebuild>false</MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PreprocessorDefinitions>_WIN64;WIN32;_DEBUG;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level4</WarningLevel>
+      <AdditionalIncludeDirectories>$(ZLIB_HOME)\include;..\cdef;..\def</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">
+    <ClCompile>
+      <AdditionalOptions>/bigobj /wd4127 /wd4244 /wd4245 /wd4505 /wd4512 /wd4702 /wd4706 /wd4062 /wd4265 /wd4548 /wd4640 /wd4826 /wd4619 /wd4626 /wd4625 /wd4623 /wd4820 /wd4365 /wd4668 /wd4710 /wd4061 /wd4242 /wd4571 /wd4514 /wd4701 %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4231;4251;4355;4100;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PreprocessorDefinitions>_WIN64;WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_SECURE_ATL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <StringPooling>true</StringPooling>
+      <WarningLevel>Level4</WarningLevel>
+      <AdditionalIncludeDirectories>$(ZLIB_HOME)\include;..\cdef;..\def</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="cdefzlib.c" />
+    <CustomBuild Include="defzlib.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">xcopy "%(FullPath)" ..\..\..\include\lefdefParser\ /i /f /r /y
+    </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">Promoting %(Filename)%(Extension)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='dbgDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='optDLL|x64'">..\..\..\include\lefdefParser\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

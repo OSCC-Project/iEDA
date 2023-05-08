@@ -1,0 +1,23 @@
+<Node1>Layer
+    <Node2>POLY1</Node2>
+    <Node2>CONT</Node2>
+    <Node2>METAL1</Node2>
+    <Node2>VIA12</Node2>
+    <Node2>METAL2</Node2>
+    <Node2>VIA23</Node2>
+    <Node2>METAL3</Node2>
+    <Node2>VIA34</Node2>
+    <Node2>METAL4</Node2>
+    <Node2>VIA45</Node2>
+    <Node2>METAL5</Node2>
+    <Node2>VIA56</Node2>
+    <Node2>METAL6</Node2>
+    <Node2>VIA67</Node2>
+    <Node2>METAL7</Node2>
+    <Node2>VIA78</Node2>
+    <Node2>METAL8</Node2>
+    <Node2>VIA89</Node2>
+    <Node2>METAL9</Node2>
+    <Node2>PA</Node2>
+    <Node2>ALPA</Node2>
+</Node1>

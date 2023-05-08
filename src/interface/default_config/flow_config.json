@@ -1,0 +1,24 @@
+{
+    "Tools": {
+        "TCL": "OFF"
+    },
+    "Flow": {
+        "Synthesis": "OFF",
+        "Floorplan": "OFF",
+        "Placer": "OFF",
+        "CTS": "OFF",
+        "TO": "OFF",
+        "Router": "OFF",
+        "DRC": "OFF",
+        "GUI": "OFF"
+    },
+    "ConfigPath": {
+        "idb_path": "<path>",
+        "ifp_path": "<path>",
+        "ipl_path": "<path>",
+        "irt_path": "<path>",
+        "idrc_path": "<path>",
+        "icts_path": "<path>",
+        "ito_path": "<path>"
+    }
+}

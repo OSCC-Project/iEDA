@@ -1,0 +1,5 @@
+add_subdirectory(multi_patterning)
+add_subdirectory(region_query)
+add_subdirectory(shape_check)
+add_subdirectory(spacing_check)
+add_subdirectory(spot_parser)

@@ -1,0 +1,7 @@
+swig -tcl -c++ sta.i
+g++ -fpic -c ista_wrap.cxx -I/usr/include/tcl8.6/ -std=c++11
+g++ -shared sta_wrap.o -o ista.so
+tclsh
+load ./ista.so
+source sdc.tcl
+create_clock -name clk -period 10

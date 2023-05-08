@@ -1,0 +1,16 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+SET (CMAKE_CXX_STANDARD 20)
+
+AUX_SOURCE_DIRECTORY(./ SRC)
+if(BUILD_STATIC_LIB)
+  ADD_LIBRARY(time STATIC ${SRC})
+else()
+  ADD_LIBRARY(time SHARED ${SRC})
+endif()
+
+TARGET_LINK_LIBRARIES(time absl::time)
+
+target_include_directories(time 
+    PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)

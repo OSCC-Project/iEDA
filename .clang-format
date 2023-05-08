@@ -1,0 +1,34 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+
+ColumnLimit: 140
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BinPackArguments: true
+BinPackParameters: true
+BraceWrapping:
+  AfterClass:            true
+  AfterControlStatement: false
+  AfterEnum:             true
+  AfterFunction:         true
+  AfterNamespace:        false
+  AfterObjCDeclaration:  false
+  AfterStruct:           true
+  AfterUnion:            true
+  AfterExternBlock:      false
+  BeforeCatch:           false
+  BeforeElse:            false
+  IndentBraces:          false
+  SplitEmptyFunction:    true
+  SplitEmptyRecord:      true
+  SplitEmptyNamespace:   true
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Custom
+DerivePointerAlignment: false
+SpaceAfterCStyleCast: true
+Standard: c++20

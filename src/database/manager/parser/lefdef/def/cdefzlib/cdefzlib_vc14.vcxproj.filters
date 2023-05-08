@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Public Header Files">
+      <UniqueIdentifier>{aeafd166-99c9-4db0-980e-075fa5f41e06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{a6f2e3ed-ea59-4cda-afe8-7504fa2a0ba3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cdefzlib.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defzlib.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+
+This directory contains the binary distribution of hMETIS 1.5.
+The files in this directory are the following:
+
+  shmetis, hmetis, khmetis	Executable programs 
+  libhmetis.a			The user callable library of hMETIS
+  manual.ps			hMETIS's user manual
+  s13207P.hgr			A sample hypergraph file
+  COPYRIGHT			hMETIS Copyright notice and usage agreement
+  CHANGES			A list of recent changes/updates/bug fixes 
+
+
+If you have any questions or problems with hMETIS please contact the authors
+at metis@cs.umn.edu.
+
+
+--------------
+George Karypis
+6/23/98
+

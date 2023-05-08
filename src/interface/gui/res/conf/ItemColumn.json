@@ -1,0 +1,22 @@
+[
+    {
+        "name":"Label",
+        "col":0,
+        "type":0,
+        "master":"master=-1 means that this column will not be influenced by other column's check state",
+        "master":"master=n(n>=0) means that this column is influenced by the check state of column n",
+        "master":-1
+    },
+    {
+        "name":"Visibility",
+        "col":1,
+        "type":1,
+        "master":-1
+    },
+    {
+        "name":"Selectivity",
+        "col":2,
+        "type":1,
+        "master":1
+    }
+]

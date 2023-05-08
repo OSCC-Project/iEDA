@@ -1,0 +1,24 @@
+{
+    "Tools": {
+        "TCL": "ON"
+    },
+    "Flow": {
+        "Synthesis": "OFF",
+        "Floorplan": "OFF",
+        "Placer": "OFF",
+        "CTS": "OFF",
+        "TO": "OFF",
+        "Router": "OFF",
+        "DRC": "OFF",
+        "GUI": "OFF"
+    },
+    "ConfigPath": {
+        "idb_path": "./iEDA_config/db_default_config.json",
+        "ifp_path": "./iEDA_config/fp_default_config.json",
+        "ipl_path": "./iEDA_config/pl_default_config.json",
+        "irt_path": "./iEDA_config/rt_default_config.json",
+        "idrc_path": "./iEDA_config/drc_default_config.json",
+        "icts_path": "./iEDA_config/cts_default_config.json",
+        "ito_path": "./iEDA_config/to_default_config.json"
+    }
+}
