@@ -31,7 +31,8 @@
 > ## iSTA使用示例
 
 ### 编写tcl文件(run_ista.tcl)
-示例tcl文件位于:~/irefactor/src/operation/iSTA/source/data/example1/run_ista.tcl
+
+示例tcl文件位于: /src/operation/iSTA/source/data/example1/run_ista.tcl
 
 #### 设置时序报告输出路径
 
@@ -89,11 +90,11 @@ report_timing
 - top_hold.skew（报告hold模式下的时钟偏斜)
 - top_setup.skew（报告setup模式下的时钟偏斜）
 
-### 编译iSTA（iSTA位于:~/irefactor/bin/）
+### 编译iSTA（iSTA位于:bin/）
 
 ### 使用iSTA运行tcl文件
 
 ```bash
- cd ~/irefactor/bin/
+ cd bin/
  ./iSTA run_ista.tcl
 ```

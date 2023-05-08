@@ -1,21 +1,9 @@
-/*
- * @Author: your name
- * @Date: 2021-09-14 20:20:00
- * @LastEditTime: 2021-12-13 14:41:45
- * @LastEditors: Please set LastEditors
- * @Description: 打开koroFileHeader查看配置 进行设置:
- * https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- * @FilePath: /iEDA/src/iUtility/log/Log.hh
- */
 /**
  * @file Log.h
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief The file is designed for log utility tool.
  * @version 0.1
  * @date 2020-11-12
- *
- * @copyright Copyright (c) 2020 PCL EDA
- *
  */
 
 #pragma once
@@ -30,8 +18,10 @@ namespace ieda {
  * from glog.
  *
  */
-class Log {
-  enum class LogServerity : int {
+class Log
+{
+  enum class LogServerity : int
+  {
     kInfo = 0,
     kWarning = 1,
     kError = 2,
@@ -70,8 +60,7 @@ class Log {
 
 /*conditional and periodically log*/
 #define LOG_INFO_IF_EVERY_N(condition, n) LOG_IF_EVERY_N(INFO, condition, n)
-#define LOG_WARNING_IF_EVERY_N(condition, n) \
-  LOG_IF_EVERY_N(WARNING, condition, n)
+#define LOG_WARNING_IF_EVERY_N(condition, n) LOG_IF_EVERY_N(WARNING, condition, n)
 #define LOG_ERROR_IF_EVERY_N(condition, n) LOG_IF_EVERY_N(ERROR, condition, n)
 #define LOG_FATAL_IF_EVERY_N(condition, n) LOG_IF_EVERY_N(FATAL, condition, n)
 
@@ -93,8 +82,7 @@ class Log {
 #define DLOG_FATAL_EVERY_N(n) DLOG_EVERY_N(FATAL, n)
 
 #define DLOG_INFO_IF_EVERY_N(condition, n) DLOG_IF_EVERY_N(INFO, condition, n)
-#define DLOG_WARNING_IF_EVERY_N(condition, n) \
-  DLOG_IF_EVERY_N(WARNING, condition, n)
+#define DLOG_WARNING_IF_EVERY_N(condition, n) DLOG_IF_EVERY_N(WARNING, condition, n)
 #define DLOG_ERROR_IF_EVERY_N(condition, n) DLOG_IF_EVERY_N(ERROR, condition, n)
 #define DLOG_FATAL_IF_EVERY_N(condition, n) DLOG_IF_EVERY_N(FATAL, condition, n)
 
@@ -107,17 +95,13 @@ class Log {
 #define DVERBOSE_VLOG(verbose_level) VLOG(verbose_level)
 #define VERBOSE_LOG(verbose_level) VLOG(verbose_level)
 
-#define DVERBOSE_VLOG_IF(verbose_level, condition) \
-  VLOG_IF(verbose_level, condition)
-#define VERBOSE_LOG_IF(verbose_level, condition) \
-  VLOG_IF(verbose_level, condition)
+#define DVERBOSE_VLOG_IF(verbose_level, condition) VLOG_IF(verbose_level, condition)
+#define VERBOSE_LOG_IF(verbose_level, condition) VLOG_IF(verbose_level, condition)
 
 #define DVERBOSE_VLOG_EVERY_N(verbose_level, n) VLOG_EVERY_N(verbose_level, n)
 #define VERBOSE_VLOG_EVERY_N(verbose_level, n) VLOG_EVERY_N(verbose_level, n)
 
-#define DVERBOSE_VLOG_IF_EVERY_N(verbose_level, condition, n) \
-  VLOG_IF_EVERY_N(verbose_level, condition, n)
-#define VERBOSE_VLOG_IF_EVERY_N(verbose_level, condition, n) \
-  VLOG_IF_EVERY_N(verbose_level, condition, n)
+#define DVERBOSE_VLOG_IF_EVERY_N(verbose_level, condition, n) VLOG_IF_EVERY_N(verbose_level, condition, n)
+#define VERBOSE_VLOG_IF_EVERY_N(verbose_level, condition, n) VLOG_IF_EVERY_N(verbose_level, condition, n)
 
 }  // namespace ieda

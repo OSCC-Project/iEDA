@@ -18,9 +18,9 @@ void MainWindow::createSearch() {
   searchBtn->setFixedSize(20, 20);
   searchBtn->setToolTip("Search");
   searchBtn->setStyleSheet(
-      "QPushButton{border-image:url(/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/search.png); background:transparent;} \
-                                     QPushButton:hover{border-image:url(/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/search.png)} \
-                                     QPushButton:pressed{border-image:url(/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/search.png)}");
+      "QPushButton{border-image:url(./iEDA/src/iGUI/res/icon/search.png); background:transparent;} \
+                                     QPushButton:hover{border-image:url(./iEDA/src/iGUI/res/icon/search.png)} \
+                                     QPushButton:pressed{border-image:url(./iEDA/src/iGUI/res/icon/search.png)}");
   connect(searchBtn, SIGNAL(clicked(bool)), this, SLOT(search()));
 
   _edit_search = new GuiSearchEdit(searchBox);

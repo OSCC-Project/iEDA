@@ -1,18 +1,20 @@
 /**
  * @file StaBuildTag.cc
- * @author your name (you@domain.com)
- * @brief
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief The impelmention of propagation tag for specify path by -from -through
+ * -to.
  * @version 0.1
  * @date 2022-04-21
  *
  * @copyright Copyright (c) 2022
  *
  */
+#include "StaBuildPropTag.hh"
+
 #include <algorithm>
 #include <iterator>
 
 #include "Sta.hh"
-#include "StaBuildPropTag.hh"
 #include "StaGraph.hh"
 #include "sta/StaVertex.hh"
 

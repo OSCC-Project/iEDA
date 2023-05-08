@@ -4,9 +4,6 @@
  * @brief The class for pin in the netlist.
  * @version 0.1
  * @date 2021-02-03
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

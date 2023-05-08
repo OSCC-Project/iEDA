@@ -10,14 +10,14 @@ void MainWindow::createGuiFile() {
 void MainWindow::createMenuFile() {
   /*--------------------create flieMenu---------------------*/
   QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-  FileActions << fileMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/Import.png"),
+  FileActions << fileMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/Import.png"),
                                      tr("&Import Design"), this, &MainWindow::import);
   //   FileActions << fileMenu->addAction(QIcon(""), tr("&Import Design"), this, &MainWindow::import);
   fileMenu->addSeparator();
 
   //   fileMenu->addAction(tr("R&estore Design"), this, &MainWindow::restore);
   //   fileMenu->addAction(tr("EC&O Design"), this, &MainWindow::eco);
-  //   FileActions << fileMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/save.png"),
+  //   FileActions << fileMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/save.png"),
   //                                      tr("Sa&ve Design"), this, &MainWindow::save, tr("F2"));
 
   //   fileMenu->addSeparator();
@@ -55,10 +55,10 @@ void MainWindow::createMenuFile() {
   //   fileMenu->addSeparator();
   //   fileMenu->addAction(tr("C&heck Design"), this, &MainWindow::check);
   //   QMenu* report = fileMenu->addMenu(tr("&Report"));
-  //   reportActions << report->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/summary.png"),
+  //   reportActions << report->addAction(QIcon("./iEDA/src/iGUI/res/icon/summary.png"),
   //   tr("&Summary"),
   //                                      this, &MainWindow::summary, tr("Shift+Q"));
-  //   reportActions << report->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/selectobj.png"),
+  //   reportActions << report->addAction(QIcon("./iEDA/src/iGUI/res/icon/selectobj.png"),
   //                                      tr("S&elected Object"), this, &MainWindow::selectedObject);
   //   report->addSeparator();
   //   report->addAction(tr("&Gate Count"), this, &MainWindow::gateCount);
@@ -66,7 +66,7 @@ void MainWindow::createMenuFile() {
   //   fileMenu->addSeparator();
 
   //   QMenu* recent =
-  //       fileMenu->addMenu(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/recent.png"), tr("Recen&t Action"));
+  //       fileMenu->addMenu(QIcon("./iEDA/src/iGUI/res/icon/recent.png"), tr("Recen&t Action"));
 
   //   fileMenu->addSeparator();
 

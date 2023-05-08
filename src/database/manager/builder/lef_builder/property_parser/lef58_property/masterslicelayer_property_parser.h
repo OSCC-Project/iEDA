@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2022-10-22
- *
- * @copyright Copyright (c) 2022
- *
  */
 
 #pragma once
@@ -23,8 +20,8 @@ bool parse_lef58_type(Iterator beg, Iterator end, std::string& type)
   const static qi::rule<Iterator, std::string(), qi::ascii::space_type> value_string = qi::lexeme[+(qi::char_ - qi::char_(" ;\n"))];
   const static qi::rule<Iterator, std::string(), qi::ascii::space_type> type_rule = qi::lit("TYPE") >> value_string >> qi::lit(";");
   bool ok = qi::phrase_parse(beg, end, type_rule, qi::ascii::space, type);
-  if(not ok || beg != end){
-      std::cout << "Parse \"" << std::string(beg, end) << "\" failed" << std::endl;
+  if (not ok || beg != end) {
+    std::cout << "Parse \"" << std::string(beg, end) << "\" failed" << std::endl;
     return false;
   }
   return true;

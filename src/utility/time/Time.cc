@@ -4,15 +4,13 @@
  * @brief The utility class implemention of time.
  * @version 0.1
  * @date 2021-05-08
- *
- * @copyright Copyright (c) 2021
- *
  */
+
+#include "Time.hh"
 
 #include <iostream>
 #include <sstream>
 
-#include "Time.hh"
 #include "absl/time/civil_time.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -24,7 +22,8 @@ namespace ieda {
  *
  * @return const char*
  */
-const char* Time::getNowWallTime() {
+const char* Time::getNowWallTime()
+{
   absl::Time t = absl::Now();
   absl::TimeZone loc = absl::LocalTimeZone();
   const auto now_time = loc.At(t);

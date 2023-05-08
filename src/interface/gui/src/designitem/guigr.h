@@ -6,7 +6,6 @@
  * @version 0.1
  * @date 2021-08-16(V0.1)
  *
- * @copyright Copyright (c) 2021
  *
  */
 #ifndef GUIGR_H
@@ -14,8 +13,7 @@
 
 #include "guirect.h"
 
-class GuiGrPrivate : public GuiRectPrivate
-{
+class GuiGrPrivate : public GuiRectPrivate {
  public:
   explicit GuiGrPrivate();
   ~GuiGrPrivate();
@@ -32,14 +30,11 @@ class GuiGrPrivate : public GuiRectPrivate
   //   friend class GuiGrRect;
 };
 
-class GuiGrRect : public GuiRect
-{
+class GuiGrRect : public GuiRect {
  public:
   explicit GuiGrRect(QGraphicsItem* parent = nullptr);
 
-  void paint(QPainter*                       painter,
-             const QStyleOptionGraphicsItem* option,
-             QWidget*                        widget = nullptr) override;
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
   void set_layer(const std::string layer);
   void add_info(std::string info) { _data->add_info(info); }

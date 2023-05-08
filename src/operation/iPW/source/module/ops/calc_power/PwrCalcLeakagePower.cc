@@ -4,9 +4,6 @@
  * @brief Calc leakage power.
  * @version 0.1
  * @date 2023-04-13
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PwrCalcLeakagePower.hh"

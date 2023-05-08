@@ -9,55 +9,55 @@ void MainWindow::createMenu() {
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
 
   QMenu* zoom = viewMenu->addMenu(tr("&Zoom"));
-  viewActions << zoom->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/ZoomIn.png"), tr("&In"), this,
+  viewActions << zoom->addAction(QIcon("./iEDA/src/iGUI/res/icon/ZoomIn.png"), tr("&In"), this,
                                  &MainWindow::inAct, tr("Z"));
-  viewActions << zoom->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/ZoomOut.png"), tr("&Out"), this,
+  viewActions << zoom->addAction(QIcon("./iEDA/src/iGUI/res/icon/ZoomOut.png"), tr("&Out"), this,
                                  &MainWindow::outAct, tr("Shift+Z"));
-  viewActions.insert(0, zoom->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/selected.png"),
+  viewActions.insert(0, zoom->addAction(QIcon("./iEDA/src/iGUI/res/icon/selected.png"),
                                         tr("&Selected"), this, &MainWindow::Selected));
-  viewActions << zoom->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/previous.png"), tr("&Previous"),
+  viewActions << zoom->addAction(QIcon("./iEDA/src/iGUI/res/icon/previous.png"), tr("&Previous"),
                                  this, &MainWindow::previous, tr("W"));
-  viewActions << zoom->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/next.png"), tr("&Next"), this,
+  viewActions << zoom->addAction(QIcon("./iEDA/src/iGUI/res/icon/next.png"), tr("&Next"), this,
                                  &MainWindow::nextAct, tr("Y"));
 
   QMenu* pan        = viewMenu->addMenu(tr("&Pan"));
-  QAction* upAct    = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/up.png"), tr("&In"), this,
+  QAction* upAct    = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/up.png"), tr("&In"), this,
                                      &MainWindow::upAct, tr("Up"));
-  QAction* downAct  = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/down.png"), tr("&Down"), this,
+  QAction* downAct  = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/down.png"), tr("&Down"), this,
                                      &MainWindow::downAct, tr("Down"));
-  QAction* leftAct  = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/left.png"), tr("&Left"), this,
+  QAction* leftAct  = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/left.png"), tr("&Left"), this,
                                      &MainWindow::leftAct, tr("Left"));
-  QAction* rightAct = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/right.png"), tr("&Right"),
+  QAction* rightAct = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/right.png"), tr("&Right"),
                                      this, &MainWindow::rightAct, tr("Right"));
 
-  viewActions.insert(3, viewMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/fit.png"), tr("&Fit"),
+  viewActions.insert(3, viewMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/fit.png"), tr("&Fit"),
                                             this, &MainWindow::fit, tr("F")));
-  viewActions << viewMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/redraw.png"), tr("&Redraw"),
+  viewActions << viewMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/redraw.png"), tr("&Redraw"),
                                      this, &MainWindow::redraw, tr("Ctrl+R"));
 
   viewMenu->addSeparator();
 
-  FileActions << viewMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/setPreference.png"),
+  FileActions << viewMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/setPreference.png"),
                                      tr("Set &Preference"), this, &MainWindow::setPreference);
   viewMenu->addAction(tr("&All Color"), this, &MainWindow::allColor);
   viewMenu->addAction(tr("Set &FlightLine Congest Color"), this, &MainWindow::setLineColor);
   viewMenu->addAction(tr("Go_To"), this, &MainWindow::goTo);
-  FileActions << viewMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/find.png"),
+  FileActions << viewMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/find.png"),
                                      tr("&Find/Select Object"), this, &MainWindow::findSelect, tr("Ctrl+F"));
 
   viewMenu->addSeparator();
 
-  toolsActions << viewMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/deselect.png"),
+  toolsActions << viewMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/deselect.png"),
                                       tr("&Deselect All"), this, &MainWindow::deselectAll, tr("Ctrl+D"));
   QMenu* highlightSelected = viewMenu->addMenu(
-      QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/highlightSelected.png"), tr("&Highlight Selected"));
+      QIcon("./iEDA/src/iGUI/res/icon/highlightSelected.png"), tr("&Highlight Selected"));
   highlightSelected->addAction(tr("&Original"), this, &MainWindow::original);
-  QMenu* clearHighlight = viewMenu->addMenu(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/clearhighlight.png"),
+  QMenu* clearHighlight = viewMenu->addMenu(QIcon("./iEDA/src/iGUI/res/icon/clearhighlight.png"),
                                             tr("&Clear Highlight"));
   clearHighlight->addAction(tr("Clear &Original"), this, &MainWindow::clearoriginal);
-  editActions << clearHighlight->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/clearall.png"),
+  editActions << clearHighlight->addAction(QIcon("./iEDA/src/iGUI/res/icon/clearall.png"),
                                            tr("Clear All Highlight"), this, &MainWindow::clearAllHighlight);
-  editActions << clearHighlight->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/clearSelected.png"),
+  editActions << clearHighlight->addAction(QIcon("./iEDA/src/iGUI/res/icon/clearSelected.png"),
                                            tr("Clear Selected Highlight"), this, &MainWindow::clearSelectedHighlight);
   viewMenu->addAction(tr("&Edit Highlight Color"), this, &MainWindow::editHighlightColor);
 
@@ -68,17 +68,17 @@ void MainWindow::createMenu() {
   /*--------------------create editMenu---------------------*/
   toolBoxActions  = new QActionGroup(this);
   QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
-  editActions.insert(0, editMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/undo.png"),
+  editActions.insert(0, editMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/undo.png"),
                                             tr("&Undo"), this, &MainWindow::undo, tr("U")));
-  editActions.insert(1, editMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/redo.png"),
+  editActions.insert(1, editMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/redo.png"),
                                             tr("&Redo"), this, &MainWindow::redo, tr("Shifit+U")));
-  toolBoxActions->addAction(editMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/copy.png"),
+  toolBoxActions->addAction(editMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/copy.png"),
                                                 tr("&Copy"), this, &MainWindow::copy));
-  toolsActions << editMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/attribute.png"),
+  toolsActions << editMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/attribute.png"),
                                       tr("&Attribute Editor"), this, &MainWindow::attributeEditor, tr("Q"));
   editMenu->addAction(tr("DB Br&owser"), this, &MainWindow::dbBrowser, tr("V"));
   toolBoxActions->addAction(
-      editMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/moveResizeReshape.png"),
+      editMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/moveResizeReshape.png"),
                           tr("&Move/Resize/Reshape"), this, &MainWindow::moveResizeReshape, tr("Shift+R")));
 
   editMenu->addSeparator();
@@ -87,25 +87,25 @@ void MainWindow::createMenu() {
   editMenu->addAction(tr("Edit &Net Group"), this, &MainWindow::editNetGroup);
   editMenu->addAction(tr("Edit Pin &Guide"), this, &MainWindow::editPinGuide);
   QMenu* busGuide = editMenu->addMenu(tr("&Bus Guide"));
-  busGuide->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/editBusGuide.png"), tr("&Edit"), this,
+  busGuide->addAction(QIcon("./iEDA/src/iGUI/res/icon/editBusGuide.png"), tr("&Edit"), this,
                       &MainWindow::editBusGuide);
   busGuide->addAction(tr("&Color"), this, &MainWindow::busColor);
   busGuide->addAction(tr("C&lear Color"), this, &MainWindow::clearBusColor);
   editMenu->addAction(tr("&Pin Editor"), this, &MainWindow::pinEditor);
   editMenu->addSeparator();
   QMenu* wire = editMenu->addMenu(tr("&Wire"));
-  wire->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/editWire.png"), tr("&Edit"), this,
+  wire->addAction(QIcon("./iEDA/src/iGUI/res/icon/editWire.png"), tr("&Edit"), this,
                   &MainWindow::editWire, tr("E"));
-  wire->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/movewire.png"), tr("&Move"), this,
+  wire->addAction(QIcon("./iEDA/src/iGUI/res/icon/movewire.png"), tr("&Move"), this,
                   &MainWindow::moveWire);
   wire->addAction(tr("&Cut"), this, &MainWindow::cutWire, tr("Shift+X"));
   wire->addAction(tr("S&nap"), this, &MainWindow::snapWire);
-  wire->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/stretch.png"), tr("&Stretch"), this,
+  wire->addAction(QIcon("./iEDA/src/iGUI/res/icon/stretch.png"), tr("&Stretch"), this,
                   &MainWindow::stretchWire);
   wire->addSeparator();
-  wire->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/addVia.png"), tr("Add &Via"), this,
+  wire->addAction(QIcon("./iEDA/src/iGUI/res/icon/addVia.png"), tr("Add &Via"), this,
                   &MainWindow::addViaWire);
-  wire->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/addPloygon.png"), tr("Add &Polygon"), this,
+  wire->addAction(QIcon("./iEDA/src/iGUI/res/icon/addPloygon.png"), tr("Add &Polygon"), this,
                   &MainWindow::addPolygonWire);
   editMenu->addAction(tr("C&reate Non Default Rule"), this, &MainWindow::ceateNonDefaultRule);
 
@@ -231,11 +231,11 @@ void MainWindow::createMenu() {
 
   /*--------------------create toolsMenu---------------------*/
   QMenu* toolsMenu = menuBar()->addMenu(tr("Too&ls"));
-  toolsActions << toolsMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/designBrowser.png"),
+  toolsActions << toolsMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/designBrowser.png"),
                                        tr("&Design Broswer"), this, &MainWindow::designBrower);
   QMenu* setMode = toolsMenu->addMenu(tr("setMode"));
   toolsMenu->addAction(tr("Set Global Variable"), this, &MainWindow::setGlobalVariable);
-  toolsActions << toolsMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/violationBrowser.png"),
+  toolsActions << toolsMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/violationBrowser.png"),
                                        tr("Violation Browser"), this, &MainWindow::violationBrowser);
   toolsMenu->addAction(tr("Layout Viewer"), this, &MainWindow::layoutViewer);
   toolsMenu->addAction(tr("Cell Viewer"), this, &MainWindow::cellViewer);
@@ -273,9 +273,9 @@ void MainWindow::createMenu() {
   screenCapture->addAction(tr("&Screen Dump"), this, &MainWindow::screenDump);
   screenCapture->addAction(tr("D&isplay Screen Dump"), this, &MainWindow::displayScreenDump);
 
-  toolBoxActions->addAction(toolsMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/ruler.png"),
+  toolBoxActions->addAction(toolsMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/ruler.png"),
                                                  tr("Create Ruler"), this, &MainWindow::createRuler, tr("K")));
-  toolsActions << toolsMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/clearRuler.png"),
+  toolsActions << toolsMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/clearRuler.png"),
                                        tr("Creal All Rulers"), this, &MainWindow::clearAllRulers, tr("Shift+k"));
 
   /*--------------------create routeMenw---------------------*/

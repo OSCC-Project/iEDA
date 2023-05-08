@@ -1,19 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbViaMaster.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
 * @description
@@ -30,100 +17,112 @@
 
 namespace idb {
 
-  IdbViaRuleGenerate::IdbViaRuleGenerate() {
-    _name             = "";
-    _layer_bottom     = nullptr;
-    _enclosure_bottom = new IdbLayerCutEnclosure();
-    _layer_cut        = nullptr;
-    // _enclosure_cut = new IdbLayerCutEnclosure();
-    _cut_rect      = new IdbRect();
-    _spacing_x     = -1;
-    _spacing_y     = -1;
-    _layer_top     = nullptr;
-    _enclosure_top = new IdbLayerCutEnclosure();
+IdbViaRuleGenerate::IdbViaRuleGenerate()
+{
+  _name = "";
+  _layer_bottom = nullptr;
+  _enclosure_bottom = new IdbLayerCutEnclosure();
+  _layer_cut = nullptr;
+  // _enclosure_cut = new IdbLayerCutEnclosure();
+  _cut_rect = new IdbRect();
+  _spacing_x = -1;
+  _spacing_y = -1;
+  _layer_top = nullptr;
+  _enclosure_top = new IdbLayerCutEnclosure();
+}
+
+IdbViaRuleGenerate::~IdbViaRuleGenerate()
+{
+  if (_enclosure_bottom) {
+    delete _enclosure_bottom;
+    _enclosure_bottom = nullptr;
   }
 
-  IdbViaRuleGenerate::~IdbViaRuleGenerate() {
-    if (_enclosure_bottom) {
-      delete _enclosure_bottom;
-      _enclosure_bottom = nullptr;
-    }
+  if (_cut_rect) {
+    delete _cut_rect;
+    _cut_rect = nullptr;
+  }
 
-    if (_cut_rect) {
-      delete _cut_rect;
-      _cut_rect = nullptr;
-    }
+  if (_enclosure_top) {
+    delete _enclosure_top;
+    _enclosure_top = nullptr;
+  }
+}
 
-    if (_enclosure_top) {
-      delete _enclosure_top;
-      _enclosure_top = nullptr;
+void IdbViaRuleGenerate::set_cut_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y)
+{
+  _cut_rect->set_rect(ll_x, ll_y, ur_x, ur_y);
+}
+
+void IdbViaRuleGenerate::swap_routing_layer()
+{
+  if (_layer_bottom != nullptr && _layer_top != nullptr) {
+    if (_layer_bottom->get_order() > _layer_top->get_order()) {
+      std::swap(_layer_bottom, _layer_top);
+    }
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+IdbViaRuleList::IdbViaRuleList()
+{
+  _num_rule_generate = 0;
+}
+
+IdbViaRuleList::~IdbViaRuleList()
+{
+  for (IdbViaRuleGenerate* via_rule : _via_rule_generate_list) {
+    if (via_rule != nullptr) {
+      delete via_rule;
+      via_rule = nullptr;
+    }
+  }
+}
+
+IdbViaRuleGenerate* IdbViaRuleList::find_via_rule_generate(string name)
+{
+  for (IdbViaRuleGenerate* via_rule : _via_rule_generate_list) {
+    if (via_rule->get_name() == name) {
+      return via_rule;
     }
   }
 
-  void IdbViaRuleGenerate::set_cut_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y) {
-    _cut_rect->set_rect(ll_x, ll_y, ur_x, ur_y);
+  return nullptr;
+}
+
+IdbViaRuleGenerate* IdbViaRuleList::find_via_rule_generate(int32_t index)
+{
+  if (_num_rule_generate > index) {
+    return _via_rule_generate_list.at(index);
   }
 
-  void IdbViaRuleGenerate::swap_routing_layer() {
-    if (_layer_bottom != nullptr && _layer_top != nullptr) {
-      if (_layer_bottom->get_order() > _layer_top->get_order()) {
-        std::swap(_layer_bottom, _layer_top);
-      }
-    }
+  return nullptr;
+}
+
+IdbViaRuleGenerate* IdbViaRuleList::add_via_rule_generate(IdbViaRuleGenerate* via_rule)
+{
+  IdbViaRuleGenerate* pRule = via_rule;
+  if (pRule == nullptr) {
+    pRule = new IdbViaRuleGenerate();
   }
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IdbViaRuleList::IdbViaRuleList() { _num_rule_generate = 0; }
+  _via_rule_generate_list.emplace_back(pRule);
+  _num_rule_generate++;
 
-  IdbViaRuleList::~IdbViaRuleList() {
-    for (IdbViaRuleGenerate* via_rule : _via_rule_generate_list) {
-      if (via_rule != nullptr) {
-        delete via_rule;
-        via_rule = nullptr;
-      }
-    }
-  }
+  return pRule;
+}
 
-  IdbViaRuleGenerate* IdbViaRuleList::find_via_rule_generate(string name) {
-    for (IdbViaRuleGenerate* via_rule : _via_rule_generate_list) {
-      if (via_rule->get_name() == name) {
-        return via_rule;
-      }
-    }
-
-    return nullptr;
-  }
-
-  IdbViaRuleGenerate* IdbViaRuleList::find_via_rule_generate(int32_t index) {
-    if (_num_rule_generate > index) {
-      return _via_rule_generate_list.at(index);
-    }
-
-    return nullptr;
-  }
-
-  IdbViaRuleGenerate* IdbViaRuleList::add_via_rule_generate(IdbViaRuleGenerate* via_rule) {
-    IdbViaRuleGenerate* pRule = via_rule;
-    if (pRule == nullptr) {
-      pRule = new IdbViaRuleGenerate();
-    }
+IdbViaRuleGenerate* IdbViaRuleList::add_via_rule_generate(string name)
+{
+  IdbViaRuleGenerate* pRule = find_via_rule_generate(name);
+  if (pRule == nullptr) {
+    pRule = new IdbViaRuleGenerate();
+    pRule->set_name(name);
     _via_rule_generate_list.emplace_back(pRule);
     _num_rule_generate++;
-
-    return pRule;
   }
 
-  IdbViaRuleGenerate* IdbViaRuleList::add_via_rule_generate(string name) {
-    IdbViaRuleGenerate* pRule = find_via_rule_generate(name);
-    if (pRule == nullptr) {
-      pRule = new IdbViaRuleGenerate();
-      pRule->set_name(name);
-      _via_rule_generate_list.emplace_back(pRule);
-      _num_rule_generate++;
-    }
-
-    return pRule;
-  }
+  return pRule;
+}
 
 }  // namespace idb

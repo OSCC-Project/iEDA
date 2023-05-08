@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2021-07-28
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once
@@ -28,7 +25,8 @@ namespace ista {
  * fast:typical:slow.
  *
  */
-class SdfTripleValue {
+class SdfTripleValue
+{
  public:
   explicit SdfTripleValue(std::array<std::optional<float>, 3> triple_value);
   ~SdfTripleValue() = default;
@@ -37,8 +35,7 @@ class SdfTripleValue {
   SdfTripleValue& operator=(SdfTripleValue&& other) = default;
 
  private:
-  std::array<std::optional<float>, 3>
-      _triple_value;  //!< The triple value fast:typical:slow.
+  std::array<std::optional<float>, 3> _triple_value;  //!< The triple value fast:typical:slow.
 
   DISALLOW_COPY_AND_ASSIGN(SdfTripleValue);
 };
@@ -47,15 +44,19 @@ class SdfTripleValue {
  * @brief Specify the port name, rise/fall, condition.
  *
  */
-class SdfPortSpec {
+class SdfPortSpec
+{
  public:
-  enum class TransitionType : int { kPOSEDGE = 0, kNEGEDGE = 1, kBoth = 2 };
+  enum class TransitionType : int
+  {
+    kPOSEDGE = 0,
+    kNEGEDGE = 1,
+    kBoth = 2
+  };
   explicit SdfPortSpec(const char* port_name);
   ~SdfPortSpec();
 
-  void set_transition_type(TransitionType transition_type) {
-    _transition_type = transition_type;
-  }
+  void set_transition_type(TransitionType transition_type) { _transition_type = transition_type; }
 
   TransitionType get_transition_type() { return _transition_type; }
 
@@ -69,7 +70,8 @@ class SdfPortSpec {
  * @brief Specify the port instance name for interconnect net.
  *
  */
-class SdfPortInstance {
+class SdfPortInstance
+{
  public:
   explicit SdfPortInstance(const char* port_instance_name);
   ~SdfPortInstance();
@@ -83,9 +85,11 @@ class SdfPortInstance {
  * max skew,  min width, min period, no change.
  *
  */
-class SdfTimingCheckDef {
+class SdfTimingCheckDef
+{
  public:
-  enum class SdfCheckType {
+  enum class SdfCheckType
+  {
     kSetup = 0,
     kHold = 1,
     kSetupHold = 2,
@@ -98,8 +102,7 @@ class SdfTimingCheckDef {
     kNoChange = 9
   };
 
-  SdfTimingCheckDef(SdfCheckType sdf_check_type, SdfPortSpec&& snk_port_tchk,
-                    SdfPortSpec&& src_port_tchk, SdfTripleValue value0,
+  SdfTimingCheckDef(SdfCheckType sdf_check_type, SdfPortSpec&& snk_port_tchk, SdfPortSpec&& src_port_tchk, SdfTripleValue value0,
                     std::optional<SdfTripleValue> value1);
   ~SdfTimingCheckDef() = default;
 
@@ -109,15 +112,15 @@ class SdfTimingCheckDef {
   SdfPortSpec _src_port_tchk;
 
   SdfTripleValue _value0;
-  std::optional<SdfTripleValue>
-      _value1;  //!< if SetupHold, RecoveryRemoval, then should two value.
+  std::optional<SdfTripleValue> _value1;  //!< if SetupHold, RecoveryRemoval, then should two value.
 };
 
 /**
  * @brief The sdf timing spec may be delay timing spec, or check timing spec.
  *
  */
-class SdfTimingSpec {
+class SdfTimingSpec
+{
  public:
   SdfTimingSpec() = default;
   virtual ~SdfTimingSpec() = default;
@@ -129,7 +132,8 @@ class SdfTimingSpec {
  * @brief The sdf delay timing spec, which include tco etc.
  *
  */
-class SdfDelayTimingSpec : public SdfTimingSpec {
+class SdfDelayTimingSpec : public SdfTimingSpec
+{
  public:
   unsigned isDelayTimingSpec() override { return 1; }
 };
@@ -138,10 +142,10 @@ class SdfDelayTimingSpec : public SdfTimingSpec {
  * @brief The io path delay timing spec, which means tco timing arc.
  *
  */
-class SdfIOPathDelayTimingSpec : SdfDelayTimingSpec {
+class SdfIOPathDelayTimingSpec : SdfDelayTimingSpec
+{
  public:
-  SdfIOPathDelayTimingSpec(SdfPortSpec* src_port_spec,
-                           SdfPortInstance* snk_port_instance);
+  SdfIOPathDelayTimingSpec(SdfPortSpec* src_port_spec, SdfPortInstance* snk_port_instance);
   ~SdfIOPathDelayTimingSpec() override;
 
  private:
@@ -155,10 +159,10 @@ class SdfIOPathDelayTimingSpec : SdfDelayTimingSpec {
  * min width, min period etc.
  *
  */
-class SdfCheckTimingSpec : public SdfTimingSpec {
+class SdfCheckTimingSpec : public SdfTimingSpec
+{
  public:
-  explicit SdfCheckTimingSpec(
-      std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs);
+  explicit SdfCheckTimingSpec(std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs);
   ~SdfCheckTimingSpec() override = default;
   unsigned isCheckTimingSpec() override { return 1; }
 
@@ -170,33 +174,25 @@ class SdfCheckTimingSpec : public SdfTimingSpec {
  * @brief The sdf reader for read the sdf file.
  *
  */
-class SdfReader {
+class SdfReader
+{
  public:
   explicit SdfReader(const char* file_name);
   ~SdfReader() = default;
 
-  [[nodiscard]] unsigned isParseTimingCheck() const {
-    return _parse_timing_check;
-  }
-  void set_parse_timing_check(bool is_parse_timing_check) {
-    _parse_timing_check = is_parse_timing_check ? 1 : 0;
-  }
+  [[nodiscard]] unsigned isParseTimingCheck() const { return _parse_timing_check; }
+  void set_parse_timing_check(bool is_parse_timing_check) { _parse_timing_check = is_parse_timing_check ? 1 : 0; }
 
   bool read();
 
   SdfTripleValue* makeTriple(std::array<std::optional<float>, 3> triple_value);
   SdfPortSpec* makePortSpec(const char* port_name);
-  SdfPortSpec* makePortSpec(SdfPortSpec::TransitionType transition_type,
-                            const char* port_name);
+  SdfPortSpec* makePortSpec(SdfPortSpec::TransitionType transition_type, const char* port_name);
   SdfPortInstance* makePortInstance(const char* port_instance_name);
-  SdfTimingCheckDef* makeTimingCheckDef(
-      SdfTimingCheckDef::SdfCheckType sdf_check_type, SdfPortSpec snk_port_tchk,
-      SdfPortSpec src_port_tchk, SdfTripleValue value0,
-      std::optional<SdfTripleValue> value1);
-  SdfTimingSpec* makeTimingSpec(SdfPortSpec* src_port_spec,
-                                SdfPortInstance* snk_port_instance);
-  SdfTimingSpec* makeTimingSpec(
-      std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs);
+  SdfTimingCheckDef* makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType sdf_check_type, SdfPortSpec snk_port_tchk,
+                                        SdfPortSpec src_port_tchk, SdfTripleValue value0, std::optional<SdfTripleValue> value1);
+  SdfTimingSpec* makeTimingSpec(SdfPortSpec* src_port_spec, SdfPortInstance* snk_port_instance);
+  SdfTimingSpec* makeTimingSpec(std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs);
 
  private:
   const char* _file_name;

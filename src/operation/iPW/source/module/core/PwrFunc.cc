@@ -4,9 +4,6 @@
  * @brief The implemention of power analysis functor.
  * @version 0.1
  * @date 2023-02-14
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "PwrFunc.hh"
 

@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2021-10-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "Cmd.hh"
 #include "sdc/SdcCollection.hh"

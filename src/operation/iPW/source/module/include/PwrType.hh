@@ -4,9 +4,6 @@
  * @brief The type for all ipower file.
  * @version 0.1
  * @date 2023-02-13
- *
- * @copyright Copyright (c) 2023
- *
  */
 #pragma once
 namespace ipower {

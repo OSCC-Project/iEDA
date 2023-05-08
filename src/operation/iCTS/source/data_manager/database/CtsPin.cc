@@ -1,14 +1,3 @@
-/**
- * @file CtsPin.cc
- * @author congxiang (congxiang@ustc.edu)
- * @brief  The implemention of the pin
- * @version 0.1
- * @date 2022-01-15
- *
- * @copyright Copyright (c) 2022
- *
- */
-
 #include "CtsPin.h"
 
 namespace icts {

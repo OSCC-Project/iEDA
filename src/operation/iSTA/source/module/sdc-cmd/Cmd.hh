@@ -4,9 +4,6 @@
  * @brief The sdc cmd class.
  * @version 0.1
  * @date 2021-03-02
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once
@@ -234,9 +231,6 @@ class CmdSetMaxCapacitance : public TclCmd {
 
 /**
  * @brief current_design get the current design netlist.
- *
- *
- *
  */
 class CmdCurrentDesign : public TclCmd {
  public:

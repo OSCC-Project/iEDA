@@ -4,9 +4,6 @@
  * @brief Check the pipeline loop for the seq graph.
  * @version 0.1
  * @date 2023-03-14
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "PwrCheckPipelineLoop.hh"
 

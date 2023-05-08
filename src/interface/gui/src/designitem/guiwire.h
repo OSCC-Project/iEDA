@@ -15,7 +15,7 @@
  * @version 0.1
  * @date 2021-08-17(V0.1)
  *
- * @copyright Copyright (c) 2021
+ *
  *
  */
 #ifndef GUIWIRE_H

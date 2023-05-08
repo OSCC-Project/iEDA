@@ -4,9 +4,6 @@
  * @brief This is the interface of liberty module.
  * @version 0.1
  * @date 2020-11-28
- *
- * @copyright Copyright (c) 2020 PCL EDA.
- *
  */
 
 #pragma once
@@ -51,27 +48,18 @@ class LibertyCellPowerArcSetIterator;
  * @brief The base object of the library.
  *
  */
-class LibertyObject {
+class LibertyObject
+{
  public:
   LibertyObject() = default;
   virtual ~LibertyObject() = default;
 
-  virtual void addAxis(std::unique_ptr<LibertyAxis>&& axis) {
-    LOG_FATAL << "not support";
-  }
-  virtual void set_template_variable1(const char*) {
-    LOG_FATAL << "not support";
-  }
-  virtual void set_template_variable2(const char*) {
-    LOG_FATAL << "not support";
-  }
-  virtual void set_template_variable3(const char*) {
-    LOG_FATAL << "not support";
-  }
+  virtual void addAxis(std::unique_ptr<LibertyAxis>&& axis) { LOG_FATAL << "not support"; }
+  virtual void set_template_variable1(const char*) { LOG_FATAL << "not support"; }
+  virtual void set_template_variable2(const char*) { LOG_FATAL << "not support"; }
+  virtual void set_template_variable3(const char*) { LOG_FATAL << "not support"; }
 
-  virtual void set_template_variable4(const char*) {
-    LOG_FATAL << "not support";
-  }
+  virtual void set_template_variable4(const char*) { LOG_FATAL << "not support"; }
 
   virtual unsigned isLibertyPortBus() { return 0; }
 
@@ -92,7 +80,8 @@ class LibertyObject {
  * @brief The liberty axis, which the lut table consist of.
  *
  */
-class LibertyAxis : public LibertyObject {
+class LibertyAxis : public LibertyObject
+{
  public:
   explicit LibertyAxis(const char* axis_name);
   ~LibertyAxis() override = default;
@@ -102,10 +91,7 @@ class LibertyAxis : public LibertyObject {
 
   const char* get_axis_name() { return _axis_name.c_str(); }
 
-  void set_axis_values(
-      std::vector<std::unique_ptr<LibertyAttrValue>>&& table_values) {
-    _axis_values = std::move(table_values);
-  }
+  void set_axis_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& table_values) { _axis_values = std::move(table_values); }
 
   auto& get_axis_values() { return _axis_values; }
   std::size_t get_axis_size() { return _axis_values.size(); }
@@ -115,8 +101,7 @@ class LibertyAxis : public LibertyObject {
  private:
   std::string _axis_name;  //!< The axis name.
 
-  std::vector<std::unique_ptr<LibertyAttrValue>>
-      _axis_values;  //!< The axis sample values.
+  std::vector<std::unique_ptr<LibertyAttrValue>> _axis_values;  //!< The axis sample values.
 
   DISALLOW_COPY_AND_ASSIGN(LibertyAxis);
 };
@@ -125,9 +110,11 @@ class LibertyAxis : public LibertyObject {
  * @brief The liberty NLDM table.
  *
  */
-class LibertyTable : public LibertyObject {
+class LibertyTable : public LibertyObject
+{
  public:
-  enum class TableType : int {
+  enum class TableType : int
+  {
     kCellRise = 0,
     kCellFall = 1,
     kRiseTransition = 2,
@@ -151,25 +138,18 @@ class LibertyTable : public LibertyObject {
   LibertyTable(LibertyTable&& other) noexcept;
   LibertyTable& operator=(LibertyTable&& rhs) noexcept;
 
-  void addAxis(std::unique_ptr<LibertyAxis>&& axis) override {
-    _axes.push_back(std::move(axis));
-  }
+  void addAxis(std::unique_ptr<LibertyAxis>&& axis) override { _axes.push_back(std::move(axis)); }
 
   LibertyAxis& getAxis(unsigned int index);
 
   Vector<std::unique_ptr<LibertyAxis>>& get_axes();
 
-  void set_table_values(
-      std::vector<std::unique_ptr<LibertyAttrValue>>&& table_values) {
-    _table_values = std::move(table_values);
-  }
+  void set_table_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& table_values) { _table_values = std::move(table_values); }
   auto& get_table_values() { return _table_values; }
 
   TableType get_table_type() { return _table_type; }
 
-  void set_table_template(LibertyLutTableTemplate* table_template) {
-    _table_template = table_template;
-  }
+  void set_table_template(LibertyLutTableTemplate* table_template) { _table_template = table_template; }
   LibertyLutTableTemplate* get_table_template() { return _table_template; }
 
   double findValue(double slew, double constrain_slew_or_load);
@@ -177,11 +157,9 @@ class LibertyTable : public LibertyObject {
   double driveResistance();
 
  private:
-  Vector<std::unique_ptr<LibertyAxis>>
-      _axes;  //!< May be zero, one, two, three axes.
-  std::vector<std::unique_ptr<LibertyAttrValue>>
-      _table_values;      //!< The axis values.
-  TableType _table_type;  //!< The table type.
+  Vector<std::unique_ptr<LibertyAxis>> _axes;                    //!< May be zero, one, two, three axes.
+  std::vector<std::unique_ptr<LibertyAttrValue>> _table_values;  //!< The axis values.
+  TableType _table_type;                                         //!< The table type.
 
   LibertyLutTableTemplate* _table_template;  //!< The lut template.
 
@@ -192,7 +170,8 @@ class LibertyTable : public LibertyObject {
  * @brief The CCS model simulation information.
  *
  */
-struct LibertyCurrentSimuInfo {
+struct LibertyCurrentSimuInfo
+{
   double _start_time;
   double _end_time;
   int _num_sim_point;
@@ -209,10 +188,10 @@ struct LibertyCurrentSimuInfo {
  *         values("-0.00616907,-0.00724877,-0.0171559,-0.0279607,-0.0365291,-0.0398586,-0.0304221,-0.00932126,-0.00135837");
  * }
  */
-class LibertyVectorTable : public LibertyTable {
+class LibertyVectorTable : public LibertyTable
+{
  public:
-  LibertyVectorTable(TableType table_type,
-                     LibertyLutTableTemplate* table_template);
+  LibertyVectorTable(TableType table_type, LibertyLutTableTemplate* table_template);
   ~LibertyVectorTable() override = default;
 
   LibertyVectorTable(LibertyVectorTable&& other) noexcept;
@@ -223,8 +202,7 @@ class LibertyVectorTable : public LibertyTable {
 
   std::tuple<double, int> getSimulationTotalTimeAndNumPoints();
 
-  std::vector<double> getOutputCurrent(
-      std::optional<LibertyCurrentSimuInfo>& simu_info);
+  std::vector<double> getOutputCurrent(std::optional<LibertyCurrentSimuInfo>& simu_info);
 
  private:
   double _ref_time = 0.0;  //!< The current reference time.
@@ -236,10 +214,10 @@ class LibertyVectorTable : public LibertyTable {
  * @brief The output current data for upper layer interface.
  *
  */
-class LibetyCurrentData {
+class LibetyCurrentData
+{
  public:
-  LibetyCurrentData(LibertyVectorTable* low_low, LibertyVectorTable* low_high,
-                    LibertyVectorTable* high_low, LibertyVectorTable* high_high,
+  LibetyCurrentData(LibertyVectorTable* low_low, LibertyVectorTable* low_high, LibertyVectorTable* high_low, LibertyVectorTable* high_high,
                     double slew, double load);
   ~LibetyCurrentData() = default;
 
@@ -258,8 +236,7 @@ class LibetyCurrentData {
 
   std::tuple<double, int> getSimulationTotalTimeAndNumPoints();
 
-  std::vector<double> getOutputCurrent(
-      std::optional<LibertyCurrentSimuInfo>& simu_info);
+  std::vector<double> getOutputCurrent(std::optional<LibertyCurrentSimuInfo>& simu_info);
 
  private:
   LibertyVectorTable* _low_low;    //!< low slew and low load
@@ -275,20 +252,18 @@ class LibetyCurrentData {
  * @brief The liberty CCS table include one or more vector table.
  *
  */
-class LibertyCCSTable : public LibertyObject {
+class LibertyCCSTable : public LibertyObject
+{
  public:
   explicit LibertyCCSTable(LibertyTable::TableType table_type);
   ~LibertyCCSTable() override = default;
-  void addTable(std::unique_ptr<LibertyVectorTable>&& current_table) {
-    _vector_tables.emplace_back(std::move(current_table));
-  }
+  void addTable(std::unique_ptr<LibertyVectorTable>&& current_table) { _vector_tables.emplace_back(std::move(current_table)); }
   auto get_table_type() { return _table_type; }
   auto& get_vector_tables() { return _vector_tables; }
 
  private:
-  LibertyTable::TableType _table_type;  //!< The table type.
-  std::vector<std::unique_ptr<LibertyVectorTable>>
-      _vector_tables;  //!< The current tables.
+  LibertyTable::TableType _table_type;                              //!< The table type.
+  std::vector<std::unique_ptr<LibertyVectorTable>> _vector_tables;  //!< The current tables.
 
   DISALLOW_COPY_AND_ASSIGN(LibertyCCSTable);
 };
@@ -299,7 +274,8 @@ class LibertyCCSTable : public LibertyObject {
  * @brief The liberty table model, include delay model and check model.
  *
  */
-class LibertyTableModel : public LibertyObject {
+class LibertyTableModel : public LibertyObject
+{
  public:
   LibertyTableModel() = default;
   ~LibertyTableModel() override = default;
@@ -308,30 +284,32 @@ class LibertyTableModel : public LibertyObject {
   virtual unsigned isPowerModel() { return 0; }
   virtual unsigned addTable(std::unique_ptr<LibertyTable>&& table) = 0;
   virtual LibertyTable* getTable(int index) = 0;
-  virtual double gateDelay(TransType trans_type, double slew, double load) {
+  virtual double gateDelay(TransType trans_type, double slew, double load)
+  {
     LOG_FATAL << "not support";
     return 0.0;
   }
-  virtual double gateSlew(TransType trans_type, double slew, double load) {
+  virtual double gateSlew(TransType trans_type, double slew, double load)
+  {
     LOG_FATAL << "not support";
     return 0.0;
   }
-  virtual double gateCheckConstrain(TransType trans_type, double slew,
-                                    double load) {
+  virtual double gateCheckConstrain(TransType trans_type, double slew, double load)
+  {
     LOG_FATAL << "not support";
     return 0.0;
   }
 
-  virtual std::unique_ptr<LibetyCurrentData> gateOutputCurrent(
-      TransType trans_type, double slew, double load) {
+  virtual std::unique_ptr<LibetyCurrentData> gateOutputCurrent(TransType trans_type, double slew, double load)
+  {
     LOG_FATAL << "not support";
     return nullptr;
   }
 
   virtual double driveResistance() { return 0.0; }
 
-  virtual double gatePower(TransType trans_type, double slew,
-                           std::optional<double> load) {
+  virtual double gatePower(TransType trans_type, double slew, std::optional<double> load)
+  {
     LOG_FATAL << "not support";
     return 0.0;
   }
@@ -340,9 +318,7 @@ class LibertyTableModel : public LibertyObject {
   DISALLOW_COPY_AND_ASSIGN(LibertyTableModel);
 };
 
-#define CAST_TYPE_TO_INDEX(type)                               \
-  ((static_cast<int>(type) > 3) ? (static_cast<int>(type) - 4) \
-                                : static_cast<int>(type))
+#define CAST_TYPE_TO_INDEX(type) ((static_cast<int>(type) > 3) ? (static_cast<int>(type) - 4) : static_cast<int>(type))
 #define CAST_CURRENT_TYPE_TO_INDEX(type) (static_cast<int>(type) - 6)
 #define CAST_POWER_TYPE_TO_INDEX(type) (static_cast<int>(type) - 8)
 
@@ -350,10 +326,10 @@ class LibertyTableModel : public LibertyObject {
  * @brief The liberty delay model.
  *
  */
-class LibertyDelayTableModel final : public LibertyTableModel {
+class LibertyDelayTableModel final : public LibertyTableModel
+{
  public:
-  static constexpr size_t kTableNum =
-      4;  //!< The model contain delay/slew, rise/fall four table.
+  static constexpr size_t kTableNum = 4;         //!< The model contain delay/slew, rise/fall four table.
   static constexpr size_t kCurrentTableNum = 2;  //!< Current rise/fall table.
 
   unsigned isDelayModel() override { return 1; }
@@ -364,7 +340,8 @@ class LibertyDelayTableModel final : public LibertyTableModel {
   LibertyDelayTableModel(LibertyDelayTableModel&& other) noexcept;
   LibertyDelayTableModel& operator=(LibertyDelayTableModel&& rhs) noexcept;
 
-  unsigned addTable(std::unique_ptr<LibertyTable>&& table) {
+  unsigned addTable(std::unique_ptr<LibertyTable>&& table)
+  {
     auto table_type = table->get_table_type();
     _tables[CAST_TYPE_TO_INDEX(table_type)] = std::move(table);
     return 1;
@@ -372,7 +349,8 @@ class LibertyDelayTableModel final : public LibertyTableModel {
 
   LibertyTable* getTable(int index) override { return _tables[index].get(); }
 
-  unsigned addCurrentTable(std::unique_ptr<LibertyCCSTable>&& table) {
+  unsigned addCurrentTable(std::unique_ptr<LibertyCCSTable>&& table)
+  {
     auto table_type = table->get_table_type();
     _current_tables[CAST_CURRENT_TYPE_TO_INDEX(table_type)] = std::move(table);
     return 1;
@@ -380,16 +358,13 @@ class LibertyDelayTableModel final : public LibertyTableModel {
 
   double gateDelay(TransType trans_type, double slew, double load) override;
   double gateSlew(TransType trans_type, double slew, double load) override;
-  std::unique_ptr<LibetyCurrentData> gateOutputCurrent(TransType trans_type,
-                                                       double slew,
-                                                       double load) override;
+  std::unique_ptr<LibetyCurrentData> gateOutputCurrent(TransType trans_type, double slew, double load) override;
 
   double driveResistance() override;
 
  private:
-  std::array<std::unique_ptr<LibertyTable>, kTableNum>
-      _tables;  // NLDM table,include cell rise/cell fall/rise transition/fall
-                // transition.
+  std::array<std::unique_ptr<LibertyTable>, kTableNum> _tables;  // NLDM table,include cell rise/cell fall/rise transition/fall
+                                                                 // transition.
   std::array<std::unique_ptr<LibertyCCSTable>,
              kCurrentTableNum>  // Output current rise/fall.
       _current_tables;
@@ -401,10 +376,10 @@ class LibertyDelayTableModel final : public LibertyTableModel {
  * @brief The liberty check model.
  *
  */
-class LibertyCheckTableModel final : public LibertyTableModel {
+class LibertyCheckTableModel final : public LibertyTableModel
+{
  public:
-  static constexpr size_t kTableNum =
-      2;  //!< The model contain rise/fall constrain two tables.
+  static constexpr size_t kTableNum = 2;  //!< The model contain rise/fall constrain two tables.
 
   unsigned isCheckModel() override { return 1; }
 
@@ -414,15 +389,15 @@ class LibertyCheckTableModel final : public LibertyTableModel {
   LibertyCheckTableModel(LibertyCheckTableModel&& other) noexcept;
   LibertyCheckTableModel& operator=(LibertyCheckTableModel&& rhs) noexcept;
 
-  unsigned addTable(std::unique_ptr<LibertyTable>&& table) override {
+  unsigned addTable(std::unique_ptr<LibertyTable>&& table) override
+  {
     auto table_type = table->get_table_type();
     _tables[CAST_TYPE_TO_INDEX(table_type)] = std::move(table);
     return 1;
   }
 
   LibertyTable* getTable(int index) override { return _tables[index].get(); }
-  double gateCheckConstrain(TransType trans_type, double slew,
-                            double constrain_slew) override;
+  double gateCheckConstrain(TransType trans_type, double slew, double constrain_slew) override;
 
  private:
   std::array<std::unique_ptr<LibertyTable>, kTableNum> _tables;
@@ -434,10 +409,10 @@ class LibertyCheckTableModel final : public LibertyTableModel {
  * @brief The liberty power model.
  *
  */
-class LibertyPowerTableModel final : public LibertyTableModel {
+class LibertyPowerTableModel final : public LibertyTableModel
+{
  public:
-  static constexpr size_t kTableNum =
-      2;  //!< The model contain rise/fall power two table.
+  static constexpr size_t kTableNum = 2;  //!< The model contain rise/fall power two table.
   unsigned isPowerModel() override { return 1; }
 
   LibertyPowerTableModel() = default;
@@ -446,19 +421,18 @@ class LibertyPowerTableModel final : public LibertyTableModel {
   LibertyPowerTableModel(LibertyPowerTableModel&& other) noexcept;
   LibertyPowerTableModel& operator=(LibertyPowerTableModel&& rhs) noexcept;
 
-  unsigned addTable(std::unique_ptr<LibertyTable>&& table) {
+  unsigned addTable(std::unique_ptr<LibertyTable>&& table)
+  {
     auto table_type = table->get_table_type();
     _tables[CAST_POWER_TYPE_TO_INDEX(table_type)] = std::move(table);
     return 1;
   }
   LibertyTable* getTable(int index) override { return _tables[index].get(); }
 
-  double gatePower(TransType trans_type, double slew,
-                   std::optional<double> load) override;
+  double gatePower(TransType trans_type, double slew, std::optional<double> load) override;
 
  private:
-  std::array<std::unique_ptr<LibertyTable>, kTableNum>
-      _tables;  // power table,include rise power/fall power.
+  std::array<std::unique_ptr<LibertyTable>, kTableNum> _tables;  // power table,include rise power/fall power.
   DISALLOW_COPY_AND_ASSIGN(LibertyPowerTableModel);
 };
 
@@ -466,56 +440,56 @@ class LibertyPowerTableModel final : public LibertyTableModel {
  * @brief class for internal power information
  *
  */
-class LibertyInternalPowerInfo {
+class LibertyInternalPowerInfo
+{
  public:
-  void set_related_pg_port(const char* related_pg_port) {
-    _related_pg_port = related_pg_port;
-  }
+  void set_related_pg_port(const char* related_pg_port) { _related_pg_port = related_pg_port; }
   auto& get_related_pg_port() { return _related_pg_port; }
 
   void set_when(const char* when) { _when = when; }
   auto& get_when() { return _when; }
 
-  void set_power_table_model(
-      std::unique_ptr<LibertyTableModel>&& power_table_model) {
-    _power_table_model = std::move(power_table_model);
-  }
-  LibertyTableModel* get_power_table_model() {
-    return _power_table_model.get();
-  }
+  void set_power_table_model(std::unique_ptr<LibertyTableModel>&& power_table_model) { _power_table_model = std::move(power_table_model); }
+  LibertyTableModel* get_power_table_model() { return _power_table_model.get(); }
 
-  double gatePower(TransType trans_type, double slew,
-                   std::optional<double> load) {
+  double gatePower(TransType trans_type, double slew, std::optional<double> load)
+  {
     return _power_table_model->gatePower(trans_type, slew, load);
   }
 
  private:
-  std::string _related_pg_port;  //!< The liberty power arc related pg port.
-  std::string _when;             //!< The liberty power arc related pg port.
-  std::unique_ptr<LibertyTableModel>
-      _power_table_model;  //!< The pin power table model.
+  std::string _related_pg_port;                           //!< The liberty power arc related pg port.
+  std::string _when;                                      //!< The liberty power arc related pg port.
+  std::unique_ptr<LibertyTableModel> _power_table_model;  //!< The pin power table model.
 };
 
 /**
  * @brief The port in the cell.
  *
  */
-class LibertyPort : public LibertyObject {
+class LibertyPort : public LibertyObject
+{
  public:
-  enum class LibertyPortType {
+  enum class LibertyPortType
+  {
     kDefault = 0,
     kInput = 1,
     kOutput = 2,
     kInOut = 3
   };
-  enum class LibertyCapIndex : int {
+  enum class LibertyCapIndex : int
+  {
     kMaxRise = 0,
     kMaxFall = 1,
     kMinRise = 2,
     kMinFall = 3
   };
 
-  enum class LibertyMaxMinLimitIndex : int { kMax = 0, kMin = 1 };
+  enum class LibertyMaxMinLimitIndex : int
+  {
+    kMax = 0,
+    kMin = 1
+  };
 
   explicit LibertyPort(const char* port_name);
   ~LibertyPort() override = default;
@@ -530,14 +504,10 @@ class LibertyPort : public LibertyObject {
   void set_port_type(LibertyPortType port_type) { _port_type = port_type; }
   LibertyPortType get_port_type() { return _port_type; }
 
-  void set_clock_gate_clock_pin(bool clock_gate_clock_pin) {
-    _clock_gate_clock_pin = clock_gate_clock_pin;
-  }
+  void set_clock_gate_clock_pin(bool clock_gate_clock_pin) { _clock_gate_clock_pin = clock_gate_clock_pin; }
   bool get_clock_gate_clock_pin() { return _clock_gate_clock_pin; }
 
-  void set_clock_gate_enable_pin(bool clock_gate_enable_pin) {
-    _clock_gate_enable_pin = clock_gate_enable_pin;
-  }
+  void set_clock_gate_enable_pin(bool clock_gate_enable_pin) { _clock_gate_enable_pin = clock_gate_enable_pin; }
   bool get_clock_gate_enable_pin() { return _clock_gate_enable_pin; }
 
   void set_port_cap(double cap) { _port_cap = cap; }
@@ -555,22 +525,15 @@ class LibertyPort : public LibertyObject {
   void set_func_expr(LibertyExpr* lib_expr);
   LibertyExpr* get_func_expr();
 
-  void set_func_expr_str(const char* func_expr_str) {
-    _func_expr_str = func_expr_str;
-  }
+  void set_func_expr_str(const char* func_expr_str) { _func_expr_str = func_expr_str; }
   auto& get_func_expr_str() { return _func_expr_str; }
 
-  unsigned isInput() {
-    return (_port_type == LibertyPortType::kInput ||
-            _port_type == LibertyPortType::kInOut);
-  }
-  unsigned isOutput() {
-    return (_port_type == LibertyPortType::kOutput ||
-            _port_type == LibertyPortType::kInOut);
-  }
+  unsigned isInput() { return (_port_type == LibertyPortType::kInput || _port_type == LibertyPortType::kInOut); }
+  unsigned isOutput() { return (_port_type == LibertyPortType::kOutput || _port_type == LibertyPortType::kInOut); }
   unsigned isInout() { return _port_type == LibertyPortType::kInOut; }
 
-  void set_port_type(const char* port_type) {
+  void set_port_type(const char* port_type)
+  {
     if (Str::equal(port_type, "input")) {
       _port_type = LibertyPortType::kInput;
     } else if (Str::equal(port_type, "output")) {
@@ -580,9 +543,7 @@ class LibertyPort : public LibertyObject {
     }
   }
 
-  void set_fanout_load(double fanout_load_val) {
-    _fanout_load = fanout_load_val;
-  }
+  void set_fanout_load(double fanout_load_val) { _fanout_load = fanout_load_val; }
   auto& get_fanout_load() { return _fanout_load; }
 
   double driveResistance();
@@ -590,8 +551,8 @@ class LibertyPort : public LibertyObject {
   bool isClock();
   bool isSeqDataIn();
 
-  void addInternalPower(
-      std::unique_ptr<LibertyInternalPowerInfo>&& internal_power) {
+  void addInternalPower(std::unique_ptr<LibertyInternalPowerInfo>&& internal_power)
+  {
     _internal_powers.emplace_back(std::move(internal_power));
   }
   auto& get_internal_powers() { return _internal_powers; }
@@ -603,19 +564,16 @@ class LibertyPort : public LibertyObject {
   bool _clock_gate_clock_pin = false;   //!< The flag of gate clock pin.
   bool _clock_gate_enable_pin = false;  //!< The flag of gate enable pin.
   std::unique_ptr<LibertyExpr> _func_expr;
-  std::string _func_expr_str;  //!< store func expr string for debug.
-  double _port_cap =
-      0.0;  //!< The input pin corresponding to the port has capacitance.
-  std::array<std::optional<double>, MODE_TRANS_SPLIT>
-      _port_caps{};  //!< May be port cap split max rise, max fall, min rise,
-                     //!< min fall.
+  std::string _func_expr_str;                                        //!< store func expr string for debug.
+  double _port_cap = 0.0;                                            //!< The input pin corresponding to the port has capacitance.
+  std::array<std::optional<double>, MODE_TRANS_SPLIT> _port_caps{};  //!< May be port cap split max rise, max fall, min rise,
+                                                                     //!< min fall.
   std::array<std::optional<double>, MODE_SPLIT> _cap_limits{};
   std::array<std::optional<double>, MODE_SPLIT> _slew_limits{};
 
   std::optional<double> _fanout_load;
 
-  Vector<std::unique_ptr<LibertyInternalPowerInfo>>
-      _internal_powers;  //!< The internal power information.
+  Vector<std::unique_ptr<LibertyInternalPowerInfo>> _internal_powers;  //!< The internal power information.
 
   DISALLOW_COPY_AND_ASSIGN(LibertyPort);
 };
@@ -629,12 +587,9 @@ class LibertyPort : public LibertyObject {
  *    do_something_for_internal_power();
  * }
  */
-#define FOREACH_INTERNAL_POWER(port, internal_power)                           \
-  if (auto& internal_powers = (port)->get_internal_powers();                   \
-      !internal_powers.empty())                                                \
-    for (auto p = internal_powers.begin();                                     \
-         p != internal_powers.end() ? internal_power = p->get(), true : false; \
-         ++p)
+#define FOREACH_INTERNAL_POWER(port, internal_power)                                   \
+  if (auto& internal_powers = (port)->get_internal_powers(); !internal_powers.empty()) \
+    for (auto p = internal_powers.begin(); p != internal_powers.end() ? internal_power = p->get(), true : false; ++p)
 
 /**
  * @brief The liberty bus type class，such as:
@@ -647,21 +602,17 @@ class LibertyPort : public LibertyObject {
  *           downto : true ;
  *       }
  */
-class LibertyType : public LibertyObject {
+class LibertyType : public LibertyObject
+{
  public:
-  explicit LibertyType(std::string&& type_name)
-      : _type_name(std::move(type_name)) {}
+  explicit LibertyType(std::string&& type_name) : _type_name(std::move(type_name)) {}
 
   const char* get_type_name() { return _type_name.c_str(); }
 
-  void set_base_type(std::string&& base_type) {
-    _base_type = std::move(base_type);
-  }
+  void set_base_type(std::string&& base_type) { _base_type = std::move(base_type); }
   auto& get_base_type() { return _base_type; }
 
-  void set_data_type(std::string&& data_type) {
-    _data_type = std::move(data_type);
-  }
+  void set_data_type(std::string&& data_type) { _data_type = std::move(data_type); }
   auto& get_data_type() { return _data_type; }
 
   void set_bit_width(unsigned bit_width) { _bit_width = bit_width; }
@@ -687,27 +638,22 @@ class LibertyType : public LibertyObject {
  * @brief The port bus in the cell.
  *
  */
-class LibertyPortBus : public LibertyPort {
+class LibertyPortBus : public LibertyPort
+{
  public:
   explicit LibertyPortBus(const char* port_bus_name);
   ~LibertyPortBus() override = default;
 
   unsigned isLibertyPortBus() override { return 1; }
 
-  void addlibertyPort(std::unique_ptr<LibertyPort>&& port) {
-    _ports.push_back(std::move(port));
-  }
+  void addlibertyPort(std::unique_ptr<LibertyPort>&& port) { _ports.push_back(std::move(port)); }
 
-  auto getBusSize() {
-    return _bus_type ? _bus_type->get_bit_width() : _ports.size();
-  }
+  auto getBusSize() { return _bus_type ? _bus_type->get_bit_width() : _ports.size(); }
 
   void set_bus_type(LibertyType* bus_type) { _bus_type = bus_type; }
   auto* get_bus_type() { return _bus_type; }
 
-  LibertyPort* operator[](int index) {
-    return _ports.empty() ? this : _ports[index].get();
-  }
+  LibertyPort* operator[](int index) { return _ports.empty() ? this : _ports[index].get(); }
 
  private:
   Vector<std::unique_ptr<LibertyPort>> _ports;  //!< The bus ports.
@@ -720,7 +666,8 @@ class LibertyPortBus : public LibertyPort {
  * @brief The leakage power in the cell.
  *
  */
-class LibertyLeakagePower : public LibertyObject {
+class LibertyLeakagePower : public LibertyObject
+{
  public:
   LibertyLeakagePower();
   ~LibertyLeakagePower() override = default;
@@ -730,9 +677,7 @@ class LibertyLeakagePower : public LibertyObject {
 
   void set_owner_cell(LibertyCell* ower_cell) { _owner_cell = ower_cell; }
   LibertyCell* get_owner_cell() { return _owner_cell; }
-  void set_related_pg_port(const char* related_pg_port) {
-    _related_pg_port = related_pg_port;
-  }
+  void set_related_pg_port(const char* related_pg_port) { _related_pg_port = related_pg_port; }
   void set_when(const char* when) { _when = when; }
   void set_value(double value) { _value = value; }
 
@@ -753,16 +698,23 @@ class LibertyLeakagePower : public LibertyObject {
  * @brief The timing arc in the liberty.
  *
  */
-class LibertyArc : public LibertyObject {
+class LibertyArc : public LibertyObject
+{
  public:
-  enum class ArcType { kDelayArc, kCheckArc };
-  enum class TimingSense {
+  enum class ArcType
+  {
+    kDelayArc,
+    kCheckArc
+  };
+  enum class TimingSense
+  {
     kPositiveUnate,
     kNegativeUnate,
     kNonUnate,
     kDefault
   };
-  enum class TimingType : int {
+  enum class TimingType : int
+  {
     kSetupRising = 1,
     kHoldRising,
     kRecoveryRising,
@@ -826,88 +778,58 @@ class LibertyArc : public LibertyObject {
   unsigned isDelayArc();
   unsigned isMpwArc();
   unsigned isClockGateCheckArc();
-  unsigned isClearPresetArc() {
-    return _timing_type == TimingType::kClear ||
-           _timing_type == TimingType::kPreset;
+  unsigned isClearPresetArc() { return _timing_type == TimingType::kClear || _timing_type == TimingType::kPreset; }
+
+  unsigned isUnateArc()
+  {
+    return (_timing_sense == TimingSense::kPositiveUnate) || (_timing_sense == TimingSense::kNegativeUnate)
+           || (_timing_sense == TimingSense::kDefault);
   }
 
-  unsigned isUnateArc() {
-    return (_timing_sense == TimingSense::kPositiveUnate) ||
-           (_timing_sense == TimingSense::kNegativeUnate) ||
-           (_timing_sense == TimingSense::kDefault);
+  unsigned isPositiveArc() { return _timing_sense == TimingSense::kPositiveUnate || (_timing_sense == TimingSense::kDefault); }
+
+  unsigned isNegativeArc() { return _timing_sense == TimingSense::kNegativeUnate; }
+
+  unsigned isSetupArc() { return (_timing_type == TimingType::kSetupRising) || (_timing_type == TimingType::kSetupFalling); }
+
+  unsigned isHoldArc() { return (_timing_type == TimingType::kHoldRising) || (_timing_type == TimingType::kHoldFalling); }
+
+  unsigned isRecoveryArc() { return (_timing_type == TimingType::kRecoveryRising) || (_timing_type == TimingType::kRecoveryFalling); }
+
+  unsigned isRemovalArc() { return (_timing_type == TimingType::kRemovalRising) || (_timing_type == TimingType::kRemovalFalling); }
+
+  unsigned isRisingEdgeCheck()
+  {
+    return (_timing_type == TimingType::kSetupRising) || (_timing_type == TimingType::kHoldRising)
+           || (_timing_type == TimingType::kRecoveryRising) || (_timing_type == TimingType::kRemovalRising);
   }
 
-  unsigned isPositiveArc() {
-    return _timing_sense == TimingSense::kPositiveUnate ||
-           (_timing_sense == TimingSense::kDefault);
+  unsigned isFallingEdgeCheck()
+  {
+    return (_timing_type == TimingType::kSetupFalling) || (_timing_type == TimingType::kHoldFalling)
+           || (_timing_type == TimingType::kRecoveryFalling) || (_timing_type == TimingType::kRemovalFalling);
   }
 
-  unsigned isNegativeArc() {
-    return _timing_sense == TimingSense::kNegativeUnate;
-  }
+  unsigned isRisingTriggerArc() { return (_timing_type == TimingType::kRisingEdge); }
 
-  unsigned isSetupArc() {
-    return (_timing_type == TimingType::kSetupRising) ||
-           (_timing_type == TimingType::kSetupFalling);
-  }
+  unsigned isFallingTriggerArc() { return (_timing_type == TimingType::kFallingEdge); }
 
-  unsigned isHoldArc() {
-    return (_timing_type == TimingType::kHoldRising) ||
-           (_timing_type == TimingType::kHoldFalling);
-  }
-
-  unsigned isRecoveryArc() {
-    return (_timing_type == TimingType::kRecoveryRising) ||
-           (_timing_type == TimingType::kRecoveryFalling);
-  }
-
-  unsigned isRemovalArc() {
-    return (_timing_type == TimingType::kRemovalRising) ||
-           (_timing_type == TimingType::kRemovalFalling);
-  }
-
-  unsigned isRisingEdgeCheck() {
-    return (_timing_type == TimingType::kSetupRising) ||
-           (_timing_type == TimingType::kHoldRising) ||
-           (_timing_type == TimingType::kRecoveryRising) ||
-           (_timing_type == TimingType::kRemovalRising);
-  }
-
-  unsigned isFallingEdgeCheck() {
-    return (_timing_type == TimingType::kSetupFalling) ||
-           (_timing_type == TimingType::kHoldFalling) ||
-           (_timing_type == TimingType::kRecoveryFalling) ||
-           (_timing_type == TimingType::kRemovalFalling);
-  }
-
-  unsigned isRisingTriggerArc() {
-    return (_timing_type == TimingType::kRisingEdge);
-  }
-
-  unsigned isFallingTriggerArc() {
-    return (_timing_type == TimingType::kFallingEdge);
-  }
-
-  void set_table_model(std::unique_ptr<LibertyTableModel>&& table_model) {
-    _table_model = std::move(table_model);
-  }
+  void set_table_model(std::unique_ptr<LibertyTableModel>&& table_model) { _table_model = std::move(table_model); }
   LibertyTableModel* get_table_model() { return _table_model.get(); }
 
-  double getDelayOrConstrainCheck(TransType trans_type, double slew,
-                                  double load_or_constrain_slew);
+  double getDelayOrConstrainCheck(TransType trans_type, double slew, double load_or_constrain_slew);
 
   double getSlew(TransType trans_type, double slew, double load);
 
-  std::unique_ptr<LibetyCurrentData> getOutputCurrent(TransType trans_type,
-                                                      double slew, double load);
+  std::unique_ptr<LibetyCurrentData> getOutputCurrent(TransType trans_type, double slew, double load);
 
   double getDriveResistance() { return _table_model->driveResistance(); }
 
  private:
-  std::string _src_port;  //!< The liberty timing arc source port, for liberty
-                          //!< file port may be behind the arc, so we use port
-                          //!< name, fix me.
-  std::string _snk_port;  //!< The liberty timing arc sink port.
+  std::string _src_port;      //!< The liberty timing arc source port, for liberty
+                              //!< file port may be behind the arc, so we use port
+                              //!< name, fix me.
+  std::string _snk_port;      //!< The liberty timing arc sink port.
   LibertyCell* _owner_cell;   //!< The cell owner the port.
   TimingSense _timing_sense;  //!< The arc timing sense.
   TimingType _timing_type;    //!< The arc timing type.
@@ -924,16 +846,15 @@ class LibertyArc : public LibertyObject {
  * condition is different.
  *
  */
-class LibertyArcSet {
+class LibertyArcSet
+{
  public:
   LibertyArcSet() = default;
   ~LibertyArcSet() = default;
   LibertyArcSet(LibertyArcSet&& other) noexcept;
   LibertyArcSet& operator=(LibertyArcSet&& rhs) noexcept;
 
-  void addLibertyArc(std::unique_ptr<LibertyArc>&& cell_arc) {
-    _arcs.emplace_back(std::move(cell_arc));
-  }
+  void addLibertyArc(std::unique_ptr<LibertyArc>&& cell_arc) { _arcs.emplace_back(std::move(cell_arc)); }
 
   LibertyArc* front() { return _arcs.front().get(); }
   auto& get_arcs() { return _arcs; }
@@ -948,7 +869,8 @@ class LibertyArcSet {
  * @brief The power arc in the liberty.
  *
  */
-class LibertyPowerArc : public LibertyObject {
+class LibertyPowerArc : public LibertyObject
+{
  public:
   LibertyPowerArc();
   ~LibertyPowerArc() override = default;
@@ -968,26 +890,20 @@ class LibertyPowerArc : public LibertyObject {
   void set_owner_cell(LibertyCell* ower_cell) { _owner_cell = ower_cell; }
   LibertyCell* get_owner_cell() { return _owner_cell; }
 
-  void set_related_pg_port(const char* related_pg_port) {
-    _internal_power_info->set_related_pg_port(related_pg_port);
-  }
-  const char* get_related_pg_port() {
-    return _internal_power_info->get_related_pg_port().c_str();
-  }
+  void set_related_pg_port(const char* related_pg_port) { _internal_power_info->set_related_pg_port(related_pg_port); }
+  const char* get_related_pg_port() { return _internal_power_info->get_related_pg_port().c_str(); }
 
   void set_when(const char* when) { _internal_power_info->set_when(when); }
   std::string get_when() { return _internal_power_info->get_when(); }
 
-  void set_power_table_model(
-      std::unique_ptr<LibertyTableModel>&& power_table_model) {
+  void set_power_table_model(std::unique_ptr<LibertyTableModel>&& power_table_model)
+  {
     _internal_power_info->set_power_table_model(std::move(power_table_model));
   }
-  LibertyTableModel* get_power_table_model() {
-    return _internal_power_info->get_power_table_model();
-  }
+  LibertyTableModel* get_power_table_model() { return _internal_power_info->get_power_table_model(); }
 
-  void set_internal_power_info(
-      std::unique_ptr<LibertyInternalPowerInfo>&& internal_power_info) {
+  void set_internal_power_info(std::unique_ptr<LibertyInternalPowerInfo>&& internal_power_info)
+  {
     _internal_power_info = std::move(internal_power_info);
   }
   auto& get_internal_power_info() { return _internal_power_info; }
@@ -997,8 +913,7 @@ class LibertyPowerArc : public LibertyObject {
   std::string _snk_port;     //!< The liberty power arc sink port.
   LibertyCell* _owner_cell;  //!< The cell owner the port.
 
-  std::unique_ptr<LibertyInternalPowerInfo>
-      _internal_power_info;  //!< The internal power information.
+  std::unique_ptr<LibertyInternalPowerInfo> _internal_power_info;  //!< The internal power information.
 
   DISALLOW_COPY_AND_ASSIGN(LibertyPowerArc);
 };
@@ -1008,16 +923,15 @@ class LibertyPowerArc : public LibertyObject {
  * the condition is different.
  *
  */
-class LibertyPowerArcSet {
+class LibertyPowerArcSet
+{
  public:
   LibertyPowerArcSet() = default;
   ~LibertyPowerArcSet() = default;
   LibertyPowerArcSet(LibertyPowerArcSet&& other) noexcept;
   LibertyPowerArcSet& operator=(LibertyPowerArcSet&& rhs) noexcept;
 
-  void addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_power_arc) {
-    _power_arcs.emplace_back(std::move(cell_power_arc));
-  }
+  void addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_power_arc) { _power_arcs.emplace_back(std::move(cell_power_arc)); }
 
   LibertyPowerArc* front() { return _power_arcs.front().get(); }
   auto& get_power_arcs() { return _power_arcs; }
@@ -1039,14 +953,14 @@ class LibertyPowerArcSet {
  */
 #define FOREACH_POWER_LIB_ARC(power_arc_set, power_arc)                        \
   if (auto& power_arcs = power_arc_set->get_power_arcs(); !power_arcs.empty()) \
-    for (auto p = power_arcs.begin();                                          \
-         p != power_arcs.end() ? power_arc = p->get(), true : false; ++p)
+    for (auto p = power_arcs.begin(); p != power_arcs.end() ? power_arc = p->get(), true : false; ++p)
 
 /**
  * @brief The timing cell in the liberty.
  *
  */
-class LibertyCell : public LibertyObject {
+class LibertyCell : public LibertyObject
+{
  public:
   LibertyCell(const char* cell_name, LibertyLibrary* owner_lib);
   ~LibertyCell() override;
@@ -1065,41 +979,35 @@ class LibertyCell : public LibertyObject {
   void set_cell_area(double cell_area) { _cell_area = cell_area; }
 
   double get_cell_leakage_power() const { return _cell_leakage_power; }
-  void set_cell_leakage_power(double cell_leakage_power) {
-    _cell_leakage_power = cell_leakage_power;
-  }
+  void set_cell_leakage_power(double cell_leakage_power) { _cell_leakage_power = cell_leakage_power; }
 
-  std::string get_clock_gating_integrated_cell() const {
-    return _clock_gating_integrated_cell;
-  }
-  void set_clock_gating_integrated_cell(
-      std::string clock_gating_integrated_cell) {
+  std::string get_clock_gating_integrated_cell() const { return _clock_gating_integrated_cell; }
+  void set_clock_gating_integrated_cell(std::string clock_gating_integrated_cell)
+  {
     _clock_gating_integrated_cell = clock_gating_integrated_cell;
   }
 
-  bool get_is_clock_gating_integrated_cell() const {
-    return _is_clock_gating_integrated_cell;
-  }
-  void set_is_clock_gating_integrated_cell(
-      bool is_clock_gating_integrated_cell) {
+  bool get_is_clock_gating_integrated_cell() const { return _is_clock_gating_integrated_cell; }
+  void set_is_clock_gating_integrated_cell(bool is_clock_gating_integrated_cell)
+  {
     _is_clock_gating_integrated_cell = is_clock_gating_integrated_cell;
   }
 
-  void addLeakagePower(std::unique_ptr<LibertyLeakagePower>&& leakage_power) {
-    _leakage_power_list.emplace_back(std::move(leakage_power));
-  }
+  void addLeakagePower(std::unique_ptr<LibertyLeakagePower>&& leakage_power) { _leakage_power_list.emplace_back(std::move(leakage_power)); }
   auto& get_leakage_power_list() { return _leakage_power_list; }
   std::vector<LibertyLeakagePower*> getLeakagePowerList();
   std::size_t getCellArcSetCount() { return _cell_ports.size(); }
 
   void addLibertyArc(std::unique_ptr<LibertyArc>&& cell_arc);
   void addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_power_arc);
-  void addLibertyPort(std::unique_ptr<LibertyPort>&& cell_port) {
+  void addLibertyPort(std::unique_ptr<LibertyPort>&& cell_port)
+  {
     _str2ports.emplace(cell_port->get_port_name(), cell_port.get());
     _cell_ports.emplace_back(std::move(cell_port));
   }
 
-  void addLibertyPortBus(std::unique_ptr<LibertyPortBus>&& cell_port_bus) {
+  void addLibertyPortBus(std::unique_ptr<LibertyPortBus>&& cell_port_bus)
+  {
     _str2portbuses.emplace(cell_port_bus->get_port_name(), cell_port_bus.get());
     _cell_port_buses.emplace_back(std::move(cell_port_bus));
   }
@@ -1113,16 +1021,12 @@ class LibertyCell : public LibertyObject {
   LibertyLibrary* get_owner_lib() { return _owner_lib; }
   void set_owner_lib(LibertyLibrary* owner_lib) { _owner_lib = owner_lib; }
 
-  std::optional<LibertyArcSet*> findLibertyArcSet(
-      const char* from_port_name, const char* to_port_name,
-      LibertyArc::TimingType timing_type);
+  std::optional<LibertyArcSet*> findLibertyArcSet(const char* from_port_name, const char* to_port_name, LibertyArc::TimingType timing_type);
 
-  std::optional<LibertyArcSet*> findLibertyArcSet(const char* from_port_name,
-                                                  const char* to_port_name);
+  std::optional<LibertyArcSet*> findLibertyArcSet(const char* from_port_name, const char* to_port_name);
 
   std::vector<LibertyArcSet*> findLibertyArcSet(const char* to_port_name);
-  std::optional<LibertyPowerArcSet*> findLibertyPowerArcSet(
-      const char* from_port_name, const char* to_port_name);
+  std::optional<LibertyPowerArcSet*> findLibertyPowerArcSet(const char* from_port_name, const char* to_port_name);
 
   bool hasBufferFunc(LibertyPort* input, LibertyPort* output);
   bool hasInverterFunc(LibertyPort* input, LibertyPort* output);
@@ -1141,22 +1045,18 @@ class LibertyCell : public LibertyObject {
   double convertTablePowerToMw(double query_table_power);
 
  private:
-  std::string _cell_name;      //!< The liberty cell name.
-  double _cell_area;           //!< The liberty cell area.
-  double _cell_leakage_power;  //!< The cell leakage power of the cell.
-  std::string _clock_gating_integrated_cell;  //!< The clock gate cell.
-  bool _is_clock_gating_integrated_cell =
-      false;  //!< The flag of the clock gate cell.
-  std::vector<std::unique_ptr<LibertyLeakagePower>>
-      _leakage_power_list;  //!< All leakage powers of the cell.
+  std::string _cell_name;                                                 //!< The liberty cell name.
+  double _cell_area;                                                      //!< The liberty cell area.
+  double _cell_leakage_power;                                             //!< The cell leakage power of the cell.
+  std::string _clock_gating_integrated_cell;                              //!< The clock gate cell.
+  bool _is_clock_gating_integrated_cell = false;                          //!< The flag of the clock gate cell.
+  std::vector<std::unique_ptr<LibertyLeakagePower>> _leakage_power_list;  //!< All leakage powers of the cell.
   std::vector<std::unique_ptr<LibertyPort>> _cell_ports;
   StrMap<LibertyPort*> _str2ports;  //!< The cell ports.
   std::vector<std::unique_ptr<LibertyPortBus>> _cell_port_buses;
-  StrMap<LibertyPortBus*> _str2portbuses;  //!< The cell port buses.
-  std::vector<std::unique_ptr<LibertyArcSet>>
-      _cell_arcs;  //!< All timing arcs of the cell.
-  std::vector<std::unique_ptr<LibertyPowerArcSet>>
-      _cell_power_arcs;  //!< All power arcs of the cell.
+  StrMap<LibertyPortBus*> _str2portbuses;                             //!< The cell port buses.
+  std::vector<std::unique_ptr<LibertyArcSet>> _cell_arcs;             //!< All timing arcs of the cell.
+  std::vector<std::unique_ptr<LibertyPowerArcSet>> _cell_power_arcs;  //!< All power arcs of the cell.
 
   LibertyLibrary* _owner_lib;  //!< The owner lib.
 
@@ -1171,7 +1071,8 @@ class LibertyCell : public LibertyObject {
  * @brief The cell port iterator.
  *
  */
-class LibertyCellPortIterator {
+class LibertyCellPortIterator
+{
  public:
   explicit LibertyCellPortIterator(LibertyCell* lib_cell);
   ~LibertyCellPortIterator() = default;
@@ -1196,9 +1097,7 @@ class LibertyCellPortIterator {
  * }
  *
  */
-#define FOREACH_CELL_PORT(cell, port)            \
-  for (ista::LibertyCellPortIterator iter(cell); \
-       iter.hasNext() ? port = (iter.next()), true : false;)
+#define FOREACH_CELL_PORT(cell, port) for (ista::LibertyCellPortIterator iter(cell); iter.hasNext() ? port = (iter.next()), true : false;)
 
 /**
  * @brief The macro of foreach leakage power, usage:
@@ -1209,18 +1108,16 @@ class LibertyCellPortIterator {
  *    do_something_for_leakage_powers();
  * }
  */
-#define FOREACH_LEAKAGE_POWER(cell, leakage_power)                           \
-  if (auto& leakage_powers = cell->get_leakage_power_list();                 \
-      !leakage_powers.empty())                                               \
-    for (auto p = leakage_powers.begin();                                    \
-         p != leakage_powers.end() ? leakage_power = p->get(), true : false; \
-         ++p)
+#define FOREACH_LEAKAGE_POWER(cell, leakage_power)                                    \
+  if (auto& leakage_powers = cell->get_leakage_power_list(); !leakage_powers.empty()) \
+    for (auto p = leakage_powers.begin(); p != leakage_powers.end() ? leakage_power = p->get(), true : false; ++p)
 
 /**
  * @brief The cell timing arc iterator.
  *
  */
-class LibertyCellTimingArcSetIterator {
+class LibertyCellTimingArcSetIterator
+{
  public:
   explicit LibertyCellTimingArcSetIterator(LibertyCell* lib_cell);
   ~LibertyCellTimingArcSetIterator() = default;
@@ -1246,14 +1143,14 @@ class LibertyCellTimingArcSetIterator {
  *
  */
 #define FOREACH_CELL_TIMING_ARC_SET(cell, timing_arc_set) \
-  for (ista::LibertyCellTimingArcSetIterator iter(cell);  \
-       iter.hasNext() ? timing_arc_set = (iter.next()), true : false;)
+  for (ista::LibertyCellTimingArcSetIterator iter(cell); iter.hasNext() ? timing_arc_set = (iter.next()), true : false;)
 
 /**
  * @brief The cell power arc iterator.
  *
  */
-class LibertyCellPowerArcSetIterator {
+class LibertyCellPowerArcSetIterator
+{
  public:
   explicit LibertyCellPowerArcSetIterator(LibertyCell* lib_cell);
   ~LibertyCellPowerArcSetIterator() = default;
@@ -1278,9 +1175,8 @@ class LibertyCellPowerArcSetIterator {
  *    do_something_for_power_arc_set();
  * }
  */
-#define FOREACH_POWER_ARC_SET(cell, power_arc_set)      \
-  for (ista::LibertyCellPowerArcSetIterator iter(cell); \
-       iter.hasNext() ? power_arc_set = (iter.next()), true : false;)
+#define FOREACH_POWER_ARC_SET(cell, power_arc_set) \
+  for (ista::LibertyCellPowerArcSetIterator iter(cell); iter.hasNext() ? power_arc_set = (iter.next()), true : false;)
 
 /**
  * @brief The liberty wire load model, such as:
@@ -1298,40 +1194,32 @@ class LibertyCellPowerArcSetIterator {
  *   fanout_length( 8, 19.3185 );
  * }
  */
-class LibertyWireLoad : public LibertyObject {
+class LibertyWireLoad : public LibertyObject
+{
  public:
   explicit LibertyWireLoad(const char* wire_load_name);
   ~LibertyWireLoad() override = default;
 
-  [[nodiscard]] const char* get_wire_load_name() const {
-    return _wire_load_name.c_str();
-  }
+  [[nodiscard]] const char* get_wire_load_name() const { return _wire_load_name.c_str(); }
 
-  void set_cap_per_length_unit(double cap_per_length_unit) {
-    _cap_per_length_unit = cap_per_length_unit;
-  }
+  void set_cap_per_length_unit(double cap_per_length_unit) { _cap_per_length_unit = cap_per_length_unit; }
   auto& get_cap_per_length_unit() { return _cap_per_length_unit; }
 
-  void set_resistance_per_length_unit(double resistance_per_length_unit) {
-    _resistance_per_length_unit = resistance_per_length_unit;
-  }
+  void set_resistance_per_length_unit(double resistance_per_length_unit) { _resistance_per_length_unit = resistance_per_length_unit; }
   auto& get_resistance_per_length_unit() { return _resistance_per_length_unit; }
 
   void set_slope(double slope) { _slope = slope; }
   auto& get_slope() { return _slope; }
 
-  void add_length_to_map(int fanout, double length) {
-    _fanout_to_length[fanout] = length;
-  }
+  void add_length_to_map(int fanout, double length) { _fanout_to_length[fanout] = length; }
   auto& get_fanout_to_length() { return _fanout_to_length; }
 
  private:
-  std::string _wire_load_name;                 //!< The wire load name.
-  std::map<int, double> _fanout_to_length;     //!< The fanout to length.
-  std::optional<double> _cap_per_length_unit;  //!< The cap per length unit.
-  std::optional<double>
-      _resistance_per_length_unit;  //!< The resistance per length unit.
-  std::optional<double> _slope;     //!< The slope.
+  std::string _wire_load_name;                        //!< The wire load name.
+  std::map<int, double> _fanout_to_length;            //!< The fanout to length.
+  std::optional<double> _cap_per_length_unit;         //!< The cap per length unit.
+  std::optional<double> _resistance_per_length_unit;  //!< The resistance per length unit.
+  std::optional<double> _slope;                       //!< The slope.
 };
 
 /**
@@ -1343,9 +1231,11 @@ class LibertyWireLoad : public LibertyObject {
  *  index_2 ("1000.0, 1001.0, 1002.0, 1003.0, 1004.0");
  *}
  */
-class LibertyLutTableTemplate : public LibertyObject {
+class LibertyLutTableTemplate : public LibertyObject
+{
  public:
-  enum class Variable {
+  enum class Variable
+  {
     TOTAL_OUTPUT_NET_CAPACITANCE = 0,
     INPUT_NET_TRANSITION,
     CONSTRAINED_PIN_TRANSITION,
@@ -1364,32 +1254,24 @@ class LibertyLutTableTemplate : public LibertyObject {
 
   const char* get_template_name() { return _template_name.c_str(); }
 
-  void set_template_variable1(const char* template_variable1) override {
-    DLOG_FATAL_IF(!_str2var.contains(template_variable1))
-        << "not contain the template variable " << template_variable1;
+  void set_template_variable1(const char* template_variable1) override
+  {
+    DLOG_FATAL_IF(!_str2var.contains(template_variable1)) << "not contain the template variable " << template_variable1;
     _template_variable1 = _str2var.at(template_variable1);
   }
 
-  void set_template_variable2(const char* template_variable2) override {
-    _template_variable2 = _str2var.at(template_variable2);
-  }
+  void set_template_variable2(const char* template_variable2) override { _template_variable2 = _str2var.at(template_variable2); }
 
-  void set_template_variable3(const char* template_variable3) override {
-    _template_variable3 = _str2var.at(template_variable3);
-  }
+  void set_template_variable3(const char* template_variable3) override { _template_variable3 = _str2var.at(template_variable3); }
 
-  void set_template_variable4(const char* template_variable4) override {
-    _template_variable4 = _str2var.at(template_variable4);
-  }
+  void set_template_variable4(const char* template_variable4) override { _template_variable4 = _str2var.at(template_variable4); }
 
   auto get_template_variable1() { return _template_variable1; }
   auto get_template_variable2() { return _template_variable2; }
   auto get_template_variable3() { return _template_variable3; }
   auto get_template_variable4() { return _template_variable4; }
 
-  void addAxis(std::unique_ptr<LibertyAxis>&& axis) override {
-    _axes.push_back(std::move(axis));
-  }
+  void addAxis(std::unique_ptr<LibertyAxis>&& axis) override { _axes.push_back(std::move(axis)); }
 
   auto& get_axes() { return _axes; }
 
@@ -1403,8 +1285,7 @@ class LibertyLutTableTemplate : public LibertyObject {
   std::optional<Variable> _template_variable3;
   std::optional<Variable> _template_variable4;
 
-  Vector<std::unique_ptr<LibertyAxis>>
-      _axes;  //!< May be zero, one, two, three axes.
+  Vector<std::unique_ptr<LibertyAxis>> _axes;  //!< May be zero, one, two, three axes.
 
   DISALLOW_COPY_AND_ASSIGN(LibertyLutTableTemplate);
 };
@@ -1419,14 +1300,13 @@ class LibertyLutTableTemplate : public LibertyObject {
   }
  *
  */
-class LibertyCurrentTemplate : public LibertyLutTableTemplate {
+class LibertyCurrentTemplate : public LibertyLutTableTemplate
+{
  public:
   explicit LibertyCurrentTemplate(const char* template_name);
   ~LibertyCurrentTemplate() override = default;
 
-  void set_template_axis(std::unique_ptr<LibertyAxis>&& axis) {
-    _template_axis = std::move(axis);
-  }
+  void set_template_axis(std::unique_ptr<LibertyAxis>&& axis) { _template_axis = std::move(axis); }
   LibertyAxis* get_template_axis() { return _template_axis.get(); }
 
  private:
@@ -1439,30 +1319,32 @@ class LibertyCurrentTemplate : public LibertyLutTableTemplate {
  * @brief The timing library class.
  *
  */
-class LibertyLibrary {
+class LibertyLibrary
+{
  public:
   explicit LibertyLibrary(const char* lib_name) : _lib_name(lib_name) {}
   ~LibertyLibrary() = default;
 
   friend LibertyCellIterator;
 
-  LibertyLibrary(LibertyLibrary&& other) noexcept
-      : _lib_name(std::move(other._lib_name)),
-        _cells(std::move(other._cells)) {}
+  LibertyLibrary(LibertyLibrary&& other) noexcept : _lib_name(std::move(other._lib_name)), _cells(std::move(other._cells)) {}
 
-  LibertyLibrary& operator=(LibertyLibrary&& rhs) noexcept {
+  LibertyLibrary& operator=(LibertyLibrary&& rhs) noexcept
+  {
     _lib_name = std::move(rhs._lib_name);
     _cells = std::move(rhs._cells);
 
     return *this;
   }
 
-  void addLibertyCell(std::unique_ptr<LibertyCell> lib_cell) {
+  void addLibertyCell(std::unique_ptr<LibertyCell> lib_cell)
+  {
     _str2cell.insert(lib_cell->get_cell_name(), lib_cell.get());
     _cells.emplace_back(std::move(lib_cell));
   }
 
-  LibertyCell* findCell(const char* cell_name) {
+  LibertyCell* findCell(const char* cell_name)
+  {
     auto p = _str2cell.find(cell_name);
     if (p != _str2cell.end()) {
       return p->second;
@@ -1470,12 +1352,14 @@ class LibertyLibrary {
     return nullptr;
   }
 
-  void addLutTemplate(std::unique_ptr<LibertyLutTableTemplate> lut_template) {
+  void addLutTemplate(std::unique_ptr<LibertyLutTableTemplate> lut_template)
+  {
     _str2template.insert(lut_template->get_template_name(), lut_template.get());
     _lut_templates.emplace_back(std::move(lut_template));
   }
 
-  LibertyLutTableTemplate* getLutTemplate(const char* template_name) {
+  LibertyLutTableTemplate* getLutTemplate(const char* template_name)
+  {
     auto p = _str2template.find(template_name);
     if (p != _str2template.end()) {
       return p->second;
@@ -1483,12 +1367,14 @@ class LibertyLibrary {
     return nullptr;
   }
 
-  void addLibType(std::unique_ptr<LibertyType> lib_type) {
+  void addLibType(std::unique_ptr<LibertyType> lib_type)
+  {
     _str2type.insert(lib_type->get_type_name(), lib_type.get());
     _types.emplace_back(std::move(lib_type));
   }
 
-  LibertyType* getLibType(const char* lib_type_name) {
+  LibertyType* getLibType(const char* lib_type_name)
+  {
     auto p = _str2type.find(lib_type_name);
     if (p != _str2type.end()) {
       return p->second;
@@ -1496,12 +1382,14 @@ class LibertyLibrary {
     return nullptr;
   }
 
-  void addWireLoad(std::unique_ptr<LibertyWireLoad> wire_load) {
+  void addWireLoad(std::unique_ptr<LibertyWireLoad> wire_load)
+  {
     _str2wireLoad.insert(wire_load->get_wire_load_name(), wire_load.get());
     _wire_loads.emplace_back(std::move(wire_load));
   }
 
-  LibertyWireLoad* getWireLoad(const char* wire_load_name) {
+  LibertyWireLoad* getWireLoad(const char* wire_load_name)
+  {
     auto p = _str2wireLoad.find(wire_load_name);
     if (p != _str2wireLoad.end()) {
       return p->second;
@@ -1511,114 +1399,96 @@ class LibertyLibrary {
   auto get_lib_name() { return _lib_name; }
   auto& get_wire_loads() { return _wire_loads; }
 
-  void set_default_wire_load(const char* wire_load_name) {
-    _default_wire_load = wire_load_name;
-  }
+  void set_default_wire_load(const char* wire_load_name) { _default_wire_load = wire_load_name; }
 
   auto get_default_wire_load() { return _default_wire_load; }
 
   void set_cap_unit(CapacitiveUnit cap_unit) { _cap_unit = cap_unit; }
   CapacitiveUnit get_cap_unit() { return _cap_unit; }
 
-  void set_resistance_unit(ResistanceUnit resistance_unit) {
-    _resistance_unit = resistance_unit;
-  }
+  void set_resistance_unit(ResistanceUnit resistance_unit) { _resistance_unit = resistance_unit; }
   auto get_resistance_unit() { return _resistance_unit; }
 
   std::vector<std::unique_ptr<LibertyCell>>& get_cells() { return _cells; }
 
-  void set_default_max_transition(double default_max_transition) {
-    _default_max_transition = default_max_transition;
-  }
+  void set_default_max_transition(double default_max_transition) { _default_max_transition = default_max_transition; }
   auto& get_default_max_transition() { return _default_max_transition; }
 
-  void set_default_max_fanout(double default_max_fanout) {
-    _default_max_fanout = default_max_fanout;
-  }
+  void set_default_max_fanout(double default_max_fanout) { _default_max_fanout = default_max_fanout; }
   auto& get_default_max_fanout() { return _default_max_fanout; }
 
-  void set_default_fanout_load(double default_fanout_load) {
-    _default_fanout_load = default_fanout_load;
-  }
+  void set_default_fanout_load(double default_fanout_load) { _default_fanout_load = default_fanout_load; }
   auto& get_default_fanout_load() { return _default_fanout_load; }
 
   void set_nom_voltage(double nom_voltage) { _nom_voltage = nom_voltage; }
   double get_nom_voltage() { return _nom_voltage; }
 
-  void set_slew_lower_threshold_pct_rise(double slew_lower_threshold_pct_rise) {
+  void set_slew_lower_threshold_pct_rise(double slew_lower_threshold_pct_rise)
+  {
     // change to percent.
     _slew_lower_threshold_pct_rise = slew_lower_threshold_pct_rise / 100.0;
   }
-  double get_slew_lower_threshold_pct_rise() {
-    return _slew_lower_threshold_pct_rise;
-  }
+  double get_slew_lower_threshold_pct_rise() { return _slew_lower_threshold_pct_rise; }
 
-  void set_slew_upper_threshold_pct_rise(double slew_upper_threshold_pct_rise) {
+  void set_slew_upper_threshold_pct_rise(double slew_upper_threshold_pct_rise)
+  {
     // change to percent.
     _slew_upper_threshold_pct_rise = slew_upper_threshold_pct_rise / 100.0;
   }
-  double get_slew_upper_threshold_pct_rise() {
-    return _slew_upper_threshold_pct_rise;
-  }
+  double get_slew_upper_threshold_pct_rise() { return _slew_upper_threshold_pct_rise; }
 
-  void set_slew_lower_threshold_pct_fall(double slew_lower_threshold_pct_fall) {
+  void set_slew_lower_threshold_pct_fall(double slew_lower_threshold_pct_fall)
+  {
     // change to percent.
     _slew_lower_threshold_pct_fall = slew_lower_threshold_pct_fall / 100.0;
   }
-  double get_slew_lower_threshold_pct_fall() {
-    return _slew_lower_threshold_pct_fall;
-  }
+  double get_slew_lower_threshold_pct_fall() { return _slew_lower_threshold_pct_fall; }
 
-  void set_slew_upper_threshold_pct_fall(double slew_upper_threshold_pct_fall) {
+  void set_slew_upper_threshold_pct_fall(double slew_upper_threshold_pct_fall)
+  {
     // change to percent.
     _slew_upper_threshold_pct_fall = slew_upper_threshold_pct_fall / 100.0;
   }
-  double get_slew_upper_threshold_pct_fall() {
-    return _slew_upper_threshold_pct_fall;
-  }
+  double get_slew_upper_threshold_pct_fall() { return _slew_upper_threshold_pct_fall; }
 
-  void set_input_threshold_pct_rise(double input_threshold_pct_rise) {
+  void set_input_threshold_pct_rise(double input_threshold_pct_rise)
+  {
     // change to percent.
     _input_threshold_pct_rise = input_threshold_pct_rise / 100.0;
   }
   double get_input_threshold_pct_rise() { return _input_threshold_pct_rise; }
 
-  void set_output_threshold_pct_rise(double output_threshold_pct_rise) {
+  void set_output_threshold_pct_rise(double output_threshold_pct_rise)
+  {
     // change to percent.
     _output_threshold_pct_rise = output_threshold_pct_rise / 100.0;
   }
   double get_output_threshold_pct_rise() { return _output_threshold_pct_rise; }
 
-  void set_input_threshold_pct_fall(double input_threshold_pct_fall) {
-    _input_threshold_pct_fall = input_threshold_pct_fall / 100.0;
-  }
+  void set_input_threshold_pct_fall(double input_threshold_pct_fall) { _input_threshold_pct_fall = input_threshold_pct_fall / 100.0; }
   double get_input_threshold_pct_fall() { return _input_threshold_pct_fall; }
 
-  void set_output_threshold_pct_fall(double output_threshold_pct_fall) {
+  void set_output_threshold_pct_fall(double output_threshold_pct_fall)
+  {
     // change to percent.
     _output_threshold_pct_fall = output_threshold_pct_fall / 100.0;
   }
   double get_output_threshold_pct_fall() { return _output_threshold_pct_fall; }
 
-  void set_slew_derate_from_library(double slew_derate_from_library) {
-    _slew_derate_from_library = slew_derate_from_library;
-  }
+  void set_slew_derate_from_library(double slew_derate_from_library) { _slew_derate_from_library = slew_derate_from_library; }
   double get_slew_derate_from_library() { return _slew_derate_from_library; }
 
  private:
   std::string _lib_name;
-  std::vector<std::unique_ptr<LibertyCell>>
-      _cells;  //!< The liberty cell, perserve the cell read order.
+  std::vector<std::unique_ptr<LibertyCell>> _cells;  //!< The liberty cell, perserve the cell read order.
   StrMap<LibertyCell*> _str2cell;
 
-  Vector<std::unique_ptr<LibertyLutTableTemplate>>
-      _lut_templates;  //!< The timing table lut template, preserve the
-                       //!< template order.
+  Vector<std::unique_ptr<LibertyLutTableTemplate>> _lut_templates;  //!< The timing table lut template, preserve the
+                                                                    //!< template order.
 
   StrMap<LibertyLutTableTemplate*> _str2template;
 
-  Vector<std::unique_ptr<LibertyWireLoad>>
-      _wire_loads;  //!< The wire load models.
+  Vector<std::unique_ptr<LibertyWireLoad>> _wire_loads;  //!< The wire load models.
   StrMap<LibertyWireLoad*> _str2wireLoad;
 
   Vector<std::unique_ptr<LibertyType>> _types;  //!< The lib type
@@ -1662,7 +1532,8 @@ class LibertyLibrary {
  * @brief The cell of liberty iterator.
  *
  */
-class LibertyCellIterator {
+class LibertyCellIterator
+{
  public:
   explicit LibertyCellIterator(LibertyLibrary* lib);
   ~LibertyCellIterator() = default;
@@ -1687,15 +1558,14 @@ class LibertyCellIterator {
  * }
  *
  */
-#define FOREACH_LIB_CELL(lib, cell)         \
-  for (ista::LibertyCellIterator iter(lib); \
-       iter.hasNext() ? cell = (iter.next()), true : false;)
+#define FOREACH_LIB_CELL(lib, cell) for (ista::LibertyCellIterator iter(lib); iter.hasNext() ? cell = (iter.next()), true : false;)
 
 /**
  * @brief The base class for liberty syntax statement.
  *
  */
-class LibertyStmt {
+class LibertyStmt
+{
  public:
   LibertyStmt(const char* file_name, unsigned line_no);
   virtual ~LibertyStmt() = default;
@@ -1723,7 +1593,8 @@ class LibertyStmt {
  * It would be string or float.
  *
  */
-class LibertyAttrValue {
+class LibertyAttrValue
+{
  public:
   LibertyAttrValue() = default;
   virtual ~LibertyAttrValue() = default;
@@ -1731,11 +1602,13 @@ class LibertyAttrValue {
   virtual unsigned isString() { return 0; }
   virtual unsigned isFloat() { return 0; }
 
-  virtual double getFloatValue() {
+  virtual double getFloatValue()
+  {
     DLOG_FATAL << "This is unknown value.";
     return 0.0;
   }
-  virtual const char* getStringValue() {
+  virtual const char* getStringValue()
+  {
     DLOG_FATAL << "This is unknown value.";
     return nullptr;
   }
@@ -1745,7 +1618,8 @@ class LibertyAttrValue {
  * @brief The liberty float value.
  *
  */
-class LibertyFloatValue : public LibertyAttrValue {
+class LibertyFloatValue : public LibertyAttrValue
+{
  public:
   explicit LibertyFloatValue(double val) : LibertyAttrValue(), _val(val) {}
   ~LibertyFloatValue() override = default;
@@ -1761,7 +1635,8 @@ class LibertyFloatValue : public LibertyAttrValue {
  * @brief The liberty string value.
  *
  */
-class LibertyStringValue : public LibertyAttrValue {
+class LibertyStringValue : public LibertyAttrValue
+{
  public:
   explicit LibertyStringValue(const char* val) : _val(val) {}
   ~LibertyStringValue() override = default;
@@ -1777,29 +1652,25 @@ class LibertyStringValue : public LibertyAttrValue {
  * @brief The simple attribute statement.
  * For example, drive_strength      : 1;
  */
-class LibertySimpleAttrStmt : public LibertyStmt {
+class LibertySimpleAttrStmt : public LibertyStmt
+{
  public:
-  explicit LibertySimpleAttrStmt(const char* attri_name, const char* file_name,
-                                 unsigned line_no)
-      : LibertyStmt(file_name, line_no),
-        _attri_name(attri_name),
-        _attribute_value(nullptr) {}
+  explicit LibertySimpleAttrStmt(const char* attri_name, const char* file_name, unsigned line_no)
+      : LibertyStmt(file_name, line_no), _attri_name(attri_name), _attribute_value(nullptr)
+  {
+  }
   ~LibertySimpleAttrStmt() override = default;
 
   LibertySimpleAttrStmt(LibertySimpleAttrStmt&& other) noexcept = default;
 
-  LibertySimpleAttrStmt& operator=(LibertySimpleAttrStmt&& rhs) noexcept =
-      default;
+  LibertySimpleAttrStmt& operator=(LibertySimpleAttrStmt&& rhs) noexcept = default;
 
   unsigned isSimpleAttrStmt() override { return 1; }
   unsigned isAttributeStmt() override { return 1; }
 
   const char* get_attri_name() { return _attri_name.c_str(); }
 
-  void set_attribute_value(
-      std::unique_ptr<LibertyAttrValue>&& attribute_value) {
-    _attribute_value = std::move(attribute_value);
-  }
+  void set_attribute_value(std::unique_ptr<LibertyAttrValue>&& attribute_value) { _attribute_value = std::move(attribute_value); }
   LibertyAttrValue* get_attribute_value() { return _attribute_value.get(); }
 
  private:
@@ -1814,27 +1685,25 @@ class LibertySimpleAttrStmt : public LibertyStmt {
  * For example, index_1
  * ("0.000932129,0.00354597,0.0127211,0.0302424,0.0575396,0.0958408,0.146240");
  */
-class LibertyComplexAttrStmt : public LibertyStmt {
+class LibertyComplexAttrStmt : public LibertyStmt
+{
  public:
-  explicit LibertyComplexAttrStmt(const char* attri_name, const char* file_name,
-                                  unsigned line_no)
-      : LibertyStmt(file_name, line_no), _attri_name(attri_name) {}
+  explicit LibertyComplexAttrStmt(const char* attri_name, const char* file_name, unsigned line_no)
+      : LibertyStmt(file_name, line_no), _attri_name(attri_name)
+  {
+  }
   ~LibertyComplexAttrStmt() override = default;
 
   LibertyComplexAttrStmt(LibertyComplexAttrStmt&& other) = default;
 
-  LibertyComplexAttrStmt& operator=(LibertyComplexAttrStmt&& rhs) noexcept =
-      default;
+  LibertyComplexAttrStmt& operator=(LibertyComplexAttrStmt&& rhs) noexcept = default;
 
   unsigned isComplexAttrStmt() override { return 1; }
   unsigned isAttributeStmt() override { return 1; }
 
   const char* get_attri_name() { return _attri_name.c_str(); }
 
-  void set_attribute_values(
-      std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) {
-    _attri_values = std::move(attri_values);
-  }
+  void set_attribute_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) { _attri_values = std::move(attri_values); }
   auto& get_attribute_values() { return _attri_values; }
 
  private:
@@ -1853,11 +1722,13 @@ class LibertyComplexAttrStmt : public LibertyStmt {
  *  ...
  *  }
  */
-class LibertyGroupStmt : public LibertyStmt {
+class LibertyGroupStmt : public LibertyStmt
+{
  public:
-  LibertyGroupStmt(const char* group_name, const char* file_name,
-                   unsigned line_no)
-      : LibertyStmt(file_name, line_no), _group_name(group_name) {}
+  LibertyGroupStmt(const char* group_name, const char* file_name, unsigned line_no)
+      : LibertyStmt(file_name, line_no), _group_name(group_name)
+  {
+  }
   ~LibertyGroupStmt() override = default;
 
   LibertyGroupStmt(LibertyGroupStmt&& other) noexcept = default;
@@ -1869,17 +1740,10 @@ class LibertyGroupStmt : public LibertyStmt {
   const char* get_group_name() { return _group_name.c_str(); }
 
   std::vector<std::unique_ptr<LibertyStmt>>& get_stmts() { return _stmts; }
-  void set_stmts(std::vector<std::unique_ptr<LibertyStmt>>&& stmts) {
-    _stmts = std::move(stmts);
-  }
+  void set_stmts(std::vector<std::unique_ptr<LibertyStmt>>&& stmts) { _stmts = std::move(stmts); }
 
-  std::vector<std::unique_ptr<LibertyAttrValue>>& get_attri_values() {
-    return _attri_values;
-  }
-  void set_attri_values(
-      std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) {
-    _attri_values = std::move(attri_values);
-  }
+  std::vector<std::unique_ptr<LibertyAttrValue>>& get_attri_values() { return _attri_values; }
+  void set_attri_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) { _attri_values = std::move(attri_values); }
 
  private:
   std::string _group_name;
@@ -1893,12 +1757,20 @@ class LibertyGroupStmt : public LibertyStmt {
  * @brief The library builder from the liberty to the sta analysis lib.
  *
  */
-class LibertyBuilder {
+class LibertyBuilder
+{
  public:
-  enum class LibertyOwnPortType { kTimingArc = 1, kPowerArc = 2 };
-  enum class LibertyOwnPgOrWhenType { kLibertyLeakagePower = 1, kPowerArc = 2 };
-  explicit LibertyBuilder(const char* lib_name)
-      : _lib(std::make_unique<LibertyLibrary>(lib_name)) {}
+  enum class LibertyOwnPortType
+  {
+    kTimingArc = 1,
+    kPowerArc = 2
+  };
+  enum class LibertyOwnPgOrWhenType
+  {
+    kLibertyLeakagePower = 1,
+    kPowerArc = 2
+  };
+  explicit LibertyBuilder(const char* lib_name) : _lib(std::make_unique<LibertyLibrary>(lib_name)) {}
   ~LibertyBuilder() = default;
 
   LibertyLibrary* get_lib() { return _lib.get(); }
@@ -1910,9 +1782,7 @@ class LibertyBuilder {
   void set_cell(LibertyCell* cell) { _obj = _cell = cell; }
   LibertyCell* get_cell() { return _cell; }
 
-  void set_leakage_power(LibertyLeakagePower* leakage_power) {
-    _obj = _leakage_power = leakage_power;
-  }
+  void set_leakage_power(LibertyLeakagePower* leakage_power) { _obj = _leakage_power = leakage_power; }
   LibertyLeakagePower* get_leakage_power() { return _leakage_power; }
 
   void set_port(LibertyPort* port) { _obj = _port = port; }
@@ -1924,42 +1794,32 @@ class LibertyBuilder {
   void set_arc(LibertyArc* arc) { _obj = _arc = arc; }
   LibertyArc* get_arc() { return _arc; }
 
-  void set_power_arc(LibertyPowerArc* power_arc) {
-    _obj = _power_arc = power_arc;
-  }
+  void set_power_arc(LibertyPowerArc* power_arc) { _obj = _power_arc = power_arc; }
   LibertyPowerArc* get_power_arc() { return _power_arc; }
 
-  void set_table_model(LibertyTableModel* table_model) {
-    _obj = _table_model = table_model;
-  }
+  void set_table_model(LibertyTableModel* table_model) { _obj = _table_model = table_model; }
   LibertyTableModel* get_table_model() { return _table_model; }
 
   void set_table(LibertyTable* table) { _obj = _table = table; }
   LibertyTable* get_table() { return _table; }
 
-  void set_current_table(LibertyCCSTable* table) {
+  void set_current_table(LibertyCCSTable* table)
+  {
     //@note pay attention to the obj and current table is not the same.
     // for we need get current table every time we parsed the vector.
     _current_table = table;
   }
   LibertyCCSTable* get_current_table() { return _current_table; }
-  void set_own_port_type(LibertyOwnPortType own_port_type) {
-    _own_port_type = own_port_type;
-  }
+  void set_own_port_type(LibertyOwnPortType own_port_type) { _own_port_type = own_port_type; }
   LibertyOwnPortType get_own_port_type() { return _own_port_type; }
 
-  void set_own_pg_or_when_type(LibertyOwnPgOrWhenType own_pg_or_when_type) {
-    _own_pg_or_when_type = own_pg_or_when_type;
-  }
-  LibertyOwnPgOrWhenType get_own_pg_or_when_type() {
-    return _own_pg_or_when_type;
-  }
+  void set_own_pg_or_when_type(LibertyOwnPgOrWhenType own_pg_or_when_type) { _own_pg_or_when_type = own_pg_or_when_type; }
+  LibertyOwnPgOrWhenType get_own_pg_or_when_type() { return _own_pg_or_when_type; }
 
  private:
   std::unique_ptr<LibertyLibrary> _lib;  //!< The current lib.
 
-  LibertyObject* _obj =
-      nullptr;  //< The current library obj except the object below.
+  LibertyObject* _obj = nullptr;                  //< The current library obj except the object below.
   LibertyCell* _cell = nullptr;                   //!< The parsed cell.
   LibertyLeakagePower* _leakage_power = nullptr;  //!< The parsed leakage power.
   LibertyPort* _port = nullptr;                   //!< The parsed port.
@@ -1969,11 +1829,9 @@ class LibertyBuilder {
   LibertyTableModel* _table_model = nullptr;      //!< The parsed table model.
   LibertyTable* _table = nullptr;                 //!< The parsed table.
   LibertyCCSTable* _current_table = nullptr;      //!< The parsed current table.
-  LibertyOwnPortType
-      _own_port_type;  //!< The flag of port own timing arc or power arc.
-  LibertyOwnPgOrWhenType
-      _own_pg_or_when_type;  //!< The flag of pg port/when own leakage power
-                             //!< or power arc.
+  LibertyOwnPortType _own_port_type;              //!< The flag of port own timing arc or power arc.
+  LibertyOwnPgOrWhenType _own_pg_or_when_type;    //!< The flag of pg port/when own leakage power
+                                                  //!< or power arc.
   DISALLOW_COPY_AND_ASSIGN(LibertyBuilder);
 };
 
@@ -1981,7 +1839,8 @@ class LibertyBuilder {
  * @brief The liberty reader is used to read the related keyword.
  *
  */
-class LibertyReader {
+class LibertyReader
+{
  public:
   explicit LibertyReader(const char* file_name) : _file_name(file_name) {}
   ~LibertyReader() = default;
@@ -2003,9 +1862,7 @@ class LibertyReader {
   const char* get_record_str() { return _string_buf.c_str(); }
   void recordStr(const char* str) { _string_buf += str; }
 
-  void set_library_group(LibertyGroupStmt* library_group) {
-    _library_group.reset(library_group);
-  }
+  void set_library_group(LibertyGroupStmt* library_group) { _library_group.reset(library_group); }
 
   char* stringCopy(const char* str);
   void stringDelete(const char* str) { delete[] str; }
@@ -2032,9 +1889,7 @@ class LibertyReader {
 
   LibertyGroupStmt* get_library_group() { return _library_group.get(); }
   auto takeLibraryGroup() { return std::move(_library_group); }
-  void set_library_builder(std::unique_ptr<LibertyBuilder>&& library_builder) {
-    _library_builder = std::move(library_builder);
-  }
+  void set_library_builder(std::unique_ptr<LibertyBuilder>&& library_builder) { _library_builder = std::move(library_builder); }
   LibertyBuilder* get_library_builder() { return _library_builder.get(); }
 
  private:
@@ -2053,7 +1908,8 @@ class LibertyReader {
  * @brief This is the top interface class for liberty module.
  *
  */
-class Liberty {
+class Liberty
+{
  public:
   Liberty() = default;
   ~Liberty() = default;

@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2021-02-22
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

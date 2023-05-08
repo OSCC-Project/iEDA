@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2020-11-27
- *
- * @copyright Copyright (c) 2020 PCL EDA
- *
  */
 
 #include "SdcConstrain.hh"

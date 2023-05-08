@@ -4,9 +4,6 @@
  * @brief The utility class of time.
  * @version 0.1
  * @date 2021-05-08
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

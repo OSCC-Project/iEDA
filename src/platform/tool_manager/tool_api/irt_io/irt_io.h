@@ -1,16 +1,5 @@
 #pragma once
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**
  * @File Name: irt_io.h
  * @Brief :
  * @Author : Yell (12112088@qq.com)
@@ -31,17 +20,18 @@
 
 namespace iplf {
 
-  class RTIO {
-   public:
-    static RTIO& getInst();
-    static void delInst();
-    // function
+class RTIO
+{
+ public:
+  static RTIO& getInst();
+  static void delInst();
+  // function
 
-   private:
-    static RTIO* _rt_io_instance;
+ private:
+  static RTIO* _rt_io_instance;
 
-    RTIO()  = default;
-    ~RTIO() = default;
-  };
+  RTIO() = default;
+  ~RTIO() = default;
+};
 
 }  // namespace iplf

@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2021-10-22
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once
@@ -19,7 +16,8 @@ namespace ieda {
  * @brief singleton UserShell
  *
  */
-class UserShell {
+class UserShell
+{
  public:
   UserShell(const UserShell&) = delete;
   UserShell(const UserShell&&) = delete;
@@ -50,9 +48,7 @@ class UserShell {
    */
   static int userMain(const char* file_path);
 
-  static void displayHello(const std::string& hello_info) {
-    std::cout << hello_info << std::endl;
-  }
+  static void displayHello(const std::string& hello_info) { std::cout << hello_info << std::endl; }
 
   /**
    * @brief display how to exit user shell

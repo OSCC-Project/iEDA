@@ -4,9 +4,6 @@
  * @brief The sdc set_clock_latency implemention.
  * @version 0.1
  * @date 2021-10-19
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "Cmd.hh"

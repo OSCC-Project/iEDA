@@ -1,12 +1,9 @@
 /**
  * @file DelayCalc.cc
- * @author LH (you@domain.com)
+ * @author LH (liuh0326@163.com)
  * @brief The file implement traditional elmore calc algorithm.
  * @version 0.1
  * @date 2021-01-27
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "ElmoreDelayCalc.hh"

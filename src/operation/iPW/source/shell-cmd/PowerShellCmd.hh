@@ -4,9 +4,6 @@
  * @brief the classes of ipower shell cmd.
  * @version 0.1
  * @date 2023-05-04
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #pragma once

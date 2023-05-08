@@ -4,15 +4,13 @@
  * @brief
  * @version 0.1
  * @date 2021-10-22
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "UserShell.hh"
 
 namespace ieda {
 
-int UserShell::userMain(const char* file_path) {
+int UserShell::userMain(const char* file_path)
+{
   int argc = 1;
   char** argv = new char*[2];
   argv[0] = const_cast<char*>("UserShell\n");
@@ -35,25 +33,29 @@ int UserShell::userMain(const char* file_path) {
   return EXIT_SUCCESS;
 }
 
-void UserShell::displayHelp() {
+void UserShell::displayHelp()
+{
   std::cerr << "\033[49;32m"
                "Enter \033[1mexit\033[0m\033[49;32m to quit."
                "\033[0m\n";
 }
 
-UserShell* UserShell::getShell() {
+UserShell* UserShell::getShell()
+{
   static UserShell shell;
   return &shell;
 }
 
-static int defaultInit() {
+static int defaultInit()
+{
   std::cerr << "notice: no user defined initialized function\n";
   return EXIT_SUCCESS;
 }
 
 int (*UserShell::_user_init)() = defaultInit;
 
-void UserShell::set_init_func(int (*callback_func)()) {
+void UserShell::set_init_func(int (*callback_func)())
+{
   _user_init = callback_func;
 }
 }  // namespace ieda

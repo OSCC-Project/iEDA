@@ -4,9 +4,6 @@
  * @brief The implemention of log utility tool.
  * @version 0.1
  * @date 2020-11-12
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #include "Log.hh"
@@ -26,7 +23,8 @@ namespace ieda {
  * @param data
  * @param size
  */
-void SignalHandle(const char* data, int size) {
+void SignalHandle(const char* data, int size)
+{
   std::ofstream fs("glog_dump.log", std::ios::app);
   std::string str = std::string(data, size);
   fs << str;
@@ -39,7 +37,8 @@ void SignalHandle(const char* data, int size) {
  *
  * @param argv The gflag config from main function.
  */
-void Log::init(char* argv[]) {
+void Log::init(char* argv[])
+{
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 
@@ -71,7 +70,10 @@ void Log::init(char* argv[]) {
  * @brief The end of log module.
  *
  */
-void Log::end() { google::ShutdownGoogleLogging(); }
+void Log::end()
+{
+  google::ShutdownGoogleLogging();
+}
 
 /**
  * @brief Set verbose log level.
@@ -79,7 +81,8 @@ void Log::end() { google::ShutdownGoogleLogging(); }
  * @param module_name
  * @param level
  */
-void Log::setVerboseLogLevel(const char* module_name, int level) {
+void Log::setVerboseLogLevel(const char* module_name, int level)
+{
   google::SetVLOGLevel(module_name, level);
 }
 

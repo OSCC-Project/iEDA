@@ -4,9 +4,6 @@
  * @brief The file is the set_load class of sdc.
  * @version 0.1
  * @date 2021-04-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

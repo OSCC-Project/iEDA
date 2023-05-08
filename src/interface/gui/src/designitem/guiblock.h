@@ -4,9 +4,6 @@
  * @brief This class inherits from GuiOrientationRect to represent Block in the GUI
  * @version 0.2
  * @date 2021-07-09(V0.1) 2021-08-12(V0.2)
- *
- * @copyright Copyright (c) 2021 PCNL
- *
  */
 
 #ifndef GUIBLOCK_H

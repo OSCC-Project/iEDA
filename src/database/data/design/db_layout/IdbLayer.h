@@ -1,20 +1,7 @@
 #pragma once
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbLayer.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
  * @description
@@ -231,26 +218,27 @@ class IdbMinEncloseAreaList
   uint32_t _area_list_num;
   vector<IdbMinEncloseArea> _area_list;
 };
-class IdbMinStep{
-
-public:
-  enum class Type{
+class IdbMinStep
+{
+ public:
+  enum class Type
+  {
     kNone = 0,
     kINSIDECORNER,
     kOUTSIDECORNER,
     kSTEP,
   };
   IdbMinStep() = default;
-  explicit IdbMinStep(int32_t min_step): _min_step_length(min_step){};
-  [[nodiscard]] int32_t get_min_step_length() const {return _min_step_length;}
-  [[nodiscard]] Type get_type() const {return _type;}
-  [[nodiscard]] bool has_length_sum() const {return _has_length_sum;}
-  [[nodiscard]] bool has_max_edges() const {return _has_max_edges;}
-  [[nodiscard]] int32_t get_max_length_sum()const {return _max_length_sum;}
-  [[nodiscard]] int32_t get_max_edges() const {return _max_edges;}
-  
-  void set_min_step_length(int32_t min_step_len){_min_step_length = min_step_len;}
-  void set_type(Type type ) { _type = type;}
+  explicit IdbMinStep(int32_t min_step) : _min_step_length(min_step){};
+  [[nodiscard]] int32_t get_min_step_length() const { return _min_step_length; }
+  [[nodiscard]] Type get_type() const { return _type; }
+  [[nodiscard]] bool has_length_sum() const { return _has_length_sum; }
+  [[nodiscard]] bool has_max_edges() const { return _has_max_edges; }
+  [[nodiscard]] int32_t get_max_length_sum() const { return _max_length_sum; }
+  [[nodiscard]] int32_t get_max_edges() const { return _max_edges; }
+
+  void set_min_step_length(int32_t min_step_len) { _min_step_length = min_step_len; }
+  void set_type(Type type) { _type = type; }
   void set_type(const std::string& type)
   {
     if (type == "INSIDECORNER") {
@@ -269,11 +257,10 @@ public:
  private:
   bool _has_max_edges{false};
   bool _has_length_sum{false};
-  int32_t _min_step_length;  
+  int32_t _min_step_length;
   int32_t _max_length_sum;
   int32_t _max_edges;
   Type _type{Type::kNone};
-
 };
 
 // Direction, Rect, Pitch, OffSet, Width, Space, TrackGrid, res, cap, WireExtension, Thickness,
@@ -336,7 +323,7 @@ class IdbLayerRouting : public IdbLayer
   IdbLayerSpacingNotchLength& get_spacing_notchlength() { return _spacing_notch_length; }
 
   // lef58_property getter
-  std::shared_ptr<IdbMinStep> get_min_step() {return _min_step;}
+  std::shared_ptr<IdbMinStep> get_min_step() { return _min_step; }
   std::vector<std::shared_ptr<routinglayer::Lef58SpacingEol>>& get_lef58_spacing_eol_list() { return _lef58_spacing_eol_list; };
   std::vector<std::shared_ptr<routinglayer::Lef58Area>>& get_lef58_area() { return _lef58_area; }
   std::shared_ptr<routinglayer::Lef58CornerFillSpacing> get_lef58_corner_fill_spacing() { return _lef58_corner_fill_spacing; }
@@ -380,7 +367,7 @@ class IdbLayerRouting : public IdbLayer
   // operator
 
   // verifier
-  void set_min_step(std::shared_ptr<IdbMinStep> min_step) { _min_step = std::move(min_step);}
+  void set_min_step(std::shared_ptr<IdbMinStep> min_step) { _min_step = std::move(min_step); }
 
   // lef58_property setter
   void add_spacing_eol(std::shared_ptr<routinglayer::Lef58SpacingEol> spacing) { _lef58_spacing_eol_list.emplace_back(std::move(spacing)); }
@@ -565,14 +552,14 @@ class IdbLayerCut : public IdbLayer
   virtual ~IdbLayerCut();
   // getter
   const int32_t get_width() const { return _width; }
-  std::vector<IdbLayerCutSpacing*> get_spacings(){return _spacings;}
+  std::vector<IdbLayerCutSpacing*> get_spacings() { return _spacings; }
   IdbLayerCutArraySpacing* get_array_spacing() { return _array_spacing; }
   IdbLayerCutEnclosure* get_enclosure_below() { return _enclosure_below; }
   IdbLayerCutEnclosure* get_enclosure_above() { return _enclosure_above; }
   IdbViaRuleGenerate* get_via_rule() { return _via_rule == nullptr ? _via_rule_default : _via_rule; }
   IdbViaRuleGenerate* get_via_rule_default() { return _via_rule_default; }
 
-  void add_spacing(IdbLayerCutSpacing* spacing){_spacings.push_back(spacing);}
+  void add_spacing(IdbLayerCutSpacing* spacing) { _spacings.push_back(spacing); }
   std::vector<std::shared_ptr<cutlayer::Lef58Cutclass>>& get_lef58_cutclass_list() { return _lef58_cutclass_list; }
   std::vector<std::shared_ptr<cutlayer::Lef58Enclosure>>& get_lef58_enclosure_list() { return _lef58_enclosure_list; }
   std::vector<std::shared_ptr<cutlayer::Lef58EnclosureEdge>>& get_lef58_enclosure_edge_list() { return _lef58_enclosure_edge_list; }
@@ -610,9 +597,9 @@ class IdbLayerCut : public IdbLayer
  private:
   //!--------tbd----------------
   int32_t _width;
-  //int32_t _spacing;
+  // int32_t _spacing;
   std::vector<IdbLayerCutSpacing*> _spacings;
-  
+
   IdbLayerCutArraySpacing* _array_spacing;
   IdbLayerCutEnclosure* _enclosure_below;
   IdbLayerCutEnclosure* _enclosure_above;
@@ -818,7 +805,7 @@ class IdbLayers
   void add_cut_layer(IdbLayer* layer) { _cut_layers.emplace_back(layer); };
 
   // operator
-  IdbLayer* find_layer(const string &src_name, bool new_layer = false);
+  IdbLayer* find_layer(const string& src_name, bool new_layer = false);
   IdbLayer* find_layer(IdbLayer* src_layer);
   IdbLayer* find_routing_layer(uint32_t index);
   IdbLayer* find_middle_layer(string layer_name_1, string layer_name_2);

@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2022-09-15
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "IdbBus.h"
 

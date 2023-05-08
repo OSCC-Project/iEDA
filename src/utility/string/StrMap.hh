@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2020-11-27
- *
- * @copyright Copyright (c) 2020 PCL EDA
- *
  */
 
 #pragma once
@@ -20,7 +17,8 @@ namespace ieda {
  * @brief The C-style string case lexical cmp.
  *
  */
-struct StrCmp {
+struct StrCmp
+{
   bool operator()(const char* const& lhs, const char* const& rhs) const;
 };
 
@@ -30,12 +28,16 @@ struct StrCmp {
  * @tparam VALUE
  */
 template <typename VALUE>
-class StrMap : public Map<const char*, VALUE, StrCmp> {};
+class StrMap : public Map<const char*, VALUE, StrCmp>
+{
+};
 
 /**
  * @brief The C-style string set.
  *
  */
-class StrSet : public Set<const char*, StrCmp> {};
+class StrSet : public Set<const char*, StrCmp>
+{
+};
 
 }  // namespace ieda

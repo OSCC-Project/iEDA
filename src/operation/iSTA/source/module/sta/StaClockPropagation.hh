@@ -4,9 +4,6 @@
  * @brief The class of clock propagation.
  * @version 0.1
  * @date 2021-02-19
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

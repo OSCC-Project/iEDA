@@ -4,9 +4,6 @@
  * @brief The io_delay and set_output_delay cmd implemention.
  * @version 0.1
  * @date 2021-05-24
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "Cmd.hh"
 #include "log/Log.hh"

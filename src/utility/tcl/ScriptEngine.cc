@@ -4,28 +4,32 @@
  * @brief The file is the implementation of the script engine based on tcl.
  * @version 0.1
  * @date 2020-11-18
- *
- * @copyright Copyright (c) 2020 pcl EDA.
- *
  */
+
+#include "ScriptEngine.hh"
 
 #include <cstring>
 #include <utility>
 
-#include "ScriptEngine.hh"
-
 namespace ieda {
 ScriptEngine* ScriptEngine::_instance = nullptr;
 
-ScriptEngine::ScriptEngine() { _interp = Tcl_CreateInterp(); }
-ScriptEngine::~ScriptEngine() { Tcl_DeleteInterp(_interp); }
+ScriptEngine::ScriptEngine()
+{
+  _interp = Tcl_CreateInterp();
+}
+ScriptEngine::~ScriptEngine()
+{
+  Tcl_DeleteInterp(_interp);
+}
 
 /**
  * @brief Get the script engine or create one.
  *
  * @return ScriptEngine* The script engine.
  */
-ScriptEngine* ScriptEngine::getOrCreateInstance() {
+ScriptEngine* ScriptEngine::getOrCreateInstance()
+{
   static std::mutex mt;
   if (_instance == nullptr) {
     std::lock_guard<std::mutex> lock(mt);
@@ -40,7 +44,8 @@ ScriptEngine* ScriptEngine::getOrCreateInstance() {
  * @brief Close the script engine.
  *
  */
-void ScriptEngine::destroyInstance() {
+void ScriptEngine::destroyInstance()
+{
   delete _instance;
   _instance = nullptr;
 }
@@ -55,9 +60,8 @@ void ScriptEngine::destroyInstance() {
  * deleted through a call to Tcl_DeleteCommand.
  * @return int
  */
-Tcl_Command ScriptEngine::createCmd(const char* cmd_name, Tcl_ObjCmdProc* proc,
-                                    void* cmd_data,
-                                    Tcl_CmdDeleteProc* delete_proc) {
+Tcl_Command ScriptEngine::createCmd(const char* cmd_name, Tcl_ObjCmdProc* proc, void* cmd_data, Tcl_CmdDeleteProc* delete_proc)
+{
   return Tcl_CreateObjCommand(_interp, cmd_name, proc, cmd_data, delete_proc);
 }
 
@@ -67,7 +71,8 @@ Tcl_Command ScriptEngine::createCmd(const char* cmd_name, Tcl_ObjCmdProc* proc,
  * @param file_name The script file.
  * @return int The return code.
  */
-int ScriptEngine::evalScriptFile(const char* file_name) {
+int ScriptEngine::evalScriptFile(const char* file_name)
+{
   return Tcl_EvalFile(_interp, file_name);
 }
 
@@ -77,11 +82,13 @@ int ScriptEngine::evalScriptFile(const char* file_name) {
  * @param cmd_str The cmd string.
  * @return int The return code.
  */
-int ScriptEngine::evalString(const char* cmd_str) {
+int ScriptEngine::evalString(const char* cmd_str)
+{
   return Tcl_Eval(_interp, cmd_str);
 }
 
-const char* ScriptEngine::getTclFileName() {
+const char* ScriptEngine::getTclFileName()
+{
   evalString("set fileName [dict get [info frame 2] file]");
   const char* file_name = Tcl_GetVar(_interp, "fileName", 0);
   return file_name;
@@ -92,13 +99,15 @@ const char* ScriptEngine::getTclFileName() {
  *
  * @return unsigned The tcl file line no.
  */
-unsigned ScriptEngine::getTclLineNo() {
+unsigned ScriptEngine::getTclLineNo()
+{
   evalString("set lineNum [dict get [info frame 2] line]");
   const char* line_no = Tcl_GetVar(_interp, "lineNum", 0);
   return Str::toUnsigned(line_no);
 }
 
-void ScriptEngine::setResult(char* result) {
+void ScriptEngine::setResult(char* result)
+{
   Tcl_SetResult(_interp, result, nullptr);
 }
 
@@ -107,7 +116,8 @@ void ScriptEngine::setResult(char* result) {
  *
  * @param result The cmd execuate result.
  */
-void ScriptEngine::appendResult(char* result) {
+void ScriptEngine::appendResult(char* result)
+{
   Tcl_AppendResult(_interp, result, nullptr);
 }
 
@@ -116,32 +126,41 @@ void ScriptEngine::appendResult(char* result) {
  *
  * @return const char* The tcl result that is string format.
  */
-const char* ScriptEngine::getResult() { return Tcl_GetStringResult(_interp); }
+const char* ScriptEngine::getResult()
+{
+  return Tcl_GetStringResult(_interp);
+}
 
-TclOption::TclOption(const char* option_name, unsigned is_arg)
-    : _option_name(Str::copy(option_name)), _is_arg(is_arg) {}
+TclOption::TclOption(const char* option_name, unsigned is_arg) : _option_name(Str::copy(option_name)), _is_arg(is_arg)
+{
+}
 
-TclOption::~TclOption() {
+TclOption::~TclOption()
+{
   Str::free(_option_name);
   _option_name = nullptr;
 }
 
-TclSwitchOption::TclSwitchOption(const char* option_name)
-    : TclOption(option_name, 0) {}
+TclSwitchOption::TclSwitchOption(const char* option_name) : TclOption(option_name, 0)
+{
+}
 
 TclSwitchOption::~TclSwitchOption() = default;
 
-TclDoubleOption::TclDoubleOption(const char* option_name, unsigned is_arg,
-                                 float default_val)
-    : TclOption(option_name, is_arg), _default_val(default_val) {}
+TclDoubleOption::TclDoubleOption(const char* option_name, unsigned is_arg, float default_val)
+    : TclOption(option_name, is_arg), _default_val(default_val)
+{
+}
 
 TclDoubleOption::~TclDoubleOption() = default;
 
-TclStringOption::TclStringOption(const char* option_name, unsigned is_arg,
-                                 const char* default_val)
-    : TclOption(option_name, is_arg), _default_val(Str::copy(default_val)) {}
+TclStringOption::TclStringOption(const char* option_name, unsigned is_arg, const char* default_val)
+    : TclOption(option_name, is_arg), _default_val(Str::copy(default_val))
+{
+}
 
-TclStringOption::~TclStringOption() {
+TclStringOption::~TclStringOption()
+{
   Str::free(_default_val);
   _default_val = nullptr;
 
@@ -149,65 +168,73 @@ TclStringOption::~TclStringOption() {
   _val = nullptr;
 }
 
-TclStringListListOption::TclStringListListOption(
-    const char* option_name, unsigned is_arg,
-    std::vector<StrList>&& default_val)
-    : TclOption(option_name, is_arg), _default_val(std::move(default_val)) {}
+TclStringListListOption::TclStringListListOption(const char* option_name, unsigned is_arg, std::vector<StrList>&& default_val)
+    : TclOption(option_name, is_arg), _default_val(std::move(default_val))
+{
+}
 
-template<char c>
-inline int IgnoreNext(const char val[], int pos=0) {
+template <char c>
+inline int IgnoreNext(const char val[], int pos = 0)
+{
   static_assert(c != '\0');
-  for (; val[pos] == c; ++pos);
+  for (; val[pos] == c; ++pos)
+    ;
   return pos;
 }
 
-template<char c>
-inline int FindNext(const char val[], int pos=0) {
+template <char c>
+inline int FindNext(const char val[], int pos = 0)
+{
   for (; val[pos] != c; ++pos)
-    if (val[pos] == '\0') break;
+    if (val[pos] == '\0')
+      break;
   return pos;
 }
 
-template<char c0, char c1, class Itr = std::string::iterator>
-inline Itr IgnoreNext(Itr start) {
-  for (; *start==c0 || *start==c1; ++start);
+template <char c0, char c1, class Itr = std::string::iterator>
+inline Itr IgnoreNext(Itr start)
+{
+  for (; *start == c0 || *start == c1; ++start)
+    ;
   return start;
 }
 
-template<char c, class Itr = std::string::iterator>
-inline Itr FindNext(Itr start, Itr end) {
+template <char c, class Itr = std::string::iterator>
+inline Itr FindNext(Itr start, Itr end)
+{
   for (; *start != c; ++start)
-    if (start == end) break;
+    if (start == end)
+      break;
   return start;
 }
 
-inline std::vector<std::pair<int, int>>
-GetStrListPosLen(const char val[]) {
+inline std::vector<std::pair<int, int>> GetStrListPosLen(const char val[])
+{
   std::vector<std::pair<int, int>> pos_len_list;
   int pos = 0;
-  while (val[pos]!='\0') {
+  while (val[pos] != '\0') {
     int start = FindNext<'{'>(val, pos);
-    int end   = FindNext<'}'>(val, start);
-    start = IgnoreNext<' '>(val, start+1);
-    pos   = IgnoreNext<' '>(val, end+1);
-    pos_len_list.emplace_back(start, end-start);
+    int end = FindNext<'}'>(val, start);
+    start = IgnoreNext<' '>(val, start + 1);
+    pos = IgnoreNext<' '>(val, end + 1);
+    pos_len_list.emplace_back(start, end - start);
   }
   return pos_len_list;
 }
 
-template<char delim0, char delim1>
-inline TclStringListListOption::StrList 
-Split(const char *val, int len) {
+template <char delim0, char delim1>
+inline TclStringListListOption::StrList Split(const char* val, int len)
+{
   TclStringListListOption::StrList str_list;
   std::string str(val, len);
   auto substr_begin = str.begin();
-  auto substr_end   = str.begin();
+  auto substr_end = str.begin();
   while (substr_end != str.end()) {
     switch (*substr_end) {
       case '\"':
         substr_begin = ++substr_end;
         substr_end = FindNext<'\"'>(substr_end, str.end());
-        *substr_end=' ';
+        *substr_end = ' ';
 
       case delim0:
       case delim1:
@@ -231,13 +258,14 @@ Split(const char *val, int len) {
  *
  * @param val
  */
-void TclStringListListOption::setVal(const char* val) {
+void TclStringListListOption::setVal(const char* val)
+{
   val += IgnoreNext<' '>(val);
 
   if (*val == '{') {
     auto pos_len_list = GetStrListPosLen(val);
     for (auto& [pos, len] : pos_len_list) {
-      _val.emplace_back(Split<' ', ','>(val+pos, len));
+      _val.emplace_back(Split<' ', ','>(val + pos, len));
     }
   } else {
     _val.emplace_back(Str::split(val, " "));
@@ -246,9 +274,12 @@ void TclStringListListOption::setVal(const char* val) {
   _is_set_val = 1;
 }
 
-TclCmd::TclCmd(const char* cmd_name) : _cmd_name(Str::copy(cmd_name)) {}
+TclCmd::TclCmd(const char* cmd_name) : _cmd_name(Str::copy(cmd_name))
+{
+}
 
-TclCmd::~TclCmd() {
+TclCmd::~TclCmd()
+{
   Str::free(_cmd_name);
   _cmd_name = nullptr;
 }
@@ -257,7 +288,8 @@ TclCmd::~TclCmd() {
  * @brief Reset the option and arg value.
  *
  */
-void TclCmd::resetOptionArgValue() {
+void TclCmd::resetOptionArgValue()
+{
   for (auto& [option_name, option] : _options) {
     option->resetVal();
   }
@@ -276,8 +308,8 @@ StrMap<std::unique_ptr<TclCmd>> TclCmds::_cmds;
  * @return int The process result, success return TCL_OK, else return
  * TCL_ERROR.
  */
-int CmdProc(ClientData clientData, Tcl_Interp* interp, int objc,
-            struct Tcl_Obj* const* objv) {
+int CmdProc(ClientData clientData, Tcl_Interp* interp, int objc, struct Tcl_Obj* const* objv)
+{
   const char* cmd_name = Tcl_GetString(objv[0]);
   TclCmd* cmd = TclCmds::getTclCmd(cmd_name);
   cmd->resetOptionArgValue();
@@ -306,8 +338,7 @@ int CmdProc(ClientData clientData, Tcl_Interp* interp, int objc,
         TclOption* arg = cmd->getArg(arg_index);
         ++arg_index;
         if (!arg) {
-          LOG_ERROR << "The cmd " << cmd->get_cmd_name()
-                    << " syntax has error.";
+          LOG_ERROR << "The cmd " << cmd->get_cmd_name() << " syntax has error.";
           return TCL_ERROR;
         }
 
@@ -320,8 +351,7 @@ int CmdProc(ClientData clientData, Tcl_Interp* interp, int objc,
   }
 
   if (next_is_option_val) {
-    LOG_ERROR << "The cmd syntax has error " << curr_option->get_option_name()
-              << " need val.";
+    LOG_ERROR << "The cmd syntax has error " << curr_option->get_option_name() << " need val.";
   }
 
   unsigned result = cmd->exec();
@@ -333,9 +363,9 @@ int CmdProc(ClientData clientData, Tcl_Interp* interp, int objc,
  *
  * @param cmd
  */
-void TclCmds::addTclCmd(std::unique_ptr<TclCmd> cmd) {
-  ScriptEngine::getOrCreateInstance()->createCmd(cmd->get_cmd_name(), CmdProc,
-                                                 cmd.get());
+void TclCmds::addTclCmd(std::unique_ptr<TclCmd> cmd)
+{
+  ScriptEngine::getOrCreateInstance()->createCmd(cmd->get_cmd_name(), CmdProc, cmd.get());
   _cmds.emplace(cmd->get_cmd_name(), std::move(cmd));
 }
 
@@ -343,7 +373,8 @@ void TclCmds::addTclCmd(std::unique_ptr<TclCmd> cmd) {
  * @brief Get tcl cmd accord to cmd name.
  *
  */
-TclCmd* TclCmds::getTclCmd(const char* cmd_name) {
+TclCmd* TclCmds::getTclCmd(const char* cmd_name)
+{
   auto it = _cmds.find(cmd_name);
   if (it != _cmds.end()) {
     return it->second.get();
@@ -357,7 +388,8 @@ TclCmd* TclCmds::getTclCmd(const char* cmd_name) {
  * @param pointer
  * @return char*
  */
-char* TclEncodeResult::encode(void* pointer) {
+char* TclEncodeResult::encode(void* pointer)
+{
   return Str::printf("%s%p", _encode_preamble, pointer);
 }
 
@@ -366,20 +398,21 @@ char* TclEncodeResult::encode(void* pointer) {
  *
  * @param encode_str
  */
-void* TclEncodeResult::decode(const char* encode_str) {
+void* TclEncodeResult::decode(const char* encode_str)
+{
   std::string pointer_str = Str::stripPrefix(encode_str, _encode_preamble);
   const int hex = 16;
-  auto pointer_address =
-      static_cast<uintptr_t>(std::stoull(pointer_str, nullptr, hex));
+  auto pointer_address = static_cast<uintptr_t>(std::stoull(pointer_str, nullptr, hex));
   return reinterpret_cast<void*>(pointer_address);
 }
 
-bool containWildcard(const char* pattern) {
+bool containWildcard(const char* pattern)
+{
   return strpbrk(pattern, "*?") != nullptr;
 }
 
-bool matchWildcardWithtarget(const char* const pattern,
-                             const char* const target) {
+bool matchWildcardWithtarget(const char* const pattern, const char* const target)
+{
   const char* p = pattern;
   const char* t = target;
 

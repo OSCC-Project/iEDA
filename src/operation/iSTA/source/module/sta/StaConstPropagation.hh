@@ -5,9 +5,6 @@
  * Vdd, Gnd.), it don't need timing analysis, so we can exclude some node.
  * @version 0.1
  * @date 2021-03-04
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

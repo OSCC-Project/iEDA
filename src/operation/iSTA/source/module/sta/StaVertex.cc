@@ -1,12 +1,9 @@
 /**
  * @file StaVetex.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @brief The implemention of sta vertex.
  * @version 0.1
  * @date 2021-02-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "StaVertex.hh"

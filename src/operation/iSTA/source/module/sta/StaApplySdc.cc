@@ -1,12 +1,9 @@
 /**
  * @file StaApplySdc.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @brief The implemention of apply sdc to graph.
  * @version 0.1
  * @date 2021-03-01
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "StaApplySdc.hh"

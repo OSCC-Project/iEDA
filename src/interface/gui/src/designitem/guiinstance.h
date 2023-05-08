@@ -5,9 +5,6 @@
  *        Inherited by: GuiStandardCell, GuiBlock, GuiPad.
  * @version 0.1
  * @date 2021-08-16(V0.1)
- *
- * @copyright Copyright (c) 2021
- *
  */
 #ifndef GUIINSTANCE_H
 #define GUIINSTANCE_H
@@ -17,8 +14,7 @@
 #include "guiwire.h"
 
 class GuiInstancePrivate;
-class GuiInstance : public GuiRect
-{
+class GuiInstance : public GuiRect {
  public:
   explicit GuiInstance(QGraphicsItem* parent = nullptr);
 
@@ -26,9 +22,7 @@ class GuiInstance : public GuiRect
   void add_wire(GuiWire* wire);
   void add_pin(qreal x_pos, qreal y_pos, qreal width = -1);
 
-  void paint(QPainter*                       painter,
-             const QStyleOptionGraphicsItem* option,
-             QWidget*                        widget = nullptr) override;
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
  protected:
   GuiInstance(GuiInstancePrivate* data, QGraphicsItem* parent = nullptr);
@@ -39,16 +33,15 @@ class GuiInstance : public GuiRect
  private:
   GuiInstancePrivate* _data;
 };
-class GuiInstancePrivate : public GuiRectPrivate
-{
+class GuiInstancePrivate : public GuiRectPrivate {
  public:
   explicit GuiInstancePrivate();
   ~GuiInstancePrivate();
 
  private:
-  QVector<QRectF>         _pins;
+  QVector<QRectF> _pins;
   QVector<GuiFlightLine*> _flight_lines;
-  QVector<GuiWire*>       _wires;
+  QVector<GuiWire*> _wires;
   friend class GuiInstance;
 };
 

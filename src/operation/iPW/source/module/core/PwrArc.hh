@@ -5,9 +5,6 @@
  * the cell arc for internal power and the net arc for switch power.
  * @version 0.1
  * @date 2023-01-18
- *
- * @copyright Copyright (c) 2023
- *
  */
 #pragma once
 

@@ -5,9 +5,6 @@
  * from the start vertex.
  * @version 0.1
  * @date 2021-03-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

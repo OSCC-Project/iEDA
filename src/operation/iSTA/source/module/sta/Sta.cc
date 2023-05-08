@@ -1,12 +1,9 @@
 /**
  * @file Sta.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The implemention of the Sta class.
+ * @brief The implemention of the top Sta class.
  * @version 0.1
  * @date 2020-11-27
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #include "Sta.hh"

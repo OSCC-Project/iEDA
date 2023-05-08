@@ -5,9 +5,6 @@
  * graph, so we just need to update the power information to the timing graph.
  * @version 0.1
  * @date 2023-01-01
- *
- * @copyright Copyright (c) 2023
- *
  */
 #pragma once
 

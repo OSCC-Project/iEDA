@@ -4,9 +4,6 @@
  * @brief The hash set container for the eda project.
  * @version 0.1
  * @date 2020-10-09
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #pragma once
@@ -24,9 +21,9 @@ namespace ieda {
  * The set is a wrapper of flat hash set from google abseil containers.The hash
  * tables are knowns as "Swiss tables".
  */
-template <class KEY, class HASH = typename absl::flat_hash_set<KEY>::hasher,
-          class EQ = typename absl::flat_hash_set<KEY>::key_equal>
-class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
+template <class KEY, class HASH = typename absl::flat_hash_set<KEY>::hasher, class EQ = typename absl::flat_hash_set<KEY>::key_equal>
+class HashSet : public absl::flat_hash_set<KEY, HASH, EQ>
+{
  public:
   using Base = typename HashSet::flat_hash_set;
   using iterator = typename Base::iterator;
@@ -87,7 +84,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    *
    * Returns a reference to this set.
    */
-  HashSet<KEY, HASH, EQ>& subtract(const HashSet<KEY, HASH, EQ>& other) {
+  HashSet<KEY, HASH, EQ>& subtract(const HashSet<KEY, HASH, EQ>& other)
+  {
     for (const auto& e : other) {
       erase(e);
     }
@@ -101,7 +99,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after unite the other.
    */
-  HashSet<KEY, HASH, EQ>& unite(const HashSet<KEY, HASH, EQ>& other) {
+  HashSet<KEY, HASH, EQ>& unite(const HashSet<KEY, HASH, EQ>& other)
+  {
     for (const KEY& e : other) {
       insert(e);
     }
@@ -114,7 +113,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after intersect the other.
    */
-  HashSet<KEY, HASH, EQ>& intersect(const HashSet<KEY, HASH, EQ>& other) {
+  HashSet<KEY, HASH, EQ>& intersect(const HashSet<KEY, HASH, EQ>& other)
+  {
     HashSet<KEY, HASH, EQ> copy1;
     HashSet<KEY, HASH, EQ> copy2;
     if (size() <= other.size()) {
@@ -139,7 +139,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param value
    * @return HashSet<KEY, HASH, EQ>& This set after insert value.
    */
-  inline HashSet<KEY, HASH, EQ>& operator<<(const KEY& value) {
+  inline HashSet<KEY, HASH, EQ>& operator<<(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -150,17 +151,19 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after unite the other.
    */
-  inline HashSet<KEY, HASH, EQ>& operator|=(
-      const HashSet<KEY, HASH, EQ>& other) {
+  inline HashSet<KEY, HASH, EQ>& operator|=(const HashSet<KEY, HASH, EQ>& other)
+  {
     unite(other);
     return *this;
   }
 
-  inline HashSet<KEY, HASH, EQ>& operator|=(HashSet<KEY, HASH, EQ>&& other) {
+  inline HashSet<KEY, HASH, EQ>& operator|=(HashSet<KEY, HASH, EQ>&& other)
+  {
     unite(other);
     return *this;
   }
-  inline HashSet<KEY, HASH, EQ>& operator|=(const KEY& value) {
+  inline HashSet<KEY, HASH, EQ>& operator|=(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -171,12 +174,13 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after intersect the other set.
    */
-  inline HashSet<KEY, HASH, EQ>& operator&=(
-      const HashSet<KEY, HASH, EQ>& other) {
+  inline HashSet<KEY, HASH, EQ>& operator&=(const HashSet<KEY, HASH, EQ>& other)
+  {
     intersect(other);
     return *this;
   }
-  inline HashSet<KEY, HASH, EQ>& operator&=(const KEY& value) {
+  inline HashSet<KEY, HASH, EQ>& operator&=(const KEY& value)
+  {
     HashSet<KEY, HASH, EQ> result;
     if (contains(value)) {
       result.insert(value);
@@ -190,11 +194,13 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after merge the other.
    */
-  inline HashSet<KEY, HASH, EQ>& operator+=(HashSet<KEY, HASH, EQ>& other) {
+  inline HashSet<KEY, HASH, EQ>& operator+=(HashSet<KEY, HASH, EQ>& other)
+  {
     merge(other);
     return *this;
   }
-  inline HashSet<KEY, HASH, EQ>& operator+=(const KEY& value) {
+  inline HashSet<KEY, HASH, EQ>& operator+=(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -205,34 +211,36 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @param other
    * @return HashSet<KEY, HASH, EQ>& This set after subtract the other.
    */
-  inline HashSet<KEY, HASH, EQ>& operator-=(
-      const HashSet<KEY, HASH, EQ>& other) {
+  inline HashSet<KEY, HASH, EQ>& operator-=(const HashSet<KEY, HASH, EQ>& other)
+  {
     subtract(other);
     return *this;
   }
-  inline HashSet<KEY, HASH, EQ>& operator-=(const KEY& value) {
+  inline HashSet<KEY, HASH, EQ>& operator-=(const KEY& value)
+  {
     erase(value);
     return *this;
   }
-  inline HashSet<KEY, HASH, EQ> operator|(
-      const HashSet<KEY, HASH, EQ>& other) const {
+  inline HashSet<KEY, HASH, EQ> operator|(const HashSet<KEY, HASH, EQ>& other) const
+  {
     HashSet<KEY, HASH, EQ> result = *this;
     result |= other;
     return result;
   }
-  inline HashSet<KEY, HASH, EQ> operator&(
-      const HashSet<KEY, HASH, EQ>& other) const {
+  inline HashSet<KEY, HASH, EQ> operator&(const HashSet<KEY, HASH, EQ>& other) const
+  {
     HashSet<KEY, HASH, EQ> result = *this;
     result &= other;
     return result;
   }
-  inline HashSet<KEY, HASH, EQ> operator+(HashSet<KEY, HASH, EQ>& other) const {
+  inline HashSet<KEY, HASH, EQ> operator+(HashSet<KEY, HASH, EQ>& other) const
+  {
     HashSet<KEY, HASH, EQ> result = *this;
     result += other;
     return result;
   }
-  inline HashSet<KEY, HASH, EQ> operator-(
-      const HashSet<KEY, HASH, EQ>& other) const {
+  inline HashSet<KEY, HASH, EQ> operator-(const HashSet<KEY, HASH, EQ>& other) const
+  {
     HashSet<KEY, HASH, EQ> result = *this;
     result -= other;
     return result;
@@ -245,7 +253,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @return true when has key.
    * @return false when do not has key.
    */
-  bool hasKey(const KEY key) const {
+  bool hasKey(const KEY key) const
+  {
     auto find_iter = this->find(key);
     return find_iter != this->end();
   }
@@ -258,8 +267,7 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    * @return true when the two set is equal.
    * @return false
    */
-  static bool equal(const HashSet<KEY, HASH, EQ>* set1,
-                    const HashSet<KEY, HASH, EQ>* set2);
+  static bool equal(const HashSet<KEY, HASH, EQ>* set1, const HashSet<KEY, HASH, EQ>* set2);
 
   /**
    * @brief Judge the set2 is the subset of the set.
@@ -271,8 +279,7 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
   bool isSubset(const HashSet<KEY, HASH, EQ>* set2);
 
   void insertSet(const HashSet<KEY, HASH, EQ>* set2);
-  static bool intersects(HashSet<KEY, HASH, EQ>* set1,
-                         HashSet<KEY, HASH, EQ>* set2);
+  static bool intersects(HashSet<KEY, HASH, EQ>* set1, HashSet<KEY, HASH, EQ>* set2);
 
   /**
    * @brief Java style container itererator.
@@ -283,29 +290,31 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
    *    iter.next();
    *  }
    */
-  class Iterator {
+  class Iterator
+  {
    public:
     Iterator() = default;
     ~Iterator() = default;
 
-    explicit Iterator(HashSet<KEY, HASH, EQ>* container) {
+    explicit Iterator(HashSet<KEY, HASH, EQ>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    void init(HashSet<KEY, HASH, EQ>* container) {
+    void init(HashSet<KEY, HASH, EQ>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    Iterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    Iterator& next()
+    {
       ++_iter;
       return *this;
     }
@@ -321,29 +330,30 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
     typename HashSet<KEY, HASH, EQ>::iterator _iter;
   };
 
-  class ConstIterator {
+  class ConstIterator
+  {
    public:
     ConstIterator() = default;
     ~ConstIterator() = default;
 
-    explicit ConstIterator(const HashSet<KEY, HASH, EQ>* container)
-        : _container(container) {
+    explicit ConstIterator(const HashSet<KEY, HASH, EQ>* container) : _container(container)
+    {
       if (_container != nullptr) {
         _iter = _container->begin();
       }
     }
 
-    void init(const HashSet<KEY, HASH, EQ>* container) {
+    void init(const HashSet<KEY, HASH, EQ>* container)
+    {
       _container = container;
       if (_container != nullptr) {
         _iter = _container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    ConstIterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    ConstIterator& next()
+    {
       ++_iter;
       return *this;
     }
@@ -351,12 +361,8 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
     inline const KEY& value() const { return *_iter; }
     inline const KEY& operator*() const { return *_iter; }
     inline const KEY* operator->() const { return &(_iter); }
-    inline bool operator==(const ConstIterator& o) const {
-      return _iter == o._iter;
-    }
-    inline bool operator!=(const ConstIterator& o) const {
-      return _iter != o._iter;
-    }
+    inline bool operator==(const ConstIterator& o) const { return _iter == o._iter; }
+    inline bool operator!=(const ConstIterator& o) const { return _iter != o._iter; }
 
    private:
     const HashSet<KEY, HASH, EQ>* _container = nullptr;
@@ -365,10 +371,9 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ> {
 };
 
 template <class KEY, class HASH, class EQ>
-bool HashSet<KEY, HASH, EQ>::equal(const HashSet<KEY, HASH, EQ>* set1,
-                                   const HashSet<KEY, HASH, EQ>* set2) {
-  if ((set1 == nullptr || set1->empty()) &&
-      (set2 == nullptr || set2->empty())) {
+bool HashSet<KEY, HASH, EQ>::equal(const HashSet<KEY, HASH, EQ>* set1, const HashSet<KEY, HASH, EQ>* set2)
+{
+  if ((set1 == nullptr || set1->empty()) && (set2 == nullptr || set2->empty())) {
     return true;
   } else if (set1 && set2) {
     if (set1->size() == set2->size()) {
@@ -394,7 +399,8 @@ bool HashSet<KEY, HASH, EQ>::equal(const HashSet<KEY, HASH, EQ>* set1,
 }
 
 template <class KEY, class HASH, class EQ>
-bool HashSet<KEY, HASH, EQ>::isSubset(const HashSet<KEY, HASH, EQ>* set2) {
+bool HashSet<KEY, HASH, EQ>::isSubset(const HashSet<KEY, HASH, EQ>* set2)
+{
   if (this->empty() && set2->empty()) {
     return true;
   } else {
@@ -421,8 +427,8 @@ bool HashSet<KEY, HASH, EQ>::isSubset(const HashSet<KEY, HASH, EQ>* set2) {
  * @return false
  */
 template <class KEY, class HASH, class EQ>
-bool HashSet<KEY, HASH, EQ>::intersects(HashSet<KEY, HASH, EQ>* set1,
-                                        HashSet<KEY, HASH, EQ>* set2) {
+bool HashSet<KEY, HASH, EQ>::intersects(HashSet<KEY, HASH, EQ>* set1, HashSet<KEY, HASH, EQ>* set2)
+{
   if (set1 && !set1->empty() && set2 && !set2->empty()) {
     const HashSet<KEY, HASH, EQ>* small = set1;
     const HashSet<KEY, HASH, EQ>* big = set2;
@@ -434,8 +440,7 @@ bool HashSet<KEY, HASH, EQ>::intersects(HashSet<KEY, HASH, EQ>* set1,
     auto last1 = big->end();
     auto iter2 = small->begin();
     auto last2 = small->end();
-    if (static_cast<float>(small->size() + big->size()) <
-        (small->size() * log(static_cast<float>(big->size())))) {
+    if (static_cast<float>(small->size() + big->size()) < (small->size() * log(static_cast<float>(big->size())))) {
       while (iter1 != last1 && iter2 != last2) {
         if (*iter1 < *iter2) {
           ++iter1;
@@ -464,27 +469,28 @@ bool HashSet<KEY, HASH, EQ>::intersects(HashSet<KEY, HASH, EQ>* set1,
  * @param set2
  */
 template <class KEY, class HASH, class EQ>
-void HashSet<KEY, HASH, EQ>::insertSet(const HashSet<KEY, HASH, EQ>* set2) {
+void HashSet<KEY, HASH, EQ>::insertSet(const HashSet<KEY, HASH, EQ>* set2)
+{
   if (set2) {
     this->insert(set2->begin(), set2->end());
   }
 }
 
 template <class KEY, class HASH, class EQ>
-inline void swap(HashSet<KEY, HASH, EQ>& x,
-                 HashSet<KEY, HASH, EQ>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(HashSet<KEY, HASH, EQ>& x, HashSet<KEY, HASH, EQ>& y) noexcept(noexcept(x.swap(y)))
+{
   x.swap(y);
 }
 
 template <class KEY, class HASH, class EQ>
-inline bool operator==(const HashSet<KEY, HASH, EQ>& x,
-                       const HashSet<KEY, HASH, EQ>& y) {
+inline bool operator==(const HashSet<KEY, HASH, EQ>& x, const HashSet<KEY, HASH, EQ>& y)
+{
   return static_cast<const typename HashSet<KEY, HASH, EQ>::Base&>(x) == y;
 }
 
 template <class KEY, class HASH, class EQ>
-inline bool operator!=(const HashSet<KEY, HASH, EQ>& x,
-                       const HashSet<KEY, HASH, EQ>& y) {
+inline bool operator!=(const HashSet<KEY, HASH, EQ>& x, const HashSet<KEY, HASH, EQ>& y)
+{
   return !(x == y);
 }
 
@@ -497,7 +503,8 @@ inline bool operator!=(const HashSet<KEY, HASH, EQ>& x,
  * @tparam KEY Type of key objects.
  */
 template <typename KEY>
-class HashMultiset : public std::unordered_multiset<KEY> {
+class HashMultiset : public std::unordered_multiset<KEY>
+{
  public:
   using Base = typename HashMultiset::unordered_multiset;
 
@@ -550,18 +557,20 @@ class HashMultiset : public std::unordered_multiset<KEY> {
 };
 
 template <typename KEY>
-inline void swap(HashMultiset<KEY>& x,
-                 HashMultiset<KEY>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(HashMultiset<KEY>& x, HashMultiset<KEY>& y) noexcept(noexcept(x.swap(y)))
+{
   x.swap(y);
 }
 
 template <typename KEY>
-inline bool operator==(const HashMultiset<KEY>& x, const HashMultiset<KEY>& y) {
+inline bool operator==(const HashMultiset<KEY>& x, const HashMultiset<KEY>& y)
+{
   return static_cast<const typename HashMultiset<KEY>::Base&>(x) == y;
 }
 
 template <typename KEY>
-inline bool operator!=(const HashMultiset<KEY>& x, const HashMultiset<KEY>& y) {
+inline bool operator!=(const HashMultiset<KEY>& x, const HashMultiset<KEY>& y)
+{
   return !(x == y);
 }
 

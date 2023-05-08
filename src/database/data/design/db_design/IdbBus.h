@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2022-09-15
- *
- * @copyright Copyright (c) 2022
- *
  */
 
 #pragma once
@@ -19,12 +16,17 @@
 #include "IdbObject.h"
 #include "IdbPins.h"
 namespace idb {
-class IdbBus {
+class IdbBus
+{
  public:
-  enum kBusType { kBusNet, kBusInstancePin, kBusIo };
+  enum kBusType
+  {
+    kBusNet,
+    kBusInstancePin,
+    kBusIo
+  };
   IdbBus() = default;
-  IdbBus(std::string name, unsigned left, unsigned right)
-      : _bus_name(std::move(name)), _left(left), _right(right){};
+  IdbBus(std::string name, unsigned left, unsigned right) : _bus_name(std::move(name)), _left(left), _right(right){};
   ~IdbBus() = default;
   IdbBus(IdbBus&& other) = default;
   IdbBus& operator=(IdbBus&& other) = default;
@@ -38,8 +40,7 @@ class IdbBus {
   void updateRange(unsigned index);
   void updateRange(const IdbBus& bus_object);
   void set_name(const std::string& bus_name) { _bus_name = bus_name; }
-  static std::optional<IdbBus> parseBusObj(const std::string& name_str,
-                                           const IdbBusBitChars* bus_bit_chars);
+  static std::optional<IdbBus> parseBusObj(const std::string& name_str, const IdbBusBitChars* bus_bit_chars);
 
   /**
    * @brief
@@ -52,8 +53,7 @@ class IdbBus {
    * @param bus_bit_chars
    * @return std::optional<std::pair<std::string, unsigned>>
    */
-  static std::optional<std::pair<std::string, unsigned>> parseBusName(
-      const std::string& name_str, const IdbBusBitChars& bus_bit_chars);
+  static std::optional<std::pair<std::string, unsigned>> parseBusName(const std::string& name_str, const IdbBusBitChars& bus_bit_chars);
   void set_type(kBusType type) { _bus_type = type; }
   [[nodiscard]] kBusType get_type() const { return _bus_type; }
 
@@ -63,7 +63,8 @@ class IdbBus {
   void addNet(IdbNet* net, unsigned index);
 
   [[nodiscard]] const std::vector<IdbPin*>& getPins() const { return _pins; }
-  IdbPin* getPin(unsigned index) {
+  IdbPin* getPin(unsigned index)
+  {
     if (index >= _pins.size()) {
       return nullptr;
     }
@@ -93,7 +94,8 @@ class IdbBus {
  * @brief IdbBusList, used for bus query and storage
  *
  */
-class IdbBusList {
+class IdbBusList
+{
  public:
   /**
    * @brief find a bus object by name. If it doesn't exist, return nullopt.
@@ -101,14 +103,11 @@ class IdbBusList {
    * @param bus_name
    * @return std::optional<IdbBus>
    */
-  std::optional<std::reference_wrapper<IdbBus>> findBus(
-      const std::string& full_name);
-  std::optional<std::reference_wrapper<IdbBus>> findBus(
-      const std::string& instance_name, const std::string& pin_name);
+  std::optional<std::reference_wrapper<IdbBus>> findBus(const std::string& full_name);
+  std::optional<std::reference_wrapper<IdbBus>> findBus(const std::string& instance_name, const std::string& pin_name);
 
   void addBusObject(IdbBus&& idb_bus);
-  void addOrUpdate(const std::pair<std::string, unsigned>& info,
-                   const std::function<void(IdbBus&)>& setter);
+  void addOrUpdate(const std::pair<std::string, unsigned>& info, const std::function<void(IdbBus&)>& setter);
 
   /**
    * @brief given a busname with an index, add it to buslist or update the
@@ -119,8 +118,7 @@ class IdbBusList {
    * A callable object that do some property settings after bus has been added
    * or updated. For example:  [](IdbBus& bus){ bus.set_type(kBusNet);}
    */
-  void addOrUpdate(const std::string& name, unsigned index,
-                   const std::function<void(IdbBus&)>& setter);
+  void addOrUpdate(const std::string& name, unsigned index, const std::function<void(IdbBus&)>& setter);
 
   // get all buses as a const vector of IdbBus
   const std::vector<IdbBus>& get_bus_list() { return _bus_arr; }

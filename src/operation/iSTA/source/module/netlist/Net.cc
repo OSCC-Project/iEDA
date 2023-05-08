@@ -1,12 +1,9 @@
 /**
  * @file Net.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @brief The implemention for Net in the netlist.
  * @version 0.1
  * @date 2021-02-03
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "Net.hh"
@@ -34,7 +31,7 @@ Net& Net::operator=(Net&& rhs) noexcept {
     DesignObject::operator=(std::move(rhs));
     _pin_ports = std::move(rhs._pin_ports);
     _is_clock_net = rhs._is_clock_net;
-    for(auto* pin_port : _pin_ports) {
+    for (auto* pin_port : _pin_ports) {
       pin_port->set_net(this);
     }
   }

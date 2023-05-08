@@ -4,9 +4,6 @@
  * @brief The file is the clock class obj of sdc.
  * @version 0.1
  * @date 2020-11-27
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #pragma once

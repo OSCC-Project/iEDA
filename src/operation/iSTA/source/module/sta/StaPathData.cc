@@ -4,9 +4,6 @@
  * @brief The implemention of timing path data.
  * @version 0.1
  * @date 2021-03-15
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "StaPathData.hh"
 

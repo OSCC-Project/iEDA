@@ -4,9 +4,6 @@
  * @brief update the power information to sta graph.
  * @version 0.1
  * @date 2023-01-01
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "PwrBuildGraph.hh"
 

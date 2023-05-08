@@ -4,9 +4,6 @@
  * @brief The verilog reader is used for build the netlist database.
  * @version 0.1
  * @date 2021-07-20
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 
@@ -29,7 +26,8 @@ using ieda::Str;
  * @brief The base class of verilog id.
  *
  */
-class VerilogID {
+class VerilogID
+{
  public:
   explicit VerilogID(const char* id);
   virtual ~VerilogID() = default;
@@ -54,7 +52,8 @@ class VerilogID {
  * @brief The verilog index id such as gpio[0].
  *
  */
-class VerilogIndexID : public VerilogID {
+class VerilogIndexID : public VerilogID
+{
  public:
   VerilogIndexID(const char* id, int index);
   ~VerilogIndexID() override = default;
@@ -68,9 +67,7 @@ class VerilogIndexID : public VerilogID {
 
   [[nodiscard]] int get_index() const { return _index; }
 
-  const char* getName() override {
-    return Str::printf("%s[%d]", _id.c_str(), _index);
-  }
+  const char* getName() override { return Str::printf("%s[%d]", _id.c_str(), _index); }
 
  private:
   int _index;
@@ -80,7 +77,8 @@ class VerilogIndexID : public VerilogID {
  * @brief The verilog slice id such as gpio[1:0].
  *
  */
-class VerilogSliceID : public VerilogID {
+class VerilogSliceID : public VerilogID
+{
  public:
   VerilogSliceID(const char* id, int range_from, int range_to);
   ~VerilogSliceID() override = default;
@@ -97,18 +95,12 @@ class VerilogSliceID : public VerilogID {
   [[nodiscard]] int get_range_to() const { return _range_to; }
   void set_range_to(int range_to) { _range_to = range_to; }
 
-  [[nodiscard]] int get_range_base() {
-    return std::min(_range_from, _range_to);
-  }
+  [[nodiscard]] int get_range_base() { return std::min(_range_from, _range_to); }
   [[nodiscard]] int get_range_max() { return std::max(_range_from, _range_to); }
 
-  const char* getName() override {
-    return Str::printf("%s[%d:%d]", _id.c_str(), _range_from, _range_to);
-  }
+  const char* getName() override { return Str::printf("%s[%d:%d]", _id.c_str(), _range_from, _range_to); }
 
-  const char* getName(unsigned index) {
-    return Str::printf("%s[%d]", _id.c_str(), index);
-  }
+  const char* getName(unsigned index) { return Str::printf("%s[%d]", _id.c_str(), index); }
 
  private:
   int _range_from;
@@ -120,7 +112,8 @@ class VerilogSliceID : public VerilogID {
  * constant, id, concat expr way.
  *
  */
-class VerilogNetExpr {
+class VerilogNetExpr
+{
  public:
   explicit VerilogNetExpr(unsigned line_no) : _line_no(line_no) {}
   virtual ~VerilogNetExpr() = default;
@@ -136,14 +129,13 @@ class VerilogNetExpr {
 
   [[nodiscard]] unsigned get_line_no() const { return _line_no; }
 
-  virtual VerilogID* get_verilog_id() {
+  virtual VerilogID* get_verilog_id()
+  {
     LOG_FATAL << "not implement.";
     return nullptr;
   }
 
-  virtual void set_verilog_id(std::unique_ptr<VerilogID> verilog_id) {
-    LOG_FATAL << "not implement.";
-  }
+  virtual void set_verilog_id(std::unique_ptr<VerilogID> verilog_id) { LOG_FATAL << "not implement."; }
 
  private:
   unsigned _line_no = 0;
@@ -153,7 +145,8 @@ class VerilogNetExpr {
  * @brief The verilog id expression way.
  *
  */
-class VerilogNetIDExpr : public VerilogNetExpr {
+class VerilogNetIDExpr : public VerilogNetExpr
+{
  public:
   explicit VerilogNetIDExpr(VerilogID* verilog_id, unsigned line_no);
   ~VerilogNetIDExpr() override = default;
@@ -166,9 +159,7 @@ class VerilogNetIDExpr : public VerilogNetExpr {
   [[nodiscard]] unsigned isIDExpr() override { return 1; }
   VerilogID* get_verilog_id() override { return _verilog_id.get(); }
 
-  void set_verilog_id(std::unique_ptr<VerilogID> verilog_id) override {
-    _verilog_id = std::move(verilog_id);
-  }
+  void set_verilog_id(std::unique_ptr<VerilogID> verilog_id) override { _verilog_id = std::move(verilog_id); }
 
  private:
   std::unique_ptr<VerilogID> _verilog_id;
@@ -178,11 +169,10 @@ class VerilogNetIDExpr : public VerilogNetExpr {
  * @brief The verilog concatenation expression way.
  *
  */
-class VerilogNetConcatExpr : public VerilogNetExpr {
+class VerilogNetConcatExpr : public VerilogNetExpr
+{
  public:
-  explicit VerilogNetConcatExpr(
-      Vector<std::unique_ptr<VerilogNetExpr>>&& verilog_id_concat,
-      unsigned line_no);
+  explicit VerilogNetConcatExpr(Vector<std::unique_ptr<VerilogNetExpr>>&& verilog_id_concat, unsigned line_no);
   ~VerilogNetConcatExpr() override = default;
 
   VerilogNetConcatExpr(const VerilogNetConcatExpr& orig);
@@ -193,28 +183,29 @@ class VerilogNetConcatExpr : public VerilogNetExpr {
   [[nodiscard]] unsigned isConcatExpr() override { return 1; }
   auto& get_verilog_id_concat() { return _verilog_id_concat; }
 
-  VerilogNetExpr* getVerilogIdExpr(unsigned index) {
+  VerilogNetExpr* getVerilogIdExpr(unsigned index)
+  {
     LOG_FATAL_IF(index >= _verilog_id_concat.size());
     // for verilog expr, the max bit first, so we need reverse the index.
     return _verilog_id_concat[_verilog_id_concat.size() - index - 1].get();
   }
 
-  void setVerilogIdExpr(unsigned index, VerilogNetExpr* new_net_expr) {
+  void setVerilogIdExpr(unsigned index, VerilogNetExpr* new_net_expr)
+  {
     LOG_FATAL_IF(index >= _verilog_id_concat.size());
-    _verilog_id_concat[_verilog_id_concat.size() - index - 1].reset(
-        new_net_expr);
+    _verilog_id_concat[_verilog_id_concat.size() - index - 1].reset(new_net_expr);
   }
 
  private:
-  Vector<std::unique_ptr<VerilogNetExpr>>
-      _verilog_id_concat;  //!< such as { 2'b00, _0_ }
+  Vector<std::unique_ptr<VerilogNetExpr>> _verilog_id_concat;  //!< such as { 2'b00, _0_ }
 };
 
 /**
  * @brief The verilog constant expression, such as 1'b0, 1'b1.
  *
  */
-class VerilogConstantExpr : public VerilogNetExpr {
+class VerilogConstantExpr : public VerilogNetExpr
+{
  public:
   VerilogConstantExpr(const char* constant, unsigned line_no);
   ~VerilogConstantExpr() override = default;
@@ -236,7 +227,8 @@ class VerilogConstantExpr : public VerilogNetExpr {
  * module assign.
  *
  */
-class VerilogStmt {
+class VerilogStmt
+{
  public:
   explicit VerilogStmt(int line);
   virtual ~VerilogStmt() = default;
@@ -262,7 +254,8 @@ class VerilogStmt {
  * @brief The verilog module port connection of module instance statement.
  *
  */
-class VerilogPortConnect {
+class VerilogPortConnect
+{
  public:
   VerilogPortConnect() = default;
   virtual ~VerilogPortConnect() = default;
@@ -277,7 +270,8 @@ class VerilogPortConnect {
  * @brief The port connection such as .port_id(net_id).
  *
  */
-class VerilogPortRefPortConnect : public VerilogPortConnect {
+class VerilogPortRefPortConnect : public VerilogPortConnect
+{
  public:
   VerilogPortRefPortConnect(VerilogID* port_id, VerilogNetExpr* net_id);
   ~VerilogPortRefPortConnect() override = default;
@@ -285,15 +279,11 @@ class VerilogPortRefPortConnect : public VerilogPortConnect {
   VerilogPortRefPortConnect(const VerilogPortRefPortConnect& orig);
   VerilogPortRefPortConnect& operator=(const VerilogPortRefPortConnect& orig);
 
-  VerilogPortConnect* copy() override {
-    return new VerilogPortRefPortConnect(*this);
-  }
+  VerilogPortConnect* copy() override { return new VerilogPortRefPortConnect(*this); }
 
   VerilogID* get_port_id() { return _port_id.get(); }
   VerilogNetExpr* get_net_expr() { return _net_expr.get(); }
-  void set_net_expr(std::unique_ptr<VerilogNetExpr>&& net_expr) {
-    _net_expr = std::move(net_expr);
-  }
+  void set_net_expr(std::unique_ptr<VerilogNetExpr>&& net_expr) { _net_expr = std::move(net_expr); }
   std::unique_ptr<VerilogNetExpr>& takeNetExpr() { return _net_expr; }
 
  private:
@@ -305,12 +295,11 @@ class VerilogPortRefPortConnect : public VerilogPortConnect {
  * @brief Verilog instance stmt.
  *
  */
-class VerilogInst : public VerilogStmt {
+class VerilogInst : public VerilogStmt
+{
  public:
-  VerilogInst(
-      const char* liberty_cell_name, const char* inst_name,
-      std::vector<std::unique_ptr<VerilogPortRefPortConnect>>&& port_connection,
-      int line);
+  VerilogInst(const char* liberty_cell_name, const char* inst_name,
+              std::vector<std::unique_ptr<VerilogPortRefPortConnect>>&& port_connection, int line);
   ~VerilogInst() override = default;
 
   VerilogInst(const VerilogInst& orig);
@@ -321,15 +310,12 @@ class VerilogInst : public VerilogStmt {
   unsigned isModuleInstStmt() override { return 1; }
 
   const char* get_inst_name() { return _inst_name.c_str(); }
-  void set_inst_name(std::string&& inst_name) {
-    _inst_name = std::move(inst_name);
-  }
+  void set_inst_name(std::string&& inst_name) { _inst_name = std::move(inst_name); }
 
   const char* get_cell_name() { return _cell_name.c_str(); }
   auto& get_port_connections() { return _port_connections; }
-  std::unique_ptr<VerilogNetExpr> getPortConnectNet(
-      VerilogModule* parent_module, VerilogModule* inst_module,
-      VerilogID* port_id, std::optional<std::pair<int, int>> bus_size_range);
+  std::unique_ptr<VerilogNetExpr> getPortConnectNet(VerilogModule* parent_module, VerilogModule* inst_module, VerilogID* port_id,
+                                                    std::optional<std::pair<int, int>> bus_size_range);
 
  private:
   std::string _inst_name;
@@ -342,10 +328,10 @@ class VerilogInst : public VerilogStmt {
  * @brief Verilog assign stmt.
  *
  */
-class VerilogAssign : public VerilogStmt {
+class VerilogAssign : public VerilogStmt
+{
  public:
-  VerilogAssign(VerilogNetExpr* left_net_expr, VerilogNetExpr* right_net_expr,
-                int line);
+  VerilogAssign(VerilogNetExpr* left_net_expr, VerilogNetExpr* right_net_expr, int line);
   ~VerilogAssign() override = default;
   unsigned isModuleAssignStmt() { return 1; }
 
@@ -361,16 +347,17 @@ class VerilogAssign : public VerilogStmt {
  * @brief iterate the inst port connect.
  *
  */
-#define FOREACH_VERILOG_PORT_CONNECT(inst, port_connect) \
-  for (auto& port_connect : inst->get_port_connections())
+#define FOREACH_VERILOG_PORT_CONNECT(inst, port_connect) for (auto& port_connect : inst->get_port_connections())
 
 /**
  * @brief The wire or port declaration.
  *
  */
-class VerilogDcl : public VerilogStmt {
+class VerilogDcl : public VerilogStmt
+{
  public:
-  enum class DclType : int {
+  enum class DclType : int
+  {
     kInput = 0,
     kInout = 1,
     kOutput = 2,
@@ -408,10 +395,10 @@ class VerilogDcl : public VerilogStmt {
  * @brief The mutiple verilg dcl.
  *
  */
-class VerilogDcls : public VerilogStmt {
+class VerilogDcls : public VerilogStmt
+{
  public:
-  VerilogDcls(std::vector<std::unique_ptr<VerilogDcl>>&& verilog_dcls,
-              int line);
+  VerilogDcls(std::vector<std::unique_ptr<VerilogDcl>>&& verilog_dcls, int line);
   ~VerilogDcls() override = default;
 
   VerilogDcls(const VerilogDcls& orig);
@@ -432,9 +419,11 @@ class VerilogDcls : public VerilogStmt {
  * @brief The verilog module class.
  *
  */
-class VerilogModule : public VerilogStmt {
+class VerilogModule : public VerilogStmt
+{
  public:
-  enum class PortDclType : int {
+  enum class PortDclType : int
+  {
     kInput = 0,
     kInputWire = 1,
     kInout = 2,
@@ -452,71 +441,56 @@ class VerilogModule : public VerilogStmt {
 
   const char* get_module_name() { return _module_name.c_str(); }
 
-  void set_module_stmts(
-      std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts) {
-    _module_stmts = std::move(module_stmts);
-  }
+  void set_module_stmts(std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts) { _module_stmts = std::move(module_stmts); }
 
-  void addStmt(std::unique_ptr<VerilogStmt> module_stmt) {
-    _module_stmts.emplace_back(std::move(module_stmt));
-  }
-  void eraseStmt(VerilogStmt* the_stmt) {
-    auto ret = std::erase_if(_module_stmts, [the_stmt](auto& stmt) {
-      return stmt.get() == the_stmt;
-    });
+  void addStmt(std::unique_ptr<VerilogStmt> module_stmt) { _module_stmts.emplace_back(std::move(module_stmt)); }
+  void eraseStmt(VerilogStmt* the_stmt)
+  {
+    auto ret = std::erase_if(_module_stmts, [the_stmt](auto& stmt) { return stmt.get() == the_stmt; });
     assert(ret != 0);
   }
 
   auto& get_module_stmts() { return _module_stmts; }
 
-  void set_port_list(std::vector<std::unique_ptr<VerilogID>>&& port_list) {
-    _port_list = std::move(port_list);
-  }
+  void set_port_list(std::vector<std::unique_ptr<VerilogID>>&& port_list) { _port_list = std::move(port_list); }
 
-  bool isPort(const char* name) {
+  bool isPort(const char* name)
+  {
     auto it = std::find_if(_port_list.begin(), _port_list.end(),
-                           [&name](const std::unique_ptr<VerilogID>& id) {
-                             return Str::equal(id->getBaseName(), name);
-                           });
+                           [&name](const std::unique_ptr<VerilogID>& id) { return Str::equal(id->getBaseName(), name); });
     return it != _port_list.end();
   }
 
-  VerilogStmt* findDclStmt(const char* name, bool is_need_range = false) {
-    auto it = std::find_if(
-        _module_stmts.begin(), _module_stmts.end(),
-        [&name, is_need_range](const std::unique_ptr<VerilogStmt>& stmt) {
-          if (stmt->isVerilogDclStmt()) {
-            if (Str::equal(
-                    dynamic_cast<VerilogDcl*>(stmt.get())->get_dcl_name(),
-                    name)) {
-              return true;
-            }
-          } else if (stmt->isVerilogDclsStmt()) {
-            auto* dcls = dynamic_cast<VerilogDcls*>(stmt.get());
-            // assume dcls stmt should not contain range.
-            if (is_need_range && (dcls->get_dcl_num() > 1)) {
-              return false;
-            }
-
-            for (auto& dcl : dcls->get_verilog_dcls()) {
-              if (Str::equal(
-                      dynamic_cast<VerilogDcl*>(dcl.get())->get_dcl_name(),
-                      name)) {
-                return true;
-              }
-            }
-          }
-
+  VerilogStmt* findDclStmt(const char* name, bool is_need_range = false)
+  {
+    auto it = std::find_if(_module_stmts.begin(), _module_stmts.end(), [&name, is_need_range](const std::unique_ptr<VerilogStmt>& stmt) {
+      if (stmt->isVerilogDclStmt()) {
+        if (Str::equal(dynamic_cast<VerilogDcl*>(stmt.get())->get_dcl_name(), name)) {
+          return true;
+        }
+      } else if (stmt->isVerilogDclsStmt()) {
+        auto* dcls = dynamic_cast<VerilogDcls*>(stmt.get());
+        // assume dcls stmt should not contain range.
+        if (is_need_range && (dcls->get_dcl_num() > 1)) {
           return false;
-        });
+        }
+
+        for (auto& dcl : dcls->get_verilog_dcls()) {
+          if (Str::equal(dynamic_cast<VerilogDcl*>(dcl.get())->get_dcl_name(), name)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
     if (it != _module_stmts.end()) {
       return it->get();
     }
     return nullptr;
   }
 
-  void flattenModule(VerilogModule* parent_module, VerilogInst* inst_stmt,
-                     VerilogReader* verilog_reader);
+  void flattenModule(VerilogModule* parent_module, VerilogInst* inst_stmt, VerilogReader* verilog_reader);
 
  private:
   std::string _module_name;
@@ -529,14 +503,14 @@ class VerilogModule : public VerilogStmt {
  * @brief iterate the verilog stmt.
  *
  */
-#define FOR_EACH_VERILOG_STMT(module, stmt) \
-  for (auto& stmt : module->get_module_stmts())
+#define FOR_EACH_VERILOG_STMT(module, stmt) for (auto& stmt : module->get_module_stmts())
 
 /**
  * @brief Verilog reader class.
  *
  */
-class VerilogReader {
+class VerilogReader
+{
  public:
   VerilogReader() = default;
   ~VerilogReader() = default;
@@ -555,7 +529,8 @@ class VerilogReader {
   [[nodiscard]] int get_line_no() const { return _line_no; }
 
 #ifdef ZLIB_FOUND
-  void getChars(char* buf, int& result, size_t max_size) {
+  void getChars(char* buf, int& result, size_t max_size)
+  {
     char* status = gzgets(_verilog_in, buf, max_size);
     if (status == Z_NULL) {
       result = 0;
@@ -572,40 +547,28 @@ class VerilogReader {
   auto& get_verilog_modules() { return _verilog_modules; }
   VerilogModule* findModule(const char* module_name);
 
-  VerilogDcls* makeDcl(VerilogDcl::DclType dcl_type,
-                       std::vector<const char*>&& dcl_args, int line);
-  VerilogDcls* makeDcl(VerilogDcl::DclType dcl_type,
-                       std::vector<const char*>&& dcl_args, int line,
-                       std::pair<int, int> range);
+  VerilogDcls* makeDcl(VerilogDcl::DclType dcl_type, std::vector<const char*>&& dcl_args, int line);
+  VerilogDcls* makeDcl(VerilogDcl::DclType dcl_type, std::vector<const char*>&& dcl_args, int line, std::pair<int, int> range);
 
-  VerilogPortRefPortConnect* makePortConnect(VerilogID* port_id,
-                                             VerilogNetExpr* net_id);
+  VerilogPortRefPortConnect* makePortConnect(VerilogID* port_id, VerilogNetExpr* net_id);
 
   VerilogID* makeVerilogID(const char* id);
   VerilogID* makeVerilogID(const char* id, int index);
   VerilogID* makeVerilogID(const char* id, int range_from, int range_to);
 
   VerilogNetExpr* makeVerilogNetExpr(VerilogID* verilog_id, int line);
-  VerilogNetExpr* makeVerilogNetExpr(
-      Vector<std::unique_ptr<VerilogNetExpr>>&& verilog_id_concat, int line);
+  VerilogNetExpr* makeVerilogNetExpr(Vector<std::unique_ptr<VerilogNetExpr>>&& verilog_id_concat, int line);
 
   VerilogNetExpr* makeVerilogNetExpr(const char* constant, int line);
 
-  VerilogInst* makeModuleInst(
-      const char* liberty_cell_name, const char* inst_name,
-      std::vector<std::unique_ptr<VerilogPortRefPortConnect>>&& port_connection,
-      int line);
-  VerilogAssign* makeModuleAssign(VerilogNetExpr* left_net_expr,
-                                  VerilogNetExpr* right_net_expr, int line);
+  VerilogInst* makeModuleInst(const char* liberty_cell_name, const char* inst_name,
+                              std::vector<std::unique_ptr<VerilogPortRefPortConnect>>&& port_connection, int line);
+  VerilogAssign* makeModuleAssign(VerilogNetExpr* left_net_expr, VerilogNetExpr* right_net_expr, int line);
 
-  VerilogModule* makeModule(
-      const char* module_name,
-      std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts, int line);
+  VerilogModule* makeModule(const char* module_name, std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts, int line);
 
-  VerilogModule* makeModule(
-      const char* module_name,
-      std::vector<std::unique_ptr<VerilogID>>&& port_list,
-      std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts, int line);
+  VerilogModule* makeModule(const char* module_name, std::vector<std::unique_ptr<VerilogID>>&& port_list,
+                            std::vector<std::unique_ptr<VerilogStmt>>&& module_stmts, int line);
 
   VerilogModule* flattenModule(const char* module_name);
 

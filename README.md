@@ -121,7 +121,7 @@ bash build.sh
 
 ## 2. 使用 iEDA 完成芯片设计
 
-这里提供三种 iEDA 的运行方法。
+这里提供两种 iEDA 的运行方法作为参考。
 
 关于 iEDA 的使用，参考 [Tcl 命令手册][Tcl-menu-xls] 和 `src/operation` 下各工具的说明文档readme。
 
@@ -156,7 +156,7 @@ Roadmap -->
 
 ## 贡献指南
 
-Fork 此 iEDA 仓库，修改代码后提交 Pull Request。
+Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
 
 请注意 iEDA 使用的[编程规范][Code-conduct-md]。
 ## 讨论和反馈

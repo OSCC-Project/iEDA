@@ -1,12 +1,9 @@
 /**
  * @file StaCppr.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @brief The implemention of cppr(common path pessimism removal).
  * @version 0.1
  * @date 2021-03-24
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "StaCppr.hh"

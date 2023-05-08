@@ -4,9 +4,6 @@
  * @brief The liberty expression parser and process function.
  * @version 0.1
  * @date 2021-09-19
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once
@@ -22,9 +19,11 @@ class LibertyPort;
  * @brief The liberty expression.
  *
  */
-class LibertyExpr {
+class LibertyExpr
+{
  public:
-  enum class Operator {
+  enum class Operator
+  {
     kBuffer = 1,
     kNot = 2,
     kOr = 3,
@@ -63,7 +62,8 @@ class LibertyExpr {
  * @brief The liberty expression func
  *
  */
-class LibertyExprBuilder {
+class LibertyExprBuilder
+{
  public:
   explicit LibertyExprBuilder(LibertyPort* expr_port, const char* expr_str);
   ~LibertyExprBuilder() = default;
@@ -95,12 +95,8 @@ class LibertyExprBuilder {
   LibertyExpr* makeMultExpr(LibertyExpr* left_expr, LibertyExpr* right_expr);
   LibertyExpr* makeAndExpr(LibertyExpr* left_expr, LibertyExpr* right_expr);
   LibertyExpr* makeXorExpr(LibertyExpr* left_expr, LibertyExpr* right_expr);
-  LibertyExpr* makeOneExpr() {
-    return new LibertyExpr(LibertyExpr::Operator::kOne);
-  }
-  LibertyExpr* makeZeroExpr() {
-    return new LibertyExpr(LibertyExpr::Operator::kZero);
-  }
+  LibertyExpr* makeOneExpr() { return new LibertyExpr(LibertyExpr::Operator::kOne); }
+  LibertyExpr* makeZeroExpr() { return new LibertyExpr(LibertyExpr::Operator::kZero); }
 
   void set_result_expr(LibertyExpr* result_expr) { _result_expr = result_expr; }
   LibertyExpr* get_result_expr() { return _result_expr; }

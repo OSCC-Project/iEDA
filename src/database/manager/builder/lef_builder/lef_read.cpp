@@ -1,21 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- *
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		lef_read.cpp
- * @copyright	(c) 2021 All Rights Reserved.
  * @author		Yell
  * @date		25/05/2021
  * @version		0.1
@@ -400,18 +385,16 @@ int LefRead::parse_layer_cut(lefiLayer* lef_layer, IdbLayerCut* layer_cut)
 
   // spacing
   int num_spacing = lef_layer->numSpacing();
-  for(int i = 0;i<num_spacing; ++i){
+  for (int i = 0; i < num_spacing; ++i) {
     int32_t cut_spacing = transUnitDB(lef_layer->spacing(i));
     IdbLayerCutSpacing* spacing = new IdbLayerCutSpacing(cut_spacing);
-    if(lef_layer->hasSpacingAdjacent(i)){
-      int adj_cuts =  lef_layer->spacingAdjacentCuts(i);
+    if (lef_layer->hasSpacingAdjacent(i)) {
+      int adj_cuts = lef_layer->spacingAdjacentCuts(i);
       double cut_within = lef_layer->spacingAdjacentWithin(i);
       spacing->set_adjacent_cuts(IdbLayerCutSpacing::AdjacentCuts(adj_cuts, transUnitDB(cut_within)));
     }
     layer_cut->add_spacing(spacing);
-    
   }
-
 
   for (int i = 0; i < lef_layer->numEnclosure(); i++) {
     //!<------------tbd-------------------
@@ -966,15 +949,15 @@ int LefRead::parse_pin(lefiPin* lef_pin)
           break;
         }
         case lefiGeomViaE: {
-          if (!shape){
+          if (!shape) {
             break;
           }
           lefiGeomVia* ivia = lef_geometry->getVia(j);
           auto* vialist = layout->get_via_list();
           auto* via = vialist->find_via(ivia->name);
-          if(via == nullptr){
-            std::cerr <<"Error, cannot find via " << ivia->name << std::endl;
-          }else{
+          if (via == nullptr) {
+            std::cerr << "Error, cannot find via " << ivia->name << std::endl;
+          } else {
             auto* macro_via = via->clone();
             macro_via->set_coordinate(transUnitDB(ivia->x), transUnitDB(ivia->y));
             port->add_via(macro_via);

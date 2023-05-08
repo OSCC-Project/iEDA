@@ -36,7 +36,7 @@ void MainWindow::createToolbar() {
   // create toolbox
   QToolBar* toolbox = new QToolBar(tr("Tool Box"));
 
-  QAction* selectByBox = toolbox->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/selectByBox.png"),
+  QAction* selectByBox = toolbox->addAction(QIcon("./iEDA/src/iGUI/res/icon/selectByBox.png"),
                                             tr("Select By Box"), this, &MainWindow::selectByBox);
 
   toolbox->addActions(toolBoxActions->actions());
@@ -48,15 +48,15 @@ void MainWindow::createToolbar() {
   // create wireEditTool
   QToolBar* wireEditTool = new QToolBar(tr("wire Edit"));
 
-  wireEditTool->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/duplicate.png"),
+  wireEditTool->addAction(QIcon("./iEDA/src/iGUI/res/icon/duplicate.png"),
                           tr("Duplicate Selected Wires"), this, &MainWindow::duplicateSelectedWires);
-  wireEditTool->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/split.png"), tr("Split Selected Wires"),
+  wireEditTool->addAction(QIcon("./iEDA/src/iGUI/res/icon/split.png"), tr("Split Selected Wires"),
                           this, &MainWindow::splitSelectedWires);
-  wireEditTool->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/merge.png"), tr("Merge Selected Wires"),
+  wireEditTool->addAction(QIcon("./iEDA/src/iGUI/res/icon/merge.png"), tr("Merge Selected Wires"),
                           this, &MainWindow::mergeSelectedWires);
-  wireEditTool->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/trim.png"), tr("Trim Selected Wires"),
+  wireEditTool->addAction(QIcon("./iEDA/src/iGUI/res/icon/trim.png"), tr("Trim Selected Wires"),
                           this, &MainWindow::trimSelectedWires);
-  wireEditTool->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/deleteWire.png"), tr("Delete Wires"),
+  wireEditTool->addAction(QIcon("./iEDA/src/iGUI/res/icon/deleteWire.png"), tr("Delete Wires"),
                           this, &MainWindow::deleteWires);
 
   layoutTab->addToolBar(Qt::LeftToolBarArea, wireEditTool);
@@ -64,12 +64,12 @@ void MainWindow::createToolbar() {
   // creat PanActionTool
   QToolBar* pan = new QToolBar(tr("Pan Action"));
 
-  pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/up.png"), tr("Up"), this, &MainWindow::upAct);
-  QAction* downAct  = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/down.png"), tr("Down"), this,
+  pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/up.png"), tr("Up"), this, &MainWindow::upAct);
+  QAction* downAct  = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/down.png"), tr("Down"), this,
                                      &MainWindow::downAct);
-  QAction* leftAct  = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/left.png"), tr("Left"), this,
+  QAction* leftAct  = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/left.png"), tr("Left"), this,
                                      &MainWindow::leftAct);
-  QAction* rightAct = pan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/right.png"), tr("Right"),
+  QAction* rightAct = pan->addAction(QIcon("./iEDA/src/iGUI/res/icon/right.png"), tr("Right"),
                                      this, &MainWindow::rightAct);
 
   layoutTab->addToolBar(Qt::LeftToolBarArea, pan);

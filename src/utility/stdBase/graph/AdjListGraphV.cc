@@ -4,14 +4,12 @@
  * @brief
  * @version 0.1
  * @date 2020-11-23
- *
- * @copyright Copyright (c) 2020
- *
  */
+#include "AdjListGraphV.hh"
+
 #include <iostream>
 #include <queue>
 
-#include "AdjListGraphV.hh"
 #include "List.hh"
 #include "Vector.hh"
 
@@ -20,20 +18,23 @@
 
 namespace ieda {
 
-struct Node {
+struct Node
+{
   int id;
   int w;
 
   friend bool operator<(struct Node a, struct Node b) { return a.w > b.w; }
 };
-struct Node1 {
+struct Node1
+{
   int id;
   int w;
 
   friend bool operator<(struct Node1 a, struct Node1 b) { return a.w < b.w; }
 };
 
-Graph::Graph(unsigned numVer) {
+Graph::Graph(unsigned numVer)
+{
   this->numVer = numVer;
   numEdge = 0;
   visited = new bool[numVer];
@@ -43,7 +44,8 @@ Graph::Graph(unsigned numVer) {
     adjVector->push_back(ver);
   }
 }
-Graph::~Graph() {
+Graph::~Graph()
+{
   Edge *p, *q;
   for (int i = 0; i < numVer; i++) {
     if ((*adjVector)[i].next) {
@@ -57,18 +59,27 @@ Graph::~Graph() {
   }
   delete adjVector;
 }
-int Graph::getIndegree(int v) { return (*adjVector)[v]._indegree; }
-int Graph::getOutdegree(int v) { return (*adjVector)[v]._outdegree; }
-bool Graph::checkVer(int tail, int head) {
+int Graph::getIndegree(int v)
+{
+  return (*adjVector)[v]._indegree;
+}
+int Graph::getOutdegree(int v)
+{
+  return (*adjVector)[v]._outdegree;
+}
+bool Graph::checkVer(int tail, int head)
+{
   if (tail >= 0 && tail < numVer && head >= 0 && head < numVer)
     return true;
   else
     return false;
 }
-void Graph::createGraph(int tail, int head, int weight) {
+void Graph::createGraph(int tail, int head, int weight)
+{
   insertEdge(tail, head, weight);
 }
-void Graph::insertEdge(int tail, int head, int weight) {
+void Graph::insertEdge(int tail, int head, int weight)
+{
   Edge *p, *q, *r;
   p = q = r = nullptr;
   if ((*adjVector)[tail].next) {
@@ -105,10 +116,11 @@ void Graph::insertEdge(int tail, int head, int weight) {
     (*adjVector)[head]._indegree++;
   }
 }
-Vector<Vector<int>> Graph::saveAdjVector() {
-  Vector<int> *adj;
+Vector<Vector<int>> Graph::saveAdjVector()
+{
+  Vector<int>* adj;
   Vector<Vector<int>> saveAdj;
-  Edge *edge = nullptr;
+  Edge* edge = nullptr;
   for (int i = 0; i < this->numVer; i++) {
     edge = (*adjVector)[i].next;
     adj = new Vector<int>();
@@ -126,7 +138,8 @@ Vector<Vector<int>> Graph::saveAdjVector() {
   }
   return saveAdj;
 }
-void Graph::printAdjVector() {
+void Graph::printAdjVector()
+{
   Vector<Vector<int>> temp = saveAdjVector();
   Vector<Vector<int>>::iterator iter;
   Vector<int>::iterator itera;
@@ -137,10 +150,11 @@ void Graph::printAdjVector() {
     std::cout << std::endl;
   }
 }
-void Graph::deleteEdge(int tail, int head) {
-  Edge *p = (*adjVector)[tail].next;
+void Graph::deleteEdge(int tail, int head)
+{
+  Edge* p = (*adjVector)[tail].next;
 
-  Edge *q = nullptr;
+  Edge* q = nullptr;
 
   while (p != nullptr) {
     if (p->adjvex == head) {
@@ -152,8 +166,7 @@ void Graph::deleteEdge(int tail, int head) {
   }
 
   if (p == nullptr) {
-    std::cout << "edge[" << (*adjVector)[tail]._id << "->"
-              << (*adjVector)[head]._id << "] is not exist" << std::endl;
+    std::cout << "edge[" << (*adjVector)[tail]._id << "->" << (*adjVector)[head]._id << "] is not exist" << std::endl;
     return;
   }
 
@@ -169,15 +182,17 @@ void Graph::deleteEdge(int tail, int head) {
   (*adjVector)[tail]._outdegree--;
   (*adjVector)[head]._indegree--;
 }
-void Graph::BFS(int startVertex) {
-  for (int i = 0; i < numVer; i++) visited[i] = false;
+void Graph::BFS(int startVertex)
+{
+  for (int i = 0; i < numVer; i++)
+    visited[i] = false;
 
   List<int> queue;
 
   visited[startVertex] = true;
   queue.push_back(startVertex);
 
-  Edge *e = nullptr;
+  Edge* e = nullptr;
   while (!queue.empty()) {
     int currVertex = queue.front();
     std::cout << "Visited " << currVertex << " ";
@@ -193,34 +208,39 @@ void Graph::BFS(int startVertex) {
     }
   }
 }
-void Graph::DFS(int id) {
+void Graph::DFS(int id)
+{
   visited[id] = true;
 
   std::cout << id << " ";
   Vertex ve = (*adjVector)[id];
-  Edge *ed = ve.next;
+  Edge* ed = ve.next;
   int vertex1 = 0;
 
   for (int i = 0; i < ve._outdegree; ++i) {
     vertex1 = ed->adjvex;
     ed = ed->next;
-    if (!visited[vertex1]) DFS(vertex1);
+    if (!visited[vertex1])
+      DFS(vertex1);
   }
 }
-void Graph::topologicalSort() {
+void Graph::topologicalSort()
+{
   for (int i = 0; i < numVer; ++i)
-    if ((*adjVector)[i]._indegree == 0) que.push(i);
+    if ((*adjVector)[i]._indegree == 0)
+      que.push(i);
 
   while (!que.empty()) {
     int ver = que.front();
     que.pop();
     std::cout << ver << " ";
-    Edge *ed = nullptr;
+    Edge* ed = nullptr;
     ed = (*adjVector)[ver].next;
     int adjv = 0;
     for (int i = 0; i < (*adjVector)[ver]._outdegree; ++i) {
       adjv = ed->adjvex;
-      if (!(--((*adjVector)[adjv]._indegree))) que.push(adjv);
+      if (!(--((*adjVector)[adjv]._indegree)))
+        que.push(adjv);
       ed = ed->next;
     }
   }
@@ -250,21 +270,24 @@ void Graph::topologicalSort() {
 //   vis[start] = -1;
 //   return true;
 // }
-bool Graph::checkLoop() {
+bool Graph::checkLoop()
+{
   for (int i = 0; i < numVer; ++i)
-    if ((*adjVector)[i]._indegree == 0) que.push(i);
+    if ((*adjVector)[i]._indegree == 0)
+      que.push(i);
 
   int count = 0;
   while (!que.empty()) {
     int ver = que.front();
     que.pop();
     ++count;
-    Edge *ed = nullptr;
+    Edge* ed = nullptr;
     ed = (*adjVector)[ver].next;
     int adjv = 0;
     for (int i = 0; i < (*adjVector)[ver]._outdegree; ++i) {
       adjv = ed->adjvex;
-      if (!(--((*adjVector)[adjv]._indegree))) que.push(adjv);
+      if (!(--((*adjVector)[adjv]._indegree)))
+        que.push(adjv);
       ed = ed->next;
     }
   }
@@ -274,12 +297,13 @@ bool Graph::checkLoop() {
     return true;
 }
 
-void Graph::DijkstraMinLength(int v0) {
+void Graph::DijkstraMinLength(int v0)
+{
   int path[numVer] = {0};
   int visited[numVer] = {0};
   Node dist[numVer];
   std::priority_queue<Node> q;
-  //初始化
+  // 初始化
 
   for (int i = 0; i < numVer; i++) {
     dist[i].id = i;
@@ -294,9 +318,10 @@ void Graph::DijkstraMinLength(int v0) {
     q.pop();
     int u = cd.id;
 
-    if (visited[u]) continue;
+    if (visited[u])
+      continue;
     visited[u] = 1;
-    Edge *p = (*adjVector)[u].next;
+    Edge* p = (*adjVector)[u].next;
 
     while (p) {
       int tempv = p->adjvex;
@@ -316,7 +341,8 @@ void Graph::DijkstraMinLength(int v0) {
   }
 }
 
-void Graph::DijkstraMaxLength(int v0) {
+void Graph::DijkstraMaxLength(int v0)
+{
   int path[numVer] = {0};
   int visited[numVer] = {0};
 
@@ -338,7 +364,7 @@ void Graph::DijkstraMaxLength(int v0) {
 
     // if (visited[u]) continue;
     visited[u] = 1;
-    Edge *p = (*adjVector)[u].next;
+    Edge* p = (*adjVector)[u].next;
 
     while (p) {
       int tempv = p->adjvex;

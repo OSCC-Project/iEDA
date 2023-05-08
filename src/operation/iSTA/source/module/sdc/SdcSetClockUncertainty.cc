@@ -4,9 +4,6 @@
  * @brief The sdc set_clock_uncertainty implemention.
  * @version 0.1
  * @date 2021-10-25
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "SdcSetClockUncertainty.hh"

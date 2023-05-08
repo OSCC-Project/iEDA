@@ -6,7 +6,7 @@
  * @version 0.1
  * @date 2021-11-29(V0.1)
  *
- * @copyright Copyright (c) 2021 PCNL
+ *
  *
  */
 #ifndef GUI_ATTRIBUTE

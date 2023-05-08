@@ -4,9 +4,6 @@
  * @brief The power tool global config.
  * @version 0.1
  * @date 2023-04-08
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #pragma once

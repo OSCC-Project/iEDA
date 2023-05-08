@@ -4,9 +4,6 @@
  * @brief The class of power path group data, used for power report.
  * @version 0.1
  * @date 2023-04-25
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #pragma once

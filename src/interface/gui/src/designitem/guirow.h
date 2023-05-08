@@ -4,9 +4,6 @@
  * @brief This class inherits from GuiInstance to represent StandardCell in the GUI
  * @version 0.1
  * @date 2021-07-06(V0.1), 2021-08-11(V0.2)
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #ifndef GUIROW_H
