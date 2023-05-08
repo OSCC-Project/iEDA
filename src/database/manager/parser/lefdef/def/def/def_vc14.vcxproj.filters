@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Private Header Files">
+      <UniqueIdentifier>{7db7d450-9f3b-44b0-8580-363ef0601fb9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public Header Files">
+      <UniqueIdentifier>{aeafd166-99c9-4db0-980e-075fa5f41e06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{a6f2e3ed-ea59-4cda-afe8-7504fa2a0ba3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="def.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="def.tab.h">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="def.y">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="def_keywords.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="defiAlias.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiAlias.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiAssertion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiAssertion.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiBlockage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiBlockage.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiComponent.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiDebug.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="defiDefs.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiFill.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiFill.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiFPC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiFPC.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiGroup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiGroup.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiIOTiming.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiIOTiming.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="defiKRDefs.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiMisc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiMisc.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiNet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiNet.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiNonDefault.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiNonDefault.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiPartition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiPartition.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiPath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiPath.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiPinCap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiPinCap.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiPinProp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiPinProp.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiProp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiProp.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiPropType.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiPropType.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiRegion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiRegion.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiRowTrack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiRowTrack.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiScanchain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiScanchain.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiSite.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiSite.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiSlot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiSlot.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiTimingDisable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiTimingDisable.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="defiUser.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiUtil.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defiVia.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defiVia.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defrCallbacks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="defrCallBacks.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="defrData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="defrData.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="defrReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defrReader.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defrSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="defrSettings.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="defwWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defwWriter.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="defwWriterCalls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="defwWriterCalls.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="lex.h">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

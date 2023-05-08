@@ -1,0 +1,4 @@
+#ifndef GUIDATABASE_H
+#define GUIDATABASE_H
+
+#endif  // GUIDATABASE_H

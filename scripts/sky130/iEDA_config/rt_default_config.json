@@ -1,0 +1,7 @@
+{
+    "RT": {
+        "-rt_temp_directory_path": "./result/rt/rt_temp_directory",
+        "-rt_output_def_file_path": "./result/rt/rt_temp_directory/rt_output.def",
+        "-gp_guide_file_path": "./result/rt/rt_temp_directory/guide_processor/rt.guide"
+    }
+}

@@ -1,0 +1,76 @@
+Checks: >
+  readability-identifier-naming
+
+#  readability-*
+#  -readability-braces-around-statements,
+#  -readability-identifier-length,
+#  -readability-magic-numbers,
+#  -readability-named-parameter,
+#  -readability-redundant-declaration,
+#  -readability-function-cognitive-complexity
+# abseil-*,
+# boost-*,
+# bugprone-*,
+# google-*,
+# misc-*,
+# modernize-*,
+# performance-*,
+# portability-*,
+# -google-readability-braces-around-statements,
+# -google-readability-namespace-comments,
+# -google-runtime-references,
+# -misc-non-private-member-variables-in-classes,
+# -misc-const-correctness,
+# -modernize-return-braced-init-list,
+# -modernize-use-trailing-return-type,
+# -modernize-avoid-c-arrays,
+# -performance-move-const-arg,
+
+# Turn all the warnings from the checks above into errors.
+# WarningsAsErrors: "*"
+
+HeaderFilterRegex: '*.h, *.hpp, *.hh'
+
+CheckOptions:
+  # 局部变量名单词之间使用下划线隔开
+  - { key: readability-identifier-naming.LocalVariableCase,           value: lower_case }
+  - { key: readability-identifier-naming.LocalVariableIgnoredRegexp,  value: '_[a-zA-Z_]+' }
+  # 类的变量成员用下划线作为前缀如 _file_name
+  - { key: readability-identifier-naming.ClassMemberCase,             value: lower_case }
+  - { key: readability-identifier-naming.ClassMemberPrefix,           value: _          }
+  # 类的函数名使用驼峰类型；如doSomething()
+  - { key: readability-identifier-naming.ClassMethodCase,             value: camelBack }
+  # 类的成员存取使用 如get_file_name() set_file_name()
+  - { key: readability-identifier-naming.ClassMethodIgnoredRegexp,    value: '[gs]et_[a-zA-Z_]+' }
+  # 类名是PASCAL风格，即首字母大写 如MyClass
+  - { key: readability-identifier-naming.ClassCase,                   value: CamelCase  }
+  - { key: readability-identifier-naming.StructCase,                  value: CamelCase  }
+  # 常量用k作为前缀后面是PASCAL风格如 kFileName
+  - { key: readability-identifier-naming.GlobalConstantPrefix,        value: k }
+  - { key: readability-identifier-naming.GlobalConstantCase,          value: CamelCase }
+  # 全局变量用g作为前缀后面是PASCAL风格如 gFileName
+  - { key: readability-identifier-naming.GlobalVariablePrefix,        value: g }
+  - { key: readability-identifier-naming.GlobalVariableCase,          value: CamelCase }
+  # 接口类必须以Interface为后缀
+  - { key: readability-identifier-naming.AbstractClassSuffix,         value: Interface }
+  # 宏定义全大写，中间用下划线隔开 FILE_NAME
+  - { key: readability-identifier-naming.MacroDefinitionCase,         value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumConstantCase,            value: CamelCase  }
+  - { key: readability-identifier-naming.EnumConstantPrefix,          value: k          }
+  - { key: readability-identifier-naming.GlobalFunctionCase,          value: CamelCase  }
+
+#  - { key: readability-identifier-naming.NamespaceCase,          value: aNy_CasE }
+#  - { key: readability-identifier-naming.TemplateParameterCase,  value: aNy_CasE  }
+#  - { key: readability-identifier-naming.ConstexprVariableCase,    value: aNy_CasE }
+#  - { key: readability-identifier-naming.ConstexprVariablePrefix,  value: k         }
+#  - { key: readability-identifier-naming.GlobalConstantCase,       value: aNy_CasE }
+#  - { key: readability-identifier-naming.GlobalConstantPrefix,     value: k         }
+#  - { key: readability-identifier-naming.MemberConstantCase,       value: aNy_CasE }
+#  - { key: readability-identifier-naming.MemberConstantPrefix,     value: k         }
+#  - { key: readability-identifier-naming.StaticConstantCase,       value: aNy_CasE }
+#  - { key: readability-identifier-naming.StaticConstantPrefix,     value: k         }
+#  - { key: readability-implicit-bool-conversion.AllowIntegerConditions,  value: 1   }
+#  - { key: readability-implicit-bool-conversion.AllowPointerConditions,  value: 1   }
+#  - { key: readability-function-cognitive-complexity.IgnoreMacros,  value: 1   }
+
+# reference: https://clang.llvm.org/extra/clang-tidy/checks/list.html

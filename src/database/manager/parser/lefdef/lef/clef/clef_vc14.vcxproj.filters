@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Public Header Files">
+      <UniqueIdentifier>{aeafd166-99c9-4db0-980e-075fa5f41e06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{a6f2e3ed-ea59-4cda-afe8-7504fa2a0ba3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="lefiArray.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiCrossTalk.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiDebug.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiEncryptInt.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiLayer.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiMacro.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiMisc.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiNonDefault.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiProp.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiPropType.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiTypedefs.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiUnits.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiUser.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiUtil.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiVia.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiViaRule.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefMsgTable.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefrReader.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefwWriter.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefwWriterCalls.h">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="xlefiArray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiCrossTalk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiEncryptInt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiLayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiMacro.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiMisc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiNonDefault.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiProp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiPropType.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiUnits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiVia.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefiViaRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefrReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefwWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xlefwWriterCalls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

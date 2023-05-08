@@ -1,0 +1,21 @@
+{
+    "INPUT": {
+        "tech_lef_path": "<tech_lef_path>",
+        "lef_paths": [
+            "<lef_path1>",
+            "<lef_path2>",
+            "<lef_path3>"
+        ],
+        "def_path": "<def_path>",
+        "verilog_path": "<verilog_path>",
+        "lib_path": [
+            "<lib_path1>",
+            "<lib_path2>",
+            "<lib_path3>"
+        ],
+        "sdc_path": "<sdc_path>"
+    },
+    "OUTPUT": {
+        "output_dir_path": "<output_dir>"
+    }
+}

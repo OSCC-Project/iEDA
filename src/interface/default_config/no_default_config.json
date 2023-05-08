@@ -1,0 +1,19 @@
+{
+    "file_path": {
+        "design_work_space": "path",
+        "sdc_file": "path",
+        "lib_files": [
+            "path1",
+            "path2"
+        ],
+        "lef_files": [
+            "path1",
+            "path2"
+        ],
+        "def_file": "path",
+        "output_def": "path",
+        "report_file": "path"
+    },
+    "insert_buffer": "LVT_BUFHDV8",
+    "max_fanout": 30
+}

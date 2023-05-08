@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Private Header Files">
+      <UniqueIdentifier>{7db7d450-9f3b-44b0-8580-363ef0601fb9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public Header Files">
+      <UniqueIdentifier>{aeafd166-99c9-4db0-980e-075fa5f41e06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{a6f2e3ed-ea59-4cda-afe8-7504fa2a0ba3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="crypt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="crypt.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="lef.tab.h">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="lef.y">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lef_keywords.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lefiArray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiArray.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiCrossTalk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiCrossTalk.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiDebug.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiDefs.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiEncryptInt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiEncryptInt.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiKRDefs.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiLayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiLayer.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiMacro.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiMacro.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiMisc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiMisc.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiNonDefault.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiNonDefault.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiProp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiProp.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiPropType.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiPropType.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiTBExt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lefiUnits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiUnits.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiUser.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lefiUtil.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiVia.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiVia.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefiViaRule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefiViaRule.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefrCallbacks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="lefrCallBacks.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="lefrData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="lefrData.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="lefrReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefrReader.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefrSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="lefrSettings.hpp">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="lefwWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefwWriter.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="lefwWriterCalls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="lefwWriterCalls.hpp">
+      <Filter>Public Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="lex.h">
+      <Filter>Private Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

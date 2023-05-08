@@ -1,0 +1,10 @@
+{
+    "INPUT": {
+        "tech_lef_path": "",
+        "lef_paths": "",
+        "def_path": ""
+    },
+    "OUTPUT": {
+        "output_dir_path": "./result/drc"
+    }
+}

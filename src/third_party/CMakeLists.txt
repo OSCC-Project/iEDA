@@ -1,0 +1,5 @@
+add_compile_options(-w)
+add_subdirectory(libfort)
+add_subdirectory(flute3)
+add_subdirectory(pybind11)
+add_subdirectory(abseil-cpp)

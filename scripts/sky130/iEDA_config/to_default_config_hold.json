@@ -1,0 +1,32 @@
+{
+    "file_path": {
+        "design_work_space": "./result/to",
+        "sdc_file": "",
+        "lib_files": "",
+        "lef_files": "",
+        "def_file": "path",
+        "output_def": "./result/to/ito_result.def",
+        "report_file": "./result/to/report.txt",
+        "gds_file": "./result/to/to.gds"
+    },
+    "setup_slack_margin": 0.0,
+    "hold_slack_margin": 0.0,
+    "max_buffer_percent": 0.4,
+    "max_utilization": 0.8,
+    "fix_fanout": false,
+    "optimize_drv": false,
+    "optimize_hold": true,
+    "optimize_setup": false,
+    "DRV_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "setup_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "hold_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "number_passes_allowed_decreasing_slack": 5,
+    "rebuffer_max_fanout": 20,
+    "split_load_min_fanout": 8
+}

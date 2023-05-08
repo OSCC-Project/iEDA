@@ -1,0 +1,43 @@
+{
+    "file_path": {
+        "read_cts_data": "ON",
+        "write_cts_data": "ON",
+        "cts_data_file": "<path>",
+        "sta_work_dir": "<path>",
+        "log_file": "<path>",
+        "gds_file": "<path>"
+    },
+    "router_type": "ZST",
+    "delay_type": "elmore",
+    "skew_bound": 2000,
+    "cluster_type": "kmeans",
+    "cluster_size": 8,
+    "buffer_type": "LVT_CLKBUFHDV8",
+    "use_netlist": "ON",
+    "net_list": [
+        {
+            "clock_name": "CLK_u0_chiplink_rx_clk_pad_PAD",
+            "net_name": "chiplink_rx_clk"
+        },
+        {
+            "clock_name": "CLK_u0_clk_XC",
+            "net_name": "clk_core"
+        },
+        {
+            "clock_name": "CLK_u1_clk_XC",
+            "net_name": "clk_hs_peri"
+        },
+        {
+            "clock_name": "CLK_u0_clk_XC",
+            "net_name": "clk_peri"
+        },
+        {
+            "clock_name": "CLK_u2_clk_XC",
+            "net_name": "sdram_clk_o"
+        },
+        {
+            "clock_name": "CLK_u0_clk_XC",
+            "net_name": "sys_clk_25m_buf"
+        }
+    ]
+}
