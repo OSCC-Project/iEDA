@@ -4,9 +4,6 @@
  * @brief cmd to read a vcd.
  * @version 0.1
  * @date 2023-05-04
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PowerShellCmd.hh"

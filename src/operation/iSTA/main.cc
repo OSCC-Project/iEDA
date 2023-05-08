@@ -4,9 +4,6 @@
  * @brief The main function of sta.
  * @version 0.1
  * @date 2020-11-23
- *
- * @copyright Copyright (c) 2020
- *
  */
 #include <gflags/gflags.h>
 // #include <gperftools/heap-profiler.h>

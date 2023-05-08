@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2021-10-12
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "ShellCmd.hh"
 #include "sta/Sta.hh"

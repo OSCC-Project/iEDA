@@ -4,9 +4,6 @@
  * @brief Dump the seq graph for debug.
  * @version 0.1
  * @date 2023-03-06
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PwrDumpSeqGraph.hh"

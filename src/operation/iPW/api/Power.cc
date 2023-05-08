@@ -4,9 +4,6 @@
  * @brief The top class of power analysis, should include the api wrapper etc.
  * @version 0.1
  * @date 2023-01-02
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "Power.hh"

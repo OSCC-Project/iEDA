@@ -4,9 +4,6 @@
  * @brief The implemention of timing arc.
  * @version 0.1
  * @date 2021-02-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "StaArc.hh"
 

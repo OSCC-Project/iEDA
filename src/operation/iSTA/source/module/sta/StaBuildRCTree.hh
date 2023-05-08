@@ -4,9 +4,6 @@
  * @brief The class of build rc tree.
  * @version 0.1
  * @date 2021-04-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

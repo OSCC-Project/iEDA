@@ -4,9 +4,6 @@
  * @brief The set_input_transition constrain implemention.
  * @version 0.1
  * @date 2021-04-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "SdcSetInputTransition.hh"
 

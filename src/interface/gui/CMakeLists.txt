@@ -22,7 +22,6 @@ set(CMAKE_AUTORCC ON)
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fexec-charset=GBK")
 # set(CMAKE_PREFIX_PATH "/opt/Qt/5.15.2/gcc_64") 
-# set(CMAKE_PREFIX_PATH "/home/huangzengrong/Qt/5.15.2/gcc_64") 
 # set(Qt5_DIR ${CMAKE_PREFIX_PATH}/lib/cmake/Qt5)
 # set(Qt5Widgets_DIR ${CMAKE_PREFIX_PATH}/lib/cmake/Qt5Widgets)
 find_package(Qt5 COMPONENTS Core Xml Widgets REQUIRED)
@@ -256,4 +255,4 @@ endif()
 
 
 #     add_subdirectory(${IDB_HOME} idb.out)
-SET(CMAKE_BUILD_TYPE "Release")
+# SET(CMAKE_BUILD_TYPE "Release")

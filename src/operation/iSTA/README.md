@@ -31,7 +31,8 @@
 > ## Example of how to use the iSTA tool
 
 ### Write the tcl file(run_ista.tcl)
-The example tcl file path:~/irefactor/src/operation/iSTA/source/data/example1/run_ista.tcl
+
+The example tcl file path: src/operation/iSTA/source/data/example1/run_ista.tcl
 
 #### Set the timing report output path
 
@@ -89,11 +90,11 @@ The timing report will be under the timing report output path set in the first s
 - top_hold.skew（report clock skew in hold mode)
 - top_setup.skew（report clock skew in setup mode）
 
-### Build iSTA（iSTA path:~/irefactor/bin/）
+### Build iSTA（iSTA path: bin/）
 
 ### Run the tcl file with iSTA
 
 ```bash
- cd ~/irefactor/bin/
+ cd bin/
  ./iSTA run_ista.tcl
 ```

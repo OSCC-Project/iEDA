@@ -4,16 +4,14 @@
  * @brief The ArrayList container for the eda project.
  * @version 0.1
  * @date 2020-10-20
- *
- * @copyright Copyright (c) 2020
- *
  */
 #pragma once
 
-//#include "List.h"
+// #include "List.h"
 namespace ieda {
 template <class T, int init = 10>
-class ArrayList {
+class ArrayList
+{
   int _size;
   int _capacity;
   T** _params;
@@ -34,19 +32,22 @@ class ArrayList {
   T* remove(int index);
   class Iterator;
   friend class Iterator;
-  class Iterator {
+  class Iterator
+  {
     ArrayList& al;
     int index;
 
    public:
     Iterator(ArrayList& list) : al(list), index(0) {}
-    bool hasNext() {
+    bool hasNext()
+    {
       if (index < al._size) {
         return true;
       }
       return false;
     }
-    T* next() {
+    T* next()
+    {
       if (hasNext()) {
         return al._params[index++];
       }
@@ -56,7 +57,8 @@ class ArrayList {
 };
 
 template <class T, int init>
-ArrayList<T, init>::~ArrayList() {
+ArrayList<T, init>::~ArrayList()
+{
   delete[] _params;
 }
 /**
@@ -67,11 +69,13 @@ ArrayList<T, init>::~ArrayList() {
  * @tparam init
  */
 template <class T, int init>
-void ArrayList<T, init>::grow() {
+void ArrayList<T, init>::grow()
+{
   if (_size == _capacity) {
     _capacity *= 1.5;
     T** newparams = new T*[_capacity];
-    for (int i = 0; i < _size; i++) newparams[i] = _params[i];
+    for (int i = 0; i < _size; i++)
+      newparams[i] = _params[i];
     delete[] _params;
     _params = newparams;
   }
@@ -86,7 +90,8 @@ void ArrayList<T, init>::grow() {
  * @return false
  */
 template <class T, int init>
-bool ArrayList<T, init>::add(T* e) {
+bool ArrayList<T, init>::add(T* e)
+{
   grow();
   _params[_size++] = e;
   return true;
@@ -101,7 +106,8 @@ bool ArrayList<T, init>::add(T* e) {
  * @return int
  */
 template <class T, int init>
-int ArrayList<T, init>::contains(T* e) {
+int ArrayList<T, init>::contains(T* e)
+{
   for (int i = 0; i < _size; i++) {
     if (get(i) == e) {
       return i;
@@ -117,7 +123,8 @@ int ArrayList<T, init>::contains(T* e) {
  * @return int
  */
 template <class T, int init>
-int ArrayList<T, init>::capacity() {
+int ArrayList<T, init>::capacity()
+{
   return _capacity;
 }
 /**
@@ -128,11 +135,13 @@ int ArrayList<T, init>::capacity() {
  * @return int
  */
 template <class T, int init>
-int ArrayList<T, init>::size() {
+int ArrayList<T, init>::size()
+{
   return _size;
 }
 template <class T, int init>
-bool ArrayList<T, init>::remove(T* e) {
+bool ArrayList<T, init>::remove(T* e)
+{
   int index = contains(e);
   if (index != -1) {
     remove(index);
@@ -141,7 +150,8 @@ bool ArrayList<T, init>::remove(T* e) {
   return false;
 }
 template <class T, int init>
-bool ArrayList<T, init>::isEmpty() {
+bool ArrayList<T, init>::isEmpty()
+{
   if (_size == 0) {
     return true;
   } else {
@@ -157,8 +167,10 @@ bool ArrayList<T, init>::isEmpty() {
  * @param e
  */
 template <class T, int init>
-void ArrayList<T, init>::add(int index, T* e) {
-  if (index > _size) return;
+void ArrayList<T, init>::add(int index, T* e)
+{
+  if (index > _size)
+    return;
   _size = _size + 1;
   grow();
   for (int i = _size - 1; i > index; i--) {
@@ -175,7 +187,8 @@ void ArrayList<T, init>::add(int index, T* e) {
  * @return T*
  */
 template <class T, int init>
-T* ArrayList<T, init>::get(int index) {
+T* ArrayList<T, init>::get(int index)
+{
   if (index < 0 || index >= _size) {
     return 0;
   }
@@ -190,7 +203,8 @@ T* ArrayList<T, init>::get(int index) {
  * @return T*
  */
 template <class T, int init>
-T* ArrayList<T, init>::remove(int index) {
+T* ArrayList<T, init>::remove(int index)
+{
   if (index < 0 || index >= _size) {
     return 0;
   }

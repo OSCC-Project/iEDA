@@ -4,7 +4,6 @@
  * @brief SubFlow, Filler;
  * @version 0.1
  * @date 2022-4-1
- * @copyright Copyright (c) 2022 PCNL EDA.
  **/
 
 #include "MapFiller.h"

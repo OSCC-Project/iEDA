@@ -4,9 +4,6 @@
  * @brief The implemention of power graph.
  * @version 0.1
  * @date 2023-01-19
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "PwrGraph.hh"
 

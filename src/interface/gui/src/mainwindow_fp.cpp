@@ -38,7 +38,7 @@ void MainWindow::createMenuFloorplan() {
 
   //   QMenu* row = floorplanMenu->addMenu(tr("Ro&w"));
   //   toolsActions <<
-  //   floorplanMenu->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/floorplanToolBox.png"),
+  //   floorplanMenu->addAction(QIcon("./iEDA/src/iGUI/res/icon/floorplanToolBox.png"),
   //                                            tr("&Floorplan Toolbox"), this, &MainWindow::floorplanToolbox);
   //   floorplanMenu->addAction(tr("Trace &Macro"), this, &MainWindow::traceMacro);
   //   floorplanMenu->addAction(tr("Macro &Timing Slack Display"), this, &MainWindow::macroTimingSlackDisplay);
@@ -46,15 +46,15 @@ void MainWindow::createMenuFloorplan() {
   //   editFloorplan->addAction(QIcon(), tr("&Cut Rectilinear"), this, &MainWindow::cutRectilinear);
   //   editFloorplan->addSeparator();
   //   toolBoxActions->addAction(
-  //       editFloorplan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/sizeBlock.png"),
+  //       editFloorplan->addAction(QIcon("./iEDA/src/iGUI/res/icon/sizeBlock.png"),
   //                                tr("Cre&ate Size Blockage"), this, &MainWindow::createSizeBlockage));
   //   toolBoxActions->addAction(
-  //       editFloorplan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/placementBlock.png"),
+  //       editFloorplan->addAction(QIcon("./iEDA/src/iGUI/res/icon/placementBlock.png"),
   //                                tr("Crea&te Placement Blockage"), this, &MainWindow::createPlacementBlockage));
   //   toolBoxActions->addAction(
-  //       editFloorplan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/routeBlock.png"),
+  //       editFloorplan->addAction(QIcon("./iEDA/src/iGUI/res/icon/routeBlock.png"),
   //                                tr("Create &Routing Blockage"), this, &MainWindow::createRoutingBlockage));
-  //   editFloorplan->addAction(QIcon("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/pinBlock.png"),
+  //   editFloorplan->addAction(QIcon("./iEDA/src/iGUI/res/icon/pinBlock.png"),
   //                            tr("Create P&in Blockage"), this, &MainWindow::createPinBlockage);
 
   //   floorplanMenu->addAction(tr("Sna&p Floorplan"), this, &MainWindow::snapFloorplan, tr("Ctrl+N"));

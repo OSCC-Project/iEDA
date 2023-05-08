@@ -1,12 +1,9 @@
 /**
  * @file DelayCalc.h
- * @author LH (you@domain.com)
+ * @author LH (liuh0326@163.com)
  * @brief The class of elmore delay calc method.
  * @version 0.1
  * @date 2021-01-27
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

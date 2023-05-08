@@ -13,7 +13,6 @@
  * Store instance
  * @version 0.1
  * @date 2021-4-1
- * @copyright Copyright (c) 2021 PCNL EDA.
  **/
 #include "MacroPlacer.hh"
 

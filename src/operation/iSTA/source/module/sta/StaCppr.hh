@@ -5,9 +5,6 @@
  * common launch/latch clock path point.
  * @version 0.1
  * @date 2021-03-24
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

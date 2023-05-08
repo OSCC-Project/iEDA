@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2022-07-13
- *
- * @copyright Copyright (c) 2022
- *
  */
 #pragma once
 
@@ -18,7 +15,8 @@ namespace ista {
  * @brief The top Liberty class, would provide the API to other tools.
  *
  */
-class LibertyCompiler {
+class LibertyCompiler
+{
  public:
   static LibertyCompiler* getOrCreateLibertyCompiler();
   static void destroyLibertyCompiler();
@@ -31,15 +29,14 @@ class LibertyCompiler {
 
   LibertyCell* findLibertyCell(const char* cell_name);
 
-  void addLib(std::unique_ptr<LibertyLibrary> lib) {
+  void addLib(std::unique_ptr<LibertyLibrary> lib)
+  {
     std::unique_lock<std::mutex> lk(_mt);
     _libs.emplace_back(std::move(lib));
   }
 
   // get library name: getOneLib()-> get_lib_name() { return _lib_name; }
-  LibertyLibrary* getOneLib() {
-    return _libs.empty() ? nullptr : _libs.back().get();
-  }
+  LibertyLibrary* getOneLib() { return _libs.empty() ? nullptr : _libs.back().get(); }
   Vector<std::unique_ptr<LibertyLibrary>>& getAllLib() { return _libs; }
 
   // attributes
@@ -49,19 +46,16 @@ class LibertyCompiler {
   std::string getLibDefaultwireloadmode(const char* lib_name);
 
   // equivCells
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
-                      std::vector<LibertyLibrary*>& map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs, std::vector<LibertyLibrary*>& map_libs);
   Vector<LibertyCell*>* equivCells(LibertyCell* cell);
 
  private:
   LibertyCompiler();
   ~LibertyCompiler();
 
-  unsigned _num_threads;  //!< The num of thread for propagation.
-  Vector<std::unique_ptr<LibertyLibrary>>
-      _libs;  //!< The design libs of different corners.
-  std::unique_ptr<LibertyEquivCells>
-      _equiv_cells;  //!< The function equivalently liberty cell.
+  unsigned _num_threads;                            //!< The num of thread for propagation.
+  Vector<std::unique_ptr<LibertyLibrary>> _libs;    //!< The design libs of different corners.
+  std::unique_ptr<LibertyEquivCells> _equiv_cells;  //!< The function equivalently liberty cell.
 
   std::mutex _mt;
 

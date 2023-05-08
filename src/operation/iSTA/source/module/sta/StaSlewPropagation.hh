@@ -4,9 +4,6 @@
  * @brief The slew propagation from input port.
  * @version 0.1
  * @date 2021-04-08
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

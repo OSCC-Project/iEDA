@@ -4,9 +4,6 @@
  * @brief The class of timing arc, which is used for static timing analysis.
  * @version 0.1
  * @date 2021-02-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

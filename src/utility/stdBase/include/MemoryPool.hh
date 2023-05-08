@@ -4,8 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2020-11-07
- *
- * @copyright Copyright (c) 2020 PCL EDA
  */
 
 #pragma once
@@ -25,7 +23,8 @@ namespace ieda {
  * @tparam T object type.
  */
 template <typename T>
-class ObjectPool : public boost::object_pool<T> {
+class ObjectPool : public boost::object_pool<T>
+{
  public:
   using Base = typename ObjectPool::object_pool;
   using size_type = typename Base::size_type;
@@ -52,7 +51,8 @@ class ObjectPool : public boost::object_pool<T> {
  * @tparam ES the element size.
  */
 template <typename TAG, unsigned ES>
-class SingletonPool : public boost::singleton_pool<TAG, ES> {
+class SingletonPool : public boost::singleton_pool<TAG, ES>
+{
  public:
   using Base = typename SingletonPool::singleton_pool;
   using Tag = TAG;
@@ -81,19 +81,17 @@ class SingletonPool : public boost::singleton_pool<TAG, ES> {
 };
 
 template <typename T>
-using PoolAllocator =
-    boost::pool_allocator<T>;  //!< pool allocator is used for allocate memory
-                               //!< for vector, that can be used for fast and
-                               //!< efficient memory allocation in conjunction
-                               //!< with the C++ Standard Library containers.
+using PoolAllocator = boost::pool_allocator<T>;  //!< pool allocator is used for allocate memory
+                                                 //!< for vector, that can be used for fast and
+                                                 //!< efficient memory allocation in conjunction
+                                                 //!< with the C++ Standard Library containers.
 
 template <typename T>
-using FastPoolAllocator = boost::fast_pool_allocator<
-    T>;  // pool_allocator is a more general-purpose solution, geared towards
-         // efficiently servicing requests for any number of contiguous
-         // chunks.fast_pool_allocator is also a general-purpose solution but is
-         // geared towards efficiently servicing requests for one chunk at a
-         // time; it will work for contiguous chunks, but not as well as
-         // pool_allocator.
+using FastPoolAllocator = boost::fast_pool_allocator<T>;  // pool_allocator is a more general-purpose solution, geared towards
+                                                          // efficiently servicing requests for any number of contiguous
+                                                          // chunks.fast_pool_allocator is also a general-purpose solution but is
+                                                          // geared towards efficiently servicing requests for one chunk at a
+                                                          // time; it will work for contiguous chunks, but not as well as
+                                                          // pool_allocator.
 
 }  // namespace ieda

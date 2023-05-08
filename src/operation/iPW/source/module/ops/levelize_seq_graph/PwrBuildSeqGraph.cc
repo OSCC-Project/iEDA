@@ -4,9 +4,6 @@
  * @brief Build the sequential graph.
  * @version 0.1
  * @date 2023-03-03
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PwrBuildSeqGraph.hh"

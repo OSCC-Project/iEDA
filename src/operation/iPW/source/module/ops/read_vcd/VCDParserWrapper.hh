@@ -4,9 +4,6 @@
  * @brief The class for vcd parser wrapper.
  * @version 0.1
  * @date 2023-01-10
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #pragma once

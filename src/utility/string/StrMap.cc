@@ -4,13 +4,11 @@
  * @brief
  * @version 0.1
  * @date 2020-11-27
- *
- * @copyright Copyright (c) 2020 PCL EDA
- *
  */
 
-#include "Str.hh"
 #include "StrMap.hh"
+
+#include "Str.hh"
 
 namespace ieda {
 
@@ -22,8 +20,8 @@ namespace ieda {
  * @return true if lhs < rhs
  * @return false if lhs >=rhs
  */
-bool StrCmp::operator()(const char* const& lhs, const char* const& rhs) const {
-  return Str::caseCmp(lhs, rhs) <
-         0;  // if lhs == rhs, should be false to satify partial order.
+bool StrCmp::operator()(const char* const& lhs, const char* const& rhs) const
+{
+  return Str::caseCmp(lhs, rhs) < 0;  // if lhs == rhs, should be false to satify partial order.
 }
 }  // namespace ieda

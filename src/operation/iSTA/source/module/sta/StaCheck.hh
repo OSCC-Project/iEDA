@@ -5,9 +5,6 @@
  * constrain missing and else etc.
  * @version 0.1
  * @date 2021-03-01
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

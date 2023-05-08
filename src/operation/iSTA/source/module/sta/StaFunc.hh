@@ -4,9 +4,6 @@
  * @brief The sta functor class.
  * @version 0.1
  * @date 2021-02-17
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

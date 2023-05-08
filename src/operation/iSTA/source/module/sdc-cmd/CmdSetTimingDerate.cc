@@ -4,9 +4,6 @@
  * @brief The sdc set_timing_derate cmd implemention.
  * @version 0.1
  * @date 2021-09-21
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "Cmd.hh"
 #include "sdc/SdcConstrain.hh"

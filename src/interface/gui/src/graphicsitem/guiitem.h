@@ -8,7 +8,7 @@
  * @version 0.2
  * @date 2021-07-02(V0.1), 2021-08-01(V0.2)
  *
- * @copyright Copyright (c) 2021 PCNL
+ *
  *
  */
 

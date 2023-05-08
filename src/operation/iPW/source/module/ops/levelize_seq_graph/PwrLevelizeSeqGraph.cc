@@ -4,9 +4,6 @@
  * @brief Ranking of sequential logic units.
  * @version 0.1
  * @date 2023-02-27
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PwrLevelizeSeqGraph.hh"

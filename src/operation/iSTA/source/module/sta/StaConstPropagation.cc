@@ -4,9 +4,6 @@
  * @brief The implemention of const propagation.
  * @version 0.1
  * @date 2021-03-04
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "StaConstPropagation.hh"

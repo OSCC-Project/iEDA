@@ -4,18 +4,18 @@
  * @brief
  * @version 0.1
  * @date 2022-07-14
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "LibertyCompiler.hh"
+
 #include "ThreadPool/ThreadPool.h"
 
 namespace ista {
 
 LibertyCompiler* LibertyCompiler::_liberty_compiler = nullptr;
 
-LibertyCompiler::LibertyCompiler() {}
+LibertyCompiler::LibertyCompiler()
+{
+}
 LibertyCompiler::~LibertyCompiler() = default;
 
 /**
@@ -23,7 +23,8 @@ LibertyCompiler::~LibertyCompiler() = default;
  *
  * @return LibertyCompiler*
  */
-LibertyCompiler* LibertyCompiler::getOrCreateLibertyCompiler() {
+LibertyCompiler* LibertyCompiler::getOrCreateLibertyCompiler()
+{
   static std::mutex mt;
   if (_liberty_compiler == nullptr) {
     std::lock_guard<std::mutex> lock(mt);
@@ -38,7 +39,8 @@ LibertyCompiler* LibertyCompiler::getOrCreateLibertyCompiler() {
  * @brief Destory the LibertyCompiler.
  *
  */
-void LibertyCompiler::destroyLibertyCompiler() {
+void LibertyCompiler::destroyLibertyCompiler()
+{
   delete _liberty_compiler;
   _liberty_compiler = nullptr;
 }
@@ -49,7 +51,8 @@ void LibertyCompiler::destroyLibertyCompiler() {
  * @param lib_file
  * @return unsigned
  */
-unsigned LibertyCompiler::readLiberty(const char* lib_file) {
+unsigned LibertyCompiler::readLiberty(const char* lib_file)
+{
   Liberty lib;
   auto load_lib = lib.loadLiberty(lib_file);
   addLib(std::move(load_lib));
@@ -63,8 +66,8 @@ unsigned LibertyCompiler::readLiberty(const char* lib_file) {
  * @param lib_files
  * @return unsigned
  */
-unsigned LibertyCompiler::readLiberty(
-    const std::vector<const char*>& lib_files) {
+unsigned LibertyCompiler::readLiberty(const std::vector<const char*>& lib_files)
+{
   LOG_INFO << "load lib start";
 
 #if 0
@@ -95,7 +98,8 @@ unsigned LibertyCompiler::readLiberty(
  * @param cell_name
  * @return LibertyCell*
  */
-LibertyCell* LibertyCompiler::findLibertyCell(const char* cell_name) {
+LibertyCell* LibertyCompiler::findLibertyCell(const char* cell_name)
+{
   LibertyCell* found_cell = nullptr;
   for (auto& lib : _libs) {
     if (found_cell = lib->findCell(cell_name); found_cell) {
@@ -142,8 +146,8 @@ std::string LibertyCompiler::getLibDefaultwireloadmode(const char* lib_name) {
  * @param equiv_libs
  * @param map_libs
  */
-void LibertyCompiler::makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
-                                     std::vector<LibertyLibrary*>& map_libs) {
+void LibertyCompiler::makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs, std::vector<LibertyLibrary*>& map_libs)
+{
   if (_equiv_cells) {
     _equiv_cells.reset();
   }
@@ -157,7 +161,8 @@ void LibertyCompiler::makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
  * @param cell
  * @return Vector<LibertyCell *>*
  */
-Vector<LibertyCell*>* LibertyCompiler::equivCells(LibertyCell* cell) {
+Vector<LibertyCell*>* LibertyCompiler::equivCells(LibertyCell* cell)
+{
   if (_equiv_cells)
     return _equiv_cells->equivs(cell);
   else

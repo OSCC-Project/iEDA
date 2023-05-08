@@ -4,9 +4,6 @@
  * @brief Set timing derate for ocv analysis.
  * @version 0.1
  * @date 2021-09-24
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 

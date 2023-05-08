@@ -4,9 +4,6 @@
  * @brief The functor of build sta graph from the design netlist.
  * @version 0.1
  * @date 2021-08-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

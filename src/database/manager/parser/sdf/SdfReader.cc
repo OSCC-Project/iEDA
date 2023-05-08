@@ -4,63 +4,68 @@
  * @brief
  * @version 0.1
  * @date 2021-07-28
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "SdfReader.hh"
-#include "string/Str.hh"
 
+#include "string/Str.hh"
 
 extern int SdfParse_parse();
 
 namespace ista {
 
-SdfTripleValue::SdfTripleValue(std::array<std::optional<float>, 3> triple_value)
-    : _triple_value(triple_value) {}
+SdfTripleValue::SdfTripleValue(std::array<std::optional<float>, 3> triple_value) : _triple_value(triple_value)
+{
+}
 
-SdfPortSpec::SdfPortSpec(const char* port_name) : _port_name(port_name) {}
+SdfPortSpec::SdfPortSpec(const char* port_name) : _port_name(port_name)
+{
+}
 
-SdfPortSpec::~SdfPortSpec() {
+SdfPortSpec::~SdfPortSpec()
+{
   Str::free(_port_name);
   Str::free(_sdf_condition);
 }
 
-SdfPortInstance::SdfPortInstance(const char* port_instance_name)
-    : _port_instance_name(port_instance_name) {}
+SdfPortInstance::SdfPortInstance(const char* port_instance_name) : _port_instance_name(port_instance_name)
+{
+}
 
-SdfPortInstance::~SdfPortInstance() {
+SdfPortInstance::~SdfPortInstance()
+{
   Str::free(_port_instance_name);
   _port_instance_name = nullptr;
 }
 
-SdfTimingCheckDef::SdfTimingCheckDef(SdfCheckType sdf_check_type,
-                                     SdfPortSpec&& snk_port_tchk,
-                                     SdfPortSpec&& src_port_tchk,
-                                     SdfTripleValue value0,
-                                     std::optional<SdfTripleValue> value1)
+SdfTimingCheckDef::SdfTimingCheckDef(SdfCheckType sdf_check_type, SdfPortSpec&& snk_port_tchk, SdfPortSpec&& src_port_tchk,
+                                     SdfTripleValue value0, std::optional<SdfTripleValue> value1)
     : _sdf_check_type(sdf_check_type),
       _snk_port_tchk(snk_port_tchk),
       _src_port_tchk(src_port_tchk),
       _value0(std::move(value0)),
-      _value1(std::move(value1)) {}
+      _value1(std::move(value1))
+{
+}
 
-SdfIOPathDelayTimingSpec::SdfIOPathDelayTimingSpec(
-    SdfPortSpec* src_port_spec, SdfPortInstance* snk_port_instance)
-    : _src_port_spec(src_port_spec), _snk_port_instance(snk_port_instance) {}
+SdfIOPathDelayTimingSpec::SdfIOPathDelayTimingSpec(SdfPortSpec* src_port_spec, SdfPortInstance* snk_port_instance)
+    : _src_port_spec(src_port_spec), _snk_port_instance(snk_port_instance)
+{
+}
 
-SdfIOPathDelayTimingSpec::~SdfIOPathDelayTimingSpec() {
+SdfIOPathDelayTimingSpec::~SdfIOPathDelayTimingSpec()
+{
   Str::free(_cond);
   _cond = nullptr;
 }
 
-SdfCheckTimingSpec::SdfCheckTimingSpec(
-    std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs)
-    : _tchk_defs(std::move(tchk_defs)) {}
+SdfCheckTimingSpec::SdfCheckTimingSpec(std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs) : _tchk_defs(std::move(tchk_defs))
+{
+}
 
-SdfReader::SdfReader(const char* file_name)
-    : _file_name(file_name), _parse_timing_check(0) {}
+SdfReader::SdfReader(const char* file_name) : _file_name(file_name), _parse_timing_check(0)
+{
+}
 
 /**
  * @brief Make the triple value.
@@ -68,8 +73,8 @@ SdfReader::SdfReader(const char* file_name)
  * @param triple_value
  * @return SdfTripleValue*
  */
-SdfTripleValue* SdfReader::makeTriple(
-    std::array<std::optional<float>, 3> triple_value) {
+SdfTripleValue* SdfReader::makeTriple(std::array<std::optional<float>, 3> triple_value)
+{
   auto* sdf_triple_value = new SdfTripleValue(triple_value);
   return sdf_triple_value;
 }
@@ -80,7 +85,8 @@ SdfTripleValue* SdfReader::makeTriple(
  * @param port_name
  * @return SdfPortSpec*
  */
-SdfPortSpec* SdfReader::makePortSpec(const char* port_name) {
+SdfPortSpec* SdfReader::makePortSpec(const char* port_name)
+{
   auto* sdf_port_spec = new SdfPortSpec(port_name);
   return sdf_port_spec;
 }
@@ -89,14 +95,15 @@ SdfPortSpec* SdfReader::makePortSpec(const char* port_name) {
  * @brief Make the port spec include posedge or negedge.
  *
  */
-SdfPortSpec* SdfReader::makePortSpec(
-    SdfPortSpec::TransitionType transition_type, const char* port_name) {
+SdfPortSpec* SdfReader::makePortSpec(SdfPortSpec::TransitionType transition_type, const char* port_name)
+{
   auto* sdf_port_spec = new SdfPortSpec(port_name);
   sdf_port_spec->set_transition_type(transition_type);
   return sdf_port_spec;
 }
 
-SdfPortInstance* SdfReader::makePortInstance(const char* port_instance_name) {
+SdfPortInstance* SdfReader::makePortInstance(const char* port_instance_name)
+{
   auto* port_instance = new SdfPortInstance(port_instance_name);
   return port_instance;
 }
@@ -112,13 +119,11 @@ SdfPortInstance* SdfReader::makePortInstance(const char* port_instance_name) {
  * @param value1 setup/hold include value1.
  * @return SdfTimingCheckDef*
  */
-SdfTimingCheckDef* SdfReader::makeTimingCheckDef(
-    SdfTimingCheckDef::SdfCheckType sdf_check_type, SdfPortSpec snk_port_tchk,
-    SdfPortSpec src_port_tchk, SdfTripleValue value0,
-    std::optional<SdfTripleValue> value1) {
-  auto* sdf_timing_check_def = new SdfTimingCheckDef(
-      sdf_check_type, std::move(snk_port_tchk), std::move(src_port_tchk),
-      std::move(value0), std::move(value1));
+SdfTimingCheckDef* SdfReader::makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType sdf_check_type, SdfPortSpec snk_port_tchk,
+                                                 SdfPortSpec src_port_tchk, SdfTripleValue value0, std::optional<SdfTripleValue> value1)
+{
+  auto* sdf_timing_check_def
+      = new SdfTimingCheckDef(sdf_check_type, std::move(snk_port_tchk), std::move(src_port_tchk), std::move(value0), std::move(value1));
   return sdf_timing_check_def;
 }
 
@@ -128,8 +133,8 @@ SdfTimingCheckDef* SdfReader::makeTimingCheckDef(
  * @param tchk_defs
  * @return SdfTimingSpec*
  */
-SdfTimingSpec* SdfReader::makeTimingSpec(
-    std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs) {
+SdfTimingSpec* SdfReader::makeTimingSpec(std::vector<std::unique_ptr<SdfTimingCheckDef>>&& tchk_defs)
+{
   auto* timing_spec = new SdfCheckTimingSpec(std::move(tchk_defs));
   return timing_spec;
 }

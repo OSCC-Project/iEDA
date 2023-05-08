@@ -6,9 +6,6 @@
  * @brief check net connectivity
  * @version 0.1
  * @date 2023-03-01
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include <boost/graph/adjacency_list.hpp>

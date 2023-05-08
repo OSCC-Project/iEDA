@@ -4,9 +4,6 @@
  * @brief annotate toggle and SP implemention.
  * @version 0.1
  * @date 2023-02-09
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "AnnotateToggleSP.hh"
 

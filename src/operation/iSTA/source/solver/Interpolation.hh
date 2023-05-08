@@ -5,7 +5,6 @@
  * @version 0.1
  * @date 2021-06-29
  *
- * @copyright Copyright (c) 2021 PCL iEDA
  *
  */
 

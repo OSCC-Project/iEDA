@@ -5,7 +5,7 @@
  * @version 0.1
  * @date 2021-07-02
  * 
- * @copyright Copyright (c) 2021
+ *
  * 
  */
 
@@ -18,7 +18,7 @@
 void GuiTreeItemColumn::loadConfig() {
   QJsonArray json_arr =
       //   GuiJSONParser::parseJsonArrary(":/conf/ItemColumn.json");
-      GuiJSONParser::parseJsonArrary("/home/huangzengrong/Project/iEDA/src/iGUI/res/conf/ItemColumn.json");
+      GuiJSONParser::parseJsonArrary("./iEDA/src/iGUI/res/conf/ItemColumn.json");
   QJsonArray::iterator iterator;
   for (iterator = json_arr.begin(); iterator != json_arr.end(); ++iterator) {
     QJsonObject obj = (*iterator).toObject();

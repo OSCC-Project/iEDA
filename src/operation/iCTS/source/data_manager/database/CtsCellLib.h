@@ -65,6 +65,33 @@ class CtsCellLib {
     // #endif
     return calcLinearSlew(cap_out);
   }
+  
+  double calcInsertSlew(const double& slew_in, const double& cap_out) const
+  {
+    // slew_in index
+    auto it1 = std::upper_bound(_slew_in_span.begin(), _slew_in_span.end(), slew_in);
+    size_t i1 = std::clamp(static_cast<size_t>(std::distance(_slew_in_span.begin(), it1)), size_t{1}, _slew_in_span.size() - 1);
+    double slew_low = _slew_in_span[i1 - 1];
+    double slew_high = _slew_in_span[i1];
+
+    // cap_out index
+    auto it2 = std::upper_bound(_cap_out_span.begin(), _cap_out_span.end(), cap_out);
+    size_t i2 = std::clamp(static_cast<size_t>(std::distance(_cap_out_span.begin(), it2)), size_t{1}, _cap_out_span.size() - 1);
+    double cap_low = _cap_out_span[i2 - 1];
+    double cap_high = _cap_out_span[i2];
+
+    double y11 = _slew_values[(i1 - 1) * _cap_out_span.size() + i2 - 1];
+    double y12 = _slew_values[(i1 - 1) * _cap_out_span.size() + i2];
+    double y21 = _slew_values[i1 * _cap_out_span.size() + i2 - 1];
+    double y22 = _slew_values[i1 * _cap_out_span.size() + i2];
+
+    // insert value
+    double res = std::lerp(std::lerp(y11, y12, std::lerp(0.0, 1.0, (cap_out - cap_low) / (cap_high - cap_low))),
+                           std::lerp(y21, y22, std::lerp(0.0, 1.0, (cap_out - cap_low) / (cap_high - cap_low))),
+                           std::lerp(0.0, 1.0, (slew_in - slew_low) / (slew_high - slew_low)));
+
+    return res;
+  }
   double calcDelay(const double& slew_in, const double& cap_out) const {
 #ifdef PY_MODEL
     return _delay_lib_model->predict({slew_in, cap_out});

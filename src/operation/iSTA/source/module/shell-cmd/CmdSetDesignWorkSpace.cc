@@ -4,9 +4,6 @@
  * @brief The command for set the sta design workspace.
  * @version 0.1
  * @date 2021-12-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #include "ShellCmd.hh"

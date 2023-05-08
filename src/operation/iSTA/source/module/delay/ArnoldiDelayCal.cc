@@ -1,12 +1,9 @@
 /**
  * @file ArnoldiCal.cc
- * @author LH (you@domain.com)
+ * @author LH (liuh0326@163.com)
  * @brief
  * @version 0.1
  * @date 2021-07-04
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 // #include <gperftools/heap-checker.h>

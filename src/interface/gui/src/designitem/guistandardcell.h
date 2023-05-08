@@ -5,7 +5,7 @@
  * @version 0.2
  * @date 2021-07-06(V0.1), 2021-08-06(V0.2)
  *
- * @copyright Copyright (c) 2021
+ *
  *
  */
 #ifndef GUISTANDARDCELL_H

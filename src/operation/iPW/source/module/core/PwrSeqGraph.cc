@@ -4,9 +4,6 @@
  * @brief the sequential graph for labeling propagation levels.
  * @version 0.1
  * @date 2023-02-27
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "PwrSeqGraph.hh"

@@ -4,9 +4,6 @@
  * @brief Propagate clock vertexes.
  * @version 0.1
  * @date 2023-04-15
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #pragma once

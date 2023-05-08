@@ -1,19 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbLayer.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
 * @description
@@ -187,7 +174,7 @@ IdbLayer* IdbLayers::find_layer(const string& src_name, bool new_layer)
     return true;
   };
   for (IdbLayer* layer : _layers) {
-    if(equalIgnoreCase(src_name, layer->get_name())){
+    if (equalIgnoreCase(src_name, layer->get_name())) {
       return layer;
     }
   }
@@ -300,7 +287,7 @@ vector<IdbLayerCut*> IdbLayers::find_cut_layer_list(string layer_name_1, string 
 /**
  * @brief return a minspacing with given width and parallel_length
  a example from lefdef5.8
- * 
+ *
  SPACINGTABLE
 PARALLELRUNLENGTH 0.00 0.50 3.00 5.00
 #lengths must be increasing
@@ -310,30 +297,31 @@ WIDTH 1.500.15 0.50 0.50 0.50#max width>1.50
 WIDTH 3.000.15 0.50 1.00 1.00#max width>3.00        ==> width 5.000 stands here
 WIDTH 5.000.15 0.50 1.00 2.00 ;#max width>5.00
 
- * @param width 
- * @param parallel_length 
- * @return int32_t 
+ * @param width
+ * @param parallel_length
+ * @return int32_t
  */
-int32_t IdbParallelSpacingTable::get_spacing(int32_t width, int32_t parallel_length){
-  static auto search = [](vector<int32_t>& arr, int32_t target){
+int32_t IdbParallelSpacingTable::get_spacing(int32_t width, int32_t parallel_length)
+{
+  static auto search = [](vector<int32_t>& arr, int32_t target) {
     ssize_t l = 0;
-    ssize_t r = arr.size()-1;
-    while(l <= r){
-      ssize_t m = (l+r)/2;
-      if(arr[m] == target){
-        return m-1 >=0 ? m-1 : 0;
+    ssize_t r = arr.size() - 1;
+    while (l <= r) {
+      ssize_t m = (l + r) / 2;
+      if (arr[m] == target) {
+        return m - 1 >= 0 ? m - 1 : 0;
       }
-      if(arr[m] > target){
-        r = m-1;
-      }else{
-        l = m+1;
+      if (arr[m] > target) {
+        r = m - 1;
+      } else {
+        l = m + 1;
       }
     }
     return r;
   };
 
-  ssize_t iwidth = search(_width,width);
-  ssize_t ilength = search(_parallel_run_length,parallel_length);
+  ssize_t iwidth = search(_width, width);
+  ssize_t ilength = search(_parallel_run_length, parallel_length);
   return _spacing.at(iwidth).at(ilength);
 }
 

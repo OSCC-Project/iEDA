@@ -4,9 +4,6 @@
  * @brief The implemention of static timing analysis.
  * @version 0.1
  * @date 2021-03-14
- *
- * @copyright Copyright (c) 2021
- *
  */
 #include "StaAnalyze.hh"
 

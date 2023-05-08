@@ -1,19 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbGCellGrid.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
 * @description
@@ -30,38 +17,46 @@
 
 namespace idb {
 
-  IdbGCellGrid::IdbGCellGrid() {
-    _direction = IdbTrackDirection::kNone;
-    _start     = -1;
-    _num       = -1;
-    _space     = -1;
+IdbGCellGrid::IdbGCellGrid()
+{
+  _direction = IdbTrackDirection::kNone;
+  _start = -1;
+  _num = -1;
+  _space = -1;
+}
+
+IdbGCellGrid::~IdbGCellGrid()
+{
+}
+
+void IdbGCellGrid::set_direction(std::string direction)
+{
+  _direction = IdbEnum::GetInstance()->get_layer_property()->get_track_direction(direction);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+IdbGCellGridList::IdbGCellGridList()
+{
+  //   _gcell_vertical->set_direction(IdbTrackDirection::kDirectionX);
+  //   _gcell_horizontal = new IdbGCellGrid();
+  //   _gcell_horizontal->set_direction(IdbTrackDirection::kDirectionY);
+}
+
+IdbGCellGridList::~IdbGCellGridList()
+{
+}
+
+IdbGCellGrid* IdbGCellGridList::add_gcell_grid(IdbGCellGrid* gcell_grid)
+{
+  if (gcell_grid == nullptr) {
+    gcell_grid = new IdbGCellGrid();
   }
 
-  IdbGCellGrid::~IdbGCellGrid() { }
+  _gcelll_grid_list.emplace_back(gcell_grid);
 
-  void IdbGCellGrid::set_direction(std::string direction) {
-    _direction = IdbEnum::GetInstance()->get_layer_property()->get_track_direction(direction);
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IdbGCellGridList::IdbGCellGridList() {
-    //   _gcell_vertical->set_direction(IdbTrackDirection::kDirectionX);
-    //   _gcell_horizontal = new IdbGCellGrid();
-    //   _gcell_horizontal->set_direction(IdbTrackDirection::kDirectionY);
-  }
-
-  IdbGCellGridList::~IdbGCellGridList() { }
-
-  IdbGCellGrid* IdbGCellGridList::add_gcell_grid(IdbGCellGrid* gcell_grid) {
-    if (gcell_grid == nullptr) {
-      gcell_grid = new IdbGCellGrid();
-    }
-
-    _gcelll_grid_list.emplace_back(gcell_grid);
-
-    return gcell_grid;
-  }
+  return gcell_grid;
+}
 
 }  // namespace idb

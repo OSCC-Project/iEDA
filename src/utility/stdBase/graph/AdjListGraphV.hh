@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2020-11-23
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #pragma once
@@ -19,32 +16,35 @@ namespace ieda {
 
 class Edge;
 
-struct Vertex {
+struct Vertex
+{
  public:
   unsigned get_id() { return _id; }
   unsigned _id;
   int _indegree = 0;
   int _outdegree = 0;
-  Edge *next;
+  Edge* next;
 };
 
-struct Edge {
+struct Edge
+{
  public:
   unsigned get_id() { return _id; }
   unsigned _id;
   int adjvex = 0;
   int weight = 0;
-  Edge *next;
+  Edge* next;
 };
 
-class Graph {
+class Graph
+{
  private:
   int numVer;
   int numEdge;
 
-  Vector<Vertex> *adjVector;
+  Vector<Vertex>* adjVector;
 
-  bool *visited;
+  bool* visited;
   std::queue<int> que;
 
  public:

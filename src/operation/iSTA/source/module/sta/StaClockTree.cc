@@ -1,12 +1,9 @@
 /**
  * @file staClockTree.cc
  * @author shy long (longshy@pcl.ac.cn)
- * @brief
+ * @brief The implemention of clock tree for GUI show.
  * @version 0.1
  * @date 2023-03-27
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "StaClockTree.hh"
 

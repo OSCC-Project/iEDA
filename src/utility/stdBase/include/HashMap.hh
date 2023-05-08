@@ -4,9 +4,6 @@
  * @brief The hash map container for the eda project.
  * @version 0.1
  * @date 2020-10-09
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #pragma once
@@ -55,10 +52,10 @@ namespace ieda {
  * @tparam KEY Type of  key.
  * @tparam VALUE Type of value.
  */
-template <class KEY, class VALUE,
-          class HASH = typename absl::flat_hash_map<KEY, VALUE>::hasher,
+template <class KEY, class VALUE, class HASH = typename absl::flat_hash_map<KEY, VALUE>::hasher,
           class EQ = typename absl::flat_hash_map<KEY, VALUE>::key_equal>
-class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
+class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
+{
  public:
   using Base = typename HashMap::flat_hash_map;
   using iterator = typename Base::iterator;
@@ -121,7 +118,8 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
    *
    * @return std::list<KEY> All map keys.
    */
-  std::list<KEY> keys() const {
+  std::list<KEY> keys() const
+  {
     std::list<KEY> ret_value;
     for (auto p : *this) {
       ret_value.push_back(p.first);
@@ -134,7 +132,8 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
    *
    * @return std::list<VALUE> All map values.
    */
-  std::list<VALUE> values() const {
+  std::list<VALUE> values() const
+  {
     std::list<VALUE> ret_value;
     for (auto p : *this) {
       ret_value.push_back(p.second);
@@ -158,7 +157,8 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
    * @param default_value The default return value if not found.
    * @return const VALUE Return the found value.
    */
-  const VALUE value(const KEY key, const VALUE& default_value = VALUE()) const {
+  const VALUE value(const KEY key, const VALUE& default_value = VALUE()) const
+  {
     auto find_iter = this->find(key);
     if (find_iter != this->end()) {
       return find_iter->second;
@@ -173,13 +173,9 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
    * @param key
    * @param value
    */
-  void insert(const KEY& key, const VALUE& value) {
-    this->operator[](key) = value;
-  }
+  void insert(const KEY& key, const VALUE& value) { this->operator[](key) = value; }
 
-  void insert(const KEY&& key, const VALUE&& value) {
-    this->operator[](std::move(key)) = std::move(value);
-  }
+  void insert(const KEY&& key, const VALUE&& value) { this->operator[](std::move(key)) = std::move(value); }
 
   /**
    * @brief Java style container itererator.
@@ -190,32 +186,35 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
    * }
    *
    */
-  class Iterator {
+  class Iterator
+  {
    public:
     Iterator() = default;
     ~Iterator() = default;
-    explicit Iterator(HashMap<KEY, VALUE>* container) {
+    explicit Iterator(HashMap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    void init(HashMap<KEY, VALUE>* container) {
+    void init(HashMap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    Iterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    Iterator& next()
+    {
       ++_iter;
       return *this;
     }
-    void next(KEY* key, VALUE* value) {
+    void next(KEY* key, VALUE* value)
+    {
       *key = _iter->first;
       *value = _iter->second;
       _iter++;
@@ -234,33 +233,36 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
   };
   friend class Iterator;
 
-  class ConstIterator {
+  class ConstIterator
+  {
    public:
     ConstIterator() = default;
     ~ConstIterator() = default;
 
-    explicit ConstIterator(const HashMap<KEY, VALUE>* container) {
+    explicit ConstIterator(const HashMap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    void init(const HashMap<KEY, VALUE>* container) {
+    void init(const HashMap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    ConstIterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    ConstIterator& next()
+    {
       ++_iter;
       return *this;
     }
-    void next(KEY* key, VALUE* value) {
+    void next(KEY* key, VALUE* value)
+    {
       *key = _iter->first;
       *value = _iter->second;
       _iter++;
@@ -270,12 +272,8 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
     inline const VALUE& value() const { return _iter->second; }
     inline const VALUE& operator*() const { return _iter->value(); }
     inline const VALUE& operator->() const { return &_iter->value(); }
-    inline bool operator==(const ConstIterator& o) const {
-      return _iter == o._iter;
-    }
-    inline bool operator!=(const ConstIterator& o) const {
-      return _iter != o._iter;
-    }
+    inline bool operator==(const ConstIterator& o) const { return _iter == o._iter; }
+    inline bool operator!=(const ConstIterator& o) const { return _iter != o._iter; }
 
    private:
     const HashMap<KEY, VALUE>* _container = nullptr;
@@ -285,21 +283,20 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ> {
 };
 
 template <class KEY, class VALUE, class HASH, class EQ>
-inline void swap(
-    HashMap<KEY, VALUE, HASH, EQ>& x,
-    HashMap<KEY, VALUE, HASH, EQ>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(HashMap<KEY, VALUE, HASH, EQ>& x, HashMap<KEY, VALUE, HASH, EQ>& y) noexcept(noexcept(x.swap(y)))
+{
   x.swap(y);
 }
 
 template <class KEY, class VALUE, class HASH, class EQ>
-inline bool operator==(const HashMap<KEY, VALUE>& x,
-                       const HashMap<KEY, VALUE>& y) {
+inline bool operator==(const HashMap<KEY, VALUE>& x, const HashMap<KEY, VALUE>& y)
+{
   return static_cast<const typename HashMap<KEY, VALUE>::Base&>(x) == y;
 }
 
 template <class KEY, class VALUE, class HASH, class EQ>
-inline bool operator!=(const HashMap<KEY, VALUE>& x,
-                       const HashMap<KEY, VALUE> y) {
+inline bool operator!=(const HashMap<KEY, VALUE>& x, const HashMap<KEY, VALUE> y)
+{
   return !(x == y);
 }
 
@@ -313,7 +310,8 @@ inline bool operator!=(const HashMap<KEY, VALUE>& x,
  * @tparam VALUE Type of value objects.
  */
 template <class KEY, class VALUE>
-class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
+class HashMultimap : public std::unordered_multimap<KEY, VALUE>
+{
  public:
   using Base = typename HashMultimap::unordered_multimap;
   using iterator = typename Base::iterator;
@@ -369,7 +367,8 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
    *
    * @return std::list<KEY> All mapped keys.
    */
-  std::list<KEY> keys() const {
+  std::list<KEY> keys() const
+  {
     std::list<KEY> ret_value;
     for (auto p : *this) {
       ret_value.push_back(p.first);
@@ -382,7 +381,8 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
    *
    * @return std::list<VALUE> All mapped values of the key.
    */
-  std::list<VALUE> values(const KEY& key) {
+  std::list<VALUE> values(const KEY& key)
+  {
     auto ret_values = equal_range(key);
     std::list<VALUE> ret_list;
     for (auto i = ret_values.first; i != ret_values.second; ++i) {
@@ -408,7 +408,8 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
    * @param default_value the default Return value if not found.
    * @return const VALUE Return the found value.
    */
-  const VALUE value(const KEY key, const VALUE& default_value = VALUE()) const {
+  const VALUE value(const KEY key, const VALUE& default_value = VALUE()) const
+  {
     auto find_iter = this->find(key);
     if (find_iter != this->end()) {
       return find_iter->second;
@@ -423,9 +424,7 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
    * @param key
    * @param value
    */
-  void insert(const KEY& key, const VALUE& value) {
-    this->insert({key, value});
-  }
+  void insert(const KEY& key, const VALUE& value) { this->insert({key, value}); }
 
   /**
    * @brief Java style container itererator.
@@ -436,32 +435,35 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
    * }
    *
    */
-  class Iterator {
+  class Iterator
+  {
    public:
     Iterator() = default;
     ~Iterator() = default;
-    explicit Iterator(HashMultimap<KEY, VALUE>* container) {
+    explicit Iterator(HashMultimap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    void init(HashMultimap<KEY, VALUE>* container) {
+    void init(HashMultimap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    Iterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    Iterator& next()
+    {
       ++_iter;
       return *this;
     }
-    void next(KEY* key, VALUE* value) {
+    void next(KEY* key, VALUE* value)
+    {
       *key = _iter->first;
       *value = _iter->second;
       _iter++;
@@ -480,33 +482,36 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
   };
   friend class Iterator;
 
-  class ConstIterator {
+  class ConstIterator
+  {
    public:
     ConstIterator() = default;
     ~ConstIterator() = default;
 
-    explicit ConstIterator(const HashMultimap<KEY, VALUE>* container) {
+    explicit ConstIterator(const HashMultimap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    void init(const HashMultimap<KEY, VALUE>* container) {
+    void init(const HashMultimap<KEY, VALUE>* container)
+    {
       if (container != nullptr) {
         _container = container;
         _iter = container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    ConstIterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    ConstIterator& next()
+    {
       ++_iter;
       return *this;
     }
-    void next(KEY* key, VALUE* value) {
+    void next(KEY* key, VALUE* value)
+    {
       *key = _iter->first;
       *value = _iter->second;
       _iter++;
@@ -516,12 +521,8 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
     inline const VALUE& value() const { return _iter->second; }
     inline const VALUE& operator*() const { return _iter->value(); }
     inline const VALUE& operator->() const { return &_iter->value(); }
-    inline bool operator==(const ConstIterator& o) const {
-      return _iter == o._iter;
-    }
-    inline bool operator!=(const ConstIterator& o) const {
-      return _iter != o._iter;
-    }
+    inline bool operator==(const ConstIterator& o) const { return _iter == o._iter; }
+    inline bool operator!=(const ConstIterator& o) const { return _iter != o._iter; }
 
    private:
     const HashMultimap<KEY, VALUE>* _container = nullptr;
@@ -531,20 +532,20 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE> {
 };
 
 template <typename KEY, typename VALUE>
-inline void swap(HashMultimap<KEY, VALUE>& x,
-                 HashMultimap<KEY, VALUE>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(HashMultimap<KEY, VALUE>& x, HashMultimap<KEY, VALUE>& y) noexcept(noexcept(x.swap(y)))
+{
   x.swap(y);
 }
 
 template <typename KEY, typename VALUE>
-inline bool operator==(const HashMultimap<KEY, VALUE>& x,
-                       const HashMultimap<KEY, VALUE>& y) {
+inline bool operator==(const HashMultimap<KEY, VALUE>& x, const HashMultimap<KEY, VALUE>& y)
+{
   return static_cast<const typename HashMultimap<KEY, VALUE>::Base&>(x) == y;
 }
 
 template <typename KEY, typename VALUE>
-inline bool operator!=(const HashMultimap<KEY, VALUE>& x,
-                       const HashMultimap<KEY, VALUE>& y) {
+inline bool operator!=(const HashMultimap<KEY, VALUE>& x, const HashMultimap<KEY, VALUE>& y)
+{
   return !(x == y);
 }
 

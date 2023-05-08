@@ -5,9 +5,6 @@
  * @brief TimingDBAdapter is a adapter convert the idb to timing netlist.
  * @version 0.1
  * @date 2021-09-04
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 #include "DisallowCopyAssign.hh"

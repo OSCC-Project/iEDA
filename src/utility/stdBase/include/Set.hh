@@ -4,9 +4,6 @@
  * @brief The set container for the eda project.
  * @version 0.1
  * @date 2020-10-09
- *
- * @copyright Copyright (c) 2020
- *
  */
 
 #pragma once
@@ -27,7 +24,8 @@ namespace ieda {
  * more efficient.
  */
 template <class KEY, class CMP = std::less<KEY>>
-class Set : public absl::btree_set<KEY, CMP> {
+class Set : public absl::btree_set<KEY, CMP>
+{
  public:
   using Base = typename Set::btree_set;
   using key_type = typename Base::key_type;
@@ -86,7 +84,8 @@ class Set : public absl::btree_set<KEY, CMP> {
    *
    * Returns a reference to this set.
    */
-  Set<KEY, CMP>& subtract(const Set<KEY, CMP>& other) {
+  Set<KEY, CMP>& subtract(const Set<KEY, CMP>& other)
+  {
     for (const auto& e : other) {
       erase(e);
     }
@@ -99,7 +98,8 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after unite the other.
    */
-  Set<KEY, CMP>& unite(const Set<KEY, CMP>& other) {
+  Set<KEY, CMP>& unite(const Set<KEY, CMP>& other)
+  {
     for (const KEY& e : other) {
       insert(e);
     }
@@ -112,7 +112,8 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after intersect the other.
    */
-  Set<KEY, CMP>& intersect(const Set<KEY, CMP>& other) {
+  Set<KEY, CMP>& intersect(const Set<KEY, CMP>& other)
+  {
     Set<KEY, CMP> copy1;
     Set<KEY, CMP> copy2;
     if (size() <= other.size()) {
@@ -137,7 +138,8 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param value
    * @return HSet<KEY>& This set after insert value.
    */
-  inline Set<KEY, CMP>& operator<<(const KEY& value) {
+  inline Set<KEY, CMP>& operator<<(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -148,16 +150,19 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after unite the other.
    */
-  inline Set<KEY, CMP>& operator|=(const Set<KEY, CMP>& other) {
+  inline Set<KEY, CMP>& operator|=(const Set<KEY, CMP>& other)
+  {
     unite(other);
     return *this;
   }
 
-  inline Set<KEY, CMP>& operator|=(Set<KEY, CMP>&& other) {
+  inline Set<KEY, CMP>& operator|=(Set<KEY, CMP>&& other)
+  {
     unite(other);
     return *this;
   }
-  inline Set<KEY, CMP>& operator|=(const KEY& value) {
+  inline Set<KEY, CMP>& operator|=(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -168,11 +173,13 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after intersect the other set.
    */
-  inline Set<KEY, CMP>& operator&=(const Set<KEY, CMP>& other) {
+  inline Set<KEY, CMP>& operator&=(const Set<KEY, CMP>& other)
+  {
     intersect(other);
     return *this;
   }
-  inline Set<KEY, CMP>& operator&=(const KEY& value) {
+  inline Set<KEY, CMP>& operator&=(const KEY& value)
+  {
     Set<KEY, CMP> result;
     if (contains(value)) {
       result.insert(value);
@@ -186,11 +193,13 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after merge the other.
    */
-  inline Set<KEY, CMP>& operator+=(Set<KEY, CMP>& other) {
+  inline Set<KEY, CMP>& operator+=(Set<KEY, CMP>& other)
+  {
     merge(other);
     return *this;
   }
-  inline Set<KEY, CMP>& operator+=(const KEY& value) {
+  inline Set<KEY, CMP>& operator+=(const KEY& value)
+  {
     insert(value);
     return *this;
   }
@@ -201,30 +210,36 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @param other
    * @return HSet<KEY>& This set after subtract the other.
    */
-  inline Set<KEY, CMP>& operator-=(const Set<KEY, CMP>& other) {
+  inline Set<KEY, CMP>& operator-=(const Set<KEY, CMP>& other)
+  {
     subtract(other);
     return *this;
   }
-  inline Set<KEY, CMP>& operator-=(const KEY& value) {
+  inline Set<KEY, CMP>& operator-=(const KEY& value)
+  {
     erase(value);
     return *this;
   }
-  inline Set<KEY, CMP> operator|(const Set<KEY, CMP>& other) const {
+  inline Set<KEY, CMP> operator|(const Set<KEY, CMP>& other) const
+  {
     Set<KEY, CMP> result = *this;
     result |= other;
     return result;
   }
-  inline Set<KEY, CMP> operator&(const Set<KEY, CMP>& other) const {
+  inline Set<KEY, CMP> operator&(const Set<KEY, CMP>& other) const
+  {
     Set<KEY, CMP> result = *this;
     result &= other;
     return result;
   }
-  inline Set<KEY, CMP> operator+(Set<KEY, CMP>& other) const {
+  inline Set<KEY, CMP> operator+(Set<KEY, CMP>& other) const
+  {
     Set<KEY, CMP> result = *this;
     result += other;
     return result;
   }
-  inline Set<KEY, CMP> operator-(const Set<KEY, CMP>& other) const {
+  inline Set<KEY, CMP> operator-(const Set<KEY, CMP>& other) const
+  {
     Set<KEY, CMP> result = *this;
     result -= other;
     return result;
@@ -237,7 +252,8 @@ class Set : public absl::btree_set<KEY, CMP> {
    * @return true when has key.
    * @return false when do not has key.
    */
-  bool hasKey(const KEY key) const {
+  bool hasKey(const KEY key) const
+  {
     auto find_iter = this->find(key);
     return find_iter != this->end();
   }
@@ -273,28 +289,30 @@ class Set : public absl::btree_set<KEY, CMP> {
    *    iter.next();
    *  }
    */
-  class Iterator {
+  class Iterator
+  {
    public:
     Iterator() = default;
     ~Iterator() = default;
 
-    explicit Iterator(Set<KEY, CMP>* container) : _container(container) {
+    explicit Iterator(Set<KEY, CMP>* container) : _container(container)
+    {
       if (_container != nullptr) {
         _iter = _container->begin();
       }
     }
 
-    void init(Set<KEY, CMP>* container) {
+    void init(Set<KEY, CMP>* container)
+    {
       _container = container;
       if (_container != nullptr) {
         _iter = _container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    Iterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    Iterator& next()
+    {
       ++_iter;
       return *this;
     }
@@ -310,27 +328,29 @@ class Set : public absl::btree_set<KEY, CMP> {
     typename Set<KEY, CMP>::iterator _iter;
   };
 
-  class ConstIterator {
+  class ConstIterator
+  {
    public:
     ConstIterator() = default;
     ~ConstIterator() = default;
 
-    explicit ConstIterator(const Set<KEY, CMP>* container)
-        : _container(container) {
-      if (_container != nullptr) _iter = _container->begin();
+    explicit ConstIterator(const Set<KEY, CMP>* container) : _container(container)
+    {
+      if (_container != nullptr)
+        _iter = _container->begin();
     }
 
-    void init(const Set<KEY, CMP>* container) {
+    void init(const Set<KEY, CMP>* container)
+    {
       _container = container;
       if (_container != nullptr) {
         _iter = _container->begin();
       }
     }
 
-    bool hasNext() {
-      return _container != nullptr && _iter != _container->end();
-    }
-    ConstIterator& next() {
+    bool hasNext() { return _container != nullptr && _iter != _container->end(); }
+    ConstIterator& next()
+    {
       ++_iter;
       return *this;
     }
@@ -338,12 +358,8 @@ class Set : public absl::btree_set<KEY, CMP> {
     inline const KEY& value() const { return *_iter; }
     inline const KEY& operator*() const { return *_iter; }
     inline const KEY* operator->() const { return &(_iter); }
-    inline bool operator==(const ConstIterator& o) const {
-      return _iter == o._iter;
-    }
-    inline bool operator!=(const ConstIterator& o) const {
-      return _iter != o._iter;
-    }
+    inline bool operator==(const ConstIterator& o) const { return _iter == o._iter; }
+    inline bool operator!=(const ConstIterator& o) const { return _iter != o._iter; }
 
    private:
     const Set<KEY, CMP>* _container = nullptr;
@@ -352,10 +368,9 @@ class Set : public absl::btree_set<KEY, CMP> {
 };
 
 template <class KEY, class CMP>
-bool Set<KEY, CMP>::equal(const Set<KEY, CMP>* set1,
-                          const Set<KEY, CMP>* set2) {
-  if ((set1 == nullptr || set1->empty()) &&
-      (set2 == nullptr || set2->empty())) {
+bool Set<KEY, CMP>::equal(const Set<KEY, CMP>* set1, const Set<KEY, CMP>* set2)
+{
+  if ((set1 == nullptr || set1->empty()) && (set2 == nullptr || set2->empty())) {
     return true;
   } else if (set1 && set2) {
     if (set1->size() == set2->size()) {
@@ -382,7 +397,8 @@ bool Set<KEY, CMP>::equal(const Set<KEY, CMP>* set1,
 }
 
 template <class KEY, class CMP>
-bool Set<KEY, CMP>::isSubset(const Set<KEY, CMP>* set2) {
+bool Set<KEY, CMP>::isSubset(const Set<KEY, CMP>* set2)
+{
   if (this->empty() && set2->empty()) {
     return true;
   } else {
@@ -410,7 +426,8 @@ bool Set<KEY, CMP>::isSubset(const Set<KEY, CMP>* set2) {
  * @return false
  */
 template <class KEY, class CMP>
-bool Set<KEY, CMP>::intersects(Set<KEY, CMP>* set1, Set<KEY, CMP>* set2) {
+bool Set<KEY, CMP>::intersects(Set<KEY, CMP>* set1, Set<KEY, CMP>* set2)
+{
   if (set1 && !set1->empty() && set2 && !set2->empty()) {
     const Set<KEY, CMP>* small = set1;
     const Set<KEY, CMP>* big = set2;
@@ -422,8 +439,7 @@ bool Set<KEY, CMP>::intersects(Set<KEY, CMP>* set1, Set<KEY, CMP>* set2) {
     auto last1 = big->end();
     auto iter2 = small->begin();
     auto last2 = small->end();
-    if (static_cast<float>(small->size() + big->size()) <
-        (small->size() * log(static_cast<float>(big->size())))) {
+    if (static_cast<float>(small->size() + big->size()) < (small->size() * log(static_cast<float>(big->size())))) {
       while (iter1 != last1 && iter2 != last2) {
         if (*iter1 < *iter2) {
           ++iter1;
@@ -446,56 +462,64 @@ bool Set<KEY, CMP>::intersects(Set<KEY, CMP>* set1, Set<KEY, CMP>* set2) {
 }
 
 template <class KEY, class CMP>
-void Set<KEY, CMP>::insertSet(const Set<KEY, CMP>* set2) {
+void Set<KEY, CMP>::insertSet(const Set<KEY, CMP>* set2)
+{
   if (set2) {
     this->insert(set2->begin(), set2->end());
   }
 }
 
 template <typename KEY, typename CMP>
-inline bool operator==(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator==(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base == set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator!=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator!=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base != set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator<(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator<(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base < set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator<=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator<=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base <= set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator>=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator>=(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base >= set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator>(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs) {
+inline bool operator>(const Set<KEY, CMP>& lhs, const Set<KEY, CMP>& rhs)
+{
   const typename Set<KEY, CMP>::Base& set1_base = lhs;
   const typename Set<KEY, CMP>::Base& set2_base = rhs;
   return set1_base > set2_base;
 }
 
 template <typename KEY, typename CMP>
-void swap(Set<KEY, CMP>& x, Set<KEY, CMP>& y) {
+void swap(Set<KEY, CMP>& x, Set<KEY, CMP>& y)
+{
   return x.swap(y);
 }
 
@@ -506,7 +530,8 @@ void swap(Set<KEY, CMP>& x, Set<KEY, CMP>& y) {
  * The btree set implemented using B-trees is more efficent than binary tree.
  */
 template <class KEY, class CMP = std::less<KEY>>
-class Multiset : public absl::btree_multiset<KEY, CMP> {
+class Multiset : public absl::btree_multiset<KEY, CMP>
+{
  public:
   using Base = typename Multiset::btree_multiset;
   using key_type = typename Base::key_type;
@@ -562,55 +587,56 @@ class Multiset : public absl::btree_multiset<KEY, CMP> {
 };
 
 template <typename KEY, typename CMP>
-inline bool operator==(const Multiset<KEY, CMP>& lhs,
-                       const Multiset<KEY, CMP>& rhs) {
+inline bool operator==(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base == set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator!=(const Multiset<KEY, CMP>& lhs,
-                       const Multiset<KEY, CMP>& rhs) {
+inline bool operator!=(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base != set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator<(const Multiset<KEY, CMP>& lhs,
-                      const Multiset<KEY, CMP>& rhs) {
+inline bool operator<(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base < set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator<=(const Multiset<KEY, CMP>& lhs,
-                       const Multiset<KEY, CMP>& rhs) {
+inline bool operator<=(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base <= set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator>=(const Multiset<KEY, CMP>& lhs,
-                       const Multiset<KEY, CMP>& rhs) {
+inline bool operator>=(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base >= set2_base;
 }
 
 template <typename KEY, typename CMP>
-inline bool operator>(const Multiset<KEY, CMP>& lhs,
-                      const Multiset<KEY, CMP>& rhs) {
+inline bool operator>(const Multiset<KEY, CMP>& lhs, const Multiset<KEY, CMP>& rhs)
+{
   const typename Multiset<KEY, CMP>::Base& set1_base = lhs;
   const typename Multiset<KEY, CMP>::Base& set2_base = rhs;
   return set1_base > set2_base;
 }
 
 template <typename KEY, typename CMP>
-void swap(Multiset<KEY, CMP>& x, Multiset<KEY, CMP>& y) {
+void swap(Multiset<KEY, CMP>& x, Multiset<KEY, CMP>& y)
+{
   return x.swap(y);
 }
 

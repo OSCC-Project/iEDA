@@ -1,19 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iplf
  * @file		file_cts.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
  * @description
@@ -58,7 +45,7 @@ void CtsTreeNodeMap::updateChildNode()
 
 int32_t FileCtsManager::getBufferSize()
 {
-  CtsDbId obj_id = (CtsDbId)(get_object_id());
+  CtsDbId obj_id = (CtsDbId) (get_object_id());
   switch (obj_id) {
     case CtsDbId::kCtsRoutingData:
       return getCtsRoutingBufferSize();
@@ -75,7 +62,7 @@ int32_t FileCtsManager::getBufferSize()
 
 bool FileCtsManager::parseFileData()
 {
-  CtsDbId obj_id = (CtsDbId)(get_object_id());
+  CtsDbId obj_id = (CtsDbId) (get_object_id());
   switch (obj_id) {
     case CtsDbId::kCtsRoutingData:
       return parseCtsRoutingResult();
@@ -92,7 +79,7 @@ bool FileCtsManager::parseFileData()
 
 bool FileCtsManager::saveFileData()
 {
-  CtsDbId obj_id = (CtsDbId)(get_object_id());
+  CtsDbId obj_id = (CtsDbId) (get_object_id());
   switch (obj_id) {
     case CtsDbId::kCtsRoutingData:
       return saveCtsRoutingResult();

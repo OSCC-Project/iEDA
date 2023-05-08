@@ -1,20 +1,7 @@
 #pragma once
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbSpecialWire.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
  * @description
@@ -222,10 +209,7 @@ class IdbSpecialWireList
   // getter
   vector<IdbSpecialWire*>& get_wire_list() { return _wire_list; }
   int32_t get_num() { return _wire_list.size(); }
-  IdbSpecialWire* find_wire(size_t index)
-  {
-    return _wire_list.size() > 0 && _wire_list.size() > index ? _wire_list[index] : nullptr;
-  };
+  IdbSpecialWire* find_wire(size_t index) { return _wire_list.size() > 0 && _wire_list.size() > index ? _wire_list[index] : nullptr; };
 
   // setter
   IdbSpecialWire* add_wire(IdbSpecialWire* wire = nullptr, IdbWiringStatement state = IdbWiringStatement::kRouted);

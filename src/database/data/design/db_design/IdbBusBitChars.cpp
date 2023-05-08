@@ -4,12 +4,11 @@
  * @brief
  * @version 0.1
  * @date 2022-09-13
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "IdbBusBitChars.h"
 namespace idb {
-  IdbBusBitChars::IdbBusBitChars() : _left_delimiter('['), _right_delimiter(']') { }
+IdbBusBitChars::IdbBusBitChars() : _left_delimiter('['), _right_delimiter(']')
+{
+}
 
 }  // namespace idb

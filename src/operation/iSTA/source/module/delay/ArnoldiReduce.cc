@@ -1,12 +1,9 @@
 /**
  * @file ArnoldiReduce.cc
- * @author LH (you@domain.com)
+ * @author LH (liuh0326@163.com)
  * @brief The arnoldi reduce method implemention use prime algorithm.
  * @version 0.1
  * @date 2023-03-08
- *
- * @copyright Copyright (c) 2023
- *
  */
 #include "ArnoldiReduce.hh"
 

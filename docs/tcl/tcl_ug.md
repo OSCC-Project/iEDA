@@ -9,7 +9,7 @@
 
 # Build
 
-git clone --recursive https://github.com/PCNL-EDA/iEDA
+git clone --recursive 
 cd iEDA
 mkdir build
 cd build

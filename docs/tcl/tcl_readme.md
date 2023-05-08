@@ -48,7 +48,7 @@ ScriptEngine 是 Tcl 命令解析器，包含命令、命令选项、解析器�
    ```C++
    #include "tcl/ScriptEngine.hh"
    
-   namespace pcl {
+   namespace ieda {
    /**
     * @brief your command.
     */
@@ -194,7 +194,7 @@ ScriptEngine 是 Tcl 命令解析器，包含命令、命令选项、解析器�
 #include "shell-cmd/ShellCmd.hh"
 #include "tcl/UserShell.hh"
 
-using namespace pcl;
+using namespace ieda;
 
 // 2.定义初始化函数：初始化函数可用于注册你的命令。初始化函数形式：参数为空，返回值为int (返回0为执行成功，返回1则不会打开tcl解释器)
 int registerCommands() {

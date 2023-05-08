@@ -4,9 +4,6 @@
  * @brief The sdc set_clock_uncertainty class.
  * @version 0.1
  * @date 2021-10-20
- *
- * @copyright Copyright (c) 2021
- *
  */
 #pragma once
 #include <set>

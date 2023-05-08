@@ -22,7 +22,7 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initView() {
-  //   _splash = new GuiSplash(this, QPixmap("/home/huangzengrong/Project/iEDA/src/iGUI/res/icon/start.png"));
+  //   _splash = new GuiSplash(this, QPixmap("./iEDA/src/iGUI/res/icon/start.png"));
   //   _splash->show();
 
   setWindowTitle(tr("iEDA"));

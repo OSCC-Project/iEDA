@@ -4,9 +4,6 @@
  * @brief The Vector container for the eda project.
  * @version 0.1
  * @date 2020-10-20
- *
- * @copyright Copyright (c) 2020
- *
  */
 #pragma once
 #include <algorithm>
@@ -16,7 +13,8 @@
 
 namespace ieda {
 template <typename T, size_t N = 64, typename A = std::allocator<T>>
-class Vector : public absl::InlinedVector<T, N, A> {
+class Vector : public absl::InlinedVector<T, N, A>
+{
  public:
   using Base = typename Vector::InlinedVector;
   using iterator = typename Base::iterator;
@@ -68,7 +66,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @return true
    * @return false
    */
-  bool contains(const T& value) {
+  bool contains(const T& value)
+  {
     const_iterator b = this->begin();
     const_iterator e = this->end();
     return std::find(b, e, value) != e;
@@ -79,7 +78,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param value
    * @return int
    */
-  int count(const T& value) {
+  int count(const T& value)
+  {
     const_iterator b = this->begin();
     const_iterator e = this->end();
     return static_cast<int>((std::count(b, e, value)));
@@ -92,14 +92,17 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param start
    * @return int
    */
-  int indexOf(const T& value, size_t start) {
+  int indexOf(const T& value, size_t start)
+  {
     size_t size = this->size();
-    if (start < 0) start = std::max((size_t)0, start + size);
+    if (start < 0)
+      start = std::max((size_t) 0, start + size);
     if (start < size) {
       const_iterator n = this->begin() + start - 1;
       const_iterator e = this->end();
       while (++n != e) {
-        if (*n == value) return n - this->begin();
+        if (*n == value)
+          return n - this->begin();
       }
     }
     return -1;
@@ -112,7 +115,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param start
    * @return int
    */
-  int endIndexOf(const T& value, int start) {
+  int endIndexOf(const T& value, int start)
+  {
     size_t size = this->size();
     if (start < 0)
       start += size;
@@ -122,7 +126,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
       const_iterator b = this->begin();
       const_iterator n = this->begin() + start + 1;
       while (n != b) {
-        if (*--n == value) return n - b;
+        if (*--n == value)
+          return n - b;
       }
     }
     return -1;
@@ -135,7 +140,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param len
    * @return Vector<T>&
    */
-  Vector<T, N, A>& mid(size_t pos, size_t len) {
+  Vector<T, N, A>& mid(size_t pos, size_t len)
+  {
     Vector<T, N, A>* midVector = new Vector<T, N, A>();
     const_iterator from = this->begin() + pos;
     const_iterator to = this->begin() + pos + len;
@@ -152,7 +158,8 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param value
    * @return Vector<T>&
    */
-  Vector<T, N, A>& operator+=(const T& value) {
+  Vector<T, N, A>& operator+=(const T& value)
+  {
     push_back(value);
     return *this;
   }
@@ -164,16 +171,14 @@ class Vector : public absl::InlinedVector<T, N, A> {
    * @param val2
    * @return Vector<T>&
    */
-  friend Vector<T, N, A>& operator+(const Vector<T, N, A>& val1,
-                                    const Vector<T, N, A>& val2) {
+  friend Vector<T, N, A>& operator+(const Vector<T, N, A>& val1, const Vector<T, N, A>& val2)
+  {
     Vector<T>* ret_val = new Vector<T>;
 
-    for (Vector<T, N, A>::const_iterator it1 = val1.begin(); it1 != val1.end();
-         it1++) {
+    for (Vector<T, N, A>::const_iterator it1 = val1.begin(); it1 != val1.end(); it1++) {
       ret_val->push_back(*it1);
     }
-    for (Vector<T, N, A>::const_iterator it2 = val2.begin(); it2 != val2.end();
-         it2++) {
+    for (Vector<T, N, A>::const_iterator it2 = val2.begin(); it2 != val2.end(); it2++) {
       ret_val->push_back(*it2);
     }
     return *ret_val;
@@ -194,21 +199,15 @@ class Vector : public absl::InlinedVector<T, N, A> {
   const_reference operator[](size_t i) const { return data()[i]; }
   reference operator[](size_t i) { return data()[i]; }
 
-  friend bool operator<(const Vector<T, N, A>& a, const Vector<T, N, A>& b) {
+  friend bool operator<(const Vector<T, N, A>& a, const Vector<T, N, A>& b)
+  {
     auto a_data = a.data();
     auto b_data = b.data();
-    return std::lexicographical_compare(a_data, a_data + a.size(), b_data,
-                                        b_data + b.size());
+    return std::lexicographical_compare(a_data, a_data + a.size(), b_data, b_data + b.size());
   }
 
-  friend bool operator>(const Vector<T, N, A>& a, const Vector<T, N, A>& b) {
-    return b < a;
-  }
-  friend bool operator<=(const Vector<T, N, A>& a, const Vector<T, N, A>& b) {
-    return !(b < a);
-  }
-  friend bool operator>=(const Vector<T, N, A>& a, const Vector<T, N, A>& b) {
-    return !(a < b);
-  }
+  friend bool operator>(const Vector<T, N, A>& a, const Vector<T, N, A>& b) { return b < a; }
+  friend bool operator<=(const Vector<T, N, A>& a, const Vector<T, N, A>& b) { return !(b < a); }
+  friend bool operator>=(const Vector<T, N, A>& a, const Vector<T, N, A>& b) { return !(a < b); }
 };
 }  // namespace ieda

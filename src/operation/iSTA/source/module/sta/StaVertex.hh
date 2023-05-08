@@ -4,9 +4,6 @@
  * @brief The static timing analysis DAG vertex, which map to inst pin or port.
  * @version 0.1
  * @date 2021-02-10
- *
- * @copyright Copyright (c) 2021
- *
  */
 
 #pragma once

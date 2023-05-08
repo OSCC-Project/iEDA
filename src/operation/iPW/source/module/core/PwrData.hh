@@ -4,9 +4,6 @@
  * @brief the class of power data.
  * @version 0.1
  * @date 2023-02-09
- *
- * @copyright Copyright (c) 2023
- *
  */
 #pragma once
 

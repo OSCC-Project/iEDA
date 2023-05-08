@@ -1,19 +1,6 @@
 /**
- * iEDA
- * Copyright (C) 2021  PCL
- *
- * This program is free software;
- *
- */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
  * @project		iDB
  * @file		IdbHalo.h
- * @copyright	(c) 2021 All Rights Reserved.
  * @date		25/05/2021
  * @version		0.1
  * @description
@@ -30,29 +17,32 @@
 
 namespace idb {
 
-  IdbHalo::IdbHalo() {
-    _extend_left   = -1;
-    _extend_right  = -1;
-    _extend_top    = -1;
-    _extend_bottom = -1;
-    _is_soft       = false;
-  }
+IdbHalo::IdbHalo()
+{
+  _extend_left = -1;
+  _extend_right = -1;
+  _extend_top = -1;
+  _extend_bottom = -1;
+  _is_soft = false;
+}
 
-  bool IdbHalo::set_bounding_box(IdbRect* instance_bounding_box) {
-    int32_t ll_x = instance_bounding_box->get_low_x() - _extend_left;
-    int32_t ll_y = instance_bounding_box->get_low_y() - _extend_bottom;
-    int32_t ur_x = instance_bounding_box->get_high_x() + _extend_right;
-    int32_t ur_y = instance_bounding_box->get_high_y() + _extend_top;
+bool IdbHalo::set_bounding_box(IdbRect* instance_bounding_box)
+{
+  int32_t ll_x = instance_bounding_box->get_low_x() - _extend_left;
+  int32_t ll_y = instance_bounding_box->get_low_y() - _extend_bottom;
+  int32_t ur_x = instance_bounding_box->get_high_x() + _extend_right;
+  int32_t ur_y = instance_bounding_box->get_high_y() + _extend_top;
 
-    return IdbObject::set_bounding_box(ll_x, ll_y, ur_x, ur_y);
-  }
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IdbRouteHalo::IdbRouteHalo() {
-    _route_distance = -1;
-    _layer_bottom   = nullptr;
-    _layer_top      = nullptr;
-  }
+  return IdbObject::set_bounding_box(ll_x, ll_y, ur_x, ur_y);
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+IdbRouteHalo::IdbRouteHalo()
+{
+  _route_distance = -1;
+  _layer_bottom = nullptr;
+  _layer_top = nullptr;
+}
 
 }  // namespace idb

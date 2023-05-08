@@ -4,9 +4,6 @@
  * @brief
  * @version 0.1
  * @date 2020-10-20
- *
- * @copyright Copyright (c) 2020
- *
  */
 #pragma once
 #include <algorithm>
@@ -15,7 +12,8 @@
 #include "absl/algorithm/algorithm.h"
 namespace ieda {
 template <typename T>
-class List : public std::list<T> {
+class List : public std::list<T>
+{
  public:
   using Base = typename List::list;
   using Base::Base;
@@ -36,13 +34,13 @@ class List : public std::list<T> {
   using Base::crbegin;
   using Base::crend;
   using Base::emplace;
-  using Base::empty;  // returns true if the list is empty
-  using Base::end;    // Returns an STL-style iterator pointing to the imaginary
-                      // item after the last item in the list
-  using Base::erase;  // Removes the item associated with the iterator pos from
-                      // the list, and returns an iterator to the next item in
-                      // the list
-  using Base::front;  // Returns a reference to the first item in the list
+  using Base::empty;   // returns true if the list is empty
+  using Base::end;     // Returns an STL-style iterator pointing to the imaginary
+                       // item after the last item in the list
+  using Base::erase;   // Removes the item associated with the iterator pos from
+                       // the list, and returns an iterator to the next item in
+                       // the list
+  using Base::front;   // Returns a reference to the first item in the list
   using Base::insert;  // Inserts value at index position i in the list
   using Base::max_size;
   using Base::merge;  // Merges  elements of the two lists in ascending order
@@ -63,7 +61,8 @@ class List : public std::list<T> {
   using Base::swap;    // Swaps list other with this list.
   using Base::unique;  // Removes adjacent duplicate elements
 
-  List<T>& operator+=(const T& value) {
+  List<T>& operator+=(const T& value)
+  {
     push_back(value);
     return *this;
   }
@@ -75,7 +74,8 @@ class List : public std::list<T> {
    * @param val2
    * @return List<T>&
    */
-  friend List<T>& operator+(const List<T>& val1, const List<T>& val2) {
+  friend List<T>& operator+(const List<T>& val1, const List<T>& val2)
+  {
     List<T>* ret_val = new List<T>;
 
     for (List<T>::const_iterator it1 = val1.begin(); it1 != val1.end(); it1++) {
@@ -100,27 +100,19 @@ class List : public std::list<T> {
   //   }
   // }
 
-  friend bool operator==(const List& lhs, const List& rhs) {
-    return absl::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
-  }
+  friend bool operator==(const List& lhs, const List& rhs) { return absl::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end()); }
 
-  friend bool operator!=(const List& lhs, const List& rhs) {
-    return !(lhs == rhs);
-  }
+  friend bool operator!=(const List& lhs, const List& rhs) { return !(lhs == rhs); }
 
-  friend bool operator<(const List& lhs, const List& rhs) {
-    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
-                                        rhs.end());
+  friend bool operator<(const List& lhs, const List& rhs)
+  {
+    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
   }
 
   friend bool operator>(const List& lhs, const List& rhs) { return rhs < lhs; }
 
-  friend bool operator<=(const List& lhs, const List& rhs) {
-    return !(rhs < lhs);
-  }
+  friend bool operator<=(const List& lhs, const List& rhs) { return !(rhs < lhs); }
 
-  friend bool operator>=(const List& lhs, const List& rhs) {
-    return !(lhs < rhs);
-  }
+  friend bool operator>=(const List& lhs, const List& rhs) { return !(lhs < rhs); }
 };
 }  // namespace ieda
