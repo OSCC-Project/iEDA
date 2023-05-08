@@ -21,52 +21,7 @@ float MPEvaluation::evaluate()
 
 float MPEvaluation::evalDREAMPlace()
 {
-  // Py_Initialize();
-  // PyRun_SimpleString("import sys");
-  // PyRun_SimpleString("import os");
-  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
-  // QString setSysPath =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/AIFP/environment')").arg(QCoreApplication::applicationDirPath());
-
-  // pyObject* p_module;
-  // PyObject* p_function;
-  // PyObject* p_args;
-  // PyObject* p_ret_value;
-  // p_module = PyImport_ImportModule("placement_dreamplace_test.py")
-  // if (!p_module) {
-  //   std::cout << "import python failed1!!" << std::endl;
-  // }
-  // p_function = PyObject_GetAttrString(p_module, "placement");
-  // if (!p_function) {
-  //   std::cout << "get python function failed!!" << std::endl;
-  // }
-  // p_args = PyTuple_New(2);
-  // PyTuple_SetItem(p_args, 0, Py_BuildValue("i", a));
-  // PyTuple_SetItem(p_args, 1, Py_BuildValue("i", b));
-  // p_ret_value = PyObject_CallObject(p_function, p_args);
-
-  // Py_DECREF(p_module);
-  // Py_DECREF(p_function);
-  // Py_DECREF(p_args);
-  // Py_DECREF(p_ret_value);
-  // if (!p_module) {
-  //       printf("import python failed!!\n");
-  //       return -1;
-  //   }
-  // Py_Finalize();
-  // while(1);
-  // return 0;
-
-  // PyRun_SimpleString("import numpy as np");
-  // PyRun_SimpleString("import datetime");
-  // PyRun_SimpleString("import pandas as pd");
-  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
-  // QString setSysPath =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party')").arg(QCoreApplication::applicationDirPath()); QString setSysPath
-  // =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party/dreamplace/dreamplace')").arg(QCoreApplication::applicationDirPath());
-  // PyRun_SimpleString(setSysPath.toStdString().c_str());
-  // PyRun_SimpleString("import placement_dreamplace");
+  
   return 0;
 }
 

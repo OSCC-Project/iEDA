@@ -120,66 +120,6 @@ int main(int argc, char** argv) {
 
 #endif
 
-#if TEST_2
-  Stats stats;
-
-  Log::setVerboseLogLevel("Pwr*", 1);
-
-  auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
-  timing_engine->set_num_threads(48);
-  const char* design_work_space = "/home/shaozheqing/power";
-  timing_engine->set_design_work_space(design_work_space);
-
-  std::vector<const char*> lib_files{
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
-      "example1_slow.lib"};
-  timing_engine->readLiberty(lib_files);
-
-  timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
-  timing_engine->get_ista()->set_n_worst_path_per_clock(1);
-
-  timing_engine->get_ista()->set_top_module_name("top");
-
-  timing_engine->readDesign(
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
-      "example1.v");
-
-  timing_engine->readSdc(
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
-      "example1.sdc");
-
-  timing_engine->readSpef(
-      "/home/shaozheqing/irefactor/src/operation/iSTA/source/data/example1/"
-      "example1.spef");
-
-  timing_engine->buildGraph();
-
-  timing_engine->updateTiming();
-  timing_engine->reportTiming();
-
-  Power ipower(&(timing_engine->get_ista()->get_graph()));
-  // set fastest clock for default toggle.
-  auto* fastest_clock = timing_engine->get_ista()->getFastestClock();
-  PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
-                             fastest_clock->getPeriodNs());
-  // get sta clocks
-  auto clocks = timing_engine->get_ista()->getClocks();
-
-  ipower.setupClock(std::move(pwr_fastest_clock), std::move(clocks));
-
-  // build power graph.
-  ipower.buildGraph();
-
-  // build seq graph
-  ipower.buildSeqGraph();
-
-  // update power.
-  ipower.updatePower();
-
-  // report power.
-  ipower.reportPower("report.txt", PwrAnalysisMode::kAveraged);
-
-#endif
 
   Log::end();
 

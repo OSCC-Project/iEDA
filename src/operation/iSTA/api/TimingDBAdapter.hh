@@ -2,7 +2,7 @@
 /**
  * @file TimingDBAdapter.hh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief TimingDBAdapter is a adapter convert the odb/idb to timing netlist.
+ * @brief TimingDBAdapter is a adapter convert the idb to timing netlist.
  * @version 0.1
  * @date 2021-09-04
  *
