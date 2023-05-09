@@ -12,6 +12,7 @@
 #include "CtsReport.h"
 #include "Evaluator.h"
 #include "GDSPloter.h"
+#include "HCTS.h"
 #include "JsonParser.h"
 #include "Operator.h"
 #include "Optimizer.h"
@@ -286,6 +287,16 @@ void CTSAPI::addTimingNode(TimingNode* node)
 TimingNode* CTSAPI::findTimingNode(const std::string& name)
 {
   return _design->findTimingNode(name);
+}
+
+void CTSAPI::addHCtsNode(HNode* node)
+{
+  _design->addHCtsNode(node);
+}
+
+HNode* CTSAPI::findHCtsNode(const std::string& name)
+{
+  return _design->findHCtsNode(name);
 }
 
 // iSTA

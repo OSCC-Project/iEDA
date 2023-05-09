@@ -25,12 +25,15 @@ namespace icts {
 using std::vector;
 
 template <>
-struct TimeTraits<ZstNode<Endpoint>> {
-  static inline double getTime(const ZstNode<Endpoint>& t) {
+struct TimeTraits<ZstNode<Endpoint>>
+{
+  static inline double getTime(const ZstNode<Endpoint>& t)
+  {
     auto delay = t.get_delay();
     return delay._time;
   }
-  static inline void setTime(ZstNode<Endpoint>& t, double time) {
+  static inline void setTime(ZstNode<Endpoint>& t, double time)
+  {
     auto delay = t.get_delay();
     delay._time = time;
     t.set_delay(delay);
@@ -54,75 +57,43 @@ struct TimeTraits<ZstNode<Endpoint>> {
 // };
 
 template <>
-struct DataTraits<ZstNode<Endpoint>> {
+struct DataTraits<ZstNode<Endpoint>>
+{
   typedef CtsPoint<Coordinate> point_type;
   typedef std::string id_type;
 
-  static inline id_type getId(ZstNode<Endpoint>& node) {
-    return node.get_data()._name;
-  }
-  static inline Coordinate getX(ZstNode<Endpoint>& node) {
-    return node.get_data()._point.x();
-  }
-  static inline Coordinate getY(ZstNode<Endpoint>& node) {
-    return node.get_data()._point.y();
-  }
-  static inline point_type getPoint(ZstNode<Endpoint>& node) {
-    return node.get_data()._point;
-  }
+  static inline id_type getId(ZstNode<Endpoint>& node) { return node.get_data()._name; }
+  static inline Coordinate getX(ZstNode<Endpoint>& node) { return node.get_data()._point.x(); }
+  static inline Coordinate getY(ZstNode<Endpoint>& node) { return node.get_data()._point.y(); }
+  static inline point_type getPoint(ZstNode<Endpoint>& node) { return node.get_data()._point; }
 
-  static inline void setId(ZstNode<Endpoint>& node, const string& name) {
-    node.get_data()._name = name;
-  }
-  static inline void setX(ZstNode<Endpoint>& node, Coordinate coord) {
-    node.get_data()._point.x(coord);
-  }
-  static inline void setY(ZstNode<Endpoint>& node, Coordinate coord) {
-    node.get_data()._point.y(coord);
-  }
-  static inline void setPoint(ZstNode<Endpoint>& node,
-                              const point_type& point) {
-    node.get_data()._point = point;
-  }
+  static inline void setId(ZstNode<Endpoint>& node, const string& name) { node.get_data()._name = name; }
+  static inline void setX(ZstNode<Endpoint>& node, Coordinate coord) { node.get_data()._point.x(coord); }
+  static inline void setY(ZstNode<Endpoint>& node, Coordinate coord) { node.get_data()._point.y(coord); }
+  static inline void setPoint(ZstNode<Endpoint>& node, const point_type& point) { node.get_data()._point = point; }
 };
 
 template <>
-struct DataTraits<BstNode<Endpoint>> {
+struct DataTraits<BstNode<Endpoint>>
+{
   typedef CtsPoint<Coordinate> point_type;
   typedef std::string id_type;
 
-  static inline id_type getId(BstNode<Endpoint>& node) {
-    return node.get_data()._name;
-  }
-  static inline Coordinate getX(BstNode<Endpoint>& node) {
-    return node.get_data()._point.x();
-  }
-  static inline Coordinate getY(BstNode<Endpoint>& node) {
-    return node.get_data()._point.y();
-  }
-  static inline point_type getPoint(BstNode<Endpoint>& node) {
-    return node.get_data()._point;
-  }
+  static inline id_type getId(BstNode<Endpoint>& node) { return node.get_data()._name; }
+  static inline Coordinate getX(BstNode<Endpoint>& node) { return node.get_data()._point.x(); }
+  static inline Coordinate getY(BstNode<Endpoint>& node) { return node.get_data()._point.y(); }
+  static inline point_type getPoint(BstNode<Endpoint>& node) { return node.get_data()._point; }
 
-  static inline void setId(BstNode<Endpoint>& node, const string& name) {
-    node.get_data()._name = name;
-  }
-  static inline void setX(BstNode<Endpoint>& node, Coordinate coord) {
-    node.get_data()._point.x(coord);
-  }
-  static inline void setY(BstNode<Endpoint>& node, Coordinate coord) {
-    node.get_data()._point.y(coord);
-  }
-  static inline void setPoint(BstNode<Endpoint>& node,
-                              const point_type& point) {
-    node.get_data()._point = point;
-  }
+  static inline void setId(BstNode<Endpoint>& node, const string& name) { node.get_data()._name = name; }
+  static inline void setX(BstNode<Endpoint>& node, Coordinate coord) { node.get_data()._point.x(coord); }
+  static inline void setY(BstNode<Endpoint>& node, Coordinate coord) { node.get_data()._point.y(coord); }
+  static inline void setPoint(BstNode<Endpoint>& node, const point_type& point) { node.get_data()._point = point; }
 };
 
-class Router {
+class Router
+{
  public:
-  using SkewConstraintMap =
-      std::map<std::pair<string, string>, std::pair<double, double>>;
+  using SkewConstraintMap = std::map<std::pair<string, string>, std::pair<double, double>>;
   Router() = default;
   Router(const Router&) = default;
   ~Router() = default;
@@ -130,9 +101,10 @@ class Router {
   void update();
   void normalBuild();
   void slewAwareBuild();
+  void hctsBuild();
   template <typename T>
-  void topoligize(Topology<T>& topo,
-                  const vector<CtsInstance*>& cluster) const {
+  void topoligize(Topology<T>& topo, const vector<CtsInstance*>& cluster) const
+  {
     LOG_FATAL_IF(cluster.empty()) << "cluster is empty";
     vector<T> datas;
     for (auto* inst : cluster) {
@@ -147,10 +119,8 @@ class Router {
       T val;
       DataTraits<T>::setPoint(val, cluster.front()->get_location());
       DataTraits<T>::setSubWirelength(val, cluster.front()->getSubWirelength());
-      std::vector<TopoNode<T>> nodes = {
-          TopoNode<T>{datas.front(), 1, -1, -1,
-                      cluster.front()->getSubWirelength()},
-          TopoNode<T>{val, -1, 0, -1, cluster.front()->getSubWirelength()}};
+      std::vector<TopoNode<T>> nodes = {TopoNode<T>{datas.front(), 1, -1, -1, cluster.front()->getSubWirelength()},
+                                        TopoNode<T>{val, -1, 0, -1, cluster.front()->getSubWirelength()}};
       topo = Topology<T>(nodes, 1);
     } else {
       icts::build_topo(topo, datas);
@@ -161,7 +131,8 @@ class Router {
   void dme(Topology<T>& topo) const;
 
   template <typename T>
-  void rerouteDME(Topology<T>& topo) const {
+  void rerouteDME(Topology<T>& topo) const
+  {
     auto* config = CTSAPIInst.get_config();
     std::string delay_type = config->get_delay_type();
     DelayModel delay_model;
@@ -170,9 +141,7 @@ class Router {
     } else {
       delay_model = DelayModel::kLINEAR;
     }
-    ZstParams params(delay_model, config->get_micron_dbu(),
-                     CTSAPIInst.getClockUnitRes(),
-                     CTSAPIInst.getClockUnitCap());
+    ZstParams params(delay_model, config->get_micron_dbu(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params);
   }
 
@@ -183,31 +152,27 @@ class Router {
   void routing(CtsNet* clock_net);
   void comfortRouting(CtsNet* clock_net);
   void slewAwareRouting(CtsNet* clock_net);
-  void clustering(vector<vector<CtsInstance*>>& clusters,
-                  const vector<CtsInstance*>& insts) const;
+  void hctsRouting(CtsNet* clk_net);
+  void clustering(vector<vector<CtsInstance*>>& clusters, const vector<CtsInstance*>& insts) const;
   int calFeasibleFanout(const double& avg_wirelength) const;
   template <typename T>
   double calAvgWirelength(const int& root_id, Topology<T>& topo) const;
   template <typename T>
   Topology<T> cutTopo(const int& root_id, Topology<T>& topo) const;
   template <typename T>
-  vector<Topology<T>> splitTopo(Topology<T>& topo,
-                                const string& net_name) const;
+  vector<Topology<T>> splitTopo(Topology<T>& topo, const string& net_name) const;
   template <typename T = Endpoint>
   Topology<T> biClusterTopo(const vector<CtsInstance*>& insts) const;
   template <typename T>
-  TopoNode<T> biCluster(const vector<CtsInstance*>& insts,
-                        vector<TopoNode<T>>& all_nodes) const;
+  TopoNode<T> biCluster(const vector<CtsInstance*>& insts, vector<TopoNode<T>>& all_nodes) const;
   template <typename T>
-  void setParentId(TopoNode<T>& node, const int& id,
-                   vector<TopoNode<T>>& all_nodes) const;
+  void setParentId(TopoNode<T>& node, const int& id, vector<TopoNode<T>>& all_nodes) const;
   template <typename T>
   void init_node_name(Topology<T>& topo, const string& clk_topo_name);
   template <typename T>
   ClockTopo create_clock_topo(Topology<T>& topo, const string& clk_topo_name);
   ClockTopo create_clock_topo(CtsNet* clk_net);
-  std::string connect_string(const std::string& net_name, int level,
-                             int index) const;
+  std::string connect_string(const std::string& net_name, int level, int index) const;
 
   std::vector<CtsInstance*> get_clustering_insts(CtsNet* clk_net);
 
