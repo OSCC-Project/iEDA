@@ -75,7 +75,7 @@ void CTSAPI::runCTS()
   routing();
   synthesis();
   evaluate();
-  // balance();
+  balance();
   // optimize();
   LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
@@ -175,7 +175,7 @@ void CTSAPI::routing()
   ieda::Stats stats;
   Router router;
   router.init();
-  router.hctsBuild();
+  router.slewAwareBuild();
   router.update();
   LOG_INFO << "Routing memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Routing elapsed time " << stats.elapsedRunTime() << "s";
