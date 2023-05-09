@@ -192,6 +192,8 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | VCDParser | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git) | 解析功耗VCD波形文件. |
 | def lef | [def lef parser](https://github.com/asyncvlsi/lefdef.git) | 解析物理设计DEF/LEF文件. |
 | ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git) | C++11模板库实现的多线程池. |
+| fft | [ fft](https://github.com/progschj/ThreadPool.git) | 快速傅立叶变换库. |
+| hmetics | [hmetics](https://github.com/progschj/ThreadPool.git) | 高效的图划分算法. |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
