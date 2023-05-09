@@ -4,9 +4,6 @@
  * @brief The sdc all_clock implemention.
  * @version 0.1
  * @date 2022-02-23
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include <tuple>
 
