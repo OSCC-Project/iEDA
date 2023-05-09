@@ -69,4 +69,12 @@ TimingNode *CtsDesign::findTimingNode(const string &node_name) const {
   return nullptr;
 }
 
+HNode* CtsDesign::findHCtsNode(const string& node_name) const
+{
+  if (_hcts_node_map.count(node_name)) {
+    return _hcts_node_map.at(node_name);
+  }
+  return nullptr;
+}
+
 }  // namespace icts
