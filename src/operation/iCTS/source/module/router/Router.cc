@@ -1,6 +1,7 @@
 #include "Router.h"
 
 #include "CTSAPI.hpp"
+#include "HCTS.h"
 
 using namespace std;
 
@@ -76,6 +77,26 @@ void Router::slewAwareBuild()
       timer->updateTiming(clk_node);
       ClockTopo root_clk_topo = create_clock_topo(clk_net);
       root_clk_topo.connect_load(root_node->get_inst());
+      _clk_topos.emplace_back(root_clk_topo);
+    }
+  }
+}
+
+void Router::hctsBuild()
+{
+  for (auto* clock : _clocks) {
+    auto& clock_nets = clock->get_clock_nets();
+    for (auto* clk_net : clock_nets) {
+      auto insts = get_clustering_insts(clk_net);
+      if (insts.size() <= 1) {
+        continue;
+      }
+      clk_net->setClockRouted();
+      hctsRouting(clk_net);
+      // find root node
+      auto root_topo = _clk_topos.back();
+      ClockTopo root_clk_topo = create_clock_topo(clk_net);
+      root_clk_topo.connect_load(root_topo.get_driver());
       _clk_topos.emplace_back(root_clk_topo);
     }
   }
@@ -186,6 +207,21 @@ void Router::slewAwareRouting(CtsNet* clk_net)
   slew_aware->saveTrainingData();
 #endif
   auto clk_topos = slew_aware->get_clk_topos();
+  for (auto& clk_topo : clk_topos) {
+    _clk_topos.emplace_back(clk_topo);
+  }
+}
+
+void Router::hctsRouting(CtsNet* clk_net)
+{
+  std::string net_name = clk_net->get_net_name();
+  std::vector<CtsInstance*> insts = get_clustering_insts(clk_net);
+  if (insts.size() <= 1) {
+    return;
+  }
+  // total topology
+  auto* hcts = new HCTS(net_name, insts);
+  auto clk_topos = hcts->get_clk_topos();
   for (auto& clk_topo : clk_topos) {
     _clk_topos.emplace_back(clk_topo);
   }
