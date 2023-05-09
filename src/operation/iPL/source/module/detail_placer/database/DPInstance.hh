@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPInstance.hh
  * @Description: Instance structure for Detail placement.
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPINSTANCE_H
 #define IPL_DPINSTANCE_H

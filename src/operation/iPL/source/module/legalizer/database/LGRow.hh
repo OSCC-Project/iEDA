@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGRow.hh
  * @Description: Row data structure
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGROW_H
 #define IPL_LGROW_H

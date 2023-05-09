@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGInstance.hh
  * @Description: Instance data structure
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGINSTANCE_H
 #define IPL_LGINSTANCE_H

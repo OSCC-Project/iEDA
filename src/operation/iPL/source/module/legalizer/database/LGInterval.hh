@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGInterval.hh
  * @Description: LG interval data structure
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGINTERVAL_H
 #define IPL_LGINTERVAL_H

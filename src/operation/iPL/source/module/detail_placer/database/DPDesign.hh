@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPDesign.hh
  * @Description: Design of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPDESIGN_H
 #define IPL_DPDESIGN_H

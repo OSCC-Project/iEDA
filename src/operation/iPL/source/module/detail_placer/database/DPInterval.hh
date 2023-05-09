@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPInterval.hh
  * @Description: Interval of Row
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPINTERVAL_H
 #define IPL_DPINTERVAL_H
