@@ -1,6 +1,5 @@
 #include "MPEvaluation.hh"
 
-#include "iostream"
 #include "time.h"
 
 using namespace std;
@@ -21,7 +20,52 @@ float MPEvaluation::evaluate()
 
 float MPEvaluation::evalDREAMPlace()
 {
-  
+  // Py_Initialize();
+  // PyRun_SimpleString("import sys");
+  // PyRun_SimpleString("import os");
+  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
+  // QString setSysPath =
+  // QString("sys.path.append('/home/lijiangkao/project/aifp/AIFP/environment')").arg(QCoreApplication::applicationDirPath());
+
+  // pyObject* p_module;
+  // PyObject* p_function;
+  // PyObject* p_args;
+  // PyObject* p_ret_value;
+  // p_module = PyImport_ImportModule("placement_dreamplace_test.py")
+  // if (!p_module) {
+  //   LOG_INFO << "import python failed1!!";
+  // }
+  // p_function = PyObject_GetAttrString(p_module, "placement");
+  // if (!p_function) {
+  //   LOG_INFO << "get python function failed!!";
+  // }
+  // p_args = PyTuple_New(2);
+  // PyTuple_SetItem(p_args, 0, Py_BuildValue("i", a));
+  // PyTuple_SetItem(p_args, 1, Py_BuildValue("i", b));
+  // p_ret_value = PyObject_CallObject(p_function, p_args);
+
+  // Py_DECREF(p_module);
+  // Py_DECREF(p_function);
+  // Py_DECREF(p_args);
+  // Py_DECREF(p_ret_value);
+  // if (!p_module) {
+  //       printf("import python failed!!\n");
+  //       return -1;
+  //   }
+  // Py_Finalize();
+  // while(1);
+  // return 0;
+
+  // PyRun_SimpleString("import numpy as np");
+  // PyRun_SimpleString("import datetime");
+  // PyRun_SimpleString("import pandas as pd");
+  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
+  // QString setSysPath =
+  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party')").arg(QCoreApplication::applicationDirPath()); QString setSysPath
+  // =
+  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party/dreamplace/dreamplace')").arg(QCoreApplication::applicationDirPath());
+  // PyRun_SimpleString(setSysPath.toStdString().c_str());
+  // PyRun_SimpleString("import placement_dreamplace");
   return 0;
 }
 
@@ -31,8 +75,7 @@ void MPEvaluation::showMassage()
   float e_area = evalEArea();
   float area = _solution->get_total_area();
   float guidance = evalLocationPenalty();
-  std::cout << "wl: " << hpwl << " area: " << area << " e_area: " << e_area << " guidance: " << guidance << " cost: " << evaluate()
-            << std::endl;
+  LOG_INFO << "wl: " << hpwl << " area: " << area << " e_area: " << e_area << " guidance: " << guidance << " cost: " << evaluate();
 }
 
 float MPEvaluation::evalHPWL()
@@ -366,12 +409,12 @@ void MPEvaluation::init_norm(SAParam* param)
   for (size_t i = 1; i < cost_list.size(); ++i) {
     delta_cost += abs(cost_list[i] - cost_list[i - 1]);
   }
-  std::cout << "delta_cost: " << delta_cost << std::endl;
+  LOG_INFO << "delta_cost: " << delta_cost;
 
   float init_temperature = (-1.0) * (delta_cost / (perturb_per_step - 1)) / log(_init_prob);
   param->set_init_temperature(init_temperature);
-  std::cout << "start_time: " << init_temperature << std::endl;
-  std::cout << "norm_e_area: " << _norm_e_area << " norm_hpwl: " << _norm_wl << std::endl;
+  LOG_INFO << "start_time: " << init_temperature;
+  LOG_INFO << "norm_e_area: " << _norm_e_area << " norm_hpwl: " << _norm_wl;
 }
 
 void MPEvaluation::alignMacro()

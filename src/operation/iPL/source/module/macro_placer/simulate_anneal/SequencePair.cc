@@ -1,6 +1,5 @@
 #include "SequencePair.hh"
 
-#include <iostream>
 #include <unordered_map>
 
 using namespace std;
@@ -29,6 +28,7 @@ void SequencePair::perturb()
     int new_orient = (_rotate_macro_index + 1) % 8;  // the total of orient is 8
     _macro_list[_rotate_macro_index]->set_orient(Orient(new_orient));
   }
+  pack();
 }
 
 void SequencePair::pack()
@@ -139,23 +139,21 @@ void SequencePair::doubleSwap(int index1, int index2)
 void SequencePair::printSolution()
 {
   for (int i = 0; i < _num_macro; ++i) {
-    std::cout << _pos_seq[i] << " ";
+    LOG_INFO << _pos_seq[i] << " ";
   }
-  std::cout << std::endl;
   for (int i = 0; i < _num_macro; ++i) {
-    std::cout << _neg_seq[i] << " ";
+    LOG_INFO << _neg_seq[i] << " ";
   }
-  std::cout << std::endl << "width : ";
+  LOG_INFO << "width : ";
   for (FPInst* macro : _macro_list) {
-    std::cout << macro->get_width() << " ";
+    LOG_INFO << macro->get_width() << " ";
   }
-  std::cout << std::endl << "height: ";
+  LOG_INFO << "height: ";
   for (FPInst* macro : _macro_list) {
-    std::cout << macro->get_height() << " ";
+    LOG_INFO << macro->get_height() << " ";
   }
-  std::cout << std::endl;
   for (FPInst* macro : _macro_list) {
-    std::cout << "(" << macro->get_x() << ", " << macro->get_y() << ")"
+    LOG_INFO << "(" << macro->get_x() << ", " << macro->get_y() << ")"
               << " ";
   }
 }
@@ -222,7 +220,7 @@ void SequencePair::pl2sp(vector<FPInst*> macro_list)
   }
 
   if (_pos_seq.size() != macro_list.size() || _neg_seq.size() != macro_list.size()) {
-    cout << "ERROR: generated sequence pair of not correct sizes " << _pos_seq.size() << " & " << _neg_seq.size() << " vs " << size << endl;
+    LOG_ERROR << "generated sequence pair of not correct sizes " << _pos_seq.size() << " & " << _neg_seq.size() << " vs " << size << endl;
   }
 
   pack();
