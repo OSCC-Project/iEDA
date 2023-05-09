@@ -20,7 +20,6 @@ FPInst* MPDB::findNewMacro(FPInst* inst)
 
 void MPDB::buildNetList()
 {
-  // _new_net_list = _db_wrapper->get_design()->get_net_list();
   _new_net_list.clear();
   vector<FPNet*> old_net_list = _db_wrapper->get_design()->get_net_list();
   for (FPNet* old_net : old_net_list) {
