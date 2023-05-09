@@ -23,4 +23,5 @@ target_include_directories(ito_io
     PRIVATE
         ${ITO_IO_PATH}
         ${ITO_PATH}/api
+        ${HOME_THIRDPARTY}/json
 )
