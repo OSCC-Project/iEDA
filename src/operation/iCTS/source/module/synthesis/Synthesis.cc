@@ -164,6 +164,7 @@ void Synthesis::insertNet(ClockTopo& clk_topo)
   auto& load_insts = clk_topo.get_loads();
   for (auto* load_inst : load_insts) {
     CtsPin* load_pin = load_inst->get_load_pin();
+    LOG_FATAL_IF(!load_pin) << "Can't found load pin in inst: " << load_inst->get_name();
     if (load_pin->get_net() != nullptr) {
       if (load_pin->get_net() != net) {
         db_wrapper->idbDisconnect(load_pin);
