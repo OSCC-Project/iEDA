@@ -4,12 +4,10 @@
  * @brief The crosstalk delay calc method use two pi model.
  * @version 0.1
  * @date 2022-09-16
- *
- * @copyright Copyright (c) 2022
- *
  */
-#include "ArnoldiReduce.hh"
 #include "CrossTalkDelayCalc.hh"
+
+#include "ArnoldiReduce.hh"
 
 namespace ista {
 

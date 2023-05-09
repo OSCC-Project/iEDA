@@ -7,6 +7,7 @@
 
 #include "MPSolution.hh"
 #include "Setting.hh"
+#include "module/logger/Log.hh"
 
 namespace ipl::imp {
 class SequencePair : public MPSolution
@@ -20,6 +21,7 @@ class SequencePair : public MPSolution
       _pre_pos_seq.emplace_back(i);
       _pre_neg_seq.emplace_back(i);
     }
+    pack();
   }
   void perturb() override;
   void pack() override;

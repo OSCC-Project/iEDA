@@ -5,7 +5,7 @@
 #include "MPDB.hh"
 #include "MPSolution.hh"
 #include "Setting.hh"
-// #include <python3.8/Python.h>
+#include "module/logger/Log.hh"
 
 namespace ipl::imp {
 class MPEvaluation : public Evaluation
@@ -39,12 +39,11 @@ class MPEvaluation : public Evaluation
   Solution* get_solution() override { return _solution; }
   void showMassage() override;
   void alignMacro();
-  void summaryTime() { std::cout << "evl_wl_count: " << _evl_wl_count << " time: " << _evl_wl_time << std::endl; }
+  void summaryTime() { LOG_INFO << "evl_wl_count: " << _evl_wl_count << " time: " << _evl_wl_time; }
 
  private:
   float evalHPWL();
   float evalEArea();
-  float evalDREAMPlace();
   float evalBlockagePenalty();
   float evalBoundaryPenalty();
   float evalLocationPenalty();

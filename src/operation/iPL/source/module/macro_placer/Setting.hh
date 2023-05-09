@@ -11,7 +11,7 @@ namespace ipl::imp {
 
 enum class PartitionType
 {
-  KM,
+  Hmetis,
   Metis
 };
 
