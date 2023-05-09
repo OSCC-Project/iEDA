@@ -159,7 +159,9 @@ std::vector<std::vector<CtsInstance*>> HCTS::kMeans(const std::vector<CtsInstanc
 
 HNode* HCTS::biPartition(const std::vector<CtsInstance*>& instances) const
 {
-}  // TBD
+    // TBD
+  return nullptr;
+}
 
 Point HCTS::medianCenter(const std::vector<CtsInstance*>& instances) const
 {
@@ -201,7 +203,7 @@ Point HCTS::meanCenter(const std::vector<CtsInstance*>& instances) const
 
 void HCTS::netPropagation(HNode* node) const
 {
-}  // TBD
+}
 
 void HCTS::timingPropagation(HNode* root) const
 {
