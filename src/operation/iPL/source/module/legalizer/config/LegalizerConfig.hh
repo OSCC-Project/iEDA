@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/config/LegalizerConfig.hh
  * @Description: LG config
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGCONFIG_H
 #define IPL_LGCONFIG_H

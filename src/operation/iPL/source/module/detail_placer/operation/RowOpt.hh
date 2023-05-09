@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/operation/RowOpt.hh
  * @Description: Execute Single-Segment Clustering
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_ROWOPT_H
 #define IPL_ROWOPT_H

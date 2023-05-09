@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/AbacusLegalizer.hh
  * @Description: Legalization with abacus method
  *
- * Copyright (c) 2023 by iEDA, All Rights Reserved.
+ *
  */
 #ifndef IPL_ABACUSLEGALIZER_H
 #define IPL_ABACUSLEGALIZER_H

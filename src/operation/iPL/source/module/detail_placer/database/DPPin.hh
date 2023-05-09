@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPPin.hh
  * @Description: Pin of detail placement.
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPPIN_H
 #define IPL_DPPIN_H

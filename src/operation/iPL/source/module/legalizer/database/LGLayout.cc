@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGLayout.cc
  * @Description: 
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #include "LGLayout.hh"
 

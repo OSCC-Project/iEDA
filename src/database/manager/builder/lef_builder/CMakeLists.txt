@@ -20,7 +20,7 @@ target_include_directories(lef_builder
 
 target_include_directories(lef_builder 
     SYSTEM PUBLIC 
-        ${HOME_DATABASE}/manager/parser/lefdef/lef
+        ${HOME_THIRDPARTY}/lefdef/lef
 )
 
 target_link_libraries(lef_builder PRIVATE lef geometry_db tech_db)
