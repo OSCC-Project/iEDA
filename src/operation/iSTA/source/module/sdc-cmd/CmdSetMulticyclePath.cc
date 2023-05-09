@@ -4,9 +4,6 @@
  * @brief The sdc set_multicycle_path cmd implemention.
  * @version 0.1
  * @date 2022-07-17
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "Cmd.hh"
 #include "netlist/DesignObject.hh"

@@ -2,15 +2,15 @@
 #pragma once
 
 // #include "Utility.h"
-#include "FPInst.hh"
-#include "FPPin.hh"
-
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "FPInst.hh"
+#include "FPPin.hh"
 
 using std::string;
 using std::vector;

@@ -8,12 +8,13 @@
 
 #include "MPDB.hh"
 #include "Setting.hh"
+#include "SimulateAnneal.hh"
 #include "config/Config.hh"
+#include "module/logger/Log.hh"
 #include "partition/HierPartition.hh"
 #include "partition/MPPartition.hh"
 #include "simulate_anneal/MPEvaluation.hh"
 #include "simulate_anneal/SolutionFactory.hh"
-#include "SimulateAnneal.hh"
 
 using std::string;
 using std::vector;

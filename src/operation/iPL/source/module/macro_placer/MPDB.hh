@@ -3,6 +3,7 @@
 #include <map>
 
 #include "PlacerDB.hh"
+#include "module/logger/Log.hh"
 #include "wrapper/DBWrapper.hh"
 #include "wrapper/IPLDBWrapper.hh"
 
