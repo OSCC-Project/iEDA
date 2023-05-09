@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGDatabase.hh
  * @Description: LG database
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGDATABASE_H
 #define IPL_LGDATABASE_H

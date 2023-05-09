@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/operation/InstanceSwap.hh
  * @Description: Swap of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_INSTANCESWAP_H
 #define IPL_INSTANCESWAP_H

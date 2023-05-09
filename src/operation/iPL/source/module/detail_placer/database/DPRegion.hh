@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPRegion.hh
  * @Description: Region info of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPREGION_H
 #define IPL_DPREGION_H

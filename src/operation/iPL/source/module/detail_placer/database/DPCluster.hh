@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPCluster.hh
  * @Description: Cluster of detail placement
  *
- * Copyright (c) 2023 by iEDA, All Rights Reserved.
+ *
  */
 #ifndef IPL_DPCLUSTER_H
 #define IPL_DPCLUSTER_H

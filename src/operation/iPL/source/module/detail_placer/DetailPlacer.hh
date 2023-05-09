@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/DetailPlacer.hh
  * @Description: Main for detail placement
  *
- * Copyright (c) 2023 by iEDA, All Rights Reserved.
+ *
  */
 #ifndef IPL_DETAILPLACER_H
 #define IPL_DETAILPLACER_H

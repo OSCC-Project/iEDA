@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/config/DetailPlacerConfig.hh
  * @Description: DP Config
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPCONFIG_H
 #define IPL_DPCONFIG_H

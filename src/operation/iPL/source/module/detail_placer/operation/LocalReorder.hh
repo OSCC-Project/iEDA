@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/operation/LocalReorder.hh
  * @Description: Local reorder of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LOCALREORDER_H
 #define IPL_LOCALREORDER_H

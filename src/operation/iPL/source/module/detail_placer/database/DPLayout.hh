@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPLayout.hh
  * @Description: Layout Infomation of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPLAYOUT_H
 #define IPL_DPLAYOUT_H

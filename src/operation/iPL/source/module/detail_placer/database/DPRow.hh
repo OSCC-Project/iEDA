@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPRow.hh
  * @Description: 
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 /*
  * @Author: Shijian Chen  chenshj@pcl.ac.cn
@@ -16,7 +16,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPRow.hh
  * @Description: Row and Site of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_DPROW_H
 #define IPL_DPROW_H
