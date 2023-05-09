@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #include "Synthesis.h"
 
 #include "CTSAPI.hpp"
@@ -164,6 +180,7 @@ void Synthesis::insertNet(ClockTopo& clk_topo)
   auto& load_insts = clk_topo.get_loads();
   for (auto* load_inst : load_insts) {
     CtsPin* load_pin = load_inst->get_load_pin();
+    LOG_FATAL_IF(!load_pin) << "Can't found load pin in inst: " << load_inst->get_name();
     if (load_pin->get_net() != nullptr) {
       if (load_pin->get_net() != net) {
         db_wrapper->idbDisconnect(load_pin);

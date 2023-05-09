@@ -1,11 +1,25 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #include "MPDB.hh"
 
 #include <fstream>
-#include <iostream>
 #include <set>
 
 using std::set;
-using std::cout;
 using std::endl;
 
 namespace ipl::imp {
@@ -22,7 +36,6 @@ FPInst* MPDB::findNewMacro(FPInst* inst)
 
 void MPDB::buildNetList()
 {
-  // _new_net_list = _db_wrapper->get_design()->get_net_list();
   _new_net_list.clear();
   vector<FPNet*> old_net_list = _db_wrapper->get_design()->get_net_list();
   for (FPNet* old_net : old_net_list) {
@@ -114,9 +127,9 @@ void MPDB::showNetMessage()
     }
   }
   float net_num = _new_net_list.size();
-  std::cout << "number of pins   number of nets   percentage" << std::endl;
+  LOG_INFO << "number of pins   number of nets   percentage";
   for (size_t i = 0; i < pin_num.size(); ++i) {
-    std::cout << i << " " << pin_num[i] << " " << float(pin_num[i]) / net_num * 100 << "%" << std::endl;
+    LOG_INFO << i << " " << pin_num[i] << " " << float(pin_num[i]) / net_num * 100 << "%";
   }
 }
 
@@ -221,7 +234,7 @@ void MPDB::setMacroFixed(string name, int32_t x, int32_t y)
 {
   FPInst* macro = findMacro(name);
   if (nullptr == macro) {
-    std::cout << "the fixed macro (" << name << ") is not found!" << std::endl;
+    LOG_INFO << "the fixed macro (" << name << ") is not found!";
     return;
   }
   macro->set_fixed(true);
@@ -251,7 +264,7 @@ void MPDB::add_guidance_to_macro_name(FPRect* guidance, string macro_name)
 {
   FPInst* macro = findMacro(macro_name);
   if (nullptr == macro) {
-    std::cout << "the fixed macro (" << macro_name << ") is not found!" << std::endl;
+    LOG_INFO << "the fixed macro (" << macro_name << ") is not found!";
     return;
   }
   _guidance_to_macro_map.emplace(guidance, macro);
@@ -376,10 +389,10 @@ void MPDB::writeResult(std::string output_path)
   std::ofstream file;
   file.open(output_path + "/ifp_result.csv");
   file << "macro_name,x,y,orient1,orient2" << std::endl;
-  std::cout << std::endl << "macro location: " << std::endl;
+  LOG_INFO << "macro location: ";
   for (FPInst* macro : _db_wrapper->get_design()->get_macro_list()) {
     file << macro->get_name() << "," << macro->get_x() << "," << macro->get_y() << "," << macro->get_orient_name() << std::endl;
-    std::cout << macro->get_name() << ": " << macro->get_x() << " " << macro->get_y() << " " << macro->get_orient_name() << std::endl;
+    LOG_INFO << macro->get_name() << ": " << macro->get_x() << " " << macro->get_y() << " " << macro->get_orient_name();
   }
   file.close();
 };

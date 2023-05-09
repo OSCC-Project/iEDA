@@ -1,6 +1,21 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #include "MPEvaluation.hh"
 
-#include "iostream"
 #include "time.h"
 
 using namespace std;
@@ -19,20 +34,13 @@ float MPEvaluation::evaluate()
   return cost;
 }
 
-float MPEvaluation::evalDREAMPlace()
-{
-  
-  return 0;
-}
-
 void MPEvaluation::showMassage()
 {
   float hpwl = evalHPWL();
   float e_area = evalEArea();
   float area = _solution->get_total_area();
   float guidance = evalLocationPenalty();
-  std::cout << "wl: " << hpwl << " area: " << area << " e_area: " << e_area << " guidance: " << guidance << " cost: " << evaluate()
-            << std::endl;
+  LOG_INFO << "wl: " << hpwl << " area: " << area << " e_area: " << e_area << " guidance: " << guidance << " cost: " << evaluate();
 }
 
 float MPEvaluation::evalHPWL()
@@ -66,10 +74,6 @@ float MPEvaluation::evalEArea()
   float e_area = 0;
   uint32_t placement_width = _solution->get_total_width();
   uint32_t placement_height = _solution->get_total_height();
-  // float e_width = (width - _core_width) > 0 ? (width - _core_width) : 0;
-  // float e_height = (height - _core_height) > 0 ? (height - _core_height) : 0;
-  // e_area += e_width * _core_height;
-  // e_area += e_height * _core_width;
   const float max_width = max(_core_width, placement_width);
   const float max_height = max(_core_height, placement_height);
   e_area = max(e_area, max_width * max_height - float(_core_width) * float(_core_height));
@@ -366,12 +370,12 @@ void MPEvaluation::init_norm(SAParam* param)
   for (size_t i = 1; i < cost_list.size(); ++i) {
     delta_cost += abs(cost_list[i] - cost_list[i - 1]);
   }
-  std::cout << "delta_cost: " << delta_cost << std::endl;
+  LOG_INFO << "delta_cost: " << delta_cost;
 
   float init_temperature = (-1.0) * (delta_cost / (perturb_per_step - 1)) / log(_init_prob);
   param->set_init_temperature(init_temperature);
-  std::cout << "start_time: " << init_temperature << std::endl;
-  std::cout << "norm_e_area: " << _norm_e_area << " norm_hpwl: " << _norm_wl << std::endl;
+  LOG_INFO << "start_time: " << init_temperature;
+  LOG_INFO << "norm_e_area: " << _norm_e_area << " norm_hpwl: " << _norm_wl;
 }
 
 void MPEvaluation::alignMacro()

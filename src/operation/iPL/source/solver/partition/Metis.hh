@@ -1,16 +1,30 @@
-
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #pragma once
-
 #include <vector>
 
 #include "metis.h"
+#include "module/logger/Log.hh"
 
 namespace ipl {
-
-class MetisParam
+class Metis
 {
  public:
-  MetisParam()
+  Metis()
   {
     _options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB;       // METIS_PTYPE_RB or METIS_PTYPE_KWAY
     _options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;  // METIS_OBJTYPE_CUT or METIS_OBJTYPE_VOL
@@ -32,6 +46,21 @@ class MetisParam
     _options[METIS_OPTION_NUMBERING] = 0;                //
   }
 
+  void set_ncon(int ncon) { *_ncon = ncon; }
+  void set_nparts(int nparts) { *_nparts = nparts; }
+  void set_ufactor(int ufactor) { _options[METIS_OPTION_UFACTOR] = ufactor; }
+
+  void partition(const std::vector<std::vector<int>> adjacent_edge_list); // Index of adjacent node
+  std::vector<int> get_result()
+  {
+    std::vector<int> result;
+    for (idx_t part_index : _part) {
+      result.emplace_back(int(part_index));
+    }
+    return result;
+  }
+
+ private:
   // data
   idx_t* _nvtxs = new idx_t(1);       // number of node
   idx_t* _ncon = new idx_t(5);        // Maximum difference node for each part
