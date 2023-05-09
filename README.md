@@ -185,11 +185,13 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | flute3     | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute) | 借助flute3来产生rectange steiner tree. |
 | abseil-cpp | [Google abseil](https://github.com/abseil/abseil-cpp.git) | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
 | json | [JSON for Modern C++](https://github.com/nlohmann/json) | Json C++库，用来解析程序Json配置文件. |
+| magic_enum | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换. |
 | libfort | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git) | C/C++ library 产生格式化的 ASCII tables. |
 | pegtl | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/) | 使用PEGTL来方便的解析SPEF文件. |
 | pybind11 | [pybind 11](https://github.com/pybind/pybind11.git) | 方便python调用C++. |
 | VCDParser | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git) | 解析功耗VCD波形文件. |
 | def lef | [def lef parser](https://github.com/asyncvlsi/lefdef.git) | 解析物理设计DEF/LEF文件. |
+| threadpool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git) | C++11模板库实现的多线程池. |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
