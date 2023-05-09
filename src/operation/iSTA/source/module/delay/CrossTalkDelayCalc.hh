@@ -4,9 +4,6 @@
  * @brief The class two pi model of the crosstalk delay calculation.
  * @version 0.1
  * @date 2022-09-16
- *
- * @copyright Copyright (c) 2022
- *
  */
 #pragma once
 

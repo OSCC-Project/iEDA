@@ -5,9 +5,6 @@
  * set_max_delay/set_min_delay, set_multicycle_path.
  * @version 0.1
  * @date 2022-07-18
- *
- * @copyright Copyright (c) 2022
- *
  */
 #pragma once
 

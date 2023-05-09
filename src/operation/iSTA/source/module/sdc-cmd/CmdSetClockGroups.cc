@@ -4,9 +4,6 @@
  * @brief The set_clock_groups sdc cmd implemention.
  * @version 0.1
  * @date 2022-07-11
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "Cmd.hh"
 

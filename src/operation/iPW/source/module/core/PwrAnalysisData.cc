@@ -5,7 +5,4 @@
  * power and internal power.
  * @version 0.1
  * @date 2023-04-12
- * 
- * @copyright Copyright (c) 2023
- * 
  */

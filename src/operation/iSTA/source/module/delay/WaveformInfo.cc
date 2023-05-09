@@ -4,9 +4,6 @@
  * @brief The implemention of waveform relative class.
  * @version 0.1
  * @date 2022-11-09
- *
- * @copyright Copyright (c) 2022
- *
  */
 #include "WaveformInfo.hh"
 

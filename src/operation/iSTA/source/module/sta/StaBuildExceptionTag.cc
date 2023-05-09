@@ -4,9 +4,6 @@
  * @brief Build exception tag of multicycle path, false path, max/min delay.
  * @version 0.1
  * @date 2022-07-20
- *
- * @copyright Copyright (c) 2022
- *
  */
 
 #include "StaBuildExceptionTag.hh"
