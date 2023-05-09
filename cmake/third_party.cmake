@@ -7,7 +7,6 @@ include_directories(SYSTEM
     ## third party
     ${THIRD_PARTY_HOME}
     ${THIRD_PARTY_HOME}/json
-    ${THIRD_PARTY_HOME}/gurobi
 )
 
 find_package(OpenMP REQUIRED)
