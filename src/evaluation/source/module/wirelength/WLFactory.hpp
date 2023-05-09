@@ -1,7 +1,7 @@
 #ifndef SRC_EVALUATOR_SOURCE_WIRELENGTH_DATABASE_WLFACTORY_HPP_
 #define SRC_EVALUATOR_SOURCE_WIRELENGTH_DATABASE_WLFACTORY_HPP_
 
-#include "EvalMagicEnum.hpp"
+#include "magic_enum.hpp"
 #include "WL.hpp"
 
 namespace eval {
