@@ -9,8 +9,10 @@ using ieda::Log;
 
 namespace {
 
-class PyTest : public testing::Test {
-  void SetUp() {
+class PyTest : public testing::Test
+{
+  void SetUp()
+  {
     char config[] = "test";
     char* argv[] = {config};
     Log::init(argv);
@@ -18,7 +20,8 @@ class PyTest : public testing::Test {
   void TearDown() { Log::end(); }
 };
 
-TEST_F(PyTest, PyFitModel) {
+TEST_F(PyTest, PyFitModel)
+{
   LOG_INFO << "build PyTest for fit python model";
   auto* model_factory = new icts::ModelFactory();
 
@@ -39,20 +42,19 @@ TEST_F(PyTest, PyFitModel) {
   delete model_factory;
 }
 
-TEST_F(PyTest, PyLoadModel) {
+TEST_F(PyTest, PyLoadModel)
+{
   LOG_INFO << "build PyTest for load python model";
   auto* model_factory = new icts::ModelFactory();
 
-  auto* xgb_model = model_factory->pyLoad(
-      "/home/liweiguo/project/irefactor/scripts/28nm/t28/result/cts/model/"
-      "chiplink_rx_clk.joblib.dat");
-  EXPECT_TRUE(xgb_model->predict(
-      {1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
+  auto* xgb_model = model_factory->pyLoad("./scripts/sky130/result/cts/model/chiplink_rx_clk.joblib.dat");
+  EXPECT_TRUE(xgb_model->predict({1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
 
   delete model_factory;
 }
 
-TEST_F(PyTest, pyPlot) {
+TEST_F(PyTest, pyPlot)
+{
   LOG_INFO << "build PyTest for python matplotlib";
   auto* mpl = new icts::MplHelper();
 

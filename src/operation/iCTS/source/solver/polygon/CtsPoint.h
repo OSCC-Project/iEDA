@@ -100,8 +100,8 @@ class CtsPoint
   bool operator>=(const CtsPoint& that) const { return !(*this < that); }
   CtsPoint operator-(const CtsPoint& that) const { return CtsPoint(this->x() - that.x(), this->y() - that.y()); }
   CtsPoint operator+(const CtsPoint& that) const { return CtsPoint(this->x() + that.x(), this->y() + that.y()); }
-  CtsPoint operator/(const int& i) const { return CtsPoint(this->x() / i, this->y() / i); }
-  CtsPoint operator*(const int& i) const { return CtsPoint(this->x() * i, this->y() * i); }
+  CtsPoint operator/(const double& i) const { return CtsPoint(static_cast<T>(this->x() / i), static_cast<T>(this->y() / i)); }
+  CtsPoint operator*(const double& i) const { return CtsPoint(static_cast<T>(this->x() * i), static_cast<T>(this->y() * i)); }
 
  private:
   coord_t _coords[2];
