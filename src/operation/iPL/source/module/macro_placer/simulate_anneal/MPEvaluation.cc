@@ -18,57 +18,6 @@ float MPEvaluation::evaluate()
   return cost;
 }
 
-float MPEvaluation::evalDREAMPlace()
-{
-  // Py_Initialize();
-  // PyRun_SimpleString("import sys");
-  // PyRun_SimpleString("import os");
-  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
-  // QString setSysPath =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/AIFP/environment')").arg(QCoreApplication::applicationDirPath());
-
-  // pyObject* p_module;
-  // PyObject* p_function;
-  // PyObject* p_args;
-  // PyObject* p_ret_value;
-  // p_module = PyImport_ImportModule("placement_dreamplace_test.py")
-  // if (!p_module) {
-  //   LOG_INFO << "import python failed1!!";
-  // }
-  // p_function = PyObject_GetAttrString(p_module, "placement");
-  // if (!p_function) {
-  //   LOG_INFO << "get python function failed!!";
-  // }
-  // p_args = PyTuple_New(2);
-  // PyTuple_SetItem(p_args, 0, Py_BuildValue("i", a));
-  // PyTuple_SetItem(p_args, 1, Py_BuildValue("i", b));
-  // p_ret_value = PyObject_CallObject(p_function, p_args);
-
-  // Py_DECREF(p_module);
-  // Py_DECREF(p_function);
-  // Py_DECREF(p_args);
-  // Py_DECREF(p_ret_value);
-  // if (!p_module) {
-  //       printf("import python failed!!\n");
-  //       return -1;
-  //   }
-  // Py_Finalize();
-  // while(1);
-  // return 0;
-
-  // PyRun_SimpleString("import numpy as np");
-  // PyRun_SimpleString("import datetime");
-  // PyRun_SimpleString("import pandas as pd");
-  // QString setSysPath = QString("sys.path.append('/home/lijiangkao/project/aifp')").arg(QCoreApplication::applicationDirPath());
-  // QString setSysPath =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party')").arg(QCoreApplication::applicationDirPath()); QString setSysPath
-  // =
-  // QString("sys.path.append('/home/lijiangkao/project/aifp/third_party/dreamplace/dreamplace')").arg(QCoreApplication::applicationDirPath());
-  // PyRun_SimpleString(setSysPath.toStdString().c_str());
-  // PyRun_SimpleString("import placement_dreamplace");
-  return 0;
-}
-
 void MPEvaluation::showMassage()
 {
   float hpwl = evalHPWL();
@@ -109,10 +58,6 @@ float MPEvaluation::evalEArea()
   float e_area = 0;
   uint32_t placement_width = _solution->get_total_width();
   uint32_t placement_height = _solution->get_total_height();
-  // float e_width = (width - _core_width) > 0 ? (width - _core_width) : 0;
-  // float e_height = (height - _core_height) > 0 ? (height - _core_height) : 0;
-  // e_area += e_width * _core_height;
-  // e_area += e_height * _core_width;
   const float max_width = max(_core_width, placement_width);
   const float max_height = max(_core_height, placement_height);
   e_area = max(e_area, max_width * max_height - float(_core_width) * float(_core_height));

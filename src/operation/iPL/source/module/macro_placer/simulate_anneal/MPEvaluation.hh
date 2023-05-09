@@ -6,7 +6,6 @@
 #include "MPSolution.hh"
 #include "Setting.hh"
 #include "module/logger/Log.hh"
-// #include <python3.8/Python.h>
 
 namespace ipl::imp {
 class MPEvaluation : public Evaluation
@@ -45,7 +44,6 @@ class MPEvaluation : public Evaluation
  private:
   float evalHPWL();
   float evalEArea();
-  float evalDREAMPlace();
   float evalBlockagePenalty();
   float evalBoundaryPenalty();
   float evalLocationPenalty();

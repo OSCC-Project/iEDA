@@ -461,7 +461,7 @@ void BStarTree::findBlockLocation(const int tree_ptr, int32_t& out_x, int32_t& o
 
   int32_t new_block_contour_end = new_block_contour_begin + _macro_list[tree_ptr]->get_width();
   uint32_t max_ctl = _contour[contour_ptr]->_ctl;
-  int32_t contour_ptr_end =  // �ж��Ƿ�Ϊ���ڵ�
+  int32_t contour_ptr_end =
       (contour_ptr == tree_ptr) ? new_block_contour_end : _contour[contour_ptr]->_end;
 
   while (contour_ptr_end <= new_block_contour_end + _tolerance) {

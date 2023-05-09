@@ -181,7 +181,6 @@ void SequencePair::pl2sp(vector<FPInst*> macro_list)
   // snap to y grid here
   for (unsigned i = 0; i < size; ++i) {
     unsigned reqd_row = static_cast<unsigned>((macro_list[i]->get_y() / row_height) + 0.5);
-    // unsigned reqd_row = unsigned(rint(macro_list[i]->get_y()/row_height));
     macro_list[i]->set_y(reqd_row * row_height);
   }
 
