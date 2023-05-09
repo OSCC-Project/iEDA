@@ -1,5 +1,5 @@
 /*
- * @Author: your name
+ * @Author: Li Jiangkao
  * @Date: 2021-08-23 22:17:47
  * @LastEditTime: 2022-02-13 12:47:14
  * @LastEditors: Please set LastEditors
@@ -13,6 +13,7 @@
  * Store instance
  * @version 0.1
  * @date 2021-4-1
+ * @copyright Copyright (c) 2021 PCNL EDA.
  **/
 #include "MacroPlacer.hh"
 
@@ -20,7 +21,6 @@
 
 #include <algorithm>
 #include <ctime>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -29,19 +29,13 @@ namespace ipl::imp {
 
 void MacroPlacer::runMacroPlacer()
 {
-  // SequencePair* sq = new SequencePair(_mdb->get_design()->get_macro_list(), _set, true);
-  // string output_path = _set->get_output_path();
-  // _mdb->writeResult(output_path);
-  // string file = output_path + "/plane_result_macro.gds";
-  // _mdb->writeGDS(file);
-
   clock_t start = clock();
 
   // parition
   MPPartition* partition = new MPPartition(_mdb, _set);
   partition->runPartition();
   _mdb->buildNetList();
-  cout << "_mdb's netlist have build, the num of net: " << _mdb->get_new_net_list().size() << endl;
+  LOG_INFO << "_mdb's netlist have build, the num of net: " << _mdb->get_new_net_list().size();
   _mdb->updatePlaceMacroList();
 
   // simulate anneal
@@ -52,8 +46,8 @@ void MacroPlacer::runMacroPlacer()
   anneal->runAnneal();
 
   for (FPInst* macro : _mdb->get_place_macro_list()) {
-    std::cout << macro->get_name() << " " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
-              << macro->get_height() << std::endl;
+    LOG_INFO << macro->get_name() << " " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
+              << macro->get_height();
   }
 
   _mdb->writeDB();
@@ -62,11 +56,11 @@ void MacroPlacer::runMacroPlacer()
   _mdb->writeGDS(file);
   _mdb->writeResult(output_path);
   double time = double(clock() - start) / CLOCKS_PER_SEC;
-  std::cout << "time consume: " << time << "s" << std::endl;
+  LOG_INFO << "time consume: " << time << "s";
   writeSummary(time);
   for (FPInst* macro : _mdb->get_total_macro_list()) {
     if (macro->isMacro()) {
-      std::cout << macro->get_x() << "," << macro->get_y() << ",";
+      LOG_INFO << macro->get_x() << "," << macro->get_y() << ",";
     }
   }
 }
@@ -79,7 +73,7 @@ void MacroPlacer::init()
   _set->set_output_path(_mp_config.get_output_path());
   _set->set_macro_halo_x(_mp_config.get_halo_x());
   _set->set_macro_halo_y(_mp_config.get_halo_y());
-  _set->set_partition_type(PartitionType::Metis);
+  _set->set_partition_type(PartitionType::Hmetis);
   _set->set_parts(_mp_config.get_parts());  // the number of cluster
   _set->set_ncon(5);                        // The number of balancing constraints
   _set->set_ufactor(_mp_config.get_ufactor());
@@ -97,13 +91,13 @@ void MacroPlacer::init()
   _set->set_weight_boundary(22);  // 22
 
   // solution type
-  std::cout << "solution type: " << _mp_config.get_solution_tpye() << std::endl;
+  LOG_INFO << "solution type: " << _mp_config.get_solution_tpye();
   if (_mp_config.get_solution_tpye() == "BStarTree") {
     _set->set_solution_type(SolutionTYPE::BST);
   } else if ("SequencePair" == _mp_config.get_solution_tpye()) {
     _set->set_solution_type(SolutionTYPE::SP);
   } else {
-    std::cout << "error illegal type: " << _mp_config.get_solution_tpye() << std::endl;
+    LOG_ERROR << "error illegal type: " << _mp_config.get_solution_tpye();
   }
   // B* tree
   _set->set_swap_pro(0.5);  // the probability of swap
@@ -204,8 +198,8 @@ void MacroPlacer::addGuidance()
 void MacroPlacer::initLocation()
 {
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
-    std::cout << macro->get_name() << ": " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
-              << macro->get_height() << std::endl;
+    LOG_INFO << macro->get_name() << ": " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
+              << macro->get_height();
     FPRect* guidance = new FPRect();
     guidance->set_x(macro->get_x());
     guidance->set_y(macro->get_y());
