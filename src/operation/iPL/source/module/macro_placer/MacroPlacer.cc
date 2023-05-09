@@ -13,7 +13,6 @@
  * Store instance
  * @version 0.1
  * @date 2021-4-1
- * @copyright Copyright (c) 2021 PCNL EDA.
  **/
 #include "MacroPlacer.hh"
 
@@ -47,7 +46,7 @@ void MacroPlacer::runMacroPlacer()
 
   for (FPInst* macro : _mdb->get_place_macro_list()) {
     LOG_INFO << macro->get_name() << " " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
-              << macro->get_height();
+             << macro->get_height();
   }
 
   _mdb->writeDB();
@@ -199,7 +198,7 @@ void MacroPlacer::initLocation()
 {
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
     LOG_INFO << macro->get_name() << ": " << macro->get_x() << " " << macro->get_y() << " " << macro->get_width() << " "
-              << macro->get_height();
+             << macro->get_height();
     FPRect* guidance = new FPRect();
     guidance->set_x(macro->get_x());
     guidance->set_y(macro->get_y());
