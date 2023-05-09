@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGCluster.hh
  * @Description: Instance Clusters of LG
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGCLUSTER_H
 #define IPL_LGCLUSTER_H

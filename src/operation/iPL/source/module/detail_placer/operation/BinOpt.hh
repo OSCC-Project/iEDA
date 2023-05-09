@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/operation/BinOpt.hh
  * @Description: Bin Opt of detail placement
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_BINOPT_H
 #define IPL_BINOPT_H

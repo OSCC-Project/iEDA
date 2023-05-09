@@ -6,7 +6,7 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGLayout.hh
  * @Description: Layout manager of LG
  * 
- * Copyright (c) 2023 by iEDA, All Rights Reserved. 
+ * 
  */
 #ifndef IPL_LGLAYOUT_H
 #define IPL_LGLAYOUT_H
