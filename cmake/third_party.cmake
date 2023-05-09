@@ -3,8 +3,9 @@ SET(THIRD_PARTY_HOME ${HOME_THIRDPARTY})
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 add_definitions("-DBOOST_BIND_GLOBAL_PLACEHOLDERS")
 
-INCLUDE_DIRECTORIES(SYSTEM 
+include_directories(SYSTEM 
     ## third party
+    ${THIRD_PARTY_HOME}
     ${THIRD_PARTY_HOME}/json
     ${THIRD_PARTY_HOME}/gurobi
 )
