@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #include "BStarTree.hh"
 
 #include <math.h>
@@ -6,7 +22,6 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -462,7 +477,7 @@ void BStarTree::findBlockLocation(const int tree_ptr, int32_t& out_x, int32_t& o
 
   int32_t new_block_contour_end = new_block_contour_begin + _macro_list[tree_ptr]->get_width();
   uint32_t max_ctl = _contour[contour_ptr]->_ctl;
-  int32_t contour_ptr_end =  // �ж��Ƿ�Ϊ���ڵ�
+  int32_t contour_ptr_end =
       (contour_ptr == tree_ptr) ? new_block_contour_end : _contour[contour_ptr]->_end;
 
   while (contour_ptr_end <= new_block_contour_end + _tolerance) {

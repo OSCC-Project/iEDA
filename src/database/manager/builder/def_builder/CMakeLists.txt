@@ -16,9 +16,9 @@ target_include_directories(def_builder
 
 target_include_directories(def_builder 
     SYSTEM PUBLIC 
-        ${HOME_DATABASE}/manager/parser/lefdef/def
-        ${HOME_DATABASE}/manager/parser/lefdef/def/def
-        ${HOME_DATABASE}/manager/parser/lefdef/def/defzlib
+        ${HOME_THIRDPARTY}/lefdef/def
+        ${HOME_THIRDPARTY}/lefdef/def/def
+        ${HOME_THIRDPARTY}/lefdef/def/defzlib
 )
 
 target_link_libraries(def_builder PRIVATE  def defzlib str)

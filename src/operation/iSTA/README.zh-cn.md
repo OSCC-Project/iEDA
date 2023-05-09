@@ -6,7 +6,7 @@
 
 <div align="center">
 
- <img src="../../../docs/resources/iSTA.png" width="80%" height="35%" alt="iSTA-logo" />
+<img src="../../../docs/resources/iSTA.png" width="80%" height="35%" alt="iSTA-logo" />
 
   **iSTA--一款用于集成电路设计的开源智能静态时序分析工具**
 
@@ -15,15 +15,10 @@
 ### 支持功能
 
 - 完善地支持标准输入文件（Def/Verilog，sdc，spef/sdf, liberty）读取；
-
 - 延时计算除了支持NLDM/Elmore计算模型，还支持CCS电流模型，Arnoldi降阶模型；
-
 - 时序分析支持Clock Gate分析，Removal/Recovery分析和Muliticycle分析；
-
 - 时序路径分析模式支持OCV模式和AOCV模式；
-
 - 噪声分析初步支持了Crosstalk的影响，未来将进一步完善；
-
 - 提供时序分析引擎timing engine供物理设计调用。
 
 ---
@@ -51,10 +46,7 @@ read_netlist $work_dir/example1.v
 
 ```bash
 set LIB_FILES $work_dir/example1_slow.lib
-
-foreach LIB_FILE $LIB_FILES { \
-    read_liberty $LIB_FILE    \
-}
+read_liberty $LIB_FILES
 ```
 
 #### 链接设计到网表

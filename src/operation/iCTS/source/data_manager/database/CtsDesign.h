@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #pragma once
 
 #include <unordered_map>
@@ -10,6 +26,7 @@
 #include "CtsNet.h"
 #include "CtsPin.h"
 #include "TimingCalculator.h"
+#include "HCTS.h"
 
 namespace icts {
 
@@ -77,6 +94,14 @@ class CtsDesign
     }
   }
 
+  void addHCtsNode(HNode* node)
+  {
+    if (_hcts_node_map.count(node->getName()) == 0) {
+      _hcts_nodes.push_back(node);
+      _hcts_node_map.insert(std::make_pair(node->getName(), node));
+    }
+  }
+
   // wait to realize find operator | vector -> set
   ClockTopo& findClockTopo(const string& topo_name)
   {
@@ -92,6 +117,7 @@ class CtsDesign
   CtsPin* findPin(const string& pin_full_name) const;
   CtsInstance* findInstance(const string& instance_name) const;
   TimingNode* findTimingNode(const string& node_name) const;
+  HNode* findHCtsNode(const string& node_name) const;
 
  private:
   int _id = 0;
@@ -105,10 +131,12 @@ class CtsDesign
   vector<CtsInstance*> _insts;
   vector<CtsPin*> _pins;
   vector<TimingNode*> _inst_timing_nodes;
+  vector<HNode*> _hcts_nodes;
 
   std::unordered_map<std::string, CtsNet*> _net_map;
   std::unordered_map<std::string, CtsInstance*> _inst_map;
   std::unordered_map<std::string, CtsPin*> _pin_map;
   std::unordered_map<std::string, TimingNode*> _inst_timing_node_map;
+  std::unordered_map<std::string, HNode*> _hcts_node_map;
 };
 }  // namespace icts

@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #pragma once
 #include <boost/polygon/gtl.hpp>
 #include <ostream>
@@ -100,8 +116,8 @@ class CtsPoint
   bool operator>=(const CtsPoint& that) const { return !(*this < that); }
   CtsPoint operator-(const CtsPoint& that) const { return CtsPoint(this->x() - that.x(), this->y() - that.y()); }
   CtsPoint operator+(const CtsPoint& that) const { return CtsPoint(this->x() + that.x(), this->y() + that.y()); }
-  CtsPoint operator/(const int& i) const { return CtsPoint(this->x() / i, this->y() / i); }
-  CtsPoint operator*(const int& i) const { return CtsPoint(this->x() * i, this->y() * i); }
+  CtsPoint operator/(const double& i) const { return CtsPoint(static_cast<T>(this->x() / i), static_cast<T>(this->y() / i)); }
+  CtsPoint operator*(const double& i) const { return CtsPoint(static_cast<T>(this->x() * i), static_cast<T>(this->y() * i)); }
 
  private:
   coord_t _coords[2];

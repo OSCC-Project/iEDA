@@ -24,4 +24,5 @@ target_include_directories(ino_io
     PRIVATE
         ${INO_IO_PATH}
         ${INO_PATH}/api
+        ${HOME_THIRDPARTY}/json
 )

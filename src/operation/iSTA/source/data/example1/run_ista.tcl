@@ -8,9 +8,7 @@ read_netlist $work_dir/example1.v
 
 set LIB_FILES $work_dir/example1_slow.lib
 
-foreach LIB_FILE $LIB_FILES { \
-    read_liberty $LIB_FILE    \
-}
+read_liberty $LIB_FILES
 
 link_design top
 

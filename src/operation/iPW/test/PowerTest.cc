@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
@@ -29,7 +45,7 @@ TEST_F(PowerTest, example1) {
   timing_engine->set_design_work_space(design_work_space);
 
   std::vector<const char*> lib_files{
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
+      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
       "example1_slow.lib"};
   timing_engine->readLiberty(lib_files);
 
@@ -39,15 +55,15 @@ TEST_F(PowerTest, example1) {
   timing_engine->get_ista()->set_top_module_name("top");
 
   timing_engine->readDesign(
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
+      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
       "example1.v");
 
   timing_engine->readSdc(
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
+      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
       "example1.sdc");
 
   timing_engine->readSpef(
-      "/home/taosimin/irefactor/src/operation/iSTA/source/data/example1/"
+      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
       "example1.spef");
 
   timing_engine->buildGraph();

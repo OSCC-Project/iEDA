@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #pragma once
 #include <fstream>
 
@@ -5,7 +21,7 @@
 #include "MPDB.hh"
 #include "MPSolution.hh"
 #include "Setting.hh"
-// #include <python3.8/Python.h>
+#include "module/logger/Log.hh"
 
 namespace ipl::imp {
 class MPEvaluation : public Evaluation
@@ -39,12 +55,11 @@ class MPEvaluation : public Evaluation
   Solution* get_solution() override { return _solution; }
   void showMassage() override;
   void alignMacro();
-  void summaryTime() { std::cout << "evl_wl_count: " << _evl_wl_count << " time: " << _evl_wl_time << std::endl; }
+  void summaryTime() { LOG_INFO << "evl_wl_count: " << _evl_wl_count << " time: " << _evl_wl_time; }
 
  private:
   float evalHPWL();
   float evalEArea();
-  float evalDREAMPlace();
   float evalBlockagePenalty();
   float evalBoundaryPenalty();
   float evalLocationPenalty();
