@@ -27,6 +27,7 @@ enum CtsReportType
   kCELL_STATS = 2,
   kLIB_CELL_DIST = 3,
   kTIMING_NODE_LOG = 4,
+  kHCTS_LOG = 5,
 };
 
 class CtsReportTable : public ieda::ReportTable

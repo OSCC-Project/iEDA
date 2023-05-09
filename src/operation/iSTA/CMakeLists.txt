@@ -20,7 +20,6 @@ include_directories(SYSTEM ${HOME_THIRDPARTY})
 include_directories(${HOME_OPERATION}/iSTA)
 include_directories(${HOME_OPERATION}/iSTA/source/module)
 include_directories(${HOME_OPERATION}/iSTA/source/module/include)
-include_directories(SYSTEM ${HOME_OPERATION}/iSTA/source/third-party)
 
 include(${HOME_CMAKE}/operation/idb.cmake)
 

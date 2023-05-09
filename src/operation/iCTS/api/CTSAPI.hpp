@@ -21,10 +21,10 @@ using SkewConstraintsMap = std::map<std::pair<std::string, std::string>, std::pa
 
 template <typename T>
 concept Stringable = requires(const T& t) {
-                       {
-                         std::to_string(t)
-                         } -> std::convertible_to<std::string>;
-                     };
+  {
+    std::to_string(t)
+  } -> std::convertible_to<std::string>;
+};
 
 class CTSAPI
 {
@@ -52,6 +52,9 @@ class CTSAPI
   // Timing
   void addTimingNode(TimingNode* node);
   TimingNode* findTimingNode(const std::string& name);
+  void addHCtsNode(HNode* node);
+  HNode* findHCtsNode(const std::string& name);
+
   // iSTA
   void dumpVertexData(const std::vector<std::string>& vertex_names) const;
   double getClockUnitCap() const;
