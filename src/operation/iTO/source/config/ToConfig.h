@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "../utility/Json.hpp"
-
 using std::cout;
 using std::endl;
 using std::list;
@@ -40,7 +38,9 @@ class ToConfig {
   void set_optimize_setup(bool bo) { _opti_setup = bo; }
 
   void set_drv_insert_buffers(const vector<string> bufs) { _drv_insert_buffers = bufs; }
-  void set_setup_insert_buffers(const vector<string> bufs) { _setup_insert_buffers = bufs; }
+  void set_setup_insert_buffers(const vector<string> bufs) {
+    _setup_insert_buffers = bufs;
+  }
   void set_hold_insert_buffers(const vector<string> bufs) { _hold_insert_buffers = bufs; }
 
   void set_number_passes_allowed_decreasing_slack(int num) {

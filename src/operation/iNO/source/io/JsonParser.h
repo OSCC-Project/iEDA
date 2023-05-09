@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NoConfig.h"
+#include "json.hpp"
 #include <mutex>
 
 namespace ino {
