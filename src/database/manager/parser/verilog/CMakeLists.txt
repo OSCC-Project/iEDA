@@ -9,11 +9,10 @@ set(CMAKE_BUILD_TYPE "Release")
 # Flex/bison scanner/parsers
 #
 ################################################################
-
-find_package(FLEX)
-find_package(BISON)
-
 find_package(ZLIB REQUIRED)
+
+# find_package(FLEX)
+# find_package(BISON)
 
 # Verilog scan/parse. 
 # flex_target(VerilogLex ${CMAKE_CURRENT_SOURCE_DIR}/VerilogLex.l ${CMAKE_CURRENT_SOURCE_DIR}/VerilogLex.cc)

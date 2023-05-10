@@ -8,8 +8,8 @@ set (CMAKE_CXX_STANDARD 20)
 #
 ################################################################
 
-find_package(FLEX)
-find_package(BISON)
+# find_package(FLEX)
+# find_package(BISON)
 
 # Sdf scan/parse. 
 # flex_target(SdfLex ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.l ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.cc COMPILE_FLAGS --prefix=Sdf_) 
