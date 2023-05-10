@@ -9,8 +9,8 @@ set (CMAKE_CXX_STANDARD 20)
 #
 ################################################################
 
-find_package(FLEX)
-find_package(BISON)
+# find_package(FLEX)
+# find_package(BISON)
 
 # # Liberty scan/parse.
 # flex_target(LibertyLex ${CMAKE_CURRENT_SOURCE_DIR}/LibertyLex.l ${CMAKE_CURRENT_SOURCE_DIR}/LibertyLex.cc)
