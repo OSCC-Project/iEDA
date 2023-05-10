@@ -12,12 +12,9 @@ find_package(FLEX)
 find_package(BISON)
 
 # Sdf scan/parse. 
-flex_target(SdfLex ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.l ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.cc COMPILE_FLAGS --prefix=Sdf_
-) 
-bison_target(SdfParser ${CMAKE_CURRENT_SOURCE_DIR}/SdfParse.y ${CMAKE_CURRENT_SOURCE_DIR}/SdfParse.cc COMPILE_FLAGS --name-prefix=Sdf_
-) 
-
-add_flex_bison_dependency(SdfLex SdfParser)
+# flex_target(SdfLex ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.l ${CMAKE_CURRENT_SOURCE_DIR}/SdfLex.cc COMPILE_FLAGS --prefix=Sdf_) 
+# bison_target(SdfParser ${CMAKE_CURRENT_SOURCE_DIR}/SdfParse.y ${CMAKE_CURRENT_SOURCE_DIR}/SdfParse.cc COMPILE_FLAGS --name-prefix=Sdf_) 
+# add_flex_bison_dependency(SdfLex SdfParser)
 
 aux_source_directory(./ SRC)
 
