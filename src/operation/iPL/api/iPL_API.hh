@@ -69,7 +69,7 @@ class iPL_API
   void reportOverlapInfo(std::ofstream& feed);
   void reportLayoutWhiteInfo();
   void reportTimingInfo(std::ofstream& feed);
-  void reportCongestionInfo();
+  void reportCongestionInfo(std::ofstream& feed);
 
   bool isSTAStarted();
   bool isPlacerDBStarted();
