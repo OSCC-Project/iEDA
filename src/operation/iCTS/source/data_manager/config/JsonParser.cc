@@ -97,6 +97,10 @@ void JsonParser::parse(const string &json_file, CtsConfig *config) const {
       string max_length = COMUtil::getData(json, {"max_length"});
       config->set_max_length(std::stod(max_length));
     }
+    if (COMUtil::getData(json, {"scale_size"}) != nullptr) {
+      string scale_size = COMUtil::getData(json, {"scale_size"});
+      config->set_scale_size(std::stoi(scale_size));
+    }
     if (COMUtil::getData(json, {"cluster_type"}) != nullptr) {
       config->set_cluster_type(COMUtil::getData(json, {"cluster_type"}));
     }
