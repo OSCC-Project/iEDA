@@ -379,15 +379,13 @@ void EarlyGlobalRouter::routeEGRRoutingPackage(EGRRoutingPackage& egr_routing_pa
 
 void EarlyGlobalRouter::routeByTopo(EGRRoutingPackage& egr_routing_package)
 {
-  generateTopoSegmentPairList(egr_routing_package);
   generateTopoCoordPairList(egr_routing_package);
   routeAllCoordPairs(egr_routing_package);
 }
 
-void EarlyGlobalRouter::generateTopoSegmentPairList(EGRRoutingPackage& egr_routing_package)
+void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing_package)
 {
-  std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>>& topo_segment_pair_list
-      = egr_routing_package.get_topo_segment_pair_list();
+  std::vector<std::pair<LayerCoord, LayerCoord>>& topo_coord_pair_list = egr_routing_package.get_topo_coord_pair_list();
   irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
   std::vector<LayerCoord>& pin_coord_list = egr_routing_package.get_pin_coord_list();
@@ -399,18 +397,15 @@ void EarlyGlobalRouter::generateTopoSegmentPairList(EGRRoutingPackage& egr_routi
   Flute::DTYPE x[pin_size];
   Flute::DTYPE y[pin_size];
   irt_int coord_num = 0;
-  Segment<LayerCoord> segment_first;
-  Segment<LayerCoord> segment_second;
-  std::map<PlanarCoord, LayerCoord, CmpPlanarCoordByXASC> planar_layer_coord_map;
+  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC> planar_coord_layer_map;
   for (LayerCoord& pin_coord : pin_coord_list) {
-    if (RTUtil::exist(planar_layer_coord_map, PlanarCoord(pin_coord))) {
-      segment_first = Segment<LayerCoord>(planar_layer_coord_map[pin_coord], planar_layer_coord_map[pin_coord]);
-      segment_second = Segment<LayerCoord>(pin_coord, pin_coord);
-      topo_segment_pair_list.push_back(make_pair(segment_first, segment_second));
-      LOG_INST.info(Loc::current(), "Same planar coord exist");
+    if (RTUtil::exist(planar_coord_layer_map, PlanarCoord(pin_coord))) {
+      LayerCoord existed_coord = pin_coord;
+      existed_coord.set_layer_idx(planar_coord_layer_map[pin_coord]);
+      topo_coord_pair_list.push_back(make_pair(pin_coord, existed_coord));
       continue;
     }
-    planar_layer_coord_map[pin_coord] = pin_coord;
+    planar_coord_layer_map[pin_coord] = pin_coord.get_layer_idx();
     x[coord_num] = pin_coord.get_x();
     y[coord_num] = pin_coord.get_y();
     ++coord_num;
@@ -420,54 +415,131 @@ void EarlyGlobalRouter::generateTopoSegmentPairList(EGRRoutingPackage& egr_routi
     return;
   }
   Flute::Tree flute_tree = Flute::flute(coord_num, x, y, FLUTE_ACCURACY);
-  irt_int coord_pair_size = 2 * flute_tree.deg - 2;
-  topo_segment_pair_list.reserve(topo_segment_pair_list.size() + coord_pair_size);
-  for (irt_int i = 0; i < coord_pair_size; i++) {
+  irt_int deg = flute_tree.deg;
+  for (irt_int i = 0; i < deg; i++) {
     irt_int n_id = flute_tree.branch[i].n;
     PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
     PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
-
     if (first_coord == second_coord) {  // check
       continue;
     }
-
-    Segment<LayerCoord> seg_first;
-    Segment<LayerCoord> seg_second;
-    if (RTUtil::exist(planar_layer_coord_map, PlanarCoord(first_coord))) {
-      seg_first = Segment<LayerCoord>(planar_layer_coord_map[first_coord], planar_layer_coord_map[first_coord]);
-    } else {
-      seg_first = Segment<LayerCoord>(LayerCoord(first_coord, bottom_routing_layer_idx), LayerCoord(first_coord, top_routing_layer_idx));
+    if (!RTUtil::exist(planar_coord_layer_map, first_coord)) {
+      LOG_INST.error(Loc::current(), "Pin coord doesn't exist");
     }
-    if (RTUtil::exist(planar_layer_coord_map, PlanarCoord(second_coord))) {
-      seg_second = Segment<LayerCoord>(planar_layer_coord_map[second_coord], planar_layer_coord_map[second_coord]);
+    LayerCoord pin_coord(first_coord, planar_coord_layer_map[first_coord]);
+    LayerCoord steiner_coord(second_coord);
+    if (RTUtil::exist(planar_coord_layer_map, second_coord)) {  ///< choose the old layer_idx
+      steiner_coord.set_layer_idx(planar_coord_layer_map[second_coord]);
     } else {
-      seg_second = Segment<LayerCoord>(LayerCoord(second_coord, bottom_routing_layer_idx), LayerCoord(second_coord, top_routing_layer_idx));
+      LayerCoord bottom_steiner_coord(second_coord, bottom_routing_layer_idx);
+      LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
+      Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
+      steiner_coord = getNearestCoordOnSegment(pin_coord, steiner_segment);
+      topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
+      planar_coord_layer_map[second_coord] = steiner_coord.get_layer_idx();
     }
+    topo_coord_pair_list.push_back(make_pair(pin_coord, steiner_coord));
+  }
 
-    topo_segment_pair_list.push_back(make_pair(seg_first, seg_second));
+  std::set<irt_int> remain_seg_set;
+  for (irt_int i = deg; i < 2 * deg - 2; i++) {
+    remain_seg_set.insert(i);
+  }
+  irt_int pre_size = remain_seg_set.size() + 1;
+  irt_int curr_size = remain_seg_set.size();
+  while (!remain_seg_set.empty() && pre_size != curr_size) {
+    pre_size = curr_size;
+    for (auto it = remain_seg_set.begin(); it != remain_seg_set.end();) {
+      irt_int i = *it;
+      irt_int n_id = flute_tree.branch[i].n;
+      PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
+      PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
+      if (first_coord == second_coord) {  // check
+        it = remain_seg_set.erase(it);
+        curr_size--;
+        continue;
+      }
+      bool first_exist = RTUtil::exist(planar_coord_layer_map, first_coord);
+      bool second_exist = RTUtil::exist(planar_coord_layer_map, second_coord);
+      if (!first_exist && !second_exist) {
+        it++;
+        continue;
+      }
+      LayerCoord first_steiner_coord(first_coord);
+      LayerCoord second_steiner_coord(second_coord);
+      if (first_exist && second_exist) {
+        first_steiner_coord.set_layer_idx(planar_coord_layer_map[first_steiner_coord]);
+        second_steiner_coord.set_layer_idx(planar_coord_layer_map[second_steiner_coord]);
+      } else if (first_exist) {
+        first_steiner_coord.set_layer_idx(planar_coord_layer_map[first_steiner_coord]);
+        LayerCoord bottom_steiner_coord(second_coord, bottom_routing_layer_idx);
+        LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
+        Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
+        second_steiner_coord = getNearestCoordOnSegment(first_steiner_coord, steiner_segment);
+        topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
+        planar_coord_layer_map[second_coord] = second_steiner_coord.get_layer_idx();
+      } else {
+        second_steiner_coord.set_layer_idx(planar_coord_layer_map[second_steiner_coord]);
+        LayerCoord bottom_steiner_coord(first_coord, bottom_routing_layer_idx);
+        LayerCoord top_steiner_coord(first_coord, top_routing_layer_idx);
+        Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
+        first_steiner_coord = getNearestCoordOnSegment(second_steiner_coord, steiner_segment);
+        topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
+        planar_coord_layer_map[first_coord] = first_steiner_coord.get_layer_idx();
+      }
+      topo_coord_pair_list.push_back(make_pair(first_steiner_coord, second_steiner_coord));
+      it = remain_seg_set.erase(it);
+      curr_size--;
+    }
+  }
+  if (!remain_seg_set.empty()) {
+    LOG_INST.error(Loc::current(), "Steiner coord doesn't connected");
   }
 }
 
-void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing_package)
+LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, Segment<LayerCoord>& segment)
 {
-  std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>>& topo_segment_pair_list
-      = egr_routing_package.get_topo_segment_pair_list();
-  std::vector<std::pair<irt::LayerCoord, irt::LayerCoord>>& topo_coord_pair_list = egr_routing_package.get_topo_coord_pair_list();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
+  LayerCoord seg_coord = first_coord;
 
-  std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>> steiner_segment_pair_list
-      = egr_routing_package.get_topo_segment_pair_list();
-
-  topo_coord_pair_list.reserve(topo_segment_pair_list.size());
-  for (std::pair<Segment<LayerCoord>, Segment<LayerCoord>>& segment_pair : topo_segment_pair_list) {
-    Segment<LayerCoord> first_segment = segment_pair.first;
-    Segment<LayerCoord> second_segment = segment_pair.second;
-    bool first_is_point = (first_segment.get_first() == first_segment.get_second());
-    bool second_is_point = (second_segment.get_first() == second_segment.get_second());
-    if (first_is_point && second_is_point) {
-      topo_coord_pair_list.push_back(make_pair(first_segment.get_first(), second_segment.get_first()));
-    } else {
+  if (RTUtil::isHorizontal(first_coord, second_coord)) {
+    irt_int first_x = first_coord.get_x();
+    irt_int second_x = second_coord.get_x();
+    RTUtil::sortASC(first_x, second_x);
+    if (first_x < start_coord.get_x() && start_coord.get_x() < second_x) {
+      seg_coord.set_x(start_coord.get_x());
+    } else if (start_coord.get_x() <= first_x) {
+      seg_coord.set_x(first_x);
+    } else if (second_x <= start_coord.get_x()) {
+      seg_coord.set_x(second_x);
     }
+  } else if (RTUtil::isVertical(first_coord, second_coord)) {
+    irt_int first_y = first_coord.get_y();
+    irt_int second_y = second_coord.get_y();
+    RTUtil::sortASC(first_y, second_y);
+    if (first_y < start_coord.get_y() && start_coord.get_y() < second_y) {
+      seg_coord.set_y(start_coord.get_y());
+    } else if (start_coord.get_y() <= first_y) {
+      seg_coord.set_y(first_y);
+    } else if (second_y <= start_coord.get_y()) {
+      seg_coord.set_y(second_y);
+    }
+  } else if (RTUtil::isProximal(first_coord, second_coord)) {
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    RTUtil::sortASC(first_layer_idx, second_layer_idx);
+    if (first_layer_idx < start_coord.get_layer_idx() && start_coord.get_layer_idx() < second_layer_idx) {
+      seg_coord.set_layer_idx(start_coord.get_layer_idx());
+    } else if (start_coord.get_layer_idx() <= first_layer_idx) {
+      seg_coord.set_layer_idx(first_layer_idx);
+    } else if (second_layer_idx <= start_coord.get_layer_idx()) {
+      seg_coord.set_layer_idx(second_layer_idx);
+    }
+  } else {
+    LOG_INST.error(Loc::current(), "The segment is oblique");
   }
+  return seg_coord;
 }
 
 void EarlyGlobalRouter::routeAllCoordPairs(EGRRoutingPackage& egr_routing_package)
@@ -494,35 +566,9 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map = egr_routing_package.get_min_distance_map();
 
   for (size_t i = number_already_counted; i < routing_segment_list.size(); i++) {
+    Segment<LayerCoord>& routing_segment = routing_segment_list[i];
     for (LayerCoord& pin_coord : pin_coord_list) {
-      Segment<LayerCoord>& routing_segment = routing_segment_list[i];
-      LayerCoord& first_coord = routing_segment.get_first();
-      LayerCoord& second_coord = routing_segment.get_second();
-      LayerCoord seg_coord = first_coord;
-
-      if (RTUtil::isHorizontal(first_coord, second_coord)) {
-        irt_int first_x = first_coord.get_x();
-        irt_int second_x = second_coord.get_x();
-        RTUtil::sortASC(first_x, second_x);
-        if (first_x < pin_coord.get_x() && pin_coord.get_x() < second_x) {
-          seg_coord.set_x(pin_coord.get_x());
-        } else if (pin_coord.get_x() <= first_x) {
-          seg_coord.set_x(first_x);
-        } else if (second_x <= pin_coord.get_x()) {
-          seg_coord.set_x(second_x);
-        }
-      } else if (RTUtil::isVertical(first_coord, second_coord)) {
-        irt_int first_y = first_coord.get_y();
-        irt_int second_y = second_coord.get_y();
-        RTUtil::sortASC(first_y, second_y);
-        if (first_y < pin_coord.get_y() && pin_coord.get_y() < second_y) {
-          seg_coord.set_y(pin_coord.get_y());
-        } else if (pin_coord.get_y() <= first_y) {
-          seg_coord.set_y(first_y);
-        } else if (second_y <= pin_coord.get_y()) {
-          seg_coord.set_y(second_y);
-        }
-      }
+      LayerCoord seg_coord = getNearestCoordOnSegment(pin_coord, routing_segment);
       irt_int distance = RTUtil::getManhattanDistance(pin_coord, seg_coord);
       if (min_distance_map[pin_coord].first > distance) {
         min_distance_map[pin_coord] = make_pair(distance, seg_coord);
