@@ -531,7 +531,7 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
   }
   egr_routing_package.set_number_already_counted(static_cast<irt_int>(routing_segment_list.size()));
 
-  irt_int min_distance = IRT_INT_MAX;
+  irt_int min_distance = INT32_MAX;
   LayerCoord best_pin_coord;
   LayerCoord best_seg_coord;
   for (auto [pin_coord, distance_seg_coord] : min_distance_map) {

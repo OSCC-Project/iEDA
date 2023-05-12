@@ -7,7 +7,7 @@
         "log_file": "./result/cts/cts.log",
         "gds_file": "./result/cts/cts.gds"
     },
-    "router_type": "ZST",
+    "router_type": "SlewAware",
     "delay_type": "elmore",
     "skew_bound": "0.08",
     "max_buf_tran": "1",

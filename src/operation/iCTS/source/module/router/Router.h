@@ -115,7 +115,8 @@ class Router
   ~Router() = default;
   void init();
   void update();
-  void normalBuild();
+  void build();
+  void DMEBuild();
   void slewAwareBuild();
   void hctsBuild();
   template <typename T>
