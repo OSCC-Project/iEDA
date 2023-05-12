@@ -15,6 +15,7 @@
     "max_cap": "0.15183",
     "max_fanout": "32",
     "max_length": "30",
+    "scale_size": 50,
     "cluster_type": "kmeans",
     "cluster_size": 32,
     "buffer_type": [
