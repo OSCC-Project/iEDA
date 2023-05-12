@@ -173,7 +173,8 @@ void SlewAware::slewAwareByKmeans()
     for (auto* inst : sinks) {
       auto* node = new TimingNode(inst);
       node->set_slew_constraint(max_sink_tran);
-      node->set_cap_out(CTSAPIInst.getSinkCap(inst));
+      auto pin_cap = CTSAPIInst.getSinkCap(inst);
+      node->set_cap_out(pin_cap);
       node->set_type(TimingNodeType::kSink);
       timing_nodes.emplace_back(node);
     }
@@ -269,6 +270,9 @@ void SlewAware::costBuild(const std::vector<TimingNode*>& timing_nodes, CostCalc
 {
   // cost init
   auto exist_id = cost_cal->get_id_set();
+#ifdef DEBUG_ICTS_SLEW_AWARE
+  CTSAPIInst.saveToLog("[Slew Aware] Cost build exist nodes num: ", exist_id.size());
+#endif
   for (auto itr_i = exist_id.begin(); itr_i != exist_id.end(); ++itr_i) {
     for (auto itr_j = std::next(itr_i); itr_j != exist_id.end(); ++itr_j) {
       auto* node_i = timing_nodes[*itr_i];
@@ -353,15 +357,15 @@ ClockTopo SlewAware::makeTopo(TimingNode* root, const std::string& net_name)
     auto* config = CTSAPIInst.get_config();
     if (current->get_need_snake() > 0) {
       auto require_snake = std::ceil(current->get_need_snake() * config->get_micron_dbu());
-      auto dist = pgl::manhattan_distance(parent_loc, current_loc);
-      auto snake_dist = require_snake - dist;
-      auto delta_x = current_loc.x() - parent_loc.x();
-      auto direction = delta_x > 0 ? 1 : -1;
-      auto snake_p1 = Point(parent_loc.x() + direction * snake_dist / 2, parent_loc.y());
-      auto snake_p2 = Point(parent_loc.x() + direction * snake_dist / 2, current_loc.y());
-      if (!(CTSAPIInst.isInDie(snake_p1) && CTSAPIInst.isInDie(snake_p2))) {  // is in die
-        snake_p1 = Point(current_loc.x() - direction * snake_dist / 2, parent_loc.y());
-        snake_p2 = Point(current_loc.x() - direction * snake_dist / 2, current_loc.y());
+      auto delta_x = std::abs(current_loc.x() - parent_loc.x());
+      auto trunk_x = (parent_loc.x() + current_loc.x() + delta_x + require_snake) / 2;
+      auto snake_p1 = Point(trunk_x, parent_loc.y());
+      auto snake_p2 = Point(trunk_x, current_loc.y());
+      if (!(CTSAPIInst.isInDie(snake_p1) && CTSAPIInst.isInDie(snake_p2))) {
+        // is not in die
+        trunk_x = (parent_loc.x() + current_loc.x() - delta_x - require_snake) / 2;
+        snake_p1 = Point(trunk_x, parent_loc.y());
+        snake_p2 = Point(trunk_x, current_loc.y());
       }
       std::vector<std::string> name_vec
           = {parent->get_name(), "steiner_" + std::to_string(steiner_id++), "steiner_" + std::to_string(steiner_id++), current->get_name()};
@@ -609,15 +613,32 @@ std::string SlewAware::getInsertTypeEncodeStr(TimingNode* node) const
 
 void SlewAware::timingLog() const
 {
+  double total_net_length = 0;
+  double total_snake_length = 0;
+  double max_slew_in = 0;
+  double max_cap_out = 0;
   auto timing_rpt = CtsReportTable::createReportTable("Timing Log", CtsReportType::kTIMING_NODE_LOG);
   for (auto [_, node] : _timing_node_map) {
     auto timer = TimingCalculator();
     double cap_out = timer.calcCapLoad(node);
+    auto net_length_pair = calcNetLength(node);
+    auto net_part = net_length_pair.first;
+    auto snake_part = net_length_pair.second;
     auto loc_str = CTSAPIInst.toString("(", node->get_location().x(), ",", node->get_location().y(), ")");
-    (*timing_rpt) << node->get_id() << node->get_name() << node->get_need_snake() << node->get_net_length() << loc_str
+    (*timing_rpt) << node->get_id() << node->get_name() << net_part << snake_part << net_part + snake_part << loc_str
                   << node->get_delay_min() << node->get_delay_max() << getInsertTypeStr(node) << node->get_slew_in() << cap_out
                   << node->get_insertion_delay() << TABLE_ENDLINE;
+    total_net_length += net_part;
+    total_snake_length += snake_part;
+    max_slew_in = std::max(max_slew_in, node->get_slew_in());
+    max_cap_out = std::max(max_cap_out, cap_out);
   }
+  CTSAPIInst.saveToLog("\n[Slew Aware Timing Log] For net: ", _net_name);
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Total net length: ", total_net_length);
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Total snake length: ", total_snake_length);
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max slew in: ", max_slew_in);
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max cap out: ", max_cap_out, "\n");
+
   auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/timing_log";
   auto file_name = _net_name + "_timing_log.rpt";
   auto save_path = dir + "/" + file_name;
@@ -628,6 +649,36 @@ void SlewAware::timingLog() const
   outfile << "Generate the report at " << Time::getNowWallTime() << std::endl;
   outfile << timing_rpt->c_str();
   outfile.close();
+}
+
+std::pair<double, double> SlewAware::calcNetLength(TimingNode* node) const
+{
+  TimingCalculator timer;
+  double snake = 0;
+  double length = 0;
+  std::queue<TimingNode*> q;
+  q.push(node);
+  while (!q.empty()) {
+    auto cur_node = q.front();
+    q.pop();
+    auto* left = cur_node->get_left();
+    auto* right = cur_node->get_right();
+    if (left) {
+      snake += left->get_need_snake();
+      length += timer.calcLocLength(cur_node, left);
+      if (left->is_steiner()) {
+        q.push(left);
+      }
+    }
+    if (right) {
+      snake += right->get_need_snake();
+      length += timer.calcLocLength(cur_node, right);
+      if (right->is_steiner()) {
+        q.push(right);
+      }
+    }
+  }
+  return {length, snake};
 }
 
 void SlewAware::saveTrainingData() const
@@ -653,7 +704,7 @@ void SlewAware::saveTrainingData() const
     auto insert_type_encode = getInsertTypeEncodeStr(node);
     auto level = node->get_level();
     double cap_out = timer.calcCapLoad(node);
-    auto fanout = node->getFanout();
+    auto fanout = node->get_fanout();
     auto min_delay = node->get_delay_min() - node->get_insertion_delay();
     auto max_delay = node->get_delay_max() - node->get_insertion_delay();
     auto slew_in = node->get_slew_in();
