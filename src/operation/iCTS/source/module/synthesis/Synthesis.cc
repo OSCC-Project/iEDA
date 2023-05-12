@@ -152,8 +152,13 @@ void Synthesis::insertInstance(CtsInstance* inst)
 
 void Synthesis::insertInstance(ClockTopo& clk_topo)
 {
-  auto* design = CTSAPIInst.get_design();
+    auto* design = CTSAPIInst.get_design();
   auto* driver = clk_topo.get_driver();
+  auto* config = CTSAPIInst.get_config();
+  auto router_type = config->get_router_type();
+  if (router_type == "ZST" || router_type == "BST" || router_type == "UST") {
+    place(driver);
+  }
 #ifdef DEBUG_ICTS_SYNTHESIS
   DLOG_INFO << "Insert inst " << driver->get_name();
 #endif
