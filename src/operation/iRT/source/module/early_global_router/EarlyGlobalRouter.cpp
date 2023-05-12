@@ -435,7 +435,6 @@ void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing
       LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
       Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
       steiner_coord = getNearestCoordOnSegment(pin_coord, steiner_segment);
-      topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
       planar_coord_layer_map[second_coord] = steiner_coord.get_layer_idx();
     }
     topo_coord_pair_list.push_back(make_pair(pin_coord, steiner_coord));
@@ -476,7 +475,6 @@ void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing
         LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
         Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
         second_steiner_coord = getNearestCoordOnSegment(first_steiner_coord, steiner_segment);
-        topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
         planar_coord_layer_map[second_coord] = second_steiner_coord.get_layer_idx();
       } else {
         second_steiner_coord.set_layer_idx(planar_coord_layer_map[second_steiner_coord]);
@@ -484,7 +482,6 @@ void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing
         LayerCoord top_steiner_coord(first_coord, top_routing_layer_idx);
         Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
         first_steiner_coord = getNearestCoordOnSegment(second_steiner_coord, steiner_segment);
-        topo_coord_pair_list.push_back(make_pair(bottom_steiner_coord, top_steiner_coord));
         planar_coord_layer_map[first_coord] = first_steiner_coord.get_layer_idx();
       }
       topo_coord_pair_list.push_back(make_pair(first_steiner_coord, second_steiner_coord));
@@ -544,9 +541,23 @@ LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, 
 
 void EarlyGlobalRouter::routeAllCoordPairs(EGRRoutingPackage& egr_routing_package)
 {
+  std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
   std::vector<std::pair<LayerCoord, LayerCoord>>& topo_coord_pair_list = egr_routing_package.get_topo_coord_pair_list();
-  for (std::pair<LayerCoord, LayerCoord>& coord_pair : topo_coord_pair_list) {
-    routeInPattern(egr_routing_package, coord_pair);
+  size_t coord_pair_size = topo_coord_pair_list.size();
+  std::vector<std::vector<Segment<LayerCoord>>> all_path_list(coord_pair_size);
+#pragma omp parallel for schedule(static)
+  for (size_t i = 0; i < coord_pair_size; ++i) {
+    all_path_list[i] = routeInPattern(topo_coord_pair_list[i]);
+  }
+
+  size_t total_size = 0;
+  for (size_t i = 0; i < coord_pair_size; ++i) {
+    total_size += all_path_list[i].size();
+  }
+  routing_segment_list.reserve(total_size);
+  for (size_t i = 0; i < coord_pair_size; ++i) {
+    std::vector<Segment<LayerCoord>>& segment_list = all_path_list[i];
+    routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
   }
 }
 
@@ -602,11 +613,13 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
 
 void EarlyGlobalRouter::routeNearestCoordPair(EGRRoutingPackage& egr_routing_package)
 {
+  std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
   std::pair<LayerCoord, LayerCoord> coord_pair = make_pair(egr_routing_package.get_pin_coord(), egr_routing_package.get_seg_coord());
-  routeInPattern(egr_routing_package, coord_pair);
+  std::vector<Segment<LayerCoord>> path_segment_list = routeInPattern(coord_pair);
+  routing_segment_list.insert(routing_segment_list.end(), path_segment_list.begin(), path_segment_list.end());
 }
 
-void EarlyGlobalRouter::routeInPattern(EGRRoutingPackage& egr_routing_package, std::pair<LayerCoord, LayerCoord>& coord_pair)
+std::vector<Segment<LayerCoord>> EarlyGlobalRouter::routeInPattern(std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   double best_path_cost = DBL_MAX;
   std::vector<Segment<LayerCoord>> best_routing_segment_list = {};
@@ -627,9 +640,7 @@ void EarlyGlobalRouter::routeInPattern(EGRRoutingPackage& egr_routing_package, s
     routeByOuter3BendsPattern(routing_segment_comb_list, coord_pair);
     pass = updateBestSegmentList(routing_segment_comb_list, best_routing_segment_list, best_path_cost);
   }
-
-  std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
-  routing_segment_list.insert(routing_segment_list.end(), best_routing_segment_list.begin(), best_routing_segment_list.end());
+  return best_routing_segment_list;
 }
 
 bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,

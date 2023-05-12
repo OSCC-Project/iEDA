@@ -465,9 +465,8 @@ void EGRDataManager::buildPinList(EGRNet& egr_net)
       new_rect.set_rt_x(std::min(new_rect.get_rt_x(), die_rt_x));
       new_rect.set_rt_y(std::min(new_rect.get_rt_y(), die_rt_y));
       if (real_rect != new_rect) {
-        LOG_INST.warning(Loc::current(), "Pin ", egr_pin.get_pin_name(), " is out of die");
-        LOG_INST.warning(Loc::current(), "Pin ", egr_pin.get_pin_name(), " (", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
-                         real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")");
+        LOG_INST.warning(Loc::current(), "Pin:", egr_pin.get_pin_name(), "(", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
+                         real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")", " is out of die");
         real_rect = new_rect;
       }
 

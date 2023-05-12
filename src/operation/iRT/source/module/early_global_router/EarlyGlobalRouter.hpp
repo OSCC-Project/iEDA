@@ -69,7 +69,7 @@ class EarlyGlobalRouter
   LayerCoord getNearestCoordOnSegment(LayerCoord& coord, Segment<LayerCoord>& segment);
   void routeAllCoordPairs(EGRRoutingPackage& egr_routing_package);
   void initTempData(EGRRoutingPackage& egr_routing_package);
-  void routeInPattern(EGRRoutingPackage& egr_routing_package, std::pair<LayerCoord, LayerCoord>& coord_pair);
+  std::vector<Segment<LayerCoord>> routeInPattern(std::pair<LayerCoord, LayerCoord>& coord_pair);
   bool updateBestSegmentList(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
                              std::vector<Segment<LayerCoord>>& best_routing_segment_list, double& best_path_cost);
   void routeByStraight(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
