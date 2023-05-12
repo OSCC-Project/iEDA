@@ -51,9 +51,9 @@ class EGRDataManager
   // function
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
+  void wrapDie(idb::IdbBuilder* idb_builder);
   void wrapRoutingLayerList(idb::IdbBuilder* idb_builder);
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapDie(idb::IdbBuilder* idb_builder);
   void wrapBlockageList(idb::IdbBuilder* idb_builder);
   void wrapArtificialBlockage(idb::IdbBuilder* idb_builder);
   void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
