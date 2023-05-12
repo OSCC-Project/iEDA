@@ -64,6 +64,9 @@ void Synthesis::incrementalInsertInstance(ClockTopo& clk_topo)
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto* design = CTSAPIInst.get_design();
   auto* driver = clk_topo.get_driver();
+#ifdef DEBUG_ICTS_SYNTHESIS
+  DLOG_INFO << "Incremental insert inst " << driver->get_name();
+#endif
   if (!driver->is_virtual() && design->findInstance(driver->get_name()) == nullptr) {
     // insert inst to idb
     auto idb_driver = CTSAPIInst.makeIdbInstance(driver->get_name(), driver->get_cell_master());
@@ -75,6 +78,9 @@ void Synthesis::incrementalInsertInstance(ClockTopo& clk_topo)
 
 void Synthesis::incrementalInsertNet(ClockTopo& clk_topo)
 {
+#ifdef DEBUG_ICTS_SYNTHESIS
+  DLOG_INFO << "Incremental insert net " << clk_topo.get_name();
+#endif
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto* design = CTSAPIInst.get_design();
   IdbNet* idb_new_net = nullptr;
@@ -148,6 +154,9 @@ void Synthesis::insertInstance(ClockTopo& clk_topo)
 {
   auto* design = CTSAPIInst.get_design();
   auto* driver = clk_topo.get_driver();
+#ifdef DEBUG_ICTS_SYNTHESIS
+  DLOG_INFO << "Insert inst " << driver->get_name();
+#endif
   if (design->findInstance(driver->get_name()) == nullptr) {
     auto* db_wrapper = CTSAPIInst.get_db_wrapper();
     // insert inst to idb
@@ -160,6 +169,9 @@ void Synthesis::insertInstance(ClockTopo& clk_topo)
 
 void Synthesis::insertNet(ClockTopo& clk_topo)
 {
+#ifdef DEBUG_ICTS_SYNTHESIS
+  DLOG_INFO << "Insert net " << clk_topo.get_name();
+#endif
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto* design = CTSAPIInst.get_design();
   CtsNet* net = design->findNet(clk_topo.get_name());
