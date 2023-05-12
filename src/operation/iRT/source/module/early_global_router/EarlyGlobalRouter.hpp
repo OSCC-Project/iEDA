@@ -65,8 +65,8 @@ class EarlyGlobalRouter
   void routeNearestCoordPair(EGRRoutingPackage& egr_routing_package);
   void routeByGradual(EGRRoutingPackage& egr_routing_package);
   void routeByTopo(EGRRoutingPackage& egr_routing_package);
-  void generateTopoSegmentPairList(EGRRoutingPackage& egr_routing_package);
   void generateTopoCoordPairList(EGRRoutingPackage& egr_routing_package);
+  LayerCoord getNearestCoordOnSegment(LayerCoord& coord, Segment<LayerCoord>& segment);
   void routeAllCoordPairs(EGRRoutingPackage& egr_routing_package);
   void initTempData(EGRRoutingPackage& egr_routing_package);
   void routeInPattern(EGRRoutingPackage& egr_routing_package, std::pair<LayerCoord, LayerCoord>& coord_pair);

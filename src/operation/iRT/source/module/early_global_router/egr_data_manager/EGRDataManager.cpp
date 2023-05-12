@@ -55,11 +55,20 @@ void EGRDataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 
 void EGRDataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
 {
-  wrapRoutingLayerList(idb_builder);
   wrapDie(idb_builder);
+  wrapRoutingLayerList(idb_builder);
   wrapBlockageList(idb_builder);
   wrapNetList(idb_builder);
   updateHelper(idb_builder);
+}
+
+void EGRDataManager::wrapDie(idb::IdbBuilder* idb_builder)
+{
+  idb::IdbDie* die = idb_builder->get_lef_service()->get_layout()->get_die();
+
+  EXTPlanarRect& die_box = _egr_database.get_die();
+  die_box.set_real_lb(die->get_llx(), die->get_lly());
+  die_box.set_real_rt(die->get_urx(), die->get_ury());
 }
 
 void EGRDataManager::wrapRoutingLayerList(idb::IdbBuilder* idb_builder)
@@ -99,15 +108,6 @@ void EGRDataManager::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRou
       track_axis.set_y_track_grid(track_grid);
     }
   }
-}
-
-void EGRDataManager::wrapDie(idb::IdbBuilder* idb_builder)
-{
-  idb::IdbDie* die = idb_builder->get_lef_service()->get_layout()->get_die();
-
-  EXTPlanarRect& die_box = _egr_database.get_die();
-  die_box.set_real_lb(die->get_llx(), die->get_lly());
-  die_box.set_real_rt(die->get_urx(), die->get_ury());
 }
 
 void EGRDataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
@@ -449,13 +449,28 @@ void EGRDataManager::buildNetList()
 void EGRDataManager::buildPinList(EGRNet& egr_net)
 {
   std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
+  irt_int die_rt_x = _egr_database.get_die().get_real_rt_x();
+  irt_int die_rt_y = _egr_database.get_die().get_real_rt_y();
   for (size_t i = 0; i < pin_list.size(); i++) {
     EGRPin& egr_pin = pin_list[i];
 
     egr_pin.set_pin_idx(static_cast<irt_int>(i));
-
     for (EXTLayerRect& routing_shape : egr_pin.get_routing_shape_list()) {
       routing_shape.set_layer_idx(getEGRLayerIndexByDB(routing_shape.get_layer_idx()));
+      // checkPinShape
+      PlanarRect& real_rect = routing_shape.get_real_rect();
+      PlanarRect new_rect = real_rect;
+      new_rect.set_lb_x(std::min(new_rect.get_lb_x(), die_rt_x));
+      new_rect.set_lb_y(std::min(new_rect.get_lb_y(), die_rt_y));
+      new_rect.set_rt_x(std::min(new_rect.get_rt_x(), die_rt_x));
+      new_rect.set_rt_y(std::min(new_rect.get_rt_y(), die_rt_y));
+      if (real_rect != new_rect) {
+        LOG_INST.warning(Loc::current(), "Pin ", egr_pin.get_pin_name(), " is out of die");
+        LOG_INST.warning(Loc::current(), "Pin ", egr_pin.get_pin_name(), " (", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
+                         real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")");
+        real_rect = new_rect;
+      }
+
       routing_shape.set_grid_rect(getGridRect(routing_shape.get_real_rect()));
     }
     std::vector<AccessPoint>& access_point_list = egr_pin.get_access_point_list();
