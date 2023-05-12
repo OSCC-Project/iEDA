@@ -52,8 +52,6 @@ HNode* HCTS::biCluster(const std::vector<CtsInstance*>& insts) const
 {
   if (insts.size() == 1) {
     auto* node = new HNode(insts[0]);
-    auto* config = CTSAPIInst.get_config();
-    auto max_sink_tran = config->get_max_sink_tran();
     auto sink_cap = CTSAPIInst.getSinkCap(insts[0]);
     node->set_type(HNodeType::kSink);
     node->set_cap_load(sink_cap);
