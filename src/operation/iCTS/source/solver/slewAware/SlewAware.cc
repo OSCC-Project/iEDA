@@ -161,7 +161,8 @@ void SlewAware::slewAwareByKmeans()
   auto* config = CTSAPIInst.get_config();
   // init timing nodes
   auto max_sink_tran = config->get_max_sink_tran();
-  auto clusters = clustering(_instances, _instances.size() / 50);
+  auto scale_size = config->get_scale_size();
+  auto clusters = clustering(_instances, _instances.size() / scale_size);
   std::vector<TimingNode*> root_nodes;
   // level 1: cluster sinks build
   for (size_t i = 0; i < clusters.size(); ++i) {
