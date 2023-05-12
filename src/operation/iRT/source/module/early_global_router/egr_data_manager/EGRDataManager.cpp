@@ -346,7 +346,7 @@ void EGRDataManager::buildCellSize()
     pitch_count_map[routing_layer.getPreferTrackGrid().get_step_length()]++;
   }
   irt_int ref_pitch = -1;
-  irt_int max_count = IRT_INT_MIN;
+  irt_int max_count = INT32_MIN;
   for (auto [pitch, count] : pitch_count_map) {
     if (count > max_count) {
       max_count = count;
