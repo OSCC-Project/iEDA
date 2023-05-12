@@ -58,8 +58,6 @@
 #include "omp.h"
 
 using irt_int = int32_t;
-#define IRT_INT_MIN (INT32_MIN);
-#define IRT_INT_MAX (INT32_MAX);
 #define DBL_ERROR 1E-5
 
 template <class... Fs>
