@@ -406,22 +406,8 @@ void GlobalRouter::buildAccessMap(GRModel& gr_model)
     }
     for (auto& [grid, real_list] : grid_real_list_map) {
       // 本层打通孔
-      {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx()][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert({Orientation::kUp, Orientation::kDown});
-      }
-      // 上层打通孔
-      if (grid.get_layer_idx() + 1 < static_cast<irt_int>(layer_node_map.size())) {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx() + 1][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert(
-            {Orientation::kUp, Orientation::kDown, Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth});
-      }
-      // 下层打通孔
-      if (0 <= grid.get_layer_idx() - 1) {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx() - 1][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert(
-            {Orientation::kUp, Orientation::kDown, Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth});
-      }
+      GRNode& gr_node = layer_node_map[grid.get_layer_idx()][grid.get_x()][grid.get_y()];
+      gr_node.get_net_access_map()[gr_net.get_net_idx()].insert({Orientation::kUp, Orientation::kDown});
     }
   }
 }
