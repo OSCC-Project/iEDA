@@ -644,16 +644,39 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  irt_int half_width = routing_layer.get_min_width() / 2;
+  TrackAxis& track_axis = routing_layer.get_track_axis();
+
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
+  for (Segment<PlanarCoord>& segment : getSegmentList(layer_idx, blockage)) {
+    PlanarCoord& first_real = segment.get_first();
+    PlanarCoord& second_real = segment.get_second();
+
+    if (RTUtil::isOpenOverlap(blockage, RTUtil::getEnlargedRect(segment, routing_layer.get_min_width() / 2))) {
+      if (!RTUtil::existGrid(first_real, track_axis) || !RTUtil::existGrid(second_real, track_axis)) {
+        LOG_INST.error(Loc::current(), "The coord can not find grid!");
+      }
+      Orientation orientation = RTUtil::getOrientation(first_real, second_real);
+      grid_obs_map[RTUtil::getGridCoord(first_real, track_axis)].insert(orientation);
+      grid_obs_map[RTUtil::getGridCoord(second_real, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
+    }
+  }
+  return grid_obs_map;
+}
+
+std::vector<Segment<PlanarCoord>> TrackAssigner::getSegmentList(irt_int layer_idx, PlanarRect& blockage)
+{
+  std::vector<Segment<PlanarCoord>> segment_list;
+
+  std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
+  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
   TrackAxis& track_axis = routing_layer.get_track_axis();
 
   // 先膨胀half_width
-  PlanarRect search_rect = RTUtil::getEnlargedRect(blockage, half_width);
+  PlanarRect search_rect = RTUtil::getEnlargedRect(blockage, routing_layer.get_min_width() / 2);
   irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
   irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
   search_rect = RTUtil::getEnlargedRect(search_rect, x_step_length, y_step_length, x_step_length, y_step_length);
 
-  std::vector<Segment<PlanarCoord>> segment_list;
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_track_grid());
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_track_grid());
   for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
@@ -674,22 +697,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
       segment_list.emplace_back(irt::PlanarCoord(x, y_list[y_idx]), PlanarCoord(x, y_list[y_idx + 1]));
     }
   }
-
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
-  for (Segment<PlanarCoord>& segment : segment_list) {
-    PlanarCoord& first_real = segment.get_first();
-    PlanarCoord& second_real = segment.get_second();
-
-    if (RTUtil::isOpenOverlap(blockage, RTUtil::getEnlargedRect(segment, half_width))) {
-      if (!RTUtil::existGrid(first_real, track_axis) || !RTUtil::existGrid(second_real, track_axis)) {
-        LOG_INST.error(Loc::current(), "The coord can not find grid!");
-      }
-      Orientation orientation = RTUtil::getOrientation(first_real, second_real);
-      grid_obs_map[RTUtil::getGridCoord(first_real, track_axis)].insert(orientation);
-      grid_obs_map[RTUtil::getGridCoord(second_real, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
-    }
-  }
-  return grid_obs_map;
+  return segment_list;
 }
 
 void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
