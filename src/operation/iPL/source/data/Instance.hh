@@ -44,6 +44,7 @@ enum class INSTANCE_TYPE
 {
   kNone,
   kNormal,
+  kCross,
   kOutside,
   kFakeInstance
 };
