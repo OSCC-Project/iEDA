@@ -94,10 +94,7 @@ class HNode
   void set_slew_in(const double& slew_in) { _slew_in = slew_in; }
   void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
   void set_cap_out(const double& cap_out) { _cap_out = cap_out; }
-  void set_feasible_cap(const double& feasible_cap)
-  {
-    _feasible_cap = feasible_cap;
-  }
+  void set_feasible_cap(const double& feasible_cap) { _feasible_cap = feasible_cap; }
   void set_sub_total_cap(const double& sub_total_cap) { _sub_total_cap = sub_total_cap; }
   void set_fanout(const size_t& fanout) { _fanout = fanout; }
   void set_level(const size_t& level) { _level = level; }
@@ -267,7 +264,6 @@ class HCTS
   // report
 
   void reportTiming() const;
-
   // member
   std::string _net_name;
   std::vector<CtsInstance*> _instances;

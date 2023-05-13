@@ -69,7 +69,7 @@ class GridMap
 
   Proxy<T> operator[](const irt_int i) const
   {
-    if (i < 0 && _x_size <= i) {
+    if (i < 0 || _x_size <= i) {
       LOG_INST.error(Loc::current(), "The grid map index x ", i, " is out of bounds!");
     }
     return Proxy<T>(_y_size, _data_map[i]);
