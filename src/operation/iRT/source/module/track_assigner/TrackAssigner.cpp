@@ -771,6 +771,16 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
           LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
         }
       }
+      for (auto& [orien, task_idx_list] : ta_node.get_obs_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
+        }
+      }
+      for (auto& [orien, task_idx_list] : ta_node.get_cost_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
+        }
+      }
     }
   }
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
