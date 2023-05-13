@@ -162,6 +162,9 @@ void SlewAware::slewAwareByKmeans()
   // init timing nodes
   auto max_sink_tran = config->get_max_sink_tran();
   auto scale_size = config->get_scale_size();
+  if (_instances.size() / scale_size < 200) {
+    scale_size = _instances.size() / 200;
+  }
   auto clusters = clustering(_instances, _instances.size() / scale_size);
   std::vector<TimingNode*> root_nodes;
   // level 1: cluster sinks build
