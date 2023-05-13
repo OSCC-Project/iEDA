@@ -1583,15 +1583,13 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
       if (curr_rect.get_layer_idx() != ta_panel.get_layer_idx()) {
         continue;
       }
-      irt_int min_spacing = routing_layer_list[curr_rect.get_layer_idx()].getMinSpacing(curr_rect);
-      PlanarRect enlarge_curr_rect = RTUtil::getEnlargedRect(curr_rect, min_spacing);
 
       for (auto& [origin_net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
         if (ta_task_list[i].get_origin_net_idx() == origin_net_idx) {
           continue;
         }
         for (PlanarRect& blockage : blockage_list) {
-          double violation_area = RTUtil::getOverlap(enlarge_curr_rect, blockage).getArea();
+          double violation_area = RTUtil::getOverlap(curr_rect, blockage).getArea();
           ta_panel_stat.addNetAndObsViolation(violation_area / (micron_dbu * micron_dbu));
         }
       }
