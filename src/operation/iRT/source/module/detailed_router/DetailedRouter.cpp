@@ -1822,17 +1822,15 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   for (size_t i = 0; i < dr_task_list.size(); i++) {
     for (LayerRect& curr_rect : task_rect_list_map[i]) {
       irt_int rect_layer_idx = curr_rect.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[curr_rect.get_layer_idx()].getMinSpacing(curr_rect);
-      PlanarRect enlarge_curr_rect = RTUtil::getEnlargedRect(curr_rect, min_spacing);
       for (auto& [origin_net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
         if (dr_task_list[i].get_origin_net_idx() == origin_net_idx) {
           continue;
         }
         for (LayerRect& blockage : blockage_list) {
-          if (rect_layer_idx != blockage.get_layer_idx() || !RTUtil::isOpenOverlap(enlarge_curr_rect, blockage)) {
+          if (rect_layer_idx != blockage.get_layer_idx() || !RTUtil::isOpenOverlap(curr_rect, blockage)) {
             continue;
           }
-          double violation_area = RTUtil::getOverlap(enlarge_curr_rect, blockage).getArea();
+          double violation_area = RTUtil::getOverlap(curr_rect, blockage).getArea();
           dr_box_stat.get_routing_net_and_obs_violation_area_map()[rect_layer_idx] += (violation_area / (micron_dbu * micron_dbu));
         }
       }
