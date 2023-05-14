@@ -580,35 +580,16 @@ void DetailedRouter::buildBasicLayerGraph(DRBox& dr_box)
 
 void DetailedRouter::buildCrossLayerGraph(DRBox& dr_box)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-  irt_int bottom_routing_layer_idx = _dr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _dr_data_manager.getConfig().top_routing_layer_idx;
-
-  std::vector<LayerCoord> key_coord_list;
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
       for (LayerCoord& coord : dr_group.get_coord_list()) {
-        irt_int layer_idx = coord.get_layer_idx();
-        for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
-          ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-
-          const LayerRect& below_enclosure = via_master.get_below_enclosure();
-          key_coord_list.emplace_back(coord.get_planar_coord(), below_enclosure.get_layer_idx());
-
-          const LayerRect& above_enclosure = via_master.get_above_enclosure();
-          key_coord_list.emplace_back(coord.get_planar_coord(), above_enclosure.get_layer_idx());
+        std::queue<LayerCoord> added_coord_queue = RTUtil::initQueue(coord);
+        while (!added_coord_queue.empty()) {
+          LayerCoord added_coord = RTUtil::getFrontAndPop(added_coord_queue);
+          std::vector<LayerCoord> added_coord_list = addCoordToGraph(dr_box, added_coord);
+          RTUtil::addListToQueue(added_coord_queue, added_coord_list);
         }
       }
-    }
-  }
-  std::sort(key_coord_list.begin(), key_coord_list.end(), CmpLayerCoordByXASC());
-  key_coord_list.erase(std::unique(key_coord_list.begin(), key_coord_list.end()), key_coord_list.end());
-  for (LayerCoord& key_coord : key_coord_list) {
-    std::queue<LayerCoord> added_coord_queue = RTUtil::initQueue(key_coord);
-    while (!added_coord_queue.empty()) {
-      LayerCoord added_coord = RTUtil::getFrontAndPop(added_coord_queue);
-      std::vector<LayerCoord> added_coord_list = addCoordToGraph(dr_box, added_coord);
-      RTUtil::addListToQueue(added_coord_queue, added_coord_list);
     }
   }
 }
@@ -627,11 +608,8 @@ std::vector<LayerCoord> DetailedRouter::addCoordToGraph(DRBox& dr_box, LayerCoor
       return new_coord_list;
     }
   }
-  if (added_coord.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < added_coord.get_layer_idx()) {
-    // 不在可布线层
-    buildLayerNeighbor(new_coord_list, added_coord);
-  } else {
-    // 在可布线层
+  buildLayerNeighbor(new_coord_list, added_coord);
+  if (bottom_routing_layer_idx <= added_coord.get_layer_idx() || added_coord.get_layer_idx() <= top_routing_layer_idx) {
     buildPlanarNeighbor(new_coord_list, node_graph, added_coord, Direction::kHorizontal);
     buildPlanarNeighbor(new_coord_list, node_graph, added_coord, Direction::kVertical);
   }
@@ -647,14 +625,13 @@ std::vector<LayerCoord> DetailedRouter::addCoordToGraph(DRBox& dr_box, LayerCoor
 
 void DetailedRouter::buildLayerNeighbor(std::vector<LayerCoord>& new_coord_list, LayerCoord& added_coord)
 {
-  irt_int bottom_routing_layer_idx = _dr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _dr_data_manager.getConfig().top_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
 
-  if (added_coord.get_layer_idx() < bottom_routing_layer_idx) {
-    new_coord_list.emplace_back(added_coord, added_coord.get_layer_idx() + 1);
-  }
-  if (top_routing_layer_idx < added_coord.get_layer_idx()) {
+  if (routing_layer_list.front().get_layer_idx() < added_coord.get_layer_idx()) {
     new_coord_list.emplace_back(added_coord, added_coord.get_layer_idx() - 1);
+  }
+  if (added_coord.get_layer_idx() < routing_layer_list.back().get_layer_idx()) {
+    new_coord_list.emplace_back(added_coord, added_coord.get_layer_idx() + 1);
   }
 }
 
@@ -931,7 +908,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
         continue;
       }
       LOG_INST.error(Loc::current(), "The blockage(", blockage.get_lb_x(), ",", blockage.get_lb_y(), ")-(", blockage.get_rt_x(), ",",
-                     blockage.get_rt_y(), ") is out of panel!");
+                     blockage.get_rt_y(), ") is out of box!");
     }
   }
   for (auto& [net_idx, region_list] : dr_box.get_net_region_map()) {
@@ -940,7 +917,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
         continue;
       }
       LOG_INST.error(Loc::current(), "The region(", region.get_lb_x(), ",", region.get_lb_y(), ")-(", region.get_rt_x(), ",",
-                     region.get_rt_y(), ") is out of panel!");
+                     region.get_rt_y(), ") is out of box!");
     }
   }
   std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
@@ -993,6 +970,16 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
           continue;
         }
         LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+      }
+      for (auto& [orien, task_idx_list] : dr_node.get_obs_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
+        }
+      }
+      for (auto& [orien, task_idx_list] : dr_node.get_cost_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
+        }
       }
     }
   }
@@ -1835,17 +1822,15 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   for (size_t i = 0; i < dr_task_list.size(); i++) {
     for (LayerRect& curr_rect : task_rect_list_map[i]) {
       irt_int rect_layer_idx = curr_rect.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[curr_rect.get_layer_idx()].getMinSpacing(curr_rect);
-      PlanarRect enlarge_curr_rect = RTUtil::getEnlargedRect(curr_rect, min_spacing);
       for (auto& [origin_net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
         if (dr_task_list[i].get_origin_net_idx() == origin_net_idx) {
           continue;
         }
         for (LayerRect& blockage : blockage_list) {
-          if (rect_layer_idx != blockage.get_layer_idx() || !RTUtil::isOpenOverlap(enlarge_curr_rect, blockage)) {
+          if (rect_layer_idx != blockage.get_layer_idx() || !RTUtil::isOpenOverlap(curr_rect, blockage)) {
             continue;
           }
-          double violation_area = RTUtil::getOverlap(enlarge_curr_rect, blockage).getArea();
+          double violation_area = RTUtil::getOverlap(curr_rect, blockage).getArea();
           dr_box_stat.get_routing_net_and_obs_violation_area_map()[rect_layer_idx] += (violation_area / (micron_dbu * micron_dbu));
         }
       }

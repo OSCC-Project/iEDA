@@ -61,7 +61,11 @@ class TANode : public LayerCoord
   {
     bool is_obs = false;
     if (RTUtil::exist(_obs_task_map, orientation)) {
-      is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
+      if (_obs_task_map[orientation].size() >= 2) {
+        is_obs = true;
+      } else {
+        is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
+      }
     }
     if (!is_obs) {
       is_obs = !_task_queue.empty();
