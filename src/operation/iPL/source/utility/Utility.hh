@@ -43,6 +43,8 @@ struct Utility
 
   int fastModulo(const int input, const int ceil);
   std::pair<int, int> obtainMinMaxIdx(int border_bottom, int interval, int inquiry_bottom, int inquiry_top);
+  void correctPairRange(std::pair<int, int>& pair_range, int min, int32_t max);
+
   float getDistance(const std::vector<Point<int32_t>>& a, const std::vector<Point<int32_t>>& b);
   float getDistance(const std::vector<Point<float>>& a, const std::vector<Point<float>>& b);
 };
@@ -59,6 +61,16 @@ inline std::pair<int, int> Utility::obtainMinMaxIdx(int border_bottom, int inter
   int upper_idx = (fastModulo((inquiry_top - border_bottom), interval) == 0) ? (inquiry_top - border_bottom) / interval
                                                                              : (inquiry_top - border_bottom) / interval + 1;
   return std::make_pair(lower_idx, upper_idx);
+}
+
+inline void Utility::correctPairRange(std::pair<int, int>& pair_range, int min, int32_t max)
+{
+  if (pair_range.first < min) {
+    pair_range.first = min;
+  }
+  if (pair_range.second > max) {
+    pair_range.second = max;
+  }
 }
 
 inline float Utility::getDistance(const std::vector<Point<int32_t>>& a, const std::vector<Point<int32_t>>& b)
