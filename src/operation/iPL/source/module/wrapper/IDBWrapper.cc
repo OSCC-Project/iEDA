@@ -54,6 +54,11 @@ void IDBWrapper::updateFromSourceDataBase()
 
     auto* pl_inst = ipl_design->find_instance(inst_name);
     if (pl_inst) {
+      // skip fixed inst
+      if (pl_inst->isFixed()) {
+        continue;
+      }
+
       updatePLInstanceInfo(idb_inst, pl_inst);
       continue;
     }
