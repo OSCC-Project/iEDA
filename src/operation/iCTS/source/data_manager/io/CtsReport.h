@@ -42,8 +42,9 @@ enum CtsReportType
   kHP_WIRE_LENGTH = 1,
   kCELL_STATS = 2,
   kLIB_CELL_DIST = 3,
-  kTIMING_NODE_LOG = 4,
-  kHCTS_LOG = 5,
+  kNET_LEVEL = 4,
+  kTIMING_NODE_LOG = 5,
+  kHCTS_LOG = 6,
 };
 
 class CtsReportTable : public ieda::ReportTable
