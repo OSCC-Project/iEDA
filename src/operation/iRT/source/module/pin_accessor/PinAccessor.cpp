@@ -247,7 +247,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 {
   initAccessPointList(pa_net);
   mergeAccessPointList(pa_net);
-  selectAccessPointList(pa_net);
+  // selectAccessPointList(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PANet& pa_net)
@@ -505,6 +505,15 @@ void PinAccessor::countPAModel(PAModel& pa_model)
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       pa_mode_stat.addTotalPinNum(1);
 
+      std::set<irt_int> port_layer_idx_set;
+      for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+        port_layer_idx_set.insert(routing_shape.get_layer_idx());
+      }
+      for (irt_int port_layer_idx : port_layer_idx_set) {
+        pa_mode_stat.addTotalPortNum(1);
+        pa_mode_stat.get_layer_port_num_map()[port_layer_idx]++;
+      }
+
       std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
       std::sort(access_point_list.begin(), access_point_list.end(),
                 [](AccessPoint& a, AccessPoint& b) { return a.get_type() < b.get_type(); });
@@ -523,13 +532,9 @@ void PinAccessor::countPAModel(PAModel& pa_model)
           break;
       }
       for (AccessPoint& access_point : access_point_list) {
-        layer_port_set_map[access_point.get_layer_idx()].insert(pa_pin.get_pin_idx());
+        pa_mode_stat.addTotalAccessPointNum(1);
+        pa_mode_stat.get_layer_access_point_num_map()[access_point.get_layer_idx()]++;
       }
-    }
-
-    for (auto& [layer_idx, port_set] : layer_port_set_map) {
-      pa_mode_stat.addTotalPortNum(static_cast<irt_int>(port_set.size()));
-      pa_mode_stat.get_layer_port_num_map()[layer_idx] += static_cast<irt_int>(port_set.size());
     }
   }
 }
@@ -545,6 +550,8 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   irt_int shape_center_pin_num = pa_mode_stat.get_shape_center_pin_num();
   irt_int total_port_num = pa_mode_stat.get_total_port_num();
   std::map<irt_int, irt_int>& layer_port_num_map = pa_mode_stat.get_layer_port_num_map();
+  irt_int total_access_point_num = pa_mode_stat.get_total_access_point_num();
+  std::map<irt_int, irt_int>& layer_access_point_num_map = pa_mode_stat.get_layer_access_point_num_map();
 
   fort::char_table pin_table;
   pin_table.set_border_style(FT_SOLID_STYLE);
@@ -565,14 +572,16 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   fort::char_table port_table;
   port_table.set_border_style(FT_SOLID_STYLE);
   port_table << fort::header << "Routing Layer"
-             << "Port Number" << fort::endr;
+             << "Port Number"
+             << "Access Point Number" << fort::endr;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     irt_int port_num = layer_port_num_map[routing_layer.get_layer_idx()];
+    irt_int access_point_num = layer_access_point_num_map[routing_layer.get_layer_idx()];
     port_table << routing_layer.get_layer_name() << RTUtil::getString(port_num, "(", RTUtil::getPercentage(port_num, total_port_num), "%)")
-               << fort::endr;
+               << RTUtil::getString(access_point_num, "(", RTUtil::getPercentage(access_point_num, total_access_point_num), "%)") << fort::endr;
   }
-  port_table << fort::header << "Total" << total_port_num << fort::endr;
+  port_table << fort::header << "Total" << total_port_num << total_access_point_num << fort::endr;
 
   for (std::string table_str : RTUtil::splitString(port_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);

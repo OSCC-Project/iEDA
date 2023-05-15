@@ -103,8 +103,10 @@ class TimingNode
     node->_merged = _merged;
     node->_insert_type = _insert_type;
     node->_id = _id;
+    node->_is_origin = _is_origin;
     _insert_type = InsertType::kNone;
     _id = CTSAPIInst.genId();
+    _is_origin = false;
     return node;
   }
 
@@ -113,6 +115,8 @@ class TimingNode
   bool is_steiner() const { return _type == TimingNodeType::kSteiner; }
   bool is_sink() const { return _type == TimingNodeType::kSink; }
   bool is_merged() const { return _merged; }
+  bool is_origin() const { return _is_origin; }
+
   // getter
   std::string get_name() const { return _inst->get_name(); }
   Point get_location() const { return _inst->get_location(); }
@@ -126,7 +130,7 @@ class TimingNode
   double get_cap_out() const { return _cap_out; }
   double get_slew_constraint() const { return _slew_constraint; }
   double get_need_snake() const { return _need_snake; }
-  int getFanout() const { return _fanout; }
+  int get_fanout() const { return _fanout; }
   int get_level() const { return _level; }
   TimingNodeType get_type() const { return _type; }
   TimingNode* get_parent() const { return _parent; }
@@ -137,12 +141,7 @@ class TimingNode
   int get_id() const { return _id; }
   double get_net_length() const { return _net_length; }
   // setter
-  void set_name(const std::string& name)
-  {
-    if (_inst->get_name().empty()) {
-      _inst->set_name(name);
-    }
-  }
+  void set_name(const std::string& name) { _inst->set_name(name); }
   void set_location(const Point& location) { _inst->set_location(location); }
   void set_location(const int& x, const int& y) { _inst->set_location(Point(x, y)); }
   void set_join_segment(const Segment& join_segment) { _join_segment = join_segment; }
@@ -156,7 +155,7 @@ class TimingNode
   void set_cap_out(const double& cap_out) { _cap_out = cap_out; }
   void set_slew_constraint(const double& slew_constraint) { _slew_constraint = slew_constraint; }
   void set_need_snake(const double& need_snake) { _need_snake = need_snake; }
-  void setFanout(const int& fanout) { _fanout = fanout; }
+  void set_fanout(const int& fanout) { _fanout = fanout; }
   void set_level(const int& level) { _level = level; }
   void set_type(const TimingNodeType& type)
   {
@@ -182,6 +181,7 @@ class TimingNode
   }
   void set_id(const int& id) { _id = id; }
   void set_net_length(const double& sub_length) { _net_length = sub_length; }
+  void set_is_origin(const bool& is_origin = true) { _is_origin = is_origin; }
 
  private:
   Segment _join_segment;
@@ -204,6 +204,7 @@ class TimingNode
   InsertType _insert_type = InsertType::kNone;
   int _id = -1;
   double _net_length = 0.0;
+  bool _is_origin = false;
 };
 
 class TimingCalculator
@@ -222,6 +223,11 @@ class TimingCalculator
   {
     return (s->get_delay_max() - s->get_delay_min()) < _skew_bound
            || std::fabs(s->get_delay_max() - s->get_delay_min() - _skew_bound) < std::numeric_limits<double>::epsilon();
+  }
+
+  double calcLocLength(TimingNode* i, TimingNode* j) const
+  {
+    return 1.0 * pgl::manhattan_distance(i->get_location(), j->get_location()) / _db_unit;
   }
 
   double calcShortestLength(TimingNode* i, TimingNode* j) const;
@@ -299,6 +305,8 @@ class TimingCalculator
   void updateDelay(TimingNode* k) const;
 
   void timingPropagate(TimingNode* k, const bool& propagate_head = true) const;
+
+  void simplePropagate(TimingNode* k, const bool& propagate_head = true) const;
 
   void wireSnaking(TimingNode* s, TimingNode* i, const double& incre_delay) const;
 

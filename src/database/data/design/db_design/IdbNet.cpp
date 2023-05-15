@@ -116,16 +116,16 @@ IdbPin* IdbNet::get_driving_pin()
       }
     }
     std::cout << "No driving pin in net : " << _net_name << std::endl;
-  } else  // If IO PIN exist， there are only a pair pins in a net (including 1 IO Pin and 1 instance pin)
-  {
+  } else {
     // case 2
     if (_io_pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
       return _io_pin;
     }
     if (_instance_pin_list->get_pin_list().size() > 0) {
-      IdbPin* instance_pin = _instance_pin_list->get_pin_list().at(0);
-      if (instance_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
-        return instance_pin;
+      for (auto* instance_pin : _instance_pin_list->get_pin_list()) {
+        if (instance_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
+          return instance_pin;
+        }
       }
     }
 
@@ -153,8 +153,7 @@ vector<IdbPin*> IdbNet::get_load_pins()
         pin_list.emplace_back(pin);
       }
     }
-  } else  // If IO PIN exist， there are only a pair pins in a net (including 1 IO Pin and 1 instance pin)
-  {
+  } else {
     // case 2
     if (_io_pin->get_term()->get_direction() != IdbConnectDirection::kInput) {
       pin_list.emplace_back(_io_pin);
