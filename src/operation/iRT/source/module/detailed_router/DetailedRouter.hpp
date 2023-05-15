@@ -83,8 +83,8 @@ class DetailedRouter
   void addNeighborToGraph(DRBox& dr_box, LayerCoord& first_coord, LayerCoord& second_coord);
   void buildLayerNodeList(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
-  std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box);
-  std::map<DRNode*, std::set<Orientation>> getNodeOBSMap(LayerRect& blockage, std::vector<Segment<DRNode*>>& node_segment_list);
+  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& blockage);
+  std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& blockage);
   void buildCostTaskMap(DRBox& dr_box);
 #endif
 
@@ -138,7 +138,7 @@ class DetailedRouter
 
 #if 1  // count dr_box
   void countDRBox(DRBox& dr_box);
-  std::vector<LayerRect> convertToRectList(std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
 #endif
 
 #if 1  // update dr_model

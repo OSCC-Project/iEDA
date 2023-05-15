@@ -31,7 +31,25 @@ void Router::update()
   }
 }
 
-void Router::normalBuild()
+void Router::build()
+{
+  auto* config = CTSAPIInst.get_config();
+  auto router_type = config->get_router_type();
+  if (router_type == "ZST" || router_type == "BST" || router_type == "UST") {
+    DMEBuild();
+    return;
+  }
+  if (router_type == "SlewAware") {
+    slewAwareBuild();
+    return;
+  }
+  if (router_type == "HCTS") {
+    hctsBuild();
+    return;
+  }
+}
+
+void Router::DMEBuild()
 {
   for (auto* clock : _clocks) {
     auto& clock_nets = clock->get_clock_nets();
@@ -40,7 +58,8 @@ void Router::normalBuild()
         continue;
       }
       clock_net->setClockRouted();
-      routing(clock_net);
+      // routing(clock_net); // no constraint build
+      comfortRouting(clock_net);
     }
   }
 }
@@ -82,6 +101,9 @@ void Router::slewAwareBuild()
         slew_aware->topDown(clk_node);
         // make topo
         slew_aware->buildClockTopo(clk_node->get_left(), net_name);
+#ifdef TIMING_LOG
+        slew_aware->timingLog();
+#endif
         auto break_topos = slew_aware->get_clk_topos();
         for (auto topo : break_topos) {
           _clk_topos.emplace_back(topo);
@@ -216,6 +238,7 @@ void Router::slewAwareRouting(CtsNet* clk_net)
   // total topology
   auto* slew_aware = new SlewAware(net_name, insts);
   insts.size() > 3000 ? slew_aware->slewAwareByKmeans() : slew_aware->slewAware();
+  // slew_aware->slewAwareByBiCluster();
 #ifdef TIMING_LOG
   slew_aware->timingLog();
 #endif
