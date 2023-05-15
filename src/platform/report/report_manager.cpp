@@ -26,8 +26,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include "report_manager.h"
+
+#include <filesystem>
 
 #include "idm.h"
 #include "report_basic.h"
@@ -59,9 +60,12 @@ bool ReportManager::reportDBSummary(const std::string& file_name)
 
 ReportOStream::ReportOStream(const std::string& file)
 {
-  if (not file.empty()) {
-    _fs.open(file, std::ios_base::out | std::ios_base::trunc);
+  if (file.empty()) {
+    return;
   }
+  std::filesystem::path file_path(file);
+  std::filesystem::create_directories(file_path.parent_path());  // Create directories if they don't exist
+  _fs.open(file, std::ios::out | std::ios_base::trunc);
 }
 
 ReportOStream::~ReportOStream()
