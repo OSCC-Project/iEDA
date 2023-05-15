@@ -38,20 +38,22 @@ namespace iplf {
 
 class ReportOStream
 {
- public:
-  explicit ReportOStream(const std::string& file);
-  ~ReportOStream();
-  bool fileOpen() { return _fs.is_open(); }
-  template <typename T>
-  ReportOStream& operator<<(T&& obj)
-  {
-    (_fs.is_open() ? _fs : std::cout) << obj;
-    return *this;
-  };
+public:
+    explicit ReportOStream(const std::string &file);
+    ~ReportOStream();
 
- private:
-  std::fstream _fs;
+    bool fileOpen() { return _fs.is_open(); }
+    template <typename T>
+    ReportOStream &operator<<(T &&obj)
+    {
+        (_fs.is_open() ? _fs : std::cout) << obj;
+        return *this;
+    };
+
+private:
+    std::fstream _fs;
 };
+
 
 class ReportManager
 {
