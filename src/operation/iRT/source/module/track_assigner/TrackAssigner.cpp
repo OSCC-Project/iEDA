@@ -662,7 +662,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
   TrackAxis& track_axis = routing_layer.get_track_axis();
 
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
-  for (Segment<PlanarCoord>& segment : getSegmentList(ta_panel, blockage)) {
+  for (Segment<PlanarCoord>& segment : getGridSegmentList(ta_panel, blockage)) {
     PlanarCoord& first_real = segment.get_first();
     PlanarCoord& second_real = segment.get_second();
 
@@ -678,7 +678,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
   return grid_obs_map;
 }
 
-std::vector<Segment<PlanarCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel, PlanarRect& blockage)
+std::vector<Segment<PlanarCoord>> TrackAssigner::getGridSegmentList(TAPanel& ta_panel, PlanarRect& blockage)
 {
   std::vector<Segment<PlanarCoord>> segment_list;
 
@@ -1581,7 +1581,7 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
   std::map<irt_int, std::vector<LayerRect>> task_rect_list_map;
   for (size_t i = 0; i < ta_task_list.size(); i++) {
-    task_rect_list_map[i] = convertToRectList(ta_task_list[i].get_routing_segment_list());
+    task_rect_list_map[i] = getRealRectList(ta_task_list[i].get_routing_segment_list());
   }
 
   for (size_t i = 0; i < ta_task_list.size(); i++) {
@@ -1620,7 +1620,7 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
   }
 }
 
-std::vector<LayerRect> TrackAssigner::convertToRectList(std::vector<Segment<LayerCoord>>& segment_list)
+std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerCoord>>& segment_list)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _ta_data_manager.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();

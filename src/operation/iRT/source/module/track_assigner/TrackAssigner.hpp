@@ -78,7 +78,7 @@ class TrackAssigner
   void buildNeighborMap(TAPanel& ta_panel);
   void buildOBSTaskMap(TAPanel& ta_panel);
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, PlanarRect& blockage);
-  std::vector<Segment<PlanarCoord>> getSegmentList(TAPanel& ta_panel, PlanarRect& blockage);
+  std::vector<Segment<PlanarCoord>> getGridSegmentList(TAPanel& ta_panel, PlanarRect& blockage);
   void buildCostTaskMap(TAPanel& ta_panel);
 #endif
 
@@ -129,7 +129,7 @@ class TrackAssigner
 
 #if 1  // count ta_panel
   void countTAPanel(TAPanel& ta_panel);
-  std::vector<LayerRect> convertToRectList(std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
 #endif
 
 #if 1  // update ta_model
