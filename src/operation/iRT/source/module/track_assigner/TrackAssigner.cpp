@@ -635,7 +635,7 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
   for (auto& [net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (PlanarRect& blockage : blockage_list) {
-      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel.get_layer_idx(), blockage)) {
+      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, blockage)) {
         irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
         irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
         if (!ta_node_map.isInside(local_x, local_y)) {
@@ -654,15 +654,15 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
   }
 }
 
-std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(irt_int layer_idx,
+std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
                                                                                                         PlanarRect& blockage)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
   TrackAxis& track_axis = routing_layer.get_track_axis();
 
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
-  for (Segment<PlanarCoord>& segment : getSegmentList(layer_idx, blockage)) {
+  for (Segment<PlanarCoord>& segment : getSegmentList(ta_panel, blockage)) {
     PlanarCoord& first_real = segment.get_first();
     PlanarCoord& second_real = segment.get_second();
 
@@ -678,12 +678,12 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
   return grid_obs_map;
 }
 
-std::vector<Segment<PlanarCoord>> TrackAssigner::getSegmentList(irt_int layer_idx, PlanarRect& blockage)
+std::vector<Segment<PlanarCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel, PlanarRect& blockage)
 {
   std::vector<Segment<PlanarCoord>> segment_list;
 
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
   TrackAxis& track_axis = routing_layer.get_track_axis();
 
   // 先膨胀half_width
@@ -726,7 +726,7 @@ void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
   for (auto& [net_idx, region_list] : ta_panel.get_net_region_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (PlanarRect& region : region_list) {
-      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel.get_layer_idx(), region)) {
+      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, region)) {
         irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
         irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
         if (!ta_node_map.isInside(local_x, local_y)) {

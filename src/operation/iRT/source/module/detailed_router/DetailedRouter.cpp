@@ -781,8 +781,6 @@ void DetailedRouter::buildLayerNodeList(DRBox& dr_box)
 
 void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
 {
-  std::vector<Segment<DRNode*>> node_segment_list = getNodeSegmentList(dr_box);
-
   std::map<irt_int, std::vector<irt_int>> net_task_map;
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
@@ -790,7 +788,7 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
   for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (LayerRect& blockage : blockage_list) {
-      for (auto& [dr_node, orientation_set] : getNodeOBSMap(blockage, node_segment_list)) {
+      for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, blockage)) {
         for (Orientation orientation : orientation_set) {
           if (task_idx_list.empty()) {
             dr_node->get_obs_task_map()[orientation].insert(-1);
@@ -803,41 +801,14 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
   }
 }
 
-std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box)
-{
-  std::vector<Segment<DRNode*>> segment_list;
-  for (DRNodeGraph& node_graph : dr_box.get_layer_graph_list()) {
-    for (DRNode& dr_node : node_graph.get_dr_node_list()) {
-      for (auto [orient, neighbor_ptr] : dr_node.get_neighbor_ptr_map()) {
-        DRNode* node_a = &dr_node;
-        DRNode* node_b = neighbor_ptr;
-        RTUtil::sortASC(node_a, node_b);
-        segment_list.emplace_back(node_a, node_b);
-      }
-    }
-  }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<DRNode*>& a, Segment<DRNode*>& b) {
-    if (a.get_first() != b.get_first()) {
-      return a.get_first() < b.get_first();
-    } else {
-      return a.get_second() < b.get_second();
-    }
-  });
-  RTUtil::merge(segment_list, [](Segment<DRNode*>& sentry, Segment<DRNode*>& soldier) {
-    return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
-  });
-  return segment_list;
-}
-
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOBSMap(LayerRect& blockage,
-                                                                       std::vector<Segment<DRNode*>>& node_segment_list)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, LayerRect& blockage)
 {
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
 
   std::map<DRNode*, std::set<Orientation>> node_obs_map;
 
-  for (Segment<DRNode*>& node_segment : node_segment_list) {
+  for (Segment<DRNode*>& node_segment : getNodeSegmentList(dr_box, blockage)) {
     DRNode* first = node_segment.get_first();
     DRNode* second = node_segment.get_second();
     irt_int first_layer_idx = first->get_layer_idx();
@@ -876,10 +847,34 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOBSMap(LayerRect
   return node_obs_map;
 }
 
+std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, LayerRect& blockage)
+{
+  std::vector<Segment<DRNode*>> segment_list;
+  for (DRNodeGraph& node_graph : dr_box.get_layer_graph_list()) {
+    for (DRNode& dr_node : node_graph.get_dr_node_list()) {
+      for (auto [orient, neighbor_ptr] : dr_node.get_neighbor_ptr_map()) {
+        DRNode* node_a = &dr_node;
+        DRNode* node_b = neighbor_ptr;
+        RTUtil::sortASC(node_a, node_b);
+        segment_list.emplace_back(node_a, node_b);
+      }
+    }
+  }
+  std::sort(segment_list.begin(), segment_list.end(), [](Segment<DRNode*>& a, Segment<DRNode*>& b) {
+    if (a.get_first() != b.get_first()) {
+      return a.get_first() < b.get_first();
+    } else {
+      return a.get_second() < b.get_second();
+    }
+  });
+  RTUtil::merge(segment_list, [](Segment<DRNode*>& sentry, Segment<DRNode*>& soldier) {
+    return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
+  });
+  return segment_list;
+}
+
 void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
 {
-  std::vector<Segment<DRNode*>> node_segment_list = getNodeSegmentList(dr_box);
-
   std::map<irt_int, std::vector<irt_int>> net_task_map;
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
@@ -887,7 +882,7 @@ void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
   for (auto& [net_idx, region_list] : dr_box.get_net_region_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (LayerRect& region : region_list) {
-      for (auto& [dr_node, orientation_set] : getNodeOBSMap(region, node_segment_list)) {
+      for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, region)) {
         for (Orientation orientation : orientation_set) {
           if (task_idx_list.empty()) {
             dr_node->get_cost_task_map()[orientation].insert(-1);
