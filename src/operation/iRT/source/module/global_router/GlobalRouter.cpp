@@ -920,8 +920,7 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
-  std::set<GRNode*> wire_set;
-  std::set<GRNode*> via_set;
+  std::map<GRNode*, std::set<Orientation>> usage_map;
 
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     GRNode* first_node = node_segment.get_first();
@@ -930,12 +929,15 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
       LOG_INST.error(Loc::current(), "The orientation is error!");
     }
+    Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+
     GRNode* node_i = first_node;
     while (true) {
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        via_set.insert(node_i);
-      } else {
-        wire_set.insert(node_i);
+      if (node_i != first_node) {
+        usage_map[node_i].insert(oppo_orientation);
+      }
+      if (node_i != second_node) {
+        usage_map[node_i].insert(orientation);
       }
       if (node_i == second_node) {
         break;
@@ -943,16 +945,9 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
       node_i = node_i->getNeighborNode(orientation);
     }
   }
-  for (GRNode* wire_node : wire_set) {
-    wire_node->addWireDemand(gr_model.get_curr_net_idx());
+  for (auto& [usage_node, orientation_list] : usage_map) {
+    usage_node->addDemand(gr_net.get_net_idx(), orientation_list);
   }
-  for (GRNode* via_node : via_set) {
-    if (RTUtil::exist(wire_set, via_node)) {
-      continue;
-    }
-    via_node->addViaDemand(gr_model.get_curr_net_idx());
-  }
-
   std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
