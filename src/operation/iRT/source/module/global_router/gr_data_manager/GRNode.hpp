@@ -101,21 +101,22 @@ class GRNode : public LayerCoord
     }
     return cost;
   }
-  void addWireDemand(irt_int net_idx)
+  void addDemand(irt_int net_idx, std::set<Orientation> orientation_set)
   {
     if (RTUtil::exist(_net_access_map, net_idx)) {
+      orientation_set = RTUtil::getDifference(orientation_set, _net_access_map[net_idx]);
+    }
+    if (orientation_set.empty()) {
       return;
     }
-    _wire_area_demand += _single_wire_area;
-    _net_queue.push(net_idx);
-  }
-  void addViaDemand(irt_int net_idx)
-  {
-    if (RTUtil::exist(_net_access_map, net_idx)) {
-      return;
+    if (RTUtil::exist(orientation_set, Orientation::kEast) || RTUtil::exist(orientation_set, Orientation::kWest)
+        || RTUtil::exist(orientation_set, Orientation::kSouth) || RTUtil::exist(orientation_set, Orientation::kNorth)) {
+      _wire_area_demand += _single_wire_area;
+      _net_queue.push(net_idx);
+    } else if (RTUtil::exist(orientation_set, Orientation::kUp) || RTUtil::exist(orientation_set, Orientation::kDown)) {
+      _wire_area_demand += _single_wire_area;
+      _net_queue.push(net_idx);
     }
-    _via_area_demand += _single_via_area;
-    _net_queue.push(net_idx);
   }
 #if 1  // astar
   GRNodeState& get_state() { return _state; }

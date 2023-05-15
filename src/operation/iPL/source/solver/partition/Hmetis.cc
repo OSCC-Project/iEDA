@@ -46,8 +46,13 @@ void Hmetis::partition(int vertex_num, const std::vector<std::vector<int>>& hype
   if (_reconst) {
     hmetis_command += " -reconst";
   }
-  system(hmetis_command.c_str());
-  LOG_INFO << "hmetis partition succeed..";
+  int status = system(hmetis_command.c_str());
+  if (-1 != status && WIFEXITED(status) && 0 == WEXITSTATUS(status) ) {
+    LOG_INFO << "hmetis partition succeed..";
+  } else {
+    LOG_ERROR << "hmetis partition fail, system return " << status;
+  }
+  
 
   // read result
   std::string solution_file = hgraph_file_name + ".part." + std::to_string(_nparts);
