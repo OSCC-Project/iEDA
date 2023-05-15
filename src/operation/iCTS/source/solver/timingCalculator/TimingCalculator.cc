@@ -383,10 +383,10 @@ TimingNode* TimingCalculator::calcMergeNode(TimingNode* i, TimingNode* j) const
   updateTiming(j);
   auto* k = new TimingNode(i, j);
   // check fanout
-  if (i->getFanout() + j->getFanout() > _max_fanout) {
-    if (i->get_delay_max() - j->get_delay_max() > _min_insert_delay && i->getFanout() > j->getFanout()) {
+  if (i->get_fanout() + j->get_fanout() > _max_fanout) {
+    if (i->get_delay_max() - j->get_delay_max() > _min_insert_delay && i->get_fanout() > j->get_fanout()) {
       insertBuffer(i);
-    } else if (j->get_delay_max() - i->get_delay_max() > _min_insert_delay && j->getFanout() > i->getFanout()) {
+    } else if (j->get_delay_max() - i->get_delay_max() > _min_insert_delay && j->get_fanout() > i->get_fanout()) {
       insertBuffer(j);
     } else {
       insertBuffer(i);
@@ -406,7 +406,8 @@ TimingNode* TimingCalculator::calcMergeNode(TimingNode* i, TimingNode* j) const
   }
   updateTiming(k);
   k->set_merged();
-  // if (k->getFanout() == _max_fanout) {
+  k->set_is_origin();
+  // if (k->get_fanout() == _max_fanout) {
   //   insertBuffer(k);
   //   updateTiming(k);
   // }
@@ -441,13 +442,13 @@ void TimingCalculator::mergeNode(TimingNode* k) const
   // left and rigth maybe changed
   auto* left = k->get_left();
   auto* right = k->get_right();
-  if (k->getFanout() == _max_fanout) {
+  if (k->get_fanout() == _max_fanout) {
     insertBuffer(k);
     updateTiming(k);
-  } else if (left->getFanout() + right->getFanout() > _max_fanout) {
-    if (left->get_delay_max() - right->get_delay_max() > _min_insert_delay && left->getFanout() > right->getFanout()) {
+  } else if (left->get_fanout() + right->get_fanout() > _max_fanout) {
+    if (left->get_delay_max() - right->get_delay_max() > _min_insert_delay && left->get_fanout() > right->get_fanout()) {
       insertBuffer(left);
-    } else if (right->get_delay_max() - left->get_delay_max() > _min_insert_delay && right->getFanout() > left->getFanout()) {
+    } else if (right->get_delay_max() - left->get_delay_max() > _min_insert_delay && right->get_fanout() > left->get_fanout()) {
       insertBuffer(right);
     } else {
       insertBuffer(left);
@@ -466,6 +467,7 @@ void TimingCalculator::mergeNode(TimingNode* k) const
   }
   updateTiming(k);
   k->set_merged();
+  k->set_is_origin();
 }
 
 void TimingCalculator::calcMergeRegion(Polygon& merge_region, TimingNode* i, TimingNode* j) const
@@ -704,7 +706,7 @@ void TimingCalculator::updateTiming(TimingNode* k, const bool& update_cap, const
       sub_slew_constraint = std::min(left->get_slew_constraint(), sub_slew_constraint);
       sub_ideal_slew = std::max(calcIdealSlew(k, left), sub_ideal_slew);
     }
-    fanout += left->is_steiner() ? left->getFanout() : 1;
+    fanout += left->is_steiner() ? left->get_fanout() : 1;
     level = std::max(level, left->get_level() + 1);
     net_length += left->is_steiner() ? (calcShortestLength(k, left) + left->get_need_snake() + left->get_net_length())
                                      : (calcShortestLength(k, left) + left->get_need_snake());
@@ -726,7 +728,7 @@ void TimingCalculator::updateTiming(TimingNode* k, const bool& update_cap, const
       sub_slew_constraint = std::min(right->get_slew_constraint(), sub_slew_constraint);
       sub_ideal_slew = std::max(calcIdealSlew(k, right), sub_ideal_slew);
     }
-    fanout += right->is_steiner() ? right->getFanout() : 1;
+    fanout += right->is_steiner() ? right->get_fanout() : 1;
     level = std::max(level, right->get_level() + 1);
     net_length += right->is_steiner() ? (calcShortestLength(k, right) + right->get_need_snake() + right->get_net_length())
                                       : (calcShortestLength(k, right) + right->get_need_snake());
@@ -752,7 +754,7 @@ void TimingCalculator::updateTiming(TimingNode* k, const bool& update_cap, const
       }
     }
   }
-  k->setFanout(fanout);
+  k->set_fanout(fanout);
   k->set_level(level);
   k->set_net_length(net_length);
 }
@@ -840,6 +842,59 @@ void TimingCalculator::timingPropagate(TimingNode* k, const bool& propagate_head
   // just update insert delay, because cap, slew, slew constraint won't change
   updateDelay(k);
   fixTiming(k);
+}
+
+void TimingCalculator::simplePropagate(TimingNode* k, const bool& propagate_head) const
+{
+  k->set_merge_region(k->get_join_segment());
+  // k is a buffer node
+  auto* left = k->get_left();
+  auto* right = k->get_right();
+  auto* lib = findLib(k);
+  if (propagate_head) {
+    // is head
+    auto slew_out = lib->calcSlew(k->get_cap_out());
+    if (left) {
+      auto ideal_slew_left = calcIdealSlew(k, left);
+      auto wire_slew_left = std::sqrt(std::pow(slew_out, 2) + std::pow(ideal_slew_left, 2));
+      left->set_slew_in(wire_slew_left);
+    }
+    if (right) {
+      auto ideal_slew_right = calcIdealSlew(k, right);
+      auto wire_slew_right = std::sqrt(std::pow(slew_out, 2) + std::pow(ideal_slew_right, 2));
+      right->set_slew_in(wire_slew_right);
+    }
+  } else if (k->is_steiner()) {
+    // is steiner
+    // wire slew calc
+    if (left) {
+      auto left_slew_in = std::sqrt(std::pow(k->get_slew_in(), 2) + std::pow(calcIdealSlew(k, left), 2));
+      left->set_slew_in(left_slew_in);
+    }
+    if (right) {
+      auto right_slew_in = std::sqrt(std::pow(k->get_slew_in(), 2) + std::pow(calcIdealSlew(k, right), 2));
+      right->set_slew_in(right_slew_in);
+    }
+  } else {
+    // is buffer
+    if (k->is_buffer()) {
+      // modify insertion delay
+      auto slew_in = k->get_slew_in();
+      auto cap_out = calcCapLoad(k);
+      auto insert_delay = lib->calcDelay(slew_in, cap_out);
+      k->set_insertion_delay(insert_delay);
+      updateDelay(k);
+    }
+    return;
+  }
+  if (left) {
+    timingPropagate(left, false);
+  }
+  if (right) {
+    timingPropagate(right, false);
+  }
+  // just update insert delay, because cap, slew, slew constraint won't change
+  updateDelay(k);
 }
 
 void TimingCalculator::wireSnaking(TimingNode* s, TimingNode* t, const double& incre_delay) const
@@ -974,10 +1029,10 @@ void TimingCalculator::insertBuffer(TimingNode* s, TimingNode* t) const
     // virtual insertion delay
     insert_buf_node->set_insertion_delay(i > 0 ? current->get_insertion_delay() : predictInsertDelay(insert_buf_node, lib));
     updateTiming(insert_buf_node);
-    if (s->is_buffer()) {
-      timingPropagate(s);
-    }
     updateTiming(s);
+    if (s->is_buffer()) {
+      simplePropagate(s);
+    }
     auto temp_skew_range = calcTargetSkewRange(s);
     auto temp_low_skew = temp_skew_range.first;
     auto temp_high_skew = temp_skew_range.second;
@@ -1080,9 +1135,9 @@ void TimingCalculator::setMinCostCellLib(TimingNode* k) const
       return;
     }
   }
-  LOG_WARNING << "No feasible lib, please check "
-                 "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
-                 "\"max_cap\"";
+  LOG_ERROR << "No feasible lib, please check "
+               "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
+               "\"max_cap\"";
   k->set_cell_master(_delay_libs.back()->get_cell_master());
 }
 
@@ -1107,9 +1162,9 @@ CtsCellLib* TimingCalculator::findFeasibleLib(TimingNode* k) const
       return lib;
     }
   }
-  LOG_WARNING << "No feasible lib, please check "
-                 "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
-                 "\"max_cap\"";
+  LOG_ERROR << "No feasible lib, please check "
+               "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
+               "\"max_cap\"";
   return _delay_libs.back();
 }
 
@@ -1228,7 +1283,7 @@ double TimingCalculator::predictSlewIn(TimingNode* k) const
     updateTiming(k);
     double level = k->get_level();
     double cap_out = calcCapLoad(k);
-    double fanout = k->getFanout();
+    double fanout = k->get_fanout();
     double min_delay = k->get_delay_min();
     double max_delay = k->get_delay_max();
     std::vector<double> x_feat = {level, cap_out, fanout, min_delay, max_delay};

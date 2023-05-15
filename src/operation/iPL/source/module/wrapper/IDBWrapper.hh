@@ -94,6 +94,8 @@ class IDBWrapper : public DBWrapper
   Point<int32_t> calAverageOffsetFromCellCenter(IdbPin* idb_pin);
 
   bool isCoreOverlap(IdbInstance* idb_inst);
+  bool isCrossInst(IdbInstance* idb_inst);
+  Rectangle<int32_t> obtainCrossRect(IdbInstance* idb_inst, Rectangle<int32_t> core_shape);
   bool checkInCore(IdbInstance* idb_inst);
   void correctInstanceOrient();
 };
