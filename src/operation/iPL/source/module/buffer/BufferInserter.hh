@@ -31,7 +31,7 @@
 
 #include "PlacerDB.hh"
 #include "config/BufferInserterConfig.hh"
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 
 namespace ipl {
 

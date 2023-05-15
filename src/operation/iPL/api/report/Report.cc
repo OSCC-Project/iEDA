@@ -19,7 +19,7 @@
 #include <set>
 
 #include "TimingEval.hpp"
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
@@ -30,7 +30,7 @@
 
 namespace ipl {
 
-void iPL_API::reportPLInfo()
+void PLAPI::reportPLInfo()
 {
   LOG_INFO << "-----------------Start iPL Report Generation-----------------";
   ieda::Stats report_status;
@@ -107,7 +107,7 @@ void iPL_API::reportPLInfo()
   LOG_INFO << "-----------------Finish Report Generation-----------------";
 }
 
-void iPL_API::reportLayoutInfo(std::ofstream& feed)
+void PLAPI::reportLayoutInfo(std::ofstream& feed)
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -156,7 +156,7 @@ void iPL_API::reportLayoutInfo(std::ofstream& feed)
   delete checker;
 }
 
-void iPL_API::reportLayoutWhiteInfo()
+void PLAPI::reportLayoutWhiteInfo()
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -187,7 +187,7 @@ void iPL_API::reportLayoutWhiteInfo()
   delete checker;
 }
 
-void iPL_API::reportPeakBinDensity(std::ofstream& feed)
+void PLAPI::reportPeakBinDensity(std::ofstream& feed)
 {
   auto core_shape = PlacerDBInst.get_layout()->get_core_shape();
   int32_t bin_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
@@ -242,7 +242,7 @@ void plotPinName(std::stringstream& feed, std::string net_name, TreeNode* tree_n
   feed << "ENDEL" << std::endl;
 }
 
-void iPL_API::plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path)
+void PLAPI::plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -325,7 +325,7 @@ void iPL_API::plotConnectionForDebug(std::vector<std::string> net_name_list, std
   file_stream.close();
 }
 
-void iPL_API::plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path)
+void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -534,7 +534,7 @@ void iPL_API::plotModuleListForDebug(std::vector<std::string> module_prefix_list
   file_stream.close();
 }
 
-void iPL_API::plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path)
+void PLAPI::plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -606,7 +606,7 @@ void iPL_API::plotModuleStateForDebug(std::vector<std::string> special_inst_list
   file_stream.close();
 }
 
-void iPL_API::saveNetPinInfoForDebug(std::string path)
+void PLAPI::saveNetPinInfoForDebug(std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -632,7 +632,7 @@ void iPL_API::saveNetPinInfoForDebug(std::string path)
   file_stream.close();
 }
 
-void iPL_API::savePinListInfoForDebug(std::string path)
+void PLAPI::savePinListInfoForDebug(std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -656,7 +656,7 @@ void iPL_API::savePinListInfoForDebug(std::string path)
   file_stream.close();
 }
 
-void iPL_API::reportSTWLInfo(std::ofstream& feed)
+void PLAPI::reportSTWLInfo(std::ofstream& feed)
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   SteinerWirelength stwl_eval(topo_manager);
@@ -676,14 +676,14 @@ void iPL_API::reportSTWLInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void iPL_API::printHPWLInfo()
+void PLAPI::printHPWLInfo()
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   HPWirelength hpwl_eval(topo_manager);
   LOG_INFO << "Current Stage Total HPWL: " << hpwl_eval.obtainTotalWirelength();
 }
 
-void iPL_API::reportHPWLInfo(std::ofstream& feed)
+void PLAPI::reportHPWLInfo(std::ofstream& feed)
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   HPWirelength hpwl_eval(topo_manager);
@@ -691,7 +691,7 @@ void iPL_API::reportHPWLInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void iPL_API::reportLongNetInfo(std::ofstream& feed)
+void PLAPI::reportLongNetInfo(std::ofstream& feed)
 {
   auto* pl_config = PlacerDBInst.get_placer_config();
   int32_t max_wirelength_constraint = pl_config->get_buffer_config().get_max_wirelength_constraint();
@@ -738,7 +738,7 @@ void iPL_API::reportLongNetInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void iPL_API::reportOverlapInfo(std::ofstream& feed)
+void PLAPI::reportOverlapInfo(std::ofstream& feed)
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -772,7 +772,7 @@ void iPL_API::reportOverlapInfo(std::ofstream& feed)
   delete checker;
 }
 
-void iPL_API::reportTimingInfo(std::ofstream& feed)
+void PLAPI::reportTimingInfo(std::ofstream& feed)
 {
   if (this->isSTAStarted()) {
     iPLAPIInst.initTimingEval();
@@ -790,7 +790,7 @@ void iPL_API::reportTimingInfo(std::ofstream& feed)
   }
 }
 
-void iPL_API::reportCongestionInfo(std::ofstream& feed)
+void PLAPI::reportCongestionInfo(std::ofstream& feed)
 {
   std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
 
