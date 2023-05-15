@@ -77,8 +77,8 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildOBSTaskMap(TAPanel& ta_panel);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(irt_int layer_idx, PlanarRect& blockage);
-  std::vector<Segment<PlanarCoord>> getSegmentList(irt_int layer_idx, PlanarRect& blockage);
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, PlanarRect& blockage);
+  std::vector<Segment<PlanarCoord>> getSegmentList(TAPanel& ta_panel, PlanarRect& blockage);
   void buildCostTaskMap(TAPanel& ta_panel);
 #endif
 
