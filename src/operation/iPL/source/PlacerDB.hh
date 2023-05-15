@@ -90,7 +90,7 @@ class PlacerDB
   void initTopoManager();
 
  private:
-  static PlacerDB* _placer_db_instance;
+  static PlacerDB* _s_placer_db_instance;
 
   Config* _config;
   DBWrapper* _db_wrapper;

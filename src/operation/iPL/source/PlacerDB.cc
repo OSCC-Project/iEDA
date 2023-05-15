@@ -33,17 +33,17 @@ namespace ipl {
 
 PlacerDB& PlacerDB::getInst()
 {
-  if (!_placer_db_instance) {
-    _placer_db_instance = new PlacerDB();
+  if (!_s_placer_db_instance) {
+    _s_placer_db_instance = new PlacerDB();
   }
 
-  return *_placer_db_instance;
+  return *_s_placer_db_instance;
 }
 
 void PlacerDB::destoryInst()
 {
-  if (_placer_db_instance) {
-    delete _placer_db_instance;
+  if (_s_placer_db_instance) {
+    delete _s_placer_db_instance;
   }
 }
 
@@ -567,6 +567,6 @@ void PlacerDB::saveVerilogForDebug(std::string path)
 }
 
 // private
-PlacerDB* PlacerDB::_placer_db_instance = nullptr;
+PlacerDB* PlacerDB::_s_placer_db_instance = nullptr;
 
 }  // namespace ipl
