@@ -138,7 +138,7 @@ class DetailedRouter
 
 #if 1  // count dr_box
   void countDRBox(DRBox& dr_box);
-  std::vector<LayerRect> convertToRectList(std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
 #endif
 
 #if 1  // update dr_model

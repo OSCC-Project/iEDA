@@ -151,7 +151,7 @@ void DetailedRouter::addBlockageList(DRModel& dr_model)
         continue;
       }
       irt_int layer_idx = ta_node_node->value().get_first_guide().get_layer_idx();
-      irt_int half_width = routing_layer_list[layer_idx].get_min_width();
+      irt_int half_width = routing_layer_list[layer_idx].get_min_width() / 2;
       for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node_node->value().get_routing_tree())) {
         PlanarRect real_rect
             = RTUtil::getEnlargedRect(routing_segment.get_first()->value(), routing_segment.get_second()->value(), half_width);
@@ -1804,7 +1804,7 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
 
   std::map<irt_int, std::vector<LayerRect>> task_rect_list_map;
   for (size_t i = 0; i < dr_task_list.size(); i++) {
-    task_rect_list_map[i] = convertToRectList(dr_task_list[i].get_routing_segment_list());
+    task_rect_list_map[i] = getRealRectList(dr_task_list[i].get_routing_segment_list());
   }
 
   for (size_t i = 0; i < dr_task_list.size(); i++) {
@@ -1844,7 +1844,7 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   }
 }
 
-std::vector<LayerRect> DetailedRouter::convertToRectList(std::vector<Segment<LayerCoord>>& segment_list)
+std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>>& segment_list)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
