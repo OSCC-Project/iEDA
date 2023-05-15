@@ -17,7 +17,7 @@
 
 #include <string>
 #include "PlacerDB.hh"
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 #include "idm.h"
 
 using namespace ipl;
