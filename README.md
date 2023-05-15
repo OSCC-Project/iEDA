@@ -1,30 +1,31 @@
 <div align="center">
 
+<!-- <img src="docs/resources/iEDA-logo-new.png" width="15%" height="15%" alt="iEDA-logo" /> -->
 
- <!-- <img src="docs/resources/iEDA-logo-new.png" width="15%" height="15%" alt="iEDA-logo" /> -->
- <img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
+<img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
  <h1>iEDA</h1>
  <h3>从 Netlist 到 GDS 的开源芯片设计 EDA 平台</h3>
 
-[![License][License-img]][License-url]
+[License][License-url]
 
 **简体中文** | [English][README-path]
+
 </div>
 
 iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
 ## 关于iEDA
+
 - **About “i”in iEDA**
-    - Meaning 1: Infrastructure 
-    - Meaning 2: Intelligent
+  - Meaning 1: Infrastructure
+  - Meaning 2: Intelligent
 - **The goal of the iEDA project**
-    - EDA Infrastructure
-    - High quality and performance EDA tool
+  - EDA Infrastructure
+  - High quality and performance EDA tool
 - **Open-source is not a goal but a way**
 
-
-
 ## iEDA主要内容和规划
+
 - Enhance the **infrastructure** to support more design requirement
 - Complete the EDA tool chain from **RTL-GDS II**
 - Improve the **quality and performance** of all EDA tool operations
@@ -32,34 +33,33 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 - Build **data system** with enough chip design and labeling process data
 - Achieve the adaptability of the EDA platform for **cloud-native**
 
-
-
 <div align="center">
  <img src= "docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
 </div>
 
 ## **iEDA Structure**
+
 <div align="center">
  <img src= "docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
 </div>
 
-
 ## **iEDA Infrastructure**
+
 <div align="center">
  <img src= "docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
 </div>
 
-
 ## **iEDA Operations (Tools)**
+
 <div align="center">
  <img src= "docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
 </div>
 
 ## **iEDA Tapeout**
+
 <div align="center">
  <img src= "docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
 </div>
-
 
 ---
 
@@ -70,8 +70,8 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 ---
 
 ## 论文和报告
-- ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
+- ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
 # iEDA 使用指导
 
@@ -159,12 +159,11 @@ Roadmap -->
 Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
 
 请注意 iEDA 使用的[编程规范][Code-conduct-md]。
+
 ## 讨论和反馈
 
 - 新建 [issue](https://gitee.com/oscc-project/iEDA/issues)，我们将及时反馈。
-
 - QQ 群：**793409748**
-
 - 微信讨论群：
 
 <div align="center">
@@ -175,35 +174,37 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 
 [木兰宽松许可证, 第2版][License-url]
 
-
 ## 致谢
 
 在iEDA的开发过程中，我们采用了来自开源社区的子模块。具体情况如下：
 
-| 子模块              | 来源                                                         | 详细用途                                                     |
-| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| flute3     | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute) | 借助flute3来产生rectange steiner tree. |
-| abseil-cpp | [Google abseil](https://github.com/abseil/abseil-cpp.git) | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
-| json | [JSON for Modern C++](https://github.com/nlohmann/json) | Json C++库，用来解析程序Json配置文件. |
-| magic_enum | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换. |
-| libfort | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git) | C/C++ library 产生格式化的 ASCII tables. |
-| pegtl | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/) | 使用PEGTL来方便的解析SPEF文件. |
-| pybind11 | [pybind 11](https://github.com/pybind/pybind11.git) | 方便python调用C++. |
-| VCDParser | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git) | 解析功耗VCD波形文件. |
-| def lef | [def lef parser](https://github.com/asyncvlsi/lefdef.git) | 解析物理设计DEF/LEF文件. |
-| ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git) | C++11模板库实现的多线程池. |
-| fft | [ fft](https://github.com/progschj/ThreadPool.git) | 快速傅立叶变换库. |
-| hmetics | [hmetics](https://github.com/progschj/ThreadPool.git) | 高效的图划分算法. |
+| 子模块     | 来源                                                                                                  | 详细用途                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| flute3     | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | 借助flute3来产生rectange steiner tree.                            |
+| abseil-cpp | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
+| json       | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++库，用来解析程序Json配置文件.                             |
+| magic_enum | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换.                                   |
+| libfort    | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | C/C++ library 产生格式化的 ASCII tables.                          |
+| pegtl      | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | 使用PEGTL来方便的解析SPEF文件.                                    |
+| pybind11   | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | 方便python调用C++.                                                |
+| VCDParser  | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | 解析功耗VCD波形文件.                                              |
+| def lef    | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
+| ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                    | C++11模板库实现的多线程池.                                        |
+| fft        | [ fft](https://github.com/progschj/ThreadPool.git)                                                       | 快速傅立叶变换库.                                                 |
+| hmetics    | [hmetics](https://github.com/progschj/ThreadPool.git)                                                    | 高效的图划分算法.                                                 |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
+<!-- links -->
+
+<!-- [README-CN-path]: README.zh-cn.md -->
 
 <!-- links -->
+
 [License-icon]: https://s2.d2scdn.com/static/imgs/favicon.ico
 [License-img]: docs/resources/license-Mulan%20PSL%20v2-blue.svg
 [License-url]: LICENSE
-[README-path]: docs/tbd/README.md
-<!-- [README-CN-path]: README.zh-cn.md -->
+[README-path]: README-En.md
 [README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
@@ -213,5 +214,3 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
 [iFlow-repo-url]: https://gitee.com/oscc-project/iFlow
-
-<!-- links -->

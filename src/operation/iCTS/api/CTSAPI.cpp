@@ -79,7 +79,7 @@ void CTSAPI::runCTS()
   // optimize();
   LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
-  // writeGDS();
+  writeGDS();
   // writeDB();
 }
 
@@ -91,8 +91,8 @@ void CTSAPI::writeDB()
 void CTSAPI::writeGDS()
 {
   GDSPloter plotter;
-  auto& insts = _design->get_insts();
-  plotter.plotInstances(insts);
+  plotter.plotDesign();
+  plotter.plotFlyLine();
 }
 
 void CTSAPI::report(const std::string& save_dir)
@@ -175,7 +175,7 @@ void CTSAPI::routing()
   ieda::Stats stats;
   Router router;
   router.init();
-  router.slewAwareBuild();
+  router.build();
   router.update();
   LOG_INFO << "Routing memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Routing elapsed time " << stats.elapsedRunTime() << "s";
@@ -209,6 +209,18 @@ void CTSAPI::evaluate()
 
 void CTSAPI::balance()
 {
+  auto* config = CTSAPIInst.get_config();
+  auto router_type = config->get_router_type();
+  // if (router_type != "SlewAware" || router_type != "HCTS") {
+  //   // TBD
+  //   LOG_INFO << "Balance is only supported for SlewAware and HCTS";
+  //   return;
+  // }
+  if (router_type != "SlewAware") {
+    // TBD
+    LOG_INFO << "Balance is only supported for SlewAware";
+    return;
+  }
   ieda::Stats stats;
   _balancer->init();
   _balancer->balance();
