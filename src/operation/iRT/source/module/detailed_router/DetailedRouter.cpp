@@ -452,10 +452,21 @@ void DetailedRouter::buildScaleOrientList(DRBox& dr_box)
       continue;
     }
     RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+
+#if 1
+    if (routing_layer.isPreferH()) {
+      node_graph.set_y_scale_list(
+          RTUtil::getClosedScaleList(dr_box_region.get_lb_y(), dr_box_region.get_rt_y(), routing_layer.getYTrackGrid()));
+    } else {
+      node_graph.set_x_scale_list(
+          RTUtil::getClosedScaleList(dr_box_region.get_lb_x(), dr_box_region.get_rt_x(), routing_layer.getXTrackGrid()));
+    }
+#elif
     node_graph.set_x_scale_list(
         RTUtil::getClosedScaleList(dr_box_region.get_lb_x(), dr_box_region.get_rt_x(), routing_layer.getXTrackGrid()));
     node_graph.set_y_scale_list(
         RTUtil::getClosedScaleList(dr_box_region.get_lb_y(), dr_box_region.get_rt_y(), routing_layer.getYTrackGrid()));
+#endif
   }
 
   for (DRNodeGraph& node_graph : layer_graph_list) {

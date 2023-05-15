@@ -590,6 +590,7 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
     for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
       std::map<Orientation, TANode*>& neighbor_ptr_map = ta_node_map[x][y].get_neighbor_ptr_map();
 
+#if 1
       if (routing_layer.isPreferH()) {
         if (x != 0) {
           neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
@@ -605,6 +606,20 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
           neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
         }
       }
+#elif
+      if (x != 0) {
+        neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
+      }
+      if (x != (ta_node_map.get_x_size() - 1)) {
+        neighbor_ptr_map[Orientation::kEast] = &ta_node_map[x + 1][y];
+      }
+      if (y != 0) {
+        neighbor_ptr_map[Orientation::kSouth] = &ta_node_map[x][y - 1];
+      }
+      if (y != (ta_node_map.get_y_size() - 1)) {
+        neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
+      }
+#endif
     }
   }
 }
