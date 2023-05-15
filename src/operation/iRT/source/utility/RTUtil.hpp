@@ -2621,6 +2621,20 @@ class RTUtil
     return mem_string;
   }
 
+  template <typename T>
+  static std::set<T> getDifference(std::set<T>& master, std::set<T>& set)
+  {
+    std::vector<T> master_list;
+    master_list.assign(master.begin(), master.end());
+    std::vector<T> set_list;
+    set_list.assign(set.begin(), set.end());
+
+    std::vector<T> result;
+    std::set_difference(master_list.begin(), master_list.end(), set_list.begin(), set_list.end(), std::back_inserter(result));
+
+    return std::set<T>(result.begin(), result.end());
+  }
+
 #endif
 
 #if 1  // report数据结构
