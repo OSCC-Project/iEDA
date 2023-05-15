@@ -178,7 +178,7 @@ Please note the using [Coding Style][Code-conduct-md] of iEDA。
 
 [MulanPSL-2.0][License-url]
 
-## 致谢
+## Acknowledgement
 
 In the development of iEDA, some sub-modules from the open-source community are employed. All relevant usage is listed below.
 
