@@ -54,6 +54,11 @@ void IDBWrapper::updateFromSourceDataBase()
 
     auto* pl_inst = ipl_design->find_instance(inst_name);
     if (pl_inst) {
+      // skip fixed inst
+      if (pl_inst->isFixed()) {
+        continue;
+      }
+
       updatePLInstanceInfo(idb_inst, pl_inst);
       continue;
     }
@@ -380,19 +385,6 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   auto bbox = idb_inst->get_bounding_box();
   inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
 
-  // set type.
-  if (!isCoreOverlap(idb_inst)) {
-    if (idb_inst->is_fixed()) {
-      inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
-    } else {
-      if (!checkInCore(idb_inst)) {
-        inst_ptr->set_shape(-1, -1, -1, -1);  // set an unlegal coordinate.
-      }
-    }
-  } else {
-    inst_ptr->set_instance_type(INSTANCE_TYPE::kNormal);
-  }
-
   // set instance state.
   if (idb_inst->is_unplaced() || idb_inst->get_status() == IdbPlacementStatus::kNone) {
     inst_ptr->set_shape(-1, -1, -1, -1);  // set an unlegal coordinate.
@@ -404,6 +396,25 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
     inst_ptr->set_instance_state(INSTANCE_STATE::kFixed);
   } else {
     inst_ptr->set_instance_state(INSTANCE_STATE::kNone);
+  }
+
+  // set type.
+  if (!isCoreOverlap(idb_inst)) {
+    if (idb_inst->is_fixed()) {
+      inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
+    } else {
+      if (!checkInCore(idb_inst)) {
+        inst_ptr->set_shape(-1, -1, -1, -1);  // set an unlegal coordinate.
+      }
+    }
+  } else {
+    if (idb_inst->is_fixed() && isCrossInst(idb_inst)) {
+      inst_ptr->set_instance_type(INSTANCE_TYPE::kCross);
+      Rectangle<int32_t> cross_shape = obtainCrossRect(idb_inst, ipl_layout->get_core_shape());
+      inst_ptr->set_shape(cross_shape.get_ll_x(), cross_shape.get_ll_y(), cross_shape.get_ur_x(), cross_shape.get_ur_y());
+    } else {
+      inst_ptr->set_instance_type(INSTANCE_TYPE::kNormal);
+    }
   }
 
   // set orient.
@@ -854,6 +865,34 @@ bool IDBWrapper::isCoreOverlap(IdbInstance* idb_inst)
   }
 }
 
+bool IDBWrapper::isCrossInst(IdbInstance* idb_inst)
+{
+  Point<int32_t> core_lower = this->get_layout()->get_core_shape().get_lower_left();
+  Point<int32_t> core_upper = this->get_layout()->get_core_shape().get_upper_right();
+  auto* bounding_box = idb_inst->get_bounding_box();
+
+  if ((bounding_box->get_low_x() < core_lower.get_x() && bounding_box->get_high_x() > core_lower.get_x())
+      || (bounding_box->get_low_y() < core_lower.get_y() && bounding_box->get_high_y() > core_lower.get_y())
+      || (bounding_box->get_high_x() > core_upper.get_x() && bounding_box->get_low_x() < core_upper.get_x())
+      || (bounding_box->get_high_y() > core_upper.get_y() && bounding_box->get_low_y() < core_upper.get_y())) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+Rectangle<int32_t> IDBWrapper::obtainCrossRect(IdbInstance* idb_inst, Rectangle<int32_t> core_shape)
+{
+  auto* bounding_box = idb_inst->get_bounding_box();
+
+  int32_t min_x = (bounding_box->get_low_x() < core_shape.get_ll_x()) ? core_shape.get_ll_x() : bounding_box->get_low_x();
+  int32_t min_y = (bounding_box->get_low_y() < core_shape.get_ll_y()) ? core_shape.get_ll_y() : bounding_box->get_low_y();
+  int32_t max_x = (bounding_box->get_high_x() > core_shape.get_ur_x()) ? core_shape.get_ur_x() : bounding_box->get_high_x();
+  int32_t max_y = (bounding_box->get_high_y() > core_shape.get_ur_y()) ? core_shape.get_ur_y() : bounding_box->get_high_y();
+
+  return Rectangle<int32_t>(min_x, min_y, max_x, max_y);
+}
+
 bool IDBWrapper::checkInCore(IdbInstance* idb_inst)
 {
   Point<int32_t> core_lower = this->get_layout()->get_core_shape().get_lower_left();
@@ -946,6 +985,8 @@ void IDBWrapper::initInstancesForFragmentedRow()
       Rectangle<int32_t> inst_shape = inst->get_shape();
       std::pair<int, int> pair_x = utility.obtainMinMaxIdx(core_lower.get_x(), site_width, inst_shape.get_ll_x(), inst_shape.get_ur_x());
       std::pair<int, int> pair_y = utility.obtainMinMaxIdx(core_lower.get_y(), row_height, inst_shape.get_ll_y(), inst_shape.get_ur_y());
+
+      // keep legal range
 
       for (int i = pair_x.first; i < pair_x.second; ++i) {
         for (int j = pair_y.first; j < pair_y.second; ++j) {

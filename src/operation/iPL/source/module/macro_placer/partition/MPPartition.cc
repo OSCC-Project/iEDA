@@ -117,7 +117,7 @@ vector<int> MPPartition::hmetisPartition()
   LOG_INFO << "create hyper edge list time consume: " << double(clock() - start) / CLOCKS_PER_SEC << "s";
 
   // call hmetis
-  hmetis->partition(_unfixed_inst_list.size(), hyper_edge_list);
+  hmetis->partition(_unfixed_inst_list.size(), hyper_edge_list); 
   vector<int> result = hmetis->get_result();
   delete hmetis;
   return result;

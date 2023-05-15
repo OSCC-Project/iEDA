@@ -52,8 +52,6 @@ HNode* HCTS::biCluster(const std::vector<CtsInstance*>& insts) const
 {
   if (insts.size() == 1) {
     auto* node = new HNode(insts[0]);
-    auto* config = CTSAPIInst.get_config();
-    auto max_sink_tran = config->get_max_sink_tran();
     auto sink_cap = CTSAPIInst.getSinkCap(insts[0]);
     node->set_type(HNodeType::kSink);
     node->set_cap_load(sink_cap);
@@ -73,9 +71,9 @@ HNode* HCTS::biCluster(const std::vector<CtsInstance*>& insts) const
   auto* parent = new HNode(left, right);
   // 1. set loc
 
-  //   auto loc = medianCenter(insts);
-  //   parent->setLocation(loc);
-  updateCapCenterLoc(parent);
+  auto loc = medianCenter(insts);
+  parent->setLocation(loc);
+  // updateCapCenterLoc(parent);
   // 2. set sub total cap
   updateSubTotalCap(parent);
 
@@ -175,7 +173,7 @@ std::vector<std::vector<CtsInstance*>> HCTS::kMeans(const std::vector<CtsInstanc
 
 HNode* HCTS::biPartition(const std::vector<CtsInstance*>& instances) const
 {
-    // TBD
+  // TBD
   return nullptr;
 }
 
@@ -514,7 +512,7 @@ HNode* HCTS::genBufferNode() const
   auto* buf_node = new HNode();
   auto id = buf_node->get_id();
   auto* buf_inst
-      = new CtsInstance(_net_name + "_buf_" + std::to_string(id), _lib->get_cell_master(), CtsInstanceType::kBuffer, Point(-1, -1));
+      = new CtsInstance(_net_name + "_" + std::to_string(id) + "_buf", _lib->get_cell_master(), CtsInstanceType::kBuffer, Point(-1, -1));
   buf_node->set_inst(buf_inst);
   buf_node->set_type(HNodeType::kBuffer);
   buf_node->set_cap_load(_lib->get_init_cap());
@@ -526,7 +524,7 @@ void HCTS::setBuffer(HNode* node) const
   node->set_type(HNodeType::kBuffer);
   auto* inst = node->get_inst();
   auto id = node->get_id();
-  inst->set_name(_net_name + "_buf_" + std::to_string(id));
+  inst->set_name(_net_name + "_" + std::to_string(id) + "_buf");
   inst->set_cell_master(_lib->get_cell_master());
   node->set_cap_load(_lib->get_init_cap());
   CTSAPIInst.placeInstance(inst);

@@ -590,6 +590,7 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
     for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
       std::map<Orientation, TANode*>& neighbor_ptr_map = ta_node_map[x][y].get_neighbor_ptr_map();
 
+#if 1
       if (routing_layer.isPreferH()) {
         if (x != 0) {
           neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
@@ -605,6 +606,20 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
           neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
         }
       }
+#elif
+      if (x != 0) {
+        neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
+      }
+      if (x != (ta_node_map.get_x_size() - 1)) {
+        neighbor_ptr_map[Orientation::kEast] = &ta_node_map[x + 1][y];
+      }
+      if (y != 0) {
+        neighbor_ptr_map[Orientation::kSouth] = &ta_node_map[x][y - 1];
+      }
+      if (y != (ta_node_map.get_y_size() - 1)) {
+        neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
+      }
+#endif
     }
   }
 }
@@ -620,7 +635,7 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
   for (auto& [net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (PlanarRect& blockage : blockage_list) {
-      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel.get_layer_idx(), blockage)) {
+      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, blockage)) {
         irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
         irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
         if (!ta_node_map.isInside(local_x, local_y)) {
@@ -639,21 +654,44 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
   }
 }
 
-std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(irt_int layer_idx,
+std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
                                                                                                         PlanarRect& blockage)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  irt_int half_width = routing_layer.get_min_width() / 2;
+  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
+  TrackAxis& track_axis = routing_layer.get_track_axis();
+
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
+  for (Segment<PlanarCoord>& segment : getSegmentList(ta_panel, blockage)) {
+    PlanarCoord& first_real = segment.get_first();
+    PlanarCoord& second_real = segment.get_second();
+
+    if (RTUtil::isOpenOverlap(blockage, RTUtil::getEnlargedRect(segment, routing_layer.get_min_width() / 2))) {
+      if (!RTUtil::existGrid(first_real, track_axis) || !RTUtil::existGrid(second_real, track_axis)) {
+        LOG_INST.error(Loc::current(), "The coord can not find grid!");
+      }
+      Orientation orientation = RTUtil::getOrientation(first_real, second_real);
+      grid_obs_map[RTUtil::getGridCoord(first_real, track_axis)].insert(orientation);
+      grid_obs_map[RTUtil::getGridCoord(second_real, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
+    }
+  }
+  return grid_obs_map;
+}
+
+std::vector<Segment<PlanarCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel, PlanarRect& blockage)
+{
+  std::vector<Segment<PlanarCoord>> segment_list;
+
+  std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
+  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
   TrackAxis& track_axis = routing_layer.get_track_axis();
 
   // 先膨胀half_width
-  PlanarRect search_rect = RTUtil::getEnlargedRect(blockage, half_width);
+  PlanarRect search_rect = RTUtil::getEnlargedRect(blockage, routing_layer.get_min_width() / 2);
   irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
   irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
   search_rect = RTUtil::getEnlargedRect(search_rect, x_step_length, y_step_length, x_step_length, y_step_length);
 
-  std::vector<Segment<PlanarCoord>> segment_list;
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_track_grid());
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_track_grid());
   for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
@@ -674,22 +712,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
       segment_list.emplace_back(irt::PlanarCoord(x, y_list[y_idx]), PlanarCoord(x, y_list[y_idx + 1]));
     }
   }
-
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_obs_map;
-  for (Segment<PlanarCoord>& segment : segment_list) {
-    PlanarCoord& first_real = segment.get_first();
-    PlanarCoord& second_real = segment.get_second();
-
-    if (RTUtil::isOpenOverlap(blockage, RTUtil::getEnlargedRect(segment, half_width))) {
-      if (!RTUtil::existGrid(first_real, track_axis) || !RTUtil::existGrid(second_real, track_axis)) {
-        LOG_INST.error(Loc::current(), "The coord can not find grid!");
-      }
-      Orientation orientation = RTUtil::getOrientation(first_real, second_real);
-      grid_obs_map[RTUtil::getGridCoord(first_real, track_axis)].insert(orientation);
-      grid_obs_map[RTUtil::getGridCoord(second_real, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
-    }
-  }
-  return grid_obs_map;
+  return segment_list;
 }
 
 void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
@@ -703,7 +726,7 @@ void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
   for (auto& [net_idx, region_list] : ta_panel.get_net_region_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (PlanarRect& region : region_list) {
-      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel.get_layer_idx(), region)) {
+      for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, region)) {
         irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
         irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
         if (!ta_node_map.isInside(local_x, local_y)) {
@@ -769,6 +792,16 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
         LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
         if (RTUtil::getOrientation(node_coord, neighbor_coord) != orien) {
           LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+        }
+      }
+      for (auto& [orien, task_idx_list] : ta_node.get_obs_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
+        }
+      }
+      for (auto& [orien, task_idx_list] : ta_node.get_cost_task_map()) {
+        if (task_idx_list.empty()) {
+          LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
         }
       }
     }
@@ -1573,15 +1606,13 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
       if (curr_rect.get_layer_idx() != ta_panel.get_layer_idx()) {
         continue;
       }
-      irt_int min_spacing = routing_layer_list[curr_rect.get_layer_idx()].getMinSpacing(curr_rect);
-      PlanarRect enlarge_curr_rect = RTUtil::getEnlargedRect(curr_rect, min_spacing);
 
       for (auto& [origin_net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
         if (ta_task_list[i].get_origin_net_idx() == origin_net_idx) {
           continue;
         }
         for (PlanarRect& blockage : blockage_list) {
-          double violation_area = RTUtil::getOverlap(enlarge_curr_rect, blockage).getArea();
+          double violation_area = RTUtil::getOverlap(curr_rect, blockage).getArea();
           ta_panel_stat.addNetAndObsViolation(violation_area / (micron_dbu * micron_dbu));
         }
       }

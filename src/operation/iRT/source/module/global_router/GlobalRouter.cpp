@@ -406,22 +406,8 @@ void GlobalRouter::buildAccessMap(GRModel& gr_model)
     }
     for (auto& [grid, real_list] : grid_real_list_map) {
       // 本层打通孔
-      {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx()][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert({Orientation::kUp, Orientation::kDown});
-      }
-      // 上层打通孔
-      if (grid.get_layer_idx() + 1 < static_cast<irt_int>(layer_node_map.size())) {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx() + 1][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert(
-            {Orientation::kUp, Orientation::kDown, Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth});
-      }
-      // 下层打通孔
-      if (0 <= grid.get_layer_idx() - 1) {
-        GRNode& gr_node = layer_node_map[grid.get_layer_idx() - 1][grid.get_x()][grid.get_y()];
-        gr_node.get_net_access_map()[gr_net.get_net_idx()].insert(
-            {Orientation::kUp, Orientation::kDown, Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth});
-      }
+      GRNode& gr_node = layer_node_map[grid.get_layer_idx()][grid.get_x()][grid.get_y()];
+      gr_node.get_net_access_map()[gr_net.get_net_idx()].insert({Orientation::kUp, Orientation::kDown});
     }
   }
 }
@@ -934,8 +920,7 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
-  std::set<GRNode*> wire_set;
-  std::set<GRNode*> via_set;
+  std::map<GRNode*, std::set<Orientation>> usage_map;
 
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     GRNode* first_node = node_segment.get_first();
@@ -944,12 +929,15 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
       LOG_INST.error(Loc::current(), "The orientation is error!");
     }
+    Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+
     GRNode* node_i = first_node;
     while (true) {
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        via_set.insert(node_i);
-      } else {
-        wire_set.insert(node_i);
+      if (node_i != first_node) {
+        usage_map[node_i].insert(oppo_orientation);
+      }
+      if (node_i != second_node) {
+        usage_map[node_i].insert(orientation);
       }
       if (node_i == second_node) {
         break;
@@ -957,16 +945,9 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
       node_i = node_i->getNeighborNode(orientation);
     }
   }
-  for (GRNode* wire_node : wire_set) {
-    wire_node->addWireDemand(gr_model.get_curr_net_idx());
+  for (auto& [usage_node, orientation_list] : usage_map) {
+    usage_node->addDemand(gr_net.get_net_idx(), orientation_list);
   }
-  for (GRNode* via_node : via_set) {
-    if (RTUtil::exist(wire_set, via_node)) {
-      continue;
-    }
-    via_node->addViaDemand(gr_model.get_curr_net_idx());
-  }
-
   std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
@@ -1530,8 +1511,8 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   }
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  double max_wire_overflow = DBL_MIN;
-  double max_via_overflow = DBL_MIN;
+  double max_wire_overflow = -DBL_MAX;
+  double max_via_overflow = -DBL_MAX;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     GridMap<GRNode>& node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
@@ -1539,13 +1520,19 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
         GRNode& gr_node = node_map[grid_x][grid_y];
         double wire_remain = gr_node.get_wire_area_supply() + std::min(gr_node.get_via_area_supply() - gr_node.get_via_area_demand(), 0)
                              - gr_node.get_wire_area_demand();
-        double wire_overflow = wire_remain / gr_node.get_single_wire_area() * (-1);
+        double wire_overflow = 0;
+        if (wire_remain != 0) {
+          wire_overflow = wire_remain / gr_node.get_single_wire_area() * (-1);
+        }
         max_wire_overflow = std::max(max_wire_overflow, wire_overflow);
         gr_model_stat.get_wire_overflow_list().push_back(wire_overflow);
 
         double via_remain = gr_node.get_wire_area_supply() - gr_node.get_wire_area_demand() + gr_node.get_via_area_supply()
                             - gr_node.get_via_area_demand();
-        double via_overflow = via_remain / gr_node.get_single_via_area() * (-1);
+        double via_overflow = 0;
+        if (via_remain != 0) {
+          via_overflow = via_remain / gr_node.get_single_via_area() * (-1);
+        }
         max_via_overflow = std::max(max_via_overflow, via_overflow);
         gr_model_stat.get_via_overflow_list().push_back(via_overflow);
       }
@@ -1609,7 +1596,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     double left = wire_overflow_map[0][y_idx];
     double right = left + wire_overflow_range;
     std::string range_str;
-    if (right >= gr_model_stat.get_max_wire_overflow()) {
+    if (y_idx == wire_overflow_map.get_y_size() - 1) {
       range_str = RTUtil::getString("[", left, ",", gr_model_stat.get_max_wire_overflow(), "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
@@ -1635,7 +1622,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     double left = via_overflow_map[0][y_idx];
     double right = left + via_overflow_range;
     std::string range_str;
-    if (right >= gr_model_stat.get_max_via_overflow()) {
+    if (y_idx == via_overflow_map.get_y_size() - 1) {
       range_str = RTUtil::getString("[", left, ",", gr_model_stat.get_max_via_overflow(), "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
