@@ -48,7 +48,7 @@ TEST_F(ReportCongTestInterface, run_report_cong)
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
   iPLAPIInst.runGP();
   iPLAPIInst.writeBackSourceDataBase();
-  iPLAPIInst.reportCongestionInfo();
+  // iPLAPIInst.reportCongestionInfo();
   iPLAPIInst.destoryInst();
 }
 

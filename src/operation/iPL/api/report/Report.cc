@@ -90,7 +90,14 @@ void iPL_API::reportPLInfo()
   }
 
   // report congestion
-  // reportCongestionInfo();
+  std::string congestion_file = "congestion_record.txt";
+  std::ofstream congestion_stream;
+  congestion_stream.open(output_dir + congestion_file);
+  if (!congestion_stream.good()) {
+    LOG_WARNING << "Cannot open file for congestion info !";
+  }
+  reportCongestionInfo(congestion_stream);
+  congestion_stream.close();
   LOG_INFO << "Congestion Info Write to "
            << "'" << output_dir << "'";
 
@@ -783,28 +790,27 @@ void iPL_API::reportTimingInfo(std::ofstream& feed)
   }
 }
 
-void iPL_API::reportCongestionInfo()
+void iPL_API::reportCongestionInfo(std::ofstream& feed)
 {
   std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
 
   auto report_tbl = std::make_unique<ieda::ReportTable>("table");
-  (*report_tbl)[0][0].set_cell_bg_color(fort::color::red);
-  (*report_tbl).column(0).set_cell_text_align(fort::text_align::center);
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Congestion Info";
-  (*report_tbl)[1][0] = "ACE";
-  (*report_tbl)[1][1] = "TOF";
-  (*report_tbl)[1][2] = "MOF";
+  (*report_tbl)[1][0] = "Average Congestion of Edges";
+  (*report_tbl)[1][1] = std::to_string(gr_congestion[0]);
+  (*report_tbl)[2][0] = "Total Overflow";
+  (*report_tbl)[2][1] = std::to_string(gr_congestion[1]);
+  (*report_tbl)[3][0] = "Maximal Overflow";
+  (*report_tbl)[3][1] = std::to_string(gr_congestion[2]);
   (*report_tbl) << TABLE_ENDLINE;
-  (*report_tbl)[1][0] = std::to_string(gr_congestion[0]);
-  (*report_tbl)[1][1] = std::to_string(gr_congestion[1]);
-  (*report_tbl)[1][2] = std::to_string(gr_congestion[2]);
-  (*report_tbl) << TABLE_ENDLINE;
-  std::cout << (*report_tbl).to_string() << std::endl;
+  feed << (*report_tbl).to_string() << std::endl;
 
-  std::string plot_path = "./result/pl/report/";
-  std::string output_file_name = "CongMap";
-  iPLAPIInst.plotCongMap(plot_path, output_file_name);
+  //** plot congestion map which format is csv
+  // std::string plot_path = "./result/pl/report/";
+  // std::string output_file_name = "CongMap";
+  // iPLAPIInst.plotCongMap(plot_path, output_file_name);
+
   iPLAPIInst.destroyCongEval();
 }
 
