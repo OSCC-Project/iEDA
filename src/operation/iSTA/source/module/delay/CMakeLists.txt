@@ -1,13 +1,13 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
 
-SET (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 20)
 
-# SET(CMAKE_BUILD_TYPE "Release")
-FIND_PACKAGE(Eigen3 REQUIRED)
-INCLUDE_DIRECTORIES(SYSTEM ${EIGEN3_INCLUDE_DIR})
+#set(CMAKE_BUILD_TYPE "Debug")
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-AUX_SOURCE_DIRECTORY(./ SRC)
+aux_source_directory(./ SRC)
 
-ADD_LIBRARY(delay ${SRC})
+add_library(delay ${SRC})
 
-TARGET_LINK_LIBRARIES(delay str utility liberty netlist Eigen3::Eigen log) 
+target_link_libraries(delay str utility liberty netlist Eigen3::Eigen log) 
