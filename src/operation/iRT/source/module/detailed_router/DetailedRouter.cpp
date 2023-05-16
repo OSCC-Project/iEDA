@@ -833,17 +833,50 @@ std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, 
 {
   // enlarge_real_rect为已经扩了spacing的矩形
   // 获取enlarge_real_rect覆盖的线段
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+
   std::vector<Segment<DRNode*>> node_segment_list;
+  irt_int layer_idx = enlarge_real_rect.get_layer_idx();
+  irt_int enlarge_size = routing_layer_list[layer_idx].get_min_width() / 2;
+  if (!layer_via_master_list[layer_idx].empty()) {
+    enlarge_size = std::max(enlarge_size, layer_via_master_list[layer_idx].front().get_below_enclosure().getLength() / 2);
+  }
+  PlanarRect check_region = RTUtil::getEnlargedRect(enlarge_real_rect, enlarge_size);
+
+  std::vector<DRNode*> node_list;
   for (DRNodeGraph& node_graph : dr_box.get_layer_graph_list()) {
-    for (DRNode& dr_node : node_graph.get_dr_node_list()) {
-      for (auto [orient, neighbor_ptr] : dr_node.get_neighbor_ptr_map()) {
-        DRNode* node_a = &dr_node;
-        DRNode* node_b = neighbor_ptr;
-        RTUtil::sortASC(node_a, node_b);
-        node_segment_list.emplace_back(node_a, node_b);
+    if (node_graph.get_layer_idx() != layer_idx) {
+      continue;
+    }
+    for (auto& [x, y_set] : node_graph.get_x_y_map()) {
+      if (x < check_region.get_lb_x()) {
+        continue;
+      }
+      if (x > check_region.get_rt_x()) {
+        break;
+      }
+      for (irt_int y : y_set) {
+        if (y < check_region.get_lb_y()) {
+          continue;
+        }
+        if (y > check_region.get_rt_y()) {
+          break;
+        }
+        node_list.emplace_back(&(node_graph.get_dr_node_list()[node_graph.get_x_y_idx_map()[x][y]]));
       }
     }
   }
+
+  for (DRNode* node : node_list) {
+    for (auto& [orien, neighbor] : node->get_neighbor_ptr_map()) {
+      DRNode* node_a = node;
+      DRNode* node_b = neighbor;
+      RTUtil::sortASC(node_a, node_b);
+      node_segment_list.emplace_back(node_a, node_b);
+    }
+  }
+
   std::sort(node_segment_list.begin(), node_segment_list.end(), [](Segment<DRNode*>& a, Segment<DRNode*>& b) {
     if (a.get_first() != b.get_first()) {
       return a.get_first() < b.get_first();
@@ -854,6 +887,7 @@ std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, 
   RTUtil::merge(node_segment_list, [](Segment<DRNode*>& sentry, Segment<DRNode*>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
+
   return node_segment_list;
 }
 
