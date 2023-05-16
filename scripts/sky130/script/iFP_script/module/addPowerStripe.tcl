@@ -8,5 +8,3 @@ set connect2 "met4 met5"
 
 connect_two_layer -layers [concat $connect1 $connect2]
 
-# marco power connect
-#connectMacroPdn -pin_layer "METAL3" -pdn_layer "METAL5" -power_pins "vdd" -ground_pins "gnd" -orient "R0 R180 MX MY"

@@ -155,6 +155,7 @@ IdbRow* IdbRows::createRow(string row_name, IdbSite* site, int32_t orig_x, int32
   row->set_site(row_site);
 
   row_site->set_orient(site_orient);
+  row->set_orient(site_orient);
 
   row->set_original_coordinate(orig_x, orig_y);
 

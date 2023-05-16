@@ -379,7 +379,7 @@ class GuiSpeedupItemList {
     _number_y = num_y;
   }
 
-  void set_step(int32_t step_x, int32_t step_y) {
+  void set_step(qreal step_x, qreal step_y) {
     _step_x = step_x;
     _step_y = step_y;
   }
