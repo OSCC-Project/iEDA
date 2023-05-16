@@ -1,14 +1,14 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
-SET (CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.0)
+set (CMAKE_CXX_STANDARD 20)
 
-AUX_SOURCE_DIRECTORY(./ SRC)
+aux_source_directory(./ SRC)
 if(BUILD_STATIC_LIB)
-  ADD_LIBRARY(str ${SRC})
+  add_library(str ${SRC})
 else()
-  ADD_LIBRARY(str SHARED ${SRC})
+  add_library(str SHARED ${SRC})
 endif()
 
-TARGET_LINK_LIBRARIES(str PUBLIC absl::strings)
+target_link_libraries(str PUBLIC absl::strings)
 
 target_include_directories(str
     PUBLIC
