@@ -51,19 +51,27 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][3] = "Inst Area\n(um^2)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
+    case CtsReportType::kNET_LEVEL:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Num";
+      (*report_tbl)[0][2] = "Ratio";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
     case CtsReportType::kTIMING_NODE_LOG:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "ID";
       (*report_tbl)[0][1] = "Name";
-      (*report_tbl)[0][2] = "Snake";
-      (*report_tbl)[0][3] = "Net Length";
-      (*report_tbl)[0][4] = "Location";
-      (*report_tbl)[0][5] = "Min Delay";
-      (*report_tbl)[0][6] = "Max Delay";
-      (*report_tbl)[0][7] = "Insertion Type";
-      (*report_tbl)[0][8] = "Slew In";
-      (*report_tbl)[0][9] = "Cap Out";
-      (*report_tbl)[0][10] = "Insertion Delay";
+      (*report_tbl)[0][2] = "Net Length";
+      (*report_tbl)[0][3] = "Net Snake";
+      (*report_tbl)[0][4] = "Total Net Length";
+      (*report_tbl)[0][5] = "Location";
+      (*report_tbl)[0][6] = "Min Delay";
+      (*report_tbl)[0][7] = "Max Delay";
+      (*report_tbl)[0][8] = "Insertion Type";
+      (*report_tbl)[0][9] = "Slew In";
+      (*report_tbl)[0][10] = "Cap Out";
+      (*report_tbl)[0][11] = "Insertion Delay";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kHCTS_LOG:

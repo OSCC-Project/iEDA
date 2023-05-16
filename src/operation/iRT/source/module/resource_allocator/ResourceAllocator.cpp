@@ -573,7 +573,7 @@ void ResourceAllocator::updateAllocationMap(RAModel& ra_model)
     irt_int grid_lb_x = bounding_box.get_grid_lb_x();
     irt_int grid_lb_y = bounding_box.get_grid_lb_y();
 
-    double max_allocate_result = DBL_MIN;
+    double max_allocate_result = -DBL_MAX;
     for (RAGCellNode& ra_gcell_node : ra_net.get_ra_gcell_node_list()) {
       max_allocate_result = std::max(max_allocate_result, result_list[ra_gcell_node.get_result_idx()]);
     }
@@ -675,7 +675,7 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
 {
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
 
-  double max_cost = DBL_MIN;
+  double max_cost = -DBL_MAX;
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   for (RANet& ra_net : ra_net_list) {
     double total_cost = 0;
@@ -711,7 +711,7 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
     double left = avg_cost_map[0][y_idx];
     double right = left + avg_cost_range;
     std::string range_str;
-    if (right >= ra_model_stat.get_max_avg_cost()) {
+    if (y_idx == avg_cost_map.get_y_size() - 1) {
       range_str = RTUtil::getString("[", left, ",", ra_model_stat.get_max_avg_cost(), "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");

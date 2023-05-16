@@ -59,7 +59,7 @@ class AbacusLegalizer
   bool isInitialized() { return _mode != LG_MODE::kNone; }
 
  private:
-  static AbacusLegalizer* _abacus_lg_instance;
+  static AbacusLegalizer* _s_abacus_lg_instance;
 
   LGConfig _config;
   LGDatabase _database;

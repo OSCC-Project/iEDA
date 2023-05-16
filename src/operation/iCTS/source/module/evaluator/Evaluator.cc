@@ -20,6 +20,7 @@
 
 #include "CTSAPI.hpp"
 #include "CtsReport.h"
+#include "SlewAware.h"
 #include "log/Log.hh"
 namespace icts {
 
@@ -27,6 +28,7 @@ void Evaluator::init()
 {
   CTSAPIInst.setPropagateClock();
   printLog();
+  initLevel();
   transferData();
 }
 
@@ -51,6 +53,41 @@ void Evaluator::transferData()
   for (auto* clk_net : clk_nets) {
     _eval_nets.emplace_back(EvalNet(clk_net));
   }
+}
+
+void Evaluator::initLevel() const
+{
+  auto* design = CTSAPIInst.get_design();
+  auto& clk_nets = design->get_nets();
+  for (auto clk_net : clk_nets) {
+    if (!clk_net->is_newly()) {
+      continue;
+    }
+    recursiveSetLevel(clk_net);
+  }
+}
+
+void Evaluator::recursiveSetLevel(CtsNet* net) const
+{
+  auto* driver = net->get_driver_inst();
+  if (driver->get_level() > 0) {
+    return;
+  }
+  auto* design = CTSAPIInst.get_design();
+  auto loads = net->get_load_insts();
+  int max_level = 0;
+  for (auto load : loads) {
+    if (load->get_type() == CtsInstanceType::kSink) {
+      load->set_level(1);
+      max_level = std::max(1, max_level);
+      continue;
+    }
+    auto sub_net_name = load->get_name().substr(0, load->get_name().length() - 4);
+    auto* sub_net = design->findNet(sub_net_name);
+    recursiveSetLevel(sub_net);
+    max_level = std::max(load->get_level(), max_level);
+  }
+  driver->set_level(max_level + 1);
 }
 
 void Evaluator::evaluate()
@@ -151,7 +188,7 @@ void Evaluator::statistics(const std::string& save_dir) const
     auto cell_area = CTSAPIInst.getCellArea(cell_master);
     auto cell_cap = CTSAPIInst.getCellCap(cell_master);
     if (cell_property_map.count(cell_type) == 0) {
-      cell_property_map[cell_type] = {count, cell_cap * count};
+      cell_property_map[cell_type] = {count, cell_area * count, cell_cap * count};
     } else {
       cell_property_map[cell_type].total_num += count;
       cell_property_map[cell_type].total_area += cell_area * count;
@@ -178,12 +215,42 @@ void Evaluator::statistics(const std::string& save_dir) const
   std::ofstream lib_cell_dist_save_file(lib_cell_dist_save_path);
   lib_cell_dist_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
   lib_cell_dist_save_file << lib_cell_dist_rpt->c_str();
+
+  // net level distribution(Level, Num)
+  auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNET_LEVEL);
+  std::map<int, int> net_level_map;
+  int all_num = 0;
+  for (auto eval_net : _eval_nets) {
+    if (!eval_net.is_newly()) {
+      continue;
+    }
+    auto* driver = eval_net.get_driver();
+    if (net_level_map.count(driver->get_level()) == 0) {
+      net_level_map[driver->get_level()] = 1;
+    } else {
+      net_level_map[driver->get_level()]++;
+    }
+  }
+  for (auto [_, num] : net_level_map) {
+    all_num += num;
+  }
+  for (auto [level, num] : net_level_map) {
+    (*net_level_rpt) << level << num << 1.0 * num / all_num << TABLE_ENDLINE;
+  }
+  auto net_level_save_path = dir + "/net_level.rpt";
+  CTSAPIInst.checkFile(dir, "net_level");
+  std::ofstream net_level_save_file(net_level_save_path);
+  net_level_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
+  net_level_save_file << net_level_rpt->c_str();
 }
 
 int64_t Evaluator::wireLength() const
 {
   int64_t total_wire_len = 0.0;
   for (const auto& eval_net : _eval_nets) {
+    if (!eval_net.is_newly()) {
+      continue;
+    }
     int64_t net_wire_len = 0;
     auto signal_wires = eval_net.get_signal_wires();
     for (auto& signal_wire : signal_wires) {

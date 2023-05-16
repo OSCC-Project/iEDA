@@ -27,10 +27,11 @@
 namespace icts {
 using std::vector;
 
-class Evaluator {
+class Evaluator
+{
  public:
   Evaluator() = default;
-  Evaluator(const Evaluator &) = default;
+  Evaluator(const Evaluator&) = default;
   ~Evaluator() = default;
 
   void init();
@@ -41,15 +42,17 @@ class Evaluator {
   double skew() const;
   double fanout() const;
   double slew() const;
-  void statistics(const std::string &save_dir) const;
+  void statistics(const std::string& save_dir) const;
   int64_t wireLength() const;
   double dataCtsNetSlack() const;
-  void plotPath(const string &inst, const string &file = "debug.gds") const;
-  void plotNet(const string &net_name, const string &file = "debug.gds") const;
+  void plotPath(const string& inst, const string& file = "debug.gds") const;
+  void plotNet(const string& net_name, const string& file = "debug.gds") const;
 
  private:
   void printLog();
   void transferData();
+  void initLevel() const;
+  void recursiveSetLevel(CtsNet* net) const;
 
   vector<EvalNet> _eval_nets;
   const int _default_size = 100;
