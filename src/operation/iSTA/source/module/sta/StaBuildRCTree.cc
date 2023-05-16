@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -126,21 +126,18 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
     }
   }
 #else
-
-  std::for_each(std::begin(spef_nets), std::end(spef_nets),
-                [design_nl, this](const auto& spef_net) {
-                  auto spef_name = spef_net.name;
-                  auto* design_net = design_nl->findNet(spef_name.c_str());
-                  if (design_net) {
-                    auto* rc_net = getSta()->getRcNet(design_net);
-                    // DLOG_INFO << "Update Rc tree timing " << spef_name;
-                    rc_net->updateRcTiming(spef_net);
-                    // printYaml(spef_net);
-                  } else {
-                    LOG_FATAL << "build rc tree not found design net "
-                              << spef_name;
-                  }
-                });
+  for (auto& spef_net : spef_nets) {
+    std::string spef_name = spef_net.name;
+    auto* design_net = design_nl->findNet(spef_name.c_str());
+    if (design_net) {
+      auto* rc_net = getSta()->getRcNet(design_net);
+      // DLOG_INFO << "Update Rc tree timing " << spef_name;
+      rc_net->updateRcTiming(spef_net);
+      // printYaml(spef_net);
+    } else {
+      LOG_FATAL << "build rc tree not found design net " << spef_name;
+    }
+  }
 
 #endif
 

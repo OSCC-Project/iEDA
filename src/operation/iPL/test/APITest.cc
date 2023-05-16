@@ -26,10 +26,10 @@
 #include <string>
 // #include <gperftools/profiler.h>
 
+#include "PLAPI.hh"
 #include "PlacerDB.hh"
 #include "TimingEval.hpp"
 #include "gtest/gtest.h"
-#include "iPL_API.hh"
 #include "idm.h"
 
 namespace ipl {

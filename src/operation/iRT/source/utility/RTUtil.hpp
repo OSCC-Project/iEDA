@@ -644,6 +644,9 @@ class RTUtil
    */
   static PlanarRect getEnlargedRect(PlanarCoord start_coord, PlanarCoord end_coord, irt_int enlarge_size)
   {
+    if (!CmpPlanarCoordByXASC()(start_coord, end_coord)) {
+      std::swap(start_coord, end_coord);
+    }
     PlanarRect rect(start_coord, end_coord);
 
     if (isRightAngled(start_coord, end_coord)) {
@@ -2619,6 +2622,20 @@ class RTUtil
     buffer = nullptr;
 
     return mem_string;
+  }
+
+  template <typename T>
+  static std::set<T> getDifference(std::set<T>& master, std::set<T>& set)
+  {
+    std::vector<T> master_list;
+    master_list.assign(master.begin(), master.end());
+    std::vector<T> set_list;
+    set_list.assign(set.begin(), set.end());
+
+    std::vector<T> result;
+    std::set_difference(master_list.begin(), master_list.end(), set_list.begin(), set_list.end(), std::back_inserter(result));
+
+    return std::set<T>(result.begin(), result.end());
   }
 
 #endif
