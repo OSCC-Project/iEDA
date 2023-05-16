@@ -111,8 +111,6 @@ bool fpAddRoutingHalo(const std::string& layer, const std::string& distance, boo
 
 bool fpTapCell(const std::string& tapcell, double distance, const std::string& endcap)
 {
-  fpApiInst->insertTapCells(distance, tapcell);
-  fpApiInst->insertEndCaps(endcap);
-  return true;
+ return fpApiInst->tapCells(distance, tapcell, endcap);
 }
 }  // namespace python_interface

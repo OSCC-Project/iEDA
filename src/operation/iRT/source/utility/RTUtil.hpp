@@ -1325,10 +1325,10 @@ class RTUtil
     if (coord_list.empty()) {
       LOG_INST.warning(Loc::current(), "The coord list size is empty!");
     } else {
-      irt_int lb_x = IRT_INT_MAX;
-      irt_int lb_y = IRT_INT_MAX;
-      irt_int rt_x = IRT_INT_MIN;
-      irt_int rt_y = IRT_INT_MIN;
+      irt_int lb_x = INT32_MAX;
+      irt_int lb_y = INT32_MAX;
+      irt_int rt_x = INT32_MIN;
+      irt_int rt_y = INT32_MIN;
       for (size_t i = 0; i < coord_list.size(); i++) {
         const PlanarCoord& coord = coord_list[i];
 
@@ -1354,10 +1354,10 @@ class RTUtil
 
   static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list)
   {
-    irt_int lb_x = IRT_INT_MAX;
-    irt_int lb_y = IRT_INT_MAX;
-    irt_int rt_x = IRT_INT_MIN;
-    irt_int rt_y = IRT_INT_MIN;
+    irt_int lb_x = INT32_MAX;
+    irt_int lb_y = INT32_MAX;
+    irt_int rt_x = INT32_MIN;
+    irt_int rt_y = INT32_MIN;
 
     for (size_t i = 0; i < rect_list.size(); i++) {
       lb_x = std::min(lb_x, rect_list[i].get_lb_x());
@@ -1646,7 +1646,7 @@ class RTUtil
     if (!segment_list.empty()) {
       LOG_INST.error(Loc::current(), "The segment_list not covered driving_pin!");
     }
-    irt_int max_pin_num = IRT_INT_MIN;
+    irt_int max_pin_num = INT32_MIN;
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
       irt_int pin_num = static_cast<irt_int>(pin_idx_set.size());
       if (max_pin_num < pin_num) {
@@ -2621,6 +2621,20 @@ class RTUtil
     return mem_string;
   }
 
+  template <typename T>
+  static std::set<T> getDifference(std::set<T>& master, std::set<T>& set)
+  {
+    std::vector<T> master_list;
+    master_list.assign(master.begin(), master.end());
+    std::vector<T> set_list;
+    set_list.assign(set.begin(), set.end());
+
+    std::vector<T> result;
+    std::set_difference(master_list.begin(), master_list.end(), set_list.begin(), set_list.end(), std::back_inserter(result));
+
+    return std::set<T>(result.begin(), result.end());
+  }
+
 #endif
 
 #if 1  // report数据结构
@@ -2650,8 +2664,8 @@ class RTUtil
     std::map<T, irt_int> scale_num_map;
     T range = getScaleRange(value_list);
 
-    T max_value = IRT_INT_MIN;
-    T min_value = IRT_INT_MAX;
+    T max_value = INT32_MIN;
+    T min_value = INT32_MAX;
     for (T& value : value_list) {
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);
@@ -2675,8 +2689,8 @@ class RTUtil
   template <typename T>
   static T getScaleRange(std::vector<T> value_list, irt_int digit = 1)
   {
-    T max_value = IRT_INT_MIN;
-    T min_value = IRT_INT_MAX;
+    T max_value = INT32_MIN;
+    T min_value = INT32_MAX;
     for (T& value : value_list) {
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);

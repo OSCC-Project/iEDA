@@ -629,13 +629,19 @@ std::pair<std::string, std::optional<std::pair<int, int>>> Str::matchBusSliceNam
  */
 std::string Str::trimBackslash(std::string origin_str)
 {
-  auto replace_str = [](const std::string& str, const std::string& replace_str, const std::string& new_str) {
-    std::regex re(replace_str);
-    return std::regex_replace(str, re, new_str);
-  };
-  std::string new_value = replace_str(origin_str, R"(\\)", "");
+  std::string replace_str = origin_str;
+  if (ieda::Str::contain(replace_str.c_str(), R"(\[)") && ieda::Str::contain(replace_str.c_str(), R"(\])")) {
+    std::string new_value_1 = replace(replace_str, R"(\\\[)", R"([)");
+    std::string new_value_2 = replace(new_value_1, R"(\\\])", R"(])");
 
-  return new_value;
+    replace_str = new_value_2;
+  }
+
+  if (ieda::Str::contain(replace_str.c_str(), R"(\/)")) {
+    replace_str = replace(replace_str, R"(\\/)", R"(/)");
+  }
+
+  return replace_str;
 }
 
 /**

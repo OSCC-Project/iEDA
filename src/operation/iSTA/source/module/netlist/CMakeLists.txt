@@ -1,10 +1,10 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
 
-SET (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 20)
 
-# SET(CMAKE_BUILD_TYPE "Release")
-AUX_SOURCE_DIRECTORY(./ SRC)
+set(CMAKE_BUILD_TYPE "Debug")
+aux_source_directory(./ SRC)
 
-ADD_LIBRARY(netlist ${SRC})
+add_library(netlist ${SRC})
 
-TARGET_LINK_LIBRARIES(netlist str liberty log absl::inlined_vector)
+target_link_libraries(netlist str liberty log absl::inlined_vector)
