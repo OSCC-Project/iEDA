@@ -1213,6 +1213,13 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 
 void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
 {
+  updateEnvironment(ta_panel, ta_task);
+  updateDemand(ta_panel, ta_task);
+  updateResult(ta_panel, ta_task);
+}
+
+void TrackAssigner::updateEnvironment(TAPanel& ta_panel, TATask& ta_task)
+{
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
@@ -1232,12 +1239,39 @@ void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
       }
       TANode& ta_node = ta_node_map[local_x][local_y];
       for (Orientation orientation : orientation_set) {
-        ta_node.addDemand(ta_task.get_task_idx(), orientation);
+        ta_node.addEnv(ta_task.get_task_idx(), orientation);
       }
     }
   }
-  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_task.get_routing_segment_list();
-  routing_segment_list.insert(routing_segment_list.end(), net_segment_list.begin(), net_segment_list.end());
+}
+
+void TrackAssigner::updateDemand(TAPanel& ta_panel, TATask& ta_task)
+{
+  std::set<TANode*> usage_set;
+  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
+    TANode* first_node = node_segment.get_first();
+    TANode* second_node = node_segment.get_second();
+    Orientation orientation = getOrientation(first_node, second_node);
+
+    TANode* node_i = first_node;
+    while (true) {
+      usage_set.insert(node_i);
+      if (node_i == second_node) {
+        break;
+      }
+      node_i = node_i->getNeighborNode(orientation);
+    }
+  }
+  for (TANode* usage_node : usage_set) {
+    usage_node->addDemand(ta_task.get_task_idx());
+  }
+}
+
+void TrackAssigner::updateResult(TAPanel& ta_panel, TATask& ta_task)
+{
+  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
+    ta_task.get_routing_segment_list().emplace_back(*node_segment.get_first(), *node_segment.get_second());
+  }
 }
 
 void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
@@ -1472,22 +1506,43 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
       gp_text_env_task_map.set_presentation(GPTextPresentation::kLeftMiddle);
       node_graph_struct.push(gp_text_env_task_map);
 
-      for (auto& [orientation, task_map] : ta_node.get_env_task_map()) {
+      for (auto& [orientation, task_idx_set] : ta_node.get_env_task_map()) {
         y -= y_reduced_span;
         GPText gp_text_env_task_map_info;
         gp_text_env_task_map_info.set_coord(real_rect.get_lb_x(), y);
         gp_text_env_task_map_info.set_text_type(info_data_type);
         std::string env_task_map_info_message = RTUtil::getString("--", GetOrientationName()(orientation), ": ");
-        for (const auto& [task_idx, task_idx_set] : task_map) {
+        for (irt_int task_idx : task_idx_set) {
           env_task_map_info_message += RTUtil::getString("(", task_idx, ")");
-          for (irt_int task_idx : task_idx_set) {
-            env_task_map_info_message += RTUtil::getString("(", task_idx, ")");
-          }
         }
         gp_text_env_task_map_info.set_message(env_task_map_info_message);
         gp_text_env_task_map_info.set_layer_idx(ta_node.get_layer_idx());
         gp_text_env_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_env_task_map_info);
+      }
+
+      y -= y_reduced_span;
+      GPText gp_text_task_queue;
+      gp_text_task_queue.set_coord(real_rect.get_lb_x(), y);
+      gp_text_task_queue.set_text_type(info_data_type);
+      gp_text_task_queue.set_message("task_queue: ");
+      gp_text_task_queue.set_layer_idx(ta_node.get_layer_idx());
+      gp_text_task_queue.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_task_queue);
+
+      if (!ta_node.get_task_queue().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_task_queue_info;
+        gp_text_task_queue_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_task_queue_info.set_text_type(info_data_type);
+        std::string task_queue_info_message = "--";
+        for (irt_int task_idx : RTUtil::getListByQueue(ta_node.get_task_queue())) {
+          task_queue_info_message += RTUtil::getString("(", task_idx, ")");
+        }
+        gp_text_task_queue_info.set_message(task_queue_info_message);
+        gp_text_task_queue_info.set_layer_idx(ta_node.get_layer_idx());
+        gp_text_task_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_task_queue_info);
       }
     }
   }
@@ -1634,7 +1689,6 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
       if (curr_rect.get_layer_idx() != ta_panel.get_layer_idx()) {
         continue;
       }
-
       for (auto& [origin_net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
         if (ta_task_list[i].get_origin_net_idx() == origin_net_idx) {
           continue;

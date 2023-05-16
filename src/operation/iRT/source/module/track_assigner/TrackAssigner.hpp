@@ -113,6 +113,9 @@ class TrackAssigner
   void updatePathResult(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
+  void updateEnvironment(TAPanel& ta_panel, TATask& ta_task);
+  void updateDemand(TAPanel& ta_panel, TATask& ta_task);
+  void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
