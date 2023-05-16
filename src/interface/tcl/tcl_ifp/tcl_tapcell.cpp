@@ -60,8 +60,7 @@ unsigned TclFpTapCell::exec()
   auto dis = distance->getDoubleVal();
   auto end = endcap_name->getStringVal();
 
-  fpApiInst->insertTapCells(dis, tap);
-  fpApiInst->insertEndCaps(end);
+  fpApiInst->tapCells(dis, tap, end);
 
   return 1;
 }
