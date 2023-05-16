@@ -42,12 +42,12 @@ class TANode : public LayerCoord
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
   std::map<Orientation, std::set<irt_int>>& get_cost_task_map() { return _cost_task_map; }
-  std::queue<irt_int>& get_task_queue() { return _task_queue; }
+  std::map<Orientation, std::map<irt_int, std::set<irt_int>>>& get_env_task_map() { return _env_task_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
   void set_cost_task_map(const std::map<Orientation, std::set<irt_int>>& cost_task_map) { _cost_task_map = cost_task_map; }
-  void set_task_queue(const std::queue<irt_int>& task_queue) { _task_queue = task_queue; }
+  void set_env_task_map(const std::map<Orientation, std::map<irt_int, std::set<irt_int>>>& env_task_map) { _env_task_map = env_task_map; }
   // function
   TANode* getNeighborNode(Orientation orientation)
   {
@@ -68,7 +68,9 @@ class TANode : public LayerCoord
       }
     }
     if (!is_obs) {
-      is_obs = !_task_queue.empty();
+      if (RTUtil::exist(_env_task_map, orientation)) {
+        is_obs = !_env_task_map[orientation].empty();
+      }
     }
     return is_obs;
   }
@@ -79,10 +81,16 @@ class TANode : public LayerCoord
       std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
       cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : task_idx_set.size();
     }
-    cost *= std::pow(_task_queue.size(), 2);
+    if (RTUtil::exist(_env_task_map, orientation)) {
+      size_t task_size = 1;
+      for (const auto& [task_idx, task_idx_set] : _env_task_map[orientation]) {
+        task_size += task_idx_set.size();
+      }
+      cost *= std::pow(task_size, 2);
+    }
     return cost;
   }
-  void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
+  void addDemand(irt_int task_idx, Orientation orientation) {}
 #if 1  // astar
   TANodeState& get_state() { return _state; }
   TANode* get_parent_node() const { return _parent_node; }
@@ -102,7 +110,7 @@ class TANode : public LayerCoord
   std::map<Orientation, TANode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
   std::map<Orientation, std::set<irt_int>> _cost_task_map;
-  std::queue<irt_int> _task_queue;
+  std::map<Orientation, std::map<irt_int, std::set<irt_int>>> _env_task_map;
 #if 1  // astar
   TANodeState _state = TANodeState::kNone;
   TANode* _parent_node = nullptr;
