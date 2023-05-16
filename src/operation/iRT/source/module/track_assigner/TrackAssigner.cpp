@@ -606,7 +606,7 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
           neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
         }
       }
-#elif
+#else
       if (x != 0) {
         neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
       }
