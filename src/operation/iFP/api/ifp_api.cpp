@@ -108,18 +108,11 @@ bool FpApi::placeIOFiller(std::vector<std::string> filler_name_list, std::string
   return io_placer.placeIOFiller(filler_name_list, prefix, orient, begin, end, source);
 }
 
-void FpApi::insertTapCells(double distance, std::string tapcell_master_name)
+bool FpApi::tapCells(double distance, std::string tapcell_name, std::string endcap_name)
 {
   TapCellPlacer tapcell;
 
-  tapcell.insertTapCells(distance, tapcell_master_name);
-}
-
-void FpApi::insertEndCaps(std::string endcap_master)
-{
-  TapCellPlacer tapcell;
-
-  tapcell.insertEndCaps(endcap_master);
+  return tapcell.tapCells(distance, tapcell_name, endcap_name);
 }
 
 }  // namespace ifp
