@@ -113,13 +113,16 @@ void IPLDBWrapper::wrapInstancelist(ipl::Design* ipl_design)
     }
 
     // set inst type.
-    if (ipl_inst->get_cell_master()->isMacro()) {
+    if (ipl_inst->get_cell_master() != nullptr) {
+      if (ipl_inst->get_cell_master()->isMacro()) {
       inst_ptr->set_type(InstType::MACRO);
       imp_design->add_macro(inst_ptr);
     } else {
       inst_ptr->set_type(InstType::STD);
       imp_design->add_std_cell(inst_ptr);
     }
+    }
+    
 
     // set state
     if (ipl_inst->isFixed()) {
