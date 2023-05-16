@@ -27,7 +27,7 @@
 
 #include "PlacerDB.hh"
 #include "gtest/gtest.h"
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 #include "idm.h"
 
 namespace ipl {
