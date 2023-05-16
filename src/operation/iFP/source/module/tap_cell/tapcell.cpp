@@ -34,7 +34,6 @@ namespace ifp {
 bool TapCellPlacer::tapCells(double distance, std::string tapcell_name, std::string endcap_name)
 {
   auto idb_layout = dmInst->get_idb_layout();
-  auto idb_design = dmInst->get_idb_design();
 
   /// check distance
   auto checkDistance = [](int32_t& inst_space) {
@@ -81,13 +80,7 @@ bool TapCellPlacer::tapCells(double distance, std::string tapcell_name, std::str
 int TapCellPlacer::buildTapcellRegion()
 {
   auto idb_layout = dmInst->get_idb_layout();
-  auto idb_design = dmInst->get_idb_design();
   auto idb_rows = idb_layout->get_rows();
-  auto idb_sites = idb_layout->get_sites();
-
-  auto idb_blockage_list = idb_design->get_blockage_list();
-  auto idb_core_site = idb_sites->get_core_site();
-  auto row_height = idb_core_site->get_height();
 
   auto row_list = idb_rows->get_row_list();
   for (size_t i = 0; i < row_list.size(); i++) {
@@ -195,7 +188,6 @@ int TapCellPlacer::insertCell(int32_t inst_space, std::string tapcell_name, std:
 {
   auto idb_layout = dmInst->get_idb_layout();
   auto idb_core = idb_layout->get_core();
-  auto idb_design = dmInst->get_idb_design();
 
   auto tapcell_master = idb_layout->get_cell_master_list()->find_cell_master(tapcell_name);
   auto endcap_master = idb_layout->get_cell_master_list()->find_cell_master(endcap_name);
@@ -204,7 +196,7 @@ int TapCellPlacer::insertCell(int32_t inst_space, std::string tapcell_name, std:
   int tapcell_index = 0;
   for (auto region : _cell_region_list) {
     /// get width for endcap by orient
-    uint32_t endcap_width = getCellMasterWidthByOrient(endcap_master, region.orient);
+    int32_t endcap_width = getCellMasterWidthByOrient(endcap_master, region.orient);
 
     /// insert endcap at the begin
     if ((region.end - region.start) >= endcap_width) {
@@ -275,10 +267,10 @@ int TapCellPlacer::insertCell(int32_t inst_space, std::string tapcell_name, std:
 /**
  * get width of cell master by orient for a row
  */
-uint32_t TapCellPlacer::getCellMasterWidthByOrient(idb::IdbCellMaster* cell_master, idb::IdbOrient orinet)
+int32_t TapCellPlacer::getCellMasterWidthByOrient(idb::IdbCellMaster* cell_master, idb::IdbOrient orinet)
 {
-  uint32_t width = cell_master->get_width();
-  uint32_t height = cell_master->get_height();
+  int32_t width = cell_master->get_width();
+  int32_t height = cell_master->get_height();
 
   if (orinet == idb::IdbOrient::kN_R0 || orinet == idb::IdbOrient::kS_R180 || orinet == idb::IdbOrient::kFN_MY
       || orinet == idb::IdbOrient::kFS_MX) {
