@@ -19,10 +19,10 @@
  * @Date: 2022-10-27 16:17:57
  * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
  * @LastEditTime: 2023-03-11 14:36:48
- * @FilePath: /irefactor/src/operation/iPL/api/iPL_API.cc
+ * @FilePath: /irefactor/src/operation/iPL/api/PLAPI.cc
  * @Description:
  */
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 
 #include <filesystem>
 
@@ -50,38 +50,38 @@ eval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi);
 eval::CongPin* wrapCongPin(ipl::Pin* ipl_pin);
 // NOLINTEND
 
-iPL_API& iPL_API::getInst()
+PLAPI& PLAPI::getInst()
 {
-  if (!_ipl_api_instance) {
-    _ipl_api_instance = new iPL_API();
+  if (!_s_ipl_api_instance) {
+    _s_ipl_api_instance = new PLAPI();
   }
 
-  return *_ipl_api_instance;
+  return *_s_ipl_api_instance;
 }
 
-void iPL_API::destoryInst()
+void PLAPI::destoryInst()
 {
-  if (_ipl_api_instance->isAbucasLGStarted()) {
+  if (_s_ipl_api_instance->isAbucasLGStarted()) {
     AbacusLegalizerInst.destoryInst();
   }
 
-  if (_ipl_api_instance->isPlacerDBStarted()) {
+  if (_s_ipl_api_instance->isPlacerDBStarted()) {
     PlacerDBInst.destoryInst();
   }
 
-  if (_ipl_api_instance) {
-    delete _ipl_api_instance;
+  if (_s_ipl_api_instance) {
+    delete _s_ipl_api_instance;
   }
 }
 
-iPL_API::~iPL_API()
+PLAPI::~PLAPI()
 {
   // if (_timing_evaluator) {
   //   delete _timing_evaluator;
   // }
 }
 
-void iPL_API::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
+void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
   char config[] = "iPL log supported by gLog";
   char* argv[] = {config};
@@ -123,7 +123,7 @@ void iPL_API::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   }
 }
 
-void iPL_API::runIncrementalFlow()
+void PLAPI::runIncrementalFlow()
 {
   runLG();
   reportPLInfo();
@@ -131,53 +131,53 @@ void iPL_API::runIncrementalFlow()
 }
 
 /*****************************Timing-driven Placement: Start*****************************/
-void iPL_API::initTimingEval()
+void PLAPI::initTimingEval()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
   eval_api.initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 }
 
-double iPL_API::obtainPinEarlySlack(std::string pin_name)
+double PLAPI::obtainPinEarlySlack(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getEarlySlack(pin_name);
 }
 
-double iPL_API::obtainPinLateSlack(std::string pin_name)
+double PLAPI::obtainPinLateSlack(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getLateSlack(pin_name);
 }
 
-double iPL_API::obtainPinEarlyArrivalTime(std::string pin_name)
+double PLAPI::obtainPinEarlyArrivalTime(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getArrivalEarlyTime(pin_name);
 }
 
-double iPL_API::obtainPinLateArrivalTime(std::string pin_name)
+double PLAPI::obtainPinLateArrivalTime(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getArrivalLateTime(pin_name);
 }
 
-double iPL_API::obtainPinEarlyRequiredTime(std::string pin_name)
+double PLAPI::obtainPinEarlyRequiredTime(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getRequiredEarlyTime(pin_name);
 }
 
-double iPL_API::obtainPinLateRequiredTime(std::string pin_name)
+double PLAPI::obtainPinLateRequiredTime(std::string pin_name)
 {
   return eval::EvalAPI::getInst().getRequiredLateTime(pin_name);
 }
 
-double iPL_API::obtainWNS(const char* clock_name, ista::AnalysisMode mode)
+double PLAPI::obtainWNS(const char* clock_name, ista::AnalysisMode mode)
 {
   return eval::EvalAPI::getInst().reportWNS(clock_name, mode);
 }
 
-double iPL_API::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
+double PLAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
 {
   return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
 }
 
-void iPL_API::updateTiming()
+void PLAPI::updateTiming()
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   SteinerWirelength steiner_wl(topo_manager);
@@ -253,18 +253,18 @@ void iPL_API::updateTiming()
   EvalInst.updateTiming(timing_net_list);
 }
 
-void iPL_API::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
-                                       std::vector<std::string> moved_inst_list)
+void PLAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
+                                     std::vector<std::string> moved_inst_list)
 {
 }
 
-void iPL_API::destroyTimingEval()
+void PLAPI::destroyTimingEval()
 {
   eval::EvalAPI::destroyInst();
 }
 /*****************************Timing-driven Placement: END*****************************/
 
-void iPL_API::runFlow()
+void PLAPI::runFlow()
 {
   // runMP();
   runGP();
@@ -300,7 +300,7 @@ void iPL_API::runFlow()
   writeBackSourceDataBase();
 }
 
-void iPL_API::insertLayoutFiller()
+void PLAPI::insertLayoutFiller()
 {
   MapFiller(&PlacerDBInst, PlacerDBInst.get_placer_config()).mapFillerCell();
   PlacerDBInst.updateGridManager();
@@ -309,14 +309,14 @@ void iPL_API::insertLayoutFiller()
   writeBackSourceDataBase();
 }
 
-void iPL_API::runMP()
+void PLAPI::runMP()
 {
   imp::MPDB* mpdb = new imp::MPDB(&PlacerDBInst);
   imp::MacroPlacer(mpdb, PlacerDBInst.get_placer_config()).runMacroPlacer();
   delete mpdb;
 }
 
-void iPL_API::runGP()
+void PLAPI::runGP()
 {
   CenterPlace(&PlacerDBInst).runCenterPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
@@ -324,14 +324,14 @@ void iPL_API::runGP()
   nesterov_place.runNesterovPlace();
 }
 
-bool iPL_API::runLG()
+bool PLAPI::runLG()
 {
   AbacusLegalizerInst.initAbacusLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   bool flag = AbacusLegalizerInst.runLegalize();
   return flag;
 }
 
-bool iPL_API::runIncrLG()
+bool PLAPI::runIncrLG()
 {
   PlacerDBInst.updateFromSourceDataBase();
   AbacusLegalizerInst.updateInstanceList();
@@ -339,7 +339,7 @@ bool iPL_API::runIncrLG()
   return flag;
 }
 
-bool iPL_API::runIncrLG(std::vector<std::string> inst_name_list)
+bool PLAPI::runIncrLG(std::vector<std::string> inst_name_list)
 {
   auto* design = PlacerDBInst.get_design();
   std::vector<Instance*> inst_list;
@@ -353,7 +353,7 @@ bool iPL_API::runIncrLG(std::vector<std::string> inst_name_list)
   return flag;
 }
 
-void iPL_API::runDP()
+void PLAPI::runDP()
 {
   bool legal_flag = checkLegality();
   if (!legal_flag) {
@@ -369,23 +369,23 @@ void iPL_API::runDP()
   }
 }
 
-void iPL_API::initSTA()
+void PLAPI::initSTA()
 {
   staInst->initSTA();
   staInst->buildGraph();
 }
-void iPL_API::updateSTATiming()
+void PLAPI::updateSTATiming()
 {
   staInst->updateTiming();
 }
 
-bool iPL_API::isClockNet(std::string net_name)
+bool PLAPI::isClockNet(std::string net_name)
 {
   bool flag = staInst->isClockNet(net_name);
   return flag;
 }
 
-bool iPL_API::isSequentialCell(std::string inst_name)
+bool PLAPI::isSequentialCell(std::string inst_name)
 {
   return staInst->isSequentialCell(inst_name);
 
@@ -401,14 +401,14 @@ bool iPL_API::isSequentialCell(std::string inst_name)
   return is_sequential;
 }
 
-bool iPL_API::isBufferCell(std::string cell_name)
+bool PLAPI::isBufferCell(std::string cell_name)
 {
   std::string cell_type = staInst->getCellType(cell_name.c_str());
   bool flag = (cell_type == "Buffer");
   return flag;
 }
 
-void iPL_API::updateSequentialProperty()
+void PLAPI::updateSequentialProperty()
 {
   for (auto* inst : PlacerDBInst.get_design()->get_instance_list()) {
     if (inst->isOutsideInstance()) {
@@ -465,41 +465,41 @@ void iPL_API::updateSequentialProperty()
   }
 }
 
-std::vector<std::string> iPL_API::obtainClockNameList()
+std::vector<std::string> PLAPI::obtainClockNameList()
 {
   return staInst->getClockNameList();
 }
 
-void iPL_API::runBufferInsertion()
+void PLAPI::runBufferInsertion()
 {
   BufferInserter buffer_inserter(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   buffer_inserter.runBufferInsertionForMaxWireLength();
 }
 
-void iPL_API::updatePlacerDB()
+void PLAPI::updatePlacerDB()
 {
   PlacerDBInst.updateFromSourceDataBase();
 }
 
-void iPL_API::updatePlacerDB(std::vector<std::string> inst_list)
+void PLAPI::updatePlacerDB(std::vector<std::string> inst_list)
 {
   PlacerDBInst.updateFromSourceDataBase(inst_list);
 }
 
-bool iPL_API::insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
-                                 std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc)
+bool PLAPI::insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
+                               std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc)
 {
   bool flag = staInst->insertBuffer(source_sink_net, sink_pin_list, master_inst_buffer, buffer_center_loc, idb::IdbConnectType::kSignal);
   return flag;
 }
 
-void iPL_API::writeBackSourceDataBase()
+void PLAPI::writeBackSourceDataBase()
 {
   PlacerDBInst.writeBackSourceDataBase();
 }
 
-std::vector<Rectangle<int32_t>> iPL_API::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
-                                                                       std::pair<int32_t, int32_t> site_range)
+std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
+                                                                     std::pair<int32_t, int32_t> site_range)
 {
   assert(row_range.first < row_range.second && site_range.first < site_range.second);
 
@@ -515,7 +515,7 @@ std::vector<Rectangle<int32_t>> iPL_API::obtainAvailableWhiteSpaceList(std::pair
   return grid_manager->obtainAvailableRectList(row_range.first, row_range.second, site_range.first, site_range.second, 1.0);
 }
 
-bool iPL_API::checkLegality()
+bool PLAPI::checkLegality()
 {
   bool legal_flag = true;
 
@@ -536,23 +536,23 @@ bool iPL_API::checkLegality()
   return legal_flag;
 }
 
-bool iPL_API::isSTAStarted()
+bool PLAPI::isSTAStarted()
 {
   return staInst->isInitSTA();
 }
 
-bool iPL_API::isPlacerDBStarted()
+bool PLAPI::isPlacerDBStarted()
 {
   return PlacerDBInst.isInitialized();
 }
 
-bool iPL_API::isAbucasLGStarted()
+bool PLAPI::isAbucasLGStarted()
 {
   return AbacusLegalizerInst.isInitialized();
 }
 
 /*****************************Congestion-driven Placement: START*****************************/
-void iPL_API::runRoutabilityGP()
+void PLAPI::runRoutabilityGP()
 {
   CenterPlace(&PlacerDBInst).runCenterPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
@@ -564,7 +564,7 @@ void iPL_API::runRoutabilityGP()
  * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF> vector
  * @return std::vector<float>
  */
-std::vector<float> iPL_API::evalGRCong()
+std::vector<float> PLAPI::evalGRCong()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
   eval_api.initCongestionEval();
@@ -579,7 +579,7 @@ std::vector<float> iPL_API::evalGRCong()
  * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
  * @return std::vector<float>
  */
-std::vector<float> iPL_API::getUseCapRatioList()
+std::vector<float> PLAPI::getUseCapRatioList()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
   return eval_api.getUseCapRatioList();
@@ -590,7 +590,7 @@ std::vector<float> iPL_API::getUseCapRatioList()
  * @param  plot_path
  * @param  output_file_name
  */
-void iPL_API::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
+void PLAPI::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
   // layer by layer
@@ -599,17 +599,17 @@ void iPL_API::plotCongMap(const std::string& plot_path, const std::string& outpu
   eval_api.plotOverflow(plot_path, output_file_name);
 }
 
-void iPL_API::destroyCongEval()
+void PLAPI::destroyCongEval()
 {
   eval::EvalAPI::destroyInst();
 }
 
-std::vector<float> iPL_API::obtainPinDens()
+std::vector<float> PLAPI::obtainPinDens()
 {
   return eval::EvalAPI::getInst().evalPinDens();
 }
 
-std::vector<float> iPL_API::obtainNetCong(std::string rudy_type)
+std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)
 {
   return eval::EvalAPI::getInst().evalNetCong(rudy_type);
 }
@@ -649,6 +649,6 @@ eval::CongPin* wrapCongPin(ipl::Pin* ipl_pin)
 }
 
 // private
-iPL_API* iPL_API::_ipl_api_instance = nullptr;
+PLAPI* PLAPI::_s_ipl_api_instance = nullptr;
 
 }  // namespace ipl
