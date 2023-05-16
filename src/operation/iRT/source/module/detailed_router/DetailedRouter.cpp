@@ -801,11 +801,11 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
   }
 }
 
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, LayerRect& blockage)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect)
 {
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
 
-  for (Segment<DRNode*>& node_segment : getNodeSegmentList(dr_box, blockage)) {
+  for (Segment<DRNode*>& node_segment : getNodeSegmentList(dr_box, enlarge_real_rect)) {
     DRNode* first = node_segment.get_first();
     DRNode* second = node_segment.get_second();
     irt_int first_layer_idx = first->get_layer_idx();
@@ -816,10 +816,10 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
       LOG_INST.error(Loc::current(), "The node segment is illegal!");
     }
     for (LayerRect real_rect : getRealRectList({Segment<LayerCoord>(*first, *second)})) {
-      if (real_rect.get_layer_idx() != blockage.get_layer_idx()) {
+      if (real_rect.get_layer_idx() != enlarge_real_rect.get_layer_idx()) {
         continue;
       }
-      if (RTUtil::isOpenOverlap(blockage, real_rect)) {
+      if (RTUtil::isOpenOverlap(enlarge_real_rect, real_rect)) {
         node_orientation_map[first].insert(orientation);
         node_orientation_map[second].insert(RTUtil::getOppositeOrientation(orientation));
       }
@@ -828,9 +828,10 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
   return node_orientation_map;
 }
 
-std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, LayerRect& blockage)
+std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect)
 {
-  // 获取blockage覆盖的线段
+  // enlarge_real_rect为已经扩了spacing的矩形
+  // 获取enlarge_real_rect覆盖的线段
   std::vector<Segment<DRNode*>> node_segment_list;
   for (DRNodeGraph& node_graph : dr_box.get_layer_graph_list()) {
     for (DRNode& dr_node : node_graph.get_dr_node_list()) {
