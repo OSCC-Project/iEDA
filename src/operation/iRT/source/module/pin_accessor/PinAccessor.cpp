@@ -300,8 +300,16 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
         for (irt_int y : pref_y_list) {
           access_point_list.emplace_back(shape_x_mid, y, pin_shape_layer_idx, AccessPointType::kPrefTrackCenter);
         }
-        // shape center
-        access_point_list.emplace_back(shape_x_mid, shape_y_mid, pin_shape_layer_idx, AccessPointType::kShapeCenter);
+        // on shape
+        access_point_list.emplace_back(lb_x, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(shape_x_mid, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(rt_x, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(rt_x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(rt_x, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(shape_x_mid, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(lb_x, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(lb_x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
+        access_point_list.emplace_back(shape_x_mid, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
       }
     }
   }
@@ -389,7 +397,7 @@ void PinAccessor::selectAccessPointList(PANet& pa_net)
       type_point_map[access_point.get_type()].push_back(access_point);
     }
     for (AccessPointType access_point_type :
-         {AccessPointType::kPrefTrackGrid, AccessPointType::kPrefTrackCenter, AccessPointType::kShapeCenter}) {
+         {AccessPointType::kPrefTrackGrid, AccessPointType::kPrefTrackCenter, AccessPointType::kOnShape}) {
       std::vector<AccessPoint>& access_point_list = type_point_map[access_point_type];
       if (access_point_list.empty()) {
         continue;
@@ -543,7 +551,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
         case AccessPointType::kPrefTrackCenter:
           pa_mode_stat.addTrackCenterPinNum(1);
           break;
-        case AccessPointType::kShapeCenter:
+        case AccessPointType::kOnShape:
           pa_mode_stat.addShapeCenterPinNum(1);
           break;
         default:
