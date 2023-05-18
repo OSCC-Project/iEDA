@@ -45,28 +45,11 @@ class MPPartition
 
   set<FPInst*> findInstAdjacent(FPInst* instance);
 
-  void KMPartition(){};
   // for partition
   void add_inst_index(FPInst* inst, int index) { _inst_to_index_map.emplace(inst, index); }
   void add_index_inst(int index, FPInst* inst) { _index_to_inst_map.emplace(index, inst); }
-  FPInst* find_inst(int index)
-  {
-    FPInst* inst = nullptr;
-    auto inst_iter = _index_to_inst_map.find(index);
-    if (inst_iter != _index_to_inst_map.end()) {
-      inst = (*inst_iter).second;
-    }
-    return inst;
-  }
-  int findIndex(FPInst* inst)
-  {
-    int index = -1;
-    auto index_iter = _inst_to_index_map.find(inst);
-    if (index_iter != _inst_to_index_map.end()) {
-      index = (*index_iter).second;
-    }
-    return index;
-  }
+  FPInst* find_inst(int index);
+  int findIndex(FPInst* inst);
   void buildNewModule(vector<int> partition_result);
   float calculateArea(set<int>, FPInst* macro, int index);
 
