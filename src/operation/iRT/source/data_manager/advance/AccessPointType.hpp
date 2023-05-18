@@ -25,7 +25,7 @@ enum class AccessPointType
   kNone = 0,
   kPrefTrackGrid = 1,
   kPrefTrackCenter = 2,
-  kShapeCenter = 3
+  kOnShape = 3
 };
 
 struct GetAccessPointTypeName
@@ -43,7 +43,7 @@ struct GetAccessPointTypeName
       case AccessPointType::kPrefTrackCenter:
         access_point_name = "pref_track_center";
         break;
-      case AccessPointType::kShapeCenter:
+      case AccessPointType::kOnShape:
         access_point_name = "shape_center";
         break;
       default:
