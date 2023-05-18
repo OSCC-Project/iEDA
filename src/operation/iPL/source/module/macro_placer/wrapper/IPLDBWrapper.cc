@@ -42,21 +42,17 @@ void IPLDBWrapper::wrapLayout(const ipl::Layout* ipl_layout)
 
   // set die shape
   ipl::Rectangle<int32_t> ipl_die = ipl_layout->get_die_shape();
-  FPRect* die = new FPRect();
-  die->set_x(ipl_die.get_ll_x());
-  die->set_y(ipl_die.get_ll_y());
-  die->set_width(ipl_die.get_ur_x() - ipl_die.get_ll_x());
-  die->set_height(ipl_die.get_ur_y() - ipl_die.get_ll_y());
-  imp_layout->set_die_shape(die);
+  imp_layout->set_die_x(ipl_die.get_ll_x());
+  imp_layout->set_die_y(ipl_die.get_ll_y());
+  imp_layout->set_die_width(ipl_die.get_ur_x() - ipl_die.get_ll_x());
+  imp_layout->set_die_height(ipl_die.get_ur_y() - ipl_die.get_ll_y());
 
   // set core shape
   ipl::Rectangle<int32_t> ipl_core = ipl_layout->get_core_shape();
-  FPRect* core = new FPRect();
-  core->set_x(ipl_core.get_ll_x());
-  core->set_y(ipl_core.get_ll_y());
-  core->set_width(ipl_core.get_ur_x() - ipl_core.get_ll_x());
-  core->set_height(ipl_core.get_ur_y() - ipl_core.get_ll_y());
-  imp_layout->set_core_shape(core);
+  imp_layout->set_core_x(ipl_core.get_ll_x());
+  imp_layout->set_core_y(ipl_core.get_ll_y());
+  imp_layout->set_core_width(ipl_core.get_ur_x() - ipl_core.get_ll_x());
+  imp_layout->set_core_height(ipl_core.get_ur_y() - ipl_core.get_ll_y());
 }
 
 void IPLDBWrapper::wrapDesign(ipl::Design* ipl_design)
@@ -115,14 +111,13 @@ void IPLDBWrapper::wrapInstancelist(ipl::Design* ipl_design)
     // set inst type.
     if (ipl_inst->get_cell_master() != nullptr) {
       if (ipl_inst->get_cell_master()->isMacro()) {
-      inst_ptr->set_type(InstType::MACRO);
-      imp_design->add_macro(inst_ptr);
-    } else {
-      inst_ptr->set_type(InstType::STD);
-      imp_design->add_std_cell(inst_ptr);
+        inst_ptr->set_type(InstType::MACRO);
+        imp_design->add_macro(inst_ptr);
+      } else {
+        inst_ptr->set_type(InstType::STD);
+        imp_design->add_std_cell(inst_ptr);
+      }
     }
-    }
-    
 
     // set state
     if (ipl_inst->isFixed()) {

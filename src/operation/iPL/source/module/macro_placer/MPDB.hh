@@ -31,11 +31,7 @@ namespace ipl::imp {
 class MPDB
 {
  public:
-  MPDB(ipl::PlacerDB* pldb)
-  {
-    _db_wrapper = new IPLDBWrapper(pldb);
-    initMPDB();
-  }
+  MPDB(ipl::PlacerDB* pldb);
   ~MPDB(){};
 
   // Layout

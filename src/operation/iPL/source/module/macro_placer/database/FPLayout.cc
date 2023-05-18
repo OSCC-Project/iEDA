@@ -14,34 +14,22 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-#include <string>
-#include <vector>
 
-#include "Solution.hh"
-#include "database/FPInst.hh"
+#include "FPLayout.hh"
 
 namespace ipl::imp {
-class MPSolution : public Solution
+
+FPLayout::FPLayout()
 {
- public:
-  MPSolution(vector<FPInst*> macro_list)
-  {
-    _num_macro = macro_list.size();
-    _macro_list = macro_list;
+  _die_shape = new FPRect();
+  _core_shape = new FPRect();
+}
+
+FPLayout::~FPLayout()
+{
+  if (_die_shape != nullptr) {
+    delete _die_shape;
+    _die_shape = nullptr;
   }
-  uint32_t get_total_width() { return _total_width; }
-  uint32_t get_total_height() { return _total_height; }
-  float get_total_area() { return _total_area; }
-  int get_num_macro() const { return _num_macro; }
-  virtual void printSolution(){};
-
- protected:
-  int _num_macro = 0;
-  vector<FPInst*> _macro_list;
-  uint32_t _total_width = 0;
-  uint32_t _total_height = 0;
-  float _total_area = 0;
-};
-
+}
 }  // namespace ipl::imp
