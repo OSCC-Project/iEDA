@@ -322,29 +322,8 @@ void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_lay
       for (PlanarRect& wire : wire_list) {
         if (RTUtil::isOpenOverlap(blockage, wire)) {
           // 要切
-          if (routing_layer.isPreferH()) {
-            if (wire.get_lb_x() < blockage.get_lb_x()) {
-              PlanarRect new_wire = wire;
-              new_wire.set_rt_x(blockage.get_lb_x());
-              new_wire_list.push_back(new_wire);
-            }
-            if (blockage.get_rt_x() < wire.get_rt_x()) {
-              PlanarRect new_wire = wire;
-              new_wire.set_lb_x(blockage.get_rt_x());
-              new_wire_list.push_back(new_wire);
-            }
-          } else {
-            if (wire.get_lb_y() < blockage.get_lb_y()) {
-              PlanarRect new_wire = wire;
-              new_wire.set_rt_y(blockage.get_lb_y());
-              new_wire_list.push_back(new_wire);
-            }
-            if (blockage.get_rt_y() < wire.get_rt_y()) {
-              PlanarRect new_wire = wire;
-              new_wire.set_lb_y(blockage.get_rt_y());
-              new_wire_list.push_back(new_wire);
-            }
-          }
+          std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(wire, blockage, routing_layer.get_direction());
+          new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
         } else {
           // 不切
           new_wire_list.push_back(wire);

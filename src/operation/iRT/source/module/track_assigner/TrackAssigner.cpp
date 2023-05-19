@@ -441,8 +441,8 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
-    std::vector<EXTLayerRect> net_region_list;
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
+      std::vector<EXTLayerRect> net_region_list;
       for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
         irt_int layer_idx = real_coord.get_layer_idx();
         for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
@@ -461,31 +461,57 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
           net_region_list.push_back(above_via_shape);
         }
       }
-    }
-    for (const EXTLayerRect& net_region : net_region_list) {
-      irt_int layer_idx = net_region.get_layer_idx();
-      if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-        continue;
+      std::map<irt_int, std::vector<PlanarCoord>> layer_access_point_map;
+      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
+        layer_access_point_map[real_coord.get_layer_idx()].push_back(real_coord);
       }
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
-      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+      std::set<irt_int> additional_obs_layer_set;
+      for (auto& [layer_idx, access_point_list] : layer_access_point_map) {
+        RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+        irt_int prefer_pitch = routing_layer.getPreferTrackGrid().get_step_length();
 
-      if (routing_layer_list[layer_idx].isPreferH()) {
-        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][y];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
+        PlanarRect bounding_box = RTUtil::getBoundingBox(access_point_list);
+        if (routing_layer.isPreferH()) {
+          if (bounding_box.getYSpan() < prefer_pitch) {
+            additional_obs_layer_set.insert(layer_idx);
           }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+        } else {
+          if (bounding_box.getXSpan() < prefer_pitch) {
+            additional_obs_layer_set.insert(layer_idx);
+          }
         }
-      } else {
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][x];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
+      }
+      for (const EXTLayerRect& net_region : net_region_list) {
+        irt_int layer_idx = net_region.get_layer_idx();
+        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+          continue;
+        }
+        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
+        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+            TAPanel& ta_panel = layer_panel_list[layer_idx][y];
+            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+              continue;
+            }
+            if (RTUtil::exist(additional_obs_layer_set, layer_idx)) {
+              ta_panel.get_net_blockage_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+            }
+            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
           }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+        } else {
+          for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+            TAPanel& ta_panel = layer_panel_list[layer_idx][x];
+            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+              continue;
+            }
+            if (RTUtil::exist(additional_obs_layer_set, layer_idx)) {
+              ta_panel.get_net_blockage_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+            }
+            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+          }
         }
       }
     }
