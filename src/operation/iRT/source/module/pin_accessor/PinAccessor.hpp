@@ -65,6 +65,10 @@ class PinAccessor
   void accessPANet(PAModel& pa_model, PANet& pa_net);
   void initAccessPointList(PAModel& pa_model, PANet& pa_net);
   std::vector<LayerRect> getLegalPinShapeList(irt_int pa_net_idx, PAPin& pa_pin, PAModel& pa_model);
+  std::vector<LayerRect> splitPinShapeList(irt_int pa_net_idx, PAPin& pa_pin, PAModel& pa_model);
+  std::vector<LayerRect> getWireLegalPinShapeList(irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list, PAModel& pa_model);
+  std::vector<LayerRect> getViaLegalPinShapeList(irt_int pa_net_idx, irt_int via_below_layer_idx, std::vector<EXTLayerRect>& pin_shape_list,
+                                                 PAModel& pa_model);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointList(PANet& pa_net);
 #endif
