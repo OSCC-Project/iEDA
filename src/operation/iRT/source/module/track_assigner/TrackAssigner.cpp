@@ -461,26 +461,6 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
           net_region_list.push_back(above_via_shape);
         }
       }
-      std::map<irt_int, std::vector<PlanarCoord>> layer_access_point_map;
-      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
-        layer_access_point_map[real_coord.get_layer_idx()].push_back(real_coord);
-      }
-      std::set<irt_int> additional_obs_layer_set;
-      for (auto& [layer_idx, access_point_list] : layer_access_point_map) {
-        RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-        irt_int prefer_pitch = routing_layer.getPreferTrackGrid().get_step_length();
-
-        PlanarRect bounding_box = RTUtil::getBoundingBox(access_point_list);
-        if (routing_layer.isPreferH()) {
-          if (bounding_box.getYSpan() < prefer_pitch) {
-            additional_obs_layer_set.insert(layer_idx);
-          }
-        } else {
-          if (bounding_box.getXSpan() < prefer_pitch) {
-            additional_obs_layer_set.insert(layer_idx);
-          }
-        }
-      }
       for (const EXTLayerRect& net_region : net_region_list) {
         irt_int layer_idx = net_region.get_layer_idx();
         if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
@@ -496,9 +476,6 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
             if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
               continue;
             }
-            if (RTUtil::exist(additional_obs_layer_set, layer_idx)) {
-              ta_panel.get_net_blockage_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
-            }
             ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
           }
         } else {
@@ -506,9 +483,6 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
             TAPanel& ta_panel = layer_panel_list[layer_idx][x];
             if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
               continue;
-            }
-            if (RTUtil::exist(additional_obs_layer_set, layer_idx)) {
-              ta_panel.get_net_blockage_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
             }
             ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
           }

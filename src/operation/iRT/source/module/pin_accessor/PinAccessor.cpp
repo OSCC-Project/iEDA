@@ -247,7 +247,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 {
   initAccessPointList(pa_model, pa_net);
   mergeAccessPointList(pa_net);
-  selectAccessPointList(pa_net);
+  // selectAccessPointList(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
