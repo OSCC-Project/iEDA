@@ -26,8 +26,6 @@ namespace ipl {
 class Hmetis
 {
  public:
-  Hmetis(){};
-  ~Hmetis(){};
   void set_hmetis_path(std::string path) { _hmetis_path = path; }
   void set_output_path(std::string path) { _output_path = path; }
   void set_nparts(int num_parts) { _nparts = num_parts; }

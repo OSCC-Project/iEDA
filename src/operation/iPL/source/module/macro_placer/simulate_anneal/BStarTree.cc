@@ -28,6 +28,105 @@
 using namespace std;
 namespace ipl::imp {
 
+BStarTree::BStarTree(vector<FPInst*> macro_list, Setting* set) : MPSolution(macro_list)
+{
+  // set
+  _tolerance = 0;
+  _new_block_x_shift = 0;
+  _new_block_y_shift = 0;
+  _total_contour_area = 0;
+  _swap_pro = 0.3;
+  _move_pro = 0.3;
+  _rotate = false;
+  _rotate_macro_index = 0;
+  _old_orient = Orient::N;
+
+  for (int i = 0; i < _num_macro + 2; ++i) {
+    BStarTreeNode* tree_node = new BStarTreeNode();
+    BStarTreeNode* old_tree_node = new BStarTreeNode();
+    tree_node->_parent = _undefined;
+    tree_node->_left = _undefined;
+    tree_node->_right = _undefined;
+    old_tree_node->_parent = _undefined;
+    old_tree_node->_left = _undefined;
+    old_tree_node->_right = _undefined;
+    _tree.emplace_back(tree_node);
+    _old_tree.emplace_back(old_tree_node);
+
+    ContourNode* contour_node = new ContourNode();
+    contour_node->_next = _undefined;
+    contour_node->_prev = _undefined;
+    contour_node->_begin = _undefined;
+    contour_node->_ctl = _undefined;
+    _contour.emplace_back(contour_node);
+  }
+  _contour[_num_macro]->_next = _num_macro + 1;
+  _contour[_num_macro]->_prev = _undefined;
+  _contour[_num_macro]->_begin = 0;
+  _contour[_num_macro]->_end = 0;
+  _contour[_num_macro]->_ctl = _infty;
+  _contour[_num_macro + 1]->_next = _undefined;
+  _contour[_num_macro + 1]->_prev = _num_macro;
+  _contour[_num_macro + 1]->_begin = 0;
+  _contour[_num_macro + 1]->_end = _infty;
+  _contour[_num_macro + 1]->_ctl = 0;
+
+  // inst_1 represents the left edge and inst_2 represents the right edge
+  FPInst* inst_1 = new FPInst();
+  FPInst* inst_2 = new FPInst();
+  inst_1->set_name("left_edge");
+  inst_2->set_name("right_edge");
+  inst_1->set_height(_infty);
+  inst_2->set_width(_infty);
+  _macro_list.emplace_back(inst_1);
+  _macro_list.emplace_back(inst_2);
+
+  _swap_pro = set->get_swap_pro();
+  _move_pro = set->get_move_pro();
+  inittree();
+}
+
+BStarTree::~BStarTree()
+{
+  for (BStarTreeNode* node : _tree) {
+    if (node != nullptr) {
+      delete node;
+      node = nullptr;
+    }
+  }
+  _tree.clear();
+
+  for (BStarTreeNode* node : _old_tree) {
+    if (node != nullptr) {
+      delete node;
+      node = nullptr;
+    }
+  }
+  _old_tree.clear();
+
+  for (ContourNode* node : _contour) {
+    if (node != nullptr) {
+      delete node;
+      node = nullptr;
+    }
+  }
+  _contour.clear();
+
+  // delete right_edge and left_edge
+  FPInst* right_edge = _macro_list.back();
+  if (right_edge != nullptr && right_edge->get_name() == "right_edge") {
+    delete right_edge;
+    _macro_list[-1] = nullptr;
+    _macro_list.pop_back();
+  }
+  FPInst* left_edge = _macro_list.back();
+  if (left_edge != nullptr && left_edge->get_name() == "right_edge") {
+    delete left_edge;
+    _macro_list[-1] = nullptr;
+    _macro_list.pop_back();
+  }
+}
+
 void BStarTree::inittree()
 {
   _tree[0]->_parent = _num_macro;
@@ -287,10 +386,10 @@ void BStarTree::removeUpChild(int index)
 
 void BStarTree::pack()
 {
-  clean_contour(_contour);
+  clean_contour();
   // x- and y- shifts for new block to avoid obstacles
-  new_block_x_shift = 0;
-  new_block_y_shift = 0;
+  _new_block_x_shift = 0;
+  _new_block_y_shift = 0;
 
   int tree_prev = _num_macro;
   int tree_curr = _tree[_num_macro]->_left;  // start with first block
@@ -302,8 +401,8 @@ void BStarTree::pack()
       int32_t obstacle_x_min, obstacle_x_max, obstacle_y_min, obstacle_y_max;
       int32_t new_x_min, new_x_max, new_y_min, new_y_max;
 
-      if (isIntersectsObstacle(tree_curr, obstacle_id, new_x_min, new_x_max, new_y_min, new_y_max, obstacle_x_min, obstacle_x_max, obstacle_y_min,
-                               obstacle_y_max)) {
+      if (isIntersectsObstacle(tree_curr, obstacle_id, new_x_min, new_x_max, new_y_min, new_y_max, obstacle_x_min, obstacle_x_max,
+                               obstacle_y_min, obstacle_y_max)) {
         // 'add obstacle' and then resume building the tree from here
         int tree_parent = _tree[tree_curr]->_parent;
         int32_t block_height = new_y_max - new_y_min;
@@ -315,18 +414,18 @@ void BStarTree::pack()
           // _left child & shifting up makes it too high
           // or _right child & shifting up makes it too high;
           // shift the starting location of the block _right in x
-          new_block_x_shift += obstacle_x_max - new_x_min;
-          new_block_y_shift = 0;
+          _new_block_x_shift += obstacle_x_max - new_x_min;
+          _new_block_y_shift = 0;
         } else {
           // shift the block in y
-          new_block_y_shift += obstacle_y_max - new_y_min;
+          _new_block_y_shift += obstacle_y_max - new_y_min;
         }
       } else {
         addContourBlock(tree_curr);
 
         // reset x- y- obstacle shift
-        new_block_x_shift = 0;
-        new_block_y_shift = 0;
+        _new_block_x_shift = 0;
+        _new_block_y_shift = 0;
 
         tree_prev = tree_curr;
         if (_tree[tree_curr]->_left != _undefined)
@@ -363,23 +462,23 @@ void BStarTree::pack()
   _total_area = float(_total_width) * float(_total_height);
 }
 
-void BStarTree::clean_contour(std::vector<ContourNode*>& old_contour)
+void BStarTree::clean_contour()
 {
-  int vec_size = old_contour.size();
+  int vec_size = _contour.size();
   int ledge = vec_size - 2;
   int bedge = vec_size - 1;
 
-  old_contour[ledge]->_next = bedge;
-  old_contour[ledge]->_prev = _undefined;
-  old_contour[ledge]->_begin = 0;
-  old_contour[ledge]->_end = 0;
-  old_contour[ledge]->_ctl = _infty;
+  _contour[ledge]->_next = bedge;
+  _contour[ledge]->_prev = _undefined;
+  _contour[ledge]->_begin = 0;
+  _contour[ledge]->_end = 0;
+  _contour[ledge]->_ctl = _infty;
 
-  old_contour[bedge]->_next = _undefined;
-  old_contour[bedge]->_prev = ledge;
-  old_contour[bedge]->_begin = 0;
-  old_contour[bedge]->_end = _infty;
-  old_contour[bedge]->_ctl = 0;
+  _contour[bedge]->_next = _undefined;
+  _contour[bedge]->_prev = ledge;
+  _contour[bedge]->_begin = 0;
+  _contour[bedge]->_end = _infty;
+  _contour[bedge]->_ctl = 0;
 
   // reset obstacles (so we consider all of them again)
   if (_seen_obstacles.size() != get_num_obstacles())
@@ -472,13 +571,12 @@ void BStarTree::findBlockLocation(const int tree_ptr, int32_t& out_x, int32_t& o
     contour_ptr = tree_parent;
   }
 
-  new_block_contour_begin += new_block_x_shift;  // considering obstacles
-  contour_prev = _contour[contour_ptr]->_prev;   // _begins of cPtr/tPtr match
+  new_block_contour_begin += _new_block_x_shift;  // considering obstacles
+  contour_prev = _contour[contour_ptr]->_prev;    // _begins of cPtr/tPtr match
 
   int32_t new_block_contour_end = new_block_contour_begin + _macro_list[tree_ptr]->get_width();
   uint32_t max_ctl = _contour[contour_ptr]->_ctl;
-  int32_t contour_ptr_end =
-      (contour_ptr == tree_ptr) ? new_block_contour_end : _contour[contour_ptr]->_end;
+  int32_t contour_ptr_end = (contour_ptr == tree_ptr) ? new_block_contour_end : _contour[contour_ptr]->_end;
 
   while (contour_ptr_end <= new_block_contour_end + _tolerance) {
     max_ctl = max(max_ctl, _contour[contour_ptr]->_ctl);

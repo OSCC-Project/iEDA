@@ -19,6 +19,26 @@
 #include <cstring>
 
 namespace ipl::imp {
+
+Module::Module()
+{
+  _name = "top";
+  _layer = 0;
+}
+
+Module::~Module()
+{
+  for (Module* child_module : _child_module_list) {
+    if (child_module != nullptr) {
+      delete child_module;
+      child_module = nullptr;
+    }
+    _child_module_list.clear();
+  }
+
+  _stdcell_list.clear();
+}
+
 void Module::add_inst(FPInst* inst, std::queue<std::string> level_name_list, std::string father_name)
 {
   if (level_name_list.empty()) {

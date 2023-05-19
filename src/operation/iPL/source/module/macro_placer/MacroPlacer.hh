@@ -40,11 +40,7 @@ namespace ipl::imp {
 class MacroPlacer
 {
  public:
-  MacroPlacer(MPDB* mdb, ipl::Config* config) : _mdb(mdb)
-  {
-    _mp_config = config->get_mp_config();
-    init();
-  }
+  MacroPlacer(MPDB* mdb, ipl::Config* config);
   ~MacroPlacer() = default;
   // open functions
   void runMacroPlacer();

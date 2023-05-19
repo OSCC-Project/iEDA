@@ -14,34 +14,44 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-#include <string>
-#include <vector>
 
-#include "Solution.hh"
-#include "database/FPInst.hh"
+#include "FPDesign.hh"
 
 namespace ipl::imp {
-class MPSolution : public Solution
-{
- public:
-  MPSolution(vector<FPInst*> macro_list)
-  {
-    _num_macro = macro_list.size();
-    _macro_list = macro_list;
-  }
-  uint32_t get_total_width() { return _total_width; }
-  uint32_t get_total_height() { return _total_height; }
-  float get_total_area() { return _total_area; }
-  int get_num_macro() const { return _num_macro; }
-  virtual void printSolution(){};
 
- protected:
-  int _num_macro = 0;
-  vector<FPInst*> _macro_list;
-  uint32_t _total_width = 0;
-  uint32_t _total_height = 0;
-  float _total_area = 0;
-};
+FPDesign::~FPDesign()
+{
+  for (FPInst* std_cell : _std_cell_list) {
+    if (std_cell != nullptr) {
+      delete std_cell;
+      std_cell = nullptr;
+    }
+  }
+  _std_cell_list.clear();
+
+  for (FPInst* macro : _macro_list) {
+    if (macro != nullptr) {
+      delete macro;
+      macro = nullptr;
+    }
+  }
+  _macro_list.clear();
+
+  for (FPNet* net : _net_list) {
+    if (net != nullptr) {
+      delete net;
+      net = nullptr;
+    }
+  }
+  _net_list.clear();
+
+  for (FPPin* pin : _pin_list) {
+    if (pin != nullptr) {
+      delete pin;
+      pin = nullptr;
+    }
+  }
+  _pin_list.clear();
+}
 
 }  // namespace ipl::imp

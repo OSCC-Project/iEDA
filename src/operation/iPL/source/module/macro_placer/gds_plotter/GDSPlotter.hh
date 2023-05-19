@@ -14,34 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-#include <string>
-#include <vector>
 
-#include "Solution.hh"
-#include "database/FPInst.hh"
+#pragma once
+#include <fstream>
+
+#include "MPDB.hh"
 
 namespace ipl::imp {
-class MPSolution : public Solution
+class GDSPlotter
 {
  public:
-  MPSolution(vector<FPInst*> macro_list)
-  {
-    _num_macro = macro_list.size();
-    _macro_list = macro_list;
-  }
-  uint32_t get_total_width() { return _total_width; }
-  uint32_t get_total_height() { return _total_height; }
-  float get_total_area() { return _total_area; }
-  int get_num_macro() const { return _num_macro; }
-  virtual void printSolution(){};
+  GDSPlotter(std::string path) : _path(path){};
+  void set_path(std::string path) { _path = path; }
 
- protected:
-  int _num_macro = 0;
-  vector<FPInst*> _macro_list;
-  uint32_t _total_width = 0;
-  uint32_t _total_height = 0;
-  float _total_area = 0;
+ private:
+  std::string _path;
+
+  void plotInst(ofstream& gds_file, FPInst* inst, int layer);
+  void plotRect(ofstream& gds_file, FPRect* rect, int layer);
+  void plotLine(ofstream& gds_file, FPPin* start, FPPin* end, int layer = 0);
 };
-
 }  // namespace ipl::imp

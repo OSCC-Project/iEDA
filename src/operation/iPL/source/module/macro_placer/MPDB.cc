@@ -19,10 +19,16 @@
 #include <fstream>
 #include <set>
 
-using std::set;
 using std::endl;
+using std::set;
 
 namespace ipl::imp {
+
+MPDB::MPDB(ipl::PlacerDB* pldb)
+{
+  _db_wrapper = new IPLDBWrapper(pldb);
+  initMPDB();
+}
 
 FPInst* MPDB::findNewMacro(FPInst* inst)
 {
@@ -210,7 +216,8 @@ void MPDB::writeGDS(string file_name)
   gds_file.close();
 }
 
-void MPDB::writePartitonGDS(string file_name, map<FPInst*, int> partition_result) {
+void MPDB::writePartitonGDS(string file_name, map<FPInst*, int> partition_result)
+{
   std::ofstream gds_file;
   gds_file.open(file_name);
   gds_file << "HEADER 600" << std::endl;

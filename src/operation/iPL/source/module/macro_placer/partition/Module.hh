@@ -26,8 +26,8 @@ namespace ipl::imp {
 class Module
 {
  public:
-  Module(){};
-  ~Module(){};
+  Module();
+  ~Module();
   void set_name(std::string name) { _name = name; }
   void add_inst(FPInst* inst, std::queue<std::string> level_name_list = {}, std::string father_name = "top");
   void set_layer(int layer) { _layer = layer; }
@@ -42,8 +42,8 @@ class Module
 
  private:
   std::queue<string> split(const string& str);
-  std::string _name = "top";
-  int _layer = 0;
+  std::string _name;
+  int _layer;
   std::vector<FPInst*> _macro_list;
   std::vector<FPInst*> _stdcell_list;
   std::vector<Module*> _child_module_list;

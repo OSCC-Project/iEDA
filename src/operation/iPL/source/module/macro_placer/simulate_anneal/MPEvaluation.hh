@@ -27,27 +27,7 @@ namespace ipl::imp {
 class MPEvaluation : public Evaluation
 {
  public:
-  MPEvaluation(MPDB* mdb, Setting* set, MPSolution* solution)
-  {
-    _solution = solution;
-    FPRect* core_rect = mdb->get_layout()->get_core_shape();
-    _core_width = core_rect->get_width();
-    _core_height = core_rect->get_height();
-    _net_list = mdb->get_new_net_list();
-
-    _weight_area = set->get_weight_area();
-    _weight_e_area = set->get_weight_e_area();
-    _weight_wl = set->get_weight_wl();
-    _weight_boundary = set->get_weight_boundary();
-    _weight_notch = set->get_weight_notch();
-    _weight_guidance = set->get_weight_guidance();
-
-    _blockage_list = mdb->get_blockage_list();
-    _guidance_to_macro_map = mdb->get_guidance_to_macro_map();
-    _macro_list = mdb->get_place_macro_list();
-
-    init_norm(set);  // NOLINT
-  }
+  MPEvaluation(MPDB* mdb, Setting* set, MPSolution* solution);
   float get_weight_e_area() { return _weight_e_area; }
   void set_weight_e_area(float weight) { _weight_e_area = weight; }
   float evaluate() override;

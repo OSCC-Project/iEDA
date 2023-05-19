@@ -14,34 +14,34 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-#include <string>
-#include <vector>
 
-#include "Solution.hh"
-#include "database/FPInst.hh"
+#include "FPNet.hh"
 
 namespace ipl::imp {
-class MPSolution : public Solution
-{
- public:
-  MPSolution(vector<FPInst*> macro_list)
-  {
-    _num_macro = macro_list.size();
-    _macro_list = macro_list;
-  }
-  uint32_t get_total_width() { return _total_width; }
-  uint32_t get_total_height() { return _total_height; }
-  float get_total_area() { return _total_area; }
-  int get_num_macro() const { return _num_macro; }
-  virtual void printSolution(){};
 
- protected:
-  int _num_macro = 0;
-  vector<FPInst*> _macro_list;
-  uint32_t _total_width = 0;
-  uint32_t _total_height = 0;
-  float _total_area = 0;
-};
+FPNet::FPNet()
+{
+  _name = "";
+  _weight = 1.0;
+}
+
+FPNet::~FPNet()
+{
+  for (FPPin* pin : _pin_list) {
+    if (pin != nullptr) {
+      delete pin;
+      pin = nullptr;
+    }
+  }
+}
+
+void FPNet::add_pin(FPPin* pin)
+{
+  _pin_list.emplace_back(pin);
+  FPInst* pin_inst = pin->get_instance();
+  if (nullptr != pin_inst) {
+    add_inst(pin->get_instance());
+  }
+}
 
 }  // namespace ipl::imp
