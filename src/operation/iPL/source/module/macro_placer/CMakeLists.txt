@@ -17,7 +17,10 @@ add_library(ipl-module-macro_placer
     partition/Module.cc
     simulate_anneal/BStarTree.cc
     simulate_anneal/SequencePair.cc
-    simulate_anneal/MPEvaluation.cc)
+    simulate_anneal/MPEvaluation.cc
+    analytical_method/Solver.cc
+    analytical_method/Problem.cc
+    analytical_method/MProblem.cc)
 
 target_include_directories(ipl-module-macro_placer
     PUBLIC
