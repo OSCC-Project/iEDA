@@ -1369,6 +1369,14 @@ class RTUtil
 #if 1  // irt数据结构工具函数
 
   // 获得坐标集合的外接矩形
+  static PlanarRect getBoundingBox(const std::vector<LayerCoord>& coord_list)
+  {
+    std::vector<PlanarCoord> planar_coord_list;
+    planar_coord_list.insert(planar_coord_list.end(), coord_list.begin(), coord_list.end());
+    return getBoundingBox(planar_coord_list);
+  }
+
+  // 获得坐标集合的外接矩形
   static PlanarRect getBoundingBox(const std::vector<PlanarCoord>& coord_list)
   {
     PlanarRect bounding_box;

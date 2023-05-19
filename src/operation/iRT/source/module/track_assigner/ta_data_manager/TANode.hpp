@@ -85,10 +85,14 @@ class TANode : public LayerCoord
     double cost = 0;
     if (RTUtil::exist(_cost_task_map, orientation)) {
       std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
-      cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : task_idx_set.size();
+      if (task_idx_set.size() >= 2) {
+        cost += (task_idx_set.size() * 100);
+      } else {
+        cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : 100;
+      }
     }
     if (RTUtil::exist(_env_task_map, orientation)) {
-      cost *= std::pow(_env_task_map[orientation].size(), 2);
+      cost += (_env_task_map[orientation].size() * 100);
     }
     return cost;
   }
