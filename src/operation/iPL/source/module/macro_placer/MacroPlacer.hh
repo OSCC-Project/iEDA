@@ -29,6 +29,7 @@
 #include "module/logger/Log.hh"
 #include "partition/HierPartition.hh"
 #include "partition/MPPartition.hh"
+#include "gds_plotter/GDSPlotter.hh"
 #include "simulate_anneal/MPEvaluation.hh"
 #include "simulate_anneal/SolutionFactory.hh"
 
@@ -53,10 +54,14 @@ class MacroPlacer
   void updateDensity();
   void setFixedMacro();
   void addHalo();
+  void deleteHalo();
   void addBlockage();
   void addGuidance();
   void writeSummary(double time);
   void initLocation();
+  void plotGDS();
+  void plotPartitionGDS(map<FPInst*, int> partition_result);
+
   // data
   MPDB* _mdb;
   Setting* _set;

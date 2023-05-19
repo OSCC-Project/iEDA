@@ -18,29 +18,83 @@
 #include "GDSPlotter.hh"
 
 namespace ipl::imp {
-void GDSPlotter::plotInst(ofstream& gds_file, FPInst* inst, int layer)
+
+GDSPlotter::GDSPlotter(std::string path)
 {
-  int llx = int(inst->get_x());
-  int lly = int(inst->get_y());
-  int w = int(inst->get_width());
-  int h = int(inst->get_height());
-  gds_file << "TEXT" << std::endl;
-  gds_file << "LAYER 1000" << std::endl;
-  gds_file << "TEXTTYPE 0" << std::endl;
-  gds_file << "XY" << std::endl;
-  gds_file << inst->get_center_x() << " : " << inst->get_center_y() << std::endl;
-  gds_file << "STRING " << inst->get_name() << std::endl;
-  gds_file << "ENDEL" << std::endl;
-  gds_file << "BOUNDARY" << std::endl;
-  gds_file << "LAYER " << layer << std::endl;
-  gds_file << "DATATYPE 0" << std::endl;
-  gds_file << "XY" << std::endl;
-  gds_file << llx << " : " << lly << std::endl;
-  gds_file << llx + w << " : " << lly << std::endl;
-  gds_file << llx + w << " : " << lly + h << std::endl;
-  gds_file << llx << " : " << lly + h << std::endl;
-  gds_file << llx << " : " << lly << std::endl;
-  gds_file << "ENDEL" << std::endl;
+  _gds_file.open(path);
+  _gds_file << "HEADER 600" << std::endl;
+  _gds_file << "BGNLIB" << std::endl;
+  _gds_file << "LIBNAME DensityLib" << std::endl;
+  _gds_file << "UNITS 0.001 1e-9" << std::endl;
+  _gds_file << "BGNSTR" << std::endl;
+  _gds_file << "STRNAME Die" << std::endl;
+}
+
+GDSPlotter::~GDSPlotter()
+{
+  _gds_file << "ENDSTR" << std::endl;
+  _gds_file << "ENDLIB" << std::endl;
+  _gds_file.close();
+}
+
+void GDSPlotter::plotInstList(std::vector<FPInst*> inst_list, int layer)
+{
+  for (FPInst* inst : inst_list) {
+    plotInst(inst, layer);
+  }
+}
+
+void GDSPlotter::plotNetList(std::vector<FPNet*> net_list, int layer)
+{
+  for (FPNet* net : net_list) {
+    vector<FPPin*> pin_list = net->get_pin_list();
+    FPPin* pin0 = pin_list[0];
+    for (size_t i = 1; i < pin_list.size(); ++i) {
+      plotLine(pin0, pin_list[i], layer);
+    }
+  }
+}
+
+void GDSPlotter::plotInst(FPInst* inst, int layer)
+{
+  _gds_file << "TEXT" << std::endl;
+  _gds_file << "LAYER 1000" << std::endl;
+  _gds_file << "TEXTTYPE 0" << std::endl;
+  _gds_file << "XY" << std::endl;
+  _gds_file << inst->get_center_x() << " : " << inst->get_center_y() << std::endl;
+  _gds_file << "STRING " << inst->get_name() << std::endl;
+  _gds_file << "ENDEL" << std::endl;
+  plotRect(inst, layer);
+}
+
+void GDSPlotter::plotRect(FPRect* rect, int layer)
+{
+  int llx = int(rect->get_x());
+  int lly = int(rect->get_y());
+  int w = int(rect->get_width());
+  int h = int(rect->get_height());
+  _gds_file << "BOUNDARY" << std::endl;
+  _gds_file << "LAYER " << layer << std::endl;
+  _gds_file << "DATATYPE 0" << std::endl;
+  _gds_file << "XY" << std::endl;
+  _gds_file << llx << " : " << lly << std::endl;
+  _gds_file << llx + w << " : " << lly << std::endl;
+  _gds_file << llx + w << " : " << lly + h << std::endl;
+  _gds_file << llx << " : " << lly + h << std::endl;
+  _gds_file << llx << " : " << lly << std::endl;
+  _gds_file << "ENDEL" << std::endl;
+}
+
+void GDSPlotter::plotLine(FPPin* start, FPPin* end, int layer)
+{
+  _gds_file << "PATH" << std::endl;
+  _gds_file << "LAYER " << layer << std::endl;
+  _gds_file << "DATATYPE 0" << std::endl;
+  _gds_file << "WIDTH " << 20 << std::endl;
+  _gds_file << "XY" << std::endl;
+  _gds_file << int(start->get_x()) << ":" << int(start->get_y()) << std::endl;
+  _gds_file << int(end->get_x()) << ":" << int(end->get_y()) << std::endl;
+  _gds_file << "ENDEL" << std::endl;
 }
 
 }  // namespace ipl::imp
