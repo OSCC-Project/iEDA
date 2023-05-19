@@ -48,11 +48,21 @@ void Metis::partition(const std::vector<std::vector<int>> adjacent_edge_list)
   result = METIS_PartGraphRecursive(_nvtxs, _ncon, xadj, adjncy, NULL, NULL, NULL, _nparts, NULL, NULL, options, _objval, part);
 
   if (1 == result) {
-    LOG_INFO << "metis succeed" ;
+    LOG_INFO << "metis succeed";
   }
 
-  LOG_INFO << "the edge-cut: " << *_objval ;
-  LOG_INFO << "size of _part: " << _part.size() ;
-  LOG_INFO << "partition time consume: " << double(clock() - start) / CLOCKS_PER_SEC << "s" ;
+  LOG_INFO << "the edge-cut: " << *_objval;
+  LOG_INFO << "size of _part: " << _part.size();
+  LOG_INFO << "partition time consume: " << double(clock() - start) / CLOCKS_PER_SEC << "s";
 }
+
+std::vector<int> Metis::get_result()
+{
+  std::vector<int> result;
+  for (idx_t part_index : _part) {
+    result.emplace_back(int(part_index));
+  }
+  return result;
+}
+
 }  // namespace ipl

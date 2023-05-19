@@ -57,21 +57,4 @@ class FPDesign
   vector<FPPin*> _pin_list;
 };
 
-inline FPDesign::~FPDesign()
-{
-  for (FPInst* inst : _std_cell_list) {
-    delete inst;
-  }
-  _std_cell_list.clear();
-  _macro_list.clear();
-  for (FPNet* net : _net_list) {
-    delete net;
-  }
-  _net_list.clear();
-  for (FPPin* pin : _pin_list) {
-    delete pin;
-  }
-  _pin_list.clear();
-}
-
 }  // namespace ipl::imp

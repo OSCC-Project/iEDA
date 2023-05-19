@@ -22,6 +22,17 @@ using namespace std;
 
 namespace ipl::imp {
 
+SequencePair::SequencePair(vector<FPInst*> macro_list, Setting* set) : MPSolution(macro_list)
+{
+  for (int i = 0; i < _num_macro; ++i) {
+    _pos_seq.emplace_back(i);
+    _neg_seq.emplace_back(i);
+    _pre_pos_seq.emplace_back(i);
+    _pre_neg_seq.emplace_back(i);
+  }
+  pack();
+}
+
 void SequencePair::perturb()
 {
   float rand_num = rand() / (RAND_MAX + 1.0);
@@ -170,7 +181,7 @@ void SequencePair::printSolution()
   }
   for (FPInst* macro : _macro_list) {
     LOG_INFO << "(" << macro->get_x() << ", " << macro->get_y() << ")"
-              << " ";
+             << " ";
   }
 }
 

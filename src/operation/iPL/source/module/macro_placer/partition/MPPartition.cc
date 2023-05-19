@@ -117,7 +117,7 @@ vector<int> MPPartition::hmetisPartition()
   LOG_INFO << "create hyper edge list time consume: " << double(clock() - start) / CLOCKS_PER_SEC << "s";
 
   // call hmetis
-  hmetis->partition(_unfixed_inst_list.size(), hyper_edge_list); 
+  hmetis->partition(_unfixed_inst_list.size(), hyper_edge_list);
   vector<int> result = hmetis->get_result();
   delete hmetis;
   return result;
@@ -142,6 +142,30 @@ set<FPInst*> MPPartition::findInstAdjacent(FPInst* inst)
     }
   }
   return adjacent_instance_list;
+}
+
+FPInst* MPPartition::find_inst(int index)
+{
+  {
+    FPInst* inst = nullptr;
+    auto inst_iter = _index_to_inst_map.find(index);
+    if (inst_iter != _index_to_inst_map.end()) {
+      inst = (*inst_iter).second;
+    }
+    return inst;
+  }
+}
+
+int MPPartition::findIndex(FPInst* inst)
+{
+  {
+    int index = -1;
+    auto index_iter = _inst_to_index_map.find(inst);
+    if (index_iter != _inst_to_index_map.end()) {
+      index = (*index_iter).second;
+    }
+    return index;
+  }
 }
 
 void MPPartition::buildNewModule(vector<int> partition_result)

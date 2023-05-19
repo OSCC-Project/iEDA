@@ -29,16 +29,7 @@ namespace ipl::imp {
 class SequencePair : public MPSolution
 {
  public:
-  SequencePair(vector<FPInst*> macro_list, Setting* set) : MPSolution(macro_list)
-  {
-    for (int i = 0; i < _num_macro; ++i) {
-      _pos_seq.emplace_back(i);
-      _neg_seq.emplace_back(i);
-      _pre_pos_seq.emplace_back(i);
-      _pre_neg_seq.emplace_back(i);
-    }
-    pack();
-  }
+  SequencePair(vector<FPInst*> macro_list, Setting* set);
   void perturb() override;
   void pack() override;
   void rollback() override;
