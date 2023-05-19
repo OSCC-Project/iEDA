@@ -615,6 +615,53 @@ class RTUtil
     return (isInside(master, rect.get_lb()) && isInside(master, rect.get_rt()));
   }
 
+  /**
+   *  分开矩形，将master矩形用rect进行分开，并不是求差集
+   *       ┌────────────────────────────────────┐  split  ┌────────────────────────────────────┐
+   *       │ master                             │ ──────> │ c                                  │
+   *       │           ┌─────────────────┐      │         └────────────────────────────────────┘
+   *       └───────────┼─────────────────┼──────┘
+   *                   │ rect            │
+   *        split│     └─────────────────┘  │split
+   *             ▼                          ▼
+   *       ┌───────────┐                 ┌──────┐
+   *       │           │                 │      │
+   *       │     a     │                 │  b   │
+   *       └───────────┘                 └──────┘
+   *  如上图所示，输入master和rect
+   *  若split方向为horizontal，将得到a和b，可以理解为在横向上分开
+   *  若split方向为vertical，将得到c
+   */
+  static std::vector<PlanarRect> getSplitRectList(const PlanarRect& master, const PlanarRect& rect, Direction split_direction)
+  {
+    std::vector<PlanarRect> split_rect_list;
+
+    if (split_direction == Direction::kHorizontal) {
+      if (master.get_lb_x() < rect.get_lb_x()) {
+        PlanarRect split_rect = master;
+        split_rect.set_rt_x(rect.get_lb_x());
+        split_rect_list.push_back(split_rect);
+      }
+      if (rect.get_rt_x() < master.get_rt_x()) {
+        PlanarRect split_rect = master;
+        split_rect.set_lb_x(rect.get_rt_x());
+        split_rect_list.push_back(split_rect);
+      }
+    } else {
+      if (master.get_lb_y() < rect.get_lb_y()) {
+        PlanarRect split_rect = master;
+        split_rect.set_rt_y(rect.get_lb_y());
+        split_rect_list.push_back(split_rect);
+      }
+      if (rect.get_rt_y() < master.get_rt_y()) {
+        PlanarRect split_rect = master;
+        split_rect.set_lb_y(rect.get_rt_y());
+        split_rect_list.push_back(split_rect);
+      }
+    }
+    return split_rect_list;
+  }
+
 #endif
 
 #if 1  // 形状位置变化计算
