@@ -350,10 +350,6 @@ void MPDB::updatePlaceMacroList()
 
 void MPDB::writeMacro(ofstream& gds_file, FPInst* macro, int layer)
 {
-  int llx = int(macro->get_x());
-  int lly = int(macro->get_y());
-  int w = int(macro->get_width());
-  int h = int(macro->get_height());
   gds_file << "TEXT" << endl;
   gds_file << "LAYER 1000" << endl;
   gds_file << "TEXTTYPE 0" << endl;
@@ -361,6 +357,10 @@ void MPDB::writeMacro(ofstream& gds_file, FPInst* macro, int layer)
   gds_file << macro->get_center_x() << " : " << macro->get_center_y() << endl;
   gds_file << "STRING " << macro->get_name() << endl;
   gds_file << "ENDEL" << endl;
+  int llx = int(macro->get_x());
+  int lly = int(macro->get_y());
+  int w = int(macro->get_width());
+  int h = int(macro->get_height());
   gds_file << "BOUNDARY" << std::endl;
   gds_file << "LAYER " << layer << std::endl;
   gds_file << "DATATYPE 0" << std::endl;

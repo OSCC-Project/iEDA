@@ -50,11 +50,6 @@ MacroPlacer::MacroPlacer(MPDB* mdb, ipl::Config* config) : _mdb(mdb)
 
 void MacroPlacer::runMacroPlacer()
 {
-  // int part = 66;
-  // map<FPInst*, int> partition_result = partitionInst(part);
-  // string result_path = "/home/lijiangkao/design/partition_test/result/partition.gds";
-  // _mdb->writePartitonGDS(result_path, partition_result);
-
   clock_t start = clock();
 
   // parition
@@ -63,6 +58,9 @@ void MacroPlacer::runMacroPlacer()
   _mdb->buildNetList();
   LOG_INFO << "_mdb's netlist have build, the num of net: " << _mdb->get_new_net_list().size();
   _mdb->updatePlaceMacroList();
+  LOG_INFO << "halo_x: " << _set->get_macro_halo_x();
+  LOG_INFO << "halo_y: " << _set->get_macro_halo_y();
+  LOG_INFO << "new_macro_density: " << _set->get_new_macro_density();
 
   // simulate anneal
   SolutionFactory factory = SolutionFactory();
@@ -78,8 +76,7 @@ void MacroPlacer::runMacroPlacer()
 
   _mdb->writeDB();
   string output_path = _set->get_output_path();
-  string file = output_path + "/plane_result_macro.gds";
-  _mdb->writeGDS(file);
+  plotGDS();
   _mdb->writeResult(output_path);
   double time = double(clock() - start) / CLOCKS_PER_SEC;
   LOG_INFO << "time consume: " << time << "s";
@@ -104,7 +101,7 @@ void MacroPlacer::init()
   _set->set_ncon(5);                        // The number of balancing constraints
   _set->set_ufactor(_mp_config.get_ufactor());
   // simulate anneal
-  _set->set_max_num_step(500);
+  _set->set_max_num_step(200);
   _set->set_perturb_per_step(_mp_config.get_perturb_per_step());
   _set->set_cool_rate(_mp_config.get_cool_rate());
   _set->set_init_temperature(1000);
@@ -125,6 +122,7 @@ void MacroPlacer::init()
   } else {
     LOG_ERROR << "error illegal type: " << _mp_config.get_solution_tpye();
   }
+
   // B* tree
   _set->set_swap_pro(0.5);  // the probability of swap
   _set->set_move_pro(0.5);  // the probability of move
@@ -146,17 +144,12 @@ void MacroPlacer::updateDensity()
   float density = 1;
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
     total_inst_area += macro->get_area();
-    float halo_area = 0;
-    halo_area += float(macro->get_halo_x()) * float(macro->get_height()) * 2;
-    halo_area += float(macro->get_halo_y()) * float(macro->get_width()) * 2;
-    halo_area += float(macro->get_halo_x()) * float(macro->get_halo_y()) * 4;
-    total_inst_area += halo_area;
   }
   for (FPInst* std_cell : _mdb->get_design()->get_std_cell_list()) {
     total_inst_area += std_cell->get_area();
   }
-  core_area = float(_mdb->get_layout()->get_core_shape()->get_width()) * float(_mdb->get_layout()->get_core_shape()->get_height());
-  density = total_inst_area / core_area + 0.05;
+  core_area = _mdb->get_layout()->get_core_shape()->get_area();
+  density = total_inst_area / core_area;
   density = std::min(density, float(1));
   density = std::max(density, _set->get_new_macro_density());
   _set->set_new_macro_density(density);
@@ -181,14 +174,20 @@ void MacroPlacer::addHalo()
   uint32_t halo_x = _set->get_macro_halo_x();
   uint32_t halo_y = _set->get_macro_halo_y();
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
-    uint32_t self_adaption_halo_x = macro->get_width() / 20;
-    uint32_t self_adaption_halo_y = macro->get_height() / 20;
-    halo_x = max(halo_x, self_adaption_halo_x);
-    halo_y = max(halo_y, self_adaption_halo_y);
-    halo_x = min(halo_x, halo_y);
+    // uint32_t self_adaption_halo_x = macro->get_width() / 20;
+    // uint32_t self_adaption_halo_y = macro->get_height() / 20;
+    // halo_x = max(halo_x, self_adaption_halo_x);
+    // halo_y = max(halo_y, self_adaption_halo_y);
     macro->set_halo_x(halo_x);
-    macro->set_halo_y(halo_x);
+    macro->set_halo_y(halo_y);
     macro->addHalo();
+  }
+}
+
+void MacroPlacer::deleteHalo()
+{
+  for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
+    macro->deleteHalo();
   }
 }
 
@@ -253,13 +252,12 @@ void MacroPlacer::writeSummary(double time)
   config.close();
 }
 
-// void MacroPlacer::darwPartition()
-// {
-//   int part = 66;
-//   map<FPInst*, int> partition_result = partitionInst(part);
-//   string result_path = "/home/lijiangkao/design/partition_test/result/partition.gds";
-//   _mdb->writePartitonGDS(result_path, partition_result);
-// }
+void MacroPlacer::darwPartition()
+{
+  int part = _set->get_parts();
+  map<FPInst*, int> partition_result = partitionInst(part);
+  plotPartitionGDS(partition_result);
+}
 
 map<FPInst*, int> MacroPlacer::partitionInst(int part)
 {
@@ -322,6 +320,39 @@ map<FPInst*, int> MacroPlacer::partitionInst(int part)
   }
 
   return result;
+}
+
+void MacroPlacer::plotGDS()
+{
+  std::string gds_path = _set->get_output_path() + "/plane_result_macro.gds";
+  GDSPlotter* plotter = new GDSPlotter(gds_path);
+  plotter->plotDie(_mdb->get_layout()->get_die_shape());
+  plotter->plotCore(_mdb->get_layout()->get_core_shape());
+
+  for (FPInst* macro : _mdb->get_total_macro_list()) {
+    if (macro->isMacro()) {
+      macro->addHalo();
+      plotter->plotInst(macro, 2);
+      macro->deleteHalo();
+      plotter->plotInst(macro, 3);
+    } else if (macro->isNewMacro()) {
+      plotter->plotInst(macro, 4);
+    }
+  }
+  delete plotter;
+}
+
+void MacroPlacer::plotPartitionGDS(map<FPInst*, int> partition_result)
+{
+  std::string gds_path = _set->get_output_path() + "/partition_result.gds";
+  GDSPlotter* plotter = new GDSPlotter(gds_path);
+  plotter->plotDie(_mdb->get_layout()->get_die_shape());
+  plotter->plotCore(_mdb->get_layout()->get_core_shape());
+
+  for (auto iter = partition_result.begin(); iter != partition_result.end(); ++iter) {
+    plotter->plotInst(iter->first, iter->second + 2);
+  }
+  delete plotter;
 }
 
 }  // namespace ipl::imp

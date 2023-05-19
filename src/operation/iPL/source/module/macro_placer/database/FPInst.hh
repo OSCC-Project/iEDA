@@ -64,6 +64,7 @@ class FPInst : public FPRect
   void addHalo();
   void deleteHalo();
   bool isMacro() const { return _type == InstType::MACRO; }
+  bool isNewMacro() const { return _type == InstType::NEWMACRO; }
   string get_orient_name();
   bool isAlign() const { return _align_flag; }
 

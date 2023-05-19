@@ -7,6 +7,7 @@ add_library(ipl-module-macro_placer
     database/FPPin.cc
     database/FPDesign.cc
     database/FPLayout.cc
+    gds_plotter/GDSPlotter.cc
 
     MacroPlacer.cc
     MPDB.cc

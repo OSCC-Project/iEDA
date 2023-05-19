@@ -24,14 +24,18 @@ namespace ipl::imp {
 class GDSPlotter
 {
  public:
-  GDSPlotter(std::string path) : _path(path){};
-  void set_path(std::string path) { _path = path; }
+  GDSPlotter(std::string path);
+  ~GDSPlotter();
+  void plotDie(FPRect* die, int layer = 0) { plotRect(die, layer); }
+  void plotCore(FPRect* core, int layer = 1) { plotRect(core, layer); }
+  void plotInstList(std::vector<FPInst*> inst_list, int layer);
+  void plotNetList(std::vector<FPNet*> net_list, int layer);
+
+  void plotInst(FPInst* inst, int layer);
+  void plotRect(FPRect* rect, int layer);
+  void plotLine(FPPin* start, FPPin* end, int layer);
 
  private:
-  std::string _path;
-
-  void plotInst(ofstream& gds_file, FPInst* inst, int layer);
-  void plotRect(ofstream& gds_file, FPRect* rect, int layer);
-  void plotLine(ofstream& gds_file, FPPin* start, FPPin* end, int layer = 0);
+  ofstream _gds_file;
 };
 }  // namespace ipl::imp
