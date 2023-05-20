@@ -66,10 +66,10 @@ class MPEvaluation : public Evaluation
   MPSolution* _solution;
   uint32_t _core_width;
   uint32_t _core_height;
-  vector<FPNet*> _net_list;
-  vector<FPRect*> _blockage_list;
+  std::vector<FPNet*> _net_list;
+  std::vector<FPRect*> _blockage_list;
   map<FPRect*, FPInst*> _guidance_to_macro_map;
-  vector<FPInst*> _macro_list;
+  std::vector<FPInst*> _macro_list;
   int _evl_wl_count = 0;
   double _evl_wl_time = 0;
 

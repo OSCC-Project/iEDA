@@ -31,11 +31,11 @@ class SAParam
   void set_init_pro(float pro) { _init_pro = pro; }
   void set_init_temperature(float temperatrure) { _init_temperature = temperatrure; }
 
-  uint32_t get_max_num_step() { return _max_num_step; }
-  uint32_t get_perturb_per_step() { return _perturb_per_step; }
-  float get_cool_rate() { return _cool_rate; }
-  float get_init_pro() { return _init_pro; }
-  float get_init_temperature() { return _init_temperature; }
+  uint32_t get_max_num_step() const { return _max_num_step; }
+  uint32_t get_perturb_per_step() const { return _perturb_per_step; }
+  float get_cool_rate() const { return _cool_rate; }
+  float get_init_pro() const { return _init_pro; }
+  float get_init_temperature() const { return _init_temperature; }
 
  protected:
   uint32_t _max_num_step = 100;

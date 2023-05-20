@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <unordered_map>
 
 #include "MPSolution.hh"
 #include "Setting.hh"
@@ -29,7 +30,7 @@ namespace ipl::imp {
 class SequencePair : public MPSolution
 {
  public:
-  SequencePair(vector<FPInst*> macro_list, Setting* set);
+  SequencePair(std::vector<FPInst*> macro_list, Setting* set);
   void perturb() override;
   void pack() override;
   void rollback() override;
@@ -48,11 +49,11 @@ class SequencePair : public MPSolution
 
   bool _rotate = false;
   int _rotate_macro_index = 0;
-  Orient _old_orient = Orient::N;
+  Orient _old_orient = Orient::kN;
 
   void singleSwap(bool flag);  // true for pos_seq and false for neg_seq
   void doubleSwap(int index1, int index2);
-  void pl2sp(vector<FPInst*> macro_list);
+  void pl2sp(std::vector<FPInst*> macro_list);
 };
 
 struct RowElem

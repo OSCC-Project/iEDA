@@ -16,7 +16,7 @@
 // ***************************************************************************************
 
 #pragma once
-#include "Utility.hh"
+#include "Coordinate.hh"
 
 namespace ipl::imp {
 
@@ -27,15 +27,15 @@ class FPRect
   virtual ~FPRect();
 
   // getter
-  int32_t get_x() const { return _coordinate->_x; }
-  int32_t get_y() const { return _coordinate->_y; }
+  int32_t get_x() const { return _coordinate->get_x(); }
+  int32_t get_y() const { return _coordinate->get_y(); }
   virtual uint32_t get_width() const { return _width; }
   virtual uint32_t get_height() const { return _height; }
   float get_area() const { return float(_width) * float(_height); }
 
   // setter
-  void set_x(int32_t x) { _coordinate->_x = x; }
-  void set_y(int32_t y) { _coordinate->_y = y; }
+  void set_x(int32_t x) { _coordinate->set_x(x); }
+  void set_y(int32_t y) { _coordinate->set_y(y); }
   void set_width(uint32_t width) { _width = width; }
   void set_height(uint32_t height) { _height = height; }
 

@@ -17,25 +17,15 @@
 
 #include "MPPartition.hh"
 
-#include <math.h>
-#include <time.h>
-
-#include <fstream>
-#include <string>
-#include <vector>
-
-#include "Setting.hh"
-
-using namespace std;
 namespace ipl::imp {
 
 void MPPartition::runPartition()
 {
   init();
-  vector<int> result;
-  if (_set->get_partition_type() == PartitionType::Metis) {
+  std::vector<int> result;
+  if (_set->get_partition_type() == PartitionType::kMetis) {
     result = metisPartition();
-  } else if (_set->get_partition_type() == PartitionType::Hmetis) {
+  } else if (_set->get_partition_type() == PartitionType::kHmetis) {
     result = hmetisPartition();
   }
   buildNewModule(result);
@@ -56,7 +46,7 @@ void MPPartition::init()
   }
 }
 
-vector<int> MPPartition::metisPartition()
+std::vector<int> MPPartition::metisPartition()
 {
   // init
   Metis* metis = new Metis();
@@ -66,10 +56,10 @@ vector<int> MPPartition::metisPartition()
   metis->set_nparts(_set->get_parts());
 
   clock_t start = clock();
-  vector<vector<int>> adjacent_edge_list;
+  std::vector<std::vector<int>> adjacent_edge_list;
   for (FPInst* inst : _unfixed_inst_list) {
-    vector<int> adjacent_index_list;
-    set<FPInst*> adjacent_inst_set = findInstAdjacent(inst);
+    std::vector<int> adjacent_index_list;
+    std::set<FPInst*> adjacent_inst_set = findInstAdjacent(inst);
     for (auto ite : adjacent_inst_set) {
       int inst_index = findIndex(ite);
       if (-1 == inst_index) {
@@ -85,22 +75,22 @@ vector<int> MPPartition::metisPartition()
   // call metis
   metis->partition(adjacent_edge_list);
 
-  vector<int> result = metis->get_result();
+  std::vector<int> result = metis->get_result();
   delete metis;
   return result;
 }
 
-vector<int> MPPartition::hmetisPartition()
+std::vector<int> MPPartition::hmetisPartition()
 {
   Hmetis* hmetis = new Hmetis();
   hmetis->set_ufactor(_set->get_ufactor());
   hmetis->set_nparts(_set->get_parts());
 
   clock_t start = clock();
-  vector<vector<int>> hyper_edge_list;
+  std::vector<std::vector<int>> hyper_edge_list;
   for (FPNet* net : _mdb->get_design()->get_net_list()) {
-    vector<int> hyper_edge;
-    set<FPInst*> inst_set = net->get_inst_set();
+    std::vector<int> hyper_edge;
+    std::set<FPInst*> inst_set = net->get_inst_set();
     for (auto inst_ite : inst_set) {
       int inst_index = findIndex(inst_ite);
       if (-1 == inst_index) {
@@ -118,14 +108,14 @@ vector<int> MPPartition::hmetisPartition()
 
   // call hmetis
   hmetis->partition(_unfixed_inst_list.size(), hyper_edge_list);
-  vector<int> result = hmetis->get_result();
+  std::vector<int> result = hmetis->get_result();
   delete hmetis;
   return result;
 }
 
-set<FPInst*> MPPartition::findInstAdjacent(FPInst* inst)
+std::set<FPInst*> MPPartition::findInstAdjacent(FPInst* inst)
 {
-  set<FPInst*> adjacent_instance_list;
+  std::set<FPInst*> adjacent_instance_list;
   FPInst* adjacent_inst;
   for (FPPin* pin : inst->get_pin_list()) {
     if (pin == nullptr) {
@@ -136,7 +126,7 @@ set<FPInst*> MPPartition::findInstAdjacent(FPInst* inst)
     }
     for (FPPin* adjacent_pin : pin->get_net()->get_pin_list()) {
       adjacent_inst = adjacent_pin->get_instance();
-      if (adjacent_inst && adjacent_inst->get_type() == InstType::STD && adjacent_inst != inst) {
+      if (adjacent_inst && adjacent_inst->get_type() == InstType::kStd_cell && adjacent_inst != inst) {
         adjacent_instance_list.insert(adjacent_inst);
       }
     }
@@ -168,16 +158,16 @@ int MPPartition::findIndex(FPInst* inst)
   }
 }
 
-void MPPartition::buildNewModule(vector<int> partition_result)
+void MPPartition::buildNewModule(std::vector<int> partition_result)
 {
-  vector<set<int>> temp_macro_list;
+  std::vector<std::set<int>> temp_macro_list;
   temp_macro_list.resize(_set->get_parts());
   int size = partition_result.size();
   for (int i = 0; i < size; ++i) {
     temp_macro_list[partition_result[i]].insert(i);
   }
   LOG_INFO << "part size: ";
-  for (set<int> i : temp_macro_list) {
+  for (std::set<int> i : temp_macro_list) {
     LOG_INFO << i.size() << " ";
   }
 
@@ -188,22 +178,22 @@ void MPPartition::buildNewModule(vector<int> partition_result)
   float area, total_stdcell_area;
   FPInst* new_macro;
   uint32_t width;
-  for (set<int> i : temp_macro_list) {
+  for (std::set<int> i : temp_macro_list) {
     new_macro = new FPInst();
-    new_macro->set_name("newmacro" + to_string(it));
+    new_macro->set_name("newmacro" + std::to_string(it));
     total_stdcell_area = calculateArea(i, new_macro, it);
     area = total_stdcell_area / new_macro_density;
     width = uint32_t(sqrt(area));
-    new_macro->set_type(InstType::NEWMACRO);
+    new_macro->set_type(InstType::kNew_macro);
     new_macro->set_width(width);
     new_macro->set_height(width);
-    new_macro->set_orient(Orient::N);
+    new_macro->set_orient(Orient::kN);
     _mdb->add_new_macro(new_macro);
     ++it;
   }
 };
 
-float MPPartition::calculateArea(set<int> temp_macro, FPInst* macro, int index)
+float MPPartition::calculateArea(std::set<int> temp_macro, FPInst* macro, int index)
 {
   float area = 0;
   // calculate area

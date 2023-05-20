@@ -34,14 +34,14 @@ class FPDesign
   ~FPDesign();
 
   // getter
-  string get_design_name() const { return _design_name; }
-  vector<FPInst*> get_std_cell_list() const { return _std_cell_list; }
-  vector<FPInst*> get_macro_list() const { return _macro_list; }
-  vector<FPNet*> get_net_list() const { return _net_list; }
-  vector<FPPin*> get_pin_list() const { return _pin_list; }
+  std::string get_design_name() const { return _design_name; }
+  std::vector<FPInst*> get_std_cell_list() const { return _std_cell_list; }
+  std::vector<FPInst*> get_macro_list() const { return _macro_list; }
+  std::vector<FPNet*> get_net_list() const { return _net_list; }
+  std::vector<FPPin*> get_pin_list() const { return _pin_list; }
 
   // setter
-  void set_design_name(string name) { _design_name = name; }
+  void set_design_name(std::string name) { _design_name = name; }
   void add_std_cell(FPInst* inst) { _std_cell_list.emplace_back(inst); }
   void add_macro(FPInst* macro) { _macro_list.emplace_back(macro); }
   void add_net(FPNet* net) { _net_list.emplace_back(net); }
@@ -50,11 +50,11 @@ class FPDesign
   // function
 
  private:
-  string _design_name;
-  vector<FPInst*> _std_cell_list;
-  vector<FPInst*> _macro_list;
-  vector<FPNet*> _net_list;
-  vector<FPPin*> _pin_list;
+  std::string _design_name;
+  std::vector<FPInst*> _std_cell_list;
+  std::vector<FPInst*> _macro_list;
+  std::vector<FPNet*> _net_list;
+  std::vector<FPPin*> _pin_list;
 };
 
 }  // namespace ipl::imp

@@ -20,31 +20,15 @@
 
 namespace ipl::imp {
 
-enum class InstType : uint8_t
-{
-  STD,
-  MACRO,
-  IO,
-  NEWMACRO,
-  FLIPFLOP
-};
-
-enum class Orient
-{
-  kNone,
-  N,
-  E,
-  S,
-  W,
-  FN,
-  FE,
-  FS,
-  FW
-};
-
 class Coordinate
 {
  public:
+  void set_x(int32_t x) { _x = x; }
+  void set_y(int32_t y) { _y = y; }
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+
+ private:
   int32_t _x = 0;
   int32_t _y = 0;
 };

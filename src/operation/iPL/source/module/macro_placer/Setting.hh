@@ -19,23 +19,9 @@
 #include <vector>
 
 #include "SAParam.hh"
-
-using std::string;
-using std::vector;
+#include "database/Enum.hh"
 
 namespace ipl::imp {
-
-enum class PartitionType
-{
-  Hmetis,
-  Metis
-};
-
-enum class SolutionTYPE
-{
-  BST,
-  SP
-};
 
 class Setting : public SAParam
 {
@@ -91,7 +77,7 @@ class Setting : public SAParam
   uint32_t _macro_halo_y;
 
   // partition
-  PartitionType _partition_type = PartitionType::Metis;
+  PartitionType _partition_type = PartitionType::kMetis;
   int _parts = 16;  // the number of cluster
   int _ncon = 5;    // The number of balancing constraints
   int _ufactor = 400;
@@ -108,7 +94,7 @@ class Setting : public SAParam
   float _move_pro = 0.5;  // the probability of move
   std::string _output_path = ".";
 
-  SolutionTYPE _type = SolutionTYPE::BST;
+  SolutionTYPE _type = SolutionTYPE::kBStar_tree;
 };
 
 }  // namespace ipl::imp

@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <time.h>
+
+#include <algorithm>
+#include <ctime>
 #include <map>
 #include <set>
 #include <string>
@@ -26,15 +30,12 @@
 #include "Setting.hh"
 #include "SimulateAnneal.hh"
 #include "config/Config.hh"
+#include "gds_plotter/GDSPlotter.hh"
 #include "module/logger/Log.hh"
 #include "partition/HierPartition.hh"
 #include "partition/MPPartition.hh"
-#include "gds_plotter/GDSPlotter.hh"
 #include "simulate_anneal/MPEvaluation.hh"
 #include "simulate_anneal/SolutionFactory.hh"
-
-using std::string;
-using std::vector;
 
 namespace ipl::imp {
 
@@ -47,7 +48,7 @@ class MacroPlacer
   void runMacroPlacer();
 
   void darwPartition();
-  map<FPInst*, int> partitionInst(int part);
+  std::map<FPInst*, int> partitionInst(int part);
 
  private:
   void init();
@@ -60,7 +61,7 @@ class MacroPlacer
   void writeSummary(double time);
   void initLocation();
   void plotGDS();
-  void plotPartitionGDS(map<FPInst*, int> partition_result);
+  void plotPartitionGDS(std::map<FPInst*, int> partition_result);
 
   // data
   MPDB* _mdb;

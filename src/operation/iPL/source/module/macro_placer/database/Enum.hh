@@ -16,25 +16,55 @@
 // ***************************************************************************************
 
 #pragma once
-#include <math.h>
 
-#include "Evaluation.hh"
-#include "SAParam.hh"
-#include "Solution.hh"
+#include <limits>
+#include <string>
 
-namespace ipl {
+namespace ipl::imp {
 
-class SimulateAnneal
+enum class InstType : uint8_t
 {
- public:
-  SimulateAnneal(SAParam* param, Evaluation* evaluation);
-  ~SimulateAnneal(){};
-  void runAnneal();
-
- private:
-  SAParam* _param;
-  Evaluation* _evaluation;
-  Solution* _solution;
+  kStd_cell,
+  kMacro,
+  kIo_cell,
+  kNew_macro,
+  kFlip_flop
 };
 
-}  // namespace ipl
+enum class Orient : uint8_t
+{
+  kNone,
+  kN,
+  kE,
+  kS,
+  kW,
+  kFN,
+  kFE,
+  kFS,
+  kFW
+};
+
+enum class PartitionType : uint8_t
+{
+  kHmetis,
+  kMetis
+};
+
+enum class SolutionTYPE : uint8_t
+{
+  kBStar_tree,
+  kSequence_pair
+};
+
+enum class MoveType : uint8_t
+{
+  kSwap,
+  kRotate,
+  kMove
+};
+
+#define UNDEFINED -1
+#define INFITY UINT32_MAX
+#define DEFAULT 0
+
+}  // namespace ipl::imp

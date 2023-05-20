@@ -25,7 +25,7 @@ namespace ipl::imp {
 class MPSolution : public Solution
 {
  public:
-  MPSolution(vector<FPInst*> macro_list)
+  MPSolution(std::vector<FPInst*> macro_list)
   {
     _num_macro = macro_list.size();
     _macro_list = macro_list;
@@ -38,7 +38,7 @@ class MPSolution : public Solution
 
  protected:
   int _num_macro = 0;
-  vector<FPInst*> _macro_list;
+  std::vector<FPInst*> _macro_list;
   uint32_t _total_width = 0;
   uint32_t _total_height = 0;
   float _total_area = 0;

@@ -47,7 +47,7 @@ void GDSPlotter::plotInstList(std::vector<FPInst*> inst_list, int layer)
 void GDSPlotter::plotNetList(std::vector<FPNet*> net_list, int layer)
 {
   for (FPNet* net : net_list) {
-    vector<FPPin*> pin_list = net->get_pin_list();
+    std::vector<FPPin*> pin_list = net->get_pin_list();
     FPPin* pin0 = pin_list[0];
     for (size_t i = 1; i < pin_list.size(); ++i) {
       plotLine(pin0, pin_list[i], layer);

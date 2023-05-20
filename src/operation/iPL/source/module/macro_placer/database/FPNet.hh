@@ -27,8 +27,6 @@
 #include "FPInst.hh"
 #include "FPPin.hh"
 
-using std::string;
-using std::vector;
 namespace ipl::imp {
 class FPNet
 {
@@ -43,8 +41,8 @@ class FPNet
 
   std::vector<FPPin*> get_pin_list() const { return _pin_list; }
   float get_weight() const { return _weight; }
-  std::string get_name(void) const { return _name; }
-  unsigned get_degree(void) const { return _pin_list.size(); }
+  std::string get_name() const { return _name; }
+  unsigned get_degree() const { return _pin_list.size(); }
   std::set<FPInst*> get_inst_set() const { return _inst_set; }
 
  private:

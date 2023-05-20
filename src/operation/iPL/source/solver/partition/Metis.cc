@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #include "Metis.hh"
 
-#include <time.h>
-
 namespace ipl {
 void Metis::partition(const std::vector<std::vector<int>> adjacent_edge_list)
 {
