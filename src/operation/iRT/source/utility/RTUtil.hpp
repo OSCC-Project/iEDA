@@ -662,6 +662,36 @@ class RTUtil
     return split_rect_list;
   }
 
+  /**
+   *  切割矩形，将master矩形用rect进行切割，求差集
+   *       ┌────────────────────────────────────┐
+   *       │ master                             │
+   *       │           ┌─────────────────┐      │
+   *       └───────────┼─────────────────┼──────┘
+   *                   │ rect            │
+   *        cut  │     └─────────────────┘  │cut
+   *             ▼                          ▼
+   *       ┌───────────┐┌────────────────┐┌──────┐
+   *       │           ││       c        ││      │
+   *       │     a     │└────────────────┘│  b   │
+   *       └───────────┘                  └──────┘
+   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
+   */
+  static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
+  {
+    std::vector<PlanarRect> cutting_rect_list;
+
+    gtl::polygon_90_set_data<int> poly_set;
+    poly_set += RTUtil::convertToGTLRect(master);
+    poly_set -= RTUtil::convertToGTLRect(rect);
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, poly_set);
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return cutting_rect_list;
+  }
+
 #endif
 
 #if 1  // 形状位置变化计算
@@ -1924,7 +1954,7 @@ class RTUtil
     return layer_idx_list;
   }
 
-  // 获得可用层
+  // 获得可用的布线层
   static std::vector<int> getUsageLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
