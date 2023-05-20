@@ -247,7 +247,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 {
   initAccessPointList(pa_model, pa_net);
   mergeAccessPointList(pa_net);
-  // selectAccessPointList(pa_net);
+  selectAccessPointList(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
@@ -288,17 +288,17 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
         std::vector<irt_int> pref_y_list = RTUtil::getClosedScaleList(lb_y, rt_y, pref_y_track);
         for (irt_int x : pref_x_list) {
           for (irt_int y : pref_y_list) {
-            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kPrefTrackGrid);
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kTrackGrid);
           }
         }
         irt_int shape_x_mid = (lb_x + rt_x) / 2;
         irt_int shape_y_mid = (lb_y + rt_y) / 2;
         // prefer track center
         for (irt_int x : pref_x_list) {
-          access_point_list.emplace_back(x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kPrefTrackCenter);
+          access_point_list.emplace_back(x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnTrack);
         }
         for (irt_int y : pref_y_list) {
-          access_point_list.emplace_back(shape_x_mid, y, pin_shape_layer_idx, AccessPointType::kPrefTrackCenter);
+          access_point_list.emplace_back(shape_x_mid, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
         }
         // on shape
         access_point_list.emplace_back(lb_x, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
@@ -479,8 +479,7 @@ void PinAccessor::selectAccessPointList(PANet& pa_net)
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
       type_point_map[access_point.get_type()].push_back(access_point);
     }
-    for (AccessPointType access_point_type :
-         {AccessPointType::kPrefTrackGrid, AccessPointType::kPrefTrackCenter, AccessPointType::kOnShape}) {
+    for (AccessPointType access_point_type : {AccessPointType::kTrackGrid, AccessPointType::kOnTrack, AccessPointType::kOnShape}) {
       std::vector<AccessPoint>& access_point_list = type_point_map[access_point_type];
       if (access_point_list.empty()) {
         continue;
@@ -628,14 +627,14 @@ void PinAccessor::countPAModel(PAModel& pa_model)
       std::sort(access_point_list.begin(), access_point_list.end(),
                 [](AccessPoint& a, AccessPoint& b) { return a.get_type() < b.get_type(); });
       switch (access_point_list.front().get_type()) {
-        case AccessPointType::kPrefTrackGrid:
+        case AccessPointType::kTrackGrid:
           pa_mode_stat.addTrackGridPinNum(1);
           break;
-        case AccessPointType::kPrefTrackCenter:
-          pa_mode_stat.addTrackCenterPinNum(1);
+        case AccessPointType::kOnTrack:
+          pa_mode_stat.addOnTrackPinNum(1);
           break;
         case AccessPointType::kOnShape:
-          pa_mode_stat.addShapeCenterPinNum(1);
+          pa_mode_stat.addOnShapePinNum(1);
           break;
         default:
           LOG_INST.error(Loc::current(), "Type of access point is wrong!");
@@ -656,8 +655,8 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
   irt_int total_pin_num = pa_mode_stat.get_total_pin_num();
   irt_int track_grid_pin_num = pa_mode_stat.get_track_grid_pin_num();
-  irt_int track_center_pin_num = pa_mode_stat.get_track_center_pin_num();
-  irt_int shape_center_pin_num = pa_mode_stat.get_shape_center_pin_num();
+  irt_int on_track_pin_num = pa_mode_stat.get_on_track_pin_num();
+  irt_int on_shape_pin_num = pa_mode_stat.get_on_shape_pin_num();
   irt_int total_port_num = pa_mode_stat.get_total_port_num();
   std::map<irt_int, irt_int>& layer_port_num_map = pa_mode_stat.get_layer_port_num_map();
   irt_int total_access_point_num = pa_mode_stat.get_total_access_point_num();
@@ -669,10 +668,10 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
             << "Pin Number" << fort::endr;
   pin_table << "Track Grid" << RTUtil::getString(track_grid_pin_num, "(", RTUtil::getPercentage(track_grid_pin_num, total_pin_num), "%)")
             << fort::endr;
-  pin_table << "Track Center"
-            << RTUtil::getString(track_center_pin_num, "(", RTUtil::getPercentage(track_center_pin_num, total_pin_num), "%)") << fort::endr;
-  pin_table << "Shape Center"
-            << RTUtil::getString(shape_center_pin_num, "(", RTUtil::getPercentage(shape_center_pin_num, total_pin_num), "%)") << fort::endr;
+  pin_table << "On Track" << RTUtil::getString(on_track_pin_num, "(", RTUtil::getPercentage(on_track_pin_num, total_pin_num), "%)")
+            << fort::endr;
+  pin_table << "On Shape" << RTUtil::getString(on_shape_pin_num, "(", RTUtil::getPercentage(on_shape_pin_num, total_pin_num), "%)")
+            << fort::endr;
   pin_table << fort::header << "Total" << total_pin_num << fort::endr;
 
   for (std::string table_str : RTUtil::splitString(pin_table.to_string(), '\n')) {
