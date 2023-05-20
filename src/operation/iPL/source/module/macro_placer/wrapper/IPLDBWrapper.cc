@@ -169,15 +169,17 @@ FPPin* IPLDBWrapper::wrapPin(ipl::Pin* ipl_pin)
 
   pin_ptr = new FPPin();
   pin_ptr->set_name(ipl_pin->get_name());
-  pin_ptr->set_x(ipl_pin->get_offset_coordi().get_x());
-  pin_ptr->set_y(ipl_pin->get_offset_coordi().get_y());
 
   if (ipl_pin->isIOPort()) {
     pin_ptr->set_io_pin();
+    pin_ptr->set_x(ipl_pin->get_center_coordi().get_x());
+    pin_ptr->set_y(ipl_pin->get_center_coordi().get_y());
   } else {
     FPInst* imp_inst = _iplw_database->find_imp_inst(ipl_inst);
     pin_ptr->set_instance(imp_inst);
     imp_inst->add_pin(pin_ptr);
+    pin_ptr->set_x(ipl_pin->get_offset_coordi().get_x());
+    pin_ptr->set_y(ipl_pin->get_offset_coordi().get_y());
   }
 
   imp_design->add_pin(pin_ptr);

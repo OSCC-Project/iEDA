@@ -54,11 +54,11 @@ BStarTree::BStarTree(std::vector<FPInst*> macro_list, Setting* set) : MPSolution
   _contour[_num_macro]->_prev = UNDEFINED;
   _contour[_num_macro]->_begin = 0;
   _contour[_num_macro]->_end = 0;
-  _contour[_num_macro]->_ctl = INFITY;
+  _contour[_num_macro]->_ctl = UINT32_MAX;
   _contour[_num_macro + 1]->_next = UNDEFINED;
   _contour[_num_macro + 1]->_prev = _num_macro;
   _contour[_num_macro + 1]->_begin = 0;
-  _contour[_num_macro + 1]->_end = INFITY;
+  _contour[_num_macro + 1]->_end = INT32_MAX;
   _contour[_num_macro + 1]->_ctl = 0;
 
   // inst_1 represents the left edge and inst_2 represents the right edge
@@ -66,8 +66,8 @@ BStarTree::BStarTree(std::vector<FPInst*> macro_list, Setting* set) : MPSolution
   FPInst* inst_2 = new FPInst();
   inst_1->set_name("left_edge");
   inst_2->set_name("right_edge");
-  inst_1->set_height(INFITY);
-  inst_2->set_width(INFITY);
+  inst_1->set_height(UINT32_MAX);
+  inst_2->set_width(UINT32_MAX);
   _macro_list.emplace_back(inst_1);
   _macro_list.emplace_back(inst_2);
 
@@ -462,12 +462,12 @@ void BStarTree::clean_contour()
   _contour[ledge]->_prev = UNDEFINED;
   _contour[ledge]->_begin = 0;
   _contour[ledge]->_end = 0;
-  _contour[ledge]->_ctl = INFITY;
+  _contour[ledge]->_ctl = UINT32_MAX;
 
   _contour[bedge]->_next = UNDEFINED;
   _contour[bedge]->_prev = ledge;
   _contour[bedge]->_begin = 0;
-  _contour[bedge]->_end = INFITY;
+  _contour[bedge]->_end = INT32_MAX;
   _contour[bedge]->_ctl = 0;
 
   // reset obstacles (so we consider all of them again)

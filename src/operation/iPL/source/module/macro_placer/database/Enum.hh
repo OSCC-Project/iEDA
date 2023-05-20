@@ -56,15 +56,8 @@ enum class SolutionTYPE : uint8_t
   kSequence_pair
 };
 
-enum class MoveType : uint8_t
-{
-  kSwap,
-  kRotate,
-  kMove
-};
-
-#define UNDEFINED -1
-#define INFITY UINT32_MAX
-#define DEFAULT 0
+// #define UNDEFINED -1
+// #define INFITY UINT32_MAX
+// #define DEFAULT 0
 
 }  // namespace ipl::imp
