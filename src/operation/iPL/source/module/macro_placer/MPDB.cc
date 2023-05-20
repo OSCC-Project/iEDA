@@ -60,7 +60,8 @@ void MPDB::buildNetList()
         continue;
       }
       if (old_inst->isMacro()) {
-        net_macro_set.insert(old_inst);
+        new_net->add_pin(old_pin);
+        // net_macro_set.insert(old_inst);
       } else {
         FPInst* new_macro = findNewMacro(old_inst);
         if (nullptr == new_macro) {

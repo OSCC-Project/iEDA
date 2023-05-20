@@ -328,6 +328,8 @@ void MacroPlacer::plotGDS()
       plotter->plotInst(macro, 4);
     }
   }
+
+  plotter->plotNetList(_mdb->get_new_net_list(), 5);
   delete plotter;
 }
 

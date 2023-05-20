@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,8 @@
 #include "Setting.hh"
 #include "database/FPInst.hh"
 #include "database/FPRect.hh"
+
+static const int UNDEFINED = -1;
 
 namespace ipl::imp {
 
@@ -44,12 +47,12 @@ class BStarTreeNode
 class ContourNode
 {
  public:
-  int _next = DEFAULT;
-  int _prev = DEFAULT;
+  int _next = 0;
+  int _prev = 0;
 
-  int32_t _begin = DEFAULT;
-  int32_t _end = DEFAULT;
-  uint32_t _ctl = DEFAULT;
+  int32_t _begin = 0;
+  int32_t _end = 0;
+  uint32_t _ctl = 0;
 };
 
 class BStarTree : public MPSolution
