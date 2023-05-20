@@ -1200,6 +1200,7 @@ void DetailedRouter::initRoutingInfo(DRBox& dr_box, DRTask& dr_task)
   dr_box.set_wire_unit(1);
   dr_box.set_via_unit(1);
   dr_box.set_dr_task_ref(&dr_task);
+  dr_box.set_routing_region(dr_box.get_curr_bounding_box());
 
   std::vector<std::vector<DRNode*>> node_comb_list;
   std::vector<DRGroup>& dr_group_list = dr_task.get_dr_group_list();
@@ -1548,6 +1549,7 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
   cost += start_node->get_known_cost();
   cost += getJointCost(dr_box, end_node, getOrientation(end_node, start_node));
   cost += getWireCost(dr_box, start_node, end_node);
+  cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getViaCost(dr_box, start_node, end_node);
   return cost;
 }
@@ -1568,6 +1570,19 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
   double joint_cost = ((env_weight * env_cost + task_weight * task_cost)
                        * RTUtil::sigmoid((env_weight * env_cost + task_weight * task_cost), (env_weight + task_weight)));
   return joint_cost;
+}
+
+double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  double corner_cost = 0;
+  if (start_node->get_parent_node() != nullptr) {
+    Orientation curr_orientation = getOrientation(start_node, end_node);
+    Orientation pre_orientation = getOrientation(start_node->get_parent_node(), start_node);
+    if (curr_orientation != pre_orientation) {
+      corner_cost += dr_box.get_corner_unit();
+    }
+  }
+  return corner_cost;
 }
 
 // calculate estimate cost
@@ -1592,8 +1607,20 @@ double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode
 {
   double estimate_cost = 0;
   estimate_cost += getWireCost(dr_box, start_node, end_node);
+  estimate_cost += getEstimateCornerCost(dr_box, start_node, end_node);
   estimate_cost += getViaCost(dr_box, start_node, end_node);
   return estimate_cost;
+}
+
+double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  double corner_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    if (RTUtil::isOblique(*start_node, *end_node)) {
+      corner_cost = dr_box.get_corner_unit();
+    }
+  }
+  return corner_cost;
 }
 
 // common
