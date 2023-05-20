@@ -37,50 +37,50 @@ FPPin::~FPPin()
   }
 }
 
-int32_t FPPin::get_x()
+int32_t FPPin::get_x() const
 {
   if (!_is_io_pin) {
     return _instance->get_center_x() + get_offset_x();
   } else {
-    return _coordinate->_x;
+    return _coordinate->get_x();
   }
 }
 
-int32_t FPPin::get_y()
+int32_t FPPin::get_y() const
 {
   if (!_is_io_pin) {
     return _instance->get_center_y() + get_offset_y();
   } else {
-    return _coordinate->_y;
+    return _coordinate->get_y();
   }
 }
 
-int32_t FPPin::get_offset_x()
+int32_t FPPin::get_offset_x() const
 {
   Orient orient = _instance->get_orient();
-  if (orient == Orient::N || orient == Orient::FN) {
-    return _coordinate->_x;
-  } else if (orient == Orient::E || orient == Orient::FE) {
-    return _coordinate->_y;
-  } else if (orient == Orient::S || orient == Orient::FS) {
-    return -(_coordinate->_x);
-  } else if (orient == Orient::W || orient == Orient::FW) {
-    return -(_coordinate->_y);
+  if (orient == Orient::kN || orient == Orient::kFN) {
+    return _coordinate->get_x();
+  } else if (orient == Orient::kE || orient == Orient::kFE) {
+    return _coordinate->get_y();
+  } else if (orient == Orient::kS || orient == Orient::kFS) {
+    return - (_coordinate->get_x());
+  } else if (orient == Orient::kW || orient == Orient::kFW) {
+    return - (_coordinate->get_y());
   }
   return 0;
 }
 
-int32_t FPPin::get_offset_y()
+int32_t FPPin::get_offset_y() const
 {
   Orient orient = _instance->get_orient();
-  if (orient == Orient::N || orient == Orient::FN) {
-    return _coordinate->_y;
-  } else if (orient == Orient::E || orient == Orient::FW) {
-    return -(_coordinate->_x);
-  } else if (orient == Orient::S || orient == Orient::FS) {
-    return -(_coordinate->_y);
-  } else if (orient == Orient::W || orient == Orient::FE) {
-    return _coordinate->_x;
+  if (orient == Orient::kN || orient == Orient::kFN) {
+    return _coordinate->get_y();
+  } else if (orient == Orient::kE || orient == Orient::kFW) {
+    return - (_coordinate->get_x());
+  } else if (orient == Orient::kS || orient == Orient::kFS) {
+    return - (_coordinate->get_y());
+  } else if (orient == Orient::kW || orient == Orient::kFE) {
+    return _coordinate->get_x();
   }
   return 0;
 }

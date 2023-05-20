@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+#include <cstring>
 #include <map>
 #include <queue>
 #include <string>
@@ -32,16 +33,16 @@ class Module
   void add_inst(FPInst* inst, std::queue<std::string> level_name_list = {}, std::string father_name = "top");
   void set_layer(int layer) { _layer = layer; }
 
-  std::string get_name() { return _name; }
-  std::vector<FPInst*> get_macro_list() { return _macro_list; }
-  std::vector<FPInst*> get_stdcell_list() { return _stdcell_list; }
-  std::vector<Module*> get_child_module_list() { return _child_module_list; }
-  bool hasChildModule() { return _child_module_list.size() != 0; }
-  int get_layer() { return _layer; }
-  Module* findChildMoudle(std::string module_name);
+  std::string get_name() const { return _name; }
+  std::vector<FPInst*> get_macro_list() const { return _macro_list; }
+  std::vector<FPInst*> get_stdcell_list() const { return _stdcell_list; }
+  std::vector<Module*> get_child_module_list() const { return _child_module_list; }
+  bool hasChildModule() const { return _child_module_list.size() != 0; }
+  int get_layer() const { return _layer; }
+  Module* findChildMoudle(std::string module_name) const;
 
  private:
-  std::queue<string> split(const string& str);
+  std::queue<std::string> split(const std::string& str);
   std::string _name;
   int _layer;
   std::vector<FPInst*> _macro_list;

@@ -32,14 +32,6 @@
  **/
 #include "MacroPlacer.hh"
 
-#include <time.h>
-
-#include <algorithm>
-#include <ctime>
-#include <string>
-#include <vector>
-
-using namespace std;
 namespace ipl::imp {
 
 MacroPlacer::MacroPlacer(MPDB* mdb, ipl::Config* config) : _mdb(mdb)
@@ -75,7 +67,7 @@ void MacroPlacer::runMacroPlacer()
   }
 
   _mdb->writeDB();
-  string output_path = _set->get_output_path();
+  std::string output_path = _set->get_output_path();
   plotGDS();
   _mdb->writeResult(output_path);
   double time = double(clock() - start) / CLOCKS_PER_SEC;
@@ -96,12 +88,12 @@ void MacroPlacer::init()
   _set->set_output_path(_mp_config.get_output_path());
   _set->set_macro_halo_x(_mp_config.get_halo_x());
   _set->set_macro_halo_y(_mp_config.get_halo_y());
-  _set->set_partition_type(PartitionType::Hmetis);
+  _set->set_partition_type(PartitionType::kHmetis);
   _set->set_parts(_mp_config.get_parts());  // the number of cluster
   _set->set_ncon(5);                        // The number of balancing constraints
   _set->set_ufactor(_mp_config.get_ufactor());
   // simulate anneal
-  _set->set_max_num_step(200);
+  _set->set_max_num_step(500);
   _set->set_perturb_per_step(_mp_config.get_perturb_per_step());
   _set->set_cool_rate(_mp_config.get_cool_rate());
   _set->set_init_temperature(1000);
@@ -116,9 +108,9 @@ void MacroPlacer::init()
   // solution type
   LOG_INFO << "solution type: " << _mp_config.get_solution_tpye();
   if (_mp_config.get_solution_tpye() == "BStarTree") {
-    _set->set_solution_type(SolutionTYPE::BST);
+    _set->set_solution_type(SolutionTYPE::kBStar_tree);
   } else if ("SequencePair" == _mp_config.get_solution_tpye()) {
-    _set->set_solution_type(SolutionTYPE::SP);
+    _set->set_solution_type(SolutionTYPE::kSequence_pair);
   } else {
     LOG_ERROR << "error illegal type: " << _mp_config.get_solution_tpye();
   }
@@ -139,17 +131,18 @@ void MacroPlacer::init()
 void MacroPlacer::updateDensity()
 {
   // update density
-  float total_inst_area = 0;
+  float total_macro_area = 0;
+  float total_std_cell_area = 0;
   float core_area = 0;
   float density = 1;
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
-    total_inst_area += macro->get_area();
+    total_macro_area += macro->get_area();
   }
   for (FPInst* std_cell : _mdb->get_design()->get_std_cell_list()) {
-    total_inst_area += std_cell->get_area();
+    total_std_cell_area += std_cell->get_area();
   }
   core_area = _mdb->get_layout()->get_core_shape()->get_area();
-  density = total_inst_area / core_area;
+  density = total_std_cell_area / (core_area - total_macro_area) + 0.2;
   density = std::min(density, float(1));
   density = std::max(density, _set->get_new_macro_density());
   _set->set_new_macro_density(density);
@@ -174,10 +167,6 @@ void MacroPlacer::addHalo()
   uint32_t halo_x = _set->get_macro_halo_x();
   uint32_t halo_y = _set->get_macro_halo_y();
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
-    // uint32_t self_adaption_halo_x = macro->get_width() / 20;
-    // uint32_t self_adaption_halo_y = macro->get_height() / 20;
-    // halo_x = max(halo_x, self_adaption_halo_x);
-    // halo_y = max(halo_y, self_adaption_halo_y);
     macro->set_halo_x(halo_x);
     macro->set_halo_y(halo_y);
     macro->addHalo();
@@ -268,20 +257,20 @@ map<FPInst*, int> MacroPlacer::partitionInst(int part)
   inst_num += _mdb->get_design()->get_macro_list().size();
   inst_num += _mdb->get_design()->get_std_cell_list().size();
   for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
-    index_to_inst_map.insert(pair<int, FPInst*>(index, macro));
-    inst_to_index_map.insert(pair<FPInst*, int>(macro, index));
+    index_to_inst_map.insert(std::pair<int, FPInst*>(index, macro));
+    inst_to_index_map.insert(std::pair<FPInst*, int>(macro, index));
     index++;
   }
 
   for (FPInst* inst : _mdb->get_design()->get_std_cell_list()) {
-    index_to_inst_map.insert(pair<int, FPInst*>(index, inst));
-    inst_to_index_map.insert(pair<FPInst*, int>(inst, index));
+    index_to_inst_map.insert(std::pair<int, FPInst*>(index, inst));
+    inst_to_index_map.insert(std::pair<FPInst*, int>(inst, index));
     index++;
   }
 
-  vector<vector<int>> hyper_edge_list;
+  std::vector<std::vector<int>> hyper_edge_list;
   for (FPNet* net : _mdb->get_design()->get_net_list()) {
-    vector<int> hyper_edge;
+    std::vector<int> hyper_edge;
     for (FPPin* pin : net->get_pin_list()) {
       FPInst* inst = pin->get_instance();
       if (inst == nullptr) {
@@ -304,7 +293,7 @@ map<FPInst*, int> MacroPlacer::partitionInst(int part)
   hmetis->set_ufactor(20);
   hmetis->set_nparts(part);
   hmetis->partition(inst_num, hyper_edge_list);
-  vector<int> partition_result = hmetis->get_result();
+  std::vector<int> partition_result = hmetis->get_result();
   delete hmetis;
 
   map<FPInst*, int> result;
@@ -316,7 +305,7 @@ map<FPInst*, int> MacroPlacer::partitionInst(int part)
     } else {
       inst = (*inst_ite).second;
     }
-    result.insert(pair<FPInst*, int>(inst, partition_result[i]));
+    result.insert(std::pair<FPInst*, int>(inst, partition_result[i]));
   }
 
   return result;

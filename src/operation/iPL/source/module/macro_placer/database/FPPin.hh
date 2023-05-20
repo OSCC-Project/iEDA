@@ -28,8 +28,8 @@ class FPPin
 
   // setter
   void set_name(std::string name) { _name = name; }
-  void set_x(int32_t x) { _coordinate->_x = x; }
-  void set_y(int32_t y) { _coordinate->_y = y; }
+  void set_x(int32_t x) { _coordinate->set_x(x); }
+  void set_y(int32_t y) { _coordinate->set_y(y); }
   void set_instance(FPInst* instance) { _instance = instance; }
   void set_net(FPNet* net) { _net = net; }
   void set_io_pin() { _is_io_pin = true; }
@@ -39,14 +39,14 @@ class FPPin
   std::string get_name() const { return _name; }
   FPInst* get_instance() const { return _instance; }
   FPNet* get_net() const { return _net; }
-  int32_t get_x();
-  int32_t get_y();
-  bool is_io_pin() { return _is_io_pin; }
-  float get_weight() { return _weight; }
+  int32_t get_x() const;
+  int32_t get_y() const;
+  bool is_io_pin() const { return _is_io_pin; }
+  float get_weight() const { return _weight; }
 
  private:
-  int32_t get_offset_x();
-  int32_t get_offset_y();
+  int32_t get_offset_x() const;
+  int32_t get_offset_y() const;
 
   std::string _name;
   bool _is_io_pin;

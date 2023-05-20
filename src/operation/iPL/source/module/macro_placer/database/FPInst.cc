@@ -23,12 +23,12 @@ FPInst::FPInst()
 {
   _name = "";
   _index = -1;
-  _type = InstType::STD;
+  _type = InstType::kStd_cell;
   _fixed = false;
   _halo_x = 0;
   _halo_y = 0;
   _has_halo = false;
-  _orient = Orient::N;
+  _orient = Orient::kN;
   _main_orient = true;
   _align_flag = false;
 }
@@ -41,7 +41,7 @@ FPInst::~FPInst()
 void FPInst::set_orient(Orient orient)
 {
   _orient = orient;
-  if (_orient == Orient::N || _orient == Orient::FN || _orient == Orient::S || _orient == Orient::FS) {
+  if (_orient == Orient::kN || _orient == Orient::kFN || _orient == Orient::kS || _orient == Orient::kFS) {
     _main_orient = true;
   } else {
     _main_orient = false;
@@ -73,8 +73,8 @@ void FPInst::addHalo()
   if (!_has_halo) {
     _width += 2 * _halo_x;
     _height += 2 * _halo_y;
-    _coordinate->_x -= _halo_x;
-    _coordinate->_y -= _halo_y;
+    _coordinate->set_x(_coordinate->get_x() - _halo_x);
+    _coordinate->set_y(_coordinate->get_y() - _halo_y);
     _has_halo = true;
   }
 }
@@ -84,30 +84,30 @@ void FPInst::deleteHalo()
   if (_has_halo) {
     _width -= 2 * _halo_x;
     _height -= 2 * _halo_y;
-    _coordinate->_x += _halo_x;
-    _coordinate->_y += _halo_y;
+    _coordinate->set_x(_coordinate->get_x() + _halo_x);
+    _coordinate->set_y(_coordinate->get_y() + _halo_y);
     _has_halo = false;
   }
 }
 
-string FPInst::get_orient_name()
+std::string FPInst::get_orient_name()
 {
   switch (_orient) {
-    case Orient::N:
+    case Orient::kN:
       return "N,R0";
-    case Orient::S:
+    case Orient::kS:
       return "S,R180";
-    case Orient::W:
+    case Orient::kW:
       return "W,R90";
-    case Orient::E:
+    case Orient::kE:
       return "E,R270";
-    case Orient::FN:
+    case Orient::kFN:
       return "FN,MY";
-    case Orient::FS:
+    case Orient::kFS:
       return "FS,MX";
-    case Orient::FW:
+    case Orient::kFW:
       return "FW,MX90";
-    case Orient::FE:
+    case Orient::kFE:
       return "FE,MY90";
 
     default:

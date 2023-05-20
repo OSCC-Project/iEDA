@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #include "SimulateAnneal.hh"
 
-#include <math.h>
-
 namespace ipl {
 
 SimulateAnneal::SimulateAnneal(SAParam* param, Evaluation* evaluation)

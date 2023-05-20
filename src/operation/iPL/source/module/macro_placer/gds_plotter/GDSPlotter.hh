@@ -36,6 +36,6 @@ class GDSPlotter
   void plotLine(FPPin* start, FPPin* end, int layer);
 
  private:
-  ofstream _gds_file;
+  std::ofstream _gds_file;
 };
 }  // namespace ipl::imp

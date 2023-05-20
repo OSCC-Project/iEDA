@@ -21,10 +21,9 @@
 #include <vector>
 
 #include "FPRect.hh"
-#include "Utility.hh"
+#include "Coordinate.hh"
+#include "Enum.hh"
 
-using std::string;
-using std::vector;
 namespace ipl::imp {
 
 class FPPin;
@@ -36,7 +35,7 @@ class FPInst : public FPRect
   ~FPInst();
 
   // setter
-  void set_name(string name) { _name = name; }
+  void set_name(std::string name) { _name = name; }
   void set_index(int index) { _index = index; }
   void set_type(InstType type) { _type = type; }
   void set_fixed(bool fixed) { _fixed = fixed; }
@@ -48,7 +47,7 @@ class FPInst : public FPRect
   void set_align_flag(bool flag) { _align_flag = flag; }
 
   // getter
-  string get_name() const { return _name; }
+  std::string get_name() const { return _name; }
   int get_index() const { return _index; }
   uint32_t get_width() const override;
   uint32_t get_height() const override;
@@ -59,17 +58,17 @@ class FPInst : public FPRect
   // Different directions, different widths and heights
   int32_t get_center_x() const { return FPRect::get_x() + get_width() * 0.5; }
   int32_t get_center_y() const { return FPRect::get_y() + get_height() * 0.5; }
-  vector<FPPin*> get_pin_list() const { return _pin_list; }
+  std::vector<FPPin*> get_pin_list() const { return _pin_list; }
   bool isFixed() const { return _fixed; }
   void addHalo();
   void deleteHalo();
-  bool isMacro() const { return _type == InstType::MACRO; }
-  bool isNewMacro() const { return _type == InstType::NEWMACRO; }
-  string get_orient_name();
+  bool isMacro() const { return _type == InstType::kMacro; }
+  bool isNewMacro() const { return _type == InstType::kNew_macro; }
+  std::string get_orient_name();
   bool isAlign() const { return _align_flag; }
 
  private:
-  string _name;
+  std::string _name;
   int _index;
   InstType _type;
   bool _fixed;
@@ -78,7 +77,7 @@ class FPInst : public FPRect
   bool _has_halo;
   Orient _orient;
   bool _main_orient;
-  vector<FPPin*> _pin_list;
+  std::vector<FPPin*> _pin_list;
   bool _align_flag;
 };
 }  // namespace ipl::imp

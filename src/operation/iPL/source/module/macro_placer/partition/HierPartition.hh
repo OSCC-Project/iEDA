@@ -29,7 +29,6 @@ class HierParttion
 {
  public:
   HierParttion(MPDB* mdb, Setting* set) : _mdb(mdb), _set(set){};
-  ~HierParttion(){};
   void init();
 
  private:
