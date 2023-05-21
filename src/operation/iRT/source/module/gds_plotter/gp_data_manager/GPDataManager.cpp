@@ -85,7 +85,8 @@ void GPDataManager::buildConfig()
 void GPDataManager::buildDatabase()
 {
   buildGDSLayerMap();
-  buildLypFile();
+  buildLayoutLypFile();
+  buildGraphLypFile();
 }
 
 void GPDataManager::buildGDSLayerMap()
@@ -119,7 +120,7 @@ void GPDataManager::buildGDSLayerMap()
   }
 }
 
-void GPDataManager::buildLypFile()
+void GPDataManager::buildLayoutLypFile()
 {
   std::vector<RoutingLayer>& routing_layer_list = _gp_database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _gp_database.get_cut_layer_list();
@@ -169,7 +170,40 @@ void GPDataManager::buildLypFile()
       }
     }
   }
-  std::ofstream* lyp_file = RTUtil::getOutputFileStream(_gp_config.temp_directory_path + "gds.lyp");
+  writeLypFile(_gp_config.temp_directory_path + "layout.lyp", lyp_layer_list);
+}
+
+void GPDataManager::buildGraphLypFile()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _gp_database.get_routing_layer_list();
+
+  std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
+                                         "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
+                                         "#80fffb", "#80ff8d", "#afff80", "#f3ff80", "#ffc280", "#ffa080", "#00ffff", "#01ff6b", "#91ff00",
+                                         "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
+  std::vector<std::string> pattern_list = {"I5", "I9"};
+
+  std::map<irt_int, std::string> routing_data_type_map
+      = {{0, "none"}, {10, "open"}, {20, "close"}, {30, "info"}, {40, "neighbor"}, {50, "key"}, {60, "path"}};
+
+  std::vector<GPLYPLayer> lyp_layer_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    irt_int layer_idx = routing_layer.get_layer_idx();
+
+    std::string color = color_list[layer_idx % color_list.size()];
+    std::string pattern = pattern_list[layer_idx % pattern_list.size()];
+
+    for (auto [routing_data_type, type_name] : routing_data_type_map) {
+      lyp_layer_list.emplace_back(color, pattern, RTUtil::getString(routing_layer.get_layer_name(), "_", type_name), layer_idx,
+                                  routing_data_type);
+    }
+  }
+  writeLypFile(_gp_config.temp_directory_path + "graph.lyp", lyp_layer_list);
+}
+
+void GPDataManager::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list)
+{
+  std::ofstream* lyp_file = RTUtil::getOutputFileStream(lyp_file_path);
   RTUtil::pushStream(lyp_file, "<?xml version=\"1.0\" encoding=\"utf-8\"?>", "\n");
   RTUtil::pushStream(lyp_file, "<layer-properties>", "\n");
 

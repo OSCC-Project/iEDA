@@ -51,7 +51,9 @@ class GPDataManager
   void buildConfig();
   void buildDatabase();
   void buildGDSLayerMap();
-  void buildLypFile();
+  void buildLayoutLypFile();
+  void buildGraphLypFile();
+  void writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list);
 };
 
 }  // namespace irt
