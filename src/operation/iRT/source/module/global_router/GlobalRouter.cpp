@@ -1197,7 +1197,8 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPText gp_text_wire_area_supply;
         gp_text_wire_area_supply.set_coord(real_rect.get_lb_x(), y);
         gp_text_wire_area_supply.set_text_type(info_data_type);
-        gp_text_wire_area_supply.set_message(RTUtil::getString("wire_area_supply: ", gr_node.get_wire_area_supply()));
+        gp_text_wire_area_supply.set_message(RTUtil::getString("wire_area_supply: ", gr_node.get_wire_area_supply(), "(",
+                                                               gr_node.get_wire_area_supply() / gr_node.get_single_wire_area(), ")"));
         gp_text_wire_area_supply.set_layer_idx(gr_node.get_layer_idx());
         gp_text_wire_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_wire_area_supply);
@@ -1206,7 +1207,8 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPText gp_text_via_area_supply;
         gp_text_via_area_supply.set_coord(real_rect.get_lb_x(), y);
         gp_text_via_area_supply.set_text_type(info_data_type);
-        gp_text_via_area_supply.set_message(RTUtil::getString("via_area_supply: ", gr_node.get_via_area_supply()));
+        gp_text_via_area_supply.set_message(RTUtil::getString("via_area_supply: ", gr_node.get_via_area_supply(), "(",
+                                                              gr_node.get_via_area_supply() / gr_node.get_single_via_area(), ")"));
         gp_text_via_area_supply.set_layer_idx(gr_node.get_layer_idx());
         gp_text_via_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_via_area_supply);
@@ -1215,7 +1217,8 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPText gp_text_wire_area_demand;
         gp_text_wire_area_demand.set_coord(real_rect.get_lb_x(), y);
         gp_text_wire_area_demand.set_text_type(info_data_type);
-        gp_text_wire_area_demand.set_message(RTUtil::getString("wire_area_demand: ", gr_node.get_wire_area_demand()));
+        gp_text_wire_area_demand.set_message(RTUtil::getString("wire_area_demand: ", gr_node.get_wire_area_demand(), "(",
+                                                               gr_node.get_wire_area_demand() / gr_node.get_single_wire_area(), ")"));
         gp_text_wire_area_demand.set_layer_idx(gr_node.get_layer_idx());
         gp_text_wire_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_wire_area_demand);
@@ -1224,7 +1227,8 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPText gp_text_via_area_demand;
         gp_text_via_area_demand.set_coord(real_rect.get_lb_x(), y);
         gp_text_via_area_demand.set_text_type(info_data_type);
-        gp_text_via_area_demand.set_message(RTUtil::getString("via_area_demand: ", gr_node.get_via_area_demand()));
+        gp_text_via_area_demand.set_message(RTUtil::getString("via_area_demand: ", gr_node.get_via_area_demand(), "(",
+                                                              gr_node.get_via_area_demand() / gr_node.get_single_via_area(), ")"));
         gp_text_via_area_demand.set_layer_idx(gr_node.get_layer_idx());
         gp_text_via_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_via_area_demand);
