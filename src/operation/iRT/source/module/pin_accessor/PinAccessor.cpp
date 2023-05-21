@@ -475,16 +475,18 @@ void PinAccessor::mergeAccessPointList(PANet& pa_net)
 void PinAccessor::selectAccessPointList(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+
     std::map<AccessPointType, std::vector<AccessPoint>> type_point_map;
-    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+    for (AccessPoint& access_point : access_point_list) {
       type_point_map[access_point.get_type()].push_back(access_point);
     }
     for (AccessPointType access_point_type : {AccessPointType::kTrackGrid, AccessPointType::kOnTrack, AccessPointType::kOnShape}) {
-      std::vector<AccessPoint>& access_point_list = type_point_map[access_point_type];
-      if (access_point_list.empty()) {
+      std::vector<AccessPoint>& candidate_access_point_list = type_point_map[access_point_type];
+      if (candidate_access_point_list.empty()) {
         continue;
       }
-      pa_pin.set_access_point_list(access_point_list);
+      access_point_list = candidate_access_point_list;
       break;
     }
   }
