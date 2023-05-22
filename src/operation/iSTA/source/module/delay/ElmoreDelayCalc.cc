@@ -37,7 +37,7 @@ std::unique_ptr<RCNetCommonInfo> RcNet::_rc_net_common_info;
 
 RctNode::RctNode(std::string&& name) : _name{std::move(name)} {}
 
-void RctNode::calNodePIModel(){
+void RctNode::calNodePIModel() {
   double y1 = _moments.y1;
   double y2 = _moments.y2;
   double y3 = _moments.y3;
@@ -49,7 +49,6 @@ void RctNode::calNodePIModel(){
   _pi.R = R;
   _pi.C_far = C1;
 }
-
 
 double RctNode::nodeLoad(AnalysisMode mode, TransType trans_type) {
   return _nload[ModeTransPair(mode, trans_type)];
@@ -271,6 +270,29 @@ void RcTree::updateMC(RctNode* parent, RctNode* from) {
 }
 
 /**
+ * @brief update mc for modify D2M.
+ *
+ * @param parent
+ * @param from
+ */
+void RcTree::updateMCC(RctNode* parent, RctNode* from) {
+  if (from->isUpdateMCC()) {
+    return;
+  }
+
+  from->set_is_update_mc_c(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      updateMCC(from, &to);
+
+      from->_mc_c += to._mc_c;
+    }
+  }
+  from->_mc_c += from->_delay_ecm * from->cap();
+}
+
+/**
  * @brief upadate the delay from net root to each node
  *
  * @param parent
@@ -371,8 +393,7 @@ void RcTree::updateDelayECM(RctNode* parent, RctNode* from) {
   }
 }
 
-
-void RcTree::updateM2(RctNode* parent, RctNode* from){
+void RcTree::updateM2(RctNode* parent, RctNode* from) {
   if (from->isUpdateM2()) {
     return;
   }
@@ -386,7 +407,28 @@ void RcTree::updateM2(RctNode* parent, RctNode* from){
       updateM2(from, &to);
     }
   }
+}
 
+/**
+ * @brief update D2M changed.
+ *
+ * @param parent
+ * @param from
+ */
+void RcTree::updateM2C(RctNode* parent, RctNode* from) {
+  if (from->isUpdateM2C()) {
+    return;
+  }
+
+  from->set_is_update_m2_c(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      to._m2_c = from->_m2_c + e->_res * to._mc_c;
+
+      updateM2C(from, &to);
+    }
+  }
 }
 
 /**
@@ -405,6 +447,17 @@ void RcTree::updateRcTiming() {
   updateDelay(nullptr, _root);
   updateLDelay(nullptr, _root);
   updateResponse(nullptr, _root);
+
+  updateMC(nullptr, _root);
+  updateM2(nullptr, _root);
+
+  WaveformApproximation wave_form;
+  // int load_nodes_pin_cap_sum = 0;
+  // PiModel pi_model =
+  //     wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
+  updateDelayECM(nullptr, _root);
+  updateMCC(nullptr, _root);
+  updateM2C(nullptr, _root);
 
   // printGraphViz();
 }
