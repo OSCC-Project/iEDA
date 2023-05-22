@@ -44,12 +44,12 @@ run_cts -config ./iEDA_config/cts_default_config.json
 def_save -path ./result/iCTS_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iCTS_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/cts_db.rpt"
 

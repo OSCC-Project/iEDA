@@ -26,4 +26,8 @@ def_init -path ./result/iRT_result.def
 #check_net -name xxx
 check_all_net
 
+#===========================================================
+##   Exit 
+#===========================================================
+flow_exit
 
