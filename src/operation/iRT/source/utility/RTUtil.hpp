@@ -680,7 +680,7 @@ class RTUtil
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
   {
     std::vector<PlanarRect> cutting_rect_list;
-
+#if 1
     gtl::polygon_90_set_data<int> poly_set;
     poly_set += RTUtil::convertToGTLRect(master);
     poly_set -= RTUtil::convertToGTLRect(rect);
@@ -689,6 +689,47 @@ class RTUtil
     for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
       cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
+#else
+    if (!isOpenOverlap(master, rect)) {
+      return {master};
+    }
+    std::vector<irt_int> x_scale_list = {master.get_lb_x(), master.get_rt_x()};
+    for (irt_int x_scale : {rect.get_lb_x(), rect.get_rt_x()}) {
+      if (master.get_lb_x() < x_scale && x_scale < master.get_rt_x()) {
+        x_scale_list.emplace_back(x_scale);
+      }
+    }
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+    std::vector<irt_int> y_scale_list = {master.get_lb_y(), master.get_rt_y()};
+    for (irt_int y_scale : {rect.get_lb_y(), rect.get_rt_y()}) {
+      if (master.get_lb_y() < y_scale && y_scale < master.get_rt_y()) {
+        y_scale_list.emplace_back(y_scale);
+      }
+    }
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+
+    for (size_t i = 0; i < x_scale_list.size(); i++) {
+      for (size_t j = i + 1; j < x_scale_list.size(); j++) {
+        irt_int lb_y = y_scale_list.front();
+        for (size_t m = 0; m < y_scale_list.size(); m++) {
+          for (size_t n = m + 1; n < y_scale_list.size(); n++) {
+            PlanarRect splited_rect(x_scale_list[i], y_scale_list[m], x_scale_list[j], y_scale_list[n]);
+            if (!isOpenOverlap(rect, splited_rect)) {
+              continue;
+            }
+            // merge
+            if (lb_y == splited_rect.get_rt_y()) {
+              continue;
+            }
+            cutting_rect_list.emplace_back(x_scale_list[i], lb_y, x_scale_list[j], splited_rect.get_lb_y());
+            lb_y = splited_rect.get_rt_y();
+          }
+        }
+        cutting_rect_list.emplace_back(x_scale_list[i], lb_y, x_scale_list[j], y_scale_list.back());
+      }
+    }
+
+#endif
     return cutting_rect_list;
   }
 
