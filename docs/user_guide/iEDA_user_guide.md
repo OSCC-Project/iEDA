@@ -139,7 +139,7 @@ scripts/sky130/script
 
 #### Flow基础流程
 不管是自动运行顶层 run_iEDA.py 脚本还是单独运行点工具脚本，基于 iEDA 平台设计的脚本都有着相似的步骤，具体流程如下
-##### step 1 路径设置
+**step 1 路径设置**
 首先必须先配置工艺环境路径，为方便查找和配置路径参数，脚本将TechLEF、LEF、Lib、sdc、spef的路径统一在文件 ./script/DB_script/db_path_setting.tcl配置，如下表所示
 |      功能       |     配置命令     |     参考 TCL 样例      |
 |     :---        |     :---        |     :---        |
@@ -153,10 +153,10 @@ scripts/sky130/script
 | 设置 SDC 路径 | set SDC_PATH xxx | set SDC_PATH "./sdc/gcd.sdc" |
 | 设置 SPEF 路径 | #set SPEF_PATH xxx| set SPEF_PATH "./spef/xxx.spef" |
 
-##### step 2 配置点工具Config
+**step 2 配置点工具Config**
 所有点工具的参数设置Config都在路径 ./iEDA_config 中，可查看后面章节的 **输入输出一览表** 修改对应的点工具Config文件
 
-##### step 3 读 .def 设计文件
+**step 3 读 .def 设计文件**
 以 CTS 为例，执行 def_init 命令，读取布局后的结果
 ```bash
 #===========================================================
@@ -166,7 +166,7 @@ def_init -path ./result/iPL_result.def
 ```
 步骤 1 - 3 后，Tech LEF、LEF、DEF 文件数据将被加载，这是点工具启动的前提条件
 
-##### step 4 启动点工具
+**step 4 启动点工具**
 以 CTS 为例，执行 run_cts 命令，将启动 CTS 流程
 ```bash
 #===========================================================
@@ -176,7 +176,7 @@ run_cts -config ./iEDA_config/cts_default_config.json
 ```
 各个点工具运行的TCL命令，请参看 **点工具运行** 模块
 
-##### step 5 保存点工具运行结果
+**step 5 保存点工具运行结果**
 以 CTS 为例，执行完点工具流程后，将点工具运行结果保存在路径 ./result/ 中
 ```bash
 #===========================================================
@@ -190,7 +190,7 @@ def_save -path ./result/iCTS_result.def
 netlist_save -path ./result/iCTS_result.v -exclude_cell_names {}
 ```
 
-##### step 6 输出报告
+**step 6 输出报告**
 以 CTS 为例，数据存储后，将输出设计结果相关的总体报告，报告路径存储在 ./result/report/ 中
 ```bash
 #===========================================================
@@ -199,7 +199,7 @@ netlist_save -path ./result/iCTS_result.v -exclude_cell_names {}
 report_db -path "./result/report/cts_db.rpt"
 ```
 
-##### step 7 退出
+**step 7 退出**
 ```bash
 #===========================================================
 ##   Exit 
@@ -286,24 +286,24 @@ cd <sky130 path>
 | 单元填充 （Filler） | ./iEDA -script ./script/iPL_script/run_iPL_filler.tcl | ./iEDA_config/pl_default_config.json | ./result/iRT_result.def | ./result/iPL_filler_result.def <br> ./result/iPL_filler_result.v | ./result/report/filler_db.rpt |
 | DEF转GDSII | ./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl |  | ./result/iPL_filler_result.def | ./result/final_design.gds2 | |
 
-#### 点工具运行 - 布图规划 (Floorpan)
-##### 执行脚本
+#### 布图规划 (Floorplan)
+**执行脚本**
 ```bash
 ./iEDA -script ./script/iFP_script/run_iFP.tcl 
 ```
-##### 参数配置
+**参数配置**
 无
 
-##### 输入
+**输入**
 - ./result/verilog/gcd.v  
 
-##### 输出
+**输出**
 - ./result/iFP_result.def
 
-##### 评测和报告
+**评测和报告**
 - ./result/report/fp_db.rpt
 
-##### GUI
+**GUI**
 step 1：修改脚本 ./script/iGUI_script/run_iGUI.tcl 的输入设计 def 为 ./result/iFP_result.def
 ```
 #===========================================================
@@ -317,27 +317,26 @@ step 2: 执行iEDA GUI脚本
 ```
 step 3: 查看GUI  
 
-**初始版图**
-
+初始版图
 <div align=center> <img src="pic/gui/gui_floorplan.png" style="zoom:27%;" /> </div>
 
-**PDN**
+PDN
 <div align=center> <img src="pic/gui/gui_floorplan_pdn.png" style="zoom:70%;" /> </div>
 
-#### 点工具运行 - 网表优化（Fix Fanout）
-##### 执行脚本
+#### 网表优化（Fix Fanout）
+**执行脚本**
 ```bash
 ./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl 
 ```
-##### 参数配置
+**参数配置**
 
-##### 输入
+**输入**
 
-##### 输出
+**输出**
 
-##### 评测和报告
+**评测和报告**
 
-##### GUI
+**GUI**
 step 1：修改脚本 ./script/iGUI_script/run_iGUI.tcl 的输入设计 def 为 ./result/iTO_fix_fanout_result.def
 ```
 #===========================================================
