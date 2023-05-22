@@ -252,46 +252,6 @@ void RcTree::updateLoad(RctNode* parent, RctNode* from) {
   }
 }
 
-void RcTree::updateMC(RctNode* parent, RctNode* from) {
-  if (from->isUpdateMC()) {
-    return;
-  }
-
-  from->set_is_update_mc(true);
-
-  for (auto* e : from->_fanout) {
-    if (auto& to = e->_to; &to != parent) {
-      updateMC(from, &to);
-
-      from->_mc += to._mc;
-    }
-  }
-  from->_mc += from->_delay * from->cap();
-}
-
-/**
- * @brief update mc for modify D2M.
- *
- * @param parent
- * @param from
- */
-void RcTree::updateMCC(RctNode* parent, RctNode* from) {
-  if (from->isUpdateMCC()) {
-    return;
-  }
-
-  from->set_is_update_mc_c(true);
-
-  for (auto* e : from->_fanout) {
-    if (auto& to = e->_to; &to != parent) {
-      updateMCC(from, &to);
-
-      from->_mc_c += to._mc_c;
-    }
-  }
-  from->_mc_c += from->_delay_ecm * from->cap();
-}
-
 /**
  * @brief upadate the delay from net root to each node
  *
@@ -393,6 +353,46 @@ void RcTree::updateDelayECM(RctNode* parent, RctNode* from) {
   }
 }
 
+void RcTree::updateMC(RctNode* parent, RctNode* from) {
+  if (from->isUpdateMC()) {
+    return;
+  }
+
+  from->set_is_update_mc(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      updateMC(from, &to);
+
+      from->_mc += to._mc;
+    }
+  }
+  from->_mc += from->_delay * from->cap();
+}
+
+/**
+ * @brief update mc for modify D2M.
+ *
+ * @param parent
+ * @param from
+ */
+void RcTree::updateMCC(RctNode* parent, RctNode* from) {
+  if (from->isUpdateMCC()) {
+    return;
+  }
+
+  from->set_is_update_mc_c(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      updateMCC(from, &to);
+
+      from->_mc_c += to._mc_c;
+    }
+  }
+  from->_mc_c += from->_delay_ecm * from->cap();
+}
+
 void RcTree::updateM2(RctNode* parent, RctNode* from) {
   if (from->isUpdateM2()) {
     return;
@@ -451,10 +451,11 @@ void RcTree::updateRcTiming() {
   updateMC(nullptr, _root);
   updateM2(nullptr, _root);
 
-  WaveformApproximation wave_form;
+  // WaveformApproximation wave_form;
   // int load_nodes_pin_cap_sum = 0;
   // PiModel pi_model =
   //     wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
+
   updateDelayECM(nullptr, _root);
   updateMCC(nullptr, _root);
   updateM2C(nullptr, _root);
@@ -625,11 +626,29 @@ void RcNet::checkLoop() {
   auto& nodes = rct.get_nodes();
   _is_found_loop = false;
 
-  for (auto& [node_name, node] : nodes) {
-    dfsTranverse(nullptr, node);
-    if (_is_found_loop) {
-      breakLoop();
-      _is_found_loop = false;
+  while (true) {
+    bool need_check_again = false;
+    for (auto& [node_name, node] : nodes) {
+      // std::cout << "check node " << ++i << " " << node_name << std::endl;
+      dfsTranverse(nullptr, node);
+      if (_is_found_loop) {
+        breakLoop();
+        _is_found_loop = false;
+        need_check_again = true;
+      }
+    }
+
+    if (!need_check_again) {
+      break;
+    }
+
+    for (auto& [node_name, node] : nodes) {
+      node.set_is_visited(false);
+      node.set_is_tranverse(false);
+    }
+
+    for (auto& edge : rct.get_edges()) {
+      edge.set_is_visited(false);
     }
   }
 
@@ -758,6 +777,8 @@ void RcNet::updateRcTiming(const spef::Net& spef_net) {
 
   //  not empty Rct.
   if (_rct.index() != 0) {
+    checkLoop();
+
     auto& rct = std::get<RcTree>(_rct);
     rct.updateRcTiming();
 
