@@ -1407,6 +1407,7 @@ void DetailedRouter::updatePathResult(DRBox& dr_box)
   DRNode* pre_node = curr_node->get_parent_node();
 
   if (pre_node == nullptr) {
+    // 起点和终点重合
     return;
   }
   Orientation curr_orientation = getOrientation(curr_node, pre_node);

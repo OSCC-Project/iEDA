@@ -850,6 +850,7 @@ void GlobalRouter::updatePathResult(GRModel& gr_model)
   GRNode* pre_node = curr_node->get_parent_node();
 
   if (pre_node == nullptr) {
+    // 起点和终点重合
     return;
   }
   Orientation curr_orientation = getOrientation(curr_node, pre_node);
@@ -897,31 +898,54 @@ void GlobalRouter::resetStartAndEnd(GRModel& gr_model)
 
 void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
+  std::vector<std::vector<GRNode*>>& start_node_comb_list = gr_model.get_start_node_comb_list();
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
   std::map<GRNode*, std::set<Orientation>> usage_map;
 
-  for (Segment<GRNode*>& node_segment : node_segment_list) {
-    GRNode* first_node = node_segment.get_first();
-    GRNode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
-    if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
+  if (node_segment_list.empty()) {
+    // 单层的local net
+    std::set<GRNode*> node_set;
+    for (std::vector<GRNode*>& start_node_comb : start_node_comb_list) {
+      for (GRNode* start_node : start_node_comb) {
+        node_set.insert(start_node);
+      }
     }
-    Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+    if (node_set.size() > 1) {
+      LOG_INST.error(Loc::current(), "The net is not local!");
+    }
+    GRNode* local_node = *node_set.begin();
+    for (Orientation orientation : {Orientation::kUp, Orientation::kDown}) {
+      GRNode* neighbor_node = local_node->getNeighborNode(orientation);
+      if (neighbor_node != nullptr) {
+        usage_map[local_node].insert(orientation);
+        usage_map[neighbor_node].insert(RTUtil::getOppositeOrientation(orientation));
+      }
+    }
+  } else {
+    // 跨gcell线网和多层的local_net
+    for (Segment<GRNode*>& node_segment : node_segment_list) {
+      GRNode* first_node = node_segment.get_first();
+      GRNode* second_node = node_segment.get_second();
+      Orientation orientation = getOrientation(first_node, second_node);
+      if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
+        LOG_INST.error(Loc::current(), "The orientation is error!");
+      }
+      Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
 
-    GRNode* node_i = first_node;
-    while (true) {
-      if (node_i != first_node) {
-        usage_map[node_i].insert(oppo_orientation);
+      GRNode* node_i = first_node;
+      while (true) {
+        if (node_i != first_node) {
+          usage_map[node_i].insert(oppo_orientation);
+        }
+        if (node_i != second_node) {
+          usage_map[node_i].insert(orientation);
+        }
+        if (node_i == second_node) {
+          break;
+        }
+        node_i = node_i->getNeighborNode(orientation);
       }
-      if (node_i != second_node) {
-        usage_map[node_i].insert(orientation);
-      }
-      if (node_i == second_node) {
-        break;
-      }
-      node_i = node_i->getNeighborNode(orientation);
     }
   }
   for (auto& [usage_node, orientation_list] : usage_map) {
