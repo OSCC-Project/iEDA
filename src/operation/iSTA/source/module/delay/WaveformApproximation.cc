@@ -1,7 +1,7 @@
 /**
  * @file WaveformApproximation.cc
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @author LH (liuh0326@163.com)
+ * @brief The waveform approximation to calc ceff.
  * @version 0.1
  * @date 2023-05-18
  *
@@ -15,7 +15,7 @@
 
 namespace ista {
 
-constexpr static double E = 2.7183;
+constexpr static double expon = 2.7183;
 
 double WaveformApproximation::calVoltageThreshold(Eigen::MatrixXd& T,
                                                   Eigen::MatrixXd& CU,
@@ -59,8 +59,8 @@ double WaveformApproximation::calCeff1(PiModel& pi_model, double t50,
 
   double temp1 =
       (pow((pi_model.R * pi_model.C_far), 2) / (t20 * (t50 - 0.5 * t20))) *
-      pow(E, (t20 - t50) / (pi_model.R * pi_model.C_far)) *
-      (1 - pow(E, -t20 / (pi_model.R * pi_model.C_far)));
+      pow(expon, (t20 - t50) / (pi_model.R * pi_model.C_far)) *
+      (1 - pow(expon, -t20 / (pi_model.R * pi_model.C_far)));
   double temp2 =
       1 - ((pi_model.R * pi_model.C_far) / (t50 - 0.5 * t20)) + temp1;
   double Ceff = pi_model.C_near + pi_model.C_far * temp2;
@@ -68,32 +68,53 @@ double WaveformApproximation::calCeff1(PiModel& pi_model, double t50,
 }
 
 double WaveformApproximation::calCeff2(PiModel& pi_model, double t50) {
-  double temp1 = 1 - pow(E, -t50 / (pi_model.R * pi_model.C_far));
+  double temp1 = 1 - pow(expon, -t50 / (pi_model.R * pi_model.C_far));
   double temp2 = 1 - ((pi_model.R * pi_model.C_far) / t50) * temp1;
   double Ceff = pi_model.C_near + pi_model.C_far * temp2;
   return Ceff;
 }
 
-PiModel WaveformApproximation::reduceRCTreeToPIModel(
-    RcTree& rc_tree, double load_nodes_pin_cap_sum) {
-  RctNode* root = rc_tree.get_root();
-  LaplaceMoments* root_moments = calMomentsByDFS(root);
-  double y1 = root_moments->y1;
-  double y2 = root_moments->y2;
-  double y3 = root_moments->y3;
+/**
+ * @brief calc pi model by node moments.
+ *
+ * @param node_moments
+ * @return PiModel
+ */
+PiModel WaveformApproximation::calNodePIModel(LaplaceMoments* node_moments) {
+  double y1 = node_moments->y1;
+  double y2 = node_moments->y2;
+  double y3 = node_moments->y3;
   double C1 = pow(y2, 2) / y3;
   double C2 = y1 - pow(y2, 2) / y3;
   double R = -pow(y3, 2) / pow(y2, 3);
   PiModel pi_model{0, 0, 0};
   pi_model.C_near = C2;
   pi_model.R = R;
-  C1 += load_nodes_pin_cap_sum;
   pi_model.C_far = C1;
   return pi_model;
 }
 
+/**
+ * @brief reduce rc tree to pi model.
+ *
+ * @param rc_tree
+ * @param load_nodes_pin_cap_sum
+ * @return PiModel
+ */
+PiModel WaveformApproximation::reduceRCTreeToPIModel(
+    RctNode* root, double load_nodes_pin_cap_sum) {
+  LaplaceMoments* root_moments = calMomentsByDFS(root);
+  return calNodePIModel(root_moments);
+}
+
+/**
+ * @brief calc rc tree moment.
+ *
+ * @param the_node
+ * @return LaplaceMoments*
+ */
 LaplaceMoments* WaveformApproximation::calMomentsByDFS(RctNode* the_node) {
-  the_node->set_is_visited(true);
+  the_node->set_is_visited_ecm(true);
   LaplaceMoments* the_node_moments = the_node->get_moments();
   if (the_node->get_fanout().size() == 1 && the_node->get_obj()) {
     the_node_moments->y1 = the_node->get_cap();
@@ -102,8 +123,8 @@ LaplaceMoments* WaveformApproximation::calMomentsByDFS(RctNode* the_node) {
     return the_node_moments;
   }
   for (auto* fanout_edge : the_node->get_fanout()) {
-    if (!fanout_edge->get_to().isVisited()) {
-      // LaplaceMoments propagate_Y = propagateY(fanout_edge);
+    if (!fanout_edge->get_to().isVisitedEcm()) {
+      propagateY(fanout_edge);
       // the_node_moments->y1 += propagate_Y.y1;
       // the_node_moments->y2 += propagate_Y.y2;
       // the_node_moments->y3 += propagate_Y.y3;
@@ -138,7 +159,7 @@ double WaveformApproximation::calInputWaveformThresholdByCeff(
     double input_slew, LibertyArc* lib_arc) {
   WaveformApproximation waveform;
   PiModel pi_model =
-      waveform.reduceRCTreeToPIModel(rc_tree, load_nodes_pin_cap_sum);
+      waveform.reduceRCTreeToPIModel(rc_tree.get_root(), load_nodes_pin_cap_sum);
   double cap = pi_model.C_near + pi_model.C_far;
   int iter_num = 500;
   double Ceff = 0;

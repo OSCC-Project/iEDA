@@ -1,7 +1,7 @@
 /**
  * @file WaveformApproximation.hh
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @author LH (liuh0326@163.com)
+ * @brief The waveform approximation to calc ceff.
  * @version 0.1
  * @date 2023-05-18
  *
@@ -54,13 +54,17 @@ struct LaplaceMoments {
   }
 };
 
+/**
+ * @brief waveform approximation, calc ceff cap.
+ *
+ */
 class WaveformApproximation {
  public:
-  PiModel reduceRCTreeToPIModel(RcTree& rc_tree, double load_nodes_pin_cap_sum);
+  PiModel reduceRCTreeToPIModel(RctNode* root, double load_nodes_pin_cap_sum);
   LaplaceMoments* calMomentsByDFS(RctNode* the_node);
   LaplaceMoments propagateY(RctEdge* the_edge);
 
-  PiModel calNodePIModel();
+  PiModel calNodePIModel(LaplaceMoments* node_moments);
   // double PiModelToCeff();
   double calInputWaveformThresholdByCeff(
       RcTree& rc_tree, double load_nodes_pin_cap_sum, Eigen::MatrixXd& current,
@@ -84,7 +88,8 @@ class WaveformApproximation {
       double step, std::map<RctNode*, std::vector<double>>& load_voltages,
       double slew_coefficient, TransType trans_type);
 
-  double calVoltageThreshold(Eigen::MatrixXd& T, Eigen::MatrixXd& CU, double Ceff, int num);
+  double calVoltageThreshold(Eigen::MatrixXd& T, Eigen::MatrixXd& CU,
+                             double Ceff, int num);
   double calCeff1(PiModel& pi_model, double t50, double tr);
   double calCeff2(PiModel& pi_model, double t50);
 

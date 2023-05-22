@@ -23,6 +23,9 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 def_init -path ./result/iRT_result.def
 
+#===========================================================
+##   report wire length
+#===========================================================
 report_wirelength -path  "./result/report/eval/iRT_result_wirelength.rpt"
 
 #===========================================================
