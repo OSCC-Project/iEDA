@@ -289,9 +289,6 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
   PlanarRect dr_box_region = dr_node_node->value().get_first_guide().get_rect();
   RTNode& ta_node = ta_node_node->value();
   irt_int ta_layer_idx = ta_node.get_first_guide().get_layer_idx();
-  RoutingLayer& routing_layer = routing_layer_list[ta_layer_idx];
-  TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
-  TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
 
   DRGroup dr_group;
   for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
@@ -305,15 +302,19 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
     irt_int first_y = first_coord.get_y();
     PlanarCoord& second_coord = cutting_segment.get_second();
     if (RTUtil::isHorizontal(first_coord, second_coord)) {
-      for (irt_int x : RTUtil::getClosedScaleList(first_x, second_coord.get_x(), x_track_grid)) {
-        dr_group.get_coord_list().emplace_back(x, first_y, ta_layer_idx);
+      for (RoutingLayer& routing_layer : routing_layer_list) {
+        for (irt_int x : RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGrid())) {
+          dr_group.get_coord_list().emplace_back(x, first_y, ta_layer_idx);
+        }
       }
     } else if (RTUtil::isVertical(first_coord, second_coord)) {
-      for (irt_int y : RTUtil::getClosedScaleList(first_y, second_coord.get_y(), y_track_grid)) {
-        dr_group.get_coord_list().emplace_back(first_x, y, ta_layer_idx);
+      for (RoutingLayer& routing_layer : routing_layer_list) {
+        for (irt_int y : RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGrid())) {
+          dr_group.get_coord_list().emplace_back(first_x, y, ta_layer_idx);
+        }
       }
     } else if (RTUtil::isProximal(first_coord, second_coord)) {
-      dr_group.get_coord_list().emplace_back(first_coord, ta_layer_idx);
+      LOG_INST.error(Loc::current(), "The ta segment is proximal!");
     }
   }
   return dr_group;
