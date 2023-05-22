@@ -23,6 +23,9 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 def_init -path ./result/iPL_result.def
 
+#===========================================================
+##   report wire length and congestion
+#===========================================================
 report_wirelength -path  "./result/report/eval/iPL_result_wirelength.rpt"
 report_congestion -path "./result/report/eval/iPL_result_congestion.rpt"
 
