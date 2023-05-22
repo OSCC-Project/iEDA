@@ -441,8 +441,8 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
-    std::vector<EXTLayerRect> net_region_list;
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
+      std::vector<EXTLayerRect> net_region_list;
       for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
         irt_int layer_idx = real_coord.get_layer_idx();
         for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
@@ -461,31 +461,31 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
           net_region_list.push_back(above_via_shape);
         }
       }
-    }
-    for (const EXTLayerRect& net_region : net_region_list) {
-      irt_int layer_idx = net_region.get_layer_idx();
-      if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-        continue;
-      }
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
-      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-
-      if (routing_layer_list[layer_idx].isPreferH()) {
-        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][y];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
-          }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+      for (const EXTLayerRect& net_region : net_region_list) {
+        irt_int layer_idx = net_region.get_layer_idx();
+        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+          continue;
         }
-      } else {
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][x];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
+        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
+        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+            TAPanel& ta_panel = layer_panel_list[layer_idx][y];
+            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+              continue;
+            }
+            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
           }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+        } else {
+          for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+            TAPanel& ta_panel = layer_panel_list[layer_idx][x];
+            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+              continue;
+            }
+            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+          }
         }
       }
     }
@@ -1316,6 +1316,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   cost += start_node->get_known_cost();
   cost += getJointCost(ta_panel, end_node, getOrientation(end_node, start_node));
   cost += getWireCost(ta_panel, start_node, end_node);
+  cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
   return cost;
 }
@@ -1336,6 +1337,19 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
   double joint_cost = ((env_weight * env_cost + task_weight * task_cost)
                        * RTUtil::sigmoid((env_weight * env_cost + task_weight * task_cost), (env_weight + task_weight)));
   return joint_cost;
+}
+
+double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  double corner_cost = 0;
+  if (start_node->get_parent_node() != nullptr) {
+    Orientation curr_orientation = getOrientation(start_node, end_node);
+    Orientation pre_orientation = getOrientation(start_node->get_parent_node(), start_node);
+    if (curr_orientation != pre_orientation) {
+      corner_cost += ta_panel.get_corner_unit();
+    }
+  }
+  return corner_cost;
 }
 
 // calculate estimate cost
@@ -1360,8 +1374,20 @@ double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TAN
 {
   double estimate_cost = 0;
   estimate_cost += getWireCost(ta_panel, start_node, end_node);
+  estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
+}
+
+double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  double corner_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    if (RTUtil::isOblique(*start_node, *end_node)) {
+      corner_cost = ta_panel.get_corner_unit();
+    }
+  }
+  return corner_cost;
 }
 
 // common

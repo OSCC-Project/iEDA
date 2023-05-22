@@ -77,10 +77,11 @@ class DetailedRouter
   void buildScaleOrientList(DRBox& dr_box);
   void buildBasicLayerGraph(DRBox& dr_box);
   void buildCrossLayerGraph(DRBox& dr_box);
-  std::vector<LayerCoord> addCoordToGraph(DRBox& dr_box, LayerCoord& key_coord, LayerCoord& added_coord);
-  void buildLayerNeighbor(std::vector<LayerCoord>& new_coord_list, LayerCoord& added_coord);
-  void buildPlanarNeighbor(std::vector<LayerCoord>& new_coord_list, DRNodeGraph& node_graph, LayerCoord& added_coord, Direction direction);
+  void buildCrossLayerCoord(DRBox& dr_box, std::set<LayerCoord, CmpLayerCoordByXASC>& cross_coord_set);
   void addNeighborToGraph(DRBox& dr_box, LayerCoord& first_coord, LayerCoord& second_coord);
+  void buildCrossPlanarCoord(DRBox& dr_box, std::set<LayerCoord, CmpLayerCoordByXASC>& cross_coord_set);
+  std::vector<LayerCoord> addPlanarCoordToGraph(DRBox& dr_box, LayerCoord& added_coord);
+  void buildPlanarNeighbor(std::vector<LayerCoord>& new_coord_list, DRNodeGraph& node_graph, LayerCoord& added_coord, Direction direction);
   void buildLayerNodeList(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
@@ -129,8 +130,10 @@ class DetailedRouter
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
+  double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   Orientation getOrientation(DRNode* start_node, DRNode* end_node);
   double getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
