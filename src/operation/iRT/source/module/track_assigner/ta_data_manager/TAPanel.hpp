@@ -48,6 +48,7 @@ class TAPanel : public EXTLayerRect
 
 #if 1  // astar
   double get_wire_unit() const { return _wire_unit; }
+  double get_corner_unit() const { return _corner_unit; }
   double get_via_unit() const { return _via_unit; }
   const irt_int get_curr_task_idx() const { return _ta_task_ref->get_task_idx(); }
   const PlanarRect& get_curr_bounding_box() const { return _ta_task_ref->get_bounding_box(); }
@@ -62,6 +63,7 @@ class TAPanel : public EXTLayerRect
   TANode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
   void set_wire_unit(const double wire_unit) { _wire_unit = wire_unit; }
+  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_ta_task_ref(TATask* ta_task_ref) { _ta_task_ref = ta_task_ref; }
   void set_routing_region(const PlanarRect& routing_region) { _routing_region = routing_region; }
@@ -90,7 +92,8 @@ class TAPanel : public EXTLayerRect
 #if 1  // astar
   // config
   double _wire_unit = 1;
-  double _via_unit = 2;
+  double _corner_unit = 1;
+  double _via_unit = 1;
   // single net
   TATask* _ta_task_ref = nullptr;
   PlanarRect _routing_region;
