@@ -39,12 +39,12 @@ def_init -path ./result/iTO_fix_fanout_result.def
 run_placer -config ./iEDA_config/pl_default_config.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iPL_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iPL_result.v -exclude_cell_names {}
 

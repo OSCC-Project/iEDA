@@ -39,17 +39,17 @@ def_init -path ./result/iTO_drv_result.def
 run_to_hold -config ./iEDA_config/to_default_config_hold.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iTO_hold_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iTO_hold_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/hold_db.rpt"
 

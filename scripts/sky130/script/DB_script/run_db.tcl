@@ -21,21 +21,16 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path ./result/rt_0320.def
+def_init -path ./result/iRT_result.def
 
 #===========================================================
-##   Save def 
+##   save def & verilog
 #===========================================================
-#def_save -path ./result/data_out.def
-#netlist_save -path ./result/iRT_result.v
+def_save -path ./result/data_out.def
+netlist_save -path ./result/data_out.v
 
 #===========================================================
 ##   Exit 
 #===========================================================
-#flow_exit
+flow_exit
 
-report_db -path "./result/report/db.rpt"
-#report_wirelength -path "./result/report/eval.rpt"
-report_wirelength -path  "./result/report/wirelength.rpt"
-report_congestion -path "./result/report/congestion.rpt"
-check_all_net
