@@ -2098,7 +2098,7 @@ void DetailedRouter::reportTable(DRModel& dr_model)
     if (i < wire_str_list.size()) {
       table_str += wire_str_list[i];
     }
-    table_str += RTUtil::getSpaceByTabNum(1);
+    table_str += " ";
     if (i < via_str_list.size()) {
       table_str += via_str_list[i];
     }
