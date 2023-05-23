@@ -1593,7 +1593,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     if (i < wire_str_list.size()) {
       table_str += wire_str_list[i];
     }
-    table_str += RTUtil::getSpaceByTabNum(1);
+    table_str += " ";
     if (i < via_str_list.size()) {
       table_str += via_str_list[i];
     }
@@ -1656,7 +1656,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
         table_str += " ";
       }
     }
-    table_str += RTUtil::getSpaceByTabNum(1);
+    table_str += " ";
     if (i < via_overflow_str_list.size()) {
       table_str += via_overflow_str_list[i];
     }
