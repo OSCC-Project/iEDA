@@ -1571,9 +1571,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
                << fort::endr;
   }
   wire_table << fort::header << "Total" << gr_model_stat.get_total_wire_length() << fort::endr;
-  for (std::string table_str : RTUtil::splitString(wire_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
 
   // report via info
   fort::char_table via_table;
@@ -1588,7 +1585,18 @@ void GlobalRouter::reportTable(GRModel& gr_model)
               << fort::endr;
   }
   via_table << fort::header << "Total" << gr_model_stat.get_total_via_number() << fort::endr;
-  for (std::string table_str : RTUtil::splitString(via_table.to_string(), '\n')) {
+
+  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
+  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
+  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
+    std::string table_str;
+    if (i < wire_str_list.size()) {
+      table_str += wire_str_list[i];
+    }
+    table_str += RTUtil::getSpaceByTabNum(1);
+    if (i < via_str_list.size()) {
+      table_str += via_str_list[i];
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 
@@ -1614,9 +1622,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
                         << fort::endr;
   }
   wire_overflow_table << fort::header << "Total" << wire_overflow_list.size() << fort::endr;
-  for (std::string table_str : RTUtil::splitString(wire_overflow_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
 
   // report via overflow info
   std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
@@ -1639,7 +1644,22 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     via_overflow_table << range_str << RTUtil::getString(via_overflow_map[1][y_idx], "(", via_overflow_map[2][y_idx], "%)") << fort::endr;
   }
   via_overflow_table << fort::header << "Total" << via_overflow_list.size() << fort::endr;
-  for (std::string table_str : RTUtil::splitString(via_overflow_table.to_string(), '\n')) {
+
+  std::vector<std::string> wire_overflow_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
+  std::vector<std::string> via_overflow_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
+  for (size_t i = 0; i < std::max(wire_overflow_str_list.size(), via_overflow_str_list.size()); i++) {
+    std::string table_str;
+    if (i < wire_overflow_str_list.size()) {
+      table_str += wire_overflow_str_list[i];
+    } else {
+      for (size_t i = 0; i < wire_overflow_str_list.front().size(); i++) {
+        table_str += " ";
+      }
+    }
+    table_str += RTUtil::getSpaceByTabNum(1);
+    if (i < via_overflow_str_list.size()) {
+      table_str += via_overflow_str_list[i];
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 }

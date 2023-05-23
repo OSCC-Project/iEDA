@@ -479,6 +479,29 @@ void PinAccessor::checkPAModel(PAModel& pa_model)
           LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
         }
       }
+
+      std::map<irt_int, std::vector<EXTLayerRect>> layer_routing_shape_list;
+      for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+        layer_routing_shape_list[routing_shape.get_layer_idx()].push_back(routing_shape);
+      }
+      for (auto& [layer_idx, routing_shape_list] : layer_routing_shape_list) {
+        bool exist = false;
+        for (AccessPoint& access_point : access_point_list) {
+          for (EXTLayerRect& routing_shape : routing_shape_list) {
+            if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
+                && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
+              exist = true;
+              break;
+            }
+          }
+          if (exist) {
+            break;
+          }
+        }
+        if (!exist) {
+          LOG_INST.error(Loc::current(), "The port has no access point!");
+        }
+      }
     }
   }
 }
