@@ -24,7 +24,7 @@ source ./script/DB_script/db_init_lef.tcl
 def_init -path ./result/iPL_result.def
 
 #===========================================================
-##   Save gds 
+##   save verilog 
 #===========================================================
 netlist_save -path ./result/verilog.v -exclude_cell_names {}
 

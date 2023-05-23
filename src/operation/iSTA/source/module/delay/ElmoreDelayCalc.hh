@@ -124,6 +124,12 @@ class RctNode {
   [[nodiscard]] unsigned isUpdateMC() const { return _is_update_mc; }
   void set_is_update_mc(bool updated) { _is_update_mc = (updated ? 1 : 0); }
 
+  [[nodiscard]] unsigned isUpdateM2C() const { return _is_update_m2_c; }
+  void set_is_update_m2_c(bool updated) { _is_update_m2_c = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateMCC() const { return _is_update_mc_c; }
+  void set_is_update_mc_c(bool updated) { _is_update_mc_c = (updated ? 1 : 0); }
+
   [[nodiscard]] unsigned isUpdateCeff() const { return _is_update_ceff; }
   void set_is_update_ceff(bool updated) { _is_update_ceff = (updated ? 1 : 0); }
 
@@ -144,6 +150,9 @@ class RctNode {
 
   [[nodiscard]] unsigned isVisited() const { return _is_visited; }
   void set_is_visited(bool updated) { _is_visited = (updated ? 1 : 0); }
+
+  void set_is_visited_ecm(bool updated) { _is_visited_ecm = (updated ? 1 : 0); }
+  [[nodiscard]] unsigned isVisitedEcm() const { return _is_visited_ecm; }
 
   void set_obj(DesignObject* obj) { _obj = obj; }
   DesignObject* get_obj() { return _obj; }
@@ -175,6 +184,8 @@ class RctNode {
   double _delay = 0.0;
   double _m2 = 0.0;
   double _mc = 0.0;
+  double _m2_c = 0.0;
+  double _mc_c = 0.0;
   double _ceff = 0.0;
   double _delay_ecm = 0.0;
 
@@ -184,11 +195,14 @@ class RctNode {
   unsigned _is_update_delay_ecm : 1 = 0;
   unsigned _is_update_m2 : 1 = 0;
   unsigned _is_update_mc : 1 = 0;
+  unsigned _is_update_m2_c : 1 = 0;
+  unsigned _is_update_mc_c : 1 = 0;
   unsigned _is_update_ceff : 1 = 0;
   unsigned _is_update_response : 1 = 0;
   unsigned _is_tranverse : 1 = 0;
   unsigned _is_visited : 1 = 0;
-  unsigned _reserved : 22 = 0;
+  unsigned _is_visited_ecm : 1 = 0;
+  unsigned _reserved : 19 = 0;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -420,9 +434,11 @@ class RcTree {
   void initData();
   void updateLoad(RctNode*, RctNode*);
   void updateMC(RctNode* parent, RctNode* from);
+  void updateMCC(RctNode* parent, RctNode* from);
   void updateDelay(RctNode*, RctNode*);
   void updateDelayECM(RctNode* parent, RctNode* from);
   void updateM2(RctNode* parent, RctNode* from);
+  void updateM2C(RctNode* parent, RctNode* from);
   void updateLDelay(RctNode* parent, RctNode* from);
   void updateResponse(RctNode* parent, RctNode* from);
 

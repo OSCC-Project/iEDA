@@ -21,7 +21,7 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read verilog
 #===========================================================
-verilog_init -path $VERILOG_PATH -top gcd
+verilog_init -path ./result/verilog/gcd.v -top gcd
 
 #===========================================================
 ##   read def
@@ -53,7 +53,7 @@ init_floorplan \
    -io_site $IO_SITE \
    -corner_site $CORNER_SITE
 
-source ./script/iFP_script/module/gern_tracks.tcl
+source ./script/iFP_script/module/create_tracks.tcl
 
 #===========================================================
 ##   Place IO Port
@@ -71,8 +71,7 @@ tapcell \
 #===========================================================
 ##   PDN 
 #===========================================================
-source ./script/iFP_script/module/user_pg.tcl 
-source ./script/iFP_script/module/addPowerStripe.tcl
+source ./script/iFP_script/module/pdn.tcl 
 
 #===========================================================
 ##   set clock net
@@ -80,12 +79,12 @@ source ./script/iFP_script/module/addPowerStripe.tcl
 source ./script/iFP_script/module/set_clocknet.tcl
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iFP_result.def
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/fp_db.rpt"
 
