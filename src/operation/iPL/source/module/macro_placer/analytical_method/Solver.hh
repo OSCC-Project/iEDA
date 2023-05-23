@@ -22,9 +22,9 @@ class Problem;
 class Solver
 {
  public:
-  explicit Solver(){};
+  explicit Solver(std::shared_ptr<Problem> problem) : _problem(problem){};
   ~Solver(){};
-  void doNesterovSolve(VectorXf& solution);
+  void doNesterovSolve(MatrixXf& solution);
   void set_steplength_bound(float l, float u)
   {
     if (u > l)
@@ -34,9 +34,9 @@ class Solver
   }
 
  private:
-  MatrixXf _jacobi;
+  MatrixXf _gradiant;
   VectorXf _variable;
-  VectorXf _patarmeter;
+  VectorXf _parameter;
   VectorXf _cost;
 
   float _steplength_l;

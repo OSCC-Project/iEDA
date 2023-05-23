@@ -62,3 +62,16 @@ target_link_libraries(MacroPlacer
     ipl-source
     ipl-api_external_libs
 )
+
+add_executable(MPSolverTest
+    ${iPL_TEST}/MPSolverTest.cc)
+
+target_include_directories(MPSolverTest 
+    PUBLIC 
+    ${iPL_MP}/analytical_method
+)
+
+target_link_libraries(MPSolverTest
+    PUBLIC
+    ipl-module-macro_placer
+)
