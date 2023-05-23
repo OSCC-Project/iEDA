@@ -143,7 +143,6 @@ Refering the file directory in `scripts/sky130`，add the path of iEDA execution
 
 ```
 iEDA/scripts/sky130
-├── common        # common scripts
 ├── iEDA_config   # iEDA parameters configuration files
 ├── lef           # lef files
 ├── lib           # lib files

@@ -36,7 +36,6 @@ def_init -path ./result/iPL_lg_result.def
 #===========================================================
 ##   run Router
 #===========================================================
-
 init_rt -output_def_file_path "./result/rt/rt.def" \
         -temp_directory_path "./result/rt/" \
         -bottom_routing_layer "met1" \
@@ -47,17 +46,17 @@ run_rt
 destroy_rt
 
 #===========================================================
-##   Save def & netlist
+##   save def & netlist
 #===========================================================
 def_save -path ./result/iRT_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iRT_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/rt_db.rpt"
 

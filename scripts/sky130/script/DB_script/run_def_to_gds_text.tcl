@@ -24,7 +24,7 @@ source ./script/DB_script/db_init_lef.tcl
 def_init -path ./result/iPL_filler_result.def
 
 #===========================================================
-##   Save gds 
+##   save gds 
 #===========================================================
 gds_save -path ./result/final_design.gds2
 
