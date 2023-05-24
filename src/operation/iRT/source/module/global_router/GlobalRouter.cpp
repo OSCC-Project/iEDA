@@ -1432,6 +1432,7 @@ void GlobalRouter::buildRoutingResult(GRNet& gr_net)
   if (gr_net.get_gr_result_tree().get_root() == nullptr) {
     return;
   }
+  std::vector<TNode<RTNode>*> delete_node_list;
   std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
   std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
   while (!node_queue.empty()) {
@@ -1456,10 +1457,14 @@ void GlobalRouter::buildRoutingResult(GRNet& gr_net)
     for (TNode<RTNode>* child_node : box_node_list) {
       buildDRNode(merged_node, child_node);
       origin_to_merged_map[child_node] = merged_node;
+      delete_node_list.push_back(child_node);
     }
     for (TNode<RTNode>* child_node : bridge_node_list) {
       buildTANode(merged_node, child_node);
     }
+  }
+  for (TNode<RTNode>* delete_node : delete_node_list) {
+    delete delete_node;
   }
 }
 
