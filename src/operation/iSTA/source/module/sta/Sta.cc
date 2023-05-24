@@ -1242,9 +1242,10 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
       std::vector<StaReportPathSummary *> report_funcs{
           &report_path_summary, &report_path_detail, &report_path_TNS};
 
+      // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
+      StaReportPathYaml report_path_dump(rpt_file_name, mode, n_worst);
+
       if (c_print_delay_yaml) {
-        // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
-        StaReportPathYaml report_path_dump(rpt_file_name, mode, n_worst);
         report_funcs.emplace_back(&report_path_dump);
       }
 
