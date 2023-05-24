@@ -24,16 +24,16 @@ namespace ipl {
 
 AbacusLegalizer& AbacusLegalizer::getInst()
 {
-  if (!_abacus_lg_instance) {
-    _abacus_lg_instance = new AbacusLegalizer();
+  if (!_s_abacus_lg_instance) {
+    _s_abacus_lg_instance = new AbacusLegalizer();
   }
-  return *_abacus_lg_instance;
+  return *_s_abacus_lg_instance;
 }
 
 void AbacusLegalizer::destoryInst()
 {
-  if (_abacus_lg_instance) {
-    delete _abacus_lg_instance;
+  if (_s_abacus_lg_instance) {
+    delete _s_abacus_lg_instance;
   }
 }
 
@@ -901,6 +901,6 @@ int32_t AbacusLegalizer::calTotalMovement()
 }
 
 // private
-AbacusLegalizer* AbacusLegalizer::_abacus_lg_instance = nullptr;
+AbacusLegalizer* AbacusLegalizer::_s_abacus_lg_instance = nullptr;
 
 }  // namespace ipl

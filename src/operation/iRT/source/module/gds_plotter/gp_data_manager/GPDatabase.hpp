@@ -17,6 +17,7 @@
 #pragma once
 
 #include "EXTPlanarRect.hpp"
+#include "GPLYPLayer.hpp"
 #include "RoutingLayer.hpp"
 #include "ViaMaster.hpp"
 

@@ -53,8 +53,7 @@ class FpApi
   bool placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
                      std::string source);
 
-  void insertTapCells(double distance, std::string tapcell_master_name);
-  void insertEndCaps(std::string endcap_master);
+  bool tapCells(double distance, std::string tapcell_name, std::string endcap_name);
 
  private:
   static FpApi* _instance;

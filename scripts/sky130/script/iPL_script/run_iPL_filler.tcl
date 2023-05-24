@@ -29,17 +29,17 @@ def_init -path ./result/iRT_result.def
 run_filler -config ./iEDA_config/pl_default_config.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iPL_filler_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iPL_filler_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/filler_db.rpt"
 

@@ -1749,10 +1749,17 @@ int32_t DefRead::parse_via(defiVia* def_via)
       master_generate->set_offset_top(offset_top_x, offset_top_y);
     }
 
-    if (def_via->hasRowCol()) {
-      int32_t num_rows = 0;
-      int32_t num_cols = 0;
-      def_via->rowCol(&num_rows, &num_cols);
+    // ROWCOL numCutRows numCutCols
+    // Specifies the number of cut rows and columns that make up the cut array.
+    // Default: 1, for both values
+    // Type: Positive integer, for both values
+    // --lefdef_reference_5.8 p817
+    {
+      int32_t num_rows = 1;
+      int32_t num_cols = 1;
+      if(def_via->hasRowCol()){
+        def_via->rowCol(&num_rows, &num_cols);
+      }
       master_generate->set_cut_row_col(num_rows, num_cols);
 
       /// if pattern exist, cut array must follow the pattern rule

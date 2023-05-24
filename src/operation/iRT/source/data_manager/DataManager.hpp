@@ -20,6 +20,8 @@
 #include "Database.hpp"
 #include "Helper.hpp"
 #include "Logger.hpp"
+#include "SortStatus.hpp"
+#include "SortType.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
@@ -85,6 +87,11 @@ class DataManager
   void buildLayerViaMasterList();
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
+  bool sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   void buildBlockageList();
   void transBlockageList();
   void makeBlockageList();

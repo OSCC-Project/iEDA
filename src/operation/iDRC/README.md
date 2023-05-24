@@ -16,20 +16,20 @@ iDRC是iEDA工具链中的设计规则检查工具，目前支持28nm工艺下�
 |   最小面积规则    |最小面积规则规定了各个工艺层的导体面积不能小于TechFile中指定的最小面积参参数值，如下图1.4左图中的Area示意                                                |
 |  最小孔洞面积规则   | 最小包围面积规定了由导体环绕包围形成的孔洞面积不能小于TechFile指定的最小面积参数值，如下图1.4右图中的Enclosed Area示意。                                             |
 
-<img src="doc/md/图片/minstep.png" style="zoom:80%;" />
+<div align=center> <img src="doc/md/图片/minstep.png" style="zoom:80%;" />
 
 ​                                               图1.1 最小步长规则对应的检查对象
 
-<img src="doc/md/图片/enclosure.png" style="zoom:60%;" />
+<div align=center> <img src="doc/md/图片/enclosure.png" style="zoom:60%;" />
 
 ​                                               图1.2 通孔包围规则对应的检查对象
 
-<img src="doc/md/图片/图片1.3.png" style="zoom:60%;" />
+<div align=center> <img src="doc/md/图片/图片1.3.png" style="zoom:60%;" />
 
 ​                                               图1.3 导体图形的内边间距（最小宽度规则对应的检查对象）
 ​                                                 
 
-<img src="doc/md/图片/图片1.4.png" style="zoom:50%;" />
+<div align=center> <img src="doc/md/图片/图片1.4.png" style="zoom:50%;" />
 
 ​                                               图1.4 左图为导体图形的面积（最小面积规则对应的检查对象）
 
@@ -46,31 +46,31 @@ iDRC是iEDA工具链中的设计规则检查工具，目前支持28nm工艺下�
 | 金属最小CornerFill间隔规则    | 该规则要求在金属线外边缘存在符合TechFile要求的拐角处缺口型区域时，在该缺口处虚拟出一块金属，检查该虚拟出的金属与其他金属的间隔，如图1.10所示。          |
 | Cut最小间隔规则    | 该规则要求同一Cut层中的任何两个Cut之间的间隔不能小于规定值,Cut层的Spacing计算虽然一般默认为edge-to-edge的欧式距离，但有些情况下会因为规则中的某些字段而发生改变，某些情况下会以两者在X、Y方向上的最大投影长度来代替欧式距离来计算Spacing，如图1.11所示。          |
 
-<img src="doc/md/图片/图片1.1.png" style="zoom:80%;" />
+<div align=center> <img src="doc/md/图片/图片1.1.png" style="zoom:80%;" />
 
 ​                                               图1.5 短路违规情况
 
-<img src="doc/md/图片/图1.2.png" style="zoom:80%;" />
+<div align=center> <img src="doc/md/图片/图1.2.png" style="zoom:80%;" />
 
 ​                                               图1.6 导体图形外边间距示意图（最小间距规则对应检查对象）
 
-<img src="doc/md/图片/EOL.png" style="zoom:80%;" />
+<div align=center> <img src="doc/md/图片/EOL.png" style="zoom:80%;" />
 
 ​                                               图1.7  金属最小线端（EOL）间隔规则对应的检查对象
 
-<img src="doc/md/图片/notch.png" style="zoom:80%;" />
+<div align=center> <img src="doc/md/图片/notch.png" style="zoom:80%;" />
 
 ​                                               图1.8 金属最小凹槽（Notch）间隔规则对应的检查对象
 
-<img src="doc/md/图片/jog.png" style="zoom:50%;" />
+<div align=center> <img src="doc/md/图片/jog.png" style="zoom:50%;" />
 
 ​                                               图1.9 金属最小Jog间隔规则对应的检查对象
 
-<img src="doc/md/图片/corner_fill.png" style="zoom:50%;" />
+<div align=center> <img src="doc/md/图片/corner_fill.png" style="zoom:50%;" />
 
 ​                                               图1.10 金属最小CornerFill间隔规则对应的检查对象
 
-<img src="doc/md/图片/cut_spacing.png" style="zoom:100%;" />
+<div align=center> <img src="doc/md/图片/cut_spacing.png" style="zoom:100%;" />
 
 ​                                               图1.11 Cut最小间隔规则对应的检查对象
 

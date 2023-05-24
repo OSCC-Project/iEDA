@@ -18,7 +18,7 @@
 
 #include "builder.h"
 #include "flow_config.h"
-#include "iPL_API.hh"
+#include "PLAPI.hh"
 #include "idm.h"
 
 namespace iplf {

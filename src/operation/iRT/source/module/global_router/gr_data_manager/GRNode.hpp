@@ -73,49 +73,50 @@ class GRNode : public LayerCoord
   bool isOBS(irt_int net_idx, Orientation orientation)
   {
     bool is_obs = true;
-    if (RTUtil::exist(_net_access_map, net_idx) && RTUtil::exist(_net_access_map[net_idx], orientation)) {
-      // 存在绿通
-      is_obs = false;
-    } else if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-      // wire剩余可以给via
-      is_obs = ((_wire_area_supply - _wire_area_demand + _via_area_supply - _via_area_demand) < _single_via_area);
+    if (RTUtil::exist(_net_access_map, net_idx)) {
+      // net在node中有引导，但是方向不对，视为障碍
+      is_obs = !RTUtil::exist(_net_access_map[net_idx], orientation);
     } else {
-      // via剩余不可转wire
-      is_obs = ((_wire_area_supply - _wire_area_demand + std::min(_via_area_supply - _via_area_demand, 0)) < _single_wire_area);
+      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+        // wire剩余可以给via
+        is_obs = ((_wire_area_supply - _wire_area_demand + _via_area_supply - _via_area_demand) < _single_via_area);
+      } else {
+        // via剩余不可转wire
+        is_obs = ((_wire_area_supply - _wire_area_demand + std::min(_via_area_supply - _via_area_demand, 0)) < _single_wire_area);
+      }
     }
     return is_obs;
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
-    if (RTUtil::exist(_net_access_map, net_idx) && RTUtil::exist(_net_access_map[net_idx], orientation)) {
-      // 存在绿通
-      cost += 0;
-    } else if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-      cost += RTUtil::sigmoid(_via_area_demand, _wire_area_supply - _wire_area_demand + _via_area_supply);
+    if (RTUtil::exist(_net_access_map, net_idx)) {
+      // net在node中有引导，但是方向不对，视为障碍
+      cost += !RTUtil::exist(_net_access_map[net_idx], orientation) ? 1 : 0;
     } else {
-      cost += RTUtil::sigmoid(_wire_area_demand, _wire_area_supply + std::min(_via_area_supply - _via_area_demand, 0));
+      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+        // wire剩余可以给via
+        cost += RTUtil::sigmoid(_via_area_demand, _wire_area_supply - _wire_area_demand + _via_area_supply);
+      } else {
+        // via剩余不可转wire
+        cost += RTUtil::sigmoid(_wire_area_demand, _wire_area_supply + std::min(_via_area_supply - _via_area_demand, 0));
+      }
     }
     if (!RTUtil::exist(_net_region_map, net_idx)) {
       cost += static_cast<double>(_net_region_map.size());
     }
     return cost;
   }
-  void addWireDemand(irt_int net_idx)
+  void addDemand(irt_int net_idx, std::set<Orientation> orientation_set)
   {
-    if (RTUtil::exist(_net_access_map, net_idx)) {
-      return;
+    if (RTUtil::exist(orientation_set, Orientation::kEast) || RTUtil::exist(orientation_set, Orientation::kWest)
+        || RTUtil::exist(orientation_set, Orientation::kSouth) || RTUtil::exist(orientation_set, Orientation::kNorth)) {
+      _wire_area_demand += _single_wire_area;
+      _net_queue.push(net_idx);
+    } else if (RTUtil::exist(orientation_set, Orientation::kUp) || RTUtil::exist(orientation_set, Orientation::kDown)) {
+      _via_area_demand += _single_via_area;
+      _net_queue.push(net_idx);
     }
-    _wire_area_demand += _single_wire_area;
-    _net_queue.push(net_idx);
-  }
-  void addViaDemand(irt_int net_idx)
-  {
-    if (RTUtil::exist(_net_access_map, net_idx)) {
-      return;
-    }
-    _via_area_demand += _single_via_area;
-    _net_queue.push(net_idx);
   }
 #if 1  // astar
   GRNodeState& get_state() { return _state; }
@@ -143,7 +144,12 @@ class GRNode : public LayerCoord
   irt_int _via_area_supply = 0;
   irt_int _wire_area_demand = 0;
   irt_int _via_area_demand = 0;
-  // 使用绿通时，不消耗资源
+  /**
+   * 路线引导
+   *  当对应net出现在引导中时，必须按照引导的方向布线，否则视为障碍
+   *  当对应net不在引导中时，视为普通线网布线
+   *
+   */
   std::map<irt_int, std::set<Orientation>> _net_access_map;
   std::queue<irt_int> _net_queue;
 #if 1  // astar

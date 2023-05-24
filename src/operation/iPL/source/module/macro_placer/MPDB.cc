@@ -210,6 +210,59 @@ void MPDB::writeGDS(string file_name)
   gds_file.close();
 }
 
+void MPDB::writePartitonGDS(string file_name, map<FPInst*, int> partition_result) {
+  std::ofstream gds_file;
+  gds_file.open(file_name);
+  gds_file << "HEADER 600" << std::endl;
+  gds_file << "BGNLIB" << std::endl;
+  gds_file << "LIBNAME DensityLib" << std::endl;
+  gds_file << "UNITS 0.001 1e-9" << std::endl;
+  gds_file << "BGNSTR" << std::endl;
+  gds_file << "STRNAME Die" << std::endl;
+
+  // write die
+  FPRect* die = _db_wrapper->get_layout()->get_die_shape();
+  int dx = die->get_width();
+  int dy = die->get_height();
+  int x = die->get_x();
+  int y = die->get_y();
+  gds_file << "BOUNDARY" << std::endl;
+  gds_file << "LAYER 0" << std::endl;
+  gds_file << "DATATYPE 0" << std::endl;
+  gds_file << "XY" << std::endl;
+  gds_file << x << " : " << y << std::endl;
+  gds_file << x + dx << " : " << y << std::endl;
+  gds_file << x + dx << " : " << y + dy << std::endl;
+  gds_file << x << " : " << y + dy << std::endl;
+  gds_file << x << " : " << y << std::endl;
+  gds_file << "ENDEL" << std::endl;
+
+  // write core
+  FPRect* core = _db_wrapper->get_layout()->get_core_shape();
+  dx = core->get_width();
+  dy = core->get_height();
+  x = core->get_x();
+  y = core->get_y();
+  gds_file << "BOUNDARY" << std::endl;
+  gds_file << "LAYER 1" << std::endl;
+  gds_file << "DATATYPE 0" << std::endl;
+  gds_file << "XY" << std::endl;
+  gds_file << x << " : " << y << std::endl;
+  gds_file << x + dx << " : " << y << std::endl;
+  gds_file << x + dx << " : " << y + dy << std::endl;
+  gds_file << x << " : " << y + dy << std::endl;
+  gds_file << x << " : " << y << std::endl;
+  gds_file << "ENDEL" << std::endl;
+
+  for (auto iter = partition_result.begin(); iter != partition_result.end(); ++iter) {
+    writeMacro(gds_file, iter->first, iter->second + 5);
+  }
+
+  gds_file << "ENDSTR" << std::endl;
+  gds_file << "ENDLIB" << std::endl;
+  gds_file.close();
+}
+
 void MPDB::initMPDB()
 {
   vector<FPInst*> macro_list = _db_wrapper->get_design()->get_macro_list();
@@ -376,6 +429,9 @@ void MPDB::writeDB()
   for (FPInst* std_cell : std_cell_list) {
     if (!std_cell->isFixed()) {
       new_macro = findNewMacro(std_cell);
+      if (nullptr == new_macro) {
+        continue;
+      }
       x = new_macro->get_center_x();
       y = new_macro->get_center_y();
       std_cell->set_x(x);

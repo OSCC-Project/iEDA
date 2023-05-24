@@ -77,8 +77,10 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildOBSTaskMap(TAPanel& ta_panel);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(irt_int layer_idx, PlanarRect& blockage);
-  std::vector<Segment<PlanarCoord>> getSegmentList(irt_int layer_idx, PlanarRect& blockage);
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(TAPanel& ta_panel,
+                                                                                           PlanarRect& enlarge_real_rect);
+  std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, PlanarRect& enlarge_real_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void buildCostTaskMap(TAPanel& ta_panel);
 #endif
 
@@ -111,15 +113,21 @@ class TrackAssigner
   void updatePathResult(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
+  void updateEnvironment(TAPanel& ta_panel, TATask& ta_task);
+  void updateDemand(TAPanel& ta_panel, TATask& ta_task);
+  void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getJointCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
+  double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   Orientation getOrientation(TANode* start_node, TANode* end_node);
   double getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
 #endif
 
@@ -129,7 +137,6 @@ class TrackAssigner
 
 #if 1  // count ta_panel
   void countTAPanel(TAPanel& ta_panel);
-  std::vector<LayerRect> convertToRectList(std::vector<Segment<LayerCoord>>& segment_list);
 #endif
 
 #if 1  // update ta_model
