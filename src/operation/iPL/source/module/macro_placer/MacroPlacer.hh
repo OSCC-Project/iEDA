@@ -49,6 +49,9 @@ class MacroPlacer
   // open functions
   void runMacroPlacer();
 
+  void darwPartition();
+  map<FPInst*, int> partitionInst(int part);
+
  private:
   void init();
   void updateDensity();
