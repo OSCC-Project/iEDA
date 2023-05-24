@@ -276,39 +276,47 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
         }
         layer_idx_list.push_back(layer_idx);
       }
-      // generate access point
-      for (irt_int i = 0; i < static_cast<irt_int>(layer_idx_list.size()) - 1; i++) {
-        // track grid
-        TrackGrid pref_x_track = routing_layer_list[layer_idx_list[i]].getPreferTrackGrid();
-        TrackGrid pref_y_track = routing_layer_list[layer_idx_list[i + 1]].getPreferTrackGrid();
-        if (routing_layer_list[layer_idx_list[i]].isPreferH()) {
-          std::swap(pref_x_track, pref_y_track);
-        }
-        std::vector<irt_int> pref_x_list = RTUtil::getClosedScaleList(lb_x, rt_x, pref_x_track);
-        std::vector<irt_int> pref_y_list = RTUtil::getClosedScaleList(lb_y, rt_y, pref_y_track);
-        for (irt_int x : pref_x_list) {
-          for (irt_int y : pref_y_list) {
+      // track grid
+      for (irt_int layer_idx : layer_idx_list) {
+        for (irt_int x : RTUtil::getClosedScaleList(lb_x, rt_x, routing_layer_list[layer_idx].getXTrackGrid())) {
+          for (irt_int y : RTUtil::getClosedScaleList(lb_y, rt_y, routing_layer_list[layer_idx].getYTrackGrid())) {
             access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kTrackGrid);
           }
         }
-        irt_int mid_x = (lb_x + rt_x) / 2;
-        irt_int mid_y = (lb_y + rt_y) / 2;
-        // on track
-        for (irt_int x : pref_x_list) {
+      }
+      for (irt_int i = 0; i < static_cast<irt_int>(layer_idx_list.size()) - 1; i++) {
+        RoutingLayer curr_routing_layer = routing_layer_list[layer_idx_list[i]];
+        RoutingLayer adj_routing_layer = routing_layer_list[layer_idx_list[i + 1]];
+        for (irt_int x : RTUtil::getClosedScaleList(lb_x, rt_x, curr_routing_layer.getXTrackGrid())) {
+          for (irt_int y : RTUtil::getClosedScaleList(lb_y, rt_y, adj_routing_layer.getYTrackGrid())) {
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kTrackGrid);
+          }
+        }
+        for (irt_int y : RTUtil::getClosedScaleList(lb_y, rt_y, curr_routing_layer.getYTrackGrid())) {
+          for (irt_int x : RTUtil::getClosedScaleList(lb_x, rt_x, adj_routing_layer.getXTrackGrid())) {
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kTrackGrid);
+          }
+        }
+      }
+      // on track
+      irt_int mid_x = (lb_x + rt_x) / 2;
+      irt_int mid_y = (lb_y + rt_y) / 2;
+      for (irt_int layer_idx : layer_idx_list) {
+        for (irt_int x : RTUtil::getClosedScaleList(lb_x, rt_x, routing_layer_list[layer_idx].getXTrackGrid())) {
           for (irt_int y : {lb_y, mid_y, rt_y}) {
             access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
           }
         }
-        for (irt_int y : pref_y_list) {
+        for (irt_int y : RTUtil::getClosedScaleList(lb_y, rt_y, routing_layer_list[layer_idx].getYTrackGrid())) {
           for (irt_int x : {lb_x, mid_x, rt_x}) {
             access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
           }
         }
-        // on shape
-        for (irt_int x : {lb_x, mid_x, rt_x}) {
-          for (irt_int y : {lb_y, mid_y, rt_y}) {
-            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnShape);
-          }
+      }
+      // on shape
+      for (irt_int x : {lb_x, mid_x, rt_x}) {
+        for (irt_int y : {lb_y, mid_y, rt_y}) {
+          access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnShape);
         }
       }
     }
