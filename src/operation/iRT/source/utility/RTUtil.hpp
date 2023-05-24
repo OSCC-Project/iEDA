@@ -748,6 +748,29 @@ class RTUtil
     return cutting_rect_list;
   }
 
+  static std::vector<PlanarRect> getMergeRectList(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
+  {
+    gtl::polygon_90_set_data<int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += RTUtil::convertToGTLRect(rect);
+    }
+
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    if (direction == Direction::kHorizontal) {
+      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::HORIZONTAL);
+    } else if (direction == Direction::kVertical) {
+      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::VERTICAL);
+    } else {
+      LOG_INST.error(Loc::current(), "The direction is error!");
+    }
+
+    std::vector<PlanarRect> merge_rect_list;
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      merge_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return merge_rect_list;
+  }
+
 #endif
 
 #if 1  // 形状位置变化计算
