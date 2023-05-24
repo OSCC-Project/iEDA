@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -24,6 +24,7 @@
 #include "StaReport.hh"
 
 #include <algorithm>
+#include <filesystem>
 #include <optional>
 #include <queue>
 #include <stack>
@@ -359,7 +360,7 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
       float vertex_derate =
           path_delay_data->get_derate() ? *(path_delay_data->get_derate()) : 1;
       unsigned is_input = own_vertex->get_design_obj()->isInput();
-      vertex_derate = is_input == 1 ? 1 : vertex_derate;
+      vertex_derate = is_input ? 1.0 : vertex_derate;
       if (is_derate) {
         (*report_tbl) << own_vertex->getNameWithCellName() << TABLE_SKIP
                       << fix_point_str(vertex_load)
@@ -693,9 +694,59 @@ unsigned StaReportPathDump::operator()(StaSeqPathData* seq_path_data) {
 
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
-  const char* text_file_name = Str::printf("path_%s.txt", tmp.c_str());
+  const char* text_file_name = Str::printf("path_%s.yml", tmp.c_str());
 
   dump_yaml.printText(text_file_name);
+
+  return 1;
+}
+
+StaReportPathYaml::StaReportPathYaml(const char* rpt_file_name,
+                                     AnalysisMode analysis_mode,
+                                     unsigned n_worst)
+    : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief print report path in yaml not report table.
+ *
+ * @param seq_path_data
+ * @return unsigned
+ */
+unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
+  StaDumpDelayYaml dump_delay_yaml;
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_delay_yaml.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_delay_yaml.set_trans_type(path_delay_data->get_trans_type());
+    own_vertex->exec(dump_delay_yaml);
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_delay_yaml);
+    }
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  std::string design_work_space =
+      dump_delay_yaml.getSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/path";
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  const char* text_file_name = Str::printf(
+      "%s/path_delay_%s_%d.yml", path_dir.c_str(), tmp.c_str(), file_id++);
+
+  dump_delay_yaml.printText(text_file_name);
 
   return 1;
 }

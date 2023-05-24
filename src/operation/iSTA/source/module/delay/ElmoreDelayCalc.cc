@@ -448,19 +448,19 @@ void RcTree::updateRcTiming() {
   updateLDelay(nullptr, _root);
   updateResponse(nullptr, _root);
 
-#if 0
-  updateMC(nullptr, _root);
-  updateM2(nullptr, _root);
+  if (c_print_delay_yaml) {
+    updateMC(nullptr, _root);
+    updateM2(nullptr, _root);
 
-  // WaveformApproximation wave_form;
-  // int load_nodes_pin_cap_sum = 0;
-  // PiModel pi_model =
-  //     wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
+    // WaveformApproximation wave_form;
+    // int load_nodes_pin_cap_sum = 0;
+    // PiModel pi_model =
+    //     wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
 
-  updateDelayECM(nullptr, _root);
-  updateMCC(nullptr, _root);
-  updateM2C(nullptr, _root);
-#endif
+    updateDelayECM(nullptr, _root);
+    updateMCC(nullptr, _root);
+    updateM2C(nullptr, _root);
+  }
 
   // printGraphViz();
 }
@@ -867,13 +867,30 @@ double RcNet::getResistance(AnalysisMode mode, TransType trans_type,
   return res;
 }
 
-std::optional<double> RcNet::delay(DesignObject& to) {
+/**
+ * @brief get delay of rc node.
+ *
+ * @param to
+ * @param delay_method
+ * @return std::optional<double>
+ */
+std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
   if (_rct.index() == 0) {
     return std::nullopt;
   }
 
   auto node = std::get<RcTree>(_rct).node(to.getFullName());
-  return node->delay();
+  std::optional<double> delay;
+  if (delay_method == DelayMethod::kElmore) {
+    delay = node->delay();
+  } else if (delay_method == DelayMethod::kD2M) {
+    delay = node->delayD2M();
+  } else if (delay_method == DelayMethod::kECM) {
+    delay = node->delayECM();
+  } else {
+    delay = node->delayD2MM();
+  }
+  return delay;
 }
 
 std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
