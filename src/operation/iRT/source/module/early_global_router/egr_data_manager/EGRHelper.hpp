@@ -52,14 +52,11 @@ class EGRHelper
     _cut_layer_name_idx_map = cut_layer_name_idx_map;
   }
 
-  // function
-
  private:
   std::map<irt_int, irt_int> _db_to_egr_routing_layer_idx_map;
   std::map<std::string, irt_int> _routing_layer_name_idx_map;
   std::map<irt_int, irt_int> _db_to_egr_cut_layer_idx_map;
   std::map<std::string, irt_int> _cut_layer_name_idx_map;
-  std::string _design_name;
 };
 
 }  // namespace irt

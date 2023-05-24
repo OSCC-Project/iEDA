@@ -54,7 +54,6 @@ class EGRStat
   void set_total_via_num(const irt_int& total_via_num) { _total_via_num = total_via_num; }
 
  private:
-  // statistics result
   std::vector<std::map<irt_int, irt_int, std::greater<int>>> _overflow_map_list;
   std::map<irt_int, irt_int, std::greater<int>> _total_overflow_map;
   irt_int _total_track_overflow = 0;
