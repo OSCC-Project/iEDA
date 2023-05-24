@@ -1805,34 +1805,48 @@ void TrackAssigner::reportTable(TAModel& ta_model)
 
   TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
   double total_wire_length = ta_model_stat.get_total_wire_length();
-  double total_net_and_net_violation_area = ta_model_stat.get_total_net_and_net_violation_area();
-  double total_net_and_obs_violation_area = ta_model_stat.get_total_net_and_obs_violation_area();
 
   fort::char_table table;
   table.set_border_style(FT_SOLID_STYLE);
 
   table << fort::header << "Routing Layer"
-        << "Wire Length / um"
-        << "Net And Net Violation Area / um^2"
-        << "Net And Obs Violation Area / um^2" << fort::endr;
+        << "Wire Length / um" << fort::endr;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     double layer_wire_length = ta_model_stat.get_layer_wire_length_map()[routing_layer.get_layer_idx()];
+    table << routing_layer.get_layer_name()
+          << RTUtil::getString(layer_wire_length, "(", RTUtil::getPercentage(layer_wire_length, total_wire_length), "%)") << fort::endr;
+  }
+  table << fort::header << "Total" << total_wire_length << fort::endr;
+
+  for (std::string table_str : RTUtil::splitString(table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
+
+  double total_net_and_net_violation_area = ta_model_stat.get_total_net_and_net_violation_area();
+  double total_net_and_obs_violation_area = ta_model_stat.get_total_net_and_obs_violation_area();
+
+  fort::char_table violation_table;
+  violation_table.set_border_style(FT_SOLID_STYLE);
+
+  violation_table << fort::header << "Routing Layer"
+                  << "Net And Net Violation Area / um^2"
+                  << "Net And Obs Violation Area / um^2" << fort::endr;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
     double layer_net_and_net_violation_area = ta_model_stat.get_layer_net_and_net_violation_area_map()[routing_layer.get_layer_idx()];
     double layer_net_and_obs_violation_area = ta_model_stat.get_layer_net_and_obs_violation_area_map()[routing_layer.get_layer_idx()];
 
-    table << routing_layer.get_layer_name()
-          << RTUtil::getString(layer_wire_length, "(", RTUtil::getPercentage(layer_wire_length, total_wire_length), "%)")
-          << RTUtil::getString(layer_net_and_net_violation_area, "(",
-                               RTUtil::getPercentage(layer_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
-          << RTUtil::getString(layer_net_and_obs_violation_area, "(",
-                               RTUtil::getPercentage(layer_net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
-          << fort::endr;
+    violation_table << routing_layer.get_layer_name()
+                    << RTUtil::getString(layer_net_and_net_violation_area, "(",
+                                         RTUtil::getPercentage(layer_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
+                    << RTUtil::getString(layer_net_and_obs_violation_area, "(",
+                                         RTUtil::getPercentage(layer_net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
+                    << fort::endr;
   }
-  table << fort::header << "Total" << total_wire_length << total_net_and_net_violation_area << total_net_and_obs_violation_area
-        << fort::endr;
+  violation_table << fort::header << "Total" << total_net_and_net_violation_area << total_net_and_obs_violation_area << fort::endr;
 
-  for (std::string table_str : RTUtil::splitString(table.to_string(), '\n')) {
+  for (std::string table_str : RTUtil::splitString(violation_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
 }

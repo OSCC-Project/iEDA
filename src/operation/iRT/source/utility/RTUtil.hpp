@@ -555,6 +555,66 @@ class RTUtil
     }
   }
 
+  static std::vector<PlanarRect> getOverlap(std::vector<std::vector<PlanarRect>>& rect_comb_list)
+  {
+    if (rect_comb_list.size() < 2) {
+      return {};
+    }
+    std::vector<gtl::polygon_90_set_data<int>> poly_set_list;
+    for (std::vector<PlanarRect>& rect_list : rect_comb_list) {
+      gtl::polygon_90_set_data<int> poly_set;
+      for (PlanarRect& rect : rect_list) {
+        poly_set += RTUtil::convertToGTLRect(rect);
+      }
+      poly_set_list.push_back(poly_set);
+    }
+    gtl::polygon_90_set_data<int> poly_result = poly_set_list.front();
+    for (gtl::polygon_90_set_data<int>& poly_set : poly_set_list) {
+      poly_result *= poly_set;
+    }
+
+    std::vector<PlanarRect> overlap_rect_list;
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, poly_result);
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      overlap_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+
+    return overlap_rect_list;
+  }
+
+  static std::vector<PlanarRect> getOverlap2(std::vector<std::vector<PlanarRect>>& rect_comb_list)
+  {
+    if (rect_comb_list.size() < 2) {
+      return {};
+    }
+    std::vector<PlanarRect> overlap_rect_list = rect_comb_list.front();
+    for (size_t i = 1; i < rect_comb_list.size(); i++) {
+      std::vector<PlanarRect> overlap_rect_list_temp;
+      for (PlanarRect rect1 : overlap_rect_list) {
+        for (PlanarRect rect2 : rect_comb_list[i]) {
+          if (!isOpenOverlap(rect1, rect2)) {
+            continue;
+          }
+          overlap_rect_list_temp.push_back(getOverlap(rect1, rect2));
+        }
+      }
+      overlap_rect_list = overlap_rect_list_temp;
+    }
+
+    std::vector<PlanarRect> aaa;
+    gtl::polygon_90_set_data<int> poly_set;
+    for (PlanarRect& rect : overlap_rect_list) {
+      poly_set += RTUtil::convertToGTLRect(rect);
+    }
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, poly_set);
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      aaa.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return aaa;
+  }
+
   // 计算rect在master上覆盖的面积占master总面积的比例
   static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
   {
@@ -680,7 +740,7 @@ class RTUtil
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
   {
     std::vector<PlanarRect> cutting_rect_list;
-
+#if 1
     gtl::polygon_90_set_data<int> poly_set;
     poly_set += RTUtil::convertToGTLRect(master);
     poly_set -= RTUtil::convertToGTLRect(rect);
@@ -689,9 +749,98 @@ class RTUtil
     for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
       cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
+#else
+    if (!isOpenOverlap(master, rect)) {
+      return {master};
+    }
+    std::vector<irt_int> x_scale_list = {master.get_lb_x(), master.get_rt_x()};
+    for (irt_int x_scale : {rect.get_lb_x(), rect.get_rt_x()}) {
+      if (master.get_lb_x() < x_scale && x_scale < master.get_rt_x()) {
+        x_scale_list.emplace_back(x_scale);
+      }
+    }
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+    std::vector<irt_int> y_scale_list = {master.get_lb_y(), master.get_rt_y()};
+    for (irt_int y_scale : {rect.get_lb_y(), rect.get_rt_y()}) {
+      if (master.get_lb_y() < y_scale && y_scale < master.get_rt_y()) {
+        y_scale_list.emplace_back(y_scale);
+      }
+    }
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+
+    for (size_t i = 0; i < x_scale_list.size(); i++) {
+      for (size_t j = i + 1; j < x_scale_list.size(); j++) {
+        irt_int lb_y = y_scale_list.front();
+        for (size_t m = 0; m < y_scale_list.size(); m++) {
+          for (size_t n = m + 1; n < y_scale_list.size(); n++) {
+            PlanarRect splited_rect(x_scale_list[i], y_scale_list[m], x_scale_list[j], y_scale_list[n]);
+            if (!isOpenOverlap(rect, splited_rect)) {
+              continue;
+            }
+            // merge
+            if (lb_y == splited_rect.get_rt_y()) {
+              continue;
+            }
+            cutting_rect_list.emplace_back(x_scale_list[i], lb_y, x_scale_list[j], splited_rect.get_lb_y());
+            lb_y = splited_rect.get_rt_y();
+          }
+        }
+        cutting_rect_list.emplace_back(x_scale_list[i], lb_y, x_scale_list[j], y_scale_list.back());
+      }
+    }
+
+#endif
     return cutting_rect_list;
   }
 
+  static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, std::vector<PlanarRect> rect_list)
+  {
+    std::vector<PlanarRect> cutting_rect_list;
+    gtl::polygon_90_set_data<int> poly_set;
+    poly_set += RTUtil::convertToGTLRect(master);
+    for (PlanarRect& rect : rect_list) {
+      poly_set -= RTUtil::convertToGTLRect(rect);
+    }
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, poly_set);
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return cutting_rect_list;
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList2(const PlanarRect& master, std::vector<PlanarRect> rect_list)
+  {
+    std::vector<PlanarRect> cutting_rect_list;
+    std::queue<PlanarRect> cutting_queue = initQueue(master);
+    while (!cutting_queue.empty()) {
+      PlanarRect cutting_rect = getFrontAndPop(cutting_queue);
+      bool is_cutted = false;
+      for (PlanarRect rect : rect_list) {
+        if (!RTUtil::isOpenOverlap(cutting_rect, rect)) {
+          continue;
+        }
+        is_cutted = true;
+        std::vector<PlanarRect> temp_rect_list = getCuttingRectList(cutting_rect, rect);
+        RTUtil::addListToQueue(cutting_queue, temp_rect_list);
+      }
+      if (!is_cutted) {
+        cutting_rect_list.push_back(cutting_rect);
+      }
+    }
+
+    std::vector<PlanarRect> temp_cutting_rect_list;
+    gtl::polygon_90_set_data<int> poly_set;
+    for (PlanarRect& rect : cutting_rect_list) {
+      poly_set += RTUtil::convertToGTLRect(rect);
+    }
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, poly_set);
+    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+      temp_cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return temp_cutting_rect_list;
+  }
 #endif
 
 #if 1  // 形状位置变化计算
@@ -778,7 +927,24 @@ class RTUtil
   {
     RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
     RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+    if (rect.get_lb_x() > rect.get_rt_x() || rect.get_lb_y() > rect.get_rt_y()) {
+      return PlanarRect(-1, -1, -1, -1);
+    }
     return rect;
+  }
+
+  static bool hasReducedRect(PlanarRect rect, irt_int reduce_size)
+  {
+    return hasReducedRect(rect, reduce_size, reduce_size, reduce_size, reduce_size);
+  }
+
+  static bool hasReducedRect(PlanarRect rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset, irt_int rt_x_minus_offset,
+                             irt_int rt_y_minus_offset)
+  {
+    RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
+    RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+
+    return (rect.get_lb_x() <= rect.get_rt_x() && rect.get_lb_y() <= rect.get_rt_y());
   }
 
   // 偏移矩形
