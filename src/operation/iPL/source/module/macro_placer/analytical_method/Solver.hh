@@ -13,8 +13,8 @@
 
 #include <eigen3/Eigen/Dense>
 #include <memory>
-using Eigen::MatrixXf;
-using Eigen::VectorXf;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace ipl {
 class Problem;
@@ -24,7 +24,7 @@ class Solver
  public:
   explicit Solver(std::shared_ptr<Problem> problem) : _problem(problem){};
   ~Solver(){};
-  void doNesterovSolve(MatrixXf& solution);
+  void doNesterovSolve(MatrixXd& solution);
   void set_steplength_bound(float l, float u)
   {
     if (u > l)
@@ -34,10 +34,7 @@ class Solver
   }
 
  private:
-  MatrixXf _gradiant;
-  VectorXf _variable;
-  VectorXf _parameter;
-  VectorXf _cost;
+  MatrixXd _gradiant;
 
   float _steplength_l;
   float _steplength_u;
