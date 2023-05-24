@@ -2059,52 +2059,75 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _dr_data_manager.getDatabase().get_cut_layer_list();
 
-  // report overlap info
+  // wire table
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   double total_wire_length = dr_model_stat.get_total_wire_length();
+
+  fort::char_table wire_table;
+  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table << fort::header << "Routing Layer"
+             << "Wire Length / um" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double layer_wire_length = dr_model_stat.get_routing_wire_length_map()[routing_layer.get_layer_idx()];
+
+    wire_table << routing_layer.get_layer_name()
+               << RTUtil::getString(layer_wire_length, "(", RTUtil::getPercentage(layer_wire_length, total_wire_length), "%)")
+               << fort::endr;
+  }
+  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+
+  // via table
+  irt_int total_via_number = dr_model_stat.get_total_via_number();
+  std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
+
+  fort::char_table via_table;
+  via_table.set_border_style(FT_SOLID_STYLE);
+  via_table << fort::header << "Cut Layer"
+            << "Via number" << fort::endr;
+  for (CutLayer& cut_layer : cut_layer_list) {
+    irt_int cut_via_number = cut_via_number_map[cut_layer.get_layer_idx()];
+    via_table << cut_layer.get_layer_name()
+              << RTUtil::getString(cut_via_number, "(", RTUtil::getPercentage(cut_via_number, total_via_number), "%)") << fort::endr;
+  }
+  via_table << fort::header << "Total" << total_via_number << fort::endr;
+
+  // report wire via info
+  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
+  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
+  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
+    std::string table_str;
+    if (i < wire_str_list.size()) {
+      table_str += wire_str_list[i];
+    }
+    table_str += " ";
+    if (i < via_str_list.size()) {
+      table_str += via_str_list[i];
+    }
+    LOG_INST.info(Loc::current(), table_str);
+  }
+
+  // report overlap info
   double total_net_and_net_violation_area = dr_model_stat.get_total_net_and_net_violation_area();
   double total_net_and_obs_violation_area = dr_model_stat.get_total_net_and_obs_violation_area();
 
-  fort::char_table routing_table;
-  routing_table.set_border_style(FT_SOLID_STYLE);
-  routing_table << fort::header << "Routing Layer"
-                << "Wire Length / um"
+  fort::char_table overlap_table;
+  overlap_table.set_border_style(FT_SOLID_STYLE);
+  overlap_table << fort::header << "Routing Layer"
                 << "Net And Net Violation Area / um^2"
                 << "Net And Obs Violation Area / um^2" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double layer_wire_length = dr_model_stat.get_routing_wire_length_map()[routing_layer.get_layer_idx()];
     double routing_net_and_net_violation_area = dr_model_stat.get_routing_net_and_net_violation_area_map()[routing_layer.get_layer_idx()];
     double routing_net_and_obs_violation_area = dr_model_stat.get_routing_net_and_obs_violation_area_map()[routing_layer.get_layer_idx()];
 
-    routing_table << routing_layer.get_layer_name()
-                  << RTUtil::getString(layer_wire_length, "(", RTUtil::getPercentage(layer_wire_length, total_wire_length), "%)")
+    overlap_table << routing_layer.get_layer_name()
                   << RTUtil::getString(routing_net_and_net_violation_area, "(",
                                        RTUtil::getPercentage(routing_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
                   << RTUtil::getString(routing_net_and_obs_violation_area, "(",
                                        RTUtil::getPercentage(routing_net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
                   << fort::endr;
   }
-  routing_table << fort::header << "Total" << total_wire_length << total_net_and_net_violation_area << total_net_and_obs_violation_area
-                << fort::endr;
-  for (std::string table_str : RTUtil::splitString(routing_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
-
-  // report via info
-  irt_int total_via_number = dr_model_stat.get_total_via_number();
-  std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
-
-  fort::char_table cut_table;
-  cut_table.set_border_style(FT_SOLID_STYLE);
-  cut_table << fort::header << "Cut Layer"
-            << "Via number" << fort::endr;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    irt_int cut_via_number = cut_via_number_map[cut_layer.get_layer_idx()];
-    cut_table << cut_layer.get_layer_name()
-              << RTUtil::getString(cut_via_number, "(", RTUtil::getPercentage(cut_via_number, total_via_number), "%)") << fort::endr;
-  }
-  cut_table << fort::header << "Total" << total_via_number << fort::endr;
-  for (std::string table_str : RTUtil::splitString(cut_table.to_string(), '\n')) {
+  overlap_table << fort::header << "Total" << total_net_and_net_violation_area << total_net_and_obs_violation_area << fort::endr;
+  for (std::string table_str : RTUtil::splitString(overlap_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
 }
