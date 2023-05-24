@@ -21,7 +21,7 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read verilog
 #===========================================================
-verilog_init -path $VERILOG_PATH -top gcd
+verilog_init -path ./result/verilog/gcd.v -top gcd
 
 #===========================================================
 ##   read def
@@ -32,8 +32,8 @@ verilog_init -path $VERILOG_PATH -top gcd
 ##   init floorplan
 ##   gcd & uart
 #===========================================================
-set DIE_AREA "0.0    0.0   279.96   280.128"
-set CORE_AREA "9.996 10.08 269.964  270.048"
+set DIE_AREA "0.0    0.0   149.96   150.128"
+set CORE_AREA "9.996 10.08 139.964  140.048"
 
 #===========================================================
 ##   init floorplan
@@ -53,30 +53,12 @@ init_floorplan \
    -io_site $IO_SITE \
    -corner_site $CORNER_SITE
 
-source ./script/iFP_script/module/gern_tracks.tcl
-
-#===========================================================
-##   Place IO
-#===========================================================
-#source $PROJ_PATH/scripts/$DESIGN/iFP_script/asic_top_0627.io.tcl
-
-#===========================================================
-##   Place Macro
-#===========================================================
-#source $PROJ_PATH/scripts/$DESIGN/iFP_script/macro_place.tcl
+source ./script/iFP_script/module/create_tracks.tcl
 
 #===========================================================
 ##   Place IO Port
 #===========================================================
-#source $PROJ_PATH/scripts/$DESIGN/iFP_script/place_pad_new.tcl
 auto_place_pins -layer met5 -width 2000 -height 2000
-
-#===========================================================
-##   Add IO Filler
-#===========================================================
-#placeIoFiller \
-#   -filler_types "PFILL50W PFILL20W PFILL10W PFILL5W PFILL2W PFILL01W PFILL001W" \
-#   -prefix IOFIL
 
 #===========================================================
 ##   Tap Cell
@@ -89,10 +71,7 @@ tapcell \
 #===========================================================
 ##   PDN 
 #===========================================================
-source ./script/iFP_script/module/user_pg.tcl 
-#source ./script/iFP_script/module/place_powerPad.tcl
-source ./script/iFP_script/module/addPowerStripe.tcl
-#source ./script/iFP_script/module/connect_power_io.tcl 
+source ./script/iFP_script/module/pdn.tcl 
 
 #===========================================================
 ##   set clock net
@@ -100,17 +79,12 @@ source ./script/iFP_script/module/addPowerStripe.tcl
 source ./script/iFP_script/module/set_clocknet.tcl
 
 #===========================================================
-##   remove pg net
-#===========================================================
-#source $PROJ_PATH/scripts/$DESIGN/iFP_script/clear_blockage.tcl
-
-#===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iFP_result.def
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/fp_db.rpt"
 

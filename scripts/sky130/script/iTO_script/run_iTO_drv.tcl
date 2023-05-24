@@ -39,17 +39,17 @@ def_init -path ./result/iCTS_result.def
 run_to_drv -config ./iEDA_config/to_default_config_drv.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iTO_drv_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iTO_drv_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/drv_db.rpt"
 

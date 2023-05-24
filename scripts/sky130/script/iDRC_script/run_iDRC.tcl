@@ -26,10 +26,10 @@ def_init -path ./result/iRT_result.def
 #===========================================================
 ##   run DRC
 #===========================================================
-#run_drc -config ./iEDA_config/drc_default_config.json -path ./result/report/drc.rpt
-#save_drc -path ./result/drc/detail.drc
+run_drc -config ./iEDA_config/drc_default_config.json -path ./result/report/drc.rpt
+save_drc -path ./result/drc/detail.drc
 
-read_drc -path ./result/drc/detail.drc
+#read_drc -path ./result/drc/detail.drc
 
 #===========================================================
 ##   Exit 

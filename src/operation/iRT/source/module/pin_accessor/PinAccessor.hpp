@@ -63,16 +63,20 @@ class PinAccessor
 #if 1  // access pa_model
   void accessPAModel(PAModel& pa_model);
   void accessPANet(PAModel& pa_model, PANet& pa_net);
-  void initAccessPointList(PANet& pa_net);
-  std::vector<LayerRect> getIntersectPinShapeList(PAPin& pa_pin);
+  void initAccessPointList(PAModel& pa_model, PANet& pa_net);
+  std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
+  std::vector<LayerRect> getViaLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
+                                              std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointList(PANet& pa_net);
+  void selectAccessPointType(PANet& pa_net);
+  void buildBoundingBox(PANet& pa_net);
+  void buildAccessPointList(PANet& pa_net);
+  void selectGCellAccessPoint(PANet& pa_net);
 #endif
 
 #if 1  // update pa_model
   void updatePAModel(PAModel& pa_model);
-  void buildBoundingBox(PANet& pa_net);
-  void buildAccessPointList(PANet& pa_net);
   void buildDrivingPin(PANet& pa_net);
   void updateOriginPAResult(PAModel& pa_model);
 #endif

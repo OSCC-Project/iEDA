@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -503,6 +503,8 @@ void Sta::linkDesign(const char *top_cell_name) {
                 << " net id is not exist "
                 << "at line " << inst_stmt->get_line();
             net_name = net_id->getName();
+            // fix net name contain backslash
+            net_name = Str::trimBackslash(net_name);
           } else if (net_expr->isConstant()) {
             LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
           }
@@ -1237,10 +1239,16 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
       StaReportClockTNS report_path_TNS(rpt_file_name, mode, 1);
       report_path_TNS.set_significant_digits(get_significant_digits());
 
-      // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
+      std::vector<StaReportPathSummary *> report_funcs{
+          &report_path_summary, &report_path_detail, &report_path_TNS};
 
-      for (auto *report_fun : std::vector<StaReportPathSummary *>{
-               &report_path_summary, &report_path_detail, &report_path_TNS}) {
+      if (c_print_delay_yaml) {
+        // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
+        StaReportPathYaml report_path_dump(rpt_file_name, mode, n_worst);
+        report_funcs.emplace_back(&report_path_dump);
+      }
+
+      for (auto *report_fun : report_funcs) {
         is_ok = report_path(*report_fun);
       }
     }

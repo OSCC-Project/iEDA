@@ -24,7 +24,7 @@ source ./script/DB_script/db_init_lef.tcl
 def_init -path ./result/iRT_result.def
 
 #===========================================================
-##   run DRC
+##   run DRC and save result
 #===========================================================
 run_drc -config ./iEDA_config/drc_default_config.json -path ./result/report/drc/iRT_drc.rpt
 save_drc -path ./result/drc/detail.drc

@@ -19,7 +19,7 @@
  * @Date: 2022-10-24 21:17:18
  * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
  * @LastEditTime: 2023-03-11 14:20:43
- * @FilePath: /irefactor/src/operation/iPL/api/iPL_API.hh
+ * @FilePath: /irefactor/src/operation/iPL/api/PLAPI.hh
  * @Description: Interface of iPL.
  */
 
@@ -30,12 +30,12 @@
 
 namespace ipl {
 
-#define iPLAPIInst ipl::iPL_API::getInst()
+#define iPLAPIInst ipl::PLAPI::getInst()
 
-class iPL_API
+class PLAPI
 {
  public:
-  static iPL_API& getInst();
+  static PLAPI& getInst();
   static void destoryInst();
 
   void initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder);
@@ -125,14 +125,14 @@ class iPL_API
   /*****************************Congestion-driven Placement: END*****************************/
 
  private:
-  static iPL_API* _ipl_api_instance;
+  static PLAPI* _s_ipl_api_instance;
 
-  iPL_API() = default;
-  iPL_API(const iPL_API&) = delete;
-  iPL_API(iPL_API&&) = delete;
-  ~iPL_API();
-  iPL_API& operator=(const iPL_API&) = delete;
-  iPL_API& operator=(iPL_API&&) = delete;
+  PLAPI() = default;
+  PLAPI(const PLAPI&) = delete;
+  PLAPI(PLAPI&&) = delete;
+  ~PLAPI();
+  PLAPI& operator=(const PLAPI&) = delete;
+  PLAPI& operator=(PLAPI&&) = delete;
 };
 
 }  // namespace ipl

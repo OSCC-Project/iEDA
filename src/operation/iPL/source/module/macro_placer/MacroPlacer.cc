@@ -44,6 +44,12 @@ namespace ipl::imp {
 
 void MacroPlacer::runMacroPlacer()
 {
+  // int part = 66;
+  // map<FPInst*, int> partition_result = partitionInst(part);
+  // string result_path = "/home/lijiangkao/design/partition_test/result/partition.gds";
+  // _mdb->writePartitonGDS(result_path, partition_result);
+
+
   clock_t start = clock();
 
   // parition
@@ -240,6 +246,77 @@ void MacroPlacer::writeSummary(double time)
   config << "time consume: " << time << "s" << std::endl;
   config << "date: " << dt << std::endl;
   config.close();
+}
+
+// void MacroPlacer::darwPartition()
+// {
+//   int part = 66;
+//   map<FPInst*, int> partition_result = partitionInst(part);
+//   string result_path = "/home/lijiangkao/design/partition_test/result/partition.gds";
+//   _mdb->writePartitonGDS(result_path, partition_result);
+// }
+
+map<FPInst*, int> MacroPlacer::partitionInst(int part)
+{
+  map<int, FPInst*> index_to_inst_map;
+  map<FPInst*, int> inst_to_index_map;
+  int index = 0;
+  int inst_num = 0;
+  inst_num += _mdb->get_design()->get_macro_list().size();
+  inst_num += _mdb->get_design()->get_std_cell_list().size();
+  for (FPInst* macro : _mdb->get_design()->get_macro_list()) {
+    index_to_inst_map.insert(pair<int, FPInst*>(index, macro));
+    inst_to_index_map.insert(pair<FPInst*, int>(macro, index));
+    index++;
+  }
+
+  for (FPInst* inst : _mdb->get_design()->get_std_cell_list()) {
+    index_to_inst_map.insert(pair<int, FPInst*>(index, inst));
+    inst_to_index_map.insert(pair<FPInst*, int>(inst, index));
+    index++;
+  }
+
+  vector<vector<int>> hyper_edge_list;
+  for (FPNet* net : _mdb->get_design()->get_net_list()) {
+    vector<int> hyper_edge;
+    for (FPPin* pin : net->get_pin_list()) {
+      FPInst* inst = pin->get_instance();
+      if (inst == nullptr) {
+        continue;
+      }
+      // map<FPInst, int>::iterator index_ite;
+      auto index_ite = inst_to_index_map.find(inst);
+      if (index_ite == inst_to_index_map.end()) {
+        continue;
+      } else {
+        hyper_edge.emplace_back((*index_ite).second);
+      }
+    }
+    if (hyper_edge.size() > 1) {
+      hyper_edge_list.emplace_back(hyper_edge);
+    }
+  }
+
+  Hmetis* hmetis = new Hmetis();
+  hmetis->set_ufactor(20);
+  hmetis->set_nparts(part);
+  hmetis->partition(inst_num, hyper_edge_list);
+  vector<int> partition_result = hmetis->get_result();
+  delete hmetis;
+
+  map<FPInst*, int> result;
+  for (size_t i = 0; i < partition_result.size(); ++i) {
+    FPInst* inst;
+    auto inst_ite = index_to_inst_map.find(i);
+    if (inst_ite == index_to_inst_map.end()) {
+      continue;
+    } else {
+      inst = (*inst_ite).second;
+    }
+    result.insert(pair<FPInst*, int>(inst, partition_result[i]));
+  }
+
+  return result;
 }
 
 }  // namespace ipl::imp
