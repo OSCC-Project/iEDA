@@ -474,20 +474,82 @@ void PinAccessor::mergeAccessPointList(PANet& pa_net)
 
 void PinAccessor::selectAccessPointList(PANet& pa_net)
 {
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+  selectAccessPointType(pa_net);
+  buildBoundingBox(pa_net);
+  buildAccessPointList(pa_net);
+  selectGCellAccessPoint(pa_net);
+}
 
-    std::map<AccessPointType, std::vector<AccessPoint>> type_point_map;
-    for (AccessPoint& access_point : access_point_list) {
-      type_point_map[access_point.get_type()].push_back(access_point);
+void PinAccessor::selectAccessPointType(PANet& pa_net)
+{
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+    std::map<irt_int, std::map<AccessPointType, std::vector<AccessPoint>>> layer_access_point_map;
+    for (AccessPoint& access_point : pin_access_point_list) {
+      layer_access_point_map[access_point.get_layer_idx()][access_point.get_type()].push_back(access_point);
     }
-    for (AccessPointType access_point_type : {AccessPointType::kTrackGrid, AccessPointType::kOnTrack, AccessPointType::kOnShape}) {
-      std::vector<AccessPoint>& candidate_access_point_list = type_point_map[access_point_type];
-      if (candidate_access_point_list.empty()) {
-        continue;
+    pin_access_point_list.clear();
+    for (auto& [layer_idx, type_point_map] : layer_access_point_map) {
+      for (AccessPointType access_point_type : {AccessPointType::kTrackGrid, AccessPointType::kOnTrack, AccessPointType::kOnShape}) {
+        std::vector<AccessPoint>& candidate_access_point_list = type_point_map[access_point_type];
+        if (candidate_access_point_list.empty()) {
+          continue;
+        }
+        for (AccessPoint& access_point : candidate_access_point_list) {
+          pin_access_point_list.push_back(access_point);
+        }
+        break;
       }
-      access_point_list = candidate_access_point_list;
-      break;
+    }
+  }
+}
+
+void PinAccessor::buildBoundingBox(PANet& pa_net)
+{
+  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+
+  std::vector<PlanarCoord> coord_list;
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      coord_list.push_back(access_point.get_real_coord());
+    }
+  }
+  EXTPlanarRect& bounding_box = pa_net.get_bounding_box();
+  bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
+  bounding_box.set_grid_rect(RTUtil::getOpenGridRect(bounding_box.get_real_rect(), gcell_axis));
+}
+
+void PinAccessor::buildAccessPointList(PANet& pa_net)
+{
+  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  BoundingBox& bounding_box = pa_net.get_bounding_box();
+
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      access_point.set_grid_coord(RTUtil::getGridCoord(access_point.get_real_coord(), gcell_axis, bounding_box));
+    }
+  }
+}
+
+void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
+{
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+    std::map<irt_int, std::map<PlanarCoord, std::vector<AccessPoint>, CmpPlanarCoordByXASC>> layer_access_point_map;
+    for (AccessPoint& access_point : pin_access_point_list) {
+      layer_access_point_map[access_point.get_layer_idx()][access_point.get_grid_coord()].push_back(access_point);
+    }
+    pin_access_point_list.clear();
+    for (auto& [layer_idx, grid_access_point_map] : layer_access_point_map) {
+      std::vector<AccessPoint> candidate_access_point_list;
+      for (auto& [grid_coord, access_point_list] : grid_access_point_map) {
+        if (candidate_access_point_list.size() < access_point_list.size()) {
+          candidate_access_point_list = access_point_list;
+        }
+      }
+      for (AccessPoint& access_point : candidate_access_point_list) {
+        pin_access_point_list.push_back(access_point);
+      }
     }
   }
 }
@@ -538,33 +600,6 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
     buildDrivingPin(pa_net);
   }
   updateOriginPAResult(pa_model);
-}
-
-void PinAccessor::buildBoundingBox(PANet& pa_net)
-{
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
-
-  std::vector<PlanarCoord> coord_list;
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      coord_list.push_back(access_point.get_real_coord());
-    }
-  }
-  EXTPlanarRect& bounding_box = pa_net.get_bounding_box();
-  bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
-  bounding_box.set_grid_rect(RTUtil::getOpenGridRect(bounding_box.get_real_rect(), gcell_axis));
-}
-
-void PinAccessor::buildAccessPointList(PANet& pa_net)
-{
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
-  BoundingBox& bounding_box = pa_net.get_bounding_box();
-
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      access_point.set_grid_coord(RTUtil::getGridCoord(access_point.get_real_coord(), gcell_axis, bounding_box));
-    }
-  }
 }
 
 void PinAccessor::buildDrivingPin(PANet& pa_net)
