@@ -1227,11 +1227,12 @@ void EarlyGlobalRouter::calcuResult()
 void EarlyGlobalRouter::calcuCongestion()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
   std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_database.get_overflow_map_list();
-  irt_int& total_track_overflow = egr_database.get_total_track_overflow();
-  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_database.get_total_overflow_map();
+  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  irt_int& total_track_overflow = egr_stat.get_total_track_overflow();
+  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_stat.get_total_overflow_map();
 
   overflow_map_list.resize(routing_layer_list.size());
   std::vector<EGRResourceType> resource_types(
@@ -1261,13 +1262,16 @@ void EarlyGlobalRouter::calcuCongestion()
 void EarlyGlobalRouter::calcuWireViaStatistics()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   irt_int cell_width = _egr_data_manager.getConfig().cell_width;
   irt_int cell_height = _egr_data_manager.getConfig().cell_height;
-  std::vector<double>& wire_length_list = egr_database.get_wire_length_list();
-  std::vector<irt_int>& via_num_list = egr_database.get_via_num_list();
   std::vector<std::vector<irt::ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
   irt_int routing_layer_size = egr_database.get_routing_layer_list().size();
   irt_int cut_layer_size = egr_database.get_cut_layer_list().size();
+  std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
+  std::vector<irt_int>& via_num_list = egr_stat.get_via_num_list();
+  irt_int& total_via_num = egr_stat.get_total_via_num();
+  double& total_wire_length = egr_stat.get_total_wire_length();
 
   wire_length_list.resize(routing_layer_size, 0);
   via_num_list.resize(cut_layer_size, 0);
@@ -1276,7 +1280,7 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
     std::vector<Segment<TNode<LayerCoord>*>> routing_segment_list = RTUtil::getSegListByTree(coord_tree);
     if (routing_segment_list.empty()) {
       double local_net_wire_length = (cell_width + cell_height) / 2.0;
-      egr_database.addWireLength(local_net_wire_length);
+      total_wire_length += local_net_wire_length;
       LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().getGridCoordList().front();
       irt_int layer_idx = driving_pin_grid_coord.get_layer_idx();
       wire_length_list[layer_idx] += local_net_wire_length;
@@ -1290,14 +1294,14 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
       irt_int second_layer_idx = second_coord.get_layer_idx();
       if (first_layer_idx != second_layer_idx) {
         RTUtil::sortASC(first_layer_idx, second_layer_idx);
-        egr_database.addViaNum(std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx()));
+        total_via_num += std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx());
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; ++layer_idx) {
           irt_int via_layer_idx = layer_via_master_list[layer_idx].front().get_cut_layer_idx();
           via_num_list[via_layer_idx]++;
         }
       } else {
         double wire_length = RTUtil::getManhattanDistance(first_coord, second_coord);
-        egr_database.addWireLength(wire_length);
+        total_wire_length += wire_length;
         wire_length_list[first_layer_idx] += wire_length;
       }
     }
@@ -1313,11 +1317,12 @@ void EarlyGlobalRouter::reportResult()
 void EarlyGlobalRouter::reportCongestion()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
   std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_database.get_overflow_map_list();
-  irt_int total_track_overflow = egr_database.get_total_track_overflow();
-  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_database.get_total_overflow_map();
+  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  irt_int total_track_overflow = egr_stat.get_total_track_overflow();
+  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_stat.get_total_overflow_map();
   std::vector<EGRResourceType> resource_types(
       {EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kWest, EGRResourceType::kEast});
   irt_int cell_num
@@ -1394,13 +1399,14 @@ void EarlyGlobalRouter::reportCongestion()
 void EarlyGlobalRouter::reportWireViaStatistics()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   irt_int micron_dbu = egr_database.get_micron_dbu();
   std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = egr_database.get_cut_layer_list();
-  std::vector<double>& wire_length_list = egr_database.get_wire_length_list();
-  std::vector<irt_int>& via_num_list = egr_database.get_via_num_list();
-  double total_wire_length = egr_database.get_total_wire_length();
-  irt_int total_via_num = egr_database.get_total_via_num();
+  std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
+  std::vector<irt_int>& via_num_list = egr_stat.get_via_num_list();
+  double& total_wire_length = egr_stat.get_total_wire_length();
+  irt_int& total_via_num = egr_stat.get_total_via_num();
 
   fort::char_table wire_table;
   wire_table.set_border_style(FT_SOLID_STYLE);

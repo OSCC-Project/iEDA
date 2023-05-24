@@ -55,6 +55,7 @@ void EGRDataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 
 void EGRDataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
 {
+  wrapDesignName(idb_builder);
   wrapMicronDBU(idb_builder);
   wrapDie(idb_builder);
   wrapLayerList(idb_builder);
@@ -64,6 +65,10 @@ void EGRDataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
   updateHelper(idb_builder);
 }
 
+void EGRDataManager::wrapDesignName(idb::IdbBuilder* idb_builder)
+{
+  _egr_database.set_design_name(idb_builder->get_def_service()->get_design()->get_design_name());
+}
 void EGRDataManager::wrapMicronDBU(idb::IdbBuilder* idb_builder)
 {
   _egr_database.set_micron_dbu(idb_builder->get_def_service()->get_design()->get_units()->get_micron_dbu());
@@ -385,19 +390,21 @@ void EGRDataManager::wrapDrivingPin(EGRNet& egr_net, idb::IdbNet* idb_net)
 
 void EGRDataManager::updateHelper(idb::IdbBuilder* idb_builder)
 {
-  // design name
-  _design_name = idb_builder->get_def_service()->get_design()->get_design_name();
-
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
+  std::map<irt_int, irt_int>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
+  std::map<irt_int, irt_int>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
+  std::map<std::string, irt_int>& cut_layer_name_idx_map = _egr_helper.get_cut_layer_name_idx_map();
+  std::map<std::string, irt_int>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
+
   for (size_t i = 0; i < routing_layer_list.size(); ++i) {
-    _db_to_egr_routing_layer_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
-    _routing_layer_name_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
+    db_to_egr_routing_layer_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    routing_layer_name_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
 
   std::vector<CutLayer>& cut_layer_list = _egr_database.get_cut_layer_list();
   for (size_t i = 0; i < cut_layer_list.size(); i++) {
-    _db_to_egr_cut_layer_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
-    _cut_layer_name_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
+    db_to_egr_cut_layer_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    cut_layer_name_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
 }
 
@@ -437,18 +444,20 @@ void EGRDataManager::buildCellSize()
 void EGRDataManager::buildBottomTopLayerIdx()
 {
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
+  std::map<std::string, irt_int>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
   _egr_config.bottom_routing_layer_idx = 0;
   _egr_config.top_routing_layer_idx = routing_layer_list.back().get_layer_idx();
+
   if (_egr_config.bottom_routing_layer.empty() && _egr_config.top_routing_layer.empty()) {
     _egr_config.bottom_routing_layer = routing_layer_list.front().get_layer_name();
     _egr_config.top_routing_layer = routing_layer_list.back().get_layer_name();
     return;
   }
-  if (RTUtil::exist(_routing_layer_name_idx_map, _egr_config.bottom_routing_layer)) {
-    _egr_config.bottom_routing_layer_idx = _routing_layer_name_idx_map[_egr_config.bottom_routing_layer];
+  if (RTUtil::exist(routing_layer_name_idx_map, _egr_config.bottom_routing_layer)) {
+    _egr_config.bottom_routing_layer_idx = routing_layer_name_idx_map[_egr_config.bottom_routing_layer];
   }
-  if (RTUtil::exist(_routing_layer_name_idx_map, _egr_config.top_routing_layer)) {
-    _egr_config.top_routing_layer_idx = _routing_layer_name_idx_map[_egr_config.top_routing_layer];
+  if (RTUtil::exist(routing_layer_name_idx_map, _egr_config.top_routing_layer)) {
+    _egr_config.top_routing_layer_idx = routing_layer_name_idx_map[_egr_config.top_routing_layer];
   }
 }
 
@@ -854,18 +863,20 @@ Direction EGRDataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_directio
 
 irt_int EGRDataManager::getEGRRoutingLayerIndexByDB(irt_int db_layer_idx)
 {
-  if (!RTUtil::exist(_db_to_egr_routing_layer_idx_map, db_layer_idx)) {
+  std::map<irt_int, irt_int>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
+  if (!RTUtil::exist(db_to_egr_routing_layer_idx_map, db_layer_idx)) {
     LOG_INST.error(Loc::current(), "db_layer_idx not exist!");
   }
-  return _db_to_egr_routing_layer_idx_map[db_layer_idx];
+  return db_to_egr_routing_layer_idx_map[db_layer_idx];
 }
 
 irt_int EGRDataManager::getEGRCutLayerIndexByDB(irt_int db_layer_idx)
 {
-  if (!RTUtil::exist(_db_to_egr_cut_layer_idx_map, db_layer_idx)) {
+  std::map<irt_int, irt_int>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
+  if (!RTUtil::exist(db_to_egr_cut_layer_idx_map, db_layer_idx)) {
     LOG_INST.error(Loc::current(), "db_layer_idx not exist!");
   }
-  return _db_to_egr_cut_layer_idx_map[db_layer_idx];
+  return db_to_egr_cut_layer_idx_map[db_layer_idx];
 }
 
 PlanarRect EGRDataManager::getGridRect(PlanarRect& real_rect)
@@ -933,7 +944,7 @@ void EGRDataManager::printDatabase()
   LOG_INST.info(Loc::current(), "EGR_DATABASE");
   // ********** Design Name ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "design_name");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _design_name);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _egr_database.get_design_name());
   // ********** Die ********** //
   Die& die = _egr_database.get_die();
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "die");
