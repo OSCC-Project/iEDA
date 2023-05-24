@@ -71,12 +71,14 @@ class PinAccessor
                                                  PAModel& pa_model);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointList(PANet& pa_net);
+  void selectAccessPointType(PANet& pa_net);
+  void buildBoundingBox(PANet& pa_net);
+  void buildAccessPointList(PANet& pa_net);
+  void selectGCellAccessPoint(PANet& pa_net);
 #endif
 
 #if 1  // update pa_model
   void updatePAModel(PAModel& pa_model);
-  void buildBoundingBox(PANet& pa_net);
-  void buildAccessPointList(PANet& pa_net);
   void buildDrivingPin(PANet& pa_net);
   void updateOriginPAResult(PAModel& pa_model);
 #endif
