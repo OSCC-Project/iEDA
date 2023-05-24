@@ -90,6 +90,9 @@ class RctNode {
     return _m2 == 0 ? 0 : _delay * _delay / sqrt(_m2) * log(2);
   }
   [[nodiscard]] double delayECM() const { return _delay_ecm; }
+  [[nodiscard]] double delayD2MM() const {
+    return _m2_c == 0 ? 0 : _delay_ecm * _delay_ecm / sqrt(_m2_c) * log(2);
+  }
   double updateCeff() {
     calNodePIModel();
     if (_moments.y2 == 0 && _moments.y3 == 0) {
@@ -182,10 +185,10 @@ class RctNode {
   double _cap = 0.0;
   double _load = 0.0;
   double _delay = 0.0;
-  double _m2 = 0.0;
-  double _mc = 0.0;
-  double _m2_c = 0.0;
-  double _mc_c = 0.0;
+  double _mc = 0.0;    //!< Elmore * cap
+  double _m2 = 0.0;    //!< The two moment.
+  double _mc_c = 0.0;  //!< Elmore * ceff
+  double _m2_c = 0.0;  //!< The two moment with ceff.
   double _ceff = 0.0;
   double _delay_ecm = 0.0;
 
@@ -505,6 +508,7 @@ class RcNet {
   struct EmptyRct {
     double load;
   };
+  enum class DelayMethod { kElmore, kD2M, kECM, kD2MC };
 
   explicit RcNet(Net* net) : _net(net) {}
   virtual ~RcNet() = default;
@@ -530,7 +534,16 @@ class RcNet {
   double getResistance(AnalysisMode mode, TransType trans_type,
                        DesignObject* load_obj);
 
-  std::optional<double> delay(DesignObject& to);
+  std::optional<double> delay(DesignObject& to,
+                              DelayMethod delay_method = DelayMethod::kElmore);
+  std::optional<double> delayNs(DesignObject& to, DelayMethod delay_method) {
+    auto delay_ps = delay(to, delay_method);
+    if (delay_ps) {
+      return PS_TO_NS(delay_ps.value());
+    }
+    return std::nullopt;
+  }
+
   virtual std::optional<std::pair<double, Eigen::MatrixXd>> delay(
       DesignObject& to, double from_slew,
       std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,
