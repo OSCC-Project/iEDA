@@ -18,6 +18,7 @@
 
 #include "LayerCoord.hpp"
 #include "Segment.hpp"
+#include "flute3/flute.h"
 
 namespace irt {
 
@@ -26,15 +27,18 @@ class EGRRoutingPackage
  public:
   EGRRoutingPackage() = default;
   ~EGRRoutingPackage() = default;
+
   // getter
   std::vector<LayerCoord>& get_pin_coord_list() { return _pin_coord_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   LayerCoord& get_pin_coord() { return _pin_coord; }
   LayerCoord& get_seg_coord() { return _seg_coord; }
-  int get_number_already_counted() { return _number_already_counted; }
+  int get_number_calculated() { return _number_of_segments_with_distance_calculated; }
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& get_min_distance_map() { return _min_distance_map; }
   std::vector<std::pair<LayerCoord, LayerCoord>>& get_topo_coord_pair_list() { return _topo_coord_pair_list; }
-  std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>>& get_topo_segment_pair_list() { return _topo_segment_pair_list; }
+  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC>& get_planar_coord_layer_map() { return _planar_coord_layer_map; }
+  Flute::Tree& get_flute_tree() { return _flute_tree; }
+
   // setter
   void set_pin_coord_list(const std::vector<LayerCoord>& pin_coord_list) { _pin_coord_list = pin_coord_list; }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
@@ -43,7 +47,7 @@ class EGRRoutingPackage
   }
   void set_pin_coord(const LayerCoord& pin_coord) { _pin_coord = pin_coord; }
   void set_seg_coord(const LayerCoord& seg_coord) { _seg_coord = seg_coord; }
-  void set_number_already_counted(irt_int number_already_counted) { _number_already_counted = number_already_counted; }
+  void set_number_calculated(irt_int number) { _number_of_segments_with_distance_calculated = number; }
   void set_min_distance_map(std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map)
   {
     _min_distance_map = min_distance_map;
@@ -52,10 +56,12 @@ class EGRRoutingPackage
   {
     _topo_coord_pair_list = topo_coord_pair_list;
   }
-  void set_topo_segment_pair_list(const std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>>& topo_segment_pair_list)
+  void set_planar_coord_layer_map(const std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC>& planar_coord_layer_map)
   {
-    _topo_segment_pair_list = topo_segment_pair_list;
+    _planar_coord_layer_map = planar_coord_layer_map;
   }
+  void set_flute_tree(const Flute::Tree& flute_tree) { _flute_tree = flute_tree; }
+
   // function
   bool continueRouting() { return !_pin_coord_list.empty(); }
 
@@ -64,14 +70,15 @@ class EGRRoutingPackage
   std::vector<Segment<LayerCoord>> _routing_segment_list;
 
   // gradual router
-  irt_int _number_already_counted;
+  irt_int _number_of_segments_with_distance_calculated;
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC> _min_distance_map;
   LayerCoord _pin_coord;
   LayerCoord _seg_coord;
 
   // topo router
-  std::vector<std::pair<Segment<LayerCoord>, Segment<LayerCoord>>> _topo_segment_pair_list;
   std::vector<std::pair<LayerCoord, LayerCoord>> _topo_coord_pair_list;
+  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC> _planar_coord_layer_map;
+  Flute::Tree _flute_tree;
 };
 
 }  // namespace irt
