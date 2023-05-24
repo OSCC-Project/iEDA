@@ -291,25 +291,25 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
             access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kTrackGrid);
           }
         }
-        irt_int shape_x_mid = (lb_x + rt_x) / 2;
-        irt_int shape_y_mid = (lb_y + rt_y) / 2;
+        irt_int mid_x = (lb_x + rt_x) / 2;
+        irt_int mid_y = (lb_y + rt_y) / 2;
         // on track
         for (irt_int x : pref_x_list) {
-          access_point_list.emplace_back(x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnTrack);
+          for (irt_int y : {lb_y, mid_y, rt_y}) {
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
+          }
         }
         for (irt_int y : pref_y_list) {
-          access_point_list.emplace_back(shape_x_mid, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
+          for (irt_int x : {lb_x, mid_x, rt_x}) {
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnTrack);
+          }
         }
         // on shape
-        access_point_list.emplace_back(lb_x, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(shape_x_mid, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(rt_x, lb_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(rt_x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(rt_x, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(shape_x_mid, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(lb_x, rt_y, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(lb_x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
-        access_point_list.emplace_back(shape_x_mid, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnShape);
+        for (irt_int x : {lb_x, mid_x, rt_x}) {
+          for (irt_int y : {lb_y, mid_y, rt_y}) {
+            access_point_list.emplace_back(x, y, pin_shape_layer_idx, AccessPointType::kOnShape);
+          }
+        }
       }
     }
   }
