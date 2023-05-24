@@ -258,7 +258,7 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-    for (LayerRect& aligned_pin_shape : getLegalPinShapeList(pa_net.get_net_idx(), pa_pin, pa_model)) {
+    for (LayerRect& aligned_pin_shape : getLegalPinShapeList(pa_model, pa_net.get_net_idx(), pa_pin)) {
       irt_int lb_x = aligned_pin_shape.get_lb_x();
       irt_int lb_y = aligned_pin_shape.get_lb_y();
       irt_int rt_x = aligned_pin_shape.get_rt_x();
@@ -278,7 +278,7 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
       }
       // generate access point
       for (irt_int i = 0; i < static_cast<irt_int>(layer_idx_list.size()) - 1; i++) {
-        // prefer track grid
+        // track grid
         TrackGrid pref_x_track = routing_layer_list[layer_idx_list[i]].getPreferTrackGrid();
         TrackGrid pref_y_track = routing_layer_list[layer_idx_list[i + 1]].getPreferTrackGrid();
         if (routing_layer_list[layer_idx_list[i]].isPreferH()) {
@@ -293,7 +293,7 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
         }
         irt_int shape_x_mid = (lb_x + rt_x) / 2;
         irt_int shape_y_mid = (lb_y + rt_y) / 2;
-        // prefer track center
+        // on track
         for (irt_int x : pref_x_list) {
           access_point_list.emplace_back(x, shape_y_mid, pin_shape_layer_idx, AccessPointType::kOnTrack);
         }
@@ -315,22 +315,21 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
   }
 }
 
-std::vector<LayerRect> PinAccessor::getLegalPinShapeList(irt_int pa_net_idx, PAPin& pa_pin, PAModel& pa_model)
+std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin)
 {
   std::map<irt_int, std::vector<EXTLayerRect>> layer_pin_shape_list;
   for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
     layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
   }
-
   std::vector<LayerRect> legal_rect_list;
   for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
-    std::vector<LayerRect> legal_up_via_shape_list = getViaLegalPinShapeList(pa_net_idx, layer_idx, pin_shpae_list, pa_model);
-    legal_rect_list.insert(legal_rect_list.end(), legal_up_via_shape_list.begin(), legal_up_via_shape_list.end());
-    std::vector<LayerRect> legal_down_via_shape_list = getViaLegalPinShapeList(pa_net_idx, layer_idx - 1, pin_shpae_list, pa_model);
-    legal_rect_list.insert(legal_rect_list.end(), legal_down_via_shape_list.begin(), legal_down_via_shape_list.end());
+    std::vector<LayerRect> up_via_legal_shape_list = getViaLegalShapeList(pa_model, pa_net_idx, layer_idx, pin_shpae_list);
+    legal_rect_list.insert(legal_rect_list.end(), up_via_legal_shape_list.begin(), up_via_legal_shape_list.end());
+    std::vector<LayerRect> down_via_legal_shape_list = getViaLegalShapeList(pa_model, pa_net_idx, layer_idx - 1, pin_shpae_list);
+    legal_rect_list.insert(legal_rect_list.end(), down_via_legal_shape_list.begin(), down_via_legal_shape_list.end());
   }
   if (legal_rect_list.empty()) {
-    LOG_INST.warning(Loc::current(), "There is no via legal pin shape!");
+    LOG_INST.warning(Loc::current(), "There is no legal pin shape!");
     for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
       legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
     }
@@ -338,20 +337,26 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(irt_int pa_net_idx, PAP
   return legal_rect_list;
 }
 
-std::vector<LayerRect> PinAccessor::getViaLegalPinShapeList(irt_int pa_net_idx, irt_int via_below_layer_idx,
-                                                            std::vector<EXTLayerRect>& pin_shape_list, PAModel& pa_model)
+std::vector<LayerRect> PinAccessor::getViaLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
+                                                         std::vector<EXTLayerRect>& pin_shape_list)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
 
-  if (routing_layer_list.back().get_layer_idx() <= via_below_layer_idx
-      || via_below_layer_idx < routing_layer_list.front().get_layer_idx()) {
-    return {};
+  std::vector<LayerRect> legal_rect_list;
+  if (via_below_layer_idx < routing_layer_list.front().get_layer_idx()
+      || routing_layer_list.back().get_layer_idx() <= via_below_layer_idx) {
+    return legal_rect_list;
   }
-  if (layer_via_master_list[via_below_layer_idx].empty() || pin_shape_list.empty()) {
-    return {};
+  if (pin_shape_list.empty()) {
+    return legal_rect_list;
   }
   ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+
+  // for (LayerRect enclosure : {via_master.get_above_enclosure(), via_master.get_below_enclosure()}) {
+  //   irt_int half_x_span = enclosure.getXSpan() / 2;
+  //   irt_int half_y_span = enclosure.getYSpan() / 2;
+  // }
 
   std::vector<std::vector<PlanarRect>> candidate_rect_comb_list;
   // 上下enclosure的合法结果
@@ -400,7 +405,6 @@ std::vector<LayerRect> PinAccessor::getViaLegalPinShapeList(irt_int pa_net_idx, 
     }
     candidate_rect_comb_list.push_back(enclosure_rect_list);
   }
-  std::vector<LayerRect> legal_rect_list;
   for (PlanarRect& rect : RTUtil::getOverlap(candidate_rect_comb_list)) {
     legal_rect_list.emplace_back(rect, pin_shape_list.front().get_layer_idx());
   }
