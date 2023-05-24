@@ -191,7 +191,9 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
               if (!RTUtil::isInside(blockage, net_shape)) {
                 continue;
               }
-              blockage_shape_list_map[blockage].push_back(net_shape);
+              irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_shape);
+              PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(net_shape, enlarged_size);
+              blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
               is_cutting = true;
             }
           }
@@ -199,18 +201,9 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
             new_blockage_list.push_back(blockage);
           }
         }
-        for (auto& [blockage, net_shape_list] : blockage_shape_list_map) {
-          gtl::polygon_90_set_data<int> poly_set;
-          poly_set += RTUtil::convertToGTLRect(blockage);
-          for (PlanarRect& net_shape : net_shape_list) {
-            irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_shape);
-            poly_set -= RTUtil::convertToGTLRect(RTUtil::getEnlargedRect(net_shape, enlarged_size));
-          }
-          std::vector<gtl::rectangle_data<int>> slicing_rect_list;
-          gtl::get_rectangles(slicing_rect_list, poly_set);
-          for (gtl::rectangle_data<int>& slicing_rect : slicing_rect_list) {
-            new_blockage_list.push_back(RTUtil::convertToPlanarRect(slicing_rect));
-          }
+        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
+          std::vector<PlanarRect> cutting_rect_list = RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list);
+          new_blockage_list.insert(new_blockage_list.end(), cutting_rect_list.begin(), cutting_rect_list.end());
         }
         net_blockage_map[-1] = new_blockage_list;
       }
@@ -331,10 +324,17 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
   }
   std::vector<LayerRect> legal_rect_list;
   for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
-    std::vector<LayerRect> up_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx, pin_shpae_list);
-    legal_rect_list.insert(legal_rect_list.end(), up_via_legal_rect_list.begin(), up_via_legal_rect_list.end());
-    std::vector<LayerRect> down_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx - 1, pin_shpae_list);
-    legal_rect_list.insert(legal_rect_list.end(), down_via_legal_rect_list.begin(), down_via_legal_rect_list.end());
+    std::vector<PlanarRect> planar_legal_rect_list;
+    std::vector<PlanarRect> up_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx, pin_shpae_list);
+    planar_legal_rect_list.insert(planar_legal_rect_list.end(), up_via_legal_rect_list.begin(), up_via_legal_rect_list.end());
+    std::vector<PlanarRect> down_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx - 1, pin_shpae_list);
+    planar_legal_rect_list.insert(planar_legal_rect_list.end(), down_via_legal_rect_list.begin(), down_via_legal_rect_list.end());
+
+    for (Direction direction : {Direction::kHorizontal, Direction::kVertical}) {
+      for (PlanarRect legal_rect : RTUtil::getMergeRectList(planar_legal_rect_list, direction)) {
+        legal_rect_list.emplace_back(legal_rect, layer_idx);
+      }
+    }
   }
   if (legal_rect_list.empty()) {
     LOG_INST.warning(Loc::current(), "There is no legal pin shape!");
@@ -345,8 +345,8 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
   return legal_rect_list;
 }
 
-std::vector<LayerRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
-                                                        std::vector<EXTLayerRect>& pin_shape_list)
+std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
+                                                         std::vector<EXTLayerRect>& pin_shape_list)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
@@ -409,13 +409,11 @@ std::vector<LayerRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_i
   }
 
   std::vector<PlanarRect> legal_rect_list = RTUtil::getCuttingRectList(origin_rect_list, cutting_rect_list);
-  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getCuttingRectList(legal_rect_list, reduced_rect_list);
-
-  std::vector<LayerRect> via_legal_rect_list;
-  for (PlanarRect& legal_rect : reduced_legal_rect_list.empty() ? legal_rect_list : reduced_legal_rect_list) {
-    via_legal_rect_list.emplace_back(legal_rect, pin_shape_list.front().get_layer_idx());
+  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getOverlap(legal_rect_list, reduced_rect_list);
+  if (!reduced_legal_rect_list.empty()) {
+    legal_rect_list = reduced_legal_rect_list;
   }
-  return via_legal_rect_list;
+  return legal_rect_list;
 }
 
 void PinAccessor::mergeAccessPointList(PANet& pa_net)
