@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -34,6 +34,7 @@
 #include <string>
 #include <variant>
 
+#include "WaveformApproximation.hh"
 #include "liberty/Liberty.hh"
 #include "netlist/Net.hh"
 #include "netlist/Pin.hh"
@@ -45,21 +46,6 @@ class RctEdge;
 class RctNode;
 class RcTree;
 class LibetyCurrentData;
-
-/**
- * @brief The first three moments of admittance's Laplace expression.
- * Y(s)=y1s+y2s2+y3s3
- */
-struct LaplaceMoments {
-  double y1;
-  double y2;
-  double y3;
-  void operator=(LaplaceMoments* L) {
-    y1 = L->y1;
-    y2 = L->y2;
-    y3 = L->y3;
-  }
-};
 
 /**
  * @brief The RC tree node, that has ground capacitance.
@@ -76,10 +62,10 @@ class RctNode {
 
   virtual ~RctNode() = default;
 
-  double nodeLoad() const { return _load; }
+  [[nodiscard]] double nodeLoad() const { return _load; }
   double nodeLoad(AnalysisMode mode, TransType trans_type);
-  double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
-  double get_cap() const { return _cap; }
+  [[nodiscard]] double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
+  [[nodiscard]] double get_cap() const { return _cap; }
   double cap(AnalysisMode mode, TransType trans_type);
   double get_cap(AnalysisMode mode, TransType trans_type) {
     return _ncap[ModeTransPair(mode, trans_type)];
@@ -91,34 +77,82 @@ class RctNode {
     return _ures[ModeTransPair(mode, trans_type)];
   }
 
-  double delay() const { return _delay; }
+  void calNodePIModel();
+  void set_pi(PiModel* pi) {
+    _pi.C_far = pi->C_far;
+    _pi.C_near = pi->C_near;
+    _pi.R = pi->R;
+  }
+
+  [[nodiscard]] double delay() const { return _delay; }
   double delay(AnalysisMode mode, TransType trans_type);
+  [[nodiscard]] double delayD2M() const {
+    return _m2 == 0 ? 0 : _delay * _delay / sqrt(_m2) * log(2);
+  }
+  [[nodiscard]] double delayECM() const { return _delay_ecm; }
+  double updateCeff() {
+    calNodePIModel();
+    if (_moments.y2 == 0 && _moments.y3 == 0) {
+      _ceff = cap();
+    } else {
+      _ceff =
+          _pi.C_near + _pi.C_far * (1 - exp(-delayD2M() / (_pi.R * _pi.C_far)));
+    }
+    return _ceff;
+  }
   double slew(AnalysisMode mode, TransType trans_type, double input_slew);
-  std::string get_name() const { return _name; }
+  [[nodiscard]] std::string get_name() const { return _name; }
   void set_cap(double cap) { _cap = cap; }
-  unsigned isUpdateLoad() const { return _is_update_load; }
+  [[nodiscard]] unsigned isUpdateLoad() const { return _is_update_load; }
   void set_is_update_load(bool updated) { _is_update_load = (updated ? 1 : 0); }
 
-  unsigned isUpdateDelay() const { return _is_update_delay; }
+  [[nodiscard]] unsigned isUpdateDelay() const { return _is_update_delay; }
   void set_is_update_delay(bool updated) {
     _is_update_delay = (updated ? 1 : 0);
   }
 
-  unsigned isUpdateLdelay() const { return _is_update_ldelay; }
+  [[nodiscard]] unsigned isUpdateDelayECM() const {
+    return _is_update_delay_ecm;
+  }
+  void set_is_update_delay_ecm(bool updated) {
+    _is_update_delay_ecm = (updated ? 1 : 0);
+  }
+
+  [[nodiscard]] unsigned isUpdateM2() const { return _is_update_m2; }
+  void set_is_update_m2(bool updated) { _is_update_m2 = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateMC() const { return _is_update_mc; }
+  void set_is_update_mc(bool updated) { _is_update_mc = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateM2C() const { return _is_update_m2_c; }
+  void set_is_update_m2_c(bool updated) { _is_update_m2_c = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateMCC() const { return _is_update_mc_c; }
+  void set_is_update_mc_c(bool updated) { _is_update_mc_c = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateCeff() const { return _is_update_ceff; }
+  void set_is_update_ceff(bool updated) { _is_update_ceff = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateLdelay() const { return _is_update_ldelay; }
   void set_is_update_Ldelay(bool updated) {
     _is_update_ldelay = (updated ? 1 : 0);
   }
 
-  unsigned isUpdateResponse() const { return _is_update_response; }
+  [[nodiscard]] unsigned isUpdateResponse() const {
+    return _is_update_response;
+  }
   void set_is_update_response(bool updated) {
     _is_update_response = (updated ? 1 : 0);
   }
 
-  unsigned isTranverse() const { return _is_tranverse; }
+  [[nodiscard]] unsigned isTranverse() const { return _is_tranverse; }
   void set_is_tranverse(bool updated) { _is_tranverse = (updated ? 1 : 0); }
 
-  unsigned isVisited() const { return _is_visited; }
+  [[nodiscard]] unsigned isVisited() const { return _is_visited; }
   void set_is_visited(bool updated) { _is_visited = (updated ? 1 : 0); }
+
+  void set_is_visited_ecm(bool updated) { _is_visited_ecm = (updated ? 1 : 0); }
+  [[nodiscard]] unsigned isVisitedEcm() const { return _is_visited_ecm; }
 
   void set_obj(DesignObject* obj) { _obj = obj; }
   DesignObject* get_obj() { return _obj; }
@@ -148,14 +182,27 @@ class RctNode {
   double _cap = 0.0;
   double _load = 0.0;
   double _delay = 0.0;
+  double _m2 = 0.0;
+  double _mc = 0.0;
+  double _m2_c = 0.0;
+  double _mc_c = 0.0;
+  double _ceff = 0.0;
+  double _delay_ecm = 0.0;
 
-  unsigned _is_update_load : 1;
-  unsigned _is_update_delay : 1;
-  unsigned _is_update_ldelay : 1;
-  unsigned _is_update_response : 1;
-  unsigned _is_tranverse : 1;
-  unsigned _is_visited : 1;
-  unsigned _reserved : 26;
+  unsigned _is_update_load : 1 = 0;
+  unsigned _is_update_delay : 1 = 0;
+  unsigned _is_update_ldelay : 1 = 0;
+  unsigned _is_update_delay_ecm : 1 = 0;
+  unsigned _is_update_m2 : 1 = 0;
+  unsigned _is_update_mc : 1 = 0;
+  unsigned _is_update_m2_c : 1 = 0;
+  unsigned _is_update_mc_c : 1 = 0;
+  unsigned _is_update_ceff : 1 = 0;
+  unsigned _is_update_response : 1 = 0;
+  unsigned _is_tranverse : 1 = 0;
+  unsigned _is_visited : 1 = 0;
+  unsigned _is_visited_ecm : 1 = 0;
+  unsigned _reserved : 19 = 0;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -171,6 +218,7 @@ class RctNode {
   DesignObject* _obj{nullptr};
 
   LaplaceMoments _moments;
+  PiModel _pi;
 
   DISALLOW_COPY_AND_ASSIGN(RctNode);
 };
@@ -259,11 +307,11 @@ class RctEdge {
 
   unsigned _is_break : 1 = 0;
   unsigned _is_visited : 1 = 0;
+  unsigned _is_in_order : 1 = 0;
   unsigned _reserved : 30 = 0;
 
   double _res = 0.0;
 
-  bool _is_in_order = false;
   DISALLOW_COPY_AND_ASSIGN(RctEdge);
 };
 
@@ -385,7 +433,12 @@ class RcTree {
 
   void initData();
   void updateLoad(RctNode*, RctNode*);
+  void updateMC(RctNode* parent, RctNode* from);
+  void updateMCC(RctNode* parent, RctNode* from);
   void updateDelay(RctNode*, RctNode*);
+  void updateDelayECM(RctNode* parent, RctNode* from);
+  void updateM2(RctNode* parent, RctNode* from);
+  void updateM2C(RctNode* parent, RctNode* from);
   void updateLDelay(RctNode* parent, RctNode* from);
   void updateResponse(RctNode* parent, RctNode* from);
 

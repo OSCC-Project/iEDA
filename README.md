@@ -139,7 +139,6 @@ docker run -it -v ${工艺和设计目录}:${容器内目录} --rm iedaopensourc
 
 ```
 iEDA/scripts/sky130
-├── common        # common scripts
 ├── iEDA_config   # iEDA parameters configuration files
 ├── lef           # lef files
 ├── lib           # lib files

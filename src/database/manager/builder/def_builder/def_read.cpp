@@ -1748,13 +1748,13 @@ int32_t DefRead::parse_via(defiVia* def_via)
       master_generate->set_offset_bottom(offset_bottom_x, offset_bottom_y);
       master_generate->set_offset_top(offset_top_x, offset_top_y);
     }
-    
+
     // ROWCOL numCutRows numCutCols
     // Specifies the number of cut rows and columns that make up the cut array.
     // Default: 1, for both values
     // Type: Positive integer, for both values
     // --lefdef_reference_5.8 p817
-    if (true) {
+    {
       int32_t num_rows = 1;
       int32_t num_cols = 1;
       if(def_via->hasRowCol()){
