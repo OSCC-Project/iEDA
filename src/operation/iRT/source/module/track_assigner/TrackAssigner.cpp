@@ -950,7 +950,8 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
   initRoutingInfo(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     routeSinglePath(ta_panel);
-    rerouteByforcing(ta_panel);
+    rerouteByIgnoringENV(ta_panel);
+    rerouteByIgnoringOBS(ta_panel);
     updatePathResult(ta_panel);
     resetStartAndEnd(ta_panel);
     resetSinglePath(ta_panel);
@@ -1080,9 +1081,6 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
 
 bool TrackAssigner::passCheckingSegment(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
-  if (ta_panel.isForcedRouting()) {
-    return true;
-  }
   Orientation orientation = getOrientation(start_node, end_node);
   if (orientation == Orientation::kNone) {
     return true;
@@ -1099,8 +1097,10 @@ bool TrackAssigner::passCheckingSegment(TAPanel& ta_panel, TANode* start_node, T
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(ta_panel.get_curr_task_idx(), orientation)
-        || curr_node->isOBS(ta_panel.get_curr_task_idx(), opposite_orientation)) {
+    if (pre_node->isOBS(ta_panel.get_curr_task_idx(), orientation, ta_panel.get_ta_route_strategy())) {
+      return false;
+    }
+    if (curr_node->isOBS(ta_panel.get_curr_task_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
       return false;
     }
   }
@@ -1124,8 +1124,6 @@ bool TrackAssigner::isRoutingFailed(TAPanel& ta_panel)
 
 void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
 {
-  ta_panel.set_forced_routing(false);
-
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
   ta_panel.set_open_queue(empty_queue);
 
@@ -1142,17 +1140,37 @@ void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
   ta_panel.set_end_node_comb_idx(-1);
 }
 
-void TrackAssigner::rerouteByforcing(TAPanel& ta_panel)
+void TrackAssigner::rerouteByIgnoringENV(TAPanel& ta_panel)
 {
   if (isRoutingFailed(ta_panel)) {
-    if (omp_get_num_threads() == 1) {
-      LOG_INST.warning(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " forced routing!");
-    }
     resetSinglePath(ta_panel);
-    ta_panel.set_forced_routing(true);
+    ta_panel.set_ta_route_strategy(TARouteStrategy::kIgnoringENV);
     routeSinglePath(ta_panel);
-    if (isRoutingFailed(ta_panel)) {
-      LOG_INST.error(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " forced routing failed!");
+    ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
+    if (!isRoutingFailed(ta_panel)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.warning(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
+                         GetTARouteStrategyName()(TARouteStrategy::kIgnoringENV), " successfully!");
+      }
+    }
+  }
+}
+
+void TrackAssigner::rerouteByIgnoringOBS(TAPanel& ta_panel)
+{
+  if (isRoutingFailed(ta_panel)) {
+    resetSinglePath(ta_panel);
+    ta_panel.set_ta_route_strategy(TARouteStrategy::kIgnoringOBS);
+    routeSinglePath(ta_panel);
+    ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
+    if (!isRoutingFailed(ta_panel)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.warning(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
+                         GetTARouteStrategyName()(TARouteStrategy::kIgnoringOBS), " successfully!");
+      }
+    } else {
+      LOG_INST.error(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
+                     GetTARouteStrategyName()(TARouteStrategy::kIgnoringOBS), " failed!");
     }
   }
 }
@@ -1214,12 +1232,12 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 
 void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
 {
-  updateEnvironment(ta_panel, ta_task);
+  updateENVTaskMap(ta_panel, ta_task);
   updateDemand(ta_panel, ta_task);
   updateResult(ta_panel, ta_task);
 }
 
-void TrackAssigner::updateEnvironment(TAPanel& ta_panel, TATask& ta_task)
+void TrackAssigner::updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
@@ -1387,6 +1405,8 @@ double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_nod
     if (RTUtil::isOblique(*start_node, *end_node)) {
       corner_cost = ta_panel.get_corner_unit();
     }
+  } else if (start_node->get_planar_coord() != end_node->get_planar_coord()) {
+    corner_cost = ta_panel.get_corner_unit();
   }
   return corner_cost;
 }
