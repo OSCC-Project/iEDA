@@ -140,6 +140,10 @@ class TrackAssigner
   void countTAPanel(TAPanel& ta_panel);
 #endif
 
+#if 1  // update ta_panel
+  void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+#endif
+
 #if 1  // update ta_model
   void updateTAModel(TAModel& ta_model);
   void buildRoutingResult(TATask& ta_task);
