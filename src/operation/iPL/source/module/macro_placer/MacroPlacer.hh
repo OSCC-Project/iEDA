@@ -62,6 +62,7 @@ class MacroPlacer
   void initLocation();
   void plotGDS();
   void plotPartitionGDS(std::map<FPInst*, int> partition_result);
+  void buildNewNetList();
 
   // data
   MPDB* _mdb;

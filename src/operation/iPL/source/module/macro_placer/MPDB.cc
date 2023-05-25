@@ -34,68 +34,7 @@ FPInst* MPDB::findNewMacro(FPInst* inst)
   return new_macro;
 }
 
-void MPDB::buildNetList()
-{
-  _new_net_list.clear();
-  std::vector<FPNet*> old_net_list = _db_wrapper->get_design()->get_net_list();
-  for (FPNet* old_net : old_net_list) {
-    std::vector<FPPin*> pin_list = old_net->get_pin_list();
-    if (pin_list.size() == 0) {
-      continue;
-    }
-
-    if (pin_list.size() > 50) {
-      LOG_INFO << "degree of net " << old_net->get_name() << " : " << pin_list.size();
-      continue;
-    }
-
-    std::set<FPInst*> net_macro_set;
-
-    // create new net
-    FPNet* new_net = new FPNet();
-    new_net->set_name(old_net->get_name());
-    // read instance pin
-    for (FPPin* old_pin : pin_list) {
-      if (old_pin->is_io_pin()) {
-        new_net->add_pin(old_pin);
-        continue;
-      }
-      FPInst* old_inst = old_pin->get_instance();
-      if (nullptr == old_inst) {
-        continue;
-      }
-      if (old_inst->isMacro()) {
-        new_net->add_pin(old_pin);
-        // net_macro_set.insert(old_inst);
-      } else {
-        FPInst* new_macro = findNewMacro(old_inst);
-        if (nullptr == new_macro) {
-          continue;
-        }
-        net_macro_set.insert(new_macro);
-      }
-    }
-
-    // create new pin
-    if (net_macro_set.size() < 1 || ((net_macro_set.size() == 1) && (new_net->get_pin_list().size() == 0))) {
-      delete new_net;
-      continue;
-    }
-    for (std::set<FPInst*>::iterator it = net_macro_set.begin(); it != net_macro_set.end(); ++it) {
-      FPPin* new_pin = new FPPin();
-      new_pin->set_instance(*it);
-      (*it)->add_pin(new_pin);
-      new_pin->set_x(0);
-      new_pin->set_y(0);
-      new_pin->set_net(new_net);
-      new_net->add_pin(new_pin);
-    }
-    _new_net_list.emplace_back(new_net);
-  }
-  showNetMessage();
-}
-
-void MPDB::showNetMessage()
+void MPDB::showNewNetMessage()
 {
   std::vector<int> pin_num(10);
   for (FPNet* net : _new_net_list) {
@@ -260,4 +199,16 @@ void MPDB::writeResult(std::string output_path)
   }
   file.close();
 };
+
+void MPDB::clearNewNetList()
+{
+  for (auto new_net : _new_net_list) {
+    if (new_net != nullptr) {
+      delete new_net;
+      new_net = nullptr;
+    }
+  }
+  _new_net_list.clear();
+}
+
 }  // namespace ipl::imp
