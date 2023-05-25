@@ -17,7 +17,7 @@
 /**
  * @file ArnoldiCal.hh
  * @author LH (liuh0326@163.com)
- * @brief
+ * @brief Calc the delay by ccs model.
  * @version 0.1
  * @date 2021-07-04
  */

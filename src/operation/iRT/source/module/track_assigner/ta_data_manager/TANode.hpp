@@ -20,6 +20,7 @@
 #include "Orientation.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
+#include "TARouteStrategy.hpp"
 
 namespace irt {
 
@@ -59,15 +60,21 @@ class TANode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation)
+  bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
   {
     bool is_obs = false;
+    if (ta_route_strategy == TARouteStrategy::kIgnoringOBS) {
+      return is_obs;
+    }
     if (RTUtil::exist(_obs_task_map, orientation)) {
       if (_obs_task_map[orientation].size() >= 2) {
         is_obs = true;
       } else {
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
+    }
+    if (ta_route_strategy == TARouteStrategy::kIgnoringENV) {
+      return is_obs;
     }
     if (!is_obs) {
       if (RTUtil::exist(_env_task_map, orientation)) {

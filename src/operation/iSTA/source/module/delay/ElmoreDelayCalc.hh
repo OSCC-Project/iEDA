@@ -90,6 +90,9 @@ class RctNode {
     return _m2 == 0 ? 0 : _delay * _delay / sqrt(_m2) * log(2);
   }
   [[nodiscard]] double delayECM() const { return _delay_ecm; }
+  [[nodiscard]] double delayD2MM() const {
+    return _m2_c == 0 ? 0 : _delay_ecm * _delay_ecm / sqrt(_m2_c) * log(2);
+  }
   double updateCeff() {
     calNodePIModel();
     if (_moments.y2 == 0 && _moments.y3 == 0) {
@@ -124,6 +127,12 @@ class RctNode {
   [[nodiscard]] unsigned isUpdateMC() const { return _is_update_mc; }
   void set_is_update_mc(bool updated) { _is_update_mc = (updated ? 1 : 0); }
 
+  [[nodiscard]] unsigned isUpdateM2C() const { return _is_update_m2_c; }
+  void set_is_update_m2_c(bool updated) { _is_update_m2_c = (updated ? 1 : 0); }
+
+  [[nodiscard]] unsigned isUpdateMCC() const { return _is_update_mc_c; }
+  void set_is_update_mc_c(bool updated) { _is_update_mc_c = (updated ? 1 : 0); }
+
   [[nodiscard]] unsigned isUpdateCeff() const { return _is_update_ceff; }
   void set_is_update_ceff(bool updated) { _is_update_ceff = (updated ? 1 : 0); }
 
@@ -144,6 +153,9 @@ class RctNode {
 
   [[nodiscard]] unsigned isVisited() const { return _is_visited; }
   void set_is_visited(bool updated) { _is_visited = (updated ? 1 : 0); }
+
+  void set_is_visited_ecm(bool updated) { _is_visited_ecm = (updated ? 1 : 0); }
+  [[nodiscard]] unsigned isVisitedEcm() const { return _is_visited_ecm; }
 
   void set_obj(DesignObject* obj) { _obj = obj; }
   DesignObject* get_obj() { return _obj; }
@@ -173,8 +185,10 @@ class RctNode {
   double _cap = 0.0;
   double _load = 0.0;
   double _delay = 0.0;
-  double _m2 = 0.0;
-  double _mc = 0.0;
+  double _mc = 0.0;    //!< Elmore * cap
+  double _m2 = 0.0;    //!< The two moment.
+  double _mc_c = 0.0;  //!< Elmore * ceff
+  double _m2_c = 0.0;  //!< The two moment with ceff.
   double _ceff = 0.0;
   double _delay_ecm = 0.0;
 
@@ -184,11 +198,14 @@ class RctNode {
   unsigned _is_update_delay_ecm : 1 = 0;
   unsigned _is_update_m2 : 1 = 0;
   unsigned _is_update_mc : 1 = 0;
+  unsigned _is_update_m2_c : 1 = 0;
+  unsigned _is_update_mc_c : 1 = 0;
   unsigned _is_update_ceff : 1 = 0;
   unsigned _is_update_response : 1 = 0;
   unsigned _is_tranverse : 1 = 0;
   unsigned _is_visited : 1 = 0;
-  unsigned _reserved : 22 = 0;
+  unsigned _is_visited_ecm : 1 = 0;
+  unsigned _reserved : 19 = 0;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -420,9 +437,11 @@ class RcTree {
   void initData();
   void updateLoad(RctNode*, RctNode*);
   void updateMC(RctNode* parent, RctNode* from);
+  void updateMCC(RctNode* parent, RctNode* from);
   void updateDelay(RctNode*, RctNode*);
   void updateDelayECM(RctNode* parent, RctNode* from);
   void updateM2(RctNode* parent, RctNode* from);
+  void updateM2C(RctNode* parent, RctNode* from);
   void updateLDelay(RctNode* parent, RctNode* from);
   void updateResponse(RctNode* parent, RctNode* from);
 
@@ -489,6 +508,7 @@ class RcNet {
   struct EmptyRct {
     double load;
   };
+  enum class DelayMethod { kElmore, kD2M, kECM, kD2MC };
 
   explicit RcNet(Net* net) : _net(net) {}
   virtual ~RcNet() = default;
@@ -514,7 +534,16 @@ class RcNet {
   double getResistance(AnalysisMode mode, TransType trans_type,
                        DesignObject* load_obj);
 
-  std::optional<double> delay(DesignObject& to);
+  std::optional<double> delay(DesignObject& to,
+                              DelayMethod delay_method = DelayMethod::kElmore);
+  std::optional<double> delayNs(DesignObject& to, DelayMethod delay_method) {
+    auto delay_ps = delay(to, delay_method);
+    if (delay_ps) {
+      return PS_TO_NS(delay_ps.value());
+    }
+    return std::nullopt;
+  }
+
   virtual std::optional<std::pair<double, Eigen::MatrixXd>> delay(
       DesignObject& to, double from_slew,
       std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,

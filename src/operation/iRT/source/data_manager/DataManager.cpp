@@ -893,6 +893,8 @@ void DataManager::makeLayerViaMasterList()
       Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_direction();
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
+    std::sort(via_master_list.begin(), via_master_list.end(),
+              [&](ViaMaster& via_master1, ViaMaster& via_master2) { return sortByMultiLevel(via_master1, via_master2); });
 
     std::sort(via_master_list.begin(), via_master_list.end(), [&](ViaMaster& a, ViaMaster& b) {
       std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
@@ -943,6 +945,134 @@ void DataManager::makeLayerViaMasterList()
     });
     for (size_t i = 0; i < via_master_list.size(); i++) {
       via_master_list[i].set_via_idx(std::make_pair(layer_idx, i));
+    }
+  }
+}
+
+bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  SortStatus sort_status = SortStatus::kNone;
+
+  sort_status = sortByWidthASC(via_master1, via_master2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByLengthASC(via_master1, via_master2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortBySymmetryPriority(via_master1, via_master2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  return false;
+}
+
+// 宽度升序
+SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 层方向优先
+SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  Direction above_layer_direction = routing_layer_list[via_master1.get_above_enclosure().get_layer_idx()].get_direction();
+  Direction below_layer_direction = routing_layer_list[via_master1.get_below_enclosure().get_layer_idx()].get_direction();
+
+  if (via_master1.get_above_direction() == above_layer_direction && via_master2.get_above_direction() != above_layer_direction) {
+    return SortStatus::kTrue;
+  } else if (via_master1.get_above_direction() != above_layer_direction && via_master2.get_above_direction() == above_layer_direction) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
+      return SortStatus::kTrue;
+    } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 长度升序
+SortStatus DataManager::sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  if (via_master1_above.getLength() < via_master2_above.getLength()) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above.getLength() > via_master2_above.getLength()) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below.getLength() < via_master2_below.getLength()) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below.getLength() > via_master2_below.getLength()) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 对称优先
+SortStatus DataManager::sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  // via_master的lb为负数，rt为正数
+  irt_int via_master1_above_center_diff = std::abs(via_master1_above.get_lb_x() + via_master1_above.get_rt_x());
+  irt_int via_master2_above_center_diff = std::abs(via_master2_above.get_lb_x() + via_master2_above.get_rt_x());
+  irt_int via_master1_below_center_diff = std::abs(via_master1_below.get_lb_x() + via_master1_below.get_rt_x());
+  irt_int via_master2_below_center_diff = std::abs(via_master2_below.get_lb_x() + via_master2_below.get_rt_x());
+  if (via_master1_above_center_diff < via_master2_above_center_diff) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above_center_diff > via_master2_above_center_diff) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below_center_diff < via_master2_below_center_diff) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below_center_diff > via_master2_below_center_diff) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
     }
   }
 }

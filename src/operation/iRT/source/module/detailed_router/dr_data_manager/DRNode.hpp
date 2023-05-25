@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRRouteStrategy.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTU.hpp"
@@ -59,15 +60,21 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation)
+  bool isOBS(irt_int task_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
   {
     bool is_obs = false;
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringOBS) {
+      return is_obs;
+    }
     if (RTUtil::exist(_obs_task_map, orientation)) {
       if (_obs_task_map[orientation].size() >= 2) {
         is_obs = true;
       } else {
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
+    }
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
+      return is_obs;
     }
     if (!is_obs) {
       if (RTUtil::exist(_env_task_map, orientation)) {
