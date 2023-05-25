@@ -47,12 +47,8 @@ void MacroPlacer::runMacroPlacer()
   // parition
   MPPartition* partition = new MPPartition(_mdb, _set);
   partition->runPartition();
-  _mdb->buildNetList();
-  LOG_INFO << "_mdb's netlist have build, the num of net: " << _mdb->get_new_net_list().size();
+  buildNewNetList();
   _mdb->updatePlaceMacroList();
-  LOG_INFO << "halo_x: " << _set->get_macro_halo_x();
-  LOG_INFO << "halo_y: " << _set->get_macro_halo_y();
-  LOG_INFO << "new_macro_density: " << _set->get_new_macro_density();
 
   // simulate anneal
   SolutionFactory factory = SolutionFactory();
@@ -126,6 +122,10 @@ void MacroPlacer::init()
   updateDensity();
   // set guidance
   initLocation();
+
+  LOG_INFO << "halo_x: " << _set->get_macro_halo_x();
+  LOG_INFO << "halo_y: " << _set->get_macro_halo_y();
+  LOG_INFO << "new_macro_density: " << _set->get_new_macro_density();
 }
 
 void MacroPlacer::updateDensity()
@@ -344,6 +344,69 @@ void MacroPlacer::plotPartitionGDS(map<FPInst*, int> partition_result)
     plotter->plotInst(iter->first, iter->second + 2);
   }
   delete plotter;
+}
+
+void MacroPlacer::buildNewNetList()
+{
+  _mdb->clearNewNetList();
+  std::vector<FPNet*> old_net_list = _mdb->get_net_list();
+  for (FPNet* old_net : old_net_list) {
+    std::vector<FPPin*> pin_list = old_net->get_pin_list();
+    if (pin_list.size() == 0) {
+      continue;
+    }
+
+    if (pin_list.size() > 50) {
+      LOG_INFO << "degree of net " << old_net->get_name() << " : " << pin_list.size();
+      continue;
+    }
+
+    std::set<FPInst*> net_macro_set;
+
+    // create new net
+    FPNet* new_net = new FPNet();
+    new_net->set_name(old_net->get_name());
+    // read instance pin
+    for (FPPin* old_pin : pin_list) {
+      if (old_pin->is_io_pin()) {
+        new_net->add_pin(old_pin);
+        continue;
+      }
+      FPInst* old_inst = old_pin->get_instance();
+      if (nullptr == old_inst) {
+        continue;
+      }
+      if (old_inst->isMacro()) {
+        new_net->add_pin(old_pin);
+        // net_macro_set.insert(old_inst);
+      } else {
+        FPInst* new_macro = _mdb->findNewMacro(old_inst);
+        if (nullptr == new_macro) {
+          continue;
+        }
+        net_macro_set.insert(new_macro);
+      }
+    }
+
+    // create new pin
+    if (net_macro_set.size() < 1 || ((net_macro_set.size() == 1) && (new_net->get_pin_list().size() == 0))) {
+      delete new_net;
+      continue;
+    }
+    for (std::set<FPInst*>::iterator it = net_macro_set.begin(); it != net_macro_set.end(); ++it) {
+      FPPin* new_pin = new FPPin();
+      new_pin->set_instance(*it);
+      (*it)->add_pin(new_pin);
+      new_pin->set_x(0);
+      new_pin->set_y(0);
+      new_pin->set_net(new_net);
+      new_net->add_pin(new_pin);
+    }
+    _mdb->add_new_net(new_net);
+  }
+
+  LOG_INFO << "_mdb's netlist have build, the num of net: " << _mdb->get_new_net_list().size();
+  _mdb->showNewNetMessage();
 }
 
 }  // namespace ipl::imp

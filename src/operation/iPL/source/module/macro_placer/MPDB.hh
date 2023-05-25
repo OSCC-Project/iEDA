@@ -45,10 +45,12 @@ class MPDB
   void add_blockage(FPRect* rect) { _blockage_list.emplace_back(rect); }
   void add_guidance_to_macro_name(FPRect* guidance, FPInst* macro);
   void add_guidance_to_macro_name(FPRect* guidance, std::string macro_name);
+  void add_new_net(FPNet* new_net) { _new_net_list.emplace_back(new_net); }
 
   // getter
   std::vector<FPInst*> get_total_macro_list() { return _total_macro_list; }
   std::vector<FPInst*> get_place_macro_list() { return _place_macro_list; }
+  std::vector<FPNet*> get_net_list() { return _db_wrapper->get_design()->get_net_list(); }
   std::vector<FPNet*> get_new_net_list() { return _new_net_list; }
   int get_ture_index() { return _true_index; }
   std::vector<FPRect*> get_blockage_list() { return _blockage_list; }
@@ -59,14 +61,16 @@ class MPDB
   void writeBackSourceDataBase() { _db_wrapper->writeBackSourceDataBase(); }
   FPInst* findNewMacro(FPInst* inst);
   FPInst* findMacro(std::string name);
-  void buildNetList();
   void writeDB();
   void setMacroFixed(std::string name, int32_t x = -1, int32_t y = -1);
   void writeResult(std::string output_path);
 
+  void clearNewNetList();
+  void showNewNetMessage();
+
  private:
   void initMPDB();
-  void showNetMessage();
+  
 
   // data
   DBWrapper* _db_wrapper;
