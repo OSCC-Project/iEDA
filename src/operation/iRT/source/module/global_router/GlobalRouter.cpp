@@ -772,7 +772,10 @@ bool GlobalRouter::passCheckingSegment(GRModel& gr_model, GRNode* start_node, GR
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(gr_model.get_curr_net_idx(), orientation) || curr_node->isOBS(gr_model.get_curr_net_idx(), opposite_orientation)) {
+    if (pre_node->isOBS(gr_model.get_curr_net_idx(), orientation)) {
+      return false;
+    }
+    if (curr_node->isOBS(gr_model.get_curr_net_idx(), opposite_orientation)) {
       return false;
     }
   }
@@ -1069,6 +1072,8 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
     if (RTUtil::isOblique(*start_node, *end_node)) {
       corner_cost = gr_model.get_corner_unit();
     }
+  } else if (start_node->get_planar_coord() != end_node->get_planar_coord()) {
+    corner_cost = gr_model.get_corner_unit();
   }
   return corner_cost;
 }

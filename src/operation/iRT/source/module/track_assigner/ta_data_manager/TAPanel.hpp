@@ -58,6 +58,7 @@ class TAPanel : public EXTLayerRect
   std::vector<std::vector<TANode*>>& get_end_node_comb_list() { return _end_node_comb_list; }
   std::vector<TANode*>& get_path_node_comb() { return _path_node_comb; }
   std::vector<Segment<TANode*>>& get_node_segment_list() { return _node_segment_list; }
+  TARouteStrategy& get_ta_route_strategy() { return _ta_route_strategy; }
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_visited_node_list() { return _visited_node_list; }
   TANode* get_path_head_node() { return _path_head_node; }
@@ -74,12 +75,11 @@ class TAPanel : public EXTLayerRect
   void set_end_node_comb_list(const std::vector<std::vector<TANode*>>& end_node_comb_list) { _end_node_comb_list = end_node_comb_list; }
   void set_path_node_comb(const std::vector<TANode*>& path_node_comb) { _path_node_comb = path_node_comb; }
   void set_node_segment_list(const std::vector<Segment<TANode*>>& node_segment_list) { _node_segment_list = node_segment_list; }
-  void set_forced_routing(const bool forced_routing) { _forced_routing = forced_routing; }
+  void set_ta_route_strategy(const TARouteStrategy& ta_route_strategy) { _ta_route_strategy = ta_route_strategy; }
   void set_open_queue(const std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
   void set_visited_node_list(const std::vector<TANode*>& visited_node_list) { _visited_node_list = visited_node_list; }
   void set_path_head_node(TANode* path_head_node) { _path_head_node = path_head_node; }
   void set_end_node_comb_idx(const irt_int end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
-  bool isForcedRouting() { return _forced_routing; }
 #endif
 
  private:
@@ -102,7 +102,7 @@ class TAPanel : public EXTLayerRect
   std::vector<TANode*> _path_node_comb;
   std::vector<Segment<TANode*>> _node_segment_list;
   // single path
-  bool _forced_routing = false;
+  TARouteStrategy _ta_route_strategy = TARouteStrategy::kNone;
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
   std::vector<TANode*> _visited_node_list;
   TANode* _path_head_node = nullptr;

@@ -109,11 +109,12 @@ class TrackAssigner
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
-  void rerouteByforcing(TAPanel& ta_panel);
+  void rerouteByIgnoringENV(TAPanel& ta_panel);
+  void rerouteByIgnoringOBS(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
-  void updateEnvironment(TAPanel& ta_panel, TATask& ta_task);
+  void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);
   void updateDemand(TAPanel& ta_panel, TATask& ta_task);
   void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);

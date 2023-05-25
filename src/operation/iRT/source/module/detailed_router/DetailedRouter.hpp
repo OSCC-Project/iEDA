@@ -118,11 +118,12 @@ class DetailedRouter
   void rerouteByEnlarging(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
-  void rerouteByforcing(DRBox& dr_box);
+  void rerouteByIgnoringENV(DRBox& dr_box);
+  void rerouteByIgnoringOBS(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
-  void updateEnvironment(DRBox& dr_box, DRTask& dr_task);
+  void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
   void updateDemand(DRBox& dr_box, DRTask& dr_task);
   void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
