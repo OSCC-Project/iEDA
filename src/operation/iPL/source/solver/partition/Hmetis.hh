@@ -47,7 +47,7 @@ class Hmetis
   std::vector<int> get_result() { return _partition_result; }
 
  private:
-  std::string _hmetis_path = "../src/third_party/hmetis";
+  std::string _hmetis_path = "../src/third_party/hmetis/hmetis2.0pre1";
   std::string _output_path = "./result/pl";
   int _nparts = 2;
 
