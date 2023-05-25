@@ -44,6 +44,11 @@ void MPDB::buildNetList()
       continue;
     }
 
+    if (pin_list.size() > 50) {
+      LOG_INFO << "degree of net " << old_net->get_name() << " : " << pin_list.size();
+      continue;
+    }
+
     std::set<FPInst*> net_macro_set;
 
     // create new net
