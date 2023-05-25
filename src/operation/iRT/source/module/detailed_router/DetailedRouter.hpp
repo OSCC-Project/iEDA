@@ -148,6 +148,10 @@ class DetailedRouter
   void countDRBox(DRBox& dr_box);
 #endif
 
+#if 1  // update dr_box
+  void updateDRBox(DRModel& dr_model, DRBox& dr_box);
+#endif
+
 #if 1  // update dr_model
   void updateDRModel(DRModel& dr_model);
   void buildRoutingResult(DRTask& dr_task);
