@@ -564,31 +564,10 @@ void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
 
 void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
-
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   for (irt_int x = 0; x < ta_node_map.get_x_size(); x++) {
     for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
       std::map<Orientation, TANode*>& neighbor_ptr_map = ta_node_map[x][y].get_neighbor_ptr_map();
-
-#if 1
-      if (routing_layer.isPreferH()) {
-        if (x != 0) {
-          neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
-        }
-        if (x != (ta_node_map.get_x_size() - 1)) {
-          neighbor_ptr_map[Orientation::kEast] = &ta_node_map[x + 1][y];
-        }
-      } else {
-        if (y != 0) {
-          neighbor_ptr_map[Orientation::kSouth] = &ta_node_map[x][y - 1];
-        }
-        if (y != (ta_node_map.get_y_size() - 1)) {
-          neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
-        }
-      }
-#else
       if (x != 0) {
         neighbor_ptr_map[Orientation::kWest] = &ta_node_map[x - 1][y];
       }
@@ -601,7 +580,6 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
       if (y != (ta_node_map.get_y_size() - 1)) {
         neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
       }
-#endif
     }
   }
 }
@@ -1346,7 +1324,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(ta_panel, end_node, getOrientation(end_node, start_node));
-  cost += getWireCost(ta_panel, start_node, end_node);
+  cost += getKnowWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
   return cost;
@@ -1368,6 +1346,30 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
   double joint_cost = ((env_weight * env_cost + task_weight * task_cost)
                        * RTUtil::sigmoid((env_weight * env_cost + task_weight * task_cost), (env_weight + task_weight)));
   return joint_cost;
+}
+
+double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
+
+  double wire_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
+
+    irt_int x_distance = std::abs(start_node->get_x() - end_node->get_x());
+    irt_int y_distance = std::abs(start_node->get_y() - end_node->get_y());
+
+    if (routing_layer.isPreferH()) {
+      wire_cost += (x_distance * ta_panel.get_wire_unit());
+      wire_cost += (y_distance * 2 * ta_panel.get_wire_unit());
+    } else {
+      wire_cost += (y_distance * ta_panel.get_wire_unit());
+      wire_cost += (x_distance * 2 * ta_panel.get_wire_unit());
+    }
+  } else {
+    wire_cost += (ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
+  }
+  return wire_cost;
 }
 
 double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
@@ -1410,10 +1412,15 @@ double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getWireCost(ta_panel, start_node, end_node);
+  estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
+}
+
+double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  return ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
@@ -1439,11 +1446,6 @@ Orientation TrackAssigner::getOrientation(TANode* start_node, TANode* end_node)
                    ")-(", (*end_node).get_x(), ",", (*end_node).get_y(), ",", (*end_node).get_layer_idx(), ") is oblique!");
   }
   return orientation;
-}
-
-double TrackAssigner::getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double TrackAssigner::getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)

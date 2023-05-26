@@ -1611,7 +1611,7 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(dr_box, end_node, getOrientation(end_node, start_node));
-  cost += getWireCost(dr_box, start_node, end_node);
+  cost += getKnowWireCost(dr_box, start_node, end_node);
   cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getViaCost(dr_box, start_node, end_node);
   return cost;
@@ -1633,6 +1633,30 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
   double joint_cost = ((env_weight * env_cost + task_weight * task_cost)
                        * RTUtil::sigmoid((env_weight * env_cost + task_weight * task_cost), (env_weight + task_weight)));
   return joint_cost;
+}
+
+double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+
+  double wire_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
+
+    irt_int x_distance = std::abs(start_node->get_x() - end_node->get_x());
+    irt_int y_distance = std::abs(start_node->get_y() - end_node->get_y());
+
+    if (routing_layer.isPreferH()) {
+      wire_cost += (x_distance * dr_box.get_wire_unit());
+      wire_cost += (y_distance * 2 * dr_box.get_wire_unit());
+    } else {
+      wire_cost += (y_distance * dr_box.get_wire_unit());
+      wire_cost += (x_distance * 2 * dr_box.get_wire_unit());
+    }
+  } else {
+    wire_cost += (dr_box.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
+  }
+  return wire_cost;
 }
 
 double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
@@ -1675,10 +1699,15 @@ double DetailedRouter::getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node)
 double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getWireCost(dr_box, start_node, end_node);
+  estimate_cost += getEstimateWireCost(dr_box, start_node, end_node);
   estimate_cost += getEstimateCornerCost(dr_box, start_node, end_node);
   estimate_cost += getViaCost(dr_box, start_node, end_node);
   return estimate_cost;
+}
+
+double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  return dr_box.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
@@ -1704,11 +1733,6 @@ Orientation DetailedRouter::getOrientation(DRNode* start_node, DRNode* end_node)
                    ")-(", (*end_node).get_x(), ",", (*end_node).get_y(), ",", (*end_node).get_layer_idx(), ") is oblique!");
   }
   return orientation;
-}
-
-double DetailedRouter::getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  return dr_box.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double DetailedRouter::getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
