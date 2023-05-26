@@ -112,6 +112,7 @@ class TrackAssigner
   void rerouteByIgnoringENV(TAPanel& ta_panel);
   void rerouteByIgnoringOBS(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
+  void updateOrientationSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
   void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);

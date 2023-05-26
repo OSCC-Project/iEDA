@@ -121,6 +121,7 @@ class DetailedRouter
   void rerouteByIgnoringENV(DRBox& dr_box);
   void rerouteByIgnoringOBS(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
+  void updateOrientationSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);

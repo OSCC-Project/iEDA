@@ -629,8 +629,9 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   while (!isConnectedAllEnd(gr_model)) {
     routeSinglePath(gr_model);
     rerouteByEnlarging(gr_model);
-    rerouteByforcing(gr_model);
+    rerouteByIgnoringOBS(gr_model);
     updatePathResult(gr_model);
+    updateOrientationSet(gr_model);
     resetStartAndEnd(gr_model);
     resetSinglePath(gr_model);
   }
@@ -753,9 +754,6 @@ void GlobalRouter::expandSearching(GRModel& gr_model)
 
 bool GlobalRouter::passCheckingSegment(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
-  if (gr_model.isForcedRouting()) {
-    return true;
-  }
   Orientation orientation = getOrientation(start_node, end_node);
   if (orientation == Orientation::kNone) {
     return true;
@@ -772,10 +770,10 @@ bool GlobalRouter::passCheckingSegment(GRModel& gr_model, GRNode* start_node, GR
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(gr_model.get_curr_net_idx(), orientation)) {
+    if (pre_node->isOBS(gr_model.get_curr_net_idx(), orientation, gr_model.get_gr_route_strategy())) {
       return false;
     }
-    if (curr_node->isOBS(gr_model.get_curr_net_idx(), opposite_orientation)) {
+    if (curr_node->isOBS(gr_model.get_curr_net_idx(), opposite_orientation, gr_model.get_gr_route_strategy())) {
       return false;
     }
   }
@@ -813,8 +811,6 @@ bool GlobalRouter::isRoutingFailed(GRModel& gr_model)
 
 void GlobalRouter::resetSinglePath(GRModel& gr_model)
 {
-  gr_model.set_forced_routing(false);
-
   std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost> empty_queue;
   gr_model.set_open_queue(empty_queue);
 
@@ -831,15 +827,21 @@ void GlobalRouter::resetSinglePath(GRModel& gr_model)
   gr_model.set_end_node_comb_idx(-1);
 }
 
-void GlobalRouter::rerouteByforcing(GRModel& gr_model)
+void GlobalRouter::rerouteByIgnoringOBS(GRModel& gr_model)
 {
   if (isRoutingFailed(gr_model)) {
-    LOG_INST.warning(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " forced routing!");
     resetSinglePath(gr_model);
-    gr_model.set_forced_routing(true);
+    gr_model.set_gr_route_strategy(GRRouteStrategy::kIgnoringOBS);
     routeSinglePath(gr_model);
-    if (isRoutingFailed(gr_model)) {
-      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " forced routing failed!");
+    gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
+    if (!isRoutingFailed(gr_model)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.warning(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
+                         GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " successfully!");
+      }
+    } else {
+      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
+                     GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " failed!");
     }
   }
 }
@@ -867,6 +869,20 @@ void GlobalRouter::updatePathResult(GRModel& gr_model)
     pre_node = pre_node->get_parent_node();
   }
   node_segment_list.emplace_back(curr_node, pre_node);
+}
+
+void GlobalRouter::updateOrientationSet(GRModel& gr_model)
+{
+  GRNode* path_head_node = gr_model.get_path_head_node();
+
+  GRNode* curr_node = path_head_node;
+  GRNode* pre_node = curr_node->get_parent_node();
+  while (pre_node != nullptr) {
+    curr_node->get_orientation_set().insert(getOrientation(curr_node, pre_node));
+    pre_node->get_orientation_set().insert(getOrientation(pre_node, curr_node));
+    curr_node = pre_node;
+    pre_node = curr_node->get_parent_node();
+  }
 }
 
 void GlobalRouter::resetStartAndEnd(GRModel& gr_model)
@@ -966,6 +982,21 @@ void GlobalRouter::resetSingleNet(GRModel& gr_model)
   gr_model.get_start_node_comb_list().clear();
   gr_model.get_end_node_comb_list().clear();
   gr_model.get_path_node_comb().clear();
+
+  for (Segment<GRNode*>& node_segment : gr_model.get_node_segment_list()) {
+    GRNode* first_node = node_segment.get_first();
+    GRNode* second_node = node_segment.get_second();
+    Orientation orientation = getOrientation(first_node, second_node);
+
+    GRNode* node_i = first_node;
+    while (true) {
+      node_i->get_orientation_set().clear();
+      if (node_i == second_node) {
+        break;
+      }
+      node_i = node_i->getNeighborNode(orientation);
+    }
+  }
   gr_model.get_node_segment_list().clear();
 }
 
@@ -1028,13 +1059,19 @@ double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientat
 double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   double corner_cost = 0;
+
+  std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
+  std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
+
+  std::set<Orientation> orientation_set;
+  orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
+  orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
   if (start_node->get_parent_node() != nullptr) {
-    Orientation curr_orientation = getOrientation(start_node, end_node);
-    Orientation pre_orientation = getOrientation(start_node->get_parent_node(), start_node);
-    if (curr_orientation != pre_orientation) {
-      corner_cost += gr_model.get_corner_unit();
-    }
+    orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
   }
+  orientation_set.erase(getOrientation(start_node, end_node));
+  orientation_set.erase(getOrientation(end_node, start_node));
+  corner_cost += (gr_model.get_corner_unit() * orientation_set.size());
   return corner_cost;
 }
 
