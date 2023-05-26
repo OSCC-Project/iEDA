@@ -239,17 +239,13 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   } else {
     orientation = RTUtil::getOrientation(dr_grid_coord, first_grid_coord);
   }
-  std::vector<irt_int> x_list;
-  std::vector<irt_int> y_list;
+  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), routing_layer.getXTrackGrid());
+  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), routing_layer.getYTrackGrid());
   if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
-    x_list = RTUtil::getOpenScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), routing_layer.getXTrackGrid());
-    y_list = RTUtil::getOpenScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), routing_layer.getYTrackGrid());
     irt_int x = orientation == Orientation::kEast ? x_list.back() : x_list.front();
     x_list.clear();
     x_list.push_back(x);
   } else if (orientation == Orientation::kNorth || orientation == Orientation::kSouth) {
-    x_list = RTUtil::getOpenScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), routing_layer.getXTrackGrid());
-    y_list = RTUtil::getOpenScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), routing_layer.getYTrackGrid());
     irt_int y = orientation == Orientation::kNorth ? y_list.back() : y_list.front();
     y_list.clear();
     y_list.push_back(y);
@@ -939,6 +935,7 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
     rerouteByIgnoringENV(ta_panel);
     rerouteByIgnoringOBS(ta_panel);
     updatePathResult(ta_panel);
+    updateOrientationSet(ta_panel);
     resetStartAndEnd(ta_panel);
     resetSinglePath(ta_panel);
   }
@@ -1186,6 +1183,20 @@ void TrackAssigner::updatePathResult(TAPanel& ta_panel)
   node_segment_list.emplace_back(curr_node, pre_node);
 }
 
+void TrackAssigner::updateOrientationSet(TAPanel& ta_panel)
+{
+  TANode* path_head_node = ta_panel.get_path_head_node();
+
+  TANode* curr_node = path_head_node;
+  TANode* pre_node = curr_node->get_parent_node();
+  while (pre_node != nullptr) {
+    curr_node->get_orientation_set().insert(getOrientation(curr_node, pre_node));
+    pre_node->get_orientation_set().insert(getOrientation(pre_node, curr_node));
+    curr_node = pre_node;
+    pre_node = curr_node->get_parent_node();
+  }
+}
+
 void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 {
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
@@ -1285,6 +1296,21 @@ void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
   ta_panel.get_start_node_comb_list().clear();
   ta_panel.get_end_node_comb_list().clear();
   ta_panel.get_path_node_comb().clear();
+
+  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
+    TANode* first_node = node_segment.get_first();
+    TANode* second_node = node_segment.get_second();
+    Orientation orientation = getOrientation(first_node, second_node);
+
+    TANode* node_i = first_node;
+    while (true) {
+      node_i->get_orientation_set().clear();
+      if (node_i == second_node) {
+        break;
+      }
+      node_i = node_i->getNeighborNode(orientation);
+    }
+  }
   ta_panel.get_node_segment_list().clear();
 }
 
@@ -1347,13 +1373,19 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
 double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   double corner_cost = 0;
+
+  std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
+  std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
+
+  std::set<Orientation> orientation_set;
+  orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
+  orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
   if (start_node->get_parent_node() != nullptr) {
-    Orientation curr_orientation = getOrientation(start_node, end_node);
-    Orientation pre_orientation = getOrientation(start_node->get_parent_node(), start_node);
-    if (curr_orientation != pre_orientation) {
-      corner_cost += ta_panel.get_corner_unit();
-    }
+    orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
   }
+  orientation_set.erase(getOrientation(start_node, end_node));
+  orientation_set.erase(getOrientation(end_node, start_node));
+  corner_cost += (ta_panel.get_corner_unit() * orientation_set.size());
   return corner_cost;
 }
 

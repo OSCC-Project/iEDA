@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "GRRouteStrategy.hpp"
 #include "LayerCoord.hpp"
 
 namespace irt {
@@ -70,9 +71,12 @@ class GRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int net_idx, Orientation orientation)
+  bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
     bool is_obs = true;
+    if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+      return is_obs;
+    }
     if (RTUtil::exist(_net_access_map, net_idx)) {
       // net在node中有引导，但是方向不对，视为障碍
       is_obs = !RTUtil::exist(_net_access_map[net_idx], orientation);
@@ -119,10 +123,12 @@ class GRNode : public LayerCoord
     }
   }
 #if 1  // astar
+  std::set<Orientation>& get_orientation_set() { return _orientation_set; }
   GRNodeState& get_state() { return _state; }
   GRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
+  void set_orientation_set(std::set<Orientation>& orientation_set) { _orientation_set = orientation_set; }
   void set_state(GRNodeState state) { _state = state; }
   void set_parent_node(GRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
@@ -153,6 +159,9 @@ class GRNode : public LayerCoord
   std::map<irt_int, std::set<Orientation>> _net_access_map;
   std::queue<irt_int> _net_queue;
 #if 1  // astar
+  // single net
+  std::set<Orientation> _orientation_set;
+  // single path
   GRNodeState _state = GRNodeState::kNone;
   GRNode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr

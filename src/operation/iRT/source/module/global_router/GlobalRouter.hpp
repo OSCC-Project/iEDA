@@ -98,8 +98,9 @@ class GlobalRouter
   void rerouteByEnlarging(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);
-  void rerouteByforcing(GRModel& gr_model);
+  void rerouteByIgnoringOBS(GRModel& gr_model);
   void updatePathResult(GRModel& gr_model);
+  void updateOrientationSet(GRModel& gr_model);
   void resetStartAndEnd(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
