@@ -601,11 +601,11 @@ void DataManager::makeGCellAxis()
     LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
   }
 
-  std::vector<irt_int> x_scale_list = makeGCellScaleList(Direction::kVertical, ref_pitch);
-  gcell_axis.set_x_grid_list(makeGCellGridList(x_scale_list));
+  std::vector<irt_int> x_gcell_scale_list = makeGCellScaleList(Direction::kVertical, ref_pitch);
+  gcell_axis.set_x_grid_list(makeGCellGridList(x_gcell_scale_list));
 
-  std::vector<irt_int> y_scale_list = makeGCellScaleList(Direction::kHorizontal, ref_pitch);
-  gcell_axis.set_y_grid_list(makeGCellGridList(y_scale_list));
+  std::vector<irt_int> y_gcell_scale_list = makeGCellScaleList(Direction::kHorizontal, ref_pitch);
+  gcell_axis.set_y_grid_list(makeGCellGridList(y_gcell_scale_list));
 }
 
 std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int ref_pitch)
