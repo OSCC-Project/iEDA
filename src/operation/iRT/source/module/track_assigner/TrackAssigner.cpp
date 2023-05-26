@@ -416,47 +416,68 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
+    std::vector<PlanarCoord> coord_list;
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      std::vector<EXTLayerRect> net_region_list;
       for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
-        irt_int layer_idx = real_coord.get_layer_idx();
-        for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
-          ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-
-          const LayerRect& below_enclosure = via_master.get_below_enclosure();
-          EXTLayerRect below_via_shape;
-          below_via_shape.set_real_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
-          below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-          net_region_list.push_back(below_via_shape);
-
-          const LayerRect& above_enclosure = via_master.get_above_enclosure();
-          EXTLayerRect above_via_shape;
-          above_via_shape.set_real_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
-          above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-          net_region_list.push_back(above_via_shape);
+        coord_list.push_back(real_coord);
+      }
+    }
+    PlanarCoord balance_coord = RTUtil::getBalanceCoord(coord_list);
+    std::vector<LayerCoord> real_coord_list;
+    for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
+      LayerCoord best_real_coord;
+      irt_int min_distance = INT_MAX;
+      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
+        irt_int distance = RTUtil::getManhattanDistance(balance_coord, real_coord.get_planar_coord());
+        if (distance < min_distance) {
+          best_real_coord = real_coord;
+          min_distance = distance;
         }
       }
-      for (const EXTLayerRect& net_region : net_region_list) {
-        irt_int layer_idx = net_region.get_layer_idx();
-        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
-        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-            TAPanel& ta_panel = layer_panel_list[layer_idx][y];
-            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-              continue;
-            }
-            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+      if (min_distance == INT_MAX) {
+        LOG_INST.error(Loc::current(), "The distance is error!");
+      }
+      real_coord_list.push_back(best_real_coord);
+    }
+    std::vector<EXTLayerRect> net_region_list;
+    for (LayerCoord& real_coord : real_coord_list) {
+      irt_int layer_idx = real_coord.get_layer_idx();
+      for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+
+        const LayerRect& below_enclosure = via_master.get_below_enclosure();
+        EXTLayerRect below_via_shape;
+        below_via_shape.set_real_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
+        below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
+        net_region_list.push_back(below_via_shape);
+
+        const LayerRect& above_enclosure = via_master.get_above_enclosure();
+        EXTLayerRect above_via_shape;
+        above_via_shape.set_real_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
+        above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
+        net_region_list.push_back(above_via_shape);
+      }
+    }
+    for (const EXTLayerRect& net_region : net_region_list) {
+      irt_int layer_idx = net_region.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+      if (routing_layer_list[layer_idx].isPreferH()) {
+        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+          TAPanel& ta_panel = layer_panel_list[layer_idx][y];
+          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+            continue;
           }
-        } else {
-          for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-            TAPanel& ta_panel = layer_panel_list[layer_idx][x];
-            if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-              continue;
-            }
-            ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+        }
+      } else {
+        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+          TAPanel& ta_panel = layer_panel_list[layer_idx][x];
+          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
+            continue;
           }
+          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }
