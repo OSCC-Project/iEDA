@@ -54,7 +54,7 @@ class ViolationRepairer
 #if 1  // build vr_model
   VRModel initVRModel(std::vector<VRNet>& vr_net_list);
   void buildVRModel(VRModel& vr_model);
-  void addBlockageList(VRModel& vr_model);
+  void updateNetBlockageMap(VRModel& vr_model);
 #endif
 
 #if 1  // check ra_model
@@ -63,7 +63,7 @@ class ViolationRepairer
 
 #if 1  // repair ra_model
   void repairVRModel(VRModel& vr_model);
-  void buildVRResultTree(VRModel& vr_model);
+  void repairVRNet(VRModel& vr_model, VRNet& vr_net);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);
   void buildPHYNodeResult(VRNet& vr_net);
@@ -72,6 +72,8 @@ class ViolationRepairer
   TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
+  void repairMinArea(VRNet& vr_net);
+  void updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net);
 #endif
 
 #if 1  // plot ra_model
