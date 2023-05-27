@@ -19,6 +19,7 @@
 #include "DRBox.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
+#include "DRSchedule.hpp"
 #include "DetailedRouter.hpp"
 #include "GDSPlotter.hpp"
 
@@ -383,30 +384,40 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
   irt_int box_size = box_x_size * box_y_size;
   irt_int range = std::max(2, static_cast<irt_int>(std::sqrt(box_size / RTUtil::getBatchSize(box_size))));
 
+  std::vector<std::vector<DRSchedule>> dr_schedule_comb_list;
   for (irt_int start_x = 0; start_x < range; start_x++) {
     for (irt_int start_y = 0; start_y < range; start_y++) {
-      Monitor stage_monitor;
-#pragma omp parallel for collapse(2)
+      std::vector<DRSchedule> dr_schedule_list;
       for (irt_int x = start_x; x < box_x_size; x += range) {
         for (irt_int y = start_y; y < box_y_size; y += range) {
-          DRBox& dr_box = dr_box_map[x][y];
-          if (dr_box.skipRouting()) {
-            continue;
-          }
-          buildDRBox(dr_box);
-          checkDRBox(dr_box);
-          sortDRBox(dr_box);
-          routeDRBox(dr_box);
-          countDRBox(dr_box);
-          dr_box.freeNodeGraph();
+          dr_schedule_list.emplace_back(x, y);
         }
       }
-      irt_int stage_box_x = static_cast<irt_int>(std::ceil((box_x_size - start_x) / 1.0 / range));
-      irt_int stage_box_y = static_cast<irt_int>(std::ceil((box_y_size - start_y) / 1.0 / range));
-      LOG_INST.info(Loc::current(), "Processed ", stage_box_x * stage_box_y, " boxs", stage_monitor.getStatsInfo());
+      dr_schedule_comb_list.push_back(dr_schedule_list);
     }
   }
-  LOG_INST.info(Loc::current(), "Processed ", box_size, " boxs", monitor.getStatsInfo());
+
+  size_t total_box_num = 0;
+  for (std::vector<DRSchedule>& dr_schedule_list : dr_schedule_comb_list) {
+    Monitor stage_monitor;
+#pragma omp parallel for
+    for (DRSchedule& dr_schedule : dr_schedule_list) {
+      DRBox& dr_box = dr_box_map[dr_schedule.get_x()][dr_schedule.get_y()];
+      if (dr_box.skipRouting()) {
+        continue;
+      }
+      buildDRBox(dr_box);
+      checkDRBox(dr_box);
+      sortDRBox(dr_box);
+      routeDRBox(dr_box);
+      countDRBox(dr_box);
+      updateDRBox(dr_model, dr_box);
+      dr_box.freeNodeGraph();
+    }
+    total_box_num += dr_schedule_list.size();
+    LOG_INST.info(Loc::current(), "Processed ", dr_schedule_list.size(), " boxes", stage_monitor.getStatsInfo());
+  }
+  LOG_INST.info(Loc::current(), "Processed ", total_box_num, " boxes", monitor.getStatsInfo());
 }
 
 #endif
@@ -1184,7 +1195,8 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
   while (!isConnectedAllEnd(dr_box)) {
     routeSinglePath(dr_box);
     rerouteByEnlarging(dr_box);
-    rerouteByforcing(dr_box);
+    rerouteByIgnoringENV(dr_box);
+    rerouteByIgnoringOBS(dr_box);
     updatePathResult(dr_box);
     resetStartAndEnd(dr_box);
     resetSinglePath(dr_box);
@@ -1304,9 +1316,6 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
 
 bool DetailedRouter::passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  if (dr_box.isForcedRouting()) {
-    return true;
-  }
   Orientation orientation = getOrientation(start_node, end_node);
   if (orientation == Orientation::kNone) {
     return true;
@@ -1323,7 +1332,10 @@ bool DetailedRouter::passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNo
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(dr_box.get_curr_task_idx(), orientation) || curr_node->isOBS(dr_box.get_curr_task_idx(), opposite_orientation)) {
+    if (pre_node->isOBS(dr_box.get_curr_task_idx(), orientation, dr_box.get_dr_route_strategy())) {
+      return false;
+    }
+    if (curr_node->isOBS(dr_box.get_curr_task_idx(), opposite_orientation, dr_box.get_dr_route_strategy())) {
       return false;
     }
   }
@@ -1352,7 +1364,7 @@ void DetailedRouter::rerouteByEnlarging(DRBox& dr_box)
     dr_box.set_routing_region(dr_box.get_curr_bounding_box());
     if (!isRoutingFailed(dr_box)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " enlarged routing successfully!");
+        LOG_INST.info(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by enlarging successfully!");
       }
     }
   }
@@ -1365,8 +1377,6 @@ bool DetailedRouter::isRoutingFailed(DRBox& dr_box)
 
 void DetailedRouter::resetSinglePath(DRBox& dr_box)
 {
-  dr_box.set_forced_routing(false);
-
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
   dr_box.set_open_queue(empty_queue);
 
@@ -1383,17 +1393,37 @@ void DetailedRouter::resetSinglePath(DRBox& dr_box)
   dr_box.set_end_node_comb_idx(-1);
 }
 
-void DetailedRouter::rerouteByforcing(DRBox& dr_box)
+void DetailedRouter::rerouteByIgnoringENV(DRBox& dr_box)
 {
   if (isRoutingFailed(dr_box)) {
-    if (omp_get_num_threads() == 1) {
-      LOG_INST.warning(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " forced routing!");
-    }
     resetSinglePath(dr_box);
-    dr_box.set_forced_routing(true);
+    dr_box.set_dr_route_strategy(DRRouteStrategy::kIgnoringENV);
     routeSinglePath(dr_box);
-    if (isRoutingFailed(dr_box)) {
-      LOG_INST.error(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " forced routing failed!");
+    dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
+    if (!isRoutingFailed(dr_box)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.warning(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
+                         GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringENV), " successfully!");
+      }
+    }
+  }
+}
+
+void DetailedRouter::rerouteByIgnoringOBS(DRBox& dr_box)
+{
+  if (isRoutingFailed(dr_box)) {
+    resetSinglePath(dr_box);
+    dr_box.set_dr_route_strategy(DRRouteStrategy::kIgnoringOBS);
+    routeSinglePath(dr_box);
+    dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
+    if (!isRoutingFailed(dr_box)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.warning(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
+                         GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringOBS), " successfully!");
+      }
+    } else {
+      LOG_INST.error(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
+                     GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringOBS), " failed!");
     }
   }
 }
@@ -1455,12 +1485,12 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 
 void DetailedRouter::updateNetResult(DRBox& dr_box, DRTask& dr_task)
 {
-  updateEnvironment(dr_box, dr_task);
+  updateENVTaskMap(dr_box, dr_task);
   updateDemand(dr_box, dr_task);
   updateResult(dr_box, dr_task);
 }
 
-void DetailedRouter::updateEnvironment(DRBox& dr_box, DRTask& dr_task)
+void DetailedRouter::updateENVTaskMap(DRBox& dr_box, DRTask& dr_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -1560,8 +1590,8 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
 {
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& curr_coord_cost_map = dr_box.get_curr_coord_cost_map();
 
-  auto iter = curr_coord_cost_map.find(*curr_node);
   double task_cost = 0;
+  auto iter = curr_coord_cost_map.find(*curr_node);
   if (iter != curr_coord_cost_map.end()) {
     task_cost = iter->second;
   }
@@ -1621,6 +1651,8 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
     if (RTUtil::isOblique(*start_node, *end_node)) {
       corner_cost = dr_box.get_corner_unit();
     }
+  } else if (start_node->get_planar_coord() != end_node->get_planar_coord()) {
+    corner_cost = dr_box.get_corner_unit();
   }
   return corner_cost;
 }
@@ -1970,6 +2002,33 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
           }
           double violation_area = RTUtil::getOverlap(curr_rect, blockage).getArea();
           dr_box_stat.get_routing_net_and_obs_violation_area_map()[rect_layer_idx] += (violation_area / (micron_dbu * micron_dbu));
+        }
+      }
+    }
+  }
+}
+
+#endif
+
+#if 1  // update dr_box
+
+void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
+{
+  GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = _dr_data_manager.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    for (LayerRect& real_rect : getRealRectList(dr_task.get_routing_segment_list())) {
+      irt_int layer_idx = real_rect.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(real_rect);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(real_rect, min_spacing, die.get_real_rect());
+      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+      for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+          dr_box_map[x][y].get_net_blockage_map()[dr_task.get_origin_net_idx()].emplace_back(enlarged_real_rect, layer_idx);
         }
       }
     }
