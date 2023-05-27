@@ -87,7 +87,7 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  addBlockageList(ra_model);
+  updateLayerBlockageMap(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -135,7 +135,7 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::addBlockageList(RAModel& ra_model)
+void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
 {
   GCellAxis& gcell_axis = _ra_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _ra_data_manager.getDatabase().get_die();

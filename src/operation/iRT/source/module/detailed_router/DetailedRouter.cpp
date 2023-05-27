@@ -109,13 +109,13 @@ DRModel DetailedRouter::initDRModel(std::vector<DRNet>& dr_net_list)
 
 void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
-  addBlockageList(dr_model);
-  addNetRegionList(dr_model);
+  updateNetBlockageMap(dr_model);
+  updateNetFenceRegionMap(dr_model);
   buildDRTaskList(dr_model);
   buildDRTaskPriority(dr_model);
 }
 
-void DetailedRouter::addBlockageList(DRModel& dr_model)
+void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
 {
   GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _dr_data_manager.getDatabase().get_die();
@@ -172,7 +172,7 @@ void DetailedRouter::addBlockageList(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::addNetRegionList(DRModel& dr_model)
+void DetailedRouter::updateNetFenceRegionMap(DRModel& dr_model)
 {
   GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _dr_data_manager.getDatabase().get_die();
@@ -207,33 +207,33 @@ void DetailedRouter::addNetRegionList(DRModel& dr_model)
       }
       real_coord_list.push_back(best_real_coord);
     }
-    std::vector<EXTLayerRect> net_region_list;
+    std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
 
         const LayerRect& below_enclosure = via_master.get_below_enclosure();
-        EXTLayerRect below_via_shape;
-        below_via_shape.set_real_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
+        LayerRect below_via_shape;
+        below_via_shape.set_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
         below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-        net_region_list.push_back(below_via_shape);
+        net_fence_region_list.push_back(below_via_shape);
 
         const LayerRect& above_enclosure = via_master.get_above_enclosure();
-        EXTLayerRect above_via_shape;
-        above_via_shape.set_real_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
+        LayerRect above_via_shape;
+        above_via_shape.set_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
         above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-        net_region_list.push_back(above_via_shape);
+        net_fence_region_list.push_back(above_via_shape);
       }
     }
-    for (const EXTLayerRect& net_region : net_region_list) {
-      irt_int layer_idx = net_region.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+    for (const LayerRect& net_fence_region : net_fence_region_list) {
+      irt_int layer_idx = net_fence_region.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
       PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
       for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
         for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          dr_box_map[x][y].get_net_region_map()[dr_net.get_net_idx()].emplace_back(enlarged_real_rect, layer_idx);
+          dr_box_map[x][y].get_net_fence_region_map()[dr_net.get_net_idx()].emplace_back(enlarged_real_rect, layer_idx);
         }
       }
     }
@@ -965,7 +965,7 @@ void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
   }
-  for (auto& [net_idx, region_list] : dr_box.get_net_region_map()) {
+  for (auto& [net_idx, region_list] : dr_box.get_net_fence_region_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (LayerRect& region : region_list) {
       for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, region)) {
@@ -1003,7 +1003,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
                      blockage.get_rt_y(), ") is out of box!");
     }
   }
-  for (auto& [net_idx, region_list] : dr_box.get_net_region_map()) {
+  for (auto& [net_idx, region_list] : dr_box.get_net_fence_region_map()) {
     for (LayerRect& region : region_list) {
       if (RTUtil::isClosedOverlap(box_region, region)) {
         continue;

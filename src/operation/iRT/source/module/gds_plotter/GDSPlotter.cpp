@@ -294,7 +294,7 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       wire_path.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
       wire_path.set_data_type(static_cast<irt_int>(GPDataType::kWire));
       wire_path.set_width(wire_node.get_wire_width());
-      wire_path.set_segment(wire_node.get_first().get_real_coord(), wire_node.get_second().get_real_coord());
+      wire_path.set_segment(wire_node.get_first(), wire_node.get_second());
       wire_list_struct.push(wire_path);
 
     } else if (phy_node.isType<ViaNode>()) {
@@ -305,14 +305,14 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       GPBoundary above_boundary;
       above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
       above_boundary.set_data_type(static_cast<irt_int>(GPDataType::kEnclosure));
-      above_boundary.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node.get_real_coord()));
+      above_boundary.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node));
       via_list_struct.push(above_boundary);
 
       LayerRect& below_enclosure = via_master.get_below_enclosure();
       GPBoundary below_boundary;
       below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
       below_boundary.set_data_type(static_cast<irt_int>(GPDataType::kEnclosure));
-      below_boundary.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node.get_real_coord()));
+      below_boundary.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node));
       via_list_struct.push(below_boundary);
 
       std::vector<PlanarRect>& cut_shape_list = via_master.get_cut_shape_list();
@@ -320,7 +320,7 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
         GPBoundary cut_boundary;
         cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
         cut_boundary.set_data_type(static_cast<irt_int>(GPDataType::kCut));
-        cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node.get_real_coord()));
+        cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node));
         via_list_struct.push(cut_boundary);
       }
     } else if (phy_node.isType<PinNode>()) {

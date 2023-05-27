@@ -57,8 +57,8 @@ class DetailedRouter
 #if 1  // build dr_model
   DRModel initDRModel(std::vector<DRNet>& dr_net_list);
   void buildDRModel(DRModel& dr_model);
-  void addBlockageList(DRModel& dr_model);
-  void addNetRegionList(DRModel& dr_model);
+  void updateNetBlockageMap(DRModel& dr_model);
+  void updateNetFenceRegionMap(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);
   std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> getDRTAListMap(DRNet& dr_net);

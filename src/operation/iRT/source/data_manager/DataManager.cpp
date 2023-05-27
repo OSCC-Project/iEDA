@@ -1665,26 +1665,22 @@ void DataManager::saveViolationRepairerResult(nlohmann::json& net_json, Net& net
       node_json["net_idx"] = pin_node.get_net_idx();
       node_json["pin_idx"] = pin_node.get_pin_idx();
       node_json["layer_idx"] = pin_node.get_layer_idx();
-      node_json["grid"] = RTUtil::getString(pin_node.get_grid_x(), " ", pin_node.get_grid_y());
-      node_json["real"] = RTUtil::getString(pin_node.get_real_x(), " ", pin_node.get_real_y());
+      node_json["coord"] = RTUtil::getString(pin_node.get_x(), " ", pin_node.get_y());
     } else if (phy_node.isType<WireNode>()) {
       node_json["type"] = string("WireNode");
       WireNode& wire_node = phy_node.getNode<WireNode>();
       node_json["net_idx"] = wire_node.get_net_idx();
       node_json["layer_idx"] = wire_node.get_layer_idx();
       node_json["wire_width"] = wire_node.get_wire_width();
-      node_json["first"]["grid"] = RTUtil::getString(wire_node.get_first().get_grid_x(), " ", wire_node.get_first().get_grid_y());
-      node_json["first"]["real"] = RTUtil::getString(wire_node.get_first().get_real_x(), " ", wire_node.get_first().get_real_y());
-      node_json["second"]["grid"] = RTUtil::getString(wire_node.get_second().get_grid_x(), " ", wire_node.get_second().get_grid_y());
-      node_json["second"]["real"] = RTUtil::getString(wire_node.get_second().get_real_x(), " ", wire_node.get_second().get_real_y());
+      node_json["first"] = RTUtil::getString(wire_node.get_first().get_x(), " ", wire_node.get_first().get_y());
+      node_json["second"] = RTUtil::getString(wire_node.get_second().get_x(), " ", wire_node.get_second().get_y());
     } else {
       node_json["type"] = string("ViaNode");
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       node_json["net_idx"] = via_node.get_net_idx();
       node_json["via_idx"]["first"] = via_node.get_via_idx().first;
       node_json["via_idx"]["second"] = via_node.get_via_idx().second;
-      node_json["grid"] = RTUtil::getString(via_node.get_grid_x(), " ", via_node.get_grid_y());
-      node_json["real"] = RTUtil::getString(via_node.get_real_x(), " ", via_node.get_real_y());
+      node_json["coord"] = RTUtil::getString(via_node.get_x(), " ", via_node.get_y());
     }
     vr_json["node_list"].push_back(node_json);
   }
@@ -1992,10 +1988,8 @@ void DataManager::loadViolationRepairerResult(nlohmann::json& net_json, Net& net
       pin_node.set_layer_idx(node_json["layer_idx"]);
 
       irt_int x, y;
-      istringstream(std::string(node_json["grid"])) >> x >> y;
-      pin_node.set_grid_coord(x, y);
-      istringstream(std::string(node_json["real"])) >> x >> y;
-      pin_node.set_real_coord(x, y);
+      istringstream(std::string(node_json["coord"])) >> x >> y;
+      pin_node.set_coord(x, y);
 
     } else if (node_type == string("WireNode")) {
       WireNode& wire_node = node->value().getNode<WireNode>();
@@ -2004,24 +1998,18 @@ void DataManager::loadViolationRepairerResult(nlohmann::json& net_json, Net& net
       wire_node.set_wire_width(node_json["wire_width"]);
 
       irt_int x, y;
-      istringstream(std::string(node_json["first"]["grid"])) >> x >> y;
-      wire_node.get_first().set_grid_coord(x, y);
-      istringstream(std::string(node_json["first"]["real"])) >> x >> y;
-      wire_node.get_first().set_real_coord(x, y);
-      istringstream(std::string(node_json["second"]["grid"])) >> x >> y;
-      wire_node.get_second().set_grid_coord(x, y);
-      istringstream(std::string(node_json["second"]["real"])) >> x >> y;
-      wire_node.get_second().set_real_coord(x, y);
+      istringstream(std::string(node_json["first"])) >> x >> y;
+      wire_node.get_first().set_coord(x, y);
+      istringstream(std::string(node_json["second"])) >> x >> y;
+      wire_node.get_second().set_coord(x, y);
     } else if (node_type == string("ViaNode")) {
       ViaNode& via_node = node->value().getNode<ViaNode>();
       via_node.set_net_idx(node_json["net_idx"]);
       via_node.set_via_idx(make_pair(int(node_json["via_idx"]["first"]), int(node_json["via_idx"]["second"])));
 
       irt_int x, y;
-      istringstream(std::string(node_json["grid"])) >> x >> y;
-      via_node.set_grid_coord(x, y);
-      istringstream(std::string(node_json["real"])) >> x >> y;
-      via_node.set_real_coord(x, y);
+      istringstream(std::string(node_json["coord"])) >> x >> y;
+      via_node.set_coord(x, y);
     } else {
       LOG_INST.error(Loc::current(), "PHYNode type is ilegal");
     }
@@ -2119,20 +2107,14 @@ void DataManager::convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wir
   if (idb_layer == nullptr) {
     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
-  PlanarCoord& first_coord = wire_node.get_first().get_real_coord();
-  irt_int wire_first_x = first_coord.get_x();
-  irt_int wire_first_y = first_coord.get_y();
-
-  PlanarCoord& second_coord = wire_node.get_second().get_real_coord();
-  irt_int wire_second_x = second_coord.get_x();
-  irt_int wire_second_y = second_coord.get_y();
-
+  PlanarCoord& first_coord = wire_node.get_first();
+  PlanarCoord& second_coord = wire_node.get_second();
   if (RTUtil::isOblique(first_coord, second_coord)) {
     LOG_INST.error(Loc::current(), "The wire is oblique!");
   }
   idb_segment->set_layer(idb_layer);
-  idb_segment->add_point(wire_first_x, wire_first_y);
-  idb_segment->add_point(wire_second_x, wire_second_y);
+  idb_segment->add_point(first_coord.get_x(), first_coord.get_y());
+  idb_segment->add_point(second_coord.get_x(), second_coord.get_y());
 }
 
 void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node,
@@ -2155,13 +2137,9 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   idb_segment->set_layer(idb_layer_top);
   idb_segment->set_is_via(true);
 
-  PlanarCoord& via_real_coord = via_node.get_real_coord();
-  irt_int via_x = via_real_coord.get_x();
-  irt_int via_y = via_real_coord.get_y();
-
-  idb_segment->add_point(via_x, via_y);
+  idb_segment->add_point(via_node.get_x(), via_node.get_y());
   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
-  idb_via_new->set_coordinate(via_x, via_y);
+  idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
 }
 
 void DataManager::saveDef(idb::IdbBuilder* idb_builder)

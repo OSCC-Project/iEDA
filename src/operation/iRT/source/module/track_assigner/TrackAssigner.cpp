@@ -108,8 +108,8 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
 {
   buildTATaskList(ta_model);
   buildPanelRegion(ta_model);
-  addBlockageList(ta_model);
-  addNetRegionList(ta_model);
+  updateNetBlockageMap(ta_model);
+  updateNetFenceRegionMap(ta_model);
   buildTATaskPriority(ta_model);
 }
 
@@ -343,7 +343,7 @@ void TrackAssigner::buildPanelRegion(TAModel& ta_model)
   }
 }
 
-void TrackAssigner::addBlockageList(TAModel& ta_model)
+void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
 {
   GCellAxis& gcell_axis = _ta_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _ta_data_manager.getDatabase().get_die();
@@ -404,7 +404,7 @@ void TrackAssigner::addBlockageList(TAModel& ta_model)
   }
 }
 
-void TrackAssigner::addNetRegionList(TAModel& ta_model)
+void TrackAssigner::updateNetFenceRegionMap(TAModel& ta_model)
 {
   GCellAxis& gcell_axis = _ta_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _ta_data_manager.getDatabase().get_die();
@@ -439,29 +439,29 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
       }
       real_coord_list.push_back(best_real_coord);
     }
-    std::vector<EXTLayerRect> net_region_list;
+    std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
 
         const LayerRect& below_enclosure = via_master.get_below_enclosure();
-        EXTLayerRect below_via_shape;
-        below_via_shape.set_real_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
+        LayerRect below_via_shape;
+        below_via_shape.set_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
         below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-        net_region_list.push_back(below_via_shape);
+        net_fence_region_list.push_back(below_via_shape);
 
         const LayerRect& above_enclosure = via_master.get_above_enclosure();
-        EXTLayerRect above_via_shape;
-        above_via_shape.set_real_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
+        LayerRect above_via_shape;
+        above_via_shape.set_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
         above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-        net_region_list.push_back(above_via_shape);
+        net_fence_region_list.push_back(above_via_shape);
       }
     }
-    for (const EXTLayerRect& net_region : net_region_list) {
-      irt_int layer_idx = net_region.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+    for (const LayerRect& net_fence_region : net_fence_region_list) {
+      irt_int layer_idx = net_fence_region.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
       PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
       if (routing_layer_list[layer_idx].isPreferH()) {
         for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
@@ -469,7 +469,7 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
           if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
             continue;
           }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+          ta_panel.get_net_fence_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       } else {
         for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
@@ -477,7 +477,7 @@ void TrackAssigner::addNetRegionList(TAModel& ta_model)
           if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
             continue;
           }
-          ta_panel.get_net_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
+          ta_panel.get_net_fence_region_map()[ta_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }
@@ -729,7 +729,7 @@ void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
     net_task_map[ta_task.get_origin_net_idx()].push_back(ta_task.get_task_idx());
   }
-  for (auto& [net_idx, region_list] : ta_panel.get_net_region_map()) {
+  for (auto& [net_idx, region_list] : ta_panel.get_net_fence_region_map()) {
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (PlanarRect& region : region_list) {
       for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, region)) {
@@ -769,7 +769,7 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
                      blockage.get_rt_y(), ") is out of panel!");
     }
   }
-  for (auto& [net_idx, region_list] : ta_panel.get_net_region_map()) {
+  for (auto& [net_idx, region_list] : ta_panel.get_net_fence_region_map()) {
     for (PlanarRect& region : region_list) {
       if (RTUtil::isClosedOverlap(ta_panel.get_real_rect(), region)) {
         continue;
