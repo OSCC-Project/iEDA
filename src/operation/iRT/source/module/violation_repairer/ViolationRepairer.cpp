@@ -64,15 +64,103 @@ void ViolationRepairer::init(Config& config, Database& database)
 
 void ViolationRepairer::repairVRNetList(std::vector<VRNet>& vr_net_list)
 {
-  buildVRResultTree(vr_net_list);
-  repairVRResultTree(vr_net_list);
-  updateOriginVRResultTree(vr_net_list);
+  VRModel vr_model = initVRModel(vr_net_list);
+  buildVRModel(vr_model);
+  checkVRModel(vr_model);
+  repairVRModel(vr_model);
+  updateVRModel(vr_model);
+  reportVRModel(vr_model);
 }
 
-void ViolationRepairer::buildVRResultTree(std::vector<VRNet>& vr_net_list)
+#if 1  // build vr_model
+
+VRModel ViolationRepairer::initVRModel(std::vector<VRNet>& vr_net_list)
+{
+  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
+  Die& die = _vr_data_manager.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+
+  VRModel vr_model;
+  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
+  layer_gcell_map.resize(routing_layer_list.size());
+  for (size_t layer_idx = 0; layer_idx < layer_gcell_map.size(); layer_idx++) {
+    GridMap<VRGCell>& gcell_map = layer_gcell_map[layer_idx];
+    gcell_map.init(die.getXSize(), die.getYSize());
+    for (irt_int x = 0; x < die.getXSize(); x++) {
+      for (irt_int y = 0; y < die.getYSize(); y++) {
+        VRGCell& vr_gcell = gcell_map[x][y];
+        vr_gcell.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
+      }
+    }
+  }
+  vr_model.set_vr_net_list(vr_net_list);
+
+  return vr_model;
+}
+
+void ViolationRepairer::buildVRModel(VRModel& vr_model)
+{
+  addBlockageList(vr_model);
+}
+
+void ViolationRepairer::addBlockageList(VRModel& vr_model)
+{
+  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = _vr_data_manager.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = _vr_data_manager.getDatabase().get_routing_blockage_list();
+
+  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
+
+  for (const Blockage& routing_blockage : routing_blockage_list) {
+    irt_int layer_idx = routing_blockage.get_layer_idx();
+    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
+    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_blockage.get_real_rect(), min_spacing, die.get_real_rect());
+    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+        layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[-1].push_back(enlarged_real_rect);
+      }
+    }
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        irt_int layer_idx = routing_shape.get_layer_idx();
+        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_shape.get_real_rect());
+        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_shape.get_real_rect(), min_spacing, die.get_real_rect());
+        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+            layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[vr_net.get_net_idx()].push_back(enlarged_real_rect);
+          }
+        }
+      }
+    }
+  }
+}
+
+#endif
+
+#if 1  // check ra_model
+
+void ViolationRepairer::checkVRModel(VRModel& vr_model)
+{
+}
+
+#endif
+
+#if 1  // repair ra_model
+
+void ViolationRepairer::repairVRModel(VRModel& vr_model)
+{
+  buildVRResultTree(vr_model);
+}
+
+void ViolationRepairer::buildVRResultTree(VRModel& vr_model)
 {
 #pragma omp parallel for
-  for (VRNet& vr_net : vr_net_list) {
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     buildKeyCoordPinMap(vr_net);
     buildCoordTree(vr_net);
     buildPHYNodeResult(vr_net);
@@ -236,16 +324,39 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
   return (new TNode<PHYNode>(phy_node));
 }
 
-void ViolationRepairer::repairVRResultTree(std::vector<VRNet>& vr_net_list)
+#endif
+
+#if 1  // plot ra_model
+
+void ViolationRepairer::plotVRModel(VRModel& vr_model)
 {
 }
 
-void ViolationRepairer::updateOriginVRResultTree(std::vector<VRNet>& vr_net_list)
+#endif
+
+#if 1  // update ra_model
+
+void ViolationRepairer::updateVRModel(VRModel& vr_model)
 {
-  for (VRNet& vr_net : vr_net_list) {
+  updateOriginVRResultTree(vr_model);
+}
+
+void ViolationRepairer::updateOriginVRResultTree(VRModel& vr_model)
+{
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     Net* origin_net = vr_net.get_origin_net();
     origin_net->set_vr_result_tree(vr_net.get_vr_result_tree());
   }
 }
+
+#endif
+
+#if 1  // report ra_model
+
+void ViolationRepairer::reportVRModel(VRModel& vr_model)
+{
+}
+
+#endif
 
 }  // namespace irt

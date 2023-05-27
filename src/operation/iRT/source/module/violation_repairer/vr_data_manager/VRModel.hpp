@@ -16,33 +16,30 @@
 // ***************************************************************************************
 #pragma once
 
+#include "GridMap.hpp"
+#include "VRGCell.hpp"
+#include "VRModelStat.hpp"
+#include "VRNet.hpp"
+
 namespace irt {
 
-class VRDatabase
+class VRModel
 {
  public:
-  VRDatabase() = default;
-  ~VRDatabase() = default;
+  VRModel() = default;
+  ~VRModel() = default;
   // getter
-  irt_int get_micron_dbu() const { return _micron_dbu; }
-  GCellAxis& get_gcell_axis() { return _gcell_axis; }
-  Die& get_die() { return _die; }
-  std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
-  std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
-  std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
-  std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
+  std::vector<GridMap<VRGCell>>& get_layer_gcell_map() { return _layer_gcell_map; }
+  std::vector<VRNet>& get_vr_net_list() { return _vr_net_list; }
+  VRModelStat& get_vr_model_stat() { return _vr_model_stat; }
   // setter
-  void set_micron_dbu(const irt_int micron_dbu) { _micron_dbu = micron_dbu; }
-  // function
+  void set_layer_gcell_map(const std::vector<GridMap<VRGCell>>& layer_node_map) { _layer_gcell_map = layer_node_map; }
+  void set_vr_net_list(const std::vector<VRNet>& vr_net_list) { _vr_net_list = vr_net_list; }
 
  private:
-  irt_int _micron_dbu = -1;
-  GCellAxis _gcell_axis;
-  Die _die;
-  std::vector<RoutingLayer> _routing_layer_list;
-  std::vector<CutLayer> _cut_layer_list;
-  std::vector<std::vector<ViaMaster>> _layer_via_master_list;
-  std::vector<Blockage> _routing_blockage_list;
+  std::vector<GridMap<VRGCell>> _layer_gcell_map;
+  std::vector<VRNet> _vr_net_list;
+  VRModelStat _vr_model_stat;
 };
 
 }  // namespace irt

@@ -16,33 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LayerCoord.hpp"
+
 namespace irt {
 
-class VRDatabase
+class VRGCell
 {
  public:
-  VRDatabase() = default;
-  ~VRDatabase() = default;
+  VRGCell() = default;
+  ~VRGCell() = default;
   // getter
-  irt_int get_micron_dbu() const { return _micron_dbu; }
-  GCellAxis& get_gcell_axis() { return _gcell_axis; }
-  Die& get_die() { return _die; }
-  std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
-  std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
-  std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
-  std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
+  PlanarRect& get_real_rect() { return _real_rect; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
   // setter
-  void set_micron_dbu(const irt_int micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   // function
 
  private:
-  irt_int _micron_dbu = -1;
-  GCellAxis _gcell_axis;
-  Die _die;
-  std::vector<RoutingLayer> _routing_layer_list;
-  std::vector<CutLayer> _cut_layer_list;
-  std::vector<std::vector<ViaMaster>> _layer_via_master_list;
-  std::vector<Blockage> _routing_blockage_list;
+  PlanarRect _real_rect;
+  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
 };
 
 }  // namespace irt
