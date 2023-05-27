@@ -59,7 +59,6 @@ class GlobalRouter
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
   void buildNodeSupply(GRModel& gr_model);
-  void initNodeRealRect(GRModel& gr_model);
   void addBlockageList(GRModel& gr_model);
   void addNetRegionList(GRModel& gr_model);
   void calcAreaSupply(GRModel& gr_model);

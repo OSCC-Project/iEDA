@@ -76,10 +76,11 @@ void GlobalRouter::routeGRNetList(std::vector<GRNet>& gr_net_list)
   reportGRModel(gr_model);
 }
 
-#if 1  // build
+#if 1  // build gr_model
 
 GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
 {
+  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
   Die& die = _gr_data_manager.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -94,6 +95,7 @@ GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
         GRNode& gr_node = node_map[x][y];
         gr_node.set_coord(x, y);
         gr_node.set_layer_idx(static_cast<irt_int>(layer_idx));
+        gr_node.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
       }
     }
   }
@@ -156,27 +158,10 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
 
 void GlobalRouter::buildNodeSupply(GRModel& gr_model)
 {
-  initNodeRealRect(gr_model);
   addBlockageList(gr_model);
   addNetRegionList(gr_model);
   calcAreaSupply(gr_model);
   buildAccessMap(gr_model);
-}
-
-void GlobalRouter::initNodeRealRect(GRModel& gr_model)
-{
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        GRNode& gr_node = node_map[x][y];
-        gr_node.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
-      }
-    }
-  }
 }
 
 void GlobalRouter::addBlockageList(GRModel& gr_model)
@@ -437,7 +422,7 @@ void GlobalRouter::buildGRNetPriority(GRModel& gr_model)
 
 #endif
 
-#if 1  // check
+#if 1  // check gr_model
 
 void GlobalRouter::checkGRModel(GRModel& gr_model)
 {
@@ -517,7 +502,7 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
 
 #endif
 
-#if 1  // sort
+#if 1  // sort gr_model
 
 void GlobalRouter::sortGRModel(GRModel& gr_model)
 {
@@ -623,7 +608,7 @@ SortStatus GlobalRouter::sortByPinNumDESC(GRNet& net1, GRNet& net2)
 
 #endif
 
-#if 1  // route
+#if 1  // route gr_model
 
 void GlobalRouter::routeGRModel(GRModel& gr_model)
 {
@@ -1184,7 +1169,7 @@ double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* e
 
 #endif
 
-#if 1  // plot
+#if 1  // plot gr_model
 
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
@@ -1471,7 +1456,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
 #endif
 
-#if 1  // update
+#if 1  // update gr_model
 
 void GlobalRouter::updateGRModel(GRModel& gr_model)
 {
@@ -1599,7 +1584,7 @@ void GlobalRouter::updateOriginGRResultTree(GRModel& gr_model)
 
 #endif
 
-#if 1  // report
+#if 1  // report gr_model
 
 void GlobalRouter::reportGRModel(GRModel& gr_model)
 {
