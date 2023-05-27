@@ -634,31 +634,67 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
       }
     }
   }
-
-  std::vector<irt_int> track_scale_list;
-  for (auto& [scale, layer_set] : scale_layer_map) {
-    track_scale_list.push_back(scale);
+  std::set<irt_int> base_layer_idx_set;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    base_layer_idx_set.insert(routing_layer.get_layer_idx());
   }
   std::vector<irt_int> gcell_scale_list;
-  irt_int gcell_scale = start_gcell_scale;
-  gcell_scale_list.push_back(gcell_scale);
-  while (gcell_scale < track_scale_list.front()) {
-    gcell_scale += proposed_gcell_interval;
-  }
-  for (size_t i = 1; i < track_scale_list.size(); i++) {
-    irt_int curr_scale = track_scale_list[i];
-    if (gcell_scale >= curr_scale) {
+  gcell_scale_list.push_back(start_gcell_scale);
+  auto iter = scale_layer_map.begin();
+  std::set<irt_int> curr_layer_idx_set;
+  while (true) {
+    if (iter == scale_layer_map.end()) {
+      break;
+    }
+    irt_int track_scale = iter->first;
+    curr_layer_idx_set.insert(iter->second.begin(), iter->second.end());
+    iter++;
+    if (base_layer_idx_set != curr_layer_idx_set) {
       continue;
     }
-    irt_int pre_scale = track_scale_list[i - 1];
-    irt_int scale_span = std::max(1, (curr_scale - pre_scale) / 2);
-    if (gcell_scale == pre_scale) {
-      gcell_scale = gcell_scale + scale_span;
+    curr_layer_idx_set.clear();
+    if (iter != scale_layer_map.end()) {
+      gcell_scale_list.push_back((track_scale + iter->first) / 2);
     }
-    gcell_scale_list.push_back(gcell_scale);
-    gcell_scale += proposed_gcell_interval;
   }
   gcell_scale_list.push_back(end_gcell_scale);
+
+  if (gcell_scale_list.size() >= 2) {
+    irt_int left = gcell_scale_list[gcell_scale_list.size() - 2];
+    irt_int right = gcell_scale_list[gcell_scale_list.size() - 1];
+    std::set<irt_int> gcell_layer_set;
+    for (auto& [scale, layer_set] : scale_layer_map) {
+      if (scale < left) {
+        continue;
+      }
+      if (right < scale) {
+        break;
+      }
+      gcell_layer_set.insert(layer_set.begin(), layer_set.end());
+    }
+    if (base_layer_idx_set != gcell_layer_set) {
+      gcell_scale_list.erase(gcell_scale_list.end() - 2);
+    }
+  }
+
+  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
+    irt_int left = gcell_scale_list[i - 1];
+    irt_int right = gcell_scale_list[i];
+    std::set<irt_int> gcell_layer_set;
+    for (auto& [scale, layer_set] : scale_layer_map) {
+      if (scale < left) {
+        continue;
+      }
+      if (right < scale) {
+        break;
+      }
+      gcell_layer_set.insert(layer_set.begin(), layer_set.end());
+    }
+
+    if (base_layer_idx_set != gcell_layer_set) {
+      LOG_INST.error(Loc::current(), "The gcell no contain all layer!");
+    }
+  }
 
   return gcell_scale_list;
 }
