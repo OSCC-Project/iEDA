@@ -73,7 +73,7 @@ class GRNode : public LayerCoord
   }
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
-    bool is_obs = true;
+    bool is_obs = false;
     if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
       return is_obs;
     }

@@ -29,7 +29,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 ############################ debug source data_manager ############################
 
-set(DEBUG_IRT_DATA_MANAGER ON)
+# set(DEBUG_IRT_DATA_MANAGER ON)
 
 ############################ debug source utility ############################
 
