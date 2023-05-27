@@ -121,6 +121,7 @@ class DetailedRouter
   void rerouteByIgnoringENV(DRBox& dr_box);
   void rerouteByIgnoringOBS(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
+  void updateOrientationSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
@@ -131,12 +132,13 @@ class DetailedRouter
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
+  double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   Orientation getOrientation(DRNode* start_node, DRNode* end_node);
-  double getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
 #endif
 
