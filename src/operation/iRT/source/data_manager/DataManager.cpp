@@ -618,7 +618,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
-  irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
   irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
 
   std::map<irt_int, std::set<irt_int>> scale_layer_map;
@@ -629,7 +629,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
     while (step_num--) {
       scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
       track_scale += track_grid.get_step_length();
-      if (track_scale > end_die_scale) {
+      if (track_scale > end_gcell_scale) {
         break;
       }
     }
@@ -640,7 +640,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
     track_scale_list.push_back(scale);
   }
   std::vector<irt_int> gcell_scale_list;
-  irt_int gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
+  irt_int gcell_scale = start_gcell_scale;
   gcell_scale_list.push_back(gcell_scale);
   while (gcell_scale < track_scale_list.front()) {
     gcell_scale += proposed_gcell_interval;
@@ -658,7 +658,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
     gcell_scale_list.push_back(gcell_scale);
     gcell_scale += proposed_gcell_interval;
   }
-  gcell_scale_list.push_back(end_die_scale);
+  gcell_scale_list.push_back(end_gcell_scale);
 
   return gcell_scale_list;
 }
