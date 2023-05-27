@@ -74,6 +74,7 @@ class DataManager
   void buildDatabase();
   void buildGCellAxis();
   void makeGCellAxis();
+  irt_int getProposedInterval();
   std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int ref_pitch);
   std::vector<GCellGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
   void checkGCellAxis();

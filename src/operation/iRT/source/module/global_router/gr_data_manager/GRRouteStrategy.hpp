@@ -16,27 +16,36 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
-#include "Orientation.hpp"
+#include <string>
+
+#include "Logger.hpp"
 
 namespace irt {
 
-class DRGroup
+enum class GRRouteStrategy
 {
- public:
-  DRGroup() = default;
-  ~DRGroup() = default;
-  // getter
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_coord_orientation_map() { return _coord_orientation_map; }
-  // setter
-  void set_coord_orientation_map(const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& coord_orientation_map)
-  {
-    _coord_orientation_map = coord_orientation_map;
-  }
-  // function
+  kNone = 0,
+  kIgnoringOBS = 1
+};
 
- private:
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _coord_orientation_map;
+struct GetGRRouteStrategyName
+{
+  std::string operator()(const GRRouteStrategy& GRRouteStrategy) const
+  {
+    std::string gr_route_strategy_name;
+    switch (GRRouteStrategy) {
+      case GRRouteStrategy::kNone:
+        gr_route_strategy_name = "none";
+        break;
+      case GRRouteStrategy::kIgnoringOBS:
+        gr_route_strategy_name = "ignoring_obs";
+        break;
+      default:
+        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return gr_route_strategy_name;
+  }
 };
 
 }  // namespace irt

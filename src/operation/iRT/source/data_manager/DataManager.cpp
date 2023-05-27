@@ -583,6 +583,16 @@ void DataManager::buildGCellAxis()
 void DataManager::makeGCellAxis()
 {
   GCellAxis& gcell_axis = _database.get_gcell_axis();
+
+  irt_int proposed_interval = getProposedInterval();
+  std::vector<irt_int> x_gcell_scale_list = makeGCellScaleList(Direction::kVertical, proposed_interval);
+  gcell_axis.set_x_grid_list(makeGCellGridList(x_gcell_scale_list));
+  std::vector<irt_int> y_gcell_scale_list = makeGCellScaleList(Direction::kHorizontal, proposed_interval);
+  gcell_axis.set_y_grid_list(makeGCellGridList(y_gcell_scale_list));
+}
+
+irt_int DataManager::getProposedInterval()
+{
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
   std::map<irt_int, irt_int> pitch_count_map;
@@ -600,45 +610,40 @@ void DataManager::makeGCellAxis()
   if (ref_pitch == -1) {
     LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
   }
-
-  std::vector<irt_int> x_scale_list = makeGCellScaleList(Direction::kVertical, ref_pitch);
-  gcell_axis.set_x_grid_list(makeGCellGridList(x_scale_list));
-
-  std::vector<irt_int> y_scale_list = makeGCellScaleList(Direction::kHorizontal, ref_pitch);
-  gcell_axis.set_y_grid_list(makeGCellGridList(y_scale_list));
+  return (15 * ref_pitch);
 }
 
-std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int ref_pitch)
+std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval)
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
-  irt_int end_die_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
 
-  std::vector<irt_int> track_scale_list;
+  std::map<irt_int, std::set<irt_int>> scale_layer_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     TrackGrid track_grid = (direction == Direction::kVertical ? routing_layer.getXTrackGrid() : routing_layer.getYTrackGrid());
-
     irt_int track_scale = track_grid.get_start_line();
     irt_int step_num = track_grid.get_step_num();
     while (step_num--) {
-      track_scale_list.push_back(track_scale);
+      scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
       track_scale += track_grid.get_step_length();
       if (track_scale > end_die_scale) {
         break;
       }
     }
   }
-  std::sort(track_scale_list.begin(), track_scale_list.end());
-  track_scale_list.erase(std::unique(track_scale_list.begin(), track_scale_list.end()), track_scale_list.end());
 
+  std::vector<irt_int> track_scale_list;
+  for (auto& [scale, layer_set] : scale_layer_map) {
+    track_scale_list.push_back(scale);
+  }
   std::vector<irt_int> gcell_scale_list;
-  irt_int gcell_step = 15 * ref_pitch;
-
   irt_int gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
   gcell_scale_list.push_back(gcell_scale);
   while (gcell_scale < track_scale_list.front()) {
-    gcell_scale += gcell_step;
+    gcell_scale += proposed_gcell_interval;
   }
   for (size_t i = 1; i < track_scale_list.size(); i++) {
     irt_int curr_scale = track_scale_list[i];
@@ -651,7 +656,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
       gcell_scale = gcell_scale + scale_span;
     }
     gcell_scale_list.push_back(gcell_scale);
-    gcell_scale += gcell_step;
+    gcell_scale += proposed_gcell_interval;
   }
   gcell_scale_list.push_back(end_die_scale);
 
