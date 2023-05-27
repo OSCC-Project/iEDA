@@ -63,8 +63,8 @@ class TrackAssigner
   TAGroup makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node);
   void makeCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   void buildPanelRegion(TAModel& ta_model);
-  void addBlockageList(TAModel& ta_model);
-  void addNetRegionList(TAModel& ta_model);
+  void updateNetBlockageMap(TAModel& ta_model);
+  void updateNetFenceRegionMap(TAModel& ta_model);
   void buildTATaskPriority(TAModel& ta_model);
 #endif
 

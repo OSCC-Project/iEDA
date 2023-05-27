@@ -110,7 +110,7 @@ PAModel PinAccessor::initPAModel(std::vector<PANet>& pa_net_list)
 void PinAccessor::buildPAModel(PAModel& pa_model)
 {
   initGCellRealRect(pa_model);
-  addBlockageList(pa_model);
+  updateNetBlockageMap(pa_model);
   cutBlockageList(pa_model);
 }
 
@@ -130,7 +130,7 @@ void PinAccessor::initGCellRealRect(PAModel& pa_model)
   }
 }
 
-void PinAccessor::addBlockageList(PAModel& pa_model)
+void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 {
   GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();

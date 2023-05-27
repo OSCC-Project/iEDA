@@ -56,7 +56,7 @@ class PinAccessor
   PAModel initPAModel(std::vector<PANet>& pa_net_list);
   void buildPAModel(PAModel& pa_model);
   void initGCellRealRect(PAModel& pa_model);
-  void addBlockageList(PAModel& pa_model);
+  void updateNetBlockageMap(PAModel& pa_model);
   void cutBlockageList(PAModel& pa_model);
 #endif
 
