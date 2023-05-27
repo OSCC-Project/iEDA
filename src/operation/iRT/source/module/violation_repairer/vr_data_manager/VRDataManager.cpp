@@ -64,9 +64,13 @@ void VRDataManager::wrapConfig(Config& config)
 
 void VRDataManager::wrapDatabase(Database& database)
 {
+  wrapMicronDBU(database);
   wrapGCellAxis(database);
-  wrapViaMasterList(database);
+  wrapDie(database);
   wrapRoutingLayerList(database);
+  wrapCutLayerList(database);
+  wrapLayerViaMasterList(database);
+  wrapRoutingBlockageList(database);
 }
 
 void VRDataManager::wrapMicronDBU(Database& database)
@@ -80,16 +84,34 @@ void VRDataManager::wrapGCellAxis(Database& database)
   gcell_axis = database.get_gcell_axis();
 }
 
-void VRDataManager::wrapViaMasterList(Database& database)
+void VRDataManager::wrapDie(Database& database)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_database.get_layer_via_master_list();
-  layer_via_master_list = database.get_layer_via_master_list();
+  Die& die = _vr_database.get_die();
+  die = database.get_die();
 }
 
 void VRDataManager::wrapRoutingLayerList(Database& database)
 {
   std::vector<RoutingLayer>& routing_layer_list = _vr_database.get_routing_layer_list();
   routing_layer_list = database.get_routing_layer_list();
+}
+
+void VRDataManager::wrapCutLayerList(Database& database)
+{
+  std::vector<CutLayer>& cut_layer_list = _vr_database.get_cut_layer_list();
+  cut_layer_list = database.get_cut_layer_list();
+}
+
+void VRDataManager::wrapLayerViaMasterList(Database& database)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_database.get_layer_via_master_list();
+  layer_via_master_list = database.get_layer_via_master_list();
+}
+
+void VRDataManager::wrapRoutingBlockageList(Database& database)
+{
+  std::vector<Blockage>& routing_blockage_list = _vr_database.get_routing_blockage_list();
+  routing_blockage_list = database.get_routing_blockage_list();
 }
 
 void VRDataManager::buildConfig()

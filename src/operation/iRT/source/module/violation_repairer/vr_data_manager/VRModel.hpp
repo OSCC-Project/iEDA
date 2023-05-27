@@ -16,39 +16,30 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PlanarCoord.hpp"
-#include "Segment.hpp"
+#include "GridMap.hpp"
+#include "VRGCell.hpp"
+#include "VRModelStat.hpp"
+#include "VRNet.hpp"
 
 namespace irt {
 
-class WireNode : public Segment<PlanarCoord>
-
+class VRModel
 {
  public:
-  WireNode() = default;
-  WireNode(const WireNode& other) : Segment<PlanarCoord>(other)
-  {
-    _net_idx = other._net_idx;
-    _layer_idx = other._layer_idx;
-    _wire_width = other._wire_width;
-  }
-  ~WireNode() = default;
+  VRModel() = default;
+  ~VRModel() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  irt_int get_layer_idx() const { return _layer_idx; }
-  irt_int get_wire_width() const { return _wire_width; }
-
+  std::vector<GridMap<VRGCell>>& get_layer_gcell_map() { return _layer_gcell_map; }
+  std::vector<VRNet>& get_vr_net_list() { return _vr_net_list; }
+  VRModelStat& get_vr_model_stat() { return _vr_model_stat; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
-  void set_wire_width(const irt_int wire_width) { _wire_width = wire_width; }
-
-  // function
+  void set_layer_gcell_map(const std::vector<GridMap<VRGCell>>& layer_node_map) { _layer_gcell_map = layer_node_map; }
+  void set_vr_net_list(const std::vector<VRNet>& vr_net_list) { _vr_net_list = vr_net_list; }
 
  private:
-  irt_int _net_idx = -1;
-  irt_int _layer_idx = -1;
-  irt_int _wire_width = -1;
+  std::vector<GridMap<VRGCell>> _layer_gcell_map;
+  std::vector<VRNet> _vr_net_list;
+  VRModelStat _vr_model_stat;
 };
 
 }  // namespace irt

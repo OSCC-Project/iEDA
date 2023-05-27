@@ -34,7 +34,7 @@ class DRBox
   PlanarCoord& get_grid_coord() { return _grid_coord; }
   PlanarRect& get_bottom_region() { return _bottom_region; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_region_map() { return _net_region_map; }
+  std::map<irt_int, std::vector<LayerRect>>& get_net_fence_region_map() { return _net_fence_region_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<DRNodeGraph>& get_layer_graph_list() { return _layer_graph_list; }
   DRBoxStat& get_dr_box_stat() { return _dr_box_stat; }
@@ -42,7 +42,7 @@ class DRBox
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
   void set_bottom_region(const PlanarRect& bottom_region) { _bottom_region = bottom_region; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_region_map(const std::map<irt_int, std::vector<LayerRect>>& net_region_map) { _net_region_map = net_region_map; }
+  void set_net_fence_region_map(const std::map<irt_int, std::vector<LayerRect>>& net_fence_region_map) { _net_fence_region_map = net_fence_region_map; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_graph_list(const std::vector<DRNodeGraph>& layer_graph_list) { _layer_graph_list = layer_graph_list; }
   // function
@@ -110,7 +110,7 @@ class DRBox
   PlanarCoord _grid_coord;
   PlanarRect _bottom_region;
   std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
-  std::map<irt_int, std::vector<LayerRect>> _net_region_map;
+  std::map<irt_int, std::vector<LayerRect>> _net_fence_region_map;
   std::vector<DRTask> _dr_task_list;
   std::vector<DRNodeGraph> _layer_graph_list;
   DRBoxStat _dr_box_stat;

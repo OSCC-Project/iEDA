@@ -16,39 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PlanarCoord.hpp"
-#include "Segment.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class WireNode : public Segment<PlanarCoord>
-
+class VRGCell
 {
  public:
-  WireNode() = default;
-  WireNode(const WireNode& other) : Segment<PlanarCoord>(other)
-  {
-    _net_idx = other._net_idx;
-    _layer_idx = other._layer_idx;
-    _wire_width = other._wire_width;
-  }
-  ~WireNode() = default;
+  VRGCell() = default;
+  ~VRGCell() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  irt_int get_layer_idx() const { return _layer_idx; }
-  irt_int get_wire_width() const { return _wire_width; }
-
+  PlanarRect& get_real_rect() { return _real_rect; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
-  void set_wire_width(const irt_int wire_width) { _wire_width = wire_width; }
-
+  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   // function
 
  private:
-  irt_int _net_idx = -1;
-  irt_int _layer_idx = -1;
-  irt_int _wire_width = -1;
+  PlanarRect _real_rect;
+  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
 };
 
 }  // namespace irt

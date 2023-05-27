@@ -20,11 +20,11 @@
 
 namespace irt {
 
-class ViaNode : public EXTPlanarCoord
+class ViaNode : public PlanarCoord
 {
  public:
   ViaNode() = default;
-  ViaNode(const ViaNode& other) : EXTPlanarCoord(other)
+  ViaNode(const ViaNode& other) : PlanarCoord(other)
   {
     _net_idx = other._net_idx;
     _via_idx = other._via_idx;
@@ -40,7 +40,7 @@ class ViaNode : public EXTPlanarCoord
 
  private:
   irt_int _net_idx = -1;
-  std::pair<irt_int, irt_int> _via_idx;
+  std::pair<irt_int, irt_int> _via_idx; //<! below_layer_idx, layer inner via_idx
 };
 
 }  // namespace irt

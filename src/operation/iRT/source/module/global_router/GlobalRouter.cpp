@@ -76,10 +76,11 @@ void GlobalRouter::routeGRNetList(std::vector<GRNet>& gr_net_list)
   reportGRModel(gr_model);
 }
 
-#if 1  // build
+#if 1  // build gr_model
 
 GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
 {
+  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
   Die& die = _gr_data_manager.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -94,6 +95,7 @@ GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
         GRNode& gr_node = node_map[x][y];
         gr_node.set_coord(x, y);
         gr_node.set_layer_idx(static_cast<irt_int>(layer_idx));
+        gr_node.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
       }
     }
   }
@@ -156,30 +158,13 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
 
 void GlobalRouter::buildNodeSupply(GRModel& gr_model)
 {
-  initNodeRealRect(gr_model);
-  addBlockageList(gr_model);
-  addNetRegionList(gr_model);
+  updateNetBlockageMap(gr_model);
+  updateNetFenceRegionMap(gr_model);
   calcAreaSupply(gr_model);
   buildAccessMap(gr_model);
 }
 
-void GlobalRouter::initNodeRealRect(GRModel& gr_model)
-{
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        GRNode& gr_node = node_map[x][y];
-        gr_node.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
-      }
-    }
-  }
-}
-
-void GlobalRouter::addBlockageList(GRModel& gr_model)
+void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
 {
   GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _gr_data_manager.getDatabase().get_die();
@@ -216,7 +201,7 @@ void GlobalRouter::addBlockageList(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::addNetRegionList(GRModel& gr_model)
+void GlobalRouter::updateNetFenceRegionMap(GRModel& gr_model)
 {
   GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _gr_data_manager.getDatabase().get_die();
@@ -251,33 +236,33 @@ void GlobalRouter::addNetRegionList(GRModel& gr_model)
       }
       real_coord_list.push_back(best_real_coord);
     }
-    std::vector<EXTLayerRect> net_region_list;
+    std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
 
         const LayerRect& below_enclosure = via_master.get_below_enclosure();
-        EXTLayerRect below_via_shape;
-        below_via_shape.set_real_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
+        LayerRect below_via_shape;
+        below_via_shape.set_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
         below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-        net_region_list.push_back(below_via_shape);
+        net_fence_region_list.push_back(below_via_shape);
 
         const LayerRect& above_enclosure = via_master.get_above_enclosure();
-        EXTLayerRect above_via_shape;
-        above_via_shape.set_real_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
+        LayerRect above_via_shape;
+        above_via_shape.set_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
         above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-        net_region_list.push_back(above_via_shape);
+        net_fence_region_list.push_back(above_via_shape);
       }
     }
-    for (const EXTLayerRect& net_region : net_region_list) {
-      irt_int layer_idx = net_region.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_region.get_real_rect());
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_region.get_real_rect(), min_spacing, die.get_real_rect());
+    for (const LayerRect& net_fence_region : net_fence_region_list) {
+      irt_int layer_idx = net_fence_region.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
       PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
       for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
         for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          layer_node_map[layer_idx][x][y].get_net_region_map()[gr_net.get_net_idx()].push_back(enlarged_real_rect);
+          layer_node_map[layer_idx][x][y].get_net_fence_region_map()[gr_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }
@@ -437,7 +422,7 @@ void GlobalRouter::buildGRNetPriority(GRModel& gr_model)
 
 #endif
 
-#if 1  // check
+#if 1  // check gr_model
 
 void GlobalRouter::checkGRModel(GRModel& gr_model)
 {
@@ -490,7 +475,7 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The blockage is outside the node region!");
           }
         }
-        for (auto& [net_idx, region_list] : gr_node.get_net_region_map()) {
+        for (auto& [net_idx, region_list] : gr_node.get_net_fence_region_map()) {
           for (PlanarRect& region : region_list) {
             if (RTUtil::isClosedOverlap(gr_node.get_real_rect(), region)) {
               continue;
@@ -517,7 +502,7 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
 
 #endif
 
-#if 1  // sort
+#if 1  // sort gr_model
 
 void GlobalRouter::sortGRModel(GRModel& gr_model)
 {
@@ -623,7 +608,7 @@ SortStatus GlobalRouter::sortByPinNumDESC(GRNet& net1, GRNet& net2)
 
 #endif
 
-#if 1  // route
+#if 1  // route gr_model
 
 void GlobalRouter::routeGRModel(GRModel& gr_model)
 {
@@ -640,7 +625,6 @@ void GlobalRouter::routeGRModel(GRModel& gr_model)
       LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
-
   LOG_INST.info(Loc::current(), "Processed ", gr_net_list.size(), " nets", monitor.getStatsInfo());
 }
 
@@ -1184,7 +1168,7 @@ double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* e
 
 #endif
 
-#if 1  // plot
+#if 1  // plot gr_model
 
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
@@ -1263,27 +1247,27 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
 
         y -= y_reduced_span;
-        GPText gp_text_net_region_map;
-        gp_text_net_region_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_region_map.set_text_type(info_data_type);
-        gp_text_net_region_map.set_message("net_region_map: ");
-        gp_text_net_region_map.set_layer_idx(gr_node.get_layer_idx());
-        gp_text_net_region_map.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_net_region_map);
+        GPText gp_text_net_fence_region_map;
+        gp_text_net_fence_region_map.set_coord(real_rect.get_lb_x(), y);
+        gp_text_net_fence_region_map.set_text_type(info_data_type);
+        gp_text_net_fence_region_map.set_message("net_fence_region_map: ");
+        gp_text_net_fence_region_map.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_net_fence_region_map.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_net_fence_region_map);
 
-        if (!gr_node.get_net_region_map().empty()) {
+        if (!gr_node.get_net_fence_region_map().empty()) {
           y -= y_reduced_span;
-          GPText gp_text_net_region_map_info;
-          gp_text_net_region_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_region_map_info.set_text_type(info_data_type);
-          std::string net_region_map_message = "--";
-          for (auto& [net_idx, blockage_list] : gr_node.get_net_region_map()) {
-            net_region_map_message += RTUtil::getString("(", net_idx, ")");
+          GPText gp_text_net_fence_region_map_info;
+          gp_text_net_fence_region_map_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_net_fence_region_map_info.set_text_type(info_data_type);
+          std::string net_fence_region_map_message = "--";
+          for (auto& [net_idx, blockage_list] : gr_node.get_net_fence_region_map()) {
+            net_fence_region_map_message += RTUtil::getString("(", net_idx, ")");
           }
-          gp_text_net_region_map_info.set_message(net_region_map_message);
-          gp_text_net_region_map_info.set_layer_idx(gr_node.get_layer_idx());
-          gp_text_net_region_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_net_region_map_info);
+          gp_text_net_fence_region_map_info.set_message(net_fence_region_map_message);
+          gp_text_net_fence_region_map_info.set_layer_idx(gr_node.get_layer_idx());
+          gp_text_net_fence_region_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          node_graph_struct.push(gp_text_net_fence_region_map_info);
         }
 
         y -= y_reduced_span;
@@ -1471,7 +1455,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
 #endif
 
-#if 1  // update
+#if 1  // update gr_model
 
 void GlobalRouter::updateGRModel(GRModel& gr_model)
 {
@@ -1599,7 +1583,7 @@ void GlobalRouter::updateOriginGRResultTree(GRModel& gr_model)
 
 #endif
 
-#if 1  // report
+#if 1  // report gr_model
 
 void GlobalRouter::reportGRModel(GRModel& gr_model)
 {
