@@ -291,7 +291,7 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
 {
   irt_int min_width = routing_layer.get_min_width();
 
-  double single_wire_area = 0;
+  irt_int single_wire_area = 0;
   if (routing_layer.isPreferH()) {
     single_wire_area = (gr_node.get_real_rect().getXSpan() * min_width);
   } else {
@@ -302,7 +302,7 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
   // 由于通孔是一个一个放的，所以不能算最小面积，在track上放置时，需要以track方向双向延长half spacing
   PlanarRect via_rect(0, 0, routing_layer.get_min_area() / min_width, min_width);
   via_rect.set_rt_x(via_rect.get_rt_x() + routing_layer.getMinSpacing(via_rect));
-  gr_node.set_single_via_area(via_rect.getArea());
+  gr_node.set_single_via_area(static_cast<irt_int>(via_rect.getArea()));
 }
 
 void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer)
@@ -1100,7 +1100,7 @@ double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GR
   }
   orientation_set.erase(getOrientation(start_node, end_node));
   orientation_set.erase(getOrientation(end_node, start_node));
-  corner_cost += (gr_model.get_corner_unit() * orientation_set.size());
+  corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   return corner_cost;
 }
 
@@ -1621,17 +1621,6 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
       }
     }
   }
-  double total_wire_length = 0;
-  irt_int total_via_number = 0;
-  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    total_wire_length += wire_length;
-  }
-  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
-    total_via_number += via_number;
-  }
-  gr_model_stat.set_total_wire_length(total_wire_length);
-  gr_model_stat.set_total_via_number(total_via_number);
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
     GridMap<GRNode>& node_map = gr_model.get_layer_node_map()[routing_layer.get_layer_idx()];
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
@@ -1647,14 +1636,24 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
       }
     }
   }
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
   double max_wire_overflow = -DBL_MAX;
   double max_via_overflow = -DBL_MAX;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
   for (double wire_overflow : wire_overflow_list) {
     max_wire_overflow = std::max(max_wire_overflow, wire_overflow);
   }
   for (double via_overflow : via_overflow_list) {
     max_via_overflow = std::max(max_via_overflow, via_overflow);
   }
+  gr_model_stat.set_total_wire_length(total_wire_length);
+  gr_model_stat.set_total_via_number(total_via_number);
   gr_model_stat.set_max_wire_overflow(max_wire_overflow);
   gr_model_stat.set_max_via_overflow(max_via_overflow);
 }
@@ -1665,6 +1664,14 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   std::vector<CutLayer>& cut_layer_list = _gr_data_manager.getDatabase().get_cut_layer_list();
 
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
+  std::vector<double>& wire_overflow_list = gr_model_stat.get_wire_overflow_list();
+  std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
+  double total_wire_length = gr_model_stat.get_total_wire_length();
+  irt_int total_via_number = gr_model_stat.get_total_via_number();
+  double max_wire_overflow = gr_model_stat.get_max_wire_overflow();
+  double max_via_overflow = gr_model_stat.get_max_via_overflow();
 
   // report wire info
   fort::char_table wire_table;
@@ -1672,13 +1679,11 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   wire_table << fort::header << "Routing Layer"
              << "Wire Length / um" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double layer_wire_length = gr_model_stat.get_routing_wire_length_map()[routing_layer.get_layer_idx()];
+    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
     wire_table << routing_layer.get_layer_name()
-               << RTUtil::getString(layer_wire_length, "(", RTUtil::getPercentage(layer_wire_length, gr_model_stat.get_total_wire_length()),
-                                    "%)")
-               << fort::endr;
+               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
   }
-  wire_table << fort::header << "Total" << gr_model_stat.get_total_wire_length() << fort::endr;
+  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
 
   // report via info
   fort::char_table via_table;
@@ -1686,13 +1691,11 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   via_table << fort::header << "Cut Layer"
             << "Via Number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
-    irt_int layer_via_number = gr_model_stat.get_cut_via_number_map()[cut_layer.get_layer_idx()];
-    via_table << cut_layer.get_layer_name()
-              << RTUtil::getString(layer_via_number, "(", RTUtil::getPercentage(layer_via_number, gr_model_stat.get_total_via_number()),
-                                   "%)")
+    irt_int via_number = cut_via_number_map[cut_layer.get_layer_idx()];
+    via_table << cut_layer.get_layer_name() << RTUtil::getString(via_number, "(", RTUtil::getPercentage(via_number, total_via_number), "%)")
               << fort::endr;
   }
-  via_table << fort::header << "Total" << gr_model_stat.get_total_via_number() << fort::endr;
+  via_table << fort::header << "Total" << total_via_number << fort::endr;
 
   std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
   std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
@@ -1709,7 +1712,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   }
 
   // report wire overflow info
-  std::vector<double>& wire_overflow_list = gr_model_stat.get_wire_overflow_list();
   double wire_overflow_range = RTUtil::getScaleRange(wire_overflow_list);
   GridMap<double> wire_overflow_map = RTUtil::getRangeNumRatioMap(wire_overflow_list);
 
@@ -1722,7 +1724,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     double right = left + wire_overflow_range;
     std::string range_str;
     if (y_idx == wire_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", gr_model_stat.get_max_wire_overflow(), "]");
+      range_str = RTUtil::getString("[", left, ",", max_wire_overflow, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
@@ -1732,7 +1734,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   wire_overflow_table << fort::header << "Total" << wire_overflow_list.size() << fort::endr;
 
   // report via overflow info
-  std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
   double via_overflow_range = RTUtil::getScaleRange(via_overflow_list);
   GridMap<double> via_overflow_map = RTUtil::getRangeNumRatioMap(via_overflow_list);
 
@@ -1745,7 +1746,7 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     double right = left + via_overflow_range;
     std::string range_str;
     if (y_idx == via_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", gr_model_stat.get_max_via_overflow(), "]");
+      range_str = RTUtil::getString("[", left, ",", max_via_overflow, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }

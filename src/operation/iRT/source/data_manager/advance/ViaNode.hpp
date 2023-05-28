@@ -40,7 +40,7 @@ class ViaNode : public PlanarCoord
 
  private:
   irt_int _net_idx = -1;
-  std::pair<irt_int, irt_int> _via_idx; //<! below_layer_idx, layer inner via_idx
+  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, layer inner via_idx
 };
 
 }  // namespace irt
