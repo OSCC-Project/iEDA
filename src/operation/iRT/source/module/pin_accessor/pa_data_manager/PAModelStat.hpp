@@ -28,9 +28,9 @@ class PAModelStat
   // getter
   std::map<AccessPointType, irt_int>& get_type_pin_num_map() { return _type_pin_num_map; }
   irt_int get_total_pin_num() { return _total_pin_num; }
-  std::map<irt_int, irt_int>& get_layer_port_num_map() { return _layer_port_num_map; }
+  std::map<irt_int, irt_int>& get_routing_port_num_map() { return _routing_port_num_map; }
   irt_int get_total_port_num() { return _total_port_num; }
-  std::map<irt_int, irt_int>& get_layer_access_point_num_map() { return _layer_access_point_num_map; }
+  std::map<irt_int, irt_int>& get_routing_access_point_num_map() { return _routing_access_point_num_map; }
   irt_int get_total_access_point_num() { return _total_access_point_num; }
   // setter
   void set_total_pin_num(const irt_int total_pin_num) { _total_pin_num = total_pin_num; }
@@ -41,9 +41,9 @@ class PAModelStat
  private:
   std::map<AccessPointType, irt_int> _type_pin_num_map;
   irt_int _total_pin_num = 0;
-  std::map<irt_int, irt_int> _layer_port_num_map;
+  std::map<irt_int, irt_int> _routing_port_num_map;
   irt_int _total_port_num = 0;
-  std::map<irt_int, irt_int> _layer_access_point_num_map;
+  std::map<irt_int, irt_int> _routing_access_point_num_map;
   irt_int _total_access_point_num = 0;
 };
 

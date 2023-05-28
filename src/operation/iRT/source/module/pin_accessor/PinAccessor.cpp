@@ -635,9 +635,11 @@ void PinAccessor::updateOriginPAResult(PAModel& pa_model)
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
+  std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
+  std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
+  std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       AccessPointType access_point_type = pa_pin.get_access_point_list().front().get_type();
       type_pin_num_map[access_point_type]++;
@@ -648,30 +650,28 @@ void PinAccessor::countPAModel(PAModel& pa_model)
     }
     pa_mode_stat.set_total_pin_num(total_pin_num);
 
-    std::map<irt_int, irt_int>& layer_port_num_map = pa_mode_stat.get_layer_port_num_map();
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      std::set<irt_int> layer_idx_set;
+      std::set<irt_int> routing_layer_idx_set;
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-        layer_idx_set.insert(routing_shape.get_layer_idx());
+        routing_layer_idx_set.insert(routing_shape.get_layer_idx());
       }
-      for (irt_int layer_idx : layer_idx_set) {
-        layer_port_num_map[layer_idx]++;
+      for (irt_int routing_layer_idx : routing_layer_idx_set) {
+        routing_port_num_map[routing_layer_idx]++;
       }
     }
     irt_int total_port_num = 0;
-    for (auto& [layer_idx, port_num] : layer_port_num_map) {
+    for (auto& [routing_layer_idx, port_num] : routing_port_num_map) {
       total_port_num += port_num;
     }
     pa_mode_stat.set_total_port_num(total_port_num);
 
-    std::map<irt_int, irt_int>& layer_access_point_num_map = pa_mode_stat.get_layer_access_point_num_map();
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-        layer_access_point_num_map[access_point.get_layer_idx()]++;
+        routing_access_point_num_map[access_point.get_layer_idx()]++;
       }
     }
     irt_int total_access_point_num = 0;
-    for (auto& [layer_idx, access_point_num] : layer_access_point_num_map) {
+    for (auto& [routing_layer_idx, access_point_num] : routing_access_point_num_map) {
       total_access_point_num += access_point_num;
     }
     pa_mode_stat.set_total_access_point_num(total_access_point_num);
@@ -685,9 +685,9 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
   std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
   irt_int total_pin_num = pa_mode_stat.get_total_pin_num();
-  std::map<irt_int, irt_int>& layer_port_num_map = pa_mode_stat.get_layer_port_num_map();
+  std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
   irt_int total_port_num = pa_mode_stat.get_total_port_num();
-  std::map<irt_int, irt_int>& layer_access_point_num_map = pa_mode_stat.get_layer_access_point_num_map();
+  std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
   irt_int total_access_point_num = pa_mode_stat.get_total_access_point_num();
 
   fort::char_table pin_table;
@@ -719,8 +719,8 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
              << "Access Point Number" << fort::endr;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    irt_int port_num = layer_port_num_map[routing_layer.get_layer_idx()];
-    irt_int access_point_num = layer_access_point_num_map[routing_layer.get_layer_idx()];
+    irt_int port_num = routing_port_num_map[routing_layer.get_layer_idx()];
+    irt_int access_point_num = routing_access_point_num_map[routing_layer.get_layer_idx()];
     port_table << routing_layer.get_layer_name() << RTUtil::getString(port_num, "(", RTUtil::getPercentage(port_num, total_port_num), "%)")
                << RTUtil::getString(access_point_num, "(", RTUtil::getPercentage(access_point_num, total_access_point_num), "%)")
                << fort::endr;

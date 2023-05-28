@@ -1598,6 +1598,10 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _gr_data_manager.getDatabase().get_layer_via_master_list();
 
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
+  std::vector<double>& wire_overflow_list = gr_model_stat.get_wire_overflow_list();
+  std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
 
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
@@ -1608,44 +1612,48 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
 
       if (first_layer_idx == second_layer_idx) {
         double wire_length = RTUtil::getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
-        gr_model_stat.addTotalWireLength(wire_length);
-        gr_model_stat.get_routing_wire_length_map()[first_layer_idx] += wire_length;
+        routing_wire_length_map[first_layer_idx] += wire_length;
       } else {
-        gr_model_stat.addTotalViaNumber(std::abs(first_layer_idx - second_layer_idx));
-        for (irt_int i = std::min(first_layer_idx, second_layer_idx); i < std::max(first_layer_idx, second_layer_idx); i++) {
-          gr_model_stat.get_cut_via_number_map()[layer_via_master_list[i].front().get_cut_layer_idx()]++;
+        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
         }
       }
     }
   }
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  gr_model_stat.set_total_wire_length(total_wire_length);
+  gr_model_stat.set_total_via_number(total_via_number);
 
-  double max_wire_overflow = -DBL_MAX;
-  double max_via_overflow = -DBL_MAX;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    GridMap<GRNode>& node_map = layer_node_map[routing_layer.get_layer_idx()];
+    GridMap<GRNode>& node_map = gr_model.get_layer_node_map()[routing_layer.get_layer_idx()];
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
         double wire_remain = gr_node.get_wire_area_supply() + std::min(gr_node.get_via_area_supply() - gr_node.get_via_area_demand(), 0)
                              - gr_node.get_wire_area_demand();
-        double wire_overflow = 0;
-        if (wire_remain != 0) {
-          wire_overflow = wire_remain / gr_node.get_single_wire_area() * (-1);
-        }
-        max_wire_overflow = std::max(max_wire_overflow, wire_overflow);
-        gr_model_stat.get_wire_overflow_list().push_back(wire_overflow);
+        wire_overflow_list.push_back(wire_remain != 0 ? (-1 * wire_remain / gr_node.get_single_wire_area()) : 0);
 
         double via_remain = gr_node.get_wire_area_supply() - gr_node.get_wire_area_demand() + gr_node.get_via_area_supply()
                             - gr_node.get_via_area_demand();
-        double via_overflow = 0;
-        if (via_remain != 0) {
-          via_overflow = via_remain / gr_node.get_single_via_area() * (-1);
-        }
-        max_via_overflow = std::max(max_via_overflow, via_overflow);
-        gr_model_stat.get_via_overflow_list().push_back(via_overflow);
+        via_overflow_list.push_back(via_remain != 0 ? (-1 * via_remain / gr_node.get_single_via_area()) : 0);
       }
     }
+  }
+  double max_wire_overflow = -DBL_MAX;
+  double max_via_overflow = -DBL_MAX;
+  for (double wire_overflow : wire_overflow_list) {
+    max_wire_overflow = std::max(max_wire_overflow, wire_overflow);
+  }
+  for (double via_overflow : via_overflow_list) {
+    max_via_overflow = std::max(max_via_overflow, via_overflow);
   }
   gr_model_stat.set_max_wire_overflow(max_wire_overflow);
   gr_model_stat.set_max_via_overflow(max_via_overflow);
