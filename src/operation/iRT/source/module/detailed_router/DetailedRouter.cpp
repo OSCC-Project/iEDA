@@ -400,17 +400,15 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  irt_int box_x_size = dr_box_map.get_x_size();
-  irt_int box_y_size = dr_box_map.get_y_size();
-  irt_int box_size = box_x_size * box_y_size;
+  irt_int box_size = dr_box_map.get_x_size() * dr_box_map.get_y_size();
   irt_int range = std::max(2, static_cast<irt_int>(std::sqrt(box_size / RTUtil::getBatchSize(box_size))));
 
   std::vector<std::vector<DRSchedule>> dr_schedule_comb_list;
   for (irt_int start_x = 0; start_x < range; start_x++) {
     for (irt_int start_y = 0; start_y < range; start_y++) {
       std::vector<DRSchedule> dr_schedule_list;
-      for (irt_int x = start_x; x < box_x_size; x += range) {
-        for (irt_int y = start_y; y < box_y_size; y += range) {
+      for (irt_int x = start_x; x < dr_box_map.get_x_size(); x += range) {
+        for (irt_int y = start_y; y < dr_box_map.get_y_size(); y += range) {
           dr_schedule_list.emplace_back(x, y);
         }
       }
