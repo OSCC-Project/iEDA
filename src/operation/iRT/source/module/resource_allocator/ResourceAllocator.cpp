@@ -698,20 +698,20 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
 
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-  double avg_cost_range = RTUtil::getScaleRange(avg_cost_list);
-  GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
+  double max_avg_cost = ra_model_stat.get_max_avg_cost();
 
   fort::char_table avg_cost_table;
   avg_cost_table.set_border_style(FT_SOLID_STYLE);
-
   avg_cost_table << fort::header << "Avg Cost"
                  << "Net Number" << fort::endr;
+  double avg_cost_range = RTUtil::getScaleRange(avg_cost_list);
+  GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
   for (irt_int y_idx = 0; y_idx < avg_cost_map.get_y_size(); y_idx++) {
     double left = avg_cost_map[0][y_idx];
     double right = left + avg_cost_range;
     std::string range_str;
     if (y_idx == avg_cost_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", ra_model_stat.get_max_avg_cost(), "]");
+      range_str = RTUtil::getString("[", left, ",", max_avg_cost, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }

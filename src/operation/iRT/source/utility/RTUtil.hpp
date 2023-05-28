@@ -928,7 +928,7 @@ class RTUtil
     std::sort(y_list.begin(), y_list.end());
     x_list.erase(std::unique(x_list.begin(), x_list.end()), x_list.end());
     y_list.erase(std::unique(y_list.begin(), y_list.end()), y_list.end());
-    
+
     std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> x_range_rect_list_map;
     std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> y_range_rect_list_map;
     for (const PlanarRect& rect : unique_rect_list) {
@@ -3128,12 +3128,12 @@ class RTUtil
       LOG_INST.error(Loc::current(), "number is different!");
     }
 
-    irt_int area1 = 0;
+    double area1 = 0;
     for (PlanarRect& rect : rect_list1) {
       area1 += rect.getArea();
     }
 
-    irt_int area2 = 0;
+    double area2 = 0;
     for (PlanarRect& rect : rect_list2) {
       area2 += rect.getArea();
     }
