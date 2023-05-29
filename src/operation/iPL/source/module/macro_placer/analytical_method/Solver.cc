@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "Log.hh"
 #include "Problem.hh"
 namespace ipl {
 void Solver::doNesterovSolve(MatrixXd& solution)
@@ -49,17 +50,17 @@ void Solver::doNesterovSolve(MatrixXd& solution)
   for (int iter = 0; iter < 1000; iter++) {
     _problem->evaluate(reference, grad, cost, iter);
 
-    // if (iter % 10 == 0) {
-    //   std::cout << std::left << std::setw(6) << "Iter:" << std::setw(5) << iter;
-    //   std::cout << std::left << std::setw(6) << "Cost:" << std::setw(15) << cost;
-    //   std::cout << std::left << std::setw(7) << "Major:" << std::setw(0) << Eigen::Map<Eigen::RowVectorXd>(major.data(), major.size())
-    //             << "     ";
-    //   std::cout << std::left << std::setw(6) << "Grad:" << std::setw(0)
-    //             << Eigen::Map<Eigen::RowVectorXd>(prev_grad.data(), prev_grad.size()) << "     ";
-    //   std::cout << std::left << std::setw(6) << "Step:" << std::setw(0)
-    //             << Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size());
-    //   std::cout << std::endl;
-    // }
+    if (iter % 10 == 0) {
+      std::cout << std::left << std::setw(6) << "Iter:" << std::setw(5) << iter;
+      std::cout << std::left << std::setw(6) << "Cost:" << std::setw(15) << cost;
+      std::cout << std::left << std::setw(7) << "Major:" << std::setw(0) << Eigen::Map<Eigen::RowVectorXd>(major.data(), major.size())
+                << "     ";
+      std::cout << std::left << std::setw(6) << "Grad:" << std::setw(0)
+                << Eigen::Map<Eigen::RowVectorXd>(prev_grad.data(), prev_grad.size()) << "     ";
+      std::cout << std::left << std::setw(6) << "Step:" << std::setw(0)
+                << Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size());
+      std::cout << std::endl;
+    }
     for (Eigen::Index i = 0; i < cols; i++) {
       steplength(i) = (reference.col(i) - prev_reference.col(i)).norm() / (grad.col(i) - prev_grad.col(i)).norm();
     }
