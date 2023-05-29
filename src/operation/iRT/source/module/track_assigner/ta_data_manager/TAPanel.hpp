@@ -32,14 +32,17 @@ class TAPanel : public EXTLayerRect
   // getter
   irt_int get_panel_idx() const { return _panel_idx; }
   std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_net_region_map() { return _net_region_map; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_fence_region_map() { return _net_fence_region_map; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_region_map) { _net_region_map = net_region_map; }
+  void set_net_fence_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_fence_region_map)
+  {
+    _net_fence_region_map = net_fence_region_map;
+  }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   // function
@@ -85,7 +88,7 @@ class TAPanel : public EXTLayerRect
  private:
   irt_int _panel_idx = -1;
   std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
-  std::map<irt_int, std::vector<PlanarRect>> _net_region_map;
+  std::map<irt_int, std::vector<PlanarRect>> _net_fence_region_map;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
   TAPanelStat _ta_panel_stat;

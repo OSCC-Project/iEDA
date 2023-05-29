@@ -110,7 +110,7 @@ PAModel PinAccessor::initPAModel(std::vector<PANet>& pa_net_list)
 void PinAccessor::buildPAModel(PAModel& pa_model)
 {
   initGCellRealRect(pa_model);
-  addBlockageList(pa_model);
+  updateNetBlockageMap(pa_model);
   cutBlockageList(pa_model);
 }
 
@@ -130,7 +130,7 @@ void PinAccessor::initGCellRealRect(PAModel& pa_model)
   }
 }
 
-void PinAccessor::addBlockageList(PAModel& pa_model)
+void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 {
   GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
@@ -635,44 +635,45 @@ void PinAccessor::updateOriginPAResult(PAModel& pa_model)
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
+  std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
+  std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
+  std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    std::map<irt_int, std::set<irt_int>> layer_port_set_map;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      pa_mode_stat.addTotalPinNum(1);
-
-      std::set<irt_int> port_layer_idx_set;
+      AccessPointType access_point_type = pa_pin.get_access_point_list().front().get_type();
+      type_pin_num_map[access_point_type]++;
+    }
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::set<irt_int> routing_layer_idx_set;
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-        port_layer_idx_set.insert(routing_shape.get_layer_idx());
+        routing_layer_idx_set.insert(routing_shape.get_layer_idx());
       }
-      for (irt_int port_layer_idx : port_layer_idx_set) {
-        pa_mode_stat.addTotalPortNum(1);
-        pa_mode_stat.get_layer_port_num_map()[port_layer_idx]++;
+      for (irt_int routing_layer_idx : routing_layer_idx_set) {
+        routing_port_num_map[routing_layer_idx]++;
       }
-
-      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-      std::sort(access_point_list.begin(), access_point_list.end(),
-                [](AccessPoint& a, AccessPoint& b) { return a.get_type() < b.get_type(); });
-      switch (access_point_list.front().get_type()) {
-        case AccessPointType::kTrackGrid:
-          pa_mode_stat.addTrackGridPinNum(1);
-          break;
-        case AccessPointType::kOnTrack:
-          pa_mode_stat.addOnTrackPinNum(1);
-          break;
-        case AccessPointType::kOnShape:
-          pa_mode_stat.addOnShapePinNum(1);
-          break;
-        default:
-          LOG_INST.error(Loc::current(), "Type of access point is wrong!");
-          break;
-      }
-      for (AccessPoint& access_point : access_point_list) {
-        pa_mode_stat.addTotalAccessPointNum(1);
-        pa_mode_stat.get_layer_access_point_num_map()[access_point.get_layer_idx()]++;
+    }
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        routing_access_point_num_map[access_point.get_layer_idx()]++;
       }
     }
   }
+  irt_int total_pin_num = 0;
+  irt_int total_port_num = 0;
+  irt_int total_access_point_num = 0;
+  for (auto& [type, pin_num] : type_pin_num_map) {
+    total_pin_num += pin_num;
+  }
+  for (auto& [routing_layer_idx, port_num] : routing_port_num_map) {
+    total_port_num += port_num;
+  }
+  for (auto& [routing_layer_idx, access_point_num] : routing_access_point_num_map) {
+    total_access_point_num += access_point_num;
+  }
+  pa_mode_stat.set_total_pin_num(total_pin_num);
+  pa_mode_stat.set_total_port_num(total_port_num);
+  pa_mode_stat.set_total_access_point_num(total_access_point_num);
 }
 
 void PinAccessor::reportPAModel(PAModel& pa_model)
@@ -680,27 +681,30 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
 
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
+  std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
   irt_int total_pin_num = pa_mode_stat.get_total_pin_num();
-  irt_int track_grid_pin_num = pa_mode_stat.get_track_grid_pin_num();
-  irt_int on_track_pin_num = pa_mode_stat.get_on_track_pin_num();
-  irt_int on_shape_pin_num = pa_mode_stat.get_on_shape_pin_num();
+  std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
   irt_int total_port_num = pa_mode_stat.get_total_port_num();
-  std::map<irt_int, irt_int>& layer_port_num_map = pa_mode_stat.get_layer_port_num_map();
+  std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
   irt_int total_access_point_num = pa_mode_stat.get_total_access_point_num();
-  std::map<irt_int, irt_int>& layer_access_point_num_map = pa_mode_stat.get_layer_access_point_num_map();
 
   fort::char_table pin_table;
   pin_table.set_border_style(FT_SOLID_STYLE);
   pin_table << fort::header << "Access Type"
             << "Pin Number" << fort::endr;
-  pin_table << "Track Grid" << RTUtil::getString(track_grid_pin_num, "(", RTUtil::getPercentage(track_grid_pin_num, total_pin_num), "%)")
+  pin_table << "Track Grid"
+            << RTUtil::getString(type_pin_num_map[AccessPointType::kTrackGrid], "(",
+                                 RTUtil::getPercentage(type_pin_num_map[AccessPointType::kTrackGrid], total_pin_num), "%)")
             << fort::endr;
-  pin_table << "On Track" << RTUtil::getString(on_track_pin_num, "(", RTUtil::getPercentage(on_track_pin_num, total_pin_num), "%)")
+  pin_table << "On Track"
+            << RTUtil::getString(type_pin_num_map[AccessPointType::kOnTrack], "(",
+                                 RTUtil::getPercentage(type_pin_num_map[AccessPointType::kOnTrack], total_pin_num), "%)")
             << fort::endr;
-  pin_table << "On Shape" << RTUtil::getString(on_shape_pin_num, "(", RTUtil::getPercentage(on_shape_pin_num, total_pin_num), "%)")
+  pin_table << "On Shape"
+            << RTUtil::getString(type_pin_num_map[AccessPointType::kOnShape], "(",
+                                 RTUtil::getPercentage(type_pin_num_map[AccessPointType::kOnShape], total_pin_num), "%)")
             << fort::endr;
   pin_table << fort::header << "Total" << total_pin_num << fort::endr;
-
   for (std::string table_str : RTUtil::splitString(pin_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
@@ -710,16 +714,16 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   port_table << fort::header << "Routing Layer"
              << "Port Number"
              << "Access Point Number" << fort::endr;
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    irt_int port_num = layer_port_num_map[routing_layer.get_layer_idx()];
-    irt_int access_point_num = layer_access_point_num_map[routing_layer.get_layer_idx()];
-    port_table << routing_layer.get_layer_name() << RTUtil::getString(port_num, "(", RTUtil::getPercentage(port_num, total_port_num), "%)")
-               << RTUtil::getString(access_point_num, "(", RTUtil::getPercentage(access_point_num, total_access_point_num), "%)")
+    irt_int routing_layer_idx = routing_layer.get_layer_idx();
+    port_table << routing_layer.get_layer_name()
+               << RTUtil::getString(routing_port_num_map[routing_layer_idx], "(",
+                                    RTUtil::getPercentage(routing_port_num_map[routing_layer_idx], total_port_num), "%)")
+               << RTUtil::getString(routing_access_point_num_map[routing_layer_idx], "(",
+                                    RTUtil::getPercentage(routing_access_point_num_map[routing_layer_idx], total_access_point_num), "%)")
                << fort::endr;
   }
   port_table << fort::header << "Total" << total_port_num << total_access_point_num << fort::endr;
-
   for (std::string table_str : RTUtil::splitString(port_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }

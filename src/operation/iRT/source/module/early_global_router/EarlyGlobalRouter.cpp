@@ -1266,8 +1266,8 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
   irt_int cell_width = _egr_data_manager.getConfig().cell_width;
   irt_int cell_height = _egr_data_manager.getConfig().cell_height;
   std::vector<std::vector<irt::ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
-  irt_int routing_layer_size = egr_database.get_routing_layer_list().size();
-  irt_int cut_layer_size = egr_database.get_cut_layer_list().size();
+  irt_int routing_layer_size = static_cast<irt_int>(egr_database.get_routing_layer_list().size());
+  irt_int cut_layer_size = static_cast<irt_int>(egr_database.get_cut_layer_list().size());
   std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
   std::vector<irt_int>& via_num_list = egr_stat.get_via_num_list();
   irt_int& total_via_num = egr_stat.get_total_via_num();
