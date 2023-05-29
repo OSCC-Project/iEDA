@@ -1632,7 +1632,7 @@ class RTUtil
     irt_int track_step_length = track_grid.get_step_length();
     irt_int track_end_line = track_grid.get_end_line();
     irt_int offset_start_line = (std::max(start_line, track_start_line) - track_start_line);
-    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(offset_start_line / 1.0 / track_step_length);
+    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(std::ceil(offset_start_line / 1.0 / track_step_length));
     irt_int offset_end_line = (std::min(end_line, track_end_line) - track_start_line);
     irt_int second = (end_line < track_start_line) ? -1 : offset_end_line / track_step_length;
     return std::make_pair<>(first, second);
