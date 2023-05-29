@@ -19,7 +19,6 @@
 #include "EXTLayerRect.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
-#include "TAPanelStat.hpp"
 #include "TATask.hpp"
 
 namespace irt {
@@ -35,7 +34,6 @@ class TAPanel : public EXTLayerRect
   std::map<irt_int, std::vector<PlanarRect>>& get_net_fence_region_map() { return _net_fence_region_map; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
-  TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
@@ -91,7 +89,6 @@ class TAPanel : public EXTLayerRect
   std::map<irt_int, std::vector<PlanarRect>> _net_fence_region_map;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
-  TAPanelStat _ta_panel_stat;
 #if 1  // astar
   // config
   double _wire_unit = 1;

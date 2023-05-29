@@ -138,10 +138,6 @@ class TrackAssigner
   void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 
-#if 1  // count ta_panel
-  void countTAPanel(TAPanel& ta_panel);
-#endif
-
 #if 1  // update ta_panel
   void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
 #endif

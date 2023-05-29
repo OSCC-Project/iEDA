@@ -53,7 +53,10 @@ class GRNode : public LayerCoord
   void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_fence_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_fence_region_map) { _net_fence_region_map = net_fence_region_map; }
+  void set_net_fence_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_fence_region_map)
+  {
+    _net_fence_region_map = net_fence_region_map;
+  }
   void set_single_wire_area(const irt_int single_wire_area) { _single_wire_area = single_wire_area; }
   void set_single_via_area(const irt_int single_via_area) { _single_via_area = single_via_area; }
   void set_wire_area_supply(const irt_int wire_area_supply) { _wire_area_supply = wire_area_supply; }
