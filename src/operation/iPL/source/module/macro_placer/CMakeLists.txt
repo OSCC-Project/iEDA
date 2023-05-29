@@ -11,6 +11,7 @@ add_library(ipl-module-macro_placer
 
     MacroPlacer.cc
     MPDB.cc
+    Setting.cc
     wrapper/IPLDBWrapper.cc
     partition/MPPartition.cc
     partition/HierPartition.cc

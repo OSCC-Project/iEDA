@@ -15,51 +15,31 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#pragma once
-
-#include <limits>
-#include <string>
+#include "Setting.hh"
 
 namespace ipl::imp {
-
-enum class InstType : uint8_t
+Setting::Setting()
 {
-  kStd_cell,
-  kMacro,
-  kIo_cell,
-  kNew_macro,
-  kFlip_flop
-};
-
-enum class Orient : uint8_t
-{
-  kNone,
-  kN,
-  kE,
-  kS,
-  kW,
-  kFN,
-  kFE,
-  kFS,
-  kFW
-};
-
-enum class PartitionType : uint8_t
-{
-  kHmetis,
-  kMetis
-};
-
-enum class SolutionType : uint8_t
-{
-  kBStar_tree,
-  kSequence_pair
-};
-
-enum class SolverType : uint8_t
-{
-  kSimulate_anneal,
-  kAnalytical
-};
-
+  _new_macro_density = 1;
+  _macro_halo_x = 0;
+  _macro_halo_y = 0;
+  _partition_type = PartitionType::kHmetis;
+  _solver_type = SolverType::kSimulate_anneal;
+  _solution_type = SolutionType::kBStar_tree;
+  _output_path = ".";
+  _parts = 16;
+  _ncon = 5;
+  _ufactor = 400;
+  _weight_area = 1;       // 1
+  _weight_e_area = 96;    // 96
+  _weight_wl = 12;        // 12
+  _weight_boundary = 22;  // 22
+  _weight_notch = 1;
+  _weight_guidance = 3;
+  _swap_pro = 0.5;
+  _move_pro = 0.5;
+  _swap_pos_pro = 0.3;
+  _swap_neg_pro = 0.3;
+  _rotate_pro = 0;
+}
 }  // namespace ipl::imp

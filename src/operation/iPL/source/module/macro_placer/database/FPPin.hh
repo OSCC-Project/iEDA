@@ -43,11 +43,10 @@ class FPPin
   int32_t get_y() const;
   bool is_io_pin() const { return _is_io_pin; }
   float get_weight() const { return _weight; }
-
- private:
   int32_t get_offset_x() const;
   int32_t get_offset_y() const;
 
+ private:
   std::string _name;
   bool _is_io_pin;
   Coordinate* _coordinate;

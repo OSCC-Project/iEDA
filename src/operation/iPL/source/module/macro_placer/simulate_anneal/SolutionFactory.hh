@@ -30,10 +30,10 @@ class SolutionFactory
   MPSolution* createSolution(std::vector<FPInst*> macro_list, Setting* set)
   {
     switch (set->get_solution_type()) {
-      case SolutionTYPE::kBStar_tree:
+      case SolutionType::kBStar_tree:
         return new BStarTree(macro_list, set);
         break;
-      case SolutionTYPE::kSequence_pair:
+      case SolutionType::kSequence_pair:
         return new SequencePair(macro_list, set);
         break;
       default:
