@@ -171,7 +171,7 @@ scripts/sky130/script
 | 设置 Fix Hold Violation Lib 路径  | set LIB_PATH_HOLD xxx      | set LIB_PATH_HOLD ./lib/sky130_dummy_io.lib             |
 | 设置 Fix Setup Violation Lib 路径 | set LIB_PATH_SETUP xxx     | set LIB_PATH_SETUP ./lib/sky130_dummy_io.lib            |
 | 设置 SDC 路径                     | set SDC_PATH xxx           | set SDC_PATH "./sdc/gcd.sdc"                            |
-| 设置 SPEF 路径                    | set SPEF_PATH xxx         | set SPEF_PATH "./spef/xxx.spef"                         |
+| 设置 SPEF 路径                    | set SPEF_PATH xxx          | set SPEF_PATH "./spef/xxx.spef"                         |
 
 **step 2 配置点工具Config**<br>
 所有点工具的参数设置Config都在路径 ./iEDA_config 中，可查看后面章节的 **输入输出一览表** 修改对应的点工具Config文件
@@ -234,11 +234,11 @@ flow_exit
 
 #### 报告分析
 点工具运行完成后，分析报告将存储在路径 ./result/report 中，模块划分如下表所示<br>
-|      报告类型       |     路径     |     说明      |
-|     :---        |     :---        |     :---        |
-| Tech LEF、LEF、DEF数据报告 | ./result/report | 分析、统计 Design 文件的数据，并对PR过程单元、线网数据进行详细报告 |
-| 线长、拥塞评估报告 | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度等数据 |
-| DRC报告 | ./result/report/drc | 主要检测布线后的DRC违例情况，已支持GUI可视化分析 |
+| 报告类型                   | 路径                 | 说明                                                               |
+| :------------------------- | :------------------- | :----------------------------------------------------------------- |
+| Tech LEF、LEF、DEF数据报告 | ./result/report      | 分析、统计 Design 文件的数据，并对PR过程单元、线网数据进行详细报告 |
+| 线长、拥塞评估报告         | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度等数据                     |
+| DRC报告                    | ./result/report/drc  | 主要检测布线后的DRC违例情况，已支持GUI可视化分析                   |
 
 ##### 基础信息
 以 CTS 后的结果报告为例<br>
@@ -304,27 +304,27 @@ Summary
 +------------------------+----------------------------------------+
 ```
 报告的参数说明如下表所示
-|      参数名       |   Tech LEF/LEF 关键字段    |   DEF 关键字段    |     说明      |
-|     :---        |     :---        |     :---        |     :---        |
-| DIE Area ( um^2 ) |  | DIEAREA | 版图 DIE 面积，单位 平方微米 |
-| DIE Usage |  |  | 版图 DIE 的利用率，即 Design中所有 Instance 面积 / DIE 面积 |
-| CORE Area ( um^2 ) |  |  | 版图 CORE 面积， 单位 平方微米, CORE 的面积为所有标准单元ROW的面积之和 |
-| CORE Usag |  |  | 版图 CORE 的利用率, 即 Design中所有 Instance 面积 / CORE 面积 |
-| Number - Site | SITE |  | Tech LEF 中定义的 SITE 的个数 |
-| Number - Row |  | ROW | 版图生成的 标准单元ROW 的个数 |
-| Number - Track |  | TRACKS | 版图生成的 TRACK 的个数 |
-| Number - Layer | LAYER |  | Tech LEF 中定义的 总层数 |
-| Number - Routing Layer | TYPE ROUTING ; |  | Tech LEF 中定义的 布线层 层数 |
-| Number - Cut Layer | TYPE CUT ; |  | Tech LEF 中定义的 通孔层 层数 |
-| Number - GCell Grid |  | GCELLGRID | 版图生成的 GCell Grid 的个数 |
-| Number - Cell Master | MACRO |  | LEF 中定义的所有 Cell Master 个数，包括宏单元、标准单元、填充单元等 |
-| Number - Via Rule | VIA<br> VIARULE | VIAS | LEF 中定义的 Via 个数 |
-| Number - IO Pin |  | PINS | DEF 中生成的 IO Pin 的个数 |
-| Number - Instance |  | COMPONENTS | DEF 中生成的所有 Instance 个数 |
-| Number - Blockage |  | BLOCKAGES | DEF 中生成的所有 Blockage 个数 |
-| Number - Filler |  | FILLS | DEF 中生成的所有 Filler 个数 |
-| Number - Net |  | NETS | DEF 中生成的所有 Net 个数 |
-| Number - Special Net |  | SPECIALNETS | DEF 中生成的所有 Special Net 个数 |
+| 参数名                 | Tech LEF/LEF 关键字段 | DEF 关键字段 | 说明                                                                   |
+| :--------------------- | :-------------------- | :----------- | :--------------------------------------------------------------------- |
+| DIE Area ( um^2 )      |                       | DIEAREA      | 版图 DIE 面积，单位 平方微米                                           |
+| DIE Usage              |                       |              | 版图 DIE 的利用率，即 Design中所有 Instance 面积 / DIE 面积            |
+| CORE Area ( um^2 )     |                       |              | 版图 CORE 面积， 单位 平方微米, CORE 的面积为所有标准单元ROW的面积之和 |
+| CORE Usag              |                       |              | 版图 CORE 的利用率, 即 Design中所有 Instance 面积 / CORE 面积          |
+| Number - Site          | SITE                  |              | Tech LEF 中定义的 SITE 的个数                                          |
+| Number - Row           |                       | ROW          | 版图生成的 标准单元ROW 的个数                                          |
+| Number - Track         |                       | TRACKS       | 版图生成的 TRACK 的个数                                                |
+| Number - Layer         | LAYER                 |              | Tech LEF 中定义的 总层数                                               |
+| Number - Routing Layer | TYPE ROUTING ;        |              | Tech LEF 中定义的 布线层 层数                                          |
+| Number - Cut Layer     | TYPE CUT ;            |              | Tech LEF 中定义的 通孔层 层数                                          |
+| Number - GCell Grid    |                       | GCELLGRID    | 版图生成的 GCell Grid 的个数                                           |
+| Number - Cell Master   | MACRO                 |              | LEF 中定义的所有 Cell Master 个数，包括宏单元、标准单元、填充单元等    |
+| Number - Via Rule      | VIA<br> VIARULE       | VIAS         | LEF 中定义的 Via 个数                                                  |
+| Number - IO Pin        |                       | PINS         | DEF 中生成的 IO Pin 的个数                                             |
+| Number - Instance      |                       | COMPONENTS   | DEF 中生成的所有 Instance 个数                                         |
+| Number - Blockage      |                       | BLOCKAGES    | DEF 中生成的所有 Blockage 个数                                         |
+| Number - Filler        |                       | FILLS        | DEF 中生成的所有 Filler 个数                                           |
+| Number - Net           |                       | NETS         | DEF 中生成的所有 Net 个数                                              |
+| Number - Special Net   |                       | SPECIALNETS  | DEF 中生成的所有 Special Net 个数                                      |
 
 
 **Summary - Instance**<br>
@@ -351,13 +351,13 @@ Summary - Instance
 +---------------+--------+--------------+------------+------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| Type | Instance 的类型 |
-| Number | 统计的 Instance 的个数 |
-| Number Ratio | 统计的 Instance 个数占比，即 统计的 Instance 个数 / 所有 Instance 个数 |
-| Area | 统计的 Instance 的总面积 |
-| Area Ratio | 统计的 Instance 的面积占比， 即 统计的 Instance 总面积 / 所有 Instance 总面积 |
+| 参数名       | 说明                                                                          |
+| :----------- | :---------------------------------------------------------------------------- |
+| Type         | Instance 的类型                                                               |
+| Number       | 统计的 Instance 的个数                                                        |
+| Number Ratio | 统计的 Instance 个数占比，即 统计的 Instance 个数 / 所有 Instance 个数        |
+| Area         | 统计的 Instance 的总面积                                                      |
+| Area Ratio   | 统计的 Instance 的面积占比， 即 统计的 Instance 总面积 / 所有 Instance 总面积 |
 
 其中类型 Type 的分类说明如下<br>
 - All Instances ： 所有 Instance
@@ -387,12 +387,12 @@ Summary - Net
 +----------------+--------+--------------+--------+--------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| Net Type | Net 类型 |
-| Number | 统计的 Net 的个数 |
-| Number Ratio | 统计的 Net 个数占比，即 统计的 Net 个数 / 所有 Net 个数 |
-| Length | 统计的 Net 的总面积 |
+| 参数名       | 说明                                                               |
+| :----------- | :----------------------------------------------------------------- |
+| Net Type     | Net 类型                                                           |
+| Number       | 统计的 Net 的个数                                                  |
+| Number Ratio | 统计的 Net 个数占比，即 统计的 Net 个数 / 所有 Net 个数            |
+| Length       | 统计的 Net 的总面积                                                |
 | Length Ratio | 统计的 Net 的线网长度占比， 即 统计的 Net 总长度 / 所有 Net 总长度 |
 
 其中类型 Net Type 的分类说明如下<br>
@@ -426,16 +426,16 @@ Summary - Layer
 
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| Layer | 第n层信息，按从下到上的层顺序递增 |
-| Net - Wire Length | 统计当前层所有 Net 的总线长 |
-| Net - Wire Number | 统计当前层所有 Net 的 Wire 类型的Segment数据的总个数 |
-| Net - Via Number | 统计当前层所有 Net 的 Via 类型的Segment数据的总个数 |
-| Net - Patch Number | 统计当前层所有 Net 的 Patch 类型的Segment数据的总个数 |
-| Special Net - Wire Length | 统计当前层所有 Special Net 的总线长 |
+| 参数名                    | 说明                                                         |
+| :------------------------ | :----------------------------------------------------------- |
+| Layer                     | 第n层信息，按从下到上的层顺序递增                            |
+| Net - Wire Length         | 统计当前层所有 Net 的总线长                                  |
+| Net - Wire Number         | 统计当前层所有 Net 的 Wire 类型的Segment数据的总个数         |
+| Net - Via Number          | 统计当前层所有 Net 的 Via 类型的Segment数据的总个数          |
+| Net - Patch Number        | 统计当前层所有 Net 的 Patch 类型的Segment数据的总个数        |
+| Special Net - Wire Length | 统计当前层所有 Special Net 的总线长                          |
 | Special Net - Wire Number | 统计当前层所有 Special Net 的 Wire 类型的Segment数据的总个数 |
-| Special Net - Via Number | 统计当前层所有 Special Net 的 Via 类型的Segment数据的总个数 |
+| Special Net - Via Number  | 统计当前层所有 Special Net 的 Via 类型的Segment数据的总个数  |
 
 **Summary - Pin Distribution**<br>
 按Pin的个数统计所有的 Net 和 Instance 的分布情况<br>
@@ -482,13 +482,13 @@ Summary - Pin Distribution
 +------------+------------+-----------+-----------------+----------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| Pin Number | 当前统计的 Pin 个数 |
-| Net Number | 统计 Pin 个数相同的的 Net 数量 |
-| Net Ratio | 统计 Pin 个数相同的的 Net 数量与总 Net 数量的占比 ，即 统计的 Net 个数 / 所有 Net 个数|
-| Instance Number | 统计非PDN PIN 的 Pin 个数相同的的 Instance 数量 |
-| Instance Ratio | 统计的 Instance 数量与总 Instance 数量的占比 ，即 统计的 Instance 个数 / 所有 Instance 个数 |
+| 参数名          | 说明                                                                                        |
+| :-------------- | :------------------------------------------------------------------------------------------ |
+| Pin Number      | 当前统计的 Pin 个数                                                                         |
+| Net Number      | 统计 Pin 个数相同的的 Net 数量                                                              |
+| Net Ratio       | 统计 Pin 个数相同的的 Net 数量与总 Net 数量的占比 ，即 统计的 Net 个数 / 所有 Net 个数      |
+| Instance Number | 统计非PDN PIN 的 Pin 个数相同的的 Instance 数量                                             |
+| Instance Ratio  | 统计的 Instance 数量与总 Instance 数量的占比 ，即 统计的 Instance 个数 / 所有 Instance 个数 |
 
 ##### 线长、拥塞评估报告
 以 Placement 结果的 Design 线长评估和拥塞评估报告为例，以下对评估报告的各个参数、标签进行说明<br>
@@ -521,17 +521,17 @@ Congestion Report
 +------------------------+---------------+-------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| Grid Bin Size |  |
-| Bin Partition |  |
-| Total Count |  |
-| Instance Density Range |  |
-| Bins Count |  |
-| Percentage |  |
-| Pin Count Range |  |
-| Bins Count |  |
-| Percentage |  |
+| 参数名                 | 说明 |
+| :--------------------- | :--- |
+| Grid Bin Size          |      |
+| Bin Partition          |      |
+| Total Count            |      |
+| Instance Density Range |      |
+| Bins Count             |      |
+| Percentage             |      |
+| Pin Count Range        |      |
+| Bins Count             |      |
+| Percentage             |      |
 
 
 **Wire Length Report**<br>
@@ -548,13 +548,13 @@ Wire Length Report
 +-------------------+--------------+----------------+------------------+----------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
+| 参数名            | 说明                                                                    |
+| :---------------- | :---------------------------------------------------------------------- |
 | Wire-length Model | 计算线长的方法，目前支持三种线长计算方法，包括 HPWL、Bound2Bound、Flute |
-| Total Length | 统计所有 Net 的总线长 |
-| Average Length | 所有线网的平均线长，即 统计所有 Net 的总线长 / 所有 Net 个数 |
-| Longest Net Name | 线长最大的 Net 名称 |
-| Longest Length | 线长最大的 Net 线长 |
+| Total Length      | 统计所有 Net 的总线长                                                   |
+| Average Length    | 所有线网的平均线长，即 统计所有 Net 的总线长 / 所有 Net 个数            |
+| Longest Net Name  | 线长最大的 Net 名称                                                     |
+| Longest Length    | 线长最大的 Net 线长                                                     |
 
 ##### DRC违例报告
 以 Routing 结果的 Design DRC报告为例，以下对报告的各个参数、标签进行说明<br>
@@ -585,10 +585,10 @@ Drc Summary
 +-----------------------------------+------------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
-| DRC Type  | DRC 检测规则类型 |
-| Number | DRC 违例数量 |
+| 参数名   | 说明             |
+| :------- | :--------------- |
+| DRC Type | DRC 检测规则类型 |
+| Number   | DRC 违例数量     |
 
 其中类型 DRC Type 的分类说明如下<br>
 - Cut Different Layer Spacing ： 
@@ -618,10 +618,10 @@ Connectivity Summary
 +------------------------------------+----------+
 ```
 报告的参数说明如下表所示<br>
-|      参数名       |     说明      |
-|     :---        |     :---        |
+| 参数名             | 说明                                                    |
+| :----------------- | :------------------------------------------------------ |
 | Connectivity Check | 未连通的 Net 类别，按 Net 中包含的 Pin 个数进行分别统计 |
-| Number | 未连通的 Net 数量和总 Net 数量 比值 |
+| Number             | 未连通的 Net 数量和总 Net 数量 比值                     |
 
 **DRC - Disconnected Net**<br>
 记录未连通的所有 Net 名称
@@ -689,27 +689,27 @@ cd <sky130 path>
 
 全流程自动运行，前后流程的输入、输出已在脚本中配置好且存在先后依赖关系，如下表所示
 
-| Flow                               | Script                                                           | Config                                    | Design Input                                                | Design Output                                                                                               | Report                                                                                                |
-| :--------------------------------- | :--------------------------------------------------------------- | :---------------------------------------- | :---------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| 布图规划 (Floorpan)                | ./iEDA -script ./script/iFP_script/run_iFP.tcl                   |                                           | ./result/verilog/gcd.v                                      | ./result/iFP_result.def<br> ./result/iFP_result.v                                                       | ./result/report/fp_db.rpt                                                                             |
-| 网表优化（Fix Fanout）             | ./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl        | ./iEDA_config/cts_default_config.json     | ./result/iFP_result.def                                     | ./result/iTO_fix_fanout_result.def<br> ./result/iTO_fix_fanout_result.v                                 | ./result/report/fixfanout_db.rpt                                                                      |
-| 布局 (Placement)                   | ./iEDA -script ./script/iPL_script/run_iPL.tcl                   | ./iEDA_config/pl_default_config.json      | ./result/iTO_fix_fanout_result.def                          | ./result/iPL_result.def<br> ./result/iPL_result.v                                                       | ./result/report/pl_db.rpt                                                                             |
-| 布局结果评估 (评估线长和拥塞)      | ./iEDA -script ./script/iPL_script/run_iPL_eval.tcl              |                                           | ./result/iPL_result.def                                     |                                                                                                             | ./result/report/eval/iPL_result_wirelength.rpt<br> ./result/report/eval/iPL_result_congestion.rpt |
-| 时钟树综合 (CTS)                   | ./iEDA -script ./script/iCTS_script/run_iCTS.tcl                 | ./iEDA_config/cts_default_config.json     | ./result/iPL_result.def                                     | ./result/iCTS_result.def<br> ./result/iCTS_result.v                                                     | ./result/report/cts_db.rpt                                                                            |
-| 时钟树综合结果评估 (评估线长)      | ./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl            |                                           | ./result/iCTS_result.def                                    |                                                                                                             | ./result/report/eval/iCTS_result_wirelength.rpt                                                       |
-| 时钟树综合时序评估 (评估时序)      | ./iEDA -script ./script/iCTS_script/run_iCTS_STA.tcl             |                                           | ./result/iCTS_result.def                                    |                                                                                                             | ./result/cts/sta/                                                                                     |
-| 修复DRV违例 (Fix DRV Violation)    | ./iEDA -script ./script/iTO_script/run_iTO_drv.tcl               | ./iEDA_config/to_default_config_drv.json  | ./result/iCTS_result.def                                    | ./result/iTO_drv_result.def<br> ./result/iTO_drv_result.v                                               | ./result/report/drv_db.rpt                                                                            |
-| Fix DRV结果评估 (评估时序)         | ./iEDA -script ./script/iTO_script/run_iTO_drv_STA.tcl           |                                           | ./result/iTO_drv_result.def                                 |                                                                                                             | ./result/to/drv/sta/                                                                                  |
-| 修复Hold违例（Fix Hold Violation） | ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl              | ./iEDA_config/to_default_config_hold.json | ./result/iTO_drv_result.def                                 | ./result/iTO_hold_result.def<br> ./result/iTO_hold_result.v                                             | ./result/report/hold_db.rpt                                                                           |
-| Fix Hold结果评估（评估时序）       | ./iEDA -script ./script/iTO_script/run_iTO_hold_STA.tcl          |                                           | ./result/iTO_hold_result.def                                |                                                                                                             | ./result/to/hold/sta/                                                                                 |
-| 单元合法化（Legalization）         |  ./iEDA -script ./script/iPL_script/run_iPL_legalization.tcl    |  | ./result/iTO_hold_result.def              | ./result/iPL_lg_result.def<br> ./result/iPL_lg_result.v | ./result/report/lg_db.rpt                                                                                   |                                                                                                       |
-| 合法化结果评估（评估线长和拥塞）   | ./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl | | ./result/iPL_lg_result.def                |                                                             | ./result/report/eval/iPL_lg_result_wirelength.rpt<br> ./result/report/eval/iPL_lg_result_congestion.rpt |                                                                                                       |
-| 布线 （Routing）                   | ./iEDA -script ./script/iRT_script/run_iRT.tcl                   |                                           | ./result/iPL_lg_result.def                                  | ./result/iRT_result.def ./result/iRT_result.v                                                               | ./result/report/rt_db.rpt                                                                             |
-| 布线结果评估（评估线长）           | ./iEDA -script ./script/iRT_script/run_iRT_eval.tcl              |                                           | ./result/iRT_result.def                                     |                                                                                                             | ./result/report/eval/iRT_result_wirelength.rpt                                                        |
-| 布线结果评估 （评估时序）          | ./iEDA -script ./script/iRT_script/run_iRT_STA.tcl               |                                           | ./result/iRT_result.def                                     |                                                                                                             | ./result/rt/sta/                                                                                      |
-| 布线结果DRC                        | ./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl               |                                           | ./result/iRT_result.def                                     |                                                                                                             | ./result/report/drc/iRT_drc.rpt                                                                       |
-| 单元填充 （Filler）                | ./iEDA -script ./script/iPL_script/run_iPL_filler.tcl            | ./iEDA_config/pl_default_config.json      | ./result/iRT_result.def                                     | ./result/iPL_filler_result.def<br> ./result/iPL_filler_result.v                                         | ./result/report/filler_db.rpt                                                                         |
-| DEF转GDSII                         | ./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl        |                                           | ./result/iPL_filler_result.def                              | ./result/final_design.gds2                                                                                  |                                                                                                       |
+| Flow                               | Script                                                           | Config                                    | Design Input                       | Design Output                                                           | Report                                                                                                  |
+| :--------------------------------- | :--------------------------------------------------------------- | :---------------------------------------- | :--------------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
+| 布图规划 (Floorpan)                | ./iEDA -script ./script/iFP_script/run_iFP.tcl                   |                                           | ./result/verilog/gcd.v             | ./result/iFP_result.def<br> ./result/iFP_result.v                       | ./result/report/fp_db.rpt                                                                               |
+| 网表优化（Fix Fanout）             | ./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl        | ./iEDA_config/cts_default_config.json     | ./result/iFP_result.def            | ./result/iTO_fix_fanout_result.def<br> ./result/iTO_fix_fanout_result.v | ./result/report/fixfanout_db.rpt                                                                        |
+| 布局 (Placement)                   | ./iEDA -script ./script/iPL_script/run_iPL.tcl                   | ./iEDA_config/pl_default_config.json      | ./result/iTO_fix_fanout_result.def | ./result/iPL_result.def<br> ./result/iPL_result.v                       | ./result/report/pl_db.rpt                                                                               |
+| 布局结果评估 (评估线长和拥塞)      | ./iEDA -script ./script/iPL_script/run_iPL_eval.tcl              |                                           | ./result/iPL_result.def            |                                                                         | ./result/report/eval/iPL_result_wirelength.rpt<br> ./result/report/eval/iPL_result_congestion.rpt       |
+| 时钟树综合 (CTS)                   | ./iEDA -script ./script/iCTS_script/run_iCTS.tcl                 | ./iEDA_config/cts_default_config.json     | ./result/iPL_result.def            | ./result/iCTS_result.def<br> ./result/iCTS_result.v                     | ./result/report/cts_db.rpt                                                                              |
+| 时钟树综合结果评估 (评估线长)      | ./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl            |                                           | ./result/iCTS_result.def           |                                                                         | ./result/report/eval/iCTS_result_wirelength.rpt                                                         |
+| 时钟树综合时序评估 (评估时序)      | ./iEDA -script ./script/iCTS_script/run_iCTS_STA.tcl             |                                           | ./result/iCTS_result.def           |                                                                         | ./result/cts/sta/                                                                                       |
+| 修复DRV违例 (Fix DRV Violation)    | ./iEDA -script ./script/iTO_script/run_iTO_drv.tcl               | ./iEDA_config/to_default_config_drv.json  | ./result/iCTS_result.def           | ./result/iTO_drv_result.def<br> ./result/iTO_drv_result.v               | ./result/report/drv_db.rpt                                                                              |
+| Fix DRV结果评估 (评估时序)         | ./iEDA -script ./script/iTO_script/run_iTO_drv_STA.tcl           |                                           | ./result/iTO_drv_result.def        |                                                                         | ./result/to/drv/sta/                                                                                    |
+| 修复Hold违例（Fix Hold Violation） | ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl              | ./iEDA_config/to_default_config_hold.json | ./result/iTO_drv_result.def        | ./result/iTO_hold_result.def<br> ./result/iTO_hold_result.v             | ./result/report/hold_db.rpt                                                                             |
+| Fix Hold结果评估（评估时序）       | ./iEDA -script ./script/iTO_script/run_iTO_hold_STA.tcl          |                                           | ./result/iTO_hold_result.def       |                                                                         | ./result/to/hold/sta/                                                                                   |
+| 单元合法化（Legalization）         | ./iEDA -script ./script/iPL_script/run_iPL_legalization.tcl      |                                           | ./result/iTO_hold_result.def       | ./result/iPL_lg_result.def<br> ./result/iPL_lg_result.v                 | ./result/report/lg_db.rpt                                                                               |  |
+| 合法化结果评估（评估线长和拥塞）   | ./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl |                                           | ./result/iPL_lg_result.def         |                                                                         | ./result/report/eval/iPL_lg_result_wirelength.rpt<br> ./result/report/eval/iPL_lg_result_congestion.rpt |  |
+| 布线 （Routing）                   | ./iEDA -script ./script/iRT_script/run_iRT.tcl                   |                                           | ./result/iPL_lg_result.def         | ./result/iRT_result.def ./result/iRT_result.v                           | ./result/report/rt_db.rpt                                                                               |
+| 布线结果评估（评估线长）           | ./iEDA -script ./script/iRT_script/run_iRT_eval.tcl              |                                           | ./result/iRT_result.def            |                                                                         | ./result/report/eval/iRT_result_wirelength.rpt                                                          |
+| 布线结果评估 （评估时序）          | ./iEDA -script ./script/iRT_script/run_iRT_STA.tcl               |                                           | ./result/iRT_result.def            |                                                                         | ./result/rt/sta/                                                                                        |
+| 布线结果DRC                        | ./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl               |                                           | ./result/iRT_result.def            |                                                                         | ./result/report/drc/iRT_drc.rpt                                                                         |
+| 单元填充 （Filler）                | ./iEDA -script ./script/iPL_script/run_iPL_filler.tcl            | ./iEDA_config/pl_default_config.json      | ./result/iRT_result.def            | ./result/iPL_filler_result.def<br> ./result/iPL_filler_result.v         | ./result/report/filler_db.rpt                                                                           |
+| DEF转GDSII                         | ./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl        |                                           | ./result/iPL_filler_result.def     | ./result/final_design.gds2                                              |                                                                                                         |
 
 #### 布图规划 (Floorplan)
 **执行脚本**<br>
@@ -776,17 +776,17 @@ PDN
 }
 ```
 可配置参数定义如下
-|      参数名       |     默认值     |     说明      |
-|     :---        |     :---        |     :---        |
-| design_work_space | ./result/no | 设置 Fix Fanout 运行过程的工作区路径 |
-| sdc_file |  | 无效参数，后续删除 |
-| lib_files |  | 无效参数，后续删除|
-| lef_files |  | 无效参数，后续删除 |
-| def_file |  | 无效参数，后续删除 |
-| output_def | | 无效参数，后续删除 |
-| report_file | ./result/no/report.txt | Fix Fanout 过程中产生的报告 |
-| insert_buffer | sky130_fd_sc_hs__buf_8 | 设置插入的 buffer 名称 |
-| max_fanout | 30 | 最大Fanout数量 |
+| 参数名            | 默认值                 | 说明                                 |
+| :---------------- | :--------------------- | :----------------------------------- |
+| design_work_space | ./result/no            | 设置 Fix Fanout 运行过程的工作区路径 |
+| sdc_file          |                        | 无效参数，后续删除                   |
+| lib_files         |                        | 无效参数，后续删除                   |
+| lef_files         |                        | 无效参数，后续删除                   |
+| def_file          |                        | 无效参数，后续删除                   |
+| output_def        |                        | 无效参数，后续删除                   |
+| report_file       | ./result/no/report.txt | Fix Fanout 过程中产生的报告          |
+| insert_buffer     | sky130_fd_sc_hs__buf_8 | 设置插入的 buffer 名称               |
+| max_fanout        | 30                     | 最大Fanout数量                       |
 
 **输入**<br>
 - ./result/iFP_result.def
@@ -855,6 +855,20 @@ step 3: 查看GUI
 ./iEDA -script ./script/iCTS_script/run_iCTS.tcl 
 ```
 **参数配置**<br>
+
+|     参数      |          类型           |                                            说明                                             |
+| :-----------: | :---------------------: | :-----------------------------------------------------------------------------------------: |
+|  skew_bound   |       浮点字符串        |                             时钟源到达各个寄存器的最大时钟偏差                              |
+| max_buf_tran  |       浮点字符串        |                                   缓冲器最大转换时间约束                                    |
+| max_sink_tran |       浮点字符串        |                                   寄存器最大转换时间约束                                    |
+|    max_cap    |       浮点字符串        |                                      最大负载电容约束                                       |
+|  max_fanout   |       整型字符串        |                                        最大扇出约束                                         |
+|  max_length   |       整型字符串        |                                      最大线网线长约束                                       |
+|  scale_size   |          整型           |                            用于减小规模加速时钟树构建的划分程度                             |
+|  buffer_type  |       字符串列表        |                         用于指定时钟树综合阶段可用的缓冲器类型列表                          |
+| routing_layer |        整型列表         |                           指定时钟绕线层以获取单位电容、电阻信息                            |
+|  use_netlist  | 字符串（"ON" or "OFF"） | 是否只对"net_list"中的线网进行时钟树综合，若该参数为"OFF"则默认对所有时钟线长进行时钟树综合 |
+|   net_list    |     字符串字典列表      |                                指定需要进行时钟树构建的线网                                 |
 
 **输入**<br>
 - ./result/iPL_result.def

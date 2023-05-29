@@ -621,8 +621,11 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
   irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
 
+  std::set<irt_int> base_layer_idx_set;
   std::map<irt_int, std::set<irt_int>> scale_layer_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
+    base_layer_idx_set.insert(routing_layer.get_layer_idx());
+
     TrackGrid track_grid = (direction == Direction::kVertical ? routing_layer.getXTrackGrid() : routing_layer.getYTrackGrid());
     irt_int track_scale = track_grid.get_start_line();
     irt_int step_num = track_grid.get_step_num();
@@ -634,68 +637,29 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
       }
     }
   }
-  std::set<irt_int> base_layer_idx_set;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    base_layer_idx_set.insert(routing_layer.get_layer_idx());
-  }
-  std::vector<irt_int> gcell_scale_list;
-  gcell_scale_list.push_back(start_gcell_scale);
-  auto iter = scale_layer_map.begin();
+  std::vector<irt_int> gcell_scale_list = {start_gcell_scale};
   std::set<irt_int> curr_layer_idx_set;
+  auto iter = scale_layer_map.begin();
   while (true) {
-    if (iter == scale_layer_map.end()) {
-      break;
-    }
     irt_int track_scale = iter->first;
     curr_layer_idx_set.insert(iter->second.begin(), iter->second.end());
     iter++;
+    if (iter == scale_layer_map.end()) {
+      if (base_layer_idx_set != curr_layer_idx_set) {
+        gcell_scale_list.pop_back();
+      }
+      gcell_scale_list.push_back(end_gcell_scale);
+      break;
+    }
+    if (track_scale - gcell_scale_list.back() < proposed_gcell_interval) {
+      continue;
+    }
     if (base_layer_idx_set != curr_layer_idx_set) {
       continue;
     }
     curr_layer_idx_set.clear();
-    if (iter != scale_layer_map.end()) {
-      gcell_scale_list.push_back((track_scale + iter->first) / 2);
-    }
+    gcell_scale_list.push_back((track_scale + iter->first) / 2);
   }
-  gcell_scale_list.push_back(end_gcell_scale);
-
-  if (gcell_scale_list.size() >= 2) {
-    irt_int left = gcell_scale_list[gcell_scale_list.size() - 2];
-    irt_int right = gcell_scale_list[gcell_scale_list.size() - 1];
-    std::set<irt_int> gcell_layer_set;
-    for (auto& [scale, layer_set] : scale_layer_map) {
-      if (scale < left) {
-        continue;
-      }
-      if (right < scale) {
-        break;
-      }
-      gcell_layer_set.insert(layer_set.begin(), layer_set.end());
-    }
-    if (base_layer_idx_set != gcell_layer_set) {
-      gcell_scale_list.erase(gcell_scale_list.end() - 2);
-    }
-  }
-
-  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
-    irt_int left = gcell_scale_list[i - 1];
-    irt_int right = gcell_scale_list[i];
-    std::set<irt_int> gcell_layer_set;
-    for (auto& [scale, layer_set] : scale_layer_map) {
-      if (scale < left) {
-        continue;
-      }
-      if (right < scale) {
-        break;
-      }
-      gcell_layer_set.insert(layer_set.begin(), layer_set.end());
-    }
-
-    if (base_layer_idx_set != gcell_layer_set) {
-      LOG_INST.error(Loc::current(), "The gcell no contain all layer!");
-    }
-  }
-
   return gcell_scale_list;
 }
 

@@ -93,13 +93,13 @@ class DRNode : public LayerCoord
     if (RTUtil::exist(_cost_task_map, orientation)) {
       std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
       if (task_idx_set.size() >= 2) {
-        cost += (task_idx_set.size() * 100);
+        cost += static_cast<double>(task_idx_set.size() * 100);
       } else {
         cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : 100;
       }
     }
     if (RTUtil::exist(_env_task_map, orientation)) {
-      cost += (_env_task_map[orientation].size() * 100);
+      cost += static_cast<double>(_env_task_map[orientation].size() * 100);
     }
     return cost;
   }

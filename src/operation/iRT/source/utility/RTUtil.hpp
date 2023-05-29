@@ -928,7 +928,7 @@ class RTUtil
     std::sort(y_list.begin(), y_list.end());
     x_list.erase(std::unique(x_list.begin(), x_list.end()), x_list.end());
     y_list.erase(std::unique(y_list.begin(), y_list.end()), y_list.end());
-    
+
     std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> x_range_rect_list_map;
     std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> y_range_rect_list_map;
     for (const PlanarRect& rect : unique_rect_list) {
@@ -1632,7 +1632,7 @@ class RTUtil
     irt_int track_step_length = track_grid.get_step_length();
     irt_int track_end_line = track_grid.get_end_line();
     irt_int offset_start_line = (std::max(start_line, track_start_line) - track_start_line);
-    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(offset_start_line / 1.0 / track_step_length);
+    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(std::ceil(offset_start_line / 1.0 / track_step_length));
     irt_int offset_end_line = (std::min(end_line, track_end_line) - track_start_line);
     irt_int second = (end_line < track_start_line) ? -1 : offset_end_line / track_step_length;
     return std::make_pair<>(first, second);
@@ -3128,12 +3128,12 @@ class RTUtil
       LOG_INST.error(Loc::current(), "number is different!");
     }
 
-    irt_int area1 = 0;
+    double area1 = 0;
     for (PlanarRect& rect : rect_list1) {
       area1 += rect.getArea();
     }
 
-    irt_int area2 = 0;
+    double area2 = 0;
     for (PlanarRect& rect : rect_list2) {
       area2 += rect.getArea();
     }
