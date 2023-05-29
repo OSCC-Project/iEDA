@@ -146,7 +146,7 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
     lef_resistance = routing_layer->get_resistance();
   } else {
     lef_resistance =
-        routing_layer->get_resistance() / idb_layout->get_units()->get_ohms();
+        routing_layer->get_resistance();
   }
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
