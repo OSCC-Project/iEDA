@@ -26,19 +26,25 @@ class TAPanelStat
   TAPanelStat() = default;
   ~TAPanelStat() = default;
   // getter
-  double get_total_wire_length() { return _total_wire_length; }
-  double get_net_and_net_violation_area() { return _net_and_net_violation_area; }
-  double get_net_and_obs_violation_area() { return _net_and_obs_violation_area; }
+  double get_total_wire_length() const { return _total_wire_length; }
+  double get_total_net_and_obs_violation_area() const { return _total_net_and_obs_violation_area; }
+  double get_total_net_and_net_violation_area() const { return _total_net_and_net_violation_area; }
   // setter
+  void set_total_wire_length(const double total_wire_length) { _total_wire_length = total_wire_length; }
+  void set_total_net_and_obs_violation_area(const double total_net_and_obs_violation_area)
+  {
+    _total_net_and_obs_violation_area = total_net_and_obs_violation_area;
+  }
+  void set_total_net_and_net_violation_area(const double total_net_and_net_violation_area)
+  {
+    _total_net_and_net_violation_area = total_net_and_net_violation_area;
+  }
   // function
-  void addTotalWireLength(const double wire_length) { _total_wire_length += wire_length; }
-  void addNetAndNetViolation(const double violation_area) { _net_and_net_violation_area += violation_area; }
-  void addNetAndObsViolation(const double violation_area) { _net_and_obs_violation_area += violation_area; }
 
  private:
   double _total_wire_length = 0;
-  double _net_and_net_violation_area = 0;
-  double _net_and_obs_violation_area = 0;
+  double _total_net_and_obs_violation_area = 0;
+  double _total_net_and_net_violation_area = 0;
 };
 
 }  // namespace irt

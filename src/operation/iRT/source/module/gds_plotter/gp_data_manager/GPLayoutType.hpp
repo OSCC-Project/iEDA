@@ -20,7 +20,7 @@
 
 namespace irt {
 
-enum class GPDataType
+enum class GPLayoutType
 {
   kNone = 0,
   kText = 1,
@@ -37,49 +37,49 @@ enum class GPDataType
   kConnection = 12
 };
 
-struct GetGPDataTypeName
+struct GetGPLayoutTypeName
 {
-  std::string operator()(const GPDataType& data_type) const
+  std::string operator()(const GPLayoutType& data_type) const
   {
     std::string data_type_name;
     switch (data_type) {
-      case GPDataType::kNone:
+      case GPLayoutType::kNone:
         data_type_name = "none";
         break;
-      case GPDataType::kText:
+      case GPLayoutType::kText:
         data_type_name = "text";
         break;
-      case GPDataType::kBoundingBox:
+      case GPLayoutType::kBoundingBox:
         data_type_name = "bounding_box";
         break;
-      case GPDataType::kPort:
+      case GPLayoutType::kPort:
         data_type_name = "port";
         break;
-      case GPDataType::kAccessPoint:
+      case GPLayoutType::kAccessPoint:
         data_type_name = "access_point";
         break;
-      case GPDataType::kGuide:
+      case GPLayoutType::kGuide:
         data_type_name = "guide";
         break;
-      case GPDataType::kPreferTrack:
+      case GPLayoutType::kPreferTrack:
         data_type_name = "prefer_track";
         break;
-      case GPDataType::kNonpreferTrack:
+      case GPLayoutType::kNonpreferTrack:
         data_type_name = "nonprefer_track";
         break;
-      case GPDataType::kWire:
+      case GPLayoutType::kWire:
         data_type_name = "wire";
         break;
-      case GPDataType::kEnclosure:
+      case GPLayoutType::kEnclosure:
         data_type_name = "enclosure";
         break;
-      case GPDataType::kCut:
+      case GPLayoutType::kCut:
         data_type_name = "cut";
         break;
-      case GPDataType::kBlockage:
+      case GPLayoutType::kBlockage:
         data_type_name = "blockage";
         break;
-      case GPDataType::kConnection:
+      case GPLayoutType::kConnection:
         data_type_name = "connection";
         break;
       default:
