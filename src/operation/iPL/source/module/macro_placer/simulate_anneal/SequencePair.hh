@@ -43,13 +43,13 @@ class SequencePair : public MPSolution
   std::vector<int> _pre_pos_seq;
   std::vector<int> _pre_neg_seq;
 
-  float _swap_pos_pro = 0.3;
-  float _swap_neg_pro = 0.3;
-  float _rotate_pro = 0;
+  float _swap_pos_pro;
+  float _swap_neg_pro;
+  float _rotate_pro;
 
-  bool _rotate = false;
-  int _rotate_macro_index = 0;
-  Orient _old_orient = Orient::kN;
+  bool _rotate;
+  int _rotate_macro_index;
+  Orient _old_orient;
 
   void singleSwap(bool flag);  // true for pos_seq and false for neg_seq
   void doubleSwap(int index1, int index2);

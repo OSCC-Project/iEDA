@@ -45,11 +45,11 @@ float MPEvaluation::evaluate()
   float cost = 0;
   float hpwl = evalHPWL();
   float e_area = evalEArea();
-  float guidance_penalty = evalLocationPenalty();
+  // float guidance_penalty = evalLocationPenalty();
   cost += _weight_wl * hpwl / _norm_wl;
   cost += _weight_area * _solution->get_total_area() / _norm_area;
   cost += _weight_e_area * e_area / _norm_e_area;
-  cost += _weight_guidance * guidance_penalty / _norm_guidance;
+  // cost += _weight_guidance * guidance_penalty / _norm_guidance;
   return cost;
 }
 
@@ -358,7 +358,7 @@ void MPEvaluation::init_norm(SAParam* param)
     area = _solution->get_total_area();
     wl = evalHPWL();
     e_area = evalEArea();
-    guidance = evalLocationPenalty();
+    // guidance = evalLocationPenalty();
     area_list.emplace_back(area);
     wl_list.emplace_back(wl);
     e_area_list.emplace_back(e_area);
@@ -366,13 +366,13 @@ void MPEvaluation::init_norm(SAParam* param)
     _norm_area += area;
     _norm_wl += wl;
     _norm_e_area += e_area;
-    _norm_guidance += guidance;
+    // _norm_guidance += guidance;
   }
 
   _norm_area = _norm_area / perturb_per_step;
   _norm_wl = _norm_wl / perturb_per_step;
   _norm_e_area = _norm_e_area / perturb_per_step;
-  _norm_guidance = _norm_guidance / perturb_per_step;
+  // _norm_guidance = _norm_guidance / perturb_per_step;
 
   std::vector<float> cost_list;
   for (size_t i = 0; i < area_list.size(); ++i) {
@@ -380,7 +380,7 @@ void MPEvaluation::init_norm(SAParam* param)
     cost += _weight_area * area_list[i] / _norm_area;
     cost += _weight_wl * wl_list[i] / _norm_wl;
     cost += _weight_e_area * e_area_list[i] / _norm_e_area;
-    cost += _weight_guidance * guidance_list[i] / _norm_guidance;
+    // cost += _weight_guidance * guidance_list[i] / _norm_guidance;
 
     cost_list.emplace_back(cost);
   }

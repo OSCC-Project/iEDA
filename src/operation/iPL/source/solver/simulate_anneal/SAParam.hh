@@ -22,9 +22,6 @@ namespace ipl {
 class SAParam
 {
  public:
-  SAParam(){};
-  ~SAParam(){};
-
   void set_max_num_step(uint32_t step) { _max_num_step = step; }
   void set_perturb_per_step(uint32_t step) { _perturb_per_step = step; }
   void set_cool_rate(float rate) { _cool_rate = rate; }
@@ -38,7 +35,7 @@ class SAParam
   float get_init_temperature() const { return _init_temperature; }
 
  protected:
-  uint32_t _max_num_step = 100;
+  uint32_t _max_num_step = 500;
   uint32_t _perturb_per_step = 60;
   float _cool_rate = 0.92;
   float _init_pro = 0.95;

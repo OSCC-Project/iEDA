@@ -51,15 +51,11 @@ class MacroPlacer
   std::map<FPInst*, int> partitionInst(int part);
 
  private:
-  void init();
+  void setConfig(Config* config);
   void updateDensity();
-  void setFixedMacro();
   void addHalo();
   void deleteHalo();
-  void addBlockage();
-  void addGuidance();
-  void writeSummary(double time);
-  void initLocation();
+  void writeSummary();
   void plotGDS();
   void plotPartitionGDS(std::map<FPInst*, int> partition_result);
   void buildNewNetList();
@@ -67,7 +63,8 @@ class MacroPlacer
   // data
   MPDB* _mdb;
   Setting* _set;
-  MacroPlacerConfig _mp_config;
+
+  clock_t time;
 };
 
 }  // namespace ipl::imp

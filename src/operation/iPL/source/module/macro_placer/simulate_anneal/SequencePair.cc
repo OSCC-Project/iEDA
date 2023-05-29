@@ -20,6 +20,14 @@ namespace ipl::imp {
 
 SequencePair::SequencePair(std::vector<FPInst*> macro_list, Setting* set) : MPSolution(macro_list)
 {
+  // set
+  _swap_pos_pro = set->get_swap_pos_pro();
+  _swap_neg_pro = set->get_swap_neg_pro();
+  _rotate_pro = set->get_rotate_pro();
+  _rotate = false;
+  _rotate_macro_index = 0;
+  _old_orient = Orient::kN;
+
   for (int i = 0; i < _num_macro; ++i) {
     _pos_seq.emplace_back(i);
     _neg_seq.emplace_back(i);
