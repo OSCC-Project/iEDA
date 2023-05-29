@@ -2263,30 +2263,9 @@ class RTUtil
   // 考虑的全部via below层
   static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
   {
-    if (bottom_layer_idx > top_layer_idx) {
-      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
-    }
-    std::vector<int> layer_idx_list;
-
-    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == bottom_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-    } else {
-      for (int i = curr_layer_idx; i <= bottom_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-      for (int i = (top_layer_idx - 1); i <= (curr_layer_idx - 1); i++) {
-        layer_idx_list.push_back(i);
-      }
-    }
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-
-    return layer_idx_list;
+    std::vector<int> usage_layer_idx_list = getUsageLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    usage_layer_idx_list.pop_back();
+    return usage_layer_idx_list;
   }
 
   // 获得可用的布线层
