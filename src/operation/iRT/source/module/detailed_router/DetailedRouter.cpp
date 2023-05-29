@@ -429,7 +429,6 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
       checkDRBox(dr_box);
       sortDRBox(dr_box);
       routeDRBox(dr_box);
-      countDRBox(dr_box);
       updateDRBox(dr_model, dr_box);
       dr_box.freeNodeGraph();
     }
@@ -2019,62 +2018,6 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
 #endif
 
-#if 1  // count dr_box
-
-void DetailedRouter::countDRBox(DRBox& dr_box)
-{
-  irt_int micron_dbu = _dr_data_manager.getDatabase().get_micron_dbu();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-
-  DRBoxStat& dr_box_stat = dr_box.get_dr_box_stat();
-  std::map<irt_int, double>& routing_wire_length_map = dr_box_stat.get_routing_wire_length_map();
-  std::map<irt_int, irt_int>& cut_via_number_map = dr_box_stat.get_cut_via_number_map();
-  std::map<irt_int, double>& routing_net_and_obs_violation_area_map = dr_box_stat.get_routing_net_and_obs_violation_area_map();
-  std::map<irt_int, double>& routing_net_and_net_violation_area_map = dr_box_stat.get_routing_net_and_net_violation_area_map();
-
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    for (Segment<LayerCoord>& routing_segment : dr_task.get_routing_segment_list()) {
-      irt_int first_layer_idx = routing_segment.get_first().get_layer_idx();
-      irt_int second_layer_idx = routing_segment.get_second().get_layer_idx();
-      if (first_layer_idx == second_layer_idx) {
-        double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
-        routing_wire_length_map[first_layer_idx] += wire_length;
-      } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
-        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-          cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
-        }
-      }
-    }
-  }
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    for (LayerRect& real_rect : getRealRectList(dr_task.get_routing_segment_list())) {
-      irt_int layer_idx = real_rect.get_layer_idx();
-      for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
-        if (dr_task.get_origin_net_idx() == net_idx) {
-          continue;
-        }
-        for (LayerRect& blockage : blockage_list) {
-          if (layer_idx != blockage.get_layer_idx()) {
-            continue;
-          }
-          if (RTUtil::isOpenOverlap(real_rect, blockage)) {
-            double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
-            violation_area = (violation_area / (micron_dbu * micron_dbu));
-            if (net_idx == -1) {
-              routing_net_and_obs_violation_area_map[layer_idx] += violation_area;
-            } else {
-              routing_net_and_net_violation_area_map[layer_idx] += violation_area;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-#endif
-
 #if 1  // update dr_box
 
 void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -2153,6 +2096,9 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
 void DetailedRouter::countDRModel(DRModel& dr_model)
 {
+  irt_int micron_dbu = _dr_data_manager.getDatabase().get_micron_dbu();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
+
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
@@ -2162,18 +2108,45 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
     for (irt_int y = 0; y < dr_box_map.get_y_size(); y++) {
-      DRBoxStat& dr_box_stat = dr_box_map[x][y].get_dr_box_stat();
-      for (auto& [layer_idx, wire_length] : dr_box_stat.get_routing_wire_length_map()) {
-        routing_wire_length_map[layer_idx] += wire_length;
+      DRBox& dr_box = dr_box_map[x][y];
+      for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+        for (Segment<LayerCoord>& routing_segment : dr_task.get_routing_segment_list()) {
+          irt_int first_layer_idx = routing_segment.get_first().get_layer_idx();
+          irt_int second_layer_idx = routing_segment.get_second().get_layer_idx();
+          if (first_layer_idx == second_layer_idx) {
+            double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
+            routing_wire_length_map[first_layer_idx] += wire_length;
+          } else {
+            RTUtil::sortASC(first_layer_idx, second_layer_idx);
+            for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+              cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+            }
+          }
+        }
       }
-      for (auto& [layer_idx, via_num] : dr_box_stat.get_cut_via_number_map()) {
-        cut_via_number_map[layer_idx] += via_num;
-      }
-      for (auto& [layer_idx, violation_area] : dr_box_stat.get_routing_net_and_net_violation_area_map()) {
-        routing_net_and_obs_violation_area_map[layer_idx] += violation_area;
-      }
-      for (auto& [layer_idx, violation_area] : dr_box_stat.get_routing_net_and_obs_violation_area_map()) {
-        routing_net_and_net_violation_area_map[layer_idx] += violation_area;
+      for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+        for (LayerRect& real_rect : getRealRectList(dr_task.get_routing_segment_list())) {
+          irt_int layer_idx = real_rect.get_layer_idx();
+          for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
+            if (dr_task.get_origin_net_idx() == net_idx) {
+              continue;
+            }
+            for (LayerRect& blockage : blockage_list) {
+              if (layer_idx != blockage.get_layer_idx()) {
+                continue;
+              }
+              if (RTUtil::isOpenOverlap(real_rect, blockage)) {
+                double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
+                violation_area = (violation_area / (micron_dbu * micron_dbu));
+                if (net_idx == -1) {
+                  routing_net_and_obs_violation_area_map[layer_idx] += violation_area;
+                } else {
+                  routing_net_and_net_violation_area_map[layer_idx] += violation_area;
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

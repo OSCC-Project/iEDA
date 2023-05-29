@@ -554,7 +554,7 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
       checkTAPanel(ta_panel);
       sortTAPanel(ta_panel);
       assignTAPanel(ta_panel);
-      countTAPanel(ta_panel);
+      updateTAPanel(ta_model, ta_panel);
       ta_panel.freeNodeMap();
     }
     total_panel_num += ta_schedule_list.size();
@@ -1780,48 +1780,6 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
 #endif
 
-#if 1  // count ta_panel
-
-void TrackAssigner::countTAPanel(TAPanel& ta_panel)
-{
-  irt_int micron_dbu = _ta_data_manager.getDatabase().get_micron_dbu();
-
-  TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
-
-  double total_wire_length = 0;
-  double total_net_and_obs_violation_area = 0;
-  double total_net_and_net_violation_area = 0;
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
-      double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
-      total_wire_length += wire_length;
-    }
-    for (LayerRect& real_rect : getRealRectList(ta_task.get_routing_segment_list())) {
-      for (auto& [net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
-        if (ta_task.get_origin_net_idx() == net_idx) {
-          continue;
-        }
-        for (PlanarRect& blockage : blockage_list) {
-          if (RTUtil::isOpenOverlap(real_rect, blockage)) {
-            double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
-            violation_area = (violation_area / (micron_dbu * micron_dbu));
-            if (net_idx == -1) {
-              total_net_and_obs_violation_area += violation_area;
-            } else {
-              total_net_and_net_violation_area += violation_area;
-            }
-          }
-        }
-      }
-    }
-  }
-  ta_panel_stat.set_total_wire_length(total_wire_length);
-  ta_panel_stat.set_total_net_and_obs_violation_area(total_net_and_obs_violation_area);
-  ta_panel_stat.set_total_net_and_net_violation_area(total_net_and_net_violation_area);
-}
-
-#endif
-
 #if 1  // update ta_panel
 
 void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
@@ -1912,17 +1870,39 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
 
 void TrackAssigner::countTAModel(TAModel& ta_model)
 {
+  irt_int micron_dbu = _ta_data_manager.getDatabase().get_micron_dbu();
+
   TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
   std::map<irt_int, double>& routing_wire_length = ta_model_stat.get_routing_wire_length_map();
   std::map<irt_int, double>& routing_net_and_obs_violation_area = ta_model_stat.get_routing_net_and_obs_violation_area_map();
   std::map<irt_int, double>& routing_net_and_net_violation_area = ta_model_stat.get_routing_net_and_net_violation_area_map();
 
   for (std::vector<TAPanel>& panel_list : ta_model.get_layer_panel_list()) {
-    for (TAPanel& panel : panel_list) {
-      TAPanelStat& ta_panel_stat = panel.get_ta_panel_stat();
-      routing_wire_length[panel.get_layer_idx()] += ta_panel_stat.get_total_wire_length();
-      routing_net_and_obs_violation_area[panel.get_layer_idx()] += ta_panel_stat.get_total_net_and_obs_violation_area();
-      routing_net_and_net_violation_area[panel.get_layer_idx()] += ta_panel_stat.get_total_net_and_net_violation_area();
+    for (TAPanel& ta_panel : panel_list) {
+      for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+        for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
+          double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
+          routing_wire_length[ta_panel.get_layer_idx()] += wire_length;
+        }
+        for (LayerRect& real_rect : getRealRectList(ta_task.get_routing_segment_list())) {
+          for (auto& [net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
+            if (ta_task.get_origin_net_idx() == net_idx) {
+              continue;
+            }
+            for (PlanarRect& blockage : blockage_list) {
+              if (RTUtil::isOpenOverlap(real_rect, blockage)) {
+                double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
+                violation_area = (violation_area / (micron_dbu * micron_dbu));
+                if (net_idx == -1) {
+                  routing_net_and_obs_violation_area[ta_panel.get_layer_idx()] += violation_area;
+                } else {
+                  routing_net_and_net_violation_area[ta_panel.get_layer_idx()] += violation_area;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
   double total_wire_length = 0;
