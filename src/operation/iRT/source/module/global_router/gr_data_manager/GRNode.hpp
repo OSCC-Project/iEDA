@@ -154,7 +154,6 @@ class GRNode : public LayerCoord
    * 路线引导
    *  当对应net出现在引导中时，必须按照引导的方向布线，否则视为障碍
    *  当对应net不在引导中时，视为普通线网布线
-   *
    */
   std::map<irt_int, std::set<Orientation>> _net_access_map;
   std::queue<irt_int> _net_queue;
