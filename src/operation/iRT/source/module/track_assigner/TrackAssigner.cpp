@@ -725,7 +725,7 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
-  std::vector<LayerRect> rect_list;
+  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
   for (Segment<LayerCoord>& segment : segment_list) {
     LayerCoord& first_coord = segment.get_first();
     LayerCoord& second_coord = segment.get_second();
@@ -733,12 +733,19 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
     if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
       irt_int half_width = routing_layer_list[first_coord.get_layer_idx()].get_min_width() / 2;
       PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
-      rect_list.emplace_back(wire_rect, first_coord.get_layer_idx());
+      layer_rect_map[first_coord.get_layer_idx()].push_back(wire_rect);
     } else {
       LOG_INST.error(Loc::current(), "The segment is proximal!");
     }
   }
-  return rect_list;
+  std::vector<LayerRect> real_rect_list;
+  for (auto& [layer_idx, rect_list] : layer_rect_map) {
+    rect_list = RTUtil::getMergeRectList(rect_list);
+    for (PlanarRect& rect : rect_list) {
+      real_rect_list.emplace_back(rect, layer_idx);
+    }
+  }
+  return real_rect_list;
 }
 
 void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
@@ -1879,7 +1886,10 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
 
   for (std::vector<TAPanel>& panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : panel_list) {
+      std::set<irt_int> visited_net_idx_set;
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+        visited_net_idx_set.insert(ta_task.get_origin_net_idx());
+
         for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
           double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
           routing_wire_length[ta_panel.get_layer_idx()] += wire_length;
@@ -1887,6 +1897,9 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
         for (LayerRect& real_rect : getRealRectList(ta_task.get_routing_segment_list())) {
           for (auto& [net_idx, blockage_list] : ta_panel.get_net_blockage_map()) {
             if (ta_task.get_origin_net_idx() == net_idx) {
+              continue;
+            }
+            if (RTUtil::exist(visited_net_idx_set, net_idx)) {
               continue;
             }
             for (PlanarRect& blockage : blockage_list) {

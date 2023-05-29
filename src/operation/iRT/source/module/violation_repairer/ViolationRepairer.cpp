@@ -377,7 +377,7 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
   EXTPlanarRect& die = _vr_data_manager.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
-  for (const LayerRect& real_rect : getRealRectList(vr_net)) {
+  for (const LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
     irt_int layer_idx = real_rect.get_layer_idx();
     irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(real_rect);
     PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(real_rect, min_spacing, die.get_real_rect());
@@ -390,33 +390,36 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
   }
 }
 
-std::vector<LayerRect> ViolationRepairer::getRealRectList(VRNet& vr_net)
+std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_node_tree)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_data_manager.getDatabase().get_layer_via_master_list();
 
-  std::vector<LayerRect> real_rect_list;
-  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
+  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
     PHYNode& phy_node = phy_node_node->value();
     if (phy_node.isType<WireNode>()) {
       WireNode& wire_node = phy_node.getNode<WireNode>();
-      real_rect_list.emplace_back(RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width()),
-                                  wire_node.get_layer_idx());
+      layer_rect_map[wire_node.get_layer_idx()].push_back(
+          RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width()));
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       std::pair<irt_int, irt_int>& via_idx = via_node.get_via_idx();
       ViaMaster& via_master = layer_via_master_list[via_idx.first][via_idx.second];
 
       const LayerRect& below_enclosure = via_master.get_below_enclosure();
-      LayerRect below_via_shape;
-      below_via_shape.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node));
-      below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-      real_rect_list.push_back(below_via_shape);
+      PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, via_node);
+      layer_rect_map[below_enclosure.get_layer_idx()].push_back(offset_below_enclosure);
 
       const LayerRect& above_enclosure = via_master.get_above_enclosure();
-      LayerRect above_via_shape;
-      above_via_shape.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node));
-      above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-      real_rect_list.push_back(above_via_shape);
+      PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, via_node);
+      layer_rect_map[above_enclosure.get_layer_idx()].push_back(offset_above_enclosure);
+    }
+  }
+  std::vector<LayerRect> real_rect_list;
+  for (auto& [layer_idx, rect_list] : layer_rect_map) {
+    rect_list = RTUtil::getMergeRectList(rect_list);
+    for (PlanarRect& rect : rect_list) {
+      real_rect_list.emplace_back(rect, layer_idx);
     }
   }
   return real_rect_list;
@@ -462,67 +465,84 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   irt_int micron_dbu = _vr_data_manager.getDatabase().get_micron_dbu();
   GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
 
-  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
+  std::map<irt_int, double>& routing_net_and_obs_violation_area_map = vr_model_stat.get_routing_net_and_obs_violation_area_map();
+  std::map<irt_int, double>& routing_net_and_net_violation_area_map = vr_model_stat.get_routing_net_and_net_violation_area_map();
 
-  std::set<irt_int> visited_set;
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
       PHYNode& phy_node = phy_node_node->value();
       if (phy_node.isType<WireNode>()) {
         WireNode& wire_node = phy_node.getNode<WireNode>();
         double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
-        vr_model_stat.addTotalWireLength(wire_length);
-        vr_model_stat.get_routing_wire_length_map()[wire_node.get_layer_idx()] += wire_length;
+        routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
       } else if (phy_node.isType<ViaNode>()) {
         ViaNode& via_node = phy_node.getNode<ViaNode>();
-        vr_model_stat.addTotalViaNumber(1);
-        vr_model_stat.get_cut_via_number_map()[via_node.get_via_idx().first]++;
+        cut_via_number_map[via_node.get_via_idx().first]++;
       }
     }
+  }
+  std::set<irt_int> visited_net_idx_set;
+  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    visited_net_idx_set.insert(vr_net.get_net_idx());
 
-    std::map<irt_int, std::set<LayerRect, CmpLayerRectByLayerASC>> net_blockage_map;
-    std::vector<LayerRect> net_rect_list = getRealRectList(vr_net);
-    for (LayerRect real_rect : net_rect_list) {
+    for (LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
       irt_int layer_idx = real_rect.get_layer_idx();
+      GridMap<VRGCell>& gcell_map = layer_gcell_map[layer_idx];
+
+      std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>> net_blockage_map;
       PlanarRect grid_rect = RTUtil::getClosedGridRect(real_rect, gcell_axis);
       for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
         for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
-          for (auto& [net_idx, blockage_list] : layer_gcell_map[layer_idx][x][y].get_net_blockage_map()) {
+          for (auto& [net_idx, blockage_list] : gcell_map[x][y].get_net_blockage_map()) {
             if (vr_net.get_net_idx() == net_idx) {
               continue;
             }
-            if (RTUtil::exist(visited_set, net_idx)) {
+            if (RTUtil::exist(visited_net_idx_set, net_idx)) {
               continue;
             }
-            for (PlanarRect& blockage : blockage_list) {
-              net_blockage_map[net_idx].insert(LayerRect(blockage, layer_idx));
-            }
+            net_blockage_map[net_idx].insert(blockage_list.begin(), blockage_list.end());
           }
         }
       }
-    }
-
-    for (LayerRect real_rect : net_rect_list) {
-      irt_int layer_idx = real_rect.get_layer_idx();
       for (auto& [net_idx, blockage_set] : net_blockage_map) {
-        for (const LayerRect& blockage : blockage_set) {
-          if (layer_idx == blockage.get_layer_idx() && RTUtil::isOpenOverlap(real_rect, blockage)) {
+        for (const PlanarRect& blockage : blockage_set) {
+          if (RTUtil::isOpenOverlap(real_rect, blockage)) {
             double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
             violation_area = (violation_area / (micron_dbu * micron_dbu));
             if (net_idx == -1) {
-              vr_model_stat.addTotalNetAndObsViolation(violation_area);
-              vr_model_stat.get_routing_net_and_obs_violation_area_map()[layer_idx] += violation_area;
+              routing_net_and_obs_violation_area_map[layer_idx] += violation_area;
             } else {
-              vr_model_stat.addTotalNetAndNetViolation(violation_area);
-              vr_model_stat.get_routing_net_and_net_violation_area_map()[layer_idx] += violation_area;
+              routing_net_and_net_violation_area_map[layer_idx] += violation_area;
             }
           }
         }
       }
     }
-    visited_set.insert(vr_net.get_net_idx());
   }
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
+  double total_net_and_obs_violation_area = 0;
+  double total_net_and_net_violation_area = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  for (auto& [routing_layer_idx, violation_area] : routing_net_and_obs_violation_area_map) {
+    total_net_and_obs_violation_area += violation_area;
+  }
+  for (auto& [routing_layer_idx, violation_area] : routing_net_and_net_violation_area_map) {
+    total_net_and_net_violation_area += violation_area;
+  }
+  vr_model_stat.set_total_wire_length(total_wire_length);
+  vr_model_stat.set_total_via_number(total_via_number);
+  vr_model_stat.set_total_net_and_obs_violation_area(total_net_and_obs_violation_area);
+  vr_model_stat.set_total_net_and_net_violation_area(total_net_and_net_violation_area);
 }
 
 void ViolationRepairer::reportTable(VRModel& vr_model)
@@ -578,26 +598,26 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
   }
 
   // report overlap info
-  double total_net_and_net_violation_area = vr_model_stat.get_total_net_and_net_violation_area();
   double total_net_and_obs_violation_area = vr_model_stat.get_total_net_and_obs_violation_area();
+  double total_net_and_net_violation_area = vr_model_stat.get_total_net_and_net_violation_area();
 
   fort::char_table overlap_table;
   overlap_table.set_border_style(FT_SOLID_STYLE);
   overlap_table << fort::header << "Routing Layer"
-                << "Net And Net Violation Area / um^2"
-                << "Net And Obs Violation Area / um^2" << fort::endr;
+                << "Net And Obs Violation Area / um^2"
+                << "Net And Net Violation Area / um^2" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double routing_net_and_net_violation_area = vr_model_stat.get_routing_net_and_net_violation_area_map()[routing_layer.get_layer_idx()];
     double routing_net_and_obs_violation_area = vr_model_stat.get_routing_net_and_obs_violation_area_map()[routing_layer.get_layer_idx()];
+    double routing_net_and_net_violation_area = vr_model_stat.get_routing_net_and_net_violation_area_map()[routing_layer.get_layer_idx()];
 
     overlap_table << routing_layer.get_layer_name()
-                  << RTUtil::getString(routing_net_and_net_violation_area, "(",
-                                       RTUtil::getPercentage(routing_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
                   << RTUtil::getString(routing_net_and_obs_violation_area, "(",
                                        RTUtil::getPercentage(routing_net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
+                  << RTUtil::getString(routing_net_and_net_violation_area, "(",
+                                       RTUtil::getPercentage(routing_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
                   << fort::endr;
   }
-  overlap_table << fort::header << "Total" << total_net_and_net_violation_area << total_net_and_obs_violation_area << fort::endr;
+  overlap_table << fort::header << "Total" << total_net_and_obs_violation_area << total_net_and_net_violation_area << fort::endr;
   for (std::string table_str : RTUtil::splitString(overlap_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
