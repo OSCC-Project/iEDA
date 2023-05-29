@@ -591,7 +591,7 @@ void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), x_track_grid);
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), y_track_grid);
   if (static_cast<irt_int>(x_list.size()) != ta_node_map.get_x_size() || static_cast<irt_int>(y_list.size()) != ta_node_map.get_y_size()) {
-    LOG_INST.error(Loc::current(), "The neighbor orien is different with real orien!");
+    LOG_INST.error(Loc::current(), "The size of scale list is different with size of node map!");
   }
   for (irt_int x = 0; x < ta_node_map.get_x_size(); x++) {
     for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
