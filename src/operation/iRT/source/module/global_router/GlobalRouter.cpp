@@ -1808,20 +1808,16 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   }
   via_overflow_table << fort::header << "Total" << via_overflow_list.size() << fort::endr;
 
-  std::vector<std::string> wire_overflow_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
-  std::vector<std::string> via_overflow_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
-  for (size_t i = 0; i < std::max(wire_overflow_str_list.size(), via_overflow_str_list.size()); i++) {
-    std::string table_str;
-    if (i < wire_overflow_str_list.size()) {
-      table_str += wire_overflow_str_list[i];
-    } else {
-      for (size_t i = 0; i < wire_overflow_str_list.front().size(); i++) {
-        table_str += " ";
-      }
-    }
+  std::vector<std::string> longer_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
+  std::vector<std::string> shorter_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
+  if (longer_str_list.size() < shorter_str_list.size()) {
+    std::swap(longer_str_list, shorter_str_list);
+  }
+  for (size_t i = 0; i < longer_str_list.size(); i++) {
+    std::string table_str = longer_str_list[i];
     table_str += " ";
-    if (i < via_overflow_str_list.size()) {
-      table_str += via_overflow_str_list[i];
+    if (i < shorter_str_list.size()) {
+      table_str += shorter_str_list[i];
     }
     LOG_INST.info(Loc::current(), table_str);
   }
