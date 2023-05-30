@@ -9,6 +9,9 @@
 # set(TIMING_LOG ON)
 # # Use routing
 # set(USE_ROUTING ON)
+# # Test
+# set(SOLVER_TEST ON)
+
 
 # # DEBUG CTS
 # set(DEBUG_ICTS_API ON)
@@ -28,6 +31,7 @@
 # # DEBUG SOLVER
 # set(DEBUG_ICTS_CLUSTERING ON)
 # set(DEBUG_ICTS_DME ON)
+# set(DEBUG_ICTS_HCTS ON)
 # set(DEBUG_ICTS_POLYGON ON)
 # set(DEBUG_ICTS_SLEW_AWARE ON)
 # set(DEBUG_ICTS_COST_CALCULATOR ON)
@@ -37,6 +41,7 @@
 # # DEBUG TEST
 # set(DEBUG_ICTS_TEST ON)
 # set(DEBUG_ICTS_PYTHON ON)
+
 
 # Tool definitions
 if(PY_MODEL)
@@ -94,6 +99,9 @@ if(DEBUG_ICTS_CLUSTERING)
 endif()
 if(DEBUG_ICTS_DME)
   add_compile_definitions(DEBUG_ICTS_DME)
+endif()
+if(DEBUG_ICTS_HCTS)
+  add_compile_definitions(DEBUG_ICTS_HCTS)
 endif()
 if(DEBUG_ICTS_POLYGON)
   add_compile_definitions(DEBUG_ICTS_POLYGON)

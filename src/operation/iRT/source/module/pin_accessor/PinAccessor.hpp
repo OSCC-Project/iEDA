@@ -56,7 +56,7 @@ class PinAccessor
   PAModel initPAModel(std::vector<PANet>& pa_net_list);
   void buildPAModel(PAModel& pa_model);
   void initGCellRealRect(PAModel& pa_model);
-  void addBlockageList(PAModel& pa_model);
+  void updateNetBlockageMap(PAModel& pa_model);
   void cutBlockageList(PAModel& pa_model);
 #endif
 
@@ -65,7 +65,7 @@ class PinAccessor
   void accessPANet(PAModel& pa_model, PANet& pa_net);
   void initAccessPointList(PAModel& pa_model, PANet& pa_net);
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
-  std::vector<LayerRect> getViaLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
+  std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointList(PANet& pa_net);

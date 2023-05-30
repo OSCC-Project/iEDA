@@ -152,7 +152,7 @@ void Synthesis::insertInstance(CtsInstance* inst)
 
 void Synthesis::insertInstance(ClockTopo& clk_topo)
 {
-    auto* design = CTSAPIInst.get_design();
+  auto* design = CTSAPIInst.get_design();
   auto* driver = clk_topo.get_driver();
   auto* config = CTSAPIInst.get_config();
   auto router_type = config->get_router_type();

@@ -16,31 +16,31 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerCoord.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-class ViaNode : public PlanarCoord
+class DRSchedule
 {
  public:
-  ViaNode() = default;
-  ViaNode(const ViaNode& other) : PlanarCoord(other)
+  DRSchedule() = default;
+  DRSchedule(const irt_int x, const irt_int y)
   {
-    _net_idx = other._net_idx;
-    _via_idx = other._via_idx;
+    _x = x;
+    _y = y;
   }
-  ~ViaNode() = default;
+  ~DRSchedule() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  std::pair<irt_int, irt_int>& get_via_idx() { return _via_idx; }
+  irt_int get_x() const { return _x; }
+  irt_int get_y() const { return _y; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_via_idx(const std::pair<irt_int, irt_int>& via_idx) { _via_idx = via_idx; }
+  void set_x(const irt_int x) { _x = x; }
+  void set_y(const irt_int y) { _y = y; }
   // function
 
  private:
-  irt_int _net_idx = -1;
-  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, layer inner via_idx
+  irt_int _x = -1;
+  irt_int _y = -1;
 };
 
 }  // namespace irt
