@@ -97,7 +97,7 @@ class GlobalRouter
   void rerouteByEnlarging(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);
-  void rerouteByIgnoringOBS(GRModel& gr_model);
+  void rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void updatePathResult(GRModel& gr_model);
   void updateOrientationSet(GRModel& gr_model);
   void resetStartAndEnd(GRModel& gr_model);

@@ -31,10 +31,10 @@ enum class DRRouteStrategy
 
 struct GetDRRouteStrategyName
 {
-  std::string operator()(const DRRouteStrategy& DRRouteStrategy) const
+  std::string operator()(const DRRouteStrategy& dr_route_strategy) const
   {
     std::string dr_route_strategy_name;
-    switch (DRRouteStrategy) {
+    switch (dr_route_strategy) {
       case DRRouteStrategy::kNone:
         dr_route_strategy_name = "none";
         break;

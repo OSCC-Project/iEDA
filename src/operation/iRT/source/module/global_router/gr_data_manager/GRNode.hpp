@@ -76,23 +76,31 @@ class GRNode : public LayerCoord
   }
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
-    bool is_obs = false;
     if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
-      return is_obs;
+      return false;
     }
     if (RTUtil::exist(_net_access_map, net_idx)) {
       // net在node中有引导，但是方向不对，视为障碍
-      is_obs = !RTUtil::exist(_net_access_map[net_idx], orientation);
-    } else {
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        // wire剩余可以给via
-        is_obs = ((_wire_area_supply - _wire_area_demand + _via_area_supply - _via_area_demand) < _single_via_area);
-      } else {
-        // via剩余不可转wire
-        is_obs = ((_wire_area_supply - _wire_area_demand + std::min(_via_area_supply - _via_area_demand, 0)) < _single_wire_area);
-      }
+      return !RTUtil::exist(_net_access_map[net_idx], orientation);
     }
-    return is_obs;
+    if (gr_route_strategy == GRRouteStrategy::kIgnoringENV) {
+      return false;
+    }
+    irt_int fence_via_area_demand = 0;
+    if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
+      fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
+    }
+    if (gr_route_strategy == GRRouteStrategy::kIgnoringFence) {
+      fence_via_area_demand = 0;
+    }
+    if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+      // wire剩余可以给via
+      return ((_wire_area_supply - _wire_area_demand + _via_area_supply - _via_area_demand - fence_via_area_demand) < _single_via_area);
+    } else {
+      // via剩余不可转wire
+      return ((_wire_area_supply - _wire_area_demand + std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0))
+              < _single_wire_area);
+    }
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
@@ -108,9 +116,6 @@ class GRNode : public LayerCoord
         // via剩余不可转wire
         cost += RTUtil::sigmoid(_wire_area_demand, _wire_area_supply + std::min(_via_area_supply - _via_area_demand, 0));
       }
-    }
-    if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
-      cost += static_cast<double>(_net_fence_region_map.size());
     }
     return cost;
   }

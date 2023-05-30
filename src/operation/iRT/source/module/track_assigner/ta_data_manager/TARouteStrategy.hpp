@@ -31,10 +31,10 @@ enum class TARouteStrategy
 
 struct GetTARouteStrategyName
 {
-  std::string operator()(const TARouteStrategy& TARouteStrategy) const
+  std::string operator()(const TARouteStrategy& ta_route_strategy) const
   {
     std::string ta_route_strategy_name;
-    switch (TARouteStrategy) {
+    switch (ta_route_strategy) {
       case TARouteStrategy::kNone:
         ta_route_strategy_name = "none";
         break;
