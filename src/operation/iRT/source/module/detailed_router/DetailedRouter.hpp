@@ -87,7 +87,7 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildCostTaskMap(DRBox& dr_box);
+  void buildFenceTaskMap(DRBox& dr_box);
 #endif
 
 #if 1  // check dr_box
@@ -118,8 +118,7 @@ class DetailedRouter
   void rerouteByEnlarging(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
-  void rerouteByIgnoringENV(DRBox& dr_box);
-  void rerouteByIgnoringOBS(DRBox& dr_box);
+  void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void updatePathResult(DRBox& dr_box);
   void updateOrientationSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);

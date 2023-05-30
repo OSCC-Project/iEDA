@@ -81,7 +81,7 @@ class TrackAssigner
                                                                                            PlanarRect& enlarge_real_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, PlanarRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildCostTaskMap(TAPanel& ta_panel);
+  void buildFenceTaskMap(TAPanel& ta_panel);
 #endif
 
 #if 1  // check ta_panel
@@ -109,8 +109,7 @@ class TrackAssigner
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
-  void rerouteByIgnoringENV(TAPanel& ta_panel);
-  void rerouteByIgnoringOBS(TAPanel& ta_panel);
+  void rerouteByIgnoring(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void updatePathResult(TAPanel& ta_panel);
   void updateOrientationSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);

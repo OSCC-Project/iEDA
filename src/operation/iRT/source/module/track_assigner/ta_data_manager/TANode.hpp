@@ -42,13 +42,13 @@ class TANode : public LayerCoord
   // getter
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
-  std::map<Orientation, std::set<irt_int>>& get_cost_task_map() { return _cost_task_map; }
+  std::map<Orientation, std::set<irt_int>>& get_fence_task_map() { return _fence_task_map; }
   std::map<Orientation, std::set<irt_int>>& get_env_task_map() { return _env_task_map; }
   std::queue<irt_int>& get_task_queue() { return _task_queue; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
-  void set_cost_task_map(const std::map<Orientation, std::set<irt_int>>& cost_task_map) { _cost_task_map = cost_task_map; }
+  void set_fence_task_map(const std::map<Orientation, std::set<irt_int>>& fence_task_map) { _fence_task_map = fence_task_map; }
   void set_env_task_map(const std::map<Orientation, std::set<irt_int>>& env_task_map) { _env_task_map = env_task_map; }
   void set_task_queue(const std::queue<irt_int>& task_queue) { _task_queue = task_queue; }
   // function
@@ -62,44 +62,48 @@ class TANode : public LayerCoord
   }
   bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
   {
-    bool is_obs = false;
     if (ta_route_strategy == TARouteStrategy::kIgnoringOBS) {
-      return is_obs;
+      return false;
     }
     if (RTUtil::exist(_obs_task_map, orientation)) {
       if (_obs_task_map[orientation].size() >= 2) {
-        is_obs = true;
+        return true;
       } else {
-        is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
+        return !RTUtil::exist(_obs_task_map[orientation], task_idx);
       }
+    } else {
+      return false;
     }
     if (ta_route_strategy == TARouteStrategy::kIgnoringENV) {
-      return is_obs;
+      return false;
     }
-    if (!is_obs) {
-      if (RTUtil::exist(_env_task_map, orientation)) {
-        if (_env_task_map[orientation].size() >= 2) {
-          is_obs = true;
-        } else {
-          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
-        }
+    if (RTUtil::exist(_env_task_map, orientation)) {
+      if (_env_task_map[orientation].size() >= 2) {
+        return true;
+      } else {
+        return !RTUtil::exist(_env_task_map[orientation], task_idx);
       }
+    } else {
+      return false;
     }
-    return is_obs;
+    if (ta_route_strategy == TARouteStrategy::kIgnoringFence) {
+      return false;
+    }
+    if (RTUtil::exist(_fence_task_map, orientation)) {
+      if (_fence_task_map[orientation].size() >= 2) {
+        return true;
+      } else {
+        return !RTUtil::exist(_fence_task_map[orientation], task_idx);
+      }
+    } else {
+      return false;
+    }
   }
   double getCost(irt_int task_idx, Orientation orientation)
   {
     double cost = 0;
-    if (RTUtil::exist(_cost_task_map, orientation)) {
-      std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
-      if (task_idx_set.size() >= 2) {
-        cost += static_cast<double>(task_idx_set.size() * 1000);
-      } else {
-        cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1000;
-      }
-    }
     if (RTUtil::exist(_env_task_map, orientation)) {
-      cost += static_cast<double>(_env_task_map[orientation].size() * 1000);
+      cost += static_cast<double>(_env_task_map[orientation].size() * 100);
     }
     return cost;
   }
@@ -125,7 +129,7 @@ class TANode : public LayerCoord
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
-  std::map<Orientation, std::set<irt_int>> _cost_task_map;
+  std::map<Orientation, std::set<irt_int>> _fence_task_map;
   std::map<Orientation, std::set<irt_int>> _env_task_map;
   std::queue<irt_int> _task_queue;
 #if 1  // astar
