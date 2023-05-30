@@ -3084,7 +3084,7 @@ class RTUtil
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);
     }
-    T range = (max_value - min_value) / 10;
+    T range = std::max(0.001, (max_value - min_value) / 10);
     return retainPlaces(range, digit);
   }
 

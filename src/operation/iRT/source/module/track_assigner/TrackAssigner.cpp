@@ -572,7 +572,7 @@ void TrackAssigner::buildTAPanel(TAPanel& ta_panel)
   initTANodeMap(ta_panel);
   buildNeighborMap(ta_panel);
   buildOBSTaskMap(ta_panel);
-  buildCostTaskMap(ta_panel);
+  buildFenceTaskMap(ta_panel);
 }
 
 void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
@@ -748,7 +748,7 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
   return real_rect_list;
 }
 
-void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
+void TrackAssigner::buildFenceTaskMap(TAPanel& ta_panel)
 {
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
@@ -768,9 +768,9 @@ void TrackAssigner::buildCostTaskMap(TAPanel& ta_panel)
         TANode& ta_node = ta_node_map[local_x][local_y];
         for (Orientation orientation : orientation_set) {
           if (task_idx_list.empty()) {
-            ta_node.get_cost_task_map()[orientation].insert(-1);
+            ta_node.get_fence_task_map()[orientation].insert(-1);
           } else {
-            ta_node.get_cost_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+            ta_node.get_fence_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
           }
         }
       }
@@ -832,7 +832,7 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
           LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
         }
       }
-      for (auto& [orien, task_idx_list] : ta_node.get_cost_task_map()) {
+      for (auto& [orien, task_idx_list] : ta_node.get_fence_task_map()) {
         if (task_idx_list.empty()) {
           LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
         }
@@ -958,8 +958,10 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
   initRoutingInfo(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     routeSinglePath(ta_panel);
-    rerouteByIgnoringENV(ta_panel);
-    rerouteByIgnoringOBS(ta_panel);
+    for (TARouteStrategy ta_route_strategy :
+         {TARouteStrategy::kIgnoringFence, TARouteStrategy::kIgnoringENV, TARouteStrategy::kIgnoringOBS}) {
+      rerouteByIgnoring(ta_panel, ta_route_strategy);
+    }
     updatePathResult(ta_panel);
     updateOrientationSet(ta_panel);
     resetStartAndEnd(ta_panel);
@@ -1149,37 +1151,21 @@ void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
   ta_panel.set_end_node_comb_idx(-1);
 }
 
-void TrackAssigner::rerouteByIgnoringENV(TAPanel& ta_panel)
+void TrackAssigner::rerouteByIgnoring(TAPanel& ta_panel, TARouteStrategy ta_route_strategy)
 {
   if (isRoutingFailed(ta_panel)) {
     resetSinglePath(ta_panel);
-    ta_panel.set_ta_route_strategy(TARouteStrategy::kIgnoringENV);
+    ta_panel.set_ta_route_strategy(ta_route_strategy);
     routeSinglePath(ta_panel);
     ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
     if (!isRoutingFailed(ta_panel)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
-                         GetTARouteStrategyName()(TARouteStrategy::kIgnoringENV), " successfully!");
+        LOG_INST.info(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
+                      GetTARouteStrategyName()(ta_route_strategy), " successfully!");
       }
-    }
-  }
-}
-
-void TrackAssigner::rerouteByIgnoringOBS(TAPanel& ta_panel)
-{
-  if (isRoutingFailed(ta_panel)) {
-    resetSinglePath(ta_panel);
-    ta_panel.set_ta_route_strategy(TARouteStrategy::kIgnoringOBS);
-    routeSinglePath(ta_panel);
-    ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
-    if (!isRoutingFailed(ta_panel)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
-                         GetTARouteStrategyName()(TARouteStrategy::kIgnoringOBS), " successfully!");
-      }
-    } else {
-      LOG_INST.error(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
-                     GetTARouteStrategyName()(TARouteStrategy::kIgnoringOBS), " failed!");
+    } else if (ta_route_strategy == TARouteStrategy::kIgnoringOBS) {
+      LOG_INST.error(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ", GetTARouteStrategyName()(ta_route_strategy),
+                     " failed!");
     }
   }
 }
@@ -1590,27 +1576,27 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
       }
 
       y -= y_reduced_span;
-      GPText gp_text_cost_task_map;
-      gp_text_cost_task_map.set_coord(real_rect.get_lb_x(), y);
-      gp_text_cost_task_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_cost_task_map.set_message("cost_task_map: ");
-      gp_text_cost_task_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_cost_task_map.set_presentation(GPTextPresentation::kLeftMiddle);
-      node_graph_struct.push(gp_text_cost_task_map);
+      GPText gp_text_fence_task_map;
+      gp_text_fence_task_map.set_coord(real_rect.get_lb_x(), y);
+      gp_text_fence_task_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_fence_task_map.set_message("fence_task_map: ");
+      gp_text_fence_task_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_fence_task_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_fence_task_map);
 
-      for (auto& [orientation, task_idx_set] : ta_node.get_cost_task_map()) {
+      for (auto& [orientation, task_idx_set] : ta_node.get_fence_task_map()) {
         y -= y_reduced_span;
-        GPText gp_text_cost_task_map_info;
-        gp_text_cost_task_map_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_cost_task_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        std::string cost_task_map_info_message = RTUtil::getString("--", GetOrientationName()(orientation), ": ");
+        GPText gp_text_fence_task_map_info;
+        gp_text_fence_task_map_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_fence_task_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        std::string fence_task_map_info_message = RTUtil::getString("--", GetOrientationName()(orientation), ": ");
         for (irt_int task_idx : task_idx_set) {
-          cost_task_map_info_message += RTUtil::getString("(", task_idx, ")");
+          fence_task_map_info_message += RTUtil::getString("(", task_idx, ")");
         }
-        gp_text_cost_task_map_info.set_message(cost_task_map_info_message);
-        gp_text_cost_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_cost_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_cost_task_map_info);
+        gp_text_fence_task_map_info.set_message(fence_task_map_info_message);
+        gp_text_fence_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_fence_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_fence_task_map_info);
       }
 
       y -= y_reduced_span;

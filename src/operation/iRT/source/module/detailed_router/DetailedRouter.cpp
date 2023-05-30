@@ -450,7 +450,7 @@ void DetailedRouter::buildDRBox(DRBox& dr_box)
   buildCrossLayerGraph(dr_box);
   buildLayerNodeList(dr_box);
   buildOBSTaskMap(dr_box);
-  buildCostTaskMap(dr_box);
+  buildFenceTaskMap(dr_box);
 }
 
 void DetailedRouter::initLayerGraphList(DRBox& dr_box)
@@ -961,7 +961,7 @@ std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<Layer
   return real_rect_list;
 }
 
-void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
+void DetailedRouter::buildFenceTaskMap(DRBox& dr_box)
 {
   std::map<irt_int, std::vector<irt_int>> net_task_map;
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
@@ -973,9 +973,9 @@ void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
       for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, region)) {
         for (Orientation orientation : orientation_set) {
           if (task_idx_list.empty()) {
-            dr_node->get_cost_task_map()[orientation].insert(-1);
+            dr_node->get_fence_task_map()[orientation].insert(-1);
           } else {
-            dr_node->get_cost_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+            dr_node->get_fence_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
           }
         }
       }
@@ -1070,7 +1070,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
           LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
         }
       }
-      for (auto& [orien, task_idx_list] : dr_node.get_cost_task_map()) {
+      for (auto& [orien, task_idx_list] : dr_node.get_fence_task_map()) {
         if (task_idx_list.empty()) {
           LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
         }
@@ -1219,8 +1219,10 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
   while (!isConnectedAllEnd(dr_box)) {
     routeSinglePath(dr_box);
     rerouteByEnlarging(dr_box);
-    rerouteByIgnoringENV(dr_box);
-    rerouteByIgnoringOBS(dr_box);
+    for (DRRouteStrategy dr_route_strategy :
+         {DRRouteStrategy::kIgnoringFence, DRRouteStrategy::kIgnoringENV, DRRouteStrategy::kIgnoringOBS}) {
+      rerouteByIgnoring(dr_box, dr_route_strategy);
+    }
     updatePathResult(dr_box);
     updateOrientationSet(dr_box);
     resetStartAndEnd(dr_box);
@@ -1417,37 +1419,21 @@ void DetailedRouter::resetSinglePath(DRBox& dr_box)
   dr_box.set_end_node_comb_idx(-1);
 }
 
-void DetailedRouter::rerouteByIgnoringENV(DRBox& dr_box)
+void DetailedRouter::rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy)
 {
   if (isRoutingFailed(dr_box)) {
     resetSinglePath(dr_box);
-    dr_box.set_dr_route_strategy(DRRouteStrategy::kIgnoringENV);
+    dr_box.set_dr_route_strategy(dr_route_strategy);
     routeSinglePath(dr_box);
     dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
     if (!isRoutingFailed(dr_box)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
-                         GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringENV), " successfully!");
+        LOG_INST.info(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
+                      GetDRRouteStrategyName()(dr_route_strategy), " successfully!");
       }
-    }
-  }
-}
-
-void DetailedRouter::rerouteByIgnoringOBS(DRBox& dr_box)
-{
-  if (isRoutingFailed(dr_box)) {
-    resetSinglePath(dr_box);
-    dr_box.set_dr_route_strategy(DRRouteStrategy::kIgnoringOBS);
-    routeSinglePath(dr_box);
-    dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
-    if (!isRoutingFailed(dr_box)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
-                         GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringOBS), " successfully!");
-      }
-    } else {
-      LOG_INST.error(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ",
-                     GetDRRouteStrategyName()(DRRouteStrategy::kIgnoringOBS), " failed!");
+    } else if (dr_route_strategy == DRRouteStrategy::kIgnoringOBS) {
+      LOG_INST.error(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ", GetDRRouteStrategyName()(dr_route_strategy),
+                     " failed!");
     }
   }
 }
@@ -1853,27 +1839,27 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
       }
 
       y -= y_reduced_span;
-      GPText gp_text_cost_task_map;
-      gp_text_cost_task_map.set_coord(real_rect.get_lb_x(), y);
-      gp_text_cost_task_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_cost_task_map.set_message("cost_task_map: ");
-      gp_text_cost_task_map.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
-      gp_text_cost_task_map.set_presentation(GPTextPresentation::kLeftMiddle);
-      node_graph_struct.push(gp_text_cost_task_map);
+      GPText gp_text_fence_task_map;
+      gp_text_fence_task_map.set_coord(real_rect.get_lb_x(), y);
+      gp_text_fence_task_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_fence_task_map.set_message("fence_task_map: ");
+      gp_text_fence_task_map.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+      gp_text_fence_task_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_fence_task_map);
 
-      for (auto& [orientation, task_idx_set] : dr_node.get_cost_task_map()) {
+      for (auto& [orientation, task_idx_set] : dr_node.get_fence_task_map()) {
         y -= y_reduced_span;
-        GPText gp_text_cost_task_map_info;
-        gp_text_cost_task_map_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_cost_task_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        std::string cost_task_map_info_message = RTUtil::getString("--", GetOrientationName()(orientation), ": ");
+        GPText gp_text_fence_task_map_info;
+        gp_text_fence_task_map_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_fence_task_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        std::string fence_task_map_info_message = RTUtil::getString("--", GetOrientationName()(orientation), ": ");
         for (irt_int task_idx : task_idx_set) {
-          cost_task_map_info_message += RTUtil::getString("(", task_idx, ")");
+          fence_task_map_info_message += RTUtil::getString("(", task_idx, ")");
         }
-        gp_text_cost_task_map_info.set_message(cost_task_map_info_message);
-        gp_text_cost_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
-        gp_text_cost_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_cost_task_map_info);
+        gp_text_fence_task_map_info.set_message(fence_task_map_info_message);
+        gp_text_fence_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+        gp_text_fence_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_fence_task_map_info);
       }
 
       y -= y_reduced_span;
