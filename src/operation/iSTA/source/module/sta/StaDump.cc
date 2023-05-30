@@ -247,7 +247,9 @@ unsigned StaDumpDelayYaml::operator()(StaVertex* the_vertex) {
   auto vertex_load = the_vertex->getLoad(analysis_mode, trans_type);
   vertex_node["Capacitance"] = vertex_load;
   auto vertex_slew = FS_TO_NS(the_vertex->getSlew(analysis_mode, trans_type));
-  vertex_node["Transition"] = vertex_slew;
+  vertex_node["slew"] = vertex_slew;
+  vertex_node["trans_type"] =
+      (trans_type == TransType::kRise) ? "rise" : "fall";
 
   return 1;
 }
@@ -271,7 +273,6 @@ unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
 
   arc_node["Incr"] =
       FS_TO_NS(the_arc->get_arc_delay(analysis_mode, trans_type));
-  arc_node["transition"] = (trans_type == TransType::kRise) ? "rise" : "fall";
 
   if (the_arc->isNetArc()) {
     auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
@@ -280,6 +281,8 @@ unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
     auto* rc_net = getSta()->getRcNet(the_net);
     auto* snk_node = the_arc->get_snk();
     auto* snk_obj = snk_node->get_design_obj();
+    arc_node["net_name"] = the_net->get_name();
+    arc_node["fanout"] = the_net->getLoads().size();
     arc_node["Elmore"] =
         rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kElmore).value_or(0.0);
     arc_node["D2M"] =
