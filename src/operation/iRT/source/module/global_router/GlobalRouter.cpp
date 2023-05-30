@@ -634,7 +634,10 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   while (!isConnectedAllEnd(gr_model)) {
     routeSinglePath(gr_model);
     rerouteByEnlarging(gr_model);
-    rerouteByIgnoringOBS(gr_model);
+    for (GRRouteStrategy gr_route_strategy :
+         {GRRouteStrategy::kIgnoringFence, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
+      rerouteByIgnoring(gr_model, gr_route_strategy);
+    }
     updatePathResult(gr_model);
     updateOrientationSet(gr_model);
     resetStartAndEnd(gr_model);
@@ -832,21 +835,21 @@ void GlobalRouter::resetSinglePath(GRModel& gr_model)
   gr_model.set_end_node_comb_idx(-1);
 }
 
-void GlobalRouter::rerouteByIgnoringOBS(GRModel& gr_model)
+void GlobalRouter::rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
 {
   if (isRoutingFailed(gr_model)) {
     resetSinglePath(gr_model);
-    gr_model.set_gr_route_strategy(GRRouteStrategy::kIgnoringOBS);
+    gr_model.set_gr_route_strategy(gr_route_strategy);
     routeSinglePath(gr_model);
     gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
     if (!isRoutingFailed(gr_model)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
-                         GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " successfully!");
+        LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                      " successfully!");
       }
-    } else {
-      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
-                     GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " failed!");
+    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                     " failed!");
     }
   }
 }
