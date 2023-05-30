@@ -46,7 +46,7 @@ class ViaMaster
   // function
 
  private:
-  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, idx
+  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, layer inner via_idx
   std::string _via_name;
   LayerRect _above_enclosure;
   Direction _above_direction = Direction::kNone;

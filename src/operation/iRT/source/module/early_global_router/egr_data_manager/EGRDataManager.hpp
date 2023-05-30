@@ -20,6 +20,8 @@
 #include "Database.hpp"
 #include "EGRConfig.hpp"
 #include "EGRDatabase.hpp"
+#include "EGRHelper.hpp"
+#include "EGRStat.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
@@ -39,21 +41,25 @@ class EGRDataManager
   void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
   EGRConfig& getConfig() { return _egr_config; }
   EGRDatabase& getDatabase() { return _egr_database; }
+  EGRHelper& getEGRHelper() { return _egr_helper; }
+  EGRStat& getEGRStat() { return _egr_stat; }
 
  private:
   EGRConfig _egr_config;
   EGRDatabase _egr_database;
+  EGRHelper _egr_helper;
+  EGRStat _egr_stat;
   // Helper
-  std::map<irt_int, irt_int> _db_to_egr_routing_layer_idx_map;
-  std::map<std::string, irt_int> _routing_layer_name_idx_map;
-  std::string _design_name;
 
   // function
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
+  void wrapDesignName(idb::IdbBuilder* idb_builder);
+  void wrapMicronDBU(idb::IdbBuilder* idb_builder);
   void wrapDie(idb::IdbBuilder* idb_builder);
-  void wrapRoutingLayerList(idb::IdbBuilder* idb_builder);
+  void wrapLayerList(idb::IdbBuilder* idb_builder);
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
   void wrapBlockageList(idb::IdbBuilder* idb_builder);
   void wrapArtificialBlockage(idb::IdbBuilder* idb_builder);
   void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
@@ -70,7 +76,10 @@ class EGRDataManager
   void buildBottomTopLayerIdx();
   void buildEGRStrategy();
   void buildDatabase();
-  void buildRoutingLayerList();
+  void buildLayerList();
+  void buildLayerViaMasterList();
+  void transLayerViaMasterList();
+  void makeLayerViaMasterList();
   void buildDie();
   void buildBlockageList();
   void buildNetList();
@@ -83,7 +92,8 @@ class EGRDataManager
   void legalizeResourceMapDemand();
   void buildHVLayerIdxList();
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  irt_int getEGRLayerIndexByDB(irt_int db_layer_idx);
+  irt_int getEGRRoutingLayerIndexByDB(irt_int db_layer_idx);
+  irt_int getEGRCutLayerIndexByDB(irt_int db_layer_idx);
   PlanarRect getGridRect(PlanarRect& real_rect);
   void printConfig();
   void printDatabase();

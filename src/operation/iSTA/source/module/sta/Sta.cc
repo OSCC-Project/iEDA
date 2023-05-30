@@ -1239,10 +1239,17 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
       StaReportClockTNS report_path_TNS(rpt_file_name, mode, 1);
       report_path_TNS.set_significant_digits(get_significant_digits());
 
-      // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
+      std::vector<StaReportPathSummary *> report_funcs{
+          &report_path_summary, &report_path_detail, &report_path_TNS};
 
-      for (auto *report_fun : std::vector<StaReportPathSummary *>{
-               &report_path_summary, &report_path_detail, &report_path_TNS}) {
+      // StaReportPathDump report_path_dump(rpt_file_name, mode, n_worst);
+      StaReportPathYaml report_path_dump(rpt_file_name, mode, n_worst);
+
+      if (c_print_delay_yaml) {
+        report_funcs.emplace_back(&report_path_dump);
+      }
+
+      for (auto *report_fun : report_funcs) {
         is_ok = report_path(*report_fun);
       }
     }

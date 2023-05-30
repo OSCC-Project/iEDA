@@ -247,6 +247,7 @@ class HCTS
   double calcLength(const Point& p1, const Point& p2) const { return 1.0 * calcManhattanDist(p1, p2) / _db_unit; }
   Point internalPoint(const Point& p1, const Point& p2, const int& dist_to_left) const
   {
+    LOG_FATAL_IF(dist_to_left < 0) << "dist to left should be positive, but got " << dist_to_left;
     auto dist = calcManhattanDist(p1, p2);
     auto ratio = 1.0 * dist_to_left / dist;
     auto loc = p1 + (p2 - p1) * ratio;
