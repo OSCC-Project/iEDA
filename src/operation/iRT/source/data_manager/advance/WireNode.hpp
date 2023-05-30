@@ -16,17 +16,17 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTPlanarCoord.hpp"
+#include "PlanarCoord.hpp"
 #include "Segment.hpp"
 
 namespace irt {
 
-class WireNode : public Segment<EXTPlanarCoord>
+class WireNode : public Segment<PlanarCoord>
 
 {
  public:
   WireNode() = default;
-  WireNode(const WireNode& other) : Segment<EXTPlanarCoord>(other)
+  WireNode(const WireNode& other) : Segment<PlanarCoord>(other)
   {
     _net_idx = other._net_idx;
     _layer_idx = other._layer_idx;

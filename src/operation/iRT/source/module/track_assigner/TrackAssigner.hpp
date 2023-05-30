@@ -63,8 +63,8 @@ class TrackAssigner
   TAGroup makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node);
   void makeCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   void buildPanelRegion(TAModel& ta_model);
-  void addBlockageList(TAModel& ta_model);
-  void addNetRegionList(TAModel& ta_model);
+  void updateNetBlockageMap(TAModel& ta_model);
+  void updateNetFenceRegionMap(TAModel& ta_model);
   void buildTATaskPriority(TAModel& ta_model);
 #endif
 
@@ -109,11 +109,13 @@ class TrackAssigner
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
-  void rerouteByforcing(TAPanel& ta_panel);
+  void rerouteByIgnoringENV(TAPanel& ta_panel);
+  void rerouteByIgnoringOBS(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
+  void updateOrientationSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
-  void updateEnvironment(TAPanel& ta_panel, TATask& ta_task);
+  void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);
   void updateDemand(TAPanel& ta_panel, TATask& ta_task);
   void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
@@ -121,12 +123,13 @@ class TrackAssigner
   TANode* popFromOpenList(TAPanel& ta_panel);
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getJointCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
+  double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   Orientation getOrientation(TANode* start_node, TANode* end_node);
-  double getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
 #endif
@@ -135,8 +138,8 @@ class TrackAssigner
   void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 
-#if 1  // count ta_panel
-  void countTAPanel(TAPanel& ta_panel);
+#if 1  // update ta_panel
+  void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
 #endif
 
 #if 1  // update ta_model

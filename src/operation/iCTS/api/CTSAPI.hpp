@@ -120,6 +120,7 @@ class CTSAPI
   void disconnect(idb::IdbPin* pin);
   void connect(idb::IdbInstance* idb_inst, const std::string& pin_name, idb::IdbNet* net);
   void insertBuffer(const std::string& name);
+  void resetId();
   int genId();
 
   // evaluate
