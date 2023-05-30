@@ -48,8 +48,11 @@ class VRDataManager
   void wrapDatabase(Database& database);
   void wrapMicronDBU(Database& database);
   void wrapGCellAxis(Database& database);
-  void wrapViaMasterList(Database& database);
+  void wrapDie(Database& database);
   void wrapRoutingLayerList(Database& database);
+  void wrapCutLayerList(Database& database);
+  void wrapLayerViaMasterList(Database& database);
+  void wrapRoutingBlockageList(Database& database);
   void buildConfig();
   void buildDatabase();
 };

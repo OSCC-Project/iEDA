@@ -20,6 +20,7 @@
 #include "Orientation.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
+#include "TARouteStrategy.hpp"
 
 namespace irt {
 
@@ -59,15 +60,21 @@ class TANode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation)
+  bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
   {
     bool is_obs = false;
+    if (ta_route_strategy == TARouteStrategy::kIgnoringOBS) {
+      return is_obs;
+    }
     if (RTUtil::exist(_obs_task_map, orientation)) {
       if (_obs_task_map[orientation].size() >= 2) {
         is_obs = true;
       } else {
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
+    }
+    if (ta_route_strategy == TARouteStrategy::kIgnoringENV) {
+      return is_obs;
     }
     if (!is_obs) {
       if (RTUtil::exist(_env_task_map, orientation)) {
@@ -86,23 +93,25 @@ class TANode : public LayerCoord
     if (RTUtil::exist(_cost_task_map, orientation)) {
       std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
       if (task_idx_set.size() >= 2) {
-        cost += (task_idx_set.size() * 100);
+        cost += static_cast<double>(task_idx_set.size() * 1000);
       } else {
-        cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : 100;
+        cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1000;
       }
     }
     if (RTUtil::exist(_env_task_map, orientation)) {
-      cost += (_env_task_map[orientation].size() * 100);
+      cost += static_cast<double>(_env_task_map[orientation].size() * 1000);
     }
     return cost;
   }
   void addEnv(irt_int task_idx, Orientation orientation) { _env_task_map[orientation].insert(task_idx); }
   void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
 #if 1  // astar
+  std::set<Orientation>& get_orientation_set() { return _orientation_set; }
   TANodeState& get_state() { return _state; }
   TANode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
+  void set_orientation_set(std::set<Orientation>& orientation_set) { _orientation_set = orientation_set; }
   void set_state(TANodeState state) { _state = state; }
   void set_parent_node(TANode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
@@ -120,6 +129,9 @@ class TANode : public LayerCoord
   std::map<Orientation, std::set<irt_int>> _env_task_map;
   std::queue<irt_int> _task_queue;
 #if 1  // astar
+  // single net
+  std::set<Orientation> _orientation_set;
+  // single path
   TANodeState _state = TANodeState::kNone;
   TANode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr

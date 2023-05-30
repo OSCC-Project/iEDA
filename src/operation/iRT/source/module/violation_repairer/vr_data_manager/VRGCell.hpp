@@ -16,31 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerCoord.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class ViaNode : public PlanarCoord
+class VRGCell
 {
  public:
-  ViaNode() = default;
-  ViaNode(const ViaNode& other) : PlanarCoord(other)
-  {
-    _net_idx = other._net_idx;
-    _via_idx = other._via_idx;
-  }
-  ~ViaNode() = default;
+  VRGCell() = default;
+  ~VRGCell() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  std::pair<irt_int, irt_int>& get_via_idx() { return _via_idx; }
+  PlanarRect& get_real_rect() { return _real_rect; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_via_idx(const std::pair<irt_int, irt_int>& via_idx) { _via_idx = via_idx; }
+  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   // function
 
  private:
-  irt_int _net_idx = -1;
-  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, layer inner via_idx
+  PlanarRect _real_rect;
+  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
 };
 
 }  // namespace irt

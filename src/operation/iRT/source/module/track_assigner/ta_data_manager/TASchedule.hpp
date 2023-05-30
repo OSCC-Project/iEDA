@@ -20,25 +20,27 @@
 
 namespace irt {
 
-class TAPanelStat
+class TASchedule
 {
  public:
-  TAPanelStat() = default;
-  ~TAPanelStat() = default;
+  TASchedule() = default;
+  TASchedule(const irt_int layer_idx, const irt_int panel_idx)
+  {
+    _layer_idx = layer_idx;
+    _panel_idx = panel_idx;
+  }
+  ~TASchedule() = default;
   // getter
-  double get_total_wire_length() { return _total_wire_length; }
-  double get_net_and_net_violation_area() { return _net_and_net_violation_area; }
-  double get_net_and_obs_violation_area() { return _net_and_obs_violation_area; }
+  irt_int get_layer_idx() const { return _layer_idx; }
+  irt_int get_panel_idx() const { return _panel_idx; }
   // setter
+  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   // function
-  void addTotalWireLength(const double wire_length) { _total_wire_length += wire_length; }
-  void addNetAndNetViolation(const double violation_area) { _net_and_net_violation_area += violation_area; }
-  void addNetAndObsViolation(const double violation_area) { _net_and_obs_violation_area += violation_area; }
 
  private:
-  double _total_wire_length = 0;
-  double _net_and_net_violation_area = 0;
-  double _net_and_obs_violation_area = 0;
+  irt_int _layer_idx = -1;
+  irt_int _panel_idx = -1;
 };
 
 }  // namespace irt
