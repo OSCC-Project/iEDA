@@ -955,6 +955,32 @@ step 3: 查看GUI
 ```
 **参数配置**<br>
 
+参考"./scripts/sky130/iEDA_config/to_default_config_drv.json"
+
+<div><a name="drv_tab"></a>
+
+| 参数名                                 | 默认值                 | 说明                                                         |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------ |
+| design_work_space                      | ./result/to            | 设置运行过程的工作区路径                                     |
+| sdc_file                               |                        | 无效参数，后续删除                                           |
+| lib_files                              |                        | 无效参数，后续删除                                           |
+| lef_files                              |                        | 无效参数，后续删除                                           |
+| def_file                               |                        | 无效参数，后续删除                                           |
+| output_def                             |                        | 无效参数，后续删除                                           |
+| report_file                            | ./result/to/report.txt | 优化过程产生的报告                                           |
+| gds_file                               | ./result/to/to.gds     | 生成的GDS文件路径，默认不会生成该文件                        |
+| setup_slack_margin                     | 0.0                    | setup slack小于该值时认为违例，也是slack优化的目标           |
+| hold_slack_margin                      | 0.0                    | hold slack小于该值时认为违例，也是slack优化的目标            |
+| max_buffer_percent                     | 0.2                    | 缓冲器插入的面积占芯片面积的最大比例                         |
+| max_utilization                        | 0.8                    | 缓冲器插入后的面积+其他单元的面积，占芯片面积的最大比例      |
+| DRV_insert_buffers                     | sky130_fd_sc_hs__buf_8 | 优化DRV时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| setup_insert_buffers                   | sky130_fd_sc_hs__buf_8 | 优化setup时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| hold_insert_buffers                    | sky130_fd_sc_hs__buf_8 | 优化hold时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| number_passes_allowed_decreasing_slack | 5                      | 迭代优化setup时，允许WNS不断变差的最大连续迭代次数           |
+| rebuffer_max_fanout                    | 20                     | 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化  |
+| split_load_min_fanout                  | 8                      | 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低  |
+</div>
+
 **输入**<br>
 - ./result/iCTS_result.def
 
@@ -971,6 +997,11 @@ step 3: 查看GUI
 ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl
 ```
 **参数配置**<br>
+
+参考"./scripts/sky130/iEDA_config/to_default_config_hold.json"
+
+参数详细信息同[修复DRV违例](#drv_tab)
+
 
 **输入**<br>
 - ./result/iTO_drv_result.def
