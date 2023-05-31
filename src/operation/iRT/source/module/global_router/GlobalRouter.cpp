@@ -213,28 +213,9 @@ void GlobalRouter::updateNetFenceRegionMap(GRModel& gr_model)
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    std::vector<PlanarCoord> coord_list;
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (LayerCoord& real_coord : gr_pin.getRealCoordList()) {
-        coord_list.push_back(real_coord);
-      }
-    }
-    PlanarCoord balance_coord = RTUtil::getBalanceCoord(coord_list);
     std::vector<LayerCoord> real_coord_list;
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      LayerCoord best_real_coord;
-      irt_int min_distance = INT_MAX;
-      for (LayerCoord& real_coord : gr_pin.getRealCoordList()) {
-        irt_int distance = RTUtil::getManhattanDistance(balance_coord, real_coord.get_planar_coord());
-        if (distance < min_distance) {
-          best_real_coord = real_coord;
-          min_distance = distance;
-        }
-      }
-      if (min_distance == INT_MAX) {
-        LOG_INST.error(Loc::current(), "The distance is error!");
-      }
-      real_coord_list.push_back(best_real_coord);
+      real_coord_list.push_back(gr_pin.getRealCoordList().front());
     }
     std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
