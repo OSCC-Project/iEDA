@@ -49,11 +49,19 @@ class EXTPlanarRect
   void set_grid_rt(const PlanarCoord& grid_rt) { _grid_rect.set_rt(grid_rt); }
   void set_grid_lb(const irt_int x, const irt_int y) { _grid_rect.set_lb(x, y); }
   void set_grid_rt(const irt_int x, const irt_int y) { _grid_rect.set_rt(x, y); }
+  void set_grid_lb_x(const irt_int x) { _grid_rect.set_lb_x(x); }
+  void set_grid_rt_x(const irt_int x) { _grid_rect.set_rt_x(x); }
+  void set_grid_lb_y(const irt_int y) { _grid_rect.set_lb_y(y); }
+  void set_grid_rt_y(const irt_int y) { _grid_rect.set_rt_y(y); }
   void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
   void set_real_lb(const PlanarCoord& real_lb) { _real_rect.set_lb(real_lb); }
   void set_real_rt(const PlanarCoord& real_rt) { _real_rect.set_rt(real_rt); }
   void set_real_lb(const irt_int x, const irt_int y) { _real_rect.set_lb(x, y); }
   void set_real_rt(const irt_int x, const irt_int y) { _real_rect.set_rt(x, y); }
+  void set_real_lb_x(const irt_int x) { _real_rect.set_lb_x(x); }
+  void set_real_rt_x(const irt_int x) { _real_rect.set_rt_x(x); }
+  void set_real_lb_y(const irt_int y) { _real_rect.set_lb_y(y); }
+  void set_real_rt_y(const irt_int y) { _real_rect.set_rt_y(y); }
   // function
   inline irt_int getXSize() const;
   inline irt_int getYSize() const;

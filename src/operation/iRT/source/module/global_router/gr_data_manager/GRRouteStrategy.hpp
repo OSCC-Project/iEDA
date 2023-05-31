@@ -25,17 +25,25 @@ namespace irt {
 enum class GRRouteStrategy
 {
   kNone = 0,
-  kIgnoringOBS = 1
+  kIgnoringFence = 1,
+  kIgnoringENV = 2,
+  kIgnoringOBS = 3
 };
 
 struct GetGRRouteStrategyName
 {
-  std::string operator()(const GRRouteStrategy& GRRouteStrategy) const
+  std::string operator()(const GRRouteStrategy& gr_route_strategy) const
   {
     std::string gr_route_strategy_name;
-    switch (GRRouteStrategy) {
+    switch (gr_route_strategy) {
       case GRRouteStrategy::kNone:
         gr_route_strategy_name = "none";
+        break;
+      case GRRouteStrategy::kIgnoringFence:
+        gr_route_strategy_name = "ignoring_fence";
+        break;
+      case GRRouteStrategy::kIgnoringENV:
+        gr_route_strategy_name = "ignoring_env";
         break;
       case GRRouteStrategy::kIgnoringOBS:
         gr_route_strategy_name = "ignoring_obs";

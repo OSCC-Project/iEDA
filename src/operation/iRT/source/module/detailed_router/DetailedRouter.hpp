@@ -146,10 +146,6 @@ class DetailedRouter
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx = -1);
 #endif
 
-#if 1  // count dr_box
-  void countDRBox(DRBox& dr_box);
-#endif
-
 #if 1  // update dr_box
   void updateDRBox(DRModel& dr_model, DRBox& dr_box);
 #endif

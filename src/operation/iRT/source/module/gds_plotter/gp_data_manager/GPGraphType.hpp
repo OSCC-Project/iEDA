@@ -16,39 +16,61 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
 #include "Logger.hpp"
 
 namespace irt {
 
-enum class TARouteStrategy
+enum class GPGraphType
 {
   kNone = 0,
-  kIgnoringOBS = 1,
-  kIgnoringENV = 2
+  kOpen = 1,
+  kClose = 2,
+  kInfo = 3,
+  kNeighbor = 4,
+  kKey = 5,
+  kPath = 6,
+  kBlockage = 7,
+  kFenceRegion = 8
 };
 
-struct GetTARouteStrategyName
+struct GetGPGraphTypeName
 {
-  std::string operator()(const TARouteStrategy& ta_route_strategy) const
+  std::string operator()(const GPGraphType& data_type) const
   {
-    std::string ta_route_strategy_name;
-    switch (ta_route_strategy) {
-      case TARouteStrategy::kNone:
-        ta_route_strategy_name = "none";
+    std::string data_type_name;
+    switch (data_type) {
+      case GPGraphType::kNone:
+        data_type_name = "none";
         break;
-      case TARouteStrategy::kIgnoringOBS:
-        ta_route_strategy_name = "ignoring_obs";
+      case GPGraphType::kOpen:
+        data_type_name = "open";
         break;
-      case TARouteStrategy::kIgnoringENV:
-        ta_route_strategy_name = "ignoring_env";
+      case GPGraphType::kClose:
+        data_type_name = "close";
+        break;
+      case GPGraphType::kInfo:
+        data_type_name = "info";
+        break;
+      case GPGraphType::kNeighbor:
+        data_type_name = "neighbor";
+        break;
+      case GPGraphType::kKey:
+        data_type_name = "key";
+        break;
+      case GPGraphType::kPath:
+        data_type_name = "path";
+        break;
+      case GPGraphType::kBlockage:
+        data_type_name = "blockage";
+        break;
+      case GPGraphType::kFenceRegion:
+        data_type_name = "fence_region";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return ta_route_strategy_name;
+    return data_type_name;
   }
 };
 

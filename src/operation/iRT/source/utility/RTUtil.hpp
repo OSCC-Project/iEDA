@@ -1611,31 +1611,18 @@ class RTUtil
 
   static PlanarRect getGridRect(const PlanarRect& real_rect, TrackAxis& track_axis)
   {
-    std::pair<irt_int, irt_int> x_pair = getClosedTrackIdxPair(real_rect.get_lb_x(), real_rect.get_rt_x(), track_axis.get_x_track_grid());
-    std::pair<irt_int, irt_int> y_pair = getClosedTrackIdxPair(real_rect.get_lb_y(), real_rect.get_rt_y(), track_axis.get_y_track_grid());
-    irt_int grid_lb_x = x_pair.first;
-    irt_int grid_lb_y = y_pair.first;
-    irt_int grid_rt_x = x_pair.second;
-    irt_int grid_rt_y = y_pair.second;
-    if (grid_lb_x == -1 || grid_lb_y == -1 || grid_rt_x == -1 || grid_rt_y == -1) {
+    TrackGrid& x_track_grid = track_axis.get_x_track_grid();
+    TrackGrid& y_track_grid = track_axis.get_y_track_grid();
+    std::vector<irt_int> x_list = getClosedScaleList(real_rect.get_lb_x(), real_rect.get_rt_x(), x_track_grid);
+    std::vector<irt_int> y_list = getClosedScaleList(real_rect.get_lb_y(), real_rect.get_rt_y(), y_track_grid);
+    if (x_list.empty() || y_list.empty()) {
       return PlanarRect(-1, -1, -1, -1);
     }
-    if (grid_lb_x > grid_rt_x || grid_lb_y > grid_rt_y) {
-      return PlanarRect(-1, -1, -1, -1);
-    }
-    return PlanarRect(grid_lb_x, grid_lb_y, grid_rt_x, grid_rt_y);
-  }
-
-  static std::pair<irt_int, irt_int> getClosedTrackIdxPair(irt_int start_line, irt_int end_line, TrackGrid& track_grid)
-  {
-    irt_int track_start_line = track_grid.get_start_line();
-    irt_int track_step_length = track_grid.get_step_length();
-    irt_int track_end_line = track_grid.get_end_line();
-    irt_int offset_start_line = (std::max(start_line, track_start_line) - track_start_line);
-    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(offset_start_line / 1.0 / track_step_length);
-    irt_int offset_end_line = (std::min(end_line, track_end_line) - track_start_line);
-    irt_int second = (end_line < track_start_line) ? -1 : offset_end_line / track_step_length;
-    return std::make_pair<>(first, second);
+    irt_int lb_x = (x_list.front() - x_track_grid.get_start_line()) / x_track_grid.get_step_length();
+    irt_int lb_y = (y_list.front() - y_track_grid.get_start_line()) / y_track_grid.get_step_length();
+    irt_int rt_x = (x_list.back() - x_track_grid.get_start_line()) / x_track_grid.get_step_length();
+    irt_int rt_y = (y_list.back() - y_track_grid.get_start_line()) / y_track_grid.get_step_length();
+    return PlanarRect(lb_x, lb_y, rt_x, rt_y);
   }
 
   // 返回的是基于track_axis的grid坐标
@@ -2263,30 +2250,9 @@ class RTUtil
   // 考虑的全部via below层
   static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
   {
-    if (bottom_layer_idx > top_layer_idx) {
-      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
-    }
-    std::vector<int> layer_idx_list;
-
-    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == bottom_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-    } else {
-      for (int i = curr_layer_idx; i <= bottom_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-      for (int i = (top_layer_idx - 1); i <= (curr_layer_idx - 1); i++) {
-        layer_idx_list.push_back(i);
-      }
-    }
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-
-    return layer_idx_list;
+    std::vector<int> usage_layer_idx_list = getUsageLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    usage_layer_idx_list.pop_back();
+    return usage_layer_idx_list;
   }
 
   // 获得可用的布线层

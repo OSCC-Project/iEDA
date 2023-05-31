@@ -75,7 +75,7 @@ void CTSAPI::runCTS()
   routing();
   synthesis();
   evaluate();
-  balance();
+  // balance();
   // optimize();
   LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
@@ -884,6 +884,11 @@ void CTSAPI::connect(idb::IdbInstance* idb_inst, const std::string& pin_name, id
 void CTSAPI::insertBuffer(const std::string& name)
 {
   _timing_engine->insertBuffer(name.c_str());
+}
+
+void CTSAPI::resetId()
+{
+  _design->resetId();
 }
 
 int CTSAPI::genId()

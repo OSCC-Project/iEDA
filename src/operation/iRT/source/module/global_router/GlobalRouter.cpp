@@ -634,7 +634,10 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   while (!isConnectedAllEnd(gr_model)) {
     routeSinglePath(gr_model);
     rerouteByEnlarging(gr_model);
-    rerouteByIgnoringOBS(gr_model);
+    for (GRRouteStrategy gr_route_strategy :
+         {GRRouteStrategy::kIgnoringFence, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
+      rerouteByIgnoring(gr_model, gr_route_strategy);
+    }
     updatePathResult(gr_model);
     updateOrientationSet(gr_model);
     resetStartAndEnd(gr_model);
@@ -832,21 +835,21 @@ void GlobalRouter::resetSinglePath(GRModel& gr_model)
   gr_model.set_end_node_comb_idx(-1);
 }
 
-void GlobalRouter::rerouteByIgnoringOBS(GRModel& gr_model)
+void GlobalRouter::rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
 {
   if (isRoutingFailed(gr_model)) {
     resetSinglePath(gr_model);
-    gr_model.set_gr_route_strategy(GRRouteStrategy::kIgnoringOBS);
+    gr_model.set_gr_route_strategy(gr_route_strategy);
     routeSinglePath(gr_model);
     gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
     if (!isRoutingFailed(gr_model)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.warning(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
-                         GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " successfully!");
+        LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                      " successfully!");
       }
-    } else {
-      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
-                     GetGRRouteStrategyName()(GRRouteStrategy::kIgnoringOBS), " failed!");
+    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                     " failed!");
     }
   }
 }
@@ -1173,16 +1176,18 @@ double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* e
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
   GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-
-  irt_int none_data_type = 0;
-  irt_int open_data_type = 10;
-  irt_int close_data_type = 20;
-  irt_int info_data_type = 30;
-  irt_int neighbor_data_type = 40;
-  irt_int key_data_type = 50;
-  irt_int path_data_type = 60;
+  Die& die = _gr_data_manager.getDatabase().get_die();
 
   GPGDS gp_gds;
+
+  // base_region
+  GPStruct base_region_struct("base_region");
+  GPBoundary gp_boundary;
+  gp_boundary.set_layer_idx(0);
+  gp_boundary.set_data_type(0);
+  gp_boundary.set_rect(die.get_real_rect());
+  base_region_struct.push(gp_boundary);
+  gp_gds.addStruct(base_region_struct);
 
   // node_graph
   GPStruct node_graph_struct("node_graph");
@@ -1197,37 +1202,37 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPBoundary gp_boundary;
         switch (gr_node.get_state()) {
           case GRNodeState::kNone:
-            gp_boundary.set_data_type(none_data_type);
+            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kNone));
             break;
           case GRNodeState::kOpen:
-            gp_boundary.set_data_type(open_data_type);
+            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kOpen));
             break;
           case GRNodeState::kClose:
-            gp_boundary.set_data_type(close_data_type);
+            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kClose));
             break;
           default:
             LOG_INST.error(Loc::current(), "The type is error!");
             break;
         }
         gp_boundary.set_rect(real_rect);
-        gp_boundary.set_layer_idx(gr_node.get_layer_idx());
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         node_graph_struct.push(gp_boundary);
 
         y -= y_reduced_span;
         GPText gp_text_node_coord;
         gp_text_node_coord.set_coord(real_rect.get_lb_x(), y);
-        gp_text_node_coord.set_text_type(info_data_type);
+        gp_text_node_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_node_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", gr_node.get_layer_idx(), ")"));
-        gp_text_node_coord.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_node_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_node_coord.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_node_coord);
 
         y -= y_reduced_span;
         GPText gp_text_net_blockage_map;
         gp_text_net_blockage_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_blockage_map.set_text_type(info_data_type);
+        gp_text_net_blockage_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_net_blockage_map.set_message("net_blockage_map: ");
-        gp_text_net_blockage_map.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_net_blockage_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_blockage_map.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_net_blockage_map);
 
@@ -1235,13 +1240,13 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_net_blockage_map_info;
           gp_text_net_blockage_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_blockage_map_info.set_text_type(info_data_type);
+          gp_text_net_blockage_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
           std::string net_blockage_map_message = "--";
           for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
             net_blockage_map_message += RTUtil::getString("(", net_idx, ")");
           }
           gp_text_net_blockage_map_info.set_message(net_blockage_map_message);
-          gp_text_net_blockage_map_info.set_layer_idx(gr_node.get_layer_idx());
+          gp_text_net_blockage_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_blockage_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
           node_graph_struct.push(gp_text_net_blockage_map_info);
         }
@@ -1249,9 +1254,9 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_net_fence_region_map;
         gp_text_net_fence_region_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_fence_region_map.set_text_type(info_data_type);
+        gp_text_net_fence_region_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_net_fence_region_map.set_message("net_fence_region_map: ");
-        gp_text_net_fence_region_map.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_net_fence_region_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_fence_region_map.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_net_fence_region_map);
 
@@ -1259,13 +1264,13 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_net_fence_region_map_info;
           gp_text_net_fence_region_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_fence_region_map_info.set_text_type(info_data_type);
+          gp_text_net_fence_region_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
           std::string net_fence_region_map_message = "--";
           for (auto& [net_idx, blockage_list] : gr_node.get_net_fence_region_map()) {
             net_fence_region_map_message += RTUtil::getString("(", net_idx, ")");
           }
           gp_text_net_fence_region_map_info.set_message(net_fence_region_map_message);
-          gp_text_net_fence_region_map_info.set_layer_idx(gr_node.get_layer_idx());
+          gp_text_net_fence_region_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_fence_region_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
           node_graph_struct.push(gp_text_net_fence_region_map_info);
         }
@@ -1273,67 +1278,67 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_single_wire_area;
         gp_text_single_wire_area.set_coord(real_rect.get_lb_x(), y);
-        gp_text_single_wire_area.set_text_type(info_data_type);
+        gp_text_single_wire_area.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_single_wire_area.set_message(RTUtil::getString("single_wire_area: ", gr_node.get_single_wire_area()));
-        gp_text_single_wire_area.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_single_wire_area.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_single_wire_area.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_single_wire_area);
 
         y -= y_reduced_span;
         GPText gp_text_single_via_area;
         gp_text_single_via_area.set_coord(real_rect.get_lb_x(), y);
-        gp_text_single_via_area.set_text_type(info_data_type);
+        gp_text_single_via_area.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_single_via_area.set_message(RTUtil::getString("single_via_area: ", gr_node.get_single_via_area()));
-        gp_text_single_via_area.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_single_via_area.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_single_via_area.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_single_via_area);
 
         y -= y_reduced_span;
         GPText gp_text_wire_area_supply;
         gp_text_wire_area_supply.set_coord(real_rect.get_lb_x(), y);
-        gp_text_wire_area_supply.set_text_type(info_data_type);
+        gp_text_wire_area_supply.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_wire_area_supply.set_message(RTUtil::getString("wire_area_supply: ", gr_node.get_wire_area_supply(), "(",
                                                                gr_node.get_wire_area_supply() / gr_node.get_single_wire_area(), ")"));
-        gp_text_wire_area_supply.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_wire_area_supply.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_wire_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_wire_area_supply);
 
         y -= y_reduced_span;
         GPText gp_text_via_area_supply;
         gp_text_via_area_supply.set_coord(real_rect.get_lb_x(), y);
-        gp_text_via_area_supply.set_text_type(info_data_type);
+        gp_text_via_area_supply.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_via_area_supply.set_message(RTUtil::getString("via_area_supply: ", gr_node.get_via_area_supply(), "(",
                                                               gr_node.get_via_area_supply() / gr_node.get_single_via_area(), ")"));
-        gp_text_via_area_supply.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_via_area_supply.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_via_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_via_area_supply);
 
         y -= y_reduced_span;
         GPText gp_text_wire_area_demand;
         gp_text_wire_area_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_wire_area_demand.set_text_type(info_data_type);
+        gp_text_wire_area_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_wire_area_demand.set_message(RTUtil::getString("wire_area_demand: ", gr_node.get_wire_area_demand(), "(",
                                                                gr_node.get_wire_area_demand() / gr_node.get_single_wire_area(), ")"));
-        gp_text_wire_area_demand.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_wire_area_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_wire_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_wire_area_demand);
 
         y -= y_reduced_span;
         GPText gp_text_via_area_demand;
         gp_text_via_area_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_via_area_demand.set_text_type(info_data_type);
+        gp_text_via_area_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_via_area_demand.set_message(RTUtil::getString("via_area_demand: ", gr_node.get_via_area_demand(), "(",
                                                               gr_node.get_via_area_demand() / gr_node.get_single_via_area(), ")"));
-        gp_text_via_area_demand.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_via_area_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_via_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_via_area_demand);
 
         y -= y_reduced_span;
         GPText gp_text_net_queue;
         gp_text_net_queue.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_queue.set_text_type(info_data_type);
+        gp_text_net_queue.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
         gp_text_net_queue.set_message("net_queue: ");
-        gp_text_net_queue.set_layer_idx(gr_node.get_layer_idx());
+        gp_text_net_queue.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_queue.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_net_queue);
 
@@ -1341,13 +1346,13 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_net_queue_info;
           gp_text_net_queue_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_queue_info.set_text_type(info_data_type);
+          gp_text_net_queue_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
           std::string net_queue_info_message = "--";
           for (irt_int net_idx : RTUtil::getListByQueue(gr_node.get_net_queue())) {
             net_queue_info_message += RTUtil::getString("(", net_idx, ")");
           }
           gp_text_net_queue_info.set_message(net_queue_info_message);
-          gp_text_net_queue_info.set_layer_idx(gr_node.get_layer_idx());
+          gp_text_net_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
           node_graph_struct.push(gp_text_net_queue_info);
         }
@@ -1398,15 +1403,67 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
               LOG_INST.error(Loc::current(), "The orientation is oblique!");
               break;
           }
-          gp_path.set_layer_idx(gr_node.get_layer_idx());
+          gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_path.set_width(width);
-          gp_path.set_data_type(neighbor_data_type);
+          gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kNeighbor));
           neighbor_map_struct.push(gp_path);
         }
       }
     }
   }
   gp_gds.addStruct(neighbor_map_struct);
+
+  // net blockage
+  std::map<irt_int, std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>> layer_net_blockage_map;
+  for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
+    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
+        GRNode& gr_node = node_map[grid_x][grid_y];
+        for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
+          layer_net_blockage_map[gr_node.get_layer_idx()][net_idx].insert(blockage_list.begin(), blockage_list.end());
+        }
+      }
+    }
+  }
+  for (auto& [layer_idx, net_blockage_map] : layer_net_blockage_map) {
+    for (auto& [net_idx, blockage_set] : net_blockage_map) {
+      GPStruct blockage_struct(RTUtil::getString("blockage@", net_idx));
+      for (const PlanarRect& blockage : blockage_set) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kBlockage));
+        gp_boundary.set_rect(blockage);
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+        blockage_struct.push(gp_boundary);
+      }
+      gp_gds.addStruct(blockage_struct);
+    }
+  }
+
+  // net fence_region
+  std::map<irt_int, std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>> layer_net_fence_region_map;
+  for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
+    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
+        GRNode& gr_node = node_map[grid_x][grid_y];
+        for (auto& [net_idx, fence_region_list] : gr_node.get_net_fence_region_map()) {
+          layer_net_fence_region_map[gr_node.get_layer_idx()][net_idx].insert(fence_region_list.begin(), fence_region_list.end());
+        }
+      }
+    }
+  }
+  for (auto& [layer_idx, net_fence_region_map] : layer_net_fence_region_map) {
+    for (auto& [net_idx, fence_region_set] : net_fence_region_map) {
+      GPStruct fence_region_struct(RTUtil::getString("fence_region@", net_idx));
+      for (const PlanarRect& fence_region : fence_region_set) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kFenceRegion));
+        gp_boundary.set_rect(fence_region);
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+        fence_region_struct.push(gp_boundary);
+      }
+      gp_gds.addStruct(fence_region_struct);
+    }
+  }
 
   // net
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
@@ -1418,9 +1475,9 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           PlanarRect real_rect = RTUtil::getRealRect(coord.get_planar_coord(), gcell_axis);
 
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(key_data_type);
+          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
           gp_boundary.set_rect(real_rect);
-          gp_boundary.set_layer_idx(coord.get_layer_idx());
+          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
           net_struct.push(gp_boundary);
         }
       }
@@ -1433,17 +1490,17 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
       if (first_layer_idx == second_layer_idx) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(path_data_type);
+        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
         gp_boundary.set_rect(RTUtil::getRealRect(first_coord, second_coord, gcell_axis));
-        gp_boundary.set_layer_idx(first_layer_idx);
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         net_struct.push(gp_boundary);
       } else {
         RTUtil::sortASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(path_data_type);
+          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
           gp_boundary.set_rect(RTUtil::getRealRect(first_coord, gcell_axis));
-          gp_boundary.set_layer_idx(layer_idx);
+          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
           net_struct.push(gp_boundary);
         }
       }
@@ -1754,20 +1811,16 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   }
   via_overflow_table << fort::header << "Total" << via_overflow_list.size() << fort::endr;
 
-  std::vector<std::string> wire_overflow_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
-  std::vector<std::string> via_overflow_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
-  for (size_t i = 0; i < std::max(wire_overflow_str_list.size(), via_overflow_str_list.size()); i++) {
-    std::string table_str;
-    if (i < wire_overflow_str_list.size()) {
-      table_str += wire_overflow_str_list[i];
-    } else {
-      for (size_t i = 0; i < wire_overflow_str_list.front().size(); i++) {
-        table_str += " ";
-      }
-    }
+  std::vector<std::string> longer_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
+  std::vector<std::string> shorter_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
+  if (longer_str_list.size() < shorter_str_list.size()) {
+    std::swap(longer_str_list, shorter_str_list);
+  }
+  for (size_t i = 0; i < longer_str_list.size(); i++) {
+    std::string table_str = longer_str_list[i];
     table_str += " ";
-    if (i < via_overflow_str_list.size()) {
-      table_str += via_overflow_str_list[i];
+    if (i < shorter_str_list.size()) {
+      table_str += shorter_str_list[i];
     }
     LOG_INST.info(Loc::current(), table_str);
   }
