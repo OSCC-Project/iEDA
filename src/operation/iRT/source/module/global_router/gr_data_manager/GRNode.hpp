@@ -76,31 +76,55 @@ class GRNode : public LayerCoord
   }
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
+    bool is_obs = false;
     if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
-      return false;
+      return is_obs;
     }
     if (RTUtil::exist(_net_access_map, net_idx)) {
       // net在node中有引导，但是方向不对，视为障碍
-      return !RTUtil::exist(_net_access_map[net_idx], orientation);
+      is_obs = RTUtil::exist(_net_access_map[net_idx], orientation) ? false : true;
     }
     if (gr_route_strategy == GRRouteStrategy::kIgnoringENV) {
-      return false;
+      return is_obs;
     }
-    irt_int fence_via_area_demand = 0;
-    if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
-      fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
+    if (!is_obs) {
+      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+        // wire剩余可以给via
+        irt_int via_remain = 0;
+        via_remain += _wire_area_supply - _wire_area_demand;
+        via_remain += _via_area_supply - _via_area_demand;
+        is_obs = (via_remain < _single_via_area);
+      } else {
+        // via剩余不可转wire
+        irt_int wire_remain = 0;
+        wire_remain += _wire_area_supply - _wire_area_demand;
+        wire_remain += std::min(_via_area_supply - _via_area_demand, 0);
+        is_obs = (wire_remain < _single_wire_area);
+      }
     }
     if (gr_route_strategy == GRRouteStrategy::kIgnoringFence) {
-      fence_via_area_demand = 0;
+      return is_obs;
     }
-    if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-      // wire剩余可以给via
-      return ((_wire_area_supply - _wire_area_demand + _via_area_supply - _via_area_demand - fence_via_area_demand) < _single_via_area);
-    } else {
-      // via剩余不可转wire
-      return ((_wire_area_supply - _wire_area_demand + std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0))
-              < _single_wire_area);
+    if (!is_obs) {
+      irt_int fence_via_area_demand = 0;
+      if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
+        fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
+      }
+      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+        // wire剩余可以给via
+        irt_int via_remain = 0;
+        via_remain += _wire_area_supply - _wire_area_demand;
+        via_remain += _via_area_supply - _via_area_demand - fence_via_area_demand;
+        is_obs = (via_remain < _single_via_area);
+      } else {
+        // via剩余不可转wire
+        irt_int wire_remain = 0;
+        wire_remain += _wire_area_supply - _wire_area_demand;
+        wire_remain += std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0);
+        is_obs = (wire_remain < _single_wire_area);
+      }
     }
+    return is_obs;
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
@@ -109,12 +133,22 @@ class GRNode : public LayerCoord
       // net在node中有引导，但是方向不对，视为障碍
       cost += !RTUtil::exist(_net_access_map[net_idx], orientation) ? 1 : 0;
     } else {
+      irt_int fence_via_area_demand = 0;
+      if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
+        fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
+      }
       if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
         // wire剩余可以给via
-        cost += RTUtil::sigmoid(_via_area_demand, _wire_area_supply - _wire_area_demand + _via_area_supply);
+        irt_int via_remain = 0;
+        via_remain += _wire_area_supply - _wire_area_demand;
+        via_remain += _via_area_supply - _via_area_demand - fence_via_area_demand;
+        cost += RTUtil::sigmoid(_single_via_area, std::max(0, via_remain));
       } else {
         // via剩余不可转wire
-        cost += RTUtil::sigmoid(_wire_area_demand, _wire_area_supply + std::min(_via_area_supply - _via_area_demand, 0));
+        irt_int wire_remain = 0;
+        wire_remain += _wire_area_supply - _wire_area_demand;
+        wire_remain += std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0);
+        cost += RTUtil::sigmoid(_single_wire_area, std::max(0, wire_remain));
       }
     }
     return cost;

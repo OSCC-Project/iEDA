@@ -253,12 +253,13 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   }
   std::vector<irt_int> x_list = RTUtil::getOpenScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), routing_layer.getXTrackGrid());
   std::vector<irt_int> y_list = RTUtil::getOpenScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), routing_layer.getYTrackGrid());
+  irt_int in_num = 2;
   if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
-    irt_int x = orientation == Orientation::kEast ? x_list.back() : x_list.front();
+    irt_int x = (orientation == Orientation::kEast ? x_list[x_list.size() - in_num] : x_list[in_num - 1]);
     x_list.clear();
     x_list.push_back(x);
   } else if (orientation == Orientation::kNorth || orientation == Orientation::kSouth) {
-    irt_int y = orientation == Orientation::kNorth ? y_list.back() : y_list.front();
+    irt_int y = (orientation == Orientation::kNorth ? y_list[y_list.size() - in_num] : y_list[in_num - 1]);
     y_list.clear();
     y_list.push_back(y);
   }
@@ -433,28 +434,9 @@ void TrackAssigner::updateNetFenceRegionMap(TAModel& ta_model)
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
-    std::vector<PlanarCoord> coord_list;
-    for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
-        coord_list.push_back(real_coord);
-      }
-    }
-    PlanarCoord balance_coord = RTUtil::getBalanceCoord(coord_list);
     std::vector<LayerCoord> real_coord_list;
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      LayerCoord best_real_coord;
-      irt_int min_distance = INT_MAX;
-      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
-        irt_int distance = RTUtil::getManhattanDistance(balance_coord, real_coord.get_planar_coord());
-        if (distance < min_distance) {
-          best_real_coord = real_coord;
-          min_distance = distance;
-        }
-      }
-      if (min_distance == INT_MAX) {
-        LOG_INST.error(Loc::current(), "The distance is error!");
-      }
-      real_coord_list.push_back(best_real_coord);
+      real_coord_list.push_back(ta_pin.getRealCoordList().front());
     }
     std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
@@ -599,6 +581,7 @@ void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
       ta_node.set_x(x_list[x]);
       ta_node.set_y(y_list[y]);
       ta_node.set_layer_idx(layer_idx);
+      ta_node.set_fence_violation_cost(ta_panel.getRealWidth());
     }
   }
 }
