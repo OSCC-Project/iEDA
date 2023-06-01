@@ -125,9 +125,9 @@ void DetailedRouter::buildDRTaskList(DRModel& dr_model)
       DRBox& dr_box = dr_box_map[grid_coord.get_x()][grid_coord.get_y()];
 
       std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
+      dr_task.set_origin_net_idx(dr_net.get_net_idx());
       dr_task.set_origin_node(dr_node_node);
       dr_task.set_task_idx(static_cast<irt_int>(dr_task_list.size()));
-      dr_task.set_origin_net_idx(dr_net.get_net_idx());
       dr_task.set_connect_type(dr_net.get_connect_type());
       buildBoundingBox(dr_box, dr_task);
       dr_task_list.push_back(dr_task);
@@ -137,8 +137,25 @@ void DetailedRouter::buildDRTaskList(DRModel& dr_model)
 
 std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net)
 {
+  // dr_ta_list_map
+  std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
+  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
+  std::vector<Segment<TNode<RTNode>*>> segment_list = RTUtil::getSegListByTree(dr_result_tree);
+  if (dr_result_tree.get_root() != nullptr && segment_list.empty()) {
+    // local net
+    dr_ta_list_map[dr_result_tree.get_root()] = {};
+  }
+  for (Segment<TNode<RTNode>*>& segment : segment_list) {
+    TNode<RTNode>* dr_node_node = segment.get_first();
+    TNode<RTNode>* ta_node_node = segment.get_second();
+    if (dr_node_node->value().isTANode()) {
+      std::swap(dr_node_node, ta_node_node);
+    }
+    dr_ta_list_map[dr_node_node].push_back(ta_node_node);
+  }
+  // dr_node_task_map
   std::map<TNode<RTNode>*, DRTask> dr_node_task_map;
-  for (auto& [dr_node_node, ta_node_node_list] : getDRTAListMap(dr_net)) {
+  for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
     RTNode& dr_node = dr_node_node->value();
     PlanarRect dr_base_region = dr_node_node->value().get_first_guide().get_rect();
 
@@ -158,27 +175,6 @@ std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net
     dr_node_task_map[dr_node_node].set_dr_group_list(dr_group_list);
   }
   return dr_node_task_map;
-}
-
-std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> DetailedRouter::getDRTAListMap(DRNet& dr_net)
-{
-  std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
-
-  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
-  std::vector<Segment<TNode<RTNode>*>> segment_list = RTUtil::getSegListByTree(dr_result_tree);
-  if (dr_result_tree.get_root() != nullptr && segment_list.empty()) {
-    // local net
-    dr_ta_list_map[dr_result_tree.get_root()] = {};
-  }
-  for (Segment<TNode<RTNode>*>& segment : segment_list) {
-    TNode<RTNode>* dr_node_node = segment.get_first();
-    TNode<RTNode>* ta_node_node = segment.get_second();
-    if (dr_node_node->value().isTANode()) {
-      std::swap(dr_node_node, ta_node_node);
-    }
-    dr_ta_list_map[dr_node_node].push_back(ta_node_node);
-  }
-  return dr_ta_list_map;
 }
 
 DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node)

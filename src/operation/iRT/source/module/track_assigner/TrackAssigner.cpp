@@ -150,9 +150,9 @@ void TrackAssigner::buildTATaskList(TAModel& ta_model)
       TAPanel& ta_panel = layer_panel_list[layer_idx][panel_idx];
 
       std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+      ta_task.set_origin_net_idx(ta_net.get_net_idx());
       ta_task.set_origin_node(ta_node_node);
       ta_task.set_task_idx(static_cast<irt_int>(ta_task_list.size()));
-      ta_task.set_origin_net_idx(ta_net.get_net_idx());
       ta_task.set_connect_type(ta_net.get_connect_type());
       std::vector<PlanarCoord> coord_list;
       for (TAGroup& ta_group : ta_task.get_ta_group_list()) {
@@ -168,58 +168,15 @@ void TrackAssigner::buildTATaskList(TAModel& ta_model)
 
 std::map<TNode<RTNode>*, TATask> TrackAssigner::makeTANodeTaskMap(TANet& ta_net)
 {
-  std::map<TNode<RTNode>*, TATask> ta_node_task_map = initGroupAndCost(ta_net);
-  makeCoordCostMap(ta_node_task_map);
-  return ta_node_task_map;
-}
-
-std::map<TNode<RTNode>*, TATask> TrackAssigner::initGroupAndCost(TANet& ta_net)
-{
   std::map<TNode<RTNode>*, TATask> ta_node_task_map;
-  for (auto& [dr_node_node, ta_node_node_list] : getDRTAListMap(ta_net)) {
-    std::vector<LayerCoord> pin_coord_list;
-    for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
-      std::vector<LayerCoord> real_coord_list = ta_net.get_ta_pin_list()[pin_idx].getRealCoordList();
-      pin_coord_list.insert(pin_coord_list.end(), real_coord_list.begin(), real_coord_list.end());
-    }
-
-    std::map<TNode<RTNode>*, TAGroup> ta_node_group_map;
-    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
-      ta_node_group_map[ta_node_node] = makeTAGroup(dr_node_node, ta_node_node);
-    }
-    for (auto& [ta_node_node1, group1] : ta_node_group_map) {
-      // 真实坐标
-      std::vector<std::tuple<LayerCoord, irt_int, irt_int>> coord_distance_list;
-      for (LayerCoord& coord : group1.get_coord_list()) {
-        coord_distance_list.emplace_back(coord, 0, 0);
-      }
-      for (auto& [coord, pin_distance, group_distance] : coord_distance_list) {
-        for (LayerCoord& pin_coord : pin_coord_list) {
-          pin_distance += RTUtil::getManhattanDistance(coord, pin_coord);
-        }
-        for (auto& [ta_node_node2, group2] : ta_node_group_map) {
-          for (LayerCoord& group_coord : group2.get_coord_list()) {
-            group_distance += RTUtil::getManhattanDistance(coord, group_coord);
-          }
-        }
-      }
-      std::sort(coord_distance_list.begin(), coord_distance_list.end(),
-                [](std::tuple<LayerCoord, irt_int, irt_int>& a, std::tuple<LayerCoord, irt_int, irt_int>& b) {
-                  return std::get<1>(a) == std::get<1>(b) ? std::get<2>(a) < std::get<2>(b) : std::get<1>(a) < std::get<1>(b);
-                });
-      // 构建 ta_group_list 和 coord_cost_map
-      TATask& ta_task = ta_node_task_map[ta_node_node1];
-      ta_task.get_ta_group_list().push_back(group1);
-      for (size_t i = 0; i < coord_distance_list.size(); i++) {
-        ta_task.get_coord_cost_map()[std::get<0>(coord_distance_list[i])] = static_cast<double>(i);
-      }
-    }
-  }
+  makeGroupAndCost(ta_net, ta_node_task_map);
+  expandCoordCostMap(ta_node_task_map);
   return ta_node_task_map;
 }
 
-std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> TrackAssigner::getDRTAListMap(TANet& ta_net)
+void TrackAssigner::makeGroupAndCost(TANet& ta_net, std::map<TNode<RTNode>*, TATask>& ta_node_task_map)
 {
+  // dr_ta_list_map
   std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
   for (Segment<TNode<RTNode>*>& segment : RTUtil::getSegListByTree(ta_net.get_ta_result_tree())) {
     TNode<RTNode>* dr_node_node = segment.get_first();
@@ -229,21 +186,45 @@ std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> TrackAssigner::getDRTAList
     }
     dr_ta_list_map[dr_node_node].push_back(ta_node_node);
   }
-  return dr_ta_list_map;
+  for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
+    // pin_coord_list
+    std::vector<LayerCoord> pin_coord_list;
+    for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
+      pin_coord_list.push_back(ta_net.get_ta_pin_list()[pin_idx].getRealCoordList().front());
+    }
+    std::map<TNode<RTNode>*, TAGroup> ta_group_map;
+    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
+      ta_group_map[ta_node_node] = makeTAGroup(dr_node_node, ta_node_node, pin_coord_list);
+    }
+    std::map<TNode<RTNode>*, std::map<LayerCoord, double, CmpLayerCoordByXASC>> ta_cost_map_map;
+    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
+      ta_cost_map_map[ta_node_node] = makeTACostMap(ta_node_node, ta_group_map, pin_coord_list);
+    }
+    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
+      TATask& ta_task = ta_node_task_map[ta_node_node];
+      ta_task.get_ta_group_list().push_back(ta_group_map[ta_node_node]);
+      ta_task.get_coord_cost_map().insert(ta_cost_map_map[ta_node_node].begin(), ta_cost_map_map[ta_node_node].end());
+    }
+  }
 }
 
-TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node)
+TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
+  // dr info
   Guide& dr_guide = dr_node_node->value().get_first_guide();
   PlanarCoord& dr_grid_coord = dr_guide.get_grid_coord();
 
+  // ta info
   PlanarCoord& first_grid_coord = ta_node_node->value().get_first_guide().get_grid_coord();
   PlanarCoord& second_grid_coord = ta_node_node->value().get_second_guide().get_grid_coord();
   irt_int ta_layer_idx = ta_node_node->value().get_first_guide().get_layer_idx();
 
+  // layer
   RoutingLayer& routing_layer = routing_layer_list[ta_layer_idx];
+  TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
+  TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
 
   Orientation orientation = Orientation::kNone;
   if (dr_grid_coord == first_grid_coord) {
@@ -251,15 +232,21 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   } else {
     orientation = RTUtil::getOrientation(dr_grid_coord, first_grid_coord);
   }
-  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), routing_layer.getXTrackGrid());
-  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), routing_layer.getYTrackGrid());
-  irt_int in_num = 2;
+  PlanarRect routing_region = dr_guide;
+  if (!pin_coord_list.empty()) {
+    routing_region = RTUtil::getBoundingBox(pin_coord_list);
+    routing_region = RTUtil::getEnlargedRect(routing_region, routing_layer.get_track_axis());
+  }
+  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), x_track_grid);
+  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), y_track_grid);
   if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
-    irt_int x = (orientation == Orientation::kEast ? x_list[x_list.size() - in_num] : x_list[in_num - 1]);
+    x_list = RTUtil::getClosedScaleList(routing_region.get_lb_x(), routing_region.get_rt_x(), x_track_grid);
+    irt_int x = (orientation == Orientation::kEast ? x_list.back() : x_list.front());
     x_list.clear();
     x_list.push_back(x);
   } else if (orientation == Orientation::kNorth || orientation == Orientation::kSouth) {
-    irt_int y = (orientation == Orientation::kNorth ? y_list[y_list.size() - in_num] : y_list[in_num - 1]);
+    y_list = RTUtil::getClosedScaleList(routing_region.get_lb_y(), routing_region.get_rt_y(), y_track_grid);
+    irt_int y = (orientation == Orientation::kNorth ? y_list.back() : y_list.front());
     y_list.clear();
     y_list.push_back(y);
   }
@@ -273,7 +260,34 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   return ta_group;
 }
 
-void TrackAssigner::makeCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map)
+std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(TNode<RTNode>* ta_node_node,
+                                                                               std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
+                                                                               std::vector<LayerCoord>& pin_coord_list)
+{
+  std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_cost_map;
+  TAGroup& curr_group = ta_group_map[ta_node_node];
+  if (!pin_coord_list.empty()) {
+    for (LayerCoord& coord : curr_group.get_coord_list()) {
+      for (LayerCoord& pin_coord : pin_coord_list) {
+        coord_cost_map[coord] += RTUtil::getManhattanDistance(coord, pin_coord);
+      }
+    }
+  } else {
+    for (LayerCoord& coord : curr_group.get_coord_list()) {
+      for (auto& [other_ta_node_node, group] : ta_group_map) {
+        if (other_ta_node_node == ta_node_node) {
+          continue;
+        }
+        for (LayerCoord& group_coord : group.get_coord_list()) {
+          coord_cost_map[coord] += RTUtil::getManhattanDistance(coord, group_coord);
+        }
+      }
+    }
+  }
+  return coord_cost_map;
+}
+
+void TrackAssigner::expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
