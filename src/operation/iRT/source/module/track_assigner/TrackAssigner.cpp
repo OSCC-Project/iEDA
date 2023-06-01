@@ -235,7 +235,10 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   PlanarRect routing_region = dr_guide;
   if (!pin_coord_list.empty()) {
     routing_region = RTUtil::getBoundingBox(pin_coord_list);
-    routing_region = RTUtil::getEnlargedRect(routing_region, routing_layer.get_track_axis());
+    if (!RTUtil::existGrid(routing_region, routing_layer.get_track_axis())) {
+      routing_region = RTUtil::getTrackLineRect(routing_region, routing_layer.get_track_axis());
+    }
+    routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
   }
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), x_track_grid);
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), y_track_grid);
