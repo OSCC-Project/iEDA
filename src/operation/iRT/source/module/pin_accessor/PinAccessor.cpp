@@ -217,6 +217,12 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
 
 void PinAccessor::accessPAModel(PAModel& pa_model)
 {
+  accessPANetList(pa_model);
+  eliminateConflict(pa_model);
+}
+
+void PinAccessor::accessPANetList(PAModel& pa_model)
+{
   Monitor monitor;
 
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
@@ -519,6 +525,94 @@ void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
       }
     }
   }
+}
+
+void PinAccessor::eliminateConflict(PAModel& pa_model)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+
+  std::vector<std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>> layer_access_point_list;
+  layer_access_point_list.resize(routing_layer_list.size());
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        layer_access_point_list[access_point.get_layer_idx()][access_point.get_grid_coord()][pa_net.get_net_idx()].push_back(
+            access_point.get_real_coord());
+      }
+    }
+  }
+
+  irt_int bottom_layer_idx = routing_layer_list.front().get_layer_idx();
+  irt_int top_layer_idx = routing_layer_list.back().get_layer_idx();
+
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::map<LayerCoord, irt_int, CmpLayerCoordByLayerASC> access_point_via_num_map;
+      std::vector<irt::AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+      for (AccessPoint& access_point : access_point_list) {
+        irt_int layer_idx = access_point.get_layer_idx();
+        PlanarCoord& access_coord = access_point.get_real_coord();
+        access_point_via_num_map[LayerCoord(access_coord, layer_idx)];
+        for (std::vector<irt_int> via_layer_idx_list : RTUtil::getAccessLayerIdxListGroup(layer_idx, bottom_layer_idx, top_layer_idx)) {
+          for (irt_int via_layer_idx : via_layer_idx_list) {
+            if (layer_via_master_list[via_layer_idx].empty()) {
+              continue;
+            }
+            bool conflicted = false;
+            ViaMaster& via_master = layer_via_master_list[via_layer_idx].front();
+            for (LayerRect enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+              irt_int min_spacing = routing_layer_list[enclosure.get_layer_idx()].getMinSpacing(PlanarRect(access_coord, access_coord));
+              irt_int x_enlarge_size = enclosure.getXSpan() + min_spacing;
+              irt_int y_enlarge_size = enclosure.getYSpan() + min_spacing;
+              PlanarRect conflict_real_rect
+                  = RTUtil::getEnlargedRect(access_coord, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+              if (isConflict(pa_net.get_net_idx(), conflict_real_rect, layer_access_point_list[enclosure.get_layer_idx()])) {
+                conflicted = true;
+                break;
+              }
+            }
+            if (conflicted) {
+              break;
+            }
+            access_point_via_num_map[LayerCoord(access_coord, layer_idx)] += 1;
+          }
+        }
+      }
+      std::sort(access_point_list.begin(), access_point_list.end(), [&access_point_via_num_map](AccessPoint& a, AccessPoint& b) {
+        irt_int a_via_num = access_point_via_num_map.find(LayerCoord(a.get_real_coord(), a.get_layer_idx()))->second;
+        irt_int b_via_num = access_point_via_num_map.find(LayerCoord(b.get_real_coord(), b.get_layer_idx()))->second;
+        return a_via_num > b_via_num;
+      });
+    }
+  }
+}
+
+bool PinAccessor::isConflict(irt_int net_idx, PlanarRect& conflict_real_rect,
+    std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>& grid_access_point_map)
+{
+  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  PlanarRect conflict_grid_rect = RTUtil::getClosedGridRect(conflict_real_rect, gcell_axis);
+
+  for (irt_int x = conflict_grid_rect.get_lb_x(); x <= conflict_grid_rect.get_rt_x(); x++) {
+    for (irt_int y = conflict_grid_rect.get_lb_y(); y <= conflict_grid_rect.get_rt_y(); y++) {
+      PlanarCoord grid_coord(x, y);
+      if (!RTUtil::exist(grid_access_point_map, grid_coord)) {
+        continue;
+      }
+      for (auto& [curr_net_idx, access_coord_set] : grid_access_point_map[grid_coord]) {
+        if (curr_net_idx == net_idx) {
+          continue;
+        }
+        for (PlanarCoord& access_coord : access_coord_set) {
+          if (RTUtil::isInside(conflict_real_rect, access_coord)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 #endif
