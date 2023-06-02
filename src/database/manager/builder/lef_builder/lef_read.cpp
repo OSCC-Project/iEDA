@@ -463,8 +463,18 @@ int LefRead::parse_layer_routing(lefiLayer* lef_layer, IdbLayerRouting* layer_ro
   }
 
   // min width
+  // MINWIDTH width
+  // Specifies the minimum legal object width on the routing layer. For example, MINWIDTH
+  // 0.15 specifies that the width of every object must be greater than or equal to 0.15 μm.
+  // This value is used for verification purposes, and does not affect the routing width. The
+  // WIDTH statement defines the default routing width on the layer.
+  // Default: The value of the WIDTH statement
+  // Type: Float, specified in microns
   if (lef_layer->hasMinwidth()) {
     layer_routing->set_min_width(transUnitDB(lef_layer->minwidth()));
+  }else{
+    // Default value
+    layer_routing->set_min_width(layer_routing->get_width());
   }
 
   // max width
