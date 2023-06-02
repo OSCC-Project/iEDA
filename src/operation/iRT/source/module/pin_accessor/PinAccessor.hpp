@@ -57,6 +57,7 @@ class PinAccessor
   void buildPAModel(PAModel& pa_model);
   void initGCellRealRect(PAModel& pa_model);
   void updateNetBlockageMap(PAModel& pa_model);
+  void updateNetFenceRegionMap(PAModel& pa_model);
   void cutBlockageList(PAModel& pa_model);
 #endif
 
