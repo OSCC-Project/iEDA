@@ -1577,8 +1577,8 @@ void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_
   first_guide.set_layer_idx(std::min(first_guide.get_layer_idx(), child_layer_idx));
   second_guide.set_layer_idx(std::max(second_guide.get_layer_idx(), child_layer_idx));
 
-  std::set<int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
-  std::set<int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
+  std::set<irt_int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
+  std::set<irt_int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
   parent_pin_idx_set.insert(child_pin_idx_set.begin(), child_pin_idx_set.end());
 
   parent_node->addChildren(child_node->get_child_list());
