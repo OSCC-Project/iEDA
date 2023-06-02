@@ -146,6 +146,7 @@ class TrackAssigner
 #if 1  // update ta_model
   void updateTAModel(TAModel& ta_model);
   void buildRoutingResult(TATask& ta_task);
+  std::vector<TAGroup> getBoundaryTAGroupList(TATask& ta_task);
   void updateOriginTAResultTree(TAModel& ta_model);
 #endif
 
