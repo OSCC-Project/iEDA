@@ -57,7 +57,6 @@ class PinAccessor
   void buildPAModel(PAModel& pa_model);
   void initGCellRealRect(PAModel& pa_model);
   void updateNetBlockageMap(PAModel& pa_model);
-  void updateNetFenceRegionMap(PAModel& pa_model);
   void cutBlockageList(PAModel& pa_model);
 #endif
 
@@ -75,9 +74,8 @@ class PinAccessor
   void buildBoundingBox(PANet& pa_net);
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
+  void updateNetFenceRegionMap(PAModel& pa_model);
   void eliminateConflict(PAModel& pa_model);
-  std::vector<PlanarCoord> getConflictPointList(irt_int net_idx, PlanarRect& conflict_real_rect,
-      std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>& grid_access_point_map);
 #endif
 
 #if 1  // update pa_model

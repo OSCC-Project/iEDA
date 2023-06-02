@@ -456,7 +456,7 @@ void EarlyGlobalRouter::generateCoordPairList(EGRRoutingPackage& egr_routing_pac
 irt_int EarlyGlobalRouter::getMinCostLayerIdx(const PlanarCoord& planar_coord)
 {
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
-  std::vector<irt::RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
   irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
 
@@ -1265,7 +1265,7 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   irt_int cell_width = _egr_data_manager.getConfig().cell_width;
   irt_int cell_height = _egr_data_manager.getConfig().cell_height;
-  std::vector<std::vector<irt::ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
   irt_int routing_layer_size = static_cast<irt_int>(egr_database.get_routing_layer_list().size());
   irt_int cut_layer_size = static_cast<irt_int>(egr_database.get_cut_layer_list().size());
   std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
