@@ -11,7 +11,7 @@
 #ifndef IPL_MP_SOLVER_H
 #define IPL_MP_SOLVER_H
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <memory>
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
