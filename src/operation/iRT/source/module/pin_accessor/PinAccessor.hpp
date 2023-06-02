@@ -75,8 +75,8 @@ class PinAccessor
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
   void eliminateConflict(PAModel& pa_model);
-  bool isConflict(irt_int net_idx, PlanarRect& conflict_real_rect,
-                  std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>& grid_access_point_map);
+  std::vector<PlanarCoord> getConflictPointList(irt_int net_idx, PlanarRect& conflict_real_rect,
+      std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>& grid_access_point_map);
 #endif
 
 #if 1  // update pa_model

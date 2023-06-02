@@ -554,21 +554,26 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
         irt_int layer_idx = access_point.get_layer_idx();
         PlanarCoord& access_coord = access_point.get_real_coord();
         access_point_via_num_map[LayerCoord(access_coord, layer_idx)];
-        for (std::vector<irt_int> via_layer_idx_list : RTUtil::getAccessLayerIdxListGroup(layer_idx, bottom_layer_idx, top_layer_idx)) {
-          for (irt_int via_layer_idx : via_layer_idx_list) {
-            if (layer_via_master_list[via_layer_idx].empty()) {
-              continue;
-            }
+        for (irt_int via_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_layer_idx, top_layer_idx)) {
             bool conflicted = false;
             ViaMaster& via_master = layer_via_master_list[via_layer_idx].front();
             for (LayerRect enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-              irt_int min_spacing = routing_layer_list[enclosure.get_layer_idx()].getMinSpacing(PlanarRect(access_coord, access_coord));
-              irt_int x_enlarge_size = enclosure.getXSpan() + min_spacing;
-              irt_int y_enlarge_size = enclosure.getYSpan() + min_spacing;
+              irt_int min_spacing = routing_layer_list[enclosure.get_layer_idx()].getMinSpacing(enclosure);
+              PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, access_coord);
+              PlanarRect enlarged_enclosure = RTUtil::getEnlargedRect(offset_enclosure, min_spacing);
+              irt_int x_enlarge_size = enclosure.getXSpan() / 2 + min_spacing;
+              irt_int y_enlarge_size = enclosure.getYSpan() / 2 + min_spacing;
               PlanarRect conflict_real_rect
-                  = RTUtil::getEnlargedRect(access_coord, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
-              if (isConflict(pa_net.get_net_idx(), conflict_real_rect, layer_access_point_list[enclosure.get_layer_idx()])) {
-                conflicted = true;
+                  = RTUtil::getEnlargedRect(offset_enclosure, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+              for (PlanarCoord& conflict_point :
+                   getConflictPointList(pa_net.get_net_idx(), conflict_real_rect, layer_access_point_list[enclosure.get_layer_idx()])) {
+                PlanarRect real_rect = RTUtil::getOffsetRect(enclosure, conflict_point);
+                if (RTUtil::isOpenOverlap(real_rect, enlarged_enclosure)) {
+                  conflicted = true;
+                  break;
+                }
+              }
+              if (conflicted) {
                 break;
               }
             }
@@ -576,7 +581,6 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
               break;
             }
             access_point_via_num_map[LayerCoord(access_coord, layer_idx)] += 1;
-          }
         }
       }
       std::sort(access_point_list.begin(), access_point_list.end(), [&access_point_via_num_map](AccessPoint& a, AccessPoint& b) {
@@ -588,12 +592,14 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   }
 }
 
-bool PinAccessor::isConflict(irt_int net_idx, PlanarRect& conflict_real_rect,
+std::vector<PlanarCoord> PinAccessor::getConflictPointList(
+    irt_int net_idx, PlanarRect& conflict_real_rect,
     std::map<PlanarCoord, std::map<irt_int, std::vector<PlanarCoord>>, CmpPlanarCoordByXASC>& grid_access_point_map)
 {
   GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
   PlanarRect conflict_grid_rect = RTUtil::getClosedGridRect(conflict_real_rect, gcell_axis);
 
+  std::vector<PlanarCoord> conflict_point_list;
   for (irt_int x = conflict_grid_rect.get_lb_x(); x <= conflict_grid_rect.get_rt_x(); x++) {
     for (irt_int y = conflict_grid_rect.get_lb_y(); y <= conflict_grid_rect.get_rt_y(); y++) {
       PlanarCoord grid_coord(x, y);
@@ -606,13 +612,13 @@ bool PinAccessor::isConflict(irt_int net_idx, PlanarRect& conflict_real_rect,
         }
         for (PlanarCoord& access_coord : access_coord_set) {
           if (RTUtil::isInside(conflict_real_rect, access_coord)) {
-            return true;
+            conflict_point_list.push_back(access_coord);
           }
         }
       }
     }
   }
-  return false;
+  return conflict_point_list;
 }
 
 #endif
