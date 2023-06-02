@@ -567,22 +567,22 @@ class RTUtil
 
   static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
-    gtl::polygon_90_set_data<int> master_poly;
+    gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
       master_poly += RTUtil::convertToGTLRect(master);
     }
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
     master_poly *= rect_poly;
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, master_poly);
 
     std::vector<PlanarRect> overlap_rect_list;
-    for (gtl::rectangle_data<int>& overlap_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
       overlap_rect_list.emplace_back(RTUtil::convertToPlanarRect(overlap_rect));
     }
     return overlap_rect_list;
@@ -751,22 +751,22 @@ class RTUtil
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
-    gtl::polygon_90_set_data<int> master_poly;
+    gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
       master_poly += RTUtil::convertToGTLRect(master);
     }
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
     master_poly -= rect_poly;
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, master_poly);
 
     std::vector<PlanarRect> cutting_rect_list;
-    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
       cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
     return cutting_rect_list;
@@ -833,12 +833,12 @@ class RTUtil
 
   static std::vector<PlanarRect> getMergeRectList(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
   {
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     if (direction == Direction::kHorizontal) {
       gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::HORIZONTAL);
     } else if (direction == Direction::kVertical) {
@@ -848,7 +848,7 @@ class RTUtil
     }
 
     std::vector<PlanarRect> merge_rect_list;
-    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
       merge_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
     return merge_rect_list;
@@ -2338,22 +2338,22 @@ class RTUtil
   }
 
   // 获得可用的布线层
-  static std::vector<int> getUsageLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<int> layer_idx_list;
+    std::vector<irt_int> layer_idx_list;
     if (curr_layer_idx < bottom_layer_idx) {
-      for (int i = curr_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else if (top_layer_idx < curr_layer_idx) {
-      for (int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else {
-      for (int i = bottom_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     }

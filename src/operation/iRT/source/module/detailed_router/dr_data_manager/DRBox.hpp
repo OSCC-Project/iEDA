@@ -60,7 +60,7 @@ class DRBox
       LOG_INST.error(Loc::current(), "The coord layer_idx is error!");
     }
     DRNodeGraph& node_graph = _layer_graph_list[coord.get_layer_idx()];
-    std::unordered_map<irt_int, std::unordered_map<int, int>>& x_y_idx_map = node_graph.get_x_y_idx_map();
+    std::unordered_map<irt_int, std::unordered_map<irt_int, irt_int>>& x_y_idx_map = node_graph.get_x_y_idx_map();
     std::vector<DRNode>& dr_node_list = node_graph.get_dr_node_list();
 
     if (!RTUtil::exist(x_y_idx_map, coord.get_x())) {
