@@ -267,25 +267,35 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
                                                                                std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                                std::vector<LayerCoord>& pin_coord_list)
 {
-  std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_cost_map;
-  TAGroup& curr_group = ta_group_map[ta_node_node];
+  std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_distance_map;
   if (!pin_coord_list.empty()) {
-    for (LayerCoord& coord : curr_group.get_coord_list()) {
+    for (LayerCoord& coord : ta_group_map[ta_node_node].get_coord_list()) {
       for (LayerCoord& pin_coord : pin_coord_list) {
-        coord_cost_map[coord] += RTUtil::getManhattanDistance(coord, pin_coord);
+        coord_distance_map[coord] += RTUtil::getManhattanDistance(coord, pin_coord);
       }
     }
   } else {
-    for (LayerCoord& coord : curr_group.get_coord_list()) {
+    for (LayerCoord& coord : ta_group_map[ta_node_node].get_coord_list()) {
       for (auto& [other_ta_node_node, group] : ta_group_map) {
         if (other_ta_node_node == ta_node_node) {
           continue;
         }
         for (LayerCoord& group_coord : group.get_coord_list()) {
-          coord_cost_map[coord] += RTUtil::getManhattanDistance(coord, group_coord);
+          coord_distance_map[coord] += RTUtil::getManhattanDistance(coord, group_coord);
         }
       }
     }
+  }
+  std::vector<std::pair<LayerCoord, double>> coord_distance_pair_list;
+  for (auto& [coord, distance] : coord_distance_map) {
+    coord_distance_pair_list.emplace_back(coord, distance);
+  }
+  std::sort(coord_distance_pair_list.begin(), coord_distance_pair_list.end(),
+            [](std::pair<LayerCoord, double>& a, std::pair<LayerCoord, double>& b) { return a.second < b.second; });
+
+  std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_cost_map;
+  for (size_t i = 0; i < coord_distance_pair_list.size(); i++) {
+    coord_cost_map[coord_distance_pair_list[i].first] = i;
   }
   return coord_cost_map;
 }
