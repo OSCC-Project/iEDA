@@ -470,18 +470,10 @@ void TrackAssigner::updateNetFenceRegionMap(TAModel& ta_model)
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-
-        const LayerRect& below_enclosure = via_master.get_below_enclosure();
-        LayerRect below_via_shape;
-        below_via_shape.set_rect(RTUtil::getOffsetRect(below_enclosure, real_coord));
-        below_via_shape.set_layer_idx(below_enclosure.get_layer_idx());
-        net_fence_region_list.push_back(below_via_shape);
-
-        const LayerRect& above_enclosure = via_master.get_above_enclosure();
-        LayerRect above_via_shape;
-        above_via_shape.set_rect(RTUtil::getOffsetRect(above_enclosure, real_coord));
-        above_via_shape.set_layer_idx(above_enclosure.get_layer_idx());
-        net_fence_region_list.push_back(above_via_shape);
+        for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+          LayerRect via_shape(RTUtil::getOffsetRect(enclosure, real_coord), enclosure.get_layer_idx());
+          net_fence_region_list.push_back(via_shape);
+        }
       }
     }
     for (const LayerRect& net_fence_region : net_fence_region_list) {

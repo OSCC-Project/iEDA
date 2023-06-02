@@ -2275,22 +2275,60 @@ class RTUtil
     return getScaleList(begin_line, end_line, scale_grid, false, false);
   }
 
+  /**
+   * 返回跳跃的层idx
+   * eg. curr_layer_idx: 3
+   *     layer_idx_list: [1 2 3 4 5 6 7 8]
+   *     return: [3 2 4 1 5 6 7 8]
+   */
+  static std::vector<irt_int> getJumpLayerIdxList(irt_int curr_layer_idx, std::vector<irt_int> layer_idx_list)
+  {
+    if (layer_idx_list.empty()) {
+      return layer_idx_list;
+    }
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    irt_int curr_i = -1;
+    if (layer_idx_list.back() < curr_layer_idx) {
+      curr_i = static_cast<irt_int>(layer_idx_list.size() - 1);
+    } else if (curr_layer_idx < layer_idx_list.front()) {
+      curr_i = 0;
+    } else {
+      for (size_t i = 0; i < layer_idx_list.size(); i++) {
+        if (curr_layer_idx == layer_idx_list[i]) {
+          curr_i = static_cast<irt_int>(i);
+          break;
+        }
+      }
+    }
+    std::vector<irt_int> result_layer_idx_list;
+    irt_int jump_step = 0;
+    while (result_layer_idx_list.size() != layer_idx_list.size()) {
+      if (jump_step % 2 == 0) {
+        result_layer_idx_list.push_back(layer_idx_list[curr_i + jump_step]);
+      } else {
+        result_layer_idx_list.push_back(layer_idx_list[curr_i + (-1 * jump_step)]);
+      }
+      jump_step++;
+    }
+    return result_layer_idx_list;
+  }
+
   // 考虑的全部via below层
-  static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<int> layer_idx_list;
+    std::vector<irt_int> layer_idx_list;
     if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
       layer_idx_list.push_back(curr_layer_idx - 1);
       layer_idx_list.push_back(curr_layer_idx);
     } else if (curr_layer_idx <= bottom_layer_idx) {
-      for (int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+      for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
         layer_idx_list.push_back(layer_idx);
       }
     } else if (top_layer_idx <= curr_layer_idx) {
-      for (int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+      for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
         layer_idx_list.push_back(layer_idx);
       }
     }
@@ -2320,24 +2358,6 @@ class RTUtil
       }
     }
     return layer_idx_list;
-  }
-
-  // 获得全部的access层
-  static std::vector<std::vector<irt_int>> getAccessLayerIdxListGroup(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
-  {
-    std::vector<std::vector<irt_int>> access_layer_idx_list_group;
-    access_layer_idx_list_group.resize(2);
-
-    if (bottom_layer_idx > top_layer_idx) {
-      std::swap(bottom_layer_idx, top_layer_idx);
-    }
-    for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::max(curr_layer_idx, top_layer_idx); layer_idx++) {
-      access_layer_idx_list_group.front().push_back(layer_idx);
-    }
-    for (irt_int layer_idx = (curr_layer_idx - 1); layer_idx >= bottom_layer_idx; layer_idx--) {
-      access_layer_idx_list_group.back().push_back(layer_idx);
-    }
-    return access_layer_idx_list_group;
   }
 
 #endif
