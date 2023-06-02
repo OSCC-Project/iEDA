@@ -10,7 +10,9 @@
  */
 #ifndef IPL_MP_PROBLEM_H
 #define IPL_MP_PROBLEM_H
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
+
+// #include "eigen3/Eigen/Dense"
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 namespace ipl {
@@ -20,7 +22,7 @@ class Problem
  public:
   Problem(/* args */){};
   virtual ~Problem(){};
-  virtual void evaluate(const MatrixXd& variable, MatrixXd& gradient, float& cost, int iter) const = 0;
+  virtual void evaluate(const MatrixXd& variable, MatrixXd& gradient, double& cost, int iter) const = 0;
   // virtual void updateParameter(VectorXf& parameter, int iter) = 0;
   // virtual MatrixXd hessianMatrix() = 0;
   virtual double getLowerBound(int row, int col) const { return std::numeric_limits<double>::lowest(); }
