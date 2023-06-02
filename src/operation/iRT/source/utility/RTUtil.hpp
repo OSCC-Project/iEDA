@@ -1086,6 +1086,18 @@ class RTUtil
     return enalrged_rect;
   }
 
+  // 在有最大外边界约束下扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, irt_int lb_x_minus_offset, irt_int lb_y_minus_offset, irt_int rt_x_add_offset,
+                                    irt_int rt_y_add_offset, PlanarRect border)
+  {
+    PlanarRect enalrged_rect = getEnlargedRect(rect, lb_x_minus_offset, lb_y_minus_offset, rt_x_add_offset, rt_y_add_offset);
+
+    enalrged_rect.set_lb(std::max(enalrged_rect.get_lb_x(), border.get_lb_x()), std::max(enalrged_rect.get_lb_y(), border.get_lb_y()));
+    enalrged_rect.set_rt(std::min(enalrged_rect.get_rt_x(), border.get_rt_x()), std::min(enalrged_rect.get_rt_y(), border.get_rt_y()));
+
+    return enalrged_rect;
+  }
+
   // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, irt_int enlarge_size)
   {
@@ -1733,6 +1745,22 @@ class RTUtil
     return track_start + track_idx * track_pitch;
   }
 
+  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
+  static PlanarRect getTrackLineRect(PlanarRect rect, TrackAxis& track_axis)
+  {
+    irt_int x_start_line = track_axis.get_x_track_grid().get_start_line();
+    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
+    irt_int y_start_line = track_axis.get_y_track_grid().get_start_line();
+    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+    PlanarRect enlarge_real_rect = getEnlargedRect(rect, x_step_length, y_step_length, x_step_length, y_step_length);
+    PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
+    irt_int real_lb_x = x_start_line + enlarge_grid_rect.get_lb_x() * x_step_length;
+    irt_int real_rt_x = x_start_line + enlarge_grid_rect.get_rt_x() * x_step_length;
+    irt_int real_lb_y = y_start_line + enlarge_grid_rect.get_lb_y() * y_step_length;
+    irt_int real_rt_y = y_start_line + enlarge_grid_rect.get_rt_y() * y_step_length;
+    return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
+  }
+
 #endif
 
 #if 1  // irt数据结构工具函数
@@ -2250,9 +2278,25 @@ class RTUtil
   // 考虑的全部via below层
   static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
   {
-    std::vector<int> usage_layer_idx_list = getUsageLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
-    usage_layer_idx_list.pop_back();
-    return usage_layer_idx_list;
+    if (bottom_layer_idx > top_layer_idx) {
+      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+    }
+    std::vector<int> layer_idx_list;
+    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+      layer_idx_list.push_back(curr_layer_idx - 1);
+      layer_idx_list.push_back(curr_layer_idx);
+    } else if (curr_layer_idx <= bottom_layer_idx) {
+      for (int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
+      }
+    } else if (top_layer_idx <= curr_layer_idx) {
+      for (int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
+      }
+    }
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+    return layer_idx_list;
   }
 
   // 获得可用的布线层
@@ -2772,9 +2816,14 @@ class RTUtil
    * notice : The closer the <value> is to the <threshold>, the closer the return value is to 1
    *
    */
-  static double sigmoid(const double value, const double threshold)
+  static double sigmoid(double value, double threshold)
   {
-    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / std::max(threshold, 0.01)))));
+    if (-0.01 < threshold && threshold < 0) {
+      threshold = -0.01;
+    } else if (0 <= threshold && threshold < 0.01) {
+      threshold = 0.01;
+    }
+    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / threshold))));
     if (std::isnan(result)) {
       LOG_INST.error(Loc::current(), "The value is nan!");
     }
@@ -3084,7 +3133,7 @@ class RTUtil
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);
     }
-    T range = (max_value - min_value) / 10;
+    T range = std::max(0.001, (max_value - min_value) / 10);
     return retainPlaces(range, digit);
   }
 

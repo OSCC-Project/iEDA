@@ -722,13 +722,14 @@ unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
     auto* own_vertex = path_delay_data->get_own_vertex();
     dump_delay_yaml.set_analysis_mode(path_delay_data->get_delay_type());
     dump_delay_yaml.set_trans_type(path_delay_data->get_trans_type());
-    own_vertex->exec(dump_delay_yaml);
 
     if (last_vertex) {
       auto snk_arcs = last_vertex->getSnkArc(own_vertex);
       auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
       snk_arc->exec(dump_delay_yaml);
     }
+
+    own_vertex->exec(dump_delay_yaml);
 
     last_vertex = own_vertex;
 
