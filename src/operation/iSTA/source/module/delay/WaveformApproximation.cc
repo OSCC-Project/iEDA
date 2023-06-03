@@ -84,13 +84,22 @@ PiModel WaveformApproximation::calNodePIModel(LaplaceMoments* node_moments) {
   double y1 = node_moments->y1;
   double y2 = node_moments->y2;
   double y3 = node_moments->y3;
-  double C1 = pow(y2, 2) / y3;
-  double C2 = y1 - pow(y2, 2) / y3;
-  double R = -pow(y3, 2) / pow(y2, 3);
+
   PiModel pi_model{0, 0, 0};
-  pi_model.C_near = C2;
-  pi_model.R = R;
-  pi_model.C_far = C1;
+  if (!IsDoubleEqual(y2, 0.0) && !IsDoubleEqual(y3, 0.0)) {
+    double C1 = pow(y2, 2) / y3;
+    double C2 = y1 - pow(y2, 2) / y3;
+    double R = -pow(y3, 2) / pow(y2, 3);
+
+    pi_model.C_near = C2;
+    pi_model.R = R;
+    pi_model.C_far = C1;
+  } else {
+    pi_model.C_near = y1;
+    pi_model.R = 0;
+    pi_model.C_far = 0;
+  }
+
   return pi_model;
 }
 
@@ -104,7 +113,12 @@ PiModel WaveformApproximation::calNodePIModel(LaplaceMoments* node_moments) {
 PiModel WaveformApproximation::reduceRCTreeToPIModel(
     RctNode* root, double load_nodes_pin_cap_sum) {
   LaplaceMoments* root_moments = calMomentsByDFS(root);
-  return calNodePIModel(root_moments);
+
+  PiModel pi_model{0, 0, 0};
+  pi_model = calNodePIModel(root_moments);
+  pi_model.C_far += load_nodes_pin_cap_sum;
+
+  return pi_model;
 }
 
 /**
@@ -116,8 +130,10 @@ PiModel WaveformApproximation::reduceRCTreeToPIModel(
 LaplaceMoments* WaveformApproximation::calMomentsByDFS(RctNode* the_node) {
   the_node->set_is_visited_ecm(true);
   LaplaceMoments* the_node_moments = the_node->get_moments();
-  if (the_node->get_fanout().size() == 1 && the_node->get_obj()) {
-    the_node_moments->y1 = the_node->get_cap();
+
+  if (the_node->get_obj() && !the_node->isRoot()) {
+    // the node is leaf node.
+    the_node_moments->y1 = the_node->cap();
     the_node_moments->y2 = 0;
     the_node_moments->y3 = 0;
     return the_node_moments;
@@ -130,6 +146,7 @@ LaplaceMoments* WaveformApproximation::calMomentsByDFS(RctNode* the_node) {
       // the_node_moments->y3 += propagate_Y.y3;
     }
   }
+
   the_node_moments->y1 += the_node->get_cap();
   return the_node_moments;
 }
@@ -138,17 +155,19 @@ LaplaceMoments WaveformApproximation::propagateY(RctEdge* the_edge) {
   double R = the_edge->get_res();
   LaplaceMoments* load_moments = calMomentsByDFS(&(the_edge->get_to()));
   RctNode* from_node = &(the_edge->get_from());
-  double from_y1 = the_edge->get_to().get_moments()->y1;
   double load_y1 = load_moments->y1;
   double load_y2 = load_moments->y2;
   double load_y3 = load_moments->y3;
-  from_y1 = load_y1;
+
+  double from_y1 = load_y1;
   double from_y2 = load_y2 - R * pow(from_y1, 2);
   double from_y3 =
       load_y3 - 2 * R * load_y1 * load_y2 + pow(R, 2) * pow(load_y1, 3);
+
   from_node->get_moments()->y1 += from_y1;
   from_node->get_moments()->y2 += from_y2;
   from_node->get_moments()->y3 += from_y3;
+
   LaplaceMoments* from_node_moments = from_node->get_moments();
   return *from_node_moments;
 }
@@ -158,8 +177,8 @@ double WaveformApproximation::calInputWaveformThresholdByCeff(
     Eigen::MatrixXd& time, int step_num, TransType trans_type,
     double input_slew, LibertyArc* lib_arc) {
   WaveformApproximation waveform;
-  PiModel pi_model =
-      waveform.reduceRCTreeToPIModel(rc_tree.get_root(), load_nodes_pin_cap_sum);
+  PiModel pi_model = waveform.reduceRCTreeToPIModel(rc_tree.get_root(),
+                                                    load_nodes_pin_cap_sum);
   double cap = pi_model.C_near + pi_model.C_far;
   int iter_num = 500;
   double Ceff = 0;
