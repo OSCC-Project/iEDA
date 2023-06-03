@@ -405,14 +405,10 @@ std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_no
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       std::pair<irt_int, irt_int>& via_idx = via_node.get_via_idx();
       ViaMaster& via_master = layer_via_master_list[via_idx.first][via_idx.second];
-
-      const LayerRect& below_enclosure = via_master.get_below_enclosure();
-      PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, via_node);
-      layer_rect_map[below_enclosure.get_layer_idx()].push_back(offset_below_enclosure);
-
-      const LayerRect& above_enclosure = via_master.get_above_enclosure();
-      PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, via_node);
-      layer_rect_map[above_enclosure.get_layer_idx()].push_back(offset_above_enclosure);
+      for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+        PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, via_node);
+        layer_rect_map[enclosure.get_layer_idx()].push_back(offset_enclosure);
+      }
     }
   }
   std::vector<LayerRect> real_rect_list;

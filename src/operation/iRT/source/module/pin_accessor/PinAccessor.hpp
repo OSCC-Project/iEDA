@@ -62,6 +62,7 @@ class PinAccessor
 
 #if 1  // access pa_model
   void accessPAModel(PAModel& pa_model);
+  void accessPANetList(PAModel& pa_model);
   void accessPANet(PAModel& pa_model, PANet& pa_net);
   void initAccessPointList(PAModel& pa_model, PANet& pa_net);
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
@@ -73,6 +74,8 @@ class PinAccessor
   void buildBoundingBox(PANet& pa_net);
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
+  void updateNetFenceRegionMap(PAModel& pa_model);
+  void eliminateConflict(PAModel& pa_model);
 #endif
 
 #if 1  // update pa_model
