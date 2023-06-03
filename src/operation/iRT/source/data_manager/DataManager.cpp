@@ -2005,7 +2005,7 @@ void DataManager::loadViolationRepairerResult(nlohmann::json& net_json, Net& net
     } else if (node_type == string("ViaNode")) {
       ViaNode& via_node = node->value().getNode<ViaNode>();
       via_node.set_net_idx(node_json["net_idx"]);
-      via_node.set_via_idx(make_pair(int(node_json["via_idx"]["first"]), int(node_json["via_idx"]["second"])));
+      via_node.set_via_idx(make_pair(irt_int(node_json["via_idx"]["first"]), irt_int(node_json["via_idx"]["second"])));
 
       irt_int x, y;
       istringstream(std::string(node_json["coord"])) >> x >> y;
