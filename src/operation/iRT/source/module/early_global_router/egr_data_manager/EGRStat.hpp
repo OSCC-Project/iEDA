@@ -30,8 +30,8 @@ class EGRStat
   EGRStat() = default;
   ~EGRStat() = default;
   // getter
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& get_overflow_map_list() { return _overflow_map_list; }
-  std::map<irt_int, irt_int, std::greater<int>>& get_total_overflow_map() { return _total_overflow_map; }
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& get_overflow_map_list() { return _overflow_map_list; }
+  std::map<irt_int, irt_int, std::greater<irt_int>>& get_total_overflow_map() { return _total_overflow_map; }
   irt_int& get_total_track_overflow() { return _total_track_overflow; }
   std::vector<double>& get_wire_length_list() { return _wire_length_list; }
   std::vector<irt_int>& get_via_num_list() { return _via_num_list; }
@@ -39,11 +39,11 @@ class EGRStat
   irt_int& get_total_via_num() { return _total_via_num; }
 
   // setter
-  void set_overflow_map_list(const std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list)
+  void set_overflow_map_list(const std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& overflow_map_list)
   {
     _overflow_map_list = overflow_map_list;
   }
-  void set_total_overflow_map(const std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map)
+  void set_total_overflow_map(const std::map<irt_int, irt_int, std::greater<irt_int>>& total_overflow_map)
   {
     _total_overflow_map = total_overflow_map;
   }
@@ -54,8 +54,8 @@ class EGRStat
   void set_total_via_num(const irt_int& total_via_num) { _total_via_num = total_via_num; }
 
  private:
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>> _overflow_map_list;
-  std::map<irt_int, irt_int, std::greater<int>> _total_overflow_map;
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>> _overflow_map_list;
+  std::map<irt_int, irt_int, std::greater<irt_int>> _total_overflow_map;
   irt_int _total_track_overflow = 0;
   std::vector<double> _wire_length_list;
   std::vector<irt_int> _via_num_list;

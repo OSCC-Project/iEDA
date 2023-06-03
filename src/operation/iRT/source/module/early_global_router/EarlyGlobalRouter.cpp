@@ -223,7 +223,7 @@ void EarlyGlobalRouter::plot()
 
 void EarlyGlobalRouter::plotCongstLoc()
 {
-  const int kLevel = 9;
+  const irt_int kLevel = 9;
   irt_int node_data_type = 0;
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
   std::ofstream* gds_file = RTUtil::getOutputFileStream(_egr_data_manager.getConfig().temp_directory_path + "egr_congst_loc.gds");
@@ -237,7 +237,7 @@ void EarlyGlobalRouter::plotCongstLoc()
   irt_int x_size = layer_resource_map[0].get_x_size();
   irt_int y_size = layer_resource_map[0].get_y_size();
 
-  std::vector<std::vector<irt_int>> cong_map(x_size, std::vector<int>(y_size, 0));
+  std::vector<std::vector<irt_int>> cong_map(x_size, std::vector<irt_int>(y_size, 0));
   irt_int max_congestion_val = 0;
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); layer_idx++) {
     GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
@@ -456,7 +456,7 @@ void EarlyGlobalRouter::generateCoordPairList(EGRRoutingPackage& egr_routing_pac
 irt_int EarlyGlobalRouter::getMinCostLayerIdx(const PlanarCoord& planar_coord)
 {
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
-  std::vector<irt::RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
   irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
 
@@ -640,14 +640,14 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
 
   irt_int comb_size = static_cast<irt_int>(routing_segment_comb_list.size());
-  std::vector<int> pass_list(comb_size, 1);
+  std::vector<irt_int> pass_list(comb_size, 1);
   std::vector<double> cost_list(comb_size, 0);
   std::vector<double> avg_cost_list(comb_size, 0);
 #pragma omp parallel for schedule(static)
   for (size_t i = 0; i < routing_segment_comb_list.size(); ++i) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_comb_list[i];
     double& path_cost = cost_list[i];
-    int& pass = pass_list[i];
+    irt_int& pass = pass_list[i];
     for (size_t j = 0; j < routing_segment_list.size(); ++j) {
       Segment<LayerCoord>& routing_segment = routing_segment_list[j];
       LayerCoord& first_coord = routing_segment.get_first();
@@ -705,7 +705,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
 
   double min_path_cost = DBL_MAX;
   irt_int best_path_idx = -1;
-  for (int i = 0; i < comb_size; i++) {
+  for (irt_int i = 0; i < comb_size; i++) {
     if (pass_list[i] == 1) {
       best_routing_segment_list = routing_segment_comb_list[i];
       return true;
@@ -813,7 +813,7 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
 
   std::vector<irt_int> inflection_x_list;
   std::vector<irt_int> inflection_y_list;
-  for (int i = 1; i <= scope; ++i) {
+  for (irt_int i = 1; i <= scope; ++i) {
     if (!RTUtil::isHorizontal(start_coord, end_coord)) {
       if (start_x - i > die_lb_x) {
         inflection_x_list.push_back(start_x - i);
@@ -1230,9 +1230,9 @@ void EarlyGlobalRouter::calcuCongestion()
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
   std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
   irt_int& total_track_overflow = egr_stat.get_total_track_overflow();
-  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_stat.get_total_overflow_map();
+  std::map<irt_int, irt_int, std::greater<irt_int>>& total_overflow_map = egr_stat.get_total_overflow_map();
 
   overflow_map_list.resize(routing_layer_list.size());
   std::vector<EGRResourceType> resource_types(
@@ -1240,7 +1240,7 @@ void EarlyGlobalRouter::calcuCongestion()
   // statistics
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); ++layer_idx) {
     GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
-    std::map<irt_int, irt_int, std::greater<int>>& overflow_map = overflow_map_list[layer_idx];
+    std::map<irt_int, irt_int, std::greater<irt_int>>& overflow_map = overflow_map_list[layer_idx];
     for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
       for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
         EGRNode& resource_node = resource_map[x][y];
@@ -1265,7 +1265,7 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   irt_int cell_width = _egr_data_manager.getConfig().cell_width;
   irt_int cell_height = _egr_data_manager.getConfig().cell_height;
-  std::vector<std::vector<irt::ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
   irt_int routing_layer_size = static_cast<irt_int>(egr_database.get_routing_layer_list().size());
   irt_int cut_layer_size = static_cast<irt_int>(egr_database.get_cut_layer_list().size());
   std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
@@ -1320,9 +1320,9 @@ void EarlyGlobalRouter::reportCongestion()
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();
   std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
   std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
   irt_int total_track_overflow = egr_stat.get_total_track_overflow();
-  std::map<irt_int, irt_int, std::greater<int>>& total_overflow_map = egr_stat.get_total_overflow_map();
+  std::map<irt_int, irt_int, std::greater<irt_int>>& total_overflow_map = egr_stat.get_total_overflow_map();
   std::vector<EGRResourceType> resource_types(
       {EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kWest, EGRResourceType::kEast});
   irt_int cell_num
@@ -1348,7 +1348,7 @@ void EarlyGlobalRouter::reportCongestion()
   irt_int v_overflow = 0;
   // report every layer
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); ++layer_idx) {
-    std::map<irt_int, irt_int, std::greater<int>>& overflow_map = overflow_map_list[layer_idx];
+    std::map<irt_int, irt_int, std::greater<irt_int>>& overflow_map = overflow_map_list[layer_idx];
     table << routing_layer_list[layer_idx].get_layer_name();
     for (irt_int i : overflow_num_list) {
       sprintf(c_buffer, "%d(%.2f%%)", overflow_map[i], overflow_map[i] * 100.0 / cell_num);
