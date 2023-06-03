@@ -57,13 +57,12 @@ class DetailedRouter
 #if 1  // build dr_model
   DRModel initDRModel(std::vector<DRNet>& dr_net_list);
   void buildDRModel(DRModel& dr_model);
-  void updateNetBlockageMap(DRModel& dr_model);
-  void updateNetFenceRegionMap(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);
-  std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> getDRTAListMap(DRNet& dr_net);
   DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
+  void updateNetBlockageMap(DRModel& dr_model);
+  void updateNetFenceRegionMap(DRModel& dr_model);
   void buildDRTaskPriority(DRModel& dr_model);
 #endif
 
@@ -87,7 +86,7 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildCostTaskMap(DRBox& dr_box);
+  void buildFenceTaskMap(DRBox& dr_box);
 #endif
 
 #if 1  // check dr_box
@@ -118,8 +117,7 @@ class DetailedRouter
   void rerouteByEnlarging(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
-  void rerouteByIgnoringENV(DRBox& dr_box);
-  void rerouteByIgnoringOBS(DRBox& dr_box);
+  void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void updatePathResult(DRBox& dr_box);
   void updateOrientationSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);

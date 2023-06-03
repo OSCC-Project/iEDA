@@ -567,22 +567,22 @@ class RTUtil
 
   static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
-    gtl::polygon_90_set_data<int> master_poly;
+    gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
       master_poly += RTUtil::convertToGTLRect(master);
     }
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
     master_poly *= rect_poly;
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, master_poly);
 
     std::vector<PlanarRect> overlap_rect_list;
-    for (gtl::rectangle_data<int>& overlap_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
       overlap_rect_list.emplace_back(RTUtil::convertToPlanarRect(overlap_rect));
     }
     return overlap_rect_list;
@@ -751,22 +751,22 @@ class RTUtil
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
-    gtl::polygon_90_set_data<int> master_poly;
+    gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
       master_poly += RTUtil::convertToGTLRect(master);
     }
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
     master_poly -= rect_poly;
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, master_poly);
 
     std::vector<PlanarRect> cutting_rect_list;
-    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
       cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
     return cutting_rect_list;
@@ -833,12 +833,12 @@ class RTUtil
 
   static std::vector<PlanarRect> getMergeRectList(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
   {
-    gtl::polygon_90_set_data<int> rect_poly;
+    gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
       rect_poly += RTUtil::convertToGTLRect(rect);
     }
 
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
     if (direction == Direction::kHorizontal) {
       gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::HORIZONTAL);
     } else if (direction == Direction::kVertical) {
@@ -848,7 +848,7 @@ class RTUtil
     }
 
     std::vector<PlanarRect> merge_rect_list;
-    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
       merge_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
     return merge_rect_list;
@@ -1079,6 +1079,18 @@ class RTUtil
   static PlanarRect getEnlargedRect(PlanarRect rect, irt_int enlarge_size, PlanarRect border)
   {
     PlanarRect enalrged_rect = getEnlargedRect(rect, enlarge_size);
+
+    enalrged_rect.set_lb(std::max(enalrged_rect.get_lb_x(), border.get_lb_x()), std::max(enalrged_rect.get_lb_y(), border.get_lb_y()));
+    enalrged_rect.set_rt(std::min(enalrged_rect.get_rt_x(), border.get_rt_x()), std::min(enalrged_rect.get_rt_y(), border.get_rt_y()));
+
+    return enalrged_rect;
+  }
+
+  // 在有最大外边界约束下扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, irt_int lb_x_minus_offset, irt_int lb_y_minus_offset, irt_int rt_x_add_offset,
+                                    irt_int rt_y_add_offset, PlanarRect border)
+  {
+    PlanarRect enalrged_rect = getEnlargedRect(rect, lb_x_minus_offset, lb_y_minus_offset, rt_x_add_offset, rt_y_add_offset);
 
     enalrged_rect.set_lb(std::max(enalrged_rect.get_lb_x(), border.get_lb_x()), std::max(enalrged_rect.get_lb_y(), border.get_lb_y()));
     enalrged_rect.set_rt(std::min(enalrged_rect.get_rt_x(), border.get_rt_x()), std::min(enalrged_rect.get_rt_y(), border.get_rt_y()));
@@ -1733,6 +1745,22 @@ class RTUtil
     return track_start + track_idx * track_pitch;
   }
 
+  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
+  static PlanarRect getTrackLineRect(PlanarRect rect, TrackAxis& track_axis)
+  {
+    irt_int x_start_line = track_axis.get_x_track_grid().get_start_line();
+    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
+    irt_int y_start_line = track_axis.get_y_track_grid().get_start_line();
+    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+    PlanarRect enlarge_real_rect = getEnlargedRect(rect, x_step_length, y_step_length, x_step_length, y_step_length);
+    PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
+    irt_int real_lb_x = x_start_line + enlarge_grid_rect.get_lb_x() * x_step_length;
+    irt_int real_rt_x = x_start_line + enlarge_grid_rect.get_rt_x() * x_step_length;
+    irt_int real_lb_y = y_start_line + enlarge_grid_rect.get_lb_y() * y_step_length;
+    irt_int real_rt_y = y_start_line + enlarge_grid_rect.get_rt_y() * y_step_length;
+    return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
+  }
+
 #endif
 
 #if 1  // irt数据结构工具函数
@@ -2247,53 +2275,89 @@ class RTUtil
     return getScaleList(begin_line, end_line, scale_grid, false, false);
   }
 
-  // 考虑的全部via below层
-  static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  /**
+   * 返回跳跃的层idx
+   * eg. curr_layer_idx: 3
+   *     layer_idx_list: [1 2 3 4 5 6 7 8]
+   *     return: [3 2 4 1 5 6 7 8]
+   */
+  static std::vector<irt_int> getJumpLayerIdxList(irt_int curr_layer_idx, std::vector<irt_int> layer_idx_list)
   {
-    std::vector<int> usage_layer_idx_list = getUsageLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
-    usage_layer_idx_list.pop_back();
-    return usage_layer_idx_list;
+    if (layer_idx_list.empty()) {
+      return layer_idx_list;
+    }
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    irt_int curr_i = -1;
+    if (layer_idx_list.back() < curr_layer_idx) {
+      curr_i = static_cast<irt_int>(layer_idx_list.size() - 1);
+    } else if (curr_layer_idx < layer_idx_list.front()) {
+      curr_i = 0;
+    } else {
+      for (size_t i = 0; i < layer_idx_list.size(); i++) {
+        if (curr_layer_idx == layer_idx_list[i]) {
+          curr_i = static_cast<irt_int>(i);
+          break;
+        }
+      }
+    }
+    std::vector<irt_int> result_layer_idx_list;
+    irt_int jump_step = 0;
+    while (result_layer_idx_list.size() != layer_idx_list.size()) {
+      if (jump_step % 2 == 0) {
+        result_layer_idx_list.push_back(layer_idx_list[curr_i + jump_step]);
+      } else {
+        result_layer_idx_list.push_back(layer_idx_list[curr_i + (-1 * jump_step)]);
+      }
+      jump_step++;
+    }
+    return result_layer_idx_list;
   }
 
-  // 获得可用的布线层
-  static std::vector<int> getUsageLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  // 考虑的全部via below层
+  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<int> layer_idx_list;
+    std::vector<irt_int> layer_idx_list;
+    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+      layer_idx_list.push_back(curr_layer_idx - 1);
+      layer_idx_list.push_back(curr_layer_idx);
+    } else if (curr_layer_idx <= bottom_layer_idx) {
+      for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
+      }
+    } else if (top_layer_idx <= curr_layer_idx) {
+      for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
+      }
+    }
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+    return layer_idx_list;
+  }
+
+  // 获得可用的布线层
+  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  {
+    if (bottom_layer_idx > top_layer_idx) {
+      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+    }
+    std::vector<irt_int> layer_idx_list;
     if (curr_layer_idx < bottom_layer_idx) {
-      for (int i = curr_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else if (top_layer_idx < curr_layer_idx) {
-      for (int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else {
-      for (int i = bottom_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     }
     return layer_idx_list;
-  }
-
-  // 获得全部的access层
-  static std::vector<std::vector<irt_int>> getAccessLayerIdxListGroup(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
-  {
-    std::vector<std::vector<irt_int>> access_layer_idx_list_group;
-    access_layer_idx_list_group.resize(2);
-
-    if (bottom_layer_idx > top_layer_idx) {
-      std::swap(bottom_layer_idx, top_layer_idx);
-    }
-    for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::max(curr_layer_idx, top_layer_idx); layer_idx++) {
-      access_layer_idx_list_group.front().push_back(layer_idx);
-    }
-    for (irt_int layer_idx = (curr_layer_idx - 1); layer_idx >= bottom_layer_idx; layer_idx--) {
-      access_layer_idx_list_group.back().push_back(layer_idx);
-    }
-    return access_layer_idx_list_group;
   }
 
 #endif
@@ -2772,9 +2836,14 @@ class RTUtil
    * notice : The closer the <value> is to the <threshold>, the closer the return value is to 1
    *
    */
-  static double sigmoid(const double value, const double threshold)
+  static double sigmoid(double value, double threshold)
   {
-    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / std::max(threshold, 0.01)))));
+    if (-0.01 < threshold && threshold < 0) {
+      threshold = -0.01;
+    } else if (0 <= threshold && threshold < 0.01) {
+      threshold = 0.01;
+    }
+    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / threshold))));
     if (std::isnan(result)) {
       LOG_INST.error(Loc::current(), "The value is nan!");
     }
@@ -3084,7 +3153,7 @@ class RTUtil
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);
     }
-    T range = (max_value - min_value) / 10;
+    T range = std::max(0.001, (max_value - min_value) / 10);
     return retainPlaces(range, digit);
   }
 

@@ -138,6 +138,7 @@ void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
   std::vector<Blockage>& routing_blockage_list = _pa_data_manager.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
+
   for (Blockage& routing_blockage : routing_blockage_list) {
     irt_int layer_idx = routing_blockage.get_layer_idx();
     irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
@@ -216,6 +217,13 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
 #if 1  // access pa_model
 
 void PinAccessor::accessPAModel(PAModel& pa_model)
+{
+  accessPANetList(pa_model);
+  updateNetFenceRegionMap(pa_model);
+  eliminateConflict(pa_model);
+}
+
+void PinAccessor::accessPANetList(PAModel& pa_model)
 {
   Monitor monitor;
 
@@ -516,6 +524,107 @@ void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
       }
       for (AccessPoint& access_point : candidate_access_point_list) {
         pin_access_point_list.push_back(access_point);
+      }
+    }
+  }
+}
+
+void PinAccessor::updateNetFenceRegionMap(PAModel& pa_model)
+{
+  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
+  irt_int bottom_routing_layer_idx = _pa_data_manager.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = _pa_data_manager.getConfig().top_routing_layer_idx;
+
+  std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
+
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    std::vector<LayerCoord> real_coord_list;
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      real_coord_list.push_back(pa_pin.getRealCoordList().front());
+    }
+    std::vector<LayerRect> net_fence_region_list;
+    for (LayerCoord& real_coord : real_coord_list) {
+      irt_int layer_idx = real_coord.get_layer_idx();
+      for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+        for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+          LayerRect via_shape;
+          via_shape.set_rect(RTUtil::getOffsetRect(enclosure, real_coord));
+          via_shape.set_layer_idx(enclosure.get_layer_idx());
+          net_fence_region_list.push_back(via_shape);
+        }
+      }
+    }
+    for (const LayerRect& net_fence_region : net_fence_region_list) {
+      irt_int layer_idx = net_fence_region.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
+      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+      for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+          layer_gcell_map[layer_idx][x][y].get_net_fence_region_map()[pa_net.get_net_idx()].push_back(enlarged_real_rect);
+        }
+      }
+    }
+  }
+}
+
+void PinAccessor::eliminateConflict(PAModel& pa_model)
+{
+  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
+  irt_int bottom_routing_layer_idx = _pa_data_manager.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = _pa_data_manager.getConfig().top_routing_layer_idx;
+
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        irt_int via_num = 0;
+        std::vector<irt_int> via_below_layer_idx_list
+            = RTUtil::getViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
+        for (irt_int via_below_layer_idx : RTUtil::getJumpLayerIdxList(access_point.get_layer_idx(), via_below_layer_idx_list)) {
+          bool has_confilct = false;
+          ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+          for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+            LayerRect via_shape(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
+            irt_int min_spacing = routing_layer_list[via_shape.get_layer_idx()].getMinSpacing(via_shape);
+            PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(via_shape, min_spacing, die.get_real_rect());
+            PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+            for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+              for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+                PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[via_shape.get_layer_idx()][x][y];
+                for (auto& [net_idx, region_list] : pa_gcell.get_net_fence_region_map()) {
+                  if (pa_net.get_net_idx() == net_idx) {
+                    continue;
+                  }
+                  for (const LayerRect& region : region_list) {
+                    if (RTUtil::isOpenOverlap(via_shape, region)) {
+                      has_confilct = true;
+                      goto here;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        here:
+          if (has_confilct) {
+            break;
+          } else {
+            via_num++;
+          }
+        }
+        via_num_access_point_map[via_num].push_back(access_point);
+      }
+      pa_pin.get_access_point_list().clear();
+      for (auto& [via_num, access_point_list] : via_num_access_point_map) {
+        pa_pin.get_access_point_list().insert(pa_pin.get_access_point_list().end(), access_point_list.begin(), access_point_list.end());
       }
     }
   }

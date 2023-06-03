@@ -33,7 +33,7 @@ class EGRRoutingPackage
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   LayerCoord& get_pin_coord() { return _pin_coord; }
   LayerCoord& get_seg_coord() { return _seg_coord; }
-  int get_number_calculated() { return _number_of_segments_with_distance_calculated; }
+  irt_int get_number_calculated() { return _number_of_segments_with_distance_calculated; }
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& get_min_distance_map() { return _min_distance_map; }
   std::vector<std::pair<LayerCoord, LayerCoord>>& get_topo_coord_pair_list() { return _topo_coord_pair_list; }
   std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC>& get_planar_coord_layer_map() { return _planar_coord_layer_map; }

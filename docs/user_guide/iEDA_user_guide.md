@@ -689,27 +689,27 @@ cd <sky130 path>
 
 全流程自动运行，前后流程的输入、输出已在脚本中配置好且存在先后依赖关系，如下表所示
 
-| Flow                               | Script                                                           | Config                                    | Design Input                       | Design Output                                                           | Report                                                                                                  |
-| :--------------------------------- | :--------------------------------------------------------------- | :---------------------------------------- | :--------------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
-| 布图规划 (Floorpan)                | ./iEDA -script ./script/iFP_script/run_iFP.tcl                   |                                           | ./result/verilog/gcd.v             | ./result/iFP_result.def<br> ./result/iFP_result.v                       | ./result/report/fp_db.rpt                                                                               |
-| 网表优化（Fix Fanout）             | ./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl        | ./iEDA_config/cts_default_config.json     | ./result/iFP_result.def            | ./result/iTO_fix_fanout_result.def<br> ./result/iTO_fix_fanout_result.v | ./result/report/fixfanout_db.rpt                                                                        |
-| 布局 (Placement)                   | ./iEDA -script ./script/iPL_script/run_iPL.tcl                   | ./iEDA_config/pl_default_config.json      | ./result/iTO_fix_fanout_result.def | ./result/iPL_result.def<br> ./result/iPL_result.v                       | ./result/report/pl_db.rpt                                                                               |
-| 布局结果评估 (评估线长和拥塞)      | ./iEDA -script ./script/iPL_script/run_iPL_eval.tcl              |                                           | ./result/iPL_result.def            |                                                                         | ./result/report/eval/iPL_result_wirelength.rpt<br> ./result/report/eval/iPL_result_congestion.rpt       |
-| 时钟树综合 (CTS)                   | ./iEDA -script ./script/iCTS_script/run_iCTS.tcl                 | ./iEDA_config/cts_default_config.json     | ./result/iPL_result.def            | ./result/iCTS_result.def<br> ./result/iCTS_result.v                     | ./result/report/cts_db.rpt                                                                              |
-| 时钟树综合结果评估 (评估线长)      | ./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl            |                                           | ./result/iCTS_result.def           |                                                                         | ./result/report/eval/iCTS_result_wirelength.rpt                                                         |
-| 时钟树综合时序评估 (评估时序)      | ./iEDA -script ./script/iCTS_script/run_iCTS_STA.tcl             |                                           | ./result/iCTS_result.def           |                                                                         | ./result/cts/sta/                                                                                       |
-| 修复DRV违例 (Fix DRV Violation)    | ./iEDA -script ./script/iTO_script/run_iTO_drv.tcl               | ./iEDA_config/to_default_config_drv.json  | ./result/iCTS_result.def           | ./result/iTO_drv_result.def<br> ./result/iTO_drv_result.v               | ./result/report/drv_db.rpt                                                                              |
-| Fix DRV结果评估 (评估时序)         | ./iEDA -script ./script/iTO_script/run_iTO_drv_STA.tcl           |                                           | ./result/iTO_drv_result.def        |                                                                         | ./result/to/drv/sta/                                                                                    |
-| 修复Hold违例（Fix Hold Violation） | ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl              | ./iEDA_config/to_default_config_hold.json | ./result/iTO_drv_result.def        | ./result/iTO_hold_result.def<br> ./result/iTO_hold_result.v             | ./result/report/hold_db.rpt                                                                             |
-| Fix Hold结果评估（评估时序）       | ./iEDA -script ./script/iTO_script/run_iTO_hold_STA.tcl          |                                           | ./result/iTO_hold_result.def       |                                                                         | ./result/to/hold/sta/                                                                                   |
-| 单元合法化（Legalization）         | ./iEDA -script ./script/iPL_script/run_iPL_legalization.tcl      |                                           | ./result/iTO_hold_result.def       | ./result/iPL_lg_result.def<br> ./result/iPL_lg_result.v                 | ./result/report/lg_db.rpt                                                                               |  |
-| 合法化结果评估（评估线长和拥塞）   | ./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl |                                           | ./result/iPL_lg_result.def         |                                                                         | ./result/report/eval/iPL_lg_result_wirelength.rpt<br> ./result/report/eval/iPL_lg_result_congestion.rpt |  |
-| 布线 （Routing）                   | ./iEDA -script ./script/iRT_script/run_iRT.tcl                   |                                           | ./result/iPL_lg_result.def         | ./result/iRT_result.def ./result/iRT_result.v                           | ./result/report/rt_db.rpt                                                                               |
-| 布线结果评估（评估线长）           | ./iEDA -script ./script/iRT_script/run_iRT_eval.tcl              |                                           | ./result/iRT_result.def            |                                                                         | ./result/report/eval/iRT_result_wirelength.rpt                                                          |
-| 布线结果评估 （评估时序）          | ./iEDA -script ./script/iRT_script/run_iRT_STA.tcl               |                                           | ./result/iRT_result.def            |                                                                         | ./result/rt/sta/                                                                                        |
-| 布线结果DRC                        | ./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl               |                                           | ./result/iRT_result.def            |                                                                         | ./result/report/drc/iRT_drc.rpt                                                                         |
-| 单元填充 （Filler）                | ./iEDA -script ./script/iPL_script/run_iPL_filler.tcl            | ./iEDA_config/pl_default_config.json      | ./result/iRT_result.def            | ./result/iPL_filler_result.def<br> ./result/iPL_filler_result.v         | ./result/report/filler_db.rpt                                                                           |
-| DEF转GDSII                         | ./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl        |                                           | ./result/iPL_filler_result.def     | ./result/final_design.gds2                                              |                                                                                                         |
+| Flow                               | Script                                                           | Config                                    | Design Input                                                | Design Output                                                                                               | Report                                                                                                |
+| :--------------------------------- | :--------------------------------------------------------------- | :---------------------------------------- | :---------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| 布图规划 (Floorpan)                | ./iEDA -script ./script/iFP_script/run_iFP.tcl                   |                                           | ./result/verilog/gcd.v                                      | ./result/iFP_result.def<br> ./result/iFP_result.v                                                       | ./result/report/fp_db.rpt                                                                             |
+| 网表优化（Fix Fanout）             | ./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl        | ./iEDA_config/cts_default_config.json     | ./result/iFP_result.def                                     | ./result/iTO_fix_fanout_result.def<br> ./result/iTO_fix_fanout_result.v                                 | ./result/report/fixfanout_db.rpt                                                                      |
+| 布局 (Placement)                   | ./iEDA -script ./script/iPL_script/run_iPL.tcl                   | ./iEDA_config/pl_default_config.json      | ./result/iTO_fix_fanout_result.def                          | ./result/iPL_result.def<br> ./result/iPL_result.v                                                       | ./result/report/pl_db.rpt                                                                             |
+| 布局结果评估 (评估线长和拥塞)      | ./iEDA -script ./script/iPL_script/run_iPL_eval.tcl              |                                           | ./result/iPL_result.def                                     |                                                                                                             | ./result/report/eval/iPL_result_wirelength.rpt<br> ./result/report/eval/iPL_result_congestion.rpt |
+| 时钟树综合 (CTS)                   | ./iEDA -script ./script/iCTS_script/run_iCTS.tcl                 | ./iEDA_config/cts_default_config.json     | ./result/iPL_result.def                                     | ./result/iCTS_result.def<br> ./result/iCTS_result.v                                                     | ./result/report/cts_db.rpt                                                                            |
+| 时钟树综合结果评估 (评估线长)      | ./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl            |                                           | ./result/iCTS_result.def                                    |                                                                                                             | ./result/report/eval/iCTS_result_wirelength.rpt                                                       |
+| 时钟树综合时序评估 (评估时序)      | ./iEDA -script ./script/iCTS_script/run_iCTS_STA.tcl             |                                           | ./result/iCTS_result.def                                    |                                                                                                             | ./result/cts/sta/                                                                                     |
+| 修复DRV违例 (Fix DRV Violation)    | ./iEDA -script ./script/iTO_script/run_iTO_drv.tcl               | ./iEDA_config/to_default_config_drv.json  | ./result/iCTS_result.def                                    | ./result/iTO_drv_result.def<br> ./result/iTO_drv_result.v                                               | ./result/report/drv_db.rpt                                                                            |
+| Fix DRV结果评估 (评估时序)         | ./iEDA -script ./script/iTO_script/run_iTO_drv_STA.tcl           |                                           | ./result/iTO_drv_result.def                                 |                                                                                                             | ./result/to/drv/sta/                                                                                  |
+| 修复Hold违例（Fix Hold Violation） | ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl              | ./iEDA_config/to_default_config_hold.json | ./result/iTO_drv_result.def                                 | ./result/iTO_hold_result.def<br> ./result/iTO_hold_result.v                                             | ./result/report/hold_db.rpt                                                                           |
+| Fix Hold结果评估（评估时序）       | ./iEDA -script ./script/iTO_script/run_iTO_hold_STA.tcl          |                                           | ./result/iTO_hold_result.def                                |                                                                                                             | ./result/to/hold/sta/                                                                                 |
+| 单元合法化（Legalization）         |  ./iEDA -script ./script/iPL_script/run_iPL_legalization.tcl    | ./iEDA_config/pl_default_config.json | ./result/iTO_hold_result.def              | ./result/iPL_lg_result.def<br> ./result/iPL_lg_result.v | ./result/report/lg_db.rpt                                                                                   |                                                                                                       |
+| 合法化结果评估（评估线长和拥塞）   | ./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl | | ./result/iPL_lg_result.def                |                                                             | ./result/report/eval/iPL_lg_result_wirelength.rpt<br> ./result/report/eval/iPL_lg_result_congestion.rpt |                                                                                                       |
+| 布线 （Routing）                   | ./iEDA -script ./script/iRT_script/run_iRT.tcl                   |                                           | ./result/iPL_lg_result.def                                  | ./result/iRT_result.def ./result/iRT_result.v                                                               | ./result/report/rt_db.rpt                                                                             |
+| 布线结果评估（评估线长）           | ./iEDA -script ./script/iRT_script/run_iRT_eval.tcl              |                                           | ./result/iRT_result.def                                     |                                                                                                             | ./result/report/eval/iRT_result_wirelength.rpt                                                        |
+| 布线结果评估 （评估时序）          | ./iEDA -script ./script/iRT_script/run_iRT_STA.tcl               |                                           | ./result/iRT_result.def                                     |                                                                                                             | ./result/rt/sta/                                                                                      |
+| 布线结果DRC                        | ./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl               | ./iEDA_config/drc_default_config.json | ./result/iRT_result.def                                     |                                                                                                             | ./result/report/drc/iRT_drc.rpt                                                                       |
+| 单元填充 （Filler）                | ./iEDA -script ./script/iPL_script/run_iPL_filler.tcl            | ./iEDA_config/pl_default_config.json      | ./result/iRT_result.def                                     | ./result/iPL_filler_result.def<br> ./result/iPL_filler_result.v                                         | ./result/report/filler_db.rpt                                                                         |
+| DEF转GDSII                         | ./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl        |                                           | ./result/iPL_filler_result.def                              | ./result/final_design.gds2                                                                                  |                                                                                                       |
 
 #### 布图规划 (Floorplan)
 **执行脚本**<br>
@@ -823,6 +823,52 @@ step 3: 查看GUI
 ./iEDA -script ./script/iPL_script/run_iPL.tcl 
 ```
 **参数配置**<br>
+参考iEDA_config/pl_default_config.json: `./scripts/sky130/iEDA_config/pl_default_config.json`
+
+| JSON参数                                      | 功能说明                                                                                                                    | 参数范围                     | 默认值        |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------- |
+| is_max_length_opt                             | 是否开启最大线长优化                                                                                                        | [0,1]                        | 0             |
+| max_length_constraint                         | 指定最大线长                                                                                                                | [0-1000000]                  | 1000000       |
+| is_timing_aware_mode                          | 是否开启时序模式                                                                                                            | [0,1]                        | 0             |
+| ignore_net_degree                             | 忽略超过指定pin个数的线网                                                                                                   | [10-10000]                   | 100           |
+| num_threads                                   | 指定的CPU线程数                                                                                                             | [1-64]                       | 8             |
+| [GP-Wirelength] init_wirelength_coef          | 设置初始线长系数                                                                                                            | [0.0-1.0]                    | 0.25          |
+| [GP-Wirelength] reference_hpwl                | 调整密度惩罚的参考线长                                                                                                      | [100-1000000]                | 446000000     |
+| [GP-Wirelength] min_wirelength_force_bar      | 控制线长边界                                                                                                                | [-1000-0]                    | -300          |
+| [GP-Density] target_density                   | 指定的目标密度                                                                                                              | [0.0-1.0]                    | 0.8           |
+| [GP-Density] bin_cnt_x                        | 指定水平方向上Bin的个数                                                                                                     | [16,32,64,128,256,512,1024]  | 512           |
+| [GP-Density] bin_cnt_y                        | 指定垂直方向上Bin的个数                                                                                                     | [16,32,64,128,256,512,1024]  | 512           |
+| [GP-Nesterov] max_iter                        | 指定最大的迭代次数                                                                                                          | [50-2000]                    | 2000          |
+| [GP-Nesterov] max_backtrack                   | 指定最大的回溯次数                                                                                                          | [0-100]                      | 10            |
+| [GP-Nesterov] init_density_penalty            | 指定初始状态的密度惩罚                                                                                                      | [0.0-1.0]                    | 0.00008       |
+| [GP-Nesterov] target_overflow                 | 指定目标的溢出值                                                                                                            | [0.0-1.0]                    | 0.1           |
+| [GP-Nesterov] initial_prev_coordi_update_coef | 初始扰动坐标时的系数                                                                                                        | [10-10000]                   | 100           |
+| [GP-Nesterov] min_precondition                | 设置precondition的最小值                                                                                                    | [1-100]                      | 1             |
+| [GP-Nesterov] min_phi_coef                    | 设置最小的phi参数                                                                                                           | [0.0-1.0]                    | 0.95          |
+| [GP-Nesterov] max_phi_coef                    | 设置最大的phi参数                                                                                                           | [0.0-1.0]                    | 1.05          |
+| [BUFFER] max_buffer_num                       | 指定限制最大buffer插入个数                                                                                                  | [0-1000000]                  | 35000         |
+| [BUFFER] buffer_type                          | 指定可插入的buffer类型名字                                                                                                  | 工艺相关                     | 列表[...,...] |
+| [LG] max_displacement                         | 指定单元的最大移动量                                                                                                        | [10000-1000000]              | 50000         |
+| [LG] global_right_padding                     | 指定单元间的间距（以Site为单位）                                                                                            | [0,1,2,3,4...]               | 1             |
+| [DP] max_displacement                         | 指定单元的最大移动量                                                                                                        | [10000-1000000]              | 50000         |
+| [DP] global_right_padding                     | 指定单元间的间距（以Site为单位）                                                                                            | [0,1,2,3,4...]               | 1             |
+| [Filler] first_iter                           | 指定第一轮迭代使用的Filler                                                                                                  | 工艺相关                     | 列表[...,...] |
+| [Filler] second_iter                          | 指定第二轮迭代使用的Filler                                                                                                  | 工艺相关                     | 列表[...,...] |
+| [Filler] min_filler_width                     | 指定Filler的最小宽度（以Site为单位）                                                                                        | 工艺相关                     | 1             |
+| [MP] fixed_macro                              | 指定固定的宏单元 (string macro_name)                                                                                        | 设计相关                     | 列表[...,...] |
+| [MP] fixed_macro_coordinate                   | 指定固定宏单元的位置坐标（int location_x, int location_y）                                                                  | 设计相关                     | 列表[...,...] |
+| [MP] blockage                                 | 指定宏单元阻塞矩形区域，宏单元应该避免摆放在该区域（int left_bottom_x, int left_bottom_y, int right_top_x, int right_top_y) | 设计相关                     | 列表[...,...] |
+| [MP] guidance_macro                           | 指定指导摆放宏单元，每个宏单元可以设置期望摆放的区域 (string macro_name)                                                    | 设计相关                     | 列表[...,...] |
+| [MP] guidance                                 | 指定对应宏单元的指导摆放区域（int left_bottom_x, int left_bottom_y, int right_top_x, int right_top_y）                      | 设计相关                     | 列表[...,...] |
+| [MP] solution_type                            | 指定解的表示方式                                                                                                            | ["BStarTree","SequencePair"] | "BStarTree"   |
+| [MP] perturb_per_step                         | 指定模拟退火每步扰动次数                                                                                                    | [10-1000]                    | 100           |
+| [MP] cool_rate                                | 指定模拟退火温度冷却率                                                                                                      | [0.0-1.0]                    | 0.92          |
+| [MP] parts                                    | 指定标准单元划分数（int)                                                                                                    | [10-100]                     | 66            |
+| [MP] ufactor                                  | 指定标准单元划分不平衡值 (int)                                                                                              | [10-1000]                    | 100           |
+| [MP] new_macro_density                        | 指定虚拟宏单元密度                                                                                                          | [0.0-1.0]                    | 0.6           |
+| [MP] halo_x                                   | 指定宏单元的halo（横向）                                                                                                    | [0-1000000]                  | 0             |
+| [MP] halo_y                                   | 指定宏单元的halo（纵向）                                                                                                    | [0-1000000]                  | 0             |
+| [MP] output_path                              | 指定输出文件路径                                                                                                            |                              | "./result/pl" |
 
 **输入**<br>
 - ./result/iTO_fix_fanout_result.def
@@ -833,6 +879,13 @@ step 3: 查看GUI
 
 **评测和报告**<br>
 - ./result/report/pl_db.rpt
+
+iPL工具的中间报告默认存放在目录：`./scripts/sky130/result/pl/`
+
+* report/violation_record.txt ：布局违例的单元
+* report/wirelength_record.txt ：布局的HPWL线长、STWL线长以及长线线长统计
+* report/density_record.txt ：布局的峰值bin密度
+* report/timing_record.txt ：布局的时序信息（wns、tns），调用Flute进行简易绕线
 
 **GUI**<br>
 step 1：修改脚本 ./script/iGUI_script/run_iGUI.tcl 的输入设计 def 为 ./result/iPL_result.def
@@ -902,6 +955,32 @@ step 3: 查看GUI
 ```
 **参数配置**<br>
 
+参考"./scripts/sky130/iEDA_config/to_default_config_drv.json"
+
+<div><a name="drv_tab"></a>
+
+| 参数名                                 | 默认值                 | 说明                                                         |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------ |
+| design_work_space                      | ./result/to            | 设置运行过程的工作区路径                                     |
+| sdc_file                               |                        | 无效参数，后续删除                                           |
+| lib_files                              |                        | 无效参数，后续删除                                           |
+| lef_files                              |                        | 无效参数，后续删除                                           |
+| def_file                               |                        | 无效参数，后续删除                                           |
+| output_def                             |                        | 无效参数，后续删除                                           |
+| report_file                            | ./result/to/report.txt | 优化过程产生的报告                                           |
+| gds_file                               | ./result/to/to.gds     | 生成的GDS文件路径，默认不会生成该文件                        |
+| setup_slack_margin                     | 0.0                    | setup slack小于该值时认为违例，也是slack优化的目标           |
+| hold_slack_margin                      | 0.0                    | hold slack小于该值时认为违例，也是slack优化的目标            |
+| max_buffer_percent                     | 0.2                    | 缓冲器插入的面积占芯片面积的最大比例                         |
+| max_utilization                        | 0.8                    | 缓冲器插入后的面积+其他单元的面积，占芯片面积的最大比例      |
+| DRV_insert_buffers                     | sky130_fd_sc_hs__buf_8 | 优化DRV时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| setup_insert_buffers                   | sky130_fd_sc_hs__buf_8 | 优化setup时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| hold_insert_buffers                    | sky130_fd_sc_hs__buf_8 | 优化hold时使用的缓冲器（需要针对设计指定），为空时会自动从缓冲器库中选择 |
+| number_passes_allowed_decreasing_slack | 5                      | 迭代优化setup时，允许WNS不断变差的最大连续迭代次数           |
+| rebuffer_max_fanout                    | 20                     | 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化  |
+| split_load_min_fanout                  | 8                      | 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低  |
+</div>
+
 **输入**<br>
 - ./result/iCTS_result.def
 
@@ -918,6 +997,11 @@ step 3: 查看GUI
 ./iEDA -script ./script/iTO_script/run_iTO_hold.tcl
 ```
 **参数配置**<br>
+
+参考"./scripts/sky130/iEDA_config/to_default_config_hold.json"
+
+参数详细信息同[修复DRV违例](#drv_tab)
+
 
 **输入**<br>
 - ./result/iTO_drv_result.def

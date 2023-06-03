@@ -25,8 +25,9 @@ namespace irt {
 enum class TARouteStrategy
 {
   kNone = 0,
-  kIgnoringOBS = 1,
-  kIgnoringENV = 2
+  kIgnoringFence = 1,
+  kIgnoringENV = 2,
+  kIgnoringOBS = 3
 };
 
 struct GetTARouteStrategyName
@@ -38,11 +39,14 @@ struct GetTARouteStrategyName
       case TARouteStrategy::kNone:
         ta_route_strategy_name = "none";
         break;
-      case TARouteStrategy::kIgnoringOBS:
-        ta_route_strategy_name = "ignoring_obs";
+      case TARouteStrategy::kIgnoringFence:
+        ta_route_strategy_name = "ignoring_fence";
         break;
       case TARouteStrategy::kIgnoringENV:
         ta_route_strategy_name = "ignoring_env";
+        break;
+      case TARouteStrategy::kIgnoringOBS:
+        ta_route_strategy_name = "ignoring_obs";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
