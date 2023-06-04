@@ -2313,6 +2313,19 @@ class RTUtil
     return result_layer_idx_list;
   }
 
+  static std::vector<std::vector<irt_int>> getViaBelowLayerIdxGroup(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  {
+    std::vector<std::vector<irt_int>> result_layer_idx_group;
+    result_layer_idx_group.resize(2);
+    for (irt_int layer_idx = curr_layer_idx; layer_idx < top_layer_idx; layer_idx++) {
+      result_layer_idx_group[0].push_back(layer_idx);
+    }
+    for (irt_int layer_idx = curr_layer_idx - 1; layer_idx >= bottom_layer_idx; layer_idx--) {
+      result_layer_idx_group[1].push_back(layer_idx);
+    }
+    return result_layer_idx_group;
+  }
+
   // 考虑的全部via below层
   static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
