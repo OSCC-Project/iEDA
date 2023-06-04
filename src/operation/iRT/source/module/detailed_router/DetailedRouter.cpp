@@ -137,9 +137,9 @@ void DetailedRouter::buildDRTaskList(DRModel& dr_model)
 
 std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net)
 {
+  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
   // dr_ta_list_map
   std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
-  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
   std::vector<Segment<TNode<RTNode>*>> segment_list = RTUtil::getSegListByTree(dr_result_tree);
   if (dr_result_tree.get_root() != nullptr && segment_list.empty()) {
     // local net
@@ -156,28 +156,28 @@ std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net
   // dr_node_task_map
   std::map<TNode<RTNode>*, DRTask> dr_node_task_map;
   for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
-    RTNode& dr_node = dr_node_node->value();
     PlanarRect dr_base_region = dr_node_node->value().get_first_guide().get_rect();
+    std::vector<DRGroup>& dr_group_list = dr_node_task_map[dr_node_node].get_dr_group_list();
 
-    std::vector<DRGroup> dr_group_list;
-    for (irt_int pin_idx : dr_node.get_pin_idx_set()) {
+    std::vector<LayerCoord> pin_coord_list;
+    for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
       DRGroup dr_group;
       for (LayerCoord& real_coord : dr_net.get_dr_pin_list()[pin_idx].getRealCoordList()) {
         if (RTUtil::isInside(dr_base_region, real_coord)) {
+          pin_coord_list.push_back(real_coord);
           dr_group.get_coord_orientation_map()[real_coord].insert({});
         }
       }
       dr_group_list.push_back(dr_group);
     }
     for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
-      dr_group_list.push_back(makeDRGroup(dr_node_node, ta_node_node));
+      dr_group_list.push_back(makeDRGroup(dr_node_node, ta_node_node, pin_coord_list));
     }
-    dr_node_task_map[dr_node_node].set_dr_group_list(dr_group_list);
   }
   return dr_node_task_map;
 }
 
-DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node)
+DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -197,16 +197,32 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
     irt_int first_y = first_coord.get_y();
     PlanarCoord& second_coord = cutting_segment.get_second();
     if (RTUtil::isHorizontal(first_coord, second_coord)) {
-      for (RoutingLayer& routing_layer : routing_layer_list) {
-        for (irt_int x : RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGrid())) {
-          dr_group.get_coord_orientation_map()[LayerCoord(x, first_y, ta_layer_idx)].insert({Orientation::kEast, Orientation::kWest});
+      std::set<irt_int> x_scale_set;
+      for (LayerCoord& pin_coord : pin_coord_list) {
+        if (first_x <= pin_coord.get_x() && pin_coord.get_x() <= second_coord.get_x()) {
+          x_scale_set.insert(pin_coord.get_x());
         }
       }
-    } else if (RTUtil::isVertical(first_coord, second_coord)) {
       for (RoutingLayer& routing_layer : routing_layer_list) {
-        for (irt_int y : RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGrid())) {
-          dr_group.get_coord_orientation_map()[LayerCoord(first_x, y, ta_layer_idx)].insert({Orientation::kSouth, Orientation::kNorth});
+        std::vector<irt_int> x_scale_list = RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGrid());
+        x_scale_set.insert(x_scale_list.begin(), x_scale_list.end());
+      }
+      for (irt_int x : x_scale_set) {
+        dr_group.get_coord_orientation_map()[LayerCoord(x, first_y, ta_layer_idx)].insert({Orientation::kEast, Orientation::kWest});
+      }
+    } else if (RTUtil::isVertical(first_coord, second_coord)) {
+      std::set<irt_int> y_scale_set;
+      for (LayerCoord& pin_coord : pin_coord_list) {
+        if (first_y <= pin_coord.get_y() && pin_coord.get_y() <= second_coord.get_y()) {
+          y_scale_set.insert(pin_coord.get_y());
         }
+      }
+      for (RoutingLayer& routing_layer : routing_layer_list) {
+        std::vector<irt_int> y_scale_list = RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGrid());
+        y_scale_set.insert(y_scale_list.begin(), y_scale_list.end());
+      }
+      for (irt_int y : y_scale_set) {
+        dr_group.get_coord_orientation_map()[LayerCoord(first_x, y, ta_layer_idx)].insert({Orientation::kSouth, Orientation::kNorth});
       }
     } else if (RTUtil::isProximal(first_coord, second_coord)) {
       LOG_INST.error(Loc::current(), "The ta segment is proximal!");
@@ -720,16 +736,13 @@ void DetailedRouter::buildPlanarNeighbor(std::vector<LayerCoord>& new_coord_list
     irt_int min_scale = -1;
     irt_int max_scale = INT32_MAX;
     for (irt_int scale : scale_list) {
-      if (scale <= base_scale) {
+      if (scale < base_scale) {
         min_scale = scale;
       }
-      if (base_scale <= scale) {
+      if (base_scale < scale) {
         max_scale = scale;
         break;
       }
-    }
-    if (min_scale == max_scale) {
-      return;
     }
     irt_int lb_scale = -1;
     irt_int rt_scale = INT32_MAX;
@@ -767,7 +780,6 @@ void DetailedRouter::buildLayerNodeList(DRBox& dr_box)
       DRNode dr_node;
       dr_node.set_coord(coord.get_planar_coord());
       dr_node.set_layer_idx(coord.get_layer_idx());
-      dr_node.set_fence_violation_cost(dr_box.get_base_region().getWidth());
       dr_node_list.push_back(dr_node);
     }
   }
@@ -996,6 +1008,9 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
       LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
     }
     for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
+      if (dr_group.get_coord_orientation_map().empty()) {
+        LOG_INST.error(Loc::current(), "The coord_orientation_map is empty!");
+      }
       for (auto& [coord, orientation_set] : dr_group.get_coord_orientation_map()) {
         irt_int layer_idx = coord.get_layer_idx();
         if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {

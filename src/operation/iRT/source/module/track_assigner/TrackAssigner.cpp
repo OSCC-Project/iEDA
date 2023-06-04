@@ -600,7 +600,6 @@ void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
       ta_node.set_x(x_list[x]);
       ta_node.set_y(y_list[y]);
       ta_node.set_layer_idx(layer_idx);
-      ta_node.set_fence_violation_cost(ta_panel.getRealWidth());
     }
   }
 }
