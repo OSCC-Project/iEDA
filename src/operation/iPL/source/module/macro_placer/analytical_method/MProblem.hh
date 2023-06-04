@@ -18,6 +18,9 @@
 
 #include "Problem.hh"
 
+using SpMat = Eigen::SparseMatrix<double>;
+using Mat = Eigen::MatrixXd;
+using Vec = Eigen::VectorXd;
 using Eigen::SparseMatrix;
 using std::pair;
 using std::unique_ptr;
@@ -32,7 +35,7 @@ class MProblem final : public Problem
  public:
   explicit MProblem(MPDB* db) { set_db(db); }
   ~MProblem() {}
-  virtual void evaluate(const MatrixXd& variable, MatrixXd& gradient, double& cost, int iter) const override;
+  virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const override;
   virtual double getLowerBound(int row, int col) const override { return _bound[_var_rows * col + row].first; }
   virtual double getUpperBound(int row, int col) const override { return _bound[_var_rows * col + row].second; };
   virtual int variableMatrixRows() const override { return _var_rows; };
@@ -42,9 +45,10 @@ class MProblem final : public Problem
  private:
   void initWirelengthModel();
   void initDensityModel();
-  MatrixXd getWirelengthGradient(const VectorXd& x, const VectorXd& y, const VectorXd& r, double gamma) const;
-  MatrixXd getDensityGradient(const VectorXd& x, const VectorXd& y, const VectorXd& r) const;
-  double evalHpwl(const VectorXd& x, const VectorXd& y, const VectorXd& r) const;
+  Mat getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, double gamma) const;
+  Mat getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const;
+  double evalHpwl(const Vec& x, const Vec& y, const Vec& r) const;
+  double evalOverflow(const Vec& x, const Vec& y, const Vec& r) const;
   double getPenaltyFactor() const;
   void updateLowerBound(int row, int col, double lower) { _bound[_var_rows * col + row].first = lower; }
   void updateUpperBound(int row, int col, double upper) { _bound[_var_rows * col + row].second = upper; }
@@ -58,10 +62,11 @@ class MProblem final : public Problem
 
   unordered_map<FPInst*, uint32_t> _inst2id = {};
   vector<pair<double, double>> _bound = {};
-  vector<vector<pair<double, double>>> _io_pin_pos = {};
-  SparseMatrix<double> _connectivity;
-  VectorXd _sum_exp_x = {};
-  VectorXd _sum_exp_y = {};
+  SpMat _connectivity;
+  SpMat _io_conn_x;
+  SpMat _io_conn_y;
+  Vec _sum_exp_x = {};
+  Vec _sum_exp_y = {};
 };
 
 }  // namespace ipl::imp
