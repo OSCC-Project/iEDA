@@ -12,7 +12,7 @@
 class Quadratic : public ipl::Problem
 {
  public:
-  virtual void evaluate(const MatrixXd& variable, MatrixXd& gradient, double& cost, int iter) const override
+  virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const override
   {
     const double x = variable(0, 0);
     const double y = variable(1, 0);
@@ -29,17 +29,17 @@ class Quadratic : public ipl::Problem
 int main()
 {
   Eigen::initParallel();
-  Eigen::setNbThreads(48);
-  int size = 50000;
+  Eigen::setNbThreads(1);
+  int size = 5;
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   Eigen::SparseMatrix<double> m(size, size);
   // Eigen::SparseMatrix<double> n(size, size);
   // m.reserve(5 * size);
   std::vector<Eigen::Triplet<double>> triplets;
 
-  for (int i = 0; i < size; i += size / 5) {
+  for (int i = 1; i < size; i += size / 5) {
     for (int j = 0; j < size; j += 1) {
-      triplets.emplace_back(i, j, 100);
+      triplets.emplace_back(i, j, 2);
     }
   }
   std::sort(triplets.begin(), triplets.end(), [](const Eigen::Triplet<double>& a, const Eigen::Triplet<double>& b) {
@@ -50,21 +50,43 @@ int main()
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   std::cout << "Creat time= " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" << std::endl;
 
-  // MatrixXd m = MatrixXd::Random(10000, 10000);
-  // MatrixXd n = MatrixXd::Random(10000, 10000);
-  VectorXd v = VectorXd::Ones(size);
+  // Mat m = Mat::Random(10000, 10000);
+  // Mat n = Mat::Random(10000, 10000);
+  Eigen::RowVectorXd v = Eigen::RowVectorXd::Ones(size);
+  Mat x = Mat::Ones(2, 2);
+  Mat y = Mat::Ones(2, 2);
+  x(0, 0) = 0;
+  Mat a = Mat::Ones(1000, 1000);
+  Mat b = Mat::Ones(1000, 1000);
+  // Mat c;
   begin = std::chrono::steady_clock::now();
-  // m.unaryViewExpr([](double a) { return std::exp(a); });
-  // m = m.unaryViewExpr([](double a) { return std::exp(a); });
-  Eigen::SparseMatrix<double> n = m;
-  Eigen::RowVectorXd x;
-  for (size_t i = 0; i < 100; i++) {
-    x = v.transpose() * n;
-  }
-  m.coeffRef(0, 0) = 200;
-  n.coeffRef(0, 0) = 200;
 
-  std::cout << "x(0,0) = " << n.coeff(0, 0) << "\n";
+  // for (size_t i = 0; i < 1; i++) {
+  // auto a = x.unaryExpr([](double val) { return val * val; });
+  // auto b = x.unaryExpr([](double val) { return val * val; });
+  // b += a;
+  // Mat c;
+  auto c = a * b;
+  // z.eval();
+  // std::cout << m.unaryExpr([](double val) { return std::exp(val); }).toDense() << "\n";
+  // }
+
+  // m.unaryViewExpr([](double a) { return std::exp(a); });
+  // Eigen::SparseMatrix<double> n;
+  // v = Eigen::RowVectorXd::Ones(size) * (m / -1).unaryExpr([](double a) { return a * a; });
+  // Eigen::VectorXd x;
+  // for (size_t i = 0; i < 1000; i++) {
+  //   v = v * m;
+  // }
+
+  // std::cout << "sum = " << v.sum();
+
+  // x = VectorXd::Ones(size).transpose() * x;
+  // m.coeffRef(0, 0) = 0;
+  // m.unaryExpr([](double x) { return (x == 0) ? 0 : 1 / x; });
+  // std::cout << "n = \n" << m.toDense() << "\n";
+  // std::cout << "x(0,0) = " << n.coeff(0, 0) << "\n";
+  c.eval();
   end = std::chrono::steady_clock::now();
   std::cout << "Compete time = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" << std::endl;
 
@@ -77,7 +99,7 @@ int main()
 
   // Eigen::SparseMatrix<double> m(5, 5);
   // ipl::Solver solver = ipl::Solver(std::shared_ptr<Quadratic>(new Quadratic()));
-  // Eigen::MatrixXd var = MatrixXd::Random(2, 1);
+  // Eigen::Mat var = Mat::Random(2, 1);
   // var *= 100;
   // solver.doNesterovSolve(var);
   // std::cout << std::endl;

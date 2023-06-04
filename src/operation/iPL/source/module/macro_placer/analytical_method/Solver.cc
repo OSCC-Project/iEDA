@@ -20,7 +20,7 @@ void log(const T& val, const Args&... args)
   log(args...);
 }
 
-void Solver::doNesterovSolve(MatrixXd& solution)
+void Solver::doNesterovSolve(Mat& solution)
 {
   int rows = _problem->variableMatrixRows();
   int cols = _problem->variableMatrixcols();
@@ -30,16 +30,16 @@ void Solver::doNesterovSolve(MatrixXd& solution)
   }
 
   // Major solution u_k
-  MatrixXd major = std::move(solution);
-  MatrixXd new_major = MatrixXd::Zero(rows, cols);
+  Mat major = std::move(solution);
+  Mat new_major = Mat::Zero(rows, cols);
 
   // Reference solution v_k
-  MatrixXd reference = major;
-  MatrixXd prev_reference = MatrixXd::Zero(rows, cols);
+  Mat reference = major;
+  Mat prev_reference = Mat::Zero(rows, cols);
 
   // Gradiant of Reference solution v_k
-  MatrixXd grad = MatrixXd::Zero(rows, cols);
-  MatrixXd prev_grad = MatrixXd::Zero(rows, cols);
+  Mat grad = Mat::Zero(rows, cols);
+  Mat prev_grad = Mat::Zero(rows, cols);
 
   double cur_cost = 0.0;
   double prev_cost = 0.0;
@@ -51,7 +51,7 @@ void Solver::doNesterovSolve(MatrixXd& solution)
   float a_k_1 = 1.0F;
 
   // Alpha
-  VectorXd steplength = VectorXd::Ones(cols);
+  Vec steplength = Vec::Ones(cols);
 
   for (int iter = 0; iter < 1000; iter++) {
     _problem->evaluate(reference, grad, cur_cost, iter);

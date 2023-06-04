@@ -45,6 +45,8 @@ class FPPin
   float get_weight() const { return _weight; }
   int32_t get_offset_x() const;
   int32_t get_offset_y() const;
+  int32_t get_orig_xoff() const { return _coordinate->get_x(); }
+  int32_t get_orig_yoff() const { return _coordinate->get_y(); }
 
  private:
   std::string _name;
