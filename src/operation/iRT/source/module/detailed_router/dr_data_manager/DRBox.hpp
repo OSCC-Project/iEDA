@@ -64,10 +64,10 @@ class DRBox
     std::vector<DRNode>& dr_node_list = node_graph.get_dr_node_list();
 
     if (!RTUtil::exist(x_y_idx_map, coord.get_x())) {
-      return nullptr;
+      LOG_INST.error(Loc::current(), "The coord is not in x_y_idx_map!");
     }
     if (!RTUtil::exist(x_y_idx_map[coord.get_x()], coord.get_y())) {
-      return nullptr;
+      LOG_INST.error(Loc::current(), "The coord is not in x_y_idx_map!");
     }
     return &dr_node_list[x_y_idx_map[coord.get_x()][coord.get_y()]];
   }

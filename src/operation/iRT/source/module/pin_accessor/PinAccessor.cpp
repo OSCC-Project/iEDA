@@ -603,7 +603,7 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
                   if (pa_net.get_net_idx() == net_idx) {
                     continue;
                   }
-                  for (const LayerRect& region : region_list) {
+                  for (PlanarRect& region : region_list) {
                     if (RTUtil::isOpenOverlap(via_shape, region)) {
                       has_confilct = true;
                       goto here;
