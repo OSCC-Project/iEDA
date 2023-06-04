@@ -780,6 +780,7 @@ void DetailedRouter::buildLayerNodeList(DRBox& dr_box)
       DRNode dr_node;
       dr_node.set_coord(coord.get_planar_coord());
       dr_node.set_layer_idx(coord.get_layer_idx());
+      dr_node.set_fence_violation_cost(dr_box.get_base_region().getWidth());
       dr_node_list.push_back(dr_node);
     }
   }

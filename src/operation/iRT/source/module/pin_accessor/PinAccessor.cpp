@@ -585,11 +585,13 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+      // via_num_access_point_map
       std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      for (AccessPoint& access_point : pin_access_point_list) {
         irt_int via_num = 0;
         for (std::vector<irt_int> via_below_layer_idx_list :
-             RTUtil::getViaBelowLayerIdxGroup(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
+             RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
           for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
             bool has_confilct = false;
             ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
@@ -625,9 +627,18 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
         }
         via_num_access_point_map[via_num].push_back(access_point);
       }
-      pa_pin.get_access_point_list().clear();
-      for (auto& [via_num, access_point_list] : via_num_access_point_map) {
-        pa_pin.get_access_point_list().insert(pa_pin.get_access_point_list().end(), access_point_list.begin(), access_point_list.end());
+      // balance_coord
+      LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
+      pin_access_point_list.clear();
+      for (auto& [via_num, via_access_point_list] : via_num_access_point_map) {
+        std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
+        for (AccessPoint& access_point : via_access_point_list) {
+          LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
+          distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
+        }
+        for (auto& [distance, distance_access_point_list] : distance_access_point_map) {
+          pin_access_point_list.insert(pin_access_point_list.end(), distance_access_point_list.begin(), distance_access_point_list.end());
+        }
       }
     }
   }
