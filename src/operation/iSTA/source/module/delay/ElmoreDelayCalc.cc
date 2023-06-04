@@ -38,6 +38,10 @@ std::unique_ptr<RCNetCommonInfo> RcNet::_rc_net_common_info;
 RctNode::RctNode(std::string&& name) : _name{std::move(name)} {}
 
 void RctNode::calNodePIModel() {
+  if (IsDoubleEqual(_moments.y2, 0.0) || IsDoubleEqual(_moments.y3, 0.0)) {
+    return;
+  }
+
   double y1 = _moments.y1;
   double y2 = _moments.y2;
   double y3 = _moments.y3;
@@ -215,6 +219,16 @@ void RcTree::initData() {
     init_zero_value(kvp.second._ldelay);
     init_zero_value(kvp.second._impulse);
   }
+}
+
+/**
+ * @brief init node moment.
+ *
+ */
+void RcTree::initMoment() {
+  WaveformApproximation wave_form;
+  int load_nodes_pin_cap_sum = 0;
+  wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
 }
 
 /**
@@ -452,11 +466,7 @@ void RcTree::updateRcTiming() {
     updateMC(nullptr, _root);
     updateM2(nullptr, _root);
 
-    // WaveformApproximation wave_form;
-    // int load_nodes_pin_cap_sum = 0;
-    // PiModel pi_model =
-    //     wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
-
+    initMoment();
     updateDelayECM(nullptr, _root);
     updateMCC(nullptr, _root);
     updateM2C(nullptr, _root);
@@ -744,9 +754,9 @@ void RcNet::updateRcTreeInfo() {
       if (auto* node = rct.rcNode(pin->getFullName()); node) {
         if (pin == driver) {
           rct._root = node;
+          node->set_is_root();
         }
         node->set_obj(pin);
-
       } else {
         const auto& nodes = rct.get_nodes();
         for (const auto& [node_name, node] : nodes) {
