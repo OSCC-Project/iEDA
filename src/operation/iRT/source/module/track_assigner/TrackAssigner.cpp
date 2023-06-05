@@ -295,7 +295,7 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
 
   std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_cost_map;
   for (size_t i = 0; i < coord_distance_pair_list.size(); i++) {
-    coord_cost_map[coord_distance_pair_list[i].first] = i;
+    coord_cost_map[coord_distance_pair_list[i].first] = static_cast<double>(i);
   }
   return coord_cost_map;
 }
@@ -1930,15 +1930,16 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
 
   TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
   std::map<irt_int, double>& routing_wire_length = ta_model_stat.get_routing_wire_length_map();
-  std::map<irt_int, double>& routing_net_and_obs_violation_area = ta_model_stat.get_routing_net_and_obs_violation_area_map();
-  std::map<irt_int, double>& routing_net_and_net_violation_area = ta_model_stat.get_routing_net_and_net_violation_area_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map
+      = ta_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map
+      = ta_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map
+      = ta_model_stat.get_routing_net_and_net_rect_map();
 
   for (std::vector<TAPanel>& panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : panel_list) {
-      std::set<irt_int> visited_net_idx_set;
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-        visited_net_idx_set.insert(ta_task.get_origin_net_idx());
-
         for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
           double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
           routing_wire_length[ta_panel.get_layer_idx()] += wire_length;
@@ -1948,18 +1949,25 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
             if (ta_task.get_origin_net_idx() == net_idx) {
               continue;
             }
-            if (RTUtil::exist(visited_net_idx_set, net_idx)) {
-              continue;
-            }
             for (PlanarRect& blockage : blockage_list) {
               if (RTUtil::isOpenOverlap(real_rect, blockage)) {
-                double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
-                violation_area = (violation_area / (micron_dbu * micron_dbu));
+                PlanarRect violation_rect = RTUtil::getOverlap(real_rect, blockage);
                 if (net_idx == -1) {
-                  routing_net_and_obs_violation_area[ta_panel.get_layer_idx()] += violation_area;
+                  routing_net_and_obs_rect_map[ta_panel.get_layer_idx()].insert(violation_rect);
                 } else {
-                  routing_net_and_net_violation_area[ta_panel.get_layer_idx()] += violation_area;
+                  routing_net_and_net_rect_map[ta_panel.get_layer_idx()].insert(violation_rect);
                 }
+              }
+            }
+          }
+          for (auto& [net_idx, fence_region_list] : ta_panel.get_net_fence_region_map()) {
+            if (ta_task.get_origin_net_idx() == net_idx) {
+              continue;
+            }
+            for (PlanarRect& fence_region : fence_region_list) {
+              if (RTUtil::isOpenOverlap(real_rect, fence_region)) {
+                PlanarRect violation_rect = RTUtil::getOverlap(real_rect, fence_region);
+                routing_net_and_fence_rect_map[ta_panel.get_layer_idx()].insert(violation_rect);
               }
             }
           }
@@ -1968,20 +1976,25 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
     }
   }
   double total_wire_length = 0;
-  double total_net_and_obs_violation_area = 0;
-  double total_net_and_net_violation_area = 0;
+  irt_int total_net_and_obs_rect_number = 0;
+  irt_int total_net_and_fence_rect_number = 0;
+  irt_int total_net_and_net_rect_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length) {
     total_wire_length += wire_length;
   }
-  for (auto& [routing_layer_idx, net_and_obs_violation_area] : routing_net_and_obs_violation_area) {
-    total_net_and_obs_violation_area += net_and_obs_violation_area;
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_obs_rect_map) {
+    total_net_and_obs_rect_number += static_cast<irt_int>(rect_list.size());
   }
-  for (auto& [routing_layer_idx, net_and_net_violation_area] : routing_net_and_net_violation_area) {
-    total_net_and_net_violation_area += net_and_net_violation_area;
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_fence_rect_map) {
+    total_net_and_fence_rect_number += static_cast<irt_int>(rect_list.size());
+  }
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_net_rect_map) {
+    total_net_and_net_rect_number += static_cast<irt_int>(rect_list.size());
   }
   ta_model_stat.set_total_wire_length(total_wire_length);
-  ta_model_stat.set_total_net_and_obs_violation_area(total_net_and_obs_violation_area);
-  ta_model_stat.set_total_net_and_net_violation_area(total_net_and_net_violation_area);
+  ta_model_stat.set_total_net_and_obs_rect_number(total_net_and_obs_rect_number);
+  ta_model_stat.set_total_net_and_fence_rect_number(total_net_and_fence_rect_number);
+  ta_model_stat.set_total_net_and_net_rect_number(total_net_and_net_rect_number);
 }
 
 void TrackAssigner::reportTable(TAModel& ta_model)
@@ -1990,11 +2003,16 @@ void TrackAssigner::reportTable(TAModel& ta_model)
 
   TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
   std::map<irt_int, double>& routing_wire_length = ta_model_stat.get_routing_wire_length_map();
-  std::map<irt_int, double>& routing_net_and_obs_violation_area = ta_model_stat.get_routing_net_and_obs_violation_area_map();
-  std::map<irt_int, double>& routing_net_and_net_violation_area = ta_model_stat.get_routing_net_and_net_violation_area_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map
+      = ta_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map
+      = ta_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map
+      = ta_model_stat.get_routing_net_and_net_rect_map();
   double total_wire_length = ta_model_stat.get_total_wire_length();
-  double total_net_and_obs_violation_area = ta_model_stat.get_total_net_and_obs_violation_area();
-  double total_net_and_net_violation_area = ta_model_stat.get_total_net_and_net_violation_area();
+  irt_int total_net_and_obs_rect_number = ta_model_stat.get_total_net_and_obs_rect_number();
+  irt_int total_net_and_fence_rect_number = ta_model_stat.get_total_net_and_fence_rect_number();
+  irt_int total_net_and_net_rect_number = ta_model_stat.get_total_net_and_net_rect_number();
 
   fort::char_table wire_table;
   wire_table.set_border_style(FT_SOLID_STYLE);
@@ -2009,24 +2027,27 @@ void TrackAssigner::reportTable(TAModel& ta_model)
   for (std::string table_str : RTUtil::splitString(wire_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
-
   fort::char_table violation_table;
   violation_table.set_border_style(FT_SOLID_STYLE);
   violation_table << fort::header << "Routing Layer"
-                  << "Net And Obs Violation Area / um^2"
-                  << "Net And Net Violation Area / um^2" << fort::endr;
+                  << "Net And Obs Rect Number"
+                  << "Net And Fence Rect Number"
+                  << "Net And Net Rect Number" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double net_and_obs_violation_area = routing_net_and_obs_violation_area[routing_layer.get_layer_idx()];
-    double net_and_net_violation_area = routing_net_and_net_violation_area[routing_layer.get_layer_idx()];
-
+    irt_int net_and_obs_rect_number = static_cast<irt_int>(routing_net_and_obs_rect_map[routing_layer.get_layer_idx()].size());
+    irt_int net_and_fence_rect_number = static_cast<irt_int>(routing_net_and_fence_rect_map[routing_layer.get_layer_idx()].size());
+    irt_int net_and_net_rect_number = static_cast<irt_int>(routing_net_and_net_rect_map[routing_layer.get_layer_idx()].size());
     violation_table << routing_layer.get_layer_name()
-                    << RTUtil::getString(net_and_obs_violation_area, "(",
-                                         RTUtil::getPercentage(net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
-                    << RTUtil::getString(net_and_net_violation_area, "(",
-                                         RTUtil::getPercentage(net_and_net_violation_area, total_net_and_net_violation_area), "%)")
+                    << RTUtil::getString(net_and_obs_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_obs_rect_number, total_net_and_obs_rect_number), "%)")
+                    << RTUtil::getString(net_and_fence_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_fence_rect_number, total_net_and_fence_rect_number), "%)")
+                    << RTUtil::getString(net_and_net_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_net_rect_number, total_net_and_net_rect_number), "%)")
                     << fort::endr;
   }
-  violation_table << fort::header << "Total" << total_net_and_obs_violation_area << total_net_and_net_violation_area << fort::endr;
+  violation_table << fort::header << "Total" << total_net_and_obs_rect_number << total_net_and_fence_rect_number
+                  << total_net_and_net_rect_number << fort::endr;
   for (std::string table_str : RTUtil::splitString(violation_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }

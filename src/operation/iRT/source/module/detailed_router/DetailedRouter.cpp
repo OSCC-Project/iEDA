@@ -919,7 +919,6 @@ std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<Layer
       layer_rect_map[first_layer_idx].push_back(wire_rect);
     }
   }
-
   std::vector<LayerRect> real_rect_list;
   for (auto& [layer_idx, rect_list] : layer_rect_map) {
     rect_list = RTUtil::getMergeRectList(rect_list);
@@ -2114,8 +2113,9 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
-  std::map<irt_int, double>& routing_net_and_obs_violation_area_map = dr_model_stat.get_routing_net_and_obs_violation_area_map();
-  std::map<irt_int, double>& routing_net_and_net_violation_area_map = dr_model_stat.get_routing_net_and_net_violation_area_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map = dr_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map = dr_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map = dr_model_stat.get_routing_net_and_net_rect_map();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
@@ -2136,17 +2136,11 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
           }
         }
       }
-      std::set<irt_int> visited_net_idx_set;
       for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-        visited_net_idx_set.insert(dr_task.get_origin_net_idx());
-
         for (LayerRect& real_rect : getRealRectList(dr_task.get_routing_segment_list())) {
           irt_int layer_idx = real_rect.get_layer_idx();
           for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
             if (dr_task.get_origin_net_idx() == net_idx) {
-              continue;
-            }
-            if (RTUtil::exist(visited_net_idx_set, net_idx)) {
               continue;
             }
             for (LayerRect& blockage : blockage_list) {
@@ -2154,13 +2148,26 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
                 continue;
               }
               if (RTUtil::isOpenOverlap(real_rect, blockage)) {
-                double violation_area = RTUtil::getOverlap(real_rect, blockage).getArea();
-                violation_area = (violation_area / (micron_dbu * micron_dbu));
+                PlanarRect violation_rect = RTUtil::getOverlap(real_rect, blockage);
                 if (net_idx == -1) {
-                  routing_net_and_obs_violation_area_map[layer_idx] += violation_area;
+                  routing_net_and_obs_rect_map[layer_idx].insert(violation_rect);
                 } else {
-                  routing_net_and_net_violation_area_map[layer_idx] += violation_area;
+                  routing_net_and_net_rect_map[layer_idx].insert(violation_rect);
                 }
+              }
+            }
+          }
+          for (auto& [net_idx, fence_region_list] : dr_box.get_net_fence_region_map()) {
+            if (dr_task.get_origin_net_idx() == net_idx) {
+              continue;
+            }
+            for (LayerRect& fence_region : fence_region_list) {
+              if (layer_idx != fence_region.get_layer_idx()) {
+                continue;
+              }
+              if (RTUtil::isOpenOverlap(real_rect, fence_region)) {
+                PlanarRect violation_rect = RTUtil::getOverlap(real_rect, fence_region);
+                routing_net_and_fence_rect_map[layer_idx].insert(violation_rect);
               }
             }
           }
@@ -2170,24 +2177,29 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   }
   double total_wire_length = 0;
   irt_int total_via_number = 0;
-  double total_net_and_obs_violation_area = 0;
-  double total_net_and_net_violation_area = 0;
+  irt_int total_net_and_obs_rect_number = 0;
+  irt_int total_net_and_fence_rect_number = 0;
+  irt_int total_net_and_net_rect_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
   }
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
-  for (auto& [routing_layer_idx, violation_area] : routing_net_and_obs_violation_area_map) {
-    total_net_and_obs_violation_area += violation_area;
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_obs_rect_map) {
+    total_net_and_obs_rect_number += static_cast<irt_int>(rect_list.size());
   }
-  for (auto& [routing_layer_idx, violation_area] : routing_net_and_net_violation_area_map) {
-    total_net_and_net_violation_area += violation_area;
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_fence_rect_map) {
+    total_net_and_fence_rect_number += static_cast<irt_int>(rect_list.size());
+  }
+  for (auto& [routing_layer_idx, rect_list] : routing_net_and_net_rect_map) {
+    total_net_and_net_rect_number += static_cast<irt_int>(rect_list.size());
   }
   dr_model_stat.set_total_wire_length(total_wire_length);
   dr_model_stat.set_total_via_number(total_via_number);
-  dr_model_stat.set_total_net_and_obs_violation_area(total_net_and_obs_violation_area);
-  dr_model_stat.set_total_net_and_net_violation_area(total_net_and_net_violation_area);
+  dr_model_stat.set_total_net_and_obs_rect_number(total_net_and_obs_rect_number);
+  dr_model_stat.set_total_net_and_fence_rect_number(total_net_and_fence_rect_number);
+  dr_model_stat.set_total_net_and_net_rect_number(total_net_and_net_rect_number);
 }
 
 void DetailedRouter::reportTable(DRModel& dr_model)
@@ -2198,12 +2210,14 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
-  std::map<irt_int, double>& routing_net_and_obs_violation_area_map = dr_model_stat.get_routing_net_and_obs_violation_area_map();
-  std::map<irt_int, double>& routing_net_and_net_violation_area_map = dr_model_stat.get_routing_net_and_net_violation_area_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map = dr_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map = dr_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map = dr_model_stat.get_routing_net_and_net_rect_map();
   double total_wire_length = dr_model_stat.get_total_wire_length();
   irt_int total_via_number = dr_model_stat.get_total_via_number();
-  double total_net_and_obs_violation_area = dr_model_stat.get_total_net_and_obs_violation_area();
-  double total_net_and_net_violation_area = dr_model_stat.get_total_net_and_net_violation_area();
+  irt_int total_net_and_obs_rect_number = dr_model_stat.get_total_net_and_obs_rect_number();
+  irt_int total_net_and_fence_rect_number = dr_model_stat.get_total_net_and_fence_rect_number();
+  irt_int total_net_and_net_rect_number = dr_model_stat.get_total_net_and_net_rect_number();
 
   // wire table
   fort::char_table wire_table;
@@ -2241,24 +2255,29 @@ void DetailedRouter::reportTable(DRModel& dr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
-  // report overlap info
-  fort::char_table overlap_table;
-  overlap_table.set_border_style(FT_SOLID_STYLE);
-  overlap_table << fort::header << "Routing Layer"
-                << "Net And Obs Violation Area / um^2"
-                << "Net And Net Violation Area / um^2" << fort::endr;
+  // violation_table
+  fort::char_table violation_table;
+  violation_table.set_border_style(FT_SOLID_STYLE);
+  violation_table << fort::header << "Routing Layer"
+                << "Net And Obs Rect Number"
+                << "Net And Fence Rect Number"
+                << "Net And Net Rect Number" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double routing_net_and_obs_violation_area = routing_net_and_obs_violation_area_map[routing_layer.get_layer_idx()];
-    double routing_net_and_net_violation_area = routing_net_and_net_violation_area_map[routing_layer.get_layer_idx()];
-    overlap_table << routing_layer.get_layer_name()
-                  << RTUtil::getString(routing_net_and_obs_violation_area, "(",
-                                       RTUtil::getPercentage(routing_net_and_obs_violation_area, total_net_and_obs_violation_area), "%)")
-                  << RTUtil::getString(routing_net_and_net_violation_area, "(",
-                                       RTUtil::getPercentage(routing_net_and_net_violation_area, total_net_and_net_violation_area), "%)")
+    irt_int net_and_obs_rect_number = static_cast<irt_int>(routing_net_and_obs_rect_map[routing_layer.get_layer_idx()].size());
+    irt_int net_and_fence_rect_number = static_cast<irt_int>(routing_net_and_fence_rect_map[routing_layer.get_layer_idx()].size());
+    irt_int net_and_net_rect_number = static_cast<irt_int>(routing_net_and_net_rect_map[routing_layer.get_layer_idx()].size());
+    violation_table << routing_layer.get_layer_name()
+                  << RTUtil::getString(net_and_obs_rect_number, "(",
+                                       RTUtil::getPercentage(net_and_obs_rect_number, total_net_and_obs_rect_number), "%)")
+                  << RTUtil::getString(net_and_fence_rect_number, "(",
+                                       RTUtil::getPercentage(net_and_fence_rect_number, total_net_and_fence_rect_number), "%)")
+                  << RTUtil::getString(net_and_net_rect_number, "(",
+                                       RTUtil::getPercentage(net_and_net_rect_number, total_net_and_net_rect_number), "%)")
                   << fort::endr;
   }
-  overlap_table << fort::header << "Total" << total_net_and_obs_violation_area << total_net_and_net_violation_area << fort::endr;
-  for (std::string table_str : RTUtil::splitString(overlap_table.to_string(), '\n')) {
+  violation_table << fort::header << "Total" << total_net_and_obs_rect_number << total_net_and_fence_rect_number
+                << total_net_and_net_rect_number << fort::endr;
+  for (std::string table_str : RTUtil::splitString(violation_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
 }
