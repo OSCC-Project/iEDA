@@ -138,6 +138,7 @@ std::vector<std::pair<RTreeBox, DrcRect*>> RoutingSpacingCheck::getQueryResult(i
  * @return true 跳过DRC检查
  * @return false 需要进行DRC检查
  */
+
 bool RoutingSpacingCheck::skipCheck(DrcRect* target_rect, DrcRect* result_rect)
 {
   // #if TEST
@@ -145,6 +146,13 @@ bool RoutingSpacingCheck::skipCheck(DrcRect* target_rect, DrcRect* result_rect)
   //   isSameNetRectConnect(target_rect, result_rect);
   // #endif
   //需要跳过检查的情况包括：(1)区域搜索的结果矩形就是目标检查矩形本身，(2)被检查的两个矩形都是fix的，(3)搜索结果矩形被检测过，(4)同一net的矩形两个相交矩形也跳过
+  std::vector<std::pair<RTreeBox, DrcRect*>> contatins_query_result;
+  _region_query->queryContainsInRoutingLayer(result_rect->get_layer_id(), DRCUtil::getRTreeBox(result_rect), contatins_query_result);
+  if (contatins_query_result.size() > 1) {
+    // std::cout << "tiaoguo" << std::endl;
+    return true;
+  }
+
   return (target_rect == result_rect) || (target_rect->is_fixed() && result_rect->is_fixed()) || isChecked(result_rect)
          || isSameNetRectConnect(target_rect, result_rect);
 }
@@ -350,6 +358,7 @@ bool RoutingSpacingCheck::checkSpacingViolation(int routingLayerId, DrcRect* tar
   // if (!span_box_query_result.empty()) {
   //   return false;
   // }
+
   if (!isParallelOverlap(target_rect, result_rect)) {
     // case no Parallel Overlap between two rect ,need check corner spacing
     // if corner spacing is not meet require_spacing,it is a violation
@@ -439,7 +448,7 @@ void RoutingSpacingCheck::checkSpacingFromQueryResult(int routingLayerId, DrcRec
     if (!span_box_query_result.empty()) {
       continue;
     }
-    //检查是否存在间距违规
+    // 检查是否存在间距违规
     if (checkSpacingViolation(routingLayerId, target_rect, result_rect, query_result)) {
       // _region_query->addViolation(ViolationType::kRoutingSpacing);
       _region_query->addPRLRunLengthSpacingViolation(routingLayerId, span_box);
@@ -521,6 +530,12 @@ void RoutingSpacingCheck::storeViolationResult(int routingLayerId, DrcRect* targ
 void RoutingSpacingCheck::checkRoutingSpacing(DrcRect* target_rect)
 {
   int routingLayerId = target_rect->get_layer_id();
+  std::vector<std::pair<RTreeBox, DrcRect*>> contatins_query_result;
+  _region_query->queryContainsInRoutingLayer(routingLayerId, DRCUtil::getRTreeBox(target_rect), contatins_query_result);
+  if (contatins_query_result.size() > 1) {
+    // std::cout << "tiaoguo 1" << std::endl;
+    return;
+  }
   //获得当前金属层的最大金属宽度对应的要求间距
   int layer_max_require_spacing = _tech->getRoutingMaxRequireSpacing(routingLayerId, target_rect);
   //通过当前层的最大金属宽度所对应间距要求膨胀矩形获得搜索区域
