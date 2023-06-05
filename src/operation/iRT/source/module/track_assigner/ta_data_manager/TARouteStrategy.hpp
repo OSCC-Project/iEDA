@@ -39,11 +39,11 @@ struct GetTARouteStrategyName
       case TARouteStrategy::kNone:
         ta_route_strategy_name = "none";
         break;
-      case TARouteStrategy::kIgnoringFence:
-        ta_route_strategy_name = "ignoring_fence";
-        break;
       case TARouteStrategy::kIgnoringENV:
         ta_route_strategy_name = "ignoring_env";
+        break;
+      case TARouteStrategy::kIgnoringFence:
+        ta_route_strategy_name = "ignoring_fence";
         break;
       case TARouteStrategy::kIgnoringOBS:
         ta_route_strategy_name = "ignoring_obs";

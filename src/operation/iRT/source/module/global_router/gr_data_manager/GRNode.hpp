@@ -102,28 +102,6 @@ class GRNode : public LayerCoord
         is_obs = (wire_remain < _single_wire_area);
       }
     }
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringFence) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      irt_int fence_via_area_demand = 0;
-      if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
-        fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
-      }
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        // wire剩余可以给via
-        irt_int via_remain = 0;
-        via_remain += _wire_area_supply - _wire_area_demand;
-        via_remain += _via_area_supply - _via_area_demand - fence_via_area_demand;
-        is_obs = (via_remain < _single_via_area);
-      } else {
-        // via剩余不可转wire
-        irt_int wire_remain = 0;
-        wire_remain += _wire_area_supply - _wire_area_demand;
-        wire_remain += std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0);
-        is_obs = (wire_remain < _single_wire_area);
-      }
-    }
     return is_obs;
   }
   double getCost(irt_int net_idx, Orientation orientation)

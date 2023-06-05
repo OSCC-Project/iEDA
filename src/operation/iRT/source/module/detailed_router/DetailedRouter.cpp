@@ -1206,7 +1206,7 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
     routeSinglePath(dr_box);
     rerouteByEnlarging(dr_box);
     for (DRRouteStrategy dr_route_strategy :
-         {DRRouteStrategy::kIgnoringFence, DRRouteStrategy::kIgnoringENV, DRRouteStrategy::kIgnoringOBS}) {
+         {DRRouteStrategy::kIgnoringENV, DRRouteStrategy::kIgnoringFence, DRRouteStrategy::kIgnoringOBS}) {
       rerouteByIgnoring(dr_box, dr_route_strategy);
     }
     updatePathResult(dr_box);

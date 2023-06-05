@@ -607,8 +607,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   while (!isConnectedAllEnd(gr_model)) {
     routeSinglePath(gr_model);
     rerouteByEnlarging(gr_model);
-    for (GRRouteStrategy gr_route_strategy :
-         {GRRouteStrategy::kIgnoringFence, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
+    for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
       rerouteByIgnoring(gr_model, gr_route_strategy);
     }
     updatePathResult(gr_model);
