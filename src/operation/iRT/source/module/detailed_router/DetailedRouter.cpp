@@ -720,51 +720,37 @@ void DetailedRouter::buildPlanarNeighbor(std::vector<LayerCoord>& new_coord_list
   irt_int added_y = added_coord.get_y();
   irt_int added_layer_idx = added_coord.get_layer_idx();
 
-  std::vector<irt_int> scale_list;
   std::set<irt_int> scale_set;
   irt_int base_scale = -1;
   if (direction == Direction::kHorizontal) {
-    scale_list = node_graph.get_x_scale_list();
-    scale_set = node_graph.get_y_x_map()[added_y];
+    for (auto& [x, y_set] : node_graph.get_x_y_map()) {
+      scale_set.insert(x);
+    }
     base_scale = added_x;
   } else if (direction == Direction::kVertical) {
-    scale_list = node_graph.get_y_scale_list();
-    scale_set = node_graph.get_x_y_map()[added_x];
+    for (auto& [y, x_set] : node_graph.get_y_x_map()) {
+      scale_set.insert(y);
+    }
     base_scale = added_y;
   }
-  if (!scale_list.empty()) {
-    irt_int min_scale = -1;
-    irt_int max_scale = INT32_MAX;
-    for (irt_int scale : scale_list) {
-      if (scale < base_scale) {
-        min_scale = scale;
-      }
-      if (base_scale < scale) {
-        max_scale = scale;
-        break;
-      }
+  irt_int lb_scale = -1;
+  irt_int rt_scale = INT32_MAX;
+  for (auto scale : scale_set) {
+    if (scale < base_scale) {
+      lb_scale = scale;
     }
-    irt_int lb_scale = -1;
-    irt_int rt_scale = INT32_MAX;
-    for (auto scale : scale_set) {
-      if (scale < base_scale) {
-        lb_scale = scale;
-      }
-      if (base_scale < scale) {
-        rt_scale = scale;
-        break;
-      }
+    if (base_scale < scale) {
+      rt_scale = scale;
+      break;
     }
-    if (!(min_scale == -1 && lb_scale == -1)) {
-      lb_scale = std::max(min_scale, lb_scale);
-      new_coord_list.push_back(direction == Direction::kHorizontal ? LayerCoord(lb_scale, added_y, added_layer_idx)
-                                                                   : LayerCoord(added_x, lb_scale, added_layer_idx));
-    }
-    if (!(max_scale == INT32_MAX && rt_scale == INT32_MAX)) {
-      rt_scale = std::min(max_scale, rt_scale);
-      new_coord_list.push_back(direction == Direction::kHorizontal ? LayerCoord(rt_scale, added_y, added_layer_idx)
-                                                                   : LayerCoord(added_x, rt_scale, added_layer_idx));
-    }
+  }
+  if (lb_scale != -1) {
+    new_coord_list.push_back(direction == Direction::kHorizontal ? LayerCoord(lb_scale, added_y, added_layer_idx)
+                                                                 : LayerCoord(added_x, lb_scale, added_layer_idx));
+  }
+  if (rt_scale != INT32_MAX) {
+    new_coord_list.push_back(direction == Direction::kHorizontal ? LayerCoord(rt_scale, added_y, added_layer_idx)
+                                                                 : LayerCoord(added_x, rt_scale, added_layer_idx));
   }
 }
 
@@ -1769,7 +1755,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
     for (size_t node_idx = 0; node_idx < dr_node_list.size(); node_idx++) {
       DRNode& dr_node = dr_node_list[node_idx];
       PlanarRect real_rect = RTUtil::getEnlargedRect(dr_node.get_planar_coord(), layer_width_map[dr_node.get_layer_idx()]);
-      irt_int y_reduced_span = real_rect.getYSpan() / 15;
+      irt_int y_reduced_span = real_rect.getYSpan() / 25;
       irt_int y = real_rect.get_rt_y();
 
       GPBoundary gp_boundary;
@@ -1894,6 +1880,30 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         gp_text_task_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
         gp_text_task_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_task_queue_info);
+      }
+
+      y -= y_reduced_span;
+      GPText gp_text_orientation_set;
+      gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
+      gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_orientation_set.set_message("orientation_set: ");
+      gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+      gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_orientation_set);
+
+      if (!dr_node.get_orientation_set().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_orientation_set_info;
+        gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        std::string orientation_set_info_message = "--";
+        for (Orientation orientation : dr_node.get_orientation_set()) {
+          orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+        }
+        gp_text_orientation_set_info.set_message(orientation_set_info_message);
+        gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+        gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_orientation_set_info);
       }
     }
   }
