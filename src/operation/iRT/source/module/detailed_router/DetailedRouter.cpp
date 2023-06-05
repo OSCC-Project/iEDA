@@ -2040,7 +2040,14 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         }
       }
     }
-
+    {
+      // bounding_box
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(0);
+      gp_boundary.set_data_type(1);
+      gp_boundary.set_rect(dr_task.get_bounding_box());
+      task_struct.push(gp_boundary);
+    }
     for (Segment<LayerCoord>& segment : dr_task.get_routing_segment_list()) {
       LayerCoord first_coord = segment.get_first();
       irt_int first_layer_idx = first_coord.get_layer_idx();
