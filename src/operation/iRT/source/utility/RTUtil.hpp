@@ -555,6 +555,63 @@ class RTUtil
     }
   }
 
+  static std::vector<PlanarRect> getOverlap(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    return getOverlap({master}, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    return getOverlap(master_list, {rect});
+  }
+
+  static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
+  {
+    gtl::polygon_90_set_data<irt_int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += RTUtil::convertToGTLRect(master);
+    }
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += RTUtil::convertToGTLRect(rect);
+    }
+
+    master_poly *= rect_poly;
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, master_poly);
+
+    std::vector<PlanarRect> overlap_rect_list;
+    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
+      overlap_rect_list.emplace_back(RTUtil::convertToPlanarRect(overlap_rect));
+    }
+    return overlap_rect_list;
+  }
+
+  static std::vector<PlanarRect> getOverlap2(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    return getOverlap2({master}, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOverlap2(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    return getOverlap2(master_list, {rect});
+  }
+
+  static std::vector<PlanarRect> getOverlap2(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> overlap_rect_list;
+    for (const PlanarRect& master : master_list) {
+      for (const PlanarRect& rect : rect_list) {
+        if (!isClosedOverlap(master, rect)) {
+          continue;
+        }
+        overlap_rect_list.push_back(getOverlap(master, rect));
+      }
+    }
+    return overlap_rect_list;
+  }
+
   // 计算rect在master上覆盖的面积占master总面积的比例
   static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
   {
@@ -679,17 +736,295 @@ class RTUtil
    */
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
   {
-    std::vector<PlanarRect> cutting_rect_list;
+    return getCuttingRectList({master}, {rect});
+  }
 
-    gtl::polygon_90_set_data<int> poly_set;
-    poly_set += RTUtil::convertToGTLRect(master);
-    poly_set -= RTUtil::convertToGTLRect(rect);
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, poly_set);
-    for (gtl::rectangle_data<int>& slicing_rect : gtl_rect_list) {
+  static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    return getCuttingRectList({master}, rect_list);
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    return getCuttingRectList(master_list, {rect});
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
+  {
+    gtl::polygon_90_set_data<irt_int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += RTUtil::convertToGTLRect(master);
+    }
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += RTUtil::convertToGTLRect(rect);
+    }
+
+    master_poly -= rect_poly;
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, master_poly);
+
+    std::vector<PlanarRect> cutting_rect_list;
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
       cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
     }
     return cutting_rect_list;
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList2(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> cutting_rect_list;
+    for (const PlanarRect& master : master_list) {
+      std::vector<PlanarRect> cutting_rect_list_tmep = getCuttingRectList2(master, rect_list);
+      cutting_rect_list.insert(cutting_rect_list.end(), cutting_rect_list_tmep.begin(), cutting_rect_list_tmep.end());
+    }
+    return cutting_rect_list;
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList2(const PlanarRect& master, std::vector<PlanarRect> rect_list)
+  {
+    std::vector<PlanarRect> cutting_rect_list = {master};
+    for (PlanarRect& rect : rect_list) {
+      std::vector<PlanarRect> cutting_rect_list_temp;
+      for (PlanarRect& cutting_rect : cutting_rect_list) {
+        std::vector<PlanarRect> curring_result = getCuttingRectList2(cutting_rect, rect);
+        cutting_rect_list_temp.insert(cutting_rect_list_temp.end(), curring_result.begin(), curring_result.end());
+      }
+      cutting_rect_list = cutting_rect_list_temp;
+    }
+    return cutting_rect_list;
+  }
+
+  static std::vector<PlanarRect> getCuttingRectList2(const PlanarRect& master, const PlanarRect& rect)
+  {
+    if (!isOpenOverlap(master, rect)) {
+      return {master};
+    }
+
+    std::vector<irt_int> x_scale_list = {master.get_lb_x(), master.get_rt_x()};
+    for (irt_int x_scale : {rect.get_lb_x(), rect.get_rt_x()}) {
+      if (master.get_lb_x() <= x_scale && x_scale <= master.get_rt_x()) {
+        x_scale_list.emplace_back(x_scale);
+      }
+    }
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+
+    std::vector<irt_int> y_scale_list = {master.get_lb_y(), master.get_rt_y()};
+    for (irt_int y_scale : {rect.get_lb_y(), rect.get_rt_y()}) {
+      if (master.get_lb_y() <= y_scale && y_scale <= master.get_rt_y()) {
+        y_scale_list.emplace_back(y_scale);
+      }
+    }
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+
+    std::vector<PlanarRect> cutting_rect_list;
+    for (irt_int i = 0; i < static_cast<irt_int>(x_scale_list.size()) - 1; i++) {
+      for (irt_int j = 0; j < static_cast<irt_int>(y_scale_list.size()) - 1; j++) {
+        PlanarRect cutting_rect(x_scale_list[i], y_scale_list[j], x_scale_list[i + 1], y_scale_list[j + 1]);
+        if (isOpenOverlap(rect, cutting_rect)) {
+          continue;
+        }
+        cutting_rect_list.emplace_back(cutting_rect);
+      }
+    }
+    return cutting_rect_list;
+  }
+
+  static std::vector<PlanarRect> getMergeRectList(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
+  {
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += RTUtil::convertToGTLRect(rect);
+    }
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    if (direction == Direction::kHorizontal) {
+      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::HORIZONTAL);
+    } else if (direction == Direction::kVertical) {
+      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::VERTICAL);
+    } else {
+      LOG_INST.error(Loc::current(), "The direction is error!");
+    }
+
+    std::vector<PlanarRect> merge_rect_list;
+    for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
+      merge_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+    }
+    return merge_rect_list;
+  }
+
+  static std::vector<PlanarRect> getMergeRectList2(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
+  {
+    std::map<irt_int, std::set<irt_int>> overlap_rect_idx_map;
+    for (irt_int i = 0; i < static_cast<irt_int>(rect_list.size()); i++) {
+      for (irt_int j = i + 1; j < static_cast<irt_int>(rect_list.size()); j++) {
+        if (!isClosedOverlap(rect_list[i], rect_list[j])) {
+          continue;
+        }
+        overlap_rect_idx_map[i].insert(j);
+        overlap_rect_idx_map[j].insert(i);
+      }
+    }
+
+    std::vector<bool> visited_list(rect_list.size(), false);
+    std::vector<std::vector<irt_int>> overlap_rect_idx_comb_list;
+    for (irt_int i = 0; i < static_cast<irt_int>(rect_list.size()); i++) {
+      if (visited_list[i]) {
+        continue;
+      }
+
+      std::vector<irt_int> overlap_rect_idx_list;
+      std::queue<irt_int> rect_idx_queue = initQueue(i);
+      while (!rect_idx_queue.empty()) {
+        irt_int curr_rect_idx = getFrontAndPop(rect_idx_queue);
+        if (visited_list[curr_rect_idx]) {
+          continue;
+        }
+        visited_list[curr_rect_idx] = true;
+        overlap_rect_idx_list.push_back(curr_rect_idx);
+        if (!exist(overlap_rect_idx_map, curr_rect_idx)) {
+          continue;
+        }
+        for (irt_int overlap_rect_idx : overlap_rect_idx_map[curr_rect_idx]) {
+          if (visited_list[overlap_rect_idx]) {
+            continue;
+          }
+          rect_idx_queue.push(overlap_rect_idx);
+        }
+      }
+      overlap_rect_idx_comb_list.push_back(overlap_rect_idx_list);
+    }
+
+    std::vector<PlanarRect> merge_rect_list;
+    for (std::vector<irt_int>& overlap_rect_idx_comb : overlap_rect_idx_comb_list) {
+      std::vector<PlanarRect> overlap_rect_list;
+      for (irt_int overlap_rect_idx : overlap_rect_idx_comb) {
+        overlap_rect_list.push_back(rect_list[overlap_rect_idx]);
+      }
+      std::vector<PlanarRect> merge_result = mergeRectList2(overlap_rect_list, direction);
+      merge_rect_list.insert(merge_rect_list.end(), merge_result.begin(), merge_result.end());
+    }
+    return merge_rect_list;
+  }
+
+  static std::vector<PlanarRect> mergeRectList2(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
+  {
+    if (rect_list.size() < 2) {
+      return rect_list;
+    }
+
+    std::vector<PlanarRect> unique_rect_list = uniqueRectList(rect_list);
+
+    std::vector<irt_int> x_list;
+    std::vector<irt_int> y_list;
+    for (const PlanarRect& rect : unique_rect_list) {
+      x_list.push_back(rect.get_lb_x());
+      x_list.push_back(rect.get_rt_x());
+      y_list.push_back(rect.get_lb_y());
+      y_list.push_back(rect.get_rt_y());
+    }
+    std::sort(x_list.begin(), x_list.end());
+    std::sort(y_list.begin(), y_list.end());
+    x_list.erase(std::unique(x_list.begin(), x_list.end()), x_list.end());
+    y_list.erase(std::unique(y_list.begin(), y_list.end()), y_list.end());
+
+    std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> x_range_rect_list_map;
+    std::map<irt_int, std::map<irt_int, std::vector<PlanarRect>>> y_range_rect_list_map;
+    for (const PlanarRect& rect : unique_rect_list) {
+      for (irt_int i = 0; i < static_cast<irt_int>(x_list.size()) - 1; i++) {
+        if (x_list[i + 1] < rect.get_lb_x()) {
+          continue;
+        }
+        if (rect.get_rt_x() < x_list[i]) {
+          break;
+        }
+        for (irt_int j = 0; j < static_cast<irt_int>(y_list.size()) - 1; j++) {
+          if (y_list[j + 1] < rect.get_lb_y()) {
+            continue;
+          }
+          if (rect.get_rt_y() < y_list[j]) {
+            break;
+          }
+          PlanarRect curr_rect(x_list[i], y_list[j], x_list[i + 1], y_list[j + 1]);
+          if (!isOpenOverlap(curr_rect, rect)) {
+            continue;
+          }
+          x_range_rect_list_map[curr_rect.get_lb_x()][curr_rect.get_rt_x()].push_back(curr_rect);
+          y_range_rect_list_map[curr_rect.get_lb_y()][curr_rect.get_rt_y()].push_back(curr_rect);
+        }
+      }
+    }
+
+    std::vector<PlanarRect> merge_rect_list;
+    if (direction == Direction::kHorizontal) {
+      for (auto& [lb_y, rt_y_rect_list_map] : y_range_rect_list_map) {
+        for (auto& [rt_y, rect_list] : rt_y_rect_list_map) {
+          std::sort(rect_list.begin(), rect_list.end(), CmpPlanarRectByXASC());
+          irt_int lb_x = rect_list.front().get_lb_x();
+          irt_int rt_x = rect_list.front().get_rt_x();
+          for (irt_int i = 0; i < static_cast<irt_int>(rect_list.size()) - 1; i++) {
+            PlanarRect& curr_rect = rect_list[i];
+            PlanarRect& next_rect = rect_list[i + 1];
+            if (isClosedOverlap(curr_rect, next_rect)) {
+              rt_x = next_rect.get_rt_x();
+              continue;
+            }
+            merge_rect_list.emplace_back(lb_x, lb_y, rt_x, rt_y);
+            lb_x = next_rect.get_lb_x();
+            rt_x = next_rect.get_rt_x();
+          }
+          merge_rect_list.emplace_back(lb_x, lb_y, rt_x, rt_y);
+        }
+      }
+    } else if (direction == Direction::kVertical) {
+      for (auto& [lb_x, rt_x_rect_list_map] : x_range_rect_list_map) {
+        for (auto& [rt_x, rect_list] : rt_x_rect_list_map) {
+          std::sort(rect_list.begin(), rect_list.end(), CmpPlanarRectByYASC());
+          irt_int lb_y = rect_list.front().get_lb_y();
+          irt_int rt_y = rect_list.front().get_rt_y();
+          for (irt_int i = 0; i < static_cast<irt_int>(rect_list.size()) - 1; i++) {
+            PlanarRect& curr_rect = rect_list[i];
+            PlanarRect& next_rect = rect_list[i + 1];
+            if (isClosedOverlap(curr_rect, next_rect)) {
+              rt_y = next_rect.get_rt_y();
+              continue;
+            }
+            merge_rect_list.emplace_back(lb_x, lb_y, rt_x, rt_y);
+            lb_y = next_rect.get_lb_y();
+            rt_y = next_rect.get_rt_y();
+          }
+          merge_rect_list.emplace_back(lb_x, lb_y, rt_x, rt_y);
+        }
+      }
+    } else {
+      LOG_INST.error(Loc::current(), "The direction is illegal!");
+    }
+    return merge_rect_list;
+  }
+
+  static std::vector<PlanarRect> uniqueRectList(const std::vector<PlanarRect>& rect_list)
+  {
+    std::set<irt_int> covered_rect_idx_set;
+    std::vector<PlanarRect> rect_list_temp = rect_list;
+    std::sort(rect_list_temp.begin(), rect_list_temp.end(), [](PlanarRect& a, PlanarRect& b) { return a.getArea() > b.getArea(); });
+    for (irt_int i = 0; i < static_cast<irt_int>(rect_list_temp.size()); i++) {
+      for (irt_int j = i + 1; j < static_cast<irt_int>(rect_list_temp.size()); j++) {
+        if (!isInside(rect_list_temp[i], rect_list_temp[j])) {
+          continue;
+        }
+        covered_rect_idx_set.insert(j);
+      }
+    }
+
+    std::vector<PlanarRect> unique_rect_list;
+    for (irt_int i = 0; i < static_cast<irt_int>(rect_list_temp.size()); i++) {
+      if (exist(covered_rect_idx_set, i)) {
+        continue;
+      }
+      unique_rect_list.push_back(rect_list_temp[i]);
+    }
+    return unique_rect_list;
   }
 
 #endif
@@ -751,6 +1086,18 @@ class RTUtil
     return enalrged_rect;
   }
 
+  // 在有最大外边界约束下扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, irt_int lb_x_minus_offset, irt_int lb_y_minus_offset, irt_int rt_x_add_offset,
+                                    irt_int rt_y_add_offset, PlanarRect border)
+  {
+    PlanarRect enalrged_rect = getEnlargedRect(rect, lb_x_minus_offset, lb_y_minus_offset, rt_x_add_offset, rt_y_add_offset);
+
+    enalrged_rect.set_lb(std::max(enalrged_rect.get_lb_x(), border.get_lb_x()), std::max(enalrged_rect.get_lb_y(), border.get_lb_y()));
+    enalrged_rect.set_rt(std::min(enalrged_rect.get_rt_x(), border.get_rt_x()), std::min(enalrged_rect.get_rt_y(), border.get_rt_y()));
+
+    return enalrged_rect;
+  }
+
   // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, irt_int enlarge_size)
   {
@@ -778,7 +1125,24 @@ class RTUtil
   {
     RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
     RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+    if (rect.get_lb_x() > rect.get_rt_x() || rect.get_lb_y() > rect.get_rt_y()) {
+      return PlanarRect(-1, -1, -1, -1);
+    }
     return rect;
+  }
+
+  static bool hasReducedRect(PlanarRect rect, irt_int reduce_size)
+  {
+    return hasReducedRect(rect, reduce_size, reduce_size, reduce_size, reduce_size);
+  }
+
+  static bool hasReducedRect(PlanarRect rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset, irt_int rt_x_minus_offset,
+                             irt_int rt_y_minus_offset)
+  {
+    RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
+    RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+
+    return (rect.get_lb_x() <= rect.get_rt_x() && rect.get_lb_y() <= rect.get_rt_y());
   }
 
   // 偏移矩形
@@ -1259,31 +1623,18 @@ class RTUtil
 
   static PlanarRect getGridRect(const PlanarRect& real_rect, TrackAxis& track_axis)
   {
-    std::pair<irt_int, irt_int> x_pair = getClosedTrackIdxPair(real_rect.get_lb_x(), real_rect.get_rt_x(), track_axis.get_x_track_grid());
-    std::pair<irt_int, irt_int> y_pair = getClosedTrackIdxPair(real_rect.get_lb_y(), real_rect.get_rt_y(), track_axis.get_y_track_grid());
-    irt_int grid_lb_x = x_pair.first;
-    irt_int grid_lb_y = y_pair.first;
-    irt_int grid_rt_x = x_pair.second;
-    irt_int grid_rt_y = y_pair.second;
-    if (grid_lb_x == -1 || grid_lb_y == -1 || grid_rt_x == -1 || grid_rt_y == -1) {
+    TrackGrid& x_track_grid = track_axis.get_x_track_grid();
+    TrackGrid& y_track_grid = track_axis.get_y_track_grid();
+    std::vector<irt_int> x_list = getClosedScaleList(real_rect.get_lb_x(), real_rect.get_rt_x(), x_track_grid);
+    std::vector<irt_int> y_list = getClosedScaleList(real_rect.get_lb_y(), real_rect.get_rt_y(), y_track_grid);
+    if (x_list.empty() || y_list.empty()) {
       return PlanarRect(-1, -1, -1, -1);
     }
-    if (grid_lb_x > grid_rt_x || grid_lb_y > grid_rt_y) {
-      return PlanarRect(-1, -1, -1, -1);
-    }
-    return PlanarRect(grid_lb_x, grid_lb_y, grid_rt_x, grid_rt_y);
-  }
-
-  static std::pair<irt_int, irt_int> getClosedTrackIdxPair(irt_int start_line, irt_int end_line, TrackGrid& track_grid)
-  {
-    irt_int track_start_line = track_grid.get_start_line();
-    irt_int track_step_length = track_grid.get_step_length();
-    irt_int track_end_line = track_grid.get_end_line();
-    irt_int offset_start_line = (std::max(start_line, track_start_line) - track_start_line);
-    irt_int first = (start_line > track_end_line) ? -1 : static_cast<irt_int>(offset_start_line / 1.0 / track_step_length);
-    irt_int offset_end_line = (std::min(end_line, track_end_line) - track_start_line);
-    irt_int second = (end_line < track_start_line) ? -1 : offset_end_line / track_step_length;
-    return std::make_pair<>(first, second);
+    irt_int lb_x = (x_list.front() - x_track_grid.get_start_line()) / x_track_grid.get_step_length();
+    irt_int lb_y = (y_list.front() - y_track_grid.get_start_line()) / y_track_grid.get_step_length();
+    irt_int rt_x = (x_list.back() - x_track_grid.get_start_line()) / x_track_grid.get_step_length();
+    irt_int rt_y = (y_list.back() - y_track_grid.get_start_line()) / y_track_grid.get_step_length();
+    return PlanarRect(lb_x, lb_y, rt_x, rt_y);
   }
 
   // 返回的是基于track_axis的grid坐标
@@ -1394,6 +1745,22 @@ class RTUtil
     return track_start + track_idx * track_pitch;
   }
 
+  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
+  static PlanarRect getTrackLineRect(PlanarRect rect, TrackAxis& track_axis)
+  {
+    irt_int x_start_line = track_axis.get_x_track_grid().get_start_line();
+    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
+    irt_int y_start_line = track_axis.get_y_track_grid().get_start_line();
+    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+    PlanarRect enlarge_real_rect = getEnlargedRect(rect, x_step_length, y_step_length, x_step_length, y_step_length);
+    PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
+    irt_int real_lb_x = x_start_line + enlarge_grid_rect.get_lb_x() * x_step_length;
+    irt_int real_rt_x = x_start_line + enlarge_grid_rect.get_rt_x() * x_step_length;
+    irt_int real_lb_y = y_start_line + enlarge_grid_rect.get_lb_y() * y_step_length;
+    irt_int real_rt_y = y_start_line + enlarge_grid_rect.get_rt_y() * y_step_length;
+    return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
+  }
+
 #endif
 
 #if 1  // irt数据结构工具函数
@@ -1457,12 +1824,32 @@ class RTUtil
   }
 
   // 获得坐标集合的重心
+  static LayerCoord getBalanceCoord(const std::vector<LayerCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      return LayerCoord(-1, -1, -1);
+    }
+    std::vector<irt_int> x_list;
+    std::vector<irt_int> y_list;
+    std::vector<irt_int> layer_idx_list;
+    x_list.reserve(coord_list.size());
+    y_list.reserve(coord_list.size());
+    layer_idx_list.reserve(coord_list.size());
+    for (const LayerCoord& coord : coord_list) {
+      x_list.push_back(coord.get_x());
+      y_list.push_back(coord.get_y());
+      layer_idx_list.push_back(coord.get_layer_idx());
+    }
+
+    return LayerCoord(getAverage(x_list), getAverage(y_list), getAverage(layer_idx_list));
+  }
+
+  // 获得坐标集合的重心
   static PlanarCoord getBalanceCoord(const std::vector<PlanarCoord>& coord_list)
   {
     if (coord_list.empty()) {
       return PlanarCoord(-1, -1);
     }
-
     std::vector<irt_int> x_value_list;
     std::vector<irt_int> y_value_list;
     x_value_list.reserve(coord_list.size());
@@ -1869,40 +2256,6 @@ class RTUtil
     return true;
   }
 
-  static void mergeRectList(std::vector<LayerRect>& layer_rect_list)
-  {
-    std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
-    for (LayerRect& layer_rect : layer_rect_list) {
-      layer_rect_map[layer_rect.get_layer_idx()].push_back(layer_rect);
-    }
-    layer_rect_list.clear();
-    for (auto& [layer_idx, planar_rect_list] : layer_rect_map) {
-      mergeRectList(planar_rect_list);
-    }
-    for (auto& [layer_idx, planar_rect_list] : layer_rect_map) {
-      for (PlanarRect& planar_rect : planar_rect_list) {
-        layer_rect_list.emplace_back(planar_rect, layer_idx);
-      }
-    }
-  }
-
-  static void mergeRectList(std::vector<PlanarRect>& rect_list)
-  {
-    // add to polygon
-    gtl::polygon_90_set_data<irt_int> poly_set;
-    for (PlanarRect& rect : rect_list) {
-      poly_set += RTUtil::convertToGTLRect(rect);
-    }
-    // slicing polygon set
-    std::vector<gtl::rectangle_data<irt_int>> slicing_rect_list;
-    gtl::get_rectangles(slicing_rect_list, poly_set);
-    // reset rect_list
-    rect_list.clear();
-    for (gtl::rectangle_data<irt_int>& slicing_rect : slicing_rect_list) {
-      rect_list.push_back(RTUtil::convertToPlanarRect(slicing_rect));
-    }
-  }
-
   // 计算刻度，可选择是否包含边界
   static std::vector<irt_int> getScaleList(irt_int begin_line, irt_int end_line, ScaleGrid& scale_grid, bool lb_boundary, bool rt_boundary)
   {
@@ -1942,74 +2295,87 @@ class RTUtil
     return getScaleList(begin_line, end_line, scale_grid, false, false);
   }
 
+  /**
+   * 返回多级层idx
+   * eg. curr_layer_idx: 5
+   *     layer_idx_list: [1 2 3 4 5 6 7 8]
+   *     return: [4 3 2 1]
+   *             [5 6 7 8]
+   */
+  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
+                                                                        irt_int top_layer_idx)
+  {
+    std::vector<irt_int> via_below_layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    std::vector<std::vector<irt_int>> level_layer_idx_list;
+
+    std::vector<irt_int> down_via_below_layer_idx_list;
+    for (irt_int layer_idx : via_below_layer_idx_list) {
+      if (layer_idx < curr_layer_idx) {
+        down_via_below_layer_idx_list.push_back(layer_idx);
+      }
+    }
+    std::sort(down_via_below_layer_idx_list.begin(), down_via_below_layer_idx_list.end(), std::greater());
+    if (!down_via_below_layer_idx_list.empty()) {
+      level_layer_idx_list.push_back(down_via_below_layer_idx_list);
+    }
+    std::vector<irt_int> up_via_below_layer_idx_list;
+    for (irt_int layer_idx : via_below_layer_idx_list) {
+      if (curr_layer_idx <= layer_idx) {
+        up_via_below_layer_idx_list.push_back(layer_idx);
+      }
+    }
+    std::sort(up_via_below_layer_idx_list.begin(), up_via_below_layer_idx_list.end(), std::less());
+    if (!up_via_below_layer_idx_list.empty()) {
+      level_layer_idx_list.push_back(up_via_below_layer_idx_list);
+    }
+    return level_layer_idx_list;
+  }
+
   // 考虑的全部via below层
-  static std::vector<int> getViaBelowLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<int> layer_idx_list;
-
+    std::vector<irt_int> layer_idx_list;
     if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
       layer_idx_list.push_back(curr_layer_idx - 1);
       layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == bottom_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx == top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-    } else {
-      for (int i = curr_layer_idx; i <= bottom_layer_idx; i++) {
-        layer_idx_list.push_back(i);
+    } else if (curr_layer_idx <= bottom_layer_idx) {
+      for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
       }
-      for (int i = (top_layer_idx - 1); i <= (curr_layer_idx - 1); i++) {
-        layer_idx_list.push_back(i);
+    } else if (top_layer_idx <= curr_layer_idx) {
+      for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+        layer_idx_list.push_back(layer_idx);
       }
     }
     std::sort(layer_idx_list.begin(), layer_idx_list.end());
     layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-
     return layer_idx_list;
   }
 
   // 获得可用的布线层
-  static std::vector<int> getUsageLayerIdxList(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
+  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<int> layer_idx_list;
+    std::vector<irt_int> layer_idx_list;
     if (curr_layer_idx < bottom_layer_idx) {
-      for (int i = curr_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else if (top_layer_idx < curr_layer_idx) {
-      for (int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     } else {
-      for (int i = bottom_layer_idx; i <= top_layer_idx; i++) {
+      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
         layer_idx_list.push_back(i);
       }
     }
     return layer_idx_list;
-  }
-
-  // 获得全部的access层
-  static std::vector<std::vector<irt_int>> getAccessLayerIdxListGroup(int curr_layer_idx, int bottom_layer_idx, int top_layer_idx)
-  {
-    std::vector<std::vector<irt_int>> access_layer_idx_list_group;
-    access_layer_idx_list_group.resize(2);
-
-    if (bottom_layer_idx > top_layer_idx) {
-      std::swap(bottom_layer_idx, top_layer_idx);
-    }
-    for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::max(curr_layer_idx, top_layer_idx); layer_idx++) {
-      access_layer_idx_list_group.front().push_back(layer_idx);
-    }
-    for (irt_int layer_idx = (curr_layer_idx - 1); layer_idx >= bottom_layer_idx; layer_idx--) {
-      access_layer_idx_list_group.back().push_back(layer_idx);
-    }
-    return access_layer_idx_list_group;
   }
 
 #endif
@@ -2488,9 +2854,14 @@ class RTUtil
    * notice : The closer the <value> is to the <threshold>, the closer the return value is to 1
    *
    */
-  static double sigmoid(const double value, const double threshold)
+  static double sigmoid(double value, double threshold)
   {
-    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / std::max(threshold, 0.01)))));
+    if (-0.01 < threshold && threshold < 0) {
+      threshold = -0.01;
+    } else if (0 <= threshold && threshold < 0.01) {
+      threshold = 0.01;
+    }
+    double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / threshold))));
     if (std::isnan(result)) {
       LOG_INST.error(Loc::current(), "The value is nan!");
     }
@@ -2800,8 +3171,29 @@ class RTUtil
       max_value = std::max(max_value, value);
       min_value = std::min(min_value, value);
     }
-    T range = (max_value - min_value) / 10;
+    T range = std::max(0.001, (max_value - min_value) / 10);
     return retainPlaces(range, digit);
+  }
+
+  static void check(std::vector<PlanarRect>& rect_list1, std::vector<PlanarRect>& rect_list2)
+  {
+    if (rect_list1.size() != rect_list2.size()) {
+      LOG_INST.error(Loc::current(), "number is different!");
+    }
+
+    double area1 = 0;
+    for (PlanarRect& rect : rect_list1) {
+      area1 += rect.getArea();
+    }
+
+    double area2 = 0;
+    for (PlanarRect& rect : rect_list2) {
+      area2 += rect.getArea();
+    }
+
+    if (area1 != area2) {
+      LOG_INST.error(Loc::current(), "area is different!");
+    }
   }
 
 #endif

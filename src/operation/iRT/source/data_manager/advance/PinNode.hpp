@@ -16,15 +16,15 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerCoord.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class PinNode : public EXTLayerCoord
+class PinNode : public LayerCoord
 {
  public:
   PinNode() = default;
-  PinNode(const PinNode& other) : EXTLayerCoord(other)
+  PinNode(const PinNode& other) : LayerCoord(other)
   {
     _net_idx = other._net_idx;
     _pin_idx = other._pin_idx;
