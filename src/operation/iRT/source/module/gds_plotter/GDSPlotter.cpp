@@ -194,13 +194,11 @@ void GDSPlotter::addAccessPointList(GPStruct& pin_struct, Pin& pin)
 
 void GDSPlotter::addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gp_data_manager.getDatabase().get_routing_layer_list();
-
   GPStruct bounding_box_struct(RTUtil::getString("bounding_box@", net_struct.get_alias_name()));
 
   GPBoundary bounding_box_boundary;
-  bounding_box_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer_list.front().get_layer_idx()));
-  bounding_box_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBoundingBox));
+  bounding_box_boundary.set_layer_idx(0);
+  bounding_box_boundary.set_data_type(1);
   bounding_box_boundary.set_rect(bounding_box.get_real_rect());
   bounding_box_struct.push(bounding_box_boundary);
 

@@ -64,7 +64,6 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
 
   outputGCellGrid(idb_builder);
   outputNetList(idb_builder);
-  saveDef(idb_builder);
 
   LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
 }
@@ -74,8 +73,6 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
-  _config.output_def_file_path
-      = RTUtil::getConfigValue<std::string>(config_map, "-output_def_file_path", "./rt_temp_directory/rt.output.def");
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
   _config.log_level = RTUtil::getConfigValue<irt_int>(config_map, "-log_level", 0);
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
@@ -501,7 +498,6 @@ void DataManager::buildConfig()
 {
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  _config.output_def_file_path = std::filesystem::absolute(_config.output_def_file_path);
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
   _config.log_file_path = _config.temp_directory_path + "rt.log";
@@ -539,7 +535,6 @@ void DataManager::buildConfig()
   _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  RTUtil::createDirByFile(_config.output_def_file_path);
   RTUtil::createDir(_config.temp_directory_path);
   RTUtil::createDirByFile(_config.log_file_path);
   // **********    DataManager    ********** //
@@ -1254,8 +1249,6 @@ void DataManager::printConfig()
   /////////////////////////////////////////////
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_def_file_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_def_file_path);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_level");
@@ -2140,11 +2133,6 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   idb_segment->add_point(via_node.get_x(), via_node.get_y());
   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
   idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
-}
-
-void DataManager::saveDef(idb::IdbBuilder* idb_builder)
-{
-  idb_builder->saveDef(_config.output_def_file_path);
 }
 
 Direction DataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_direction)

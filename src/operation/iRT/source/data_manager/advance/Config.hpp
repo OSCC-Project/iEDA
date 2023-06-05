@@ -28,7 +28,6 @@ class Config
   ~Config() = default;
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  std::string output_def_file_path;                       // required
   std::string temp_directory_path;                        // required
   irt_int log_level;                                      // optional
   irt_int thread_number;                                  // optional
