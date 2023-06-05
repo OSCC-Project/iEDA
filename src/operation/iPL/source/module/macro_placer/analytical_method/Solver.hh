@@ -11,10 +11,10 @@
 #ifndef IPL_MP_SOLVER_H
 #define IPL_MP_SOLVER_H
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <memory>
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
+using Mat = Eigen::MatrixXd;
+using Vec = Eigen::VectorXd;
 
 namespace ipl {
 class Problem;
@@ -24,7 +24,7 @@ class Solver
  public:
   explicit Solver(std::shared_ptr<Problem> problem) : _problem(problem){};
   ~Solver(){};
-  void doNesterovSolve(MatrixXd& solution);
+  void doNesterovSolve(Mat& solution);
   void set_steplength_bound(float l, float u)
   {
     if (u > l)
@@ -34,7 +34,7 @@ class Solver
   }
 
  private:
-  MatrixXd _gradiant;
+  Mat _gradiant;
 
   float _steplength_l;
   float _steplength_u;

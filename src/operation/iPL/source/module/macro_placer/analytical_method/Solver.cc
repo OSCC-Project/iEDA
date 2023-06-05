@@ -7,7 +7,20 @@
 #include "Log.hh"
 #include "Problem.hh"
 namespace ipl {
-void Solver::doNesterovSolve(MatrixXd& solution)
+template <typename T>
+void log(const T& val)
+{
+  std::cout << std::left << " " << val << "\n";
+}
+
+template <typename T, typename... Args>
+void log(const T& val, const Args&... args)
+{
+  std::cout << std::left << " " << val;
+  log(args...);
+}
+
+void Solver::doNesterovSolve(Mat& solution)
 {
   int rows = _problem->variableMatrixRows();
   int cols = _problem->variableMatrixcols();
@@ -17,54 +30,40 @@ void Solver::doNesterovSolve(MatrixXd& solution)
   }
 
   // Major solution u_k
-  MatrixXd major = std::move(solution);
-  MatrixXd new_major = MatrixXd::Zero(rows, cols);
+  Mat major = std::move(solution);
+  Mat new_major = Mat::Zero(rows, cols);
 
   // Reference solution v_k
-  MatrixXd reference = major;
-  MatrixXd prev_reference = MatrixXd::Zero(rows, cols);
+  Mat reference = major;
+  Mat prev_reference = Mat::Zero(rows, cols);
 
   // Gradiant of Reference solution v_k
-  MatrixXd grad = MatrixXd::Zero(rows, cols);
-  MatrixXd prev_grad = MatrixXd::Zero(rows, cols);
+  Mat grad = Mat::Zero(rows, cols);
+  Mat prev_grad = Mat::Zero(rows, cols);
 
-  // for (Eigen::Index i = 0; i < prev_reference.rows(); i++) {
-  //   for (Eigen::Index j = 0; j < prev_reference.cols(); j++) {
-  //     float coeff = prev_reference(i, j);
-  //     float l = _problem->getLowerBound(i, j);
-  //     float u = _problem->getUpperBound(i, j);
-  //     prev_reference(i, j) = l + (coeff + 1.0) / 2 * (u - l);
-  //   }
-  // }
-  float cost = 0;
+  double cur_cost = 0.0;
+  double prev_cost = 0.0;
 
   prev_reference = reference - reference * 0.1;
-  _problem->evaluate(prev_reference, prev_grad, cost, -1);
+  _problem->evaluate(prev_reference, prev_grad, prev_cost, -1);
 
   float a_k = 1.0F;
   float a_k_1 = 1.0F;
 
   // Alpha
-  VectorXd steplength = VectorXd::Ones(cols);
+  Vec steplength = Vec::Ones(cols);
 
   for (int iter = 0; iter < 1000; iter++) {
-    _problem->evaluate(reference, grad, cost, iter);
+    _problem->evaluate(reference, grad, cur_cost, iter);
 
-    if (iter % 10 == 0) {
-      std::cout << std::left << std::setw(6) << "Iter:" << std::setw(5) << iter;
-      std::cout << std::left << std::setw(6) << "Cost:" << std::setw(15) << cost;
-      std::cout << std::left << std::setw(7) << "Major:" << std::setw(0) << Eigen::Map<Eigen::RowVectorXd>(major.data(), major.size())
-                << "     ";
-      std::cout << std::left << std::setw(6) << "Grad:" << std::setw(0)
-                << Eigen::Map<Eigen::RowVectorXd>(prev_grad.data(), prev_grad.size()) << "     ";
-      std::cout << std::left << std::setw(6) << "Step:" << std::setw(0)
-                << Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size());
-      std::cout << std::endl;
-    }
     for (Eigen::Index i = 0; i < cols; i++) {
       steplength(i) = (reference.col(i) - prev_reference.col(i)).norm() / (grad.col(i) - prev_grad.col(i)).norm();
     }
-
+    if (iter % 10 == 0) {
+      log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", prev_cost - cur_cost,
+          "step:", Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size()));
+      prev_cost = cur_cost;
+    }
     new_major = reference - grad * steplength.asDiagonal();
 
     a_k_1 = (1 + sqrt(4 * a_k * a_k + 1)) * 0.5;

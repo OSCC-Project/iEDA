@@ -21,7 +21,8 @@ add_library(ipl-module-macro_placer
     simulate_anneal/MPEvaluation.cc
     analytical_method/Solver.cc
     analytical_method/Problem.cc
-    analytical_method/MProblem.cc)
+    analytical_method/MProblem.cc
+    analytical_method/LSEWirelength.cc)
 
 target_include_directories(ipl-module-macro_placer
     PUBLIC
