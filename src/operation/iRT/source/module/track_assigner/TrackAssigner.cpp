@@ -961,7 +961,7 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
   while (!isConnectedAllEnd(ta_panel)) {
     routeSinglePath(ta_panel);
     for (TARouteStrategy ta_route_strategy :
-         {TARouteStrategy::kIgnoringFence, TARouteStrategy::kIgnoringENV, TARouteStrategy::kIgnoringOBS}) {
+         {TARouteStrategy::kIgnoringENV, TARouteStrategy::kIgnoringFence, TARouteStrategy::kIgnoringOBS}) {
       rerouteByIgnoring(ta_panel, ta_route_strategy);
     }
     updatePathResult(ta_panel);

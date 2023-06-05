@@ -75,18 +75,6 @@ class DRNode : public LayerCoord
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
     }
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (RTUtil::exist(_env_task_map, orientation)) {
-        if (_env_task_map[orientation].size() >= 2) {
-          is_obs = true;
-        } else {
-          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
-        }
-      }
-    }
     if (dr_route_strategy == DRRouteStrategy::kIgnoringFence) {
       return is_obs;
     }
@@ -99,6 +87,19 @@ class DRNode : public LayerCoord
         }
       }
     }
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
+      return is_obs;
+    }
+    if (!is_obs) {
+      if (RTUtil::exist(_env_task_map, orientation)) {
+        if (_env_task_map[orientation].size() >= 2) {
+          is_obs = true;
+        } else {
+          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
+        }
+      }
+    }
+
     return is_obs;
   }
   double getCost(irt_int task_idx, Orientation orientation)
