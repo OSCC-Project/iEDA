@@ -2305,21 +2305,19 @@ class RTUtil
   static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
                                                                         irt_int top_layer_idx)
   {
-    std::vector<irt_int> layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    std::vector<irt_int> via_below_layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
-    for (irt_int layer_idx : layer_idx_list) {
-      std::vector<irt_int> layer_idx_list;
+    level_layer_idx_list.resize(2);
+
+    for (irt_int layer_idx : via_below_layer_idx_list) {
       if (layer_idx < curr_layer_idx) {
-        layer_idx_list.push_back(layer_idx);
+        level_layer_idx_list[0].push_back(layer_idx);
       }
-      level_layer_idx_list.push_back(layer_idx_list);
     }
-    for (irt_int layer_idx : layer_idx_list) {
-      std::vector<irt_int> layer_idx_list;
+    for (irt_int layer_idx : via_below_layer_idx_list) {
       if (curr_layer_idx <= layer_idx) {
-        layer_idx_list.push_back(layer_idx);
+        level_layer_idx_list[1].push_back(layer_idx);
       }
-      level_layer_idx_list.push_back(layer_idx_list);
     }
     return level_layer_idx_list;
   }
