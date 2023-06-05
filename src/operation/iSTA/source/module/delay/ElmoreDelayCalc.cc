@@ -37,7 +37,11 @@ std::unique_ptr<RCNetCommonInfo> RcNet::_rc_net_common_info;
 
 RctNode::RctNode(std::string&& name) : _name{std::move(name)} {}
 
-void RctNode::calNodePIModel(){
+void RctNode::calNodePIModel() {
+  if (IsDoubleEqual(_moments.y2, 0.0) || IsDoubleEqual(_moments.y3, 0.0)) {
+    return;
+  }
+
   double y1 = _moments.y1;
   double y2 = _moments.y2;
   double y3 = _moments.y3;
@@ -49,7 +53,6 @@ void RctNode::calNodePIModel(){
   _pi.R = R;
   _pi.C_far = C1;
 }
-
 
 double RctNode::nodeLoad(AnalysisMode mode, TransType trans_type) {
   return _nload[ModeTransPair(mode, trans_type)];
@@ -219,6 +222,16 @@ void RcTree::initData() {
 }
 
 /**
+ * @brief init node moment.
+ *
+ */
+void RcTree::initMoment() {
+  WaveformApproximation wave_form;
+  int load_nodes_pin_cap_sum = 0;
+  wave_form.reduceRCTreeToPIModel(_root, load_nodes_pin_cap_sum);
+}
+
+/**
  * @brief calculate and update the each node's load of a rctree
  *
  * @param parent
@@ -251,23 +264,6 @@ void RcTree::updateLoad(RctNode* parent, RctNode* from) {
   FOREACH_MODE_TRANS(mode, trans) {
     from->_nload[ModeTransPair(mode, trans)] += from->cap(mode, trans);
   }
-}
-
-void RcTree::updateMC(RctNode* parent, RctNode* from) {
-  if (from->isUpdateMC()) {
-    return;
-  }
-
-  from->set_is_update_mc(true);
-
-  for (auto* e : from->_fanout) {
-    if (auto& to = e->_to; &to != parent) {
-      updateMC(from, &to);
-
-      from->_mc += to._mc;
-    }
-  }
-  from->_mc += from->_delay * from->cap();
 }
 
 /**
@@ -371,8 +367,47 @@ void RcTree::updateDelayECM(RctNode* parent, RctNode* from) {
   }
 }
 
+void RcTree::updateMC(RctNode* parent, RctNode* from) {
+  if (from->isUpdateMC()) {
+    return;
+  }
 
-void RcTree::updateM2(RctNode* parent, RctNode* from){
+  from->set_is_update_mc(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      updateMC(from, &to);
+
+      from->_mc += to._mc;
+    }
+  }
+  from->_mc += from->_delay * from->cap();
+}
+
+/**
+ * @brief update mc for modify D2M.
+ *
+ * @param parent
+ * @param from
+ */
+void RcTree::updateMCC(RctNode* parent, RctNode* from) {
+  if (from->isUpdateMCC()) {
+    return;
+  }
+
+  from->set_is_update_mc_c(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      updateMCC(from, &to);
+
+      from->_mc_c += to._mc_c;
+    }
+  }
+  from->_mc_c += from->_delay_ecm * from->cap();
+}
+
+void RcTree::updateM2(RctNode* parent, RctNode* from) {
   if (from->isUpdateM2()) {
     return;
   }
@@ -386,7 +421,28 @@ void RcTree::updateM2(RctNode* parent, RctNode* from){
       updateM2(from, &to);
     }
   }
+}
 
+/**
+ * @brief update D2M changed.
+ *
+ * @param parent
+ * @param from
+ */
+void RcTree::updateM2C(RctNode* parent, RctNode* from) {
+  if (from->isUpdateM2C()) {
+    return;
+  }
+
+  from->set_is_update_m2_c(true);
+
+  for (auto* e : from->_fanout) {
+    if (auto& to = e->_to; &to != parent) {
+      to._m2_c = from->_m2_c + e->_res * to._mc_c;
+
+      updateM2C(from, &to);
+    }
+  }
 }
 
 /**
@@ -405,6 +461,16 @@ void RcTree::updateRcTiming() {
   updateDelay(nullptr, _root);
   updateLDelay(nullptr, _root);
   updateResponse(nullptr, _root);
+
+  if (c_print_delay_yaml) {
+    updateMC(nullptr, _root);
+    updateM2(nullptr, _root);
+
+    initMoment();
+    updateDelayECM(nullptr, _root);
+    updateMCC(nullptr, _root);
+    updateM2C(nullptr, _root);
+  }
 
   // printGraphViz();
 }
@@ -572,11 +638,29 @@ void RcNet::checkLoop() {
   auto& nodes = rct.get_nodes();
   _is_found_loop = false;
 
-  for (auto& [node_name, node] : nodes) {
-    dfsTranverse(nullptr, node);
-    if (_is_found_loop) {
-      breakLoop();
-      _is_found_loop = false;
+  while (true) {
+    bool need_check_again = false;
+    for (auto& [node_name, node] : nodes) {
+      // std::cout << "check node " << ++i << " " << node_name << std::endl;
+      dfsTranverse(nullptr, node);
+      if (_is_found_loop) {
+        breakLoop();
+        _is_found_loop = false;
+        need_check_again = true;
+      }
+    }
+
+    if (!need_check_again) {
+      break;
+    }
+
+    for (auto& [node_name, node] : nodes) {
+      node.set_is_visited(false);
+      node.set_is_tranverse(false);
+    }
+
+    for (auto& edge : rct.get_edges()) {
+      edge.set_is_visited(false);
     }
   }
 
@@ -670,9 +754,9 @@ void RcNet::updateRcTreeInfo() {
       if (auto* node = rct.rcNode(pin->getFullName()); node) {
         if (pin == driver) {
           rct._root = node;
+          node->set_is_root();
         }
         node->set_obj(pin);
-
       } else {
         const auto& nodes = rct.get_nodes();
         for (const auto& [node_name, node] : nodes) {
@@ -705,6 +789,8 @@ void RcNet::updateRcTiming(const spef::Net& spef_net) {
 
   //  not empty Rct.
   if (_rct.index() != 0) {
+    checkLoop();
+
     auto& rct = std::get<RcTree>(_rct);
     rct.updateRcTiming();
 
@@ -791,13 +877,30 @@ double RcNet::getResistance(AnalysisMode mode, TransType trans_type,
   return res;
 }
 
-std::optional<double> RcNet::delay(DesignObject& to) {
+/**
+ * @brief get delay of rc node.
+ *
+ * @param to
+ * @param delay_method
+ * @return std::optional<double>
+ */
+std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
   if (_rct.index() == 0) {
     return std::nullopt;
   }
 
   auto node = std::get<RcTree>(_rct).node(to.getFullName());
-  return node->delay();
+  std::optional<double> delay;
+  if (delay_method == DelayMethod::kElmore) {
+    delay = node->delay();
+  } else if (delay_method == DelayMethod::kD2M) {
+    delay = node->delayD2M();
+  } else if (delay_method == DelayMethod::kECM) {
+    delay = node->delayECM();
+  } else {
+    delay = node->delayD2MM();
+  }
+  return delay;
 }
 
 std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(

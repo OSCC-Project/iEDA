@@ -17,8 +17,7 @@
 #include "GDSPloter.h"
 
 #include "CTSAPI.hpp"
-
-using namespace std;
+#include "CtsDBWrapper.h"
 
 namespace icts {
 
@@ -33,77 +32,126 @@ GDSPloter::GDSPloter(const string& gds_file)
   _log_ofs.open(gds_file, std::ios::out | std::ios::trunc);
 }
 
-void GDSPloter::plotDesign() const
+void GDSPloter::plotDesign()
 {
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/cts_design.gds";
-  GDSPloter ploter(path);
-  ploter.head();
+  auto plotter = GDSPloter(path);
+
+  plotter.head();
 
   for (auto& clk_net : clk_nets) {
+    // check prefix whether is "sdram_clk_o"
+    if (clk_net->get_net_name().find("sdram_clk_o") == string::npos) {
+      continue;
+    }
     for (const auto& wire : clk_net->get_signal_wires()) {
       auto first = DataTraits<Endpoint>::getPoint(wire.get_first());
       auto second = DataTraits<Endpoint>::getPoint(wire.get_second());
-      ploter.insertWire(first, second);
+      plotter.insertWire(first, second, clk_net->get_driver_inst()->get_level());
     }
   }
 
   auto insts = design->get_insts();
   for (auto* inst : insts) {
-    ploter.insertInstance(inst);
+    plotter.insertInstance(inst);
   }
 
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", 100);
-  ploter.strBegin();
-  ploter.topBegin();
+  plotter.insertPolygon(core, "core", 100);
+  plotter.strBegin();
+  plotter.topBegin();
   for (auto* inst : insts) {
-    ploter.refInstance(inst);
+    plotter.refInstance(inst);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
+  plotter.refPolygon("core");
+  plotter.refPolygon("WIRE");
+  plotter.strEnd();
 
-  ploter.tail();
+  plotter.tail();
 }
 
-void GDSPloter::plotFlyLine() const
+void GDSPloter::plotFlyLine()
 {
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/cts_fly_line.gds";
-  GDSPloter ploter(path);
-  ploter.head();
+  auto plotter = GDSPloter(path);
+
+  plotter.head();
 
   for (auto& clk_net : clk_nets) {
+    // check prefix whether is "clk_hs_peri"
+    if (clk_net->get_net_name().find("sdram_clk_o") == string::npos) {
+      continue;
+    }
     auto driver = clk_net->get_driver_inst();
     for (auto load : clk_net->get_load_insts()) {
-      ploter.insertWire(driver->get_location(), load->get_location(), driver->get_level());
+      plotter.insertWire(driver->get_location(), load->get_location(), driver->get_level());
     }
   }
 
-  auto insts = design->get_insts();
-  for (auto* inst : insts) {
-    ploter.insertInstance(inst);
+  auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
+  auto idb_insts = idb_design->get_instance_list()->get_instance_list();
+  for (auto idb_inst : idb_insts) {
+    auto* inst_box = idb_inst->get_bounding_box();
+    auto lp = inst_box->get_low_point();
+    auto hp = inst_box->get_high_point();
+    auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
+                         Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
+    auto name = idb_inst->get_name();
+    plotter.insertPolygon(rect, name, 1);
+  }
+
+  auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
+  for (auto* blockage : idb_blockages) {
+    auto blockage_rect_list = blockage->get_rect_list();
+    if (blockage_rect_list.empty()) {
+      LOG_WARNING << "rectangles of blockage are empty!";
+      continue;
+    }
+    int i = 0;
+    for (auto* blockage_rect : blockage_rect_list) {
+      auto lp = blockage_rect->get_low_point();
+      auto hp = blockage_rect->get_high_point();
+      auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
+                           Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
+      auto name = blockage->get_instance_name() + std::to_string(i);
+      ++i;
+      plotter.insertPolygon(rect, name, 1);
+    }
   }
 
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", 100);
-  ploter.strBegin();
-  ploter.topBegin();
-  for (auto* inst : insts) {
-    ploter.refInstance(inst);
+  plotter.insertPolygon(core, "core", 100);
+  plotter.strBegin();
+  plotter.topBegin();
+  for (auto idb_inst : idb_insts) {
+    auto name = idb_inst->get_name();
+    plotter.refPolygon(name);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
 
-  ploter.tail();
+  for (auto* blockage : idb_blockages) {
+    auto blockage_rect_list = blockage->get_rect_list();
+    if (blockage_rect_list.empty()) {
+      LOG_WARNING << "rectangles of blockage are empty!";
+      continue;
+    }
+    for (size_t i = 0; i < blockage_rect_list.size(); ++i) {
+      auto name = blockage->get_instance_name() + std::to_string(i);
+      plotter.refPolygon(name);
+    }
+  }
+  plotter.refPolygon("core");
+  plotter.refPolygon("WIRE");
+  plotter.strEnd();
+
+  plotter.tail();
 }
 
 void GDSPloter::refPolygon(const string& name)
@@ -127,18 +175,18 @@ void GDSPloter::insertWire(const Point& begin, const Point& end, const int& laye
 {
   _log_ofs << "BGNSTR" << std::endl;
   _log_ofs << "STRNAME WIRE" << std::endl;
-  _log_ofs << "PATH" << endl;
-  _log_ofs << "LAYER " + to_string(layer) << endl;
-  _log_ofs << "DATATYPE 0" << endl;
-  _log_ofs << "WIDTH " << to_string(width) << endl;
-  _log_ofs << "XY" << endl;
-  auto begin_x = to_string(begin.x());
-  auto begin_y = to_string(begin.y());
-  auto end_x = to_string(end.x());
-  auto end_y = to_string(end.y());
-  _log_ofs << begin_x << ":" << begin_y << endl;
-  _log_ofs << end_x << ":" << end_y << endl;
-  _log_ofs << "ENDEL" << endl;
+  _log_ofs << "PATH" << std::endl;
+  _log_ofs << "LAYER " + std::to_string(layer) << std::endl;
+  _log_ofs << "DATATYPE 0" << std::endl;
+  _log_ofs << "WIDTH " << std::to_string(width) << std::endl;
+  _log_ofs << "XY" << std::endl;
+  auto begin_x = std::to_string(begin.x());
+  auto begin_y = std::to_string(begin.y());
+  auto end_x = std::to_string(end.x());
+  auto end_y = std::to_string(end.y());
+  _log_ofs << begin_x << ":" << begin_y << std::endl;
+  _log_ofs << end_x << ":" << end_y << std::endl;
+  _log_ofs << "ENDEL" << std::endl;
   _log_ofs << "ENDSTR" << std::endl;
 }
 

@@ -235,8 +235,8 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
   std::vector<double> wire_length_via_num;
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getDatabase().get_total_wire_length());
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getDatabase().get_total_via_num());
+  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_wire_length());
+  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_via_num());
   EarlyGlobalRouter::destroyInst();
   return wire_length_via_num;
 }
