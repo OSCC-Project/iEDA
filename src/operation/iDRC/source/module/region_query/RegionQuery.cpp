@@ -49,6 +49,27 @@ void RegionQuery::queryIntersectsInRoutingLayer(int routingLayerId, RTreeBox que
   // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
 }
 
+void RegionQuery::queryContainsInRoutingLayer(int routingLayerId, RTreeBox query_box,
+                                              std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
+{
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::contains(query_box), std::back_inserter(query_result));
+
+  _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::covers(query_box), std::back_inserter(query_result));
+
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::disjoint(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::contains(query_box), std::back_inserter(query_result));
+
+  _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::covers(query_box), std::back_inserter(query_result));
+
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::disjoint(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
+}
+
 /**
  * @brief query and store results
  *        搜索绕线层上与目标区域相交的所有矩形，并把搜索结果存放于搜索结果列表中

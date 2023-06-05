@@ -128,7 +128,7 @@ class RegionQuery
   void addRectScope(DrcRect* drc_rect, Tech* tech);
   void removeRectScope(DrcRect* drc_rect);
 
-  /************下面都是没用到的**********/
+  void queryContainsInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryIntersectsInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryInCutLayer(int cutLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryEdgeInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeSegment, DrcEdge*>>& result);
@@ -171,21 +171,21 @@ class RegionQuery
   std::vector<DrcViolationSpot*> _min_step_spot_list;
 
  private:
-  int _cut_diff_layer_spacing_count;
-  int _common_spacing_count;
-  int _eol_spacing_count;
-  int _short_count;
-  int _corner_fill_spacing_count;
-  int _notch_spacing_count;
-  int _jog_spacing_count;
-  int _cut_common_spacing_count;
-  int _cut_eol_spacing_count;
-  int _area_count;
-  int _common_enclosure_count;
-  int _egde_enclosure_count;
-  int _width_count;
-  int _minstep_count;
-  int _min_hole_count;
+  int _cut_diff_layer_spacing_count = 0;
+  int _common_spacing_count = 0;
+  int _eol_spacing_count = 0;
+  int _short_count = 0;
+  int _corner_fill_spacing_count = 0;
+  int _notch_spacing_count = 0;
+  int _jog_spacing_count = 0;
+  int _cut_common_spacing_count = 0;
+  int _cut_eol_spacing_count = 0;
+  int _area_count = 0;
+  int _common_enclosure_count = 0;
+  int _egde_enclosure_count = 0;
+  int _width_count = 0;
+  int _minstep_count = 0;
+  int _min_hole_count = 0;
 
   std::set<std::pair<DrcRect*, DrcRect*>> _prl_spacing_vio_set;
   std::set<std::pair<DrcRect*, DrcRect*>> _short_vio_set;
