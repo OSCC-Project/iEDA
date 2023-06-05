@@ -1477,6 +1477,14 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
       }
     }
+    {
+      // bounding_box
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(0);
+      gp_boundary.set_data_type(1);
+      gp_boundary.set_rect(gr_net.get_bounding_box().get_real_rect());
+      net_struct.push(gp_boundary);
+    }
     for (Segment<LayerCoord>& segment : gr_net.get_routing_segment_list()) {
       LayerCoord first_coord = segment.get_first();
       irt_int first_layer_idx = first_coord.get_layer_idx();
