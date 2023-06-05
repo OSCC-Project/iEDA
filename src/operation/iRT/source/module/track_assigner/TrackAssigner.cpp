@@ -1522,7 +1522,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
     for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
       TANode& ta_node = node_map[grid_x][grid_y];
       PlanarRect real_rect = RTUtil::getEnlargedRect(ta_node.get_planar_coord(), layer_width_map[ta_node.get_layer_idx()]);
-      irt_int y_reduced_span = real_rect.getYSpan() / 15;
+      irt_int y_reduced_span = real_rect.getYSpan() / 25;
       irt_int y = real_rect.get_rt_y();
 
       GPBoundary gp_boundary;
@@ -1647,6 +1647,30 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
         gp_text_task_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
         gp_text_task_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_task_queue_info);
+      }
+
+      y -= y_reduced_span;
+      GPText gp_text_orientation_set;
+      gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
+      gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_orientation_set.set_message("orientation_set: ");
+      gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_orientation_set);
+
+      if (!ta_node.get_orientation_set().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_orientation_set_info;
+        gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        std::string orientation_set_info_message = "--";
+        for (Orientation orientation : ta_node.get_orientation_set()) {
+          orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+        }
+        gp_text_orientation_set_info.set_message(orientation_set_info_message);
+        gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_orientation_set_info);
       }
     }
   }

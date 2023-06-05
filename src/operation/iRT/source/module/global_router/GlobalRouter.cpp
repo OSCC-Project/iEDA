@@ -1168,7 +1168,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
         PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
-        irt_int y_reduced_span = real_rect.getYSpan() / 15;
+        irt_int y_reduced_span = real_rect.getYSpan() / 25;
         irt_int y = real_rect.get_rt_y();
 
         GPBoundary gp_boundary;
@@ -1327,6 +1327,30 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           gp_text_net_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
           node_graph_struct.push(gp_text_net_queue_info);
+        }
+
+        y -= y_reduced_span;
+        GPText gp_text_orientation_set;
+        gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_orientation_set.set_message("orientation_set: ");
+        gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_orientation_set);
+
+        if (!gr_node.get_orientation_set().empty()) {
+          y -= y_reduced_span;
+          GPText gp_text_orientation_set_info;
+          gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string orientation_set_info_message = "--";
+          for (Orientation orientation : gr_node.get_orientation_set()) {
+            orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+          }
+          gp_text_orientation_set_info.set_message(orientation_set_info_message);
+          gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          node_graph_struct.push(gp_text_orientation_set_info);
         }
       }
     }
