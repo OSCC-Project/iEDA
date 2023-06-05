@@ -1063,19 +1063,20 @@ double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNo
 double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   double corner_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
+    std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
 
-  std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
-  std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
-
-  std::set<Orientation> orientation_set;
-  orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
-  orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
-  if (start_node->get_parent_node() != nullptr) {
-    orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
+    orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
+    if (start_node->get_parent_node() != nullptr) {
+      orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+    }
+    orientation_set.erase(getOrientation(start_node, end_node));
+    orientation_set.erase(getOrientation(end_node, start_node));
+    corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   }
-  orientation_set.erase(getOrientation(start_node, end_node));
-  orientation_set.erase(getOrientation(end_node, start_node));
-  corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   return corner_cost;
 }
 
@@ -1118,8 +1119,6 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
     if (RTUtil::isOblique(*start_node, *end_node)) {
       corner_cost = gr_model.get_corner_unit();
     }
-  } else if (start_node->get_planar_coord() != end_node->get_planar_coord()) {
-    corner_cost = gr_model.get_corner_unit();
   }
   return corner_cost;
 }
