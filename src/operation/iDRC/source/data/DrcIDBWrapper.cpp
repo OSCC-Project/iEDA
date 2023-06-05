@@ -688,6 +688,19 @@ void DrcIDBWrapper::wrapBlockageFromLayerShape(idb::IdbLayerShape* layer_shape, 
     drc_rect->set_owner_type(RectOwnerType::kBlockage);
     drc_rect->set_is_fixed(true);
     drc_rect->set_layer_id(layer_id);
+    // if (rect->get_low_x() == 39680 && rect->get_low_y() == 29720) {
+    //   std::cout << "  "
+    //             << "idb_rect2: " << rect->get_high_x() << std::endl;
+    //   std::cout << rect->get_low_y() << "," << rect->get_high_y() << std::endl;
+    //   sleep(10000000);
+    // }
+
+    // if (rect->get_low_x() == 39720 && rect->get_low_y() == 29720) {
+    //   std::cout << layer_id << "  "
+    //             << "idb_rect222222222: " << rect->get_high_x() << std::endl;
+    //   std::cout << rect->get_low_y() << "," << rect->get_high_y() << std::endl;
+    //   sleep(10000000);
+    // }
 
     wrapRect(drc_rect, rect);
     BoostRect boost_rect = getBoostRectFromIdbRect(rect);
@@ -754,6 +767,16 @@ void DrcIDBWrapper::addRoutingBlockage(idb::IdbRoutingBlockage* idb_blockage, Dr
     drc_rect->set_net_id(-1);
 
     wrapRect(drc_rect, idb_rect);
+    // if (idb_rect->get_low_x() == 39680 && idb_rect->get_low_y() == 29720) {
+    //   std::cout << "  "
+    //             << "idb_idb_rect3: " << idb_rect->get_high_x() << std::endl;
+    //   std::cout << idb_rect->get_low_y() << "," << idb_rect->get_high_y() << std::endl;
+    //   sleep(10000000);
+    // }
+    // if (idb_rect->get_low_x() == 39720 && idb_rect->get_low_y() == 29720) {
+    //   std::cout << "idb_rect3333333333" << idb_rect->get_high_x() << std::endl;
+    //   sleep(10000000);
+    // }
     BoostRect boost_rect = getBoostRectFromIdbRect(idb_rect);
 
     design->add_blockage(layer_id, drc_rect);
@@ -995,6 +1018,16 @@ bool DrcIDBWrapper::addPortToNet(idb::IdbLayerShape* idb_shape, DrcNet* drc_net)
 
     wrapRect(drc_rect, idb_rect);
     BoostRect boost_rect = getBoostRectFromIdbRect(idb_rect);
+    // if (idb_rect->get_low_x() == 39680 && idb_rect->get_low_y() == 29720) {
+    //   std::cout << "  "
+    //             << "idb_idb_rect1: " << idb_rect->get_high_x() << std::endl;
+    //   std::cout << idb_rect->get_low_y() << "," << idb_rect->get_high_y() << std::endl;
+    //   sleep(10000000);
+    // }
+    // if (idb_rect->get_low_x() == 39720 && idb_rect->get_low_y() == 29720) {
+    //   std::cout << "idb_rect111111111111" << idb_rect->get_high_x() << std::endl;
+    //   sleep(10000000);
+    // }
 
     drc_net->add_pin_rect(layer_id, drc_rect);
     drc_net->add_pin_rect(layer_id, boost_rect);
@@ -1031,6 +1064,9 @@ bool DrcIDBWrapper::addIdbSegmentToNet(idb::IdbRegularWireSegment* idb_segment, 
   if (idb_segment->is_via()) {
     // via
     addViaToNet(idb_segment, drc_net);
+    if (idb_segment->get_point_number() >= 2) {
+      addSegmentToNet(idb_segment, drc_net);
+    }
   } else if (idb_segment->is_rect()) {
     addRectShapeToNet(idb_segment, drc_net);
   } else if (idb_segment->get_point_number() == 2) {
@@ -1053,6 +1089,10 @@ void DrcIDBWrapper::addRectShapeToNet(idb::IdbRegularWireSegment* idb_segment, D
   int lb_y = end_point->get_y() + delta_rect->get_low_y();
   int rt_x = end_point->get_x() + delta_rect->get_high_x();
   int rt_y = end_point->get_y() + delta_rect->get_high_y();
+  if (lb_x == 43210 && lb_y == 38350) {
+    std::cout << "find22222222" << std::endl;
+    std::cout << rt_x << "," << rt_y << std::endl;
+  }
 
   DrcRect* drc_rect = new DrcRect();
 
@@ -1130,7 +1170,6 @@ void DrcIDBWrapper::addViaShapeToNet(idb::IdbLayerShape* layer_shape, DrcNet* dr
     drc_rect->set_owner_type(RectOwnerType::kViaMetal);
     drc_rect->set_is_fixed(false);
     drc_rect->set_layer_id(layer_id);
-
     drc_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
     BoostRect boost_rect(lb_x, lb_y, rt_x, rt_y);
     if (is_cut) {
@@ -1156,6 +1195,12 @@ void DrcIDBWrapper::addSegmentShapeToNet(int layer_id, idb::IdbCoordinate<int32_
   int lb_y = std::min(start->get_y(), end->get_y()) - width / 2;
   int rt_x = std::max(start->get_x(), end->get_x()) + width / 2;
   int rt_y = std::max(start->get_y(), end->get_y()) + width / 2;
+  static int count = 0;
+  if (lb_x == 43210 && lb_y == 38350 && count <= 2) {
+    std::cout << "find" << std::endl;
+    std::cout << rt_x << "," << rt_y << std::endl;
+    count++;
+  }
 
   DrcRect* drc_rect = new DrcRect();
 
