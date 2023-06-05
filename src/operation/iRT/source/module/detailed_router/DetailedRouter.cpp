@@ -1051,6 +1051,48 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
         }
         LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
       }
+      irt_int node_x = dr_node.get_planar_coord().get_x();
+      irt_int node_y = dr_node.get_planar_coord().get_y();
+      std::set<int>& y_scale_set = node_graph.get_x_y_map()[node_x];
+      std::set<int>& x_scale_set = node_graph.get_y_x_map()[node_y];
+      for (auto& [orien, neighbor] : dr_node.get_neighbor_ptr_map()) {
+        if (orien == Orientation::kUp || orien == Orientation::kDown) {
+          continue;
+        }
+        PlanarCoord neighbor_coord(node_x, node_y);
+        switch (orien) {
+          case Orientation::kEast:
+            if (!RTUtil::exist(x_scale_set, node_x) || x_scale_set.find(node_x)++ == x_scale_set.end()) {
+              LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
+            }
+            neighbor_coord.set_x(*(++x_scale_set.find(node_x)));
+            break;
+          case Orientation::kWest:
+            if (!RTUtil::exist(x_scale_set, node_x) || x_scale_set.find(node_x) == x_scale_set.begin()) {
+              LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
+            }
+            neighbor_coord.set_x(*(--x_scale_set.find(node_x)));
+            break;
+          case Orientation::kNorth:
+            if (!RTUtil::exist(y_scale_set, node_y) || y_scale_set.find(node_y)++ == y_scale_set.end()) {
+              LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
+            }
+            neighbor_coord.set_y(*(++y_scale_set.find(node_y)));
+            break;
+          case Orientation::kSouth:
+            if (!RTUtil::exist(y_scale_set, node_y) || y_scale_set.find(node_y) == y_scale_set.begin()) {
+              LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
+            }
+            neighbor_coord.set_y(*(--y_scale_set.find(node_y)));
+            break;
+          default:
+            break;
+        }
+        if (neighbor_coord == neighbor->get_planar_coord()) {
+          continue;
+        }
+        LOG_INST.error(Loc::current(), "The neighbor coord is different with real coord!");
+      }
       for (auto& [orien, task_idx_list] : dr_node.get_obs_task_map()) {
         if (task_idx_list.empty()) {
           LOG_INST.error(Loc::current(), "The task_idx_list is empty!");
