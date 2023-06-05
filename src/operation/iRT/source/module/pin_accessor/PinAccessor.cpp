@@ -248,7 +248,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 {
   initAccessPointList(pa_model, pa_net);
   mergeAccessPointList(pa_net);
-  selectAccessPointList(pa_net);
+  // selectAccessPointList(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
@@ -629,17 +629,13 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
       }
       // balance_coord
       LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
-      pin_access_point_list.clear();
-      for (auto& [via_num, via_access_point_list] : via_num_access_point_map) {
-        std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
-        for (AccessPoint& access_point : via_access_point_list) {
-          LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
-          distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
-        }
-        for (auto& [distance, distance_access_point_list] : distance_access_point_map) {
-          pin_access_point_list.insert(pin_access_point_list.end(), distance_access_point_list.begin(), distance_access_point_list.end());
-        }
+      std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
+      for (AccessPoint& access_point : via_num_access_point_map.begin()->second) {
+        LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
+        distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
       }
+      pin_access_point_list.clear();
+      pin_access_point_list.push_back(distance_access_point_map.begin()->second.front());
     }
   }
 }
