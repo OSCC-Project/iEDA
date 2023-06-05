@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.5-labs
-# BASE_IMG: ubuntu:20.04, debian:11-slim (default)
-ARG BASE_IMG=debian:11-slim
-FROM ${BASE_IMG}
+# (docker build) --build-arg BASE_IMAGE=ubuntu:20.04, debian:11-slim (default)
+ARG BASE_IMAGE=debian:11-slim
+FROM ${BASE_IMAGE}
 LABEL maintainer="WH"
 
 # build iEDA
@@ -14,18 +14,16 @@ ENV IEDA_WORKSPACE=${IEDA_WORKSPACE}
 ENV PATH=${iEDA_BINARY_DIR}:${PATH}
 ENV TZ=Asia/Shanghai
 
-# cd ${IEDA_WORKSPACE}/scripts/docker
-# docker build -f Dockerfile.base -t iedaopensource/base:latest --ssh default=$HOME/.ssh/id_rsa .
+# (docker build) --ssh default=$HOME/.ssh/id_rsa
 ADD --keep-git-dir=false ${IEDA_REPO_BRANCH} ${IEDA_WORKSPACE}
 
 RUN ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime && \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list &&\
-    bash ${IEDA_WORKSPACE}/build.sh -i nonit-apt && \
+    bash ${IEDA_WORKSPACE}/build.sh -i nonit-apt -n && \
     apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-RUN bash ${IEDA_WORKSPACE}/build.sh -b ${iEDA_BINARY_DIR} && \
+RUN bash ${IEDA_WORKSPACE}/build.sh -b ${iEDA_BINARY_DIR} -j 3 && \
     rm -rf ${iEDA_BUILD_DIR}
 
 WORKDIR ${IEDA_WORKSPACE}
 
-CMD ["/usr/bin/env", "bash", "-c", "./iEDA -script scripts/docker/build_succeeded.tcl"]
+CMD ["/usr/bin/env", "bash", "-c", "iEDA -script scripts/docker/build_succeeded.tcl"]
