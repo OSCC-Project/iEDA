@@ -113,7 +113,7 @@ class GRNode : public LayerCoord
     } else {
       irt_int fence_via_area_demand = 0;
       if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
-        fence_via_area_demand += (_single_via_area * static_cast<double>(_net_fence_region_map.size()));
+        fence_via_area_demand += (_single_via_area * static_cast<irt_int>(_net_fence_region_map.size()));
       }
       if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
         // wire剩余可以给via
