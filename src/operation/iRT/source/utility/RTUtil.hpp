@@ -1824,12 +1824,32 @@ class RTUtil
   }
 
   // 获得坐标集合的重心
+  static LayerCoord getBalanceCoord(const std::vector<LayerCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      return LayerCoord(-1, -1, -1);
+    }
+    std::vector<irt_int> x_list;
+    std::vector<irt_int> y_list;
+    std::vector<irt_int> layer_idx_list;
+    x_list.reserve(coord_list.size());
+    y_list.reserve(coord_list.size());
+    layer_idx_list.reserve(coord_list.size());
+    for (const LayerCoord& coord : coord_list) {
+      x_list.push_back(coord.get_x());
+      y_list.push_back(coord.get_y());
+      layer_idx_list.push_back(coord.get_layer_idx());
+    }
+
+    return LayerCoord(getAverage(x_list), getAverage(y_list), getAverage(layer_idx_list));
+  }
+
+  // 获得坐标集合的重心
   static PlanarCoord getBalanceCoord(const std::vector<PlanarCoord>& coord_list)
   {
     if (coord_list.empty()) {
       return PlanarCoord(-1, -1);
     }
-
     std::vector<irt_int> x_value_list;
     std::vector<irt_int> y_value_list;
     x_value_list.reserve(coord_list.size());
@@ -2276,41 +2296,32 @@ class RTUtil
   }
 
   /**
-   * 返回跳跃的层idx
-   * eg. curr_layer_idx: 3
+   * 返回多级层idx
+   * eg. curr_layer_idx: 5
    *     layer_idx_list: [1 2 3 4 5 6 7 8]
-   *     return: [3 2 4 1 5 6 7 8]
+   *     return: [1 2 3 4]
+   *             [5 6 7 8]
    */
-  static std::vector<irt_int> getJumpLayerIdxList(irt_int curr_layer_idx, std::vector<irt_int> layer_idx_list)
+  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
+                                                                        irt_int top_layer_idx)
   {
-    if (layer_idx_list.empty()) {
-      return layer_idx_list;
-    }
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    irt_int curr_i = -1;
-    if (layer_idx_list.back() < curr_layer_idx) {
-      curr_i = static_cast<irt_int>(layer_idx_list.size() - 1);
-    } else if (curr_layer_idx < layer_idx_list.front()) {
-      curr_i = 0;
-    } else {
-      for (size_t i = 0; i < layer_idx_list.size(); i++) {
-        if (curr_layer_idx == layer_idx_list[i]) {
-          curr_i = static_cast<irt_int>(i);
-          break;
-        }
+    std::vector<irt_int> layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    std::vector<std::vector<irt_int>> level_layer_idx_list;
+    for (irt_int layer_idx : layer_idx_list) {
+      std::vector<irt_int> layer_idx_list;
+      if (layer_idx < curr_layer_idx) {
+        layer_idx_list.push_back(layer_idx);
       }
+      level_layer_idx_list.push_back(layer_idx_list);
     }
-    std::vector<irt_int> result_layer_idx_list;
-    irt_int jump_step = 0;
-    while (result_layer_idx_list.size() != layer_idx_list.size()) {
-      if (jump_step % 2 == 0) {
-        result_layer_idx_list.push_back(layer_idx_list[curr_i + jump_step]);
-      } else {
-        result_layer_idx_list.push_back(layer_idx_list[curr_i + (-1 * jump_step)]);
+    for (irt_int layer_idx : layer_idx_list) {
+      std::vector<irt_int> layer_idx_list;
+      if (curr_layer_idx <= layer_idx) {
+        layer_idx_list.push_back(layer_idx);
       }
-      jump_step++;
+      level_layer_idx_list.push_back(layer_idx_list);
     }
-    return result_layer_idx_list;
+    return level_layer_idx_list;
   }
 
   // 考虑的全部via below层

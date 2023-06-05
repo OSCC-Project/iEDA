@@ -62,6 +62,9 @@ class RctNode {
 
   virtual ~RctNode() = default;
 
+  void set_is_root() { _is_root = 1; }
+  [[nodiscard]] unsigned isRoot() const { return _is_root; }
+
   [[nodiscard]] double nodeLoad() const { return _load; }
   double nodeLoad(AnalysisMode mode, TransType trans_type);
   [[nodiscard]] double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
@@ -96,10 +99,9 @@ class RctNode {
   double updateCeff() {
     calNodePIModel();
     if (_moments.y2 == 0 && _moments.y3 == 0) {
-      _ceff = cap();
+      _ceff = nodeLoad();
     } else {
-      _ceff =
-          _pi.C_near + _pi.C_far * (1 - exp(-delayD2M() / (_pi.R * _pi.C_far)));
+      _ceff = _pi.C_near + _pi.C_far * (1 - exp(-_delay / (_pi.R * _pi.C_far)));
     }
     return _ceff;
   }
@@ -205,7 +207,8 @@ class RctNode {
   unsigned _is_tranverse : 1 = 0;
   unsigned _is_visited : 1 = 0;
   unsigned _is_visited_ecm : 1 = 0;
-  unsigned _reserved : 19 = 0;
+  unsigned _is_root : 1 = 0;
+  unsigned _reserved : 18 = 0;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -435,6 +438,7 @@ class RcTree {
   std::vector<CoupledRcNode> _coupled_nodes;
 
   void initData();
+  void initMoment();
   void updateLoad(RctNode*, RctNode*);
   void updateMC(RctNode* parent, RctNode* from);
   void updateMCC(RctNode* parent, RctNode* from);

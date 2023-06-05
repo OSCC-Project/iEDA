@@ -32,9 +32,9 @@ class RcTree;
  */
 struct PiModel {
  public:
-  double C_near;
-  double R;
-  double C_far;
+  double C_near = 0.0;
+  double R = 0.0;
+  double C_far = 0.0;
 };
 
 /**
@@ -42,9 +42,9 @@ struct PiModel {
  * Y(s)=y1s+y2s2+y3s3
  */
 struct LaplaceMoments {
-  double y1;
-  double y2;
-  double y3;
+  double y1 = 0.0;
+  double y2 = 0.0;
+  double y3 = 0.0;
   LaplaceMoments& operator=(LaplaceMoments* L) {
     y1 = L->y1;
     y2 = L->y2;

@@ -543,7 +543,9 @@ void PinAccessor::updateNetFenceRegionMap(PAModel& pa_model)
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     std::vector<LayerCoord> real_coord_list;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      real_coord_list.push_back(pa_pin.getRealCoordList().front());
+      for (LayerCoord& real_coord : pa_pin.getRealCoordList()) {
+        real_coord_list.push_back(real_coord);
+      }
     }
     std::vector<LayerRect> net_fence_region_list;
     for (LayerCoord& real_coord : real_coord_list) {
@@ -583,48 +585,60 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+      // via_num_access_point_map
       std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      for (AccessPoint& access_point : pin_access_point_list) {
         irt_int via_num = 0;
-        std::vector<irt_int> via_below_layer_idx_list
-            = RTUtil::getViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
-        for (irt_int via_below_layer_idx : RTUtil::getJumpLayerIdxList(access_point.get_layer_idx(), via_below_layer_idx_list)) {
-          bool has_confilct = false;
-          ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-          for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-            LayerRect via_shape(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
-            irt_int min_spacing = routing_layer_list[via_shape.get_layer_idx()].getMinSpacing(via_shape);
-            PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(via_shape, min_spacing, die.get_real_rect());
-            PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-            for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-              for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-                PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[via_shape.get_layer_idx()][x][y];
-                for (auto& [net_idx, region_list] : pa_gcell.get_net_fence_region_map()) {
-                  if (pa_net.get_net_idx() == net_idx) {
-                    continue;
-                  }
-                  for (const LayerRect& region : region_list) {
-                    if (RTUtil::isOpenOverlap(via_shape, region)) {
-                      has_confilct = true;
-                      goto here;
+        for (std::vector<irt_int> via_below_layer_idx_list :
+             RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
+          for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
+            bool has_confilct = false;
+            ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+            for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+              LayerRect via_shape(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
+              irt_int min_spacing = routing_layer_list[via_shape.get_layer_idx()].getMinSpacing(via_shape);
+              PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(via_shape, min_spacing, die.get_real_rect());
+              PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
+              for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
+                for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
+                  PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[via_shape.get_layer_idx()][x][y];
+                  for (auto& [net_idx, region_list] : pa_gcell.get_net_fence_region_map()) {
+                    if (pa_net.get_net_idx() == net_idx) {
+                      continue;
+                    }
+                    for (const LayerRect& region : region_list) {
+                      if (RTUtil::isOpenOverlap(via_shape, region)) {
+                        has_confilct = true;
+                        goto here;
+                      }
                     }
                   }
                 }
               }
             }
-          }
-        here:
-          if (has_confilct) {
-            break;
-          } else {
-            via_num++;
+          here:
+            if (has_confilct) {
+              break;
+            } else {
+              via_num++;
+            }
           }
         }
         via_num_access_point_map[via_num].push_back(access_point);
       }
-      pa_pin.get_access_point_list().clear();
-      for (auto& [via_num, access_point_list] : via_num_access_point_map) {
-        pa_pin.get_access_point_list().insert(pa_pin.get_access_point_list().end(), access_point_list.begin(), access_point_list.end());
+      // balance_coord
+      LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
+      pin_access_point_list.clear();
+      for (auto& [via_num, via_access_point_list] : via_num_access_point_map) {
+        std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
+        for (AccessPoint& access_point : via_access_point_list) {
+          LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
+          distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
+        }
+        for (auto& [distance, distance_access_point_list] : distance_access_point_map) {
+          pin_access_point_list.insert(pin_access_point_list.end(), distance_access_point_list.begin(), distance_access_point_list.end());
+        }
       }
     }
   }
