@@ -59,7 +59,7 @@ class DetailedRouter
   void buildDRModel(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);
-  DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node);
+  DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void updateNetBlockageMap(DRModel& dr_model);
   void updateNetFenceRegionMap(DRModel& dr_model);

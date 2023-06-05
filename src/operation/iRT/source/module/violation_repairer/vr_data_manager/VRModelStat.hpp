@@ -46,7 +46,7 @@ class VRModelStat
     _total_net_and_net_violation_area = total_net_and_net_violation_area;
   }
   // function
-  
+
  private:
   std::map<irt_int, double> _routing_wire_length_map;
   std::map<irt_int, irt_int> _cut_via_number_map;
