@@ -2299,7 +2299,7 @@ class RTUtil
    * 返回多级层idx
    * eg. curr_layer_idx: 5
    *     layer_idx_list: [1 2 3 4 5 6 7 8]
-   *     return: [1 2 3 4]
+   *     return: [4 3 2 1]
    *             [5 6 7 8]
    */
   static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
@@ -2307,17 +2307,26 @@ class RTUtil
   {
     std::vector<irt_int> via_below_layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
-    level_layer_idx_list.resize(2);
 
+    std::vector<irt_int> down_via_below_layer_idx_list;
     for (irt_int layer_idx : via_below_layer_idx_list) {
       if (layer_idx < curr_layer_idx) {
-        level_layer_idx_list[0].push_back(layer_idx);
+        down_via_below_layer_idx_list.push_back(layer_idx);
       }
     }
+    std::sort(down_via_below_layer_idx_list.begin(), down_via_below_layer_idx_list.end(), std::greater());
+    if (!down_via_below_layer_idx_list.empty()) {
+      level_layer_idx_list.push_back(down_via_below_layer_idx_list);
+    }
+    std::vector<irt_int> up_via_below_layer_idx_list;
     for (irt_int layer_idx : via_below_layer_idx_list) {
       if (curr_layer_idx <= layer_idx) {
-        level_layer_idx_list[1].push_back(layer_idx);
+        up_via_below_layer_idx_list.push_back(layer_idx);
       }
+    }
+    std::sort(up_via_below_layer_idx_list.begin(), up_via_below_layer_idx_list.end(), std::less());
+    if (!up_via_below_layer_idx_list.empty()) {
+      level_layer_idx_list.push_back(up_via_below_layer_idx_list);
     }
     return level_layer_idx_list;
   }
