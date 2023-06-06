@@ -148,6 +148,9 @@ void IdbPin::set_average_coordinate(int32_t x, int32_t y)
     IdbOrientTransform db_transform(_instance->get_orient(), _instance->get_coordinate(), _instance->get_cell_master()->get_width(),
                                     _instance->get_cell_master()->get_height());
     db_transform.transformCoordinate(_average_coordinate);
+  } else {
+    IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
+    db_transform.transformCoordinate(_average_coordinate);
   }
 }
 
@@ -338,6 +341,9 @@ void IdbPin::set_pin_bounding_box()
     IdbOrientTransform db_transform(_instance->get_orient(), _instance->get_coordinate(), _instance->get_cell_master()->get_width(),
                                     _instance->get_cell_master()->get_height());
     db_transform.transformRect(rect);
+  } else {
+    IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
+    db_transform.transformRect(rect);
   }
 }
 
@@ -362,6 +368,7 @@ void IdbPin::set_port_layer_shape()
   if (is_io_pin()) {
     if (!_io_term->is_placed())
       return;
+    IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
 
     if (_io_term->is_port_exist()) {
       for (IdbPort* port : _io_term->get_port_list()) {
@@ -371,6 +378,7 @@ void IdbPin::set_port_layer_shape()
           for (IdbRect* rect : layer_shape->get_rect_list()) {
             IdbRect* rect_transform = new IdbRect(rect);
             rect_transform->moveByStep(port->get_coordinate()->get_x(), port->get_coordinate()->get_y());
+            db_transform.transformRect(rect_transform);
             layer_shape_transform->add_rect(rect_transform);
           }
           _layer_shape_list.emplace_back(layer_shape_transform);
@@ -384,6 +392,7 @@ void IdbPin::set_port_layer_shape()
           for (IdbRect* rect : layer_shape->get_rect_list()) {
             IdbRect* rect_transform = new IdbRect(rect);
             rect_transform->moveByStep(_location->get_x(), _location->get_y());
+            db_transform.transformRect(rect_transform);
             layer_shape_transform->add_rect(rect_transform);
           }
           _layer_shape_list.emplace_back(layer_shape_transform);
