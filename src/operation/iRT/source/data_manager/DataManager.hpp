@@ -108,6 +108,7 @@ class DataManager
   void printDatabase();
   void saveStageResult(Stage stage);
   void saveHeadInfo(nlohmann::json& all_json, std::string& current_stage);
+  std::tuple<std::string, std::string,std::set<std::string>, std::string>  getHeadInfo(const std::string& stage);
   std::string getBaseName(std::string file_path);
   void saveStageNetResult(nlohmann::json& net_json, Net& net);
   void savePinAccessorResult(nlohmann::json& net_json, Net& net);
