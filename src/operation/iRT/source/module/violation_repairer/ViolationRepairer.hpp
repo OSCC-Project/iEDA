@@ -77,10 +77,6 @@ class ViolationRepairer
   std::vector<LayerRect> getRealRectList(MTree<PHYNode>& phy_node_tree);
 #endif
 
-#if 1  // plot ra_model
-  void plotVRModel(VRModel& vr_model);
-#endif
-
 #if 1  // update ra_model
   void updateVRModel(VRModel& vr_model);
   void updateOriginVRResultTree(VRModel& vr_model);
