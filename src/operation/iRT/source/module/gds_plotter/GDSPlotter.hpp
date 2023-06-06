@@ -69,6 +69,8 @@ class GDSPlotter
   void addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box);
   void addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree);
   void addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNode>& node_tree);
+  void addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list);
+  void addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map);
   void plotGDS(GPGDS& gp_gds, std::string gds_file_path, bool add_layout, bool need_clipping);
   PlanarRect getClippingWindow(GPGDS& gp_gds);
   void addLayout(GPGDS& gp_gds, PlanarRect& clipping_window);
