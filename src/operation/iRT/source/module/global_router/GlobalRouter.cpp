@@ -607,8 +607,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   while (!isConnectedAllEnd(gr_model)) {
     routeSinglePath(gr_model);
     rerouteByEnlarging(gr_model);
-    for (GRRouteStrategy gr_route_strategy :
-         {GRRouteStrategy::kIgnoringFence, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
+    for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
       rerouteByIgnoring(gr_model, gr_route_strategy);
     }
     updatePathResult(gr_model);
@@ -1064,19 +1063,20 @@ double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNo
 double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   double corner_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
+    std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
 
-  std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
-  std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
-
-  std::set<Orientation> orientation_set;
-  orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
-  orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
-  if (start_node->get_parent_node() != nullptr) {
-    orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
+    orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
+    if (start_node->get_parent_node() != nullptr) {
+      orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+    }
+    orientation_set.erase(getOrientation(start_node, end_node));
+    orientation_set.erase(getOrientation(end_node, start_node));
+    corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   }
-  orientation_set.erase(getOrientation(start_node, end_node));
-  orientation_set.erase(getOrientation(end_node, start_node));
-  corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   return corner_cost;
 }
 
@@ -1119,8 +1119,6 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
     if (RTUtil::isOblique(*start_node, *end_node)) {
       corner_cost = gr_model.get_corner_unit();
     }
-  } else if (start_node->get_planar_coord() != end_node->get_planar_coord()) {
-    corner_cost = gr_model.get_corner_unit();
   }
   return corner_cost;
 }
@@ -1169,7 +1167,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
         PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
-        irt_int y_reduced_span = real_rect.getYSpan() / 15;
+        irt_int y_reduced_span = real_rect.getYSpan() / 25;
         irt_int y = real_rect.get_rt_y();
 
         GPBoundary gp_boundary;
@@ -1329,6 +1327,30 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           gp_text_net_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
           node_graph_struct.push(gp_text_net_queue_info);
         }
+
+        y -= y_reduced_span;
+        GPText gp_text_orientation_set;
+        gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_orientation_set.set_message("orientation_set: ");
+        gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_orientation_set);
+
+        if (!gr_node.get_orientation_set().empty()) {
+          y -= y_reduced_span;
+          GPText gp_text_orientation_set_info;
+          gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string orientation_set_info_message = "--";
+          for (Orientation orientation : gr_node.get_orientation_set()) {
+            orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+          }
+          gp_text_orientation_set_info.set_message(orientation_set_info_message);
+          gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          node_graph_struct.push(gp_text_orientation_set_info);
+        }
       }
     }
   }
@@ -1454,6 +1476,14 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           net_struct.push(gp_boundary);
         }
       }
+    }
+    {
+      // bounding_box
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(0);
+      gp_boundary.set_data_type(1);
+      gp_boundary.set_rect(gr_net.get_bounding_box().get_real_rect());
+      net_struct.push(gp_boundary);
     }
     for (Segment<LayerCoord>& segment : gr_net.get_routing_segment_list()) {
       LayerCoord first_coord = segment.get_first();

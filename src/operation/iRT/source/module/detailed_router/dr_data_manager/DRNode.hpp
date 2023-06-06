@@ -75,18 +75,6 @@ class DRNode : public LayerCoord
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
     }
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (RTUtil::exist(_env_task_map, orientation)) {
-        if (_env_task_map[orientation].size() >= 2) {
-          is_obs = true;
-        } else {
-          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
-        }
-      }
-    }
     if (dr_route_strategy == DRRouteStrategy::kIgnoringFence) {
       return is_obs;
     }
@@ -99,6 +87,19 @@ class DRNode : public LayerCoord
         }
       }
     }
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
+      return is_obs;
+    }
+    if (!is_obs) {
+      if (RTUtil::exist(_env_task_map, orientation)) {
+        if (_env_task_map[orientation].size() >= 2) {
+          is_obs = true;
+        } else {
+          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
+        }
+      }
+    }
+
     return is_obs;
   }
   double getCost(irt_int task_idx, Orientation orientation)
@@ -107,13 +108,13 @@ class DRNode : public LayerCoord
     if (RTUtil::exist(_fence_task_map, orientation)) {
       std::set<irt_int>& task_idx_set = _fence_task_map[orientation];
       if (task_idx_set.size() >= 2) {
-        fence_violation_num += static_cast<double>(task_idx_set.size());
+        fence_violation_num += static_cast<irt_int>(task_idx_set.size());
       } else {
         fence_violation_num += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1;
       }
     }
     if (RTUtil::exist(_env_task_map, orientation)) {
-      fence_violation_num += static_cast<double>(_env_task_map[orientation].size());
+      fence_violation_num += static_cast<irt_int>(_env_task_map[orientation].size());
     }
     return static_cast<double>(fence_violation_num * _fence_violation_cost);
   }
