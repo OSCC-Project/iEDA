@@ -58,7 +58,13 @@ void GDSPlotter::plot(std::vector<Net>& net_list, Stage stage, bool add_layout, 
   std::string gds_file_path = _gp_data_manager.getConfig().temp_directory_path + GetStageName()(stage) + ".gds";
 
   GPGDS gp_gds;
-  addNetList(gp_gds, net_list, stage);
+  if (stage == Stage::kResourceAllocator) {
+    addCostMap(gp_gds, net_list);
+    add_layout = false;
+    need_clipping = false;
+  } else {
+    addNetList(gp_gds, net_list, stage);
+  }
   plot(gp_gds, gds_file_path, add_layout, need_clipping);
 }
 
@@ -131,7 +137,7 @@ void GDSPlotter::addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage sta
         addPHYNodeTree(gp_gds, net_struct, net.get_vr_result_tree());
         break;
       default:
-        // LOG_INST.error(Loc::current(), "Unknown process stage type!");
+        LOG_INST.error(Loc::current(), "Unknown stage type!");
         break;
     }
     net_list_struct.push(net_struct.get_name());
@@ -331,6 +337,49 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
   net_struct.push(via_list_struct.get_name());
   gp_gds.addStruct(wire_list_struct);
   gp_gds.addStruct(via_list_struct);
+}
+
+void GDSPlotter::addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list)
+{
+  Monitor monitor;
+
+  GPStruct net_list_struct(RTUtil::getString("net_list(size:", net_list.size(), ")"));
+  for (size_t i = 0; i < net_list.size(); i++) {
+    Net& net = net_list[i];
+
+    GPStruct net_struct(
+        RTUtil::getString("net_", net.get_net_idx(), "(", net.get_net_name(), ")", "(", GetConnectTypeName()(net.get_connect_type()), ")"),
+        RTUtil::getString(net.get_net_idx()));
+
+    addBoundingBox(gp_gds, net_struct, net.get_bounding_box());
+    addCostMap(gp_gds, net_struct, net.get_bounding_box(), net.get_ra_cost_map());
+
+    net_list_struct.push(net_struct.get_name());
+    gp_gds.addStruct(net_struct);
+  }
+  gp_gds.addStruct(net_list_struct);
+
+  LOG_INST.info(Loc::current(), "Add ", net_list.size(), " nets to gds completed!", monitor.getStatsInfo());
+}
+
+void GDSPlotter::addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map)
+{
+  GCellAxis& gcell_axis = _gp_data_manager.getDatabase().get_gcell_axis();
+
+  GPStruct cost_map_struct(RTUtil::getString("cost_map@", net_struct.get_alias_name()));
+
+  for (irt_int x = 0; x < cost_map.get_x_size(); ++x) {
+    for (irt_int y = 0; y < cost_map.get_y_size(); ++y) {
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(static_cast<irt_int>(cost_map[x][y] * 100));
+      gp_boundary.set_data_type(0);
+      gp_boundary.set_rect(
+          RTUtil::getRealRect(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
+      cost_map_struct.push(gp_boundary);
+    }
+  }
+  net_struct.push(cost_map_struct.get_name());
+  gp_gds.addStruct(cost_map_struct);
 }
 
 void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path, bool add_layout, bool need_clipping)
