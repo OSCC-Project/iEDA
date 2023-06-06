@@ -74,7 +74,7 @@ void ResourceAllocator::allocateRANetList(std::vector<RANet>& ra_net_list)
   reportRAModel(ra_model);
 }
 
-#if 1  // build
+#if 1  // build ra_model
 
 RAModel ResourceAllocator::initRAModel(std::vector<RANet>& ra_net_list)
 {

@@ -423,14 +423,6 @@ std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_no
 
 #endif
 
-#if 1  // plot ra_model
-
-void ViolationRepairer::plotVRModel(VRModel& vr_model)
-{
-}
-
-#endif
-
 #if 1  // update ra_model
 
 void ViolationRepairer::updateVRModel(VRModel& vr_model)
