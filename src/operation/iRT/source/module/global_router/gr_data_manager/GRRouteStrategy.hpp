@@ -25,9 +25,8 @@ namespace irt {
 enum class GRRouteStrategy
 {
   kNone = 0,
-  kIgnoringFence = 1,
-  kIgnoringENV = 2,
-  kIgnoringOBS = 3
+  kIgnoringENV = 1,
+  kIgnoringOBS = 2
 };
 
 struct GetGRRouteStrategyName
@@ -38,9 +37,6 @@ struct GetGRRouteStrategyName
     switch (gr_route_strategy) {
       case GRRouteStrategy::kNone:
         gr_route_strategy_name = "none";
-        break;
-      case GRRouteStrategy::kIgnoringFence:
-        gr_route_strategy_name = "ignoring_fence";
         break;
       case GRRouteStrategy::kIgnoringENV:
         gr_route_strategy_name = "ignoring_env";
