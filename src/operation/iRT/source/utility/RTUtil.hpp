@@ -1749,22 +1749,6 @@ class RTUtil
     return track_start + track_idx * track_pitch;
   }
 
-  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-  static PlanarRect getTrackLineRect(PlanarRect rect, TrackAxis& track_axis)
-  {
-    irt_int x_start_line = track_axis.get_x_track_grid().get_start_line();
-    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
-    irt_int y_start_line = track_axis.get_y_track_grid().get_start_line();
-    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
-    PlanarRect enlarge_real_rect = getEnlargedRect(rect, x_step_length, y_step_length, x_step_length, y_step_length);
-    PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
-    irt_int real_lb_x = x_start_line + enlarge_grid_rect.get_lb_x() * x_step_length;
-    irt_int real_rt_x = x_start_line + enlarge_grid_rect.get_rt_x() * x_step_length;
-    irt_int real_lb_y = y_start_line + enlarge_grid_rect.get_lb_y() * y_step_length;
-    irt_int real_rt_y = y_start_line + enlarge_grid_rect.get_rt_y() * y_step_length;
-    return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
-  }
-
 #endif
 
 #if 1  // irt数据结构工具函数
