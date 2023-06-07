@@ -39,9 +39,10 @@
 
 namespace ipl {
 
-class Design {
+class Design
+{
  public:
-  Design() = default;
+  Design();
   Design(const Design&) = delete;
   Design(Design&&) = delete;
   ~Design();
@@ -55,11 +56,13 @@ class Design {
   std::vector<Net*> get_net_list() const { return _net_list; }
   std::vector<Pin*> get_pin_list() const { return _pin_list; }
   std::vector<Region*> get_region_list() const { return _region_list; }
+  int32_t get_instances_range() const { return _instances_range; }
+  int32_t get_nets_range() const { return _nets_range; }
+  int32_t get_pins_range() const { return _pins_range; }
+  int32_t get_regions_range() const { return _regions_range; }
 
   // setter.
-  void set_design_name(std::string design_name) {
-    _design_name = std::move(design_name);
-  }
+  void set_design_name(std::string design_name) { _design_name = std::move(design_name); }
   void add_instance(Instance* inst);
   void add_net(Net* net);
   void add_pin(Pin* pin);
@@ -86,9 +89,18 @@ class Design {
   std::map<std::string, Net*> _name_to_net_map;
   std::map<std::string, Pin*> _name_to_pin_map;
   std::map<std::string, Region*> _name_to_region_map;
-};
 
-inline Design::~Design() {
+  int32_t _instances_range;
+  int32_t _nets_range;
+  int32_t _pins_range;
+  int32_t _regions_range;
+};
+inline Design::Design() : _instances_range(0), _nets_range(0), _pins_range(0), _regions_range(0)
+{
+}
+
+inline Design::~Design()
+{
   for (auto* inst : _instance_list) {
     delete inst;
   }
@@ -110,29 +122,47 @@ inline Design::~Design() {
   _name_to_net_map.clear();
   _name_to_pin_map.clear();
   _name_to_region_map.clear();
+
+  _instances_range = 0;
+  _nets_range = 0;
+  _pins_range = 0;
+  _regions_range = 0;
 }
 
-inline void Design::add_instance(Instance* inst) {
+inline void Design::add_instance(Instance* inst)
+{
   _instance_list.push_back(inst);
   _name_to_inst_map.emplace(inst->get_name(), inst);
+  inst->set_inst_id(_instances_range);
+  _instances_range += 1;
 }
 
-inline void Design::add_net(Net* net) {
+inline void Design::add_net(Net* net)
+{
   _net_list.push_back(net);
   _name_to_net_map.emplace(net->get_name(), net);
+  net->set_net_id(_nets_range);
+  _nets_range += 1;
 }
 
-inline void Design::add_pin(Pin* pin) {
+inline void Design::add_pin(Pin* pin)
+{
   _pin_list.push_back(pin);
   _name_to_pin_map.emplace(pin->get_name(), pin);
+  pin->set_pin_id(_pins_range);
+  _pins_range += 1;
 }
 
-inline void Design::add_region(Region* region) {
+inline void Design::add_region(Region* region)
+{
   _region_list.push_back(region);
   _name_to_region_map.emplace(region->get_name(), region);
+  region->set_region_id(_regions_range);
+  _regions_range += 1;
 }
 
-inline Instance* Design::find_instance(const std::string& inst_name) const {
+inline Instance* Design::find_instance(const std::string& inst_name) const
+{
   Instance* inst = nullptr;
   auto inst_iter = _name_to_inst_map.find(inst_name);
   if (inst_iter != _name_to_inst_map.end()) {
@@ -141,7 +171,8 @@ inline Instance* Design::find_instance(const std::string& inst_name) const {
   return inst;
 }
 
-inline Net* Design::find_net(const std::string& net_name) const {
+inline Net* Design::find_net(const std::string& net_name) const
+{
   Net* net = nullptr;
   auto net_iter = _name_to_net_map.find(net_name);
   if (net_iter != _name_to_net_map.end()) {
@@ -150,7 +181,8 @@ inline Net* Design::find_net(const std::string& net_name) const {
   return net;
 }
 
-inline Pin* Design::find_pin(const std::string& pin_name) const {
+inline Pin* Design::find_pin(const std::string& pin_name) const
+{
   Pin* pin = nullptr;
   auto pin_iter = _name_to_pin_map.find(pin_name);
   if (pin_iter != _name_to_pin_map.end()) {
@@ -159,7 +191,8 @@ inline Pin* Design::find_pin(const std::string& pin_name) const {
   return pin;
 }
 
-inline Region* Design::find_region(const std::string& region_name) const {
+inline Region* Design::find_region(const std::string& region_name) const
+{
   Region* region = nullptr;
   auto region_iter = _name_to_region_map.find(region_name);
   if (region_iter != _name_to_region_map.end()) {
@@ -168,23 +201,20 @@ inline Region* Design::find_region(const std::string& region_name) const {
   return region;
 }
 
-inline void Design::sortDataForParallel() {
+inline void Design::sortDataForParallel()
+{
   // sort instance by area
-  std::sort(_instance_list.begin(), _instance_list.end(),
-            [](Instance* l_inst, Instance* r_inst) {
-              return static_cast<int64_t>(l_inst->get_shape_height()) *
-                         static_cast<int64_t>(l_inst->get_shape_width()) <
-                     static_cast<int64_t>(r_inst->get_shape_height()) *
-                         static_cast<int64_t>(r_inst->get_shape_width());
-            });
+  std::sort(_instance_list.begin(), _instance_list.end(), [](Instance* l_inst, Instance* r_inst) {
+    return static_cast<int64_t>(l_inst->get_shape_height()) * static_cast<int64_t>(l_inst->get_shape_width())
+           < static_cast<int64_t>(r_inst->get_shape_height()) * static_cast<int64_t>(r_inst->get_shape_width());
+  });
 
   // sort net by degree
-  std::sort(_net_list.begin(), _net_list.end(), [](Net* l_net, Net* r_net) {
-    return l_net->get_pins().size() < r_net->get_pins().size();
-  });
+  std::sort(_net_list.begin(), _net_list.end(), [](Net* l_net, Net* r_net) { return l_net->get_pins().size() < r_net->get_pins().size(); });
 }
 
-inline void Design::deleteInstForTest() {
+inline void Design::deleteInstForTest()
+{
   std::vector<Instance*> new_inst_list;
 
   for (auto* inst : _instance_list) {

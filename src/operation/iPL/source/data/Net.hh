@@ -57,20 +57,21 @@ class Net
   Net() = delete;
   explicit Net(std::string name);
   Net(const Net&) = delete;
-  Net(Net&&)      = delete;
-  ~Net()          = default;
+  Net(Net&&) = delete;
+  ~Net() = default;
 
   Net& operator=(const Net&) = delete;
   Net& operator=(Net&&) = delete;
 
   // getter.
-  std::string       get_name() const { return _name; }
-  Pin*              get_driver_pin() const { return _driver_pin; }
+  int32_t get_net_id() const { return _net_id; }
+  std::string get_name() const { return _name; }
+  Pin* get_driver_pin() const { return _driver_pin; }
   std::vector<Pin*> get_sink_pins() const { return _sink_pins; }
   std::vector<Pin*> get_pins() const;
-  float             get_net_weight() const { return _netweight; }
-  NET_TYPE          get_net_type() const { return _net_type; }
-  NET_STATE         get_net_state() const { return _net_state; }
+  float get_net_weight() const { return _netweight; }
+  NET_TYPE get_net_type() const { return _net_type; }
+  NET_STATE get_net_state() const { return _net_state; }
 
   bool isSignalNet() const { return _net_type == NET_TYPE::kSignal; }
   bool isClockNet() const { return _net_type == NET_TYPE::kClock; }
@@ -81,6 +82,7 @@ class Net
   bool isDontCareNet() const { return _net_state == NET_STATE::kDontCare; }
 
   // setter.
+  void set_net_id(int32_t id) { _net_id = id; }
   void set_driver_pin(Pin* pin) { _driver_pin = pin; }
   void add_sink_pin(Pin* pin) { _sink_pins.push_back(pin); }
   void set_netweight(float weight) { _netweight = weight; }
@@ -92,16 +94,18 @@ class Net
   void disConnectLoadPins();
 
  private:
-  std::string       _name;
-  Pin*              _driver_pin;
+  int32_t _net_id;
+  std::string _name;
+  Pin* _driver_pin;
   std::vector<Pin*> _sink_pins;
-  float             _netweight;
+  float _netweight;
 
-  NET_TYPE  _net_type;
+  NET_TYPE _net_type;
   NET_STATE _net_state;
 };
 
-inline Net::Net(std::string name) : _name(std::move(name)), _driver_pin(nullptr), _netweight(1.0), _net_type(NET_TYPE::kNone), _net_state(NET_STATE::kNone)
+inline Net::Net(std::string name)
+    : _net_id(-1), _name(std::move(name)), _driver_pin(nullptr), _netweight(1.0), _net_type(NET_TYPE::kNone), _net_state(NET_STATE::kNone)
 {
 }
 
@@ -135,8 +139,9 @@ inline int32_t Net::get_hpwl() const
   return Rectangle<int32_t>(lower_x, lower_y, upper_x, upper_y).get_half_perimeter();
 }
 
-inline void Net::disConnectLoadPins(){
-  for(auto* sink_pin : _sink_pins){
+inline void Net::disConnectLoadPins()
+{
+  for (auto* sink_pin : _sink_pins) {
     sink_pin->set_net(nullptr);
   }
   _sink_pins.clear();

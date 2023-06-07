@@ -27,6 +27,7 @@
 #include "WAWirelengthGradient.hh"
 
 #include "omp.h"
+#include "usage/usage.hh"
 
 // debug
 #include <fstream>
@@ -44,23 +45,18 @@ WAWirelengthGradient::WAWirelengthGradient(TopologyManager* topology_manager) : 
 
 void WAWirelengthGradient::initWAInfo()
 {
-  for (auto* network : _topology_manager->get_network_list()) {
-    _wa_net_map.emplace(network, WANetInfo());
-
-    for (auto* node : network->get_node_list()) {
-      _wa_pin_map.emplace(node, WAPinInfo());
-    }
-  }
+  _wa_net_info_list.resize(_topology_manager->get_network_list().size());
+  _wa_pin_info_list.resize(_topology_manager->get_node_list().size());
 }
 
 void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num)
 {
   // reset all WA variables.
-  for (auto pair : _wa_pin_map) {
-    pair.second.reset();
+  for (auto& wa_pin_info : _wa_pin_info_list) {
+    wa_pin_info.reset();
   }
-  for (auto pair : _wa_net_map) {
-    pair.second.reset();
+  for (auto& wa_net_info : _wa_net_info_list) {
+    wa_net_info.reset();
   }
 
   // NOLINTNEXTLINE
@@ -115,11 +111,11 @@ void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, f
         wa_net_info.wa_Y_ExpMaxSum_y += node_loc.get_y() * wa_pin_info.max_ExpSum_y;
       }
 
-      auto& cur_node_info = _wa_pin_map.find(node)->second;
+      auto& cur_node_info = _wa_pin_info_list[node->get_node_id()];
       cur_node_info = std::move(wa_pin_info);
     }
 
-    auto& cur_network_info = _wa_net_map.find(network)->second;
+    auto& cur_network_info = _wa_net_info_list[network->get_network_id()];
     cur_network_info = std::move(wa_net_info);
   }
 }
@@ -143,7 +139,7 @@ void WAWirelengthGradient::waWLAnalyzeForDebug(float coeff_x, float coeff_y)
       continue;
     }
 
-    auto& wa_net_info = _wa_net_map[network];
+    auto& wa_net_info = _wa_net_info_list[network->get_network_id()];
     float func_x_value
         = wa_net_info.wa_X_ExpMaxSum_x / wa_net_info.wa_ExpMaxSum_x - wa_net_info.wa_X_ExpMinSum_x / wa_net_info.wa_ExpMinSum_x;
     float func_y_value
@@ -168,24 +164,34 @@ void WAWirelengthGradient::waWLAnalyzeForDebug(float coeff_x, float coeff_y)
   std::cout << "append gradientAnalyze_4pins.txt to ./result/pl/" << std::endl;
 }
 
-Point<float> WAWirelengthGradient::obtainWirelengthGradient(std::string inst_name, float coeff_x, float coeff_y)
+Point<float> WAWirelengthGradient::obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y)
 {
   float gradient_x = 0.0F;
   float gradient_y = 0.0F;
 
-  auto* group = _topology_manager->findGroup(inst_name);
+  // debug
+  // double wl_collect_inner_runtime = 0.0;
+
+  // ieda::Stats outer_collect_status;
+  auto* group = _topology_manager->findGroupById(inst_id);
   if (group) {
     for (auto* node : group->get_node_list()) {
-      Point<float> pin_gradient_pair = obtainPinWirelengthGradient(node, coeff_x, coeff_y);
+      // ieda::Stats inner_collect_status;
+      Point<float> pin_gradient_pair = std::move(obtainPinWirelengthGradient(node, coeff_x, coeff_y));
+      // wl_collect_inner_runtime += inner_collect_status.elapsedRunTime();
 
       // add net weight.
-      float pin_gradient_x = pin_gradient_pair.get_x() * node->get_network()->get_net_weight();
-      float pin_gradient_y = pin_gradient_pair.get_y() * node->get_network()->get_net_weight();
+      float net_weight = node->get_network()->get_net_weight();
+      float pin_gradient_x = pin_gradient_pair.get_x() * net_weight;
+      float pin_gradient_y = pin_gradient_pair.get_y() * net_weight;
 
       gradient_x += pin_gradient_x;
       gradient_y += pin_gradient_y;
     }
   }
+
+  // std::cout << "DEBUG: wl grad collecting outer runtime: " << outer_collect_status.elapsedRunTime() << " s" << std::endl;
+  // std::cout << "DEBUG: wl grad collecting inner runtime: " << wl_collect_inner_runtime << " s" << std::endl;
 
   return Point<float>(gradient_x, gradient_y);
 }
@@ -195,8 +201,8 @@ Point<float> WAWirelengthGradient::obtainPinWirelengthGradient(Node* pin, float 
   float gradient_min_x = 0, gradient_min_y = 0;
   float gradient_max_x = 0, gradient_max_y = 0;
 
-  WAPinInfo pin_info = _wa_pin_map.find(pin)->second;
-  WANetInfo net_info = _wa_net_map.find(pin->get_network())->second;
+  auto& pin_info = _wa_pin_info_list[pin->get_node_id()];
+  auto& net_info = _wa_net_info_list[pin->get_network()->get_network_id()];
 
   // min x.
   if (pin_info.has_MinExpSum_x == 1) {

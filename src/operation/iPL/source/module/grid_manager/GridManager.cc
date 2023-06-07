@@ -302,7 +302,7 @@ void GridManager::obtainOverlapRowList(std::vector<GridRow*>& overlap_row_list, 
 //   return overlap_grid_list;
 // }
 
-void GridManager::obtainOverlapGridList(std::vector<Grid*>& overlap_grid_list, Rectangle<int32_t> rect)
+void GridManager::obtainOverlapGridList(std::vector<Grid*>& overlap_grid_list, Rectangle<int32_t>& rect)
 {
   LOG_ERROR_IF(!overlap_grid_list.empty()) << "Pass overlap_grid_list is not Empty!";
 

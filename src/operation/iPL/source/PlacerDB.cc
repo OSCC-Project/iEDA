@@ -100,7 +100,7 @@ void PlacerDB::initTopoManager()
   for (auto* pin : pl_design->get_pin_list()) {
     Node* node = new Node(pin->get_name());
     node->set_location(std::move(pin->get_center_coordi()));
-    _topo_manager->add_node(node->get_name(), node);
+    _topo_manager->add_node(node);
   }
 
   for (auto* net : pl_design->get_net_list()) {
@@ -110,30 +110,30 @@ void PlacerDB::initTopoManager()
 
     Pin* driver_pin = net->get_driver_pin();
     if (driver_pin) {
-      Node* transmitter = _topo_manager->findNode(driver_pin->get_name());
+      Node* transmitter = _topo_manager->findNodeById(driver_pin->get_pin_id());
       transmitter->set_network(network);
       network->set_transmitter(transmitter);
     }
 
     for (auto* loader_pin : net->get_sink_pins()) {
-      Node* receiver = _topo_manager->findNode(loader_pin->get_name());
+      Node* receiver = _topo_manager->findNodeById(loader_pin->get_pin_id());
       receiver->set_network(network);
       network->add_receiver(receiver);
     }
 
-    _topo_manager->add_network(network->get_name(), network);
+    _topo_manager->add_network(network);
   }
 
   for (auto* inst : pl_design->get_instance_list()) {
     Group* group = new Group(inst->get_name());
 
     for (auto* pin : inst->get_pins()) {
-      Node* node = _topo_manager->findNode(pin->get_name());
+      Node* node = _topo_manager->findNodeById(pin->get_pin_id());
       node->set_group(group);
       group->add_node(node);
     }
 
-    _topo_manager->add_group(group->get_name(), group);
+    _topo_manager->add_group(group);
   }
 }
 
@@ -165,7 +165,8 @@ void PlacerDB::initGridManagerFixedArea()
 
     // add fix insts.
     std::vector<Grid*> overlap_grid_list;
-    _grid_manager->obtainOverlapGridList(overlap_grid_list, inst->get_shape());
+    auto inst_shape = std::move(inst->get_shape());
+    _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst->get_shape());
       grid->add_fixed_area(overlap_area);
@@ -214,7 +215,7 @@ void PlacerDB::initIgnoreNets(int32_t ignore_net_degree)
 void PlacerDB::updateTopoManager()
 {
   for (auto* pin : this->get_design()->get_pin_list()) {
-    auto* node = _topo_manager->findNode(pin->get_name());
+    auto* node = _topo_manager->findNodeById(pin->get_pin_id());
     node->set_location(std::move(pin->get_center_coordi()));
   }
 }

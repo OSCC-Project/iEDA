@@ -48,6 +48,7 @@ class NesInstance
   NesInstance& operator=(NesInstance&&) = delete;
 
   // getter.
+  int32_t get_inst_id() const { return _n_inst_id; }
   std::string get_name() const { return _name; }
   float get_density_scale() const { return _density_scale; }
 
@@ -63,6 +64,7 @@ class NesInstance
   bool isMacro() const { return _is_macro == 1; }
 
   // setter.
+  void set_inst_id(int32_t id) { _n_inst_id = id; }
   void set_density_scale(float scale) { _density_scale = scale; }
 
   void set_origin_shape(Rectangle<int32_t> shape) { _origin_shape = std::move(shape); }
@@ -80,6 +82,7 @@ class NesInstance
   void changeSize(int width, int height);
 
  private:
+  int32_t _n_inst_id;
   std::string _name;
   float _density_scale;
 
@@ -95,7 +98,8 @@ class NesInstance
 
   void updateNesPinListLocation();
 };
-inline NesInstance::NesInstance(std::string name) : _name(std::move(name)), _density_scale(1.0F), _is_fixed(0), _is_filler(0), _is_macro(0)
+inline NesInstance::NesInstance(std::string name)
+    : _n_inst_id(-1), _name(std::move(name)), _density_scale(1.0F), _is_fixed(0), _is_filler(0), _is_macro(0)
 {
 }
 

@@ -18,8 +18,8 @@
 #include <iostream>
 #include <set>
 
-#include "TimingEval.hpp"
 #include "PLAPI.hh"
+#include "TimingEval.hpp"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
@@ -251,11 +251,13 @@ void PLAPI::plotConnectionForDebug(std::vector<std::string> net_name_list, std::
   }
 
   auto* ipl_layout = PlacerDBInst.get_layout();
+  auto* ipl_design = PlacerDBInst.get_design();
   auto* topo_manager = PlacerDBInst.get_topo_manager();
 
   std::vector<NetWork*> net_list;
   for (std::string net_name : net_name_list) {
-    auto* network = topo_manager->findNetwork(net_name);
+    auto* pl_net = ipl_design->find_net(net_name);
+    auto* network = topo_manager->findNetworkById(pl_net->get_net_id());
     if (!network) {
       LOG_WARNING << "Net : " << net_name << " Not Found!";
     } else {
@@ -399,7 +401,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
     std::set<NetWork*> relative_nets;
     std::set<NetWork*> unrelative_nets;
     for (auto* inst : inst_list) {
-      auto* group = topo_manager->findGroup(inst->get_name());
+      auto* group = topo_manager->findGroupById(inst->get_inst_id());
       for (auto* node : group->get_node_list()) {
         auto* network = node->get_network();
         bool skip_flag = false;
@@ -448,7 +450,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
         continue;
       }
 
-      relative_wl += stwl_eval.obtainNetWirelength(network->get_name());
+      relative_wl += stwl_eval.obtainNetWirelength(network->get_network_id());
       auto* multi_tree = stwl_eval.obtainMultiTree(network);
       std::set<TreeNode*> visited_tree_nodes;
       std::queue<TreeNode*> tree_node_queue;
@@ -488,7 +490,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
         continue;
       }
 
-      unrelative_wl += stwl_eval.obtainNetWirelength(network->get_name());
+      unrelative_wl += stwl_eval.obtainNetWirelength(network->get_network_id());
       auto* multi_tree = stwl_eval.obtainMultiTree(network);
       std::set<TreeNode*> visited_tree_nodes;
       std::queue<TreeNode*> tree_node_queue;
@@ -666,7 +668,7 @@ void PLAPI::reportSTWLInfo(std::ofstream& feed)
   int64_t max_stwl = 0;
 
   for (auto* network : topo_manager->get_network_list()) {
-    int64_t stwl = stwl_eval.obtainNetWirelength(network->get_name());
+    int64_t stwl = stwl_eval.obtainNetWirelength(network->get_network_id());
     stwl > max_stwl ? max_stwl = stwl : max_stwl;
     sum_stwl += stwl;
   }
