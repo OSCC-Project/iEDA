@@ -271,11 +271,11 @@ int64_t SteinerWirelength::obtainTotalWirelength()
   return total_wirelength;
 }
 
-int64_t SteinerWirelength::obtainNetWirelength(std::string net_name)
+int64_t SteinerWirelength::obtainNetWirelength(int32_t net_id)
 {
   int64_t wirelength = 0;
-  auto* network = _topology_manager->findNetwork(net_name);
-  LOG_ERROR_IF(!network) << "NetWork : " << net_name << " is not existed!";
+  auto* network = _topology_manager->findNetworkById(net_id);
+  LOG_ERROR_IF(!network) << "NetWork Index : " << net_id << " is not existed!";
 
   auto iter = _point_pair_map.find(network);
   if (iter != _point_pair_map.end()) {
@@ -284,13 +284,13 @@ int64_t SteinerWirelength::obtainNetWirelength(std::string net_name)
                      + std::abs(point_pair.first.get_y() - point_pair.second.get_y()));
     }
   } else {
-    LOG_ERROR << "NetWork : " << net_name << " has not been initialized!";
+    LOG_ERROR << "NetWork Index : " << net_id << " has not been initialized!";
   }
 
   return wirelength;
 }
 
-int64_t SteinerWirelength::obtainPartOfNetWirelength(std::string net_name, std::string sink_pin_name)
+int64_t SteinerWirelength::obtainPartOfNetWirelength(int32_t net_id, int32_t sink_pin_id)
 {
   int64_t netlength = -1;
   // TODO.
