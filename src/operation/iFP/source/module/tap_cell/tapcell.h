@@ -55,7 +55,7 @@ class TapCellPlacer
   void buildRegionInRow(idb::IdbRow* idb_row, int32_t index);
 
   int insertCell(int32_t inst_space, std::string tapcell_name, std::string endcap_name);
-  uint32_t getCellMasterWidthByOrient(idb::IdbCellMaster* cell_master, idb::IdbOrient orinet);
+  int32_t getCellMasterWidthByOrient(idb::IdbCellMaster* cell_master, idb::IdbOrient orinet);
 };
 
 }  // namespace ifp

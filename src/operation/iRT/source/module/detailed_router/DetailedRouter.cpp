@@ -803,10 +803,7 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, LayerRect& blockage)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-
-  std::map<DRNode*, std::set<Orientation>> node_obs_map;
+  std::map<DRNode*, std::set<Orientation>> node_orientation_map;
 
   for (Segment<DRNode*>& node_segment : getNodeSegmentList(dr_box, blockage)) {
     DRNode* first = node_segment.get_first();
@@ -815,62 +812,81 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
     irt_int second_layer_idx = second->get_layer_idx();
 
     Orientation orientation = RTUtil::getOrientation(*first, *second);
-    if (orientation == Orientation::kOblique) {
+    if (orientation == Orientation::kOblique || std::abs(first_layer_idx - second_layer_idx) > 1) {
       LOG_INST.error(Loc::current(), "The node segment is illegal!");
     }
-    if (std::abs(first_layer_idx - second_layer_idx) > 1) {
-      LOG_INST.error(Loc::current(), "The node segment is illegal!");
-    }
-    if (blockage.get_layer_idx() != first_layer_idx && blockage.get_layer_idx() != second_layer_idx) {
-      continue;
-    }
-    PlanarRect check_rect;
-    if (first_layer_idx == second_layer_idx) {
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
-      check_rect = RTUtil::getEnlargedRect(Segment<PlanarCoord>(*first, *second), half_width);
-    } else {
-      irt_int below_layer_idx = (orientation == Orientation::kUp ? first_layer_idx : second_layer_idx);
-      irt_int above_layer_idx = (orientation == Orientation::kUp ? second_layer_idx : first_layer_idx);
-
-      ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
-      if (blockage.get_layer_idx() == below_layer_idx) {
-        check_rect = (RTUtil::getOffsetRect(via_master.get_below_enclosure(), *first));
-      } else if (blockage.get_layer_idx() == above_layer_idx) {
-        check_rect = (RTUtil::getOffsetRect(via_master.get_above_enclosure(), *first));
+    for (LayerRect real_rect : getRealRectList({Segment<LayerCoord>(*first, *second)})) {
+      if (real_rect.get_layer_idx() != blockage.get_layer_idx()) {
+        continue;
+      }
+      if (RTUtil::isOpenOverlap(blockage, real_rect)) {
+        node_orientation_map[first].insert(orientation);
+        node_orientation_map[second].insert(RTUtil::getOppositeOrientation(orientation));
       }
     }
-    if (RTUtil::isOpenOverlap(blockage, check_rect)) {
-      node_obs_map[first].insert(orientation);
-      node_obs_map[second].insert(RTUtil::getOppositeOrientation(orientation));
-    }
   }
-  return node_obs_map;
+  return node_orientation_map;
 }
 
 std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, LayerRect& blockage)
 {
-  std::vector<Segment<DRNode*>> segment_list;
+  // 获取blockage覆盖的线段
+  std::vector<Segment<DRNode*>> node_segment_list;
   for (DRNodeGraph& node_graph : dr_box.get_layer_graph_list()) {
     for (DRNode& dr_node : node_graph.get_dr_node_list()) {
       for (auto [orient, neighbor_ptr] : dr_node.get_neighbor_ptr_map()) {
         DRNode* node_a = &dr_node;
         DRNode* node_b = neighbor_ptr;
         RTUtil::sortASC(node_a, node_b);
-        segment_list.emplace_back(node_a, node_b);
+        node_segment_list.emplace_back(node_a, node_b);
       }
     }
   }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<DRNode*>& a, Segment<DRNode*>& b) {
+  std::sort(node_segment_list.begin(), node_segment_list.end(), [](Segment<DRNode*>& a, Segment<DRNode*>& b) {
     if (a.get_first() != b.get_first()) {
       return a.get_first() < b.get_first();
     } else {
       return a.get_second() < b.get_second();
     }
   });
-  RTUtil::merge(segment_list, [](Segment<DRNode*>& sentry, Segment<DRNode*>& soldier) {
+  RTUtil::merge(node_segment_list, [](Segment<DRNode*>& sentry, Segment<DRNode*>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
-  return segment_list;
+  return node_segment_list;
+}
+
+std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>> segment_list)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+
+  std::vector<LayerRect> rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
+
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    if (first_layer_idx != second_layer_idx) {
+      RTUtil::sortASC(first_layer_idx, second_layer_idx);
+      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+        LayerRect& above_enclosure = via_master.get_above_enclosure();
+        PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, first_coord);
+        rect_list.emplace_back(offset_above_enclosure, above_enclosure.get_layer_idx());
+
+        LayerRect& below_enclosure = via_master.get_below_enclosure();
+        PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, first_coord);
+        rect_list.emplace_back(offset_below_enclosure, below_enclosure.get_layer_idx());
+      }
+    } else {
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+      rect_list.emplace_back(wire_rect, first_layer_idx);
+    }
+  }
+  return rect_list;
 }
 
 void DetailedRouter::buildCostTaskMap(DRBox& dr_box)
@@ -1842,42 +1858,6 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
       }
     }
   }
-}
-
-std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>>& segment_list)
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
-
-  std::vector<LayerRect> rect_list;
-  for (Segment<LayerCoord>& segment : segment_list) {
-    LayerCoord first_coord = segment.get_first();
-    LayerCoord second_coord = segment.get_second();
-    if (!CmpLayerCoordByLayerASC()(first_coord, second_coord)) {
-      std::swap(first_coord, second_coord);
-    }
-
-    irt_int first_layer_idx = first_coord.get_layer_idx();
-    irt_int second_layer_idx = second_coord.get_layer_idx();
-    if (first_layer_idx != second_layer_idx) {
-      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
-
-        LayerRect& above_enclosure = via_master.get_above_enclosure();
-        PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, first_coord);
-        rect_list.emplace_back(offset_above_enclosure, above_enclosure.get_layer_idx());
-
-        LayerRect& below_enclosure = via_master.get_below_enclosure();
-        PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, first_coord);
-        rect_list.emplace_back(offset_below_enclosure, below_enclosure.get_layer_idx());
-      }
-    } else {
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
-      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
-      rect_list.emplace_back(wire_rect, first_layer_idx);
-    }
-  }
-  return rect_list;
 }
 
 #endif

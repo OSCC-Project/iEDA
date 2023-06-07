@@ -23,11 +23,12 @@
  * https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /LJK-iEDA/iEDA/src/iFP/MacroPlacer/checker/checker.cpp
  */
-#include "checker.h"
+#include "Checker.h"
+
 namespace ipl::imp {
-bool Checker::checkOverlape(vector<FPInst*> macro_list)
+
+bool Checker::checkOverlape(std::vector<FPInst*> macro_list)
 {
-  cout << "-------star check overlape------" << endl;
   bool pass = true;
   // coordinate of left-down and right-up
   int32_t macro1_ldx, macro1_ldy, macro1_rux, macro1_ruy;
@@ -50,7 +51,7 @@ bool Checker::checkOverlape(vector<FPInst*> macro_list)
   return pass;
 }
 
-bool Checker::checkOutborder(vector<FPInst*> macro_list, Coordinate* ld, Coordinate* ru)
+bool Checker::checkOutborder(std::vector<FPInst*> macro_list, Coordinate* ld, Coordinate* ru)
 {
   cout << "-------star check out border------" << endl;
   bool pass = true;
@@ -68,4 +69,5 @@ bool Checker::checkOutborder(vector<FPInst*> macro_list, Coordinate* ld, Coordin
   }
   return pass;
 }
+
 }  // namespace ipl::imp

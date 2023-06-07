@@ -26,8 +26,6 @@ namespace ipl {
 class Hmetis
 {
  public:
-  Hmetis(){};
-  ~Hmetis(){};
   void set_hmetis_path(std::string path) { _hmetis_path = path; }
   void set_output_path(std::string path) { _output_path = path; }
   void set_nparts(int num_parts) { _nparts = num_parts; }
@@ -49,7 +47,7 @@ class Hmetis
   std::vector<int> get_result() { return _partition_result; }
 
  private:
-  std::string _hmetis_path = "/home/lijiangkao/project/test/hmetis_test/hmetis-2.0pre1/Linux-x86_64/hmetis2.0pre1";
+  std::string _hmetis_path = "../src/third_party/hmetis/hmetis2.0pre1";
   std::string _output_path = "./result/pl";
   int _nparts = 2;
 

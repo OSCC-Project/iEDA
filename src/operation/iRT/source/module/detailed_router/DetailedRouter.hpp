@@ -85,6 +85,7 @@ class DetailedRouter
   void buildOBSTaskMap(DRBox& dr_box);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& blockage);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& blockage);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void buildCostTaskMap(DRBox& dr_box);
 #endif
 
@@ -138,7 +139,6 @@ class DetailedRouter
 
 #if 1  // count dr_box
   void countDRBox(DRBox& dr_box);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
 #endif
 
 #if 1  // update dr_model
