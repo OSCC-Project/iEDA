@@ -23,14 +23,23 @@
 #include "CongInst.hpp"
 #include "CongNet.hpp"
 #include "CongTile.hpp"
+#include "idm.h"
 
 namespace eval {
 
 class CongestionEval
 {
  public:
-  CongestionEval() = default;
-  ~CongestionEval() = default;
+  CongestionEval()
+  {
+    _tile_grid = new TileGrid();
+    _cong_grid = new CongGrid();
+  }
+  ~CongestionEval()
+  {
+    delete _tile_grid;
+    delete _cong_grid;
+  }
 
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);
 
@@ -50,7 +59,9 @@ class CongestionEval
   std::vector<float> getInstDens();
 
   /*----evaluate net congestion----*/
-  void mapNet2Bin();
+  void initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y);
+  void initCongNetList();
+  void mapNetCoord2Grid();
   void evalNetCong(const std::string& rudy_type);
   void reportNetCong();
   void plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type);
@@ -112,8 +123,11 @@ class CongestionEval
   double getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
+  double getLUTRUDY(CongBin* bin, CongNet* net);
 
   float getUsageCapacityRatio(Tile* tile);
+  CongPin* wrapCongPin(idb::IdbPin* idb_pin);
+  std::string fixSlash(std::string raw_str);
 };
 
 }  // namespace eval
