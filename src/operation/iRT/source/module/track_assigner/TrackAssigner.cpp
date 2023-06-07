@@ -1094,7 +1094,7 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
 
 bool TrackAssigner::passCheckingSegment(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
-  Orientation orientation = getOrientation(start_node, end_node);
+  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
   if (orientation == Orientation::kNone) {
     return true;
   }
@@ -1184,9 +1184,9 @@ void TrackAssigner::updatePathResult(TAPanel& ta_panel)
     // 起点和终点重合
     return;
   }
-  Orientation curr_orientation = getOrientation(curr_node, pre_node);
+  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
   while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = getOrientation(pre_node, pre_node->get_parent_node());
+    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
     if (curr_orientation != pre_orientation) {
       node_segment_list.emplace_back(curr_node, pre_node);
       curr_orientation = pre_orientation;
@@ -1204,8 +1204,8 @@ void TrackAssigner::updateOrientationSet(TAPanel& ta_panel)
   TANode* curr_node = path_head_node;
   TANode* pre_node = curr_node->get_parent_node();
   while (pre_node != nullptr) {
-    curr_node->get_orientation_set().insert(getOrientation(curr_node, pre_node));
-    pre_node->get_orientation_set().insert(getOrientation(pre_node, curr_node));
+    curr_node->get_orientation_set().insert(RTUtil::getOrientation(*curr_node, *pre_node));
+    pre_node->get_orientation_set().insert(RTUtil::getOrientation(*pre_node, *curr_node));
     curr_node = pre_node;
     pre_node = curr_node->get_parent_node();
   }
@@ -1281,7 +1281,7 @@ void TrackAssigner::updateDemand(TAPanel& ta_panel, TATask& ta_task)
   for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
     TANode* first_node = node_segment.get_first();
     TANode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
 
     TANode* node_i = first_node;
     while (true) {
@@ -1314,7 +1314,7 @@ void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
   for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
     TANode* first_node = node_segment.get_first();
     TANode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
 
     TANode* node_i = first_node;
     while (true) {
@@ -1359,7 +1359,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 {
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getJointCost(ta_panel, end_node, getOrientation(end_node, start_node));
+  cost += getJointCost(ta_panel, end_node, RTUtil::getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
@@ -1419,13 +1419,18 @@ double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, T
     orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
     orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
     if (start_node->get_parent_node() != nullptr) {
-      orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+      orientation_set.insert(RTUtil::getOrientation(*start_node->get_parent_node(), *start_node));
     }
-    orientation_set.erase(getOrientation(start_node, end_node));
-    orientation_set.erase(getOrientation(end_node, start_node));
+    orientation_set.erase(RTUtil::getOrientation(*start_node, *end_node));
+    orientation_set.erase(RTUtil::getOrientation(*end_node, *start_node));
     corner_cost += (ta_panel.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
   }
   return corner_cost;
+}
+
+double TrackAssigner::getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  return ta_panel.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 // calculate estimate cost
@@ -1469,23 +1474,6 @@ double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_nod
     }
   }
   return corner_cost;
-}
-
-// common
-
-Orientation TrackAssigner::getOrientation(TANode* start_node, TANode* end_node)
-{
-  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
-  if (orientation == Orientation::kOblique) {
-    LOG_INST.error(Loc::current(), "The segment (", (*start_node).get_x(), ",", (*start_node).get_y(), ",", (*start_node).get_layer_idx(),
-                   ")-(", (*end_node).get_x(), ",", (*end_node).get_y(), ",", (*end_node).get_layer_idx(), ") is oblique!");
-  }
-  return orientation;
-}
-
-double TrackAssigner::getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 #endif

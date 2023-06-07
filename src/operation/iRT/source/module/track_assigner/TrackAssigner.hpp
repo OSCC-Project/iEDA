@@ -126,13 +126,11 @@ class TrackAssigner
   double getJointCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
   double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  Orientation getOrientation(TANode* start_node, TANode* end_node);
-  double getCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
 #endif
 
 #if 1  // plot ta_panel
