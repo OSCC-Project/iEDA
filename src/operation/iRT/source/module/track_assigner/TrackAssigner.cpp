@@ -236,7 +236,7 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   if (!pin_coord_list.empty()) {
     routing_region = RTUtil::getBoundingBox(pin_coord_list);
     if (!RTUtil::existGrid(routing_region, routing_layer.get_track_axis())) {
-      routing_region = RTUtil::getTrackLineRect(routing_region, routing_layer.get_track_axis());
+      routing_region = getTrackLineRect(routing_region, routing_layer.get_track_axis());
     }
     routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
   }
@@ -261,6 +261,24 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
     }
   }
   return ta_group;
+}
+
+// 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
+PlanarRect TrackAssigner::getTrackLineRect(PlanarRect& rect, TrackAxis& track_axis)
+{
+  irt_int real_lb_x = rect.get_lb_x();
+  irt_int real_rt_x = rect.get_rt_x();
+  irt_int real_lb_y = rect.get_lb_y();
+  irt_int real_rt_y = rect.get_rt_y();
+  if(RTUtil::getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_track_grid()).empty()) {
+    real_lb_x = RTUtil::getFloorTrackLine(real_lb_x, track_axis.get_x_track_grid());
+    real_rt_x = RTUtil::getCeilTrackLine(real_rt_x, track_axis.get_x_track_grid());
+  }
+  if(RTUtil::getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_track_grid()).empty()) {
+    real_lb_y = RTUtil::getFloorTrackLine(real_lb_y, track_axis.get_y_track_grid());
+    real_rt_y = RTUtil::getCeilTrackLine(real_rt_y, track_axis.get_y_track_grid());
+  }
+  return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
 }
 
 std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(TNode<RTNode>* ta_node_node,
