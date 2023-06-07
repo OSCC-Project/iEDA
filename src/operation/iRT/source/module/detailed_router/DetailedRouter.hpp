@@ -119,7 +119,7 @@ class DetailedRouter
   void resetSinglePath(DRBox& dr_box);
   void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void updatePathResult(DRBox& dr_box);
-  void updateOrientationSet(DRBox& dr_box);
+  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
