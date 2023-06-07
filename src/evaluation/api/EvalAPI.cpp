@@ -73,16 +73,16 @@ int64_t EvalAPI::evalDriver2LoadWL(WLNet* wl_net, const string& sink_pin_name)
   return wirelength_eval.evalDriver2LoadWL(wl_net, sink_pin_name);
 }
 
-double EvalAPI::evalEGRWL(){
+double EvalAPI::evalEGRWL()
+{
   // call router to get eGR wirelength info
   irt::RTAPI& rt_api = irt::RTAPI::getInst();
   std::map<std::string, std::any> config_map;
   std::vector<double> wl_via_pair = rt_api.getWireLengthAndViaNum(config_map);
   rt_api.destroyInst();
-  
+
   return wl_via_pair[0];
 }
-
 
 void EvalAPI::reportWirelength(const string& plot_path, const string& output_file_name, const vector<WLNet*>& net_list)
 {
@@ -99,13 +99,6 @@ void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_l
   _congestion_eval_inst->set_cong_grid(grid);
   _congestion_eval_inst->set_cong_inst_list(inst_list);
   _congestion_eval_inst->set_cong_net_list(net_list);
-}
-
-void EvalAPI::initCongestionEval()
-{
-  if (_congestion_eval_inst == nullptr) {
-    _congestion_eval_inst = new CongestionEval();
-  }
 }
 
 vector<float> EvalAPI::evalPinDens()
@@ -141,7 +134,7 @@ vector<float> EvalAPI::evalInstDens(CongGrid* grid, const vector<CongInst*>& ins
 vector<float> EvalAPI::evalNetCong(const string& rudy_type)
 {
   _congestion_eval_inst->checkRUDYType(rudy_type);
-  _congestion_eval_inst->mapNet2Bin();
+  _congestion_eval_inst->mapNetCoord2Grid();
   return _congestion_eval_inst->getNetCong(rudy_type);
 }
 
@@ -151,8 +144,26 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   return congestion_eval.getNetCong(rudy_type);
+}
+
+pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong(const int& bin_cnt_x, const int& bin_cnt_y)
+{
+  // initialize cong_grid
+  _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
+  // transfrom idb_net to cong_net
+  _congestion_eval_inst->initCongNetList();
+  // map CongNet to each CongBin
+  _congestion_eval_inst->mapNetCoord2Grid();
+  // eval RUDY,  return Horizontal utilzation map and Vertical utilization map
+  _congestion_eval_inst->evalNetCong("LUTRUDY");
+
+  vector<float> a, b;
+  a.push_back(0.3);
+  b.push_back(0.5);
+
+  return std::make_pair(a, b);
 }
 
 vector<float> EvalAPI::evalGRCong()
@@ -222,7 +233,7 @@ void EvalAPI::plotNetCong(const string& plot_path, const string& output_file_nam
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.evalNetCong(rudy_type);
   congestion_eval.plotNetCong(plot_path, output_file_name, rudy_type);
 }
@@ -235,7 +246,7 @@ void EvalAPI::reportCongestion(const string& plot_path, const string& output_fil
   congestion_eval.set_cong_inst_list(inst_list);
   congestion_eval.set_cong_net_list(net_list);
   congestion_eval.mapInst2Bin();
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.reportCongestion(plot_path, output_file_name);
 }
 /******************************Congestion Eval: END******************************/

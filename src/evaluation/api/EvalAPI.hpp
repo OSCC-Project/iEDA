@@ -28,6 +28,7 @@ namespace eval {
 
 #define EvalInst (eval::EvalAPI::getInst())
 
+using std::pair;
 using std::string;
 using std::vector;
 
@@ -48,13 +49,13 @@ class EvalAPI
 
   /****************************** Congestion Eval: START ******************************/
   void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
-  void initCongestionEval();
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();
   vector<float> evalInstDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalNetCong(const string& rudy_type);
   vector<float> evalNetCong(CongGrid* grid, const vector<CongNet*>& net_list, const string& rudy_type);
+  pair<vector<float>, vector<float>> evalHVNetCong(const int& bin_cnt_x, const int& bin_cnt_y);
   vector<float> evalGRCong();
   vector<float> getUseCapRatioList();
   vector<int> getTileGridCoordSizeCntXY();
@@ -94,14 +95,22 @@ class EvalAPI
   TimingEval* _timing_eval_inst = nullptr;
   CongestionEval* _congestion_eval_inst = nullptr;
 
-  EvalAPI() = default;
+  EvalAPI()
+  {
+    _timing_eval_inst = new TimingEval();
+    _congestion_eval_inst = new CongestionEval();
+  }
   EvalAPI(const EvalAPI& other) = delete;
   EvalAPI(EvalAPI&& other) = delete;
-  ~EvalAPI() = default;
+  ~EvalAPI()
+  {
+    delete _timing_eval_inst;
+    delete _congestion_eval_inst;
+  }
   EvalAPI& operator=(const EvalAPI& other) = delete;
   EvalAPI& operator=(EvalAPI&& other) = delete;
 };
 
 }  // namespace eval
 
-#endif // SRC_EVALUATION_API_EVALAPI_HPP_
+#endif  // SRC_EVALUATION_API_EVALAPI_HPP_

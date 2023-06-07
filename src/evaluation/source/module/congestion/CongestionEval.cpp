@@ -20,6 +20,7 @@
 #include <cfloat>
 #include <cmath>
 #include <fstream>
+#include <regex>
 
 #include "../manager.hpp"
 #include "EvalLog.hpp"
@@ -41,7 +42,7 @@ void CongestionEval::reportCongestion(const std::string& plot_path, const std::s
   reportInstDens();
   plotInstDens(plot_path, output_file_name);
   LOG_INFO << " Evaluating Net Congestion for Each Bin ... ... ";
-  mapNet2Bin();
+  mapNetCoord2Grid();
   evalNetCong("RUDY");
   reportNetCong();
   plotNetCong(plot_path, output_file_name, "RUDY");
@@ -282,7 +283,76 @@ double CongestionEval::getBinInstDens(const int& index_x, const int& index_y)
 /////////////////////////////////
 /////////////////////////////////
 
-void CongestionEval::mapNet2Bin()
+void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbLayers* idb_layers = idb_layout->get_layers();
+  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  int32_t lx = core_bbox->get_low_x();
+  int32_t ly = core_bbox->get_low_y();
+  int32_t width = core_bbox->get_width();
+  int32_t height = core_bbox->get_height();
+
+  _cong_grid->set_lx(lx);
+  _cong_grid->set_ly(ly);
+  _cong_grid->set_bin_cnt_x(bin_cnt_x);
+  _cong_grid->set_bin_cnt_y(bin_cnt_y);
+  _cong_grid->set_bin_size_x(ceil(width / (float) bin_cnt_x));
+  _cong_grid->set_bin_size_y(ceil(height / (float) bin_cnt_y));
+  _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
+  _cong_grid->initBins(idb_layers);
+}
+
+void CongestionEval::initCongNetList()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
+    std::string net_name = fixSlash(idb_net->get_net_name());
+    CongNet* net_ptr = new CongNet();
+    net_ptr->set_name(net_name);
+    auto* idb_driving_pin = idb_net->get_driving_pin();
+    if (idb_driving_pin) {
+      CongPin* pin_ptr = wrapCongPin(idb_driving_pin);
+      net_ptr->add_pin(pin_ptr);
+    }
+    for (auto* idb_load_pin : idb_net->get_load_pins()) {
+      CongPin* pin_ptr = wrapCongPin(idb_load_pin);
+      net_ptr->add_pin(pin_ptr);
+    }
+    _cong_net_list.emplace_back(net_ptr);
+  }
+}
+
+std::string CongestionEval::fixSlash(std::string raw_str)
+{
+  std::regex re(R"(\\)");
+  return std::regex_replace(raw_str, re, "");
+}
+
+CongPin* CongestionEval::wrapCongPin(idb::IdbPin* idb_pin)
+{
+  CongPin* pin_ptr = nullptr;
+
+  auto* idb_inst = idb_pin->get_instance();
+  if (!idb_inst) {
+    pin_ptr = new CongPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+  } else {
+    std::string pin_name = idb_inst->get_name() + ":" + idb_pin->get_pin_name();
+    pin_ptr = new CongPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+  }
+
+  pin_ptr->set_x(idb_pin->get_average_coordinate()->get_x());
+  pin_ptr->set_y(idb_pin->get_average_coordinate()->get_y());
+
+  return pin_ptr;
+}
+
+void CongestionEval::mapNetCoord2Grid()
 {
   for (auto& net : _cong_net_list) {
     if (net->get_pin_list().size() == 1) {
@@ -345,6 +415,8 @@ void CongestionEval::evalNetCong(const std::string& rudy_type)
         congestion += overlap_area * getSteinerRudy(bin, net, netname_steinerwl_map);
       } else if (rudy_type == "TrueRUDY") {
         congestion += overlap_area * getTrueRudy(bin, net, netname_truewl_map);
+      } else if (rudy_type == "LUTRUDY") {
+        congestion += overlap_area * getLUTRUDY(bin, net);
       }
     }
     bin->set_net_cong(congestion);
@@ -1065,6 +1137,10 @@ double CongestionEval::getTrueRudy(CongBin* bin, CongNet* net, const std::map<st
   }
   std::cout << "ture rudy :" << result << std::endl;
   return result;
+}
+
+double CongestionEval::getLUTRUDY(CongBin* bin, CongNet* net)
+{
 }
 
 float CongestionEval::getUsageCapacityRatio(Tile* tile)
