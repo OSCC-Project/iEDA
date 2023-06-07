@@ -644,6 +644,9 @@ class RTUtil
    */
   static PlanarRect getEnlargedRect(PlanarCoord start_coord, PlanarCoord end_coord, irt_int enlarge_size)
   {
+    if (!CmpPlanarCoordByXASC()(start_coord, end_coord)) {
+      std::swap(start_coord, end_coord);
+    }
     PlanarRect rect(start_coord, end_coord);
 
     if (isRightAngled(start_coord, end_coord)) {

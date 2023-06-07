@@ -24,16 +24,22 @@ namespace ipl::imp {
 class FPLayout
 {
  public:
-  FPLayout(){};
-  ~FPLayout(){};
+  FPLayout();
+  ~FPLayout();
 
   // getter
   FPRect* get_die_shape() const { return _die_shape; }
   FPRect* get_core_shape() const { return _core_shape; }
 
   // setter
-  void set_die_shape(FPRect* die) { _die_shape = die; }
-  void set_core_shape(FPRect* core) { _core_shape = core; }
+  void set_die_x(int32_t x) { _die_shape->set_x(x); }
+  void set_die_y(int32_t y) { _die_shape->set_y(y); }
+  void set_die_width(uint32_t width) { _die_shape->set_width(width); }
+  void set_die_height(uint32_t height) { _die_shape->set_height(height); }
+  void set_core_x(int32_t x) { _core_shape->set_x(x); }
+  void set_core_y(int32_t y) { _core_shape->set_y(y); }
+  void set_core_width(uint32_t width) { _core_shape->set_width(width); }
+  void set_core_height(uint32_t height) { _core_shape->set_height(height); }
 
  private:
   FPRect* _die_shape;

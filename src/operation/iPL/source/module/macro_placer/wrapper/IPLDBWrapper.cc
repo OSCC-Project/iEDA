@@ -42,21 +42,17 @@ void IPLDBWrapper::wrapLayout(const ipl::Layout* ipl_layout)
 
   // set die shape
   ipl::Rectangle<int32_t> ipl_die = ipl_layout->get_die_shape();
-  FPRect* die = new FPRect();
-  die->set_x(ipl_die.get_ll_x());
-  die->set_y(ipl_die.get_ll_y());
-  die->set_width(ipl_die.get_ur_x() - ipl_die.get_ll_x());
-  die->set_height(ipl_die.get_ur_y() - ipl_die.get_ll_y());
-  imp_layout->set_die_shape(die);
+  imp_layout->set_die_x(ipl_die.get_ll_x());
+  imp_layout->set_die_y(ipl_die.get_ll_y());
+  imp_layout->set_die_width(ipl_die.get_ur_x() - ipl_die.get_ll_x());
+  imp_layout->set_die_height(ipl_die.get_ur_y() - ipl_die.get_ll_y());
 
   // set core shape
   ipl::Rectangle<int32_t> ipl_core = ipl_layout->get_core_shape();
-  FPRect* core = new FPRect();
-  core->set_x(ipl_core.get_ll_x());
-  core->set_y(ipl_core.get_ll_y());
-  core->set_width(ipl_core.get_ur_x() - ipl_core.get_ll_x());
-  core->set_height(ipl_core.get_ur_y() - ipl_core.get_ll_y());
-  imp_layout->set_core_shape(core);
+  imp_layout->set_core_x(ipl_core.get_ll_x());
+  imp_layout->set_core_y(ipl_core.get_ll_y());
+  imp_layout->set_core_width(ipl_core.get_ur_x() - ipl_core.get_ll_x());
+  imp_layout->set_core_height(ipl_core.get_ur_y() - ipl_core.get_ll_y());
 }
 
 void IPLDBWrapper::wrapDesign(ipl::Design* ipl_design)
@@ -64,7 +60,7 @@ void IPLDBWrapper::wrapDesign(ipl::Design* ipl_design)
   FPDesign* imp_design = _iplw_database->_design;
 
   // set design name.
-  const string design_name = ipl_design->get_design_name();
+  const std::string design_name = ipl_design->get_design_name();
   imp_design->set_design_name(design_name);
 
   // set instance list
@@ -93,32 +89,34 @@ void IPLDBWrapper::wrapInstancelist(ipl::Design* ipl_design)
     // set orient.
     ipl::Orient ipl_orient = ipl_inst->get_orient();
     if (ipl_orient == ipl::Orient::kN_R0) {
-      inst_ptr->set_orient(Orient::N);
+      inst_ptr->set_orient(Orient::kN);
     } else if (ipl_orient == ipl::Orient::kS_R180) {
-      inst_ptr->set_orient(Orient::S);
+      inst_ptr->set_orient(Orient::kS);
     } else if (ipl_orient == ipl::Orient::kW_R90) {
-      inst_ptr->set_orient(Orient::W);
+      inst_ptr->set_orient(Orient::kW);
     } else if (ipl_orient == ipl::Orient::kE_R270) {
-      inst_ptr->set_orient(Orient::E);
+      inst_ptr->set_orient(Orient::kE);
     } else if (ipl_orient == ipl::Orient::kFN_MY) {
-      inst_ptr->set_orient(Orient::FN);
+      inst_ptr->set_orient(Orient::kFN);
     } else if (ipl_orient == ipl::Orient::kFS_MX) {
-      inst_ptr->set_orient(Orient::FS);
+      inst_ptr->set_orient(Orient::kFS);
     } else if (ipl_orient == ipl::Orient::kFW_MX90) {
-      inst_ptr->set_orient(Orient::FW);
+      inst_ptr->set_orient(Orient::kFW);
     } else if (ipl_orient == ipl::Orient::kFE_MY90) {
-      inst_ptr->set_orient(Orient::FE);
+      inst_ptr->set_orient(Orient::kFE);
     } else {
       inst_ptr->set_orient(Orient::kNone);
     }
 
     // set inst type.
-    if (ipl_inst->get_cell_master()->isMacro()) {
-      inst_ptr->set_type(InstType::MACRO);
-      imp_design->add_macro(inst_ptr);
-    } else {
-      inst_ptr->set_type(InstType::STD);
-      imp_design->add_std_cell(inst_ptr);
+    if (ipl_inst->get_cell_master() != nullptr) {
+      if (ipl_inst->get_cell_master()->isMacro()) {
+        inst_ptr->set_type(InstType::kMacro);
+        imp_design->add_macro(inst_ptr);
+      } else {
+        inst_ptr->set_type(InstType::kStd_cell);
+        imp_design->add_std_cell(inst_ptr);
+      }
     }
 
     // set state
@@ -139,7 +137,7 @@ void IPLDBWrapper::wrapNetlist(ipl::Design* ipl_design)
 
   for (ipl::Net* ipl_net : ipl_design->get_net_list()) {
     // build net and set name
-    string net_name = ipl_net->get_name();
+    std::string net_name = ipl_net->get_name();
     FPNet* net_ptr = new FPNet();
     net_ptr->set_name(net_name);
 
@@ -169,20 +167,19 @@ FPPin* IPLDBWrapper::wrapPin(ipl::Pin* ipl_pin)
   ipl::Instance* ipl_inst = ipl_pin->get_instance();
   FPPin* pin_ptr = nullptr;
 
-  if (!ipl_inst) {
-    pin_ptr = new FPPin();
-    pin_ptr->set_name(ipl_pin->get_name());
+  pin_ptr = new FPPin();
+  pin_ptr->set_name(ipl_pin->get_name());
+
+  if (ipl_pin->isIOPort()) {
     pin_ptr->set_io_pin();
     pin_ptr->set_x(ipl_pin->get_center_coordi().get_x());
     pin_ptr->set_y(ipl_pin->get_center_coordi().get_y());
   } else {
-    pin_ptr = new FPPin();
-    pin_ptr->set_name(ipl_pin->get_name());
     FPInst* imp_inst = _iplw_database->find_imp_inst(ipl_inst);
     pin_ptr->set_instance(imp_inst);
     imp_inst->add_pin(pin_ptr);
-    // pin_ptr->set_x(ipl_pin->get_offset_coordi().get_x());
-    // pin_ptr->set_y(ipl_pin->get_offset_coordi().get_y());
+    pin_ptr->set_x(ipl_pin->get_offset_coordi().get_x());
+    pin_ptr->set_y(ipl_pin->get_offset_coordi().get_y());
   }
 
   imp_design->add_pin(pin_ptr);
@@ -217,21 +214,21 @@ void IPLDBWrapper::writeBackSourceDataBase()
 
       // set orient
       Orient inst_orient = macro->get_orient();
-      if (inst_orient == Orient::N) {
+      if (inst_orient == Orient::kN) {
         ipl_inst->set_orient(ipl::Orient::kN_R0);
-      } else if (inst_orient == Orient::S) {
+      } else if (inst_orient == Orient::kS) {
         ipl_inst->set_orient(ipl::Orient::kS_R180);
-      } else if (inst_orient == Orient::W) {
+      } else if (inst_orient == Orient::kW) {
         ipl_inst->set_orient(ipl::Orient::kW_R90);
-      } else if (inst_orient == Orient::E) {
+      } else if (inst_orient == Orient::kE) {
         ipl_inst->set_orient(ipl::Orient::kE_R270);
-      } else if (inst_orient == Orient::FN) {
+      } else if (inst_orient == Orient::kFN) {
         ipl_inst->set_orient(ipl::Orient::kFN_MY);
-      } else if (inst_orient == Orient::FS) {
+      } else if (inst_orient == Orient::kFS) {
         ipl_inst->set_orient(ipl::Orient::kFS_MX);
-      } else if (inst_orient == Orient::FW) {
+      } else if (inst_orient == Orient::kFW) {
         ipl_inst->set_orient(ipl::Orient::kFW_MX90);
-      } else if (inst_orient == Orient::FE) {
+      } else if (inst_orient == Orient::kFE) {
         ipl_inst->set_orient(ipl::Orient::kFE_MY90);
       } else {
         ipl_inst->set_orient(ipl::Orient::kNone);

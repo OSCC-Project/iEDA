@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <time.h>
+
+#include <algorithm>
+#include <ctime>
 #include <map>
 #include <set>
 #include <string>
@@ -26,42 +30,41 @@
 #include "Setting.hh"
 #include "SimulateAnneal.hh"
 #include "config/Config.hh"
+#include "gds_plotter/GDSPlotter.hh"
 #include "module/logger/Log.hh"
 #include "partition/HierPartition.hh"
 #include "partition/MPPartition.hh"
 #include "simulate_anneal/MPEvaluation.hh"
 #include "simulate_anneal/SolutionFactory.hh"
 
-using std::string;
-using std::vector;
-
 namespace ipl::imp {
 
 class MacroPlacer
 {
  public:
-  MacroPlacer(MPDB* mdb, ipl::Config* config) : _mdb(mdb)
-  {
-    _mp_config = config->get_mp_config();
-    init();
-  }
+  MacroPlacer(MPDB* mdb, ipl::Config* config);
   ~MacroPlacer() = default;
   // open functions
   void runMacroPlacer();
 
+  void darwPartition();
+  std::map<FPInst*, int> partitionInst(int part);
+
  private:
-  void init();
+  void setConfig(Config* config);
   void updateDensity();
-  void setFixedMacro();
   void addHalo();
-  void addBlockage();
-  void addGuidance();
-  void writeSummary(double time);
-  void initLocation();
+  void deleteHalo();
+  void writeSummary();
+  void plotGDS();
+  void plotPartitionGDS(std::map<FPInst*, int> partition_result);
+  void buildNewNetList();
+
   // data
   MPDB* _mdb;
   Setting* _set;
-  MacroPlacerConfig _mp_config;
+
+  clock_t time;
 };
 
 }  // namespace ipl::imp
