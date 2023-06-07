@@ -18,7 +18,7 @@
 
 namespace ipl {
 
-DPDesign::DPDesign()
+DPDesign::DPDesign() : _dp_instances_range(0), _dp_nets_range(0), _dp_pins_range(0)
 {
 }
 
@@ -59,18 +59,24 @@ void DPDesign::add_instance(DPInstance* inst)
 {
   _dpInstance_list.push_back(inst);
   _dpInstance_map.emplace(inst->get_name(), inst);
+  inst->set_inst_id(_dp_instances_range);
+  _dp_instances_range += 1;
 }
 
 void DPDesign::add_net(DPNet* net)
 {
   _dpNet_list.push_back(net);
   _dpNet_map.emplace(net->get_name(), net);
+  net->set_net_id(_dp_nets_range);
+  _dp_nets_range += 1;
 }
 
 void DPDesign::add_pin(DPPin* pin)
 {
   _dpPin_list.push_back(pin);
   _dpPin_map.emplace(pin->get_name(), pin);
+  pin->set_pin_id(_dp_pins_range);
+  _dp_pins_range += 1;
 }
 
 void DPDesign::add_cluster(DPCluster* cluster)

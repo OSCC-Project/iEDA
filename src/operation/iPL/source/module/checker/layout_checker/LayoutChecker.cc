@@ -247,7 +247,8 @@ void LayoutChecker::connectInstSite(Instance* inst)
 {
   // add inst position.
   std::vector<Grid*> overlap_site_list;
-  _grid_manager->obtainOverlapGridList(overlap_site_list, inst->get_shape());
+  auto inst_shape = std::move(inst->get_shape());
+  _grid_manager->obtainOverlapGridList(overlap_site_list, inst_shape);
 
   for (auto* site : overlap_site_list) {
     addSiteInstConnection(site, inst);

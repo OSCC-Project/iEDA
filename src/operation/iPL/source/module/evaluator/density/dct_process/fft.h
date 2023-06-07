@@ -51,7 +51,7 @@ class FFT
 
   // return func
   std::pair<float, float> get_electro_force(int x, int y);
-  float                   get_electro_phi(int x, int y);
+  float get_electro_phi(int x, int y);
 
  private:
   // 2D array; width: binCntX_, height: binCntY_

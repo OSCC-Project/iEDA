@@ -314,6 +314,8 @@ Appendix :
     w[] and ip[] are compatible with all routines.
 */
 
+#include "fftsg.h"
+
 #include <cmath>
 #include <iostream>
 
