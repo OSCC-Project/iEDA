@@ -17,6 +17,7 @@
 #pragma once
 
 #include "DRRouteStrategy.hpp"
+#include "Direction.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTU.hpp"
@@ -121,12 +122,12 @@ class DRNode : public LayerCoord
   void addEnv(irt_int task_idx, Orientation orientation) { _env_task_map[orientation].insert(task_idx); }
   void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
 #if 1  // astar
-  std::set<Orientation>& get_orientation_set() { return _orientation_set; }
+  std::set<Direction>& get_direction_set() { return _direction_set; }
   DRNodeState& get_state() { return _state; }
   DRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_orientation_set(std::set<Orientation>& orientation_set) { _orientation_set = orientation_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(DRNodeState state) { _state = state; }
   void set_parent_node(DRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
@@ -146,7 +147,7 @@ class DRNode : public LayerCoord
   std::queue<irt_int> _task_queue;
 #if 1  // astar
   // single net
-  std::set<Orientation> _orientation_set;
+  std::set<Direction> _direction_set;
   // single path
   DRNodeState _state = DRNodeState::kNone;
   DRNode* _parent_node = nullptr;

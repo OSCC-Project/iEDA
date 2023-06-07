@@ -99,7 +99,7 @@ class GlobalRouter
   void resetSinglePath(GRModel& gr_model);
   void rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void updatePathResult(GRModel& gr_model);
-  void updateOrientationSet(GRModel& gr_model);
+  void updateDirectionSet(GRModel& gr_model);
   void resetStartAndEnd(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);

@@ -113,7 +113,7 @@ class TrackAssigner
   void resetSinglePath(TAPanel& ta_panel);
   void rerouteByIgnoring(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void updatePathResult(TAPanel& ta_panel);
-  void updateOrientationSet(TAPanel& ta_panel);
+  void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
   void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);

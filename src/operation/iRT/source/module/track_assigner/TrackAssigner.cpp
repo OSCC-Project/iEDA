@@ -965,7 +965,7 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
       rerouteByIgnoring(ta_panel, ta_route_strategy);
     }
     updatePathResult(ta_panel);
-    updateOrientationSet(ta_panel);
+    updateDirectionSet(ta_panel);
     resetStartAndEnd(ta_panel);
     resetSinglePath(ta_panel);
   }
@@ -1197,15 +1197,15 @@ void TrackAssigner::updatePathResult(TAPanel& ta_panel)
   node_segment_list.emplace_back(curr_node, pre_node);
 }
 
-void TrackAssigner::updateOrientationSet(TAPanel& ta_panel)
+void TrackAssigner::updateDirectionSet(TAPanel& ta_panel)
 {
   TANode* path_head_node = ta_panel.get_path_head_node();
 
   TANode* curr_node = path_head_node;
   TANode* pre_node = curr_node->get_parent_node();
   while (pre_node != nullptr) {
-    curr_node->get_orientation_set().insert(RTUtil::getOrientation(*curr_node, *pre_node));
-    pre_node->get_orientation_set().insert(RTUtil::getOrientation(*pre_node, *curr_node));
+    curr_node->get_direction_set().insert(RTUtil::getDirection(*curr_node, *pre_node));
+    pre_node->get_direction_set().insert(RTUtil::getDirection(*pre_node, *curr_node));
     curr_node = pre_node;
     pre_node = curr_node->get_parent_node();
   }
@@ -1318,7 +1318,7 @@ void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
 
     TANode* node_i = first_node;
     while (true) {
-      node_i->get_orientation_set().clear();
+      node_i->get_direction_set().clear();
       if (node_i == second_node) {
         break;
       }
@@ -1412,18 +1412,18 @@ double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, T
 {
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
-    std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
-
-    std::set<Orientation> orientation_set;
-    orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
-    orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
+    std::set<Direction> start_direction_set = start_node->get_direction_set();
     if (start_node->get_parent_node() != nullptr) {
-      orientation_set.insert(RTUtil::getOrientation(*start_node->get_parent_node(), *start_node));
+      start_direction_set.insert(RTUtil::getDirection(*start_node->get_parent_node(), *start_node));
     }
-    orientation_set.erase(RTUtil::getOrientation(*start_node, *end_node));
-    orientation_set.erase(RTUtil::getOrientation(*end_node, *start_node));
-    corner_cost += (ta_panel.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
+    std::set<Direction> end_direction_set = end_node->get_direction_set();
+    end_direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
+
+    if (start_direction_set.size() == 1 && end_direction_set.size() == 1) {
+      if (*start_direction_set.begin() != *end_direction_set.begin()) {
+        corner_cost += ta_panel.get_corner_unit();
+      }
+    }
   }
   return corner_cost;
 }
@@ -1470,7 +1470,7 @@ double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_nod
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     if (RTUtil::isOblique(*start_node, *end_node)) {
-      corner_cost = ta_panel.get_corner_unit();
+      corner_cost += ta_panel.get_corner_unit();
     }
   }
   return corner_cost;
@@ -1637,27 +1637,27 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
       }
 
       y -= y_reduced_span;
-      GPText gp_text_orientation_set;
-      gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
-      gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_orientation_set.set_message("orientation_set: ");
-      gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
-      node_graph_struct.push(gp_text_orientation_set);
+      GPText gp_text_direction_set;
+      gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
+      gp_text_direction_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_direction_set.set_message("direction_set: ");
+      gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
+      node_graph_struct.push(gp_text_direction_set);
 
-      if (!ta_node.get_orientation_set().empty()) {
+      if (!ta_node.get_direction_set().empty()) {
         y -= y_reduced_span;
-        GPText gp_text_orientation_set_info;
-        gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        std::string orientation_set_info_message = "--";
-        for (Orientation orientation : ta_node.get_orientation_set()) {
-          orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+        GPText gp_text_direction_set_info;
+        gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        std::string direction_set_info_message = "--";
+        for (Direction direction : ta_node.get_direction_set()) {
+          direction_set_info_message += RTUtil::getString("(", GetDirectionName()(direction), ")");
         }
-        gp_text_orientation_set_info.set_message(orientation_set_info_message);
-        gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_orientation_set_info);
+        gp_text_direction_set_info.set_message(direction_set_info_message);
+        gp_text_direction_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_direction_set_info);
       }
     }
   }
