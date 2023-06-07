@@ -32,8 +32,7 @@ enum class GPLayoutType
   kWire = 7,
   kEnclosure = 8,
   kCut = 9,
-  kBlockage = 10,
-  kConnection = 11
+  kBlockage = 10
 };
 
 struct GetGPLayoutTypeName
@@ -74,9 +73,6 @@ struct GetGPLayoutTypeName
         break;
       case GPLayoutType::kBlockage:
         data_type_name = "blockage";
-        break;
-      case GPLayoutType::kConnection:
-        data_type_name = "connection";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
