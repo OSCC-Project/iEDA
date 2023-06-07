@@ -38,21 +38,23 @@ class NesPin
   NesPin() = delete;
   explicit NesPin(std::string name);
   NesPin(const NesPin&) = delete;
-  NesPin(NesPin&&)      = delete;
-  ~NesPin()             = default;
+  NesPin(NesPin&&) = delete;
+  ~NesPin() = default;
 
   NesPin& operator=(const NesPin&) = delete;
   NesPin& operator=(NesPin&&) = delete;
 
   // getter.
-  std::string  get_name() const { return _name; }
+  int32_t get_pin_id() const { return _n_pin_id; }
+  std::string get_name() const { return _name; }
   NesInstance* get_nInstance() const { return _nInstance; }
-  NesNet*      get_nNet() const { return _nNet; }
+  NesNet* get_nNet() const { return _nNet; }
 
   Point<int32_t> get_offset_coordi() const { return _offset_coordi; }
   Point<int32_t> get_center_coordi() const { return _center_coordi; }
 
   // setter.
+  void set_pin_id(int32_t id) { _n_pin_id = id; }
   void set_nInstance(NesInstance* nInst) { _nInstance = nInst; }
   void set_nNet(NesNet* nNet) { _nNet = nNet; }
 
@@ -60,15 +62,15 @@ class NesPin
   void set_center_coordi(Point<int32_t> coordi) { _center_coordi = std::move(coordi); }
 
  private:
+  int32_t _n_pin_id;
   std::string _name;
-
   NesInstance* _nInstance;
-  NesNet*      _nNet;
+  NesNet* _nNet;
 
   Point<int32_t> _offset_coordi;
   Point<int32_t> _center_coordi;
 };
-inline NesPin::NesPin(std::string name) : _name(name), _nInstance(nullptr), _nNet(nullptr)
+inline NesPin::NesPin(std::string name) : _n_pin_id(-1), _name(name), _nInstance(nullptr), _nNet(nullptr)
 {
 }
 

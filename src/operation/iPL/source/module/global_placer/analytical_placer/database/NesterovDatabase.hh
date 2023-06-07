@@ -66,6 +66,10 @@ class NesterovDatabase
   std::vector<NesNet*> _nNet_list;
   std::vector<NesPin*> _nPin_list;
 
+  int32_t _nInstances_range;
+  int32_t _nNets_range;
+  int32_t _nPins_range;
+
   std::map<Instance*, NesInstance*> _nInstance_map;
   std::map<Net*, NesNet*> _nNet_map;
   std::map<Pin*, NesPin*> _nPin_map;
@@ -98,6 +102,9 @@ class NesterovDatabase
 };
 inline NesterovDatabase::NesterovDatabase()
     : _placer_db(nullptr),
+      _nInstances_range(0),
+      _nNets_range(0),
+      _nPins_range(0),
       _topology_manager(nullptr),
       _wirelength(nullptr),
       _wirelength_gradient(nullptr),
@@ -136,6 +143,10 @@ inline NesterovDatabase::~NesterovDatabase()
   for (auto* nPin : _nPin_list) {
     delete nPin;
   }
+
+  _nInstances_range = 0;
+  _nNets_range = 0;
+  _nPins_range = 0;
 }
 
 inline void NesterovDatabase::reset()
