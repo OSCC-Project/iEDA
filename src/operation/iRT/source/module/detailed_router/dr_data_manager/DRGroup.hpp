@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include "Direction.hpp"
 #include "LayerCoord.hpp"
-#include "Orientation.hpp"
 
 namespace irt {
 
@@ -27,16 +27,16 @@ class DRGroup
   DRGroup() = default;
   ~DRGroup() = default;
   // getter
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_coord_orientation_map() { return _coord_orientation_map; }
+  std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& get_coord_direction_map() { return _coord_direction_map; }
   // setter
-  void set_coord_orientation_map(const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& coord_orientation_map)
+  void set_coord_direction_map(const std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& coord_direction_map)
   {
-    _coord_orientation_map = coord_orientation_map;
+    _coord_direction_map = coord_direction_map;
   }
   // function
 
  private:
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _coord_orientation_map;
+  std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC> _coord_direction_map;
 };
 
 }  // namespace irt
