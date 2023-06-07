@@ -270,11 +270,11 @@ PlanarRect TrackAssigner::getTrackLineRect(PlanarRect& rect, TrackAxis& track_ax
   irt_int real_rt_x = rect.get_rt_x();
   irt_int real_lb_y = rect.get_lb_y();
   irt_int real_rt_y = rect.get_rt_y();
-  if(RTUtil::getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_track_grid()).empty()) {
+  if (RTUtil::getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_track_grid()).empty()) {
     real_lb_x = RTUtil::getFloorTrackLine(real_lb_x, track_axis.get_x_track_grid());
     real_rt_x = RTUtil::getCeilTrackLine(real_rt_x, track_axis.get_x_track_grid());
   }
-  if(RTUtil::getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_track_grid()).empty()) {
+  if (RTUtil::getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_track_grid()).empty()) {
     real_lb_y = RTUtil::getFloorTrackLine(real_lb_y, track_axis.get_y_track_grid());
     real_rt_y = RTUtil::getCeilTrackLine(real_rt_y, track_axis.get_y_track_grid());
   }
