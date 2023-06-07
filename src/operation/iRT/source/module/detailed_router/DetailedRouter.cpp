@@ -1358,7 +1358,7 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
 
 bool DetailedRouter::passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  Orientation orientation = getOrientation(start_node, end_node);
+  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
   if (orientation == Orientation::kNone) {
     return true;
   }
@@ -1463,9 +1463,9 @@ void DetailedRouter::updatePathResult(DRBox& dr_box)
     // 起点和终点重合
     return;
   }
-  Orientation curr_orientation = getOrientation(curr_node, pre_node);
+  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
   while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = getOrientation(pre_node, pre_node->get_parent_node());
+    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
     if (curr_orientation != pre_orientation) {
       node_segment_list.emplace_back(curr_node, pre_node);
       curr_orientation = pre_orientation;
@@ -1483,8 +1483,8 @@ void DetailedRouter::updateOrientationSet(DRBox& dr_box)
   DRNode* curr_node = path_head_node;
   DRNode* pre_node = curr_node->get_parent_node();
   while (pre_node != nullptr) {
-    curr_node->get_orientation_set().insert(getOrientation(curr_node, pre_node));
-    pre_node->get_orientation_set().insert(getOrientation(pre_node, curr_node));
+    curr_node->get_orientation_set().insert(RTUtil::getOrientation(*curr_node, *pre_node));
+    pre_node->get_orientation_set().insert(RTUtil::getOrientation(*pre_node, *curr_node));
     curr_node = pre_node;
     pre_node = curr_node->get_parent_node();
   }
@@ -1553,7 +1553,7 @@ void DetailedRouter::updateDemand(DRBox& dr_box, DRTask& dr_task)
   for (Segment<DRNode*>& node_segment : dr_box.get_node_segment_list()) {
     DRNode* first_node = node_segment.get_first();
     DRNode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
 
     DRNode* node_i = first_node;
     while (true) {
@@ -1587,7 +1587,7 @@ void DetailedRouter::resetSingleNet(DRBox& dr_box)
   for (Segment<DRNode*>& node_segment : dr_box.get_node_segment_list()) {
     DRNode* first_node = node_segment.get_first();
     DRNode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
 
     DRNode* node_i = first_node;
     while (true) {
@@ -1632,7 +1632,7 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 {
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getJointCost(dr_box, end_node, getOrientation(end_node, start_node));
+  cost += getJointCost(dr_box, end_node, RTUtil::getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(dr_box, start_node, end_node);
   cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getViaCost(dr_box, start_node, end_node);
@@ -1692,13 +1692,18 @@ double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNo
     orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
     orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
     if (start_node->get_parent_node() != nullptr) {
-      orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+      orientation_set.insert(RTUtil::getOrientation(*start_node->get_parent_node(), *start_node));
     }
-    orientation_set.erase(getOrientation(start_node, end_node));
-    orientation_set.erase(getOrientation(end_node, start_node));
+    orientation_set.erase(RTUtil::getOrientation(*start_node, *end_node));
+    orientation_set.erase(RTUtil::getOrientation(*end_node, *start_node));
     corner_cost += (dr_box.get_corner_unit() * static_cast<double>(orientation_set.size()));
   }
   return corner_cost;
+}
+
+double DetailedRouter::getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  return dr_box.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 // calculate estimate cost
@@ -1742,23 +1747,6 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
     }
   }
   return corner_cost;
-}
-
-// common
-
-Orientation DetailedRouter::getOrientation(DRNode* start_node, DRNode* end_node)
-{
-  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
-  if (orientation == Orientation::kOblique) {
-    LOG_INST.error(Loc::current(), "The segment (", (*start_node).get_x(), ",", (*start_node).get_y(), ",", (*start_node).get_layer_idx(),
-                   ")-(", (*end_node).get_x(), ",", (*end_node).get_y(), ",", (*end_node).get_layer_idx(), ") is oblique!");
-  }
-  return orientation;
-}
-
-double DetailedRouter::getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  return dr_box.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 #endif
@@ -2162,9 +2150,12 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map = dr_model_stat.get_routing_net_and_obs_rect_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map = dr_model_stat.get_routing_net_and_fence_rect_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map = dr_model_stat.get_routing_net_and_net_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map
+      = dr_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map
+      = dr_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map
+      = dr_model_stat.get_routing_net_and_net_rect_map();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
@@ -2259,9 +2250,12 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map = dr_model_stat.get_routing_net_and_obs_rect_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map = dr_model_stat.get_routing_net_and_fence_rect_map();
-  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map = dr_model_stat.get_routing_net_and_net_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_obs_rect_map
+      = dr_model_stat.get_routing_net_and_obs_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_fence_rect_map
+      = dr_model_stat.get_routing_net_and_fence_rect_map();
+  std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>& routing_net_and_net_rect_map
+      = dr_model_stat.get_routing_net_and_net_rect_map();
   double total_wire_length = dr_model_stat.get_total_wire_length();
   irt_int total_via_number = dr_model_stat.get_total_via_number();
   irt_int total_net_and_obs_rect_number = dr_model_stat.get_total_net_and_obs_rect_number();
@@ -2308,24 +2302,24 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   fort::char_table violation_table;
   violation_table.set_border_style(FT_SOLID_STYLE);
   violation_table << fort::header << "Routing Layer"
-                << "Net And Obs Rect Number"
-                << "Net And Fence Rect Number"
-                << "Net And Net Rect Number" << fort::endr;
+                  << "Net And Obs Rect Number"
+                  << "Net And Fence Rect Number"
+                  << "Net And Net Rect Number" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     irt_int net_and_obs_rect_number = static_cast<irt_int>(routing_net_and_obs_rect_map[routing_layer.get_layer_idx()].size());
     irt_int net_and_fence_rect_number = static_cast<irt_int>(routing_net_and_fence_rect_map[routing_layer.get_layer_idx()].size());
     irt_int net_and_net_rect_number = static_cast<irt_int>(routing_net_and_net_rect_map[routing_layer.get_layer_idx()].size());
     violation_table << routing_layer.get_layer_name()
-                  << RTUtil::getString(net_and_obs_rect_number, "(",
-                                       RTUtil::getPercentage(net_and_obs_rect_number, total_net_and_obs_rect_number), "%)")
-                  << RTUtil::getString(net_and_fence_rect_number, "(",
-                                       RTUtil::getPercentage(net_and_fence_rect_number, total_net_and_fence_rect_number), "%)")
-                  << RTUtil::getString(net_and_net_rect_number, "(",
-                                       RTUtil::getPercentage(net_and_net_rect_number, total_net_and_net_rect_number), "%)")
-                  << fort::endr;
+                    << RTUtil::getString(net_and_obs_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_obs_rect_number, total_net_and_obs_rect_number), "%)")
+                    << RTUtil::getString(net_and_fence_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_fence_rect_number, total_net_and_fence_rect_number), "%)")
+                    << RTUtil::getString(net_and_net_rect_number, "(",
+                                         RTUtil::getPercentage(net_and_net_rect_number, total_net_and_net_rect_number), "%)")
+                    << fort::endr;
   }
   violation_table << fort::header << "Total" << total_net_and_obs_rect_number << total_net_and_fence_rect_number
-                << total_net_and_net_rect_number << fort::endr;
+                  << total_net_and_net_rect_number << fort::endr;
   for (std::string table_str : RTUtil::splitString(violation_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
