@@ -736,17 +736,21 @@ class RTUtil
    */
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
   {
-    return getCuttingRectList({master}, {rect});
+    std::vector<PlanarRect> master_list = {master};
+    std::vector<PlanarRect> rect_list = {rect};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
   {
-    return getCuttingRectList({master}, rect_list);
+    std::vector<PlanarRect> master_list = {master};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
   {
-    return getCuttingRectList(master_list, {rect});
+    std::vector<PlanarRect> rect_list = {rect};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
