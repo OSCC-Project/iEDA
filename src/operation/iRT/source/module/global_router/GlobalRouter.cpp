@@ -611,7 +611,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
       rerouteByIgnoring(gr_model, gr_route_strategy);
     }
     updatePathResult(gr_model);
-    updateOrientationSet(gr_model);
+    updateDirectionSet(gr_model);
     resetStartAndEnd(gr_model);
     resetSinglePath(gr_model);
   }
@@ -734,7 +734,7 @@ void GlobalRouter::expandSearching(GRModel& gr_model)
 
 bool GlobalRouter::passCheckingSegment(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
-  Orientation orientation = getOrientation(start_node, end_node);
+  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
   if (orientation == Orientation::kNone) {
     return true;
   }
@@ -838,9 +838,9 @@ void GlobalRouter::updatePathResult(GRModel& gr_model)
     // 起点和终点重合
     return;
   }
-  Orientation curr_orientation = getOrientation(curr_node, pre_node);
+  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
   while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = getOrientation(pre_node, pre_node->get_parent_node());
+    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
     if (curr_orientation != pre_orientation) {
       node_segment_list.emplace_back(curr_node, pre_node);
       curr_orientation = pre_orientation;
@@ -851,15 +851,15 @@ void GlobalRouter::updatePathResult(GRModel& gr_model)
   node_segment_list.emplace_back(curr_node, pre_node);
 }
 
-void GlobalRouter::updateOrientationSet(GRModel& gr_model)
+void GlobalRouter::updateDirectionSet(GRModel& gr_model)
 {
   GRNode* path_head_node = gr_model.get_path_head_node();
 
   GRNode* curr_node = path_head_node;
   GRNode* pre_node = curr_node->get_parent_node();
   while (pre_node != nullptr) {
-    curr_node->get_orientation_set().insert(getOrientation(curr_node, pre_node));
-    pre_node->get_orientation_set().insert(getOrientation(pre_node, curr_node));
+    curr_node->get_direction_set().insert(RTUtil::getDirection(*curr_node, *pre_node));
+    pre_node->get_direction_set().insert(RTUtil::getDirection(*pre_node, *curr_node));
     curr_node = pre_node;
     pre_node = curr_node->get_parent_node();
   }
@@ -926,7 +926,7 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
     for (Segment<GRNode*>& node_segment : node_segment_list) {
       GRNode* first_node = node_segment.get_first();
       GRNode* second_node = node_segment.get_second();
-      Orientation orientation = getOrientation(first_node, second_node);
+      Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
       if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
         LOG_INST.error(Loc::current(), "The orientation is error!");
       }
@@ -966,11 +966,11 @@ void GlobalRouter::resetSingleNet(GRModel& gr_model)
   for (Segment<GRNode*>& node_segment : gr_model.get_node_segment_list()) {
     GRNode* first_node = node_segment.get_first();
     GRNode* second_node = node_segment.get_second();
-    Orientation orientation = getOrientation(first_node, second_node);
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
 
     GRNode* node_i = first_node;
     while (true) {
-      node_i->get_orientation_set().clear();
+      node_i->get_direction_set().clear();
       if (node_i == second_node) {
         break;
       }
@@ -1011,7 +1011,7 @@ double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* 
 {
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getJointCost(gr_model, end_node, getOrientation(end_node, start_node));
+  cost += getJointCost(gr_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(gr_model, start_node, end_node);
   cost += getKnowCornerCost(gr_model, start_node, end_node);
   cost += getViaCost(gr_model, start_node, end_node);
@@ -1064,20 +1064,25 @@ double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GR
 {
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Orientation>& start_orientation_set = start_node->get_orientation_set();
-    std::set<Orientation>& end_orientation_set = end_node->get_orientation_set();
-
-    std::set<Orientation> orientation_set;
-    orientation_set.insert(start_orientation_set.begin(), start_orientation_set.end());
-    orientation_set.insert(end_orientation_set.begin(), end_orientation_set.end());
+    std::set<Direction> start_direction_set = start_node->get_direction_set();
     if (start_node->get_parent_node() != nullptr) {
-      orientation_set.insert(getOrientation(start_node->get_parent_node(), start_node));
+      start_direction_set.insert(RTUtil::getDirection(*start_node->get_parent_node(), *start_node));
     }
-    orientation_set.erase(getOrientation(start_node, end_node));
-    orientation_set.erase(getOrientation(end_node, start_node));
-    corner_cost += (gr_model.get_corner_unit() * static_cast<irt_int>(orientation_set.size()));
+    std::set<Direction> end_direction_set = end_node->get_direction_set();
+    end_direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
+
+    if (start_direction_set.size() == 1 && end_direction_set.size() == 1) {
+      if (*start_direction_set.begin() != *end_direction_set.begin()) {
+        corner_cost += gr_model.get_corner_unit();
+      }
+    }
   }
   return corner_cost;
+}
+
+double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
+{
+  return gr_model.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 // calculate estimate cost
@@ -1117,27 +1122,10 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     if (RTUtil::isOblique(*start_node, *end_node)) {
-      corner_cost = gr_model.get_corner_unit();
+      corner_cost += gr_model.get_corner_unit();
     }
   }
   return corner_cost;
-}
-
-// common
-
-Orientation GlobalRouter::getOrientation(GRNode* start_node, GRNode* end_node)
-{
-  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
-  if (orientation == Orientation::kOblique) {
-    LOG_INST.error(Loc::current(), "The segment (", (*start_node).get_x(), ",", (*start_node).get_y(), ",", (*start_node).get_layer_idx(),
-                   ")-(", (*end_node).get_x(), ",", (*end_node).get_y(), ",", (*end_node).get_layer_idx(), ") is oblique!");
-  }
-  return orientation;
-}
-
-double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
-{
-  return gr_model.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 #endif
@@ -1329,27 +1317,27 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
 
         y -= y_reduced_span;
-        GPText gp_text_orientation_set;
-        gp_text_orientation_set.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orientation_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        gp_text_orientation_set.set_message("orientation_set: ");
-        gp_text_orientation_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-        gp_text_orientation_set.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_orientation_set);
+        GPText gp_text_direction_set;
+        gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
+        gp_text_direction_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_direction_set.set_message("direction_set: ");
+        gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
+        node_graph_struct.push(gp_text_direction_set);
 
-        if (!gr_node.get_orientation_set().empty()) {
+        if (!gr_node.get_direction_set().empty()) {
           y -= y_reduced_span;
-          GPText gp_text_orientation_set_info;
-          gp_text_orientation_set_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_orientation_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-          std::string orientation_set_info_message = "--";
-          for (Orientation orientation : gr_node.get_orientation_set()) {
-            orientation_set_info_message += RTUtil::getString("(", GetOrientationName()(orientation), ")");
+          GPText gp_text_direction_set_info;
+          gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string direction_set_info_message = "--";
+          for (Direction direction : gr_node.get_direction_set()) {
+            direction_set_info_message += RTUtil::getString("(", GetDirectionName()(direction), ")");
           }
-          gp_text_orientation_set_info.set_message(orientation_set_info_message);
-          gp_text_orientation_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-          gp_text_orientation_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_orientation_set_info);
+          gp_text_direction_set_info.set_message(direction_set_info_message);
+          gp_text_direction_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          node_graph_struct.push(gp_text_direction_set_info);
         }
       }
     }

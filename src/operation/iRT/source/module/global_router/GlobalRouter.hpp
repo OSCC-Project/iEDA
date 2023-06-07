@@ -99,7 +99,7 @@ class GlobalRouter
   void resetSinglePath(GRModel& gr_model);
   void rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void updatePathResult(GRModel& gr_model);
-  void updateOrientationSet(GRModel& gr_model);
+  void updateDirectionSet(GRModel& gr_model);
   void resetStartAndEnd(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
@@ -109,12 +109,11 @@ class GlobalRouter
   double getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
   double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  double getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node);
   double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  Orientation getOrientation(GRNode* start_node, GRNode* end_node);
-  double getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
 #endif
 
 #if 1  // plot gr_model

@@ -134,10 +134,12 @@ void GPDataManager::buildLayoutLypFile()
                                          "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
-  std::vector<GPLayoutType> routing_data_type_list = {
-      GPLayoutType::kText,           GPLayoutType::kPort, GPLayoutType::kAccessPoint, GPLayoutType::kGuide,    GPLayoutType::kPreferTrack,
-      GPLayoutType::kNonpreferTrack, GPLayoutType::kWire, GPLayoutType::kEnclosure,   GPLayoutType::kBlockage, GPLayoutType::kConnection};
-  std::vector<GPLayoutType> cut_data_type_list = {GPLayoutType::kText, GPLayoutType::kCut, GPLayoutType::kBlockage};
+  std::map<GPLayoutType, bool> routing_data_type_visible_map
+      = {{GPLayoutType::kText, false},  {GPLayoutType::kPort, true},         {GPLayoutType::kAccessPoint, true},
+         {GPLayoutType::kGuide, false}, {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
+         {GPLayoutType::kWire, true},   {GPLayoutType::kEnclosure, true},    {GPLayoutType::kBlockage, true}};
+  std::map<GPLayoutType, bool> cut_data_type_visible_map
+      = {{GPLayoutType::kText, false}, {GPLayoutType::kCut, true}, {GPLayoutType::kBlockage, true}};
 
   // 0为die 最后一个为gcell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(gds_routing_layer_map.size() + gds_cut_layer_map.size());
@@ -148,24 +150,25 @@ void GPDataManager::buildLayoutLypFile()
     std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
 
     if (gds_layer_idx == 0) {
-      lyp_layer_list.emplace_back(color, pattern, "die", gds_layer_idx, 0);
-      lyp_layer_list.emplace_back(color, pattern, "bounding_box", gds_layer_idx, 1);
+      lyp_layer_list.emplace_back(color, pattern, false, "die", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
     } else if (gds_layer_idx == (gds_layer_size - 1)) {
-      lyp_layer_list.emplace_back(color, pattern, "gcell", gds_layer_idx, 0);
-      lyp_layer_list.emplace_back(color, pattern, "gcell_text", gds_layer_idx, 1);
+      lyp_layer_list.emplace_back(color, pattern, true, "gcell", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "gcell_text", gds_layer_idx, 1);
     } else {
       if (RTUtil::exist(gds_routing_layer_map, gds_layer_idx)) {
         // routing
         std::string routing_layer_name = routing_layer_list[gds_routing_layer_map[gds_layer_idx]].get_layer_name();
-        for (GPLayoutType routing_data_type : routing_data_type_list) {
-          lyp_layer_list.emplace_back(color, pattern, RTUtil::getString(routing_layer_name, "_", GetGPLayoutTypeName()(routing_data_type)),
-                                      gds_layer_idx, static_cast<irt_int>(routing_data_type));
+        for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
+          lyp_layer_list.emplace_back(color, pattern, visible,
+                                      RTUtil::getString(routing_layer_name, "_", GetGPLayoutTypeName()(routing_data_type)), gds_layer_idx,
+                                      static_cast<irt_int>(routing_data_type));
         }
       } else if (RTUtil::exist(gds_cut_layer_map, gds_layer_idx)) {
         // cut
         std::string cut_layer_name = cut_layer_list[gds_cut_layer_map[gds_layer_idx]].get_layer_name();
-        for (GPLayoutType cut_data_type : cut_data_type_list) {
-          lyp_layer_list.emplace_back(color, pattern, RTUtil::getString(cut_layer_name, "_", GetGPLayoutTypeName()(cut_data_type)),
+        for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
+          lyp_layer_list.emplace_back(color, pattern, visible, RTUtil::getString(cut_layer_name, "_", GetGPLayoutTypeName()(cut_data_type)),
                                       gds_layer_idx, static_cast<irt_int>(cut_data_type));
         }
       }
@@ -186,9 +189,10 @@ void GPDataManager::buildGraphLypFile()
                                          "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
-  std::vector<GPGraphType> routing_data_type_list
-      = {GPGraphType::kNone, GPGraphType::kOpen, GPGraphType::kClose,    GPGraphType::kInfo,       GPGraphType::kNeighbor,
-         GPGraphType::kKey,  GPGraphType::kPath, GPGraphType::kBlockage, GPGraphType::kFenceRegion};
+  std::map<GPGraphType, bool> routing_data_type_visible_map
+      = {{GPGraphType::kNone, false}, {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},
+         {GPGraphType::kInfo, false}, {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},
+         {GPGraphType::kPath, true},  {GPGraphType::kBlockage, true},  {GPGraphType::kFenceRegion, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(gds_routing_layer_map.size() + gds_cut_layer_map.size());
@@ -199,14 +203,15 @@ void GPDataManager::buildGraphLypFile()
     std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
 
     if (gds_layer_idx == 0) {
-      lyp_layer_list.emplace_back(color, pattern, "base_region", gds_layer_idx, 0);
-      lyp_layer_list.emplace_back(color, pattern, "bounding_box", gds_layer_idx, 1);
+      lyp_layer_list.emplace_back(color, pattern, true, "base_region", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
     } else if (RTUtil::exist(gds_routing_layer_map, gds_layer_idx)) {
       // routing
       std::string routing_layer_name = routing_layer_list[gds_routing_layer_map[gds_layer_idx]].get_layer_name();
-      for (GPGraphType routing_data_type : routing_data_type_list) {
-        lyp_layer_list.emplace_back(color, pattern, RTUtil::getString(routing_layer_name, "_", GetGPGraphTypeName()(routing_data_type)),
-                                    gds_layer_idx, static_cast<irt_int>(routing_data_type));
+      for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
+        lyp_layer_list.emplace_back(color, pattern, visible,
+                                    RTUtil::getString(routing_layer_name, "_", GetGPGraphTypeName()(routing_data_type)), gds_layer_idx,
+                                    static_cast<irt_int>(routing_data_type));
       }
     }
   }
@@ -229,7 +234,11 @@ void GPDataManager::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLay
     RTUtil::pushStream(lyp_file, "<dither-pattern>", lyp_layer.get_pattern(), "</dither-pattern>", "\n");
     RTUtil::pushStream(lyp_file, "<line-style/>", "\n");
     RTUtil::pushStream(lyp_file, "<valid>true</valid>", "\n");
-    RTUtil::pushStream(lyp_file, "<visible>true</visible>", "\n");
+    if (lyp_layer.get_visible()) {
+      RTUtil::pushStream(lyp_file, "<visible>true</visible>", "\n");
+    } else {
+      RTUtil::pushStream(lyp_file, "<visible>false</visible>", "\n");
+    }
     RTUtil::pushStream(lyp_file, "<transparent>false</transparent>", "\n");
     RTUtil::pushStream(lyp_file, "<width/>", "\n");
     RTUtil::pushStream(lyp_file, "<marked>false</marked>", "\n");
