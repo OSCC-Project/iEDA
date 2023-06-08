@@ -1121,17 +1121,17 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
       // update next density gradient force.
 
-      // ieda::Stats density_cal_status;
+      ieda::Stats density_cal_status;
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
       _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
-      // LOG_ERROR << "density grad calculating runtime: " << density_cal_status.elapsedRunTime() << " s";
+      LOG_ERROR << "density grad calculating runtime: " << density_cal_status.elapsedRunTime() << " s";
 
-      // ieda::Stats wirelength_cal_status;
+      ieda::Stats wirelength_cal_status;
       // update next wirelength gradient force.
       updateTopologyManager();
       _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
-      // LOG_ERROR << "wirelength grad calculating runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
+      LOG_ERROR << "wirelength grad calculating runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
 
       // update next target penalty object.
       updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list);
