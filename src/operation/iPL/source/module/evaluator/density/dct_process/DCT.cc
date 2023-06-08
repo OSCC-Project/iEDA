@@ -108,6 +108,7 @@ void DCT::doDCT(bool is_calculate_phi)
   dct2UseFFT2Process(_bin_density);
 
   // obtain auv_by_wu2_plus_wv2_wu
+#pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
     float wu = _wy[i];
     float wu2 = _wy_square[i];
@@ -180,8 +181,6 @@ void DCT::dct2Preprocess(float** sequence, float** buf_sequence)
       index_1 = tmp_index / _bin_cnt_x;
       index_2 = tmp_index % _bin_cnt_x;
 
-      assert(index_1 >= 0 && index_1 < _bin_cnt_y);
-      assert(index_2 >= 0 && index_2 < _bin_cnt_x);
       buf_sequence[index_1][index_2] = sequence[h_id][w_id];
     }
   }

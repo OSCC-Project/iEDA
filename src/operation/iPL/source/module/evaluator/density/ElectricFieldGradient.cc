@@ -67,6 +67,7 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
 
   // update electro phi and electro force
   // update _sum_phi for nesterov loop
+#pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
     int32_t row_idx = row->get_row_idx();
 
