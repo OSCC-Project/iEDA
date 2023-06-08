@@ -956,32 +956,7 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
     ieda::Stats density_status;
     density_grads[i] = std::move(
         _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
-    density_grad_runtime += density_status.elapsedRunTime();
-
-    // // ieda::Stats other_status;
-    // _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_x());
-    // _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_y());
-
-    // _nes_database->_density_grad_sum += fabs(density_grads[i].get_x());
-    // _nes_database->_density_grad_sum += fabs(density_grads[i].get_y());
-
-    // sum_grads[i].set_x(wirelength_grads[i].get_x() + _nes_database->_density_penalty * density_grads[i].get_x());
-    // sum_grads[i].set_y(wirelength_grads[i].get_y() + _nes_database->_density_penalty * density_grads[i].get_y());
-
-    // Point<float> wirelength_precondition = std::move(obtainWirelengthPrecondition(cur_n_inst));
-    // Point<float> density_precondition = std::move(obtainDensityPrecondition(cur_n_inst));
-    // Point<float> sum_precondition(wirelength_precondition.get_x() + _nes_database->_density_penalty * density_precondition.get_x(),
-    //                               wirelength_precondition.get_y() + _nes_database->_density_penalty * density_precondition.get_y());
-
-    // if (sum_precondition.get_x() <= _nes_config.get_min_precondition()) {
-    //   sum_precondition.set_x(_nes_config.get_min_precondition());
-    // }
-    // if (sum_precondition.get_y() <= _nes_config.get_min_precondition()) {
-    //   sum_precondition.set_y(_nes_config.get_min_precondition());
-    // }
-
-    // sum_grads[i].set_x(sum_grads[i].get_x() / sum_precondition.get_x());
-    // sum_grads[i].set_y(sum_grads[i].get_y() / sum_precondition.get_y());
+    // density_grad_runtime += density_status.elapsedRunTime();
   }
 
   for (size_t i = 0; i < nInst_list.size(); i++) {
@@ -1126,7 +1101,6 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       LOG_WARNING << "get_density_map runtime: " << get_density_map_status.elapsedRunTime() << " s";
 
       _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
-
       // update next wirelength gradient force.
       ieda::Stats wirelength_forward_status;
       updateTopologyManager();
