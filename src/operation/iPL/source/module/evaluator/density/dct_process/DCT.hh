@@ -52,7 +52,7 @@ class DCT
   std::vector<std::vector<std::complex<float>>> _complex_2d_list;
 
   // cos/sin table (prev: w_2d)
-  // length:  max(_bin_cnt_x, _bin_cnt_y) * 3 / 2
+  // length:  max(_bin_cnt_y / 2, _bin_cnt_x / 4) + _bin_cnt_x /4
   std::vector<float> _cs_table;
 
   // wx. length:  _bin_cnt_x
@@ -64,7 +64,7 @@ class DCT
   std::vector<float> _wy_square;
 
   // work area for bit reversal (prev: ip)
-  // length: round(sqrt( max(_bin_cnt_x, _bin_cnt_y) )) + 2
+  // length: round(sqrt( max(_bin_cnt_y, _bin_cnt_x / 2) )) + 2
   std::vector<int> _work_area;
 
   int _bin_cnt_y;
