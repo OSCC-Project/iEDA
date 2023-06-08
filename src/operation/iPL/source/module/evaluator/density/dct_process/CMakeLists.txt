@@ -1,5 +1,6 @@
 add_library(ipl-dct 
-            DCT.cc)
+            DCT.cc
+            FFT.cc)
 
 target_link_libraries(ipl-dct 
     PUBLIC

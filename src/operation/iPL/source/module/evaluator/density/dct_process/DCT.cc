@@ -128,8 +128,8 @@ void DCT::doDCT(bool is_calculate_phi)
           phi = auv_by_wu2_plus_wv2;
         }
 
-        electro_y = auv_by_wu2_plus_wv2 * wu;
-        electro_x = auv_by_wu2_plus_wv2 * wv;
+        electro_y = auv_by_wu2_plus_wv2 * wu * 0.5;
+        electro_x = auv_by_wu2_plus_wv2 * wv * 0.5;
       }
       _electroForce_x[i][j] = electro_x;
       _electroForce_y[i][j] = electro_y;
@@ -195,7 +195,7 @@ void DCT::dct2Postprocess(float** buf_sequence, float** sequence)
   float four_over_yx = (float) (4.0 / (_bin_cnt_y * _bin_cnt_x));
   float two_over_yx = (float) (2.0 / (_bin_cnt_y * _bin_cnt_x));
 
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < half_cnt_y; h_id++) {
     for (int w_id = 0; w_id < half_cnt_x; w_id++) {
       int condition = ((h_id != 0) << 1) | (w_id != 0);
@@ -784,7 +784,7 @@ void DCT::resetComplex2DList()
 
 void DCT::convertSequenceToComplex2DList(float** buf_sequence)
 {
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
     for (int j = 0; (j < _bin_cnt_x + 2) && (j + 1 < _bin_cnt_x + 2); j += 2) {
       int index = j / 2;

@@ -32,7 +32,7 @@
 #include <vector>
 
 #include "DensityGradient.hh"
-// #include "dct_process/fft.h"
+// #include "dct_process/FFT.hh"
 #include "dct_process/DCT.hh"
 
 namespace ipl {

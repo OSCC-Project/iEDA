@@ -54,32 +54,36 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
 // copy density to utilize FFT
 #pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
+    int32_t row_idx = row->get_row_idx();
     for (auto* grid : row->get_grid_list()) {
-      // _fft->updateDensity(grid->get_grid_idx(), grid->get_row_idx(), grid->obtainGridDensity() / grid->get_available_ratio());
-      _dct->updateDensity(grid->get_row_idx(), grid->get_grid_idx(), grid->obtainGridDensity() / grid->get_available_ratio());
+      int32_t grid_idx = grid->get_grid_idx();
+      // _fft->updateDensity(grid_idx, row_idx, grid->obtainGridDensity() / grid->get_available_ratio());
+      _dct->updateDensity(grid_idx, row_idx, grid->obtainGridDensity() / grid->get_available_ratio());
     }
   }
 
   // do FFT
-  // _fft->doFFT();
   _dct->set_thread_nums(thread_num);
   _dct->doDCT(false);
+  // _fft->set_thread_nums(thread_num);
+  // _fft->doFFT(false);
 
   // update electro phi and electro force
   // update _sum_phi for nesterov loop
-#pragma omp parallel for num_threads(thread_num)
+  // #pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
     int32_t row_idx = row->get_row_idx();
 
     for (auto* grid : row->get_grid_list()) {
       int32_t grid_idx = grid->get_grid_idx();
 
-      std::pair<float, float> e_force_pair = _dct->get_electro_force(grid->get_grid_idx(), grid->get_row_idx());
+      // std::pair<float, float> e_force_pair = _fft->get_electro_force(grid_idx, row_idx);
+      std::pair<float, float> e_force_pair = _dct->get_electro_force(grid_idx, row_idx);
       _force_2d_x_list[row_idx][grid_idx] = e_force_pair.first;
       _force_2d_y_list[row_idx][grid_idx] = e_force_pair.second;
 
-      // float electro_phi = _fft->get_electro_phi(grid->get_grid_idx(), grid->get_row_idx());
-      float electro_phi = _dct->get_electro_phi(grid->get_row_idx(), grid->get_grid_idx());
+      // float electro_phi = _fft->get_electro_phi(grid_idx, row_idx);
+      float electro_phi = _dct->get_electro_phi(grid_idx, row_idx);
       _phi_2d_list[row_idx][grid_idx] = electro_phi;
 
       _sum_phi += electro_phi * static_cast<float>(grid->get_occupied_area());
