@@ -113,6 +113,7 @@ inline void BinGrid::updateBinGrid(std::vector<NesInstance*>& nInst_list, int32_
   _grid_manager->clearAllOccupiedArea();
   resetBinToArea();
 
+#pragma omp parallel for num_threads(thread_num)
   for (auto* nInst : nInst_list) {
     if (nInst->isFixed()) {
       continue;
