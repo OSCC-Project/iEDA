@@ -394,28 +394,21 @@ std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_no
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_data_manager.getDatabase().get_layer_via_master_list();
 
-  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  std::vector<LayerRect> real_rect_list;
   for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
     PHYNode& phy_node = phy_node_node->value();
     if (phy_node.isType<WireNode>()) {
       WireNode& wire_node = phy_node.getNode<WireNode>();
-      layer_rect_map[wire_node.get_layer_idx()].push_back(
-          RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2));
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
+      real_rect_list.emplace_back(wire_rect, wire_node.get_layer_idx());
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       std::pair<irt_int, irt_int>& via_idx = via_node.get_via_idx();
       ViaMaster& via_master = layer_via_master_list[via_idx.first][via_idx.second];
       for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
         PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, via_node);
-        layer_rect_map[enclosure.get_layer_idx()].push_back(offset_enclosure);
+        real_rect_list.emplace_back(offset_enclosure, enclosure.get_layer_idx());
       }
-    }
-  }
-  std::vector<LayerRect> real_rect_list;
-  for (auto& [layer_idx, rect_list] : layer_rect_map) {
-    rect_list = RTUtil::getMergeRectList(rect_list);
-    for (PlanarRect& rect : rect_list) {
-      real_rect_list.emplace_back(rect, layer_idx);
     }
   }
   return real_rect_list;

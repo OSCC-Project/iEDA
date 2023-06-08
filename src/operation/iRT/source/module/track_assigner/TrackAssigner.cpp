@@ -728,7 +728,7 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  std::vector<LayerRect> real_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
     LayerCoord& first_coord = segment.get_first();
     LayerCoord& second_coord = segment.get_second();
@@ -736,16 +736,9 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
     if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
       irt_int half_width = routing_layer_list[first_coord.get_layer_idx()].get_min_width() / 2;
       PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
-      layer_rect_map[first_coord.get_layer_idx()].push_back(wire_rect);
+      real_rect_list.emplace_back(wire_rect, first_coord.get_layer_idx());
     } else {
       LOG_INST.error(Loc::current(), "The segment is proximal!");
-    }
-  }
-  std::vector<LayerRect> real_rect_list;
-  for (auto& [layer_idx, rect_list] : layer_rect_map) {
-    rect_list = RTUtil::getMergeRectList(rect_list);
-    for (PlanarRect& rect : rect_list) {
-      real_rect_list.emplace_back(rect, layer_idx);
     }
   }
   return real_rect_list;
@@ -1361,7 +1354,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(ta_panel, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(ta_panel, start_node, end_node);
+  cost += getWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
   return cost;
@@ -1385,7 +1378,7 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
   return joint_cost;
 }
 
-double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
@@ -1403,8 +1396,6 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
       wire_cost += (y_distance * ta_panel.get_wire_unit());
       wire_cost += (x_distance * 2 * ta_panel.get_wire_unit());
     }
-  } else {
-    wire_cost += (ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
   }
   return wire_cost;
 }
@@ -1455,15 +1446,10 @@ double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
+  estimate_cost += getWireCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
-}
-
-double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)

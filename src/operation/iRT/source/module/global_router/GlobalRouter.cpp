@@ -1012,7 +1012,7 @@ double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* 
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(gr_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(gr_model, start_node, end_node);
+  cost += getWireCost(gr_model, start_node, end_node);
   cost += getKnowCornerCost(gr_model, start_node, end_node);
   cost += getViaCost(gr_model, start_node, end_node);
   return cost;
@@ -1036,7 +1036,7 @@ double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientat
   return joint_cost;
 }
 
-double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
+double GlobalRouter::getWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -1054,8 +1054,6 @@ double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNo
       wire_cost += (y_distance * gr_model.get_wire_unit());
       wire_cost += (x_distance * 2 * gr_model.get_wire_unit());
     }
-  } else {
-    wire_cost += (gr_model.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
   }
   return wire_cost;
 }
@@ -1106,15 +1104,10 @@ double GlobalRouter::getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node)
 double GlobalRouter::getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getEstimateWireCost(gr_model, start_node, end_node);
+  estimate_cost += getWireCost(gr_model, start_node, end_node);
   estimate_cost += getEstimateCornerCost(gr_model, start_node, end_node);
   estimate_cost += getViaCost(gr_model, start_node, end_node);
   return estimate_cost;
-}
-
-double GlobalRouter::getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
-{
-  return gr_model.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
