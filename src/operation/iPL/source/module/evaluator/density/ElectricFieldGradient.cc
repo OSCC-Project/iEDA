@@ -27,6 +27,7 @@
 #include "ElectricFieldGradient.hh"
 
 #include "omp.h"
+#include "usage/usage.hh"
 
 namespace ipl {
 
@@ -62,8 +63,11 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
 
   // do FFT
   // _fft->doFFT();
+  ieda::Stats do_DCT_status;
   _dct->set_thread_nums(thread_num);
   _dct->doDCT(false);
+
+  LOG_WARNING << "do_DCT runtime: " << do_DCT_status.elapsedRunTime() << " s";
 
   // update electro phi and electro force
   // update _sum_phi for nesterov loop
@@ -100,7 +104,6 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
     gradient_x += overlap_area * _force_2d_x_list[grid->get_row_idx()][grid->get_grid_idx()];
     gradient_y += overlap_area * _force_2d_y_list[grid->get_row_idx()][grid->get_grid_idx()];
   }
-
   return Point<float>(gradient_x, gradient_y);
 }
 

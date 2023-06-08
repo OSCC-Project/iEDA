@@ -936,8 +936,8 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
   _nes_database->_density_grad_sum = 0.0F;
 
   // run time debug
-  // double wl_grad_runtime = 0.0;
-  // double density_grad_runtime = 0.0;
+  double wl_grad_runtime = 0.0;
+  double density_grad_runtime = 0.0;
   // double others_runtime = 0.0;
   // double sum_grad_runtime = 0.0;
 
@@ -948,15 +948,15 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
     auto& cur_n_inst = nInst_list[i];
 
     // debug
-    // ieda::Stats wl_status;
+    ieda::Stats wl_status;
     wirelength_grads[i] = std::move(_nes_database->_wirelength_gradient->obtainWirelengthGradient(
         cur_n_inst->get_inst_id(), _nes_database->_wirelength_coef, _nes_database->_wirelength_coef));
-    // wl_grad_runtime += wl_status.elapsedRunTime();
+    wl_grad_runtime += wl_status.elapsedRunTime();
 
-    // ieda::Stats density_status;
+    ieda::Stats density_status;
     density_grads[i] = std::move(
         _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
-    // density_grad_runtime += density_status.elapsedRunTime();
+    density_grad_runtime += density_status.elapsedRunTime();
 
     // // ieda::Stats other_status;
     // _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_x());
@@ -1014,8 +1014,8 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
   }
 
   // sum_grad_runtime = sum_grad_status.elapsedRunTime();
-  // LOG_WARNING << "wl grad collecting runtime: " << wl_grad_runtime << " s";
-  // LOG_WARNING << "density grad collecting runtime: " << density_grad_runtime << " s";
+  LOG_ERROR << "wirelength_backward runtime: " << wl_grad_runtime << " s";
+  LOG_WARNING << "density_backward runtime: " << density_grad_runtime << " s";
   // LOG_WARNING << "others runtime: " << others_runtime << " s";
   // LOG_WARNING << "sum grad runtime: " << sum_grad_runtime << " s";
 
@@ -1121,17 +1121,18 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
       // update next density gradient force.
 
-      ieda::Stats density_cal_status;
+      ieda::Stats get_density_map_status;
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
-      LOG_ERROR << "density grad calculating runtime: " << density_cal_status.elapsedRunTime() << " s";
+      LOG_WARNING << "get_density_map runtime: " << get_density_map_status.elapsedRunTime() << " s";
 
-      ieda::Stats wirelength_cal_status;
+      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+
       // update next wirelength gradient force.
+      ieda::Stats wirelength_forward_status;
       updateTopologyManager();
       _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
-      LOG_ERROR << "wirelength grad calculating runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
+      LOG_ERROR << "wirelength forward runtime: " << wirelength_forward_status.elapsedRunTime() << " s";
 
       // update next target penalty object.
       updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list);
