@@ -894,7 +894,7 @@ std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<Layer
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  std::vector<LayerRect> real_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
     LayerCoord& first_coord = segment.get_first();
     LayerCoord& second_coord = segment.get_second();
@@ -908,23 +908,16 @@ std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<Layer
 
         LayerRect& above_enclosure = via_master.get_above_enclosure();
         PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, first_coord);
-        layer_rect_map[above_enclosure.get_layer_idx()].push_back(offset_above_enclosure);
+        real_rect_list.emplace_back(offset_above_enclosure, above_enclosure.get_layer_idx());
 
         LayerRect& below_enclosure = via_master.get_below_enclosure();
         PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, first_coord);
-        layer_rect_map[below_enclosure.get_layer_idx()].push_back(offset_below_enclosure);
+        real_rect_list.emplace_back(offset_below_enclosure, below_enclosure.get_layer_idx());
       }
     } else {
       irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
       PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
-      layer_rect_map[first_layer_idx].push_back(wire_rect);
-    }
-  }
-  std::vector<LayerRect> real_rect_list;
-  for (auto& [layer_idx, rect_list] : layer_rect_map) {
-    rect_list = RTUtil::getMergeRectList(rect_list);
-    for (PlanarRect& rect : rect_list) {
-      real_rect_list.emplace_back(rect, layer_idx);
+      real_rect_list.emplace_back(wire_rect, first_layer_idx);
     }
   }
   return real_rect_list;

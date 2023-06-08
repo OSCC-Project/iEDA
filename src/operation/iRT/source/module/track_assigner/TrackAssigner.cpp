@@ -745,7 +745,7 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  std::vector<LayerRect> real_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
     LayerCoord& first_coord = segment.get_first();
     LayerCoord& second_coord = segment.get_second();
@@ -753,16 +753,9 @@ std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerC
     if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
       irt_int half_width = routing_layer_list[first_coord.get_layer_idx()].get_min_width() / 2;
       PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
-      layer_rect_map[first_coord.get_layer_idx()].push_back(wire_rect);
+      real_rect_list.emplace_back(wire_rect, first_coord.get_layer_idx());
     } else {
       LOG_INST.error(Loc::current(), "The segment is proximal!");
-    }
-  }
-  std::vector<LayerRect> real_rect_list;
-  for (auto& [layer_idx, rect_list] : layer_rect_map) {
-    rect_list = RTUtil::getMergeRectList(rect_list);
-    for (PlanarRect& rect : rect_list) {
-      real_rect_list.emplace_back(rect, layer_idx);
     }
   }
   return real_rect_list;
