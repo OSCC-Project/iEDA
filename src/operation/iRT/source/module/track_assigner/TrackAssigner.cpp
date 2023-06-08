@@ -1378,7 +1378,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(ta_panel, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(ta_panel, start_node, end_node);
+  cost += getWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
   return cost;
@@ -1402,7 +1402,7 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
   return joint_cost;
 }
 
-double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
 
@@ -1420,8 +1420,6 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
       wire_cost += (y_distance * ta_panel.get_wire_unit());
       wire_cost += (x_distance * 2 * ta_panel.get_wire_unit());
     }
-  } else {
-    wire_cost += (ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
   }
   return wire_cost;
 }
@@ -1472,15 +1470,10 @@ double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
+  estimate_cost += getWireCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
-}
-
-double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)

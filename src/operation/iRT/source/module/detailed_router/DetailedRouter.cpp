@@ -1634,7 +1634,7 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(dr_box, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(dr_box, start_node, end_node);
+  cost += getWireCost(dr_box, start_node, end_node);
   cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getViaCost(dr_box, start_node, end_node);
   return cost;
@@ -1658,7 +1658,7 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
   return joint_cost;
 }
 
-double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+double DetailedRouter::getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
 
@@ -1676,8 +1676,6 @@ double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode
       wire_cost += (y_distance * dr_box.get_wire_unit());
       wire_cost += (x_distance * 2 * dr_box.get_wire_unit());
     }
-  } else {
-    wire_cost += (dr_box.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node));
   }
   return wire_cost;
 }
@@ -1728,15 +1726,10 @@ double DetailedRouter::getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node)
 double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getEstimateWireCost(dr_box, start_node, end_node);
+  estimate_cost += getWireCost(dr_box, start_node, end_node);
   estimate_cost += getEstimateCornerCost(dr_box, start_node, end_node);
   estimate_cost += getViaCost(dr_box, start_node, end_node);
   return estimate_cost;
-}
-
-double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  return dr_box.get_wire_unit() * RTUtil::getManhattanDistance(*start_node, *end_node);
 }
 
 double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
