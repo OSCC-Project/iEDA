@@ -15,11 +15,11 @@ endif()
 add_executable(iPLTest
     ${iPL_SOURCE}/PlacerDB.cc
     ${iPL_API}/PLAPI.cc
-    ${iPL_TEST}/APITest.cc
-    ${iPL_TEST}/ReportCongTest.cc
+    # ${iPL_TEST}/APITest.cc
+    # ${iPL_TEST}/ReportCongTest.cc
     # ${iPL_TEST}/ComputationCheck.cc
     # ${iPL_TEST}/GlogTest.cc
-    # ${iPL_TEST}/CongEvalAPITest.cc
+    ${iPL_TEST}/CongEvalAPITest.cc
     # ${iPL_TEST}/GridManagerTest.cc
     # ${iPL_TEST}/MPTest.cc
 )
