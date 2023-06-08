@@ -53,12 +53,12 @@ void DCT::init()
     }
   }
 
-  _cs_table.resize(std::max(_bin_cnt_x, _bin_cnt_y) * 3 / 2, 0);
+  _cs_table.resize(std::max(_bin_cnt_y / 2, _bin_cnt_x / 4) + _bin_cnt_x / 4, 0);
   _wx.resize(_bin_cnt_x, 0);
   _wx_square.resize(_bin_cnt_x, 0);
   _wy.resize(_bin_cnt_y, 0);
   _wy_square.resize(_bin_cnt_y, 0);
-  _work_area.resize(round(sqrt(std::max(_bin_cnt_x, _bin_cnt_y))) + 2, 0);
+  _work_area.resize(round(sqrt(std::max(_bin_cnt_y, _bin_cnt_x / 2))) + 2, 0);
 
   _expk_x.resize(_bin_cnt_x);
   _expk_y.resize(_bin_cnt_y);
@@ -156,7 +156,7 @@ void DCT::dct2UseFFT2Process(float** sequence)
 void DCT::dct2Preprocess(float** sequence, float** buf_sequence)
 {
   int half_x_cnt = _bin_cnt_x / 2;
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < _bin_cnt_y; h_id++) {
     for (int w_id = 0; w_id < _bin_cnt_x; w_id++) {
       int tmp_index, index_1, index_2;
@@ -280,7 +280,7 @@ void DCT::idct2Preprocess(float** sequence, float** buf_sequence)
   int half_cnt_y = _bin_cnt_y / 2;
   int half_cnt_x = _bin_cnt_x / 2;
 
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < half_cnt_y; h_id++) {
     for (int w_id = 0; w_id < half_cnt_x; w_id++) {
       int condition = ((h_id != 0) << 1) | (w_id != 0);
@@ -382,7 +382,7 @@ void DCT::idct2Preprocess(float** sequence, float** buf_sequence)
 void DCT::idct2Postprocess(float** buf_sequence, float** sequence)
 {
   int bin_cnt_yx = _bin_cnt_y * _bin_cnt_x;
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < _bin_cnt_y; h_id++) {
     for (int w_id = 0; w_id < _bin_cnt_x; w_id++) {
       int condition = ((h_id < _bin_cnt_y / 2) << 1) | (w_id < _bin_cnt_x / 2);
@@ -433,7 +433,7 @@ void DCT::idctAndIdxstPreprocess(float** sequence, float** buf_sequence)
   int half_cnt_y = _bin_cnt_y / 2;
   int half_cnt_x = _bin_cnt_x / 2;
 
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < half_cnt_y; h_id++) {
     for (int w_id = 0; w_id < half_cnt_x; w_id++) {
       int condition = ((h_id != 0) << 1) | (w_id != 0);
@@ -524,7 +524,7 @@ void DCT::idctAndIdxstPreprocess(float** sequence, float** buf_sequence)
 void DCT::idctAndIdxstPostprocess(float** buf_sequence, float** sequence)
 {
   int bin_cnt_yx = _bin_cnt_y * _bin_cnt_x;
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < _bin_cnt_y; h_id++) {
     for (int w_id = 0; w_id < _bin_cnt_x; w_id++) {
       int condition = ((h_id < _bin_cnt_y / 2) << 1) | (w_id < _bin_cnt_x / 2);
@@ -578,7 +578,7 @@ void DCT::idxstAndIdctPreprocess(float** sequence, float** buf_sequence)
   int half_cnt_y = _bin_cnt_y / 2;
   int half_cnt_x = _bin_cnt_x / 2;
 
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < half_cnt_y; h_id++) {
     for (int w_id = 0; w_id < half_cnt_x; w_id++) {
       int condition = ((h_id != 0) << 1) | (w_id != 0);
@@ -675,7 +675,7 @@ void DCT::idxstAndIdctPreprocess(float** sequence, float** buf_sequence)
 void DCT::idxstAndIdctPostprocess(float** buf_sequence, float** sequence)
 {
   int bin_cnt_yx = _bin_cnt_y * _bin_cnt_x;
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int h_id = 0; h_id < _bin_cnt_y; h_id++) {
     for (int w_id = 0; w_id < _bin_cnt_x; w_id++) {
       int condition = ((h_id < _bin_cnt_y / 2) << 1) | (w_id < _bin_cnt_x / 2);
@@ -715,7 +715,7 @@ void DCT::idxstAndIdctPostprocess(float** buf_sequence, float** sequence)
 
 void DCT::resetForInverseMatrix(float** sequence)
 {
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int j1 = 0; j1 < _bin_cnt_y; j1++) {
     for (int j2 = 0; j2 < _bin_cnt_x; j2++) {
       sequence[j1][j2] *= 2.0 / _bin_cnt_y / _bin_cnt_x;
@@ -766,7 +766,7 @@ std::complex<float> DCT::obtainComplexConjugate(std::complex<float>& x)
 
 void DCT::resetBufSequence()
 {
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
     for (int j = 0; j < _bin_cnt_x + 2; j++) {
       _buf_sequence[i][j] = 0;
@@ -775,7 +775,7 @@ void DCT::resetBufSequence()
 }
 void DCT::resetComplex2DList()
 {
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
     for (int j = 0; j < _bin_cnt_x / 2 + 1; j++) {
       _complex_2d_list[i][j] = {0, 0};
@@ -788,21 +788,23 @@ void DCT::convertSequenceToComplex2DList(float** buf_sequence)
   // #pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
     for (int j = 0; (j < _bin_cnt_x + 2) && (j + 1 < _bin_cnt_x + 2); j += 2) {
-      _complex_2d_list[i][j] = {buf_sequence[i][j], -buf_sequence[i][j + 1]};
+      int index = j / 2;
+      _complex_2d_list[i][index] = {buf_sequence[i][j], -buf_sequence[i][j + 1]};
     }
   }
 }
 
 void DCT::convertComplex2DListToSequence(std::vector<std::vector<std::complex<float>>>& complex_2d_list)
 {
-  int half_cnt_x = _bin_cnt_x / 2 + 1;
+  int half_cnt_x = _bin_cnt_x / 2;
 
-  // #pragma omp parallel for num_threads(_thread_nums)
+#pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
-    for (int j = 0; (j < half_cnt_x) && (j + 1 < half_cnt_x); j++) {
+    for (int j = 0; (j < half_cnt_x + 1) && (j + 1 < half_cnt_x + 1); j++) {
       std::complex<float> cur_complex = _complex_2d_list[i][j];
-      _buf_sequence[i][j] = cur_complex.real();
-      _buf_sequence[i][j + 1] = -cur_complex.imag();
+      int index = 2 * j;
+      _buf_sequence[i][index] = cur_complex.real();
+      _buf_sequence[i][index + 1] = -cur_complex.imag();
     }
   }
 }
