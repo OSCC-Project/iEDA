@@ -21,75 +21,78 @@
  * @LastEditTime: 2023-03-10 11:15:02
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPDesign.hh
  * @Description: Design of detail placement
- * 
- * 
+ *
+ *
  */
 #ifndef IPL_DPDESIGN_H
 #define IPL_DPDESIGN_H
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-#include "data/Instance.hh"
-
+#include "DPCluster.hh"
 #include "DPInstance.hh"
 #include "DPNet.hh"
 #include "DPPin.hh"
-#include "DPCluster.hh"
+#include "data/Instance.hh"
 
 namespace ipl {
 class DPDesign
 {
-public:
-    DPDesign();
-    
-    DPDesign(const DPDesign&) = delete;
-    DPDesign(DPDesign&&) = delete;
-    ~DPDesign();
+ public:
+  DPDesign();
 
-    DPDesign& operator=(const DPDesign&) = delete;
-    DPDesign& operator=(DPDesign&&) = delete;
+  DPDesign(const DPDesign&) = delete;
+  DPDesign(DPDesign&&) = delete;
+  ~DPDesign();
 
-    // getter
-    const std::vector<DPInstance*> get_inst_list() const { return _dpInstance_list;}
-    const std::vector<DPNet*> get_net_list() const { return _dpNet_list;}
-    const std::vector<DPPin*> get_pin_list() const { return _dpPin_list;}
+  DPDesign& operator=(const DPDesign&) = delete;
+  DPDesign& operator=(DPDesign&&) = delete;
 
-    // setter
-    void add_instance(DPInstance* inst);
-    void add_net(DPNet* net);
-    void add_pin(DPPin* pin);
-    void add_cluster(DPCluster* cluster);
-    
-    // function
-    void connectInst(DPInstance* dp_inst, Instance* pl_inst);
+  // getter
+  const std::vector<DPInstance*> get_inst_list() const { return _dpInstance_list; }
+  const std::vector<DPNet*> get_net_list() const { return _dpNet_list; }
+  const std::vector<DPPin*> get_pin_list() const { return _dpPin_list; }
 
-    DPInstance* find_instance(std::string inst_name);
-    DPNet* find_net(std::string net_name);
-    DPPin* find_pin(std::string pin_name);
-    DPCluster* find_cluster(std::string cluster_name);
+  // setter
+  void add_instance(DPInstance* inst);
+  void add_net(DPNet* net);
+  void add_pin(DPPin* pin);
+  void add_cluster(DPCluster* cluster);
 
-    void clearClusterInfo();
-    void deleteCluster(std::string cluster_name);
+  // function
+  void connectInst(DPInstance* dp_inst, Instance* pl_inst);
 
-    void writeBackToPL(int32_t shift_x, int32_t shift_y);
+  DPInstance* find_instance(std::string inst_name);
+  DPNet* find_net(std::string net_name);
+  DPPin* find_pin(std::string pin_name);
+  DPCluster* find_cluster(std::string cluster_name);
 
-    int64_t calInstAffectiveHPWL(DPInstance* inst);
+  void clearClusterInfo();
+  void deleteCluster(std::string cluster_name);
 
-private:
-    std::vector<DPInstance*> _dpInstance_list;
-    std::vector<DPNet*> _dpNet_list;
-    std::vector<DPPin*> _dpPin_list;
+  void writeBackToPL(int32_t shift_x, int32_t shift_y);
 
-    std::map<std::string, DPInstance*> _dpInstance_map;
-    std::map<std::string, DPNet*> _dpNet_map;
-    std::map<std::string, DPPin*> _dpPin_map;
+  int64_t calInstAffectiveHPWL(DPInstance* inst);
 
-    std::map<std::string, DPCluster*> _dpCluster_map;
+ private:
+  std::vector<DPInstance*> _dpInstance_list;
+  std::vector<DPNet*> _dpNet_list;
+  std::vector<DPPin*> _dpPin_list;
 
-    std::map<DPInstance*, Instance*> _dpInst_inst_map;
-    std::map<Instance*, DPInstance*> _inst_dpInst_map;
+  std::map<std::string, DPInstance*> _dpInstance_map;
+  std::map<std::string, DPNet*> _dpNet_map;
+  std::map<std::string, DPPin*> _dpPin_map;
+
+  std::map<std::string, DPCluster*> _dpCluster_map;
+
+  std::map<DPInstance*, Instance*> _dpInst_inst_map;
+  std::map<Instance*, DPInstance*> _inst_dpInst_map;
+
+  int32_t _dp_instances_range;
+  int32_t _dp_nets_range;
+  int32_t _dp_pins_range;
 };
-}
+}  // namespace ipl
 #endif

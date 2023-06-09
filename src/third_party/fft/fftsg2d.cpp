@@ -369,6 +369,8 @@ macro definitions
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "fftsg.h"
+
 // NOLINTBEGIN
 
 #define fft2d_alloc_error_check(p)                        \

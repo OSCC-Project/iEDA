@@ -44,8 +44,8 @@ class Wirelength
   Wirelength& operator=(Wirelength&&) = delete;
 
   virtual int64_t obtainTotalWirelength() = 0;
-  virtual int64_t obtainNetWirelength(std::string net_name) = 0;
-  virtual int64_t obtainPartOfNetWirelength(std::string net_name, std::string sink_pin_name) = 0;
+  virtual int64_t obtainNetWirelength(int32_t net_id) = 0;
+  virtual int64_t obtainPartOfNetWirelength(int32_t net_id, int32_t sink_pin_id) = 0;
 
  protected:
   TopologyManager* _topology_manager;
