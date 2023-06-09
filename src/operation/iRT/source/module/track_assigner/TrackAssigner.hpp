@@ -67,7 +67,6 @@ class TrackAssigner
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   void buildPanelRegion(TAModel& ta_model);
   void updateNetBlockageMap(TAModel& ta_model);
-  void updateNetFenceRegionMap(TAModel& ta_model);
   void buildTATaskPriority(TAModel& ta_model);
 #endif
 
@@ -84,7 +83,6 @@ class TrackAssigner
                                                                                            PlanarRect& enlarge_real_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, PlanarRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildFenceTaskMap(TAPanel& ta_panel);
 #endif
 
 #if 1  // check ta_panel
