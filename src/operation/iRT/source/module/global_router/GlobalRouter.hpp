@@ -60,7 +60,6 @@ class GlobalRouter
   void buildNeighborMap(GRModel& gr_model);
   void buildNodeSupply(GRModel& gr_model);
   void updateNetBlockageMap(GRModel& gr_model);
-  void updateNetFenceRegionMap(GRModel& gr_model);
   void calcAreaSupply(GRModel& gr_model);
   void initSingleResource(GRNode& gr_node, RoutingLayer& routing_layer);
   void initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer);

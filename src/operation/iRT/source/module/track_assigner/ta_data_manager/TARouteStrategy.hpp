@@ -25,9 +25,8 @@ namespace irt {
 enum class TARouteStrategy
 {
   kNone = 0,
-  kIgnoringFence = 1,
-  kIgnoringENV = 2,
-  kIgnoringOBS = 3
+  kIgnoringENV = 1,
+  kIgnoringOBS = 2
 };
 
 struct GetTARouteStrategyName
@@ -41,9 +40,6 @@ struct GetTARouteStrategyName
         break;
       case TARouteStrategy::kIgnoringENV:
         ta_route_strategy_name = "ignoring_env";
-        break;
-      case TARouteStrategy::kIgnoringFence:
-        ta_route_strategy_name = "ignoring_fence";
         break;
       case TARouteStrategy::kIgnoringOBS:
         ta_route_strategy_name = "ignoring_obs";

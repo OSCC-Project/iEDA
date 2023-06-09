@@ -40,7 +40,6 @@ class GRNode : public LayerCoord
   PlanarRect& get_real_rect() { return _real_rect; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_net_fence_region_map() { return _net_fence_region_map; }
   irt_int get_single_wire_area() const { return _single_wire_area; }
   irt_int get_single_via_area() const { return _single_via_area; }
   irt_int get_wire_area_supply() const { return _wire_area_supply; }
@@ -53,10 +52,6 @@ class GRNode : public LayerCoord
   void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_fence_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_fence_region_map)
-  {
-    _net_fence_region_map = net_fence_region_map;
-  }
   void set_single_wire_area(const irt_int single_wire_area) { _single_wire_area = single_wire_area; }
   void set_single_via_area(const irt_int single_via_area) { _single_via_area = single_via_area; }
   void set_wire_area_supply(const irt_int wire_area_supply) { _wire_area_supply = wire_area_supply; }
@@ -111,21 +106,17 @@ class GRNode : public LayerCoord
       // net在node中有引导，但是方向不对，视为障碍
       cost += !RTUtil::exist(_net_access_map[net_idx], orientation) ? 1 : 0;
     } else {
-      irt_int fence_via_area_demand = 0;
-      if (!RTUtil::exist(_net_fence_region_map, net_idx)) {
-        fence_via_area_demand += (_single_via_area * static_cast<irt_int>(_net_fence_region_map.size()));
-      }
       if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
         // wire剩余可以给via
         irt_int via_remain = 0;
         via_remain += _wire_area_supply - _wire_area_demand;
-        via_remain += _via_area_supply - _via_area_demand - fence_via_area_demand;
+        via_remain += _via_area_supply - _via_area_demand;
         cost += RTUtil::sigmoid(_single_via_area, std::max(0, via_remain));
       } else {
         // via剩余不可转wire
         irt_int wire_remain = 0;
         wire_remain += _wire_area_supply - _wire_area_demand;
-        wire_remain += std::min(_via_area_supply - _via_area_demand - fence_via_area_demand, 0);
+        wire_remain += std::min(_via_area_supply - _via_area_demand, 0);
         cost += RTUtil::sigmoid(_single_wire_area, std::max(0, wire_remain));
       }
     }
@@ -163,7 +154,6 @@ class GRNode : public LayerCoord
   PlanarRect _real_rect;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
   std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
-  std::map<irt_int, std::vector<PlanarRect>> _net_fence_region_map;
   irt_int _single_wire_area = 0;
   irt_int _single_via_area = 0;
   irt_int _wire_area_supply = 0;

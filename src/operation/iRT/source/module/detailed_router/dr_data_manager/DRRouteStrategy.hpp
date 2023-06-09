@@ -26,8 +26,7 @@ enum class DRRouteStrategy
 {
   kNone = 0,
   kIgnoringENV = 1,
-  kIgnoringFence = 2,
-  kIgnoringOBS = 3
+  kIgnoringOBS = 2
 };
 
 struct GetDRRouteStrategyName
@@ -41,9 +40,6 @@ struct GetDRRouteStrategyName
         break;
       case DRRouteStrategy::kIgnoringENV:
         dr_route_strategy_name = "ignoring_env";
-        break;
-      case DRRouteStrategy::kIgnoringFence:
-        dr_route_strategy_name = "ignoring_fence";
         break;
       case DRRouteStrategy::kIgnoringOBS:
         dr_route_strategy_name = "ignoring_obs";

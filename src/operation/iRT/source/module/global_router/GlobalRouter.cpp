@@ -159,7 +159,6 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
 void GlobalRouter::buildNodeSupply(GRModel& gr_model)
 {
   updateNetBlockageMap(gr_model);
-  updateNetFenceRegionMap(gr_model);
   calcAreaSupply(gr_model);
   buildAccessMap(gr_model);
 }
@@ -195,47 +194,6 @@ void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
           for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
             layer_node_map[layer_idx][x][y].get_net_blockage_map()[gr_net.get_net_idx()].push_back(enlarged_real_rect);
           }
-        }
-      }
-    }
-  }
-}
-
-void GlobalRouter::updateNetFenceRegionMap(GRModel& gr_model)
-{
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _gr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _gr_data_manager.getDatabase().get_layer_via_master_list();
-  irt_int bottom_routing_layer_idx = _gr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _gr_data_manager.getConfig().top_routing_layer_idx;
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    std::vector<LayerCoord> real_coord_list;
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      real_coord_list.push_back(gr_pin.getRealCoordList().front());
-    }
-    std::vector<LayerRect> net_fence_region_list;
-    for (LayerCoord& real_coord : real_coord_list) {
-      irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
-        ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-        for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-          LayerRect via_shape(RTUtil::getOffsetRect(enclosure, real_coord), enclosure.get_layer_idx());
-          net_fence_region_list.push_back(via_shape);
-        }
-      }
-    }
-    for (const LayerRect& net_fence_region : net_fence_region_list) {
-      irt_int layer_idx = net_fence_region.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
-      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-      for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          layer_node_map[layer_idx][x][y].get_net_fence_region_map()[gr_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }
@@ -446,14 +404,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
               continue;
             }
             LOG_INST.error(Loc::current(), "The blockage is outside the node region!");
-          }
-        }
-        for (auto& [net_idx, region_list] : gr_node.get_net_fence_region_map()) {
-          for (PlanarRect& region : region_list) {
-            if (RTUtil::isClosedOverlap(gr_node.get_real_rect(), region)) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The region is outside the node region!");
           }
         }
         if (gr_node.get_single_wire_area() <= 0) {
@@ -1204,30 +1154,6 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
 
         y -= y_reduced_span;
-        GPText gp_text_net_fence_region_map;
-        gp_text_net_fence_region_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_fence_region_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        gp_text_net_fence_region_map.set_message("net_fence_region_map: ");
-        gp_text_net_fence_region_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-        gp_text_net_fence_region_map.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_net_fence_region_map);
-
-        if (!gr_node.get_net_fence_region_map().empty()) {
-          y -= y_reduced_span;
-          GPText gp_text_net_fence_region_map_info;
-          gp_text_net_fence_region_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_fence_region_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-          std::string net_fence_region_map_message = "--";
-          for (auto& [net_idx, blockage_list] : gr_node.get_net_fence_region_map()) {
-            net_fence_region_map_message += RTUtil::getString("(", net_idx, ")");
-          }
-          gp_text_net_fence_region_map_info.set_message(net_fence_region_map_message);
-          gp_text_net_fence_region_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-          gp_text_net_fence_region_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_net_fence_region_map_info);
-        }
-
-        y -= y_reduced_span;
         GPText gp_text_single_wire_area;
         gp_text_single_wire_area.set_coord(real_rect.get_lb_x(), y);
         gp_text_single_wire_area.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
@@ -1412,32 +1338,6 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         blockage_struct.push(gp_boundary);
       }
       gp_gds.addStruct(blockage_struct);
-    }
-  }
-
-  // net fence_region
-  std::map<irt_int, std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>> layer_net_fence_region_map;
-  for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
-    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
-      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
-        GRNode& gr_node = node_map[grid_x][grid_y];
-        for (auto& [net_idx, fence_region_list] : gr_node.get_net_fence_region_map()) {
-          layer_net_fence_region_map[gr_node.get_layer_idx()][net_idx].insert(fence_region_list.begin(), fence_region_list.end());
-        }
-      }
-    }
-  }
-  for (auto& [layer_idx, net_fence_region_map] : layer_net_fence_region_map) {
-    for (auto& [net_idx, fence_region_set] : net_fence_region_map) {
-      GPStruct fence_region_struct(RTUtil::getString("fence_region@", net_idx));
-      for (const PlanarRect& fence_region : fence_region_set) {
-        GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kFenceRegion));
-        gp_boundary.set_rect(fence_region);
-        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-        fence_region_struct.push(gp_boundary);
-      }
-      gp_gds.addStruct(fence_region_struct);
     }
   }
 

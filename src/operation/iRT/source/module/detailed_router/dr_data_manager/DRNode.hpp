@@ -41,17 +41,13 @@ class DRNode : public LayerCoord
   ~DRNode() = default;
 
   // getter
-  irt_int get_fence_violation_cost() const { return _fence_violation_cost; }
   std::map<Orientation, DRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
-  std::map<Orientation, std::set<irt_int>>& get_fence_task_map() { return _fence_task_map; }
   std::map<Orientation, std::set<irt_int>>& get_env_task_map() { return _env_task_map; }
   std::queue<irt_int>& get_task_queue() { return _task_queue; }
   // setter
-  void set_fence_violation_cost(const irt_int fence_violation_cost) { _fence_violation_cost = fence_violation_cost; }
   void set_neighbor_ptr_map(const std::map<Orientation, DRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
-  void set_fence_task_map(const std::map<Orientation, std::set<irt_int>>& fence_task_map) { _fence_task_map = fence_task_map; }
   void set_env_task_map(const std::map<Orientation, std::set<irt_int>>& env_task_map) { _env_task_map = env_task_map; }
   void set_task_queue(const std::queue<irt_int>& task_queue) { _task_queue = task_queue; }
   // function
@@ -76,18 +72,6 @@ class DRNode : public LayerCoord
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
     }
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringFence) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (RTUtil::exist(_fence_task_map, orientation)) {
-        if (_fence_task_map[orientation].size() >= 2) {
-          is_obs = true;
-        } else {
-          is_obs = RTUtil::exist(_fence_task_map[orientation], task_idx) ? false : true;
-        }
-      }
-    }
     if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
       return is_obs;
     }
@@ -100,24 +84,20 @@ class DRNode : public LayerCoord
         }
       }
     }
-
     return is_obs;
   }
   double getCost(irt_int task_idx, Orientation orientation)
   {
-    irt_int fence_violation_num = 0;
-    if (RTUtil::exist(_fence_task_map, orientation)) {
-      std::set<irt_int>& task_idx_set = _fence_task_map[orientation];
+    irt_int env_violation_num = 0;
+    if (RTUtil::exist(_env_task_map, orientation)) {
+      std::set<irt_int>& task_idx_set = _env_task_map[orientation];
       if (task_idx_set.size() >= 2) {
-        fence_violation_num += static_cast<irt_int>(task_idx_set.size());
+        env_violation_num += static_cast<irt_int>(task_idx_set.size());
       } else {
-        fence_violation_num += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1;
+        env_violation_num += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1;
       }
     }
-    if (RTUtil::exist(_env_task_map, orientation)) {
-      fence_violation_num += static_cast<irt_int>(_env_task_map[orientation].size());
-    }
-    return static_cast<double>(fence_violation_num * _fence_violation_cost);
+    return static_cast<double>(env_violation_num);
   }
   void addEnv(irt_int task_idx, Orientation orientation) { _env_task_map[orientation].insert(task_idx); }
   void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
@@ -139,10 +119,8 @@ class DRNode : public LayerCoord
 #endif
 
  private:
-  irt_int _fence_violation_cost = 0;
   std::map<Orientation, DRNode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
-  std::map<Orientation, std::set<irt_int>> _fence_task_map;
   std::map<Orientation, std::set<irt_int>> _env_task_map;
   std::queue<irt_int> _task_queue;
 #if 1  // astar

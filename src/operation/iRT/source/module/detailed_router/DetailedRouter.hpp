@@ -62,7 +62,6 @@ class DetailedRouter
   DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void updateNetBlockageMap(DRModel& dr_model);
-  void updateNetFenceRegionMap(DRModel& dr_model);
   void buildDRTaskPriority(DRModel& dr_model);
 #endif
 
@@ -86,7 +85,6 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildFenceTaskMap(DRBox& dr_box);
 #endif
 
 #if 1  // check dr_box

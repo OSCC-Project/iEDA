@@ -219,7 +219,7 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
 void PinAccessor::accessPAModel(PAModel& pa_model)
 {
   accessPANetList(pa_model);
-  updateNetFenceRegionMap(pa_model);
+  updateNetEnclosureMap(pa_model);
   eliminateConflict(pa_model);
 }
 
@@ -529,7 +529,7 @@ void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
   }
 }
 
-void PinAccessor::updateNetFenceRegionMap(PAModel& pa_model)
+void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 {
   GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
@@ -547,7 +547,7 @@ void PinAccessor::updateNetFenceRegionMap(PAModel& pa_model)
         real_coord_list.push_back(real_coord);
       }
     }
-    std::vector<LayerRect> net_fence_region_list;
+    std::vector<LayerRect> net_enclosure_list;
     for (LayerCoord& real_coord : real_coord_list) {
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
@@ -556,18 +556,18 @@ void PinAccessor::updateNetFenceRegionMap(PAModel& pa_model)
           LayerRect via_shape;
           via_shape.set_rect(RTUtil::getOffsetRect(enclosure, real_coord));
           via_shape.set_layer_idx(enclosure.get_layer_idx());
-          net_fence_region_list.push_back(via_shape);
+          net_enclosure_list.push_back(via_shape);
         }
       }
     }
-    for (const LayerRect& net_fence_region : net_fence_region_list) {
-      irt_int layer_idx = net_fence_region.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_fence_region);
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_fence_region, min_spacing, die.get_real_rect());
+    for (const LayerRect& net_enclosure : net_enclosure_list) {
+      irt_int layer_idx = net_enclosure.get_layer_idx();
+      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_enclosure);
+      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_enclosure, min_spacing, die.get_real_rect());
       PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
       for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
         for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          layer_gcell_map[layer_idx][x][y].get_net_fence_region_map()[pa_net.get_net_idx()].push_back(enlarged_real_rect);
+          layer_gcell_map[layer_idx][x][y].get_net_enclosure_map()[pa_net.get_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }
@@ -603,7 +603,7 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
               for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
                 for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
                   PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[via_shape.get_layer_idx()][x][y];
-                  for (auto& [net_idx, region_list] : pa_gcell.get_net_fence_region_map()) {
+                  for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
                     if (pa_net.get_net_idx() == net_idx) {
                       continue;
                     }
