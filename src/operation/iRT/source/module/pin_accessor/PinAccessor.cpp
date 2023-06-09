@@ -345,7 +345,7 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
     }
   }
   if (legal_rect_list.empty()) {
-    LOG_INST.warning(Loc::current(), "There is no legal pin shape!");
+    LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " has no legal pin shape!");
     for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
       legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
     }
