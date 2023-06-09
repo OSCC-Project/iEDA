@@ -1686,7 +1686,6 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 void TrackAssigner::updateTAModel(TAModel& ta_model)
 {
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
-    omp_set_num_threads(1);
 #pragma omp parallel for
     for (TAPanel& ta_panel : ta_panel_list) {
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
@@ -1701,68 +1700,16 @@ void TrackAssigner::buildRoutingResult(TATask& ta_task)
 {
   std::vector<LayerCoord> driving_grid_coord_list;
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<TAGroup> ta_group_list = getBoundaryTAGroupList(ta_task);
+  std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
   for (size_t i = 0; i < ta_group_list.size(); i++) {
     for (LayerCoord& coord : ta_group_list[i].get_coord_list()) {
       driving_grid_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
     }
   }
-  std::vector<Segment<LayerCoord>> routing_segment_list = buildRoutingSegmentList(ta_task);
+  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_task.get_routing_segment_list() ;
   RTNode& rt_node = ta_task.get_origin_node()->value();
   rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
-}
-
-std::vector<TAGroup> TrackAssigner::getBoundaryTAGroupList(TATask& ta_task)
-{
-  std::vector<irt::RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-
-  RTNode& rt_node = ta_task.get_origin_node()->value();
-  Guide first_guide = rt_node.get_first_guide();
-  Guide second_guide = rt_node.get_second_guide();
-  if (!CmpPlanarCoordByXASC()(first_guide.get_grid_coord(), second_guide.get_grid_coord())) {
-    std::swap(first_guide, second_guide);
-  }
-  PlanarCoord& first_grid_coord = first_guide.get_grid_coord();
-  PlanarCoord& second_grid_coord = second_guide.get_grid_coord();
-  RoutingLayer& routing_layer = routing_layer_list[first_guide.get_layer_idx()];
-
-  std::vector<TAGroup> ta_group_list;
-  for (Guide guide : {first_guide, second_guide}) {
-    std::vector<irt_int> x_list = RTUtil::getClosedScaleList(guide.get_lb_x(), guide.get_rt_x(), routing_layer.getXTrackGrid());
-    std::vector<irt_int> y_list = RTUtil::getClosedScaleList(guide.get_lb_y(), guide.get_rt_y(), routing_layer.getYTrackGrid());
-    if (RTUtil::isHorizontal(first_grid_coord, second_grid_coord)) {
-      irt_int x = (guide.get_grid_coord() == first_grid_coord) ? x_list.back() : x_list.front();
-      x_list.clear();
-      x_list.push_back(x);
-    } else if (RTUtil::isVertical(first_grid_coord, second_grid_coord)) {
-      irt_int y = (guide.get_grid_coord() == first_grid_coord) ? y_list.back() : y_list.front();
-      y_list.clear();
-      y_list.push_back(y);
-    }
-    TAGroup ta_group;
-    for (irt_int x : x_list) {
-      for (irt_int y : y_list) {
-        ta_group.get_coord_list().emplace_back(x, y, guide.get_layer_idx());
-      }
-    }
-    ta_group_list.push_back(ta_group);
-  }
-  return ta_group_list;
-}
-
-std::vector<Segment<LayerCoord>> TrackAssigner::buildRoutingSegmentList(TATask& ta_task)
-{
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-  RTNode& rt_node = ta_task.get_origin_node()->value();
-  for (Segment<LayerCoord>& segment : ta_task.get_routing_segment_list()) {
-    Segment<PlanarCoord> planar_segment(segment.get_first(), segment.get_second());
-    if (RTUtil::isInside(rt_node.get_first_guide(), planar_segment) || RTUtil::isInside(rt_node.get_second_guide(), planar_segment)) {
-      continue;
-    }
-    routing_segment_list.push_back(segment);
-  }
-  return routing_segment_list;
 }
 
 void TrackAssigner::updateOriginTAResultTree(TAModel& ta_model)
