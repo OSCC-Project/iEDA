@@ -234,6 +234,7 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
 void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  Die& die = _dr_data_manager.getDatabase().get_die();
 
   std::vector<PlanarCoord> coord_list;
   for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
@@ -245,11 +246,7 @@ void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 
   std::vector<PlanarRect> layer_bounding_box;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    irt_int lb_x = RTUtil::getFloorTrackLine(real_bounding_box.get_lb_x(), routing_layer.getXTrackGrid());
-    irt_int lb_y = RTUtil::getFloorTrackLine(real_bounding_box.get_lb_y(), routing_layer.getYTrackGrid());
-    irt_int rt_x = RTUtil::getCeilTrackLine(real_bounding_box.get_rt_x(), routing_layer.getXTrackGrid());
-    irt_int rt_y = RTUtil::getCeilTrackLine(real_bounding_box.get_rt_y(), routing_layer.getYTrackGrid());
-    layer_bounding_box.emplace_back(lb_x, lb_y, rt_x, rt_y);
+    layer_bounding_box.push_back(RTUtil::getTrackLineRect(real_bounding_box, routing_layer.get_track_axis(), die.get_real_rect()));
   }
   dr_task.set_bounding_box(RTUtil::getBoundingBox(layer_bounding_box, dr_box.get_base_region()));
 }
