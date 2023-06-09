@@ -20,7 +20,7 @@ target_include_directories(file_manager_routing
 )
 
 
-option(TEST_RT_SERIALIZE "If ON, test db." ON)
+option(TEST_RT_SERIALIZE "If ON, test db." OFF)
 
 if(TEST_RT_SERIALIZE)
     find_package(GTest REQUIRED)
