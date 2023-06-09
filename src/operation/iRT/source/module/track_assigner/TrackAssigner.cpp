@@ -210,6 +210,7 @@ void TrackAssigner::makeGroupAndCost(TANet& ta_net, std::map<TNode<RTNode>*, TAT
 TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
+  Die& die = _ta_data_manager.getDatabase().get_die();
 
   // dr info
   Guide& dr_guide = dr_node_node->value().get_first_guide();
@@ -235,7 +236,7 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   if (!pin_coord_list.empty()) {
     routing_region = RTUtil::getBoundingBox(pin_coord_list);
     if (!RTUtil::existGrid(routing_region, routing_layer.get_track_axis())) {
-      routing_region = getTrackLineRect(routing_region, routing_layer.get_track_axis());
+      routing_region = RTUtil::getTrackLineRect(routing_region, routing_layer.get_track_axis(), die.get_real_rect());
     }
     routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
   }
@@ -260,24 +261,6 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
     }
   }
   return ta_group;
-}
-
-// 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-PlanarRect TrackAssigner::getTrackLineRect(PlanarRect& rect, TrackAxis& track_axis)
-{
-  irt_int real_lb_x = rect.get_lb_x();
-  irt_int real_rt_x = rect.get_rt_x();
-  irt_int real_lb_y = rect.get_lb_y();
-  irt_int real_rt_y = rect.get_rt_y();
-  if (RTUtil::getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_track_grid()).empty()) {
-    real_lb_x = RTUtil::getFloorTrackLine(real_lb_x, track_axis.get_x_track_grid());
-    real_rt_x = RTUtil::getCeilTrackLine(real_rt_x, track_axis.get_x_track_grid());
-  }
-  if (RTUtil::getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_track_grid()).empty()) {
-    real_lb_y = RTUtil::getFloorTrackLine(real_lb_y, track_axis.get_y_track_grid());
-    real_rt_y = RTUtil::getCeilTrackLine(real_rt_y, track_axis.get_y_track_grid());
-  }
-  return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
 }
 
 std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(TNode<RTNode>* ta_node_node,
@@ -1703,6 +1686,7 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 void TrackAssigner::updateTAModel(TAModel& ta_model)
 {
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    omp_set_num_threads(1);
 #pragma omp parallel for
     for (TAPanel& ta_panel : ta_panel_list) {
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
@@ -1724,7 +1708,7 @@ void TrackAssigner::buildRoutingResult(TATask& ta_task)
       key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
     }
   }
-  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_task.get_routing_segment_list();
+  std::vector<Segment<LayerCoord>> routing_segment_list = buildRoutingSegmentList(ta_task);
   RTNode& rt_node = ta_task.get_origin_node()->value();
   rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
 }
@@ -1765,6 +1749,20 @@ std::vector<TAGroup> TrackAssigner::getBoundaryTAGroupList(TATask& ta_task)
     ta_group_list.push_back(ta_group);
   }
   return ta_group_list;
+}
+
+std::vector<Segment<LayerCoord>> TrackAssigner::buildRoutingSegmentList(TATask& ta_task)
+{
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+  RTNode& rt_node = ta_task.get_origin_node()->value();
+  for (Segment<LayerCoord>& segment : ta_task.get_routing_segment_list()) {
+    Segment<PlanarCoord> planar_segment(segment.get_first(), segment.get_second());
+    if (RTUtil::isInside(rt_node.get_first_guide(), planar_segment) || RTUtil::isInside(rt_node.get_second_guide(), planar_segment)) {
+      continue;
+    }
+    routing_segment_list.push_back(segment);
+  }
+  return routing_segment_list;
 }
 
 void TrackAssigner::updateOriginTAResultTree(TAModel& ta_model)
