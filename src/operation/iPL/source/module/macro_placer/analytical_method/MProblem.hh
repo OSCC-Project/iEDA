@@ -45,7 +45,7 @@ class MProblem final : public Problem
  private:
   void initWirelengthModel();
   void initDensityModel();
-  Mat getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, double gamma) const;
+  Mat getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const;
   Mat getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const;
   double evalHpwl(const Vec& x, const Vec& y, const Vec& r) const;
   double evalOverflow(const Vec& x, const Vec& y, const Vec& r) const;
