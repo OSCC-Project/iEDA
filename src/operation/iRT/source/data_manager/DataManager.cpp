@@ -19,6 +19,7 @@
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
+#include "file_rt.hpp"
 
 using namespace std;
 
@@ -1423,24 +1424,21 @@ void DataManager::printDatabase()
 void DataManager::saveStageResult(Stage stage)
 {
   Monitor monitor;
-
-  nlohmann::json all_json;
   std::string current_stage = GetStageName()(stage);
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result is being saved...");
-  saveHeadInfo(all_json, current_stage);
-
-  for (Net net : _database.get_net_list()) {
-    nlohmann::json& net_json = all_json["net_list"][net.get_net_name()];
-    saveStageNetResult(net_json, net);
-  }
-  std::string json_file_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".json";
-  std::ofstream* json_stream = RTUtil::getOutputFileStream(json_file_path);
-  (*json_stream) << all_json << std::endl;
-  RTUtil::closeFileStream(json_stream);
-
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", json_file_path, "'!", monitor.getStatsInfo());
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
 }
+std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
+{
+  std::string design_name = _helper.get_design_name();
+  std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
+  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
+  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
 
+  return make_tuple(stage, design_name, lef_list, def_name);
+}
 void DataManager::saveHeadInfo(nlohmann::json& all_json, std::string& current_stage)
 {
   std::string update_time = RTUtil::getTimestamp();
@@ -1684,19 +1682,10 @@ void DataManager::loadStageResult(Stage stage)
   Monitor monitor;
 
   std::string current_stage = GetStageName()(stage);
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result is loading...");
-
-  std::string json_file_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".json";
-  std::ifstream* json_stream = RTUtil::getInputFileStream(json_file_path);
-  nlohmann::json all_json = nlohmann::json::parse(*json_stream);
-  RTUtil::closeFileStream(json_stream);
-
-  checkHeadInfo(all_json, current_stage);
-  for (Net& net : _database.get_net_list()) {
-    nlohmann::json& net_json = all_json["net_list"][net.get_net_name()];
-    loadStageNetResult(net_json, net);
-  }
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", json_file_path, "'!", monitor.getStatsInfo());
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
 }
 
 void DataManager::checkHeadInfo(nlohmann::json& all_json, std::string current_stage)
