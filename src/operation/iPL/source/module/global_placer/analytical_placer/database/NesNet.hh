@@ -40,39 +40,42 @@ class NesNet
   NesNet() = delete;
   explicit NesNet(std::string name);
   NesNet(const NesNet&) = delete;
-  NesNet(NesNet&&)      = delete;
-  ~NesNet()             = default;
+  NesNet(NesNet&&) = delete;
+  ~NesNet() = default;
 
   NesNet& operator=(const NesNet&) = delete;
   NesNet& operator=(NesNet&&) = delete;
 
   // getter.
+  int32_t get_net_id() const { return _n_net_id; }
   std::string get_name() const { return _name; }
-  float       get_weight() const { return _weight; }
-  float get_delta_weight() const  { return _delta_weight;}
-  bool        isDontCare() const { return _is_dont_care == 1; }
+  float get_weight() const { return _weight; }
+  float get_delta_weight() const { return _delta_weight; }
+  bool isDontCare() const { return _is_dont_care == 1; }
 
-  NesPin*              get_driver() const { return _driver; }
+  NesPin* get_driver() const { return _driver; }
   std::vector<NesPin*> get_loader_list() const { return _loader_list; }
   std::vector<NesPin*> get_nPin_list() const;
 
   // setter.
+  void set_net_id(int32_t id) { _n_net_id = id; }
   void set_weight(float weight) { _weight = weight; }
-  void set_delta_weight(float delta_weight) { _delta_weight = delta_weight;}
+  void set_delta_weight(float delta_weight) { _delta_weight = delta_weight; }
   void set_dont_care() { _is_dont_care = 1; }
   void set_driver(NesPin* nPin) { _driver = nPin; }
   void add_loader(NesPin* nPin) { _loader_list.push_back(nPin); }
 
  private:
-  std::string   _name;
-  float         _weight;
-  float         _delta_weight;
+  int32_t _n_net_id;
+  std::string _name;
+  float _weight;
+  float _delta_weight;
   unsigned char _is_dont_care : 1;
 
-  NesPin*              _driver;
+  NesPin* _driver;
   std::vector<NesPin*> _loader_list;
 };
-inline NesNet::NesNet(std::string name) : _name(name), _weight(1.0F), _delta_weight(0.0F), _is_dont_care(0), _driver(nullptr)
+inline NesNet::NesNet(std::string name) : _n_net_id(-1), _name(name), _weight(1.0F), _delta_weight(0.0F), _is_dont_care(0), _driver(nullptr)
 {
 }
 

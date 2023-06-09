@@ -107,14 +107,13 @@ class GridRow
   // getter.
   int32_t get_row_idx() const { return _row_idx; }
   Rectangle<int32_t> get_shape() const { return _shape; }
-  std::vector<Grid*>& get_grid_list() { return _grid_list; }
+  const std::vector<Grid*>& get_grid_list() { return _grid_list; }
 
   // setter.
   void set_shape(Rectangle<int32_t> shape) { _shape = std::move(shape); }
   void add_grid_list(Grid* grid) { _grid_list.push_back(grid); }
 
   // function.
-  // std::vector<Grid*>              obtainOverlapGridList(int32_t lower_x, int32_t upper_x);
   void obtainOverlapGridList(std::vector<Grid*>& grid_list, int32_t lower_x, int32_t upper_x);
 
   std::vector<Grid*> obtainAvailableGridList(float available_ratio);
@@ -155,7 +154,7 @@ class GridManager
 
   // getter.
   Rectangle<int32_t> get_shape() const { return _shape; }
-  std::vector<GridRow*>& get_row_list() { return _row_list; }
+  const std::vector<GridRow*>& get_row_list() { return _row_list; }
   int32_t get_grid_size_x() const { return _grid_size_x; }
   int32_t get_grid_size_y() const { return _grid_size_y; }
 
@@ -165,10 +164,8 @@ class GridManager
   // function.
   int32_t obtainGridCntX();
   int32_t obtainRowCntY();
-  // std::vector<GridRow*> obtainOverlapRowList(int32_t lower_y, int32_t upper_y);
-  // std::vector<Grid*> obtainOverlapGridList(Rectangle<int32_t> rect);
   void obtainOverlapRowList(std::vector<GridRow*>& row_list, int32_t lower_y, int32_t upper_y);
-  void obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle<int32_t> rect);
+  void obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle<int32_t>& rect);
   std::vector<Rectangle<int32_t>> obtainAvailableRectList(int32_t row_low, int32_t row_high, int32_t grid_left, int32_t grid_right,
                                                           float available_ratio);
 

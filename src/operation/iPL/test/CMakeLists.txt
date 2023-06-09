@@ -35,10 +35,11 @@ endif()
 
 target_link_libraries(iPLTest
     PUBLIC
-    ipl-api
-    ipl-source
     ipl-api_external_libs
     ipl-test_external_libs
+    ipl-api
+    ipl-source_external_libs
+    ipl-source
 
     tool_api_icts
     icts_api

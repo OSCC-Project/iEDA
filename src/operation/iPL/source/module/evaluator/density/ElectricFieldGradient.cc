@@ -30,12 +30,19 @@
 
 namespace ipl {
 
-void ElectricFieldGradient::initElectroMap()
+void ElectricFieldGradient::initElectro2DList()
 {
-  for (auto* row : _grid_manager->get_row_list()) {
-    for (auto* grid : row->get_grid_list()) {
-      _electro_map.emplace(grid, ElectroInfo());
-    }
+  size_t row_cnt = static_cast<size_t>(_grid_manager->obtainRowCntY());
+  size_t grid_cnt = static_cast<size_t>(_grid_manager->obtainGridCntX());
+  // _force_2d_list.resize(row_cnt);
+  _force_2d_x_list.resize(row_cnt);
+  _force_2d_y_list.resize(row_cnt);
+  _phi_2d_list.resize(row_cnt);
+  for (size_t i = 0; i < row_cnt; i++) {
+    // _force_2d_list[i].resize(grid_cnt, std::make_pair(0.0f, 0.0f));
+    _force_2d_x_list[i].resize(grid_cnt, 0.0f);
+    _force_2d_y_list[i].resize(grid_cnt, 0.0f);
+    _phi_2d_list[i].resize(grid_cnt, 0.0f);
   }
 }
 
@@ -47,34 +54,39 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
 // copy density to utilize FFT
 #pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
+    int32_t row_idx = row->get_row_idx();
     for (auto* grid : row->get_grid_list()) {
-      _fft->updateDensity(grid->get_grid_idx(), grid->get_row_idx(), grid->obtainGridDensity() / grid->get_available_ratio());
+      int32_t grid_idx = grid->get_grid_idx();
+      // _fft->updateDensity(grid_idx, row_idx, grid->obtainGridDensity() / grid->get_available_ratio());
+      _dct->updateDensity(grid_idx, row_idx, grid->obtainGridDensity() / grid->get_available_ratio());
     }
   }
 
   // do FFT
-  _fft->doFFT();
+  _dct->set_thread_nums(thread_num);
+  _dct->doDCT(false);
+  // _fft->set_thread_nums(thread_num);
+  // _fft->doFFT(false);
 
-// update electro phi and electro force
-// update _sum_phi for nesterov loop
-#pragma omp parallel for num_threads(thread_num)
+  // update electro phi and electro force
+  // update _sum_phi for nesterov loop
+  // #pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
+    int32_t row_idx = row->get_row_idx();
+
     for (auto* grid : row->get_grid_list()) {
-      ElectroInfo electro_info;
+      int32_t grid_idx = grid->get_grid_idx();
 
-      std::pair<float, float> e_force_pair = _fft->get_electro_force(grid->get_grid_idx(), grid->get_row_idx());
-      electro_info.electro_force_x = e_force_pair.first;
-      electro_info.electro_force_y = e_force_pair.second;
+      // std::pair<float, float> e_force_pair = _fft->get_electro_force(grid_idx, row_idx);
+      std::pair<float, float> e_force_pair = _dct->get_electro_force(grid_idx, row_idx);
+      _force_2d_x_list[row_idx][grid_idx] = e_force_pair.first;
+      _force_2d_y_list[row_idx][grid_idx] = e_force_pair.second;
 
-      float electro_phi = _fft->get_electro_phi(grid->get_grid_idx(), grid->get_row_idx());
-      electro_info.electro_phi = electro_phi;
+      // float electro_phi = _fft->get_electro_phi(grid_idx, row_idx);
+      float electro_phi = _dct->get_electro_phi(grid_idx, row_idx);
+      _phi_2d_list[row_idx][grid_idx] = electro_phi;
 
       _sum_phi += electro_phi * static_cast<float>(grid->get_occupied_area());
-
-      auto it = _electro_map.find(grid);
-      if (it != _electro_map.end()) {
-        it->second = std::move(electro_info);
-      }
     }
   }
 }
@@ -89,9 +101,8 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
   for (auto* grid : overlap_grid_list) {
     float overlap_area = _grid_manager->obtainOverlapArea(grid, shape) * scale;
 
-    ElectroInfo electro_info = _electro_map.find(grid)->second;
-    gradient_x += overlap_area * electro_info.electro_force_x;
-    gradient_y += overlap_area * electro_info.electro_force_y;
+    gradient_x += overlap_area * _force_2d_x_list[grid->get_row_idx()][grid->get_grid_idx()];
+    gradient_y += overlap_area * _force_2d_y_list[grid->get_row_idx()][grid->get_grid_idx()];
   }
 
   return Point<float>(gradient_x, gradient_y);
@@ -100,11 +111,6 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
 void ElectricFieldGradient::reset()
 {
   _sum_phi = 0;
-
-  // _electro_map.clear();
-  // for (auto pair : _electro_map) {
-  //   pair.second.reset();
-  // }
 }
 
 }  // namespace ipl

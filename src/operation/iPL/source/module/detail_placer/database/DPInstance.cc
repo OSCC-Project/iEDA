@@ -19,7 +19,13 @@
 namespace ipl {
 
 DPInstance::DPInstance(std::string name)
-    : _name(name), _master(nullptr), _belong_region(nullptr), _cluster_internal_id(INT32_MIN), _belong_cluster(nullptr), _weight(1.0)
+    : _dp_inst_id(-1),
+      _name(name),
+      _master(nullptr),
+      _belong_region(nullptr),
+      _cluster_internal_id(INT32_MIN),
+      _belong_cluster(nullptr),
+      _weight(1.0)
 {
 }
 
