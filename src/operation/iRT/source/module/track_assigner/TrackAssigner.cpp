@@ -210,7 +210,6 @@ void TrackAssigner::makeGroupAndCost(TANet& ta_net, std::map<TNode<RTNode>*, TAT
 TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = _ta_data_manager.getDatabase().get_routing_layer_list();
-  Die& die = _ta_data_manager.getDatabase().get_die();
 
   // dr info
   Guide& dr_guide = dr_node_node->value().get_first_guide();
@@ -232,23 +231,13 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   } else {
     orientation = RTUtil::getOrientation(dr_grid_coord, first_grid_coord);
   }
-  PlanarRect routing_region = dr_guide;
-  if (!pin_coord_list.empty()) {
-    routing_region = RTUtil::getBoundingBox(pin_coord_list);
-    if (!RTUtil::existGrid(routing_region, routing_layer.get_track_axis())) {
-      routing_region = RTUtil::getTrackLineRect(routing_region, routing_layer.get_track_axis(), die.get_real_rect());
-    }
-    routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
-  }
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(dr_guide.get_lb_x(), dr_guide.get_rt_x(), x_track_grid);
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(dr_guide.get_lb_y(), dr_guide.get_rt_y(), y_track_grid);
   if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
-    x_list = RTUtil::getClosedScaleList(routing_region.get_lb_x(), routing_region.get_rt_x(), x_track_grid);
     irt_int x = (orientation == Orientation::kEast ? x_list.back() : x_list.front());
     x_list.clear();
     x_list.push_back(x);
   } else if (orientation == Orientation::kNorth || orientation == Orientation::kSouth) {
-    y_list = RTUtil::getClosedScaleList(routing_region.get_lb_y(), routing_region.get_rt_y(), y_track_grid);
     irt_int y = (orientation == Orientation::kNorth ? y_list.back() : y_list.front());
     y_list.clear();
     y_list.push_back(y);
