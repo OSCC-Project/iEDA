@@ -121,7 +121,6 @@ class DetailedRouter
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
-  void updateDemand(DRBox& dr_box, DRTask& dr_task);
   void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);

@@ -1433,7 +1433,6 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 void DetailedRouter::updateNetResult(DRBox& dr_box, DRTask& dr_task)
 {
   updateENVTaskMap(dr_box, dr_task);
-  updateDemand(dr_box, dr_task);
   updateResult(dr_box, dr_task);
 }
 
@@ -1454,28 +1453,6 @@ void DetailedRouter::updateENVTaskMap(DRBox& dr_box, DRTask& dr_task)
         dr_node->addEnv(dr_task.get_task_idx(), orientation);
       }
     }
-  }
-}
-
-void DetailedRouter::updateDemand(DRBox& dr_box, DRTask& dr_task)
-{
-  std::set<DRNode*> usage_set;
-  for (Segment<DRNode*>& node_segment : dr_box.get_node_segment_list()) {
-    DRNode* first_node = node_segment.get_first();
-    DRNode* second_node = node_segment.get_second();
-    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
-
-    DRNode* node_i = first_node;
-    while (true) {
-      usage_set.insert(node_i);
-      if (node_i == second_node) {
-        break;
-      }
-      node_i = node_i->getNeighborNode(orientation);
-    }
-  }
-  for (DRNode* usage_node : usage_set) {
-    usage_node->addDemand(dr_task.get_task_idx());
   }
 }
 
@@ -1763,30 +1740,6 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         gp_text_env_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
         gp_text_env_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_env_task_map_info);
-      }
-
-      y -= y_reduced_span;
-      GPText gp_text_task_queue;
-      gp_text_task_queue.set_coord(real_rect.get_lb_x(), y);
-      gp_text_task_queue.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_task_queue.set_message("task_queue: ");
-      gp_text_task_queue.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
-      gp_text_task_queue.set_presentation(GPTextPresentation::kLeftMiddle);
-      node_graph_struct.push(gp_text_task_queue);
-
-      if (!dr_node.get_task_queue().empty()) {
-        y -= y_reduced_span;
-        GPText gp_text_task_queue_info;
-        gp_text_task_queue_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_task_queue_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        std::string task_queue_info_message = "--";
-        for (irt_int task_idx : RTUtil::getListByQueue(dr_node.get_task_queue())) {
-          task_queue_info_message += RTUtil::getString("(", task_idx, ")");
-        }
-        gp_text_task_queue_info.set_message(task_queue_info_message);
-        gp_text_task_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
-        gp_text_task_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_task_queue_info);
       }
 
       y -= y_reduced_span;
