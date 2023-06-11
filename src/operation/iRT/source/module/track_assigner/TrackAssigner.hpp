@@ -116,7 +116,6 @@ class TrackAssigner
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
   void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);
-  void updateDemand(TAPanel& ta_panel, TATask& ta_task);
   void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);

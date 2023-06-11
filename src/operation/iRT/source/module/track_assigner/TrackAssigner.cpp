@@ -1126,7 +1126,6 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
 {
   updateENVTaskMap(ta_panel, ta_task);
-  updateDemand(ta_panel, ta_task);
   updateResult(ta_panel, ta_task);
 }
 
@@ -1154,28 +1153,6 @@ void TrackAssigner::updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task)
         ta_node.addEnv(ta_task.get_task_idx(), orientation);
       }
     }
-  }
-}
-
-void TrackAssigner::updateDemand(TAPanel& ta_panel, TATask& ta_task)
-{
-  std::set<TANode*> usage_set;
-  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
-    TANode* first_node = node_segment.get_first();
-    TANode* second_node = node_segment.get_second();
-    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
-
-    TANode* node_i = first_node;
-    while (true) {
-      usage_set.insert(node_i);
-      if (node_i == second_node) {
-        break;
-      }
-      node_i = node_i->getNeighborNode(orientation);
-    }
-  }
-  for (TANode* usage_node : usage_set) {
-    usage_node->addDemand(ta_task.get_task_idx());
   }
 }
 
@@ -1461,30 +1438,6 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
         gp_text_env_task_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
         gp_text_env_task_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
         node_graph_struct.push(gp_text_env_task_map_info);
-      }
-
-      y -= y_reduced_span;
-      GPText gp_text_task_queue;
-      gp_text_task_queue.set_coord(real_rect.get_lb_x(), y);
-      gp_text_task_queue.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_task_queue.set_message("task_queue: ");
-      gp_text_task_queue.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_task_queue.set_presentation(GPTextPresentation::kLeftMiddle);
-      node_graph_struct.push(gp_text_task_queue);
-
-      if (!ta_node.get_task_queue().empty()) {
-        y -= y_reduced_span;
-        GPText gp_text_task_queue_info;
-        gp_text_task_queue_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_task_queue_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        std::string task_queue_info_message = "--";
-        for (irt_int task_idx : RTUtil::getListByQueue(ta_node.get_task_queue())) {
-          task_queue_info_message += RTUtil::getString("(", task_idx, ")");
-        }
-        gp_text_task_queue_info.set_message(task_queue_info_message);
-        gp_text_task_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_task_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_task_queue_info);
       }
 
       y -= y_reduced_span;
