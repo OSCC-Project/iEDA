@@ -120,7 +120,7 @@ class DRNode : public LayerCoord
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
   std::map<Orientation, std::set<irt_int>> _env_task_map;
 #if 1  // astar
-  // single net
+  // single task
   std::set<Direction> _direction_set;
   // single path
   DRNodeState _state = DRNodeState::kNone;
