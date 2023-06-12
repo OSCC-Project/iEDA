@@ -43,12 +43,10 @@ class TANode : public LayerCoord
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
   std::map<Orientation, std::set<irt_int>>& get_env_task_map() { return _env_task_map; }
-  std::queue<irt_int>& get_task_queue() { return _task_queue; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
   void set_env_task_map(const std::map<Orientation, std::set<irt_int>>& env_task_map) { _env_task_map = env_task_map; }
-  void set_task_queue(const std::queue<irt_int>& task_queue) { _task_queue = task_queue; }
   // function
   TANode* getNeighborNode(Orientation orientation)
   {
@@ -99,7 +97,6 @@ class TANode : public LayerCoord
     return static_cast<double>(env_violation_num);
   }
   void addEnv(irt_int task_idx, Orientation orientation) { _env_task_map[orientation].insert(task_idx); }
-  void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
 #if 1  // astar
   std::set<Direction>& get_direction_set() { return _direction_set; }
   TANodeState& get_state() { return _state; }
@@ -121,9 +118,8 @@ class TANode : public LayerCoord
   std::map<Orientation, TANode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
   std::map<Orientation, std::set<irt_int>> _env_task_map;
-  std::queue<irt_int> _task_queue;
 #if 1  // astar
-  // single net
+  // single task
   std::set<Direction> _direction_set;
   // single path
   TANodeState _state = TANodeState::kNone;
