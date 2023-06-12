@@ -129,7 +129,6 @@ void DetailedRouter::buildDRTaskList(DRModel& dr_model)
       dr_task.set_origin_net_idx(dr_net.get_net_idx());
       dr_task.set_origin_node(dr_node_node);
       dr_task.set_task_idx(static_cast<irt_int>(dr_task_list.size()));
-      dr_task.set_connect_type(dr_net.get_connect_type());
       buildBoundingBox(dr_box, dr_task);
       dr_task_list.push_back(dr_task);
     }
