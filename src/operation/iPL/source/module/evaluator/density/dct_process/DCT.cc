@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "omp.h"
 
@@ -137,6 +138,15 @@ void DCT::doDCT(bool is_calculate_phi)
     }
   }
 
+  // // Debug
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     _electroForce_x[i][j] = _bin_density[i][j];
+  //     _electroForce_y[i][j] = _bin_density[i][j];
+  //     _electro_phi[i][j] = _bin_density[i][j];
+  //   }
+  // }
+
   idxstAndIdctProcess(_electroForce_x);
   idctAndIdxstProcess(_electroForce_y);
 
@@ -151,6 +161,16 @@ void DCT::dct2UseFFT2Process(float** sequence)
   dct2Preprocess(sequence, _buf_sequence);
   rdft2d(_bin_cnt_y, _bin_cnt_x, 1, _buf_sequence, NULL, (int*) &_work_area[0], (float*) &_cs_table[0]);
   rdft2dsort(_bin_cnt_y, _bin_cnt_x, 1, _buf_sequence);
+
+  // // Debug 2
+  // std::cout << "Debug 2.1" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x + 2; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   dct2Postprocess(_buf_sequence, sequence);
 }
 
@@ -184,12 +204,31 @@ void DCT::dct2Preprocess(float** sequence, float** buf_sequence)
       buf_sequence[index_1][index_2] = sequence[h_id][w_id];
     }
   }
+
+  // // Debug
+  // std::cout << "Debug 1" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::dct2Postprocess(float** buf_sequence, float** sequence)
 {
   resetComplex2DList();
   convertSequenceToComplex2DList(buf_sequence);
+
+  // // Debug 2.2
+  // std::cout << "Debug 2.2" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x / 2 + 1; j++) {
+  //     std::cout << _complex_2d_list[i][j].real() << " " << _complex_2d_list[i][j].imag() << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   int half_cnt_y = _bin_cnt_y / 2;
   int half_cnt_x = _bin_cnt_x / 2;
   float four_over_yx = (float) (4.0 / (_bin_cnt_y * _bin_cnt_x));
@@ -199,6 +238,11 @@ void DCT::dct2Postprocess(float** buf_sequence, float** sequence)
   for (int h_id = 0; h_id < half_cnt_y; h_id++) {
     for (int w_id = 0; w_id < half_cnt_x; w_id++) {
       int condition = ((h_id != 0) << 1) | (w_id != 0);
+
+      // // Debug
+      // if (h_id == 1 && w_id == 1) {
+      //   int a = 0;
+      // }
       switch (condition) {
         case 0: {
           sequence[0][0] = _complex_2d_list[0][0].real() * four_over_yx;
@@ -246,7 +290,7 @@ void DCT::dct2Postprocess(float** buf_sequence, float** sequence)
           tmp_complex_1 = obtainComplexAdd(_complex_2d_list[h_id][w_id], _complex_2d_list[_bin_cnt_y - h_id][w_id]);
           tmp_complex_2 = obtainComplexSubtract(_complex_2d_list[h_id][w_id], _complex_2d_list[_bin_cnt_y - h_id][w_id]);
           tmp_complex_up = {_expk_y[h_id].real() * tmp_complex_1.real() - _expk_y[h_id].imag() * tmp_complex_2.imag(),
-                            _expk_y[h_id].real() * tmp_complex_1.imag() + _expk_y[h_id].imag() + tmp_complex_2.real()};
+                            _expk_y[h_id].real() * tmp_complex_1.imag() + _expk_y[h_id].imag() * tmp_complex_2.real()};
           tmp_complex_down = {-_expk_y[h_id].imag() * tmp_complex_1.real() - _expk_y[h_id].real() * tmp_complex_2.imag(),
                               -_expk_y[h_id].imag() * tmp_complex_1.imag() + _expk_y[h_id].real() * tmp_complex_2.real()};
           sequence[h_id][w_id] = obtainRealPartMultiply(_expk_x[w_id], tmp_complex_up) * two_over_yx;
@@ -261,6 +305,15 @@ void DCT::dct2Postprocess(float** buf_sequence, float** sequence)
       }
     }
   }
+
+  // // Debug 3
+  // std::cout << "Debug 3" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idct2UseFFT2Process(float** sequence)
@@ -375,7 +428,26 @@ void DCT::idct2Preprocess(float** sequence, float** buf_sequence)
       }
     }
   }
+
+  // // Debug 10.1
+  // std::cout << "Debug 10.1" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < (half_cnt_x + 1); j++) {
+  //     std::cout << _complex_2d_list[i][j].real() << " " << _complex_2d_list[i][j].imag() << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   convertComplex2DListToSequence(_complex_2d_list);
+
+  // // Debug 10.2
+  // std::cout << "Debug 10.2" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x + 2; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idct2Postprocess(float** buf_sequence, float** sequence)
@@ -414,6 +486,15 @@ void DCT::idct2Postprocess(float** buf_sequence, float** sequence)
       sequence[index_1][index_2] = buf_sequence[h_id][w_id] * bin_cnt_yx;
     }
   }
+
+  // // Debug 11
+  // std::cout << "Debug 11" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idctAndIdxstProcess(float** sequence)
@@ -423,6 +504,16 @@ void DCT::idctAndIdxstProcess(float** sequence)
   rdft2dsort(_bin_cnt_y, _bin_cnt_x, -1, _buf_sequence);
   rdft2d(_bin_cnt_y, _bin_cnt_x, -1, _buf_sequence, NULL, (int*) &_work_area[0], (float*) &_cs_table[0]);
   resetForInverseMatrix(_buf_sequence);
+
+  // // Debug 5
+  // std::cout << "Debug 5" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   idctAndIdxstPostprocess(_buf_sequence, sequence);
 }
 
@@ -517,7 +608,24 @@ void DCT::idctAndIdxstPreprocess(float** sequence, float** buf_sequence)
       }
     }
   }
+
+  // std::cout << "Debug 4.1" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < (half_cnt_x + 1); j++) {
+  //     std::cout << _complex_2d_list[i][j].real() << " " << _complex_2d_list[i][j].imag() << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   convertComplex2DListToSequence(_complex_2d_list);
+
+  // std::cout << "Debug 4.2" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x + 2; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idctAndIdxstPostprocess(float** buf_sequence, float** sequence)
@@ -559,6 +667,15 @@ void DCT::idctAndIdxstPostprocess(float** buf_sequence, float** sequence)
       }
     }
   }
+
+  // // Debug 6
+  // std::cout << "Debug 6" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idxstAndIdctProcess(float** sequence)
@@ -568,6 +685,16 @@ void DCT::idxstAndIdctProcess(float** sequence)
   rdft2dsort(_bin_cnt_y, _bin_cnt_x, -1, _buf_sequence);
   rdft2d(_bin_cnt_y, _bin_cnt_x, -1, _buf_sequence, NULL, (int*) &_work_area[0], (float*) &_cs_table[0]);
   resetForInverseMatrix(_buf_sequence);
+
+  // // Debug 8
+  // std::cout << "Debug 8" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   idxstAndIdctPostprocess(_buf_sequence, sequence);
 }
 
@@ -668,7 +795,26 @@ void DCT::idxstAndIdctPreprocess(float** sequence, float** buf_sequence)
       }
     }
   }
+
+  // // Debug 7.1
+  // std::cout << "Debug 7.1" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < (half_cnt_x + 1); j++) {
+  //     std::cout << _complex_2d_list[i][j].real() << " " << _complex_2d_list[i][j].imag() << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   convertComplex2DListToSequence(_complex_2d_list);
+
+  // // Debug 7.2
+  // std::cout << "Debug 7.2" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x + 2; j++) {
+  //     std::cout << _buf_sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::idxstAndIdctPostprocess(float** buf_sequence, float** sequence)
@@ -710,6 +856,15 @@ void DCT::idxstAndIdctPostprocess(float** buf_sequence, float** sequence)
       }
     }
   }
+
+  // // Debug 9
+  // std::cout << "Debug 9" << std::endl;
+  // for (int i = 0; i < _bin_cnt_y; i++) {
+  //   for (int j = 0; j < _bin_cnt_x; j++) {
+  //     std::cout << sequence[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 }
 
 void DCT::resetForInverseMatrix(float** sequence)
@@ -799,7 +954,7 @@ void DCT::convertComplex2DListToSequence(std::vector<std::vector<std::complex<fl
 
 #pragma omp parallel for num_threads(_thread_nums)
   for (int i = 0; i < _bin_cnt_y; i++) {
-    for (int j = 0; (j < half_cnt_x + 1) && (j + 1 < half_cnt_x + 1); j++) {
+    for (int j = 0; j < half_cnt_x + 1; j++) {
       std::complex<float> cur_complex = _complex_2d_list[i][j];
       int index = 2 * j;
       _buf_sequence[i][index] = cur_complex.real();
