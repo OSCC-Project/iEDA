@@ -60,14 +60,12 @@ class TrackAssigner
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TANet& ta_net);
   void makeGroupAndCost(TANet& ta_net, std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   TAGroup makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
-  PlanarRect getTrackLineRect(PlanarRect& rect, TrackAxis& track_axis);
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   void buildPanelRegion(TAModel& ta_model);
   void updateNetBlockageMap(TAModel& ta_model);
-  void buildTATaskPriority(TAModel& ta_model);
 #endif
 
 #if 1  // assign ta_model
@@ -87,13 +85,6 @@ class TrackAssigner
 
 #if 1  // check ta_panel
   void checkTAPanel(TAPanel& ta_panel);
-#endif
-
-#if 1  // sort ta_panel
-  void sortTAPanel(TAPanel& ta_panel);
-  bool sortByMultiLevel(TATask& task1, TATask& task2);
-  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
-  SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
 #endif
 
 #if 1  // assign ta_panel
@@ -116,7 +107,6 @@ class TrackAssigner
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
   void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);
-  void updateDemand(TAPanel& ta_panel, TATask& ta_task);
   void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);

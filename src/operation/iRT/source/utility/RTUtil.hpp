@@ -112,6 +112,15 @@ class RTUtil
     }
   }
 
+  static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
+                                                     Orientation point_orientation = Orientation::kNone)
+  {
+    std::vector<Orientation> orientation_list;
+    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    return orientation_list;
+  }
+
   // 判断线段方向 从start到end
   static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord,
                                     Orientation point_orientation = Orientation::kNone)

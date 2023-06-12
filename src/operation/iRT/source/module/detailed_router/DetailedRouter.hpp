@@ -62,7 +62,6 @@ class DetailedRouter
   DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void updateNetBlockageMap(DRModel& dr_model);
-  void buildDRTaskPriority(DRModel& dr_model);
 #endif
 
 #if 1  // route dr_model
@@ -91,15 +90,6 @@ class DetailedRouter
   void checkDRBox(DRBox& dr_box);
 #endif
 
-#if 1  // sort dr_box
-  void sortDRBox(DRBox& dr_box);
-  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
-  SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
-  SortStatus sortByRoutingAreaASC(DRTask& task1, DRTask& task2);
-  SortStatus sortByLengthWidthRatioDESC(DRTask& task1, DRTask& task2);
-  SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
-#endif
-
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
@@ -112,7 +102,6 @@ class DetailedRouter
   bool passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   bool replaceParentNode(DRBox& dr_box, DRNode* parent_node, DRNode* child_node);
   void resetPathHead(DRBox& dr_box);
-  void rerouteByEnlarging(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
   void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
@@ -121,7 +110,6 @@ class DetailedRouter
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
-  void updateDemand(DRBox& dr_box, DRTask& dr_task);
   void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);

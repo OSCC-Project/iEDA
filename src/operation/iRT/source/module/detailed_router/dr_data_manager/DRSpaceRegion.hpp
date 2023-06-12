@@ -16,32 +16,33 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "DRNode.hpp"
+#include "DRNodeGraph.hpp"
+#include "DRTask.hpp"
+#include "LayerCoord.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
-class DRTaskPriority
+class DRSpaceRegion
 {
  public:
-  DRTaskPriority() = default;
-  ~DRTaskPriority() = default;
+  DRSpaceRegion() = default;
+  ~DRSpaceRegion() = default;
   // getter
-  ConnectType get_connect_type() const { return _connect_type; }
-  double get_routing_area() const { return _routing_area; }
-  double get_length_width_ratio() const { return _length_width_ratio; }
-  irt_int get_pin_num() const { return _pin_num; }
+  PlanarRect& get_base_region() { return _base_region; }
+  irt_int get_top_layer_idx() const { return _top_layer_idx; }
+  irt_int get_bottom_layer_idx() const { return _bottom_layer_idx; }
   // setter
-  void set_connect_type(const ConnectType connect_type) { _connect_type = connect_type; }
-  void set_routing_area(const double routing_area) { _routing_area = routing_area; }
-  void set_length_width_ratio(const double length_width_ratio) { _length_width_ratio = length_width_ratio; }
-  void set_pin_num(const irt_int pin_num) { _pin_num = pin_num; }
+  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
+  void set_top_layer_idx(const irt_int top_layer_idx) { _top_layer_idx = top_layer_idx; }
+  void set_bottom_layer_idx(const irt_int bottom_layer_idx) { _bottom_layer_idx = bottom_layer_idx; }
   // function
 
  private:
-  ConnectType _connect_type = ConnectType::kNone;
-  double _routing_area = -1;
-  double _length_width_ratio = 1;
-  irt_int _pin_num = -1;
+  PlanarRect _base_region;
+  irt_int _top_layer_idx = -1;
+  irt_int _bottom_layer_idx = -1;
 };
 
 }  // namespace irt

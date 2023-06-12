@@ -46,7 +46,6 @@ DRNet DRDataManager::convertToDRNet(Net& net)
   DRNet dr_net;
   dr_net.set_origin_net(&net);
   dr_net.set_net_idx(net.get_net_idx());
-  dr_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     dr_net.get_dr_pin_list().push_back(DRPin(pin));
   }
