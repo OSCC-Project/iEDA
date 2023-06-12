@@ -71,7 +71,7 @@ inline ElectricFieldGradient::ElectricFieldGradient(GridManager* grid_manager) :
   int32_t grid_size_y = grid_manager->get_grid_size_y();
 
   // _fft = new FFT(_grid_manager->obtainGridCntX(), _grid_manager->obtainRowCntY(), grid_size_x, grid_size_y);
-  _dct = new DCT(_grid_manager->obtainRowCntY(), _grid_manager->obtainGridCntX(), grid_size_y, grid_size_x);
+  _dct = new DCT(_grid_manager->obtainGridCntX(), _grid_manager->obtainRowCntY(), grid_size_x, grid_size_y);
 
   initElectro2DList();
 }
