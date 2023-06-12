@@ -24,20 +24,18 @@
 
 namespace irt {
 
-class DRBox
+class DRBox : public DRSpaceRegion
 {
  public:
   DRBox() = default;
   ~DRBox() = default;
   // getter
   PlanarCoord& get_grid_coord() { return _grid_coord; }
-  PlanarRect& get_base_region() { return _base_region; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<DRNodeGraph>& get_layer_graph_list() { return _layer_graph_list; }
   // setter
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
-  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_graph_list(const std::vector<DRNodeGraph>& layer_graph_list) { _layer_graph_list = layer_graph_list; }
@@ -71,9 +69,9 @@ class DRBox
   double get_corner_unit() const { return _corner_unit; }
   double get_via_unit() const { return _via_unit; }
   const irt_int get_curr_task_idx() const { return _dr_task_ref->get_task_idx(); }
-  const PlanarRect& get_curr_bounding_box() const { return _dr_task_ref->get_bounding_box(); }
+  const DRSpaceRegion& get_curr_bounding_box() const { return _dr_task_ref->get_bounding_box(); }
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& get_curr_coord_cost_map() const { return _dr_task_ref->get_coord_cost_map(); }
-  PlanarRect& get_routing_region() { return _routing_region; }
+  DRSpaceRegion& get_routing_region() { return _routing_region; }
   std::vector<std::vector<DRNode*>>& get_start_node_comb_list() { return _start_node_comb_list; }
   std::vector<std::vector<DRNode*>>& get_end_node_comb_list() { return _end_node_comb_list; }
   std::vector<DRNode*>& get_path_node_comb() { return _path_node_comb; }
@@ -87,7 +85,7 @@ class DRBox
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_dr_task_ref(DRTask* dr_task_ref) { _dr_task_ref = dr_task_ref; }
-  void set_routing_region(const PlanarRect& routing_region) { _routing_region = routing_region; }
+  void set_routing_region(const DRSpaceRegion& routing_region) { _routing_region = routing_region; }
   void set_start_node_comb_list(const std::vector<std::vector<DRNode*>>& start_node_comb_list)
   {
     _start_node_comb_list = start_node_comb_list;
@@ -104,7 +102,6 @@ class DRBox
 
  private:
   PlanarCoord _grid_coord;
-  PlanarRect _base_region;
   std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
   std::vector<DRTask> _dr_task_list;
   std::vector<DRNodeGraph> _layer_graph_list;
@@ -113,9 +110,9 @@ class DRBox
   double _wire_unit = 1;
   double _corner_unit = 1;
   double _via_unit = 1;
-  // single net
+  // single task
   DRTask* _dr_task_ref = nullptr;
-  PlanarRect _routing_region;
+  DRSpaceRegion _routing_region;
   std::vector<std::vector<DRNode*>> _start_node_comb_list;
   std::vector<std::vector<DRNode*>> _end_node_comb_list;
   std::vector<DRNode*> _path_node_comb;

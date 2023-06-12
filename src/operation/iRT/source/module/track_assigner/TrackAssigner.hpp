@@ -67,7 +67,6 @@ class TrackAssigner
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
   void buildPanelRegion(TAModel& ta_model);
   void updateNetBlockageMap(TAModel& ta_model);
-  void buildTATaskPriority(TAModel& ta_model);
 #endif
 
 #if 1  // assign ta_model
@@ -87,13 +86,6 @@ class TrackAssigner
 
 #if 1  // check ta_panel
   void checkTAPanel(TAPanel& ta_panel);
-#endif
-
-#if 1  // sort ta_panel
-  void sortTAPanel(TAPanel& ta_panel);
-  bool sortByMultiLevel(TATask& task1, TATask& task2);
-  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
-  SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
 #endif
 
 #if 1  // assign ta_panel
