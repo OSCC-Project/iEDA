@@ -190,9 +190,8 @@ void GPDataManager::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPGraphType, bool> routing_data_type_visible_map
-      = {{GPGraphType::kNone, false}, {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},
-         {GPGraphType::kInfo, false}, {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},
-         {GPGraphType::kPath, true},  {GPGraphType::kBlockage, true}};
+      = {{GPGraphType::kNone, false},     {GPGraphType::kOpen, false}, {GPGraphType::kClose, false}, {GPGraphType::kInfo, false},
+         {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},   {GPGraphType::kPath, true},   {GPGraphType::kBlockage, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(gds_routing_layer_map.size() + gds_cut_layer_map.size());
