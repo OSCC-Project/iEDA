@@ -52,8 +52,8 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
   // reset all variables.
   this->reset();
 
-// copy density to utilize FFT
-#pragma omp parallel for num_threads(thread_num)
+  // copy density to utilize FFT
+  // #pragma omp parallel for num_threads(thread_num)
   for (auto* row : _grid_manager->get_row_list()) {
     int32_t row_idx = row->get_row_idx();
     for (auto* grid : row->get_grid_list()) {

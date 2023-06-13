@@ -70,7 +70,6 @@ class MPDB
 
  private:
   void initMPDB();
-  
 
   // data
   DBWrapper* _db_wrapper;
