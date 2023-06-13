@@ -83,7 +83,7 @@ PLAPI::~PLAPI()
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
-  char config[] = "iPL log supported by gLog";
+  char config[] = "info_ipl_glog";
   char* argv[] = {config};
   Log::init(argv);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
