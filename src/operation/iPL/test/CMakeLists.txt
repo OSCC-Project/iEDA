@@ -17,13 +17,13 @@ add_executable(iPLTest
     ${iPL_API}/PLAPI.cc
     # ${iPL_TEST}/APITest.cc
     # ${iPL_TEST}/ReportCongTest.cc
+    ${iPL_TEST}/DCTTest.cc
     # ${iPL_TEST}/ComputationCheck.cc
     # ${iPL_TEST}/GlogTest.cc
-    ${iPL_TEST}/CongEvalAPITest.cc
+    # ${iPL_TEST}/CongEvalAPITest.cc
     # ${iPL_TEST}/GridManagerTest.cc
     # ${iPL_TEST}/MPTest.cc
 )
-
 set(OPENMP ON)
 if(OPENMP)
     # Find OpenMP package
@@ -64,15 +64,15 @@ target_link_libraries(MacroPlacer
     ipl-api_external_libs
 )
 
-add_executable(MPSolverTest
-    ${iPL_TEST}/MPSolverTest.cc)
+add_executable(MPLseTest
+    ${iPL_TEST}/MPLseTest.cc)
 
-target_include_directories(MPSolverTest 
+target_include_directories(MPLseTest 
     PUBLIC 
     ${iPL_MP}/analytical_method
 )
 
-target_link_libraries(MPSolverTest
+target_link_libraries(MPLseTest
     PUBLIC
     ipl-module-macro_placer
 )

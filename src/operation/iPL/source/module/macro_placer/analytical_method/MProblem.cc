@@ -69,7 +69,7 @@ void MProblem::initDensityModel()
 {
 }
 
-Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, double gamma) const
+Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const
 {
   const auto& macros = _db->get_total_macro_list();
   const auto& nets = _db->get_new_net_list();
@@ -78,8 +78,8 @@ Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, do
   auto exp_neg_div = [gamma](double val) { return std::exp(val / -gamma); };
   auto inverse = [](double val) { return (val == 0) ? 0 : 1 / val; };
 
-  // const auto& pos_x_exp = x.unaryExpr(exp_pos_div);      // exp(x_i/gamma)
-  // const auto& pos_y_exp = y.unaryExpr(exp_pos_div);      // exp(y_i/gamma)
+  const auto& pos_x_exp = x.unaryExpr(exp_pos_div);  // exp(x_i/gamma)
+  const auto& pos_y_exp = y.unaryExpr(exp_pos_div);  // exp(y_i/gamma)
   // const auto& neg_x_exp = pos_x_exp.unaryExpr(inverse);  // exp(-x_i/gamma)
   // const auto& neg_y_exp = pos_y_exp.unaryExpr(inverse);  // exp(-y_i/gamma)
 
@@ -90,13 +90,14 @@ Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, do
   const auto& io_exp_pos_y = ones_1 * _io_conn_y.unaryExpr(exp_pos_div);
   const auto& io_exp_neg_y = ones_1 * _io_conn_y.unaryExpr(exp_neg_div);
 
-  auto get_pin_off = [](double& x_off, double& y_off, double r) {
+  const Vec& rcos = r.array().cos();
+  const Vec& rsin = r.array().sin();
+
+  auto get_pin_off = [&](double& x_off, double& y_off, int id) {
     double x_temp = x_off;
     double y_temp = y_off;
-    double cos = std::cos(r);
-    double sin = std::sin(r);
-    x_off = x_temp * cos - y_temp * sin;
-    y_off = x_temp * sin + y_temp * cos;
+    x_off = x_temp * rcos(id) - y_temp * rsin(id);
+    y_off = x_temp * rsin(id) + y_temp * rcos(id);
   };
   // The hypergraph matrix of nets where the each coeff is the coordinate of the corresponding pin.
   SpMat connectivity_x = _connectivity;
@@ -110,16 +111,16 @@ Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, do
       double x_off = (double) pin->get_orig_xoff();
       double y_off = (double) pin->get_orig_yoff();
       uint32_t id = _inst2id.at(pin->get_instance());
-      get_pin_off(x_off, y_off, r(id));
-      connectivity_x.coeffRef(id, net_num) = x(id) + x_off;
-      connectivity_y.coeffRef(id, net_num) = y(id) + y_off;
+      get_pin_off(x_off, y_off, id);
+      connectivity_x.coeffRef(id, net_num) = x_off;
+      connectivity_y.coeffRef(id, net_num) = y_off;
     }
     net_num++;
   }
-  const auto& conn_pos_x = connectivity_x.unaryExpr(exp_pos_div).eval();  // exp((x+x_off)/gamma)
-  const auto& conn_pos_y = connectivity_y.unaryExpr(exp_pos_div).eval();  // exp(-(x+x_off)/gamma)
-  const auto& conn_neg_x = conn_pos_x.unaryExpr(inverse).eval();          // exp((y+y_off)/gamma)
-  const auto& conn_neg_y = conn_pos_y.unaryExpr(inverse).eval();          // exp(-(y+y_off)/gamma)
+  const SpMat& conn_pos_x = (pos_x_exp.asDiagonal() * connectivity_x.unaryExpr(exp_pos_div)).eval();  // exp((x+x_off)/gamma)
+  const SpMat& conn_pos_y = (pos_y_exp.asDiagonal() * connectivity_y.unaryExpr(exp_pos_div)).eval();  // exp((y+y_off)/gamma)
+  const SpMat& conn_neg_x = conn_pos_x.unaryExpr(inverse).eval();                                     // exp(-(x+x_off)/gamma)
+  const SpMat& conn_neg_y = conn_pos_y.unaryExpr(inverse).eval();                                     // exp(-(y+y_off)/gamma)
   Eigen::RowVectorXd ones_2 = Eigen::RowVectorXd::Ones(_connectivity.rows());
 
   const auto& sum_exp_pos_x = (ones_2 * conn_pos_x + io_exp_pos_x).unaryExpr(inverse).transpose();  // ∑ exp((x+x_off)/gamma)
@@ -127,31 +128,19 @@ Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, do
   const auto& sum_exp_pos_y = (ones_2 * conn_pos_y + io_exp_pos_y).unaryExpr(inverse).transpose();  // ∑ exp((y+y_off)/gamma)
   const auto& sum_exp_neg_y = (ones_2 * conn_neg_y + io_exp_neg_y).unaryExpr(inverse).transpose();  // ∑ exp(-(y+y_off)/gamma)
 
+  Mat grad = Mat(_connectivity.rows(), 3);
+
   Vec grad_x = conn_pos_x * sum_exp_pos_x - conn_neg_x * sum_exp_neg_x;
   Vec grad_y = conn_pos_y * sum_exp_pos_y - conn_neg_y * sum_exp_neg_y;
-  // Vec grad_r = grad_x
+  Vec grad_r = (grad_x.asDiagonal() * connectivity_x * Vec::Ones(_connectivity.rows())
+                + grad_y.asDiagonal() * connectivity_y * Vec::Ones(_connectivity.rows()))
+                   .eval();
 
-  // const auto& sum_exp_pos_x = pos_x_exp.transpose() * conn_pos_x + io_exp_pos_x;  // ∑ exp((x+x_off)/gamma)
-  // const auto& sum_exp_neg_x = neg_x_exp.transpose() * conn_neg_x + io_exp_neg_x;  // ∑ exp(-(x+x_off)/gamma)
-  // const auto& sum_exp_pos_y = pos_y_exp.transpose() * conn_pos_y + io_exp_pos_y;  // ∑ exp((y+y_off)/gamma)
-  // const auto& sum_exp_neg_y = neg_y_exp.transpose() * conn_neg_y + io_exp_neg_y;  // ∑ exp(-(y+y_off)/gamma)
+  grad.col(0) = grad_x;
+  grad.col(1) = grad_y;
+  grad.col(2) = grad_r;
 
-  //  connectivity_x = (connectivity_x / gamma).unaryExpr(dexp);
-  //  connectivity_y = (connectivity_y / gamma).unaryExpr(dexp);
-
-  // sum_exp_pos_x += ones_1 * connectivity_x;
-  // sum_exp_neg_x += ones_1 * connectivity_x.unaryExpr(inverse);
-  // sum_exp_pos_y += ones_1 * connectivity_y;
-  // sum_exp_neg_y += ones_1 * connectivity_y.unaryExpr(inverse);
-
-  // sum_exp_pos_x = ;
-
-  // Vec grad_x
-  //     = connectivity_x * sum_exp_pos_x.unaryExpr(inverse) - connectivity_x.unaryExpr(inverse) - sum_exp_neg_x.unaryExpr(inverse);
-  // Vec grad_y
-  //     = connectivity_y * sum_exp_pos_y.unaryExpr(inverse) - connectivity_y.unaryExpr(inverse) - sum_exp_neg_y.unaryExpr(inverse);
-
-  return Mat();
+  return grad;
 }
 
 Mat MProblem::getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const
