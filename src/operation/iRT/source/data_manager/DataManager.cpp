@@ -945,7 +945,7 @@ void DataManager::makeLayerViaMasterList()
       }
     });
     for (size_t i = 0; i < via_master_list.size(); i++) {
-      via_master_list[i].set_via_idx(std::make_pair(layer_idx, i));
+      via_master_list[i].set_via_master_idx(layer_idx, i);
     }
   }
 }
@@ -1233,11 +1233,11 @@ void DataManager::buildDrivingPin(Net& net)
 
 void DataManager::updateHelper()
 {
-  std::map<std::string, std::pair<irt_int, irt_int>>& via_name_to_idx_map = _helper.get_via_name_to_idx_map();
+  std::map<std::string, ViaMasterIdx>& via_name_to_idx_map = _helper.get_via_name_to_idx_map();
 
   for (std::vector<ViaMaster>& via_master_list : _database.get_layer_via_master_list()) {
     for (ViaMaster& via_master : via_master_list) {
-      via_name_to_idx_map[via_master.get_via_name()] = via_master.get_via_idx();
+      via_name_to_idx_map[via_master.get_via_name()] = via_master.get_via_master_idx();
     }
   }
 }
@@ -1669,8 +1669,8 @@ void DataManager::saveViolationRepairerResult(nlohmann::json& net_json, Net& net
       node_json["type"] = string("ViaNode");
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       node_json["net_idx"] = via_node.get_net_idx();
-      node_json["via_idx"]["first"] = via_node.get_via_idx().first;
-      node_json["via_idx"]["second"] = via_node.get_via_idx().second;
+      node_json["via_idx"]["first"] = via_node.get_via_master_idx().get_below_layer_idx();
+      node_json["via_idx"]["second"] = via_node.get_via_master_idx().get_via_idx();
       node_json["coord"] = RTUtil::getString(via_node.get_x(), " ", via_node.get_y());
     }
     vr_json["node_list"].push_back(node_json);
@@ -1987,7 +1987,7 @@ void DataManager::loadViolationRepairerResult(nlohmann::json& net_json, Net& net
     } else if (node_type == string("ViaNode")) {
       ViaNode& via_node = node->value().getNode<ViaNode>();
       via_node.set_net_idx(node_json["net_idx"]);
-      via_node.set_via_idx(make_pair(irt_int(node_json["via_idx"]["first"]), irt_int(node_json["via_idx"]["second"])));
+      via_node.set_via_master_idx(node_json["via_idx"]["first"], node_json["via_idx"]["second"]);
 
       irt_int x, y;
       istringstream(std::string(node_json["coord"])) >> x >> y;
@@ -2104,7 +2104,8 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
 
-  std::string via_name = layer_via_master_list[via_node.get_via_idx().first][via_node.get_via_idx().second].get_via_name();
+  ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+  std::string via_name = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()].get_via_name();
   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
   if (idb_via == nullptr) {
     idb_via = def_via_list->find_via(via_name);

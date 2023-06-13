@@ -346,7 +346,7 @@ TNode<PHYNode>* ViolationRepairer::makeViaPHYNode(VRNet& vr_net, irt_int below_l
   ViaNode& via_node = phy_node.getNode<ViaNode>();
   via_node.set_net_idx(vr_net.get_net_idx());
   via_node.set_coord(coord);
-  via_node.set_via_idx(layer_via_master_list[below_layer_idx].front().get_via_idx());
+  via_node.set_via_master_idx(layer_via_master_list[below_layer_idx].front().get_via_master_idx());
   return (new TNode<PHYNode>(phy_node));
 }
 
@@ -403,8 +403,8 @@ std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_no
       real_rect_list.emplace_back(wire_rect, wire_node.get_layer_idx());
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
-      std::pair<irt_int, irt_int>& via_idx = via_node.get_via_idx();
-      ViaMaster& via_master = layer_via_master_list[via_idx.first][via_idx.second];
+      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
       for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
         PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, via_node);
         real_rect_list.emplace_back(offset_enclosure, enclosure.get_layer_idx());
@@ -463,7 +463,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
       } else if (phy_node.isType<ViaNode>()) {
         ViaNode& via_node = phy_node.getNode<ViaNode>();
-        cut_via_number_map[via_node.get_via_idx().first]++;
+        cut_via_number_map[via_node.get_via_master_idx().get_below_layer_idx()]++;
       }
     }
   }
