@@ -68,7 +68,7 @@ void DCT::init()
     float pi_k_by_2cnt = DCT_PI * k / (2 * _bin_cnt_x);
     _expk_x[k] = {std::cos(pi_k_by_2cnt), -std::sin(pi_k_by_2cnt)};
 
-    _wx[k] = DCT_PI * static_cast<float>(k) / _bin_cnt_x;
+    _wx[k] = 2.0 * DCT_PI * static_cast<float>(k) / _bin_cnt_x;
     _wx_square[k] = _wx[k] * _wx[k];
   }
 
@@ -77,7 +77,7 @@ void DCT::init()
     _expk_y[k] = {std::cos(pi_k_by_2cnt), -std::sin(pi_k_by_2cnt)};
 
     float y_x_ratio = static_cast<float>(_bin_size_y) / _bin_size_x;
-    _wy[k] = DCT_PI * static_cast<float>(k) / _bin_cnt_y * y_x_ratio;
+    _wy[k] = 2.0 * DCT_PI * static_cast<float>(k) / _bin_cnt_y * y_x_ratio;
     _wy_square[k] = _wy[k] * _wy[k];
   }
 
@@ -95,7 +95,7 @@ void DCT::updateDensity(int y, int x, float density)
 
 std::pair<float, float> DCT::get_electro_force(int y, int x)
 {
-  return std::make_pair(_electroForce_x[y][x], _electroForce_y[y][x]);
+  return std::make_pair(_electroForce_y[y][x], _electroForce_x[y][x]);
 }
 
 float DCT::get_electro_phi(int y, int x)
@@ -147,8 +147,8 @@ void DCT::doDCT(bool is_calculate_phi)
   //   }
   // }
 
-  idxstAndIdctProcess(_electroForce_x);
-  idctAndIdxstProcess(_electroForce_y);
+  idxstAndIdctProcess(_electroForce_y);
+  idctAndIdxstProcess(_electroForce_x);
 
   if (is_calculate_phi) {
     idct2UseFFT2Process(_electro_phi);
