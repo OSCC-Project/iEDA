@@ -122,7 +122,7 @@ install_dependencies_apt()
     export DEBIAN_FRONTEND=noninteractive
     apt-get update && apt-get install -y \
       g++-10 cmake ninja-build \
-      tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev \
+      tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev flex\
       libeigen3-dev libyaml-cpp-dev libunwind-dev libmetis-dev libgmp-dev bison
   else
     echo -e "${red}apt-get not found, pleas make sure you were running on Debian-Based Linux distribution${clear}"
@@ -288,7 +288,7 @@ while getopts j:t:b:c:dnhi:r opt; do
 done
 
 if [[ ${INSTALL_DEP} != "OFF" ]]; then
-  echo "install_dependencies $INSTALL_DEP"
+  install_dependencies $INSTALL_DEP
 fi
 
 if [[ ${NO_BUILD} == "OFF" ]]; then

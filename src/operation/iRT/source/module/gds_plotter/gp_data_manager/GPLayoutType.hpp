@@ -24,17 +24,15 @@ enum class GPLayoutType
 {
   kNone = 0,
   kText = 1,
-  kBoundingBox = 2,
-  kPort = 3,
-  kAccessPoint = 4,
-  kGuide = 5,
-  kPreferTrack = 6,
-  kNonpreferTrack = 7,
-  kWire = 8,
-  kEnclosure = 9,
-  kCut = 10,
-  kBlockage = 11,
-  kConnection = 12
+  kPort = 2,
+  kAccessPoint = 3,
+  kGuide = 4,
+  kPreferTrack = 5,
+  kNonpreferTrack = 6,
+  kWire = 7,
+  kEnclosure = 8,
+  kCut = 9,
+  kBlockage = 10
 };
 
 struct GetGPLayoutTypeName
@@ -48,9 +46,6 @@ struct GetGPLayoutTypeName
         break;
       case GPLayoutType::kText:
         data_type_name = "text";
-        break;
-      case GPLayoutType::kBoundingBox:
-        data_type_name = "bounding_box";
         break;
       case GPLayoutType::kPort:
         data_type_name = "port";
@@ -78,9 +73,6 @@ struct GetGPLayoutTypeName
         break;
       case GPLayoutType::kBlockage:
         data_type_name = "blockage";
-        break;
-      case GPLayoutType::kConnection:
-        data_type_name = "connection";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

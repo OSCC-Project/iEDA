@@ -29,8 +29,7 @@ enum class GPGraphType
   kNeighbor = 4,
   kKey = 5,
   kPath = 6,
-  kBlockage = 7,
-  kFenceRegion = 8
+  kBlockage = 7
 };
 
 struct GetGPGraphTypeName
@@ -62,9 +61,6 @@ struct GetGPGraphTypeName
         break;
       case GPGraphType::kBlockage:
         data_type_name = "blockage";
-        break;
-      case GPGraphType::kFenceRegion:
-        data_type_name = "fence_region";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

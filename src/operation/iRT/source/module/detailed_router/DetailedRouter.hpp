@@ -62,8 +62,6 @@ class DetailedRouter
   DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void updateNetBlockageMap(DRModel& dr_model);
-  void updateNetFenceRegionMap(DRModel& dr_model);
-  void buildDRTaskPriority(DRModel& dr_model);
 #endif
 
 #if 1  // route dr_model
@@ -86,20 +84,10 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-  void buildFenceTaskMap(DRBox& dr_box);
 #endif
 
 #if 1  // check dr_box
   void checkDRBox(DRBox& dr_box);
-#endif
-
-#if 1  // sort dr_box
-  void sortDRBox(DRBox& dr_box);
-  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
-  SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
-  SortStatus sortByRoutingAreaASC(DRTask& task1, DRTask& task2);
-  SortStatus sortByLengthWidthRatioDESC(DRTask& task1, DRTask& task2);
-  SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
 #endif
 
 #if 1  // route dr_box
@@ -114,30 +102,26 @@ class DetailedRouter
   bool passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   bool replaceParentNode(DRBox& dr_box, DRNode* parent_node, DRNode* child_node);
   void resetPathHead(DRBox& dr_box);
-  void rerouteByEnlarging(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
   void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void updatePathResult(DRBox& dr_box);
-  void updateOrientationSet(DRBox& dr_box);
+  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
   void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
-  void updateDemand(DRBox& dr_box, DRTask& dr_task);
   void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
-  double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  Orientation getOrientation(DRNode* start_node, DRNode* end_node);
-  double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
 #endif
 
 #if 1  // plot dr_box

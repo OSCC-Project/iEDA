@@ -19,6 +19,7 @@
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
+#include "file_rt.hpp"
 
 using namespace std;
 
@@ -64,7 +65,6 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
 
   outputGCellGrid(idb_builder);
   outputNetList(idb_builder);
-  saveDef(idb_builder);
 
   LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
 }
@@ -74,8 +74,6 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
-  _config.output_def_file_path
-      = RTUtil::getConfigValue<std::string>(config_map, "-output_def_file_path", "./rt_temp_directory/rt.output.def");
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
   _config.log_level = RTUtil::getConfigValue<irt_int>(config_map, "-log_level", 0);
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
@@ -501,7 +499,6 @@ void DataManager::buildConfig()
 {
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  _config.output_def_file_path = std::filesystem::absolute(_config.output_def_file_path);
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
   _config.log_file_path = _config.temp_directory_path + "rt.log";
@@ -539,7 +536,6 @@ void DataManager::buildConfig()
   _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  RTUtil::createDirByFile(_config.output_def_file_path);
   RTUtil::createDir(_config.temp_directory_path);
   RTUtil::createDirByFile(_config.log_file_path);
   // **********    DataManager    ********** //
@@ -949,7 +945,7 @@ void DataManager::makeLayerViaMasterList()
       }
     });
     for (size_t i = 0; i < via_master_list.size(); i++) {
-      via_master_list[i].set_via_idx(std::make_pair(layer_idx, i));
+      via_master_list[i].set_via_master_idx(layer_idx, i);
     }
   }
 }
@@ -1237,11 +1233,11 @@ void DataManager::buildDrivingPin(Net& net)
 
 void DataManager::updateHelper()
 {
-  std::map<std::string, std::pair<irt_int, irt_int>>& via_name_to_idx_map = _helper.get_via_name_to_idx_map();
+  std::map<std::string, ViaMasterIdx>& via_name_to_idx_map = _helper.get_via_name_to_idx_map();
 
   for (std::vector<ViaMaster>& via_master_list : _database.get_layer_via_master_list()) {
     for (ViaMaster& via_master : via_master_list) {
-      via_name_to_idx_map[via_master.get_via_name()] = via_master.get_via_idx();
+      via_name_to_idx_map[via_master.get_via_name()] = via_master.get_via_master_idx();
     }
   }
 }
@@ -1254,8 +1250,6 @@ void DataManager::printConfig()
   /////////////////////////////////////////////
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_def_file_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_def_file_path);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_level");
@@ -1430,260 +1424,21 @@ void DataManager::printDatabase()
 void DataManager::saveStageResult(Stage stage)
 {
   Monitor monitor;
-
-  nlohmann::json all_json;
   std::string current_stage = GetStageName()(stage);
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result is being saved...");
-  saveHeadInfo(all_json, current_stage);
-
-  for (Net net : _database.get_net_list()) {
-    nlohmann::json& net_json = all_json["net_list"][net.get_net_name()];
-    saveStageNetResult(net_json, net);
-  }
-  std::string json_file_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".json";
-  std::ofstream* json_stream = RTUtil::getOutputFileStream(json_file_path);
-  (*json_stream) << all_json << std::endl;
-  RTUtil::closeFileStream(json_stream);
-
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", json_file_path, "'!", monitor.getStatsInfo());
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
 }
 
-void DataManager::saveHeadInfo(nlohmann::json& all_json, std::string& current_stage)
+std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
 {
-  std::string update_time = RTUtil::getTimestamp();
-  all_json["stage"] = current_stage;
-  all_json["update_time"] = update_time;
-  all_json["design_name"] = _helper.get_design_name();
-  all_json["lef_name_list"] = nlohmann::json::array();
+  std::string design_name = _helper.get_design_name();
   std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
-  for (string& lef_file_path : lef_file_path_list) {
-    all_json["lef_name_list"].push_back(RTUtil::getFileName(lef_file_path));
-  }
-  all_json["def_name"] = RTUtil::getFileName(_helper.get_def_file_path());
-}
+  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
+  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
 
-void DataManager::saveStageNetResult(nlohmann::json& net_json, Net& net)
-{
-  saveBasicInfo(net_json, net);
-  savePinAccessorResult(net_json, net);
-  saveResourceAllocatorResult(net_json, net);
-  saveGlobalRouterResult(net_json, net);
-  saveTrackAssignerResult(net_json, net);
-  saveDetailedRouterResult(net_json, net);
-  saveViolationRepairerResult(net_json, net);
-}
-
-void DataManager::saveBasicInfo(nlohmann::json& net_json, Net& net)
-{
-  net_json["net_idx"] = net.get_net_idx();
-  net_json["connect_type"] = net.get_connect_type();
-}
-
-void DataManager::savePinAccessorResult(nlohmann::json& net_json, Net& net)
-{
-  std::vector<Pin>& pin_list = net.get_pin_list();
-  Pin& driving_pin = net.get_driving_pin();
-  BoundingBox& bounding_box = net.get_bounding_box();
-
-  net_json["pin_list_size"] = pin_list.size();
-  net_json["pin_list"] = nlohmann::json::array();
-  for (Pin& pin : pin_list) {
-    nlohmann::json pin_json;
-    pin_json["pin_name"] = pin.get_pin_name();
-    pin_json["pin_idx"] = pin.get_pin_idx();
-    // routing_shape_list
-    std::vector<EXTLayerRect>& routing_shape_list = pin.get_routing_shape_list();
-    pin_json["routing_shape_list_size"] = routing_shape_list.size();
-    pin_json["routing_shape_list"] = nlohmann::json::array();
-    for (EXTLayerRect& routing_shape : routing_shape_list) {
-      nlohmann::json routing_shape_json;
-      routing_shape_json["layer_idx"] = routing_shape.get_layer_idx();
-      routing_shape_json["grid_rect"] = RTUtil::getString(routing_shape.get_grid_lb_x(), " ", routing_shape.get_grid_lb_y(), " ",
-                                                          routing_shape.get_grid_rt_x(), " ", routing_shape.get_grid_rt_y());
-      routing_shape_json["real_rect"] = RTUtil::getString(routing_shape.get_real_lb_x(), " ", routing_shape.get_real_lb_y(), " ",
-                                                          routing_shape.get_real_rt_x(), " ", routing_shape.get_real_rt_y());
-      pin_json["routing_shape_list"].push_back(routing_shape_json);
-    }
-    // cut_shape_list
-    std::vector<EXTLayerRect>& cut_shape_list = pin.get_cut_shape_list();
-    pin_json["cut_shape_list_size"] = cut_shape_list.size();
-    pin_json["cut_shape_list"] = nlohmann::json::array();
-    for (EXTLayerRect& cut_shape : cut_shape_list) {
-      nlohmann::json cut_shape_json;
-      cut_shape_json["layer_idx"] = cut_shape.get_layer_idx();
-      cut_shape_json["grid_rect"] = RTUtil::getString(cut_shape.get_grid_lb_x(), " ", cut_shape.get_grid_lb_y(), " ",
-                                                      cut_shape.get_grid_rt_x(), " ", cut_shape.get_grid_rt_y());
-      cut_shape_json["real_rect"] = RTUtil::getString(cut_shape.get_real_lb_x(), " ", cut_shape.get_real_lb_y(), " ",
-                                                      cut_shape.get_real_rt_x(), " ", cut_shape.get_real_rt_y());
-      pin_json["cut_shape_list"].push_back(cut_shape_json);
-    }
-    // access_point_list
-    std::vector<AccessPoint>& access_point_list = pin.get_access_point_list();
-    pin_json["access_point_list_size"] = access_point_list.size();
-    pin_json["access_point_list"] = nlohmann::json::array();
-    for (AccessPoint& access_point : access_point_list) {
-      nlohmann::json access_point_json;
-      access_point_json["type"] = access_point.get_type();
-      access_point_json["layer_idx"] = access_point.get_layer_idx();
-      access_point_json["grid"] = RTUtil::getString(access_point.get_grid_x(), " ", access_point.get_grid_y());
-      access_point_json["real"] = RTUtil::getString(access_point.get_real_x(), " ", access_point.get_real_y());
-      pin_json["access_point_list"].push_back(access_point_json);
-    }
-    net_json["pin_list"].push_back(pin_json);
-  }
-
-  net_json["driving_pin_idx"] = driving_pin.get_pin_idx();
-  // rect "lb_x lb_y rt_x rt_y"
-  net_json["bounding_box"]["grid_rect"] = RTUtil::getString(bounding_box.get_grid_lb_x(), " ", bounding_box.get_grid_lb_y(), " ",
-                                                            bounding_box.get_grid_rt_x(), " ", bounding_box.get_grid_rt_y());
-  net_json["bounding_box"]["real_rect"] = RTUtil::getString(bounding_box.get_real_lb_x(), " ", bounding_box.get_real_lb_y(), " ",
-                                                            bounding_box.get_real_rt_x(), " ", bounding_box.get_real_rt_y());
-}
-
-void DataManager::saveResourceAllocatorResult(nlohmann::json& net_json, Net& net)
-{
-  GridMap<double>& ra_cost_map = net.get_ra_cost_map();
-  irt_int x_size = ra_cost_map.get_x_size();
-  irt_int y_size = ra_cost_map.get_y_size();
-  net_json["ra_cost_map"]["x_size"] = x_size;
-  net_json["ra_cost_map"]["y_size"] = y_size;
-  net_json["ra_cost_map"]["_data_map"] = nlohmann::json::array();
-  for (irt_int x = 0; x < x_size; ++x) {
-    for (irt_int y = 0; y < y_size; ++y) {
-      net_json["ra_cost_map"]["data_map"].push_back(ra_cost_map[x][y]);
-    }
-  }
-}
-
-void DataManager::saveGlobalRouterResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_gr_result_tree();
-  nlohmann::json& gr_json = net_json["gr_result_tree"];
-  saveResultTree(gr_json, net, node_tree);
-}
-
-void DataManager::saveResultTree(nlohmann::json& net_json, Net& net, MTree<RTNode>& node_tree)
-{
-  std::vector<TNode<RTNode>*> node_list = RTUtil::getNodeList(node_tree);
-  net_json["node_list_size"] = node_list.size();
-  std::map<TNode<RTNode>*, irt_int> node_ref_idx_map;
-  for (size_t i = 0; i < node_list.size(); i++) {
-    node_ref_idx_map.insert(std::make_pair(node_list[i], i));
-  }
-  net_json["root_node_idx"] = node_ref_idx_map[node_tree.get_root()];
-  for (TNode<RTNode>* node : node_list) {
-    nlohmann::json node_json;
-    // node_idx
-    node_json["node_idx"] = node_ref_idx_map[node];
-    // child_node_idx_list
-    node_json["child_node_idx_list"] = nlohmann::json::array();
-    for (TNode<RTNode>* child_node : node->get_child_list()) {
-      node_json["child_node_idx_list"].push_back(node_ref_idx_map[child_node]);
-    }
-    // guide "lb_x lb_y rt_x rt_y layer_idx grid_x grid_y"
-    Guide& first_guide = node->value().get_first_guide();
-    node_json["first_guide"] = RTUtil::getString(first_guide.get_lb_x(), " ", first_guide.get_lb_y(), " ", first_guide.get_rt_x(), " ",
-                                                 first_guide.get_rt_y(), " ", first_guide.get_layer_idx(), " ",
-                                                 first_guide.get_grid_coord().get_x(), " ", first_guide.get_grid_coord().get_y());
-    Guide& second_guide = node->value().get_second_guide();
-    node_json["second_guide"] = RTUtil::getString(second_guide.get_lb_x(), " ", second_guide.get_lb_y(), " ", second_guide.get_rt_x(), " ",
-                                                  second_guide.get_rt_y(), " ", second_guide.get_layer_idx(), " ",
-                                                  second_guide.get_grid_coord().get_x(), " ", second_guide.get_grid_coord().get_y());
-    // pin_idx_list
-    node_json["pin_list"] = nlohmann::json::array();
-    for (irt_int pin_idx : node->value().get_pin_idx_set()) {
-      node_json["pin_list"].push_back(net.get_pin_list()[pin_idx].get_pin_name());
-    }
-    // routing_tree
-    MTree<LayerCoord>& routing_tree = node->value().get_routing_tree();
-    std::vector<TNode<LayerCoord>*> coord_list = RTUtil::getNodeList(routing_tree);
-    node_json["coord_list_size"] = coord_list.size();
-    std::map<TNode<LayerCoord>*, irt_int> coord_ref_idx_map;
-    for (size_t i = 0; i < coord_list.size(); i++) {
-      coord_ref_idx_map.insert(std::make_pair(coord_list[i], i));
-    }
-    node_json["root_coord_idx"] = coord_ref_idx_map[routing_tree.get_root()];
-    for (TNode<LayerCoord>* coord : coord_list) {
-      nlohmann::json coord_json;
-      // coord_idx
-      coord_json["coord_idx"] = coord_ref_idx_map[coord];
-      // child_coord_idx_list
-      coord_json["child_coord_idx_list"] = nlohmann::json::array();
-      for (TNode<LayerCoord>* child_coord : coord->get_child_list()) {
-        coord_json["child_coord_idx_list"].push_back(coord_ref_idx_map[child_coord]);
-      }
-      // x y layer_idx
-      coord_json["coord_value"]
-          = RTUtil::getString(coord->value().get_x(), " ", coord->value().get_y(), " ", coord->value().get_layer_idx());
-      node_json["coord_list"].push_back(coord_json);
-    }
-    net_json["node_list"].push_back(node_json);
-  }
-}
-
-void DataManager::saveTrackAssignerResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_ta_result_tree();
-  nlohmann::json& ta_json = net_json["ta_result_tree"];
-  saveResultTree(ta_json, net, node_tree);
-}
-
-void DataManager::saveDetailedRouterResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_dr_result_tree();
-  nlohmann::json& dr_json = net_json["dr_result_tree"];
-  saveResultTree(dr_json, net, node_tree);
-}
-
-void DataManager::saveViolationRepairerResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<PHYNode>& node_tree = net.get_vr_result_tree();
-  std::vector<TNode<PHYNode>*> node_list = RTUtil::getNodeList(node_tree);
-  nlohmann::json& vr_json = net_json["vr_result_tree"];
-  vr_json["node_list_size"] = node_list.size();
-  std::map<TNode<PHYNode>*, irt_int> node_ref_idx_map;
-  for (size_t i = 0; i < node_list.size(); i++) {
-    node_ref_idx_map.insert(std::make_pair(node_list[i], i));
-  }
-  vr_json["root_node_idx"] = node_ref_idx_map[node_tree.get_root()];
-  for (TNode<PHYNode>* node : node_list) {
-    nlohmann::json node_json;
-    // node_idx
-    node_json["node_idx"] = node_ref_idx_map[node];
-    // child_node_idx_list
-    node_json["child_node_idx_list"] = nlohmann::json::array();
-    for (TNode<PHYNode>* child_node : node->get_child_list()) {
-      node_json["child_node_idx_list"].push_back(node_ref_idx_map[child_node]);
-    }
-    // PinNode*, WireNode*, ViaNode*
-    PHYNode& phy_node = node->value();
-    if (phy_node.isEmpty()) {
-      node_json["type"] = string("monostate");
-    } else if (phy_node.isType<PinNode>()) {
-      node_json["type"] = string("PinNode");
-      PinNode& pin_node = phy_node.getNode<PinNode>();
-      node_json["net_idx"] = pin_node.get_net_idx();
-      node_json["pin_idx"] = pin_node.get_pin_idx();
-      node_json["layer_idx"] = pin_node.get_layer_idx();
-      node_json["coord"] = RTUtil::getString(pin_node.get_x(), " ", pin_node.get_y());
-    } else if (phy_node.isType<WireNode>()) {
-      node_json["type"] = string("WireNode");
-      WireNode& wire_node = phy_node.getNode<WireNode>();
-      node_json["net_idx"] = wire_node.get_net_idx();
-      node_json["layer_idx"] = wire_node.get_layer_idx();
-      node_json["wire_width"] = wire_node.get_wire_width();
-      node_json["first"] = RTUtil::getString(wire_node.get_first().get_x(), " ", wire_node.get_first().get_y());
-      node_json["second"] = RTUtil::getString(wire_node.get_second().get_x(), " ", wire_node.get_second().get_y());
-    } else {
-      node_json["type"] = string("ViaNode");
-      ViaNode& via_node = phy_node.getNode<ViaNode>();
-      node_json["net_idx"] = via_node.get_net_idx();
-      node_json["via_idx"]["first"] = via_node.get_via_idx().first;
-      node_json["via_idx"]["second"] = via_node.get_via_idx().second;
-      node_json["coord"] = RTUtil::getString(via_node.get_x(), " ", via_node.get_y());
-    }
-    vr_json["node_list"].push_back(node_json);
-  }
+  return make_tuple(stage, design_name, lef_list, def_name);
 }
 
 void DataManager::loadStageResult(Stage stage)
@@ -1691,329 +1446,10 @@ void DataManager::loadStageResult(Stage stage)
   Monitor monitor;
 
   std::string current_stage = GetStageName()(stage);
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result is loading...");
-
-  std::string json_file_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".json";
-  std::ifstream* json_stream = RTUtil::getInputFileStream(json_file_path);
-  nlohmann::json all_json = nlohmann::json::parse(*json_stream);
-  RTUtil::closeFileStream(json_stream);
-
-  checkHeadInfo(all_json, current_stage);
-  for (Net& net : _database.get_net_list()) {
-    nlohmann::json& net_json = all_json["net_list"][net.get_net_name()];
-    loadStageNetResult(net_json, net);
-  }
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", json_file_path, "'!", monitor.getStatsInfo());
-}
-
-void DataManager::checkHeadInfo(nlohmann::json& all_json, std::string current_stage)
-{
-  std::string file_stage = all_json["stage"];
-  if (file_stage != current_stage) {
-    LOG_INST.error(Loc::current(), "The file_stage '", file_stage, "' != current_stage '", current_stage, "'");
-  }
-
-  std::string file_design_name = all_json["design_name"];
-  if (file_design_name != _helper.get_design_name()) {
-    LOG_INST.error(Loc::current(), "The file_design_name '", file_design_name, "' != design_name '", _helper.get_design_name(), "'");
-  }
-
-  std::string file_def_name = all_json["def_name"];
-  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
-  if (file_def_name != def_name) {
-    LOG_INST.error(Loc::current(), "The file_def_name '", file_def_name, "' != def_name '", def_name, "'");
-  }
-
-  std::set<std::string> file_lef_name_set;
-  for (std::string lef_name : all_json["lef_name_list"]) {
-    file_lef_name_set.insert(lef_name);
-  }
-  for (std::string lef_file_path : _helper.get_lef_file_path_list()) {
-    std::string lef_name = RTUtil::getFileName(lef_file_path);
-    if (!RTUtil::exist(file_lef_name_set, lef_name)) {
-      LOG_INST.error(Loc::current(), "The lef_file_path '", lef_file_path, "is inconsistent with the json file");
-    }
-    file_lef_name_set.erase(lef_name);
-  }
-  for (std::string file_name : file_lef_name_set) {
-    LOG_INST.error(Loc::current(), "The lef_file '", file_name, "' is not found");
-  }
-}
-
-void DataManager::loadStageNetResult(nlohmann::json& net_json, Net& net)
-{
-  loadBasicInfo(net_json, net);
-  loadPinAccessorResult(net_json, net);
-  loadResourceAllocatorResult(net_json, net);
-  loadGlobalRouterResult(net_json, net);
-  loadTrackAssignerResult(net_json, net);
-  loadDetailedRouterResult(net_json, net);
-  loadViolationRepairerResult(net_json, net);
-}
-
-void DataManager::loadBasicInfo(nlohmann::json& net_json, Net& net)
-{
-  net.set_net_idx(net_json["net_idx"]);
-  net.set_connect_type(net_json["connect_type"]);
-}
-
-void DataManager::loadPinAccessorResult(nlohmann::json& net_json, Net& net)
-{
-  size_t pin_list_size = net_json["pin_list_size"];
-  if (pin_list_size == 0) {
-    return;
-  }
-
-  std::vector<Pin>& pin_list = net.get_pin_list();
-  pin_list.clear();
-  pin_list.resize(pin_list_size);
-  for (nlohmann::json& pin_json : net_json["pin_list"]) {
-    irt_int pin_idx = pin_json["pin_idx"];
-    Pin& pin = pin_list[pin_idx];
-    pin.set_pin_idx(pin_idx);
-    pin.set_pin_name(pin_json["pin_name"]);
-
-    // routing_shape_list
-    size_t routing_shape_list_size = pin_json["routing_shape_list_size"];
-    if (routing_shape_list_size != 0) {
-      std::vector<EXTLayerRect>& routing_shape_list = pin.get_routing_shape_list();
-      routing_shape_list.clear();
-      routing_shape_list.reserve(routing_shape_list_size);
-      for (nlohmann::json& routing_shape_json : pin_json["routing_shape_list"]) {
-        EXTLayerRect routing_shape;
-        routing_shape.set_layer_idx(routing_shape_json["layer_idx"]);
-        // rect lb_x lb_y rt_x rt_y
-        irt_int lb_x, lb_y, rt_x, rt_y;
-        std::istringstream(std::string(routing_shape_json["grid_rect"])) >> lb_x >> lb_y >> rt_x >> rt_y;
-        routing_shape.set_grid_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-        std::istringstream(std::string(routing_shape_json["real_rect"])) >> lb_x >> lb_y >> rt_x >> rt_y;
-        routing_shape.set_real_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-        routing_shape_list.push_back(routing_shape);
-      }
-    }
-    // cut_shape_list
-    size_t cut_shape_list_size = pin_json["cut_shape_list_size"];
-    if (cut_shape_list_size != 0) {
-      std::vector<EXTLayerRect>& cut_shape_list = pin.get_cut_shape_list();
-      cut_shape_list.clear();
-      cut_shape_list.reserve(cut_shape_list_size);
-      for (nlohmann::json& cut_shape_json : pin_json["cut_shape_list"]) {
-        EXTLayerRect cut_shape;
-        cut_shape.set_layer_idx(cut_shape_json["layer_idx"]);
-        // rect lb_x lb_y rt_x rt_y
-        irt_int lb_x, lb_y, rt_x, rt_y;
-        std::istringstream(std::string(cut_shape_json["grid_rect"])) >> lb_x >> lb_y >> rt_x >> rt_y;
-        cut_shape.set_grid_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-        std::istringstream(std::string(cut_shape_json["real_rect"])) >> lb_x >> lb_y >> rt_x >> rt_y;
-        cut_shape.set_real_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-        cut_shape_list.push_back(cut_shape);
-      }
-    }
-
-    // access_point_list
-    size_t access_point_list_size = pin_json["access_point_list_size"];
-    if (access_point_list_size != 0) {
-      std::vector<AccessPoint>& access_point_list = pin.get_access_point_list();
-      access_point_list.clear();
-      access_point_list.reserve(access_point_list_size);
-      for (nlohmann::json& access_point_json : pin_json["access_point_list"]) {
-        AccessPoint access_point;
-        access_point.set_type(access_point_json["type"]);
-        access_point.set_layer_idx(access_point_json["layer_idx"]);
-        irt_int x, y;
-        istringstream(std::string(access_point_json["grid"])) >> x >> y;
-        access_point.set_grid_coord(x, y);
-        istringstream(std::string(access_point_json["real"])) >> x >> y;
-        access_point.set_real_coord(x, y);
-        access_point_list.push_back(access_point);
-      }
-    }
-  }
-
-  // driving_pin
-  irt_int driving_pin_idx = net_json["driving_pin_idx"];
-  net.set_driving_pin(net.get_pin_list()[driving_pin_idx]);
-
-  // bounding_box
-  BoundingBox& bounding_box = net.get_bounding_box();
-  irt_int lb_x, lb_y, rt_x, rt_y;
-  std::string grid_string = net_json["bounding_box"]["grid_rect"];
-  istringstream(grid_string) >> lb_x >> lb_y >> rt_x >> rt_y;
-  bounding_box.set_grid_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-
-  std::string real_string = net_json["bounding_box"]["real_rect"];
-  istringstream(real_string) >> lb_x >> lb_y >> rt_x >> rt_y;
-  bounding_box.set_real_rect(PlanarRect(lb_x, lb_y, rt_x, rt_y));
-}
-
-void DataManager::loadResourceAllocatorResult(nlohmann::json& net_json, Net& net)
-{
-  irt_int x_size = net_json["ra_cost_map"]["x_size"];
-  irt_int y_size = net_json["ra_cost_map"]["y_size"];
-  if (x_size == 0 || y_size == 0) {
-    return;
-  }
-  vector<double> costs;
-  costs.reserve(x_size * y_size);
-  for (double cost : net_json["ra_cost_map"]["data_map"]) {
-    costs.push_back(cost);
-  }
-  if (costs.size() != static_cast<size_t>(x_size * y_size)) {
-    LOG_INST.error(Loc::current(), "Error when load the size of ra_cost_map");
-  }
-
-  GridMap<double> cost_map(x_size, y_size);
-  for (irt_int x = 0; x < x_size; ++x) {
-    for (irt_int y = 0; y < y_size; ++y) {
-      cost_map[x][y] = costs[x * y_size + y];
-    }
-  }
-  net.set_ra_cost_map(cost_map);
-}
-
-void DataManager::loadGlobalRouterResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_gr_result_tree();
-  nlohmann::json& gr_json = net_json["gr_result_tree"];
-  loadResultTree(gr_json, net, node_tree);
-}
-
-void DataManager::loadResultTree(nlohmann::json& net_json, Net& net, MTree<RTNode>& node_tree)
-{
-  std::map<std::string, irt_int> pin_name_idx_map;
-  for (Pin& pin : net.get_pin_list()) {
-    pin_name_idx_map.insert(std::pair(pin.get_pin_name(), pin.get_pin_idx()));
-  }
-  size_t node_list_size = net_json["node_list_size"];
-  if (node_list_size == 0) {
-    return;
-  }
-  std::vector<TNode<RTNode>*> node_list;
-  for (size_t i = 0; i < node_list_size; i++) {
-    node_list.push_back(new TNode<RTNode>(RTNode()));
-  }
-  node_tree.set_root(node_list[net_json["root_node_idx"]]);
-  for (nlohmann::json& node_json : net_json["node_list"]) {
-    TNode<RTNode>* node = node_list[node_json["node_idx"]];
-    // child_node_idx_list
-    for (irt_int child_node_idx : node_json["child_node_idx_list"]) {
-      node->addChild(node_list[child_node_idx]);
-    }
-    // guide "lb_x lb_y rt_x rt_y layer_idx grid_x grid_y"
-    irt_int lb_x, lb_y, rt_x, rt_y, layer_idx, grid_x, grid_y;
-    Guide& first_guide = node->value().get_first_guide();
-    std::istringstream(std::string(node_json["first_guide"])) >> lb_x >> lb_y >> rt_x >> rt_y >> layer_idx >> grid_x >> grid_y;
-    first_guide.set_rect(lb_x, lb_y, rt_x, rt_y);
-    first_guide.set_layer_idx(layer_idx);
-    first_guide.set_grid_coord(grid_x, grid_y);
-    Guide& second_guide = node->value().get_second_guide();
-    std::istringstream(std::string(node_json["second_guide"])) >> lb_x >> lb_y >> rt_x >> rt_y >> layer_idx >> grid_x >> grid_y;
-    second_guide.set_rect(lb_x, lb_y, rt_x, rt_y);
-    second_guide.set_layer_idx(layer_idx);
-    second_guide.set_grid_coord(grid_x, grid_y);
-    // pin_idx_list
-    for (std::string pin_name : node_json["pin_list"]) {
-      node->value().get_pin_idx_set().insert(pin_name_idx_map[pin_name]);
-    }
-    // routing_tree
-    MTree<LayerCoord>& routing_tree = node->value().get_routing_tree();
-    size_t coord_list_size = node_json["coord_list_size"];
-    if (coord_list_size == 0) {
-      continue;
-    }
-    std::vector<TNode<LayerCoord>*> coord_list;
-    for (size_t i = 0; i < coord_list_size; i++) {
-      coord_list.push_back(new TNode<LayerCoord>(LayerCoord()));
-    }
-    routing_tree.set_root(coord_list[node_json["root_coord_idx"]]);
-    for (nlohmann::json& coord_json : node_json["coord_list"]) {
-      TNode<LayerCoord>* coord = coord_list[coord_json["coord_idx"]];
-      // child_coord_idx_list
-      for (irt_int child_coord_idx : coord_json["child_coord_idx_list"]) {
-        coord->addChild(coord_list[child_coord_idx]);
-      }
-      // x y layer_idx
-      irt_int x, y, layer_idx;
-      LayerCoord& coord_value = coord->value();
-      std::istringstream(std::string(coord_json["coord_value"])) >> x >> y >> layer_idx;
-      coord_value.set_coord(x, y);
-      coord_value.set_layer_idx(layer_idx);
-    }
-  }
-}
-
-void DataManager::loadTrackAssignerResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_ta_result_tree();
-  nlohmann::json& ta_json = net_json["ta_result_tree"];
-  loadResultTree(ta_json, net, node_tree);
-}
-
-void DataManager::loadDetailedRouterResult(nlohmann::json& net_json, Net& net)
-{
-  MTree<RTNode>& node_tree = net.get_dr_result_tree();
-  nlohmann::json& dr_json = net_json["dr_result_tree"];
-  loadResultTree(dr_json, net, node_tree);
-}
-
-void DataManager::loadViolationRepairerResult(nlohmann::json& net_json, Net& net)
-{
-  nlohmann::json& vr_json = net_json["vr_result_tree"];
-  std::map<std::string, irt_int> pin_name_idx_map;
-  for (Pin& pin : net.get_pin_list()) {
-    pin_name_idx_map.insert(std::pair(pin.get_pin_name(), pin.get_pin_idx()));
-  }
-  size_t node_list_size = vr_json["node_list_size"];
-  if (node_list_size == 0) {
-    return;
-  }
-  std::vector<TNode<PHYNode>*> node_list;
-  for (size_t i = 0; i < node_list_size; i++) {
-    node_list.push_back(new TNode<PHYNode>(PHYNode()));
-  }
-  MTree<PHYNode>& node_tree = net.get_vr_result_tree();
-  node_tree.set_root(node_list[vr_json["root_node_idx"]]);
-  for (nlohmann::json& node_json : vr_json["node_list"]) {
-    TNode<PHYNode>* node = node_list[node_json["node_idx"]];
-    // child_node_idx_list
-    for (irt_int child_node_idx : node_json["child_node_idx_list"]) {
-      node->addChild(node_list[child_node_idx]);
-    }
-    std::string node_type = node_json["type"];
-    if (node_type == string("monostate")) {
-    } else if (node_type == string("PinNode")) {
-      PinNode& pin_node = node->value().getNode<PinNode>();
-      pin_node.set_net_idx(node_json["net_idx"]);
-      pin_node.set_pin_idx(node_json["pin_idx"]);
-      pin_node.set_layer_idx(node_json["layer_idx"]);
-
-      irt_int x, y;
-      istringstream(std::string(node_json["coord"])) >> x >> y;
-      pin_node.set_coord(x, y);
-
-    } else if (node_type == string("WireNode")) {
-      WireNode& wire_node = node->value().getNode<WireNode>();
-      wire_node.set_net_idx(node_json["net_idx"]);
-      wire_node.set_layer_idx(node_json["layer_idx"]);
-      wire_node.set_wire_width(node_json["wire_width"]);
-
-      irt_int x, y;
-      istringstream(std::string(node_json["first"])) >> x >> y;
-      wire_node.get_first().set_coord(x, y);
-      istringstream(std::string(node_json["second"])) >> x >> y;
-      wire_node.get_second().set_coord(x, y);
-    } else if (node_type == string("ViaNode")) {
-      ViaNode& via_node = node->value().getNode<ViaNode>();
-      via_node.set_net_idx(node_json["net_idx"]);
-      via_node.set_via_idx(make_pair(irt_int(node_json["via_idx"]["first"]), irt_int(node_json["via_idx"]["second"])));
-
-      irt_int x, y;
-      istringstream(std::string(node_json["coord"])) >> x >> y;
-      via_node.set_coord(x, y);
-    } else {
-      LOG_INST.error(Loc::current(), "PHYNode type is ilegal");
-    }
-  }
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
 }
 
 void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
@@ -2122,7 +1558,8 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
 
-  std::string via_name = layer_via_master_list[via_node.get_via_idx().first][via_node.get_via_idx().second].get_via_name();
+  ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+  std::string via_name = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()].get_via_name();
   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
   if (idb_via == nullptr) {
     idb_via = def_via_list->find_via(via_name);
@@ -2140,11 +1577,6 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   idb_segment->add_point(via_node.get_x(), via_node.get_y());
   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
   idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
-}
-
-void DataManager::saveDef(idb::IdbBuilder* idb_builder)
-{
-  idb_builder->saveDef(_config.output_def_file_path);
 }
 
 Direction DataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_direction)
