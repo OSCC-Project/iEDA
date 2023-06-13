@@ -1448,6 +1448,9 @@ void DataManager::loadStageResult(Stage stage)
   std::string current_stage = GetStageName()(stage);
   std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
   iplf::RtPersister ps(data_path);
+  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage) )>();
+  // check header 
+
   ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
   LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
 }

@@ -87,6 +87,14 @@ class Persister
       throw std::runtime_error("Invalid serialize data");
     }
   }
+  
+  template<InEqualable T>
+  T loadHeader(){
+    T header;
+    auto iar = getIarchive();
+    iar >> header;
+    return header;
+  }
   void load(Args&... args)
   {
     Timer timer;
@@ -128,6 +136,7 @@ class Persister
       ss << "Failed to open file for reading: " << _path;
       throw std::runtime_error(ss.str());
     }
+    ifs.seekg(0, std::ios::beg);
     return iarchive(ifs);
   }
 
