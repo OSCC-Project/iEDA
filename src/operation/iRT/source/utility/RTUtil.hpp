@@ -112,6 +112,15 @@ class RTUtil
     }
   }
 
+  static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
+                                                     Orientation point_orientation = Orientation::kNone)
+  {
+    std::vector<Orientation> orientation_list;
+    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    return orientation_list;
+  }
+
   // 判断线段方向 从start到end
   static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord,
                                     Orientation point_orientation = Orientation::kNone)
@@ -736,17 +745,21 @@ class RTUtil
    */
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
   {
-    return getCuttingRectList({master}, {rect});
+    std::vector<PlanarRect> master_list = {master};
+    std::vector<PlanarRect> rect_list = {rect};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
   {
-    return getCuttingRectList({master}, rect_list);
+    std::vector<PlanarRect> master_list = {master};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
   {
-    return getCuttingRectList(master_list, {rect});
+    std::vector<PlanarRect> rect_list = {rect};
+    return getCuttingRectList(master_list, rect_list);
   }
 
   static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
@@ -1719,45 +1732,50 @@ class RTUtil
     return coord_obs_map;
   }
 
-  static irt_int getFloorTrackLine(irt_int line, TrackGrid& x_track_grid)
-  {
-    irt_int track_start = x_track_grid.get_start_line();
-    irt_int track_pitch = x_track_grid.get_step_length();
-    irt_int track_end = x_track_grid.get_end_line();
-    if (line < track_start) {
-      return -1;
-    }
-    line = std::min(line, track_end);
-    irt_int track_idx = (line - track_start) / track_pitch;
-    return track_start + track_idx * track_pitch;
-  }
-
-  static irt_int getCeilTrackLine(irt_int line, TrackGrid& x_track_grid)
-  {
-    irt_int track_start = x_track_grid.get_start_line();
-    irt_int track_pitch = x_track_grid.get_step_length();
-    irt_int track_end = x_track_grid.get_end_line();
-    if (line > track_end) {
-      return -1;
-    }
-    line = std::max(line, track_start);
-    irt_int track_idx = static_cast<irt_int>(std::ceil((line - track_start) / 1.0 / track_pitch));
-    return track_start + track_idx * track_pitch;
-  }
-
   // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-  static PlanarRect getTrackLineRect(PlanarRect rect, TrackAxis& track_axis)
+  static PlanarRect getTrackLineRect(PlanarRect& rect, TrackAxis& track_axis, PlanarRect& border)
   {
-    irt_int x_start_line = track_axis.get_x_track_grid().get_start_line();
-    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
-    irt_int y_start_line = track_axis.get_y_track_grid().get_start_line();
-    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
-    PlanarRect enlarge_real_rect = getEnlargedRect(rect, x_step_length, y_step_length, x_step_length, y_step_length);
-    PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
-    irt_int real_lb_x = x_start_line + enlarge_grid_rect.get_lb_x() * x_step_length;
-    irt_int real_rt_x = x_start_line + enlarge_grid_rect.get_rt_x() * x_step_length;
-    irt_int real_lb_y = y_start_line + enlarge_grid_rect.get_lb_y() * y_step_length;
-    irt_int real_rt_y = y_start_line + enlarge_grid_rect.get_rt_y() * y_step_length;
+    if (!isInside(border, rect)) {
+      LOG_INST.error(Loc::current(), "The rect is out of border!");
+    }
+    irt_int real_lb_x = rect.get_lb_x();
+    irt_int real_rt_x = rect.get_rt_x();
+    irt_int real_lb_y = rect.get_lb_y();
+    irt_int real_rt_y = rect.get_rt_y();
+    TrackGrid& x_track_grid = track_axis.get_x_track_grid();
+    if (RTUtil::getClosedScaleList(real_lb_x, real_rt_x, x_track_grid).empty()) {
+      std::vector<irt_int> scale_list;
+      scale_list.push_back(border.get_lb_x());
+      for (irt_int scale = x_track_grid.get_start_line(); scale <= x_track_grid.get_end_line(); scale += x_track_grid.get_step_length()) {
+        scale_list.push_back(scale);
+      }
+      scale_list.push_back(border.get_rt_x());
+      for (size_t i = 0; i < scale_list.size(); i++) {
+        if (scale_list[i] < real_lb_x) {
+          continue;
+        }
+        real_lb_x = scale_list[i - 1];
+        real_rt_x = scale_list[i];
+        break;
+      }
+    }
+    TrackGrid& y_track_grid = track_axis.get_y_track_grid();
+    if (RTUtil::getClosedScaleList(real_lb_y, real_rt_y, y_track_grid).empty()) {
+      std::vector<irt_int> scale_list;
+      scale_list.push_back(border.get_lb_x());
+      for (irt_int scale = y_track_grid.get_start_line(); scale <= y_track_grid.get_end_line(); scale += y_track_grid.get_step_length()) {
+        scale_list.push_back(scale);
+      }
+      scale_list.push_back(border.get_rt_y());
+      for (size_t i = 0; i < scale_list.size(); i++) {
+        if (scale_list[i] < real_lb_y) {
+          continue;
+        }
+        real_lb_y = scale_list[i - 1];
+        real_rt_y = scale_list[i];
+        break;
+      }
+    }
     return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
   }
 

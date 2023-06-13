@@ -74,7 +74,7 @@ class PinAccessor
   void buildBoundingBox(PANet& pa_net);
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
-  void updateNetFenceRegionMap(PAModel& pa_model);
+  void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateConflict(PAModel& pa_model);
 #endif
 

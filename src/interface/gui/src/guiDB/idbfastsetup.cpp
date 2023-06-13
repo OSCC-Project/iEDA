@@ -1005,7 +1005,7 @@ void IdbSpeedUpSetup::createTrackGrid() {
         GuiSpeedupItemType gui_type =
             routing_layer->is_horizontal() ? GuiSpeedupItemType::kTrackGridPrefer : GuiSpeedupItemType::kTrackGridNonPrefer;
         for (uint i = 0; i < track_grid->get_track_num(); ++i) {
-          qreal y = _transform.db_to_guidb(start + pitch * i);
+          qreal y = _transform.db_to_guidb_rotate(start + pitch * i);
 
           GuiSpeedupGrid* item = findGridItem(this_container, layer->get_name(), QPointF(0, y), QPointF(width, y));
           if (item == nullptr) {

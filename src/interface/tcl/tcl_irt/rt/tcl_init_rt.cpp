@@ -24,8 +24,6 @@ namespace tcl {
 
 TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
 {
-  // std::string output_def_file_path;  // required
-  _config_list.push_back(std::make_pair("-output_def_file_path", ValueType::kString));
   // std::string temp_directory_path;  // required
   _config_list.push_back(std::make_pair("-temp_directory_path", ValueType::kString));
   // irt_int log_level;  // optional

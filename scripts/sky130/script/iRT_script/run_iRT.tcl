@@ -36,8 +36,7 @@ def_init -path ./result/iPL_lg_result.def
 #===========================================================
 ##   run Router
 #===========================================================
-init_rt -output_def_file_path "./result/rt/rt.def" \
-        -temp_directory_path "./result/rt/" \
+init_rt -temp_directory_path "./result/rt/" \
         -bottom_routing_layer "met1" \
         -top_routing_layer "met5"
 

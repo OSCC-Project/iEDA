@@ -31,16 +31,11 @@ class TAPanel : public EXTLayerRect
   // getter
   irt_int get_panel_idx() const { return _panel_idx; }
   std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_net_fence_region_map() { return _net_fence_region_map; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_fence_region_map(const std::map<irt_int, std::vector<PlanarRect>>& net_fence_region_map)
-  {
-    _net_fence_region_map = net_fence_region_map;
-  }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   // function
@@ -54,6 +49,7 @@ class TAPanel : public EXTLayerRect
   const irt_int get_curr_task_idx() const { return _ta_task_ref->get_task_idx(); }
   const PlanarRect& get_curr_bounding_box() const { return _ta_task_ref->get_bounding_box(); }
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& get_curr_coord_cost_map() const { return _ta_task_ref->get_coord_cost_map(); }
+  std::set<Orientation>& get_routing_orientation_set() { return _routing_orientation_set; }
   PlanarRect& get_routing_region() { return _routing_region; }
   std::vector<std::vector<TANode*>>& get_start_node_comb_list() { return _start_node_comb_list; }
   std::vector<std::vector<TANode*>>& get_end_node_comb_list() { return _end_node_comb_list; }
@@ -68,6 +64,10 @@ class TAPanel : public EXTLayerRect
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_ta_task_ref(TATask* ta_task_ref) { _ta_task_ref = ta_task_ref; }
+  void set_routing_orientation_set(const std::set<Orientation>& routing_orientation_set)
+  {
+    _routing_orientation_set = routing_orientation_set;
+  }
   void set_routing_region(const PlanarRect& routing_region) { _routing_region = routing_region; }
   void set_start_node_comb_list(const std::vector<std::vector<TANode*>>& start_node_comb_list)
   {
@@ -86,7 +86,6 @@ class TAPanel : public EXTLayerRect
  private:
   irt_int _panel_idx = -1;
   std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
-  std::map<irt_int, std::vector<PlanarRect>> _net_fence_region_map;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
 #if 1  // astar
@@ -94,8 +93,9 @@ class TAPanel : public EXTLayerRect
   double _wire_unit = 1;
   double _corner_unit = 1;
   double _via_unit = 1;
-  // single net
+  // single task
   TATask* _ta_task_ref = nullptr;
+  std::set<Orientation> _routing_orientation_set;
   PlanarRect _routing_region;
   std::vector<std::vector<TANode*>> _start_node_comb_list;
   std::vector<std::vector<TANode*>> _end_node_comb_list;
