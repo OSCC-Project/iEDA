@@ -25,6 +25,7 @@ class Solver
   explicit Solver(std::shared_ptr<Problem> problem) : _problem(problem){};
   ~Solver(){};
   void doNesterovSolve(Mat& solution);
+  static void doNesterovSolve(const Problem& problem, Mat& solution);
   void set_steplength_bound(float l, float u)
   {
     if (u > l)
