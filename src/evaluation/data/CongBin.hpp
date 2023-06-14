@@ -63,6 +63,7 @@ class CongBin
   void add_inst(CongInst* inst) { _inst_list.push_back(inst); }
   void add_net(CongNet* net) { _net_list.push_back(net); }
   void increPinNum() { _pin_num++; }
+  void increNetCong(const double& net_cong) { _net_cong += net_cong; }
   void reset();
 
  private:

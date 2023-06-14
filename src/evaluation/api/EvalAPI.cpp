@@ -101,6 +101,40 @@ void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_l
   _congestion_eval_inst->set_cong_net_list(net_list);
 }
 
+void EvalAPI::initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y)
+{
+  // initialize cong_grid
+  _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
+  // transform idb_inst to cong_inst
+  _congestion_eval_inst->initCongInst();
+  // tansform idb_net to cong_net
+  _congestion_eval_inst->initCongNetList();
+  // map cong_inst to each cong_bin
+  _congestion_eval_inst->mapInst2Bin();
+  // map cong_net to each cong_bin
+  _congestion_eval_inst->mapNetCoord2Grid();
+}
+
+void EvalAPI::evalInstDens(INSTANCE_STATUS inst_status)
+{
+  _congestion_eval_inst->evalInstDens(inst_status);
+}
+
+void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status)
+{
+  _congestion_eval_inst->evalPinDens(inst_status);
+}
+
+void EvalAPI::evalNetDens(INSTANCE_STATUS inst_status)
+{
+  _congestion_eval_inst->evalNetCong(inst_status);
+}
+
+void EvalAPI::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
+{
+  _congestion_eval_inst->plotBinValue(plot_path, output_file_name, cong_type);
+}
+
 vector<float> EvalAPI::evalPinDens()
 {
   _congestion_eval_inst->mapInst2Bin();
