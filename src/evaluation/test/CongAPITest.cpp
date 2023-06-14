@@ -30,7 +30,7 @@ class CongAPITest : public testing::Test
 {
   void SetUp()
   {  // Read Def, Lef
-    std::string idb_json_file = "/home/yhqiu/irefactor/bin/db_default_config.json";
+    std::string idb_json_file = "/home/yhqiu/iEDA/bin/db_ispd15.json";
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}
@@ -39,18 +39,20 @@ class CongAPITest : public testing::Test
 TEST_F(CongAPITest, sample)
 {
   EvalAPI& eval_api = EvalAPI::initInst();
-  eval_api.initCongestionEval();
 
-  std::vector<float> gr_congestion;
-  gr_congestion = eval_api.evalGRCong();  // return <ACE,TOF,MOF>
-  LOG_INFO << "ACE: " << gr_congestion[0];
-  LOG_INFO << "TOF: " << gr_congestion[1];
-  LOG_INFO << "MOF: " << gr_congestion[2];
+  int32_t bin_cnt_x = 256;
+  int32_t bin_cnt_y = 256;
+  auto inst_status = INSTANCE_STATUS::kFixed;
 
-  std::string plot_path = "/home/yhqiu/irefactor/bin/";
-  std::string output_file_name = "CongestionMap_";
-  eval_api.plotGRCong(plot_path, output_file_name);
-  eval_api.plotOverflow(plot_path, output_file_name);
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+  eval_api.evalInstDens(inst_status);
+  eval_api.evalPinDens(inst_status);
+  eval_api.evalNetDens(inst_status);
+
+  std::string plot_path = "/home/yhqiu/i-circuit-net/ispd2015/eval_routability_features/";
+  eval_api.plotBinValue(plot_path, "macro_density", CONGESTION_TYPE::kInstDens);
+  eval_api.plotBinValue(plot_path, "macro_pin_density", CONGESTION_TYPE::kPinDens);
+  eval_api.plotBinValue(plot_path, "macro_net_density", CONGESTION_TYPE::kNetCong);
 
   EvalAPI::destroyInst();
 }

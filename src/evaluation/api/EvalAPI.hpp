@@ -49,6 +49,11 @@ class EvalAPI
 
   /****************************** Congestion Eval: START ******************************/
   void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
+  void initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y);
+  void evalInstDens(INSTANCE_STATUS inst_status);
+  void evalPinDens(INSTANCE_STATUS inst_status);
+  void evalNetDens(INSTANCE_STATUS inst_status);
+  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();

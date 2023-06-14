@@ -46,6 +46,7 @@ class CongestionEval
   /*----evaluate pin number----*/
   void mapInst2Bin();
   void evalPinNum();
+  void evalPinDens(INSTANCE_STATUS inst_status);
   void reportPinNum();
   void plotPinNum(const std::string& plot_path, const std::string& output_file_name);
   int getBinPinNum(const int& index_x, const int& index_y);
@@ -53,6 +54,7 @@ class CongestionEval
   std::vector<float> evalPinDens();
   /*----evaluate inst density----*/
   void evalInstDens();
+  void evalInstDens(INSTANCE_STATUS inst_status);
   void reportInstDens();
   void plotInstDens(const std::string& plot_path, const std::string& output_file_name);
   double getBinInstDens(const int& index_x, const int& index_y);
@@ -60,9 +62,11 @@ class CongestionEval
 
   /*----evaluate net congestion----*/
   void initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y);
+  void initCongInst();
   void initCongNetList();
   void mapNetCoord2Grid();
   void evalNetCong(const std::string& rudy_type);
+  void evalNetCong(INSTANCE_STATUS inst_status);
   void reportNetCong();
   void plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type);
   double getBinNetCong(const int& index_x, const int& index_y, const std::string& rudy_type);
@@ -87,7 +91,7 @@ class CongestionEval
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name);
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name, const std::vector<int>& plane_grid, const int& x_cnt,
                     const std::string& type);
-
+  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
   void reportCongMap();
 
   /*----Common used----*/
@@ -113,6 +117,7 @@ class CongestionEval
   CongGrid* _cong_grid = nullptr;
   std::vector<CongInst*> _cong_inst_list;
   std::vector<CongNet*> _cong_net_list;
+  std::map<std::string, CongInst*> _name_to_inst_map;
 
   int32_t getOverlapArea(CongBin* bin, CongInst* inst);
   int32_t getOverlapArea(CongBin* bin, CongNet* net);

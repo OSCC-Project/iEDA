@@ -51,6 +51,25 @@ enum class INSTANCE_TYPE
   kFakeInstance
 };
 
+enum class INSTANCE_STATUS
+{
+  kNone,
+  kFixed,
+  kCover,
+  kPlaced,
+  kUnplaced,
+  kMax
+};
+
+enum class CONGESTION_TYPE
+{
+  kNone,
+  kInstDens,
+  kPinDens,
+  kNetCong,
+  kGRCong
+};
+
 }  // namespace eval
 
 #endif  // SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
