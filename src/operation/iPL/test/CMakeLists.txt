@@ -67,12 +67,10 @@ target_link_libraries(MacroPlacer
 add_executable(MPLseTest
     ${iPL_TEST}/MPLseTest.cc)
 
-target_include_directories(MPLseTest 
-    PUBLIC 
-    ${iPL_MP}/analytical_method
-)
 
 target_link_libraries(MPLseTest
     PUBLIC
-    ipl-module-macro_placer
+    ipl-api
+    ipl-source
+    ipl-api_external_libs
 )

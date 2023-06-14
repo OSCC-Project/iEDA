@@ -4,9 +4,63 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <random>
 
-#include "MPDB.hh"
-namespace ipl::imp {
+#include "LSEWirelength.hh"
+// #include "MPDB.hh"
+namespace ipl {
+void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization)
+{
+  _num_types = 3;
+  _num_macros = num_macros;
+  _num_nets = num_macros;
+  _width = Vec(_num_macros);
+  _height = Vec(_num_macros);
+
+  vector<Triplet<double>> moveable_x_offset;
+  vector<Triplet<double>> moveable_y_offset;
+  vector<Triplet<double>> fixed_x_location;
+  vector<Triplet<double>> fixed_y_location;
+
+  double sq = std::sqrt(utilization);
+  double w = sq * core_w / num_macros;
+  double h = sq * core_h / num_macros;
+
+  _width.setConstant(w);
+  _height.setConstant(h);
+
+  std::random_device r;
+  std::default_random_engine e1(r());
+  std::uniform_int_distribution<int> rand_bool(0, 1);
+  std::uniform_int_distribution<int> rand_range(-5, 5);
+
+  auto rand = [&](double& x, double& y) {
+    x = rand_bool(e1) ? 0.5 : -0.5;
+    y = (double) rand_range(e1) / 10;
+    (rand_bool(e1)) ? std::swap(x, y) : void();
+  };
+  double x = 0;
+  double y = 0;
+  for (int j = 0; j < _num_nets; j++) {
+    for (int i = 0; i < netdgree; i++) {
+      rand(x, y);
+      moveable_x_offset.emplace_back((j + i) % _num_macros, j, x * _width(i));
+      moveable_y_offset.emplace_back((j + i) % _num_macros, j, y * _height(i));
+    }
+  }
+  double cx = core_w / 2;
+  double cy = core_h / 2;
+  for (int i = 0; i < _num_nets; i++) {
+    rand(x, y);
+    fixed_x_location.emplace_back(0, i, cx * (1 + x));
+    fixed_y_location.emplace_back(0, i, cy * (1 + y));
+    rand(x, y);
+    fixed_x_location.emplace_back(1, i, cx * (1 + x));
+    fixed_y_location.emplace_back(1, i, cy * (1 + y));
+  }
+  wl = std::make_shared<LSEWirelength>(LSEWirelength(_num_macros, _num_nets));
+  wl->setConstant(moveable_x_offset, moveable_y_offset, fixed_x_location, fixed_y_location);
+}
 
 void MProblem::set_db(MPDB* db)
 {
@@ -14,8 +68,9 @@ void MProblem::set_db(MPDB* db)
     return;
   }
   _db = db;
-  _var_cols = 3;
-  _var_rows = _db->get_total_macro_list().size();
+  _num_types = 3;
+  _num_macros = _db->get_total_macro_list().size();
+  _num_nets = _db->get_new_net_list().size();
   _core_width = _db->get_layout()->get_core_shape()->get_width();
   _core_height = _db->get_layout()->get_core_shape()->get_height();
   const auto& macro_list = _db->get_total_macro_list();
@@ -29,133 +84,36 @@ void MProblem::set_db(MPDB* db)
 
 void MProblem::initWirelengthModel()
 {
-  const auto& nets = _db->get_new_net_list();
-
-  std::vector<Eigen::Triplet<double>> macro_triplets;
-  std::vector<Eigen::Triplet<double>> io_triplets_x;
-  std::vector<Eigen::Triplet<double>> io_triplets_y;
-
-  Eigen::Index net_num = 0;
-  Eigen::Index max_io_num = 0;
-
-  for (const auto& net : nets) {
-    Eigen::Index io_num = 0;
+  vector<Triplet<double>> moveable_x_offset;
+  vector<Triplet<double>> moveable_y_offset;
+  vector<Triplet<double>> fixed_x_location;
+  vector<Triplet<double>> fixed_y_location;
+  uint32_t col = 0;
+  for (const auto& net : _db->get_new_net_list()) {
+    uint32_t fix_row = 0;
     for (const auto& pin : net->get_pin_list()) {
-      if (pin->is_io_pin()) {
-        io_triplets_x.emplace_back(io_num, net_num, pin->get_x());
-        io_triplets_y.emplace_back(io_num, net_num, pin->get_y());
-        max_io_num = std::max(max_io_num, io_num++);
+      if (!pin->is_io_pin()) {
+        uint32_t row = _inst2id.at(pin->get_instance());
+        moveable_x_offset.emplace_back(row, col, pin->get_orig_xoff());
+        moveable_y_offset.emplace_back(row, col, pin->get_orig_yoff());
       } else {
-        assert(pin->get_instance() != nullptr);
-        macro_triplets.emplace_back(_inst2id[pin->get_instance()], net_num, 1.0);
+        fixed_x_location.emplace_back(fix_row, col, pin->get_x());
+        fixed_y_location.emplace_back(fix_row, col, pin->get_x());
+        fix_row++;
       }
     }
-    net_num++;
+    col++;
   }
-
-  _io_conn_x = SpMat(max_io_num, nets.size());
-  _io_conn_y = SpMat(max_io_num, nets.size());
-  _connectivity = SpMat(_var_rows, nets.size());
-
-  _io_conn_x.setFromTriplets(io_triplets_x.begin(), io_triplets_x.end());
-  _io_conn_y.setFromTriplets(io_triplets_y.begin(), io_triplets_y.end());
-  _connectivity.setFromTriplets(macro_triplets.begin(), macro_triplets.end());
-
-  _io_conn_x.makeCompressed();
-  _io_conn_y.makeCompressed();
-  _connectivity.makeCompressed();
+  wl = std::make_shared<LSEWirelength>(LSEWirelength(_num_macros, _num_nets));
+  wl->setConstant(moveable_x_offset, moveable_y_offset, fixed_x_location, fixed_y_location);
 }
 void MProblem::initDensityModel()
 {
 }
 
-Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const
+void MProblem::evalWirelength(const Mat& variable, Mat& gradient, double& cost, const double& gamma) const
 {
-  const auto& macros = _db->get_total_macro_list();
-  const auto& nets = _db->get_new_net_list();
-
-  auto exp_pos_div = [gamma](double val) { return std::exp(val / gamma); };
-  auto exp_neg_div = [gamma](double val) { return std::exp(val / -gamma); };
-  auto inverse = [](double val) { return (val == 0) ? 0 : 1 / val; };
-
-  const auto& pos_x_exp = x.unaryExpr(exp_pos_div);  // exp(x_i/gamma)
-  const auto& pos_y_exp = y.unaryExpr(exp_pos_div);  // exp(y_i/gamma)
-  // const auto& neg_x_exp = pos_x_exp.unaryExpr(inverse);  // exp(-x_i/gamma)
-  // const auto& neg_y_exp = pos_y_exp.unaryExpr(inverse);  // exp(-y_i/gamma)
-
-  Eigen::RowVectorXd ones_1 = Eigen::RowVectorXd::Ones(_io_conn_x.rows());
-
-  const auto& io_exp_pos_x = ones_1 * _io_conn_x.unaryExpr(exp_pos_div);
-  const auto& io_exp_neg_x = ones_1 * _io_conn_x.unaryExpr(exp_neg_div);
-  const auto& io_exp_pos_y = ones_1 * _io_conn_y.unaryExpr(exp_pos_div);
-  const auto& io_exp_neg_y = ones_1 * _io_conn_y.unaryExpr(exp_neg_div);
-
-  const Vec& rcos = r.array().cos();
-  const Vec& rsin = r.array().sin();
-
-  auto get_pin_off = [&](double& x_off, double& y_off, int id) {
-    double x_temp = x_off;
-    double y_temp = y_off;
-    x_off = x_temp * rcos(id) - y_temp * rsin(id);
-    y_off = x_temp * rsin(id) + y_temp * rcos(id);
-  };
-  // The hypergraph matrix of nets where the each coeff is the coordinate of the corresponding pin.
-  SpMat connectivity_x = _connectivity;
-  SpMat connectivity_y = _connectivity;
-
-  Eigen::Index net_num = 0;
-  for (const auto& net : nets) {
-    for (const auto& pin : net->get_pin_list()) {
-      if (pin->is_io_pin())
-        continue;
-      double x_off = (double) pin->get_orig_xoff();
-      double y_off = (double) pin->get_orig_yoff();
-      uint32_t id = _inst2id.at(pin->get_instance());
-      get_pin_off(x_off, y_off, id);
-      connectivity_x.coeffRef(id, net_num) = x_off;
-      connectivity_y.coeffRef(id, net_num) = y_off;
-    }
-    net_num++;
-  }
-  const SpMat& conn_pos_x = (pos_x_exp.asDiagonal() * connectivity_x.unaryExpr(exp_pos_div)).eval();  // exp((x+x_off)/gamma)
-  const SpMat& conn_pos_y = (pos_y_exp.asDiagonal() * connectivity_y.unaryExpr(exp_pos_div)).eval();  // exp((y+y_off)/gamma)
-  const SpMat& conn_neg_x = conn_pos_x.unaryExpr(inverse).eval();                                     // exp(-(x+x_off)/gamma)
-  const SpMat& conn_neg_y = conn_pos_y.unaryExpr(inverse).eval();                                     // exp(-(y+y_off)/gamma)
-  Eigen::RowVectorXd ones_2 = Eigen::RowVectorXd::Ones(_connectivity.rows());
-
-  const auto& sum_exp_pos_x = (ones_2 * conn_pos_x + io_exp_pos_x).unaryExpr(inverse).transpose();  // ∑ exp((x+x_off)/gamma)
-  const auto& sum_exp_neg_x = (ones_2 * conn_neg_x + io_exp_neg_x).unaryExpr(inverse).transpose();  // ∑ exp(-(x+x_off)/gamma)
-  const auto& sum_exp_pos_y = (ones_2 * conn_pos_y + io_exp_pos_y).unaryExpr(inverse).transpose();  // ∑ exp((y+y_off)/gamma)
-  const auto& sum_exp_neg_y = (ones_2 * conn_neg_y + io_exp_neg_y).unaryExpr(inverse).transpose();  // ∑ exp(-(y+y_off)/gamma)
-
-  Mat grad = Mat(_connectivity.rows(), 3);
-
-  Vec grad_x = conn_pos_x * sum_exp_pos_x - conn_neg_x * sum_exp_neg_x;
-  Vec grad_y = conn_pos_y * sum_exp_pos_y - conn_neg_y * sum_exp_neg_y;
-  Vec grad_r = (grad_x.asDiagonal() * connectivity_x * Vec::Ones(_connectivity.rows())
-                + grad_y.asDiagonal() * connectivity_y * Vec::Ones(_connectivity.rows()))
-                   .eval();
-
-  grad.col(0) = grad_x;
-  grad.col(1) = grad_y;
-  grad.col(2) = grad_r;
-
-  return grad;
-}
-
-Mat MProblem::getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const
-{
-  return Mat();
-}
-
-double MProblem::evalHpwl(const Vec& x, const Vec& y, const Vec& r) const
-{
-  return 0.0;
-}
-
-double MProblem::evalOverflow(const Vec& x, const Vec& y, const Vec& r) const
-{
-  return 0.0;
+  wl->evaluate(variable, gradient, cost, 100);
 }
 
 double MProblem::getPenaltyFactor() const
@@ -168,11 +126,10 @@ void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int it
   const Vec& x = variable.col(0);
   const Vec& y = variable.col(1);
   const Vec& r = variable.col(2);
-  const Mat& wirelength_grad = getWirelengthGradient(x, y, r, 100);
-  const Mat& density_grad = getDensityGradient(x, y, r);
-  double penalty = getPenaltyFactor();
-  gradient = wirelength_grad + penalty * density_grad;
-  cost = evalHpwl(x, y, r);
+  double hpwl = 0;
+  evalWirelength(variable, gradient, hpwl, 100);
+  cost = hpwl;
+  assert(!std::isnan(cost));
 }
 
-}  // namespace ipl::imp
+}  // namespace ipl

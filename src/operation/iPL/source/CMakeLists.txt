@@ -28,7 +28,7 @@ target_link_libraries(ipl-source
         ipl-configurator
         ipl-module
         ipl-solver
-        ipl-utility
+        ipl-bridge
 )
 
 target_include_directories(ipl-source PUBLIC ${iPL_SOURCE})

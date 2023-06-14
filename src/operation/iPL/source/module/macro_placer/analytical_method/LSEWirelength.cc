@@ -36,8 +36,10 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
   auto get_pin_off = [&](double& x_off, double& y_off, int id) {
     double x_temp = x_off;
     double y_temp = y_off;
+    assert(!std::isnan(x_off) || !std::isnan(y_off));
     x_off = x_temp * rcos(id) - y_temp * rsin(id);
     y_off = x_temp * rsin(id) + y_temp * rcos(id);
+    assert(!std::isnan(x_off) || !std::isnan(y_off));
   };
 
 #pragma omp parallel for num_threads(48)
@@ -75,9 +77,11 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
 
       double x_off = it_oxo.value();
       double y_off = it_oyo.value();
+      assert(!std::isnan(x_off) || !std::isnan(y_off));
       get_pin_off(x_off, y_off, row);
       it_xo.valueRef() = x_off;
       it_yo.valueRef() = y_off;
+      assert(!std::isnan(x_off) || !std::isnan(y_off));
 
       x_min = std::min(x(row) + x_off, x_min);
       x_max = std::max(x(row) + x_off, x_max);
@@ -149,6 +153,7 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
     _sum_exp_neg_x(k) = 1 / sum_exp_neg_x_k;
     _sum_exp_pos_y(k) = 1 / sum_exp_pos_y_k;
     _sum_exp_neg_y(k) = 1 / sum_exp_neg_y_k;
+    assert(!std::isnan(_hpwl(k)));
   }
 }
 
@@ -160,8 +165,11 @@ void LSEWirelength::evaluate(const Mat& variable, Mat& grad, double& cost, const
   grad.col(1) = _exp_pos_y * _sum_exp_pos_y - _exp_neg_y * _sum_exp_neg_y;  // exp(y/gamma)/Σ exp(y/gamma) - exp(-y/gamma)/Σ exp(-y/gamma).
   grad.col(2) = grad.col(0).asDiagonal() * -_y_offset * Vec::Ones(_y_offset.cols())    // grad_x * y_displacement
                 + grad.col(1).asDiagonal() * _x_offset * Vec::Ones(_x_offset.cols());  //  + grad_y * x_displacement.
-  // double norm = 0.5 * (grad.col(0).lpNorm<1>() + grad.col(1).lpNorm<1>()) / grad.col(2).lpNorm<1>();
-  // grad.col(2) = norm * grad.col(2);
+  double norm_x = grad.col(0).lpNorm<1>();
+  double norm_y = grad.col(1).lpNorm<1>();
+  double norm_r = grad.col(2).lpNorm<1>();
+  // if (norm_r >= 1e-5)
+  //   grad.col(2) = (norm_x + norm_y) / (2 * norm_r) * grad.col(2);
 }
 void LSEWirelength::init()
 {

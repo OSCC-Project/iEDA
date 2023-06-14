@@ -20,7 +20,6 @@ using paird = std::pair<double, double>;
 using Eigen::Triplet;
 using std::vector;
 namespace ipl {
-class MPDB;
 class LSEWirelength
 {
  public:
