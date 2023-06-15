@@ -48,12 +48,17 @@ class EvalAPI
   /****************************** Wirelength Eval: END *******************************/
 
   /****************************** Congestion Eval: START ******************************/
-  void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
   void initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y);
-  void evalInstDens(INSTANCE_STATUS inst_status);
-  void evalPinDens(INSTANCE_STATUS inst_status);
+  void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
+  void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
   void evalNetDens(INSTANCE_STATUS inst_status);
   void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
+  int32_t evalInstNum(INSTANCE_STATUS inst_status);
+  int32_t evalRoutingLayerNum();
+  vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
+  vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+
+  void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();

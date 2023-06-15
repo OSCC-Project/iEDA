@@ -41,44 +41,49 @@ class CongestionEval
     delete _cong_grid;
   }
 
+  void initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y);
+  void initCongInst();
+  void initCongNetList();
+  void mapInst2Bin();
+  void mapNetCoord2Grid();
+
+  void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
+  void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
+  void evalNetCong(INSTANCE_STATUS inst_status);
+
+  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
+
+  int32_t evalInstNum(INSTANCE_STATUS inst_status);
+  int32_t evalRoutingLayerNum();
+  std::vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
+  vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+
+  /////////////////////////////////////////////////////////////////////////
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);
 
-  /*----evaluate pin number----*/
-  void mapInst2Bin();
   void evalPinNum();
-  void evalPinDens(INSTANCE_STATUS inst_status);
   void reportPinNum();
   void plotPinNum(const std::string& plot_path, const std::string& output_file_name);
   int getBinPinNum(const int& index_x, const int& index_y);
   double getBinPinDens(const int& index_x, const int& index_y);
   std::vector<float> evalPinDens();
-  /*----evaluate inst density----*/
   void evalInstDens();
-  void evalInstDens(INSTANCE_STATUS inst_status);
   void reportInstDens();
   void plotInstDens(const std::string& plot_path, const std::string& output_file_name);
   double getBinInstDens(const int& index_x, const int& index_y);
   std::vector<float> getInstDens();
 
-  /*----evaluate net congestion----*/
-  void initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y);
-  void initCongInst();
-  void initCongNetList();
-  void mapNetCoord2Grid();
   void evalNetCong(const std::string& rudy_type);
-  void evalNetCong(INSTANCE_STATUS inst_status);
   void reportNetCong();
   void plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type);
   double getBinNetCong(const int& index_x, const int& index_y, const std::string& rudy_type);
   std::vector<float> getNetCong(const std::string& rudy_type);
-  /*----evaluate post-route congestion----*/
   // void evalViaDens();
   // void reportViaDens();
   // void plotViaDens(const std::string& plot_path, const std::string& output_file_name);
   // double getBinViaDens(const int& index_x, const int& index_y);
   // std::vector<CongNet>& getPostRouteNetlist();
 
-  /*----evaluate routing congestion----*/
   std::vector<float> evalRouteCong();
   float evalACE(const std::vector<float>& hor_edge_cong_list, const std::vector<float>& ver_edge_cong_list);
   std::vector<int> evalOverflow();                 // <TOF,MOF>
@@ -91,7 +96,6 @@ class CongestionEval
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name);
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name, const std::vector<int>& plane_grid, const int& x_cnt,
                     const std::string& type);
-  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
   void reportCongMap();
 
   /*----Common used----*/
