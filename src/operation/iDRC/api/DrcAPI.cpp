@@ -23,6 +23,7 @@
 #include "EOLSpacingCheck.hpp"
 #include "EnclosedAreaCheck.h"
 #include "EnclosureCheck.hpp"
+#include "JogSpacingCheck.hpp"
 #include "MinStepCheck.hpp"
 #include "NotchSpacingCheck.hpp"
 #include "RoutingAreaCheck.h"
@@ -356,69 +357,69 @@ void DrcAPI::initPoly(std::map<int, DrcNet>& nets, RegionQuery* region_query)
   }
 }
 
-bool DrcAPI::checkDRC(std::vector<DrcRect*> origin_rect_list)
-{
-  // init RectRTreeMap
-  // LayerIdToRTreeMap* region_query = new LayerIdToRTreeMap();
-  RegionQuery* region_query = new RegionQuery();
+// bool DrcAPI::checkDRC(std::vector<DrcRect*> origin_rect_list)
+// {
+//   // init RectRTreeMap
+//   // LayerIdToRTreeMap* region_query = new LayerIdToRTreeMap();
+//   RegionQuery* region_query = new RegionQuery();
 
-  initRegionQuery(origin_rect_list, region_query);
-  std::map<int, DrcNet> nets;
-  initNets(origin_rect_list, nets);
-  initPoly(nets, region_query);
-  // TODO EdgeRtreeMap
+//   initRegionQuery(origin_rect_list, region_query);
+//   std::map<int, DrcNet> nets;
+//   initNets(origin_rect_list, nets);
+//   initPoly(nets, region_query);
+//   // TODO EdgeRtreeMap
 
-  // init check module
-  // RoutingSpacingCheck* routing_spacing_check = new RoutingSpacingCheck(_tech, region_query);
-  // EOLSpacingCheck* eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
-  // NotchSpacingCheck* notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
-  // RoutingWidthCheck* width_check = new RoutingWidthCheck(_tech, region_query);
-  // MinStepCheck* min_step_check = new MinStepCheck(_tech);
-  // RoutingAreaCheck* area_check = new RoutingAreaCheck(_tech);
-  // CornerFillSpacingCheck* corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
-  CutSpacingCheck* cut_spacing_check = new CutSpacingCheck(_tech, region_query);
-  // CutEolSpacingCheck* cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
-  // EnclosureCheck* enclosure_check = new EnclosureCheck(_tech, region_query);
+//   // init check module
+//   // RoutingSpacingCheck* routing_spacing_check = new RoutingSpacingCheck(_tech, region_query);
+//   // EOLSpacingCheck* eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
+//   // NotchSpacingCheck* notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
+//   // RoutingWidthCheck* width_check = new RoutingWidthCheck(_tech, region_query);
+//   // MinStepCheck* min_step_check = new MinStepCheck(_tech);
+//   // RoutingAreaCheck* area_check = new RoutingAreaCheck(_tech);
+//   // CornerFillSpacingCheck* corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
+//   // CutSpacingCheck* cut_spacing_check = new CutSpacingCheck(_tech, region_query);
+//   // CutEolSpacingCheck* cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
+//   // EnclosureCheck* enclosure_check = new EnclosureCheck(_tech, region_query);
 
-  bool res = true;
+//   bool res = true;
 
-  for (auto& target_drc_rect : origin_rect_list) {
-    if (!cut_spacing_check->check(target_drc_rect)) {
-      return false;
-    }
-  }
-  // for (auto& net : nets) {
-  //   if (!corner_fill_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!min_step_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!eol_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!notch_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!width_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  // }
+//   for (auto& target_drc_rect : origin_rect_list) {
+//     if (!cut_spacing_check->check(target_drc_rect)) {
+//       return false;
+//     }
+//   }
+//   // for (auto& net : nets) {
+//   //   if (!corner_fill_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!min_step_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!eol_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!notch_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!width_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   // }
 
-  // delete region_query;
-  // // delete area_check;
-  // // delete min_step_check;
-  // // delete routing_spacing_check;
-  // // delete eol_spacing_check;
-  // // delete corner_fill_spacing_check;
+//   // delete region_query;
+//   // // delete area_check;
+//   // // delete min_step_check;
+//   // // delete routing_spacing_check;
+//   // // delete eol_spacing_check;
+//   // // delete corner_fill_spacing_check;
 
-  return res;
-}
+//   return res;
+// }
 
 RTreeBox DrcAPI::getRTreeBox(DrcRect* rect)
 {
@@ -771,9 +772,10 @@ std::vector<DrcRect*> DrcAPI::getMinScope(std::vector<DrcRect*> origin_rect_list
   return min_scope_list;
 }
 
-DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, std::string layer_name, bool is_artifical)
+DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, int layer_order, std::string layer_name, bool is_artifical)
 {
   DrcRect* drc_rect = new DrcRect(net_id, lb_x, lb_y, rt_x, rt_y);
+  drc_rect->set_layer_order(layer_order);
   std::pair<bool, int> layer_info = _tech->getLayerInfoByLayerName(layer_name);
   drc_rect->set_layer_id(layer_info.second);
   if (is_artifical) {
@@ -786,6 +788,79 @@ DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, 
     }
   }
   return drc_rect;
+}
+
+std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(std::vector<DrcRect*>& region_rect_list)
+{
+  std::vector<DrcRect*> cut_rect_list;
+  std::vector<DrcRect*> routing_rect_list;
+  std::map<int, DrcNet> nets;
+  RegionQuery* region_query = new RegionQuery();
+  for (auto& drc_rect : region_rect_list) {
+    int layer_id = drc_rect->get_layer_id();
+    if (drc_rect->get_owner_type() == RectOwnerType::kViaCut) {
+      cut_rect_list.push_back(drc_rect);
+      region_query->add_cut_rect_to_rtree(layer_id, drc_rect);
+    } else if (drc_rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
+      routing_rect_list.push_back(drc_rect);
+      region_query->add_routing_rect_to_rtree(layer_id, drc_rect);
+    }
+  }
+  initNets(region_rect_list, nets);
+  initPoly(nets, region_query);
+  auto jog_spacing_check = new JogSpacingCheck(_tech, region_query);
+  auto notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
+  auto min_step_check = new MinStepCheck(_tech, region_query);
+  auto corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
+  auto cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
+  auto routing_sapcing_check = new RoutingSpacingCheck(_tech, region_query);
+  auto eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
+  auto routing_area_check = new RoutingAreaCheck(_tech, region_query);
+  auto routing_width_check = new RoutingWidthCheck(_tech, region_query);
+  auto enclosed_area_check = new EnclosedAreaCheck(_tech, region_query);
+  auto cut_spacing_check = new CutSpacingCheck(_tech, region_query);
+  auto enclosure_check = new EnclosureCheck(_tech, region_query);
+  for (auto& [net_id, net] : nets) {
+    routing_sapcing_check->checkRoutingSpacing(&net);
+
+    routing_width_check->checkRoutingWidth(&net);
+
+    routing_area_check->checkArea(&net);
+
+    enclosed_area_check->checkEnclosedArea(&net);
+
+    cut_spacing_check->checkCutSpacing(&net);
+
+    enclosure_check->checkEnclosure(&net);
+
+    eol_spacing_check->checkEOLSpacing(&net);
+
+    notch_spacing_check->checkNotchSpacing(&net);
+
+    min_step_check->checkMinStep(&net);
+
+    corner_fill_spacing_check->checkCornerFillSpacing(&net);
+
+    cut_eol_spacing_check->checkCutEolSpacing(&net);
+
+    jog_spacing_check->checkJogSpacing(&net);
+  }
+  delete jog_spacing_check;
+  delete notch_spacing_check;
+  delete min_step_check;
+  delete corner_fill_spacing_check;
+  delete cut_eol_spacing_check;
+  delete routing_sapcing_check;
+  delete eol_spacing_check;
+  delete routing_area_check;
+  delete routing_width_check;
+  delete enclosed_area_check;
+  delete cut_spacing_check;
+  delete enclosure_check;
+
+  std::map<std::string, std::vector<DrcViolationSpot*>> vio_map;
+  region_query->getRegionDetailReport(vio_map);
+  return vio_map;
 }
 
 }  // namespace idrc

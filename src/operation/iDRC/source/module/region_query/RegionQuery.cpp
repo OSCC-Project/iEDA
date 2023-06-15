@@ -476,6 +476,7 @@ void RegionQuery::getRegionDetailReport(std::map<std::string, std::vector<DrcVio
 {
   vio_map.insert(std::make_pair("Cut EOL Spacing", _cut_eol_spacing_spot_list));
   vio_map.insert(std::make_pair("Cut Spacing", _cut_spacing_spot_list));
+  vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
   vio_map.insert(std::make_pair("Cut Enclosure", _cut_enclosure_spot_list));
   initMetalEOLVioSpot();
   vio_map.insert(std::make_pair("Metal EOL Spacing", _metal_eol_spacing_spot_list));

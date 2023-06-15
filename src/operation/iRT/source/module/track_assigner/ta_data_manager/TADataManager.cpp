@@ -45,7 +45,6 @@ TANet TADataManager::convertToTANet(Net& net)
   TANet ta_net;
   ta_net.set_origin_net(&net);
   ta_net.set_net_idx(net.get_net_idx());
-  ta_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     ta_net.get_ta_pin_list().push_back(TAPin(pin));
   }

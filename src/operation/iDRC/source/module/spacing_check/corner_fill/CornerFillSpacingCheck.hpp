@@ -60,6 +60,7 @@ class CornerFillSpacingCheck
   bool check(DrcPoly* poly);
   void getScope(DrcPoly* target_poly, std::vector<DrcRect*>& max_scope_list);
   void addScope(DrcPoly* target_poly, RegionQuery* rq);
+  void addSpot(DrcRect* result_rect);
 
   void reset();
 

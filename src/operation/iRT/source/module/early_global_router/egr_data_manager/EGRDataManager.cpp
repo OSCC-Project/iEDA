@@ -599,7 +599,7 @@ void EGRDataManager::makeLayerViaMasterList()
       }
     });
     for (size_t i = 0; i < via_master_list.size(); i++) {
-      via_master_list[i].set_via_idx(std::make_pair(layer_idx, i));
+      via_master_list[i].set_via_master_idx(layer_idx, i);
     }
   }
 }

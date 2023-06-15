@@ -157,6 +157,7 @@ void CornerFillSpacingCheck::checkCornerSpacing(DrcRect* result_rect)
   if (required_spacing * required_spacing > distanceX * distanceX + distanceY * distanceY) {
     if (_interact_with_op) {
       _region_query->addViolation(ViolationType::kCornerFillingSpacing);
+      addSpot(result_rect);
       _check_result = false;
     } else {
       std::cout << "cornerfill spacing vio " << std::endl;
@@ -183,11 +184,25 @@ void CornerFillSpacingCheck::checkXYSpacing(DrcRect* result_rect)
   if (spacing < _rule->get_spacing()) {
     if (_interact_with_op) {
       _region_query->addViolation(ViolationType::kCornerFillingSpacing);
+      addSpot(result_rect);
       _check_result = false;
     } else {
       std::cout << "spacing vio " << std::endl;
     }
   }
+}
+
+void CornerFillSpacingCheck::addSpot(DrcRect* result_rect)
+{
+  auto box = DRCUtil::getSpanBoxBetweenTwoRects(&_corner_fill_rect, result_rect);
+  DrcViolationSpot* spot = new DrcViolationSpot();
+  int layer_id = _corner_fill_rect.get_layer_id();
+  spot->set_layer_id(layer_id);
+  spot->set_layer_name(_tech->getCutLayerNameById(layer_id));
+  spot->set_net_id(_corner_fill_rect.get_net_id());
+  spot->set_vio_type(ViolationType::kCornerFillingSpacing);
+  spot->setCoordinate(box.min_corner().x(), box.min_corner().y(), box.max_corner().x(), box.max_corner().y());
+  _region_query->_metal_corner_fill_spacing_spot_list.emplace_back(spot);
 }
 
 void CornerFillSpacingCheck::checkSpacing(DrcRect* result_rect)
@@ -392,10 +407,9 @@ void CornerFillSpacingCheck::addScope(DrcPoly* target_poly, RegionQuery* rq)
       getCornerFillRect(edge.get());
       DrcRect* scope_rect = new DrcRect();
       getScopeRect(edge.get(), scope_rect);
-      // 构造函数要重新写
+
       DrcRect* _corner_fill_scope = new DrcRect(_corner_fill_rect);
       target_poly->addScope(_corner_fill_scope);
-      std::cout << "add corner_fill" << std::endl;
       rq->addScopeToMaxScopeRTree(_corner_fill_scope);
       rq->addScopeToMinScopeRTree(_corner_fill_scope);
     }

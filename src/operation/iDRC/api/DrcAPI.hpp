@@ -62,6 +62,8 @@ class DrcAPI
   // interact function
   RegionQuery* init();
   void runDrc();
+
+  // dynamic interaction
   bool check(std::vector<ids::DRCTask> task_list);
   void add(std::vector<ids::DRCTask> task_list);
   void del(std::vector<ids::DRCTask> task_list);
@@ -74,12 +76,15 @@ class DrcAPI
   std::vector<DrcRect*> getMaxScope(std::vector<DrcRect*> origin_rect_list);
   // Get the minimum influence region of spacing (Common,EOL,Corner_fill)
   std::vector<DrcRect*> getMinScope(std::vector<DrcRect*> origin_rect_list);
-  DrcRect* getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, std::string layer_name, bool is_artificial = false);
+  DrcRect* getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, int layer_order, std::string layer_name,
+                      bool is_artificial = false);
 
-  //
   void initDRC();
   // RegionQuery* createRTree(ids::DRCEnv env);
   bool checkDRC(std::vector<DrcRect*> origin_rect_list);
+
+  // static interaction
+  std::map<std::string, std::vector<DrcViolationSpot*>> check(std::vector<DrcRect*>& region_rect_list);
 
  private:
   static DrcAPI* _drc_api_instance;
