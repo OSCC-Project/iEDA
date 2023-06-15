@@ -151,7 +151,6 @@ void TrackAssigner::buildTATaskList(TAModel& ta_model)
       ta_task.set_origin_net_idx(ta_net.get_net_idx());
       ta_task.set_origin_node(ta_node_node);
       ta_task.set_task_idx(static_cast<irt_int>(ta_task_list.size()));
-      ta_task.set_connect_type(ta_net.get_connect_type());
       std::vector<PlanarCoord> coord_list;
       for (TAGroup& ta_group : ta_task.get_ta_group_list()) {
         for (LayerCoord& coord : ta_group.get_coord_list()) {

@@ -46,6 +46,8 @@ class Tech
   std::vector<DrcCutLayer*>& get_drc_cut_layer_list() { return _drc_cut_layer_list; }
   std::vector<DrcVia*>& get_via_lib() { return _via_lib; }
   // function
+  int getLayerIdByOrder(int layer_order) { return _layer_order_to_id_map[layer_order].second; }
+  void insertOrderToIdMap(int order, bool is_cut, int layer_id) { _layer_order_to_id_map[order] = std::make_pair(is_cut, layer_id); }
   int getRoutingWidth(int routingLayerId);
   int getRoutingSpacing(int routingLayerId, int width);
   int getRoutingMinWidth(int routingLayerId);
@@ -72,6 +74,7 @@ class Tech
   std::vector<DrcRoutingLayer*> _drc_routing_layer_list;
   std::vector<DrcCutLayer*> _drc_cut_layer_list;
   std::vector<DrcVia*> _via_lib;
+  std::map<int, std::pair<int, int>> _layer_order_to_id_map;
 };
 }  // namespace idrc
 
