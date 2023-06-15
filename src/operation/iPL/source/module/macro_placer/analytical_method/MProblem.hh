@@ -38,6 +38,7 @@ class MProblem final : public Problem
   MProblem() {}
   ~MProblem() {}
   virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const override;
+  virtual double getSolutionDistance(const Vec& a, const Vec& b, int col) const override;
   virtual double getLowerBound(int row, int col) const override { return _bound[_num_macros * col + row].first; }
   virtual double getUpperBound(int row, int col) const override { return _bound[_num_macros * col + row].second; };
   virtual int variableMatrixRows() const override { return _num_macros; };
@@ -54,20 +55,21 @@ class MProblem final : public Problem
   double getPenaltyFactor() const;
   void updateLowerBound(int row, int col, double lower) { _bound[_num_macros * col + row].first = lower; }
   void updateUpperBound(int row, int col, double upper) { _bound[_num_macros * col + row].second = upper; }
+  void drawImage(const Mat& variable, int index) const;
 
  private:
-  MPDB* _db = {nullptr};
+  MPDB* _db{};
   Vec _width;
   Vec _height;
-  std::shared_ptr<LSEWirelength> wl;
-  int _num_macros = {};
-  int _num_nets = {};
-  int _num_types = {};
-  double _core_width = {};
-  double _core_height = {};
+  std::shared_ptr<LSEWirelength> wl{};
+  int _num_macros{};
+  int _num_nets{};
+  int _num_types{};
+  double _core_width{};
+  double _core_height{};
 
-  unordered_map<FPInst*, uint32_t> _inst2id = {};
-  vector<pair<double, double>> _bound = {};
+  unordered_map<FPInst*, uint32_t> _inst2id{};
+  vector<pair<double, double>> _bound{};
 };
 
 }  // namespace ipl

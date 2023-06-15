@@ -42,7 +42,7 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
     assert(!std::isnan(x_off) || !std::isnan(y_off));
   };
 
-#pragma omp parallel for num_threads(48)
+#pragma omp parallel for num_threads(8)
   for (int k = 0; k < _exp_pos_x.outerSize(); ++k) {
     double x_min = std::numeric_limits<double>::max();
     double x_max = std::numeric_limits<double>::lowest();
@@ -165,9 +165,9 @@ void LSEWirelength::evaluate(const Mat& variable, Mat& grad, double& cost, const
   grad.col(1) = _exp_pos_y * _sum_exp_pos_y - _exp_neg_y * _sum_exp_neg_y;  // exp(y/gamma)/Σ exp(y/gamma) - exp(-y/gamma)/Σ exp(-y/gamma).
   grad.col(2) = grad.col(0).asDiagonal() * -_y_offset * Vec::Ones(_y_offset.cols())    // grad_x * y_displacement
                 + grad.col(1).asDiagonal() * _x_offset * Vec::Ones(_x_offset.cols());  //  + grad_y * x_displacement.
-  double norm_x = grad.col(0).lpNorm<1>();
-  double norm_y = grad.col(1).lpNorm<1>();
-  double norm_r = grad.col(2).lpNorm<1>();
+  // double norm_x = grad.col(0).lpNorm<1>();
+  // double norm_y = grad.col(1).lpNorm<1>();
+  // double norm_r = grad.col(2).lpNorm<1>();
   // if (norm_r >= 1e-5)
   //   grad.col(2) = (norm_x + norm_y) / (2 * norm_r) * grad.col(2);
 }

@@ -34,4 +34,5 @@ target_link_libraries(ipl-module-macro_placer
     ipl-solver-partition
     ipl-solver-simulate_anneal
     ipl-configurator
+    ipl-utility
 )
