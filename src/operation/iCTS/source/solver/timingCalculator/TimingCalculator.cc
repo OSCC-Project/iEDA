@@ -35,7 +35,7 @@ TimingCalculator::TimingCalculator()
   // init timing model from api
   _delay_libs = CTSAPIInst.getAllBufferLibs();
   _skew_bound = config->get_skew_bound();
-  _db_unit = config->get_micron_dbu();
+  _db_unit = CTSAPIInst.getDbUnit();
   _max_buf_tran = config->get_max_buf_tran();
   _max_sink_tran = config->get_max_sink_tran();
   _max_cap = config->get_max_cap();
