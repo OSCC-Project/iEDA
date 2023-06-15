@@ -79,8 +79,6 @@ class CtsDBWrapper
 
   // read data from idb
   void read();
-  void readConfig();
-  void readClockNetlist();
 
   // the operator of idb
   IdbInstance* makeIdbInstance(CtsInstance* inst);

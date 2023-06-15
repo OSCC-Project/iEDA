@@ -112,6 +112,7 @@ class CTSAPI
   void makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const;
 
   // synthesis
+  int32_t getDbUnit() const;
   bool isInDie(const icts::Point& point) const;
   void placeInstance(icts::CtsInstance* inst);
   idb::IdbInstance* makeIdbInstance(const std::string& inst_name, const std::string& cell_master);
@@ -122,6 +123,7 @@ class CTSAPI
   void insertBuffer(const std::string& name);
   void resetId();
   int genId();
+  void genShallowLightTree(const std::vector<Node*>& loads, Node* driver, const std::string& net_name = "salt");
 
   // evaluate
   bool isTop(const std::string& net_name) const;

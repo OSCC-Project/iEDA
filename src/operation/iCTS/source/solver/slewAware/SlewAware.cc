@@ -364,9 +364,8 @@ ClockTopo SlewAware::makeTopo(TimingNode* root, const std::string& net_name)
     auto current_loc = current->get_location();
     auto* parent = current->get_parent();
     auto parent_loc = parent->get_location();
-    auto* config = CTSAPIInst.get_config();
     if (current->get_need_snake() > 0) {
-      auto require_snake = std::ceil(current->get_need_snake() * config->get_micron_dbu());
+      auto require_snake = std::ceil(current->get_need_snake() * CTSAPIInst.getDbUnit());
       auto delta_x = std::abs(current_loc.x() - parent_loc.x());
       auto trunk_x = (parent_loc.x() + current_loc.x() + delta_x + require_snake) / 2;
       auto snake_p1 = Point(trunk_x, parent_loc.y());

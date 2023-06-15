@@ -25,6 +25,7 @@ class Str;
 class Time;
 }  // namespace ieda
 namespace icts {
+class Node;
 class HNode;
 class TimingNode;
 class CtsCellLib;

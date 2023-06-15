@@ -157,7 +157,7 @@ class Router
     } else {
       delay_model = DelayModel::kLINEAR;
     }
-    ZstParams params(delay_model, config->get_micron_dbu(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
+    ZstParams params(delay_model, CTSAPIInst.getDbUnit(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params);
   }
 
