@@ -93,13 +93,6 @@ void EvalAPI::reportWirelength(const string& plot_path, const string& output_fil
 /******************************Wirelength Eval: END******************************/
 
 /******************************Congestion Eval: START******************************/
-void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
-{
-  _congestion_eval_inst = new CongestionEval();
-  _congestion_eval_inst->set_cong_grid(grid);
-  _congestion_eval_inst->set_cong_inst_list(inst_list);
-  _congestion_eval_inst->set_cong_net_list(net_list);
-}
 
 void EvalAPI::initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y)
 {
@@ -115,14 +108,14 @@ void EvalAPI::initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y)
   _congestion_eval_inst->mapNetCoord2Grid();
 }
 
-void EvalAPI::evalInstDens(INSTANCE_STATUS inst_status)
+void EvalAPI::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop)
 {
-  _congestion_eval_inst->evalInstDens(inst_status);
+  _congestion_eval_inst->evalInstDens(inst_status, eval_flip_flop);
 }
 
-void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status)
+void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status, int level)
 {
-  _congestion_eval_inst->evalPinDens(inst_status);
+  _congestion_eval_inst->evalPinDens(inst_status, level);
 }
 
 void EvalAPI::evalNetDens(INSTANCE_STATUS inst_status)
@@ -135,6 +128,27 @@ void EvalAPI::plotBinValue(const string& plot_path, const string& output_file_na
   _congestion_eval_inst->plotBinValue(plot_path, output_file_name, cong_type);
 }
 
+int32_t EvalAPI::evalInstNum(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalInstNum(inst_status);
+}
+
+int32_t EvalAPI::evalRoutingLayerNum()
+{
+  return _congestion_eval_inst->evalRoutingLayerNum();
+}
+
+vector<int64_t> EvalAPI::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
+{
+  return _congestion_eval_inst->evalChipWidthHeightArea(chip_region_type);
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalInstSize(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalInstSize(inst_status);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()
 {
   _congestion_eval_inst->mapInst2Bin();
@@ -198,6 +212,14 @@ pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong(const int& bin_cnt_x, 
   b.push_back(0.5);
 
   return std::make_pair(a, b);
+}
+
+void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
+{
+  _congestion_eval_inst = new CongestionEval();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->set_cong_net_list(net_list);
 }
 
 vector<float> EvalAPI::evalGRCong()

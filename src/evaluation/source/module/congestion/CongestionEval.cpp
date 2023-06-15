@@ -27,6 +27,352 @@
 
 namespace eval {
 
+void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbLayers* idb_layers = idb_layout->get_layers();
+  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  int32_t lx = core_bbox->get_low_x();
+  int32_t ly = core_bbox->get_low_y();
+  int32_t width = core_bbox->get_width();
+  int32_t height = core_bbox->get_height();
+
+  _cong_grid->set_lx(lx);
+  _cong_grid->set_ly(ly);
+  _cong_grid->set_bin_cnt_x(bin_cnt_x);
+  _cong_grid->set_bin_cnt_y(bin_cnt_y);
+  _cong_grid->set_bin_size_x(ceil(width / (float) bin_cnt_x));
+  _cong_grid->set_bin_size_y(ceil(height / (float) bin_cnt_y));
+  _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
+  _cong_grid->initBins(idb_layers);
+}
+
+void CongestionEval::initCongInst()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbDie* idb_die = idb_layout->get_die();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int32_t die_lx = idb_die->get_llx();
+  int32_t die_ly = idb_die->get_lly();
+  int32_t die_ux = idb_die->get_urx();
+  int32_t die_uy = idb_die->get_ury();
+  int32_t core_lx = idb_core->get_low_x();
+  int32_t core_ly = idb_core->get_low_y();
+  int32_t core_ux = idb_core->get_high_x();
+  int32_t core_uy = idb_core->get_high_y();
+
+  for (auto* idb_inst : idb_design->get_instance_list()->get_instance_list()) {
+    CongInst* inst_ptr = new CongInst();
+    inst_ptr->set_name(idb_inst->get_name());
+    auto bbox = idb_inst->get_bounding_box();
+    inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
+
+    auto inst_status = idb_inst->get_status();
+    if (inst_status == IdbPlacementStatus::kNone) {
+      inst_ptr->set_status(INSTANCE_STATUS::kNone);
+    } else if (inst_status == IdbPlacementStatus::kFixed) {
+      inst_ptr->set_status(INSTANCE_STATUS::kFixed);
+    } else if (inst_status == IdbPlacementStatus::kCover) {
+      inst_ptr->set_status(INSTANCE_STATUS::kCover);
+    } else if (inst_status == IdbPlacementStatus::kPlaced) {
+      inst_ptr->set_status(INSTANCE_STATUS::kPlaced);
+    } else if (inst_status == IdbPlacementStatus::kUnplaced) {
+      inst_ptr->set_status(INSTANCE_STATUS::kUnplaced);
+    } else {
+      inst_ptr->set_status(INSTANCE_STATUS::kMax);
+    }
+
+    if (idb_inst->is_flip_flop()) {
+      inst_ptr->set_flip_flop(true);
+      std::cout << "flip flop " << std::endl;
+    }
+
+    if ((bbox->get_low_x() >= die_lx && bbox->get_high_x() <= core_lx) || (bbox->get_low_x() >= core_ux && bbox->get_high_x() <= die_ux)
+        || (bbox->get_low_y() >= die_ly && bbox->get_high_y() <= core_ly)
+        || (bbox->get_low_y() >= core_uy && bbox->get_high_y() <= die_uy)) {
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kOutside);
+    } else {
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kNormal);
+    }
+
+    _cong_inst_list.emplace_back(inst_ptr);
+    _name_to_inst_map.emplace(inst_ptr->get_name(), inst_ptr);
+  }
+}
+
+void CongestionEval::initCongNetList()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
+    std::string net_name = fixSlash(idb_net->get_net_name());
+    CongNet* net_ptr = new CongNet();
+    net_ptr->set_name(net_name);
+
+    auto* idb_driving_pin = idb_net->get_driving_pin();
+    if (idb_driving_pin) {
+      CongPin* pin_ptr = wrapCongPin(idb_driving_pin);
+      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
+      net_ptr->add_pin(pin_ptr);
+    }
+    for (auto* idb_load_pin : idb_net->get_load_pins()) {
+      CongPin* pin_ptr = wrapCongPin(idb_load_pin);
+      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
+      net_ptr->add_pin(pin_ptr);
+    }
+
+    _cong_net_list.emplace_back(net_ptr);
+  }
+}
+
+void CongestionEval::mapInst2Bin()
+{
+  for (auto& inst : _cong_inst_list) {
+    if (inst->isNormalInst()) {
+      std::pair<int, int> pair_x = _cong_grid->getMinMaxX(inst);
+      std::pair<int, int> pair_y = _cong_grid->getMinMaxY(inst);
+      // fix the out of core bug
+      if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
+        pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
+      }
+      if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
+        pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
+      }
+      if (pair_x.first < 0) {
+        pair_x.first = 0;
+      }
+      if (pair_y.first < 0) {
+        pair_y.first = 0;
+      }
+      for (int i = pair_x.first; i <= pair_x.second; ++i) {
+        for (int j = pair_y.first; j <= pair_y.second; ++j) {
+          CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
+          bin->add_inst(inst);
+        }
+      }
+    }
+  }
+}
+
+void CongestionEval::mapNetCoord2Grid()
+{
+  for (auto& net : _cong_net_list) {
+    if (net->get_pin_list().size() == 1) {
+      continue;
+    }
+    std::pair<int, int> pair_x = _cong_grid->getMinMaxX(net);
+    std::pair<int, int> pair_y = _cong_grid->getMinMaxY(net);
+    // fix the out of core bug
+    if (pair_x.first < 0) {
+      pair_x.first = 0;
+    }
+    if (pair_y.first < 0) {
+      pair_y.first = 0;
+    }
+    if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
+      pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
+    }
+    if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
+      pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
+    }
+    for (int i = pair_x.first; i <= pair_x.second; i++) {
+      for (int j = pair_y.first; j <= pair_y.second; j++) {
+        CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
+        bin->add_net(net);
+      }
+    }
+  }
+}
+
+void CongestionEval::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    double overlap_area = 0.0;
+    double density = 0.0;
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        if (eval_flip_flop == false) {
+          overlap_area += getOverlapArea(bin, inst);
+        } else if (inst->isFlipFlop()) {
+          overlap_area += getOverlapArea(bin, inst);
+        }
+      }
+    }
+    density = overlap_area / bin->get_area();
+    bin->set_inst_density(density);
+  }
+}
+
+void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status, int level)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_pin_num(0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increPinNum();
+          }
+        }
+      }
+    }
+  }
+}
+
+void CongestionEval::evalNetCong(INSTANCE_STATUS inst_status)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increNetCong(pin->get_two_pin_net_num());
+          }
+        }
+      }
+    }
+  }
+}
+
+void CongestionEval::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
+{
+  std::ofstream plot(plot_path + output_file_name + ".csv");
+  if (!plot.good()) {
+    std::cerr << "plot bin value:: cannot open " << output_file_name << "for writing" << std::endl;
+    exit(1);
+  }
+  std::stringstream feed;
+  feed.precision(5);
+  int32_t x_cnt = _cong_grid->get_bin_cnt_x();
+  int32_t y_cnt = _cong_grid->get_bin_cnt_y();
+
+  for (int i = 0; i < x_cnt; i++) {
+    if (i == x_cnt - 1) {
+      feed << "col_" << i;
+    } else {
+      feed << "col_" << i << ",";
+    }
+  }
+  feed << std::endl;
+
+  if (cong_type == CONGESTION_TYPE::kInstDens) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double inst_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_inst_density();
+        if (j == x_cnt - 1) {
+          feed << inst_density;
+        } else {
+          feed << inst_density << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  } else if (cong_type == CONGESTION_TYPE::kPinDens) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        int pin_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_pin_num();
+        if (j == x_cnt - 1) {
+          feed << pin_density;
+        } else {
+          feed << pin_density << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  } else if (cong_type == CONGESTION_TYPE::kNetCong) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double net_cong = _cong_grid->get_bin_list()[i * x_cnt + j]->get_net_cong();
+        if (j == x_cnt - 1) {
+          feed << net_cong;
+        } else {
+          feed << net_cong << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  }
+
+  plot << feed.str();
+  feed.clear();
+  plot.close();
+  LOG_INFO << output_file_name + ".csv"
+           << " has been created in " << plot_path;
+}
+
+int32_t CongestionEval::evalInstNum(INSTANCE_STATUS inst_status)
+{
+  int32_t inst_num = 0;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == inst_status) {
+      ++inst_num;
+    }
+  }
+  return inst_num;
+}
+
+int32_t CongestionEval::evalRoutingLayerNum()
+{
+  return _cong_grid->get_routing_layers_number();
+}
+
+std::vector<int64_t> CongestionEval::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbDie* idb_die = idb_layout->get_die();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int32_t die_width = idb_die->get_width();
+  int32_t die_height = idb_die->get_height();
+  int64_t die_area = idb_die->get_area();
+  int32_t core_width = idb_core->get_width();
+  int32_t core_height = idb_core->get_height();
+  int64_t core_area = idb_core->get_area();
+
+  std::vector<int64_t> chip_info_list;
+  chip_info_list.reserve(3);
+  if (chip_region_type == CHIP_REGION_TYPE::kDie) {
+    chip_info_list.emplace_back(die_width);
+    chip_info_list.emplace_back(die_height);
+    chip_info_list.emplace_back(die_area);
+  } else if (chip_region_type == CHIP_REGION_TYPE::kCore) {
+    chip_info_list.emplace_back(core_width);
+    chip_info_list.emplace_back(core_height);
+    chip_info_list.emplace_back(core_area);
+  }
+  return chip_info_list;
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalInstSize(INSTANCE_STATUS inst_status)
+{
+  vector<pair<string, pair<int32_t, int32_t>>> inst_name_to_size_list;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == inst_status) {
+      pair<string, pair<int32_t, int32_t>> name_to_size
+          = std::make_pair(inst->get_name(), std::make_pair(inst->get_width(), inst->get_height()));
+      inst_name_to_size_list.emplace_back(name_to_size);
+    }
+  }
+  return inst_name_to_size_list;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 void CongestionEval::reportCongestion(const std::string& plot_path, const std::string& output_file_name)
 {
   LOG_INFO << " ==========================================";
@@ -63,12 +409,6 @@ void CongestionEval::reportCongestion(const std::string& plot_path, const std::s
   // plotNetCong(plot_path, output_file_name, "TrueRUDY");
   LOG_INFO << " Evaluating Routing Congestion for Each Tile ... ... ";
 }
-
-/////////////////////////////////
-/////////////////////////////////
-/*----evaluate pin number----*/
-/////////////////////////////////
-/////////////////////////////////
 
 void CongestionEval::evalPinNum()
 {
@@ -161,12 +501,6 @@ double CongestionEval::getBinPinDens(const int& index_x, const int& index_y)
   return (double) pin_num / bin->get_area();
 }
 
-/////////////////////////////////
-/////////////////////////////////
-/*----evaluate inst density----*/
-/////////////////////////////////
-/////////////////////////////////
-
 void CongestionEval::evalInstDens()
 {
   for (auto& bin : _cong_grid->get_bin_list()) {
@@ -254,103 +588,6 @@ double CongestionEval::getBinInstDens(const int& index_x, const int& index_y)
 /////////////////////////////////
 /////////////////////////////////
 
-void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
-{
-  auto* idb_builder = dmInst->get_idb_builder();
-  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
-  idb::IdbLayers* idb_layers = idb_layout->get_layers();
-  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
-  int32_t lx = core_bbox->get_low_x();
-  int32_t ly = core_bbox->get_low_y();
-  int32_t width = core_bbox->get_width();
-  int32_t height = core_bbox->get_height();
-
-  _cong_grid->set_lx(lx);
-  _cong_grid->set_ly(ly);
-  _cong_grid->set_bin_cnt_x(bin_cnt_x);
-  _cong_grid->set_bin_cnt_y(bin_cnt_y);
-  _cong_grid->set_bin_size_x(ceil(width / (float) bin_cnt_x));
-  _cong_grid->set_bin_size_y(ceil(height / (float) bin_cnt_y));
-  _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
-  _cong_grid->initBins(idb_layers);
-}
-
-void CongestionEval::initCongInst()
-{
-  auto* idb_builder = dmInst->get_idb_builder();
-  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
-  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
-  idb::IdbDie* idb_die = idb_layout->get_die();
-  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
-  int32_t die_lx = idb_die->get_llx();
-  int32_t die_ly = idb_die->get_lly();
-  int32_t die_ux = idb_die->get_urx();
-  int32_t die_uy = idb_die->get_ury();
-  int32_t core_lx = idb_core->get_low_x();
-  int32_t core_ly = idb_core->get_low_y();
-  int32_t core_ux = idb_core->get_high_x();
-  int32_t core_uy = idb_core->get_high_y();
-
-  for (auto* idb_inst : idb_design->get_instance_list()->get_instance_list()) {
-    CongInst* inst_ptr = new CongInst();
-    inst_ptr->set_name(idb_inst->get_name());
-    auto bbox = idb_inst->get_bounding_box();
-    inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
-
-    auto inst_status = idb_inst->get_status();
-    if (inst_status == IdbPlacementStatus::kNone) {
-      inst_ptr->set_status(INSTANCE_STATUS::kNone);
-    } else if (inst_status == IdbPlacementStatus::kFixed) {
-      inst_ptr->set_status(INSTANCE_STATUS::kFixed);
-    } else if (inst_status == IdbPlacementStatus::kCover) {
-      inst_ptr->set_status(INSTANCE_STATUS::kCover);
-    } else if (inst_status == IdbPlacementStatus::kPlaced) {
-      inst_ptr->set_status(INSTANCE_STATUS::kPlaced);
-    } else if (inst_status == IdbPlacementStatus::kUnplaced) {
-      inst_ptr->set_status(INSTANCE_STATUS::kUnplaced);
-    } else {
-      inst_ptr->set_status(INSTANCE_STATUS::kMax);
-    }
-
-    if ((bbox->get_low_x() >= die_lx && bbox->get_high_x() <= core_lx) || (bbox->get_low_x() >= core_ux && bbox->get_high_x() <= die_ux)
-        || (bbox->get_low_y() >= die_ly && bbox->get_high_y() <= core_ly)
-        || (bbox->get_low_y() >= core_uy && bbox->get_high_y() <= die_uy)) {
-      inst_ptr->set_type(INSTANCE_TYPE::kOutside);
-    } else {
-      inst_ptr->set_type(INSTANCE_TYPE::kNormal);
-    }
-
-    _cong_inst_list.emplace_back(inst_ptr);
-    _name_to_inst_map.emplace(inst_ptr->get_name(), inst_ptr);
-  }
-}
-
-void CongestionEval::initCongNetList()
-{
-  auto* idb_builder = dmInst->get_idb_builder();
-  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
-
-  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
-    std::string net_name = fixSlash(idb_net->get_net_name());
-    CongNet* net_ptr = new CongNet();
-    net_ptr->set_name(net_name);
-
-    auto* idb_driving_pin = idb_net->get_driving_pin();
-    if (idb_driving_pin) {
-      CongPin* pin_ptr = wrapCongPin(idb_driving_pin);
-      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
-      net_ptr->add_pin(pin_ptr);
-    }
-    for (auto* idb_load_pin : idb_net->get_load_pins()) {
-      CongPin* pin_ptr = wrapCongPin(idb_load_pin);
-      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
-      net_ptr->add_pin(pin_ptr);
-    }
-
-    _cong_net_list.emplace_back(net_ptr);
-  }
-}
-
 std::string CongestionEval::fixSlash(std::string raw_str)
 {
   std::regex re(R"(\\)");
@@ -385,123 +622,6 @@ CongPin* CongestionEval::wrapCongPin(idb::IdbPin* idb_pin)
   pin_ptr->set_y(idb_pin->get_average_coordinate()->get_y());
 
   return pin_ptr;
-}
-
-void CongestionEval::mapInst2Bin()
-{
-  for (auto& inst : _cong_inst_list) {
-    if (inst->isNormalInst()) {
-      std::pair<int, int> pair_x = _cong_grid->getMinMaxX(inst);
-      std::pair<int, int> pair_y = _cong_grid->getMinMaxY(inst);
-      // fix the out of core bug
-      if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
-        pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
-      }
-      if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
-        pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
-      }
-      if (pair_x.first < 0) {
-        pair_x.first = 0;
-      }
-      if (pair_y.first < 0) {
-        pair_y.first = 0;
-      }
-      for (int i = pair_x.first; i <= pair_x.second; ++i) {
-        for (int j = pair_y.first; j <= pair_y.second; ++j) {
-          CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
-          bin->add_inst(inst);
-        }
-      }
-    }
-  }
-}
-
-void CongestionEval::mapNetCoord2Grid()
-{
-  for (auto& net : _cong_net_list) {
-    if (net->get_pin_list().size() == 1) {
-      continue;
-    }
-    std::pair<int, int> pair_x = _cong_grid->getMinMaxX(net);
-    std::pair<int, int> pair_y = _cong_grid->getMinMaxY(net);
-    // fix the out of core bug
-    if (pair_x.first < 0) {
-      pair_x.first = 0;
-    }
-    if (pair_y.first < 0) {
-      pair_y.first = 0;
-    }
-    if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
-      pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
-    }
-    if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
-      pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
-    }
-    for (int i = pair_x.first; i <= pair_x.second; i++) {
-      for (int j = pair_y.first; j <= pair_y.second; j++) {
-        CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
-        bin->add_net(net);
-      }
-    }
-  }
-}
-
-void CongestionEval::evalInstDens(INSTANCE_STATUS inst_status)
-{
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    double overlap_area = 0.0;
-    double density = 0.0;
-    for (auto& inst : bin->get_inst_list()) {
-      auto status = inst->get_status();
-      if (inst_status == status) {
-        overlap_area += getOverlapArea(bin, inst);
-      }
-    }
-    density = overlap_area / bin->get_area();
-    bin->set_inst_density(density);
-  }
-}
-
-void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status)
-{
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    bin->set_pin_num(0);
-  }
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    for (auto& inst : bin->get_inst_list()) {
-      auto status = inst->get_status();
-      if (inst_status == status) {
-        for (auto& pin : inst->get_pin_list()) {
-          auto pin_x = pin->get_x();
-          auto pin_y = pin->get_y();
-          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
-            bin->increPinNum();
-          }
-        }
-      }
-    }
-  }
-}
-
-void CongestionEval::evalNetCong(INSTANCE_STATUS inst_status)
-{
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    bin->set_net_cong(0.0);
-  }
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    for (auto& inst : bin->get_inst_list()) {
-      auto status = inst->get_status();
-      if (inst_status == status) {
-        for (auto& pin : inst->get_pin_list()) {
-          auto pin_x = pin->get_x();
-          auto pin_y = pin->get_y();
-          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
-            bin->increNetCong(pin->get_two_pin_net_num());
-          }
-        }
-      }
-    }
-  }
 }
 
 void CongestionEval::evalNetCong(const std::string& rudy_type)
@@ -946,72 +1066,6 @@ void CongestionEval::plotOverflow(const std::string& plot_path, const std::strin
   feed.clear();
   plot.close();
   LOG_INFO << output_file_name + type + ".csv"
-           << " has been created in " << plot_path;
-}
-
-void CongestionEval::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
-{
-  std::ofstream plot(plot_path + output_file_name + ".csv");
-  if (!plot.good()) {
-    std::cerr << "plot bin value:: cannot open " << output_file_name << "for writing" << std::endl;
-    exit(1);
-  }
-  std::stringstream feed;
-  feed.precision(5);
-  int32_t x_cnt = _cong_grid->get_bin_cnt_x();
-  int32_t y_cnt = _cong_grid->get_bin_cnt_y();
-
-  for (int i = 0; i < x_cnt; i++) {
-    if (i == x_cnt - 1) {
-      feed << "col_" << i;
-    } else {
-      feed << "col_" << i << ",";
-    }
-  }
-  feed << std::endl;
-
-  if (cong_type == CONGESTION_TYPE::kInstDens) {
-    for (int i = y_cnt - 1; i >= 0; i--) {
-      for (int j = 0; j < x_cnt; j++) {
-        double inst_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_inst_density();
-        if (j == x_cnt - 1) {
-          feed << inst_density;
-        } else {
-          feed << inst_density << ",";
-        }
-      }
-      feed << std::endl;
-    }
-  } else if (cong_type == CONGESTION_TYPE::kPinDens) {
-    for (int i = y_cnt - 1; i >= 0; i--) {
-      for (int j = 0; j < x_cnt; j++) {
-        int pin_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_pin_num();
-        if (j == x_cnt - 1) {
-          feed << pin_density;
-        } else {
-          feed << pin_density << ",";
-        }
-      }
-      feed << std::endl;
-    }
-  } else if (cong_type == CONGESTION_TYPE::kNetCong) {
-    for (int i = y_cnt - 1; i >= 0; i--) {
-      for (int j = 0; j < x_cnt; j++) {
-        double net_cong = _cong_grid->get_bin_list()[i * x_cnt + j]->get_net_cong();
-        if (j == x_cnt - 1) {
-          feed << net_cong;
-        } else {
-          feed << net_cong << ",";
-        }
-      }
-      feed << std::endl;
-    }
-  }
-
-  plot << feed.str();
-  feed.clear();
-  plot.close();
-  LOG_INFO << output_file_name + ".csv"
            << " has been created in " << plot_path;
 }
 

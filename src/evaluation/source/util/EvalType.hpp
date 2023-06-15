@@ -43,7 +43,7 @@ enum class PIN_IO_TYPE
   kInputOutput
 };
 
-enum class INSTANCE_TYPE
+enum class INSTANCE_LOC_TYPE
 {
   kNone,
   kNormal,
@@ -58,7 +58,7 @@ enum class INSTANCE_STATUS
   kCover,
   kPlaced,
   kUnplaced,
-  kMax
+  kMax,
 };
 
 enum class CONGESTION_TYPE
@@ -68,6 +68,13 @@ enum class CONGESTION_TYPE
   kPinDens,
   kNetCong,
   kGRCong
+};
+
+enum class CHIP_REGION_TYPE
+{
+  kNone,
+  kDie,
+  kCore
 };
 
 }  // namespace eval
