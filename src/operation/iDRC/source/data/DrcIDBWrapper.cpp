@@ -401,6 +401,7 @@ void DrcIDBWrapper::wrapCutLayerList()
     /// idb routing layer
     idb::IdbLayerCut* idb_cut_layer = dynamic_cast<idb::IdbLayerCut*>(idb_layer);
     tech->insertOrderToIdMap(idb_layer->get_order(), true, idb_layer->get_id());
+    tech->insertNameToOrderMap(idb_layer->get_name(), idb_layer->get_order());
 
     /// tech routing layer
     DrcCutLayer* drc_cut_layer = new DrcCutLayer();
@@ -432,6 +433,7 @@ void DrcIDBWrapper::wrapRoutingLayerList()
     /// idb routing layer
     idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
     tech->insertOrderToIdMap(idb_layer->get_order(), false, idb_layer->get_id());
+    tech->insertNameToOrderMap(idb_layer->get_name(), idb_layer->get_order());
 
     /// tech routing layer
     DrcRoutingLayer* drc_routing_layer = new DrcRoutingLayer();
