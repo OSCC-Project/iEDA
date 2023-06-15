@@ -158,17 +158,19 @@ class RegionQuery
   std::vector<DrcViolationSpot*> _cut_diff_layer_spacing_spot_list;
   std::vector<DrcViolationSpot*> _cut_enclosure_spot_list;
   std::vector<DrcViolationSpot*> _cut_enclosure_edge_spot_list;
-
   std::vector<DrcViolationSpot*> _prl_run_length_spacing_spot_list;
 
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_prl_vio_box_tree;
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_short_vio_box_tree;
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_metal_EOL_vio_box_tree;
 
+  std::vector<DrcViolationSpot*> _metal_corner_fill_spacing_spot_list;
+  std::vector<DrcViolationSpot*> _metal_jog_spacing_spot_list;
   std::vector<DrcViolationSpot*> _metal_eol_spacing_spot_list;
   std::vector<DrcViolationSpot*> _metal_notch_spacing_spot_list;
   std::vector<DrcViolationSpot*> _min_area_spot_list;
   std::vector<DrcViolationSpot*> _min_step_spot_list;
+  std::vector<DrcViolationSpot*> _min_hole_spot_list;
 
  private:
   int _cut_diff_layer_spacing_count = 0;
