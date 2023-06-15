@@ -140,8 +140,7 @@ void Balancer::balance()
 
 double Balancer::calcDumpCapOut(CtsNet* clock_net) const
 {
-  auto* config = CTSAPIInst.get_config();
-  auto db_unit = config->get_micron_dbu();
+  auto db_unit = CTSAPIInst.getDbUnit();
   auto unit_cap = CTSAPIInst.getClockUnitCap();
   double cap_out = 0;
   auto* driver_pin = clock_net->get_driver_pin();

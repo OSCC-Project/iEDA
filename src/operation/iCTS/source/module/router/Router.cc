@@ -395,13 +395,13 @@ void Router::dme(Topology<T>& topo) const
   std::string router_type = config->get_router_type();
   if (router_type == "BST") {
     double skew_bound = config->get_skew_bound();
-    BstParams params(BstType::kIME, config->get_micron_dbu(), skew_bound, DelayModel::kLINEAR);
+    BstParams params(BstType::kIME, CTSAPIInst.getDbUnit(), skew_bound, DelayModel::kLINEAR);
     icts::dme(topo, params);
   } else if (router_type == "ZST") {
-    ZstParams params(delay_model, config->get_micron_dbu(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
+    ZstParams params(delay_model, CTSAPIInst.getDbUnit(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params);
   } else {
-    UstParams params(delay_model, config->get_micron_dbu(), config->get_skew_bound(), CTSAPIInst.getClockUnitRes(),
+    UstParams params(delay_model, CTSAPIInst.getDbUnit(), config->get_skew_bound(), CTSAPIInst.getClockUnitRes(),
                      CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params, _skew_scheduler);
   }
@@ -429,7 +429,7 @@ void Router::clustering(std::vector<std::vector<CtsInstance*>>& clusters, const 
       total_dist += pgl::manhattan_distance(center_point, inst->get_location());
     }
     auto avg_dist = total_dist / cluster.size();
-    auto avg_ratio = avg_dist / config->get_micron_dbu() / 15;
+    auto avg_ratio = avg_dist / CTSAPIInst.getDbUnit() / 15;
     if (avg_ratio < 1) {
       clusters.emplace_back(cluster);
     } else {
@@ -445,7 +445,7 @@ void Router::clustering(std::vector<std::vector<CtsInstance*>>& clusters, const 
 int Router::calFeasibleFanout(const double& avg_wirelength) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto level_length = config->get_micron_dbu() * 15;  // um
+  auto level_length = CTSAPIInst.getDbUnit() * 15;  // um
   auto avg_ratio = avg_wirelength / level_length;
   if (avg_ratio < 1) {
     return config->get_cluster_size();
