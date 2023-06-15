@@ -428,7 +428,8 @@ bool VerilogWriter::isNeedEscape(const std::string& name)
  */
 std::string VerilogWriter::escapeName(const std::string& name)
 {
-  std::string escape_name = isNeedEscape(name) ? "\\" + name : name;
+  std::string trim_name = ieda::Str::trimBackslash(name);
+  std::string escape_name = isNeedEscape(trim_name) ? "\\" + trim_name : trim_name;
   return escape_name;
 }
 
