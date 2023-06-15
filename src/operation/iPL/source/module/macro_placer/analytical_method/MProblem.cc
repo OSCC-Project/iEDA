@@ -5,8 +5,10 @@
 #include <cassert>
 #include <cmath>
 #include <random>
+#include <string>
 
 #include "LSEWirelength.hh"
+#include "utility/Image.hh"
 // #include "MPDB.hh"
 namespace ipl {
 void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization)
@@ -14,6 +16,8 @@ void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core
   _num_types = 3;
   _num_macros = num_macros;
   _num_nets = num_macros;
+  _core_width = core_w;
+  _core_height = core_h;
   _width = Vec(_num_macros);
   _height = Vec(_num_macros);
 
@@ -23,8 +27,8 @@ void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core
   vector<Triplet<double>> fixed_y_location;
 
   double sq = std::sqrt(utilization);
-  double w = sq * core_w / num_macros;
-  double h = sq * core_h / num_macros;
+  double w = 2 * sq * core_w / num_macros;
+  double h = 2 * sq * core_h / num_macros;
 
   _width.setConstant(w);
   _height.setConstant(h);
@@ -121,6 +125,15 @@ double MProblem::getPenaltyFactor() const
   return 0.0;
 }
 
+void MProblem::drawImage(const Mat& variable, int index) const
+{
+  Image img(_core_width, _core_height, _num_macros);
+  for (int i = 0; i < _num_macros; i++) {
+    img.drawRect(variable(i, 0), variable(i, 1), _width(i), _height(i), variable(i, 2));
+  }
+  img.save("/home/huangfuxing/Prog_cpp/iEDA/bin/t" + std::to_string(index) + ".jpg");
+}
+
 void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const
 {
   const Vec& x = variable.col(0);
@@ -130,6 +143,22 @@ void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int it
   evalWirelength(variable, gradient, hpwl, 100);
   cost = hpwl;
   assert(!std::isnan(cost));
+  if (iter % 1 == 0)
+    drawImage(variable, iter);
+}
+
+double MProblem::getSolutionDistance(const Vec& a, const Vec& b, int col) const
+{
+  constexpr double k_2pi = 2 * M_PI;
+  auto angle_dis = [](double a, double b) {
+    double angle_a = std::fmod(a, k_2pi);
+    double angle_b = std::fmod(b, k_2pi);
+    double dis = std::fabs(angle_a - angle_b);
+    dis = std::min(dis, k_2pi - dis);
+    return dis;
+  };
+  return (col != 2 ? (a - b).norm() : a.binaryExpr(b, angle_dis).norm());
+  // return (col != 2 ? (a - b).norm() : a.dot(b) / a.norm() / b.norm());
 }
 
 }  // namespace ipl
