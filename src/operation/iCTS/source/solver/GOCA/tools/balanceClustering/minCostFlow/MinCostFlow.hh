@@ -140,7 +140,7 @@ class MinCostFlow
     FlowPoint point;
     Value value;
   };
-  static double calcManhDist(const FlowPoint& p1, const FlowPoint& p2) const { return std::fabs(p1.x - p2.x) + std::fabs(p1.y - p2.y); }
+  static double calcManhDist(const FlowPoint& p1, const FlowPoint& p2) { return std::fabs(p1.x - p2.x) + std::fabs(p1.y - p2.y); }
   std::vector<FlowPoint> _centers;
   std::vector<FlowNode> _nodes;
 };
