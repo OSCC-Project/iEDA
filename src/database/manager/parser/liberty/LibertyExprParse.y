@@ -77,8 +77,8 @@ implicit_and:
 
 terminal:
     PORT    { $$ = lib_expr_builder->makeBufferExpr(static_cast<const char*>($1)); lib_expr_builder->stringDelete(static_cast<const char*>($1));}
-|  '0'    { $$ = nullptr; }
-|  '1'    { $$ = nullptr; }
+|  '0'    { $$ = lib_expr_builder->makeZeroExpr(); }
+|  '1'    { $$ = lib_expr_builder->makeOneExpr(); }
 |  '(' expr ')'  { $$ = $2; }
 ;
 
