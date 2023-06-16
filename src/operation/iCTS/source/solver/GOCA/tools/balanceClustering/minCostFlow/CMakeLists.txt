@@ -6,9 +6,6 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-find_package(LEMON QUIET NO_MODULE)
-find_package(LEMON REQUIRED)
-
 add_library(icts_min_cost_flow INTERFACE)
 
 target_link_libraries(icts_min_cost_flow INTERFACE lemon)
