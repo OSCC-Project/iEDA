@@ -17,10 +17,19 @@
 #include "RTAPI.hpp"
 
 #include "CongTile.hpp"
+#include "DataManager.hpp"
+#include "DetailedRouter.hpp"
 #include "DrcAPI.hpp"
-#include "RT.hpp"
+#include "EarlyGlobalRouter.hpp"
+#include "GDSPlotter.hpp"
+#include "GlobalRouter.hpp"
+#include "Monitor.hpp"
+#include "PinAccessor.hpp"
+#include "ResourceAllocator.hpp"
 #include "Stage.hpp"
 #include "TimingEval.hpp"
+#include "TrackAssigner.hpp"
+#include "ViolationRepairer.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
@@ -51,7 +60,19 @@ void RTAPI::destroyInst()
 
 void RTAPI::initRT(std::map<std::string, std::any> config_map)
 {
-  RT::initInst(config_map, dmInst->get_idb_builder());
+  Logger::initInst();
+  // clang-format off
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________ ________ ________  ");
+  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     __  ___/___  __/___    |___  __ \\___  __/");
+  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        _____ \\ __  /   __  /| |__  /_/ /__  /    ");
+  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         ____/ / _  /    _  ___ |_  _, _/ _  /      ");
+  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /____/  /_/     /_/  |_|/_/ |_|  /_/       ");
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  // clang-format on  
+  LOG_INST.printLogFilePath();
+  DataManager::initInst();
+  DM_INST.input(config_map, dmInst->get_idb_builder());
 }
 
 void RTAPI::runRT(std::vector<Tool> tool_list)
@@ -67,12 +88,12 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     stage_idx++;
   }
   if (stage_list[stage_idx - 1] != Stage::kNone) {
-    RT_INST.getDataManager().load(stage_list[stage_idx - 1]);
+    DM_INST.load(stage_list[stage_idx - 1]);
   }
 
-  Config& config = RT_INST.getDataManager().getConfig();
-  Database& database = RT_INST.getDataManager().getDatabase();
-  std::vector<Net>& net_list = RT_INST.getDataManager().getDatabase().get_net_list();
+  Config& config = DM_INST.getConfig();
+  Database& database = DM_INST.getDatabase();
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
 
   if (config.enable_output_gds_files == 1) {
     GDSPlotter::initInst(config, database);
@@ -115,7 +136,7 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     if (config.enable_output_gds_files == 1) {
       GP_INST.plot(net_list, stage_list[stage_idx], true, false);
     }
-    RT_INST.getDataManager().save(stage_list[stage_idx]);
+    DM_INST.save(stage_list[stage_idx]);
     stage_idx++;
   }
   GDSPlotter::destroyInst();
@@ -149,7 +170,19 @@ Stage RTAPI::convertToStage(Tool tool)
 
 void RTAPI::destroyRT()
 {
-  RT::destroyInst();
+  DM_INST.output( dmInst->get_idb_builder());
+  DataManager::destroyInst();
+  LOG_INST.printLogFilePath();
+  // clang-format off
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________   ________________________  __  ");
+  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     ___  ____/____  _/___  | / /____  _/__  ___/___  / / / ");
+  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        __  /_     __  /  __   |/ /  __  /  _____ \\ __  /_/ /  ");
+  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         _  __/    __/ /   _  /|  /  __/ /   ____/ / _  __  /    ");
+  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /_/       /___/   /_/ |_/   /___/   /____/  /_/ /_/     ");
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  // clang-format on  
+  Logger::destroyInst();
 }
 
 // EGR
@@ -253,8 +286,8 @@ std::vector<ids::DRCRect> RTAPI::getMinScope(std::vector<ids::DRCRect>& detectio
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)
 {
-  Helper& helper = RT_INST.getDataManager().getHelper();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RT_INST.getDataManager().getDatabase().get_layer_via_master_list();
+  Helper& helper = DM_INST.getHelper();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   std::vector<ids::PHYNode> phy_node_list;
 

@@ -28,30 +28,37 @@
 
 namespace irt {
 
+#define DM_INST (irt::DataManager::getInst())
+
 class DataManager
 {
  public:
+  static void initInst();
+  static DataManager& getInst();
+  static void destroyInst();
+  // function
+  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
+  void output(idb::IdbBuilder* idb_builder);
+  void save(Stage stage);
+  void load(Stage stage);
+  Config& getConfig() { return _config; }
+  Database& getDatabase() { return _database; }
+  Helper& getHelper() { return _helper; }
+
+ private:
+  static DataManager* _dm_instance;
+  // config & database & helper
+  Config _config;
+  Database _database;
+  Helper _helper;
+
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
   ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
-  // function
-  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
-  void save(Stage stage);
-  void load(Stage stage);
-  void output(idb::IdbBuilder* idb_builder);
-  Config& getConfig() { return _config; }
-  Database& getDatabase() { return _database; }
-  Helper& getHelper() { return _helper; }
-
- private:
-  // self
-  Config _config;
-  Database _database;
-  Helper _helper;
-  // function
+#if 1  // wrap
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
   void wrapMicronDBU(idb::IdbBuilder* idb_builder);
@@ -70,12 +77,17 @@ class DataManager
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
   void updateHelper(idb::IdbBuilder* idb_builder);
+  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
+  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#endif
+
+#if 1  // build
   void buildConfig();
   void buildDatabase();
   void buildGCellAxis();
   void makeGCellAxis();
   irt_int getProposedInterval();
-  std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int ref_pitch);
+  std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval);
   std::vector<GCellGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();
@@ -104,18 +116,26 @@ class DataManager
   void checkPinList(Net& net);
   void buildDrivingPin(Net& net);
   void updateHelper();
+#endif
+
+#if 1  // print
   void printConfig();
   void printDatabase();
-  void saveStageResult(Stage stage);
-  std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
-  void loadStageResult(Stage stage);
+#endif
+
+#if 1  // output
   void outputGCellGrid(idb::IdbBuilder* idb_builder);
   void outputNetList(idb::IdbBuilder* idb_builder);
   void convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net);
   void convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
   void convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
-  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#endif
+
+#if 1  // save & load
+  void saveStageResult(Stage stage);
+  std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
+  void loadStageResult(Stage stage);
+#endif
 };
 
 }  // namespace irt
