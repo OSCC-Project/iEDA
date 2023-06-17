@@ -73,20 +73,19 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   LOG_INST.printLogFilePath();
   DataManager::initInst();
   DM_INST.input(config_map, dmInst->get_idb_builder());
+  DetailedRouter::initInst();
+  GDSPlotter::initInst();
+  GlobalRouter::initInst();
+  PinAccessor::initInst();
+  TrackAssigner::initInst();
+  ViolationRepairer::initInst();
 }
 
 void RTAPI::runRT(std::vector<Tool> tool_list)
 {
 #if 1
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
-  int num = 10;
-
-  PinAccessor::initInst();
-  GlobalRouter::initInst();
-  TrackAssigner::initInst();
-  DetailedRouter::initInst();
-  ViolationRepairer::initInst();
+  int num = 2;
   while (num--) {
     PA_INST.access(net_list);
     GR_INST.route(net_list);
@@ -94,13 +93,7 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     DR_INST.route(net_list);
     VR_INST.repair(net_list);
   }
-  PinAccessor::destroyInst();
-  GlobalRouter::destroyInst();
-  TrackAssigner::destroyInst();
-  DetailedRouter::destroyInst();
-  ViolationRepairer::destroyInst();
 #else
-
   irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
 
   std::set<Stage> stage_set;
@@ -195,6 +188,12 @@ Stage RTAPI::convertToStage(Tool tool)
 
 void RTAPI::destroyRT()
 {
+  DetailedRouter::destroyInst();
+  GDSPlotter::destroyInst();
+  GlobalRouter::destroyInst();
+  PinAccessor::destroyInst();
+  TrackAssigner::destroyInst();
+  ViolationRepairer::destroyInst();
   DM_INST.output(dmInst->get_idb_builder());
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();

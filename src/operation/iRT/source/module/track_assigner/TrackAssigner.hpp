@@ -63,7 +63,6 @@ class TrackAssigner
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
-  void buildPanelRegion(TAModel& ta_model);
   void updateNetBlockageMap(TAModel& ta_model);
 #endif
 

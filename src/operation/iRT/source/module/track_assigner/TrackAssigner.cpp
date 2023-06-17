@@ -89,6 +89,10 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
+          if (!RTUtil::existGrid(ta_panel.get_real_rect(), routing_layer.get_track_axis())) {
+            LOG_INST.error(Loc::current(), "The panel not contain any grid!");
+          }
+          ta_panel.set_grid_rect(RTUtil::getGridRect(ta_panel.get_real_rect(), routing_layer.get_track_axis()));
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_list.push_back(ta_panel);
@@ -99,6 +103,10 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
+          if (!RTUtil::existGrid(ta_panel.get_real_rect(), routing_layer.get_track_axis())) {
+            LOG_INST.error(Loc::current(), "The panel not contain any grid!");
+          }
+          ta_panel.set_grid_rect(RTUtil::getGridRect(ta_panel.get_real_rect(), routing_layer.get_track_axis()));
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_list.push_back(ta_panel);
@@ -136,7 +144,6 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::buildTAModel(TAModel& ta_model)
 {
   buildTATaskList(ta_model);
-  buildPanelRegion(ta_model);
   updateNetBlockageMap(ta_model);
 }
 
@@ -356,39 +363,6 @@ void TrackAssigner::expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node
       }
     }
     ta_task.set_coord_cost_map(new_coosd_cost_map);
-  }
-}
-
-void TrackAssigner::buildPanelRegion(TAModel& ta_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
-    for (TAPanel& ta_panel : ta_panel_list) {
-      TrackAxis& track_axis = routing_layer_list[ta_panel.get_layer_idx()].get_track_axis();
-
-      std::vector<PlanarCoord> coord_list;
-      for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-        for (TAGroup& ta_group : ta_task.get_ta_group_list()) {
-          coord_list.insert(coord_list.end(), ta_group.get_coord_list().begin(), ta_group.get_coord_list().end());
-        }
-      }
-      if (coord_list.empty()) {
-        continue;
-      }
-      PlanarRect panel_region = RTUtil::getBoundingBox(coord_list);
-      if (routing_layer_list[ta_panel.get_layer_idx()].isPreferH()) {
-        ta_panel.set_real_lb_x(panel_region.get_lb_x());
-        ta_panel.set_real_rt_x(panel_region.get_rt_x());
-      } else {
-        ta_panel.set_real_lb_y(panel_region.get_lb_y());
-        ta_panel.set_real_rt_y(panel_region.get_rt_y());
-      }
-      if (!RTUtil::existGrid(ta_panel.get_real_rect(), track_axis)) {
-        LOG_INST.error(Loc::current(), "The panel not contain any grid!");
-      }
-      ta_panel.set_grid_rect(RTUtil::getGridRect(ta_panel.get_real_rect(), track_axis));
-    }
   }
 }
 
