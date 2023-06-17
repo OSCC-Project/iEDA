@@ -86,6 +86,7 @@ class RegionQuery
 
   // setter
   // getter
+  std::vector<DrcRect*>& getRegionRectList() { return _region_rect_list; }
   std::set<DrcRect*>& getCutRectSet() { return _cut_rect_set; }
   std::set<DrcRect*>& getRoutingRectSet() { return _routing_rect_set; }
   std::map<int, std::map<int, std::set<DrcPoly*>>>& getRegionPolysMap() { return _region_polys_map; }
@@ -188,6 +189,8 @@ class RegionQuery
   int _width_count = 0;
   int _minstep_count = 0;
   int _min_hole_count = 0;
+
+  std::vector<DrcRect*> _region_rect_list;
 
   std::set<std::pair<DrcRect*, DrcRect*>> _prl_spacing_vio_set;
   std::set<std::pair<DrcRect*, DrcRect*>> _short_vio_set;
