@@ -108,10 +108,10 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.layer_utilization_ratio = RTUtil::getConfigValue<std::map<std::string, double>>(config_map, "-layer_utilization_ratio", {});
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
-  _config.resource_allocate_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-resource_allocate_initial_penalty", 100);
-  _config.resource_allocate_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-resource_allocate_penalty_drop_rate", 0.8);
-  _config.resource_allocate_outer_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-resource_allocate_outer_iter_num", 10);
-  _config.resource_allocate_inner_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-resource_allocate_inner_iter_num", 10);
+  _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
+  _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
+  _config.ra_outer_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_iter_num", 10);
+  _config.ra_inner_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_iter_num", 10);
   /////////////////////////////////////////////
 }
 
@@ -1347,14 +1347,14 @@ void DataManager::printConfig()
   }
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_initial_penalty");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_initial_penalty);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_penalty_drop_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_penalty_drop_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_outer_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_outer_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_inner_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_inner_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_initial_penalty);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_penalty_drop_rate");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_penalty_drop_rate);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_outer_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_outer_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_inner_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");

@@ -34,7 +34,7 @@ class TAModel
   std::vector<std::vector<TAPanel>>& get_layer_panel_list() { return _layer_panel_list; }
   TAModelStat& get_ta_model_stat() { return _ta_model_stat; }
   // setter
-  void set_ta_net_list(std::vector<TANet>& ta_net_list) { _ta_net_list = ta_net_list; }
+  void set_ta_net_list(const std::vector<TANet>& ta_net_list) { _ta_net_list = ta_net_list; }
 
  private:
   std::vector<TANet> _ta_net_list;

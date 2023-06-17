@@ -13,10 +13,10 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -top_routing_layer "" \
         -layer_utilization_ratio "" \
         -enable_output_gds_files 0 \
-        -resource_allocate_initial_penalty 100 \
-        -resource_allocate_penalty_drop_rate 0.8 \
-        -resource_allocate_outer_iter_num 10 \
-        -resource_allocate_inner_iter_num 10
+        -ra_initial_penalty 100 \
+        -ra_penalty_drop_rate 0.8 \
+        -ra_outer_iter_num 10 \
+        -ra_inner_iter_num 10
 
 run_rt -flow "pa ra gr ta dr vr"
 

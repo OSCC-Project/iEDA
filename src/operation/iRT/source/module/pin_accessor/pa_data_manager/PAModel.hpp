@@ -20,6 +20,7 @@
 
 #include "PAGCell.hpp"
 #include "PAModelStat.hpp"
+#include "PANet.hpp"
 
 namespace irt {
 
