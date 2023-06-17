@@ -17,9 +17,10 @@
 #pragma once
 
 #include "Config.hpp"
-#include "DRDataManager.hpp"
 #include "DRModel.hpp"
+#include "DRNet.hpp"
 #include "DRNode.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
 #include "RTU.hpp"
@@ -32,7 +33,7 @@ namespace irt {
 class DetailedRouter
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static DetailedRouter& getInst();
   static void destroyInst();
   // function
@@ -41,21 +42,20 @@ class DetailedRouter
  private:
   // self
   static DetailedRouter* _dr_instance;
-  // config & database
-  DRDataManager _dr_data_manager;
 
-  DetailedRouter(Config& config, Database& database) { init(config, database); }
+  DetailedRouter() = default;
   DetailedRouter(const DetailedRouter& other) = delete;
   DetailedRouter(DetailedRouter&& other) = delete;
   ~DetailedRouter() = default;
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  void init(Config& config, Database& database);
-  void routeDRNetList(std::vector<DRNet>& dr_net_list);
+  void routeDRNetList(std::vector<Net>& net_list);
 
 #if 1  // build dr_model
-  DRModel initDRModel(std::vector<DRNet>& dr_net_list);
+  DRModel initDRModel(std::vector<Net>& net_list);
+  std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
+  DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);

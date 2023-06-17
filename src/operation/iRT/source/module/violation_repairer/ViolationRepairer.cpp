@@ -20,10 +20,10 @@ namespace irt {
 
 // public
 
-void ViolationRepairer::initInst(Config& config, Database& database)
+void ViolationRepairer::initInst()
 {
   if (_vr_instance == nullptr) {
-    _vr_instance = new ViolationRepairer(config, database);
+    _vr_instance = new ViolationRepairer();
   }
 }
 
@@ -47,8 +47,7 @@ void ViolationRepairer::repair(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<VRNet> vr_net_list = _vr_data_manager.convertToVRNetList(net_list);
-  repairVRNetList(vr_net_list);
+  repairVRNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kViolationRepairer), " completed!", monitor.getStatsInfo());
 }
@@ -57,14 +56,9 @@ void ViolationRepairer::repair(std::vector<Net>& net_list)
 
 ViolationRepairer* ViolationRepairer::_vr_instance = nullptr;
 
-void ViolationRepairer::init(Config& config, Database& database)
+void ViolationRepairer::repairVRNetList(std::vector<Net>& net_list)
 {
-  _vr_data_manager.input(config, database);
-}
-
-void ViolationRepairer::repairVRNetList(std::vector<VRNet>& vr_net_list)
-{
-  VRModel vr_model = initVRModel(vr_net_list);
+  VRModel vr_model = initVRModel(net_list);
   buildVRModel(vr_model);
   checkVRModel(vr_model);
   repairVRModel(vr_model);
@@ -74,11 +68,11 @@ void ViolationRepairer::repairVRNetList(std::vector<VRNet>& vr_net_list)
 
 #if 1  // build vr_model
 
-VRModel ViolationRepairer::initVRModel(std::vector<VRNet>& vr_net_list)
+VRModel ViolationRepairer::initVRModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
-  Die& die = _vr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  Die& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   VRModel vr_model;
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
@@ -93,9 +87,33 @@ VRModel ViolationRepairer::initVRModel(std::vector<VRNet>& vr_net_list)
       }
     }
   }
-  vr_model.set_vr_net_list(vr_net_list);
+  vr_model.set_vr_net_list(convertToVRNetList(net_list));
 
   return vr_model;
+}
+
+std::vector<VRNet> ViolationRepairer::convertToVRNetList(std::vector<Net>& net_list)
+{
+  std::vector<VRNet> vr_net_list;
+  vr_net_list.reserve(net_list.size());
+  for (Net& net : net_list) {
+    vr_net_list.emplace_back(convertToVRNet(net));
+  }
+  return vr_net_list;
+}
+
+VRNet ViolationRepairer::convertToVRNet(Net& net)
+{
+  VRNet vr_net;
+  vr_net.set_origin_net(&net);
+  vr_net.set_net_idx(net.get_net_idx());
+  for (Pin& pin : net.get_pin_list()) {
+    vr_net.get_vr_pin_list().push_back(VRPin(pin));
+  }
+  vr_net.set_vr_driving_pin(VRPin(net.get_driving_pin()));
+  vr_net.set_bounding_box(net.get_bounding_box());
+  vr_net.set_dr_result_tree(net.get_dr_result_tree());
+  return vr_net;
 }
 
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
@@ -105,10 +123,10 @@ void ViolationRepairer::buildVRModel(VRModel& vr_model)
 
 void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model)
 {
-  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _vr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _vr_data_manager.getDatabase().get_routing_blockage_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
 
@@ -314,7 +332,7 @@ void ViolationRepairer::updateConnectionList(TNode<LayerCoord>* coord_node, VRNe
 
 TNode<PHYNode>* ViolationRepairer::makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   if (RTUtil::isOblique(first_coord, second_coord)) {
     LOG_INST.error(Loc::current(), "The wire phy node is oblique!");
@@ -337,7 +355,7 @@ TNode<PHYNode>* ViolationRepairer::makeWirePHYNode(VRNet& vr_net, LayerCoord fir
 
 TNode<PHYNode>* ViolationRepairer::makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   if (below_layer_idx < 0 || below_layer_idx >= static_cast<irt_int>(layer_via_master_list.size())) {
     LOG_INST.error(Loc::current(), "The via below_layer_idx is illegal!");
@@ -352,7 +370,7 @@ TNode<PHYNode>* ViolationRepairer::makeViaPHYNode(VRNet& vr_net, irt_int below_l
 
 TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   irt_int layer_idx = coord.get_layer_idx();
   if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
@@ -373,9 +391,10 @@ void ViolationRepairer::repairMinArea(VRNet& vr_net)
 
 void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
 {
-  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _vr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
   for (const LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
     irt_int layer_idx = real_rect.get_layer_idx();
@@ -392,7 +411,7 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
 
 std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_node_tree)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _vr_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   std::vector<LayerRect> real_rect_list;
   for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
@@ -443,8 +462,8 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
-  irt_int micron_dbu = _vr_data_manager.getDatabase().get_micron_dbu();
-  GCellAxis& gcell_axis = _vr_data_manager.getDatabase().get_gcell_axis();
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
@@ -529,8 +548,8 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
 
 void ViolationRepairer::reportTable(VRModel& vr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _vr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _vr_data_manager.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
   // wire table
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();

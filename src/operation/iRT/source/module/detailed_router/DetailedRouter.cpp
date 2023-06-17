@@ -27,10 +27,10 @@ namespace irt {
 
 // public
 
-void DetailedRouter::initInst(Config& config, Database& database)
+void DetailedRouter::initInst()
 {
   if (_dr_instance == nullptr) {
-    _dr_instance = new DetailedRouter(config, database);
+    _dr_instance = new DetailedRouter();
   }
 }
 
@@ -54,8 +54,7 @@ void DetailedRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<DRNet> dr_net_list = _dr_data_manager.convertToDRNetList(net_list);
-  routeDRNetList(dr_net_list);
+  routeDRNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kDetailedRouter), " completed!", monitor.getStatsInfo());
 }
@@ -64,14 +63,9 @@ void DetailedRouter::route(std::vector<Net>& net_list)
 
 DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 
-void DetailedRouter::init(Config& config, Database& database)
+void DetailedRouter::routeDRNetList(std::vector<Net>& net_list)
 {
-  _dr_data_manager.input(config, database);
-}
-
-void DetailedRouter::routeDRNetList(std::vector<DRNet>& dr_net_list)
-{
-  DRModel dr_model = initDRModel(dr_net_list);
+  DRModel dr_model = initDRModel(net_list);
   buildDRModel(dr_model);
   routeDRModel(dr_model);
   updateDRModel(dr_model);
@@ -80,13 +74,13 @@ void DetailedRouter::routeDRNetList(std::vector<DRNet>& dr_net_list)
 
 #if 1  // build dr_model
 
-DRModel DetailedRouter::initDRModel(std::vector<DRNet>& dr_net_list)
+DRModel DetailedRouter::initDRModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   DRModel dr_model;
-  dr_model.set_dr_net_list(dr_net_list);
+  dr_model.set_dr_net_list(convertToDRNetList(net_list));
 
   irt_int x_gcell_num = 0;
   for (GCellGrid& x_grid : gcell_axis.get_x_grid_list()) {
@@ -108,6 +102,29 @@ DRModel DetailedRouter::initDRModel(std::vector<DRNet>& dr_net_list)
     }
   }
   return dr_model;
+}
+
+std::vector<DRNet> DetailedRouter::convertToDRNetList(std::vector<Net>& net_list)
+{
+  std::vector<DRNet> dr_net_list;
+  dr_net_list.reserve(net_list.size());
+  for (Net& net : net_list) {
+    dr_net_list.emplace_back(convertToDRNet(net));
+  }
+  return dr_net_list;
+}
+
+DRNet DetailedRouter::convertToDRNet(Net& net)
+{
+  DRNet dr_net;
+  dr_net.set_origin_net(&net);
+  dr_net.set_net_idx(net.get_net_idx());
+  for (Pin& pin : net.get_pin_list()) {
+    dr_net.get_dr_pin_list().push_back(DRPin(pin));
+  }
+  dr_net.set_ta_result_tree(net.get_ta_result_tree());
+  dr_net.set_dr_result_tree(net.get_ta_result_tree());
+  return dr_net;
 }
 
 void DetailedRouter::buildDRModel(DRModel& dr_model)
@@ -179,7 +196,7 @@ std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net
 
 DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   PlanarRect dr_base_region = dr_node_node->value().get_first_guide().get_rect();
   RTNode& ta_node = ta_node_node->value();
@@ -251,10 +268,10 @@ void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 
 void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
 {
-  GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _dr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _dr_data_manager.getDatabase().get_routing_blockage_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
@@ -369,7 +386,7 @@ void DetailedRouter::buildDRBox(DRBox& dr_box)
 
 void DetailedRouter::initLayerGraphList(DRBox& dr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     DRNodeGraph node_graph;
@@ -380,9 +397,9 @@ void DetailedRouter::initLayerGraphList(DRBox& dr_box)
 
 void DetailedRouter::buildScaleOrientList(DRBox& dr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _dr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _dr_data_manager.getConfig().top_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<DRNodeGraph>& layer_graph_list = dr_box.get_layer_graph_list();
 
@@ -535,8 +552,8 @@ void DetailedRouter::buildCrossLayerGraph(DRBox& dr_box)
 
 void DetailedRouter::buildCrossLayerCoord(DRBox& dr_box, std::set<LayerCoord, CmpLayerCoordByXASC>& cross_coord_set)
 {
-  irt_int bottom_routing_layer_idx = _dr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _dr_data_manager.getConfig().top_routing_layer_idx;
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (LayerCoord cross_coord : cross_coord_set) {
     std::vector<irt_int> usage_layer_idx_list
@@ -617,8 +634,8 @@ void DetailedRouter::buildCrossPlanarCoord(DRBox& dr_box, std::set<LayerCoord, C
 
 std::vector<LayerCoord> DetailedRouter::addPlanarCoordToGraph(DRBox& dr_box, LayerCoord& added_coord)
 {
-  irt_int bottom_routing_layer_idx = _dr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _dr_data_manager.getConfig().top_routing_layer_idx;
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   DRNodeGraph& node_graph = dr_box.get_layer_graph_list()[added_coord.get_layer_idx()];
   // 已记录在x_y_map y_x_map中
@@ -761,8 +778,8 @@ std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, 
 {
   // enlarge_real_rect为已经扩了spacing的矩形
   // 获取enlarge_real_rect覆盖的线段
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<Segment<DRNode*>> node_segment_list;
   irt_int layer_idx = enlarge_real_rect.get_layer_idx();
@@ -818,8 +835,8 @@ std::vector<Segment<DRNode*>> DetailedRouter::getNodeSegmentList(DRBox& dr_box, 
 
 std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>> segment_list)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<LayerRect> real_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
@@ -856,13 +873,15 @@ std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<Layer
 
 void DetailedRouter::checkDRBox(DRBox& dr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   PlanarCoord& grid_coord = dr_box.get_grid_coord();
   if (grid_coord.get_x() < 0 || grid_coord.get_y() < 0) {
     LOG_INST.error(Loc::current(), "The grid coord is illegal!");
   }
 
-  PlanarRect box_region = RTUtil::getRealRect(grid_coord, _dr_data_manager.getDatabase().get_gcell_axis());
+  PlanarRect box_region = RTUtil::getRealRect(grid_coord, gcell_axis);
   for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
     for (LayerRect& blockage : blockage_list) {
       if (RTUtil::isClosedOverlap(box_region, blockage)) {
@@ -1292,7 +1311,7 @@ void DetailedRouter::updateNetResult(DRBox& dr_box, DRTask& dr_task)
 
 void DetailedRouter::updateENVTaskMap(DRBox& dr_box, DRTask& dr_task)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<Segment<LayerCoord>> net_segment_list;
   for (Segment<DRNode*>& node_segment : dr_box.get_node_segment_list()) {
@@ -1400,7 +1419,7 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
 
 double DetailedRouter::getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1489,7 +1508,9 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
 
 void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
+
   std::map<irt_int, irt_int> layer_width_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     irt_int x_pitch = routing_layer.getXTrackGrid().get_step_length();
@@ -1734,7 +1755,9 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
     }
     gp_gds.addStruct(task_struct);
   }
-  GP_INST.plot(gp_gds, _dr_data_manager.getConfig().temp_directory_path + "dr_model.gds", false, false);
+  std::string gds_file_path
+      = RTUtil::getString(dr_temp_directory_path, "dr_box_", dr_box.get_grid_coord().get_x(), "_", dr_box.get_grid_coord().get_y(), ".gds");
+  GP_INST.plot(gp_gds, gds_file_path, false, false);
 }
 
 #endif
@@ -1743,9 +1766,9 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
 void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
 {
-  GCellAxis& gcell_axis = _dr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _dr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
@@ -1817,8 +1840,8 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
 void DetailedRouter::countDRModel(DRModel& dr_model)
 {
-  irt_int micron_dbu = _dr_data_manager.getDatabase().get_micron_dbu();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _dr_data_manager.getDatabase().get_layer_via_master_list();
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
@@ -1896,8 +1919,8 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
 
 void DetailedRouter::reportTable(DRModel& dr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _dr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _dr_data_manager.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
   DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();

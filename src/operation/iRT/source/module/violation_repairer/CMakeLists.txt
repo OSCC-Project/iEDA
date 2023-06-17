@@ -8,7 +8,6 @@ endif()
 
 add_library(irt_violation_repairer
     ## module violation_repairer
-    ${IRT_MODULE}/violation_repairer/vr_data_manager/VRDataManager.cpp
     ${IRT_MODULE}/violation_repairer/ViolationRepairer.cpp
 )
 

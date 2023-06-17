@@ -17,9 +17,8 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
-#include "GRConfig.hpp"
-#include "GRDataManager.hpp"
 #include "GRModel.hpp"
 #include "RTU.hpp"
 #include "SortStatus.hpp"
@@ -32,7 +31,7 @@ namespace irt {
 class GlobalRouter
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static GlobalRouter& getInst();
   static void destroyInst();
   // function
@@ -41,10 +40,8 @@ class GlobalRouter
  private:
   // self
   static GlobalRouter* _gr_instance;
-  // config & database
-  GRDataManager _gr_data_manager;
 
-  GlobalRouter(Config& config, Database& database) { init(config, database); }
+  GlobalRouter() = default;
   GlobalRouter(const GlobalRouter& other) = delete;
   GlobalRouter(GlobalRouter&& other) = delete;
   ~GlobalRouter() = default;
@@ -52,10 +49,12 @@ class GlobalRouter
   GlobalRouter& operator=(GlobalRouter&& other) = delete;
   // function
   void init(Config& config, Database& database);
-  void routeGRNetList(std::vector<GRNet>& gr_net_list);
+  void routeGRNetList(std::vector<Net>& net_list);
 
 #if 1  // build gr_model
-  GRModel initGRModel(std::vector<GRNet>& gr_net_list);
+  GRModel initGRModel(std::vector<Net>& net_list);
+  std::vector<GRNet> convertToGRNetList(std::vector<Net>& net_list);
+  GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
   void buildNodeSupply(GRModel& gr_model);

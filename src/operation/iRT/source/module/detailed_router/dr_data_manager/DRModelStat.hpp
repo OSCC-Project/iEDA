@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RTU.hpp"
+#include "PlanarRect.hpp"
 
 namespace irt {
 
