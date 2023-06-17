@@ -54,7 +54,7 @@ void DetailedRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  routeDRNetList(net_list);
+  routeNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kDetailedRouter), " completed!", monitor.getStatsInfo());
 }
@@ -63,7 +63,7 @@ void DetailedRouter::route(std::vector<Net>& net_list)
 
 DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 
-void DetailedRouter::routeDRNetList(std::vector<Net>& net_list)
+void DetailedRouter::routeNetList(std::vector<Net>& net_list)
 {
   DRModel dr_model = initDRModel(net_list);
   buildDRModel(dr_model);
@@ -1801,7 +1801,7 @@ void DetailedRouter::updateDRModel(DRModel& dr_model)
       }
     }
   }
-  updateOriginTAResultTree(dr_model);
+  updateOriginDRResultTree(dr_model);
 }
 
 void DetailedRouter::buildRoutingResult(DRTask& dr_task)
@@ -1820,7 +1820,7 @@ void DetailedRouter::buildRoutingResult(DRTask& dr_task)
   rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
 }
 
-void DetailedRouter::updateOriginTAResultTree(DRModel& dr_model)
+void DetailedRouter::updateOriginDRResultTree(DRModel& dr_model)
 {
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
     Net* origin_net = dr_net.get_origin_net();

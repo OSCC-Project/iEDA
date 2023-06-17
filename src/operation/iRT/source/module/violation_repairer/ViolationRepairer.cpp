@@ -47,7 +47,7 @@ void ViolationRepairer::repair(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  repairVRNetList(net_list);
+  repairNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kViolationRepairer), " completed!", monitor.getStatsInfo());
 }
@@ -56,7 +56,7 @@ void ViolationRepairer::repair(std::vector<Net>& net_list)
 
 ViolationRepairer* ViolationRepairer::_vr_instance = nullptr;
 
-void ViolationRepairer::repairVRNetList(std::vector<Net>& net_list)
+void ViolationRepairer::repairNetList(std::vector<Net>& net_list)
 {
   VRModel vr_model = initVRModel(net_list);
   buildVRModel(vr_model);
@@ -394,7 +394,7 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
   GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  
+
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
   for (const LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
     irt_int layer_idx = real_rect.get_layer_idx();

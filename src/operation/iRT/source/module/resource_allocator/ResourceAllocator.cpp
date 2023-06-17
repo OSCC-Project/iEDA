@@ -49,7 +49,7 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  allocateRANetList(net_list);
+  allocateNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kResourceAllocator), " completed!", monitor.getStatsInfo());
 }
@@ -58,7 +58,7 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 
 ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 
-void ResourceAllocator::allocateRANetList(std::vector<Net>& net_list)
+void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
   RAModel ra_model = initRAModel(net_list);
   buildRAModel(ra_model);
@@ -321,7 +321,7 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  
+
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
     PlanarRect& gcell_rect = ra_gcell.get_real_rect();
     for (auto& [layer_idx, blockage_list] : ra_gcell.get_layer_blockage_map()) {

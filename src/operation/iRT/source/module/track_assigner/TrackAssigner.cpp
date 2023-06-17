@@ -52,7 +52,7 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  assignTANetList(net_list);
+  assignNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kTrackAssigner), " completed!", monitor.getStatsInfo());
 }
@@ -61,7 +61,7 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
 
 TrackAssigner* TrackAssigner::_ta_instance = nullptr;
 
-void TrackAssigner::assignTANetList(std::vector<Net>& net_list)
+void TrackAssigner::assignNetList(std::vector<Net>& net_list)
 {
   TAModel ta_model = initTAModel(net_list);
   buildTAModel(ta_model);
@@ -617,7 +617,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
 std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_panel, PlanarRect& enlarge_real_rect)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  
+
   // enlarge_real_rect为已经扩了spacing的矩形
   // 获取enlarge_real_rect覆盖的线段
   std::vector<Segment<LayerCoord>> real_segment_list;

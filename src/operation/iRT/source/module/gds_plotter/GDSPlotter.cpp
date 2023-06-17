@@ -753,7 +753,7 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
       layout_blockage_struct.push(blockage_boundary);
     }
   }
-  for (Blockage& blockage :cut_blockage_list) {
+  for (Blockage& blockage : cut_blockage_list) {
     if (!RTUtil::isOpenOverlap(blockage.get_real_rect(), clipping_window)) {
       continue;
     }

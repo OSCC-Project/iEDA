@@ -50,7 +50,7 @@ void GlobalRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  routeGRNetList(net_list);
+  routeNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kGlobalRouter), " completed!", monitor.getStatsInfo());
 }
@@ -59,7 +59,7 @@ void GlobalRouter::route(std::vector<Net>& net_list)
 
 GlobalRouter* GlobalRouter::_gr_instance = nullptr;
 
-void GlobalRouter::routeGRNetList(std::vector<Net>& net_list)
+void GlobalRouter::routeNetList(std::vector<Net>& net_list)
 {
   GRModel gr_model = initGRModel(net_list);
   buildGRModel(gr_model);
@@ -742,7 +742,7 @@ void GlobalRouter::resetPathHead(GRModel& gr_model)
 void GlobalRouter::rerouteByEnlarging(GRModel& gr_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
-  
+
   if (isRoutingFailed(gr_model)) {
     resetSinglePath(gr_model);
     gr_model.set_routing_region(die.get_grid_rect());
