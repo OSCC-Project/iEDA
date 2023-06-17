@@ -17,10 +17,10 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
 #include "SortStatus.hpp"
-#include "TADataManager.hpp"
 #include "TAModel.hpp"
 #include "TAPanel.hpp"
 
@@ -31,7 +31,7 @@ namespace irt {
 class TrackAssigner
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static TrackAssigner& getInst();
   static void destroyInst();
   // function
@@ -40,21 +40,20 @@ class TrackAssigner
  private:
   // self
   static TrackAssigner* _ta_instance;
-  // config & database
-  TADataManager _ta_data_manager;
 
-  TrackAssigner(Config& config, Database& database) { init(config, database); }
+  TrackAssigner() = default;
   TrackAssigner(const TrackAssigner& other) = delete;
   TrackAssigner(TrackAssigner&& other) = delete;
   ~TrackAssigner() = default;
   TrackAssigner& operator=(const TrackAssigner& other) = delete;
   TrackAssigner& operator=(TrackAssigner&& other) = delete;
   // function
-  void init(Config& config, Database& database);
-  void assignTANetList(std::vector<TANet>& ta_net_list);
+  void assignNetList(std::vector<Net>& net_list);
 
 #if 1  // build ta_model
-  TAModel initTAModel(std::vector<TANet>& ta_net_list);
+  TAModel initTAModel(std::vector<Net>& net_list);
+  std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
+  TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TANet& ta_net);
@@ -64,7 +63,6 @@ class TrackAssigner
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
-  void buildPanelRegion(TAModel& ta_model);
   void updateNetBlockageMap(TAModel& ta_model);
 #endif
 

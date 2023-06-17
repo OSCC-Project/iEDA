@@ -17,9 +17,9 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
-#include "PADataManager.hpp"
 #include "PAModel.hpp"
 #include "PANode.hpp"
 
@@ -30,7 +30,7 @@ namespace irt {
 class PinAccessor
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static PinAccessor& getInst();
   static void destroyInst();
   // function
@@ -39,21 +39,20 @@ class PinAccessor
  private:
   // self
   static PinAccessor* _pa_instance;
-  // config & database
-  PADataManager _pa_data_manager;
 
-  PinAccessor(Config& config, Database& database) { init(config, database); }
+  PinAccessor() = default;
   PinAccessor(const PinAccessor& other) = delete;
   PinAccessor(PinAccessor&& other) = delete;
   ~PinAccessor() = default;
   PinAccessor& operator=(const PinAccessor& other) = delete;
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
-  void init(Config& config, Database& database);
-  void accessPANetList(std::vector<PANet>& pa_net_list);
+  void accessNetList(std::vector<Net>& net_list);
 
 #if 1  // build pa_model
-  PAModel initPAModel(std::vector<PANet>& pa_net_list);
+  PAModel initPAModel(std::vector<Net>& net_list);
+  std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
+  PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
   void initGCellRealRect(PAModel& pa_model);
   void updateNetBlockageMap(PAModel& pa_model);

@@ -28,10 +28,10 @@ namespace irt {
 
 // public
 
-void PinAccessor::initInst(Config& config, Database& database)
+void PinAccessor::initInst()
 {
   if (_pa_instance == nullptr) {
-    _pa_instance = new PinAccessor(config, database);
+    _pa_instance = new PinAccessor();
   }
 }
 
@@ -55,8 +55,7 @@ void PinAccessor::access(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<PANet> pa_net_list = _pa_data_manager.convertToPANetList(net_list);
-  accessPANetList(pa_net_list);
+  accessNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kPinAccessor), " completed!", monitor.getStatsInfo());
 }
@@ -65,14 +64,9 @@ void PinAccessor::access(std::vector<Net>& net_list)
 
 PinAccessor* PinAccessor::_pa_instance = nullptr;
 
-void PinAccessor::init(Config& config, Database& database)
+void PinAccessor::accessNetList(std::vector<Net>& net_list)
 {
-  _pa_data_manager.input(config, database);
-}
-
-void PinAccessor::accessPANetList(std::vector<PANet>& pa_net_list)
-{
-  PAModel pa_model = initPAModel(pa_net_list);
+  PAModel pa_model = initPAModel(net_list);
   buildPAModel(pa_model);
   accessPAModel(pa_model);
   checkPAModel(pa_model);
@@ -83,10 +77,10 @@ void PinAccessor::accessPANetList(std::vector<PANet>& pa_net_list)
 
 #if 1  // build pa_model
 
-PAModel PinAccessor::initPAModel(std::vector<PANet>& pa_net_list)
+PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
 {
-  Die& die = _pa_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  Die& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   PAModel pa_model;
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
@@ -102,9 +96,33 @@ PAModel PinAccessor::initPAModel(std::vector<PANet>& pa_net_list)
       }
     }
   }
-  pa_model.set_pa_net_list(pa_net_list);
+  pa_model.set_pa_net_list(convertToPANetList(net_list));
 
   return pa_model;
+}
+
+std::vector<PANet> PinAccessor::convertToPANetList(std::vector<Net>& net_list)
+{
+  std::vector<PANet> pa_net_list;
+  pa_net_list.reserve(net_list.size());
+  for (Net& net : net_list) {
+    pa_net_list.emplace_back(convertToPANet(net));
+  }
+  return pa_net_list;
+}
+
+PANet PinAccessor::convertToPANet(Net& net)
+{
+  PANet pa_net;
+  pa_net.set_origin_net(&net);
+  pa_net.set_net_idx(net.get_net_idx());
+  pa_net.set_net_name(net.get_net_name());
+  for (Pin& pin : net.get_pin_list()) {
+    pa_net.get_pa_pin_list().push_back(PAPin(pin));
+  }
+  pa_net.set_pa_driving_pin(PAPin(net.get_driving_pin()));
+  pa_net.set_bounding_box(net.get_bounding_box());
+  return pa_net;
 }
 
 void PinAccessor::buildPAModel(PAModel& pa_model)
@@ -116,7 +134,7 @@ void PinAccessor::buildPAModel(PAModel& pa_model)
 
 void PinAccessor::initGCellRealRect(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
   for (size_t layer_idx = 0; layer_idx < layer_gcell_map.size(); layer_idx++) {
@@ -132,10 +150,10 @@ void PinAccessor::initGCellRealRect(PAModel& pa_model)
 
 void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _pa_data_manager.getDatabase().get_routing_blockage_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
 
@@ -169,7 +187,7 @@ void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 
 void PinAccessor::cutBlockageList(PAModel& pa_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   for (GridMap<PAGCell>& gcell_map : pa_model.get_layer_gcell_map()) {
     for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
@@ -253,9 +271,9 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
-  irt_int top_routing_layer_idx = _pa_data_manager.getConfig().top_routing_layer_idx;
-  irt_int bottom_routing_layer_idx = _pa_data_manager.getConfig().bottom_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
@@ -356,8 +374,8 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
 std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                                          std::vector<EXTLayerRect>& pin_shape_list)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   if (via_below_layer_idx < routing_layer_list.front().get_layer_idx()
       || routing_layer_list.back().get_layer_idx() <= via_below_layer_idx) {
@@ -481,7 +499,7 @@ void PinAccessor::selectAccessPointType(PANet& pa_net)
 
 void PinAccessor::buildBoundingBox(PANet& pa_net)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   std::vector<PlanarCoord> coord_list;
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -496,7 +514,7 @@ void PinAccessor::buildBoundingBox(PANet& pa_net)
 
 void PinAccessor::buildAccessPointList(PANet& pa_net)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   BoundingBox& bounding_box = pa_net.get_bounding_box();
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -531,12 +549,12 @@ void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
 
 void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
-  irt_int bottom_routing_layer_idx = _pa_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _pa_data_manager.getConfig().top_routing_layer_idx;
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
 
@@ -576,12 +594,12 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 
 void PinAccessor::eliminateConflict(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = _pa_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _pa_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _pa_data_manager.getDatabase().get_layer_via_master_list();
-  irt_int bottom_routing_layer_idx = _pa_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _pa_data_manager.getConfig().top_routing_layer_idx;
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -774,7 +792,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
 
 void PinAccessor::reportPAModel(PAModel& pa_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _pa_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
   std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();

@@ -23,10 +23,10 @@ namespace irt {
 
 // public
 
-void GlobalRouter::initInst(Config& config, Database& database)
+void GlobalRouter::initInst()
 {
   if (_gr_instance == nullptr) {
-    _gr_instance = new GlobalRouter(config, database);
+    _gr_instance = new GlobalRouter();
   }
 }
 
@@ -50,8 +50,7 @@ void GlobalRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<GRNet> gr_net_list = _gr_data_manager.convertToGRNetList(net_list);
-  routeGRNetList(gr_net_list);
+  routeNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kGlobalRouter), " completed!", monitor.getStatsInfo());
 }
@@ -60,14 +59,9 @@ void GlobalRouter::route(std::vector<Net>& net_list)
 
 GlobalRouter* GlobalRouter::_gr_instance = nullptr;
 
-void GlobalRouter::init(Config& config, Database& database)
+void GlobalRouter::routeNetList(std::vector<Net>& net_list)
 {
-  _gr_data_manager.input(config, database);
-}
-
-void GlobalRouter::routeGRNetList(std::vector<GRNet>& gr_net_list)
-{
-  GRModel gr_model = initGRModel(gr_net_list);
+  GRModel gr_model = initGRModel(net_list);
   buildGRModel(gr_model);
   checkGRModel(gr_model);
   sortGRModel(gr_model);
@@ -78,11 +72,11 @@ void GlobalRouter::routeGRNetList(std::vector<GRNet>& gr_net_list)
 
 #if 1  // build gr_model
 
-GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
+GRModel GlobalRouter::initGRModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-  Die& die = _gr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  Die& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   GRModel gr_model;
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
@@ -99,9 +93,34 @@ GRModel GlobalRouter::initGRModel(std::vector<GRNet>& gr_net_list)
       }
     }
   }
-  gr_model.set_gr_net_list(gr_net_list);
+  gr_model.set_gr_net_list(convertToGRNetList(net_list));
 
   return gr_model;
+}
+
+std::vector<GRNet> GlobalRouter::convertToGRNetList(std::vector<Net>& net_list)
+{
+  std::vector<GRNet> gr_net_list;
+  gr_net_list.reserve(net_list.size());
+  for (size_t i = 0; i < net_list.size(); i++) {
+    gr_net_list.emplace_back(convertToGRNet(net_list[i]));
+  }
+  return gr_net_list;
+}
+
+GRNet GlobalRouter::convertToGRNet(Net& net)
+{
+  GRNet gr_net;
+  gr_net.set_origin_net(&net);
+  gr_net.set_net_idx(net.get_net_idx());
+  gr_net.set_connect_type(net.get_connect_type());
+  for (Pin& pin : net.get_pin_list()) {
+    gr_net.get_gr_pin_list().push_back(GRPin(pin));
+  }
+  gr_net.set_gr_driving_pin(GRPin(net.get_driving_pin()));
+  gr_net.set_bounding_box(net.get_bounding_box());
+  gr_net.set_ra_cost_map(net.get_ra_cost_map());
+  return gr_net;
 }
 
 void GlobalRouter::buildGRModel(GRModel& gr_model)
@@ -113,9 +132,9 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
 
 void GlobalRouter::buildNeighborMap(GRModel& gr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _gr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _gr_data_manager.getConfig().top_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
@@ -165,10 +184,10 @@ void GlobalRouter::buildNodeSupply(GRModel& gr_model)
 
 void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
 {
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _gr_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _gr_data_manager.getDatabase().get_routing_blockage_list();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
@@ -202,7 +221,7 @@ void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
 
 void GlobalRouter::calcAreaSupply(GRModel& gr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   // track supply
@@ -238,7 +257,7 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
 
 void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer)
 {
-  std::map<irt_int, double>& layer_idx_utilization_ratio = _gr_data_manager.getConfig().layer_idx_utilization_ratio;
+  std::map<irt_int, double>& layer_idx_utilization_ratio = DM_INST.getConfig().layer_idx_utilization_ratio;
 
   double layer_utilization_ratio = 1;
   if (RTUtil::exist(layer_idx_utilization_ratio, routing_layer.get_layer_idx())) {
@@ -357,9 +376,9 @@ void GlobalRouter::buildGRNetPriority(GRModel& gr_model)
 
 void GlobalRouter::checkGRModel(GRModel& gr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _gr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _gr_data_manager.getConfig().top_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
@@ -722,7 +741,8 @@ void GlobalRouter::resetPathHead(GRModel& gr_model)
 
 void GlobalRouter::rerouteByEnlarging(GRModel& gr_model)
 {
-  Die& die = _gr_data_manager.getDatabase().get_die();
+  Die& die = DM_INST.getDatabase().get_die();
+
   if (isRoutingFailed(gr_model)) {
     resetSinglePath(gr_model);
     gr_model.set_routing_region(die.get_grid_rect());
@@ -988,7 +1008,7 @@ double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientat
 
 double GlobalRouter::getWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1077,8 +1097,9 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
 
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
-  Die& die = _gr_data_manager.getDatabase().get_die();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  Die& die = DM_INST.getDatabase().get_die();
+  std::string gr_temp_directory_path = DM_INST.getConfig().gr_temp_directory_path;
 
   GPGDS gp_gds;
 
@@ -1391,7 +1412,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     }
     gp_gds.addStruct(net_struct);
   }
-  GP_INST.plot(gp_gds, _gr_data_manager.getConfig().temp_directory_path + "gr_model.gds", false, false);
+  GP_INST.plot(gp_gds, gr_temp_directory_path + "gr_model.gds", false, false);
 }
 
 #endif
@@ -1426,7 +1447,7 @@ void GlobalRouter::initRoutingResult(GRNet& gr_net)
 
 RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
 {
-  GCellAxis& gcell_axis = _gr_data_manager.getDatabase().get_gcell_axis();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
 
@@ -1534,9 +1555,9 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
 
 void GlobalRouter::countGRModel(GRModel& gr_model)
 {
-  irt_int micron_dbu = _gr_data_manager.getDatabase().get_micron_dbu();
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _gr_data_manager.getDatabase().get_layer_via_master_list();
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
@@ -1601,8 +1622,8 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
 
 void GlobalRouter::reportTable(GRModel& gr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gr_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _gr_data_manager.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
