@@ -341,13 +341,17 @@ template <typename Archive>
 void serialize(Archive& ar, irt::ViaNode& node, const unsigned int version)
 {
   int net_idx = node.get_net_idx();
-  iplf::Archive(ar, net_idx, node.get_via_idx(), boost::serialization::base_object<irt::PlanarCoord>(node));
+  int below_layer_idx = node.get_via_master_idx().get_below_layer_idx();
+  int via_idx = node.get_via_master_idx().get_via_idx();
+  iplf::Archive(ar, net_idx, below_layer_idx, via_idx, boost::serialization::base_object<irt::PlanarCoord>(node));
   if constexpr (Archive::is_loading::value) {
     node.set_net_idx(net_idx);
+    node.get_via_master_idx().set_below_layer_idx(below_layer_idx);
+    node.get_via_master_idx().set_via_idx(via_idx);
   }
 }
 template <typename Archive>
-void save(Archive& ar,const std::vector<irt::Net>& net_list, const unsigned int version)
+void save(Archive& ar, const std::vector<irt::Net>& net_list, const unsigned int version)
 {
   size_t sz = net_list.size();
   ar << sz;
@@ -358,7 +362,6 @@ void save(Archive& ar,const std::vector<irt::Net>& net_list, const unsigned int 
 template <typename Archive>
 void load(Archive& ar, std::vector<irt::Net>& net_list, const unsigned int version)
 {
-
   size_t sz;
   ar >> sz;
   if (sz != net_list.size()) {

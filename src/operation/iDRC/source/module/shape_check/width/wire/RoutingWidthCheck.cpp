@@ -161,6 +161,8 @@ void RoutingWidthCheck::checkDiagonalLengthOfOverlapRect(int layerId, DrcRect* t
       //检查两个矩形的相交矩形部分的对角线边长时，如果对角线长度不满足要求值，还要看相交的矩形部分是否被两个矩形之外的第三个矩形所覆盖，如果是则不算违规
       if (!isOverlapBoxCoveredByExistedRect(target_rect, result_rect, overlap_rect, query_result)) {
         if (_interact_with_op) {
+          _region_query->addViolation(ViolationType::kRoutingWidth);
+          add_spot(layerId, target_rect, result_rect);
           _check_result = false;
         } else {
           _region_query->addViolation(ViolationType::kRoutingWidth);

@@ -400,6 +400,8 @@ void DrcIDBWrapper::wrapCutLayerList()
   for (idb::IdbLayer* idb_layer : idb_layers->get_cut_layers()) {
     /// idb routing layer
     idb::IdbLayerCut* idb_cut_layer = dynamic_cast<idb::IdbLayerCut*>(idb_layer);
+    tech->insertOrderToIdMap(idb_layer->get_order(), true, idb_layer->get_id());
+    tech->insertNameToOrderMap(idb_layer->get_name(), idb_layer->get_order());
 
     /// tech routing layer
     DrcCutLayer* drc_cut_layer = new DrcCutLayer();
@@ -430,6 +432,8 @@ void DrcIDBWrapper::wrapRoutingLayerList()
   for (idb::IdbLayer* idb_layer : idb_layers->get_routing_layers()) {
     /// idb routing layer
     idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
+    tech->insertOrderToIdMap(idb_layer->get_order(), false, idb_layer->get_id());
+    tech->insertNameToOrderMap(idb_layer->get_name(), idb_layer->get_order());
 
     /// tech routing layer
     DrcRoutingLayer* drc_routing_layer = new DrcRoutingLayer();
@@ -463,6 +467,8 @@ void DrcIDBWrapper::wrapCutLayer(idb::IdbLayerCut* idb_cut_layer, DrcCutLayer* d
   // enclosure
   drc_cut_layer->set_lef58_enclosure_list(idb_cut_layer->get_lef58_enclosure_list());
   drc_cut_layer->set_lef58_enclosure_edge_list(idb_cut_layer->get_lef58_enclosure_edge_list());
+  drc_cut_layer->set_enclosure_above(idb_cut_layer->get_enclosure_above());
+  drc_cut_layer->set_enclosure_below(idb_cut_layer->get_enclosure_below());
 
   // rule value
   // std::vector<EnclosureRule*>& enclosure_rule_list = drc_cut_layer->getEnclosureRuleList();
@@ -683,11 +689,13 @@ BoostRect DrcIDBWrapper::getBoostRectFromIdbRect(idb::IdbRect* idb_rect)
 void DrcIDBWrapper::wrapBlockageFromLayerShape(idb::IdbLayerShape* layer_shape, DrcDesign* design)
 {
   int layer_id = layer_shape->get_layer()->get_id();
+  int layer_order = layer_shape->get_layer()->get_order();
   for (idb::IdbRect* rect : layer_shape->get_rect_list()) {
     DrcRect* drc_rect = new DrcRect();
     drc_rect->set_owner_type(RectOwnerType::kBlockage);
     drc_rect->set_is_fixed(true);
     drc_rect->set_layer_id(layer_id);
+    drc_rect->set_layer_order(layer_order);
     // if (rect->get_low_x() == 39680 && rect->get_low_y() == 29720) {
     //   std::cout << "  "
     //             << "idb_rect2: " << rect->get_high_x() << std::endl;
@@ -759,11 +767,13 @@ void DrcIDBWrapper::addPlacementBlockage(idb::IdbPlacementBlockage* idb_blockage
 void DrcIDBWrapper::addRoutingBlockage(idb::IdbRoutingBlockage* idb_blockage, DrcDesign* design)
 {
   int layer_id = idb_blockage->get_layer()->get_id();
+  int layer_order = idb_blockage->get_layer()->get_order();
   for (idb::IdbRect* idb_rect : idb_blockage->get_rect_list()) {
     DrcRect* drc_rect = new DrcRect();
     drc_rect->set_owner_type(RectOwnerType::kBlockage);
     drc_rect->set_is_fixed(true);
     drc_rect->set_layer_id(layer_id);
+    drc_rect->set_layer_order(layer_order);
     drc_rect->set_net_id(-1);
 
     wrapRect(drc_rect, idb_rect);
@@ -880,11 +890,13 @@ void DrcIDBWrapper::addSpecialNetViaBlockage(idb::IdbSpecialWireSegment* idb_seg
 void DrcIDBWrapper::addSpecialNetWireBlockage(idb::IdbSpecialWireSegment* idb_segment, DrcDesign* design)
 {
   int layer_id = idb_segment->get_layer()->get_id();
+  int layer_order = idb_segment->get_layer()->get_order();
   idb::IdbRect* idb_rect = idb_segment->get_bounding_box();
   DrcRect* drc_rect = new DrcRect();
   drc_rect->set_owner_type(RectOwnerType::kBlockage);
   drc_rect->set_is_fixed(true);
   drc_rect->set_layer_id(layer_id);
+  drc_rect->set_layer_order(layer_order);
 
   wrapRect(drc_rect, idb_rect);
   BoostRect boost_rect = getBoostRectFromIdbRect(idb_rect);
@@ -1008,6 +1020,7 @@ bool DrcIDBWrapper::addPortToNet(idb::IdbLayerShape* idb_shape, DrcNet* drc_net)
   }
   /// set layer id
   int layer_id = idb_shape->get_layer()->get_id();
+  int layer_order = idb_shape->get_layer()->get_order();
   /// wrap rect shape list
   for (auto& idb_rect : idb_shape->get_rect_list()) {
     DrcRect* drc_rect = new DrcRect();
@@ -1015,6 +1028,7 @@ bool DrcIDBWrapper::addPortToNet(idb::IdbLayerShape* idb_shape, DrcNet* drc_net)
     drc_rect->set_owner_type(RectOwnerType::kPin);
     drc_rect->set_is_fixed(true);
     drc_rect->set_layer_id(layer_id);
+    drc_rect->set_layer_order(layer_order);
 
     wrapRect(drc_rect, idb_rect);
     BoostRect boost_rect = getBoostRectFromIdbRect(idb_rect);
@@ -1082,6 +1096,7 @@ bool DrcIDBWrapper::addIdbSegmentToNet(idb::IdbRegularWireSegment* idb_segment, 
 void DrcIDBWrapper::addRectShapeToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet* drc_net)
 {
   int layer_id = idb_segment->get_layer()->get_id();
+  int layer_order = idb_segment->get_layer()->get_order();
   auto delta_rect = idb_segment->get_delta_rect();
   auto end_point = idb_segment->get_point_end();
 
@@ -1089,10 +1104,6 @@ void DrcIDBWrapper::addRectShapeToNet(idb::IdbRegularWireSegment* idb_segment, D
   int lb_y = end_point->get_y() + delta_rect->get_low_y();
   int rt_x = end_point->get_x() + delta_rect->get_high_x();
   int rt_y = end_point->get_y() + delta_rect->get_high_y();
-  if (lb_x == 43210 && lb_y == 38350) {
-    std::cout << "find22222222" << std::endl;
-    std::cout << rt_x << "," << rt_y << std::endl;
-  }
 
   DrcRect* drc_rect = new DrcRect();
 
@@ -1100,6 +1111,7 @@ void DrcIDBWrapper::addRectShapeToNet(idb::IdbRegularWireSegment* idb_segment, D
   drc_rect->set_owner_type(RectOwnerType::kSegment);
   drc_rect->set_is_fixed(false);
   drc_rect->set_layer_id(layer_id);
+  drc_rect->set_layer_order(layer_order);
 
   drc_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
   BoostRect boost_rect(lb_x, lb_y, rt_x, rt_y);
@@ -1114,9 +1126,6 @@ bool DrcIDBWrapper::addViaToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet*
 {
   // int layer_id = idb_segment->get_layer()->get_id();
   vector<idb::IdbVia*> idb_via_list = idb_segment->get_via_list();
-  if (idb_via_list.size() > 1) {
-    std::cout << "idb via list size :: " << idb_via_list.size() << std::endl;
-  }
   idb::IdbVia* idb_via = idb_via_list.back();
   idb::IdbLayerShape* bottom_shape = idb_via->get_instance()->get_bottom_layer_shape();
   idb::IdbLayerShape* top_shape = idb_via->get_instance()->get_top_layer_shape();
@@ -1141,9 +1150,10 @@ bool DrcIDBWrapper::addViaToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet*
 bool DrcIDBWrapper::addSegmentToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet* drc_net)
 {
   int layer_id = idb_segment->get_layer()->get_id();
+  int layer_order = idb_segment->get_layer()->get_order();
   idb::IdbCoordinate<int32_t>* start = idb_segment->get_point_start();
   idb::IdbCoordinate<int32_t>* end = idb_segment->get_point_end();
-  addSegmentShapeToNet(layer_id, start, end, drc_net);
+  addSegmentShapeToNet(layer_id, layer_order, start, end, drc_net);
   return true;
 }
 
@@ -1152,6 +1162,7 @@ void DrcIDBWrapper::addViaShapeToNet(idb::IdbLayerShape* layer_shape, DrcNet* dr
                                      bool is_cut)
 {
   int layer_id = layer_shape->get_layer()->get_id();
+  int layer_order = layer_shape->get_layer()->get_order();
   // idb::IdbRect* idb_rect = (layer_shape->get_rect_list()).back();
   for (auto& idb_rect : layer_shape->get_rect_list()) {
     int lb_x = idb_rect->get_low_x() + center_point->get_x();
@@ -1170,6 +1181,7 @@ void DrcIDBWrapper::addViaShapeToNet(idb::IdbLayerShape* layer_shape, DrcNet* dr
     drc_rect->set_owner_type(RectOwnerType::kViaMetal);
     drc_rect->set_is_fixed(false);
     drc_rect->set_layer_id(layer_id);
+    drc_rect->set_layer_order(layer_order);
     drc_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
     BoostRect boost_rect(lb_x, lb_y, rt_x, rt_y);
     if (is_cut) {
@@ -1187,20 +1199,14 @@ void DrcIDBWrapper::addViaShapeToNet(idb::IdbLayerShape* layer_shape, DrcNet* dr
   }
 }
 
-void DrcIDBWrapper::addSegmentShapeToNet(int layer_id, idb::IdbCoordinate<int32_t>* start, idb::IdbCoordinate<int32_t>* end,
-                                         DrcNet* drc_net)
+void DrcIDBWrapper::addSegmentShapeToNet(int layer_id, int layer_order, idb::IdbCoordinate<int32_t>* start,
+                                         idb::IdbCoordinate<int32_t>* end, DrcNet* drc_net)
 {
   int width = _tech->getRoutingWidth(layer_id);
   int lb_x = std::min(start->get_x(), end->get_x()) - width / 2;
   int lb_y = std::min(start->get_y(), end->get_y()) - width / 2;
   int rt_x = std::max(start->get_x(), end->get_x()) + width / 2;
   int rt_y = std::max(start->get_y(), end->get_y()) + width / 2;
-  static int count = 0;
-  if (lb_x == 43210 && lb_y == 38350 && count <= 2) {
-    std::cout << "find" << std::endl;
-    std::cout << rt_x << "," << rt_y << std::endl;
-    count++;
-  }
 
   DrcRect* drc_rect = new DrcRect();
 
@@ -1208,6 +1214,7 @@ void DrcIDBWrapper::addSegmentShapeToNet(int layer_id, idb::IdbCoordinate<int32_
   drc_rect->set_owner_type(RectOwnerType::kSegment);
   drc_rect->set_is_fixed(false);
   drc_rect->set_layer_id(layer_id);
+  drc_rect->set_layer_order(layer_order);
 
   drc_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
   BoostRect boost_rect(lb_x, lb_y, rt_x, rt_y);

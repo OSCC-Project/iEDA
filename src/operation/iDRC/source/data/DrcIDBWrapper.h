@@ -164,7 +164,8 @@ class DrcIDBWrapper
   bool addSegmentToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet* drc_net);
   /// basic routing shape wrap function
   void addViaShapeToNet(idb::IdbLayerShape* layer_shape, DrcNet* drc_net, idb::IdbCoordinate<int32_t>* center_point, bool is_cut);
-  void addSegmentShapeToNet(int layer_id, idb::IdbCoordinate<int32_t>* start, idb::IdbCoordinate<int32_t>* end, DrcNet* drc_net);
+  void addSegmentShapeToNet(int layer_id, int layer_order, idb::IdbCoordinate<int32_t>* start, idb::IdbCoordinate<int32_t>* end,
+                            DrcNet* drc_net);
   void addRectShapeToNet(idb::IdbRegularWireSegment* idb_segment, DrcNet* drc_net);
 };
 

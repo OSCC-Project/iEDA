@@ -97,17 +97,15 @@ class EvalNet
   }
   double centerAvgDist() const
   {
-    auto* config = CTSAPIInst.get_config();
     auto center = getCenterPoint();
     double dist = 0;
     for (auto* inst : _net->get_instances()) {
-      dist += 1.0 * pgl::manhattan_distance(center, inst->get_location()) / config->get_micron_dbu();
+      dist += 1.0 * pgl::manhattan_distance(center, inst->get_location()) / CTSAPIInst.getDbUnit();
     }
     return dist / static_cast<double>(_net->get_instances().size());
   }
   double getHPWL() const
   {
-    auto* config = CTSAPIInst.get_config();
     int l_x = std::numeric_limits<int>::max();
     int l_y = std::numeric_limits<int>::max();
     int r_x = 0;
@@ -119,14 +117,13 @@ class EvalNet
       r_x = std::max(r_x, loc.x());
       r_y = std::max(r_y, loc.y());
     }
-    return 1.0 * (r_x - l_x + r_y - l_y) / config->get_micron_dbu();
+    return 1.0 * (r_x - l_x + r_y - l_y) / CTSAPIInst.getDbUnit();
   }
   double getWireLength() const
   {
-    auto* config = CTSAPIInst.get_config();
     double net_len = 0.0;
     for (auto& signal_wire : _net->get_signal_wires()) {
-      auto length = 1.0 * signal_wire.getWireLength() / config->get_micron_dbu();
+      auto length = 1.0 * signal_wire.getWireLength() / CTSAPIInst.getDbUnit();
       net_len += length;
     }
     return net_len;
