@@ -17,11 +17,12 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "GPBoundary.hpp"
-#include "GPDataManager.hpp"
 #include "GPGDS.hpp"
 #include "GPGraphType.hpp"
+#include "GPLYPLayer.hpp"
 #include "GPLayoutType.hpp"
 #include "GPPath.hpp"
 #include "GPStruct.hpp"
@@ -34,7 +35,7 @@ namespace irt {
 class GDSPlotter
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static GDSPlotter& getInst();
   static void destroyInst();
   // function
@@ -47,10 +48,12 @@ class GDSPlotter
  private:
   // self
   static GDSPlotter* _gp_instance;
-  // config & database
-  GPDataManager _gp_data_manager;
+  std::map<irt_int, irt_int> _routing_layer_gds_map;
+  std::map<irt_int, irt_int> _cut_layer_gds_map;
+  std::map<irt_int, irt_int> _gds_routing_layer_map;
+  std::map<irt_int, irt_int> _gds_cut_layer_map;
 
-  GDSPlotter(Config& config, Database& database) { init(config, database); }
+  GDSPlotter() { init(); }
   GDSPlotter(const GDSPlotter& other) = delete;
   GDSPlotter(GDSPlotter&& other) = delete;
   ~GDSPlotter() = default;
@@ -61,7 +64,11 @@ class GDSPlotter
   // setter
 
   // function
-  void init(Config& config, Database& database);
+  void init();
+  void buildGDSLayerMap();
+  void buildLayoutLypFile();
+  void buildGraphLypFile();
+  void writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list);
   void addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage stage);
   void addPinList(GPGDS& gp_gds, GPStruct& net_struct, std::vector<Pin>& pin_list);
   void addPinShapeList(GPStruct& pin_struct, Pin& pin);

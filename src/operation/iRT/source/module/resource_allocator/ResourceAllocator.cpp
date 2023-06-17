@@ -22,10 +22,10 @@ namespace irt {
 
 // public
 
-void ResourceAllocator::initInst(Config& config, Database& database)
+void ResourceAllocator::initInst()
 {
   if (_ra_instance == nullptr) {
-    _ra_instance = new ResourceAllocator(config, database);
+    _ra_instance = new ResourceAllocator();
   }
 }
 
@@ -49,8 +49,7 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<RANet> ra_net_list = _ra_data_manager.convertToRANetList(net_list);
-  allocateRANetList(ra_net_list);
+  allocateNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kResourceAllocator), " completed!", monitor.getStatsInfo());
 }
@@ -59,14 +58,9 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 
 ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 
-void ResourceAllocator::init(Config& config, Database& database)
+void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
-  _ra_data_manager.input(config, database);
-}
-
-void ResourceAllocator::allocateRANetList(std::vector<RANet>& ra_net_list)
-{
-  RAModel ra_model = initRAModel(ra_net_list);
+  RAModel ra_model = initRAModel(net_list);
   buildRAModel(ra_model);
   checkRAModel(ra_model);
   allocateRAModel(ra_model);
@@ -76,11 +70,33 @@ void ResourceAllocator::allocateRANetList(std::vector<RANet>& ra_net_list)
 
 #if 1  // build ra_model
 
-RAModel ResourceAllocator::initRAModel(std::vector<RANet>& ra_net_list)
+RAModel ResourceAllocator::initRAModel(std::vector<Net>& net_list)
 {
   RAModel ra_model;
-  ra_model.set_ra_net_list(ra_net_list);
+  ra_model.set_ra_net_list(convertToRANetList(net_list));
   return ra_model;
+}
+
+std::vector<RANet> ResourceAllocator::convertToRANetList(std::vector<Net>& net_list)
+{
+  std::vector<RANet> ra_net_list;
+  ra_net_list.reserve(net_list.size());
+  for (size_t i = 0; i < net_list.size(); i++) {
+    ra_net_list.emplace_back(convertToRANet(net_list[i]));
+  }
+  return ra_net_list;
+}
+
+RANet ResourceAllocator::convertToRANet(Net& net)
+{
+  RANet ra_net;
+  ra_net.set_origin_net(&net);
+  ra_net.set_net_idx(net.get_net_idx());
+  for (Pin& pin : net.get_pin_list()) {
+    ra_net.get_ra_pin_list().push_back(RAPin(pin));
+  }
+  ra_net.set_bounding_box(net.get_bounding_box());
+  return ra_net;
 }
 
 void ResourceAllocator::buildRAModel(RAModel& ra_model)
@@ -121,8 +137,8 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
 void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = _ra_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _ra_data_manager.getDatabase().get_die();
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
   ra_gcell_list.resize(die.getXSize() * die.getYSize());
@@ -137,12 +153,12 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 
 void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = _ra_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _ra_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _ra_data_manager.getDatabase().get_routing_blockage_list();
-  irt_int bottom_routing_layer_idx = _ra_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _ra_data_manager.getConfig().top_routing_layer_idx;
+  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
   for (const Blockage& routing_blockage : routing_blockage_list) {
@@ -183,10 +199,10 @@ void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
 
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _ra_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _ra_data_manager.getConfig().top_routing_layer_idx;
-  std::map<irt_int, double>& layer_idx_utilization_ratio = _ra_data_manager.getConfig().layer_idx_utilization_ratio;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  std::map<irt_int, double>& layer_idx_utilization_ratio = DM_INST.getConfig().layer_idx_utilization_ratio;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -248,7 +264,7 @@ void ResourceAllocator::buildRelation(RAModel& ra_model)
 {
   Monitor monitor;
 
-  Die& die = _ra_data_manager.getDatabase().get_die();
+  Die& die = DM_INST.getDatabase().get_die();
 
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
@@ -304,7 +320,8 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
     PlanarRect& gcell_rect = ra_gcell.get_real_rect();
     for (auto& [layer_idx, blockage_list] : ra_gcell.get_layer_blockage_map()) {
@@ -355,27 +372,26 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model)
 {
   Monitor monitor;
 
-  RAConfig& ra_config = _ra_data_manager.getConfig();
   // 迭代参数
-  double initial_penalty = ra_config.initial_penalty;      //!< 罚函数的参数
-  double penalty_drop_rate = ra_config.penalty_drop_rate;  //!< 罚函数的参数下降系数
-  irt_int outer_iter_num = ra_config.outer_iter_num;       //!< 外层循环数
-  irt_int inner_iter_num = ra_config.inner_iter_num;       //!< 内层循环数
+  double ra_initial_penalty = DM_INST.getConfig().ra_initial_penalty;      //!< 罚函数的参数
+  double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;  //!< 罚函数的参数下降系数
+  irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;       //!< 外层循环数
+  irt_int ra_inner_iter_num = DM_INST.getConfig().ra_inner_iter_num;       //!< 内层循环数
 
-  for (irt_int i = 0, stage = 1; i < outer_iter_num; i++, stage++) {
-    double penalty_para = (1 / (2 * initial_penalty));
+  for (irt_int i = 0, stage = 1; i < ra_outer_iter_num; i++, stage++) {
+    double penalty_para = (1 / (2 * ra_initial_penalty));
     LOG_INST.info(Loc::current(), "************* Start iteration penalty_para=", penalty_para, " *************");
-    for (irt_int j = 0, iter = 1; j < inner_iter_num; j++, iter++) {
+    for (irt_int j = 0, iter = 1; j < ra_inner_iter_num; j++, iter++) {
       Monitor iter_monitor;
 
       calcNablaF(ra_model, penalty_para);
       double norm_nabla_f = calcAlpha(ra_model, penalty_para);
       double norm_square_step = updateResult(ra_model);
 
-      LOG_INST.info(Loc::current(), "Stage(", stage, "/", outer_iter_num, ") Iter(", iter, "/", inner_iter_num,
+      LOG_INST.info(Loc::current(), "Stage(", stage, "/", ra_outer_iter_num, ") Iter(", iter, "/", ra_inner_iter_num,
                     "), norm_nabla_f=", norm_nabla_f, ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
     }
-    initial_penalty *= penalty_drop_rate;
+    ra_initial_penalty *= ra_penalty_drop_rate;
   }
 
   LOG_INST.info(Loc::current(), "The resource model iteration was completed!", monitor.getStatsInfo());
@@ -563,7 +579,7 @@ void ResourceAllocator::updateRAModel(RAModel& ra_model)
 
 void ResourceAllocator::updateAllocationMap(RAModel& ra_model)
 {
-  Die& die = _ra_data_manager.getDatabase().get_die();
+  Die& die = DM_INST.getDatabase().get_die();
 
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   std::vector<double>& result_list = ra_model.get_result_list();
