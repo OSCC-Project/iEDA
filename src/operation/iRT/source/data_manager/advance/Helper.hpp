@@ -35,7 +35,7 @@ class Helper
   std::map<std::string, irt_int>& get_routing_layer_name_to_idx_map() { return _routing_layer_name_to_idx_map; }
   std::map<irt_int, irt_int>& get_cut_layer_idx_db_to_rt_map() { return _cut_layer_idx_db_to_rt_map; }
   std::map<std::string, irt_int>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
-  std::map<std::string, std::pair<irt_int, irt_int>>& get_via_name_to_idx_map() { return _via_name_to_idx_map; }
+  std::map<std::string, ViaMasterIdx>& get_via_name_to_idx_map() { return _via_name_to_idx_map; }
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
@@ -45,7 +45,7 @@ class Helper
   inline irt_int wrapIDBCutLayerIdxToRT(const irt_int idb_layer_id);
   inline irt_int getRoutingLayerIdxByName(const std::string& routing_layer_name);
   inline irt_int getCutLayerIdxByName(const std::string& cut_layer_name);
-  inline std::pair<irt_int, irt_int> getRTViaPairIdxByName(const std::string& via_name);
+  inline ViaMasterIdx getRTViaMasterIdxByName(const std::string& via_name);
 
  private:
   std::string _design_name;
@@ -55,7 +55,7 @@ class Helper
   std::map<std::string, irt_int> _routing_layer_name_to_idx_map;
   std::map<irt_int, irt_int> _cut_layer_idx_db_to_rt_map;
   std::map<std::string, irt_int> _cut_layer_name_to_idx_map;
-  std::map<std::string, std::pair<irt_int, irt_int>> _via_name_to_idx_map;
+  std::map<std::string, ViaMasterIdx> _via_name_to_idx_map;
 };
 
 inline irt_int Helper::wrapIDBRoutingLayerIdxToRT(const irt_int idb_layer_id)
@@ -102,15 +102,15 @@ inline irt_int Helper::getCutLayerIdxByName(const std::string& cut_layer_name)
   return cut_layer_idx;
 }
 
-inline std::pair<irt_int, irt_int> Helper::getRTViaPairIdxByName(const std::string& via_name)
+inline ViaMasterIdx Helper::getRTViaMasterIdxByName(const std::string& via_name)
 {
-  std::pair<irt_int, irt_int> via_idx;
+  ViaMasterIdx via_master_idx;
   if (RTUtil::exist(_via_name_to_idx_map, via_name)) {
-    via_idx = _via_name_to_idx_map[via_name];
+    via_master_idx = _via_name_to_idx_map[via_name];
   } else {
     LOG_INST.error(Loc::current(), "The via_name ", via_name, " is not exist!");
   }
-  return via_idx;
+  return via_master_idx;
 }
 
 }  // namespace irt

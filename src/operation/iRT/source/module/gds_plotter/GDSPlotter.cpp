@@ -303,7 +303,8 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
 
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
-      ViaMaster& via_master = layer_via_master_list[via_node.get_via_idx().first][via_node.get_via_idx().second];
+      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
 
       LayerRect& above_enclosure = via_master.get_above_enclosure();
       GPBoundary above_boundary;

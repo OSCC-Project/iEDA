@@ -23,6 +23,7 @@
 #include "EOLSpacingCheck.hpp"
 #include "EnclosedAreaCheck.h"
 #include "EnclosureCheck.hpp"
+#include "JogSpacingCheck.hpp"
 #include "MinStepCheck.hpp"
 #include "NotchSpacingCheck.hpp"
 #include "RoutingAreaCheck.h"
@@ -127,22 +128,42 @@ std::map<std::string, int> DrcAPI::getCheckResult(RegionQuery* region_query)
   return viotype_to_nums_map;
 }
 
-void DrcAPI::add(std::vector<ids::DRCTask> task_list)
-{
-  for (auto& [region_query, drc_rect_list] : task_list) {
-    std::set<DrcPoly*> intersect_poly_set;
-    // 得到与这组rect相交的所有polygon
-    region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
-    // 删除与这组rect相交的所有polygon
-    region_query->deleteIntersectPoly(intersect_poly_set);
+// void DrcAPI::add(std::vector<ids::DRCTask> task_list)
+// {
+//   for (auto& [region_query, drc_rect_list] : task_list) {
+//     std::set<DrcPoly*> intersect_poly_set;
+//     // 得到与这组rect相交的所有polygon
+//     region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
+//     // 删除与这组rect相交的所有polygon
+//     region_query->deleteIntersectPoly(intersect_poly_set);
 
-    DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
-    if (new_poly) {
-      region_query->addPoly(new_poly);
-    }
-    for (auto& drc_rect : drc_rect_list) {
-      region_query->addDrcRect(drc_rect, _tech);
-    }
+//     DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
+//     if (new_poly) {
+//       region_query->addPoly(new_poly);
+//     }
+//     for (auto& drc_rect : drc_rect_list) {
+//       region_query->addDrcRect(drc_rect, _tech);
+//     }
+//   }
+// }
+
+void DrcAPI::add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list)
+{
+  std::vector<DrcRect*>& region_rect_list = region_query->getRegionRectList();
+  region_rect_list.insert(region_rect_list.end(), drc_rect_list.begin(), drc_rect_list.end());
+
+  std::set<DrcPoly*> intersect_poly_set;
+  // 得到与这组rect相交的所有polygon
+  region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
+  // 删除与这组rect相交的所有polygon
+  region_query->deleteIntersectPoly(intersect_poly_set);
+
+  DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
+  if (new_poly) {
+    region_query->addPoly(new_poly);
+  }
+  for (auto& drc_rect : drc_rect_list) {
+    region_query->addDrcRect(drc_rect, _tech);
   }
 }
 
@@ -282,37 +303,68 @@ bool DrcAPI::checkShape(RegionQuery* region_query, DrcRect* check_rect)
   return true;
 }
 
-bool DrcAPI::check(std::vector<ids::DRCTask> task_list)
+// bool DrcAPI::check(std::vector<ids::DRCTask> task_list)
+// {
+//   for (auto& [region_query, drc_rect_list] : task_list) {
+//     for (auto& drc_rect : drc_rect_list) {
+//       if (!checkSpacing(region_query, drc_rect)) {
+//         return false;
+//       }
+
+//       if (!checkShape(region_query, drc_rect)) {
+//         return false;
+//       }
+
+//       // checkMinimumCut(drc_rect);
+//     }
+//   }
+//   return true;
+// }
+
+bool DrcAPI::check(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list)
 {
-  for (auto& [region_query, drc_rect_list] : task_list) {
-    for (auto& drc_rect : drc_rect_list) {
-      if (!checkSpacing(region_query, drc_rect)) {
-        return false;
-      }
-
-      if (!checkShape(region_query, drc_rect)) {
-        return false;
-      }
-
-      // checkMinimumCut(drc_rect);
+  for (auto& drc_rect : drc_rect_list) {
+    if (!checkSpacing(region_query, drc_rect)) {
+      return false;
     }
+
+    if (!checkShape(region_query, drc_rect)) {
+      return false;
+    }
+
+    // checkMinimumCut(drc_rect);
   }
+
   return true;
 }
 
-void DrcAPI::del(std::vector<ids::DRCTask> task_list)
+// void DrcAPI::del(std::vector<ids::DRCTask> task_list)
+// {
+//   for (auto& [region_query, drc_rect_list] : task_list) {
+//     std::set<DrcPoly*> intersect_poly_set;
+//     region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
+//     region_query->deleteIntersectPoly(intersect_poly_set);
+//     auto new_poly_list = region_query->rebuildPoly_del(intersect_poly_set, drc_rect_list);
+//     if (!new_poly_list.empty()) {
+//       region_query->addPolyList(new_poly_list);
+//     }
+//     for (auto& drc_rect : drc_rect_list) {
+//       region_query->removeDrcRect(drc_rect);
+//     }
+//   }
+// }
+
+void DrcAPI::del(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list)
 {
-  for (auto& [region_query, drc_rect_list] : task_list) {
-    std::set<DrcPoly*> intersect_poly_set;
-    region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
-    region_query->deleteIntersectPoly(intersect_poly_set);
-    auto new_poly_list = region_query->rebuildPoly_del(intersect_poly_set, drc_rect_list);
-    if (!new_poly_list.empty()) {
-      region_query->addPolyList(new_poly_list);
-    }
-    for (auto& drc_rect : drc_rect_list) {
-      region_query->removeDrcRect(drc_rect);
-    }
+  std::set<DrcPoly*> intersect_poly_set;
+  region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
+  region_query->deleteIntersectPoly(intersect_poly_set);
+  auto new_poly_list = region_query->rebuildPoly_del(intersect_poly_set, drc_rect_list);
+  if (!new_poly_list.empty()) {
+    region_query->addPolyList(new_poly_list);
+  }
+  for (auto& drc_rect : drc_rect_list) {
+    region_query->removeDrcRect(drc_rect);
   }
 }
 
@@ -356,69 +408,69 @@ void DrcAPI::initPoly(std::map<int, DrcNet>& nets, RegionQuery* region_query)
   }
 }
 
-bool DrcAPI::checkDRC(std::vector<DrcRect*> origin_rect_list)
-{
-  // init RectRTreeMap
-  // LayerIdToRTreeMap* region_query = new LayerIdToRTreeMap();
-  RegionQuery* region_query = new RegionQuery();
+// bool DrcAPI::checkDRC(std::vector<DrcRect*> origin_rect_list)
+// {
+//   // init RectRTreeMap
+//   // LayerIdToRTreeMap* region_query = new LayerIdToRTreeMap();
+//   RegionQuery* region_query = new RegionQuery();
 
-  initRegionQuery(origin_rect_list, region_query);
-  std::map<int, DrcNet> nets;
-  initNets(origin_rect_list, nets);
-  initPoly(nets, region_query);
-  // TODO EdgeRtreeMap
+//   initRegionQuery(origin_rect_list, region_query);
+//   std::map<int, DrcNet> nets;
+//   initNets(origin_rect_list, nets);
+//   initPoly(nets, region_query);
+//   // TODO EdgeRtreeMap
 
-  // init check module
-  // RoutingSpacingCheck* routing_spacing_check = new RoutingSpacingCheck(_tech, region_query);
-  // EOLSpacingCheck* eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
-  // NotchSpacingCheck* notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
-  // RoutingWidthCheck* width_check = new RoutingWidthCheck(_tech, region_query);
-  // MinStepCheck* min_step_check = new MinStepCheck(_tech);
-  // RoutingAreaCheck* area_check = new RoutingAreaCheck(_tech);
-  // CornerFillSpacingCheck* corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
-  CutSpacingCheck* cut_spacing_check = new CutSpacingCheck(_tech, region_query);
-  // CutEolSpacingCheck* cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
-  // EnclosureCheck* enclosure_check = new EnclosureCheck(_tech, region_query);
+//   // init check module
+//   // RoutingSpacingCheck* routing_spacing_check = new RoutingSpacingCheck(_tech, region_query);
+//   // EOLSpacingCheck* eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
+//   // NotchSpacingCheck* notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
+//   // RoutingWidthCheck* width_check = new RoutingWidthCheck(_tech, region_query);
+//   // MinStepCheck* min_step_check = new MinStepCheck(_tech);
+//   // RoutingAreaCheck* area_check = new RoutingAreaCheck(_tech);
+//   // CornerFillSpacingCheck* corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
+//   // CutSpacingCheck* cut_spacing_check = new CutSpacingCheck(_tech, region_query);
+//   // CutEolSpacingCheck* cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
+//   // EnclosureCheck* enclosure_check = new EnclosureCheck(_tech, region_query);
 
-  bool res = true;
+//   bool res = true;
 
-  for (auto& target_drc_rect : origin_rect_list) {
-    if (!cut_spacing_check->check(target_drc_rect)) {
-      return false;
-    }
-  }
-  // for (auto& net : nets) {
-  //   if (!corner_fill_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!min_step_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!eol_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!notch_spacing_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  //   if (!width_check->check(&net.second)) {
-  //     res = false;
-  //     break;
-  //   }
-  // }
+//   for (auto& target_drc_rect : origin_rect_list) {
+//     if (!cut_spacing_check->check(target_drc_rect)) {
+//       return false;
+//     }
+//   }
+//   // for (auto& net : nets) {
+//   //   if (!corner_fill_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!min_step_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!eol_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!notch_spacing_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   //   if (!width_check->check(&net.second)) {
+//   //     res = false;
+//   //     break;
+//   //   }
+//   // }
 
-  // delete region_query;
-  // // delete area_check;
-  // // delete min_step_check;
-  // // delete routing_spacing_check;
-  // // delete eol_spacing_check;
-  // // delete corner_fill_spacing_check;
+//   // delete region_query;
+//   // // delete area_check;
+//   // // delete min_step_check;
+//   // // delete routing_spacing_check;
+//   // // delete eol_spacing_check;
+//   // // delete corner_fill_spacing_check;
 
-  return res;
-}
+//   return res;
+// }
 
 RTreeBox DrcAPI::getRTreeBox(DrcRect* rect)
 {
@@ -747,17 +799,17 @@ void DrcAPI::getCornerFillSpacingScope(std::vector<DrcRect*>& max_scope_list, st
   delete cornerfill_check;
 }
 
-// std::vector<DrcRect*> DrcAPI::getMaxScope(std::vector<DrcRect*> origin_rect_list)
-// {
-//   std::vector<DrcRect*> max_scope_list;
-//   std::map<int, DrcNet> nets;
-//   initNets(origin_rect_list, nets);
-//   initPoly(nets, nullptr);
-//   getCommonSpacingScope(max_scope_list, nets, true);
-//   getEOLSpacingScope(max_scope_list, nets, true);
-//   getCornerFillSpacingScope(max_scope_list, nets);
-//   return max_scope_list;
-// }
+std::vector<DrcRect*> DrcAPI::getMaxScope(std::vector<DrcRect*> origin_rect_list)
+{
+  std::vector<DrcRect*> max_scope_list;
+  std::map<int, DrcNet> nets;
+  initNets(origin_rect_list, nets);
+  initPoly(nets, nullptr);
+  getCommonSpacingScope(max_scope_list, nets, true);
+  getEOLSpacingScope(max_scope_list, nets, true);
+  getCornerFillSpacingScope(max_scope_list, nets);
+  return max_scope_list;
+}
 
 std::vector<DrcRect*> DrcAPI::getMinScope(std::vector<DrcRect*> origin_rect_list)
 {
@@ -774,6 +826,12 @@ std::vector<DrcRect*> DrcAPI::getMinScope(std::vector<DrcRect*> origin_rect_list
 DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, std::string layer_name, bool is_artifical)
 {
   DrcRect* drc_rect = new DrcRect(net_id, lb_x, lb_y, rt_x, rt_y);
+  if (_tech) {
+    int layer_order = _tech->getLayerOrderByName(layer_name);
+    drc_rect->set_layer_order(layer_order);
+  } else {
+    return nullptr;
+  }
   std::pair<bool, int> layer_info = _tech->getLayerInfoByLayerName(layer_name);
   drc_rect->set_layer_id(layer_info.second);
   if (is_artifical) {
@@ -786,6 +844,82 @@ DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, 
     }
   }
   return drc_rect;
+}
+
+std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(RegionQuery* region_query)
+{
+  return check(region_query->getRegionRectList());
+}
+
+std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(std::vector<DrcRect*>& region_rect_list)
+{
+  std::vector<DrcRect*> cut_rect_list;
+  std::vector<DrcRect*> routing_rect_list;
+  std::map<int, DrcNet> nets;
+  RegionQuery* region_query = new RegionQuery();
+  for (auto& drc_rect : region_rect_list) {
+    int layer_id = drc_rect->get_layer_id();
+    if (drc_rect->get_owner_type() == RectOwnerType::kViaCut) {
+      cut_rect_list.push_back(drc_rect);
+      region_query->add_cut_rect_to_rtree(layer_id, drc_rect);
+    } else if (drc_rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
+      routing_rect_list.push_back(drc_rect);
+      region_query->add_routing_rect_to_rtree(layer_id, drc_rect);
+    }
+  }
+  initNets(region_rect_list, nets);
+  initPoly(nets, region_query);
+  auto jog_spacing_check = new JogSpacingCheck(_tech, region_query);
+  auto notch_spacing_check = new NotchSpacingCheck(_tech, region_query);
+  auto min_step_check = new MinStepCheck(_tech, region_query);
+  auto corner_fill_spacing_check = new CornerFillSpacingCheck(_tech, region_query);
+  auto cut_eol_spacing_check = new CutEolSpacingCheck(_tech, region_query);
+  auto routing_sapcing_check = new RoutingSpacingCheck(_tech, region_query);
+  auto eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
+  auto routing_area_check = new RoutingAreaCheck(_tech, region_query);
+  auto routing_width_check = new RoutingWidthCheck(_tech, region_query);
+  auto enclosed_area_check = new EnclosedAreaCheck(_tech, region_query);
+  auto cut_spacing_check = new CutSpacingCheck(_tech, region_query);
+  auto enclosure_check = new EnclosureCheck(_tech, region_query);
+  for (auto& [net_id, net] : nets) {
+    routing_sapcing_check->checkRoutingSpacing(&net);
+
+    routing_width_check->checkRoutingWidth(&net);
+
+    routing_area_check->checkArea(&net);
+
+    enclosed_area_check->checkEnclosedArea(&net);
+
+    cut_spacing_check->checkCutSpacing(&net);
+
+    eol_spacing_check->checkEOLSpacing(&net);
+
+    notch_spacing_check->checkNotchSpacing(&net);
+
+    min_step_check->checkMinStep(&net);
+
+    corner_fill_spacing_check->checkCornerFillSpacing(&net);
+
+    cut_eol_spacing_check->checkCutEolSpacing(&net);
+
+    jog_spacing_check->checkJogSpacing(&net);
+  }
+  delete jog_spacing_check;
+  delete notch_spacing_check;
+  delete min_step_check;
+  delete corner_fill_spacing_check;
+  delete cut_eol_spacing_check;
+  delete routing_sapcing_check;
+  delete eol_spacing_check;
+  delete routing_area_check;
+  delete routing_width_check;
+  delete enclosed_area_check;
+  delete cut_spacing_check;
+  delete enclosure_check;
+
+  std::map<std::string, std::vector<DrcViolationSpot*>> vio_map;
+  region_query->getRegionDetailReport(vio_map);
+  return vio_map;
 }
 
 }  // namespace idrc

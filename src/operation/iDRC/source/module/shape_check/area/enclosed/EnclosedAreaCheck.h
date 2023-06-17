@@ -75,6 +75,8 @@ class EnclosedAreaCheck
   void initLayerToPolygonSetFromPinRects(DrcNet* target_net);
   void checkEnclosedArea();
   void checkEnclosedAreaFromHolePlygonList(const std::vector<PolygonWithHoles>& hole_polygon_list, int requre_enclosed_area, int layerId);
+  void addSpot(bp::polygon_90_data<int>& hole_polygon, int layer_id);
+
   void add_spot(int layerId, const DrcRectangle<int>& vialation_box, ViolationType type);
 
   ////**********************interact with iRT********************////

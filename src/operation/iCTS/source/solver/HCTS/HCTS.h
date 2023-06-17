@@ -141,7 +141,7 @@ class HNode
   HNode* _left = nullptr;
   HNode* _right = nullptr;
   HNodeType _type = HNodeType::kSteiner;
-  size_t _id = -1;
+  size_t _id = 0;
   double _net_length = 0.0;
 };
 
@@ -155,7 +155,7 @@ class HCTS
     // unit
     _unit_res = CTSAPIInst.getClockUnitRes() / 1000;
     _unit_cap = CTSAPIInst.getClockUnitCap();
-    _db_unit = config->get_micron_dbu();
+    _db_unit = CTSAPIInst.getDbUnit();
     // constraint
     _skew_bound = config->get_skew_bound();
     _max_cap = config->get_max_cap();

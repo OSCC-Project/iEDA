@@ -35,19 +35,6 @@ void CtsDBWrapper::writeDef()
 
 void CtsDBWrapper::read()
 {
-  readConfig();
-  readClockNetlist();
-}
-
-void CtsDBWrapper::readConfig()
-{
-  auto* config = CTSAPIInst.get_config();
-  auto micron_dbu = _idb_design->get_units()->get_micron_dbu();
-  config->set_micron_dbu(micron_dbu);
-}
-
-void CtsDBWrapper::readClockNetlist()
-{
   auto* design = CTSAPIInst.get_design();
   auto* idb_net_list = _idb_design->get_net_list();
 
