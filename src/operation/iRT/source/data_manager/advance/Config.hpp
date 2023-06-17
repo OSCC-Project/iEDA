@@ -35,10 +35,10 @@ class Config
   std::string top_routing_layer;                          // optional
   std::map<std::string, double> layer_utilization_ratio;  // optional
   irt_int enable_output_gds_files;                        // optional
-  double ra_initial_penalty;               // optional
-  double ra_penalty_drop_rate;             // optional
-  irt_int ra_outer_iter_num;               // optional
-  irt_int ra_inner_iter_num;               // optional
+  double ra_initial_penalty;                              // optional
+  double ra_penalty_drop_rate;                            // optional
+  irt_int ra_outer_iter_num;                              // optional
+  irt_int ra_inner_iter_num;                              // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;                              // building

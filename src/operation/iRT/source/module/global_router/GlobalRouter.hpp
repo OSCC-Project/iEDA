@@ -49,7 +49,7 @@ class GlobalRouter
   GlobalRouter& operator=(GlobalRouter&& other) = delete;
   // function
   void init(Config& config, Database& database);
-  void routeGRNetList(std::vector<Net>& net_list);
+  void routeNetList(std::vector<Net>& net_list);
 
 #if 1  // build gr_model
   GRModel initGRModel(std::vector<Net>& net_list);

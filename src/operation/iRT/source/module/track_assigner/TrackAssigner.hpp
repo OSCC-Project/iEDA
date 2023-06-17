@@ -48,7 +48,7 @@ class TrackAssigner
   TrackAssigner& operator=(const TrackAssigner& other) = delete;
   TrackAssigner& operator=(TrackAssigner&& other) = delete;
   // function
-  void assignTANetList(std::vector<Net>& net_list);
+  void assignNetList(std::vector<Net>& net_list);
 
 #if 1  // build ta_model
   TAModel initTAModel(std::vector<Net>& net_list);

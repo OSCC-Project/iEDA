@@ -47,7 +47,7 @@ class PinAccessor
   PinAccessor& operator=(const PinAccessor& other) = delete;
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
-  void accessPANetList(std::vector<Net>& net_list);
+  void accessNetList(std::vector<Net>& net_list);
 
 #if 1  // build pa_model
   PAModel initPAModel(std::vector<Net>& net_list);

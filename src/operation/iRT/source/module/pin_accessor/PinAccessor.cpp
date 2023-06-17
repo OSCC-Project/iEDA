@@ -55,7 +55,7 @@ void PinAccessor::access(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  accessPANetList(net_list);
+  accessNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kPinAccessor), " completed!", monitor.getStatsInfo());
 }
@@ -64,7 +64,7 @@ void PinAccessor::access(std::vector<Net>& net_list)
 
 PinAccessor* PinAccessor::_pa_instance = nullptr;
 
-void PinAccessor::accessPANetList(std::vector<Net>& net_list)
+void PinAccessor::accessNetList(std::vector<Net>& net_list)
 {
   PAModel pa_model = initPAModel(net_list);
   buildPAModel(pa_model);

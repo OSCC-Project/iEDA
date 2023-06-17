@@ -48,7 +48,7 @@ class ResourceAllocator
   ResourceAllocator& operator=(const ResourceAllocator& other) = delete;
   ResourceAllocator& operator=(ResourceAllocator&& other) = delete;
   // function
-  void allocateRANetList(std::vector<Net>& net_list);
+  void allocateNetList(std::vector<Net>& net_list);
 
 #if 1  // build ra_model
   RAModel initRAModel(std::vector<Net>& net_list);

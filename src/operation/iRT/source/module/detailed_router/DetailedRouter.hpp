@@ -50,7 +50,7 @@ class DetailedRouter
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  void routeDRNetList(std::vector<Net>& net_list);
+  void routeNetList(std::vector<Net>& net_list);
 
 #if 1  // build dr_model
   DRModel initDRModel(std::vector<Net>& net_list);
@@ -135,7 +135,7 @@ class DetailedRouter
 #if 1  // update dr_model
   void updateDRModel(DRModel& dr_model);
   void buildRoutingResult(DRTask& dr_task);
-  void updateOriginTAResultTree(DRModel& dr_model);
+  void updateOriginDRResultTree(DRModel& dr_model);
 #endif
 
 #if 1  // report dr_model
