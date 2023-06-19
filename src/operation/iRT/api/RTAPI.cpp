@@ -300,6 +300,18 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 // DRC
 
+bool RTAPI::check(std::vector<ids::DRCRect>& detection_rect_list)
+{
+  // return DrcAPIInst.check(detection_rect_list);
+  return true;
+}
+
+std::vector<ids::DRCRect> RTAPI::getMaxScope(std::vector<ids::DRCRect>& detection_rect_list)
+{
+  // return DrcAPIInst.getMaxScope(detection_rect_list);
+  return detection_rect_list;
+}
+
 std::vector<ids::DRCRect> RTAPI::getMinScope(std::vector<ids::DRCRect>& detection_rect_list)
 {
   // return DrcAPIInst.getMinScope(detection_rect_list);

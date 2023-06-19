@@ -65,12 +65,14 @@ DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 
 void DetailedRouter::routeNetList(std::vector<Net>& net_list)
 {
-  DRModel dr_model = initDRModel(net_list);
-  buildDRModel(dr_model);
-  routeDRModel(dr_model);
-  updateDRModel(dr_model);
-  reportDRModel(dr_model);
+  // DRModel dr_model = initDRModel(net_list);
+  // buildDRModel(dr_model);
+  // routeDRModel(dr_model);
+  // updateDRModel(dr_model);
+  // reportDRModel(dr_model);
 }
+
+#if 0
 
 #if 1  // build dr_model
 
@@ -1991,6 +1993,8 @@ void DetailedRouter::reportTable(DRModel& dr_model)
     LOG_INST.info(Loc::current(), table_str);
   }
 }
+
+#endif
 
 #endif
 
