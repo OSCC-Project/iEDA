@@ -26,21 +26,30 @@ namespace irt {
 class TAPanel : public EXTLayerRect
 {
  public:
-  TAPanel() {}
-  ~TAPanel() {}
+  TAPanel() = default;
+  ~TAPanel() = default;
   // getter
   irt_int get_panel_idx() const { return _panel_idx; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_other_panel_result_map() { return _net_other_panel_result_map; }
+  std::map<irt_int, std::vector<PlanarRect>>& get_net_self_panel_result_map() { return _net_self_panel_result_map; }
+  std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
+  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
+  void set_net_other_panel_result_map(const std::map<irt_int, std::vector<PlanarRect>>& net_other_panel_result_map)
+  {
+    _net_other_panel_result_map = net_other_panel_result_map;
+  }
+  void set_net_self_panel_result_map(const std::map<irt_int, std::vector<PlanarRect>>& net_self_panel_result_map)
+  {
+    _net_self_panel_result_map = net_self_panel_result_map;
+  }
+  void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   // function
   bool skipAssigning() { return _ta_task_list.empty(); }
-  void freeNodeMap() { _ta_node_map.free(); }
 
 #if 1  // astar
   double get_wire_unit() const { return _wire_unit; }
@@ -85,9 +94,14 @@ class TAPanel : public EXTLayerRect
 
  private:
   irt_int _panel_idx = -1;
-  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
-  std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
+  // 用于存储blockage和pin_shape，其中blockage的net_idx为-1
+  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
+  // 用于存储其他panel的结果
+  std::map<irt_int, std::vector<PlanarRect>> _net_other_panel_result_map;
+  // 用于存储自己panel的结果
+  std::map<irt_int, std::vector<PlanarRect>> _net_self_panel_result_map;
+  std::vector<TATask> _ta_task_list;
 #if 1  // astar
   // config
   double _wire_unit = 1;

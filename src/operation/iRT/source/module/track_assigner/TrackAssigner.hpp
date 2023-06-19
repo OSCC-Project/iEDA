@@ -50,6 +50,8 @@ class TrackAssigner
   // function
   void assignNetList(std::vector<Net>& net_list);
 
+#if 0
+
 #if 1  // build ta_model
   TAModel initTAModel(std::vector<Net>& net_list);
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
@@ -138,6 +140,10 @@ class TrackAssigner
   void countTAModel(TAModel& ta_model);
   void reportTable(TAModel& ta_model);
 #endif
+
+#endif
+
+
 };
 
 }  // namespace irt

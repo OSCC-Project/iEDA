@@ -25,8 +25,11 @@ namespace irt {
 enum class DRRouteStrategy
 {
   kNone = 0,
-  kIgnoringENV = 1,
-  kIgnoringOBS = 2
+  kFullyConsider = 1,
+  kIgnoringSelfBoxResult = 2,
+  kIgnoringOtherBoxResult = 3,
+  kIgnoringPanelResult = 4,
+  kIgnoringBlockage = 5
 };
 
 struct GetDRRouteStrategyName
@@ -38,11 +41,20 @@ struct GetDRRouteStrategyName
       case DRRouteStrategy::kNone:
         dr_route_strategy_name = "none";
         break;
-      case DRRouteStrategy::kIgnoringENV:
-        dr_route_strategy_name = "ignoring_env";
+      case DRRouteStrategy::kFullyConsider:
+        dr_route_strategy_name = "fully_consider";
         break;
-      case DRRouteStrategy::kIgnoringOBS:
-        dr_route_strategy_name = "ignoring_obs";
+      case DRRouteStrategy::kIgnoringSelfBoxResult:
+        dr_route_strategy_name = "ignoring_self_box_result";
+        break;
+      case DRRouteStrategy::kIgnoringOtherBoxResult:
+        dr_route_strategy_name = "ignoring_other_box_result";
+        break;
+      case DRRouteStrategy::kIgnoringPanelResult:
+        dr_route_strategy_name = "ignoring_panel_result";
+        break;
+      case DRRouteStrategy::kIgnoringBlockage:
+        dr_route_strategy_name = "ignoring_blockage";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

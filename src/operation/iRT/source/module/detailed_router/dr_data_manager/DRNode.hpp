@@ -39,15 +39,12 @@ class DRNode : public LayerCoord
  public:
   DRNode() = default;
   ~DRNode() = default;
-
   // getter
   std::map<Orientation, DRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
-  std::map<Orientation, std::set<irt_int>>& get_env_task_map() { return _env_task_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, DRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
-  void set_env_task_map(const std::map<Orientation, std::set<irt_int>>& env_task_map) { _env_task_map = env_task_map; }
   // function
   DRNode* getNeighborNode(Orientation orientation)
   {
@@ -60,7 +57,7 @@ class DRNode : public LayerCoord
   bool isOBS(irt_int task_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
   {
     bool is_obs = false;
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringOBS) {
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockage) {
       return is_obs;
     }
     if (RTUtil::exist(_obs_task_map, orientation)) {
@@ -70,34 +67,8 @@ class DRNode : public LayerCoord
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
     }
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringENV) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (RTUtil::exist(_env_task_map, orientation)) {
-        if (_env_task_map[orientation].size() >= 2) {
-          is_obs = true;
-        } else {
-          is_obs = RTUtil::exist(_env_task_map[orientation], task_idx) ? false : true;
-        }
-      }
-    }
     return is_obs;
   }
-  double getCost(irt_int task_idx, Orientation orientation)
-  {
-    irt_int env_violation_num = 0;
-    if (RTUtil::exist(_env_task_map, orientation)) {
-      std::set<irt_int>& task_idx_set = _env_task_map[orientation];
-      if (task_idx_set.size() >= 2) {
-        env_violation_num += static_cast<irt_int>(task_idx_set.size());
-      } else {
-        env_violation_num += RTUtil::exist(task_idx_set, task_idx) ? 0 : 1;
-      }
-    }
-    return static_cast<double>(env_violation_num);
-  }
-  void addEnv(irt_int task_idx, Orientation orientation) { _env_task_map[orientation].insert(task_idx); }
 #if 1  // astar
   std::set<Direction>& get_direction_set() { return _direction_set; }
   DRNodeState& get_state() { return _state; }
@@ -118,7 +89,6 @@ class DRNode : public LayerCoord
  private:
   std::map<Orientation, DRNode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
-  std::map<Orientation, std::set<irt_int>> _env_task_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

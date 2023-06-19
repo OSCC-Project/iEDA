@@ -63,12 +63,14 @@ TrackAssigner* TrackAssigner::_ta_instance = nullptr;
 
 void TrackAssigner::assignNetList(std::vector<Net>& net_list)
 {
-  TAModel ta_model = initTAModel(net_list);
-  buildTAModel(ta_model);
-  assignTAModel(ta_model);
-  updateTAModel(ta_model);
-  reportTAModel(ta_model);
+  // TAModel ta_model = initTAModel(net_list);
+  // buildTAModel(ta_model);
+  // assignTAModel(ta_model);
+  // updateTAModel(ta_model);
+  // reportTAModel(ta_model);
 }
+
+#if 0
 
 #if 1  // build ta_model
 
@@ -1701,5 +1703,8 @@ void TrackAssigner::reportTable(TAModel& ta_model)
 }
 
 #endif
+
+#endif
+
 
 }  // namespace irt

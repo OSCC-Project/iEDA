@@ -52,6 +52,8 @@ class DetailedRouter
   // function
   void routeNetList(std::vector<Net>& net_list);
 
+#if 0
+
 #if 1  // build dr_model
   DRModel initDRModel(std::vector<Net>& net_list);
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
@@ -143,6 +145,9 @@ class DetailedRouter
   void countDRModel(DRModel& dr_model);
   void reportTable(DRModel& dr_model);
 #endif
+
+#endif
+
 };
 
 }  // namespace irt
