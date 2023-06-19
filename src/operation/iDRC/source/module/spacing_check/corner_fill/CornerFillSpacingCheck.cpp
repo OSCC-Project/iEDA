@@ -196,7 +196,7 @@ void CornerFillSpacingCheck::addSpot(DrcRect* result_rect)
 {
   auto box = DRCUtil::getSpanBoxBetweenTwoRects(&_corner_fill_rect, result_rect);
   DrcViolationSpot* spot = new DrcViolationSpot();
-  int layer_id = _corner_fill_rect.get_layer_id();
+  int layer_id = result_rect->get_layer_id();
   spot->set_layer_id(layer_id);
   spot->set_layer_name(_tech->getCutLayerNameById(layer_id));
   spot->set_net_id(_corner_fill_rect.get_net_id());

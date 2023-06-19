@@ -303,8 +303,6 @@ void DRC::run()
 
     _cut_spacing_check->checkCutSpacing(drc_net);
 
-    _enclosure_check->checkEnclosure(drc_net);
-
     _eol_spacing_check->checkEOLSpacing(drc_net);
 
     _notch_spacing_check->checkNotchSpacing(drc_net);
