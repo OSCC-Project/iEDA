@@ -23,8 +23,7 @@ class Problem
   Problem(/* args */){};
   virtual ~Problem(){};
   virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const = 0;
-  // virtual void updateParameter(VectorXf& parameter, int iter) = 0;
-  // virtual Mat hessianMatrix() = 0;
+  virtual double getSolutionDistance(const Vec& a, const Vec& b, int col) const = 0;
   virtual double getLowerBound(int row, int col) const { return std::numeric_limits<double>::lowest(); }
   virtual double getUpperBound(int row, int col) const { return std::numeric_limits<double>::max(); };
   virtual int variableMatrixRows() const = 0;

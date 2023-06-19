@@ -20,10 +20,10 @@ void log(const T& val, const Args&... args)
   log(args...);
 }
 
-void Solver::doNesterovSolve(Mat& solution)
+void Solver::solve(const Problem& problem, Mat& solution, const Option& opt)
 {
-  int rows = _problem->variableMatrixRows();
-  int cols = _problem->variableMatrixcols();
+  int rows = problem.variableMatrixRows();
+  int cols = problem.variableMatrixcols();
   if (solution.rows() != rows || solution.cols() != cols) {
     std::cerr << "Invalid start solution!\n";
     return;
@@ -31,6 +31,7 @@ void Solver::doNesterovSolve(Mat& solution)
 
   // Major solution u_k
   Mat major = std::move(solution);
+  // std::cout << major;
   Mat new_major = Mat::Zero(rows, cols);
 
   // Reference solution v_k
@@ -44,8 +45,8 @@ void Solver::doNesterovSolve(Mat& solution)
   double cur_cost = 0.0;
   double prev_cost = 0.0;
 
-  prev_reference = reference - reference * 0.1;
-  _problem->evaluate(prev_reference, prev_grad, prev_cost, -1);
+  prev_reference = reference - reference.binaryExpr(Mat::Random(rows, cols), [](double a, double b) { return 0.1 * a * b; });
+  problem.evaluate(prev_reference, prev_grad, prev_cost, -1);
 
   float a_k = 1.0F;
   float a_k_1 = 1.0F;
@@ -53,18 +54,25 @@ void Solver::doNesterovSolve(Mat& solution)
   // Alpha
   Vec steplength = Vec::Ones(cols);
 
-  for (int iter = 0; iter < 1000; iter++) {
-    _problem->evaluate(reference, grad, cur_cost, iter);
+  for (size_t iter = 0; iter < opt.max_iter; iter++) {
+    problem.evaluate(reference, grad, cur_cost, iter);
 
     for (Eigen::Index i = 0; i < cols; i++) {
-      steplength(i) = (reference.col(i) - prev_reference.col(i)).norm() / (grad.col(i) - prev_grad.col(i)).norm();
+      double grad_dis = (grad.col(i) - prev_grad.col(i)).norm();
+      double ref_dis_ = (reference.col(i) - prev_reference.col(i)).norm();
+      double ref_dis = problem.getSolutionDistance(reference.col(i), prev_reference.col(i), i);
+      steplength(i) = ref_dis / grad_dis;
     }
+    // double step = (reference - prev_reference).norm() / (grad - prev_grad).norm();
     if (iter % 10 == 0) {
-      log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", prev_cost - cur_cost,
+      log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", cur_cost - prev_cost,
           "step:", Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size()));
+      // log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", cur_cost - prev_cost, "step:", step);
       prev_cost = cur_cost;
+      // std::cout << major << std::endl;
     }
     new_major = reference - grad * steplength.asDiagonal();
+    // new_major = reference - grad * step;
 
     a_k_1 = (1 + sqrt(4 * a_k * a_k + 1)) * 0.5;
 
