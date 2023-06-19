@@ -58,6 +58,7 @@ class Grid
 
   float get_available_ratio() const { return _available_ratio; }
   int64_t get_occupied_area() const { return _occupied_area; }
+  int64_t& get_occupied_area_ref() {return _occupied_area;}
   int64_t get_fixed_area() const { return _fixed_area; }
 
   // setter.
@@ -123,12 +124,14 @@ class GridRow
   void clearAllOccupiedArea();
 
  private:
+  Utility _utility;
+
   int32_t _row_idx;
   Rectangle<int32_t> _shape;
   std::vector<Grid*> _grid_list;
 };
 
-inline GridRow::GridRow(int32_t row_idx) : _row_idx(row_idx)
+inline GridRow::GridRow(int32_t row_idx) : _utility(Utility()), _row_idx(row_idx)
 {
 }
 
@@ -175,6 +178,8 @@ class GridManager
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
 
  private:
+  Utility _utility;
+
   int32_t _grid_size_x;
   int32_t _grid_size_y;
 
@@ -185,7 +190,7 @@ class GridManager
 };
 
 inline GridManager::GridManager(Rectangle<int32_t> region_size, int32_t grid_cnt_x, int32_t grid_cnt_y, float available_ratio)
-    : _shape(std::move(region_size))
+    : _utility(Utility()), _shape(std::move(region_size))
 {
   init(grid_cnt_x, grid_cnt_y, available_ratio);
 }

@@ -39,6 +39,8 @@ class APITestInterface : public testing::Test
   {
     // Read Def, Lef
     std::string idb_json_file = "/home/chenshijian/result/ispd2019/iPL/db_default_config.json";
+    // std::string idb_json_file = "/home/chenshijian/result/ysyx3/0317/db_default_config.json";
+
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}

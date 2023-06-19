@@ -102,11 +102,10 @@ void GridRow::obtainOverlapGridList(std::vector<Grid*>& overlap_list, int32_t lo
   LOG_ERROR_IF(lower_x > upper_x) << " Inquiry GridList Range is unlegal!";
   LOG_ERROR_IF(!overlap_list.empty()) << "Pass overlap_list is not Empty!";
 
-  Utility utility;
   int32_t grid_width = _grid_list[0]->get_width();
   int32_t grid_cnt = _grid_list.size();
 
-  std::pair<int, int> idx_range = utility.obtainMinMaxIdx(_shape.get_ll_x(), grid_width, lower_x, upper_x);
+  std::pair<int, int> idx_range = _utility.obtainMinMaxIdx(_shape.get_ll_x(), grid_width, lower_x, upper_x);
 
   int32_t lower_idx = idx_range.first;
   int32_t upper_idx = idx_range.second;
@@ -261,11 +260,10 @@ void GridManager::obtainOverlapRowList(std::vector<GridRow*>& overlap_row_list, 
     LOG_WARNING << "DEBUG : " << lower_y << " , " << upper_y;
   }
 
-  Utility utility;
   int32_t row_height = this->get_grid_size_y();
   int32_t row_cnt = _row_list.size();
 
-  std::pair<int, int> idx_range = utility.obtainMinMaxIdx(_shape.get_ll_y(), row_height, lower_y, upper_y);
+  std::pair<int, int> idx_range = _utility.obtainMinMaxIdx(_shape.get_ll_y(), row_height, lower_y, upper_y);
   int32_t lower_idx = idx_range.first;
   int32_t upper_idx = idx_range.second;
 
