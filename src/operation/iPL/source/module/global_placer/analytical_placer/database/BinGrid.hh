@@ -27,11 +27,12 @@
 #ifndef IPL_OPERATOR_NESTEROV_PLACE_DATABASE_BIN_GRID_H
 #define IPL_OPERATOR_NESTEROV_PLACE_DATABASE_BIN_GRID_H
 
+#include <omp.h>
+
 #include <vector>
 
 #include "GridManager.hh"
 #include "NesInstance.hh"
-#include "omp.h"
 
 namespace ipl {
 
@@ -62,7 +63,11 @@ class BinGrid
   explicit BinGrid(GridManager* grid_manager);
   BinGrid(const BinGrid&) = delete;
   BinGrid(BinGrid&&) = delete;
-  ~BinGrid() = default;
+  ~BinGrid();
+
+  void set_thread_nums(int32_t thread_nums) { _thread_nums = thread_nums; }
+
+  void initNesInstanceTypeList(std::vector<NesInstance*>& nInst_list);
 
   void updateBinGrid(std::vector<NesInstance*>& nInst_list, int32_t thread_num);
   int64_t obtainOverflowAreaWithoutFiller();
@@ -72,6 +77,13 @@ class BinGrid
 
  private:
   GridManager* _grid_manager;
+  int32_t _thread_nums;
+
+  std::vector<omp_lock_t*> _lock_list;
+
+  std::vector<NesInstance*> _macro_inst_list;
+  std::vector<NesInstance*> _stdcell_list;
+  std::vector<NesInstance*> _filler_list;
 
   int32_t _bin_cnt_x;
   int32_t _bin_cnt_y;
@@ -86,7 +98,7 @@ class BinGrid
   void addBinStdcellAreaInfo(Grid* bin, int64_t stdcell_area);
   void addBinFillerAreaInfo(Grid* bin, int64_t filler_area);
 };
-inline BinGrid::BinGrid(GridManager* grid_manager) : _grid_manager(grid_manager)
+inline BinGrid::BinGrid(GridManager* grid_manager) : _grid_manager(grid_manager), _thread_nums(1)
 {
   _bin_cnt_x = _grid_manager->get_grid_size_x();
   _bin_cnt_y = _grid_manager->get_grid_size_y();
@@ -95,10 +107,32 @@ inline BinGrid::BinGrid(GridManager* grid_manager) : _grid_manager(grid_manager)
   _bin_area_list.resize(_bin_cnt_x * _bin_cnt_y);
 }
 
+inline BinGrid::~BinGrid()
+{
+}
+
 inline void BinGrid::resetBinToArea()
 {
+#pragma omp parallel for num_threads(_thread_nums)
   for (auto& area_info : _bin_area_list) {
     area_info.reset();
+  }
+}
+
+inline void BinGrid::initNesInstanceTypeList(std::vector<NesInstance*>& nInst_list)
+{
+  for (auto* nInst : nInst_list) {
+    if (nInst->isFixed()) {
+      continue;
+    }
+
+    if (nInst->isMacro()) {
+      _macro_inst_list.push_back(nInst);
+    } else if (nInst->isFiller()) {
+      _filler_list.push_back(nInst);
+    } else {
+      _stdcell_list.push_back(nInst);
+    }
   }
 }
 
@@ -110,10 +144,10 @@ inline void BinGrid::addBinnInstConnection(Grid* bin, NesInstance* nInst)
 
 inline void BinGrid::updateBinGrid(std::vector<NesInstance*>& nInst_list, int32_t thread_num)
 {
-  _grid_manager->clearAllOccupiedArea();
+  _grid_manager->clearAllOccupiedArea();  // TODO: multi-thread setting
   resetBinToArea();
 
-  // #pragma omp parallel for num_threads(thread_num)
+#pragma omp parallel for num_threads(thread_num)
   for (auto* nInst : nInst_list) {
     if (nInst->isFixed()) {
       continue;
@@ -125,23 +159,29 @@ inline void BinGrid::updateBinGrid(std::vector<NesInstance*>& nInst_list, int32_
     _grid_manager->obtainOverlapGridList(overlap_grid_list, nInst_density_shape);
 
     for (auto* grid : overlap_grid_list) {
+      auto& grid_area_ref = grid->get_occupied_area_ref();
+
       // addBinnInstConnection(grid, nInst);
       int32_t grid_index = grid->get_row_idx() * _bin_cnt_x + grid->get_grid_idx();
 
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, nInst_density_shape);
+      int64_t inst_area = static_cast<int64_t>(overlap_area * nInst->get_density_scale());
+
       if (nInst->isMacro()) {
-        int64_t macro_area = static_cast<int64_t>(overlap_area * nInst->get_density_scale() * grid->get_available_ratio());
-        _bin_area_list[grid_index].macro_area += macro_area;
-        grid->add_area(macro_area);
+        inst_area *= grid->get_available_ratio();
+#pragma omp atomic
+        _bin_area_list[grid_index].macro_area += inst_area;
       } else if (nInst->isFiller()) {
-        int64_t filler_area = static_cast<int64_t>(overlap_area * nInst->get_density_scale());
-        _bin_area_list[grid_index].filler_area += filler_area;
-        grid->add_area(filler_area);
+#pragma omp atomic
+        _bin_area_list[grid_index].filler_area += inst_area;
       } else {
-        int64_t stdcell_area = static_cast<int64_t>(overlap_area * nInst->get_density_scale());
-        _bin_area_list[grid_index].stdcell_area += stdcell_area;
-        grid->add_area(stdcell_area);
+#pragma omp atomic
+        _bin_area_list[grid_index].stdcell_area += inst_area;
       }
+
+#pragma omp atomic
+      grid_area_ref += inst_area;
+      // grid->add_area(inst_area);
     }
   }
 }

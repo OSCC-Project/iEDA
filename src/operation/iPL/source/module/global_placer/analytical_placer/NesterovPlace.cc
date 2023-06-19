@@ -233,7 +233,12 @@ void NesterovPlace::initGridManager()
 
   GridManager* grid_manager = new GridManager(core_shape, grid_cnt_x, grid_cnt_y, target_density);
   _nes_database->_grid_manager = grid_manager;
+
+  // BinGrid specially need to parallel
   _nes_database->_bin_grid = new BinGrid(grid_manager);
+  _nes_database->_bin_grid->set_thread_nums(_nes_config.get_thread_num());
+  _nes_database->_bin_grid->initNesInstanceTypeList(_nes_database->_nInstance_list);
+
   _nes_database->_density = new Density(grid_manager);
   _nes_database->_density_gradient = new ElectricFieldGradient(grid_manager);  // TODO : be optional.
 }
@@ -940,7 +945,6 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
   // double density_grad_runtime = 0.0;
   // double others_runtime = 0.0;
   // double sum_grad_runtime = 0.0;
-
   // ieda::Stats sum_grad_status;
 
 #pragma omp parallel for num_threads(_nes_config.get_thread_num())
@@ -958,6 +962,9 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
         _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
     // density_grad_runtime += density_status.elapsedRunTime();
   }
+
+  // sum_grad_runtime = sum_grad_status.elapsedRunTime();
+  // LOG_WARNING << "obtain sum grad runtime: " << sum_grad_runtime << " s";
 
   for (size_t i = 0; i < nInst_list.size(); i++) {
     auto& cur_n_inst = nInst_list[i];
@@ -988,11 +995,9 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
     // others_runtime += other_status.elapsedRunTime();
   }
 
-  // sum_grad_runtime = sum_grad_status.elapsedRunTime();
   // LOG_WARNING << "wl grad collecting runtime: " << wl_grad_runtime << " s";
   // LOG_WARNING << "density grad collecting runtime: " << density_grad_runtime << " s";
   // LOG_WARNING << "others runtime: " << others_runtime << " s";
-  // LOG_WARNING << "sum grad runtime: " << sum_grad_runtime << " s";
 
   if (std::isnan(_nes_database->_wirelength_grad_sum) || std::isinf(_nes_database->_wirelength_grad_sum)
       || std::isnan(_nes_database->_density_grad_sum) || std::isinf(_nes_database->_density_grad_sum)) {
@@ -1099,14 +1104,14 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       // ieda::Stats density_cal_status;
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
       _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
-      // LOG_ERROR << "density grad calculating runtime: " << density_cal_status.elapsedRunTime() << " s";
+      // LOG_ERROR << "obtain density map and dct runtime: " << density_cal_status.elapsedRunTime() << " s";
 
       // ieda::Stats wirelength_cal_status;
       // update next wirelength gradient force.
       updateTopologyManager();
       _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
-      // LOG_ERROR << "wirelength grad calculating runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
+      // LOG_ERROR << "wirelength forward and backward runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
 
       // update next target penalty object.
       updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list);

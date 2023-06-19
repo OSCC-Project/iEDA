@@ -36,7 +36,15 @@ class DCT
   void doDCT(bool is_calculate_phi);
 
   void set_thread_nums(int thread_nums) { _thread_nums = thread_nums; }
+
+
   // return function
+
+  float** get_density_2d_ptr() const { return _bin_density;}
+  float** get_electro_x_2d_ptr() const { return _electroForce_x;}
+  float** get_electro_y_2d_ptr() const { return _electroForce_y;}
+  float** get_phi_2d_ptr() const { return _electro_phi;}
+
   std::pair<float, float> get_electro_force(int y, int x);
   float get_electro_phi(int y, int x);
 
@@ -102,8 +110,8 @@ class DCT
 
   void resetBufSequence();
   void resetComplex2DList();
-  void convertSequenceToComplex2DList(float** buf_sequence);
-  void convertComplex2DListToSequence(std::vector<std::vector<std::complex<float>>>& complex_2d_list);
+  void convertBufSequenceToComplex2DList();
+  void convertComplex2DListToBufSequence();
 };
 
 }  // namespace ipl
