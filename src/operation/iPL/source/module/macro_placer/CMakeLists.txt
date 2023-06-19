@@ -28,11 +28,11 @@ target_include_directories(ipl-module-macro_placer
     PUBLIC
     ${iPL_MP}
 )
-
 target_link_libraries(ipl-module-macro_placer
     PUBLIC
     ipl-module-logger
     ipl-solver-partition
     ipl-solver-simulate_anneal
     ipl-configurator
+    ipl-utility
 )

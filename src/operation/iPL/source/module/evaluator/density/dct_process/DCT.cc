@@ -147,8 +147,6 @@ void DCT::doDCT(bool is_calculate_phi)
   }
 }
 
-static int test_iter = 0;
-
 void DCT::dct2UseFFT2Process(float** sequence)
 {
   resetBufSequence();

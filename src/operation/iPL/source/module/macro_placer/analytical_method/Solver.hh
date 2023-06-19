@@ -12,34 +12,30 @@
 #define IPL_MP_SOLVER_H
 
 #include <Eigen/Dense>
-#include <memory>
 using Mat = Eigen::MatrixXd;
 using Vec = Eigen::VectorXd;
 
 namespace ipl {
 class Problem;
 
+enum LineSearchType
+{
+  kNesterov = 0,
+  kConjugate
+};
+
+struct Option
+{
+  LineSearchType line_search_type = kNesterov;
+  size_t max_iter = 1000;
+};
+
 class Solver
 {
  public:
-  explicit Solver(std::shared_ptr<Problem> problem) : _problem(problem){};
+  explicit Solver(){};
   ~Solver(){};
-  void doNesterovSolve(Mat& solution);
-  void set_steplength_bound(float l, float u)
-  {
-    if (u > l)
-      return;
-    _steplength_l = l;
-    _steplength_u = u;
-  }
-
- private:
-  Mat _gradiant;
-
-  float _steplength_l;
-  float _steplength_u;
-
-  std::shared_ptr<Problem> _problem;
+  static void solve(const Problem& problem, Mat& solution, const Option& opt = Option());
 };
 
 }  // namespace ipl
