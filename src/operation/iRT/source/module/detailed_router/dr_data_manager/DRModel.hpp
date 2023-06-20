@@ -17,6 +17,7 @@
 #pragma once
 
 #include "DRModelStat.hpp"
+#include "DRNet.hpp"
 #include "GridMap.hpp"
 
 namespace irt {

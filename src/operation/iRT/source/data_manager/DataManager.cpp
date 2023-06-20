@@ -27,6 +27,29 @@ namespace irt {
 
 // public
 
+void DataManager::initInst()
+{
+  if (_dm_instance == nullptr) {
+    _dm_instance = new DataManager();
+  }
+}
+
+DataManager& DataManager::getInst()
+{
+  if (_dm_instance == nullptr) {
+    LOG_INST.error(Loc::current(), "The instance not initialized!");
+  }
+  return *_dm_instance;
+}
+
+void DataManager::destroyInst()
+{
+  if (_dm_instance != nullptr) {
+    delete _dm_instance;
+    _dm_instance = nullptr;
+  }
+}
+
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
@@ -39,6 +62,16 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   printDatabase();
 
   LOG_INST.info(Loc::current(), "The data manager input completed!", monitor.getStatsInfo());
+}
+
+void DataManager::output(idb::IdbBuilder* idb_builder)
+{
+  Monitor monitor;
+
+  outputGCellGrid(idb_builder);
+  outputNetList(idb_builder);
+
+  LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
 }
 
 void DataManager::save(Stage stage)
@@ -59,17 +92,11 @@ void DataManager::load(Stage stage)
   LOG_INST.info(Loc::current(), "The data manager load completed!", monitor.getStatsInfo());
 }
 
-void DataManager::output(idb::IdbBuilder* idb_builder)
-{
-  Monitor monitor;
-
-  outputGCellGrid(idb_builder);
-  outputNetList(idb_builder);
-
-  LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
-}
-
 // private
+
+DataManager* DataManager::_dm_instance = nullptr;
+
+#if 1  // wrap
 
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
@@ -81,10 +108,10 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.layer_utilization_ratio = RTUtil::getConfigValue<std::map<std::string, double>>(config_map, "-layer_utilization_ratio", {});
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
-  _config.resource_allocate_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-resource_allocate_initial_penalty", 100);
-  _config.resource_allocate_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-resource_allocate_penalty_drop_rate", 0.8);
-  _config.resource_allocate_outer_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-resource_allocate_outer_iter_num", 10);
-  _config.resource_allocate_inner_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-resource_allocate_inner_iter_num", 10);
+  _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
+  _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
+  _config.ra_outer_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_iter_num", 10);
+  _config.ra_inner_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_iter_num", 10);
   /////////////////////////////////////////////
 }
 
@@ -494,6 +521,56 @@ void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
     cut_layer_name_to_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
 }
+
+Direction DataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_direction)
+{
+  if (idb_direction == idb::IdbLayerDirection::kHorizontal) {
+    return Direction::kHorizontal;
+  } else if (idb_direction == idb::IdbLayerDirection::kVertical) {
+    return Direction::kVertical;
+  } else {
+    return Direction::kOblique;
+  }
+}
+
+ConnectType DataManager::getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type)
+{
+  ConnectType connect_type;
+  switch (idb_connect_type) {
+    case idb::IdbConnectType::kSignal:
+      connect_type = ConnectType::kSignal;
+      break;
+    case idb::IdbConnectType::kPower:
+      connect_type = ConnectType::kPower;
+      break;
+    case idb::IdbConnectType::kGround:
+      connect_type = ConnectType::kGround;
+      break;
+    case idb::IdbConnectType::kClock:
+      connect_type = ConnectType::kClock;
+      break;
+    case idb::IdbConnectType::kAnalog:
+      connect_type = ConnectType::kAnalog;
+      break;
+    case idb::IdbConnectType::kReset:
+      connect_type = ConnectType::kReset;
+      break;
+    case idb::IdbConnectType::kScan:
+      connect_type = ConnectType::kScan;
+      break;
+    case idb::IdbConnectType::kTieOff:
+      connect_type = ConnectType::kTieoff;
+      break;
+    default:
+      connect_type = ConnectType::kNone;
+      break;
+  }
+  return connect_type;
+}
+
+#endif
+
+#if 1  // build
 
 void DataManager::buildConfig()
 {
@@ -1242,6 +1319,10 @@ void DataManager::updateHelper()
   }
 }
 
+#endif
+
+#if 1  // print
+
 void DataManager::printConfig()
 {
   omp_set_num_threads(std::max(_config.thread_number, 1));
@@ -1266,14 +1347,14 @@ void DataManager::printConfig()
   }
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_initial_penalty");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_initial_penalty);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_penalty_drop_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_penalty_drop_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_outer_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_outer_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_allocate_inner_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.resource_allocate_inner_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_initial_penalty);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_penalty_drop_rate");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_penalty_drop_rate);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_outer_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_outer_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_inner_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
@@ -1421,39 +1502,9 @@ void DataManager::printDatabase()
   ////////////////////////////////////////////////
 }
 
-void DataManager::saveStageResult(Stage stage)
-{
-  Monitor monitor;
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
-}
+#endif
 
-std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
-{
-  std::string design_name = _helper.get_design_name();
-  std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
-  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
-  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
-
-  return make_tuple(stage, design_name, lef_list, def_name);
-}
-
-void DataManager::loadStageResult(Stage stage)
-{
-  Monitor monitor;
-
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage) )>();
-  // check header 
-
-  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
-}
+#if 1  // output
 
 void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
 {
@@ -1582,50 +1633,44 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
 }
 
-Direction DataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_direction)
+#endif
+
+#if 1  // save & load
+
+void DataManager::saveStageResult(Stage stage)
 {
-  if (idb_direction == idb::IdbLayerDirection::kHorizontal) {
-    return Direction::kHorizontal;
-  } else if (idb_direction == idb::IdbLayerDirection::kVertical) {
-    return Direction::kVertical;
-  } else {
-    return Direction::kOblique;
-  }
+  Monitor monitor;
+  std::string current_stage = GetStageName()(stage);
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
 }
 
-ConnectType DataManager::getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type)
+std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
 {
-  ConnectType connect_type;
-  switch (idb_connect_type) {
-    case idb::IdbConnectType::kSignal:
-      connect_type = ConnectType::kSignal;
-      break;
-    case idb::IdbConnectType::kPower:
-      connect_type = ConnectType::kPower;
-      break;
-    case idb::IdbConnectType::kGround:
-      connect_type = ConnectType::kGround;
-      break;
-    case idb::IdbConnectType::kClock:
-      connect_type = ConnectType::kClock;
-      break;
-    case idb::IdbConnectType::kAnalog:
-      connect_type = ConnectType::kAnalog;
-      break;
-    case idb::IdbConnectType::kReset:
-      connect_type = ConnectType::kReset;
-      break;
-    case idb::IdbConnectType::kScan:
-      connect_type = ConnectType::kScan;
-      break;
-    case idb::IdbConnectType::kTieOff:
-      connect_type = ConnectType::kTieoff;
-      break;
-    default:
-      connect_type = ConnectType::kNone;
-      break;
-  }
-  return connect_type;
+  std::string design_name = _helper.get_design_name();
+  std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
+  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
+  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
+
+  return make_tuple(stage, design_name, lef_list, def_name);
 }
+
+void DataManager::loadStageResult(Stage stage)
+{
+  Monitor monitor;
+
+  std::string current_stage = GetStageName()(stage);
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage))>();
+  // check header
+
+  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
+}
+
+#endif
 
 }  // namespace irt
