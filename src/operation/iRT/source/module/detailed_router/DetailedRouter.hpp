@@ -52,25 +52,34 @@ class DetailedRouter
   // function
   void routeNetList(std::vector<Net>& net_list);
 
-#if 0
-
 #if 1  // build dr_model
   DRModel initDRModel(std::vector<Net>& net_list);
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
+  void updateNetBlockageMap(DRModel& dr_model);
+  std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& rect_list);
+  std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& rect_list);
+  void updateNetPanelResultMap(DRModel& dr_model);
+  void buildBoxTrackAxis(DRModel& dr_model);
+  std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);
   DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
-  void updateNetBlockageMap(DRModel& dr_model);
+  void buildDRBoxMap(DRModel& dr_model);
+  void initLayerNodeMap(DRBox& dr_box);
+  void buildNeighborMap(DRBox& dr_box);
+  void buildOBSTaskMap(DRBox& dr_box);
+  void checkDRBox(DRBox& dr_box);
+  void saveDRBox(DRBox& dr_box);
 #endif
 
 #if 1  // route dr_model
   void routeDRModel(DRModel& dr_model);
 #endif
 
-#if 1  // build dr_box
+#if 0  // build dr_box
   void buildDRBox(DRBox& dr_box);
   void initLayerGraphList(DRBox& dr_box);
   void buildScaleOrientList(DRBox& dr_box);
@@ -86,10 +95,6 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-#endif
-
-#if 1  // check dr_box
-  void checkDRBox(DRBox& dr_box);
 #endif
 
 #if 1  // route dr_box
@@ -145,9 +150,6 @@ class DetailedRouter
   void countDRModel(DRModel& dr_model);
   void reportTable(DRModel& dr_model);
 #endif
-
-#endif
-
 };
 
 }  // namespace irt
