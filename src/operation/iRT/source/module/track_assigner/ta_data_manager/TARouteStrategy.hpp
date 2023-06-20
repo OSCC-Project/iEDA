@@ -24,31 +24,35 @@ namespace irt {
 
 enum class TARouteStrategy
 {
-  kNone = 0,
-  kIgnoringENV = 1,
-  kIgnoringOBS = 2
+  kNone,
+  kIgnoringSelfPanelResult,
+  kIgnoringOtherPanelResult,
+  kIgnoringBlockage
 };
 
 struct GetTARouteStrategyName
 {
-  std::string operator()(const TARouteStrategy& ta_route_strategy) const
+  std::string operator()(const TARouteStrategy& dr_route_strategy) const
   {
-    std::string ta_route_strategy_name;
-    switch (ta_route_strategy) {
+    std::string dr_route_strategy_name;
+    switch (dr_route_strategy) {
       case TARouteStrategy::kNone:
-        ta_route_strategy_name = "none";
+        dr_route_strategy_name = "none";
         break;
-      case TARouteStrategy::kIgnoringENV:
-        ta_route_strategy_name = "ignoring_env";
+      case TARouteStrategy::kIgnoringSelfPanelResult:
+        dr_route_strategy_name = "ignoring_self_panel_result";
         break;
-      case TARouteStrategy::kIgnoringOBS:
-        ta_route_strategy_name = "ignoring_obs";
+      case TARouteStrategy::kIgnoringOtherPanelResult:
+        dr_route_strategy_name = "ignoring_other_panel_result";
+        break;
+      case TARouteStrategy::kIgnoringBlockage:
+        dr_route_strategy_name = "ignoring_blockage";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return ta_route_strategy_name;
+    return dr_route_strategy_name;
   }
 };
 
