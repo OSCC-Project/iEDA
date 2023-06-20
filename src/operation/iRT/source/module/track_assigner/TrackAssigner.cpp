@@ -556,12 +556,12 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_p
 
   // ta只需要膨胀half_width
   PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
-  irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
-  irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+  irt_int x_step_length = routing_layer.getXTrackGrid().get_step_length();
+  irt_int y_step_length = routing_layer.getYTrackGrid().get_step_length();
   search_rect = RTUtil::getEnlargedRect(search_rect, x_step_length, y_step_length, x_step_length, y_step_length);
 
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_track_grid());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_track_grid());
+  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), routing_layer.getXTrackGrid());
+  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), routing_layer.getYTrackGrid());
   for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
     irt_int y = y_list[y_idx];
     if (y == y_list.front() || y == y_list.back()) {
