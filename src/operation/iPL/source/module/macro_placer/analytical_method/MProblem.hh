@@ -43,7 +43,7 @@ class MProblem final : public Problem
   virtual double getUpperBound(int row, int col) const override { return _bound[_num_macros * col + row].second; };
   virtual int variableMatrixRows() const override { return _num_macros; };
   virtual int variableMatrixcols() const override { return _num_types; };
-  void setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization = 0.9);
+  void setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization = 0.8);
   // void setRandomNetlist(int num_macros, int num_nets, int netdgree);
 
  private:

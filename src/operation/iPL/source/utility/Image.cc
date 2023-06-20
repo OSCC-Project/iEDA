@@ -13,23 +13,17 @@ ipl::Image::Image(int real_width, int real_height, int num_obj, double bound)
   double img_pixle = std::max(kimg_size, std::min(num_obj, 4096));
   double dsize_w = std::sqrt(img_pixle * img_pixle * real_width / real_height);
   double dsize_h = img_pixle * img_pixle / dsize_w;
-  // double dsize_w = 100;
-  // double dsize_h = 100;
   size_w = std::round(dsize_w);
   size_h = std::round(dsize_h);
   int bound_width = std::round(std::min(size_w, size_h) * bound);
   _scale = sqrt(img_pixle * img_pixle / real_width / real_height);
   _img = new QImage(size_w + bound_width, size_h + bound_width, QImage::Format_RGB32);
-  // _painter(_img);
   _painter = new QPainter(_img);
   _img->fill(Qt::white);
-  // QPainter a(_img);
-  // _painter->drawLine(0, 0, 100, 100);
-  // _img->mirrored().save("/home/huangfuxing/Prog_cpp/iEDA/bin/t.jpg");
-  _painter->setPen(QPen(Qt::black, 5));
-  // _painter->setBrush(QBrush(_rect_color, Qt::BrushStyle::SolidPattern));
   _painter->translate(bound_width / 2, bound_width / 2);
+  _painter->setPen(QPen(Qt::black, 0));
   _painter->scale(_scale, _scale);
+  // _painter->setBrush(QBrush(Qt::BrushStyle::CrossPattern));
 }
 
 ipl::Image::~Image()

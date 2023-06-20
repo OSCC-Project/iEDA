@@ -49,7 +49,7 @@ class LSEWirelength
   mutable Vec _sum_exp_neg_x;  // Σ exp(-x/gamma) O(|E|)
   mutable Vec _sum_exp_pos_y;  // Σ exp(y/gamma) O(|E|)
   mutable Vec _sum_exp_neg_y;  // Σ exp(-y/gamma) O(|E|)
-  mutable Vec _hpwl;
+  mutable Vec _hpwl;           // HPWL per nets O(|E|)
 
   SpMat _fix_x;  // fix pin x O(|IO|)
   SpMat _fix_y;  // fix pin y O(|IO|)
