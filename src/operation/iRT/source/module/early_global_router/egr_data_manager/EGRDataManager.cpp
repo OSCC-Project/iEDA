@@ -125,9 +125,9 @@ void EGRDataManager::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRou
     track_grid.set_step_num(static_cast<irt_int>(idb_track_grid->get_track_num()));
 
     if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionX) {
-      track_axis.set_x_track_grid(track_grid);
+      track_axis.get_x_grid_list().push_back(track_grid);
     } else if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionY) {
-      track_axis.set_y_track_grid(track_grid);
+      track_axis.get_y_grid_list().push_back(track_grid);
     }
   }
 }
