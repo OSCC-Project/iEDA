@@ -50,13 +50,12 @@ class TrackAssigner
   // function
   void assignNetList(std::vector<Net>& net_list);
 
-#if 0
-
 #if 1  // build ta_model
   TAModel initTAModel(std::vector<Net>& net_list);
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
+  void updateNetBlockageMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TANet& ta_net);
   void makeGroupAndCost(TANet& ta_net, std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
@@ -65,26 +64,20 @@ class TrackAssigner
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void expandCoordCostMap(std::map<TNode<RTNode>*, TATask>& ta_node_task_map);
-  void updateNetBlockageMap(TAModel& ta_model);
-#endif
-
-#if 1  // assign ta_model
-  void assignTAModel(TAModel& ta_model);
-#endif
-
-#if 1  // build ta_panel
-  void buildTAPanel(TAPanel& ta_panel);
+  void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildOBSTaskMap(TAPanel& ta_panel);
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(TAPanel& ta_panel,
-                                                                                           PlanarRect& enlarge_real_rect);
-  std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, PlanarRect& enlarge_real_rect);
+                                                                                           PlanarRect& min_scope_regular_rect);
+  std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, PlanarRect& min_scope_regular_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
+  void checkTAPanel(TAPanel& ta_panel);
+  void saveTAPanel(TAPanel& ta_panel);
 #endif
 
-#if 1  // check ta_panel
-  void checkTAPanel(TAPanel& ta_panel);
+#if 1  // assign ta_model
+  void assignTAModel(TAModel& ta_model);
 #endif
 
 #if 1  // assign ta_panel
@@ -106,7 +99,6 @@ class TrackAssigner
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
-  void updateENVTaskMap(TAPanel& ta_panel, TATask& ta_task);
   void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
@@ -140,10 +132,6 @@ class TrackAssigner
   void countTAModel(TAModel& ta_model);
   void reportTable(TAModel& ta_model);
 #endif
-
-#endif
-
-
 };
 
 }  // namespace irt
