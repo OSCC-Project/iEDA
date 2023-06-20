@@ -459,10 +459,10 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
   for (size_t i = 0; i < layer_node_map.size(); i++) {
     GridMap<DRNode>& node_map = layer_node_map[i];
     node_map.init(x_scale_list.size(), y_scale_list.size());
-    for (size_t x = 0; x < x_scale_list.size(); x++) {
-      for (size_t y = 0; y < y_scale_list.size(); y++) {
-        DRNode& dr_node = node_map[x][y];
-        dr_node.set_coord(x_scale_list[x], y_scale_list[y]);
+    for (size_t x_idx = 0; x_idx < x_scale_list.size(); x_idx++) {
+      for (size_t y_idx = 0; y_idx < y_scale_list.size(); y_idx++) {
+        DRNode& dr_node = node_map[x_idx][y_idx];
+        dr_node.set_coord(x_scale_list[x_idx], y_scale_list[y_idx]);
         dr_node.set_layer_idx(static_cast<irt_int>(i));
       }
     }
@@ -474,28 +474,28 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   for (size_t i = 0; i < layer_node_map.size(); i++) {
     GridMap<DRNode>& node_map = layer_node_map[i];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        std::map<Orientation, DRNode*>& neighbor_ptr_map = node_map[x][y].get_neighbor_ptr_map();
-        if (x + 1 < node_map.get_x_size()) {
-          neighbor_ptr_map[Orientation::kEast] = &node_map[x + 1][y];
+    for (irt_int x_idx = 0; x_idx < node_map.get_x_size(); x_idx++) {
+      for (irt_int y_idx = 0; y_idx < node_map.get_y_size(); y_idx++) {
+        std::map<Orientation, DRNode*>& neighbor_ptr_map = node_map[x_idx][y_idx].get_neighbor_ptr_map();
+        if (x_idx + 1 < node_map.get_x_size()) {
+          neighbor_ptr_map[Orientation::kEast] = &node_map[x_idx + 1][y_idx];
         }
-        if (0 <= x - 1) {
-          neighbor_ptr_map[Orientation::kWest] = &node_map[x - 1][y];
+        if (0 <= x_idx - 1) {
+          neighbor_ptr_map[Orientation::kWest] = &node_map[x_idx - 1][y_idx];
         }
-        if (y + 1 < node_map.get_y_size()) {
-          neighbor_ptr_map[Orientation::kNorth] = &node_map[x][y + 1];
+        if (y_idx + 1 < node_map.get_y_size()) {
+          neighbor_ptr_map[Orientation::kNorth] = &node_map[x_idx][y_idx + 1];
         }
-        if (0 <= y - 1) {
-          neighbor_ptr_map[Orientation::kWest] = &node_map[x][y - 1];
+        if (0 <= y_idx - 1) {
+          neighbor_ptr_map[Orientation::kWest] = &node_map[x_idx][y_idx - 1];
         }
         if (i + 1 < layer_node_map.size()) {
           GridMap<DRNode>& up_node_map = layer_node_map[i + 1];
-          neighbor_ptr_map[Orientation::kUp] = &up_node_map[x][y];
+          neighbor_ptr_map[Orientation::kUp] = &up_node_map[x_idx][y_idx];
         }
         if (0 <= i - 1) {
           GridMap<DRNode>& down_node_map = layer_node_map[i - 1];
-          neighbor_ptr_map[Orientation::kWest] = &down_node_map[x][y];
+          neighbor_ptr_map[Orientation::kWest] = &down_node_map[x_idx][y_idx];
         }
       }
     }
@@ -504,26 +504,116 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 
 void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
 {
-  // std::map<irt_int, std::vector<irt_int>> net_task_map;
-  // for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-  //   net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
-  // }
-  // for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
-  //   std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
-  //   for (LayerRect& blockage : blockage_list) {
-  //     for (LayerRect enlarged_rect : getMaxScope({blockage})) {
-  //       for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, enlarged_rect)) {
-  //         for (Orientation orientation : orientation_set) {
-  //           if (task_idx_list.empty()) {
-  //             dr_node->get_obs_task_map()[orientation].insert(-1);
-  //           } else {
-  //             dr_node->get_obs_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  std::map<irt_int, std::vector<irt_int>> net_task_map;
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
+  }
+  for (auto& [net_idx, blockage_list] : dr_box.get_net_blockage_map()) {
+    std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
+    for (LayerRect& blockage : blockage_list) {
+      GridMap<DRNode>& node_map = layer_node_map[blockage.get_layer_idx()];
+      for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
+        PlanarRect regular_rect = RTUtil::getRegularRect(min_scope_real_rect, dr_box.get_base_region());
+        LayerRect min_scope_regular_rect(regular_rect, min_scope_real_rect.get_layer_idx());
+        for (auto& [grid_coord, orientation_set] : getGridOrientationMap(dr_box, min_scope_regular_rect)) {
+          DRNode& dr_node = node_map[grid_coord.get_x()][grid_coord.get_y()];
+          for (Orientation orientation : orientation_set) {
+            if (task_idx_list.empty()) {
+              dr_node.get_obs_task_map()[orientation].insert(-1);
+            } else {
+              dr_node.get_obs_task_map()[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box,
+                                                                                                         LayerRect& min_scope_regular_rect)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  RoutingLayer& routing_layer = routing_layer_list[min_scope_regular_rect.get_layer_idx()];
+  TrackAxis& track_axis = routing_layer.get_track_axis();
+
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
+  for (Segment<LayerCoord>& real_segment : getRealSegmentList(dr_box, min_scope_regular_rect)) {
+    LayerCoord& first_coord = real_segment.get_first();
+    LayerCoord& second_coord = real_segment.get_second();
+
+    if (RTUtil::isOpenOverlap(min_scope_regular_rect, getRealRectList({real_segment}).front())) {
+      if (!RTUtil::existGrid(first_coord, track_axis) || !RTUtil::existGrid(second_coord, track_axis)) {
+        LOG_INST.error(Loc::current(), "The coord can not find grid!");
+      }
+      Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
+      grid_orientation_map[RTUtil::getGridCoord(first_coord, track_axis)].insert(orientation);
+      grid_orientation_map[RTUtil::getGridCoord(second_coord, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
+    }
+  }
+  return grid_orientation_map;
+}
+
+std::vector<Segment<LayerCoord>> DetailedRouter::getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<Segment<LayerCoord>> real_segment_list;
+
+  irt_int layer_idx = min_scope_regular_rect.get_layer_idx();
+  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  TrackAxis& track_axis = routing_layer.get_track_axis();
+
+  // ta只需要膨胀half_width
+  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
+  irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
+  irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+  search_rect = RTUtil::getEnlargedRect(search_rect, x_step_length, y_step_length, x_step_length, y_step_length);
+
+  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_track_grid());
+  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_track_grid());
+  for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
+    irt_int y = y_list[y_idx];
+    if (y == y_list.front() || y == y_list.back()) {
+      continue;
+    }
+    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, layer_idx), LayerCoord(x_list[x_idx + 1], y, layer_idx));
+    }
+  }
+  for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
+    irt_int x = x_list[x_idx];
+    if (x == x_list.front() || x == x_list.back()) {
+      continue;
+    }
+    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
+    }
+  }
+  return real_segment_list;
+}
+
+std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>> segment_list)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<LayerRect> real_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
+
+    if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
+      irt_int half_width = routing_layer_list[first_coord.get_layer_idx()].get_min_width() / 2;
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+      real_rect_list.emplace_back(wire_rect, first_coord.get_layer_idx());
+    } else {
+      LOG_INST.error(Loc::current(), "The segment is proximal!");
+    }
+  }
+  return real_rect_list;
 }
 
 void DetailedRouter::checkDRBox(DRBox& dr_box)
@@ -577,9 +667,9 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
     }
   }
   for (GridMap<DRNode>& node_map : dr_box.get_layer_node_map()) {
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        DRNode& dr_node = node_map[x][y];
+    for (irt_int x_idx = 0; x_idx < node_map.get_x_size(); x_idx++) {
+      for (irt_int y_idx = 0; y_idx < node_map.get_y_size(); y_idx++) {
+        DRNode& dr_node = node_map[x_idx][y_idx];
         if (!RTUtil::isInside(dr_box.get_base_region(), dr_node.get_planar_coord())) {
           LOG_INST.error(Loc::current(), "The dr node is out of box!");
         }
@@ -607,28 +697,28 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
           PlanarCoord neighbor_coord(node_x, node_y);
           switch (orien) {
             case Orientation::kEast:
-              if (x_scale_list[x] != node_x || (x + 1) >= static_cast<irt_int>(x_scale_list.size())) {
+              if (x_scale_list[x_idx] != node_x || (x_idx + 1) >= static_cast<irt_int>(x_scale_list.size())) {
                 LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
               }
-              neighbor_coord.set_x(x_scale_list[x + 1]);
+              neighbor_coord.set_x(x_scale_list[x_idx + 1]);
               break;
             case Orientation::kWest:
-              if (x_scale_list[x] != node_x || (x - 1) < 0) {
+              if (x_scale_list[x_idx] != node_x || (x_idx - 1) < 0) {
                 LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
               }
-              neighbor_coord.set_x(x_scale_list[x - 1]);
+              neighbor_coord.set_x(x_scale_list[x_idx - 1]);
               break;
             case Orientation::kNorth:
-              if (y_scale_list[y] != node_y || (y + 1) >= static_cast<irt_int>(y_scale_list.size())) {
+              if (y_scale_list[y_idx] != node_y || (y_idx + 1) >= static_cast<irt_int>(y_scale_list.size())) {
                 LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
               }
-              neighbor_coord.set_y(y_scale_list[y + 1]);
+              neighbor_coord.set_y(y_scale_list[y_idx + 1]);
               break;
             case Orientation::kSouth:
-              if (y_scale_list[y] != node_y || (y - 1) < 0) {
+              if (y_scale_list[y_idx] != node_y || (y_idx - 1) < 0) {
                 LOG_INST.error(Loc::current(), "The adjacent scale does not exist!");
               }
-              neighbor_coord.set_y(y_scale_list[y - 1]);
+              neighbor_coord.set_y(y_scale_list[y_idx - 1]);
               break;
             default:
               break;
