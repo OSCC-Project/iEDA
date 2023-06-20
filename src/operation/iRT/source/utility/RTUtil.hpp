@@ -1104,11 +1104,16 @@ class RTUtil
                                     irt_int rt_y_add_offset, PlanarRect border)
   {
     PlanarRect enalrged_rect = getEnlargedRect(rect, lb_x_minus_offset, lb_y_minus_offset, rt_x_add_offset, rt_y_add_offset);
-
-    enalrged_rect.set_lb(std::max(enalrged_rect.get_lb_x(), border.get_lb_x()), std::max(enalrged_rect.get_lb_y(), border.get_lb_y()));
-    enalrged_rect.set_rt(std::min(enalrged_rect.get_rt_x(), border.get_rt_x()), std::min(enalrged_rect.get_rt_y(), border.get_rt_y()));
-
+    enalrged_rect = getRegularRect(enalrged_rect, border);
     return enalrged_rect;
+  }
+
+  static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
+  {
+    PlanarRect regular_rect;
+    regular_rect.set_lb(std::max(rect.get_lb_x(), border.get_lb_x()), std::max(rect.get_lb_y(), border.get_lb_y()));
+    regular_rect.set_rt(std::min(rect.get_rt_x(), border.get_rt_x()), std::min(rect.get_rt_y(), border.get_rt_y()));
+    return regular_rect;
   }
 
   // 扩大矩形

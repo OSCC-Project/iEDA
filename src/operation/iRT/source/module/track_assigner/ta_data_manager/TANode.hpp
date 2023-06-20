@@ -57,7 +57,7 @@ class TANode : public LayerCoord
   bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
   {
     bool is_obs = false;
-    if (ta_route_strategy == TARouteStrategy::kIgnoringOBS) {
+    if (ta_route_strategy == TARouteStrategy::kIgnoringBlockage) {
       return is_obs;
     }
     if (RTUtil::exist(_obs_task_map, orientation)) {
@@ -88,7 +88,7 @@ class TANode : public LayerCoord
 
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
-  std::map<Orientation, std::set<irt_int>> _obs_task_map;
+  std::map<Orientation, std::set<irt_int>> _obs_task_map; // 只存obs_task_map，可以不管增量式
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;
