@@ -59,20 +59,16 @@ void Solver::solve(const Problem& problem, Mat& solution, const Option& opt)
 
     for (Eigen::Index i = 0; i < cols; i++) {
       double grad_dis = (grad.col(i) - prev_grad.col(i)).norm();
-      double ref_dis_ = (reference.col(i) - prev_reference.col(i)).norm();
+      // double ref_dis_ = (reference.col(i) - prev_reference.col(i)).norm();
       double ref_dis = problem.getSolutionDistance(reference.col(i), prev_reference.col(i), i);
       steplength(i) = ref_dis / grad_dis;
     }
-    // double step = (reference - prev_reference).norm() / (grad - prev_grad).norm();
     if (iter % 10 == 0) {
       log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", cur_cost - prev_cost,
           "step:", Eigen::Map<Eigen::RowVectorXd>(steplength.data(), steplength.size()));
-      // log("[NAG]", "iter:", iter, "cost:", cur_cost, "dis:", cur_cost - prev_cost, "step:", step);
       prev_cost = cur_cost;
-      // std::cout << major << std::endl;
     }
     new_major = reference - grad * steplength.asDiagonal();
-    // new_major = reference - grad * step;
 
     a_k_1 = (1 + sqrt(4 * a_k * a_k + 1)) * 0.5;
 

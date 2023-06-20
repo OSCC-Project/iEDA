@@ -6,9 +6,11 @@ target_link_libraries(ipl-bridge
         ipl-source_external_libs
 )
 
-add_library(ipl-utility Image.cc)
+add_library(ipl-utility 
+            Image.cc
+            Geometry.cc)
 
 target_link_libraries(ipl-utility 
-    PRIVATE
+    PUBLIC
         ipl-source_external_libs
 )

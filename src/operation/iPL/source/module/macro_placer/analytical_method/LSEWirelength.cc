@@ -36,7 +36,6 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
   auto get_pin_off = [&](double& x_off, double& y_off, int id) {
     double x_temp = x_off;
     double y_temp = y_off;
-    assert(!std::isnan(x_off) || !std::isnan(y_off));
     x_off = x_temp * rcos(id) - y_temp * rsin(id);
     y_off = x_temp * rsin(id) + y_temp * rcos(id);
     assert(!std::isnan(x_off) || !std::isnan(y_off));
@@ -77,11 +76,9 @@ void LSEWirelength::updatePinLocation(const Vec& x, const Vec& y, const Vec& r, 
 
       double x_off = it_oxo.value();
       double y_off = it_oyo.value();
-      assert(!std::isnan(x_off) || !std::isnan(y_off));
       get_pin_off(x_off, y_off, row);
       it_xo.valueRef() = x_off;
       it_yo.valueRef() = y_off;
-      assert(!std::isnan(x_off) || !std::isnan(y_off));
 
       x_min = std::min(x(row) + x_off, x_min);
       x_max = std::max(x(row) + x_off, x_max);

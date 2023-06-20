@@ -26,9 +26,11 @@ void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core
   vector<Triplet<double>> fixed_x_location;
   vector<Triplet<double>> fixed_y_location;
 
-  double sq = std::sqrt(utilization);
-  double w = 2 * sq * core_w / num_macros;
-  double h = 2 * sq * core_h / num_macros;
+  // double sq = std::sqrt(utilization);
+  // double w = 2 * sq * core_w / num_macros;
+  // double h = 2 * sq * core_h / num_macros;
+  double w = std::sqrt(core_w * core_h * utilization / num_macros);
+  double h = w;
 
   _width.setConstant(w);
   _height.setConstant(h);
@@ -142,7 +144,6 @@ void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int it
   double hpwl = 0;
   evalWirelength(variable, gradient, hpwl, 100);
   cost = hpwl;
-  assert(!std::isnan(cost));
   if (iter % 1 == 0)
     drawImage(variable, iter);
 }
