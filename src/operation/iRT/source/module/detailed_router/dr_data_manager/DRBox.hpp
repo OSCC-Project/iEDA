@@ -20,6 +20,7 @@
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
+#include "ScaleAxis.hpp"
 
 namespace irt {
 
@@ -30,11 +31,12 @@ class DRBox : public DRSpaceRegion
   ~DRBox() = default;
   // getter
   PlanarCoord& get_grid_coord() { return _grid_coord; }
-  std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_panel_result_map() { return _net_panel_result_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_other_box_result_map() { return _net_other_box_result_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_self_box_result_map() { return _net_self_box_result_map; }
+  ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
+  std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   // setter
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
@@ -94,7 +96,6 @@ class DRBox : public DRSpaceRegion
 
  private:
   PlanarCoord _grid_coord;
-  std::vector<GridMap<DRNode>> _layer_node_map;
   // 用于存储blockage和pin_shape，其中blockage的net_idx为-1
   std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
   // 用于存储ta的结果
@@ -103,6 +104,8 @@ class DRBox : public DRSpaceRegion
   std::map<irt_int, std::vector<LayerRect>> _net_other_box_result_map;
   // 用于存储自己box的结果
   std::map<irt_int, std::vector<LayerRect>> _net_self_box_result_map;
+  ScaleAxis _box_scale_axis;
+  std::vector<GridMap<DRNode>> _layer_node_map;
   std::vector<DRTask> _dr_task_list;
 #if 1  // astar
   // config
