@@ -61,9 +61,13 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  bool check(std::vector<ids::DRCRect>& detection_rect_list);
-  std::vector<ids::DRCRect> getMaxScope(std::vector<ids::DRCRect>& detection_rect_list);
-  std::vector<ids::DRCRect> getMinScope(std::vector<ids::DRCRect>& detection_rect_list);
+  bool check(std::vector<ids::DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& drc_rect_list);
+  std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const LayerRect& drc_rect);
+  std::vector<LayerRect> getMinScope(const LayerRect& drc_rect);
+  std::vector<ids::DRCRect> getMaxScope(std::vector<ids::DRCRect>& drc_rect_list);
+  std::vector<ids::DRCRect> getMinScope(std::vector<ids::DRCRect>& drc_rect_list);
 
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
