@@ -50,8 +50,8 @@ class RoutingLayer
 
   // function
   bool isPreferH() const { return _direction == Direction::kHorizontal; }
-  TrackGrid& getXTrackGrid() { return _track_axis.get_x_track_grid(); }
-  TrackGrid& getYTrackGrid() { return _track_axis.get_y_track_grid(); }
+  TrackGrid& getXTrackGrid() { return _track_axis.get_x_grid_list().front(); }
+  TrackGrid& getYTrackGrid() { return _track_axis.get_y_grid_list().front(); }
   TrackGrid& getPreferTrackGrid() { return isPreferH() ? getYTrackGrid() : getXTrackGrid(); }
   TrackGrid& getNonpreferTrackGrid() { return isPreferH() ? getXTrackGrid() : getYTrackGrid(); }
   irt_int getMinSpacing(const PlanarRect& rect)

@@ -26,14 +26,14 @@ class TrackAxis
   TrackAxis() = default;
   ~TrackAxis() = default;
   // getter
-  TrackGrid& get_x_track_grid() { return _x_track_grid; }
-  TrackGrid& get_y_track_grid() { return _y_track_grid; }
+  std::vector<TrackGrid>& get_x_grid_list() { return _x_grid_list; }
+  std::vector<TrackGrid>& get_y_grid_list() { return _y_grid_list; }
   // setter
-  void set_x_track_grid(const TrackGrid& x_track_grid) { _x_track_grid = x_track_grid; }
-  void set_y_track_grid(const TrackGrid& y_track_grid) { _y_track_grid = y_track_grid; }
+  void set_x_grid_list(const std::vector<TrackGrid>& x_grid_list) { _x_grid_list = x_grid_list; }
+  void set_y_grid_list(const std::vector<TrackGrid>& y_grid_list) { _y_grid_list = y_grid_list; }
   // function
  private:
-  TrackGrid _x_track_grid;
-  TrackGrid _y_track_grid;
+  std::vector<TrackGrid> _x_grid_list;
+  std::vector<TrackGrid> _y_grid_list;
 };
 }  // namespace irt
