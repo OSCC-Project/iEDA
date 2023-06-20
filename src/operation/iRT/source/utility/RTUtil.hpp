@@ -1641,8 +1641,9 @@ class RTUtil
 
   static PlanarRect getGridRect(const PlanarRect& real_rect, TrackAxis& track_axis)
   {
-    TrackGrid& x_track_grid = track_axis.get_x_track_grid();
-    TrackGrid& y_track_grid = track_axis.get_y_track_grid();
+    // zzs
+    TrackGrid& x_track_grid = track_axis.get_x_grid_list().front();
+    TrackGrid& y_track_grid = track_axis.get_y_grid_list().front();
     std::vector<irt_int> x_list = getClosedScaleList(real_rect.get_lb_x(), real_rect.get_rt_x(), x_track_grid);
     std::vector<irt_int> y_list = getClosedScaleList(real_rect.get_lb_y(), real_rect.get_rt_y(), y_track_grid);
     if (x_list.empty() || y_list.empty()) {
@@ -1660,9 +1661,9 @@ class RTUtil
                                                                                                   TrackAxis track_axis)
   {
     std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
-
-    irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
-    irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
+    // zzs
+    irt_int x_step_length = track_axis.get_x_grid_list().front().get_step_length();
+    irt_int y_step_length = track_axis.get_y_grid_list().front().get_step_length();
     PlanarRect enlarge_real_rect = getEnlargedRect(real_rect, x_step_length, y_step_length, x_step_length, y_step_length);
     PlanarRect enlarge_grid_rect = getGridRect(enlarge_real_rect, track_axis);
 
@@ -1740,6 +1741,7 @@ class RTUtil
   // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
   static PlanarRect getTrackLineRect(PlanarRect& rect, TrackAxis& track_axis, PlanarRect& border)
   {
+    // zzs
     if (!isInside(border, rect)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
@@ -1747,7 +1749,7 @@ class RTUtil
     irt_int real_rt_x = rect.get_rt_x();
     irt_int real_lb_y = rect.get_lb_y();
     irt_int real_rt_y = rect.get_rt_y();
-    TrackGrid& x_track_grid = track_axis.get_x_track_grid();
+    TrackGrid& x_track_grid = track_axis.get_x_grid_list().front();
     if (RTUtil::getClosedScaleList(real_lb_x, real_rt_x, x_track_grid).empty()) {
       std::vector<irt_int> scale_list;
       scale_list.push_back(border.get_lb_x());
@@ -1764,7 +1766,8 @@ class RTUtil
         break;
       }
     }
-    TrackGrid& y_track_grid = track_axis.get_y_track_grid();
+    // zzs
+    TrackGrid& y_track_grid = track_axis.get_y_grid_list().front();
     if (RTUtil::getClosedScaleList(real_lb_y, real_rt_y, y_track_grid).empty()) {
       std::vector<irt_int> scale_list;
       scale_list.push_back(border.get_lb_x());
