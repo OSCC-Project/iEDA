@@ -137,7 +137,7 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
 void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
@@ -153,7 +153,7 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 
 void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();

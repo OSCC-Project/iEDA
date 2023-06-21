@@ -114,12 +114,12 @@ void EGRDataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
 
 void EGRDataManager::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
-  TrackAxis& track_axis = routing_layer.get_track_axis();
+  ScaleAxis& track_axis = routing_layer.get_track_axis();
 
   for (idb::IdbTrackGrid* idb_track_grid : idb_layer->get_track_grid_list()) {
     idb::IdbTrack* idb_track = idb_track_grid->get_track();
 
-    TrackGrid track_grid;
+    ScaleGrid track_grid;
     track_grid.set_start_line(static_cast<irt_int>(idb_track->get_start()));
     track_grid.set_step_length(static_cast<irt_int>(idb_track->get_pitch()));
     track_grid.set_step_num(static_cast<irt_int>(idb_track_grid->get_track_num()));

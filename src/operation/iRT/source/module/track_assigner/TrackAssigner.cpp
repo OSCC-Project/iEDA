@@ -75,7 +75,7 @@ void TrackAssigner::assignNetList(std::vector<Net>& net_list)
 
 TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -86,7 +86,7 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::vector<TAPanel> ta_panel_list;
     if (routing_layer.isPreferH()) {
-      for (GCellGrid& gcell_grid : gcell_axis.get_y_grid_list()) {
+      for (ScaleGrid& gcell_grid : gcell_axis.get_y_grid_list()) {
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
@@ -100,7 +100,7 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
         }
       }
     } else {
-      for (GCellGrid& gcell_grid : gcell_axis.get_x_grid_list()) {
+      for (ScaleGrid& gcell_grid : gcell_axis.get_x_grid_list()) {
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
@@ -151,7 +151,7 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
 
 void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
@@ -298,7 +298,7 @@ TAGroup TrackAssigner::makeTAGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* t
   irt_int ta_layer_idx = ta_node_node->value().get_first_guide().get_layer_idx();
 
   // layer
-  TrackAxis& track_axis = routing_layer_list[ta_layer_idx].get_track_axis();
+  ScaleAxis& track_axis = routing_layer_list[ta_layer_idx].get_track_axis();
 
   Orientation orientation = Orientation::kNone;
   if (dr_grid_coord == first_grid_coord) {
@@ -523,7 +523,7 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
-  TrackAxis& track_axis = routing_layer.get_track_axis();
+  ScaleAxis& track_axis = routing_layer.get_track_axis();
 
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
   for (Segment<LayerCoord>& real_segment : getRealSegmentList(ta_panel, min_scope_regular_rect)) {
@@ -549,7 +549,7 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_p
   std::vector<Segment<LayerCoord>> real_segment_list;
 
   RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
-  TrackAxis& track_axis = routing_layer.get_track_axis();
+  ScaleAxis& track_axis = routing_layer.get_track_axis();
 
   // ta只需要膨胀half_width
   PlanarRect real_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
@@ -746,7 +746,7 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
 void TrackAssigner::initRoutingInfo(TAPanel& ta_panel, TATask& ta_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  TrackAxis& track_axis = routing_layer_list[ta_panel.get_layer_idx()].get_track_axis();
+  ScaleAxis& track_axis = routing_layer_list[ta_panel.get_layer_idx()].get_track_axis();
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
@@ -1438,7 +1438,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
 void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 

@@ -70,7 +70,7 @@ void ViolationRepairer::repairNetList(std::vector<Net>& net_list)
 
 VRModel ViolationRepairer::initVRModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -123,7 +123,7 @@ void ViolationRepairer::buildVRModel(VRModel& vr_model)
 
 void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
@@ -391,7 +391,7 @@ void ViolationRepairer::repairMinArea(VRNet& vr_net)
 
 void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -463,7 +463,7 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
