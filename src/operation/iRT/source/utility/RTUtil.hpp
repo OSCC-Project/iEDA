@@ -1772,6 +1772,31 @@ class RTUtil
     return scale_line_list;
   }
 
+  // 计算刻度，原有基础上扩大一个scale
+  static std::vector<irt_int> getEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  {
+    std::vector<irt_int> scale_list;
+    std::vector<irt_int> track_scale_list = getTrackScaleList(scale_grid_list);
+    for (size_t i = 0; i < track_scale_list.size(); i++) {
+      irt_int curr_scale = track_scale_list[i];
+      if (curr_scale < begin_line) {
+        continue;
+      }
+      if (curr_scale > end_line) {
+        break;
+      }
+      if (i != 0 && track_scale_list[i - 1] < begin_line) {
+        scale_list.push_back(track_scale_list[i - 1]);
+      }
+      scale_list.push_back(curr_scale);
+      if ((i + 1) != track_scale_list.size() && track_scale_list[i + 1] > end_line) {
+        scale_list.push_back(track_scale_list[i + 1]);
+        break;
+      }
+    }
+    return scale_list;
+  }
+
 #endif
 
 #if 1  // irt数据结构工具函数
