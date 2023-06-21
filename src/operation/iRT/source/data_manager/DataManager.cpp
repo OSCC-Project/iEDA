@@ -853,10 +853,12 @@ void DataManager::makeLayerList()
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
-    x_track_grid.set_end_line(x_track_grid.get_start_line() + x_track_grid.get_step_length() * x_track_grid.get_step_num());
-    TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
-    y_track_grid.set_end_line(y_track_grid.get_start_line() + y_track_grid.get_step_length() * y_track_grid.get_step_num());
+    for (TrackGrid& x_track_grid : routing_layer.getXTrackGridList()) {
+      x_track_grid.set_end_line(x_track_grid.get_start_line() + x_track_grid.get_step_length() * x_track_grid.get_step_num());
+    }
+    for (TrackGrid& y_track_grid : routing_layer.getYTrackGridList()) {
+      y_track_grid.set_end_line(y_track_grid.get_start_line() + y_track_grid.get_step_length() * y_track_grid.get_step_num());
+    }
   }
 }
 
@@ -878,21 +880,23 @@ void DataManager::checkLayerList()
     if (routing_layer.get_direction() == Direction::kNone) {
       LOG_INST.error(Loc::current(), "The layer '", layer_name, "' direction is none!");
     }
-    TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
-    if (x_track_grid.get_start_line() < die.get_real_lb_x() || die.get_real_rt_x() < x_track_grid.get_end_line()) {
-      LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " x_track_grid outside the die!");
+    for (TrackGrid& x_track_grid : routing_layer.getXTrackGridList()) {
+      if (x_track_grid.get_start_line() < die.get_real_lb_x() || die.get_real_rt_x() < x_track_grid.get_end_line()) {
+        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " x_track_grid outside the die!");
+      }
+      if (x_track_grid.get_step_length() <= 0) {
+        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
+                       "' is wrong!");
+      }
     }
-    if (x_track_grid.get_step_length() <= 0) {
-      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
-                     "' is wrong!");
-    }
-    TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
-    if (y_track_grid.get_start_line() < die.get_real_lb_y() || die.get_real_rt_y() < y_track_grid.get_end_line()) {
-      LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " y_track_grid outside the die!");
-    }
-    if (y_track_grid.get_step_length() <= 0) {
-      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
-                     "' is wrong!");
+    for (TrackGrid& y_track_grid : routing_layer.getYTrackGridList()) {
+      if (y_track_grid.get_start_line() < die.get_real_lb_y() || die.get_real_rt_y() < y_track_grid.get_end_line()) {
+        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " y_track_grid outside the die!");
+      }
+      if (y_track_grid.get_step_length() <= 0) {
+        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
+                       "' is wrong!");
+      }
     }
     SpacingTable& spacing_table = routing_layer.get_spacing_table();
     if (spacing_table.get_width_list().empty()) {

@@ -235,10 +235,10 @@ void DetailedRouter::buildBoxTrackAxis(DRModel& dr_model)
       std::vector<irt_int> y_scale_list;
       for (RoutingLayer& routing_layer : routing_layer_list) {
         std::vector<irt_int> x_list
-            = RTUtil::getClosedScaleList(box_region.get_lb_x(), box_region.get_rt_x(), routing_layer.getXTrackGrid());
+            = RTUtil::getClosedScaleList(box_region.get_lb_x(), box_region.get_rt_x(), routing_layer.getXTrackGridList());
         x_scale_list.insert(x_scale_list.end(), x_list.begin(), x_list.end());
         std::vector<irt_int> y_list
-            = RTUtil::getClosedScaleList(box_region.get_lb_y(), box_region.get_rt_y(), routing_layer.getYTrackGrid());
+            = RTUtil::getClosedScaleList(box_region.get_lb_y(), box_region.get_rt_y(), routing_layer.getYTrackGridList());
         y_scale_list.insert(y_scale_list.end(), y_list.begin(), y_list.end());
       }
       for (PlanarCoord& ap_coord : grid_ap_coord_map[PlanarCoord(x, y)]) {
@@ -375,7 +375,7 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
         }
       }
       for (RoutingLayer& routing_layer : routing_layer_list) {
-        std::vector<irt_int> x_scale_list = RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGrid());
+        std::vector<irt_int> x_scale_list = RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGridList());
         x_scale_set.insert(x_scale_list.begin(), x_scale_list.end());
       }
       for (irt_int x : x_scale_set) {
@@ -389,7 +389,7 @@ DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* 
         }
       }
       for (RoutingLayer& routing_layer : routing_layer_list) {
-        std::vector<irt_int> y_scale_list = RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGrid());
+        std::vector<irt_int> y_scale_list = RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGridList());
         y_scale_set.insert(y_scale_list.begin(), y_scale_list.end());
       }
       for (irt_int y : y_scale_set) {
@@ -565,32 +565,31 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRealSegmentList(DRBox& dr_bo
 
   irt_int layer_idx = min_scope_regular_rect.get_layer_idx();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  TrackAxis& track_axis = routing_layer.get_track_axis();
 
   // ta只需要膨胀half_width
-  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
-  irt_int x_step_length = track_axis.get_x_track_grid().get_step_length();
-  irt_int y_step_length = track_axis.get_y_track_grid().get_step_length();
-  search_rect = RTUtil::getEnlargedRect(search_rect, x_step_length, y_step_length, x_step_length, y_step_length);
-
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_track_grid());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_track_grid());
-  for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
-    irt_int y = y_list[y_idx];
-    if (y == y_list.front() || y == y_list.back()) {
-      continue;
+  PlanarRect real_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
+  for (LayerRect search_rect : RTAPI_INST.getMaxScope(LayerRect(real_rect, layer_idx))) {
+    std::vector<irt_int> x_list
+        = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), routing_layer.getXTrackGridList());
+    std::vector<irt_int> y_list
+        = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), routing_layer.getYTrackGridList());
+    for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
+      irt_int y = y_list[y_idx];
+      if (y == y_list.front() || y == y_list.back()) {
+        continue;
+      }
+      for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
+        real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, layer_idx), LayerCoord(x_list[x_idx + 1], y, layer_idx));
+      }
     }
-    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
-      real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, layer_idx), LayerCoord(x_list[x_idx + 1], y, layer_idx));
-    }
-  }
-  for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
-    irt_int x = x_list[x_idx];
-    if (x == x_list.front() || x == x_list.back()) {
-      continue;
-    }
-    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
-      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
+    for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
+      irt_int x = x_list[x_idx];
+      if (x == x_list.front() || x == x_list.back()) {
+        continue;
+      }
+      for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
+        real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
+      }
     }
   }
   return real_segment_list;
