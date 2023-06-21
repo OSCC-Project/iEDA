@@ -145,7 +145,6 @@ void CTSAPI::init(const std::string& config_file)
   _report = new CtsReportTable("iCTS");
   _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
 
-  TimingPropagator::init();
   _libs = new CtsLibs();
 
   _synth = new Synthesis();
@@ -161,6 +160,8 @@ void CTSAPI::init(const std::string& config_file)
   }
 #endif
   startDbSta();
+
+  TimingPropagator::init();
 }
 
 void CTSAPI::readData()
