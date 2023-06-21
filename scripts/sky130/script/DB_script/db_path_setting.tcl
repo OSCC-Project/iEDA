@@ -98,4 +98,4 @@ set SDC_PATH "./sdc/gcd.sdc"
 #===========================================================
 ##   set spef path
 #===========================================================
-#set SPEF_PATH "./spef/xxx.spef"
+#set SPEF_PATH "./spef/gcd.spef"

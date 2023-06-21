@@ -18,3 +18,5 @@
 *.json
 *.gds2
 *.drc
+*.dat
+pl/log
