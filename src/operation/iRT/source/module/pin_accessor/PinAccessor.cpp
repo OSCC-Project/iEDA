@@ -134,7 +134,7 @@ void PinAccessor::buildPAModel(PAModel& pa_model)
 
 void PinAccessor::initGCellRealRect(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
   for (size_t layer_idx = 0; layer_idx < layer_gcell_map.size(); layer_idx++) {
@@ -150,7 +150,7 @@ void PinAccessor::initGCellRealRect(PAModel& pa_model)
 
 void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
@@ -499,7 +499,7 @@ void PinAccessor::selectAccessPointType(PANet& pa_net)
 
 void PinAccessor::buildBoundingBox(PANet& pa_net)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   std::vector<PlanarCoord> coord_list;
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -514,7 +514,7 @@ void PinAccessor::buildBoundingBox(PANet& pa_net)
 
 void PinAccessor::buildAccessPointList(PANet& pa_net)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   BoundingBox& bounding_box = pa_net.get_bounding_box();
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -549,7 +549,7 @@ void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
 
 void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
@@ -594,7 +594,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 
 void PinAccessor::eliminateConflict(PAModel& pa_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();

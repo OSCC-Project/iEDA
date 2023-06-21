@@ -376,7 +376,7 @@ void GDSPlotter::addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox
 
 void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   GPStruct guide_list_struct(RTUtil::getString("guide_list@", net_struct.get_alias_name()));
@@ -527,7 +527,7 @@ void GDSPlotter::addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list)
 
 void GDSPlotter::addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   GPStruct cost_map_struct(RTUtil::getString("cost_map@", net_struct.get_alias_name()));
 
@@ -620,7 +620,7 @@ void GDSPlotter::addDie(GPGDS& gp_gds, PlanarRect& clipping_window)
 
 void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
@@ -631,9 +631,9 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
   irt_int window_rt_y = clipping_window.get_rt_y();
 
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<GCellGrid>& x_grid_list = gcell_axis.get_x_grid_list();
+  std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
   for (size_t i = 0; i < x_grid_list.size(); i++) {
-    GCellGrid& gcell_grid = x_grid_list[i];
+    ScaleGrid& gcell_grid = x_grid_list[i];
     for (irt_int x = gcell_grid.get_start_line(); x <= gcell_grid.get_end_line(); x += gcell_grid.get_step_length()) {
       if (x < window_lb_x || window_rt_x < x) {
         continue;
@@ -645,9 +645,9 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
       gcell_axis_struct.push(gp_path);
     }
   }
-  std::vector<GCellGrid>& y_grid_list = gcell_axis.get_y_grid_list();
+  std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
   for (size_t i = 0; i < y_grid_list.size(); i++) {
-    GCellGrid& gcell_grid = y_grid_list[i];
+    ScaleGrid& gcell_grid = y_grid_list[i];
     for (irt_int y = gcell_grid.get_start_line(); y <= gcell_grid.get_end_line(); y += gcell_grid.get_step_length()) {
       if (y < window_lb_y || window_rt_y < y) {
         continue;
@@ -660,9 +660,9 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
     }
   }
   for (size_t i = 0; i < x_grid_list.size(); i++) {
-    GCellGrid& x_gcell_grid = x_grid_list[i];
+    ScaleGrid& x_gcell_grid = x_grid_list[i];
     for (size_t j = 0; j < y_grid_list.size(); j++) {
-      GCellGrid& y_gcell_grid = y_grid_list[j];
+      ScaleGrid& y_gcell_grid = y_grid_list[j];
       for (irt_int x = x_gcell_grid.get_start_line(); x < x_gcell_grid.get_end_line(); x += x_gcell_grid.get_step_length()) {
         for (irt_int y = y_gcell_grid.get_start_line(); y < y_gcell_grid.get_end_line(); y += y_gcell_grid.get_step_length()) {
           if (x < window_lb_x || window_rt_x < x || y < window_lb_y || window_rt_y < y) {
@@ -698,8 +698,8 @@ void GDSPlotter::addTrackGrid(GPGDS& gp_gds, PlanarRect& clipping_window)
     RoutingLayer& routing_layer = routing_layer_list[i];
     irt_int layer_idx = routing_layer.get_layer_idx();
 
-    TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
-    TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
+    ScaleGrid& x_track_grid = routing_layer.getXTrackGrid();
+    ScaleGrid& y_track_grid = routing_layer.getYTrackGrid();
 
     GPLayoutType x_data_type = GPLayoutType::kPreferTrack;
     GPLayoutType y_data_type = GPLayoutType::kNonpreferTrack;

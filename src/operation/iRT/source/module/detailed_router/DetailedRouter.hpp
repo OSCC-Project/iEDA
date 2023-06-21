@@ -58,10 +58,8 @@ class DetailedRouter
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
   void updateNetBlockageMap(DRModel& dr_model);
-  std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& rect_list);
-  std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& rect_list);
   void updateNetPanelResultMap(DRModel& dr_model);
-  void buildBoxTrackAxis(DRModel& dr_model);
+  void buildBoxScaleAxis(DRModel& dr_model);
   std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);

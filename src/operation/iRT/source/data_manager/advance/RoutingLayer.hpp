@@ -20,7 +20,7 @@
 #include "Logger.hpp"
 #include "PlanarRect.hpp"
 #include "SpacingTable.hpp"
-#include "TrackAxis.hpp"
+#include "ScaleAxis.hpp"
 
 namespace irt {
 
@@ -36,7 +36,7 @@ class RoutingLayer
   irt_int get_min_width() const { return _min_width; }
   irt_int get_min_area() const { return _min_area; }
   Direction& get_direction() { return _direction; }
-  TrackAxis& get_track_axis() { return _track_axis; }
+  ScaleAxis& get_track_axis() { return _track_axis; }
   SpacingTable& get_spacing_table() { return _spacing_table; }
   // setter
   void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
@@ -45,19 +45,19 @@ class RoutingLayer
   void set_min_width(const irt_int min_width) { _min_width = min_width; }
   void set_min_area(const irt_int min_area) { _min_area = min_area; }
   void set_direction(const Direction& direction) { _direction = direction; }
-  void set_track_axis(const TrackAxis& track_axis) { _track_axis = track_axis; }
+  void set_track_axis(const ScaleAxis& track_axis) { _track_axis = track_axis; }
   void set_spacing_table(const SpacingTable& spacing_table) { _spacing_table = spacing_table; }
 
   // function
   bool isPreferH() const { return _direction == Direction::kHorizontal; }
-  TrackGrid& getXTrackGrid() { return _track_axis.get_x_grid_list().front(); }
-  TrackGrid& getYTrackGrid() { return _track_axis.get_y_grid_list().front(); }
-  TrackGrid& getPreferTrackGrid() { return isPreferH() ? getYTrackGrid() : getXTrackGrid(); }
-  TrackGrid& getNonpreferTrackGrid() { return isPreferH() ? getXTrackGrid() : getYTrackGrid(); }
-  std::vector<TrackGrid>& getXTrackGridList() { return _track_axis.get_x_grid_list(); }
-  std::vector<TrackGrid>& getYTrackGridList() { return _track_axis.get_y_grid_list(); }
-  std::vector<TrackGrid>& getPreferTrackGridList() { return isPreferH() ? getYTrackGridList() : getXTrackGridList(); }
-  std::vector<TrackGrid>& getNonpreferTrackGridList() { return isPreferH() ? getXTrackGridList() : getYTrackGridList(); }
+  ScaleGrid& getXTrackGrid() { return _track_axis.get_x_grid_list().front(); }
+  ScaleGrid& getYTrackGrid() { return _track_axis.get_y_grid_list().front(); }
+  ScaleGrid& getPreferTrackGrid() { return isPreferH() ? getYTrackGrid() : getXTrackGrid(); }
+  ScaleGrid& getNonpreferTrackGrid() { return isPreferH() ? getXTrackGrid() : getYTrackGrid(); }
+  std::vector<ScaleGrid>& getXTrackGridList() { return _track_axis.get_x_grid_list(); }
+  std::vector<ScaleGrid>& getYTrackGridList() { return _track_axis.get_y_grid_list(); }
+  std::vector<ScaleGrid>& getPreferTrackGridList() { return isPreferH() ? getYTrackGridList() : getXTrackGridList(); }
+  std::vector<ScaleGrid>& getNonpreferTrackGridList() { return isPreferH() ? getXTrackGridList() : getYTrackGridList(); }
   irt_int getMinSpacing(const PlanarRect& rect)
   {
     std::vector<irt_int>& width_list = _spacing_table.get_width_list();
@@ -78,7 +78,7 @@ class RoutingLayer
   irt_int _min_width = 0;
   irt_int _min_area = 0;
   Direction _direction = Direction::kNone;
-  TrackAxis _track_axis;
+  ScaleAxis _track_axis;
   SpacingTable _spacing_table;
 };
 

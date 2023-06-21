@@ -74,7 +74,7 @@ void GlobalRouter::routeNetList(std::vector<Net>& net_list)
 
 GRModel GlobalRouter::initGRModel(std::vector<Net>& net_list)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -184,7 +184,7 @@ void GlobalRouter::buildNodeSupply(GRModel& gr_model)
 
 void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
@@ -1097,7 +1097,7 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
 
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
   std::string gr_temp_directory_path = DM_INST.getConfig().gr_temp_directory_path;
 
@@ -1447,7 +1447,7 @@ void GlobalRouter::initRoutingResult(GRNet& gr_net)
 
 RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
 {
-  GCellAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
   Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
 
