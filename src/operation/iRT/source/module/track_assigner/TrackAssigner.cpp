@@ -552,29 +552,27 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_p
   ScaleAxis& track_axis = routing_layer.get_track_axis();
 
   // ta只需要膨胀half_width
-  PlanarRect real_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
-  for (LayerRect search_rect : RTAPI_INST.getMaxScope(LayerRect(real_rect, ta_panel.get_layer_idx()))) {
-    std::vector<irt_int> x_list = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_grid_list());
-    std::vector<irt_int> y_list = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_grid_list());
-    for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
-      irt_int y = y_list[y_idx];
-      if (y == y_list.front() || y == y_list.back()) {
-        continue;
-      }
-      for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
-        real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, ta_panel.get_layer_idx()),
-                                       LayerCoord(x_list[x_idx + 1], y, ta_panel.get_layer_idx()));
-      }
+  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
+  std::vector<irt_int> x_list = RTUtil::getEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), track_axis.get_x_grid_list());
+  std::vector<irt_int> y_list = RTUtil::getEnlargedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), track_axis.get_y_grid_list());
+  for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
+    irt_int y = y_list[y_idx];
+    if (y == y_list.front() || y == y_list.back()) {
+      continue;
     }
-    for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
-      irt_int x = x_list[x_idx];
-      if (x == x_list.front() || x == x_list.back()) {
-        continue;
-      }
-      for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
-        real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], ta_panel.get_layer_idx()),
-                                       LayerCoord(x, y_list[y_idx + 1], ta_panel.get_layer_idx()));
-      }
+    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, ta_panel.get_layer_idx()),
+                                     LayerCoord(x_list[x_idx + 1], y, ta_panel.get_layer_idx()));
+    }
+  }
+  for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
+    irt_int x = x_list[x_idx];
+    if (x == x_list.front() || x == x_list.back()) {
+      continue;
+    }
+    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], ta_panel.get_layer_idx()),
+                                     LayerCoord(x, y_list[y_idx + 1], ta_panel.get_layer_idx()));
     }
   }
   return real_segment_list;

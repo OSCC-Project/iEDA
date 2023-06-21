@@ -519,23 +519,19 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
 std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box,
                                                                                                          LayerRect& min_scope_regular_rect)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  RoutingLayer& routing_layer = routing_layer_list[min_scope_regular_rect.get_layer_idx()];
-  ScaleAxis& track_axis = routing_layer.get_track_axis();
+  ScaleAxis& box_scale_axis = dr_box.get_box_scale_axis();
 
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
   for (Segment<LayerCoord>& real_segment : getRealSegmentList(dr_box, min_scope_regular_rect)) {
     LayerCoord& first_coord = real_segment.get_first();
     LayerCoord& second_coord = real_segment.get_second();
-
     if (RTUtil::isOpenOverlap(min_scope_regular_rect, getRealRectList({real_segment}).front())) {
-      if (!RTUtil::existGrid(first_coord, track_axis) || !RTUtil::existGrid(second_coord, track_axis)) {
+      if (!RTUtil::existGrid(first_coord, box_scale_axis) || !RTUtil::existGrid(second_coord, box_scale_axis)) {
         LOG_INST.error(Loc::current(), "The coord can not find grid!");
       }
       Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
-      grid_orientation_map[RTUtil::getGridCoord(first_coord, track_axis)].insert(orientation);
-      grid_orientation_map[RTUtil::getGridCoord(second_coord, track_axis)].insert(RTUtil::getOppositeOrientation(orientation));
+      grid_orientation_map[RTUtil::getGridCoord(first_coord, box_scale_axis)].insert(orientation);
+      grid_orientation_map[RTUtil::getGridCoord(second_coord, box_scale_axis)].insert(RTUtil::getOppositeOrientation(orientation));
     }
   }
   return grid_orientation_map;
@@ -544,36 +540,40 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> DetailedRoute
 std::vector<Segment<LayerCoord>> DetailedRouter::getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   std::vector<Segment<LayerCoord>> real_segment_list;
 
   irt_int layer_idx = min_scope_regular_rect.get_layer_idx();
-  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  ScaleAxis& box_scale_axis = dr_box.get_box_scale_axis();
 
-  // ta只需要膨胀half_width
-  PlanarRect real_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
-  for (LayerRect search_rect : RTAPI_INST.getMaxScope(LayerRect(real_rect, layer_idx))) {
-    std::vector<irt_int> x_list
-        = RTUtil::getClosedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), routing_layer.getXTrackGridList());
-    std::vector<irt_int> y_list
-        = RTUtil::getClosedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), routing_layer.getYTrackGridList());
-    for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
-      irt_int y = y_list[y_idx];
-      if (y == y_list.front() || y == y_list.back()) {
-        continue;
-      }
-      for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
-        real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, layer_idx), LayerCoord(x_list[x_idx + 1], y, layer_idx));
-      }
+  // 需要膨胀max(half_width, half_enclosure)
+  irt_int enlarge_size = routing_layer_list[layer_idx].get_min_width() / 2;
+  if (!layer_via_master_list[layer_idx].empty()) {
+    enlarge_size = std::max(enlarge_size, layer_via_master_list[layer_idx].front().get_below_enclosure().getLength() / 2);
+  }
+  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, enlarge_size);
+  
+  std::vector<irt_int> x_list
+      = RTUtil::getEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), box_scale_axis.get_x_grid_list());
+  std::vector<irt_int> y_list
+      = RTUtil::getEnlargedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), box_scale_axis.get_y_grid_list());
+  for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
+    irt_int y = y_list[y_idx];
+    if (y == y_list.front() || y == y_list.back()) {
+      continue;
     }
-    for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
-      irt_int x = x_list[x_idx];
-      if (x == x_list.front() || x == x_list.back()) {
-        continue;
-      }
-      for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
-        real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
-      }
+    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, layer_idx), LayerCoord(x_list[x_idx + 1], y, layer_idx));
+    }
+  }
+  for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
+    irt_int x = x_list[x_idx];
+    if (x == x_list.front() || x == x_list.back()) {
+      continue;
+    }
+    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
     }
   }
   return real_segment_list;
