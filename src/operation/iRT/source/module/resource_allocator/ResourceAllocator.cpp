@@ -243,8 +243,8 @@ std::vector<PlanarRect> ResourceAllocator::getWireList(RAGCell& ra_gcell, Routin
   irt_int real_lb_y = ra_gcell.get_real_rect().get_lb_y();
   irt_int real_rt_x = ra_gcell.get_real_rect().get_rt_x();
   irt_int real_rt_y = ra_gcell.get_real_rect().get_rt_y();
-  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGrid());
-  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGrid());
+  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList());
+  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList());
   irt_int half_width = routing_layer.get_min_width() / 2;
 
   std::vector<PlanarRect> wire_list;
