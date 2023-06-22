@@ -62,14 +62,16 @@ class DetailedRouter
   void buildBoxScaleAxis(DRModel& dr_model);
   std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list);
   void buildDRTaskList(DRModel& dr_model);
-  std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRNet& dr_net);
-  DRGroup makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
+  std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(GridMap<DRBox>& dr_box_map, DRNet& dr_net);
+  DRGroup makeDRGroup(DRBox& dr_box, DRPin& dr_pin);
+  DRGroup makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void buildDRBoxMap(DRModel& dr_model);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box, LayerRect& min_scope_regular_rect);
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box,
+                                                                                           LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
