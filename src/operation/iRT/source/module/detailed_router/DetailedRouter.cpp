@@ -132,8 +132,8 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
   updateNetBlockageMap(dr_model);
   updateNetPanelResultMap(dr_model);
-  buildDRTaskList(dr_model);
   buildBoxScaleAxis(dr_model);
+  buildDRTaskList(dr_model);
   buildDRBoxMap(dr_model);
 }
 
@@ -206,139 +206,6 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::buildDRTaskList(DRModel& dr_model)
-{
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    for (auto& [dr_node_node, dr_task] : makeDRNodeTaskMap(dr_net)) {
-      PlanarCoord& grid_coord = dr_node_node->value().get_first_guide().get_grid_coord();
-      DRBox& dr_box = dr_box_map[grid_coord.get_x()][grid_coord.get_y()];
-
-      std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
-      dr_task.set_origin_net_idx(dr_net.get_net_idx());
-      dr_task.set_origin_node(dr_node_node);
-      dr_task.set_task_idx(static_cast<irt_int>(dr_task_list.size()));
-      buildBoundingBox(dr_box, dr_task);
-      dr_task_list.push_back(dr_task);
-    }
-  }
-}
-
-std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRNet& dr_net)
-{
-  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
-  // dr_ta_list_map
-  std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
-  std::vector<Segment<TNode<RTNode>*>> segment_list = RTUtil::getSegListByTree(dr_result_tree);
-  if (dr_result_tree.get_root() != nullptr && segment_list.empty()) {
-    // local net
-    dr_ta_list_map[dr_result_tree.get_root()] = {};
-  }
-  for (Segment<TNode<RTNode>*>& segment : segment_list) {
-    TNode<RTNode>* dr_node_node = segment.get_first();
-    TNode<RTNode>* ta_node_node = segment.get_second();
-    if (dr_node_node->value().isTANode()) {
-      std::swap(dr_node_node, ta_node_node);
-    }
-    dr_ta_list_map[dr_node_node].push_back(ta_node_node);
-  }
-  // dr_node_task_map
-  std::map<TNode<RTNode>*, DRTask> dr_node_task_map;
-  for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
-    PlanarRect dr_base_region = dr_node_node->value().get_first_guide().get_rect();
-    std::vector<DRGroup>& dr_group_list = dr_node_task_map[dr_node_node].get_dr_group_list();
-
-    std::vector<LayerCoord> pin_coord_list;
-    for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
-      DRGroup dr_group;
-      for (LayerCoord& real_coord : dr_net.get_dr_pin_list()[pin_idx].getRealCoordList()) {
-        if (RTUtil::isInside(dr_base_region, real_coord)) {
-          pin_coord_list.push_back(real_coord);
-          dr_group.get_coord_direction_map()[real_coord].insert({});
-        }
-      }
-      dr_group_list.push_back(dr_group);
-    }
-    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
-      dr_group_list.push_back(makeDRGroup(dr_node_node, ta_node_node, pin_coord_list));
-    }
-  }
-  return dr_node_task_map;
-}
-
-DRGroup DetailedRouter::makeDRGroup(TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  PlanarRect dr_base_region = dr_node_node->value().get_first_guide().get_rect();
-  RTNode& ta_node = ta_node_node->value();
-  irt_int ta_layer_idx = ta_node.get_first_guide().get_layer_idx();
-
-  DRGroup dr_group;
-  for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
-    Segment<PlanarCoord> cutting_segment(routing_segment.get_first()->value(), routing_segment.get_second()->value());
-    if (!RTUtil::isOverlap(dr_base_region, cutting_segment)) {
-      continue;
-    }
-    cutting_segment = RTUtil::getOverlap(dr_base_region, cutting_segment);
-    PlanarCoord& first_coord = cutting_segment.get_first();
-    irt_int first_x = first_coord.get_x();
-    irt_int first_y = first_coord.get_y();
-    PlanarCoord& second_coord = cutting_segment.get_second();
-    Direction direction = RTUtil::getDirection(first_coord, second_coord);
-    if (direction == Direction::kHorizontal) {
-      std::set<irt_int> x_scale_set;
-      for (LayerCoord& pin_coord : pin_coord_list) {
-        if (first_x <= pin_coord.get_x() && pin_coord.get_x() <= second_coord.get_x()) {
-          x_scale_set.insert(pin_coord.get_x());
-        }
-      }
-      for (RoutingLayer& routing_layer : routing_layer_list) {
-        std::vector<irt_int> x_scale_list = RTUtil::getClosedScaleList(first_x, second_coord.get_x(), routing_layer.getXTrackGridList());
-        x_scale_set.insert(x_scale_list.begin(), x_scale_list.end());
-      }
-      for (irt_int x : x_scale_set) {
-        dr_group.get_coord_direction_map()[LayerCoord(x, first_y, ta_layer_idx)].insert(direction);
-      }
-    } else if (direction == Direction::kVertical) {
-      std::set<irt_int> y_scale_set;
-      for (LayerCoord& pin_coord : pin_coord_list) {
-        if (first_y <= pin_coord.get_y() && pin_coord.get_y() <= second_coord.get_y()) {
-          y_scale_set.insert(pin_coord.get_y());
-        }
-      }
-      for (RoutingLayer& routing_layer : routing_layer_list) {
-        std::vector<irt_int> y_scale_list = RTUtil::getClosedScaleList(first_y, second_coord.get_y(), routing_layer.getYTrackGridList());
-        y_scale_set.insert(y_scale_list.begin(), y_scale_list.end());
-      }
-      for (irt_int y : y_scale_set) {
-        dr_group.get_coord_direction_map()[LayerCoord(first_x, y, ta_layer_idx)].insert(direction);
-      }
-    } else if (RTUtil::isProximal(first_coord, second_coord)) {
-      LOG_INST.error(Loc::current(), "The ta segment is proximal!");
-    }
-  }
-  return dr_group;
-}
-
-void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
-{
-  DRSpaceRegion& bounding_box = dr_task.get_bounding_box();
-  bounding_box.set_base_region(dr_box.get_base_region());
-
-  irt_int top_layer_idx = INT_MIN;
-  irt_int bottom_layer_idx = INT_MAX;
-  for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
-    for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-      top_layer_idx = std::max(top_layer_idx, coord.get_layer_idx());
-      bottom_layer_idx = std::min(bottom_layer_idx, coord.get_layer_idx());
-    }
-  }
-  bounding_box.set_top_layer_idx(top_layer_idx);
-  bounding_box.set_bottom_layer_idx(bottom_layer_idx);
-}
-
 void DetailedRouter::buildBoxScaleAxis(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -409,6 +276,125 @@ std::vector<ScaleGrid> DetailedRouter::makeScaleGridList(std::vector<irt_int>& s
   });
 
   return scale_grid_list;
+}
+
+void DetailedRouter::buildDRTaskList(DRModel& dr_model)
+{
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    for (auto& [dr_node_node, dr_task] : makeDRNodeTaskMap(dr_box_map, dr_net)) {
+      PlanarCoord& grid_coord = dr_node_node->value().get_first_guide().get_grid_coord();
+      DRBox& dr_box = dr_box_map[grid_coord.get_x()][grid_coord.get_y()];
+
+      std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
+      dr_task.set_origin_net_idx(dr_net.get_net_idx());
+      dr_task.set_origin_node(dr_node_node);
+      dr_task.set_task_idx(static_cast<irt_int>(dr_task_list.size()));
+      buildBoundingBox(dr_box, dr_task);
+      dr_task_list.push_back(dr_task);
+    }
+  }
+}
+
+std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(GridMap<DRBox>& dr_box_map, DRNet& dr_net)
+{
+  MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
+  // dr_ta_list_map
+  std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
+  std::vector<Segment<TNode<RTNode>*>> segment_list = RTUtil::getSegListByTree(dr_result_tree);
+  if (dr_result_tree.get_root() != nullptr && segment_list.empty()) {
+    // local net
+    dr_ta_list_map[dr_result_tree.get_root()] = {};
+  }
+  for (Segment<TNode<RTNode>*>& segment : segment_list) {
+    TNode<RTNode>* dr_node_node = segment.get_first();
+    TNode<RTNode>* ta_node_node = segment.get_second();
+    if (dr_node_node->value().isTANode()) {
+      std::swap(dr_node_node, ta_node_node);
+    }
+    dr_ta_list_map[dr_node_node].push_back(ta_node_node);
+  }
+  // dr_node_task_map
+  std::map<TNode<RTNode>*, DRTask> dr_node_task_map;
+  for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
+    PlanarCoord& grid_coord = dr_node_node->value().get_first_guide().get_grid_coord();
+    DRBox& dr_box = dr_box_map[grid_coord.get_x()][grid_coord.get_y()];
+
+    std::vector<DRGroup>& dr_group_list = dr_node_task_map[dr_node_node].get_dr_group_list();
+    for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
+      dr_group_list.push_back(makeDRGroup(dr_box, dr_net.get_dr_pin_list()[pin_idx]));
+    }
+    for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
+      dr_group_list.push_back(makeDRGroup(dr_box, ta_node_node));
+    }
+  }
+  return dr_node_task_map;
+}
+
+DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, DRPin& dr_pin)
+{
+  PlanarRect& dr_base_region = dr_box.get_base_region();
+
+  DRGroup dr_group;
+  for (LayerCoord& real_coord : dr_pin.getRealCoordList()) {
+    if (RTUtil::isInside(dr_base_region, real_coord)) {
+      dr_group.get_coord_direction_map()[real_coord].insert({});
+    }
+  }
+  return dr_group;
+}
+
+DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
+{
+  PlanarRect& dr_base_region = dr_box.get_base_region();
+  ScaleAxis& box_scale_axis = dr_box.get_box_scale_axis();
+
+  RTNode& ta_node = ta_node_node->value();
+  irt_int ta_layer_idx = ta_node.get_first_guide().get_layer_idx();
+
+  DRGroup dr_group;
+  for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
+    Segment<PlanarCoord> cutting_segment(routing_segment.get_first()->value(), routing_segment.get_second()->value());
+    if (!RTUtil::isOverlap(dr_base_region, cutting_segment)) {
+      continue;
+    }
+    cutting_segment = RTUtil::getOverlap(dr_base_region, cutting_segment);
+    PlanarCoord& first_coord = cutting_segment.get_first();
+    irt_int first_x = first_coord.get_x();
+    irt_int first_y = first_coord.get_y();
+    PlanarCoord& second_coord = cutting_segment.get_second();
+    Direction direction = RTUtil::getDirection(first_coord, second_coord);
+    if (direction == Direction::kHorizontal) {
+      for (irt_int x : RTUtil::getClosedScaleList(first_x, second_coord.get_x(), box_scale_axis.get_x_grid_list())) {
+        dr_group.get_coord_direction_map()[LayerCoord(x, first_y, ta_layer_idx)].insert(direction);
+      }
+    } else if (direction == Direction::kVertical) {
+      for (irt_int y : RTUtil::getClosedScaleList(first_y, second_coord.get_y(), box_scale_axis.get_y_grid_list())) {
+        dr_group.get_coord_direction_map()[LayerCoord(first_x, y, ta_layer_idx)].insert(direction);
+      }
+    } else if (RTUtil::isProximal(first_coord, second_coord)) {
+      LOG_INST.error(Loc::current(), "The ta segment is proximal!");
+    }
+  }
+  return dr_group;
+}
+
+void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
+{
+  DRSpaceRegion& bounding_box = dr_task.get_bounding_box();
+  bounding_box.set_base_region(dr_box.get_base_region());
+
+  irt_int top_layer_idx = INT_MIN;
+  irt_int bottom_layer_idx = INT_MAX;
+  for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
+    for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+      top_layer_idx = std::max(top_layer_idx, coord.get_layer_idx());
+      bottom_layer_idx = std::min(bottom_layer_idx, coord.get_layer_idx());
+    }
+  }
+  bounding_box.set_top_layer_idx(top_layer_idx);
+  bounding_box.set_bottom_layer_idx(bottom_layer_idx);
 }
 
 void DetailedRouter::buildDRBoxMap(DRModel& dr_model)
