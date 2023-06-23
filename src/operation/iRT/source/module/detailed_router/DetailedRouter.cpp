@@ -149,7 +149,7 @@ void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
     irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
     for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
-      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
@@ -164,7 +164,7 @@ void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
         irt_int shape_layer_idx = routing_shape.get_layer_idx();
         LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
         for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
-          PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
@@ -193,7 +193,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
         Segment<LayerCoord> real_segment(routing_segment.get_first()->value(), routing_segment.get_second()->value());
         LayerRect real_rect = getRealRectList({real_segment}).front();
         for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
-          PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
@@ -455,9 +455,7 @@ void DetailedRouter::buildOBSTaskMap(DRBox& dr_box)
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (LayerRect& blockage : blockage_list) {
       for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
-        LayerRect min_scope_regular_rect;
-        min_scope_regular_rect.set_rect(RTUtil::getRegularRect(min_scope_real_rect, die.get_real_rect()));
-        min_scope_regular_rect.set_layer_idx(min_scope_real_rect.get_layer_idx());
+        LayerRect min_scope_regular_rect = RTUtil::getRegularRect(min_scope_real_rect, die.get_real_rect());
         for (auto& [grid_coord, orientation_set] : getGridOrientationMap(dr_box, min_scope_regular_rect)) {
           DRNode& dr_node = layer_node_map[blockage.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
           for (Orientation orientation : orientation_set) {
@@ -510,7 +508,7 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRealSegmentList(DRBox& dr_bo
     enlarge_size = std::max(enlarge_size, layer_via_master_list[layer_idx].front().get_below_enclosure().getLength() / 2);
   }
   PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, enlarge_size);
-  
+
   std::vector<irt_int> x_list
       = RTUtil::getEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), box_scale_axis.get_x_grid_list());
   std::vector<irt_int> y_list
