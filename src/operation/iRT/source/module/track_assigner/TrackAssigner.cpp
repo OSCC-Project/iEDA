@@ -90,10 +90,7 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
-          if (!RTUtil::existGrid(ta_panel.get_real_rect(), routing_layer.get_track_axis())) {
-            LOG_INST.error(Loc::current(), "The panel not contain any grid!");
-          }
-          ta_panel.set_grid_rect(RTUtil::getGridRect(ta_panel.get_real_rect(), routing_layer.get_track_axis()));
+          ta_panel.set_grid_rect(RTUtil::getOpenGridRect(ta_panel.get_real_rect(), gcell_axis));
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_list.push_back(ta_panel);
@@ -104,10 +101,7 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
         for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           ta_panel.set_real_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
-          if (!RTUtil::existGrid(ta_panel.get_real_rect(), routing_layer.get_track_axis())) {
-            LOG_INST.error(Loc::current(), "The panel not contain any grid!");
-          }
-          ta_panel.set_grid_rect(RTUtil::getGridRect(ta_panel.get_real_rect(), routing_layer.get_track_axis()));
+          ta_panel.set_grid_rect(RTUtil::getOpenGridRect(ta_panel.get_real_rect(), gcell_axis));
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_list.push_back(ta_panel);
@@ -163,7 +157,7 @@ void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
     irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
     for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
-      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
       if (routing_layer_list[blockage_layer_idx].isPreferH()) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
@@ -184,7 +178,7 @@ void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
         irt_int shape_layer_idx = routing_shape.get_layer_idx();
         LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
         for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
-          PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           if (routing_layer_list[shape_layer_idx].isPreferH()) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
@@ -262,7 +256,7 @@ std::map<TNode<RTNode>*, TATask> TrackAssigner::makeTANodeTaskMap(std::vector<st
     if (ta_node_node->value().isDRNode()) {
       std::swap(ta_node_node, dr_node_node);
     }
-    ta_dr_list_map[dr_node_node].push_back(ta_node_node);
+    ta_dr_list_map[ta_node_node].push_back(dr_node_node);
   }
   std::map<TNode<RTNode>*, TATask> ta_node_task_map;
   for (auto& [ta_node_node, dr_node_node_list] : ta_dr_list_map) {
@@ -331,16 +325,14 @@ void TrackAssigner::buildLayerPanelList(TAModel& ta_model)
 void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
 {
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
-  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  ta_node_map.init(ta_panel.getXSize(), ta_panel.getYSize());
 
   PlanarCoord& real_lb = ta_panel.get_real_lb();
   PlanarCoord& real_rt = ta_panel.get_real_rt();
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), panel_scale_axis.get_x_grid_list());
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), panel_scale_axis.get_y_grid_list());
-  if (static_cast<irt_int>(x_list.size()) != ta_node_map.get_x_size() || static_cast<irt_int>(y_list.size()) != ta_node_map.get_y_size()) {
-    LOG_INST.error(Loc::current(), "The size of scale list is different with size of node map!");
-  }
+
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+  ta_node_map.init(x_list.size(), y_list.size());
   for (irt_int x = 0; x < ta_node_map.get_x_size(); x++) {
     for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
       TANode& ta_node = ta_node_map[x][y];
@@ -387,14 +379,9 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
     std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
     for (LayerRect& blockage : blockage_list) {
       for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
-        PlanarRect min_scope_regular_rect = RTUtil::getRegularRect(min_scope_real_rect, die.get_real_rect());
+        LayerRect min_scope_regular_rect = RTUtil::getRegularRect(min_scope_real_rect, die.get_real_rect());
         for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, min_scope_regular_rect)) {
-          irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
-          irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
-          if (!ta_node_map.isInside(local_x, local_y)) {
-            continue;
-          }
-          TANode& ta_node = ta_node_map[local_x][local_y];
+          TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
           for (Orientation orientation : orientation_set) {
             if (task_idx_list.empty()) {
               ta_node.get_obs_task_map()[orientation].insert(-1);
@@ -409,7 +396,7 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
 }
 
 std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
-                                                                                                        PlanarRect& min_scope_regular_rect)
+                                                                                                        LayerRect& min_scope_regular_rect)
 {
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
 
@@ -430,17 +417,19 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
   return grid_orientation_map;
 }
 
-std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_panel, PlanarRect& min_scope_regular_rect)
+std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_panel, LayerRect& min_scope_regular_rect)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<Segment<LayerCoord>> real_segment_list;
 
-  RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
+  irt_int layer_idx = min_scope_regular_rect.get_layer_idx();
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
 
   // ta只需要膨胀half_width
-  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, routing_layer.get_min_width() / 2);
+  irt_int enlarge_size = routing_layer_list[layer_idx].get_min_width() / 2;
+  PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, enlarge_size);
+
   std::vector<irt_int> x_list
       = RTUtil::getEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), panel_scale_axis.get_x_grid_list());
   std::vector<irt_int> y_list
@@ -633,8 +622,7 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
 
 void TrackAssigner::initRoutingInfo(TAPanel& ta_panel, TATask& ta_task)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  ScaleAxis& track_axis = routing_layer_list[ta_panel.get_layer_idx()].get_track_axis();
+  ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
@@ -645,13 +633,11 @@ void TrackAssigner::initRoutingInfo(TAPanel& ta_panel, TATask& ta_task)
   for (TAGroup& ta_group : ta_group_list) {
     std::vector<TANode*> node_comb;
     for (LayerCoord& coord : ta_group.get_coord_list()) {
-      if (!RTUtil::existGrid(coord, track_axis)) {
+      if (!RTUtil::existGrid(coord, panel_scale_axis)) {
         LOG_INST.error(Loc::current(), "The coord can not find grid!");
       }
-      PlanarCoord grid_coord = RTUtil::getGridCoord(coord, track_axis);
-      irt_int local_x = grid_coord.get_x() - ta_panel.get_grid_lb_x();
-      irt_int local_y = grid_coord.get_y() - ta_panel.get_grid_lb_y();
-      node_comb.push_back(&ta_node_map[local_x][local_y]);
+      PlanarCoord grid_coord = RTUtil::getGridCoord(coord, panel_scale_axis);
+      node_comb.push_back(&ta_node_map[grid_coord.get_x()][grid_coord.get_y()]);
     }
     node_comb_list.push_back(node_comb);
   }

@@ -1114,6 +1114,15 @@ class RTUtil
     return regular_rect;
   }
 
+  static LayerRect getRegularRect(LayerRect rect, PlanarRect border)
+  {
+    LayerRect regular_rect;
+    regular_rect.set_lb(std::max(rect.get_lb_x(), border.get_lb_x()), std::max(rect.get_lb_y(), border.get_lb_y()));
+    regular_rect.set_rt(std::min(rect.get_rt_x(), border.get_rt_x()), std::min(rect.get_rt_y(), border.get_rt_y()));
+    regular_rect.set_layer_idx(rect.get_layer_idx());
+    return regular_rect;
+  }
+
   // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, irt_int enlarge_size)
   {
