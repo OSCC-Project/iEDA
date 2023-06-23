@@ -1320,25 +1320,28 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
     for (LayerRect& real_rect : getRealRectList(ta_task.get_routing_segment_list())) {
-      irt_int layer_idx = real_rect.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(real_rect);
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(real_rect, min_spacing, die.get_real_rect());
-      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-      if (routing_layer_list[layer_idx].isPreferH()) {
-        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][y];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
+      irt_int real_rect_layer_idx = real_rect.get_layer_idx();
+      for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+        LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+        PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+        if (routing_layer_list[real_rect_layer_idx].isPreferH()) {
+          for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+            TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][y];
+            if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
+              target_panel.get_net_self_panel_result_map()[ta_task.get_origin_net_idx()].push_back(real_rect);
+            } else {
+              target_panel.get_net_other_panel_result_map()[ta_task.get_origin_net_idx()].push_back(real_rect);
+            }
           }
-          ta_panel.get_net_blockage_map()[ta_task.get_origin_net_idx()].push_back(enlarged_real_rect);
-        }
-      } else {
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          TAPanel& ta_panel = layer_panel_list[layer_idx][x];
-          if (!RTUtil::isClosedOverlap(ta_panel.get_real_rect(), enlarged_real_rect)) {
-            continue;
+        } else {
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][x];
+            if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
+              target_panel.get_net_self_panel_result_map()[ta_task.get_origin_net_idx()].push_back(real_rect);
+            } else {
+              target_panel.get_net_other_panel_result_map()[ta_task.get_origin_net_idx()].push_back(real_rect);
+            }
           }
-          ta_panel.get_net_blockage_map()[ta_task.get_origin_net_idx()].push_back(enlarged_real_rect);
         }
       }
     }

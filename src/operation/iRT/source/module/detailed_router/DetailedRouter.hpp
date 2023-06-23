@@ -81,24 +81,6 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
 #endif
 
-#if 0  // build dr_box
-  void buildDRBox(DRBox& dr_box);
-  void initLayerGraphList(DRBox& dr_box);
-  void buildScaleOrientList(DRBox& dr_box);
-  void buildBasicLayerGraph(DRBox& dr_box);
-  void buildCrossLayerGraph(DRBox& dr_box);
-  void buildCrossLayerCoord(DRBox& dr_box, std::set<LayerCoord, CmpLayerCoordByXASC>& cross_coord_set);
-  void addNeighborToGraph(DRBox& dr_box, LayerCoord& first_coord, LayerCoord& second_coord);
-  void buildCrossPlanarCoord(DRBox& dr_box, std::set<LayerCoord, CmpLayerCoordByXASC>& cross_coord_set);
-  std::vector<LayerCoord> addPlanarCoordToGraph(DRBox& dr_box, LayerCoord& added_coord);
-  void buildPlanarNeighbor(std::vector<LayerCoord>& new_coord_list, DRNodeGraph& node_graph, LayerCoord& added_coord, Direction direction);
-  void buildLayerNodeList(DRBox& dr_box);
-  void buildOBSTaskMap(DRBox& dr_box);
-  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, LayerRect& enlarge_real_rect);
-  std::vector<Segment<DRNode*>> getNodeSegmentList(DRBox& dr_box, LayerRect& enlarge_real_rect);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
-#endif
-
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
@@ -118,7 +100,6 @@ class DetailedRouter
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
-  void updateENVTaskMap(DRBox& dr_box, DRTask& dr_task);
   void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
@@ -133,7 +114,7 @@ class DetailedRouter
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
 #endif
 
-#if 1  // plot dr_box
+#if 0  // plot dr_box
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx = -1);
 #endif
 
