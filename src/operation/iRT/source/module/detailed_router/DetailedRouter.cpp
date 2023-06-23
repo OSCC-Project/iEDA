@@ -240,42 +240,13 @@ void DetailedRouter::buildBoxScaleAxis(DRModel& dr_model)
       ScaleAxis& box_scale_axis = dr_box_map[x][y].get_box_scale_axis();
       std::sort(x_scale_list.begin(), x_scale_list.end());
       x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
-      box_scale_axis.set_x_grid_list(makeScaleGridList(x_scale_list));
+      box_scale_axis.set_x_grid_list(RTUtil::makeScaleGridList(x_scale_list));
 
       std::sort(y_scale_list.begin(), y_scale_list.end());
       y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
-      box_scale_axis.set_y_grid_list(makeScaleGridList(y_scale_list));
+      box_scale_axis.set_y_grid_list(RTUtil::makeScaleGridList(y_scale_list));
     }
   }
-}
-
-std::vector<ScaleGrid> DetailedRouter::makeScaleGridList(std::vector<irt_int>& scale_list)
-{
-  std::vector<ScaleGrid> scale_grid_list;
-
-  for (size_t i = 1; i < scale_list.size(); i++) {
-    irt_int pre_scale = scale_list[i - 1];
-    irt_int curr_scale = scale_list[i];
-
-    ScaleGrid scale_grid;
-    scale_grid.set_start_line(pre_scale);
-    scale_grid.set_step_length(curr_scale - pre_scale);
-    scale_grid.set_step_num(1);
-    scale_grid.set_end_line(curr_scale);
-    scale_grid_list.push_back(scale_grid);
-  }
-  // merge
-  RTUtil::merge(scale_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-    if (sentry.get_step_length() != soldier.get_step_length()) {
-      return false;
-    }
-    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-    sentry.set_step_num(sentry.get_step_num() + 1);
-    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-    return true;
-  });
-
-  return scale_grid_list;
 }
 
 void DetailedRouter::buildDRTaskList(DRModel& dr_model)

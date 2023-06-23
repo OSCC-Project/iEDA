@@ -60,7 +60,6 @@ class DetailedRouter
   void updateNetBlockageMap(DRModel& dr_model);
   void updateNetPanelResultMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);
-  std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list);
   void buildDRTaskList(DRModel& dr_model);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(GridMap<DRBox>& dr_box_map, DRNet& dr_net);
   DRGroup makeDRGroup(DRBox& dr_box, DRPin& dr_pin);

@@ -33,6 +33,7 @@ class TAPanel : public EXTLayerRect
   std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_other_panel_result_map() { return _net_other_panel_result_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_self_panel_result_map() { return _net_self_panel_result_map; }
+  ScaleAxis& get_panel_scale_axis() { return _panel_scale_axis; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   // setter
@@ -100,6 +101,7 @@ class TAPanel : public EXTLayerRect
   std::map<irt_int, std::vector<LayerRect>> _net_other_panel_result_map;
   // 用于存储自己panel的结果
   std::map<irt_int, std::vector<LayerRect>> _net_self_panel_result_map;
+  ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
 #if 1  // astar

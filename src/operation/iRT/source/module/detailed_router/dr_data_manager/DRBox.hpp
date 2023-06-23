@@ -36,11 +36,10 @@ class DRBox : public DRSpaceRegion
   std::map<irt_int, std::vector<LayerRect>>& get_net_other_box_result_map() { return _net_other_box_result_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_self_box_result_map() { return _net_self_box_result_map; }
   ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
-  std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
+  std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   // setter
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
-  void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   void set_net_panel_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_panel_result_map)
   {
@@ -55,6 +54,7 @@ class DRBox : public DRSpaceRegion
     _net_self_box_result_map = net_self_box_result_map;
   }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
+  void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
   bool skipRouting() { return _dr_task_list.empty(); }
 
@@ -105,8 +105,8 @@ class DRBox : public DRSpaceRegion
   // 用于存储自己box的结果
   std::map<irt_int, std::vector<LayerRect>> _net_self_box_result_map;
   ScaleAxis _box_scale_axis;
-  std::vector<GridMap<DRNode>> _layer_node_map;
   std::vector<DRTask> _dr_task_list;
+  std::vector<GridMap<DRNode>> _layer_node_map;
 #if 1  // astar
   // config
   double _wire_unit = 1;

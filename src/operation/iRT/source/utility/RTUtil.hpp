@@ -576,11 +576,11 @@ class RTUtil
   {
     gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += RTUtil::convertToGTLRect(master);
+      master_poly += convertToGTLRect(master);
     }
     gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
-      rect_poly += RTUtil::convertToGTLRect(rect);
+      rect_poly += convertToGTLRect(rect);
     }
 
     master_poly *= rect_poly;
@@ -590,7 +590,7 @@ class RTUtil
 
     std::vector<PlanarRect> overlap_rect_list;
     for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
-      overlap_rect_list.emplace_back(RTUtil::convertToPlanarRect(overlap_rect));
+      overlap_rect_list.emplace_back(convertToPlanarRect(overlap_rect));
     }
     return overlap_rect_list;
   }
@@ -623,7 +623,7 @@ class RTUtil
   static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
   {
     double ratio = 0;
-    if (RTUtil::isOpenOverlap(master, rect)) {
+    if (isOpenOverlap(master, rect)) {
       ratio = getOverlap(master, rect).getArea() / master.getArea();
     }
     return ratio;
@@ -764,11 +764,11 @@ class RTUtil
   {
     gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += RTUtil::convertToGTLRect(master);
+      master_poly += convertToGTLRect(master);
     }
     gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
-      rect_poly += RTUtil::convertToGTLRect(rect);
+      rect_poly += convertToGTLRect(rect);
     }
 
     master_poly -= rect_poly;
@@ -778,7 +778,7 @@ class RTUtil
 
     std::vector<PlanarRect> cutting_rect_list;
     for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
-      cutting_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+      cutting_rect_list.emplace_back(convertToPlanarRect(slicing_rect));
     }
     return cutting_rect_list;
   }
@@ -846,7 +846,7 @@ class RTUtil
   {
     gtl::polygon_90_set_data<irt_int> rect_poly;
     for (const PlanarRect& rect : rect_list) {
-      rect_poly += RTUtil::convertToGTLRect(rect);
+      rect_poly += convertToGTLRect(rect);
     }
 
     std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
@@ -860,7 +860,7 @@ class RTUtil
 
     std::vector<PlanarRect> merge_rect_list;
     for (gtl::rectangle_data<irt_int>& slicing_rect : gtl_rect_list) {
-      merge_rect_list.emplace_back(RTUtil::convertToPlanarRect(slicing_rect));
+      merge_rect_list.emplace_back(convertToPlanarRect(slicing_rect));
     }
     return merge_rect_list;
   }
@@ -1051,8 +1051,8 @@ class RTUtil
                                     irt_int rt_y_add_offset)
   {
     PlanarRect rect(center_coord, center_coord);
-    RTUtil::minusOffset(rect.get_lb(), lb_x_minus_offset, lb_y_minus_offset);
-    RTUtil::addOffset(rect.get_rt(), rt_x_add_offset, rt_y_add_offset);
+    minusOffset(rect.get_lb(), lb_x_minus_offset, lb_y_minus_offset);
+    addOffset(rect.get_rt(), rt_x_add_offset, rt_y_add_offset);
     return rect;
   }
 
@@ -1124,8 +1124,8 @@ class RTUtil
   static PlanarRect getEnlargedRect(PlanarRect rect, irt_int lb_x_minus_offset, irt_int lb_y_minus_offset, irt_int rt_x_add_offset,
                                     irt_int rt_y_add_offset)
   {
-    RTUtil::minusOffset(rect.get_lb(), lb_x_minus_offset, lb_y_minus_offset);
-    RTUtil::addOffset(rect.get_rt(), rt_x_add_offset, rt_y_add_offset);
+    minusOffset(rect.get_lb(), lb_x_minus_offset, lb_y_minus_offset);
+    addOffset(rect.get_rt(), rt_x_add_offset, rt_y_add_offset);
     return rect;
   }
 
@@ -1139,8 +1139,8 @@ class RTUtil
   static PlanarRect getReducedRect(PlanarRect rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset, irt_int rt_x_minus_offset,
                                    irt_int rt_y_minus_offset)
   {
-    RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
-    RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+    addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
+    minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
     if (rect.get_lb_x() > rect.get_rt_x() || rect.get_lb_y() > rect.get_rt_y()) {
       return PlanarRect(-1, -1, -1, -1);
     }
@@ -1155,8 +1155,8 @@ class RTUtil
   static bool hasReducedRect(PlanarRect rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset, irt_int rt_x_minus_offset,
                              irt_int rt_y_minus_offset)
   {
-    RTUtil::addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
-    RTUtil::minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
+    addOffset(rect.get_lb(), lb_x_add_offset, lb_y_add_offset);
+    minusOffset(rect.get_rt(), rt_x_minus_offset, rt_y_minus_offset);
 
     return (rect.get_lb_x() <= rect.get_rt_x() && rect.get_lb_y() <= rect.get_rt_y());
   }
@@ -1167,8 +1167,8 @@ class RTUtil
     irt_int offset_x = offset_coord.get_x();
     irt_int offset_y = offset_coord.get_y();
 
-    RTUtil::addOffset(rect.get_lb(), offset_x, offset_y);
-    RTUtil::addOffset(rect.get_rt(), offset_x, offset_y);
+    addOffset(rect.get_lb(), offset_x, offset_y);
+    addOffset(rect.get_rt(), offset_x, offset_y);
     return rect;
   }
 
@@ -1187,8 +1187,8 @@ class RTUtil
     irt_int offset_x = origin_coord.get_x();
     irt_int offset_y = origin_coord.get_y();
 
-    RTUtil::minusOffset(rect.get_lb(), offset_x, offset_y);
-    RTUtil::minusOffset(rect.get_rt(), offset_x, offset_y);
+    minusOffset(rect.get_lb(), offset_x, offset_y);
+    minusOffset(rect.get_rt(), offset_x, offset_y);
     return rect;
   }
 
@@ -1232,13 +1232,13 @@ class RTUtil
       return {};
     }
     std::vector<std::vector<TNode<T>*>> level_list;
-    std::queue<TNode<T>*> node_queue = RTUtil::initQueue(root);
+    std::queue<TNode<T>*> node_queue = initQueue(root);
     std::vector<TNode<T>*> level;
     irt_int level_node_num = 1;
     while (!node_queue.empty()) {
-      TNode<T>* node = RTUtil::getFrontAndPop(node_queue);
+      TNode<T>* node = getFrontAndPop(node_queue);
       level.push_back(node);
-      RTUtil::addListToQueue(node_queue, node->get_child_list());
+      addListToQueue(node_queue, node->get_child_list());
       if (--level_node_num == 0) {
         level_list.push_back(std::move(level));
         level.clear();
@@ -1269,12 +1269,12 @@ class RTUtil
       return max_level < 0;
     }
 
-    std::queue<TNode<T>*> node_queue = RTUtil::initQueue(root);
+    std::queue<TNode<T>*> node_queue = initQueue(root);
     irt_int level_num = 0;
     irt_int level_node_num = 1;
     while (!node_queue.empty()) {
-      TNode<T>* node = RTUtil::getFrontAndPop(node_queue);
-      RTUtil::addListToQueue(node_queue, node->get_child_list());
+      TNode<T>* node = getFrontAndPop(node_queue);
+      addListToQueue(node_queue, node->get_child_list());
       if (--level_node_num == 0) {
         ++level_num;
         level_node_num = node_queue.size();
@@ -1302,17 +1302,17 @@ class RTUtil
     }
 
     TNode<U>* new_root = new TNode<U>(convert(old_root->value(), args...));
-    std::queue<TNode<T>*> old_node_queue = RTUtil::initQueue(old_root);
-    std::queue<TNode<U>*> new_node_queue = RTUtil::initQueue(new_root);
+    std::queue<TNode<T>*> old_node_queue = initQueue(old_root);
+    std::queue<TNode<U>*> new_node_queue = initQueue(new_root);
     while (!old_node_queue.empty()) {
-      TNode<T>* old_node = RTUtil::getFrontAndPop(old_node_queue);
-      TNode<U>* new_node = RTUtil::getFrontAndPop(new_node_queue);
+      TNode<T>* old_node = getFrontAndPop(old_node_queue);
+      TNode<U>* new_node = getFrontAndPop(new_node_queue);
       std::vector<TNode<T>*>& child_list = old_node->get_child_list();
       for (size_t i = 0; i < child_list.size(); i++) {
         new_node->addChild(new TNode<U>(convert(child_list[i]->value(), args...)));
       }
-      RTUtil::addListToQueue(old_node_queue, old_node->get_child_list());
-      RTUtil::addListToQueue(new_node_queue, new_node->get_child_list());
+      addListToQueue(old_node_queue, old_node->get_child_list());
+      addListToQueue(new_node_queue, new_node->get_child_list());
     }
 
     return new_root;
@@ -1362,9 +1362,9 @@ class RTUtil
     irt_int remain_num = static_cast<irt_int>(visited_value_pair_list.size());
 
     TNode<T>* root = new TNode(root_value);
-    std::queue<TNode<T>*> node_queue = RTUtil::initQueue(root);
+    std::queue<TNode<T>*> node_queue = initQueue(root);
     while (!node_queue.empty()) {
-      TNode<T>* node = RTUtil::getFrontAndPop(node_queue);
+      TNode<T>* node = getFrontAndPop(node_queue);
       T& value = node->value();
 
       std::vector<TNode<T>*> next_node_list;
@@ -1383,7 +1383,7 @@ class RTUtil
           remain_num--;
         }
       }
-      RTUtil::addListToQueue(node_queue, next_node_list);
+      addListToQueue(node_queue, next_node_list);
     }
     if (remain_num > 0) {
       LOG_INST.error(Loc::current(), "There are segments remaining, the tree has not been fully constructed!");
@@ -1465,11 +1465,10 @@ class RTUtil
 
   static PlanarCoord getGridCoord(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
   {
-    return PlanarCoord(
-        (real_coord.get_x() == bounding_box.get_real_rt_x() ? bounding_box.get_grid_rt_x()
-                                                            : RTUtil::getGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
-        (real_coord.get_y() == bounding_box.get_real_rt_y() ? bounding_box.get_grid_rt_y()
-                                                            : RTUtil::getGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
+    return PlanarCoord((real_coord.get_x() == bounding_box.get_real_rt_x() ? bounding_box.get_grid_rt_x()
+                                                                           : getGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
+                       (real_coord.get_y() == bounding_box.get_real_rt_y() ? bounding_box.get_grid_rt_y()
+                                                                           : getGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
   }
 
   // [lb , rt)
@@ -1678,7 +1677,6 @@ class RTUtil
   // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
   static PlanarRect getTrackLineRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
-    // zzs
     if (!isInside(border, rect)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
@@ -1701,8 +1699,7 @@ class RTUtil
         break;
       }
     }
-    // zzs
-    if (RTUtil::getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
+    if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
       std::vector<irt_int> scale_list;
       scale_list.push_back(border.get_lb_x());
       std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
@@ -1919,7 +1916,7 @@ class RTUtil
   static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& defalut_value)
   {
     T value;
-    if (RTUtil::exist(config_map, config_name)) {
+    if (exist(config_map, config_name)) {
       value = std::any_cast<T>(config_map[config_name]);
     } else {
       LOG_INST.warning(Loc::current(), "The config '", config_name, "' uses the default value!");
@@ -1972,7 +1969,7 @@ class RTUtil
   static bool passCheckingOblique(std::vector<Segment<LayerCoord>>& segment_list)
   {
     for (Segment<LayerCoord>& segment : segment_list) {
-      Orientation orientation = RTUtil::getOrientation(segment.get_first(), segment.get_second());
+      Orientation orientation = getOrientation(segment.get_first(), segment.get_second());
       if (orientation == Orientation::kOblique) {
         return false;
       }
@@ -2002,11 +1999,11 @@ class RTUtil
     std::vector<Segment<LayerCoord>> p_segment_list;
 
     for (Segment<LayerCoord>& segment : segment_list) {
-      if (RTUtil::isHorizontal(segment.get_first(), segment.get_second())) {
+      if (isHorizontal(segment.get_first(), segment.get_second())) {
         h_segment_list.push_back(segment);
-      } else if (RTUtil::isVertical(segment.get_first(), segment.get_second())) {
+      } else if (isVertical(segment.get_first(), segment.get_second())) {
         v_segment_list.push_back(segment);
-      } else if (RTUtil::isProximal(segment.get_first(), segment.get_second())) {
+      } else if (isProximal(segment.get_first(), segment.get_second())) {
         p_segment_list.push_back(segment);
       }
     }
@@ -2016,7 +2013,7 @@ class RTUtil
       PlanarCoord& planar_coord = p_segment.get_first().get_planar_coord();
       irt_int first_layer_idx = p_segment.get_first().get_layer_idx();
       irt_int second_layer_idx = p_segment.get_second().get_layer_idx();
-      RTUtil::sortASC(first_layer_idx, second_layer_idx);
+      sortASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
         p_segment_list_temp.emplace_back(LayerCoord(planar_coord, layer_idx), LayerCoord(planar_coord, layer_idx + 1));
       }
@@ -2071,7 +2068,7 @@ class RTUtil
       irt_int y = h_segment.get_first().get_y();
       irt_int layer_idx = h_segment.get_first().get_layer_idx();
 
-      RTUtil::sortASC(first_x, second_x);
+      sortASC(first_x, second_x);
       std::vector<irt_int> x_list;
       for (irt_int x_cut : x_cut_list_map[layer_idx]) {
         if (first_x <= x_cut && x_cut <= second_x) {
@@ -2094,7 +2091,7 @@ class RTUtil
       irt_int x = v_segment.get_first().get_x();
       irt_int layer_idx = v_segment.get_first().get_layer_idx();
 
-      RTUtil::sortASC(first_y, second_y);
+      sortASC(first_y, second_y);
       std::vector<irt_int> y_list;
       for (irt_int y_cut : y_cut_list_map[layer_idx]) {
         if (first_y <= y_cut && y_cut <= second_y) {
@@ -2123,7 +2120,7 @@ class RTUtil
 
     for (Segment<LayerCoord>& segment : segment_list) {
       for (LayerCoord& candidate_root_coord : candidate_root_coord_list) {
-        if (!RTUtil::isInside(segment, candidate_root_coord)) {
+        if (!isInside(segment, candidate_root_coord)) {
           continue;
         }
         return candidate_root_coord;
@@ -2152,11 +2149,11 @@ class RTUtil
   {
     std::vector<TNode<LayerCoord>*> erase_node_list;
     std::map<TNode<LayerCoord>*, TNode<LayerCoord>*> curr_to_parent_node_map;
-    std::queue<TNode<LayerCoord>*> node_queue = RTUtil::initQueue(coord_tree.get_root());
+    std::queue<TNode<LayerCoord>*> node_queue = initQueue(coord_tree.get_root());
     while (!node_queue.empty()) {
-      TNode<LayerCoord>* node = RTUtil::getFrontAndPop(node_queue);
+      TNode<LayerCoord>* node = getFrontAndPop(node_queue);
       std::vector<TNode<LayerCoord>*> child_list = node->get_child_list();
-      RTUtil::addListToQueue(node_queue, child_list);
+      addListToQueue(node_queue, child_list);
 
       for (TNode<LayerCoord>* child_node : child_list) {
         curr_to_parent_node_map[child_node] = node;
@@ -2186,10 +2183,10 @@ class RTUtil
   {
     std::vector<TNode<LayerCoord>*> merge_node_list;
     std::map<TNode<LayerCoord>*, TNode<LayerCoord>*> middle_to_start_node_map;
-    std::queue<TNode<LayerCoord>*> node_queue = RTUtil::initQueue(coord_tree.get_root());
+    std::queue<TNode<LayerCoord>*> node_queue = initQueue(coord_tree.get_root());
     while (!node_queue.empty()) {
-      TNode<LayerCoord>* node = RTUtil::getFrontAndPop(node_queue);
-      RTUtil::addListToQueue(node_queue, node->get_child_list());
+      TNode<LayerCoord>* node = getFrontAndPop(node_queue);
+      addListToQueue(node_queue, node->get_child_list());
       irt_int node_layer_idx = node->value().get_layer_idx();
       PlanarCoord& node_coord = node->value().get_planar_coord();
 
@@ -2221,7 +2218,7 @@ class RTUtil
   // 检查树中是否有斜线
   static bool passCheckingOblique(MTree<LayerCoord>& coord_tree)
   {
-    for (TNode<LayerCoord>* coord_node : RTUtil::getNodeList(coord_tree)) {
+    for (TNode<LayerCoord>* coord_node : getNodeList(coord_tree)) {
       LayerCoord& coord = coord_node->value();
 
       PlanarCoord& first_planar_coord = coord.get_planar_coord();
@@ -2229,7 +2226,7 @@ class RTUtil
       PlanarCoord& second_planar_coord = coord.get_planar_coord();
       irt_int second_layer_idx = coord.get_layer_idx();
 
-      if (first_layer_idx == second_layer_idx && RTUtil::isRightAngled(first_planar_coord, second_planar_coord)) {
+      if (first_layer_idx == second_layer_idx && isRightAngled(first_planar_coord, second_planar_coord)) {
         continue;
       } else if (first_layer_idx != second_layer_idx && first_planar_coord == second_planar_coord) {
         continue;
@@ -2277,7 +2274,7 @@ class RTUtil
   static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
                                                                         irt_int top_layer_idx)
   {
-    std::vector<irt_int> via_below_layer_idx_list = RTUtil::getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
+    std::vector<irt_int> via_below_layer_idx_list = getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
 
     std::vector<irt_int> down_via_below_layer_idx_list;
@@ -2348,6 +2345,34 @@ class RTUtil
       }
     }
     return layer_idx_list;
+  }
+
+  static std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list)
+  {
+    std::vector<ScaleGrid> scale_grid_list;
+
+    for (size_t i = 1; i < scale_list.size(); i++) {
+      irt_int pre_scale = scale_list[i - 1];
+      irt_int curr_scale = scale_list[i];
+
+      ScaleGrid scale_grid;
+      scale_grid.set_start_line(pre_scale);
+      scale_grid.set_step_length(curr_scale - pre_scale);
+      scale_grid.set_step_num(1);
+      scale_grid.set_end_line(curr_scale);
+      scale_grid_list.push_back(scale_grid);
+    }
+    // merge
+    merge(scale_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
+      if (sentry.get_step_length() != soldier.get_step_length()) {
+        return false;
+      }
+      sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
+      sentry.set_step_num(sentry.get_step_num() + 1);
+      sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
+      return true;
+    });
+    return scale_grid_list;
   }
 
 #endif
@@ -2478,7 +2503,7 @@ class RTUtil
   static Value getValueByAny(std::map<Key, std::any>& map, const Key& key, const Value& defalut_value)
   {
     Value value;
-    if (RTUtil::exist(map, key)) {
+    if (exist(map, key)) {
       value = std::any_cast<Value>(map[key]);
     } else {
       value = defalut_value;
@@ -2490,7 +2515,7 @@ class RTUtil
   static Value getValue(std::map<Key, Value>& map, const Key& key, const Value& defalut_value)
   {
     Value value;
-    if (RTUtil::exist(map, key)) {
+    if (exist(map, key)) {
       value = map[key];
     } else {
       value = defalut_value;
@@ -2602,7 +2627,7 @@ class RTUtil
   static bool isDivisible(double dividend, double divisor)
   {
     double merchant = dividend / divisor;
-    return RTUtil::equalDoubleByError(merchant, static_cast<irt_int>(merchant), DBL_ERROR);
+    return equalDoubleByError(merchant, static_cast<irt_int>(merchant), DBL_ERROR);
   }
 
   template <typename T, typename Compare>
@@ -2910,7 +2935,7 @@ class RTUtil
     return std::regex_replace(a, re, "");
   }
 
-  static bool isInteger(double a) { return RTUtil::equalDoubleByError(a, static_cast<irt_int>(a), DBL_ERROR); }
+  static bool isInteger(double a) { return equalDoubleByError(a, static_cast<irt_int>(a), DBL_ERROR); }
 
   static void checkFile(std::string file_path)
   {
