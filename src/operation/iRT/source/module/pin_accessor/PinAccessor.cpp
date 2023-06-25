@@ -152,32 +152,35 @@ void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<PAGCell>>& layer_gcell_map = pa_model.get_layer_gcell_map();
 
   for (Blockage& routing_blockage : routing_blockage_list) {
-    irt_int layer_idx = routing_blockage.get_layer_idx();
-    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
-    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_blockage.get_real_rect(), min_spacing, die.get_real_rect());
-    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-        layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[-1].push_back(enlarged_real_rect);
+    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
+    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          layer_gcell_map[blockage_layer_idx][x][y].get_net_blockage_map()[-1].push_back(blockage_real_rect);
+        }
       }
     }
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-        irt_int layer_idx = routing_shape.get_layer_idx();
-        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_shape.get_real_rect());
-        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_shape.get_real_rect(), min_spacing, die.get_real_rect());
-        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-            layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[pa_net.get_net_idx()].push_back(enlarged_real_rect);
+        irt_int shape_layer_idx = routing_shape.get_layer_idx();
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
+        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              layer_gcell_map[shape_layer_idx][x][y].get_net_blockage_map()[pa_net.get_net_idx()].push_back(shape_real_rect);
+            }
           }
         }
       }
@@ -551,7 +554,6 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -565,7 +567,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
         real_coord_list.push_back(real_coord);
       }
     }
-    std::vector<LayerRect> net_enclosure_list;
+    std::vector<LayerRect> real_rect_list;
     for (LayerCoord& real_coord : real_coord_list) {
       irt_int layer_idx = real_coord.get_layer_idx();
       for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
@@ -574,18 +576,18 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
           LayerRect via_shape;
           via_shape.set_rect(RTUtil::getOffsetRect(enclosure, real_coord));
           via_shape.set_layer_idx(enclosure.get_layer_idx());
-          net_enclosure_list.push_back(via_shape);
+          real_rect_list.push_back(via_shape);
         }
       }
     }
-    for (const LayerRect& net_enclosure : net_enclosure_list) {
-      irt_int layer_idx = net_enclosure.get_layer_idx();
-      irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(net_enclosure);
-      PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(net_enclosure, min_spacing, die.get_real_rect());
-      PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-      for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-          layer_gcell_map[layer_idx][x][y].get_net_enclosure_map()[pa_net.get_net_idx()].push_back(enlarged_real_rect);
+    for (const LayerRect& real_rect : real_rect_list) {
+      for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+        LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+        PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+        for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+          for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+            layer_gcell_map[real_rect.get_layer_idx()][x][y].get_net_blockage_map()[pa_net.get_net_idx()].push_back(real_rect);
+          }
         }
       }
     }
@@ -596,7 +598,6 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -614,21 +615,22 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
             bool has_confilct = false;
             ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
             for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-              LayerRect via_shape(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
-              irt_int min_spacing = routing_layer_list[via_shape.get_layer_idx()].getMinSpacing(via_shape);
-              PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(via_shape, min_spacing, die.get_real_rect());
-              PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-              for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-                for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-                  PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[via_shape.get_layer_idx()][x][y];
-                  for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
-                    if (pa_net.get_net_idx() == net_idx) {
-                      continue;
-                    }
-                    for (const LayerRect& region : region_list) {
-                      if (RTUtil::isOpenOverlap(via_shape, region)) {
-                        has_confilct = true;
-                        goto here;
+              LayerRect real_rect(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
+              for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+                LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+                PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+                for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+                  for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+                    PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[real_rect.get_layer_idx()][x][y];
+                    for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
+                      if (pa_net.get_net_idx() == net_idx) {
+                        continue;
+                      }
+                      for (const LayerRect& region : region_list) {
+                        if (RTUtil::isOpenOverlap(real_rect, region)) {
+                          has_confilct = true;
+                          goto here;
+                        }
                       }
                     }
                   }

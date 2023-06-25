@@ -17,6 +17,7 @@
 #include "GlobalRouter.hpp"
 
 #include "GDSPlotter.hpp"
+#include "RTAPI.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -186,32 +187,35 @@ void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int layer_idx = routing_blockage.get_layer_idx();
-    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
-    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_blockage.get_real_rect(), min_spacing, die.get_real_rect());
-    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-        layer_node_map[layer_idx][x][y].get_net_blockage_map()[-1].push_back(enlarged_real_rect);
+    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
+    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          layer_node_map[blockage_layer_idx][x][y].get_net_blockage_map()[-1].push_back(blockage_real_rect);
+        }
       }
     }
   }
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
-        irt_int layer_idx = routing_shape.get_layer_idx();
-        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_shape.get_real_rect());
-        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_shape.get_real_rect(), min_spacing, die.get_real_rect());
-        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-            layer_node_map[layer_idx][x][y].get_net_blockage_map()[gr_net.get_net_idx()].push_back(enlarged_real_rect);
+        irt_int shape_layer_idx = routing_shape.get_layer_idx();
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
+        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              layer_node_map[shape_layer_idx][x][y].get_net_blockage_map()[gr_net.get_net_idx()].push_back(shape_real_rect);
+            }
           }
         }
       }
@@ -250,6 +254,7 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
   gr_node.set_single_wire_area(single_wire_area);
 
   // 由于通孔是一个一个放的，所以不能算最小面积，在track上放置时，需要以track方向双向延长half spacing
+  // gr的通孔并非via，而是至少最小面积的矩形
   PlanarRect via_rect(0, 0, routing_layer.get_min_area() / min_width, min_width);
   via_rect.set_rt_x(via_rect.get_rt_x() + routing_layer.getMinSpacing(via_rect));
   gr_node.set_single_via_area(static_cast<irt_int>(via_rect.getArea()));
@@ -1112,12 +1117,12 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   base_region_struct.push(gp_boundary);
   gp_gds.addStruct(base_region_struct);
 
-  // node_graph
-  GPStruct node_graph_struct("node_graph");
-  for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
-    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
-      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
-        GRNode& gr_node = node_map[grid_x][grid_y];
+  // gr_node_map
+  GPStruct gr_node_map_struct("gr_node_map");
+  for (GridMap<GRNode>& gr_node_map : gr_model.get_layer_node_map()) {
+    for (irt_int grid_x = 0; grid_x < gr_node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < gr_node_map.get_y_size(); grid_y++) {
+        GRNode& gr_node = gr_node_map[grid_x][grid_y];
         PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
         irt_int y_reduced_span = real_rect.getYSpan() / 25;
         irt_int y = real_rect.get_rt_y();
@@ -1139,7 +1144,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
         gp_boundary.set_rect(real_rect);
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-        node_graph_struct.push(gp_boundary);
+        gr_node_map_struct.push(gp_boundary);
 
         y -= y_reduced_span;
         GPText gp_text_node_coord;
@@ -1148,7 +1153,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_node_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", gr_node.get_layer_idx(), ")"));
         gp_text_node_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_node_coord.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_node_coord);
+        gr_node_map_struct.push(gp_text_node_coord);
 
         y -= y_reduced_span;
         GPText gp_text_net_blockage_map;
@@ -1157,7 +1162,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_net_blockage_map.set_message("net_blockage_map: ");
         gp_text_net_blockage_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_blockage_map.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_net_blockage_map);
+        gr_node_map_struct.push(gp_text_net_blockage_map);
 
         if (!gr_node.get_net_blockage_map().empty()) {
           y -= y_reduced_span;
@@ -1171,7 +1176,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           gp_text_net_blockage_map_info.set_message(net_blockage_map_message);
           gp_text_net_blockage_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_blockage_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_net_blockage_map_info);
+          gr_node_map_struct.push(gp_text_net_blockage_map_info);
         }
 
         y -= y_reduced_span;
@@ -1181,7 +1186,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_single_wire_area.set_message(RTUtil::getString("single_wire_area: ", gr_node.get_single_wire_area()));
         gp_text_single_wire_area.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_single_wire_area.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_single_wire_area);
+        gr_node_map_struct.push(gp_text_single_wire_area);
 
         y -= y_reduced_span;
         GPText gp_text_single_via_area;
@@ -1190,7 +1195,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_single_via_area.set_message(RTUtil::getString("single_via_area: ", gr_node.get_single_via_area()));
         gp_text_single_via_area.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_single_via_area.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_single_via_area);
+        gr_node_map_struct.push(gp_text_single_via_area);
 
         y -= y_reduced_span;
         GPText gp_text_wire_area_supply;
@@ -1200,7 +1205,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
                                                                gr_node.get_wire_area_supply() / gr_node.get_single_wire_area(), ")"));
         gp_text_wire_area_supply.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_wire_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_wire_area_supply);
+        gr_node_map_struct.push(gp_text_wire_area_supply);
 
         y -= y_reduced_span;
         GPText gp_text_via_area_supply;
@@ -1210,7 +1215,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
                                                               gr_node.get_via_area_supply() / gr_node.get_single_via_area(), ")"));
         gp_text_via_area_supply.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_via_area_supply.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_via_area_supply);
+        gr_node_map_struct.push(gp_text_via_area_supply);
 
         y -= y_reduced_span;
         GPText gp_text_wire_area_demand;
@@ -1220,7 +1225,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
                                                                gr_node.get_wire_area_demand() / gr_node.get_single_wire_area(), ")"));
         gp_text_wire_area_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_wire_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_wire_area_demand);
+        gr_node_map_struct.push(gp_text_wire_area_demand);
 
         y -= y_reduced_span;
         GPText gp_text_via_area_demand;
@@ -1230,7 +1235,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
                                                               gr_node.get_via_area_demand() / gr_node.get_single_via_area(), ")"));
         gp_text_via_area_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_via_area_demand.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_via_area_demand);
+        gr_node_map_struct.push(gp_text_via_area_demand);
 
         y -= y_reduced_span;
         GPText gp_text_net_queue;
@@ -1239,7 +1244,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_net_queue.set_message("net_queue: ");
         gp_text_net_queue.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_queue.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_net_queue);
+        gr_node_map_struct.push(gp_text_net_queue);
 
         if (!gr_node.get_net_queue().empty()) {
           y -= y_reduced_span;
@@ -1253,7 +1258,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           gp_text_net_queue_info.set_message(net_queue_info_message);
           gp_text_net_queue_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_net_queue_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_net_queue_info);
+          gr_node_map_struct.push(gp_text_net_queue_info);
         }
 
         y -= y_reduced_span;
@@ -1263,7 +1268,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gp_text_direction_set.set_message("direction_set: ");
         gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
-        node_graph_struct.push(gp_text_direction_set);
+        gr_node_map_struct.push(gp_text_direction_set);
 
         if (!gr_node.get_direction_set().empty()) {
           y -= y_reduced_span;
@@ -1277,19 +1282,19 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           gp_text_direction_set_info.set_message(direction_set_info_message);
           gp_text_direction_set_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          node_graph_struct.push(gp_text_direction_set_info);
+          gr_node_map_struct.push(gp_text_direction_set_info);
         }
       }
     }
   }
-  gp_gds.addStruct(node_graph_struct);
+  gp_gds.addStruct(gr_node_map_struct);
 
-  // neighbor
+  // neighbor_map
   GPStruct neighbor_map_struct("neighbor_map");
-  for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
-    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
-      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
-        GRNode& gr_node = node_map[grid_x][grid_y];
+  for (GridMap<GRNode>& gr_node_map : gr_model.get_layer_node_map()) {
+    for (irt_int grid_x = 0; grid_x < gr_node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < gr_node_map.get_y_size(); grid_y++) {
+        GRNode& gr_node = gr_node_map[grid_x][grid_y];
         PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
         irt_int lb_x = real_rect.get_lb_x();
         irt_int lb_y = real_rect.get_lb_y();
@@ -1336,7 +1341,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   }
   gp_gds.addStruct(neighbor_map_struct);
 
-  // net blockage
+  // net_blockage_map
   std::map<irt_int, std::map<irt_int, std::set<PlanarRect, CmpPlanarRectByXASC>>> layer_net_blockage_map;
   for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {

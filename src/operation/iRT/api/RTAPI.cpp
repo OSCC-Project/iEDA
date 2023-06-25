@@ -85,13 +85,34 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
 {
 #if 1
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-  int num = 2;
-  while (num--) {
-    PA_INST.access(net_list);
-    GR_INST.route(net_list);
-    TA_INST.assign(net_list);
-    DR_INST.route(net_list);
-    VR_INST.repair(net_list);
+  irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
+
+  std::vector<Stage> stage_list
+      = {Stage::kPinAccessor, Stage::kGlobalRouter, Stage::kTrackAssigner, Stage::kDetailedRouter, Stage::kViolationRepairer};
+
+  for (Stage stage : stage_list) {
+    switch (stage) {
+      case Stage::kPinAccessor:
+        PA_INST.access(net_list);
+        break;
+      case Stage::kGlobalRouter:
+        GR_INST.route(net_list);
+        break;
+      case Stage::kTrackAssigner:
+        TA_INST.assign(net_list);
+        break;
+      case Stage::kDetailedRouter:
+        DR_INST.route(net_list);
+        break;
+      case Stage::kViolationRepairer:
+        VR_INST.repair(net_list);
+        break;
+      default:
+        break;
+    }
+    if (enable_output_gds_files == 1) {
+      GP_INST.plot(net_list, stage, true, false);
+    }
   }
 #else
   irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
@@ -303,28 +324,25 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 bool RTAPI::check(std::vector<ids::DRCRect>& drc_rect_list)
 {
   // return DrcAPIInst.check(drc_rect_list);
-  return true;
+  return false;
 }
 
-std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect_list)
+bool RTAPI::check(std::vector<LayerRect> environment, const LayerRect& drc_rect)
 {
-  return drc_rect_list;
-}
-
-std::vector<LayerRect> RTAPI::getMinScope(const std::vector<LayerRect>& drc_rect_list)
-{
-  return drc_rect_list;
+  return false;
 }
 
 std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
 {
   std::vector<LayerRect> drc_rect_list;
+  drc_rect_list.push_back(drc_rect);
   return drc_rect_list;
 }
 
 std::vector<LayerRect> RTAPI::getMinScope(const LayerRect& drc_rect)
 {
   std::vector<LayerRect> drc_rect_list;
+  drc_rect_list.push_back(drc_rect);
   return drc_rect_list;
 }
 
