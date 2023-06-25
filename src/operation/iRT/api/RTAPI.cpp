@@ -327,7 +327,7 @@ bool RTAPI::check(std::vector<ids::DRCRect>& drc_rect_list)
   return false;
 }
 
-bool RTAPI::check(std::vector<LayerRect> environment, const LayerRect& drc_rect)
+bool RTAPI::hasViolation(std::vector<LayerRect> environment, const LayerRect& drc_rect)
 {
   return false;
 }
