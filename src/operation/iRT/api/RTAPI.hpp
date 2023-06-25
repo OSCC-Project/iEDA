@@ -62,7 +62,7 @@ class RTAPI
 
   // DRC
   bool check(std::vector<ids::DRCRect>& drc_rect_list);
-  bool check(std::vector<LayerRect> environment, const LayerRect& drc_rect);
+  bool hasViolation(std::vector<LayerRect> environment, const LayerRect& drc_rect);
   std::vector<LayerRect> getMaxScope(const LayerRect& drc_rect);
   std::vector<LayerRect> getMinScope(const LayerRect& drc_rect);
   std::vector<ids::DRCRect> getMaxScope(std::vector<ids::DRCRect>& drc_rect_list);
