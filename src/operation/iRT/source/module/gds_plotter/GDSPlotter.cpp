@@ -206,8 +206,13 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPGraphType, bool> routing_data_type_visible_map
-      = {{GPGraphType::kNone, false},     {GPGraphType::kOpen, false}, {GPGraphType::kClose, false}, {GPGraphType::kInfo, false},
-         {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},   {GPGraphType::kPath, true},   {GPGraphType::kBlockage, true}};
+      = {{GPGraphType::kNone, false},           {GPGraphType::kOpen, false},
+         {GPGraphType::kClose, false},          {GPGraphType::kInfo, false},
+         {GPGraphType::kNeighbor, false},       {GPGraphType::kKey, true},
+         {GPGraphType::kScaleAxis, false},      {GPGraphType::kPath, true},
+         {GPGraphType::kBlockage, true},        {GPGraphType::kOtherPanelResult, true},
+         {GPGraphType::kSelfPanelResult, true}, {GPGraphType::kPanelResult, true},
+         {GPGraphType::kOtherBoxResult, true},  {GPGraphType::kSelfBoxResult, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
@@ -419,12 +424,14 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       irt_int second_layer_idx = second_coord.get_layer_idx();
 
       if (first_layer_idx == second_layer_idx) {
-        GPPath wire_path;
-        wire_path.set_segment(first_coord, second_coord);
-        wire_path.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
-        wire_path.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
-        wire_path.set_width(routing_layer_list[first_layer_idx].get_min_width());
-        routing_segment_list_struct.push(wire_path);
+        irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+        PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+
+        GPBoundary wire_boundary;
+        wire_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
+        wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
+        wire_boundary.set_rect(wire_rect);
+        routing_segment_list_struct.push(wire_boundary);
       } else {
         RTUtil::sortASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
@@ -455,14 +462,14 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
 
     if (phy_node.isType<WireNode>()) {
       WireNode& wire_node = phy_node.getNode<WireNode>();
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
 
-      GPPath wire_path;
-      wire_path.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
-      wire_path.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
-      wire_path.set_width(wire_node.get_wire_width());
-      wire_path.set_segment(wire_node.get_first(), wire_node.get_second());
-      wire_list_struct.push(wire_path);
-
+      GPBoundary wire_boundary;
+      wire_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
+      wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
+      wire_boundary.set_rect(wire_rect);
+      wire_list_struct.push(wire_boundary);
+      
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
