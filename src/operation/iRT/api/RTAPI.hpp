@@ -68,6 +68,8 @@ class RTAPI
   std::vector<LayerRect> getMinScope(const LayerRect& drc_rect);
   std::vector<ids::DRCRect> getMaxScope(std::vector<ids::DRCRect>& drc_rect_list);
   std::vector<ids::DRCRect> getMinScope(std::vector<ids::DRCRect>& drc_rect_list);
+  LayerRect convertToRTRect(ids::DRCRect ids_rect);
+  ids::DRCRect covertToIDSRect(LayerRect rt_rect);
 
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);

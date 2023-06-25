@@ -806,8 +806,8 @@ std::vector<DrcRect*> DrcAPI::getMaxScope(std::vector<DrcRect*> origin_rect_list
   initNets(origin_rect_list, nets);
   initPoly(nets, nullptr);
   getCommonSpacingScope(max_scope_list, nets, true);
-  getEOLSpacingScope(max_scope_list, nets, true);
-  getCornerFillSpacingScope(max_scope_list, nets);
+  // getEOLSpacingScope(max_scope_list, nets, true);
+  // getCornerFillSpacingScope(max_scope_list, nets);
   return max_scope_list;
 }
 
@@ -818,8 +818,8 @@ std::vector<DrcRect*> DrcAPI::getMinScope(std::vector<DrcRect*> origin_rect_list
   initNets(origin_rect_list, nets);
   initPoly(nets, nullptr);
   getCommonSpacingScope(min_scope_list, nets, false);
-  getEOLSpacingScope(min_scope_list, nets, false);
-  getCornerFillSpacingScope(min_scope_list, nets);
+  // getEOLSpacingScope(min_scope_list, nets, false);
+  // getCornerFillSpacingScope(min_scope_list, nets);
   return min_scope_list;
 }
 
@@ -844,6 +844,22 @@ DrcRect* DrcAPI::getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, 
     }
   }
   return drc_rect;
+}
+
+DrcRect* DrcAPI::getDrcRect(ids::DRCRect ids_rect)
+{
+  return getDrcRect(-1, ids_rect.lb_x, ids_rect.lb_y, ids_rect.rt_x, ids_rect.rt_y, ids_rect.layer_name, ids_rect.is_artificial);
+}
+
+ids::DRCRect DrcAPI::getDrcRect(DrcRect* drc_rect)
+{
+  ids::DRCRect ids_rect;
+  ids_rect.lb_x = drc_rect->get_rectangle().get_lb_x();
+  ids_rect.lb_y = drc_rect->get_rectangle().get_lb_y();
+  ids_rect.rt_x = drc_rect->get_rectangle().get_rt_x();
+  ids_rect.rt_y = drc_rect->get_rectangle().get_rt_y();
+  ids_rect.layer_name = _tech->getRoutingLayerNameById(drc_rect->get_layer_id());
+  return ids_rect;
 }
 
 std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(RegionQuery* region_query)
