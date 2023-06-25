@@ -197,7 +197,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              dr_box_map[x][y].get_net_blockage_map()[dr_net.get_net_idx()].push_back(real_rect);
+              dr_box_map[x][y].get_net_panel_result_map()[dr_net.get_net_idx()].push_back(real_rect);
             }
           }
         }
