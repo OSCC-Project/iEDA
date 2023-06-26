@@ -43,7 +43,6 @@ init_rt -temp_directory_path $temp_folder_path \
         -thread_number 8 \
         -bottom_routing_layer "" \
         -top_routing_layer "" \
-        -layer_utilization_ratio "" \
         -enable_output_gds_files 1 \
         -ra_initial_penalty 100 \
         -ra_penalty_drop_rate 0.8 \
