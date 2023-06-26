@@ -337,6 +337,7 @@ bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& 
 bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const std::vector<LayerRect>& drc_rect_list)
 {
   idrc::RegionQuery* region_query = idrc::DrcAPIInst.init();
+  //   idrc::RegionQuery* region_query = idrc::DrcAPIInst.getLayoutRegion();
   std::vector<idrc::DrcRect*> idrc_env_rect_list;
   for (LayerRect env_rect : env_rect_list) {
     idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
