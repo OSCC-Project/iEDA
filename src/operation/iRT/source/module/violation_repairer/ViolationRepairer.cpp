@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "ViolationRepairer.hpp"
+#include "RTAPI.hpp"
 
 namespace irt {
 
@@ -125,32 +126,35 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int layer_idx = routing_blockage.get_layer_idx();
-    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
-    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_blockage.get_real_rect(), min_spacing, die.get_real_rect());
-    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-        layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[-1].push_back(enlarged_real_rect);
+    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
+    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          layer_gcell_map[blockage_layer_idx][x][y].get_net_blockage_map()[-1].push_back(blockage_real_rect);
+        }
       }
     }
   }
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
       for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        irt_int layer_idx = routing_shape.get_layer_idx();
-        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_shape.get_real_rect());
-        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_shape.get_real_rect(), min_spacing, die.get_real_rect());
-        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-            layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[vr_net.get_net_idx()].push_back(enlarged_real_rect);
+        irt_int shape_layer_idx = routing_shape.get_layer_idx();
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
+        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              layer_gcell_map[shape_layer_idx][x][y].get_net_blockage_map()[vr_net.get_net_idx()].push_back(shape_real_rect);
+            }
           }
         }
       }
@@ -393,44 +397,19 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
-  for (const LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
-    irt_int layer_idx = real_rect.get_layer_idx();
-    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(real_rect);
-    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(real_rect, min_spacing, die.get_real_rect());
-    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-        layer_gcell_map[layer_idx][x][y].get_net_blockage_map()[vr_net.get_net_idx()].push_back(enlarged_real_rect);
+  for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          layer_gcell_map[real_rect.get_layer_idx()][x][y].get_net_blockage_map()[vr_net.get_net_idx()].push_back(real_rect);
+        }
       }
     }
   }
-}
-
-std::vector<LayerRect> ViolationRepairer::getRealRectList(MTree<PHYNode>& phy_node_tree)
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-  std::vector<LayerRect> real_rect_list;
-  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
-    PHYNode& phy_node = phy_node_node->value();
-    if (phy_node.isType<WireNode>()) {
-      WireNode& wire_node = phy_node.getNode<WireNode>();
-      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
-      real_rect_list.emplace_back(wire_rect, wire_node.get_layer_idx());
-    } else if (phy_node.isType<ViaNode>()) {
-      ViaNode& via_node = phy_node.getNode<ViaNode>();
-      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
-      for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-        PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, via_node);
-        real_rect_list.emplace_back(offset_enclosure, enclosure.get_layer_idx());
-      }
-    }
-  }
-  return real_rect_list;
 }
 
 #endif
@@ -491,7 +470,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     visited_net_idx_set.insert(vr_net.get_net_idx());
 
-    for (LayerRect& real_rect : getRealRectList(vr_net.get_vr_result_tree())) {
+    for (LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
       irt_int layer_idx = real_rect.get_layer_idx();
       GridMap<VRGCell>& gcell_map = layer_gcell_map[layer_idx];
 

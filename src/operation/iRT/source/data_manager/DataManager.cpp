@@ -92,6 +92,64 @@ void DataManager::load(Stage stage)
   LOG_INST.info(Loc::current(), "The data manager load completed!", monitor.getStatsInfo());
 }
 
+std::vector<LayerRect> DataManager::getRealRectList(std::vector<Segment<LayerCoord>>& segment_list)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<LayerRect> real_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
+
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    if (first_layer_idx != second_layer_idx) {
+      RTUtil::sortASC(first_layer_idx, second_layer_idx);
+      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+        LayerRect& above_enclosure = via_master.get_above_enclosure();
+        PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, first_coord);
+        real_rect_list.emplace_back(offset_above_enclosure, above_enclosure.get_layer_idx());
+
+        LayerRect& below_enclosure = via_master.get_below_enclosure();
+        PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, first_coord);
+        real_rect_list.emplace_back(offset_below_enclosure, below_enclosure.get_layer_idx());
+      }
+    } else {
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+      real_rect_list.emplace_back(wire_rect, first_layer_idx);
+    }
+  }
+  return real_rect_list;
+}
+
+std::vector<LayerRect> DataManager::getRealRectList(MTree<PHYNode>& phy_node_tree)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+
+  std::vector<LayerRect> real_rect_list;
+  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
+    PHYNode& phy_node = phy_node_node->value();
+    if (phy_node.isType<WireNode>()) {
+      WireNode& wire_node = phy_node.getNode<WireNode>();
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
+      real_rect_list.emplace_back(wire_rect, wire_node.get_layer_idx());
+    } else if (phy_node.isType<ViaNode>()) {
+      ViaNode& via_node = phy_node.getNode<ViaNode>();
+      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
+      for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+        PlanarRect offset_enclosure = RTUtil::getOffsetRect(enclosure, via_node);
+        real_rect_list.emplace_back(offset_enclosure, enclosure.get_layer_idx());
+      }
+    }
+  }
+  return real_rect_list;
+}
+
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;

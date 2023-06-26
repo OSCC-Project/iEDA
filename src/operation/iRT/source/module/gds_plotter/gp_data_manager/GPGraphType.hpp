@@ -22,14 +22,20 @@ namespace irt {
 
 enum class GPGraphType
 {
-  kNone = 0,
-  kOpen = 1,
-  kClose = 2,
-  kInfo = 3,
-  kNeighbor = 4,
-  kKey = 5,
-  kPath = 6,
-  kBlockage = 7
+  kNone,
+  kOpen,
+  kClose,
+  kInfo,
+  kNeighbor,
+  kKey,
+  kScaleAxis,
+  kPath,
+  kBlockage,
+  kOtherPanelResult,
+  kSelfPanelResult,
+  kPanelResult,
+  kOtherBoxResult,
+  kSelfBoxResult
 };
 
 struct GetGPGraphTypeName
@@ -56,11 +62,29 @@ struct GetGPGraphTypeName
       case GPGraphType::kKey:
         data_type_name = "key";
         break;
+      case GPGraphType::kScaleAxis:
+        data_type_name = "scale_axis";
+        break;
       case GPGraphType::kPath:
         data_type_name = "path";
         break;
       case GPGraphType::kBlockage:
         data_type_name = "blockage";
+        break;
+      case GPGraphType::kOtherPanelResult:
+        data_type_name = "other_panel_result";
+        break;
+      case GPGraphType::kSelfPanelResult:
+        data_type_name = "self_panel_result";
+        break;
+      case GPGraphType::kPanelResult:
+        data_type_name = "panel_result";
+        break;
+      case GPGraphType::kOtherBoxResult:
+        data_type_name = "other_box_result";
+        break;
+      case GPGraphType::kSelfBoxResult:
+        data_type_name = "self_box_result";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
