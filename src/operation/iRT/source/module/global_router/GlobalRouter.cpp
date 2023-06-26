@@ -422,14 +422,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
           }
         }
-        for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
-          for (PlanarRect& blockage : blockage_list) {
-            if (RTUtil::isClosedOverlap(gr_node.get_real_rect(), blockage)) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The blockage is outside the node region!");
-          }
-        }
         if (gr_node.get_single_wire_area() <= 0) {
           LOG_INST.error(Loc::current(), "The single_wire_area <= 0!");
         }
