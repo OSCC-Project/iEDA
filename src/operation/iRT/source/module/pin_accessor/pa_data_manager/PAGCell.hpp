@@ -42,7 +42,9 @@ class PAGCell : public LayerCoord
  private:
   PlanarRect _real_rect;
   std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
+  void* _net_blockage_region_query;
   std::map<irt_int, std::vector<LayerRect>> _net_enclosure_map;
+  void* _net_enclosure_region_query;
 };
 
 }  // namespace irt

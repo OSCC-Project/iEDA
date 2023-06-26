@@ -198,7 +198,6 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
-  std::map<irt_int, double>& layer_idx_utilization_ratio = DM_INST.getConfig().layer_idx_utilization_ratio;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -209,10 +208,6 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       irt_int layer_idx = routing_layer.get_layer_idx();
       if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
         continue;
-      }
-      double layer_utilization_ratio = 1;
-      if (RTUtil::exist(layer_idx_utilization_ratio, layer_idx)) {
-        layer_utilization_ratio = layer_idx_utilization_ratio[layer_idx];
       }
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
       irt_int layer_public_track_supply = static_cast<irt_int>(wire_list.size());
@@ -227,7 +222,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       if (layer_public_track_supply < 0) {
         LOG_INST.error(Loc::current(), "The layer_public_track_supply < 0!");
       }
-      public_track_supply += static_cast<irt_int>(layer_public_track_supply * layer_utilization_ratio);
+      public_track_supply += layer_public_track_supply;
     }
     ra_gcell.set_public_track_supply(public_track_supply);
   }

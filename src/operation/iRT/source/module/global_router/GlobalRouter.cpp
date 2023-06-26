@@ -262,13 +262,6 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
 
 void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer)
 {
-  std::map<irt_int, double>& layer_idx_utilization_ratio = DM_INST.getConfig().layer_idx_utilization_ratio;
-
-  double layer_utilization_ratio = 1;
-  if (RTUtil::exist(layer_idx_utilization_ratio, routing_layer.get_layer_idx())) {
-    layer_utilization_ratio = layer_idx_utilization_ratio[routing_layer.get_layer_idx()];
-  }
-
   std::vector<PlanarRect> wire_list = getWireList(gr_node, routing_layer);
 
   if (!wire_list.empty()) {
@@ -303,8 +296,6 @@ void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_lay
       via_num += static_cast<irt_int>(wire.getArea() / gr_node.get_single_via_area());
     }
   }
-  wire_num = static_cast<irt_int>(wire_num * layer_utilization_ratio);
-  via_num = static_cast<irt_int>(via_num * layer_utilization_ratio);
   gr_node.set_wire_area_supply(wire_num * gr_node.get_single_wire_area());
   gr_node.set_via_area_supply(via_num * gr_node.get_single_via_area());
 }
@@ -420,14 +411,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
           LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
           if (RTUtil::getOrientation(node_coord, neighbor_coord) != orien) {
             LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
-          }
-        }
-        for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
-          for (PlanarRect& blockage : blockage_list) {
-            if (RTUtil::isClosedOverlap(gr_node.get_real_rect(), blockage)) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The blockage is outside the node region!");
           }
         }
         if (gr_node.get_single_wire_area() <= 0) {
