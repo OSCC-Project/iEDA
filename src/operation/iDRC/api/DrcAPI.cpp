@@ -158,12 +158,22 @@ void DrcAPI::add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect
   // 删除与这组rect相交的所有polygon
   region_query->deleteIntersectPoly(intersect_poly_set);
 
-  DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
-  if (new_poly) {
-    region_query->addPoly(new_poly);
-  }
-  for (auto& drc_rect : drc_rect_list) {
-    region_query->addDrcRect(drc_rect, _tech);
+  //   DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
+  //   if (new_poly) {
+  //     region_query->addPoly(new_poly);
+  //   }
+  //   for (auto& drc_rect : drc_rect_list) {
+  //     region_query->addDrcRect(drc_rect, _tech);
+  //   }
+
+  auto new_poly_list = region_query->rebuildPoly_add_list(intersect_poly_set, drc_rect_list);
+  for (auto new_poly : new_poly_list) {
+    if (new_poly) {
+      region_query->addPoly(new_poly);
+    }
+    for (auto& drc_rect : drc_rect_list) {
+      region_query->addDrcRect(drc_rect, _tech);
+    }
   }
 }
 
@@ -749,6 +759,8 @@ void DrcAPI::getCommonSpacingScopeRect(DrcRect* target_rect, DrcRect* scope_rect
   int rt_x = target_rect->get_right() + spacing;
   int rt_y = target_rect->get_top() + spacing;
   scope_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
+  scope_rect->set_layer_id(target_rect->get_layer_id());
+  scope_rect->set_layer_order(target_rect->get_layer_order());
 }
 
 void DrcAPI::getCommonSpacingScope(std::vector<DrcRect*>& max_scope_list, std::map<int, DrcNet>& target_nets, bool is_max)
