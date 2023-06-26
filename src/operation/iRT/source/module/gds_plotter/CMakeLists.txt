@@ -8,7 +8,6 @@ endif()
 
 add_library(irt_gds_plotter
     ## module gds_plotter
-    ${IRT_MODULE}/gds_plotter/gp_data_manager/GPDataManager.cpp
     ${IRT_MODULE}/gds_plotter/GDSPlotter.cpp
 )
 

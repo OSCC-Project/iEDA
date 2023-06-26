@@ -16,16 +16,17 @@
 // ***************************************************************************************
 #include "ResourceAllocator.hpp"
 
+#include "RTAPI.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
 
 // public
 
-void ResourceAllocator::initInst(Config& config, Database& database)
+void ResourceAllocator::initInst()
 {
   if (_ra_instance == nullptr) {
-    _ra_instance = new ResourceAllocator(config, database);
+    _ra_instance = new ResourceAllocator();
   }
 }
 
@@ -49,8 +50,7 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 {
   Monitor monitor;
 
-  std::vector<RANet> ra_net_list = _ra_data_manager.convertToRANetList(net_list);
-  allocateRANetList(ra_net_list);
+  allocateNetList(net_list);
 
   LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kResourceAllocator), " completed!", monitor.getStatsInfo());
 }
@@ -59,14 +59,9 @@ void ResourceAllocator::allocate(std::vector<Net>& net_list)
 
 ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 
-void ResourceAllocator::init(Config& config, Database& database)
+void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
-  _ra_data_manager.input(config, database);
-}
-
-void ResourceAllocator::allocateRANetList(std::vector<RANet>& ra_net_list)
-{
-  RAModel ra_model = initRAModel(ra_net_list);
+  RAModel ra_model = initRAModel(net_list);
   buildRAModel(ra_model);
   checkRAModel(ra_model);
   allocateRAModel(ra_model);
@@ -74,20 +69,42 @@ void ResourceAllocator::allocateRANetList(std::vector<RANet>& ra_net_list)
   reportRAModel(ra_model);
 }
 
-#if 1  // build
+#if 1  // build ra_model
 
-RAModel ResourceAllocator::initRAModel(std::vector<RANet>& ra_net_list)
+RAModel ResourceAllocator::initRAModel(std::vector<Net>& net_list)
 {
   RAModel ra_model;
-  ra_model.set_ra_net_list(ra_net_list);
+  ra_model.set_ra_net_list(convertToRANetList(net_list));
   return ra_model;
+}
+
+std::vector<RANet> ResourceAllocator::convertToRANetList(std::vector<Net>& net_list)
+{
+  std::vector<RANet> ra_net_list;
+  ra_net_list.reserve(net_list.size());
+  for (size_t i = 0; i < net_list.size(); i++) {
+    ra_net_list.emplace_back(convertToRANet(net_list[i]));
+  }
+  return ra_net_list;
+}
+
+RANet ResourceAllocator::convertToRANet(Net& net)
+{
+  RANet ra_net;
+  ra_net.set_origin_net(&net);
+  ra_net.set_net_idx(net.get_net_idx());
+  for (Pin& pin : net.get_pin_list()) {
+    ra_net.get_ra_pin_list().push_back(RAPin(pin));
+  }
+  ra_net.set_bounding_box(net.get_bounding_box());
+  return ra_net;
 }
 
 void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  addBlockageList(ra_model);
+  updateLayerBlockageMap(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -121,8 +138,8 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
 void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = _ra_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _ra_data_manager.getDatabase().get_die();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
   ra_gcell_list.resize(die.getXSize() * die.getYSize());
@@ -135,45 +152,40 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::addBlockageList(RAModel& ra_model)
+void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
 {
-  GCellAxis& gcell_axis = _ra_data_manager.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = _ra_data_manager.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _ra_data_manager.getDatabase().get_routing_blockage_list();
-  irt_int bottom_routing_layer_idx = _ra_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _ra_data_manager.getConfig().top_routing_layer_idx;
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
   for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int layer_idx = routing_blockage.get_layer_idx();
-    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      continue;
-    }
-    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_blockage.get_real_rect());
-    PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_blockage.get_real_rect(), min_spacing, die.get_real_rect());
-    PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-    for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-        RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        ra_gcell.get_layer_blockage_map()[layer_idx].push_back(enlarged_real_rect);
+    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
+    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
+          ra_gcell.get_layer_blockage_map()[blockage_layer_idx].push_back(blockage_real_rect);
+        }
       }
     }
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        irt_int layer_idx = routing_shape.get_layer_idx();
-        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-          continue;
-        }
-        irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(routing_shape.get_real_rect());
-        PlanarRect enlarged_real_rect = RTUtil::getEnlargedRect(routing_shape.get_real_rect(), min_spacing, die.get_real_rect());
-        PlanarRect enlarged_grid_rect = RTUtil::getClosedGridRect(enlarged_real_rect, gcell_axis);
-        for (irt_int x = enlarged_grid_rect.get_lb_x(); x <= enlarged_grid_rect.get_rt_x(); x++) {
-          for (irt_int y = enlarged_grid_rect.get_lb_y(); y <= enlarged_grid_rect.get_rt_y(); y++) {
-            RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-            ra_gcell.get_layer_blockage_map()[layer_idx].push_back(enlarged_real_rect);
+        irt_int shape_layer_idx = routing_shape.get_layer_idx();
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
+        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
+              ra_gcell.get_layer_blockage_map()[shape_layer_idx].push_back(shape_real_rect);
+            }
           }
         }
       }
@@ -183,10 +195,9 @@ void ResourceAllocator::addBlockageList(RAModel& ra_model)
 
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _ra_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _ra_data_manager.getConfig().top_routing_layer_idx;
-  std::map<irt_int, double>& layer_idx_utilization_ratio = _ra_data_manager.getConfig().layer_idx_utilization_ratio;
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -197,10 +208,6 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       irt_int layer_idx = routing_layer.get_layer_idx();
       if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
         continue;
-      }
-      double layer_utilization_ratio = 1;
-      if (RTUtil::exist(layer_idx_utilization_ratio, layer_idx)) {
-        layer_utilization_ratio = layer_idx_utilization_ratio[layer_idx];
       }
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
       irt_int layer_public_track_supply = static_cast<irt_int>(wire_list.size());
@@ -215,7 +222,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       if (layer_public_track_supply < 0) {
         LOG_INST.error(Loc::current(), "The layer_public_track_supply < 0!");
       }
-      public_track_supply += static_cast<irt_int>(layer_public_track_supply * layer_utilization_ratio);
+      public_track_supply += layer_public_track_supply;
     }
     ra_gcell.set_public_track_supply(public_track_supply);
   }
@@ -227,8 +234,8 @@ std::vector<PlanarRect> ResourceAllocator::getWireList(RAGCell& ra_gcell, Routin
   irt_int real_lb_y = ra_gcell.get_real_rect().get_lb_y();
   irt_int real_rt_x = ra_gcell.get_real_rect().get_rt_x();
   irt_int real_rt_y = ra_gcell.get_real_rect().get_rt_y();
-  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGrid());
-  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGrid());
+  std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList());
+  std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList());
   irt_int half_width = routing_layer.get_min_width() / 2;
 
   std::vector<PlanarRect> wire_list;
@@ -248,7 +255,7 @@ void ResourceAllocator::buildRelation(RAModel& ra_model)
 {
   Monitor monitor;
 
-  Die& die = _ra_data_manager.getDatabase().get_die();
+  Die& die = DM_INST.getDatabase().get_die();
 
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
@@ -304,7 +311,8 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _ra_data_manager.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
     PlanarRect& gcell_rect = ra_gcell.get_real_rect();
     for (auto& [layer_idx, blockage_list] : ra_gcell.get_layer_blockage_map()) {
@@ -355,27 +363,26 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model)
 {
   Monitor monitor;
 
-  RAConfig& ra_config = _ra_data_manager.getConfig();
   // 迭代参数
-  double initial_penalty = ra_config.initial_penalty;      //!< 罚函数的参数
-  double penalty_drop_rate = ra_config.penalty_drop_rate;  //!< 罚函数的参数下降系数
-  irt_int outer_iter_num = ra_config.outer_iter_num;       //!< 外层循环数
-  irt_int inner_iter_num = ra_config.inner_iter_num;       //!< 内层循环数
+  double ra_initial_penalty = DM_INST.getConfig().ra_initial_penalty;      //!< 罚函数的参数
+  double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;  //!< 罚函数的参数下降系数
+  irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;       //!< 外层循环数
+  irt_int ra_inner_iter_num = DM_INST.getConfig().ra_inner_iter_num;       //!< 内层循环数
 
-  for (irt_int i = 0, stage = 1; i < outer_iter_num; i++, stage++) {
-    double penalty_para = (1 / (2 * initial_penalty));
+  for (irt_int i = 0, stage = 1; i < ra_outer_iter_num; i++, stage++) {
+    double penalty_para = (1 / (2 * ra_initial_penalty));
     LOG_INST.info(Loc::current(), "************* Start iteration penalty_para=", penalty_para, " *************");
-    for (irt_int j = 0, iter = 1; j < inner_iter_num; j++, iter++) {
+    for (irt_int j = 0, iter = 1; j < ra_inner_iter_num; j++, iter++) {
       Monitor iter_monitor;
 
       calcNablaF(ra_model, penalty_para);
       double norm_nabla_f = calcAlpha(ra_model, penalty_para);
       double norm_square_step = updateResult(ra_model);
 
-      LOG_INST.info(Loc::current(), "Stage(", stage, "/", outer_iter_num, ") Iter(", iter, "/", inner_iter_num,
+      LOG_INST.info(Loc::current(), "Stage(", stage, "/", ra_outer_iter_num, ") Iter(", iter, "/", ra_inner_iter_num,
                     "), norm_nabla_f=", norm_nabla_f, ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
     }
-    initial_penalty *= penalty_drop_rate;
+    ra_initial_penalty *= ra_penalty_drop_rate;
   }
 
   LOG_INST.info(Loc::current(), "The resource model iteration was completed!", monitor.getStatsInfo());
@@ -563,7 +570,7 @@ void ResourceAllocator::updateRAModel(RAModel& ra_model)
 
 void ResourceAllocator::updateAllocationMap(RAModel& ra_model)
 {
-  Die& die = _ra_data_manager.getDatabase().get_die();
+  Die& die = DM_INST.getDatabase().get_die();
 
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   std::vector<double>& result_list = ra_model.get_result_list();
@@ -674,22 +681,21 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
 void ResourceAllocator::countRAModel(RAModel& ra_model)
 {
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
+  std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
 
   double max_cost = -DBL_MAX;
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   for (RANet& ra_net : ra_net_list) {
     double total_cost = 0;
     GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
-    irt_int x_size = ra_cost_map.get_x_size();
-    irt_int y_size = ra_cost_map.get_y_size();
-    for (irt_int x = 0; x < x_size; x++) {
-      for (irt_int y = 0; y < y_size; y++) {
+    for (irt_int x = 0; x < ra_cost_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < ra_cost_map.get_y_size(); y++) {
         total_cost += ra_cost_map[x][y];
       }
     }
-    double cost_value = total_cost / (x_size * y_size);
+    double cost_value = total_cost / (ra_cost_map.get_x_size() * ra_cost_map.get_y_size());
     max_cost = std::max(max_cost, cost_value);
-    ra_model_stat.get_avg_cost_list().push_back(cost_value);
+    avg_cost_list.push_back(cost_value);
   }
   ra_model_stat.set_max_avg_cost(max_cost);
 }
@@ -699,25 +705,24 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
 
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-  double avg_cost_range = RTUtil::getScaleRange(avg_cost_list);
-  GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
+  double max_avg_cost = ra_model_stat.get_max_avg_cost();
 
   fort::char_table avg_cost_table;
   avg_cost_table.set_border_style(FT_SOLID_STYLE);
-
   avg_cost_table << fort::header << "Avg Cost"
-        << "Net Number" << fort::endr;
+                 << "Net Number" << fort::endr;
+  double avg_cost_range = RTUtil::getScaleRange(avg_cost_list);
+  GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
   for (irt_int y_idx = 0; y_idx < avg_cost_map.get_y_size(); y_idx++) {
     double left = avg_cost_map[0][y_idx];
     double right = left + avg_cost_range;
     std::string range_str;
     if (y_idx == avg_cost_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", ra_model_stat.get_max_avg_cost(), "]");
+      range_str = RTUtil::getString("[", left, ",", max_avg_cost, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
-    avg_cost_table << range_str << RTUtil::getString(avg_cost_map[1][y_idx], "(", avg_cost_map[2][y_idx], "%)")
-                        << fort::endr;
+    avg_cost_table << range_str << RTUtil::getString(avg_cost_map[1][y_idx], "(", avg_cost_map[2][y_idx], "%)") << fort::endr;
   }
   avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
 

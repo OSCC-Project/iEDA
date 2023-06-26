@@ -6,7 +6,7 @@ project(LEF_PARSER
 cmake_minimum_required(VERSION 3.1)
 
 set(LEFLIB_HOME ${CMAKE_CURRENT_SOURCE_DIR})
-message(STATUS "leflib_home: ${LEFLIB_HOME}")
+# message(STATUS "leflib_home: ${LEFLIB_HOME}")
 
 # BISON and ZLIB are required to compile LEF/LEF Parsers.
 find_package(BISON)

@@ -18,6 +18,8 @@
 
 #include <chrono>
 #include <filesystem>
+#include <functional>
+#include <ranges>
 #include <unordered_map>
 
 #include "Balancer.h"
@@ -29,12 +31,14 @@
 #include "Evaluator.h"
 #include "GDSPloter.h"
 #include "JsonParser.h"
+#include "Node.hh"
 #include "Operator.h"
 #include "Optimizer.h"
 #include "RTAPI.hpp"
 #include "Router.h"
 #include "Synthesis.h"
 #include "TimingCalculator.h"
+#include "TimingPropagator.hh"
 #include "ToApi.hpp"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
@@ -44,6 +48,7 @@
 #include "model/ModelFactory.h"
 #include "model/mplHelper/MplHelper.h"
 #include "model/python/PyToolBase.h"
+#include "salt/salt.h"
 #ifdef PY_MODEL
 #include "PyModel.h"
 #endif
@@ -75,7 +80,7 @@ void CTSAPI::runCTS()
   routing();
   synthesis();
   evaluate();
-  balance();
+  // balance();
   // optimize();
   LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
@@ -139,6 +144,7 @@ void CTSAPI::init(const std::string& config_file)
   }
   _report = new CtsReportTable("iCTS");
   _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
+
   _libs = new CtsLibs();
 
   _synth = new Synthesis();
@@ -154,6 +160,8 @@ void CTSAPI::init(const std::string& config_file)
   }
 #endif
   startDbSta();
+
+  TimingPropagator::init();
 }
 
 void CTSAPI::readData()
@@ -835,6 +843,13 @@ void CTSAPI::makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const
 }
 
 // synthesis
+int32_t CTSAPI::getDbUnit() const
+{
+  auto* idb = dmInst->get_idb_builder();
+  auto* idb_design = idb->get_def_service()->get_design();
+  return idb_design->get_units()->get_micron_dbu();
+}
+
 bool CTSAPI::isInDie(const icts::Point& point) const
 {
   auto die = _db_wrapper->get_core_bounding_box();
@@ -886,9 +901,58 @@ void CTSAPI::insertBuffer(const std::string& name)
   _timing_engine->insertBuffer(name.c_str());
 }
 
+void CTSAPI::resetId()
+{
+  _design->resetId();
+}
+
 int CTSAPI::genId()
 {
   return _design->nextId();
+}
+
+void CTSAPI::genShallowLightTree(const std::vector<Node*>& loads, Node* driver, const std::string& net_name)
+{
+  std::vector<Node*> nodes{driver};
+  std::ranges::copy(loads, std::back_inserter(nodes));
+
+  std::map<int, Node*> id_to_node;
+  std::vector<std::shared_ptr<salt::Pin>> pins;
+
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    auto node = nodes[i];
+    auto pin = std::make_shared<salt::Pin>(node->get_location().x(), node->get_location().y(), i, node->get_cap_load());
+    id_to_node[i] = node;
+    pins.push_back(pin);
+  }
+
+  salt::Net net;
+  net.init(0, net_name, pins);
+
+  salt::Tree tree;
+  salt::SaltBuilder salt_builder;
+  salt_builder.Run(net, tree, 0);
+
+  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
+  auto source = tree.source;
+  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+    if (salt_node->id == source->id) {
+      return;
+    }
+    // steiner point, need to create a new node
+    if (salt_node->id > static_cast<int>(loads.size())) {
+      auto name = toString(net_name, "_", salt_node->id);
+      auto node = new Node(name, Point(salt_node->loc.x, salt_node->loc.y));
+      id_to_node[salt_node->id] = node;
+    }
+    // connect to parent
+    auto* current_node = id_to_node[salt_node->id];
+    auto parent_id = salt_node->parent->id;
+    auto* parent_node = id_to_node[parent_id];
+    current_node->set_parent(parent_node);
+    parent_node->add_child(current_node);
+  };
+  salt::TreeNode::PreOrder(source, connect_node_func);
 }
 
 // evaluate
@@ -948,8 +1012,7 @@ void CTSAPI::buildLogicRCTree(const icts::EvalNet& eval_net)
   auto center_point = eval_net.getCenterPoint();
   for (auto* pin : eval_net.get_pins()) {
     auto* inst_node = makeLogicRCTreeNode(pin);
-    auto wire_length
-        = static_cast<double>(pgl::manhattan_distance(center_point, pin->get_instance()->get_location()) / _config->get_micron_dbu());
+    auto wire_length = static_cast<double>(pgl::manhattan_distance(center_point, pin->get_instance()->get_location()) / getDbUnit());
     auto res = getResistance(wire_length, 1);
     auto cap = getCapacitance(wire_length, 1);
     _timing_engine->makeResistor(sta_net, internal_node, inst_node, res);
@@ -1233,7 +1296,7 @@ double CTSAPI::getResistance(const icts::CtsSignalWire& signal_wire, const int& 
 
 double CTSAPI::getWireLength(const icts::CtsSignalWire& signal_wire) const
 {
-  return static_cast<double>(1.0 * signal_wire.getWireLength() / _config->get_micron_dbu());
+  return static_cast<double>(1.0 * signal_wire.getWireLength() / getDbUnit());
 }
 
 ista::TimingIDBAdapter* CTSAPI::getStaDbAdapter() const

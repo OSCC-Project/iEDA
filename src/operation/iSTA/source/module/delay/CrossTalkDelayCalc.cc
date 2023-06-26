@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -123,7 +123,7 @@ void CrossTalkDelayCalc::reduceRCTreeToTwoPiModel(RcNet* rc_net,
                              downstream_tree);
     WaveformApproximation downstream_waveform;
     PiModel downstream_pi_model = downstream_waveform.reduceRCTreeToPIModel(
-        downstream_tree, load_nodes_pin_cap_sum);
+        downstream_tree.get_root(), load_nodes_pin_cap_sum);
 
     // reduce to another pi model for coupled point upstream.
     RcTree upstream_tree;
@@ -134,7 +134,7 @@ void CrossTalkDelayCalc::reduceRCTreeToTwoPiModel(RcNet* rc_net,
     traverse_upstream_tree(coupled_point, nullptr, root_node, upstream_tree);
     WaveformApproximation upstream_waveform;
     PiModel upstream_pi_model = upstream_waveform.reduceRCTreeToPIModel(
-        upstream_tree, coupled_point->get_cap());
+        upstream_tree.get_root(), coupled_point->get_cap());
 
     TwoPiModel two_pi_model(
         upstream_pi_model.C_near, upstream_pi_model.R,

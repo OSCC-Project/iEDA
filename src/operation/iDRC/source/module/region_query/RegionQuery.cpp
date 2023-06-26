@@ -49,6 +49,27 @@ void RegionQuery::queryIntersectsInRoutingLayer(int routingLayerId, RTreeBox que
   // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
 }
 
+void RegionQuery::queryContainsInRoutingLayer(int routingLayerId, RTreeBox query_box,
+                                              std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
+{
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::contains(query_box), std::back_inserter(query_result));
+
+  _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::covers(query_box), std::back_inserter(query_result));
+
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::disjoint(query_box), std::back_inserter(query_result));
+  // _layer_to_routing_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::contains(query_box), std::back_inserter(query_result));
+
+  _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::covers(query_box), std::back_inserter(query_result));
+
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::intersects(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::disjoint(query_box), std::back_inserter(query_result));
+  // _layer_to_fixed_rects_tree_map[routingLayerId].query(bgi::within(query_box), std::back_inserter(query_result));
+}
+
 /**
  * @brief query and store results
  *        搜索绕线层上与目标区域相交的所有矩形，并把搜索结果存放于搜索结果列表中
@@ -455,6 +476,7 @@ void RegionQuery::getRegionDetailReport(std::map<std::string, std::vector<DrcVio
 {
   vio_map.insert(std::make_pair("Cut EOL Spacing", _cut_eol_spacing_spot_list));
   vio_map.insert(std::make_pair("Cut Spacing", _cut_spacing_spot_list));
+  vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
   vio_map.insert(std::make_pair("Cut Enclosure", _cut_enclosure_spot_list));
   initMetalEOLVioSpot();
   vio_map.insert(std::make_pair("Metal EOL Spacing", _metal_eol_spacing_spot_list));
@@ -465,6 +487,12 @@ void RegionQuery::getRegionDetailReport(std::map<std::string, std::vector<DrcVio
   vio_map.insert(std::make_pair("Metal Notch Spacing", _metal_notch_spacing_spot_list));
   vio_map.insert(std::make_pair("MinStep", _min_step_spot_list));
   vio_map.insert(std::make_pair("Minimal Area", _min_area_spot_list));
+
+  vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
+
+  vio_map.insert(std::make_pair("Metal Corner Fill Spacing", _metal_corner_fill_spacing_spot_list));
+
+  vio_map.insert(std::make_pair("Minimal Hole Area", _min_hole_spot_list));
 }
 
 int RegionQuery::get_prl_spacing_vio_nums()

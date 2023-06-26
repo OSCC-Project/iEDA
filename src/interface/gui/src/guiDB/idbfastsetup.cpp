@@ -345,7 +345,7 @@ void IdbSpeedUpSetup::createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedu
   int32_t pin_width = layer_routing != nullptr ? layer_routing->get_width() - 2 : _layout->get_rows()->get_row_height() / 20;
 
   for (IdbPin* pin : pin_list) {
-    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS")
+    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS" || pin->get_net() == nullptr)
       continue;
 
     if (pin != nullptr && pin->get_term()->get_port_number() > 0) {
@@ -362,7 +362,7 @@ void IdbSpeedUpSetup::createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedu
 
 void IdbSpeedUpSetup::createInstanceMacroPin(vector<IdbPin*>& pin_list, GuiInstance* gui_instance) {
   for (IdbPin* pin : pin_list) {
-    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS")
+    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS" || pin->get_net() == nullptr)
       continue;
 
     if (pin != nullptr && pin->get_term()->get_port_number() > 0) {
@@ -1005,7 +1005,7 @@ void IdbSpeedUpSetup::createTrackGrid() {
         GuiSpeedupItemType gui_type =
             routing_layer->is_horizontal() ? GuiSpeedupItemType::kTrackGridPrefer : GuiSpeedupItemType::kTrackGridNonPrefer;
         for (uint i = 0; i < track_grid->get_track_num(); ++i) {
-          qreal y = _transform.db_to_guidb(start + pitch * i);
+          qreal y = _transform.db_to_guidb_rotate(start + pitch * i);
 
           GuiSpeedupGrid* item = findGridItem(this_container, layer->get_name(), QPointF(0, y), QPointF(width, y));
           if (item == nullptr) {

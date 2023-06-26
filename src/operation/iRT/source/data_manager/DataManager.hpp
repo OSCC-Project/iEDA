@@ -20,36 +20,47 @@
 #include "Database.hpp"
 #include "Helper.hpp"
 #include "Logger.hpp"
+#include "SortStatus.hpp"
+#include "SortType.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
 
 namespace irt {
 
+#define DM_INST (irt::DataManager::getInst())
+
 class DataManager
 {
  public:
+  static void initInst();
+  static DataManager& getInst();
+  static void destroyInst();
+  // function
+  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
+  void output(idb::IdbBuilder* idb_builder);
+  void save(Stage stage);
+  void load(Stage stage);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<LayerRect> getRealRectList(MTree<PHYNode>& phy_node_tree);
+  Config& getConfig() { return _config; }
+  Database& getDatabase() { return _database; }
+  Helper& getHelper() { return _helper; }
+
+ private:
+  static DataManager* _dm_instance;
+  // config & database & helper
+  Config _config;
+  Database _database;
+  Helper _helper;
+
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
   ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
-  // function
-  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
-  void save(Stage stage);
-  void load(Stage stage);
-  void output(idb::IdbBuilder* idb_builder);
-  Config& getConfig() { return _config; }
-  Database& getDatabase() { return _database; }
-  Helper& getHelper() { return _helper; }
-
- private:
-  // self
-  Config _config;
-  Database _database;
-  Helper _helper;
-  // function
+#if 1  // wrap
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
   void wrapMicronDBU(idb::IdbBuilder* idb_builder);
@@ -68,12 +79,18 @@ class DataManager
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
   void updateHelper(idb::IdbBuilder* idb_builder);
+  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
+  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#endif
+
+#if 1  // build
   void buildConfig();
   void buildDatabase();
   void buildGCellAxis();
   void makeGCellAxis();
-  std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int ref_pitch);
-  std::vector<GCellGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
+  irt_int getProposedInterval();
+  std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval);
+  std::vector<ScaleGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();
   void makeDie();
@@ -85,6 +102,11 @@ class DataManager
   void buildLayerViaMasterList();
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
+  bool sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
+  SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   void buildBlockageList();
   void transBlockageList();
   void makeBlockageList();
@@ -96,39 +118,26 @@ class DataManager
   void checkPinList(Net& net);
   void buildDrivingPin(Net& net);
   void updateHelper();
+#endif
+
+#if 1  // print
   void printConfig();
   void printDatabase();
-  void saveStageResult(Stage stage);
-  void saveHeadInfo(nlohmann::json& all_json, std::string& current_stage);
-  std::string getBaseName(std::string file_path);
-  void saveStageNetResult(nlohmann::json& net_json, Net& net);
-  void savePinAccessorResult(nlohmann::json& net_json, Net& net);
-  void saveBasicInfo(nlohmann::json& net_json, Net& net);
-  void saveResourceAllocatorResult(nlohmann::json& net_json, Net& net);
-  void saveGlobalRouterResult(nlohmann::json& net_json, Net& net);
-  void saveResultTree(nlohmann::json& net_json, Net& net, MTree<RTNode>& node_tree);
-  void saveTrackAssignerResult(nlohmann::json& net_json, Net& net);
-  void saveDetailedRouterResult(nlohmann::json& net_json, Net& net);
-  void saveViolationRepairerResult(nlohmann::json& net_json, Net& net);
-  void loadStageResult(Stage stage);
-  void checkHeadInfo(nlohmann::json& all_json, std::string current_stage);
-  void loadStageNetResult(nlohmann::json& net_json, Net& net);
-  void loadBasicInfo(nlohmann::json& net_json, Net& net);
-  void loadPinAccessorResult(nlohmann::json& net_json, Net& net);
-  void loadResourceAllocatorResult(nlohmann::json& net_json, Net& net);
-  void loadGlobalRouterResult(nlohmann::json& net_json, Net& net);
-  void loadResultTree(nlohmann::json& net_json, Net& net, MTree<RTNode>& node_tree);
-  void loadTrackAssignerResult(nlohmann::json& net_json, Net& net);
-  void loadDetailedRouterResult(nlohmann::json& net_json, Net& net);
-  void loadViolationRepairerResult(nlohmann::json& net_json, Net& net);
+#endif
+
+#if 1  // output
   void outputGCellGrid(idb::IdbBuilder* idb_builder);
   void outputNetList(idb::IdbBuilder* idb_builder);
   void convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net);
   void convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
   void convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
-  void saveDef(idb::IdbBuilder* idb_builder);
-  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#endif
+
+#if 1  // save & load
+  void saveStageResult(Stage stage);
+  std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
+  void loadStageResult(Stage stage);
+#endif
 };
 
 }  // namespace irt

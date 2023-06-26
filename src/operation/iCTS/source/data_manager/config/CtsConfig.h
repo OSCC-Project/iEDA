@@ -30,7 +30,6 @@ class CtsConfig
   CtsConfig(const CtsConfig& rhs) = default;
   ~CtsConfig() = default;
 
-  int get_micron_dbu() const { return _micron_dbu; }
   double get_skew_bound() const { return _skew_bound; }
   double get_max_buf_tran() const { return _max_buf_tran; }
   double get_max_sink_tran() const { return _max_sink_tran; }
@@ -54,7 +53,6 @@ class CtsConfig
   const vector<std::pair<string, string>> get_clock_netlist() const { return _net_list; }
   const vector<std::pair<string, string>> get_external_models() const { return _external_models; }
 
-  void set_micron_dbu(int micron_dbu) { _micron_dbu = micron_dbu; }
   void set_skew_bound(double skew_bound) { _skew_bound = skew_bound; }
   void set_max_buf_tran(double max_buf_tran) { _max_buf_tran = max_buf_tran; }
   void set_max_sink_tran(double max_sink_tran) { _max_sink_tran = max_sink_tran; }
@@ -78,8 +76,6 @@ class CtsConfig
   void set_external_models(const vector<std::pair<string, string>>& external_models) { _external_models = external_models; }
 
  private:
-  // units
-  int _micron_dbu = 0;
   // algorithm
   string _router_type = "ZST";
   string _delay_type = "elmore";

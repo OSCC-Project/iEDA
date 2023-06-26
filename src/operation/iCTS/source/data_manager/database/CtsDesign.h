@@ -25,8 +25,8 @@
 #include "CtsInstance.h"
 #include "CtsNet.h"
 #include "CtsPin.h"
-#include "TimingCalculator.h"
 #include "HCTS.h"
+#include "TimingCalculator.h"
 
 namespace icts {
 
@@ -51,6 +51,7 @@ class CtsDesign
     return false;
   }
 
+  void resetId() { _id = 0; }
   int nextId() { return _id++; }
   vector<CtsClock*>& get_clocks() { return _clocks; }
   vector<ClockTopo>& get_clock_topos() { return _clock_topos; }

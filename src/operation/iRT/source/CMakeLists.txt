@@ -10,27 +10,12 @@ add_subdirectory(${IRT_MODULE})
 add_subdirectory(${IRT_SOLVER})
 add_subdirectory(${IRT_UTILITY})
 
-if(DEBUG_IRT_RT)            
-    message(STATUS "RT: DEBUG_IRT_RT")       
-    set(CMAKE_BUILD_TYPE "Debug")
-else()
-    message(STATUS "RT: RELEASE_IRT_RT")   
-    set(CMAKE_BUILD_TYPE "Release")
-endif()
-
-add_library(irt_source
-    ${IRT_SOURCE}/RT.cpp
-)
+add_library(irt_source INTERFACE)
 
 target_link_libraries(irt_source
-    PUBLIC
+    INTERFACE
         irt_data_manager
         irt_module
         irt_solver
         irt_utility
-)
-
-target_include_directories(irt_source
-    PUBLIC
-        ${IRT_SOURCE}
 )

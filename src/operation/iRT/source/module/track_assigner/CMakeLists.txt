@@ -8,7 +8,6 @@ endif()
 
 add_library(irt_track_assigner
     ## module track_assigner
-    ${IRT_MODULE}/track_assigner/ta_data_manager/TADataManager.cpp
     ${IRT_MODULE}/track_assigner/TrackAssigner.cpp
 )
 

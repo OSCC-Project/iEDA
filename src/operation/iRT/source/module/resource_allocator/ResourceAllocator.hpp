@@ -17,11 +17,9 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "GridMap.hpp"
-#include "RAConfig.hpp"
-#include "RADataManager.hpp"
-#include "RADatabase.hpp"
 #include "RAGCell.hpp"
 #include "RAModel.hpp"
 #include "RANet.hpp"
@@ -33,7 +31,7 @@ namespace irt {
 class ResourceAllocator
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static ResourceAllocator& getInst();
   static void destroyInst();
   // function
@@ -42,25 +40,24 @@ class ResourceAllocator
  private:
   // self
   static ResourceAllocator* _ra_instance;
-  // config & database
-  RADataManager _ra_data_manager;
 
-  ResourceAllocator(Config& config, Database& database) { init(config, database); }
+  ResourceAllocator() = default;
   ResourceAllocator(const ResourceAllocator& other) = delete;
   ResourceAllocator(ResourceAllocator&& other) = delete;
   ~ResourceAllocator() = default;
   ResourceAllocator& operator=(const ResourceAllocator& other) = delete;
   ResourceAllocator& operator=(ResourceAllocator&& other) = delete;
   // function
-  void init(Config& config, Database& database);
-  void allocateRANetList(std::vector<RANet>& ra_net_list);
+  void allocateNetList(std::vector<Net>& net_list);
 
 #if 1  // build ra_model
-  RAModel initRAModel(std::vector<RANet>& ra_net_list);
+  RAModel initRAModel(std::vector<Net>& net_list);
+  std::vector<RANet> convertToRANetList(std::vector<Net>& net_list);
+  RANet convertToRANet(Net& net);
   void buildRAModel(RAModel& ra_model);
   void initRANetDemand(RAModel& ra_model);
   void initRAGCellList(RAModel& ra_model);
-  void addBlockageList(RAModel& ra_model);
+  void updateLayerBlockageMap(RAModel& ra_model);
   void buildAccessMap(RAModel& ra_model);
   void calcRAGCellSupply(RAModel& ra_model);
   std::vector<PlanarRect> getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer);

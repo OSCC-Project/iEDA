@@ -17,10 +17,20 @@
 #include "RTAPI.hpp"
 
 #include "CongTile.hpp"
+#include "DataManager.hpp"
+#include "DetailedRouter.hpp"
 #include "DrcAPI.hpp"
-#include "RT.hpp"
+#include "DrcRect.h"
+#include "EarlyGlobalRouter.hpp"
+#include "GDSPlotter.hpp"
+#include "GlobalRouter.hpp"
+#include "Monitor.hpp"
+#include "PinAccessor.hpp"
+#include "ResourceAllocator.hpp"
 #include "Stage.hpp"
 #include "TimingEval.hpp"
+#include "TrackAssigner.hpp"
+#include "ViolationRepairer.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
@@ -51,11 +61,63 @@ void RTAPI::destroyInst()
 
 void RTAPI::initRT(std::map<std::string, std::any> config_map)
 {
-  RT::initInst(config_map, dmInst->get_idb_builder());
+  Logger::initInst();
+  // clang-format off
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________ ________ ________  ");
+  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     __  ___/___  __/___    |___  __ \\___  __/");
+  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        _____ \\ __  /   __  /| |__  /_/ /__  /    ");
+  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         ____/ / _  /    _  ___ |_  _, _/ _  /      ");
+  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /____/  /_/     /_/  |_|/_/ |_|  /_/       ");
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  // clang-format on
+  LOG_INST.printLogFilePath();
+  DataManager::initInst();
+  DM_INST.input(config_map, dmInst->get_idb_builder());
+  DetailedRouter::initInst();
+  GDSPlotter::initInst();
+  GlobalRouter::initInst();
+  PinAccessor::initInst();
+  TrackAssigner::initInst();
+  ViolationRepairer::initInst();
 }
 
 void RTAPI::runRT(std::vector<Tool> tool_list)
 {
+#if 1
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
+
+  std::vector<Stage> stage_list
+      = {Stage::kPinAccessor, Stage::kGlobalRouter, Stage::kTrackAssigner, Stage::kDetailedRouter, Stage::kViolationRepairer};
+
+  for (Stage stage : stage_list) {
+    switch (stage) {
+      case Stage::kPinAccessor:
+        PA_INST.access(net_list);
+        break;
+      case Stage::kGlobalRouter:
+        GR_INST.route(net_list);
+        break;
+      case Stage::kTrackAssigner:
+        TA_INST.assign(net_list);
+        break;
+      case Stage::kDetailedRouter:
+        DR_INST.route(net_list);
+        break;
+      case Stage::kViolationRepairer:
+        VR_INST.repair(net_list);
+        break;
+      default:
+        break;
+    }
+    if (enable_output_gds_files == 1) {
+      GP_INST.plot(net_list, stage, true, false);
+    }
+  }
+#else
+  irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
+
   std::set<Stage> stage_set;
   for (Tool tool : tool_list) {
     stage_set.insert(convertToStage(tool));
@@ -67,58 +129,57 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     stage_idx++;
   }
   if (stage_list[stage_idx - 1] != Stage::kNone) {
-    RT_INST.getDataManager().load(stage_list[stage_idx - 1]);
+    DM_INST.load(stage_list[stage_idx - 1]);
   }
 
-  Config& config = RT_INST.getDataManager().getConfig();
-  Database& database = RT_INST.getDataManager().getDatabase();
-  std::vector<Net>& net_list = RT_INST.getDataManager().getDatabase().get_net_list();
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
 
-  if (config.enable_output_gds_files == 1) {
-    GDSPlotter::initInst(config, database);
+  if (enable_output_gds_files == 1) {
+    GDSPlotter::initInst();
   }
   while (RTUtil::exist(stage_set, stage_list[stage_idx])) {
     switch (stage_list[stage_idx]) {
       case Stage::kPinAccessor:
-        PinAccessor::initInst(config, database);
+        PinAccessor::initInst();
         PA_INST.access(net_list);
         PinAccessor::destroyInst();
         break;
       case Stage::kResourceAllocator:
-        ResourceAllocator::initInst(config, database);
+        ResourceAllocator::initInst();
         RA_INST.allocate(net_list);
         ResourceAllocator::destroyInst();
         break;
       case Stage::kGlobalRouter:
-        GlobalRouter::initInst(config, database);
+        GlobalRouter::initInst();
         GR_INST.route(net_list);
         GlobalRouter::destroyInst();
         break;
       case Stage::kTrackAssigner:
-        TrackAssigner::initInst(config, database);
+        TrackAssigner::initInst();
         TA_INST.assign(net_list);
         TrackAssigner::destroyInst();
         break;
       case Stage::kDetailedRouter:
-        DetailedRouter::initInst(config, database);
+        DetailedRouter::initInst();
         DR_INST.route(net_list);
         DetailedRouter::destroyInst();
         break;
       case Stage::kViolationRepairer:
-        ViolationRepairer::initInst(config, database);
+        ViolationRepairer::initInst();
         VR_INST.repair(net_list);
         ViolationRepairer::destroyInst();
         break;
       default:
         break;
     }
-    if (config.enable_output_gds_files == 1) {
+    if (enable_output_gds_files == 1) {
       GP_INST.plot(net_list, stage_list[stage_idx], true, false);
     }
-    RT_INST.getDataManager().save(stage_list[stage_idx]);
+    DM_INST.save(stage_list[stage_idx]);
     stage_idx++;
   }
   GDSPlotter::destroyInst();
+#endif
 }
 
 Stage RTAPI::convertToStage(Tool tool)
@@ -149,7 +210,25 @@ Stage RTAPI::convertToStage(Tool tool)
 
 void RTAPI::destroyRT()
 {
-  RT::destroyInst();
+  DetailedRouter::destroyInst();
+  GDSPlotter::destroyInst();
+  GlobalRouter::destroyInst();
+  PinAccessor::destroyInst();
+  TrackAssigner::destroyInst();
+  ViolationRepairer::destroyInst();
+  DM_INST.output(dmInst->get_idb_builder());
+  DataManager::destroyInst();
+  LOG_INST.printLogFilePath();
+  // clang-format off
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________   ________________________  __  ");
+  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     ___  ____/____  _/___  | / /____  _/__  ___/___  / / / ");
+  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        __  /_     __  /  __   |/ /  __  /  _____ \\ __  /_/ /  ");
+  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         _  __/    __/ /   _  /|  /  __/ /   ____/ / _  __  /    ");
+  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /_/       /___/   /_/ |_/   /___/   /____/  /_/ /_/     ");
+  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  // clang-format on
+  Logger::destroyInst();
 }
 
 // EGR
@@ -235,26 +314,109 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
   std::vector<double> wire_length_via_num;
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getDatabase().get_total_wire_length());
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getDatabase().get_total_via_num());
+  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_wire_length());
+  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_via_num());
   EarlyGlobalRouter::destroyInst();
   return wire_length_via_num;
 }
 
 // DRC
 
-std::vector<ids::DRCRect> RTAPI::getMinScope(std::vector<ids::DRCRect>& detection_rect_list)
+bool RTAPI::check(std::vector<ids::DRCRect>& drc_rect_list)
 {
-  // return DrcAPIInst.getMinScope(detection_rect_list);
-  return detection_rect_list;
+  // return DrcAPIInst.check(drc_rect_list);
+  return false;
+}
+
+bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& drc_rect)
+{
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return hasViolation(env_rect_list, drc_rect_list);
+}
+
+bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const std::vector<LayerRect>& drc_rect_list)
+{
+  idrc::RegionQuery* region_query = idrc::DrcAPIInst.init();
+  std::vector<idrc::DrcRect*> idrc_env_rect_list;
+  for (LayerRect env_rect : env_rect_list) {
+    idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
+  }
+  idrc::DrcAPIInst.add(region_query, idrc_env_rect_list);
+
+  std::vector<idrc::DrcRect*> idrc_drc_rect_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    idrc_drc_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+  }
+  return idrc::DrcAPIInst.check(region_query, idrc_drc_rect_list);
+}
+
+std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect_list)
+{
+  std::vector<idrc::DrcRect*> drc_rect_ptr_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    ids::DRCRect ids_rect = covertToIDSRect(drc_rect);
+    idrc::DrcRect* drc_rect_ptr = idrc::DrcAPIInst.getDrcRect(ids_rect);
+    drc_rect_ptr_list.push_back(drc_rect_ptr);
+  }
+  std::vector<LayerRect> max_scope_list;
+  for (idrc::DrcRect* max_scope : idrc::DrcAPIInst.getMaxScope(drc_rect_ptr_list)) {
+    ids::DRCRect drc_rect = idrc::DrcAPIInst.getDrcRect(max_scope);
+    max_scope_list.push_back(convertToRTRect(drc_rect));
+  }
+  return max_scope_list;
+}
+
+std::vector<LayerRect> RTAPI::getMinScope(const std::vector<LayerRect>& drc_rect_list)
+{
+  std::vector<idrc::DrcRect*> drc_rect_ptr_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+  }
+  std::vector<LayerRect> min_scope_list;
+  for (idrc::DrcRect* max_scope : idrc::DrcAPIInst.getMinScope(drc_rect_ptr_list)) {
+    ids::DRCRect drc_rect = idrc::DrcAPIInst.getDrcRect(max_scope);
+    min_scope_list.push_back(convertToRTRect(drc_rect));
+  }
+  return min_scope_list;
+}
+
+std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
+{
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMaxScope(drc_rect_list);
+}
+
+std::vector<LayerRect> RTAPI::getMinScope(const LayerRect& drc_rect)
+{
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMinScope(drc_rect_list);
+}
+
+LayerRect RTAPI::convertToRTRect(ids::DRCRect ids_rect)
+{
+  LayerRect rt_rect;
+  rt_rect.set_layer_idx(DM_INST.getHelper().getRoutingLayerIdxByName(ids_rect.layer_name));
+  rt_rect.set_rect(ids_rect.lb_x, ids_rect.lb_y, ids_rect.rt_x, ids_rect.rt_y);
+  return rt_rect;
+}
+
+ids::DRCRect RTAPI::covertToIDSRect(LayerRect rt_rect)
+{
+  ids::DRCRect ids_rect;
+  ids_rect.lb_x = rt_rect.get_lb_x();
+  ids_rect.lb_y = rt_rect.get_lb_y();
+  ids_rect.rt_x = rt_rect.get_rt_x();
+  ids_rect.rt_y = rt_rect.get_rt_y();
+  ids_rect.layer_name = DM_INST.getDatabase().get_routing_layer_list()[rt_rect.get_layer_idx()].get_layer_name();
+  return ids_rect;
 }
 
 // CTS
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)
 {
-  Helper& helper = RT_INST.getDataManager().getHelper();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RT_INST.getDataManager().getDatabase().get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  Helper& helper = DM_INST.getHelper();
 
   std::vector<ids::PHYNode> phy_node_list;
 
