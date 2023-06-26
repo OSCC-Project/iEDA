@@ -29,17 +29,17 @@ def_init -path ./result/iTO_hold_result.def
 run_incremental_flow -config ./iEDA_config/pl_default_config.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iPL_lg_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iPL_lg_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/lg_db.rpt"
 

@@ -51,7 +51,6 @@ class JogSpacingCheck
   JogSpacingCheck& operator=(JogSpacingCheck&& other) = delete;
 
   // function
-
   void checkJogSpacing(DrcNet* target_net);
   void checkJogSpacing(DrcRect* target_rect);
 
@@ -115,6 +114,8 @@ class JogSpacingCheck
                              std::vector<DrcRect>& jogs_need_to_check_jog2jog_spacing);
   void checkSpacing_Horizontal(DrcRect* intercept_result_rect, DrcRect* check_rect, DrcRect* rect,
                                std::vector<DrcRect>& jogs_need_to_check_jog2jog_spacing);
+
+  void addSpot(DrcRect* trigger_rect, DrcRect* result_rect);
 
   /// init
   void init(DrcConfig* config, Tech* tech, RegionQuery* region_query)

@@ -19,7 +19,7 @@
 #include "Blockage.hpp"
 #include "CutLayer.hpp"
 #include "Die.hpp"
-#include "GCellAxis.hpp"
+
 #include "Helper.hpp"
 #include "Net.hpp"
 #include "RoutingLayer.hpp"
@@ -34,7 +34,7 @@ class Database
   ~Database() = default;
   // getter
   irt_int get_micron_dbu() const { return _micron_dbu; }
-  GCellAxis& get_gcell_axis() { return _gcell_axis; }
+  ScaleAxis& get_gcell_axis() { return _gcell_axis; }
   Die& get_die() { return _die; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
@@ -48,7 +48,7 @@ class Database
 
  private:
   irt_int _micron_dbu = -1;
-  GCellAxis _gcell_axis;
+  ScaleAxis _gcell_axis;
   Die _die;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;

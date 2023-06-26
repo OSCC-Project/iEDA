@@ -70,6 +70,8 @@ class MPDB
   void setMacroFixed(string name, int32_t x = -1, int32_t y = -1);
   void writeResult(std::string output_path);
 
+  void writePartitonGDS(string file_name, map<FPInst*, int> partition_result);
+
  private:
   void initMPDB();
   void writeMacro(ofstream& gds_file, FPInst* macro, int layer);

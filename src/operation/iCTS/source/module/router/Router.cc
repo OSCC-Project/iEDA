@@ -19,7 +19,6 @@
 #include "CTSAPI.hpp"
 #include "HCTS.h"
 
-using namespace std;
 
 namespace icts {
 
@@ -72,6 +71,7 @@ void Router::slewAwareBuild()
   for (auto* clock : _clocks) {
     auto& clock_nets = clock->get_clock_nets();
     for (auto* clk_net : clock_nets) {
+      CTSAPIInst.resetId();
       auto insts = get_clustering_insts(clk_net);
       if (insts.size() <= 1) {
         continue;
@@ -152,13 +152,13 @@ void Router::routing(CtsNet* clk_net)
   // hierarchical clustering
   int insert_num = 0;
   for (int level = 0; insts.size() > 1; ++level) {
-    vector<ClockTopo> clk_topos;
-    vector<vector<CtsInstance*>> clusters;
+    std::vector<ClockTopo> clk_topos;
+    std::vector<std::vector<CtsInstance*>> clusters;
     clustering(clusters, insts);
     for (size_t i = 0; i < clusters.size(); ++i) {
       Topology<Endpoint> topo;
       topoligize(topo, clusters[i]);
-      string clk_topo_name = connect_string(net_name, level, i);
+      std::string clk_topo_name = connect_string(net_name, level, i);
       init_node_name(topo, clk_topo_name);
       dme(topo);
       ClockTopo clk_topo = create_clock_topo(topo, clk_topo_name);
@@ -201,7 +201,7 @@ void Router::comfortRouting(CtsNet* clk_net)
   auto total_topo = biClusterTopo(insts);
   dme(total_topo);
   // cut sub topo
-  vector<Topology<Endpoint>> sub_topos;
+  std::vector<Topology<Endpoint>> sub_topos;
   if (static_cast<int>(insts.size()) <= config->get_cluster_size()) {
     sub_topos = {total_topo};
   } else {
@@ -209,12 +209,12 @@ void Router::comfortRouting(CtsNet* clk_net)
   }
   for (size_t i = 0; i < sub_topos.size(); ++i) {
     auto& topo = sub_topos[i];
-    string clk_topo_name = net_name + "_" + std::to_string(i);
+    std::string clk_topo_name = net_name + "_" + std::to_string(i);
     init_node_name(topo, clk_topo_name);
     ClockTopo clk_topo = create_clock_topo(topo, clk_topo_name);
     auto driver = clk_topo.get_driver();
     for (auto load : clk_topo.get_loads()) {
-      auto level = max(driver->get_level(), load->get_level() + 1);
+      auto level = std::max(driver->get_level(), load->get_level() + 1);
       driver->set_level(level);
     }
     _clk_topos.emplace_back(clk_topo);
@@ -320,7 +320,7 @@ ClockTopo Router::create_clock_topo(CtsNet* clk_net)
 }
 
 template <typename T>
-void Router::init_node_name(Topology<T>& topo, const string& clk_topo_name)
+void Router::init_node_name(Topology<T>& topo, const std::string& clk_topo_name)
 {
   // set the id of topo internal nodes
   int internal_node_name = 0;
@@ -338,7 +338,7 @@ void Router::init_node_name(Topology<T>& topo, const string& clk_topo_name)
 }
 
 template <typename T>
-ClockTopo Router::create_clock_topo(Topology<T>& topo, const string& clk_topo_name)
+ClockTopo Router::create_clock_topo(Topology<T>& topo, const std::string& clk_topo_name)
 {
   auto* config = CTSAPIInst.get_config();
   std::string root_name = clk_topo_name + "_buf";
@@ -395,19 +395,19 @@ void Router::dme(Topology<T>& topo) const
   std::string router_type = config->get_router_type();
   if (router_type == "BST") {
     double skew_bound = config->get_skew_bound();
-    BstParams params(BstType::kIME, config->get_micron_dbu(), skew_bound, DelayModel::kLINEAR);
+    BstParams params(BstType::kIME, CTSAPIInst.getDbUnit(), skew_bound, DelayModel::kLINEAR);
     icts::dme(topo, params);
   } else if (router_type == "ZST") {
-    ZstParams params(delay_model, config->get_micron_dbu(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
+    ZstParams params(delay_model, CTSAPIInst.getDbUnit(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params);
   } else {
-    UstParams params(delay_model, config->get_micron_dbu(), config->get_skew_bound(), CTSAPIInst.getClockUnitRes(),
+    UstParams params(delay_model, CTSAPIInst.getDbUnit(), config->get_skew_bound(), CTSAPIInst.getClockUnitRes(),
                      CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params, _skew_scheduler);
   }
 }
 
-void Router::clustering(vector<vector<CtsInstance*>>& clusters, const vector<CtsInstance*>& insts) const
+void Router::clustering(std::vector<std::vector<CtsInstance*>>& clusters, const std::vector<CtsInstance*>& insts) const
 {
   auto* config = CTSAPIInst.get_config();
   Kmeans<CtsInstance*> kmeans;
@@ -429,7 +429,7 @@ void Router::clustering(vector<vector<CtsInstance*>>& clusters, const vector<Cts
       total_dist += pgl::manhattan_distance(center_point, inst->get_location());
     }
     auto avg_dist = total_dist / cluster.size();
-    auto avg_ratio = avg_dist / config->get_micron_dbu() / 15;
+    auto avg_ratio = avg_dist / CTSAPIInst.getDbUnit() / 15;
     if (avg_ratio < 1) {
       clusters.emplace_back(cluster);
     } else {
@@ -445,7 +445,7 @@ void Router::clustering(vector<vector<CtsInstance*>>& clusters, const vector<Cts
 int Router::calFeasibleFanout(const double& avg_wirelength) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto level_length = config->get_micron_dbu() * 15;  // um
+  auto level_length = CTSAPIInst.getDbUnit() * 15;  // um
   auto avg_ratio = avg_wirelength / level_length;
   if (avg_ratio < 1) {
     return config->get_cluster_size();
@@ -485,7 +485,7 @@ template <typename T>
 Topology<T> Router::cutTopo(const int& root_id, Topology<T>& topo) const
 {
   auto& parent_value = topo.value(root_id);
-  vector<TopoNode<T>> new_nodes = {TopoNode<T>{parent_value, -1, -1, -1, 0}};
+  std::vector<TopoNode<T>> new_nodes = {TopoNode<T>{parent_value, -1, -1, -1, 0}};
   std::map<int, int> id_map = {{root_id, 0}};
   std::deque<int> id_que = {root_id};
 
@@ -522,13 +522,13 @@ Topology<T> Router::cutTopo(const int& root_id, Topology<T>& topo) const
 }
 
 template <typename T>
-vector<Topology<T>> Router::splitTopo(Topology<T>& topo, const string& net_name) const
+std::vector<Topology<T>> Router::splitTopo(Topology<T>& topo, const std::string& net_name) const
 {
   auto* config = CTSAPIInst.get_config();
   if (static_cast<int>(topo.nodes().size()) <= config->get_cluster_size()) {
-    return vector<Topology<T>>{topo};
+    return std::vector<Topology<T>>{topo};
   }
-  vector<Topology<T>> all_topos;
+  std::vector<Topology<T>> all_topos;
   auto vertex_itr = topo.postorder_vertexs();
   for (auto itr = vertex_itr.first; itr != vertex_itr.second; ++itr) {
     if (itr.is_leaf()) {
@@ -585,9 +585,9 @@ vector<Topology<T>> Router::splitTopo(Topology<T>& topo, const string& net_name)
 }
 
 template <typename T>
-Topology<T> Router::biClusterTopo(const vector<CtsInstance*>& insts) const
+Topology<T> Router::biClusterTopo(const std::vector<CtsInstance*>& insts) const
 {
-  vector<TopoNode<T>> all_nodes;
+  std::vector<TopoNode<T>> all_nodes;
   if (insts.size() == 1) {
     auto inst = insts[0];
     T data;
@@ -604,7 +604,7 @@ Topology<T> Router::biClusterTopo(const vector<CtsInstance*>& insts) const
 }
 
 template <typename T>
-TopoNode<T> Router::biCluster(const vector<CtsInstance*>& insts, vector<TopoNode<T>>& all_nodes) const
+TopoNode<T> Router::biCluster(const std::vector<CtsInstance*>& insts, std::vector<TopoNode<T>>& all_nodes) const
 {
   if (insts.size() == 1) {
     auto inst = insts[0];
@@ -626,7 +626,7 @@ TopoNode<T> Router::biCluster(const vector<CtsInstance*>& insts, vector<TopoNode
 }
 
 template <typename T>
-void Router::setParentId(TopoNode<T>& node, const int& id, vector<TopoNode<T>>& all_nodes) const
+void Router::setParentId(TopoNode<T>& node, const int& id, std::vector<TopoNode<T>>& all_nodes) const
 {
   if (node.left() != -1) {
     auto& left_node = all_nodes[node.left()];

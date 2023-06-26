@@ -1,8 +1,10 @@
 #===========================================================
-##   set lef path
+##   set tech lef path
 #===========================================================
 set TECH_LEF_PATH "./lef/sky130_fd_sc_hs.tlef"
-                             
+#===========================================================
+##   set lef path
+#===========================================================                             
 set LEF_PATH "./lef/sky130_ef_io__com_bus_slice_10um.lef \
               ./lef/sky130_ef_io__corner_pad.lef \
               ./lef/sky130_ef_io__vccd_lvc_pad.lef \
@@ -32,11 +34,9 @@ set LEF_PATH "./lef/sky130_ef_io__com_bus_slice_10um.lef \
               ./lef/sky130_ef_io__vssio_hvc_pad.lef \
               ./lef/sky130_fd_sc_hs_merged.lef \
               ./lef/sky130_sram_1rw1r_64x256_8.lef"
-
-
-set DEF_PATH "./result/gcd.def"
-set VERILOG_PATH "./result/verilog/gcd.v"
-
+#===========================================================
+##   set common lib path
+#===========================================================
 set LIB_PATH "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_025C_1v80.lib \
       ./lib/sky130_sram_1rw1r_128x256_8_TT_1p8V_25C.lib \
@@ -45,7 +45,9 @@ set LIB_PATH "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_100C_1v80.lib \
       ./lib/sky130_sram_1rw1r_44x64_8_TT_1p8V_25C.lib \
       ./lib/sky130_sram_1rw1r_80x64_8_TT_1p8V_25C.lib"
-
+#===========================================================
+##   set fix fanout lib path
+#===========================================================
 set LIB_PATH_FIXFANOUT "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_025C_1v80.lib \
       ./lib/sky130_sram_1rw1r_128x256_8_TT_1p8V_25C.lib \
@@ -54,7 +56,9 @@ set LIB_PATH_FIXFANOUT "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_100C_1v80.lib \
       ./lib/sky130_sram_1rw1r_44x64_8_TT_1p8V_25C.lib \
       ./lib/sky130_sram_1rw1r_80x64_8_TT_1p8V_25C.lib"
-
+#===========================================================
+##   set drv lib path
+#===========================================================
 set LIB_PATH_DRV "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_025C_1v80.lib \
       ./lib/sky130_sram_1rw1r_128x256_8_TT_1p8V_25C.lib \
@@ -63,7 +67,9 @@ set LIB_PATH_DRV "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_100C_1v80.lib \
       ./lib/sky130_sram_1rw1r_44x64_8_TT_1p8V_25C.lib \
       ./lib/sky130_sram_1rw1r_80x64_8_TT_1p8V_25C.lib"
-
+#===========================================================
+##   set hold lib path
+#===========================================================
 set LIB_PATH_HOLD "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_025C_1v80.lib \
       ./lib/sky130_sram_1rw1r_128x256_8_TT_1p8V_25C.lib \
@@ -72,7 +78,9 @@ set LIB_PATH_HOLD "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_100C_1v80.lib \
       ./lib/sky130_sram_1rw1r_44x64_8_TT_1p8V_25C.lib \
       ./lib/sky130_sram_1rw1r_80x64_8_TT_1p8V_25C.lib"
-
+#===========================================================
+##   set setup lib path
+#===========================================================
 set LIB_PATH_SETUP "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_025C_1v80.lib \
       ./lib/sky130_sram_1rw1r_128x256_8_TT_1p8V_25C.lib \
@@ -81,7 +89,13 @@ set LIB_PATH_SETUP "./lib/sky130_dummy_io.lib \
       ./lib/sky130_fd_sc_hs__tt_100C_1v80.lib \
       ./lib/sky130_sram_1rw1r_44x64_8_TT_1p8V_25C.lib \
       ./lib/sky130_sram_1rw1r_80x64_8_TT_1p8V_25C.lib"
-
+#===========================================================
+##   set sdc path
+#===========================================================
 set SDC_PATH "./sdc/gcd.sdc"
 #set SDC_PATH "./sdc/uart.sdc"
 #set SDC_PATH "./sdc/aes_cipher_top.sdc"
+#===========================================================
+##   set spef path
+#===========================================================
+#set SPEF_PATH "./spef/gcd.spef"

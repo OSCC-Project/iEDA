@@ -23,16 +23,10 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 def_init -path ./result/asic_top_1220.def
 
-#===========================================================
-##   Save def 
-#===========================================================
-#def_save -path ./result/data_out.def
-#netlist_save -path ./result/iRT_result.v
+report_wirelength -path  "./result/report/wirelength.rpt"
+report_congestion -path "./result/report/congestion.rpt"
 
 #===========================================================
 ##   Exit 
 #===========================================================
-#flow_exit
-
-report_wirelength -path  "./result/report/wirelength.rpt"
-report_congestion -path "./result/report/congestion.rpt"
+flow_exit

@@ -69,4 +69,6 @@ using ieda::Vector;
 constexpr unsigned c_vertex_slew_data_bucket_size = 1;
 constexpr unsigned c_vertex_path_delay_data_bucket_size = 1;
 
+constexpr bool c_print_delay_yaml = false;
+
 }  // namespace ista

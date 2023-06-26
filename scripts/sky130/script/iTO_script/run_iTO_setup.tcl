@@ -39,17 +39,17 @@ def_init -path ./result/iTO_hold_result.def
 run_to_setup -config ./iEDA_config/to_default_config_setup.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iTO_setup_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iTO_setup_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/setup_db.rpt"
 
