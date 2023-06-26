@@ -262,13 +262,6 @@ void GlobalRouter::initSingleResource(GRNode& gr_node, RoutingLayer& routing_lay
 
 void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer)
 {
-  std::map<irt_int, double>& layer_idx_utilization_ratio = DM_INST.getConfig().layer_idx_utilization_ratio;
-
-  double layer_utilization_ratio = 1;
-  if (RTUtil::exist(layer_idx_utilization_ratio, routing_layer.get_layer_idx())) {
-    layer_utilization_ratio = layer_idx_utilization_ratio[routing_layer.get_layer_idx()];
-  }
-
   std::vector<PlanarRect> wire_list = getWireList(gr_node, routing_layer);
 
   if (!wire_list.empty()) {
@@ -303,8 +296,6 @@ void GlobalRouter::initResourceSupply(GRNode& gr_node, RoutingLayer& routing_lay
       via_num += static_cast<irt_int>(wire.getArea() / gr_node.get_single_via_area());
     }
   }
-  wire_num = static_cast<irt_int>(wire_num * layer_utilization_ratio);
-  via_num = static_cast<irt_int>(via_num * layer_utilization_ratio);
   gr_node.set_wire_area_supply(wire_num * gr_node.get_single_wire_area());
   gr_node.set_via_area_supply(via_num * gr_node.get_single_via_area());
 }

@@ -33,7 +33,6 @@ class Config
   irt_int thread_number;                                  // optional
   std::string bottom_routing_layer;                       // optional
   std::string top_routing_layer;                          // optional
-  std::map<std::string, double> layer_utilization_ratio;  // optional
   irt_int enable_output_gds_files;                        // optional
   double ra_initial_penalty;                              // optional
   double ra_penalty_drop_rate;                            // optional
@@ -44,7 +43,6 @@ class Config
   std::string log_file_path;                              // building
   irt_int bottom_routing_layer_idx;                       // building
   irt_int top_routing_layer_idx;                          // building
-  std::map<irt_int, double> layer_idx_utilization_ratio;  // building
   // **********    DataManager    ********** //
   std::string dm_temp_directory_path;  // building
   // **********  DetailedRouter   ********** //
