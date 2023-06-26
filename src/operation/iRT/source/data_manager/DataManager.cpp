@@ -164,7 +164,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  _config.layer_utilization_ratio = RTUtil::getConfigValue<std::map<std::string, double>>(config_map, "-layer_utilization_ratio", {});
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
   _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
   _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
@@ -647,9 +646,6 @@ void DataManager::buildConfig()
   _config.top_routing_layer_idx = _helper.getRoutingLayerIdxByName(_config.top_routing_layer);
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     LOG_INST.error(Loc::current(), "The routing layer should be at least two layers!");
-  }
-  for (auto [layer_name, utilization_ratio] : _config.layer_utilization_ratio) {
-    _config.layer_idx_utilization_ratio[_helper.getRoutingLayerIdxByName(layer_name)] = utilization_ratio;
   }
   // **********    DataManager    ********** //
   _config.dm_temp_directory_path = _config.temp_directory_path + "data_manager/";
@@ -1403,10 +1399,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "layer_utilization_ratio");
-  for (auto [layer_name, utilization_ratio] : _config.layer_utilization_ratio) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), layer_name, ": ", utilization_ratio);
-  }
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
@@ -1425,10 +1417,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "layer_idx_utilization_ratio");
-  for (auto [layer_idx, utilization_ratio] : _config.layer_idx_utilization_ratio) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), layer_idx, ": ", utilization_ratio);
-  }
   // **********    DataManager    ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DataManager");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dm_temp_directory_path");

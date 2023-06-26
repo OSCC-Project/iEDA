@@ -272,6 +272,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
   initAccessPointList(pa_model, pa_net);
   mergeAccessPointList(pa_net);
   selectAccessPointList(pa_net);
+  // eliminateViolation(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
@@ -604,65 +605,93 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 
 void PinAccessor::eliminateConflict(PAModel& pa_model)
 {
+  Monitor monitor;
+
+  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
+
+  irt_int batch_size = RTUtil::getBatchSize(pa_net_list.size());
+
+  Monitor stage_monitor;
+
+#pragma omp parallel for
+  for (size_t i = 0; i < pa_net_list.size(); i++) {
+    checkConflict(pa_net_list[i], pa_model);
+    selectDistance(pa_net_list[i]);
+    if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
+      LOG_INST.info(Loc::current(), "Eliminate conflict ", (i + 1), " nets", stage_monitor.getStatsInfo());
+    }
+  }
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.info(Loc::current(), "Eliminate conflict ", pa_net_list.size(), " nets", monitor.getStatsInfo());
+  }
+}
+
+void PinAccessor::checkConflict(PANet& pa_net, PAModel& pa_model)
+{
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
-      // via_num_access_point_map
-      std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
-      for (AccessPoint& access_point : pin_access_point_list) {
-        irt_int via_num = 0;
-        for (std::vector<irt_int> via_below_layer_idx_list :
-             RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
-          for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
-            bool has_confilct = false;
-            ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
-            for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
-              LayerRect real_rect(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
-              for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
-                LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-                PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-                for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-                  for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-                    PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[real_rect.get_layer_idx()][x][y];
-                    for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
-                      if (pa_net.get_net_idx() == net_idx) {
-                        continue;
-                      }
-                      if (RTAPI_INST.hasViolation(region_list, real_rect)) {
-                        has_confilct = true;
-                        goto here;
-                      }
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+    // via_num_access_point_map
+    std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
+    for (AccessPoint& access_point : pin_access_point_list) {
+      irt_int via_num = 0;
+      for (std::vector<irt_int> via_below_layer_idx_list :
+           RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
+        for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
+          bool has_confilct = false;
+          ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+          for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+            LayerRect real_rect(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
+            for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+              LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+              PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+              for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+                for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+                  PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[real_rect.get_layer_idx()][x][y];
+                  for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
+                    if (pa_net.get_net_idx() == net_idx) {
+                      continue;
+                    }
+                    if (RTAPI_INST.hasViolation(region_list, real_rect)) {
+                      has_confilct = true;
+                      goto here;
                     }
                   }
                 }
               }
             }
-          here:
-            if (has_confilct) {
-              break;
-            } else {
-              via_num++;
-            }
+          }
+        here:
+          if (has_confilct) {
+            break;
+          } else {
+            via_num++;
           }
         }
-        via_num_access_point_map[via_num].push_back(access_point);
       }
-      // balance_coord
-      LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
-      std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
-      for (AccessPoint& access_point : via_num_access_point_map.begin()->second) {
-        LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
-        distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
-      }
-      pin_access_point_list.clear();
-      pin_access_point_list.push_back(distance_access_point_map.begin()->second.front());
+      via_num_access_point_map[via_num].push_back(access_point);
     }
+    pin_access_point_list = via_num_access_point_map.begin()->second;
+  }
+}
+
+void PinAccessor::selectDistance(PANet& pa_net)
+{
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
+    std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
+    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
+      distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
+    }
+    pin_access_point_list.clear();
+    pin_access_point_list.push_back(distance_access_point_map.begin()->second.front());
   }
 }
 
