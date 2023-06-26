@@ -75,6 +75,8 @@ class PinAccessor
   void selectGCellAccessPoint(PANet& pa_net);
   void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateConflict(PAModel& pa_model);
+  void checkConflict(PANet& pa_net, PAModel& pa_model);
+  void selectDistance(PANet& pa_net);
 #endif
 
 #if 1  // update pa_model
