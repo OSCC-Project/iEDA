@@ -69,6 +69,8 @@ class DrcAPI
   std::map<std::string, std::vector<DrcViolationSpot*>> check(RegionQuery* region_query);
   std::map<std::string, std::vector<DrcViolationSpot*>> check(std::vector<DrcRect*>& region_rect_list);
   DrcRect* getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, std::string layer_name, bool is_artificial = false);
+  DrcRect* getDrcRect(ids::DRCRect drc_rect);
+  ids::DRCRect getDrcRect(DrcRect* drc_rect);
   // Get the maximum influence region of spacing (Common,EOL,Corner_fill)
   std::vector<DrcRect*> getMaxScope(std::vector<DrcRect*> origin_rect_list);
   // Get the minimum influence region of spacing (Common,EOL,Corner_fill)

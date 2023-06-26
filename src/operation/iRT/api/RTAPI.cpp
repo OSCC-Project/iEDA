@@ -20,6 +20,7 @@
 #include "DataManager.hpp"
 #include "DetailedRouter.hpp"
 #include "DrcAPI.hpp"
+#include "DrcRect.h"
 #include "EarlyGlobalRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
@@ -327,35 +328,85 @@ bool RTAPI::check(std::vector<ids::DRCRect>& drc_rect_list)
   return false;
 }
 
-bool RTAPI::hasViolation(std::vector<LayerRect> environment, const LayerRect& drc_rect)
+bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& drc_rect)
 {
-  return false;
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return hasViolation(env_rect_list, drc_rect_list);
+}
+
+bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const std::vector<LayerRect>& drc_rect_list)
+{
+  idrc::RegionQuery* region_query = idrc::DrcAPIInst.init();
+  std::vector<idrc::DrcRect*> idrc_env_rect_list;
+  for (LayerRect env_rect : env_rect_list) {
+    idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
+  }
+  idrc::DrcAPIInst.add(region_query, idrc_env_rect_list);
+
+  std::vector<idrc::DrcRect*> idrc_drc_rect_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    idrc_drc_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+  }
+  return idrc::DrcAPIInst.check(region_query, idrc_drc_rect_list);
+}
+
+std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect_list)
+{
+  std::vector<idrc::DrcRect*> drc_rect_ptr_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+  }
+  std::vector<LayerRect> max_scope_list;
+  for (idrc::DrcRect* max_scope : idrc::DrcAPIInst.getMaxScope(drc_rect_ptr_list)) {
+    ids::DRCRect drc_rect = idrc::DrcAPIInst.getDrcRect(max_scope);
+    max_scope_list.push_back(convertToRTRect(drc_rect));
+  }
+  return max_scope_list;
+}
+
+std::vector<LayerRect> RTAPI::getMinScope(const std::vector<LayerRect>& drc_rect_list)
+{
+  std::vector<idrc::DrcRect*> drc_rect_ptr_list;
+  for (const LayerRect& drc_rect : drc_rect_list) {
+    drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+  }
+  std::vector<LayerRect> min_scope_list;
+  for (idrc::DrcRect* max_scope : idrc::DrcAPIInst.getMinScope(drc_rect_ptr_list)) {
+    ids::DRCRect drc_rect = idrc::DrcAPIInst.getDrcRect(max_scope);
+    min_scope_list.push_back(convertToRTRect(drc_rect));
+  }
+  return min_scope_list;
 }
 
 std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
 {
-  std::vector<LayerRect> drc_rect_list;
-  drc_rect_list.push_back(drc_rect);
-  return drc_rect_list;
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMaxScope(drc_rect_list);
 }
 
 std::vector<LayerRect> RTAPI::getMinScope(const LayerRect& drc_rect)
 {
-  std::vector<LayerRect> drc_rect_list;
-  drc_rect_list.push_back(drc_rect);
-  return drc_rect_list;
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMinScope(drc_rect_list);
 }
 
-std::vector<ids::DRCRect> RTAPI::getMaxScope(std::vector<ids::DRCRect>& drc_rect_list)
+LayerRect RTAPI::convertToRTRect(ids::DRCRect ids_rect)
 {
-  // return DrcAPIInst.getMaxScope(drc_rect_list);
-  return drc_rect_list;
+  LayerRect rt_rect;
+  rt_rect.set_layer_idx(DM_INST.getHelper().getRoutingLayerIdxByName(ids_rect.layer_name));
+  rt_rect.set_rect(ids_rect.lb_x, ids_rect.lb_y, ids_rect.rt_x, ids_rect.rt_y);
+  return rt_rect;
 }
 
-std::vector<ids::DRCRect> RTAPI::getMinScope(std::vector<ids::DRCRect>& drc_rect_list)
+ids::DRCRect RTAPI::covertToIDSRect(LayerRect rt_rect)
 {
-  // return DrcAPIInst.getMinScope(drc_rect_list);
-  return drc_rect_list;
+  ids::DRCRect ids_rect;
+  ids_rect.lb_x = rt_rect.get_lb_x();
+  ids_rect.lb_y = rt_rect.get_lb_y();
+  ids_rect.rt_x = rt_rect.get_rt_x();
+  ids_rect.rt_y = rt_rect.get_rt_y();
+  ids_rect.layer_name = DM_INST.getDatabase().get_routing_layer_list()[rt_rect.get_layer_idx()].get_layer_name();
+  return ids_rect;
 }
 
 // CTS
