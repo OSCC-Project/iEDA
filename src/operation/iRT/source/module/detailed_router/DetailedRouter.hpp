@@ -72,7 +72,6 @@ class DetailedRouter
   std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box,
                                                                                            LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);
 #endif
@@ -114,7 +113,7 @@ class DetailedRouter
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
 #endif
 
-#if 0  // plot dr_box
+#if 1  // plot dr_box
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx = -1);
 #endif
 

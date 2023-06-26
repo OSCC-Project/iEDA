@@ -73,7 +73,6 @@ class ViolationRepairer
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
   void repairMinArea(VRNet& vr_net);
   void updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net);
-  std::vector<LayerRect> getRealRectList(MTree<PHYNode>& phy_node_tree);
 #endif
 
 #if 1  // update ra_model
