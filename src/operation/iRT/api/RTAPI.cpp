@@ -354,7 +354,9 @@ std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect
 {
   std::vector<idrc::DrcRect*> drc_rect_ptr_list;
   for (const LayerRect& drc_rect : drc_rect_list) {
-    drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
+    ids::DRCRect ids_rect = covertToIDSRect(drc_rect);
+    idrc::DrcRect* drc_rect_ptr = idrc::DrcAPIInst.getDrcRect(ids_rect);
+    drc_rect_ptr_list.push_back(drc_rect_ptr);
   }
   std::vector<LayerRect> max_scope_list;
   for (idrc::DrcRect* max_scope : idrc::DrcAPIInst.getMaxScope(drc_rect_ptr_list)) {

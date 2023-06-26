@@ -749,6 +749,8 @@ void DrcAPI::getCommonSpacingScopeRect(DrcRect* target_rect, DrcRect* scope_rect
   int rt_x = target_rect->get_right() + spacing;
   int rt_y = target_rect->get_top() + spacing;
   scope_rect->set_coordinate(lb_x, lb_y, rt_x, rt_y);
+  scope_rect->set_layer_id(target_rect->get_layer_id());
+  scope_rect->set_layer_order(target_rect->get_layer_order());
 }
 
 void DrcAPI::getCommonSpacingScope(std::vector<DrcRect*>& max_scope_list, std::map<int, DrcNet>& target_nets, bool is_max)
