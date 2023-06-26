@@ -34,8 +34,6 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-bottom_routing_layer", ValueType::kString));
   // std::string top_routing_layer;     // optional
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
-  // std::map<std::string, double> layer_utilization_ratio;  // optional
-  _config_list.push_back(std::make_pair("-layer_utilization_ratio", ValueType::kStringDoubleMap));
   // irt_int enable_output_gds_files;  // optional
   _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
   // double ra_initial_penalty;               // optional
