@@ -59,9 +59,9 @@ class GlobalRouter
   void buildNeighborMap(GRModel& gr_model);
   void buildNodeSupply(GRModel& gr_model);
   void updateNetBlockageMap(GRModel& gr_model);
-  void calcAreaSupply(GRModel& gr_model);
-  void initSingleResource(GRNode& gr_node, RoutingLayer& routing_layer);
-  void initResourceSupply(GRNode& gr_node, RoutingLayer& routing_layer);
+  void updateWholeDemand(GRModel& gr_model);
+  void updateNetDemandMap(GRModel& gr_model);
+  void updateNodeSupply(GRModel& gr_model);
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
   void buildAccessMap(GRModel& gr_model);
   void buildGRNetPriority(GRModel& gr_model);
