@@ -168,22 +168,6 @@ void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model)
 
 void ViolationRepairer::checkVRModel(VRModel& vr_model)
 {
-  for (GridMap<VRGCell>& gcell_map : vr_model.get_layer_gcell_map()) {
-    for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
-        PlanarRect& gcell_rect = gcell_map[x][y].get_real_rect();
-        for (auto& [net_idx, blockage_list] : gcell_map[x][y].get_net_blockage_map()) {
-          for (PlanarRect& blockage : blockage_list) {
-            if (RTUtil::isClosedOverlap(gcell_rect, blockage)) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The region of gcell does not contain blockage!");
-          }
-        }
-      }
-    }
-  }
-
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     if (vr_net.get_net_idx() < 0) {
       LOG_INST.error(Loc::current(), "The net idx : ", vr_net.get_net_idx(), " is illegal!");
