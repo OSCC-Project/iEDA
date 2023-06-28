@@ -64,15 +64,15 @@ class PinAccessor
   void accessPANetList(PAModel& pa_model);
   void accessPANet(PAModel& pa_model, PANet& pa_net);
   void initAccessPointList(PAModel& pa_model, PANet& pa_net);
-  std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
-  std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
-                                              std::vector<EXTLayerRect>& pin_shape_list);
+  void optAccessPointByBlockage(PAModel& pa_model, PANet& pa_net);
+  void optAccessPointByEnclosure(PANet& pa_net);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointList(PANet& pa_net);
   void selectAccessPointType(PANet& pa_net);
   void buildBoundingBox(PANet& pa_net);
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
+  void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
   void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateConflict(PAModel& pa_model);
   void checkConflict(PANet& pa_net, PAModel& pa_model);

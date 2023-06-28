@@ -61,9 +61,11 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  bool check(std::vector<ids::DRCRect>& drc_rect_list);
   bool hasViolation(std::vector<LayerRect> environment, const LayerRect& drc_rect);
   bool hasViolation(std::vector<LayerRect> environment, const std::vector<LayerRect>& drc_rect_list);
+  void* initRegionQuery();
+  void addEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list);
+  bool hasViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const LayerRect& drc_rect);
