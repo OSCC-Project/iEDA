@@ -322,12 +322,6 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 // DRC
 
-bool RTAPI::check(std::vector<ids::DRCRect>& drc_rect_list)
-{
-  // return DrcAPIInst.check(drc_rect_list);
-  return false;
-}
-
 bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& drc_rect)
 {
   std::vector<LayerRect> drc_rect_list = {drc_rect};
@@ -336,18 +330,32 @@ bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& 
 
 bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const std::vector<LayerRect>& drc_rect_list)
 {
-  idrc::RegionQuery* region_query = idrc::DrcAPIInst.init();
+  void* region_query = initRegionQuery();
+  addEnvRectList(region_query, env_rect_list);
+  return hasViolation(region_query, drc_rect_list);
+}
+
+void* RTAPI::initRegionQuery()
+{
+  return idrc::DrcAPIInst.init();
+}
+
+void RTAPI::addEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list)
+{
   std::vector<idrc::DrcRect*> idrc_env_rect_list;
   for (LayerRect env_rect : env_rect_list) {
     idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
   }
-  idrc::DrcAPIInst.add(region_query, idrc_env_rect_list);
+  idrc::DrcAPIInst.add(static_cast<idrc::RegionQuery*>(region_query), idrc_env_rect_list);
+}
 
+bool RTAPI::hasViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list)
+{
   std::vector<idrc::DrcRect*> idrc_drc_rect_list;
   for (const LayerRect& drc_rect : drc_rect_list) {
     idrc_drc_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
   }
-  return idrc::DrcAPIInst.check(region_query, idrc_drc_rect_list);
+  return idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query), idrc_drc_rect_list);
 }
 
 std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect_list)
