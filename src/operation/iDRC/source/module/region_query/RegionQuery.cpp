@@ -914,6 +914,34 @@ void RegionQuery::deleteIntersectPoly(std::set<DrcPoly*>& intersect_poly_set)
   }
 }
 
+std::vector<DrcPoly*> RegionQuery::rebuildPoly_add_list(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list)
+{
+  std::vector<PolygonWithHoles> new_polygon_list;
+  for (auto poly : intersect_poly_set) {
+    std::vector<bp::rectangle_data<int>> rects;
+    auto boost_polygon = poly->getPolygon()->get_polygon();
+    new_polygon_list += boost_polygon;
+  }
+  for (auto rect : drc_rect_list) {
+    if (rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
+      new_polygon_list += DRCUtil::getBoostRect(rect);
+    }
+  }
+
+  std::vector<DrcPoly*> poly_list;
+  for (auto new_poly_with_hole : new_polygon_list) {
+    DrcPoly* poly = new DrcPoly();
+    int layer_id = drc_rect_list[0]->get_layer_id();
+    int net_id = drc_rect_list[0]->get_net_id();
+    poly->setNetId(net_id);
+    poly->set_layer_id(layer_id);
+    DrcPolygon* polygon = new DrcPolygon(new_polygon_list[0], layer_id, poly, net_id);
+    poly->setPolygon(polygon);
+    poly_list.push_back(poly);
+  }
+  return poly_list;
+}
+
 DrcPoly* RegionQuery::rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list)
 {
   std::vector<PolygonWithHoles> new_polygon_list;
@@ -931,6 +959,7 @@ DrcPoly* RegionQuery::rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, st
     std::cout << "[iDRC API] Warning : Rect list merge failed!" << std::endl;
     return nullptr;
   }
+
   DrcPoly* poly = new DrcPoly();
   int layer_id = drc_rect_list[0]->get_layer_id();
   int net_id = drc_rect_list[0]->get_net_id();

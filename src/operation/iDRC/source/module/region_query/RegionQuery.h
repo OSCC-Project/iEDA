@@ -65,6 +65,7 @@ class RegionQuery
   void getIntersectPoly(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   void deleteIntersectPoly(std::set<DrcPoly*>& intersect_poly_set);
   DrcPoly* rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
+  std::vector<DrcPoly*> rebuildPoly_add_list(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   std::vector<DrcPoly*> rebuildPoly_del(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   void addPoly(DrcPoly* new_polygon);
   void addPolyEdge_NotAddToRegion(DrcPoly* new_poly);

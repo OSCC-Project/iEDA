@@ -158,12 +158,22 @@ void DrcAPI::add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect
   // 删除与这组rect相交的所有polygon
   region_query->deleteIntersectPoly(intersect_poly_set);
 
-  DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
-  if (new_poly) {
-    region_query->addPoly(new_poly);
-  }
-  for (auto& drc_rect : drc_rect_list) {
-    region_query->addDrcRect(drc_rect, _tech);
+  //   DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
+  //   if (new_poly) {
+  //     region_query->addPoly(new_poly);
+  //   }
+  //   for (auto& drc_rect : drc_rect_list) {
+  //     region_query->addDrcRect(drc_rect, _tech);
+  //   }
+
+  auto new_poly_list = region_query->rebuildPoly_add_list(intersect_poly_set, drc_rect_list);
+  for (auto new_poly : new_poly_list) {
+    if (new_poly) {
+      region_query->addPoly(new_poly);
+    }
+    for (auto& drc_rect : drc_rect_list) {
+      region_query->addDrcRect(drc_rect, _tech);
+    }
   }
 }
 
