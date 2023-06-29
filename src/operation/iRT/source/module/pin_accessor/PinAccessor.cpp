@@ -255,7 +255,7 @@ void PinAccessor::accessPAModel(PAModel& pa_model)
 {
   accessPANetList(pa_model);
   updateNetEnclosureMap(pa_model);
-  eliminateConflict(pa_model);
+  eliminateViaConflict(pa_model);
 }
 
 void PinAccessor::accessPANetList(PAModel& pa_model)
@@ -583,8 +583,8 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint> legal_access_point_list;
-    std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-    for (AccessPoint& access_point : access_point_list) {
+    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
+    for (AccessPoint& access_point : pin_access_point_list) {
       irt_int layer_idx = access_point.get_layer_idx();
       if (routing_layer_list.back().get_layer_idx() <= layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
         continue;
@@ -613,9 +613,9 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
       legal_access_point_list.push_back(access_point);
     }
     if (legal_access_point_list.empty()) {
-      legal_access_point_list = {access_point_list.front()};
+      legal_access_point_list = {pin_access_point_list.front()};
     }
-    access_point_list = legal_access_point_list;
+    pin_access_point_list = legal_access_point_list;
   }
 }
 
@@ -675,7 +675,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
   }
 }
 
-void PinAccessor::eliminateConflict(PAModel& pa_model)
+void PinAccessor::eliminateViaConflict(PAModel& pa_model)
 {
   Monitor monitor;
 
@@ -687,8 +687,8 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
 
 #pragma omp parallel for
   for (size_t i = 0; i < pa_net_list.size(); i++) {
-    checkConflict(pa_net_list[i], pa_model);
-    selectDistance(pa_net_list[i]);
+    selectByViaNumber(pa_net_list[i], pa_model);
+    selectByNetDistance(pa_net_list[i]);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
       LOG_INST.info(Loc::current(), "Eliminate conflict ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
@@ -698,7 +698,7 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   }
 }
 
-void PinAccessor::checkConflict(PANet& pa_net, PAModel& pa_model)
+void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -752,7 +752,7 @@ void PinAccessor::checkConflict(PANet& pa_net, PAModel& pa_model)
   }
 }
 
-void PinAccessor::selectDistance(PANet& pa_net)
+void PinAccessor::selectByNetDistance(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
