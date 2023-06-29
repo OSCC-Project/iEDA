@@ -23,6 +23,28 @@ class Coordinate
   constexpr Coordinate<T> operator+(const Coordinate<T>& other) const { return {_x + other._x, _y + other._y}; }
   constexpr Coordinate<T> operator-(const Coordinate<T>& other) const { return {_x - other._x, _y - other._y}; }
   constexpr bool operator==(const Coordinate& other) const { return _x == other._x && _y == other._y; }
+  constexpr bool operator<(const Coordinate& other) const { return _x < other._x || (_x == other._x && _y < other._y); }
+  constexpr bool operator>(const Coordinate& other) const { return other < *this; }
+  constexpr bool operator<=(const Coordinate& other) const { return !(other < *this); }
+  constexpr bool operator>=(const Coordinate& other) const { return !(*this < other); }
+  constexpr Coordinate<T> operator+=(const Coordinate<T>& other)
+  {
+    _x += other._x;
+    _y += other._y;
+    return *this;
+  }
+  constexpr Coordinate<T> operator-=(const Coordinate<T>& other)
+  {
+    _x -= other._x;
+    _y -= other._y;
+    return *this;
+  }
+  constexpr Coordinate<T> operator*=(const T& b)
+  {
+    _x *= b;
+    _y *= b;
+    return *this;
+  }
   static constexpr T dot(const Coordinate<T>& lhs, const Coordinate<T>& rhs) { return lhs._x * rhs._x + lhs._y * rhs._y; }
   static constexpr T cross(const Coordinate<T>& lhs, const Coordinate<T>& rhs) { return lhs._x * rhs._y - rhs._x * lhs._y; }
   constexpr T get_x() const { return _x; }
@@ -35,10 +57,10 @@ class Coordinate
 template <typename T>
 struct CoordinateHash
 {
-  std::size_t operator()(const Coordinate<T>& p) const
+  std::size_t operator()(const Coordinate<T>& p) const noexcept
   {
-    std::size_t h1 = std::hash<int>{}(p.get_x());
-    std::size_t h2 = std::hash<int>{}(p.get_y());
+    std::size_t h1 = std::hash<T>{}(p.get_x());
+    std::size_t h2 = std::hash<T>{}(p.get_y());
     return h1 ^ (h2 << 1);
   }
 };
@@ -65,6 +87,8 @@ class Line
     _dis = {_a - _b};
     _cross = Coordinate<T>::cross(_a, _b);
   }
+
+ private:
   Coordinate<T> _a;
   Coordinate<T> _b;
   Coordinate<T> _dis;
@@ -81,14 +105,18 @@ class Ploygon
   ~Ploygon() {}
   bool isEmpty() const { return _coordis.empty(); }
   constexpr Ploygon<T> operator&(const Ploygon<T>& other) const { return PloygonClip(*this, other); }
+  // constexpr Ploygon<T> operator&(vector<Coordinate<T>>&& other) const { return PloygonClip(*this, Ploygon<T>(other)); }
   constexpr T area() const
   {
     T ans{0};
+    if (isEmpty())
+      return ans;
     for (size_t i = 1; i < _coordis.size() - 1; i++) {
       ans += Coordinate<T>::cross(_coordis[i] - _coordis[0], _coordis[i + 1] - _coordis[0]);
     }
     return ans / 2;
   }
+  vector<Coordinate<T>> getCoordinates() const { return _coordis; }
 
  private:
   Ploygon<T> PloygonClip(const Ploygon<T>& lhs, const Ploygon<T>& rhs) const;
