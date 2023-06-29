@@ -59,7 +59,7 @@ class TrackAssigner
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(std::vector<std::vector<TAPanel>>& layer_panel_list, TANet& ta_net);
-  TAGroup makeTAGroup(TAPanel& ta_panel, TNode<RTNode>* dr_node_node);
+  TAGroup makeTAGroup(TAPanel& ta_panel, TNode<RTNode>* ta_node_node, TNode<RTNode>* dr_node_node);
   void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
