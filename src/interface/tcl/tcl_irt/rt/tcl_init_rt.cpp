@@ -36,6 +36,8 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
   // irt_int enable_output_gds_files;  // optional
   _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
+  // irt_int enable_idrc_interfaces;  // optional
+  _config_list.push_back(std::make_pair("-enable_idrc_interfaces", ValueType::kInt));
   // double ra_initial_penalty;               // optional
   _config_list.push_back(std::make_pair("-ra_initial_penalty", ValueType::kDouble));
   // double ra_penalty_drop_rate;             // optional
