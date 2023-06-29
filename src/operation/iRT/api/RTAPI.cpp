@@ -393,6 +393,15 @@ bool RTAPI::hasViolation(void* region_query, const std::vector<LayerRect>& drc_r
   return idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query), idrc_drc_rect_list);
 }
 
+std::map<std::string, irt_int> RTAPI::getViolation(void* region_query)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  for(auto [rule_name, violation_list] : idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query))) {
+    violation_name_num_map[rule_name] = static_cast<irt_int>(violation_list.size());
+  }
+  return violation_name_num_map;
+}
+
 std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
