@@ -16,14 +16,14 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerRect.hpp"
+#include "LayerRect.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TATask.hpp"
 
 namespace irt {
 
-class TAPanel : public EXTLayerRect
+class TAPanel : public LayerRect
 {
  public:
   TAPanel() = default;
