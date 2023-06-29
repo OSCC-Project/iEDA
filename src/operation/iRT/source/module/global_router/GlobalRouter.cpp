@@ -1716,8 +1716,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& wire_overflow_list = gr_model_stat.get_wire_overflow_list();
-  std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
+  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
 
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
@@ -1742,34 +1741,26 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
-        double wire_remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
-        wire_overflow_list.push_back(wire_remain != 0 ? (-1 * wire_remain / gr_node.get_resource_supply()) : 0);
-
-        double via_remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
-        via_overflow_list.push_back(via_remain != 0 ? (-1 * via_remain / gr_node.get_resource_supply()) : 0);
+        double remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
+        overflow_list.push_back(remain != 0 ? (-1 * remain / gr_node.get_resource_supply()) : 0);
       }
     }
   }
   double total_wire_length = 0;
   irt_int total_via_number = 0;
-  double max_wire_overflow = -DBL_MAX;
-  double max_via_overflow = -DBL_MAX;
+  double max_overflow = -DBL_MAX;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
   }
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
-  for (double wire_overflow : wire_overflow_list) {
-    max_wire_overflow = std::max(max_wire_overflow, wire_overflow);
-  }
-  for (double via_overflow : via_overflow_list) {
-    max_via_overflow = std::max(max_via_overflow, via_overflow);
+  for (double overflow : overflow_list) {
+    max_overflow = std::max(max_overflow, overflow);
   }
   gr_model_stat.set_total_wire_length(total_wire_length);
   gr_model_stat.set_total_via_number(total_via_number);
-  gr_model_stat.set_max_wire_overflow(max_wire_overflow);
-  gr_model_stat.set_max_via_overflow(max_via_overflow);
+  gr_model_stat.set_max_overflow(max_overflow);
 }
 
 void GlobalRouter::reportTable(GRModel& gr_model)
@@ -1780,12 +1771,10 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& wire_overflow_list = gr_model_stat.get_wire_overflow_list();
-  std::vector<double>& via_overflow_list = gr_model_stat.get_via_overflow_list();
+  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
   double total_wire_length = gr_model_stat.get_total_wire_length();
   irt_int total_via_number = gr_model_stat.get_total_via_number();
-  double max_wire_overflow = gr_model_stat.get_max_wire_overflow();
-  double max_via_overflow = gr_model_stat.get_max_via_overflow();
+  double max_overflow = gr_model_stat.get_max_overflow();
 
   // report wire info
   fort::char_table wire_table;
@@ -1825,60 +1814,27 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     LOG_INST.info(Loc::current(), table_str);
   }
 
-  // report wire overflow info
-  double wire_overflow_range = RTUtil::getScaleRange(wire_overflow_list);
-  GridMap<double> wire_overflow_map = RTUtil::getRangeNumRatioMap(wire_overflow_list);
+  // report overflow info
+  double overflow_range = RTUtil::getScaleRange(overflow_list);
+  GridMap<double> overflow_map = RTUtil::getRangeNumRatioMap(overflow_list);
 
-  fort::char_table wire_overflow_table;
-  wire_overflow_table.set_border_style(FT_SOLID_STYLE);
-  wire_overflow_table << fort::header << "Wire Overflow"
-                      << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < wire_overflow_map.get_y_size(); y_idx++) {
-    double left = wire_overflow_map[0][y_idx];
-    double right = left + wire_overflow_range;
+  fort::char_table overflow_table;
+  overflow_table.set_border_style(FT_SOLID_STYLE);
+  overflow_table << fort::header << "Overflow"
+                 << "GCell Number" << fort::endr;
+  for (irt_int y_idx = 0; y_idx < overflow_map.get_y_size(); y_idx++) {
+    double left = overflow_map[0][y_idx];
+    double right = left + overflow_range;
     std::string range_str;
-    if (y_idx == wire_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_wire_overflow, "]");
+    if (y_idx == overflow_map.get_y_size() - 1) {
+      range_str = RTUtil::getString("[", left, ",", max_overflow, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
-    wire_overflow_table << range_str << RTUtil::getString(wire_overflow_map[1][y_idx], "(", wire_overflow_map[2][y_idx], "%)")
-                        << fort::endr;
+    overflow_table << range_str << RTUtil::getString(overflow_map[1][y_idx], "(", overflow_map[2][y_idx], "%)") << fort::endr;
   }
-  wire_overflow_table << fort::header << "Total" << wire_overflow_list.size() << fort::endr;
-
-  // report via overflow info
-  double via_overflow_range = RTUtil::getScaleRange(via_overflow_list);
-  GridMap<double> via_overflow_map = RTUtil::getRangeNumRatioMap(via_overflow_list);
-
-  fort::char_table via_overflow_table;
-  via_overflow_table.set_border_style(FT_SOLID_STYLE);
-  via_overflow_table << fort::header << "Via Overflow"
-                     << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < via_overflow_map.get_y_size(); y_idx++) {
-    double left = via_overflow_map[0][y_idx];
-    double right = left + via_overflow_range;
-    std::string range_str;
-    if (y_idx == via_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_via_overflow, "]");
-    } else {
-      range_str = RTUtil::getString("[", left, ",", right, ")");
-    }
-    via_overflow_table << range_str << RTUtil::getString(via_overflow_map[1][y_idx], "(", via_overflow_map[2][y_idx], "%)") << fort::endr;
-  }
-  via_overflow_table << fort::header << "Total" << via_overflow_list.size() << fort::endr;
-
-  std::vector<std::string> longer_str_list = RTUtil::splitString(wire_overflow_table.to_string(), '\n');
-  std::vector<std::string> shorter_str_list = RTUtil::splitString(via_overflow_table.to_string(), '\n');
-  if (longer_str_list.size() < shorter_str_list.size()) {
-    std::swap(longer_str_list, shorter_str_list);
-  }
-  for (size_t i = 0; i < longer_str_list.size(); i++) {
-    std::string table_str = longer_str_list[i];
-    table_str += " ";
-    if (i < shorter_str_list.size()) {
-      table_str += shorter_str_list[i];
-    }
+  overflow_table << fort::header << "Total" << overflow_list.size() << fort::endr;
+  for (std::string table_str : RTUtil::splitString(overflow_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
   }
 }
