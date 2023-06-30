@@ -654,10 +654,9 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
 {
   initRoutingInfo(gr_model, gr_net);
   while (!isConnectedAllEnd(gr_model)) {
-    routeSinglePath(gr_model);
-    rerouteByEnlarging(gr_model);
-    for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
-      rerouteByIgnoring(gr_model, gr_route_strategy);
+    for (GRRouteStrategy gr_route_strategy :
+         {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kEnlarging, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
+      routeByStrategy(gr_model, gr_route_strategy);
     }
     updatePathResult(gr_model);
     updateDirectionSet(gr_model);
@@ -703,6 +702,33 @@ void GlobalRouter::initRoutingInfo(GRModel& gr_model, GRNet& gr_net)
 bool GlobalRouter::isConnectedAllEnd(GRModel& gr_model)
 {
   return gr_model.get_end_node_comb_list().empty();
+}
+
+void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
+{
+  if (gr_route_strategy == GRRouteStrategy::kFullyConsider) {
+    routeSinglePath(gr_model);
+  } else if (isRoutingFailed(gr_model)) {
+    resetSinglePath(gr_model);
+    gr_model.set_gr_route_strategy(gr_route_strategy);
+    if (gr_route_strategy == GRRouteStrategy::kEnlarging) {
+      gr_model.set_routing_region(DM_INST.getDatabase().get_die().get_grid_rect());
+    }
+    routeSinglePath(gr_model);
+    if (gr_route_strategy == GRRouteStrategy::kEnlarging) {
+      gr_model.set_routing_region(gr_model.get_curr_bounding_box());
+    }
+    gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
+    if (!isRoutingFailed(gr_model)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                      " successfully!");
+      }
+    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
+                     " failed!");
+    }
+  }
 }
 
 void GlobalRouter::routeSinglePath(GRModel& gr_model)
@@ -819,21 +845,6 @@ void GlobalRouter::resetPathHead(GRModel& gr_model)
   gr_model.set_path_head_node(popFromOpenList(gr_model));
 }
 
-void GlobalRouter::rerouteByEnlarging(GRModel& gr_model)
-{
-  Die& die = DM_INST.getDatabase().get_die();
-
-  if (isRoutingFailed(gr_model)) {
-    resetSinglePath(gr_model);
-    gr_model.set_routing_region(die.get_grid_rect());
-    routeSinglePath(gr_model);
-    gr_model.set_routing_region(gr_model.get_curr_bounding_box());
-    if (!isRoutingFailed(gr_model)) {
-      LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " enlarged routing successfully!");
-    }
-  }
-}
-
 bool GlobalRouter::isRoutingFailed(GRModel& gr_model)
 {
   return gr_model.get_end_node_comb_idx() == -1;
@@ -855,25 +866,6 @@ void GlobalRouter::resetSinglePath(GRModel& gr_model)
 
   gr_model.set_path_head_node(nullptr);
   gr_model.set_end_node_comb_idx(-1);
-}
-
-void GlobalRouter::rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
-{
-  if (isRoutingFailed(gr_model)) {
-    resetSinglePath(gr_model);
-    gr_model.set_gr_route_strategy(gr_route_strategy);
-    routeSinglePath(gr_model);
-    gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
-    if (!isRoutingFailed(gr_model)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
-                      " successfully!");
-      }
-    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
-      LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
-                     " failed!");
-    }
-  }
 }
 
 void GlobalRouter::updatePathResult(GRModel& gr_model)
@@ -1059,7 +1051,7 @@ GRNode* GlobalRouter::popFromOpenList(GRModel& gr_model)
 
 double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
-    bool exist_neighbor = false;
+  bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_ptr_map()) {
     if (neighbor_ptr == end_node) {
       exist_neighbor = true;
