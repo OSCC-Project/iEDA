@@ -396,7 +396,7 @@ bool RTAPI::hasViolation(void* region_query, const std::vector<LayerRect>& drc_r
 std::map<std::string, irt_int> RTAPI::getViolation(void* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
-  for(auto [rule_name, violation_list] : idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query))) {
+  for (auto [rule_name, violation_list] : idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query))) {
     violation_name_num_map[rule_name] = static_cast<irt_int>(violation_list.size());
   }
   return violation_name_num_map;
