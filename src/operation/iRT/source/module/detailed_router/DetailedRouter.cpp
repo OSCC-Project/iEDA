@@ -542,6 +542,22 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRealSegmentList(DRBox& dr_bo
       real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], layer_idx), LayerCoord(x, y_list[y_idx + 1], layer_idx));
     }
   }
+  for (irt_int x : x_list) {
+    if (x == x_list.front() || x == x_list.back()) {
+      continue;
+    }
+    for (irt_int y : y_list) {
+      if (y == y_list.front() || y == y_list.back()) {
+        continue;
+      }
+      if ((layer_idx + 1) <= routing_layer_list.back().get_layer_idx()) {
+        real_segment_list.emplace_back(LayerCoord(x, y, layer_idx), LayerCoord(x, y, layer_idx + 1));
+      }
+      if ((layer_idx - 1) >= routing_layer_list.front().get_layer_idx()) {
+        real_segment_list.emplace_back(LayerCoord(x, y, layer_idx - 1), LayerCoord(x, y, layer_idx));
+      }
+    }
+  }
   return real_segment_list;
 }
 
