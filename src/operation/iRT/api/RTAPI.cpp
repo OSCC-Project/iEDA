@@ -402,6 +402,12 @@ std::map<std::string, irt_int> RTAPI::getViolation(void* region_query)
   return violation_name_num_map;
 }
 
+std::map<std::string, irt_int> RTAPI::getViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  return violation_name_num_map;
+}
+
 std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
