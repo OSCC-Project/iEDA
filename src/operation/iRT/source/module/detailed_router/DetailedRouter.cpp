@@ -100,6 +100,10 @@ DRModel DetailedRouter::initDRModel(std::vector<Net>& net_list)
       dr_box.set_base_region(RTUtil::getRealRect(dr_box.get_grid_coord(), gcell_axis));
       dr_box.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       dr_box.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
+      for (DRSourceType dr_source_type :
+           {DRSourceType::kBlockage, DRSourceType::kPanelResult, DRSourceType::kOtherBoxResult, DRSourceType::kSelfBoxResult}) {
+        dr_box.get_source_region_query_map()[dr_source_type] = RTAPI_INST.initRegionQuery();
+      }
     }
   }
   return dr_model;
@@ -153,7 +157,7 @@ void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          dr_box_map[x][y].get_source_net_rect_map()[DRSourceType::kBlockage][-1].push_back(blockage_real_rect);
+          dr_box_map[x][y].addRect(DRSourceType::kBlockage, -1, blockage_real_rect);
         }
       }
     }
@@ -168,7 +172,7 @@ void DetailedRouter::updateNetBlockageMap(DRModel& dr_model)
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              dr_box_map[x][y].get_source_net_rect_map()[DRSourceType::kBlockage][dr_net.get_net_idx()].push_back(shape_real_rect);
+              dr_box_map[x][y].addRect(DRSourceType::kBlockage, dr_net.get_net_idx(), shape_real_rect);
             }
           }
         }
@@ -198,7 +202,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
             PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
             for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
               for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-                dr_box_map[x][y].get_source_net_rect_map()[DRSourceType::kPanelResult][dr_net.get_net_idx()].push_back(real_rect);
+                dr_box_map[x][y].addRect(DRSourceType::kPanelResult, dr_net.get_net_idx(), real_rect);
               }
             }
           }
@@ -1570,9 +1574,9 @@ void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
           for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
             DRBox& target_box = dr_box_map[x][y];
             if (target_box.get_grid_coord() == dr_box.get_grid_coord()) {
-              target_box.get_source_net_rect_map()[DRSourceType::kSelfBoxResult][dr_task.get_origin_net_idx()].push_back(real_rect);
+              target_box.addRect(DRSourceType::kSelfBoxResult, dr_task.get_origin_net_idx(), real_rect);
             } else {
-              target_box.get_source_net_rect_map()[DRSourceType::kOtherBoxResult][dr_task.get_origin_net_idx()].push_back(real_rect);
+              target_box.addRect(DRSourceType::kOtherBoxResult, dr_task.get_origin_net_idx(), real_rect);
             }
           }
         }

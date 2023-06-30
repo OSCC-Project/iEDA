@@ -92,6 +92,9 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           ta_panel.set_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kOtherPanelResult, TASourceType::kSelfPanelResult}) {
+            ta_panel.get_source_region_query_map()[ta_source_type] = RTAPI_INST.initRegionQuery();
+          }
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -102,6 +105,9 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           ta_panel.set_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kOtherPanelResult, TASourceType::kSelfPanelResult}) {
+            ta_panel.get_source_region_query_map()[ta_source_type] = RTAPI_INST.initRegionQuery();
+          }
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -160,12 +166,12 @@ void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
       if (routing_layer_list[blockage_layer_idx].isPreferH()) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
           TAPanel& ta_panel = layer_panel_list[blockage_layer_idx][y];
-          ta_panel.get_source_net_rect_map()[TASourceType::kBlockage][-1].push_back(blockage_real_rect);
+          ta_panel.addRect(TASourceType::kBlockage, -1, blockage_real_rect);
         }
       } else {
         for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
           TAPanel& ta_panel = layer_panel_list[blockage_layer_idx][x];
-          ta_panel.get_source_net_rect_map()[TASourceType::kBlockage][-1].push_back(blockage_real_rect);
+          ta_panel.addRect(TASourceType::kBlockage, -1, blockage_real_rect);
         }
       }
     }
@@ -181,12 +187,12 @@ void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
           if (routing_layer_list[shape_layer_idx].isPreferH()) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
               TAPanel& ta_panel = layer_panel_list[shape_layer_idx][y];
-              ta_panel.get_source_net_rect_map()[TASourceType::kBlockage][ta_net.get_net_idx()].push_back(shape_real_rect);
+              ta_panel.addRect(TASourceType::kBlockage, ta_net.get_net_idx(), shape_real_rect);
             }
           } else {
             for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
               TAPanel& ta_panel = layer_panel_list[shape_layer_idx][x];
-              ta_panel.get_source_net_rect_map()[TASourceType::kBlockage][ta_net.get_net_idx()].push_back(shape_real_rect);
+              ta_panel.addRect(TASourceType::kBlockage, ta_net.get_net_idx(), shape_real_rect);
             }
           }
         }
@@ -1399,18 +1405,18 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
           for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
             TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][y];
             if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
-              target_panel.get_source_net_rect_map()[TASourceType::kSelfPanelResult][ta_task.get_origin_net_idx()].push_back(real_rect);
+              target_panel.addRect(TASourceType::kSelfPanelResult, ta_task.get_origin_net_idx(), real_rect);
             } else {
-              target_panel.get_source_net_rect_map()[TASourceType::kOtherPanelResult][ta_task.get_origin_net_idx()].push_back(real_rect);
+              target_panel.addRect(TASourceType::kOtherPanelResult, ta_task.get_origin_net_idx(), real_rect);
             }
           }
         } else {
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][x];
             if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
-              target_panel.get_source_net_rect_map()[TASourceType::kSelfPanelResult][ta_task.get_origin_net_idx()].push_back(real_rect);
+              target_panel.addRect(TASourceType::kSelfPanelResult, ta_task.get_origin_net_idx(), real_rect);
             } else {
-              target_panel.get_source_net_rect_map()[TASourceType::kOtherPanelResult][ta_task.get_origin_net_idx()].push_back(real_rect);
+              target_panel.addRect(TASourceType::kOtherPanelResult, ta_task.get_origin_net_idx(), real_rect);
             }
           }
         }
