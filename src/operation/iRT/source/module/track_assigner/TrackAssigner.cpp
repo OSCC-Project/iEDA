@@ -951,10 +951,21 @@ TANode* TrackAssigner::popFromOpenList(TAPanel& ta_panel)
 
 double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
+  bool exist_neighbor = false;
+  for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_ptr_map()) {
+    if (neighbor_ptr == end_node) {
+      exist_neighbor = true;
+      break;
+    }
+  }
+  if (!exist_neighbor) {
+    LOG_INST.info(Loc::current(), "The neighbor not exist!");
+  }
+
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(ta_panel, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getWireCost(ta_panel, start_node, end_node);
+  cost += getKnowWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getViaCost(ta_panel, start_node, end_node);
   return cost;
@@ -972,25 +983,20 @@ double TrackAssigner::getJointCost(TAPanel& ta_panel, TANode* curr_node, Orienta
   return task_cost;
 }
 
-double TrackAssigner::getWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-
-    irt_int x_distance = std::abs(start_node->get_x() - end_node->get_x());
-    irt_int y_distance = std::abs(start_node->get_y() - end_node->get_y());
-
-    if (routing_layer.isPreferH()) {
-      wire_cost += (x_distance * ta_panel.get_wire_unit());
-      wire_cost += (y_distance * 2 * ta_panel.get_wire_unit());
-    } else {
-      wire_cost += (y_distance * ta_panel.get_wire_unit());
-      wire_cost += (x_distance * 2 * ta_panel.get_wire_unit());
+    if (routing_layer.get_direction() != RTUtil::getDirection(*start_node, *end_node)) {
+      wire_cost *= 2;
     }
   }
+  wire_cost *= ta_panel.get_wire_unit();
   return wire_cost;
 }
 
@@ -1040,10 +1046,18 @@ double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getWireCost(ta_panel, start_node, end_node);
+  estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
+}
+
+double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  double wire_cost = 0;
+  wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+  wire_cost *= ta_panel.get_wire_unit();
+  return wire_cost;
 }
 
 double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
@@ -1116,13 +1130,23 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
       ta_node_map_struct.push(gp_boundary);
 
       y -= y_reduced_span;
-      GPText gp_text_node_coord;
-      gp_text_node_coord.set_coord(real_rect.get_lb_x(), y);
-      gp_text_node_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-      gp_text_node_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", ta_node.get_layer_idx(), ")"));
-      gp_text_node_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_node_coord.set_presentation(GPTextPresentation::kLeftMiddle);
-      ta_node_map_struct.push(gp_text_node_coord);
+      GPText gp_text_node_real_coord;
+      gp_text_node_real_coord.set_coord(real_rect.get_lb_x(), y);
+      gp_text_node_real_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_node_real_coord.set_message(
+          RTUtil::getString("(", ta_node.get_x(), " , ", ta_node.get_y(), " , ", ta_node.get_layer_idx(), ")"));
+      gp_text_node_real_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_node_real_coord);
+
+      y -= y_reduced_span;
+      GPText gp_text_node_grid_coord;
+      gp_text_node_grid_coord.set_coord(real_rect.get_lb_x(), y);
+      gp_text_node_grid_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_node_grid_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", ta_node.get_layer_idx(), ")"));
+      gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_node_grid_coord);
 
       y -= y_reduced_span;
       GPText gp_text_obs_task_map;
