@@ -85,6 +85,7 @@ class GlobalRouter
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void initRoutingInfo(GRModel& gr_model, GRNet& gr_net);
   bool isConnectedAllEnd(GRModel& gr_model);
+  void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
   void initPathHead(GRModel& gr_model);
   bool searchEnded(GRModel& gr_model);
@@ -92,10 +93,8 @@ class GlobalRouter
   bool passCheckingSegment(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   bool replaceParentNode(GRModel& gr_model, GRNode* parent_node, GRNode* child_node);
   void resetPathHead(GRModel& gr_model);
-  void rerouteByEnlarging(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);
-  void rerouteByIgnoring(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void updatePathResult(GRModel& gr_model);
   void updateDirectionSet(GRModel& gr_model);
   void resetStartAndEnd(GRModel& gr_model);

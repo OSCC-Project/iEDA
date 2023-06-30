@@ -152,7 +152,7 @@ void GDSPlotter::buildLayoutLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPLayoutType, bool> routing_data_type_visible_map
-      = {{GPLayoutType::kText, false},  {GPLayoutType::kPort, true},         {GPLayoutType::kAccessPoint, true},
+      = {{GPLayoutType::kText, false},  {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
          {GPLayoutType::kGuide, false}, {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
          {GPLayoutType::kWire, true},   {GPLayoutType::kEnclosure, true},    {GPLayoutType::kBlockage, true}};
   std::map<GPLayoutType, bool> cut_data_type_visible_map
@@ -338,14 +338,14 @@ void GDSPlotter::addPinShapeList(GPStruct& pin_struct, Pin& pin)
   for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(routing_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
   for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(cut_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(cut_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
@@ -469,7 +469,7 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
       wire_boundary.set_rect(wire_rect);
       wire_list_struct.push(wire_boundary);
-      
+
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
