@@ -17,6 +17,7 @@
 #pragma once
 
 #include "LayerRect.hpp"
+#include "RTAPI.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelStat.hpp"
