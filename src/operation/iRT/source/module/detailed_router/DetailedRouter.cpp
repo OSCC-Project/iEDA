@@ -192,7 +192,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
       for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node_node->value().get_routing_tree())) {
         std::vector<Segment<LayerCoord>> real_segment_list;
         real_segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
-        for (LayerRect& real_rect : DM_INST.getRealRectList(real_segment_list)) {
+        for (const LayerRect& real_rect : DM_INST.getRealRectList(real_segment_list)) {
           for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
             LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
             PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -733,11 +733,18 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
 
 void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
 {
+  // if (dr_box.get_grid_coord() == PlanarCoord(3, 6) && dr_task.get_task_idx() == 0) {
+  //   int a = 0;
+  // }
   initRoutingInfo(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     routeSinglePath(dr_box);
     for (DRRouteStrategy dr_route_strategy : {DRRouteStrategy::kIgnoringSelfBoxResult, DRRouteStrategy::kIgnoringOtherBoxResult,
                                               DRRouteStrategy::kIgnoringPanelResult, DRRouteStrategy::kIgnoringBlockage}) {
+      // if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockage) {
+      //   plotDRBox(dr_box, dr_task.get_task_idx());
+      //   irt_int a = 0;
+      // }
       rerouteByIgnoring(dr_box, dr_route_strategy);
     }
     updatePathResult(dr_box);
@@ -1086,10 +1093,21 @@ DRNode* DetailedRouter::popFromOpenList(DRBox& dr_box)
 
 double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
+  bool exist_neighbor = false;
+  for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_ptr_map()) {
+    if (neighbor_ptr == end_node) {
+      exist_neighbor = true;
+      break;
+    }
+  }
+  if (!exist_neighbor) {
+    LOG_INST.info(Loc::current(), "The neighbor not exist!");
+  }
+
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(dr_box, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getWireCost(dr_box, start_node, end_node);
+  cost += getKnowWireCost(dr_box, start_node, end_node);
   cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getViaCost(dr_box, start_node, end_node);
   return cost;
@@ -1107,25 +1125,20 @@ double DetailedRouter::getJointCost(DRBox& dr_box, DRNode* curr_node, Orientatio
   return task_cost;
 }
 
-double DetailedRouter::getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-
-    irt_int x_distance = std::abs(start_node->get_x() - end_node->get_x());
-    irt_int y_distance = std::abs(start_node->get_y() - end_node->get_y());
-
-    if (routing_layer.isPreferH()) {
-      wire_cost += (x_distance * dr_box.get_wire_unit());
-      wire_cost += (y_distance * 2 * dr_box.get_wire_unit());
-    } else {
-      wire_cost += (y_distance * dr_box.get_wire_unit());
-      wire_cost += (x_distance * 2 * dr_box.get_wire_unit());
+    if (routing_layer.get_direction() != RTUtil::getDirection(*start_node, *end_node)) {
+      wire_cost *= 2;
     }
   }
+  wire_cost *= dr_box.get_wire_unit();
   return wire_cost;
 }
 
@@ -1175,10 +1188,18 @@ double DetailedRouter::getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node)
 double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getWireCost(dr_box, start_node, end_node);
+  estimate_cost += getEstimateWireCost(dr_box, start_node, end_node);
   estimate_cost += getEstimateCornerCost(dr_box, start_node, end_node);
   estimate_cost += getViaCost(dr_box, start_node, end_node);
   return estimate_cost;
+}
+
+double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  double wire_cost = 0;
+  wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+  wire_cost *= dr_box.get_wire_unit();
+  return wire_cost;
 }
 
 double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
@@ -1203,12 +1224,12 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
   irt_int width = INT_MAX;
   for (ScaleGrid& x_grid : dr_box.get_box_scale_axis().get_x_grid_list()) {
-    width = std::min(width, x_grid.get_step_num());
+    width = std::min(width, x_grid.get_step_length());
   }
   for (ScaleGrid& y_grid : dr_box.get_box_scale_axis().get_y_grid_list()) {
-    width = std::min(width, y_grid.get_step_num());
+    width = std::min(width, y_grid.get_step_length());
   }
-  width = std::max(1, width / 10);
+  width = std::max(1, width / 3);
 
   GPGDS gp_gds;
 
@@ -1229,7 +1250,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
       for (irt_int grid_y = 0; grid_y < dr_node_map.get_y_size(); grid_y++) {
         DRNode& dr_node = dr_node_map[grid_x][grid_y];
         PlanarRect real_rect = RTUtil::getEnlargedRect(dr_node.get_planar_coord(), width);
-        irt_int y_reduced_span = real_rect.getYSpan() / 25;
+        irt_int y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
         irt_int y = real_rect.get_rt_y();
 
         GPBoundary gp_boundary;
@@ -1252,13 +1273,23 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         dr_node_map_struct.push(gp_boundary);
 
         y -= y_reduced_span;
-        GPText gp_text_node_coord;
-        gp_text_node_coord.set_coord(real_rect.get_lb_x(), y);
-        gp_text_node_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        gp_text_node_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", dr_node.get_layer_idx(), ")"));
-        gp_text_node_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
-        gp_text_node_coord.set_presentation(GPTextPresentation::kLeftMiddle);
-        dr_node_map_struct.push(gp_text_node_coord);
+        GPText gp_text_node_real_coord;
+        gp_text_node_real_coord.set_coord(real_rect.get_lb_x(), y);
+        gp_text_node_real_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_node_real_coord.set_message(
+            RTUtil::getString("(", dr_node.get_x(), " , ", dr_node.get_y(), " , ", dr_node.get_layer_idx(), ")"));
+        gp_text_node_real_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+        gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+        dr_node_map_struct.push(gp_text_node_real_coord);
+
+        y -= y_reduced_span;
+        GPText gp_text_node_grid_coord;
+        gp_text_node_grid_coord.set_coord(real_rect.get_lb_x(), y);
+        gp_text_node_grid_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_node_grid_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", dr_node.get_layer_idx(), ")"));
+        gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(dr_node.get_layer_idx()));
+        gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+        dr_node_map_struct.push(gp_text_node_grid_coord);
 
         y -= y_reduced_span;
         GPText gp_text_obs_task_map;
@@ -1508,7 +1539,7 @@ void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    for (LayerRect& real_rect : DM_INST.getRealRectList(dr_task.get_routing_segment_list())) {
+    for (const LayerRect& real_rect : DM_INST.getRealRectList(dr_task.get_routing_segment_list())) {
       for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
         LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
         PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);

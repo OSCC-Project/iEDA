@@ -105,11 +105,12 @@ class GlobalRouter
   GRNode* popFromOpenList(GRModel& gr_model);
   double getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
-  double getWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node);
   double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
 #endif
 

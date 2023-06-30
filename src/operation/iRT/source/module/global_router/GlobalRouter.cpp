@@ -1059,10 +1059,21 @@ GRNode* GlobalRouter::popFromOpenList(GRModel& gr_model)
 
 double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
+    bool exist_neighbor = false;
+  for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_ptr_map()) {
+    if (neighbor_ptr == end_node) {
+      exist_neighbor = true;
+      break;
+    }
+  }
+  if (!exist_neighbor) {
+    LOG_INST.info(Loc::current(), "The neighbor not exist!");
+  }
+
   double cost = 0;
   cost += start_node->get_known_cost();
   cost += getJointCost(gr_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
-  cost += getWireCost(gr_model, start_node, end_node);
+  cost += getKnowWireCost(gr_model, start_node, end_node);
   cost += getKnowCornerCost(gr_model, start_node, end_node);
   cost += getViaCost(gr_model, start_node, end_node);
   return cost;
@@ -1086,25 +1097,20 @@ double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientat
   return joint_cost;
 }
 
-double GlobalRouter::getWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
+double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-
-    irt_int x_distance = std::abs(start_node->get_x() - end_node->get_x());
-    irt_int y_distance = std::abs(start_node->get_y() - end_node->get_y());
-
-    if (routing_layer.isPreferH()) {
-      wire_cost += (x_distance * gr_model.get_wire_unit());
-      wire_cost += (y_distance * 2 * gr_model.get_wire_unit());
-    } else {
-      wire_cost += (y_distance * gr_model.get_wire_unit());
-      wire_cost += (x_distance * 2 * gr_model.get_wire_unit());
+    if (routing_layer.get_direction() != RTUtil::getDirection(*start_node, *end_node)) {
+      wire_cost *= 2;
     }
   }
+  wire_cost *= gr_model.get_wire_unit();
   return wire_cost;
 }
 
@@ -1154,10 +1160,18 @@ double GlobalRouter::getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node)
 double GlobalRouter::getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
 {
   double estimate_cost = 0;
-  estimate_cost += getWireCost(gr_model, start_node, end_node);
+  estimate_cost += getEstimateWireCost(gr_model, start_node, end_node);
   estimate_cost += getEstimateCornerCost(gr_model, start_node, end_node);
   estimate_cost += getViaCost(gr_model, start_node, end_node);
   return estimate_cost;
+}
+
+double GlobalRouter::getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
+{
+  double wire_cost = 0;
+  wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+  wire_cost *= gr_model.get_wire_unit();
+  return wire_cost;
 }
 
 double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)

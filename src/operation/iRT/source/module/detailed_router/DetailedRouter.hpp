@@ -105,11 +105,12 @@ class DetailedRouter
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
-  double getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
 #endif
 
