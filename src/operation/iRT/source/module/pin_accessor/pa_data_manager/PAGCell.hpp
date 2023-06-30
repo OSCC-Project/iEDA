@@ -36,10 +36,7 @@ class PAGCell : public LayerCoord
   void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   void set_net_blockage_region_query(void* net_blockage_region_query) { _net_blockage_region_query = net_blockage_region_query; }
-  void set_net_enclosure_map(const std::map<irt_int, std::vector<LayerRect>>& net_enclosure_map)
-  {
-    _net_enclosure_map = net_enclosure_map;
-  }
+  void set_net_enclosure_map(const std::map<irt_int, std::vector<LayerRect>>& net_enclosure_map) { _net_enclosure_map = net_enclosure_map; }
   void set_net_enclosure_region_query(void* net_enclosure_region_query) { _net_enclosure_region_query = net_enclosure_region_query; }
   // function
 

@@ -22,45 +22,37 @@
 
 namespace irt {
 
-enum class DRRouteStrategy
+enum class TASourceType
 {
   kNone,
-  kFullyConsider,
-  kIgnoringSelfBoxResult,
-  kIgnoringOtherBoxResult,
-  kIgnoringPanelResult,
-  kIgnoringBlockage
+  kBlockage,
+  kOtherPanelResult,
+  kSelfPanelResult
 };
 
-struct GetDRRouteStrategyName
+struct GetTASourceTypeName
 {
-  std::string operator()(const DRRouteStrategy& dr_route_strategy) const
+  std::string operator()(const TASourceType& ta_source_type) const
   {
-    std::string dr_route_strategy_name;
-    switch (dr_route_strategy) {
-      case DRRouteStrategy::kNone:
-        dr_route_strategy_name = "none";
+    std::string ta_source_type_name;
+    switch (ta_source_type) {
+      case TASourceType::kNone:
+        ta_source_type_name = "none";
         break;
-      case DRRouteStrategy::kFullyConsider:
-        dr_route_strategy_name = "fully_consider";
+      case TASourceType::kBlockage:
+        ta_source_type_name = "blockage";
         break;
-      case DRRouteStrategy::kIgnoringSelfBoxResult:
-        dr_route_strategy_name = "ignoring_self_box_result";
+      case TASourceType::kOtherPanelResult:
+        ta_source_type_name = "other_panel_result";
         break;
-      case DRRouteStrategy::kIgnoringOtherBoxResult:
-        dr_route_strategy_name = "ignoring_other_box_result";
-        break;
-      case DRRouteStrategy::kIgnoringPanelResult:
-        dr_route_strategy_name = "ignoring_panel_result";
-        break;
-      case DRRouteStrategy::kIgnoringBlockage:
-        dr_route_strategy_name = "ignoring_blockage";
+      case TASourceType::kSelfPanelResult:
+        ta_source_type_name = "self_panel_result";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return dr_route_strategy_name;
+    return ta_source_type_name;
   }
 };
 

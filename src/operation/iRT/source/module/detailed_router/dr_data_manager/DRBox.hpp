@@ -16,7 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRBoxStat.hpp"
 #include "DRNode.hpp"
+#include "DRSourceType.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
@@ -31,33 +33,27 @@ class DRBox : public DRSpaceRegion
   ~DRBox() = default;
   // getter
   PlanarCoord& get_grid_coord() { return _grid_coord; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_panel_result_map() { return _net_panel_result_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_other_box_result_map() { return _net_other_box_result_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_self_box_result_map() { return _net_self_box_result_map; }
+  std::map<DRSourceType, std::map<irt_int, std::vector<LayerRect>>>& get_source_net_rect_map() { return _source_net_rect_map; }
+  std::map<DRSourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
   ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
+  DRBoxStat& get_dr_box_stat() { return _dr_box_stat; }
   // setter
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_panel_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_panel_result_map)
+  void set_source_net_rect_map(const std::map<DRSourceType, std::map<irt_int, std::vector<LayerRect>>>& source_net_rect_map)
   {
-    _net_panel_result_map = net_panel_result_map;
+    _source_net_rect_map = source_net_rect_map;
   }
-  void set_net_other_box_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_other_box_result_map)
+  void set_source_region_query_map(const std::map<DRSourceType, void*>& source_region_query_map)
   {
-    _net_other_box_result_map = net_other_box_result_map;
+    _source_region_query_map = source_region_query_map;
   }
-  void set_net_self_box_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_self_box_result_map)
-  {
-    _net_self_box_result_map = net_self_box_result_map;
-  }
+  void set_box_scale_axis(const ScaleAxis& box_scale_axis) { _box_scale_axis = box_scale_axis; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
   bool skipRouting() { return _dr_task_list.empty(); }
-
 #if 1  // astar
   double get_wire_unit() const { return _wire_unit; }
   double get_corner_unit() const { return _corner_unit; }
@@ -96,17 +92,19 @@ class DRBox : public DRSpaceRegion
 
  private:
   PlanarCoord _grid_coord;
-  // 用于存储blockage和pin_shape，其中blockage的net_idx为-1
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
-  // 用于存储ta的结果
-  std::map<irt_int, std::vector<LayerRect>> _net_panel_result_map;
-  // 用于存储其他box的结果
-  std::map<irt_int, std::vector<LayerRect>> _net_other_box_result_map;
-  // 用于存储自己box的结果
-  std::map<irt_int, std::vector<LayerRect>> _net_self_box_result_map;
+  /**
+   * DRSourceType::kBlockage 存储blockage
+   * DRSourceType::kPinShape 存储pin_shape
+   * DRSourceType::kPanelResult 存储ta的结果
+   * DRSourceType::kOtherBoxResult 存储其他box的结果
+   * DRSourceType::kSelfBoxResult 存储自己box的结果
+   */
+  std::map<DRSourceType, std::map<irt_int, std::vector<LayerRect>>> _source_net_rect_map;
+  std::map<DRSourceType, void*> _source_region_query_map;
   ScaleAxis _box_scale_axis;
   std::vector<DRTask> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;
+  DRBoxStat _dr_box_stat;
 #if 1  // astar
   // config
   double _wire_unit = 1;

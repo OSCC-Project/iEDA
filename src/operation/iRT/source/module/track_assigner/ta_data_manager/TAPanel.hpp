@@ -19,6 +19,8 @@
 #include "LayerRect.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
+#include "TAPanelStat.hpp"
+#include "TASourceType.hpp"
 #include "TATask.hpp"
 
 namespace irt {
@@ -30,23 +32,23 @@ class TAPanel : public LayerRect
   ~TAPanel() = default;
   // getter
   irt_int get_panel_idx() const { return _panel_idx; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_other_panel_result_map() { return _net_other_panel_result_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_self_panel_result_map() { return _net_self_panel_result_map; }
+  std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>>& get_source_net_rect_map() { return _source_net_rect_map; }
+  std::map<TASourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
   ScaleAxis& get_panel_scale_axis() { return _panel_scale_axis; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
+  TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_other_panel_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_other_panel_result_map)
+  void set_source_net_rect_map(const std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>>& source_net_rect_map)
   {
-    _net_other_panel_result_map = net_other_panel_result_map;
+    _source_net_rect_map = source_net_rect_map;
   }
-  void set_net_self_panel_result_map(const std::map<irt_int, std::vector<LayerRect>>& net_self_panel_result_map)
+  void set_source_region_query_map(const std::map<TASourceType, void*>& source_region_query_map)
   {
-    _net_self_panel_result_map = net_self_panel_result_map;
+    _source_region_query_map = source_region_query_map;
   }
+  void set_panel_scale_axis(const ScaleAxis& panel_scale_axis) { _panel_scale_axis = panel_scale_axis; }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   // function
@@ -95,15 +97,18 @@ class TAPanel : public LayerRect
 
  private:
   irt_int _panel_idx = -1;
-  // 用于存储blockage和pin_shape，其中blockage的net_idx为-1
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
-  // 用于存储其他panel的结果
-  std::map<irt_int, std::vector<LayerRect>> _net_other_panel_result_map;
-  // 用于存储自己panel的结果
-  std::map<irt_int, std::vector<LayerRect>> _net_self_panel_result_map;
+  /**
+   * TASourceType::kBlockage 存储blockage
+   * TASourceType::kPinShape 存储pin_shape
+   * TASourceType::kOtherPanelResult 存储其他panel的结果
+   * TASourceType::kSelfPanelResult 存储自己panel的结果
+   */
+  std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>> _source_net_rect_map;
+  std::map<TASourceType, void*> _source_region_query_map;
   ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
+  TAPanelStat _ta_panel_stat;
 #if 1  // astar
   // config
   double _wire_unit = 1;
