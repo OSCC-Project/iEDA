@@ -53,7 +53,11 @@ class TAPanel : public LayerRect
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   // function
   bool skipAssigning() { return _ta_task_list.empty(); }
-
+  void addRect(TASourceType ta_source_type, irt_int net_idx, const LayerRect& rect)
+  {
+    _source_net_rect_map[ta_source_type][net_idx].push_back(rect);
+    RTAPI_INST.addEnvRectList(_source_region_query_map[ta_source_type], rect);
+  }
 #if 1  // astar
   double get_wire_unit() const { return _wire_unit; }
   double get_corner_unit() const { return _corner_unit; }
@@ -99,7 +103,6 @@ class TAPanel : public LayerRect
   irt_int _panel_idx = -1;
   /**
    * TASourceType::kBlockage 存储blockage
-   * TASourceType::kPinShape 存储pin_shape
    * TASourceType::kOtherPanelResult 存储其他panel的结果
    * TASourceType::kSelfPanelResult 存储自己panel的结果
    */

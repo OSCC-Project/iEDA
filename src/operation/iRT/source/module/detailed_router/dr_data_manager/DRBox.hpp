@@ -23,6 +23,7 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "ScaleAxis.hpp"
+#include "RTAPI.hpp"
 
 namespace irt {
 
@@ -54,6 +55,11 @@ class DRBox : public DRSpaceRegion
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
   bool skipRouting() { return _dr_task_list.empty(); }
+  void addRect(DRSourceType dr_source_type, irt_int net_idx, const LayerRect& rect)
+  {
+    _source_net_rect_map[dr_source_type][net_idx].push_back(rect);
+    RTAPI_INST.addEnvRectList(_source_region_query_map[dr_source_type], rect);
+  }
 #if 1  // astar
   double get_wire_unit() const { return _wire_unit; }
   double get_corner_unit() const { return _corner_unit; }
@@ -94,7 +100,6 @@ class DRBox : public DRSpaceRegion
   PlanarCoord _grid_coord;
   /**
    * DRSourceType::kBlockage 存储blockage
-   * DRSourceType::kPinShape 存储pin_shape
    * DRSourceType::kPanelResult 存储ta的结果
    * DRSourceType::kOtherBoxResult 存储其他box的结果
    * DRSourceType::kSelfBoxResult 存储自己box的结果
