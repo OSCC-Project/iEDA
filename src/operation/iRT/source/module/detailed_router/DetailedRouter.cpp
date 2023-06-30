@@ -359,17 +359,33 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
 
 void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 {
-  DRSpaceRegion& bounding_box = dr_task.get_bounding_box();
-  bounding_box.set_base_region(dr_box.get_base_region());
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  irt_int top_layer_idx = INT_MIN;
-  irt_int bottom_layer_idx = INT_MAX;
+  bool is_local_task = true;
   for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
     for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-      top_layer_idx = std::max(top_layer_idx, coord.get_layer_idx());
-      bottom_layer_idx = std::min(bottom_layer_idx, coord.get_layer_idx());
+      if (!direction_set.empty()) {
+        is_local_task = false;
+        goto here;
+      }
     }
   }
+here:
+  irt_int top_layer_idx = INT_MIN;
+  irt_int bottom_layer_idx = INT_MAX;
+  if (is_local_task) {
+    top_layer_idx = routing_layer_list.back().get_layer_idx();
+    bottom_layer_idx = routing_layer_list.front().get_layer_idx();
+  } else {
+    for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
+      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        top_layer_idx = std::max(top_layer_idx, coord.get_layer_idx());
+        bottom_layer_idx = std::min(bottom_layer_idx, coord.get_layer_idx());
+      }
+    }
+  }
+  DRSpaceRegion& bounding_box = dr_task.get_bounding_box();
+  bounding_box.set_base_region(dr_box.get_base_region());
   bounding_box.set_top_layer_idx(top_layer_idx);
   bounding_box.set_bottom_layer_idx(bottom_layer_idx);
 }
@@ -418,23 +434,32 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
 
 void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 {
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+    bool routing_hv = true;
+    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+      routing_hv = false;
+    }
     GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
     for (irt_int x = 0; x < dr_node_map.get_x_size(); x++) {
       for (irt_int y = 0; y < dr_node_map.get_y_size(); y++) {
         std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
-        if (x != 0) {
-          neighbor_ptr_map[Orientation::kWest] = &dr_node_map[x - 1][y];
-        }
-        if (x != (dr_node_map.get_x_size() - 1)) {
-          neighbor_ptr_map[Orientation::kEast] = &dr_node_map[x + 1][y];
-        }
-        if (y != 0) {
-          neighbor_ptr_map[Orientation::kSouth] = &dr_node_map[x][y - 1];
-        }
-        if (y != (dr_node_map.get_y_size() - 1)) {
-          neighbor_ptr_map[Orientation::kNorth] = &dr_node_map[x][y + 1];
+        if (routing_hv) {
+          if (x != 0) {
+            neighbor_ptr_map[Orientation::kWest] = &dr_node_map[x - 1][y];
+          }
+          if (x != (dr_node_map.get_x_size() - 1)) {
+            neighbor_ptr_map[Orientation::kEast] = &dr_node_map[x + 1][y];
+          }
+          if (y != 0) {
+            neighbor_ptr_map[Orientation::kSouth] = &dr_node_map[x][y - 1];
+          }
+          if (y != (dr_node_map.get_y_size() - 1)) {
+            neighbor_ptr_map[Orientation::kNorth] = &dr_node_map[x][y + 1];
+          }
         }
         if (layer_idx != 0) {
           neighbor_ptr_map[Orientation::kDown] = &layer_node_map[layer_idx - 1][x][y];

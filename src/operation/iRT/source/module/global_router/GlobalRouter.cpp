@@ -149,24 +149,24 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
       routing_h = false;
       routing_v = false;
     }
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        std::map<Orientation, GRNode*>& neighbor_ptr_map = node_map[x][y].get_neighbor_ptr_map();
+    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
+    for (irt_int x = 0; x < gr_node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < gr_node_map.get_y_size(); y++) {
+        std::map<Orientation, GRNode*>& neighbor_ptr_map = gr_node_map[x][y].get_neighbor_ptr_map();
         if (routing_h) {
           if (x != 0) {
-            neighbor_ptr_map[Orientation::kWest] = &node_map[x - 1][y];
+            neighbor_ptr_map[Orientation::kWest] = &gr_node_map[x - 1][y];
           }
-          if (x != (node_map.get_x_size() - 1)) {
-            neighbor_ptr_map[Orientation::kEast] = &node_map[x + 1][y];
+          if (x != (gr_node_map.get_x_size() - 1)) {
+            neighbor_ptr_map[Orientation::kEast] = &gr_node_map[x + 1][y];
           }
         }
         if (routing_v) {
           if (y != 0) {
-            neighbor_ptr_map[Orientation::kSouth] = &node_map[x][y - 1];
+            neighbor_ptr_map[Orientation::kSouth] = &gr_node_map[x][y - 1];
           }
-          if (y != (node_map.get_y_size() - 1)) {
-            neighbor_ptr_map[Orientation::kNorth] = &node_map[x][y + 1];
+          if (y != (gr_node_map.get_y_size() - 1)) {
+            neighbor_ptr_map[Orientation::kNorth] = &gr_node_map[x][y + 1];
           }
         }
         if (layer_idx != 0) {
@@ -447,10 +447,10 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
       routing_h = false;
       routing_v = false;
     }
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        GRNode& gr_node = node_map[x][y];
+    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
+    for (irt_int x = 0; x < gr_node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < gr_node_map.get_y_size(); y++) {
+        GRNode& gr_node = gr_node_map[x][y];
         std::map<Orientation, GRNode*>& neighbor_ptr_map = gr_node.get_neighbor_ptr_map();
         if (routing_h) {
           if (RTUtil::exist(neighbor_ptr_map, Orientation::kNorth) || RTUtil::exist(neighbor_ptr_map, Orientation::kSouth)) {
