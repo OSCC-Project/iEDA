@@ -24,7 +24,6 @@
 #include "Database.hpp"
 #include "Net.hpp"
 #include "RTU.hpp"
-#include "SortStatus.hpp"
 
 namespace irt {
 

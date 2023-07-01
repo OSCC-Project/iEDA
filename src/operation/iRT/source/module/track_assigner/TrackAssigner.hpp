@@ -20,7 +20,6 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
-#include "SortStatus.hpp"
 #include "TAModel.hpp"
 #include "TAPanel.hpp"
 

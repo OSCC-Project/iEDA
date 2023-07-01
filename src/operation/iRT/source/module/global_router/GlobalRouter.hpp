@@ -21,8 +21,6 @@
 #include "Database.hpp"
 #include "GRModel.hpp"
 #include "RTU.hpp"
-#include "SortStatus.hpp"
-#include "SortType.hpp"
 
 namespace irt {
 
@@ -64,20 +62,10 @@ class GlobalRouter
   void updateNodeSupply(GRModel& gr_model);
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
   void buildAccessMap(GRModel& gr_model);
-  void buildGRNetPriority(GRModel& gr_model);
 #endif
 
 #if 1  // check gr_model
   void checkGRModel(GRModel& gr_model);
-#endif
-
-#if 1  // sort gr_model
-  void sortGRModel(GRModel& gr_model);
-  bool sortByMultiLevel(GRNet& net1, GRNet& net2);
-  SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
-  SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
-  SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
-  SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);
 #endif
 
 #if 1  // route gr_model
