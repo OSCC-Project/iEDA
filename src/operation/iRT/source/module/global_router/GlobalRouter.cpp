@@ -65,7 +65,6 @@ void GlobalRouter::routeNetList(std::vector<Net>& net_list)
   GRModel gr_model = initGRModel(net_list);
   buildGRModel(gr_model);
   checkGRModel(gr_model);
-  sortGRModel(gr_model);
   routeGRModel(gr_model);
   updateGRModel(gr_model);
   reportGRModel(gr_model);
@@ -132,7 +131,6 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
   buildAccessMap(gr_model);
-  buildGRNetPriority(gr_model);
 }
 
 void GlobalRouter::buildNeighborMap(GRModel& gr_model)
@@ -406,29 +404,6 @@ void GlobalRouter::buildAccessMap(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::buildGRNetPriority(GRModel& gr_model)
-{
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    GRNetPriority& gr_net_priority = gr_net.get_gr_net_priority();
-
-    std::vector<GRPin>& gr_pin_list = gr_net.get_gr_pin_list();
-    BoundingBox& bounding_box = gr_net.get_bounding_box();
-
-    // connect_type
-    gr_net_priority.set_connect_type(gr_net.get_connect_type());
-    // routing area
-    gr_net_priority.set_routing_area(bounding_box.getTotalSize());
-    // length_width_ratio
-    double length_width_ratio = bounding_box.getXSize() / 1.0 / bounding_box.getYSize();
-    if (length_width_ratio < 1) {
-      length_width_ratio = 1 / length_width_ratio;
-    }
-    gr_net_priority.set_length_width_ratio(length_width_ratio);
-    // pin num
-    gr_net_priority.set_pin_num(static_cast<irt_int>(gr_pin_list.size()));
-  }
-}
-
 #endif
 
 #if 1  // check gr_model
@@ -519,112 +494,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
         }
       }
     }
-  }
-}
-
-#endif
-
-#if 1  // sort gr_model
-
-void GlobalRouter::sortGRModel(GRModel& gr_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Sorting all nets beginning...");
-
-  std::vector<GRNet>& gr_net_list = gr_model.get_gr_net_list();
-  std::sort(gr_net_list.begin(), gr_net_list.end(), [&](GRNet& net1, GRNet& net2) { return sortByMultiLevel(net1, net2); });
-
-  LOG_INST.info(Loc::current(), "Sorting all nets completed!", monitor.getStatsInfo());
-}
-
-bool GlobalRouter::sortByMultiLevel(GRNet& net1, GRNet& net2)
-{
-  SortStatus sort_status = SortStatus::kNone;
-
-  sort_status = sortByClockPriority(net1, net2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByRoutingAreaASC(net1, net2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByLengthWidthRatioDESC(net1, net2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByPinNumDESC(net1, net2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  return false;
-}
-
-// 时钟线网优先
-SortStatus GlobalRouter::sortByClockPriority(GRNet& net1, GRNet& net2)
-{
-  ConnectType net1_connect_type = net1.get_gr_net_priority().get_connect_type();
-  ConnectType net2_connect_type = net2.get_gr_net_priority().get_connect_type();
-
-  if (net1_connect_type == ConnectType::kClock && net2_connect_type != ConnectType::kClock) {
-    return SortStatus::kTrue;
-  } else if (net1_connect_type != ConnectType::kClock && net2_connect_type == ConnectType::kClock) {
-    return SortStatus::kFalse;
-  } else {
-    return SortStatus::kEqual;
-  }
-}
-
-// RoutingArea 升序
-SortStatus GlobalRouter::sortByRoutingAreaASC(GRNet& net1, GRNet& net2)
-{
-  double net1_routing_area = net1.get_gr_net_priority().get_routing_area();
-  double net2_routing_area = net2.get_gr_net_priority().get_routing_area();
-
-  if (net1_routing_area < net2_routing_area) {
-    return SortStatus::kTrue;
-  } else if (net1_routing_area == net2_routing_area) {
-    return SortStatus::kEqual;
-  } else {
-    return SortStatus::kFalse;
-  }
-}
-
-// 长宽比 降序
-SortStatus GlobalRouter::sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2)
-{
-  double net1_length_width_ratio = net1.get_gr_net_priority().get_length_width_ratio();
-  double net2_length_width_ratio = net2.get_gr_net_priority().get_length_width_ratio();
-
-  if (net1_length_width_ratio > net2_length_width_ratio) {
-    return SortStatus::kTrue;
-  } else if (net1_length_width_ratio == net2_length_width_ratio) {
-    return SortStatus::kEqual;
-  } else {
-    return SortStatus::kFalse;
-  }
-}
-
-// PinNum 降序
-SortStatus GlobalRouter::sortByPinNumDESC(GRNet& net1, GRNet& net2)
-{
-  double net1_pin_num = net1.get_gr_net_priority().get_pin_num();
-  double net2_pin_num = net2.get_gr_net_priority().get_pin_num();
-
-  if (net1_pin_num > net2_pin_num) {
-    return SortStatus::kTrue;
-  } else if (net1_pin_num == net2_pin_num) {
-    return SortStatus::kEqual;
-  } else {
-    return SortStatus::kFalse;
   }
 }
 
@@ -930,6 +799,8 @@ void GlobalRouter::resetStartAndEnd(GRModel& gr_model)
     }
   }
   if (start_node_comb_list.size() == 1) {
+    // 初始化时，要把start_node_comb_list的pin只留一个ap点
+    // 后续只要将end_node_comb_list的pin保留一个ap点
     start_node_comb_list.front().clear();
     start_node_comb_list.front().push_back(path_node);
   }

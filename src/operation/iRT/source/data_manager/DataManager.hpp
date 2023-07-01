@@ -21,7 +21,6 @@
 #include "Helper.hpp"
 #include "Logger.hpp"
 #include "SortStatus.hpp"
-#include "SortType.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
