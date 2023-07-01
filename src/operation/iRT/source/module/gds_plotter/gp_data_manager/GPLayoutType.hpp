@@ -24,7 +24,7 @@ enum class GPLayoutType
 {
   kNone = 0,
   kText = 1,
-  kPort = 2,
+  kPinShape = 2,
   kAccessPoint = 3,
   kGuide = 4,
   kPreferTrack = 5,
@@ -47,8 +47,8 @@ struct GetGPLayoutTypeName
       case GPLayoutType::kText:
         data_type_name = "text";
         break;
-      case GPLayoutType::kPort:
-        data_type_name = "port";
+      case GPLayoutType::kPinShape:
+        data_type_name = "pin_shape";
         break;
       case GPLayoutType::kAccessPoint:
         data_type_name = "access_point";
