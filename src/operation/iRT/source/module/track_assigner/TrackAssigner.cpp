@@ -398,12 +398,12 @@ void TrackAssigner::buildOBSTaskMap(TAPanel& ta_panel)
   }
 }
 
-std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
-                                                                                                        LayerRect& min_scope_regular_rect)
+std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
+                                                                                                          LayerRect& min_scope_regular_rect)
 {
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
 
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> grid_orientation_map;
   for (Segment<LayerCoord>& real_segment : getRealSegmentList(ta_panel, min_scope_regular_rect)) {
     std::vector<Segment<LayerCoord>> real_segment_list{real_segment};
 
@@ -420,9 +420,14 @@ std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> TrackAssigner
       if (!RTUtil::existGrid(first_coord, panel_scale_axis) || !RTUtil::existGrid(second_coord, panel_scale_axis)) {
         LOG_INST.error(Loc::current(), "The coord can not find grid!");
       }
+      if (!CmpLayerCoordByLayerASC()(first_coord, second_coord)) {
+        std::swap(first_coord, second_coord);
+      }
       Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
-      grid_orientation_map[RTUtil::getGridCoord(first_coord, panel_scale_axis)].insert(orientation);
-      grid_orientation_map[RTUtil::getGridCoord(second_coord, panel_scale_axis)].insert(RTUtil::getOppositeOrientation(orientation));
+      LayerCoord first_grid_coord(RTUtil::getGridCoord(first_coord, panel_scale_axis), first_coord.get_layer_idx());
+      LayerCoord second_grid_coord(RTUtil::getGridCoord(second_coord, panel_scale_axis), second_coord.get_layer_idx());
+      grid_orientation_map[first_grid_coord].insert(orientation);
+      grid_orientation_map[second_grid_coord].insert(RTUtil::getOppositeOrientation(orientation));
     }
   }
   return grid_orientation_map;
@@ -442,27 +447,25 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRealSegmentList(TAPanel& ta_p
   PlanarRect search_rect = RTUtil::getEnlargedRect(min_scope_regular_rect, enlarge_size);
 
   std::vector<irt_int> x_list
-      = RTUtil::getEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), panel_scale_axis.get_x_grid_list());
+      = RTUtil::getOpenEnlargedScaleList(search_rect.get_lb_x(), search_rect.get_rt_x(), panel_scale_axis.get_x_grid_list());
   std::vector<irt_int> y_list
-      = RTUtil::getEnlargedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), panel_scale_axis.get_y_grid_list());
+      = RTUtil::getOpenEnlargedScaleList(search_rect.get_lb_y(), search_rect.get_rt_y(), panel_scale_axis.get_y_grid_list());
   for (size_t y_idx = 0; y_idx < y_list.size(); y_idx++) {
     irt_int y = y_list[y_idx];
-    if (y == y_list.front() || y == y_list.back()) {
+    if (search_rect.get_rt_y() <= y || y <= search_rect.get_lb_y()) {
       continue;
     }
-    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_list.size()) - 1; x_idx++) {
-      real_segment_list.emplace_back(LayerCoord(x_list[x_idx], y, ta_panel.get_layer_idx()),
-                                     LayerCoord(x_list[x_idx + 1], y, ta_panel.get_layer_idx()));
+    for (size_t x_idx = 1; x_idx < x_list.size(); x_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x_list[x_idx - 1], y, layer_idx), LayerCoord(x_list[x_idx], y, layer_idx));
     }
   }
   for (size_t x_idx = 0; x_idx < x_list.size(); x_idx++) {
     irt_int x = x_list[x_idx];
-    if (x == x_list.front() || x == x_list.back()) {
+    if (search_rect.get_rt_x() <= x || x <= search_rect.get_lb_x()) {
       continue;
     }
-    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_list.size()) - 1; y_idx++) {
-      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx], ta_panel.get_layer_idx()),
-                                     LayerCoord(x, y_list[y_idx + 1], ta_panel.get_layer_idx()));
+    for (size_t y_idx = 1; y_idx < y_list.size(); y_idx++) {
+      real_segment_list.emplace_back(LayerCoord(x, y_list[y_idx - 1], layer_idx), LayerCoord(x, y_list[y_idx], layer_idx));
     }
   }
   return real_segment_list;
