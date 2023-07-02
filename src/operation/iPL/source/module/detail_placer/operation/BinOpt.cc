@@ -49,39 +49,67 @@ void BinOpt::runBinOpt()
   _operator->updateGridManager();
 
   // left to right
-  for (auto* grid_row : grid_manager->get_row_list()) {
-    auto& grid_list = grid_row->get_grid_list();
-    for (size_t i = 0, j = i + 1; i < grid_list.size() && j < grid_list.size(); i++, j++) {
-      auto* supply_grid = grid_list[i];
-      auto* demand_grid = grid_list[j];
+  auto& grid_2d_list = grid_manager->get_grid_2d_list();
+  for (auto& grid_row : grid_2d_list) {
+    for (size_t i = 0, j = i + 1; i < grid_row.size() && j < grid_row.size(); i++, j++) {
+      auto* supply_grid = &grid_row[i];
+      auto* demand_grid = &grid_row[j];
       slidingInstBetweenGrids(supply_grid, demand_grid, grid_area);
     }
   }
+
+  // // left to right
+  // for (auto* grid_row : grid_manager->get_row_list()) {
+  //   auto& grid_list = grid_row->get_grid_list();
+  //   for (size_t i = 0, j = i + 1; i < grid_list.size() && j < grid_list.size(); i++, j++) {
+  //     auto* supply_grid = grid_list[i];
+  //     auto* demand_grid = grid_list[j];
+  //     slidingInstBetweenGrids(supply_grid, demand_grid, grid_area);
+  //   }
+  // }
 
   // update grid_manager
   _operator->updateGridManager();
 
   // right to left
-  for (auto* grid_row : grid_manager->get_row_list()) {
-    auto& grid_list = grid_row->get_grid_list();
-    for (int32_t i = grid_list.size() - 1, j = i - 1; i >= 0 && j >= 0; i--, j--) {
-      auto* supply_grid = grid_list[i];
-      auto* demand_grid = grid_list[j];
+  for (auto& grid_row : grid_2d_list) {
+    for (int32_t i = grid_row.size() - 1, j = i - 1; i >= 0 && j >= 0; i--, j--) {
+      auto* supply_grid = &grid_row[i];
+      auto* demand_grid = &grid_row[j];
       slidingInstBetweenGrids(supply_grid, demand_grid, grid_area);
     }
   }
+
+  // // right to left
+  // for (auto* grid_row : grid_manager->get_row_list()) {
+  //   auto& grid_list = grid_row->get_grid_list();
+  //   for (int32_t i = grid_list.size() - 1, j = i - 1; i >= 0 && j >= 0; i--, j--) {
+  //     auto* supply_grid = grid_list[i];
+  //     auto* demand_grid = grid_list[j];
+  //     slidingInstBetweenGrids(supply_grid, demand_grid, grid_area);
+  //   }
+  // }
 }
 
 void BinOpt::slidingInstBetweenGrids(Grid* supply_grid, Grid* demand_grid, int64_t grid_area)
 {
-  int64_t target_area = static_cast<float>(grid_area) * supply_grid->get_available_ratio();
+  int64_t target_area = static_cast<float>(grid_area) * supply_grid->available_ratio;
 
-  if (supply_grid->get_occupied_area() < target_area) {
+  if (supply_grid->occupied_area < target_area) {
     return;
   }
-  if (supply_grid->get_occupied_area() < demand_grid->get_occupied_area()) {
+  if (supply_grid->occupied_area < demand_grid->occupied_area) {
     return;
   }
+
+  // int64_t target_area = static_cast<float>(grid_area) * supply_grid->get_available_ratio();
+
+  // if (supply_grid->get_occupied_area() < target_area) {
+  //   return;
+  // }
+  // if (supply_grid->get_occupied_area() < demand_grid->get_occupied_area()) {
+  //   return;
+  // }
 
   int64_t flow_value = calSlidingFlowValue(supply_grid, demand_grid, target_area);
 
@@ -90,8 +118,12 @@ void BinOpt::slidingInstBetweenGrids(Grid* supply_grid, Grid* demand_grid, int64
   }
   Utility utility;
 
-  auto supply_grid_shape = std::move(supply_grid->get_shape());
-  auto demand_grid_shape = std::move(demand_grid->get_shape());
+  auto supply_grid_shape = supply_grid->shape;
+  auto demand_grid_shape = demand_grid->shape;
+
+  // auto supply_grid_shape = std::move(supply_grid->get_shape());
+  // auto demand_grid_shape = std::move(demand_grid->get_shape());
+
   std::pair<int32_t, int32_t> row_range
       = utility.obtainMinMaxIdx(0, _row_height, supply_grid_shape.get_ll_y(), supply_grid_shape.get_ur_y());
   int64_t row_avg_flow = flow_value / (row_range.second - row_range.first);
@@ -220,8 +252,11 @@ void BinOpt::slidingInstBetweenGrids(Grid* supply_grid, Grid* demand_grid, int64
 int64_t BinOpt::calSlidingFlowValue(Grid* supply_grid, Grid* demand_grid, int64_t target_area)
 {
   int64_t flow_value = 0;
-  int64_t supply_area = supply_grid->get_occupied_area() - target_area;
-  int64_t demand_area = target_area - demand_grid->get_occupied_area();
+
+  int64_t supply_area = supply_grid->occupied_area - target_area;
+  int64_t demand_area = target_area - demand_grid->occupied_area;
+  // int64_t supply_area = supply_grid->get_occupied_area() - target_area;
+  // int64_t demand_area = target_area - demand_grid->get_occupied_area();
 
   if (demand_area > 0) {
     if (supply_area - demand_area <= 0) {

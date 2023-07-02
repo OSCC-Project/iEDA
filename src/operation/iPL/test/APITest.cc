@@ -207,7 +207,7 @@ TEST_F(APITestInterface, plot_module)
 
 TEST_F(APITestInterface, print_wl)
 {
-  std::string pl_json_file = "<local_path>/pl_default_config.json";
+  std::string pl_json_file = "/home/chenshijian/result/ispd2019/iPL/pl_default_config.json";
   auto* idb_builder = dmInst->get_idb_builder();
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
   // iPLAPIInst.initSTA();

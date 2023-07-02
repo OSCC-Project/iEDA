@@ -78,7 +78,9 @@ class NesInstance
 
   // function.
   void updateDensityLocation(Point<int32_t> coordi);
+  void updateDensityLocation(int32_t x_coordi, int32_t y_coordi);
   void updateDensityCenterLocation(Point<int32_t>& center_coordi);
+  void updateDensityCenterLocation(int32_t x_coordi, int32_t y_coordi);
   void changeSize(int width, int height);
 
  private:
@@ -111,9 +113,23 @@ inline void NesInstance::updateDensityLocation(Point<int32_t> coordi)
   updateNesPinListLocation();
 }
 
+inline void NesInstance::updateDensityLocation(int32_t x_coordi, int32_t y_coordi)
+{
+  _density_shape.set_rectangle(x_coordi, y_coordi, x_coordi + _density_shape.get_width(), y_coordi + _density_shape.get_height());
+
+  updateNesPinListLocation();
+}
+
 inline void NesInstance::updateDensityCenterLocation(Point<int32_t>& center_coordi)
 {
   _density_shape.set_center(center_coordi.get_x(), center_coordi.get_y());
+
+  updateNesPinListLocation();
+}
+
+inline void NesInstance::updateDensityCenterLocation(int32_t x_coordi, int32_t y_coordi)
+{
+  _density_shape.set_center(x_coordi,y_coordi);
 
   updateNesPinListLocation();
 }

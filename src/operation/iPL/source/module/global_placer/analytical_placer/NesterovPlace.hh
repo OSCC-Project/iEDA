@@ -59,6 +59,19 @@ class NesterovPlace
   NesterovPlaceConfig _nes_config;
   NesterovDatabase* _nes_database;
 
+  // For convergence acceleration and non-convergence treatment
+  std::vector<float> _overflow_record_list;
+  std::vector<float> _hpwl_record_list;
+  float _quad_penalty_coeff = 0.002;
+  int64_t _total_inst_area = 0;
+
+  void resetOverflowRecordList();
+  void resetHPWLRecordList();
+  void initQuadPenaltyCoeff();
+  bool checkPlateau(int32_t window, float threshold);
+  void entropyInjection(float shrink_factor, float noise_intensity);
+  // bool checkDivergence(int32_t window, float threshold);
+
   void initNesConfig(Config* config);
   void initNesDatabase(PlacerDB* placer_db);
   void wrapNesInstanceList();
@@ -91,14 +104,15 @@ class NesterovPlace
   void updateWirelengthCoef(float overflow);
 
   void updatePenaltyGradient(std::vector<NesInstance*>& nInst_list, std::vector<Point<float>>& sum_grads,
-                             std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads);
+                             std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads,
+                             bool is_add_quad_penalty);
 
   Point<float> obtainWirelengthPrecondition(NesInstance* nInst);
   Point<float> obtainDensityPrecondition(NesInstance* nInst);
 
   Rectangle<int32_t> obtainFirstGridShape();
   int64_t obtainTotalArea(std::vector<NesInstance*>& inst_list);
-  float obtainPhiCoef(float scaled_diff_hpwl);
+  float obtainPhiCoef(float scaled_diff_hpwl, int32_t iteration_num);
   int64_t obtainTotalFillerArea(std::vector<NesInstance*>& inst_list);
 
   void writeBackPlacerDB();
@@ -109,6 +123,7 @@ class NesterovPlace
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);
   void printIterationCoordi(std::ofstream& file_stream, int32_t cur_iter);
   void saveNesterovPlaceData(int32_t cur_iter);
+  void plotImage(bool is_plot, std::string file_name);
 
   // Precondition Test
   std::vector<double> _global_diagonal_list;
