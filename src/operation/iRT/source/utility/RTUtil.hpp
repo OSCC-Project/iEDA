@@ -1778,8 +1778,18 @@ class RTUtil
     return scale_line_list;
   }
 
+  static std::vector<irt_int> getOpenEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  {
+    if(scale_grid_list.empty()){
+      LOG_INST.error(Loc::current(), "The scale grid list is empty!");
+    }
+    begin_line = std::min(begin_line + 1, scale_grid_list.back().get_end_line());
+    end_line = std::max(end_line - 1, scale_grid_list.front().get_start_line());
+    return getClosedEnlargedScaleList(begin_line, end_line, scale_grid_list);
+  }
+  
   // 计算刻度，原有基础上扩大一个scale
-  static std::vector<irt_int> getEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  static std::vector<irt_int> getClosedEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
   {
     std::vector<irt_int> scale_list;
     std::vector<irt_int> track_scale_list = getTrackScaleList(scale_grid_list);
