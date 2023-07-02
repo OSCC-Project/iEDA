@@ -43,8 +43,10 @@ class DensityGradient
   DensityGradient& operator=(const DensityGradient&) = delete;
   DensityGradient& operator=(DensityGradient&&) = delete;
 
-  virtual void updateDensityForce(int32_t thread_num) = 0;
-  virtual Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale) = 0;
+  virtual void updateDensityForce(int32_t thread_num, bool is_cal_phi) = 0;
+  virtual Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale, bool is_add_quad_penalty, float quad_lamda) = 0;
+
+  virtual float get_sum_phi() = 0;
 
  protected:
   GridManager* _grid_manager;

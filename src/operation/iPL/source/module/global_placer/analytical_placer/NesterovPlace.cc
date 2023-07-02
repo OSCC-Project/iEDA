@@ -29,6 +29,7 @@
 #include <limits.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <random>
 
@@ -37,11 +38,13 @@
 #include "omp.h"
 #include "tool_manager.h"
 #include "usage/usage.hh"
+#include "utility/Image.hh"
 
 namespace ipl {
 
 #define PRINT_LONG_NET 0
 #define PRINT_COORDI 0
+#define PLOT_IMAGE 1
 
 #define SQRT2 1.414213562373095048801L
 
@@ -231,7 +234,7 @@ void NesterovPlace::initGridManager()
   int32_t grid_cnt_y = _nes_config.get_bin_cnt_y();
   float target_density = _nes_config.get_target_density();
 
-  GridManager* grid_manager = new GridManager(core_shape, grid_cnt_x, grid_cnt_y, target_density);
+  GridManager* grid_manager = new GridManager(core_shape, grid_cnt_x, grid_cnt_y, target_density, _nes_config.get_thread_num());
   _nes_database->_grid_manager = grid_manager;
 
   // BinGrid specially need to parallel
@@ -437,13 +440,13 @@ void NesterovPlace::runNesterovPlace()
   LOG_INFO << "-----------------Start Global Placement-----------------";
   ieda::Stats gp_status;
 
-  std::vector<NesInstance*> placable_inst_list = this->obtianPlacableNesInstanceList();
+  std::vector<NesInstance*> placable_inst_list = std::move(this->obtianPlacableNesInstanceList());
   initNesterovPlace(placable_inst_list);
 
   // main
   NesterovSolve(placable_inst_list);
-  PlacerDBInst.updateTopoManager();
-  PlacerDBInst.updateGridManager();
+  // PlacerDBInst.updateTopoManager();
+  // PlacerDBInst.updateGridManager();
 
   double time_delta = gp_status.elapsedRunTime();
   LOG_INFO << "Global Placement Total Time Elapsed: " << time_delta << "s";
@@ -485,6 +488,8 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
 
   // initial coordi vector.
   Rectangle<int32_t> core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
+
+#pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (size_t i = 0; i < inst_size; i++) {
     auto* n_inst = inst_list[i];
     this->updateDensityCoordiLayoutInside(n_inst, core_shape);
@@ -494,10 +499,10 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
   initGridFixedArea();
   // update current density gradient force.
   _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-  _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+  _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
 
-  int64_t total_area = this->obtainTotalArea(inst_list);
-  float sum_overflow = static_cast<float>(_nes_database->_bin_grid->obtainOverflowAreaWithoutFiller()) / total_area;
+  _total_inst_area = this->obtainTotalArea(inst_list);
+  float sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
 
   // update current wirelength gradient force.
   initBaseWirelengthCoef();
@@ -508,13 +513,14 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
                                                              _nes_config.get_thread_num());
 
   // update current target penalty object.
-  updatePenaltyGradient(inst_list, current_sum_grad_list, current_wirelength_grad_list, current_density_grad_list);
+  updatePenaltyGradient(inst_list, current_sum_grad_list, current_wirelength_grad_list, current_density_grad_list, false);
 
   if (_nes_database->_is_diverged) {
     return;
   }
 
   // update initial prev coordinates.
+#pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (size_t i = 0; i < inst_size; i++) {
     auto* n_inst = inst_list[i];
 
@@ -530,7 +536,7 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
 
   // update prev density gradient force.
   _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-  _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+  _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
 
   // update prev wirelength gradient force.
   updateTopologyManager();
@@ -538,11 +544,14 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
                                                              _nes_config.get_thread_num());
 
   // update prev target penalty object.
-  updatePenaltyGradient(inst_list, prev_sum_grad_list, prev_wirelength_grad_list, prev_density_grad_list);
+  updatePenaltyGradient(inst_list, prev_sum_grad_list, prev_wirelength_grad_list, prev_density_grad_list, false);
 
   if (_nes_database->_is_diverged) {
     return;
   }
+
+  // init quad penalty
+  initQuadPenaltyCoeff();
 
   // init density penalty.
   _nes_database->_density_penalty
@@ -627,6 +636,7 @@ void NesterovPlace::initGridFixedArea()
 
   grid_manager->clearAllOccupiedArea();
 
+#pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (auto* n_inst : _nes_database->_nInstance_list) {
     if (!n_inst->isFixed()) {
       continue;
@@ -637,7 +647,10 @@ void NesterovPlace::initGridFixedArea()
     grid_manager->obtainOverlapGridList(overlap_grid_list, origin_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = grid_manager->obtainOverlapArea(grid, n_inst->get_origin_shape());
-      grid->add_fixed_area(overlap_area * grid->get_available_ratio());
+
+#pragma omp atomic
+      grid->fixed_area += overlap_area * grid->available_ratio;
+      // grid->add_fixed_area(overlap_area * grid->get_available_ratio());
     }
   }
 
@@ -650,11 +663,16 @@ void NesterovPlace::initGridFixedArea()
         grid_manager->obtainOverlapGridList(overlap_grid_list, boundary);
         for (auto* grid : overlap_grid_list) {
           // tmp fix overlap area between fixed inst and blockage.
-          if (grid->get_fixed_area() != 0) {
+          if (grid->fixed_area != 0) {
             continue;
           }
+          // if (grid->get_fixed_area() != 0) {
+          //   continue;
+          // }
           int64_t overlap_area = grid_manager->obtainOverlapArea(grid, boundary);
-          grid->add_fixed_area(overlap_area * grid->get_available_ratio());
+
+          grid->fixed_area += overlap_area * grid->available_ratio;
+          // grid->add_fixed_area(overlap_area * grid->get_available_ratio());
         }
       }
     }
@@ -686,9 +704,13 @@ void NesterovPlace::updateTopologyManager()
 
 Rectangle<int32_t> NesterovPlace::obtainFirstGridShape()
 {
-  auto* first_grid = _nes_database->_grid_manager->get_row_list()[0]->get_grid_list()[0];
+  auto& first_grid = _nes_database->_grid_manager->get_grid_2d_list()[0][0];
 
-  return first_grid->get_shape();
+  return first_grid.shape;
+
+  // auto* first_grid = _nes_database->_grid_manager->get_row_list()[0]->get_grid_list()[0];
+
+  // return first_grid->get_shape();
 }
 
 int64_t NesterovPlace::obtainTotalArea(std::vector<NesInstance*>& inst_list)
@@ -822,7 +844,7 @@ void NesterovPlace::updatePenaltyGradientPre1(std::vector<NesInstance*>& nInst_l
     wirelength_grads[i] = std::move(_nes_database->_wirelength_gradient->obtainWirelengthGradient(
         cur_n_inst->get_inst_id(), _nes_database->_wirelength_coef, _nes_database->_wirelength_coef));
     density_grads[i] = std::move(
-        _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
+        _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale(), 0, 0.0f));
 
     _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_x());
     _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_y());
@@ -894,7 +916,7 @@ void NesterovPlace::updatePenaltyGradientPre2(std::vector<NesInstance*>& nInst_l
     wirelength_grads[i] = std::move(_nes_database->_wirelength_gradient->obtainWirelengthGradient(
         cur_n_inst->get_inst_id(), _nes_database->_wirelength_coef, _nes_database->_wirelength_coef));
     density_grads[i] = std::move(
-        _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
+        _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale(), 0, 0.0f));
 
     _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_x());
     _nes_database->_wirelength_grad_sum += fabs(wirelength_grads[i].get_y());
@@ -935,7 +957,8 @@ void NesterovPlace::updatePenaltyGradientPre2(std::vector<NesInstance*>& nInst_l
 }
 
 void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list, std::vector<Point<float>>& sum_grads,
-                                          std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads)
+                                          std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads,
+                                          bool is_add_quad_penalty)
 {
   _nes_database->_wirelength_grad_sum = 0.0F;
   _nes_database->_density_grad_sum = 0.0F;
@@ -958,8 +981,8 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
     // wl_grad_runtime += wl_status.elapsedRunTime();
 
     // ieda::Stats density_status;
-    density_grads[i] = std::move(
-        _nes_database->_density_gradient->obtainDensityGradient(cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale()));
+    density_grads[i] = std::move(_nes_database->_density_gradient->obtainDensityGradient(
+        cur_n_inst->get_density_shape(), cur_n_inst->get_density_scale(), is_add_quad_penalty, _quad_penalty_coeff));
     // density_grad_runtime += density_status.elapsedRunTime();
   }
 
@@ -975,8 +998,13 @@ void NesterovPlace::updatePenaltyGradient(std::vector<NesInstance*>& nInst_list,
     _nes_database->_density_grad_sum += fabs(density_grads[i].get_x());
     _nes_database->_density_grad_sum += fabs(density_grads[i].get_y());
 
-    sum_grads[i].set_x(wirelength_grads[i].get_x() + _nes_database->_density_penalty * density_grads[i].get_x());
-    sum_grads[i].set_y(wirelength_grads[i].get_y() + _nes_database->_density_penalty * density_grads[i].get_y());
+    float density_penalty = _nes_database->_density_penalty;
+    if (is_add_quad_penalty) {
+      density_penalty *= 2;
+    }
+
+    sum_grads[i].set_x(wirelength_grads[i].get_x() + density_penalty * density_grads[i].get_x());
+    sum_grads[i].set_y(wirelength_grads[i].get_y() + density_penalty * density_grads[i].get_y());
 
     Point<float> wirelength_precondition = std::move(obtainWirelengthPrecondition(cur_n_inst));
     Point<float> density_precondition = std::move(obtainDensityPrecondition(cur_n_inst));
@@ -1023,9 +1051,9 @@ Point<float> NesterovPlace::obtainDensityPrecondition(NesInstance* n_inst)
   return Point<float>(area_val, area_val);
 }
 
-float NesterovPlace::obtainPhiCoef(float scaled_diff_hpwl)
+float NesterovPlace::obtainPhiCoef(float scaled_diff_hpwl, int32_t iteration_num)
 {
-  float ret_coef = (scaled_diff_hpwl < 0) ? _nes_config.get_max_phi_coef()
+  float ret_coef = (scaled_diff_hpwl < 0) ? _nes_config.get_max_phi_coef() * std::max(std::pow(0.9999, float(iteration_num)), 0.98)
                                           : _nes_config.get_max_phi_coef() * pow(_nes_config.get_max_phi_coef(), scaled_diff_hpwl * -1.0);
   ret_coef = std::max(_nes_config.get_min_phi_coef(), ret_coef);
   return ret_coef;
@@ -1041,7 +1069,6 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
   auto* solver = _nes_database->_nesterov_solver;
   size_t inst_size = inst_list.size();
-  int64_t total_area = this->obtainTotalArea(inst_list);
 
   float sum_overflow;
   int64_t prev_hpwl, hpwl;
@@ -1077,17 +1104,25 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
     }
   }
 
+  // prepare for convergence acceleration and non-convergence treatment
+  int32_t min_perturb_interval = 50;
+  int32_t last_perturb_iter = -min_perturb_interval;
+  bool is_add_quad_penalty = false;
+  bool is_cal_phi = false;
+  bool stop_placement = false;
+
   // core Nesterov loop.
   for (int32_t iter_num = 1; iter_num <= _nes_config.get_max_iter(); iter_num++) {
     // debug
     // ieda::Stats nesterov_loop_status;
 
-    solver->runNextIter(iter_num);
+    solver->runNextIter(iter_num, _nes_config.get_thread_num());
     int32_t num_backtrack = 0;
     for (; num_backtrack < _nes_config.get_max_back_track(); num_backtrack++) {
       auto& next_coordi_list = solver->get_next_coordis();
       auto& next_slp_coordi_list = solver->get_next_slp_coordis();
 
+#pragma omp parallel for num_threads(_nes_config.get_thread_num())
       for (size_t i = 0; i < inst_size; i++) {
         Point<int32_t> next_coordi(next_coordi_list[i].get_x(), next_coordi_list[i].get_y());
         Point<int32_t> next_slp_coordi(next_slp_coordi_list[i].get_x(), next_slp_coordi_list[i].get_y());
@@ -1100,21 +1135,21 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       }
 
       // update next density gradient force.
-
       // ieda::Stats density_cal_status;
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), is_cal_phi);
       // LOG_ERROR << "obtain density map and dct runtime: " << density_cal_status.elapsedRunTime() << " s";
 
-      // ieda::Stats wirelength_cal_status;
       // update next wirelength gradient force.
+      // ieda::Stats wirelength_cal_status;
       updateTopologyManager();
       _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
       // LOG_ERROR << "wirelength forward and backward runtime: " << wirelength_cal_status.elapsedRunTime() << " s";
 
       // update next target penalty object.
-      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list);
+      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list,
+                            is_add_quad_penalty);
 
       if (_nes_database->_is_diverged) {
         break;
@@ -1128,7 +1163,7 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
         //
         break;
       } else {
-        solver->runBackTrackIter();
+        solver->runBackTrackIter(_nes_config.get_thread_num());
       }
     }
 
@@ -1144,7 +1179,8 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       break;
     }
 
-    sum_overflow = static_cast<float>(_nes_database->_bin_grid->obtainOverflowAreaWithoutFiller()) / total_area;
+    // _nes_database->_bin_grid->updataOverflowArea(inst_list, _nes_config.get_thread_num());
+    sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
 
     if (_nes_config.isOptMaxWirelength()) {
       if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
@@ -1163,7 +1199,8 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
     }
 
     hpwl = _nes_database->_wirelength->obtainTotalWirelength();
-    float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl());
+
+    float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
     prev_hpwl = hpwl;
 
     _nes_database->_density_penalty *= phi_coef;
@@ -1176,6 +1213,10 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
         long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
         long_net_stream << std::endl;
         printAcrossLongNet(long_net_stream, long_width, long_height);
+      }
+
+      if (PLOT_IMAGE) {
+        plotImage(PLOT_IMAGE, std::to_string(iter_num));
       }
     }
 
@@ -1197,8 +1238,35 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       break;
     }
 
+    _overflow_record_list.push_back(sum_overflow);
+    _hpwl_record_list.push_back(hpwl);
+
+    // if (sum_overflow < _nes_config.get_target_overflow() * 4 && sum_overflow > _nes_config.get_target_overflow() * 1.1) {
+    //   if (checkDivergence(3, 0.01 * sum_overflow)) {
+    //     // rollback to best pos.
+
+    //     stop_placement = true;
+    //   }
+    // }
+
+    if (iter_num - last_perturb_iter > min_perturb_interval && checkPlateau(50, 0.01)) {
+      if (sum_overflow > 0.9) {
+        // quad mode
+        is_add_quad_penalty = true;
+        is_cal_phi = true;
+        LOG_INFO << "Stuck at early stage. Turn on quadratic penalty with double density factor to accelerate convergence";
+        if (sum_overflow > 0.95) {
+          float noise_intensity = std::min(std::max(40 + (120 - 40) * (sum_overflow - 0.95) * 10, 40.0), 90.0);
+          entropyInjection(0.996, noise_intensity);
+          LOG_INFO << "Stuck at very early stage. Turn on entropy injection with noise intensity = " << noise_intensity
+                   << " to help convergence";
+        }
+        last_perturb_iter = iter_num;
+      }
+    }
+
     // minimun iteration is 50
-    if (iter_num > 50 && sum_overflow <= _nes_config.get_target_overflow()) {
+    if ((iter_num > 50 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
       if (PRINT_LONG_NET) {
         long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
         long_net_stream << std::endl;
@@ -1223,6 +1291,27 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
   // update PlacerDB.
   writeBackPlacerDB();
+}
+
+void NesterovPlace::plotImage(bool is_plot, std::string file_name)
+{
+  auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
+  std::vector<NesInstance*> inst_wofiller;
+  for (auto* inst : _nes_database->_nInstance_list) {
+    if (!inst->isFiller()) {
+      inst_wofiller.push_back(inst);
+    }
+  }
+
+  Image image_ploter(core_shape.get_width(), core_shape.get_height(), inst_wofiller.size());
+  for (auto* inst : inst_wofiller) {
+    int32_t inst_real_width = inst->get_origin_shape().get_width();
+    int32_t inst_real_height = inst->get_origin_shape().get_height();
+    auto inst_center = inst->get_density_center_coordi();
+    image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height);
+  }
+
+  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".png");
 }
 
 /*****************************Congestion-driven Placement: START*****************************/
@@ -1309,7 +1398,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
 
   // core Nesterov loop.
   for (int32_t iter_num = 1; iter_num <= _nes_config.get_max_iter(); iter_num++) {
-    solver->runNextIter(iter_num);
+    solver->runNextIter(iter_num, 1);
     int32_t num_backtrack = 0;
     for (; num_backtrack < _nes_config.get_max_back_track(); num_backtrack++) {
       auto next_coordi_list = solver->get_next_coordis();
@@ -1325,7 +1414,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
 
       // update next density gradient force.
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
 
       // update next wirelength gradient force.
       updateTopologyManager();
@@ -1333,7 +1422,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
 
       // update next target penalty object.
-      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list);
+      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list, false);
 
       if (_nes_database->_is_diverged) {
         break;
@@ -1347,7 +1436,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
         //
         break;
       } else {
-        solver->runBackTrackIter();
+        solver->runBackTrackIter(1);
       }
     }
 
@@ -1382,7 +1471,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
     }
 
     hpwl = _nes_database->_wirelength->obtainTotalWirelength();
-    float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl());
+    float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
     prev_hpwl = hpwl;
     _nes_database->_density_penalty *= phi_coef;
 
@@ -1431,7 +1520,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
         }
         // update next density gradient force.
         _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
         // update next wirelength gradient force.
         updateTopologyManager();
         _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
@@ -1601,7 +1690,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
         }
         // update next density gradient force.
         _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num());
+        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
         // update next wirelength gradient force.
         updateTopologyManager();
         _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
@@ -1638,6 +1727,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
 
 void NesterovPlace::writeBackPlacerDB()
 {
+  // #pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (auto pair : _nes_database->_instance_map) {
     auto* n_inst = pair.first;
     auto* inst = pair.second;
@@ -1819,6 +1909,85 @@ void NesterovPlace::printIterationCoordi(std::ofstream& long_net_stream, int32_t
     }
 
     long_net_stream << nes_inst->get_name() << " " << coordi_x << "," << coordi_y << " " << orient << std::endl;
+  }
+}
+
+void NesterovPlace::resetOverflowRecordList()
+{
+  _overflow_record_list.clear();
+}
+
+void NesterovPlace::resetHPWLRecordList()
+{
+  _hpwl_record_list.clear();
+}
+
+void NesterovPlace::initQuadPenaltyCoeff()
+{
+  int64_t cur_overflow = std::max((int64_t) 1, _nes_database->_bin_grid->get_overflow_area_without_filler());
+
+  // density weight subgradient preconditioner
+  float density_weight_grad_precond = 1.0 / cur_overflow;
+  _quad_penalty_coeff = _quad_penalty_coeff / 2 * density_weight_grad_precond;
+}
+
+bool NesterovPlace::checkPlateau(int32_t window, float threshold)
+{
+  int32_t cur_size = static_cast<int32_t>(_overflow_record_list.size());
+  if (cur_size < window) {
+    return false;
+  }
+
+  float max = FLT_MIN;
+  float min = FLT_MAX;
+  float avg = 0.0;
+  auto iter_end = _overflow_record_list.rbegin() + window;
+  for (auto it = _overflow_record_list.rbegin(); it != iter_end; it++) {
+    *it > max ? max = *it : max;
+    *it < min ? min = *it : min;
+    avg += *it;
+  }
+
+  return (max - min) / (avg / window) < threshold;
+}
+
+void NesterovPlace::entropyInjection(float shrink_factor, float noise_intensity)
+{
+  int64_t center_x = 0;
+  int64_t center_y = 0;
+  int32_t movable_inst_cnt = 0;
+  // cal all movable instance mean center
+  for (auto* inst : _nes_database->_nInstance_list) {
+    if (inst->isFixed()) {
+      continue;
+    }
+    auto inst_center = std::move(inst->get_density_center_coordi());
+    center_x += inst_center.get_x();
+    center_y += inst_center.get_y();
+    movable_inst_cnt++;
+  }
+
+  center_x /= movable_inst_cnt;
+  center_y /= movable_inst_cnt;
+
+  int32_t seed = 1000;
+  std::default_random_engine gen(seed);
+  std::normal_distribution<float> dis(0, 1);
+  for (auto* inst : _nes_database->_nInstance_list) {
+    if (inst->isFixed()) {
+      continue;
+    }
+    auto inst_center = std::move(inst->get_density_center_coordi());
+
+    // shrink all movable insts
+    int32_t new_x = (inst_center.get_x() - center_x) * shrink_factor + center_x;
+    int32_t new_y = (inst_center.get_y() - center_y) * shrink_factor + center_y;
+
+    // add some noise
+    new_x += noise_intensity * dis(gen);
+    new_y += noise_intensity * dis(gen);
+
+    inst->updateDensityCenterLocation(new_x, new_y);
   }
 }
 

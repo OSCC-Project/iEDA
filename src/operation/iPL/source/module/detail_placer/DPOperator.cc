@@ -387,7 +387,7 @@ void DPOperator::initTopoManager()
 void DPOperator::initGridManager()
 {
   _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), 128,
-                                  128, 0.8);
+                                  128, 0.8, 1);
   initGridManagerFixedArea();
 }
 
@@ -414,7 +414,9 @@ void DPOperator::initGridManagerFixedArea()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst->get_shape());
-      grid->add_fixed_area(overlap_area);
+      grid->fixed_area += overlap_area;
+
+      // grid->add_fixed_area(overlap_area);
     }
   }
 
@@ -428,11 +430,17 @@ void DPOperator::initGridManagerFixedArea()
         _grid_manager->obtainOverlapGridList(overlap_grid_list, boundary_shape);
         for (auto* grid : overlap_grid_list) {
           // tmp fix overlap area between fixed inst and blockage.
-          if (grid->get_fixed_area() != 0) {
+          if (grid->fixed_area != 0) {
             continue;
           }
+
+          // if (grid->get_fixed_area() != 0) {
+          //   continue;
+          // }
           int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, boundary);
-          grid->add_fixed_area(overlap_area);
+
+          grid->fixed_area += overlap_area;
+          // grid->add_fixed_area(overlap_area);
         }
       }
     }
@@ -464,7 +472,9 @@ void DPOperator::updateGridManager()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst_shape);
-      grid->add_area(overlap_area);
+
+      grid->occupied_area += overlap_area;
+      // grid->add_area(overlap_area);
     }
   }
 }
