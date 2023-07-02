@@ -18,7 +18,7 @@ using Vec = Eigen::VectorXd;
 namespace ipl {
 class Problem;
 
-enum LineSearchType
+enum GradientDescentMethod
 {
   kNesterov = 0,
   kConjugate
@@ -26,8 +26,10 @@ enum LineSearchType
 
 struct Option
 {
-  LineSearchType line_search_type = kNesterov;
+  GradientDescentMethod grad_decent_method = kNesterov;
+  bool hasBoundConstraint = false;
   size_t max_iter = 1000;
+  size_t threads = 1;
 };
 
 class Solver
@@ -35,7 +37,7 @@ class Solver
  public:
   explicit Solver(){};
   ~Solver(){};
-  static void solve(const Problem& problem, Mat& solution, const Option& opt = Option());
+  static void solve(Problem& problem, Mat& solution, const Option& opt = Option());
 };
 
 }  // namespace ipl

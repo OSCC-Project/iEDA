@@ -22,7 +22,8 @@ add_library(ipl-module-macro_placer
     analytical_method/Solver.cc
     analytical_method/Problem.cc
     analytical_method/MProblem.cc
-    analytical_method/LSEWirelength.cc)
+    analytical_method/LSEWirelength.cc
+    analytical_method/DensityModel.cc)
 
 target_include_directories(ipl-module-macro_placer
     PUBLIC
@@ -34,5 +35,7 @@ target_link_libraries(ipl-module-macro_placer
     ipl-solver-partition
     ipl-solver-simulate_anneal
     ipl-configurator
+    ipl-dct
+    ipl-module-evaluator
     ipl-utility
 )

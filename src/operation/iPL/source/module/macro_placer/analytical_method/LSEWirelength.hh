@@ -28,6 +28,7 @@ class LSEWirelength
   ~LSEWirelength() {}
   void setConstant(const vector<Triplet<double>>& moveable_x_offset, const vector<Triplet<double>>& moveable_y_offset,
                    const vector<Triplet<double>>& fixed_x_location, const vector<Triplet<double>>& fixed_y_location);
+  void setThreads(int n) { _num_threads = n; }
 
   void updatePinLocation(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const;
 
@@ -49,13 +50,15 @@ class LSEWirelength
   mutable Vec _sum_exp_neg_x;  // Σ exp(-x/gamma) O(|E|)
   mutable Vec _sum_exp_pos_y;  // Σ exp(y/gamma) O(|E|)
   mutable Vec _sum_exp_neg_y;  // Σ exp(-y/gamma) O(|E|)
-  mutable Vec _hpwl;
+  mutable Vec _hpwl;           // HPWL per nets O(|E|)
 
   SpMat _fix_x;  // fix pin x O(|IO|)
   SpMat _fix_y;  // fix pin y O(|IO|)
 
   SpMat _orig_x_offset;  // original x_offset O(|pins|)
   SpMat _orig_y_offset;  // original y_offset O(|pins|)
+  Vec hessian;
+  int _num_threads{1};
 };
 }  // namespace ipl
 
