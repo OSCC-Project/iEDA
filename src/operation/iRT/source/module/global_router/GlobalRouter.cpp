@@ -538,17 +538,47 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
 
 void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
 {
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
   gr_model.set_wire_unit(1);
   gr_model.set_corner_unit(1);
   gr_model.set_via_unit(1);
   gr_model.set_gr_net_ref(&gr_net);
   gr_model.set_routing_region(gr_model.get_curr_bounding_box());
   gr_model.get_node_segment_list().clear();
+  // key_node_set
+  std::set<GRNode*>& key_node_set = gr_model.get_key_node_set();
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+      GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
+      key_node_set.insert(gr_node);
+    }
+  }
 }
 
 std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> GlobalRouter::getTopoList(GRModel& gr_model, GRNet& gr_net)
 {
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
   std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> topo_list;
+
+  GRPin& gr_driving_pin = gr_net.get_gr_driving_pin();
+  std::vector<GRNode*> first_node_list;
+  for (LayerCoord& coord : gr_driving_pin.getGridCoordList()) {
+    GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
+    first_node_list.push_back(gr_node);
+  }
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    if (gr_pin.get_pin_idx() == gr_driving_pin.get_pin_idx()) {
+      continue;
+    }
+    std::vector<GRNode*> second_node_list;
+    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+      GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
+      second_node_list.push_back(gr_node);
+    }
+    topo_list.emplace_back(first_node_list, second_node_list);
+  }
   return topo_list;
 }
 
@@ -756,31 +786,44 @@ void GlobalRouter::updateDirectionSet(GRModel& gr_model)
 
 void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
+  std::set<GRNode*>& key_node_set = gr_model.get_key_node_set();
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
   std::map<GRNode*, std::set<Orientation>> usage_map;
 
-  for (Segment<GRNode*>& node_segment : node_segment_list) {
-    GRNode* first_node = node_segment.get_first();
-    GRNode* second_node = node_segment.get_second();
-    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
-    if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
+  if (node_segment_list.empty()) {
+    // 单层的local net
+    if (key_node_set.size() > 1) {
+      LOG_INST.error(Loc::current(), "The net is not local!");
     }
-    Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+    GRNode* local_node = *key_node_set.begin();
+    for (Orientation orientation : {Orientation::kUp, Orientation::kDown}) {
+      usage_map[local_node].insert(orientation);
+    }
+  } else {
+    // 跨gcell线网和多层的local_net
+    for (Segment<GRNode*>& node_segment : node_segment_list) {
+      GRNode* first_node = node_segment.get_first();
+      GRNode* second_node = node_segment.get_second();
+      Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
+      if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
+        LOG_INST.error(Loc::current(), "The orientation is error!");
+      }
+      Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
 
-    GRNode* node_i = first_node;
-    while (true) {
-      if (node_i != first_node) {
-        usage_map[node_i].insert(oppo_orientation);
+      GRNode* node_i = first_node;
+      while (true) {
+        if (node_i != first_node) {
+          usage_map[node_i].insert(oppo_orientation);
+        }
+        if (node_i != second_node) {
+          usage_map[node_i].insert(orientation);
+        }
+        if (node_i == second_node) {
+          break;
+        }
+        node_i = node_i->getNeighborNode(orientation);
       }
-      if (node_i != second_node) {
-        usage_map[node_i].insert(orientation);
-      }
-      if (node_i == second_node) {
-        break;
-      }
-      node_i = node_i->getNeighborNode(orientation);
     }
   }
   for (auto& [usage_node, orientation_list] : usage_map) {
@@ -795,6 +838,8 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 void GlobalRouter::resetSingleNet(GRModel& gr_model)
 {
   gr_model.set_gr_net_ref(nullptr);
+  gr_model.set_routing_region(PlanarRect());
+  gr_model.get_key_node_set().clear();
 
   for (Segment<GRNode*>& node_segment : gr_model.get_node_segment_list()) {
     GRNode* first_node = node_segment.get_first();
