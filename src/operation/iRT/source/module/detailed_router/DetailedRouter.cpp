@@ -782,7 +782,7 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
 
 void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
 {
-  initRoutingInfo(dr_box, dr_task);
+  initSingleNet(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     for (DRRouteStrategy dr_route_strategy :
          {DRRouteStrategy::kFullyConsider, DRRouteStrategy::kIgnoringSelfBoxResult, DRRouteStrategy::kIgnoringOtherBoxResult,
@@ -798,38 +798,42 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask& dr_task)
   resetSingleNet(dr_box);
 }
 
-void DetailedRouter::initRoutingInfo(DRBox& dr_box, DRTask& dr_task)
+void DetailedRouter::initSingleNet(DRBox& dr_box, DRTask& dr_task)
 {
   ScaleAxis& box_scale_axis = dr_box.get_box_scale_axis();
-
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-  std::vector<std::vector<DRNode*>>& start_node_comb_list = dr_box.get_start_node_comb_list();
-  std::vector<std::vector<DRNode*>>& end_node_comb_list = dr_box.get_end_node_comb_list();
 
-  std::vector<std::vector<DRNode*>> node_comb_list;
-  std::vector<DRGroup>& dr_group_list = dr_task.get_dr_group_list();
-  for (DRGroup& dr_group : dr_group_list) {
-    std::vector<DRNode*> node_comb;
-    for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-      if (!RTUtil::existGrid(coord, box_scale_axis)) {
-        LOG_INST.error(Loc::current(), "The coord can not find grid!");
-      }
-      PlanarCoord grid_coord = RTUtil::getGridCoord(coord, box_scale_axis);
-      node_comb.push_back(&layer_node_map[coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()]);
-    }
-    node_comb_list.push_back(node_comb);
-  }
-  for (size_t i = 0; i < node_comb_list.size(); i++) {
-    if (i == 0) {
-      start_node_comb_list.push_back(node_comb_list[i]);
-    } else {
-      end_node_comb_list.push_back(node_comb_list[i]);
-    }
-  }
+  // config
   dr_box.set_wire_unit(1);
+  dr_box.set_corner_unit(1);
   dr_box.set_via_unit(1);
+  // single task
   dr_box.set_dr_task_ref(&dr_task);
   dr_box.set_routing_region(dr_box.get_curr_bounding_box());
+  {
+    std::vector<std::vector<DRNode*>> node_comb_list;
+    std::vector<DRGroup>& dr_group_list = dr_task.get_dr_group_list();
+    for (DRGroup& dr_group : dr_group_list) {
+      std::vector<DRNode*> node_comb;
+      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        if (!RTUtil::existGrid(coord, box_scale_axis)) {
+          LOG_INST.error(Loc::current(), "The coord can not find grid!");
+        }
+        PlanarCoord grid_coord = RTUtil::getGridCoord(coord, box_scale_axis);
+        node_comb.push_back(&layer_node_map[coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()]);
+      }
+      node_comb_list.push_back(node_comb);
+    }
+    for (size_t i = 0; i < node_comb_list.size(); i++) {
+      if (i == 0) {
+        dr_box.get_start_node_comb_list().push_back(node_comb_list[i]);
+      } else {
+        dr_box.get_end_node_comb_list().push_back(node_comb_list[i]);
+      }
+    }
+  }
+  dr_box.get_path_node_comb().clear();
+  dr_box.get_node_segment_list().clear();
 }
 
 bool DetailedRouter::isConnectedAllEnd(DRBox& dr_box)
@@ -986,6 +990,8 @@ bool DetailedRouter::isRoutingFailed(DRBox& dr_box)
 
 void DetailedRouter::resetSinglePath(DRBox& dr_box)
 {
+  dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
+
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
   dr_box.set_open_queue(empty_queue);
 
@@ -1074,11 +1080,6 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 }
 
 void DetailedRouter::updateNetResult(DRBox& dr_box, DRTask& dr_task)
-{
-  updateResult(dr_box, dr_task);
-}
-
-void DetailedRouter::updateResult(DRBox& dr_box, DRTask& dr_task)
 {
   for (Segment<DRNode*>& node_segment : dr_box.get_node_segment_list()) {
     dr_task.get_routing_segment_list().emplace_back(*node_segment.get_first(), *node_segment.get_second());

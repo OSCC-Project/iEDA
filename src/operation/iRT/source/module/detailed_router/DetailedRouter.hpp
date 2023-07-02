@@ -82,7 +82,7 @@ class DetailedRouter
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
-  void initRoutingInfo(DRBox& dr_box, DRTask& dr_task);
+  void initSingleNet(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
   void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void routeSinglePath(DRBox& dr_box);
@@ -98,7 +98,6 @@ class DetailedRouter
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateNetResult(DRBox& dr_box, DRTask& dr_task);
-  void updateResult(DRBox& dr_box, DRTask& dr_task);
   void resetSingleNet(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);

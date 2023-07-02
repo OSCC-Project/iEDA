@@ -521,56 +521,41 @@ void GlobalRouter::routeGRModel(GRModel& gr_model)
 
 void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
 {
-  initRoutingInfo(gr_model, gr_net);
-  while (!isConnectedAllEnd(gr_model)) {
+  initSingleNet(gr_model, gr_net);
+  for (auto& topo : getTopoList(gr_model, gr_net)) {
+    initSinglePath(gr_model, topo);
     for (GRRouteStrategy gr_route_strategy :
          {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kEnlarging, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
       routeByStrategy(gr_model, gr_route_strategy);
     }
     updatePathResult(gr_model);
     updateDirectionSet(gr_model);
-    resetStartAndEnd(gr_model);
     resetSinglePath(gr_model);
   }
   updateNetResult(gr_model, gr_net);
   resetSingleNet(gr_model);
 }
 
-void GlobalRouter::initRoutingInfo(GRModel& gr_model, GRNet& gr_net)
+void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
 {
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-  std::vector<std::vector<GRNode*>>& start_node_comb_list = gr_model.get_start_node_comb_list();
-  std::vector<std::vector<GRNode*>>& end_node_comb_list = gr_model.get_end_node_comb_list();
-
   gr_model.set_wire_unit(1);
+  gr_model.set_corner_unit(1);
   gr_model.set_via_unit(1);
   gr_model.set_gr_net_ref(&gr_net);
   gr_model.set_routing_region(gr_model.get_curr_bounding_box());
-
-  GRPin& gr_driving_pin = gr_net.get_gr_driving_pin();
-  std::vector<GRNode*> start_node_comb;
-  for (LayerCoord& coord : gr_driving_pin.getGridCoordList()) {
-    GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-    start_node_comb.push_back(gr_node);
-  }
-  start_node_comb_list.push_back(start_node_comb);
-
-  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    if (gr_pin.get_pin_idx() == gr_driving_pin.get_pin_idx()) {
-      continue;
-    }
-    std::vector<GRNode*> end_node_comb;
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-      end_node_comb.push_back(gr_node);
-    }
-    end_node_comb_list.push_back(end_node_comb);
-  }
+  gr_model.get_node_segment_list().clear();
 }
 
-bool GlobalRouter::isConnectedAllEnd(GRModel& gr_model)
+std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> GlobalRouter::getTopoList(GRModel& gr_model, GRNet& gr_net)
 {
-  return gr_model.get_end_node_comb_list().empty();
+  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> topo_list;
+  return topo_list;
+}
+
+void GlobalRouter::initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& topo)
+{
+  gr_model.set_start_node_list(topo.first);
+  gr_model.set_end_node_list(topo.second);
 }
 
 void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
@@ -611,37 +596,28 @@ void GlobalRouter::routeSinglePath(GRModel& gr_model)
 
 void GlobalRouter::initPathHead(GRModel& gr_model)
 {
-  std::vector<std::vector<GRNode*>>& start_node_comb_list = gr_model.get_start_node_comb_list();
-  std::vector<GRNode*>& path_node_comb = gr_model.get_path_node_comb();
+  std::vector<GRNode*>& start_node_list = gr_model.get_start_node_list();
 
-  for (std::vector<GRNode*>& start_node_comb : start_node_comb_list) {
-    for (GRNode* start_node : start_node_comb) {
-      start_node->set_estimated_cost(getEstimateCostToEnd(gr_model, start_node));
-      pushToOpenList(gr_model, start_node);
-    }
-  }
-  for (GRNode* path_node : path_node_comb) {
-    path_node->set_estimated_cost(getEstimateCostToEnd(gr_model, path_node));
-    pushToOpenList(gr_model, path_node);
+  for (GRNode* start_node : start_node_list) {
+    start_node->set_estimated_cost(getEstimateCostToEnd(gr_model, start_node));
+    pushToOpenList(gr_model, start_node);
   }
   gr_model.set_path_head_node(popFromOpenList(gr_model));
 }
 
 bool GlobalRouter::searchEnded(GRModel& gr_model)
 {
-  std::vector<std::vector<GRNode*>>& end_node_comb_list = gr_model.get_end_node_comb_list();
+  std::vector<GRNode*>& end_node_list = gr_model.get_end_node_list();
   GRNode* path_head_node = gr_model.get_path_head_node();
 
   if (path_head_node == nullptr) {
-    gr_model.set_end_node_comb_idx(-1);
+    gr_model.set_end_node_idx(-1);
     return true;
   }
-  for (size_t i = 0; i < end_node_comb_list.size(); i++) {
-    for (GRNode* end_node : end_node_comb_list[i]) {
-      if (path_head_node == end_node) {
-        gr_model.set_end_node_comb_idx(static_cast<irt_int>(i));
-        return true;
-      }
+  for (size_t i = 0; i < end_node_list.size(); i++) {
+    if (path_head_node == end_node_list[i]) {
+      gr_model.set_end_node_idx(static_cast<irt_int>(i));
+      return true;
     }
   }
   return false;
@@ -716,11 +692,13 @@ void GlobalRouter::resetPathHead(GRModel& gr_model)
 
 bool GlobalRouter::isRoutingFailed(GRModel& gr_model)
 {
-  return gr_model.get_end_node_comb_idx() == -1;
+  return gr_model.get_end_node_idx() == -1;
 }
 
 void GlobalRouter::resetSinglePath(GRModel& gr_model)
 {
+  gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
+
   std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost> empty_queue;
   gr_model.set_open_queue(empty_queue);
 
@@ -734,7 +712,7 @@ void GlobalRouter::resetSinglePath(GRModel& gr_model)
   visited_node_list.clear();
 
   gr_model.set_path_head_node(nullptr);
-  gr_model.set_end_node_comb_idx(-1);
+  gr_model.set_end_node_idx(-1);
 }
 
 void GlobalRouter::updatePathResult(GRModel& gr_model)
@@ -776,88 +754,33 @@ void GlobalRouter::updateDirectionSet(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::resetStartAndEnd(GRModel& gr_model)
-{
-  std::vector<std::vector<GRNode*>>& start_node_comb_list = gr_model.get_start_node_comb_list();
-  std::vector<std::vector<GRNode*>>& end_node_comb_list = gr_model.get_end_node_comb_list();
-  std::vector<GRNode*>& path_node_comb = gr_model.get_path_node_comb();
-  GRNode* path_head_node = gr_model.get_path_head_node();
-  irt_int end_node_comb_idx = gr_model.get_end_node_comb_idx();
-
-  end_node_comb_list[end_node_comb_idx].clear();
-  end_node_comb_list[end_node_comb_idx].push_back(path_head_node);
-
-  GRNode* path_node = path_head_node->get_parent_node();
-  if (path_node == nullptr) {
-    // 起点和终点重合
-    path_node = path_head_node;
-  } else {
-    // 起点和终点不重合
-    while (path_node->get_parent_node() != nullptr) {
-      path_node_comb.push_back(path_node);
-      path_node = path_node->get_parent_node();
-    }
-  }
-  if (start_node_comb_list.size() == 1) {
-    // 初始化时，要把start_node_comb_list的pin只留一个ap点
-    // 后续只要将end_node_comb_list的pin保留一个ap点
-    start_node_comb_list.front().clear();
-    start_node_comb_list.front().push_back(path_node);
-  }
-  start_node_comb_list.push_back(end_node_comb_list[end_node_comb_idx]);
-  end_node_comb_list.erase(end_node_comb_list.begin() + end_node_comb_idx);
-}
-
 void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
-  std::vector<std::vector<GRNode*>>& start_node_comb_list = gr_model.get_start_node_comb_list();
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
   std::map<GRNode*, std::set<Orientation>> usage_map;
 
-  if (node_segment_list.empty()) {
-    // 单层的local net
-    std::set<GRNode*> node_set;
-    for (std::vector<GRNode*>& start_node_comb : start_node_comb_list) {
-      for (GRNode* start_node : start_node_comb) {
-        node_set.insert(start_node);
-      }
+  for (Segment<GRNode*>& node_segment : node_segment_list) {
+    GRNode* first_node = node_segment.get_first();
+    GRNode* second_node = node_segment.get_second();
+    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
+    if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
+      LOG_INST.error(Loc::current(), "The orientation is error!");
     }
-    if (node_set.size() > 1) {
-      LOG_INST.error(Loc::current(), "The net is not local!");
-    }
-    GRNode* local_node = *node_set.begin();
-    for (Orientation orientation : {Orientation::kUp, Orientation::kDown}) {
-      GRNode* neighbor_node = local_node->getNeighborNode(orientation);
-      if (neighbor_node != nullptr) {
-        usage_map[local_node].insert(orientation);
-        usage_map[neighbor_node].insert(RTUtil::getOppositeOrientation(orientation));
-      }
-    }
-  } else {
-    // 跨gcell线网和多层的local_net
-    for (Segment<GRNode*>& node_segment : node_segment_list) {
-      GRNode* first_node = node_segment.get_first();
-      GRNode* second_node = node_segment.get_second();
-      Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
-      if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-        LOG_INST.error(Loc::current(), "The orientation is error!");
-      }
-      Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+    Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
 
-      GRNode* node_i = first_node;
-      while (true) {
-        if (node_i != first_node) {
-          usage_map[node_i].insert(oppo_orientation);
-        }
-        if (node_i != second_node) {
-          usage_map[node_i].insert(orientation);
-        }
-        if (node_i == second_node) {
-          break;
-        }
-        node_i = node_i->getNeighborNode(orientation);
+    GRNode* node_i = first_node;
+    while (true) {
+      if (node_i != first_node) {
+        usage_map[node_i].insert(oppo_orientation);
       }
+      if (node_i != second_node) {
+        usage_map[node_i].insert(orientation);
+      }
+      if (node_i == second_node) {
+        break;
+      }
+      node_i = node_i->getNeighborNode(orientation);
     }
   }
   for (auto& [usage_node, orientation_list] : usage_map) {
@@ -872,9 +795,6 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 void GlobalRouter::resetSingleNet(GRModel& gr_model)
 {
   gr_model.set_gr_net_ref(nullptr);
-  gr_model.get_start_node_comb_list().clear();
-  gr_model.get_end_node_comb_list().clear();
-  gr_model.get_path_node_comb().clear();
 
   for (Segment<GRNode*>& node_segment : gr_model.get_node_segment_list()) {
     GRNode* first_node = node_segment.get_first();
@@ -1006,16 +926,14 @@ double GlobalRouter::getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* e
 
 double GlobalRouter::getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node)
 {
-  std::vector<std::vector<GRNode*>>& end_node_comb_list = gr_model.get_end_node_comb_list();
+  std::vector<GRNode*>& end_node_list = gr_model.get_end_node_list();
 
   double estimate_cost = DBL_MAX;
-  for (std::vector<GRNode*>& end_node_comb : end_node_comb_list) {
-    for (GRNode* end_node : end_node_comb) {
-      if (end_node->isClose()) {
-        continue;
-      }
-      estimate_cost = std::min(estimate_cost, getEstimateCost(gr_model, curr_node, end_node));
+  for (GRNode* end_node : end_node_list) {
+    if (end_node->isClose()) {
+      continue;
     }
+    estimate_cost = std::min(estimate_cost, getEstimateCost(gr_model, curr_node, end_node));
   }
   return estimate_cost;
 }

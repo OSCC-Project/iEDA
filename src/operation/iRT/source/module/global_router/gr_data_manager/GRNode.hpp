@@ -195,16 +195,19 @@ class GRNode : public LayerCoord
     _net_queue.push(net_idx);
   }
 #if 1  // astar
+  // single net
   std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   GRNodeState& get_state() { return _state; }
   GRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(GRNodeState state) { _state = state; }
   void set_parent_node(GRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == GRNodeState::kNone; }
   bool isOpen() { return _state == GRNodeState::kOpen; }
   bool isClose() { return _state == GRNodeState::kClose; }
