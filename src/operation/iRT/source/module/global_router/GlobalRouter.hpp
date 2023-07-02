@@ -71,8 +71,9 @@ class GlobalRouter
 #if 1  // route gr_model
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
-  void initRoutingInfo(GRModel& gr_model, GRNet& gr_net);
-  bool isConnectedAllEnd(GRModel& gr_model);
+  void initSingleNet(GRModel& gr_model, GRNet& gr_net);
+  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> getTopoList(GRModel& gr_model, GRNet& gr_net);
+  void initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& topo);
   void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
   void initPathHead(GRModel& gr_model);
@@ -85,7 +86,6 @@ class GlobalRouter
   void resetSinglePath(GRModel& gr_model);
   void updatePathResult(GRModel& gr_model);
   void updateDirectionSet(GRModel& gr_model);
-  void resetStartAndEnd(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
   void pushToOpenList(GRModel& gr_model, GRNode* curr_node);

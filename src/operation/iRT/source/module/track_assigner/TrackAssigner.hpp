@@ -77,7 +77,7 @@ class TrackAssigner
 #if 1  // assign ta_panel
   void assignTAPanel(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask& ta_task);
-  void initRoutingInfo(TAPanel& ta_panel, TATask& ta_task);
+  void initSingleNet(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
   void routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void routeSinglePath(TAPanel& ta_panel);
@@ -93,7 +93,6 @@ class TrackAssigner
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
-  void updateResult(TAPanel& ta_panel, TATask& ta_task);
   void resetSingleNet(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);

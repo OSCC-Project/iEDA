@@ -599,7 +599,7 @@ void TrackAssigner::assignTAPanel(TAPanel& ta_panel)
 
 void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
 {
-  initRoutingInfo(ta_panel, ta_task);
+  initSingleNet(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     for (TARouteStrategy ta_route_strategy : {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringSelfPanelResult,
                                               TARouteStrategy::kIgnoringOtherPanelResult, TARouteStrategy::kIgnoringBlockage}) {
@@ -614,52 +614,56 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
   resetSingleNet(ta_panel);
 }
 
-void TrackAssigner::initRoutingInfo(TAPanel& ta_panel, TATask& ta_task)
+void TrackAssigner::initSingleNet(TAPanel& ta_panel, TATask& ta_task)
 {
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
-
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
   std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
 
-  std::vector<std::vector<TANode*>> node_comb_list;
-  std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
-  for (TAGroup& ta_group : ta_group_list) {
-    std::vector<TANode*> node_comb;
-    for (LayerCoord& coord : ta_group.get_coord_list()) {
-      if (!RTUtil::existGrid(coord, panel_scale_axis)) {
-        LOG_INST.error(Loc::current(), "The coord can not find grid!");
+  // config
+  ta_panel.set_wire_unit(1);
+  ta_panel.set_corner_unit(1);
+  ta_panel.set_via_unit(1);
+  // single task
+  ta_panel.set_ta_task_ref(&ta_task);
+  ta_panel.set_routing_region(ta_panel.get_curr_bounding_box());
+  {
+    std::vector<std::vector<TANode*>> node_comb_list;
+    std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
+    for (TAGroup& ta_group : ta_group_list) {
+      std::vector<TANode*> node_comb;
+      for (LayerCoord& coord : ta_group.get_coord_list()) {
+        if (!RTUtil::existGrid(coord, panel_scale_axis)) {
+          LOG_INST.error(Loc::current(), "The coord can not find grid!");
+        }
+        PlanarCoord grid_coord = RTUtil::getGridCoord(coord, panel_scale_axis);
+        node_comb.push_back(&ta_node_map[grid_coord.get_x()][grid_coord.get_y()]);
       }
-      PlanarCoord grid_coord = RTUtil::getGridCoord(coord, panel_scale_axis);
-      node_comb.push_back(&ta_node_map[grid_coord.get_x()][grid_coord.get_y()]);
+      node_comb_list.push_back(node_comb);
     }
-    node_comb_list.push_back(node_comb);
-  }
-  for (size_t i = 0; i < node_comb_list.size(); i++) {
-    if (i == 0) {
-      start_node_comb_list.push_back(node_comb_list[i]);
-    } else {
-      end_node_comb_list.push_back(node_comb_list[i]);
+    for (size_t i = 0; i < node_comb_list.size(); i++) {
+      if (i == 0) {
+        start_node_comb_list.push_back(node_comb_list[i]);
+      } else {
+        end_node_comb_list.push_back(node_comb_list[i]);
+      }
     }
   }
-  std::set<Orientation> routing_orientation_set;
-  for (std::vector<TANode*>& start_node_comb : start_node_comb_list) {
-    for (TANode* start_node : start_node_comb) {
-      for (std::vector<TANode*>& end_node_comb : end_node_comb_list) {
-        for (TANode* end_node : end_node_comb) {
-          std::vector<Orientation> orientation_list = RTUtil::getOrientationList(*start_node, *end_node);
-          routing_orientation_set.insert(orientation_list.begin(), orientation_list.end());
+  {
+    std::set<Orientation>& routing_offset_set = ta_panel.get_routing_offset_set();
+    for (std::vector<TANode*>& start_node_comb : start_node_comb_list) {
+      for (TANode* start_node : start_node_comb) {
+        for (std::vector<TANode*>& end_node_comb : end_node_comb_list) {
+          for (TANode* end_node : end_node_comb) {
+            std::vector<Orientation> orientation_list = RTUtil::getOrientationList(*start_node, *end_node);
+            routing_offset_set.insert(orientation_list.begin(), orientation_list.end());
+          }
         }
       }
     }
+    routing_offset_set.erase(Orientation::kNone);
   }
-  routing_orientation_set.erase(Orientation::kNone);
-
-  ta_panel.set_wire_unit(1);
-  ta_panel.set_via_unit(1);
-  ta_panel.set_ta_task_ref(&ta_task);
-  ta_panel.set_routing_orientation_set(routing_orientation_set);
-  ta_panel.set_routing_region(ta_panel.get_curr_bounding_box());
 }
 
 bool TrackAssigner::isConnectedAllEnd(TAPanel& ta_panel)
@@ -743,7 +747,7 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node == nullptr) {
       continue;
     }
-    if (!RTUtil::exist(ta_panel.get_routing_orientation_set(), orientation)) {
+    if (!RTUtil::exist(ta_panel.get_routing_offset_set(), orientation)) {
       continue;
     }
     if (!RTUtil::isInside(ta_panel.get_routing_region(), *neighbor_node)) {
@@ -812,6 +816,8 @@ bool TrackAssigner::isRoutingFailed(TAPanel& ta_panel)
 
 void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
 {
+  ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
+
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
   ta_panel.set_open_queue(empty_queue);
 
@@ -900,11 +906,6 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 }
 
 void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
-{
-  updateResult(ta_panel, ta_task);
-}
-
-void TrackAssigner::updateResult(TAPanel& ta_panel, TATask& ta_task)
 {
   for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
     ta_task.get_routing_segment_list().emplace_back(*node_segment.get_first(), *node_segment.get_second());
