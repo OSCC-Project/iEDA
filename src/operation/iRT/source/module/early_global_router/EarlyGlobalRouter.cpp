@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "EarlyGlobalRouter.hpp"
 
-using namespace std;
 namespace irt {
+
 // public
 
 void EarlyGlobalRouter::initInst(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
@@ -256,7 +256,7 @@ void EarlyGlobalRouter::plotCongstLoc()
       }
     }
   }
-  irt_int interval = max(max_congestion_val / kLevel, 1);
+  irt_int interval = std::max(max_congestion_val / kLevel, 1);
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
   RTUtil::pushStream(gds_file, "STRNAME ", "congstion_map", "\n");
 
@@ -363,7 +363,7 @@ EGRRoutingPackage EarlyGlobalRouter::initEGRRoutingPackage(EGRNet& egr_net)
 
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map = egr_routing_package.get_min_distance_map();
   for (LayerCoord& pin_coord : pin_coord_list) {
-    min_distance_map[pin_coord] = make_pair(INT_MAX, LayerCoord());
+    min_distance_map[pin_coord] = std::make_pair(INT_MAX, LayerCoord());
   }
   egr_routing_package.set_number_calculated(0);
   return egr_routing_package;
@@ -402,7 +402,7 @@ void EarlyGlobalRouter::generateFluteTree(EGRRoutingPackage& egr_routing_package
     if (RTUtil::exist(planar_coord_layer_map, PlanarCoord(pin_coord))) {
       LayerCoord existed_coord = pin_coord;
       existed_coord.set_layer_idx(planar_coord_layer_map[pin_coord]);
-      topo_coord_pair_list.push_back(make_pair(pin_coord, existed_coord));
+      topo_coord_pair_list.push_back(std::make_pair(pin_coord, existed_coord));
       continue;
     }
     planar_coord_layer_map[pin_coord] = pin_coord.get_layer_idx();
@@ -449,7 +449,7 @@ void EarlyGlobalRouter::generateCoordPairList(EGRRoutingPackage& egr_routing_pac
       second_layer_coord.set_layer_idx(layer_idx);
       planar_coord_layer_map[second_coord] = layer_idx;
     }
-    topo_coord_pair_list.push_back(make_pair(first_layer_coord, second_layer_coord));
+    topo_coord_pair_list.push_back(std::make_pair(first_layer_coord, second_layer_coord));
   }
 }
 
@@ -571,7 +571,7 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
       LayerCoord seg_coord = getNearestCoordOnSegment(pin_coord, routing_segment);
       irt_int distance = RTUtil::getManhattanDistance(pin_coord, seg_coord);
       if (min_distance_map[pin_coord].first > distance) {
-        min_distance_map[pin_coord] = make_pair(distance, seg_coord);
+        min_distance_map[pin_coord] = std::make_pair(distance, seg_coord);
       }
     }
   }
@@ -603,7 +603,7 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
 void EarlyGlobalRouter::routeNearestCoordPair(EGRRoutingPackage& egr_routing_package)
 {
   std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
-  std::pair<LayerCoord, LayerCoord> coord_pair = make_pair(egr_routing_package.get_pin_coord(), egr_routing_package.get_seg_coord());
+  std::pair<LayerCoord, LayerCoord> coord_pair = std::make_pair(egr_routing_package.get_pin_coord(), egr_routing_package.get_seg_coord());
   std::vector<Segment<LayerCoord>> path_segment_list = routeInPattern(coord_pair);
   routing_segment_list.insert(routing_segment_list.end(), path_segment_list.begin(), path_segment_list.end());
 }
@@ -1250,7 +1250,7 @@ void EarlyGlobalRouter::calcuCongestion()
           overflow_map[overflow]++;
           total_overflow_map[overflow]++;
           if (overflow > 0) {
-            grid_overflow = max(grid_overflow, overflow);
+            grid_overflow = std::max(grid_overflow, overflow);
           }
         }
         total_track_overflow += grid_overflow;

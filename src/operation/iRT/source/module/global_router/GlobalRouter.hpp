@@ -21,6 +21,7 @@
 #include "Database.hpp"
 #include "GRModel.hpp"
 #include "RTU.hpp"
+#include "flute3/flute.h"
 
 namespace irt {
 
@@ -39,7 +40,7 @@ class GlobalRouter
   // self
   static GlobalRouter* _gr_instance;
 
-  GlobalRouter() = default;
+  GlobalRouter() { Flute::readLUT(); }
   GlobalRouter(const GlobalRouter& other) = delete;
   GlobalRouter(GlobalRouter&& other) = delete;
   ~GlobalRouter() = default;
