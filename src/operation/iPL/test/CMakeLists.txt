@@ -74,3 +74,5 @@ target_link_libraries(MPLseTest
     ipl-source
     ipl-api_external_libs
 )
+add_executable(ployclip
+    ${iPL_TEST}/ploygonclip.cc)
