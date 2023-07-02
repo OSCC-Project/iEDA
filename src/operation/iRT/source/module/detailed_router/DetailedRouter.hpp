@@ -68,8 +68,8 @@ class DetailedRouter
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box,
-                                                                                           LayerRect& min_scope_regular_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> getGridOrientationMap(DRBox& dr_box,
+                                                                                             LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);

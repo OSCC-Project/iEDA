@@ -69,6 +69,7 @@ class RTAPI
   bool hasViolation(void* region_query, const LayerRect& drc_rect);
   bool hasViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list);
   std::map<std::string, int> getViolation(void* region_query);
+  std::map<std::string, int> getViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const LayerRect& drc_rect);
