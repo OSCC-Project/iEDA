@@ -522,8 +522,8 @@ void GlobalRouter::routeGRModel(GRModel& gr_model)
 void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
 {
   initSingleNet(gr_model, gr_net);
-  for (auto& topo : getTopoList(gr_model, gr_net)) {
-    initSinglePath(gr_model, topo);
+  for (auto& node_topo : gr_model.get_node_topo_list()) {
+    initSinglePath(gr_model, node_topo);
     for (GRRouteStrategy gr_route_strategy :
          {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kEnlarging, GRRouteStrategy::kIgnoringENV, GRRouteStrategy::kIgnoringOBS}) {
       routeByStrategy(gr_model, gr_route_strategy);
@@ -539,6 +539,8 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
 void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   gr_model.set_wire_unit(1);
   gr_model.set_corner_unit(1);
@@ -554,38 +556,95 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       key_node_set.insert(gr_node);
     }
   }
-}
-
-std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> GlobalRouter::getTopoList(GRModel& gr_model, GRNet& gr_net)
-{
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> topo_list;
-
-  GRPin& gr_driving_pin = gr_net.get_gr_driving_pin();
-  std::vector<GRNode*> first_node_list;
-  for (LayerCoord& coord : gr_driving_pin.getGridCoordList()) {
-    GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-    first_node_list.push_back(gr_node);
-  }
+  // planar_layer_map
+  std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> planar_layer_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    if (gr_pin.get_pin_idx() == gr_driving_pin.get_pin_idx()) {
+    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+      planar_layer_map[coord.get_planar_coord()].insert(coord);
+    }
+  }
+  std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_layer_map);
+
+  for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
+    if (!RTUtil::exist(planar_layer_map, planar_topo.get_first())) {
+      for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+          continue;
+        }
+        planar_layer_map[planar_topo.get_first()].insert(LayerCoord(planar_topo.get_first(), layer_idx));
+      }
+    }
+    if (!RTUtil::exist(planar_layer_map, planar_topo.get_second())) {
+      for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+          continue;
+        }
+        planar_layer_map[planar_topo.get_second()].insert(LayerCoord(planar_topo.get_second(), layer_idx));
+      }
+    }
+  }
+  // 补充垂直线段
+  for (auto& [planar_coord, layer_coord_set] : planar_layer_map) {
+    LayerCoord first_coord = *layer_coord_set.begin();
+    LayerCoord second_coord = *layer_coord_set.rbegin();
+    if (first_coord == second_coord) {
       continue;
     }
-    std::vector<GRNode*> second_node_list;
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-      second_node_list.push_back(gr_node);
-    }
-    topo_list.emplace_back(first_node_list, second_node_list);
+    GRNode* first_node = &layer_node_map[first_coord.get_layer_idx()][first_coord.get_x()][first_coord.get_y()];
+    GRNode* second_node = &layer_node_map[second_coord.get_layer_idx()][second_coord.get_x()][second_coord.get_y()];
+    gr_model.get_node_segment_list().emplace_back(first_node, second_node);
   }
-  return topo_list;
+  // 生成topo
+  for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
+    std::vector<GRNode*> first_node_topo;
+    for (LayerCoord layer_coord : planar_layer_map[planar_topo.get_first()]) {
+      first_node_topo.push_back(&layer_node_map[layer_coord.get_layer_idx()][layer_coord.get_x()][layer_coord.get_y()]);
+    }
+    std::vector<GRNode*> second_node_topo;
+    for (LayerCoord layer_coord : planar_layer_map[planar_topo.get_second()]) {
+      second_node_topo.push_back(&layer_node_map[layer_coord.get_layer_idx()][layer_coord.get_x()][layer_coord.get_y()]);
+    }
+    gr_model.get_node_topo_list().emplace_back(first_node_topo, second_node_topo);
+  }
 }
 
-void GlobalRouter::initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& topo)
+std::vector<Segment<PlanarCoord>> GlobalRouter::getPlanarTopoListByFlute(
+    std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC>& planar_layer_map)
 {
-  gr_model.set_start_node_list(topo.first);
-  gr_model.set_end_node_list(topo.second);
+  std::vector<PlanarCoord> planar_coord_list;
+  for (auto& [planar_coord, layer_coord_set] : planar_layer_map) {
+    planar_coord_list.push_back(planar_coord);
+  }
+  size_t point_num = planar_coord_list.size();
+  if (point_num == 1) {
+    return {};
+  }
+  Flute::DTYPE* x_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
+  Flute::DTYPE* y_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
+  for (size_t i = 0; i < point_num; i++) {
+    x_list[i] = planar_coord_list[i].get_x();
+    y_list[i] = planar_coord_list[i].get_y();
+  }
+  Flute::Tree flute_tree = Flute::flute(point_num, x_list, y_list, FLUTE_ACCURACY);
+  // Flute::printtree(flute_tree);
+  free(x_list);
+  free(y_list);
+
+  std::vector<Segment<PlanarCoord>> planar_topo_list;
+  for (int i = 0; i < 2 * flute_tree.deg - 2; i++) {
+    int n_id = flute_tree.branch[i].n;
+    PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
+    PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
+    planar_topo_list.emplace_back(first_coord, second_coord);
+  }
+  Flute::free_tree(flute_tree);
+  return planar_topo_list;
+}
+
+void GlobalRouter::initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& node_topo)
+{
+  gr_model.set_start_node_list(node_topo.first);
+  gr_model.set_end_node_list(node_topo.second);
 }
 
 void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy)
@@ -840,6 +899,7 @@ void GlobalRouter::resetSingleNet(GRModel& gr_model)
   gr_model.set_gr_net_ref(nullptr);
   gr_model.set_routing_region(PlanarRect());
   gr_model.get_key_node_set().clear();
+  gr_model.get_node_topo_list().clear();
 
   for (Segment<GRNode*>& node_segment : gr_model.get_node_segment_list()) {
     GRNode* first_node = node_segment.get_first();
