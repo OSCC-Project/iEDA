@@ -19,8 +19,8 @@
 #include "Direction.hpp"
 #include "Logger.hpp"
 #include "PlanarRect.hpp"
-#include "SpacingTable.hpp"
 #include "ScaleAxis.hpp"
+#include "SpacingTable.hpp"
 
 namespace irt {
 

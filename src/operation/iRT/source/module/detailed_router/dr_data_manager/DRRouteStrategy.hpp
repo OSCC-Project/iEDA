@@ -25,6 +25,7 @@ namespace irt {
 enum class DRRouteStrategy
 {
   kNone,
+  kFullyConsider,
   kIgnoringSelfBoxResult,
   kIgnoringOtherBoxResult,
   kIgnoringPanelResult,
@@ -39,6 +40,9 @@ struct GetDRRouteStrategyName
     switch (dr_route_strategy) {
       case DRRouteStrategy::kNone:
         dr_route_strategy_name = "none";
+        break;
+      case DRRouteStrategy::kFullyConsider:
+        dr_route_strategy_name = "fully_consider";
         break;
       case DRRouteStrategy::kIgnoringSelfBoxResult:
         dr_route_strategy_name = "ignoring_self_box_result";

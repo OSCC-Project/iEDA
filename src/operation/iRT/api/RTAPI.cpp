@@ -322,25 +322,6 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 // DRC
 
-bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const LayerRect& drc_rect)
-{
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return false;
-  }
-  std::vector<LayerRect> drc_rect_list = {drc_rect};
-  return hasViolation(env_rect_list, drc_rect_list);
-}
-
-bool RTAPI::hasViolation(std::vector<LayerRect> env_rect_list, const std::vector<LayerRect>& drc_rect_list)
-{
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return false;
-  }
-  void* region_query = initRegionQuery();
-  addEnvRectList(region_query, env_rect_list);
-  return hasViolation(region_query, drc_rect_list);
-}
-
 void* RTAPI::initRegionQuery()
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
@@ -349,16 +330,55 @@ void* RTAPI::initRegionQuery()
   return idrc::DrcAPIInst.init();
 }
 
+void RTAPI::addEnvRectList(void* region_query, const LayerRect& env_rect)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return;
+  }
+  std::vector<LayerRect> env_rect_list{env_rect};
+  addEnvRectList(region_query, env_rect_list);
+}
+
 void RTAPI::addEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return ;
+    return;
   }
   std::vector<idrc::DrcRect*> idrc_env_rect_list;
   for (LayerRect env_rect : env_rect_list) {
     idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
   }
   idrc::DrcAPIInst.add(static_cast<idrc::RegionQuery*>(region_query), idrc_env_rect_list);
+}
+
+void RTAPI::delEnvRectList(void* region_query, const LayerRect& env_rect)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return;
+  }
+  std::vector<LayerRect> env_rect_list{env_rect};
+  delEnvRectList(region_query, env_rect_list);
+}
+
+void RTAPI::delEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return;
+  }
+  std::vector<idrc::DrcRect*> idrc_env_rect_list;
+  for (LayerRect env_rect : env_rect_list) {
+    idrc_env_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(env_rect)));
+  }
+  idrc::DrcAPIInst.del(static_cast<idrc::RegionQuery*>(region_query), idrc_env_rect_list);
+}
+
+bool RTAPI::hasViolation(void* region_query, const LayerRect& drc_rect)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return false;
+  }
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return hasViolation(region_query, drc_rect_list);
 }
 
 bool RTAPI::hasViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list)
@@ -371,6 +391,30 @@ bool RTAPI::hasViolation(void* region_query, const std::vector<LayerRect>& drc_r
     idrc_drc_rect_list.push_back(idrc::DrcAPIInst.getDrcRect(covertToIDSRect(drc_rect)));
   }
   return idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query), idrc_drc_rect_list);
+}
+
+std::map<std::string, irt_int> RTAPI::getViolation(void* region_query)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  for (auto [rule_name, violation_list] : idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query))) {
+    violation_name_num_map[rule_name] = static_cast<irt_int>(violation_list.size());
+  }
+  return violation_name_num_map;
+}
+
+std::map<std::string, irt_int> RTAPI::getViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  return violation_name_num_map;
+}
+
+std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return {drc_rect};
+  }
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMaxScope(drc_rect_list);
 }
 
 std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect_list)
@@ -392,6 +436,15 @@ std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<LayerRect>& drc_rect
   return max_scope_list;
 }
 
+std::vector<LayerRect> RTAPI::getMinScope(const LayerRect& drc_rect)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    return {drc_rect};
+  }
+  std::vector<LayerRect> drc_rect_list = {drc_rect};
+  return getMinScope(drc_rect_list);
+}
+
 std::vector<LayerRect> RTAPI::getMinScope(const std::vector<LayerRect>& drc_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
@@ -407,24 +460,6 @@ std::vector<LayerRect> RTAPI::getMinScope(const std::vector<LayerRect>& drc_rect
     min_scope_list.push_back(convertToRTRect(drc_rect));
   }
   return min_scope_list;
-}
-
-std::vector<LayerRect> RTAPI::getMaxScope(const LayerRect& drc_rect)
-{
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return {drc_rect};
-  }
-  std::vector<LayerRect> drc_rect_list = {drc_rect};
-  return getMaxScope(drc_rect_list);
-}
-
-std::vector<LayerRect> RTAPI::getMinScope(const LayerRect& drc_rect)
-{
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return {drc_rect};
-  }
-  std::vector<LayerRect> drc_rect_list = {drc_rect};
-  return getMinScope(drc_rect_list);
 }
 
 LayerRect RTAPI::convertToRTRect(ids::DRCRect ids_rect)

@@ -583,39 +583,41 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint> legal_access_point_list;
-    std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
-    for (AccessPoint& access_point : pin_access_point_list) {
-      irt_int layer_idx = access_point.get_layer_idx();
-      if (routing_layer_list.back().get_layer_idx() <= layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
-        continue;
-      }
-      bool has_violation = false;
-      ViaMaster& via_master = layer_via_master_list[layer_idx].front();
-      for (LayerRect enclosure : {via_master.get_below_enclosure(), via_master.get_below_enclosure()}) {
-        irt_int curr_layer_idx = enclosure.get_layer_idx();
-        PlanarRect real_enclosure_rect = RTUtil::getOffsetRect(enclosure, access_point.get_real_coord());
-        PlanarRect regular_enclosure_rect = RTUtil::getRegularRect(real_enclosure_rect, die.get_real_rect());
-        PlanarRect grid_enclosure_rect = RTUtil::getClosedGridRect(regular_enclosure_rect, gcell_axis);
-        for (irt_int x = grid_enclosure_rect.get_lb_x(); x <= grid_enclosure_rect.get_rt_x(); x++) {
-          for (irt_int y = grid_enclosure_rect.get_lb_y(); y <= grid_enclosure_rect.get_rt_y(); y++) {
-            void* net_blockage_region_query = layer_gcell_map[curr_layer_idx][x][y].get_net_blockage_region_query();
-            if (RTAPI_INST.hasViolation(net_blockage_region_query, {LayerRect(regular_enclosure_rect, curr_layer_idx)})) {
-              has_violation = true;
-              goto here;
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      irt_int access_point_layer_idx = access_point.get_layer_idx();
+      for (irt_int via_below_layer_idx : {access_point_layer_idx - 1, access_point_layer_idx}) {
+        if (routing_layer_list.back().get_layer_idx() <= via_below_layer_idx
+            || via_below_layer_idx < routing_layer_list.front().get_layer_idx()) {
+          continue;
+        }
+        bool has_violation = false;
+        ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+        for (const LayerRect& enclosure : {via_master.get_below_enclosure(), via_master.get_above_enclosure()}) {
+          LayerRect real_rect(RTUtil::getOffsetRect(enclosure, access_point.get_real_coord()), enclosure.get_layer_idx());
+          for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+            PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+            PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+            for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+              for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+                PAGCell& pa_gcell = layer_gcell_map[enclosure.get_layer_idx()][x][y];
+                if (RTAPI_INST.hasViolation(pa_gcell.get_net_blockage_region_query(), real_rect)) {
+                  has_violation = true;
+                  goto here;
+                }
+              }
             }
           }
         }
+      here:
+        if (!has_violation) {
+          legal_access_point_list.push_back(access_point);
+          break;
+        }
       }
-    here:
-      if (has_violation) {
-        continue;
-      }
-      legal_access_point_list.push_back(access_point);
     }
-    if (legal_access_point_list.empty()) {
-      legal_access_point_list = {pin_access_point_list.front()};
+    if (!legal_access_point_list.empty()) {
+      pa_pin.set_access_point_list(legal_access_point_list);
     }
-    pin_access_point_list = legal_access_point_list;
   }
 }
 
@@ -725,14 +727,9 @@ void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
               for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
                 for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
                   PAGCell& pa_gcell = pa_model.get_layer_gcell_map()[real_rect.get_layer_idx()][x][y];
-                  for (auto& [net_idx, region_list] : pa_gcell.get_net_enclosure_map()) {
-                    if (pa_net.get_net_idx() == net_idx) {
-                      continue;
-                    }
-                    if (RTAPI_INST.hasViolation(region_list, real_rect)) {
-                      has_confilct = true;
-                      goto here;
-                    }
+                  if (RTAPI_INST.hasViolation(pa_gcell.get_net_enclosure_region_query(), real_rect)) {
+                    has_confilct = true;
+                    goto here;
                   }
                 }
               }
