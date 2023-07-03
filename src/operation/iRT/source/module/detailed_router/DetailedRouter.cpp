@@ -1832,6 +1832,9 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   }
   drc_table << fort::header << "Total"
             << "Total" << total_drc_number << fort::endr;
+  for (std::string table_str : RTUtil::splitString(drc_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
 }
 
 #endif

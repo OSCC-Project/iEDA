@@ -1093,6 +1093,46 @@ double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_nod
 
 void TrackAssigner::countTAPanel(TAPanel& ta_panel)
 {
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+
+  TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
+
+  double total_wire_length = 0;
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
+      irt_int first_layer_idx = routing_segment.get_first().get_layer_idx();
+      irt_int second_layer_idx = routing_segment.get_second().get_layer_idx();
+      if (first_layer_idx != second_layer_idx) {
+        LOG_INST.error(Loc::current(), "The layer of TA Segment is different!");
+      }
+      total_wire_length += RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
+    }
+  }
+  ta_panel_stat.set_total_wire_length(total_wire_length);
+
+  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(ta_task.get_routing_segment_list());
+    for (auto& [source, region_query] : ta_panel.get_source_region_query_map()) {
+      std::map<std::string, irt_int> drc_number_map;
+      if (source == TASourceType::kSelfPanelResult) {
+        drc_number_map = RTAPI_INST.getViolation(region_query);
+      } else {
+        drc_number_map = RTAPI_INST.getViolation(region_query, real_rect_list);
+      }
+      for (auto& [drc, number] : drc_number_map) {
+        source_drc_number_map[source][drc] += number;
+      }
+    }
+  }
+
+  irt_int total_drc_number = 0;
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      total_drc_number += number;
+    }
+  }
+  ta_panel_stat.set_total_drc_number(total_drc_number);
 }
 
 #endif
@@ -1483,10 +1523,81 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
 
 void TrackAssigner::countTAModel(TAModel& ta_model)
 {
+  TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
+  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      routing_wire_length_map[ta_panel.get_layer_idx()] += ta_panel.get_ta_panel_stat().get_total_wire_length();
+    }
+  }
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
+      for (auto& [source, drc_number_map] : ta_panel_stat.get_source_drc_number_map()) {
+        for (auto& [drc, number] : drc_number_map) {
+          source_drc_number_map[source][drc] += number;
+        }
+      }
+    }
+  }
+
+  double total_wire_length = 0;
+  irt_int total_drc_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      total_drc_number += number;
+    }
+  }
+  ta_model_stat.set_total_wire_length(total_wire_length);
+  ta_model_stat.set_total_drc_number(total_drc_number);
 }
 
 void TrackAssigner::reportTable(TAModel& ta_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
+  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+  double total_wire_length = ta_model_stat.get_total_wire_length();
+  irt_int total_drc_number  = ta_model_stat.get_total_drc_number();
+
+  // report wire info
+  fort::char_table wire_table;
+  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table << fort::header << "Routing Layer"
+             << "Wire Length / um" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
+    wire_table << routing_layer.get_layer_name()
+               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
+  }
+  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+  for (std::string table_str : RTUtil::splitString(wire_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
+  // report drc info
+  fort::char_table drc_table;
+  drc_table.set_border_style(FT_SOLID_STYLE);
+  drc_table << fort::header << "Source"
+            << "DRC"
+            << "Number" << fort::endr;
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      drc_table << GetTASourceTypeName()(source) << drc
+                << RTUtil::getString(number, "(", RTUtil::getPercentage(number, total_drc_number), "%") << fort::endr;
+    }
+  }
+  drc_table << fort::header << "Total"
+            << "Total" << total_drc_number << fort::endr;
+  for (std::string table_str : RTUtil::splitString(drc_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
 }
 
 #endif
