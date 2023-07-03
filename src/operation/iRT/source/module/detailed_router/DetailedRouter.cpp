@@ -1274,6 +1274,60 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
 
 void DetailedRouter::countDRBox(DRBox& dr_box)
 {
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+
+  DRBoxStat& dr_box_stat = dr_box.get_dr_box_stat();
+  std::map<irt_int, double>& routing_wire_length_map = dr_box_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = dr_box_stat.get_cut_via_number_map();
+  std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
+
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    std::vector<Segment<LayerCoord>>& routing_segment_list = dr_task.get_routing_segment_list();
+    for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+      irt_int first_layer_idx = routing_segment.get_first().get_layer_idx();
+      irt_int second_layer_idx = routing_segment.get_second().get_layer_idx();
+      if (first_layer_idx == second_layer_idx) {
+        double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_layer_idx] += wire_length;
+      } else {
+        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+        }
+      }
+    }
+    std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(routing_segment_list);
+    for (auto& [source, region_query] : dr_box.get_source_region_query_map()) {
+      std::map<std::string, irt_int> drc_num_map;
+      if (source == DRSourceType::kSelfBoxResult) {
+        drc_num_map = RTAPI_INST.getViolation(region_query);
+      } else {
+        drc_num_map = RTAPI_INST.getViolation(region_query, real_rect_list);
+      }
+      for (auto& [drc, num] : drc_num_map) {
+        source_drc_number_map[source][drc] += num;
+      }
+    }
+  }
+
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
+  irt_int total_drc_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      total_drc_number += number;
+    }
+  }
+  dr_box_stat.set_total_wire_length(total_wire_length);
+  dr_box_stat.set_total_via_number(total_via_number);
+  dr_box_stat.set_total_drc_number(total_drc_number);
 }
 
 #endif
@@ -1674,10 +1728,114 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
 void DetailedRouter::countDRModel(DRModel& dr_model)
 {
+  DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
+  std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_model_stat.get_source_drc_number_map();
+
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+  for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < dr_box_map.get_y_size(); y++) {
+      DRBoxStat& dr_box_stat = dr_box_map[x][y].get_dr_box_stat();
+      for (auto& [routing_layer_idx, wire_length] : dr_box_stat.get_routing_wire_length_map()) {
+        routing_wire_length_map[routing_layer_idx] += wire_length;
+      }
+      for (auto& [cut_layer_idx, via_number] : dr_box_stat.get_cut_via_number_map()) {
+        cut_via_number_map[cut_layer_idx] += via_number;
+      }
+      for (auto& [source, drc_number_map] : dr_box_stat.get_source_drc_number_map()) {
+        for (auto& [drc, number] : drc_number_map) {
+          source_drc_number_map[source][drc] += number;
+        }
+      }
+    }
+  }
+
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
+  irt_int total_drc_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      total_drc_number += number;
+    }
+  }
+  dr_model_stat.set_total_wire_length(total_wire_length);
+  dr_model_stat.set_total_via_number(total_via_number);
+  dr_model_stat.set_total_drc_number(total_drc_number);
 }
 
 void DetailedRouter::reportTable(DRModel& dr_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+
+  DRModelStat& dr_model_stat = dr_model.get_dr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = dr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
+  std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_model_stat.get_source_drc_number_map();
+  double total_wire_length = dr_model_stat.get_total_wire_length();
+  irt_int total_via_number = dr_model_stat.get_total_via_number();
+  irt_int total_drc_number = dr_model_stat.get_total_drc_number();
+
+  // wire table
+  fort::char_table wire_table;
+  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table << fort::header << "Routing Layer"
+             << "Wire Length / um" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
+    wire_table << routing_layer.get_layer_name()
+               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
+  }
+  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+  // via table
+  fort::char_table via_table;
+  via_table.set_border_style(FT_SOLID_STYLE);
+  via_table << fort::header << "Cut Layer"
+            << "Via number" << fort::endr;
+  for (CutLayer& cut_layer : cut_layer_list) {
+    irt_int via_number = cut_via_number_map[cut_layer.get_layer_idx()];
+    via_table << cut_layer.get_layer_name() << RTUtil::getString(via_number, "(", RTUtil::getPercentage(via_number, total_via_number), "%)")
+              << fort::endr;
+  }
+  via_table << fort::header << "Total" << total_via_number << fort::endr;
+  // report wire via info
+  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
+  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
+  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
+    std::string table_str;
+    if (i < wire_str_list.size()) {
+      table_str += wire_str_list[i];
+    }
+    table_str += " ";
+    if (i < via_str_list.size()) {
+      table_str += via_str_list[i];
+    }
+    LOG_INST.info(Loc::current(), table_str);
+  }
+  // report drc info
+  fort::char_table drc_table;
+  drc_table.set_border_style(FT_SOLID_STYLE);
+  drc_table << fort::header << "Source"
+            << "DRC"
+            << "Number" << fort::endr;
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      drc_table << GetDRSourceTypeName()(source) << drc
+                << RTUtil::getString(number, "(", RTUtil::getPercentage(number, total_drc_number), "%") << fort::endr;
+    }
+  }
+  drc_table << fort::header << "Total"
+            << "Total" << total_drc_number << fort::endr;
+  for (std::string table_str : RTUtil::splitString(drc_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
 }
 
 #endif
