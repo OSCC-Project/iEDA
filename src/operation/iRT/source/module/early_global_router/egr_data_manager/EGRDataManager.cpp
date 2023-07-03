@@ -36,7 +36,8 @@ void EGRDataManager::input(std::map<std::string, std::any>& config_map, idb::Idb
 // private
 void EGRDataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
-  _egr_config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./egr_temp_directory/");
+  _egr_config.temp_directory_path
+      = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./result/rt/egr_temp_directory/");
   _egr_config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _egr_config.congestion_cell_x_pitch = RTUtil::getConfigValue<irt_int>(config_map, "-congestion_cell_x_pitch", 15);
   _egr_config.congestion_cell_y_pitch = RTUtil::getConfigValue<irt_int>(config_map, "-congestion_cell_y_pitch", 15);
