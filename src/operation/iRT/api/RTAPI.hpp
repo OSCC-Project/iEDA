@@ -53,9 +53,6 @@ class RTAPI
   // EGR
   void runEGR(std::map<std::string, std::any> config_map);
 
-  // AI
-  void runGRToAI(std::string ai_json_file_path, int lower_bound_value, int upper_bound_value);
-
   // EVAL
   eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
