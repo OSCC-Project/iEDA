@@ -88,8 +88,8 @@ class TANode : public LayerCoord
 
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
-  std::map<Orientation, std::set<irt_int>> _obs_task_map; // 只存obs_task_map，可以不管增量式
-#if 1  // astar
+  std::map<Orientation, std::set<irt_int>> _obs_task_map;  // 只存obs_task_map，可以不管增量式
+#if 1                                                      // astar
   // single task
   std::set<Direction> _direction_set;
   // single path

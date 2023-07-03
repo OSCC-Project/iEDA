@@ -24,7 +24,6 @@
 #include "Database.hpp"
 #include "Net.hpp"
 #include "RTU.hpp"
-#include "SortStatus.hpp"
 
 namespace irt {
 
@@ -69,8 +68,8 @@ class DetailedRouter
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box,
-                                                                                           LayerRect& min_scope_regular_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> getGridOrientationMap(DRBox& dr_box,
+                                                                                             LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);
@@ -85,6 +84,7 @@ class DetailedRouter
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
   void initRoutingInfo(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
+  void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void routeSinglePath(DRBox& dr_box);
   void initPathHead(DRBox& dr_box);
   bool searchEnded(DRBox& dr_box);
@@ -94,7 +94,6 @@ class DetailedRouter
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
-  void rerouteByIgnoring(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void updatePathResult(DRBox& dr_box);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
@@ -105,12 +104,17 @@ class DetailedRouter
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
-  double getWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+#endif
+
+#if 1  // count dr_box
+  void countDRBox(DRBox& dr_box);
 #endif
 
 #if 1  // plot dr_box
