@@ -1,4 +1,4 @@
-# iSTA API reference
+# iSTA API
 ## API list
 | API Command | Type | Description |
 | :--- | :--- | :--- |
@@ -12,8 +12,8 @@ void ista_api_1()
 ```
 
 #### Parameters
--param_1 : xxx
--param_2 : xxx
+- param_1 : xxx
+- param_2 : xxx
 
 #### Return Value
 -value : xxx
@@ -28,8 +28,8 @@ void ista_api_2()
 ```
 
 #### Parameters
--param_1 : xxx
--param_2 : xxx
+- param_1 : xxx
+- param_2 : xxx
 
 #### Return Value
 -value : xxx
