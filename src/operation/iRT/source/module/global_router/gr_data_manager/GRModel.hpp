@@ -50,10 +50,15 @@ class GRModel
   const GridMap<double>& get_curr_cost_map() const { return _gr_net_ref->get_ra_cost_map(); }
   PlanarRect& get_routing_region() { return _routing_region; }
   std::set<GRNode*>& get_key_node_set() { return _key_node_set; }
+  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>>& get_node_topo_list() { return _node_topo_list; }
   std::vector<Segment<GRNode*>>& get_node_segment_list() { return _node_segment_list; }
   void set_gr_net_ref(GRNet* gr_net_ref) { _gr_net_ref = gr_net_ref; }
   void set_routing_region(const PlanarRect& routing_region) { _routing_region = routing_region; }
   void set_key_node_set(const std::set<GRNode*>& key_node_set) { _key_node_set = key_node_set; }
+  void set_node_topo_list(const std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>>& node_topo_list)
+  {
+    _node_topo_list = node_topo_list;
+  }
   void set_node_segment_list(const std::vector<Segment<GRNode*>>& node_segment_list) { _node_segment_list = node_segment_list; }
   // single path
   std::vector<GRNode*>& get_start_node_list() { return _start_node_list; }
@@ -85,6 +90,7 @@ class GRModel
   GRNet* _gr_net_ref = nullptr;
   PlanarRect _routing_region;
   std::set<GRNode*> _key_node_set;
+  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> _node_topo_list;
   std::vector<Segment<GRNode*>> _node_segment_list;
   // single path
   std::vector<GRNode*> _start_node_list;

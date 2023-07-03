@@ -73,8 +73,9 @@ class GlobalRouter
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void initSingleNet(GRModel& gr_model, GRNet& gr_net);
-  std::vector<std::pair<std::vector<GRNode*>, std::vector<GRNode*>>> getTopoList(GRModel& gr_model, GRNet& gr_net);
-  void initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& topo);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(
+      std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC>& planar_layer_map);
+  void initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& node_topo);
   void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
   void initPathHead(GRModel& gr_model);
