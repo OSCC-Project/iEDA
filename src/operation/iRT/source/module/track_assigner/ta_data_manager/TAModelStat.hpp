@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RTU.hpp"
+#include "TASourceType.hpp"
 
 namespace irt {
 
@@ -27,7 +28,7 @@ class TAModelStat
   ~TAModelStat() = default;
   // getter
   std::map<irt_int, double>& get_routing_wire_length_map() { return _routing_wire_length_map; }
-  std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
+  std::map<TASourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
   double get_total_wire_length() { return _total_wire_length; }
   irt_int get_total_drc_number() { return _total_drc_number; }
   // setter
@@ -37,7 +38,7 @@ class TAModelStat
 
  private:
   std::map<irt_int, double> _routing_wire_length_map;
-  std::map<std::string, irt_int> _drc_number_map;
+  std::map<TASourceType, std::map<std::string, irt_int>> _source_drc_number_map;
   double _total_wire_length = 0;
   irt_int _total_drc_number = 0;
 };

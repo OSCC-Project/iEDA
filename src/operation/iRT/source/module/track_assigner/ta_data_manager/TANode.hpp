@@ -70,16 +70,19 @@ class TANode : public LayerCoord
     return is_obs;
   }
 #if 1  // astar
+  // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   TANodeState& get_state() { return _state; }
   TANode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(TANodeState state) { _state = state; }
   void set_parent_node(TANode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == TANodeState::kNone; }
   bool isOpen() { return _state == TANodeState::kOpen; }
   bool isClose() { return _state == TANodeState::kClose; }

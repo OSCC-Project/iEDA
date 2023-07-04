@@ -21,8 +21,6 @@
 #include "RTUtil.hpp"
 #include "file_rt.hpp"
 
-using namespace std;
-
 namespace irt {
 
 // public
