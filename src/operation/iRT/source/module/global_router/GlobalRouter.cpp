@@ -1715,7 +1715,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   }
 
   // report overflow info
-  double overflow_range = RTUtil::getScaleRange(overflow_list);
   GridMap<double> overflow_map = RTUtil::getRangeNumRatioMap(overflow_list);
 
   fort::char_table overflow_table;
@@ -1724,14 +1723,14 @@ void GlobalRouter::reportTable(GRModel& gr_model)
                  << "GCell Number" << fort::endr;
   for (irt_int y_idx = 0; y_idx < overflow_map.get_y_size(); y_idx++) {
     double left = overflow_map[0][y_idx];
-    double right = left + overflow_range;
+    double right = overflow_map[1][y_idx];
     std::string range_str;
     if (y_idx == overflow_map.get_y_size() - 1) {
       range_str = RTUtil::getString("[", left, ",", max_overflow, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
-    overflow_table << range_str << RTUtil::getString(overflow_map[1][y_idx], "(", overflow_map[2][y_idx], "%)") << fort::endr;
+    overflow_table << range_str << RTUtil::getString(overflow_map[2][y_idx], "(", overflow_map[3][y_idx], "%)") << fort::endr;
   }
   overflow_table << fort::header << "Total" << overflow_list.size() << fort::endr;
   for (std::string table_str : RTUtil::splitString(overflow_table.to_string(), '\n')) {
