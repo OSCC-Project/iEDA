@@ -89,6 +89,7 @@ class GlobalRouter
   void updatePathResult(GRModel& gr_model);
   void updateDirectionSet(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
+  void optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
   void pushToOpenList(GRModel& gr_model, GRNode* curr_node);
   GRNode* popFromOpenList(GRModel& gr_model);
