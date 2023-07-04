@@ -845,6 +845,8 @@ void GlobalRouter::updateDirectionSet(GRModel& gr_model)
 
 void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
+  optNodeSegmentListDueFlute(gr_model, gr_net);
+
   std::set<GRNode*>& key_node_set = gr_model.get_key_node_set();
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
@@ -891,6 +893,36 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
   std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
+  }
+}
+
+void GlobalRouter::optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net)
+{
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+  std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
+
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+  for (Segment<GRNode*>& node_segment : node_segment_list) {
+    routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
+  }
+  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
+      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
+    }
+  }
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
+
+  node_segment_list.clear();
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
+    LayerCoord first_coord = coord_segment.get_first()->value();
+    LayerCoord second_coord = coord_segment.get_second()->value();
+
+    GRNode* first_node = &layer_node_map[first_coord.get_layer_idx()][first_coord.get_x()][first_coord.get_y()];
+    GRNode* second_node = &layer_node_map[second_coord.get_layer_idx()][second_coord.get_x()][second_coord.get_y()];
+
+    node_segment_list.emplace_back(first_node, second_node);
   }
 }
 
