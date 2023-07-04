@@ -711,18 +711,17 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
   avg_cost_table.set_border_style(FT_SOLID_STYLE);
   avg_cost_table << fort::header << "Avg Cost"
                  << "Net Number" << fort::endr;
-  double avg_cost_range = RTUtil::getScaleRange(avg_cost_list);
   GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
   for (irt_int y_idx = 0; y_idx < avg_cost_map.get_y_size(); y_idx++) {
     double left = avg_cost_map[0][y_idx];
-    double right = left + avg_cost_range;
+    double right = avg_cost_map[1][y_idx];
     std::string range_str;
     if (y_idx == avg_cost_map.get_y_size() - 1) {
       range_str = RTUtil::getString("[", left, ",", max_avg_cost, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
-    avg_cost_table << range_str << RTUtil::getString(avg_cost_map[1][y_idx], "(", avg_cost_map[2][y_idx], "%)") << fort::endr;
+    avg_cost_table << range_str << RTUtil::getString(avg_cost_map[2][y_idx], "(", avg_cost_map[3][y_idx], "%)") << fort::endr;
   }
   avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
 
