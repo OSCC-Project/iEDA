@@ -136,7 +136,7 @@ void RegionQuery::queryInMaxScope(int layer_id, RTreeBox check_rect,
 {
   std::vector<std::pair<RTreeBox, DrcRect*>> origin_result;
   _layer_to_routing_max_region_tree_map[layer_id].query(bgi::overlaps(check_rect), std::back_inserter(origin_result));
-  for (auto [rtree_box, drc_rect] : origin_result) {
+  for (auto& [rtree_box, drc_rect] : origin_result) {
     query_result[drc_rect->get_scope_owner()][drc_rect->getScopeType()].push_back(drc_rect);
   }
 }
@@ -146,7 +146,7 @@ void RegionQuery::queryInMinScope(int layer_id, RTreeBox check_rect,
 {
   std::vector<std::pair<RTreeBox, DrcRect*>> origin_result;
   _layer_to_routing_min_region_tree_map[layer_id].query(bgi::overlaps(check_rect), std::back_inserter(origin_result));
-  for (auto [rtree_box, drc_rect] : origin_result) {
+  for (auto& [rtree_box, drc_rect] : origin_result) {
     query_result[drc_rect->get_scope_owner()][drc_rect->getScopeType()].push_back(drc_rect);
   }
 }
@@ -275,6 +275,10 @@ bool RegionQuery::addCutDiffLayerSpacingViolation(DrcRect* target_rect, DrcRect*
 
 void RegionQuery::initPrlVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_prl_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -292,6 +296,10 @@ void RegionQuery::initPrlVioSpot()
 
 void RegionQuery::initMetalEOLVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_metal_EOL_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -308,6 +316,10 @@ void RegionQuery::initMetalEOLVioSpot()
 
 void RegionQuery::initShortVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_short_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -866,6 +878,11 @@ void RegionQuery::deletePolyInNet(DrcPoly* poly)
 
 void RegionQuery::removeFromMaxScopeRTree(DrcRect* scope_rect)
 {
+  if (scope_rect == nullptr) {
+    std::cout << "[DrcAPI Warning]: scope_rect is null, removeFromMaxScopeRTree failed" << std::endl;
+    return;
+  }
+
   int layer_id = scope_rect->get_layer_id();
   RTreeBox scope_rtree_box = DRCUtil::getRTreeBox(scope_rect);
   if (_layer_to_routing_max_region_tree_map[layer_id].remove(std::make_pair(scope_rtree_box, scope_rect)) == 0) {
@@ -876,6 +893,11 @@ void RegionQuery::removeFromMaxScopeRTree(DrcRect* scope_rect)
 
 void RegionQuery::removeFromMinScopeRTree(DrcRect* scope_rect)
 {
+  if (scope_rect == nullptr) {
+    std::cout << "[DrcAPI Warning]: scope_rect is null, removeFromMaxScopeRTree failed" << std::endl;
+    return;
+  }
+
   int layer_id = scope_rect->get_layer_id();
   RTreeBox scope_rtree_box = DRCUtil::getRTreeBox(scope_rect);
 
