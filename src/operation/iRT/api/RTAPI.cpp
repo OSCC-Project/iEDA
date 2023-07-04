@@ -245,12 +245,6 @@ void RTAPI::runEGR(std::map<std::string, std::any> config_map)
   LOG_INST.info(Loc::current(), "Run EGR completed!", egr_monitor.getStatsInfo());
 }
 
-// AI
-
-void RTAPI::runGRToAI(std::string ai_json_file_path, int lower_bound_value, int upper_bound_value)
-{
-}
-
 // EVAL
 
 eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map)
@@ -407,12 +401,26 @@ std::map<std::string, irt_int> RTAPI::getViolation(void* region_query)
 
 std::map<std::string, irt_int> RTAPI::getViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list)
 {
+  std::map<std::string, irt_int> violation_name_num_map;
+  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Cut Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 1));
+  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Metal Short", 1));
+  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("MinStep", 1));
+  violation_name_num_map.insert(std::make_pair("Minimal Area", 1));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 1));
+  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 1));
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return {};
+    return violation_name_num_map;
   }
-  addEnvRectList(region_query, drc_rect_list);
-  std::map<std::string, irt_int> violation_name_num_map = getViolation(region_query);
-  delEnvRectList(region_query, drc_rect_list);
+  // addEnvRectList(region_query, drc_rect_list);
+  // std::map<std::string, irt_int> violation_name_num_map = getViolation(region_query);
+  // delEnvRectList(region_query, drc_rect_list);
   return violation_name_num_map;
 }
 

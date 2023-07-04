@@ -70,16 +70,19 @@ class DRNode : public LayerCoord
     return is_obs;
   }
 #if 1  // astar
+  // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   DRNodeState& get_state() { return _state; }
   DRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(DRNodeState state) { _state = state; }
   void set_parent_node(DRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == DRNodeState::kNone; }
   bool isOpen() { return _state == DRNodeState::kOpen; }
   bool isClose() { return _state == DRNodeState::kClose; }

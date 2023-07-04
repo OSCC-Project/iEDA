@@ -21,6 +21,7 @@
 #include "Database.hpp"
 #include "GRModel.hpp"
 #include "RTU.hpp"
+#include "flute3/flute.h"
 
 namespace irt {
 
@@ -39,7 +40,7 @@ class GlobalRouter
   // self
   static GlobalRouter* _gr_instance;
 
-  GlobalRouter() = default;
+  GlobalRouter() { Flute::readLUT(); }
   GlobalRouter(const GlobalRouter& other) = delete;
   GlobalRouter(GlobalRouter&& other) = delete;
   ~GlobalRouter() = default;
@@ -71,8 +72,10 @@ class GlobalRouter
 #if 1  // route gr_model
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
-  void initRoutingInfo(GRModel& gr_model, GRNet& gr_net);
-  bool isConnectedAllEnd(GRModel& gr_model);
+  void initSingleNet(GRModel& gr_model, GRNet& gr_net);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(
+      std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC>& planar_layer_map);
+  void initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& node_topo);
   void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
   void initPathHead(GRModel& gr_model);
@@ -85,8 +88,8 @@ class GlobalRouter
   void resetSinglePath(GRModel& gr_model);
   void updatePathResult(GRModel& gr_model);
   void updateDirectionSet(GRModel& gr_model);
-  void resetStartAndEnd(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
+  void optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
   void pushToOpenList(GRModel& gr_model, GRNode* curr_node);
   GRNode* popFromOpenList(GRModel& gr_model);

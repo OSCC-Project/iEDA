@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "ViolationRepairer.hpp"
+
 #include "RTAPI.hpp"
 
 namespace irt {
