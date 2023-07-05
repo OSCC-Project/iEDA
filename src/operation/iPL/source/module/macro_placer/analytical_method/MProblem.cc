@@ -151,11 +151,13 @@ void MProblem::drawImage(const Mat& variable, int index) const
   for (int i = 0; i < _num_macros; i++) {
     img.drawRect(variable(i, 0), variable(i, 1), _width(i), _height(i), variable(i, 2));
   }
-  img.save("/home/huangfuxing/Prog_cpp/iEDA/bin/t" + std::to_string(index) + ".jpg");
+  img.save("/home/huangfuxing/Prog_cpp/iEDA/bin/img" + std::to_string(index) + ".jpg");
 }
 
 void MProblem::setThreads(size_t n)
 {
+  _wl->setThreads(n);
+  _density->setThreads(n);
   Problem::setThreads(n);
 }
 
@@ -170,10 +172,11 @@ void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int it
   evalDensity(variable, d_g, hpwl);
   cost = hpwl;
   evalWirelength(variable, wl_g, hpwl, 100);
-  double lambda = wl_g.lpNorm<1>() / d_g.lpNorm<1>();
-  d_g = lambda * d_g;
+  if (iter == 0)
+    _lambda = wl_g.lpNorm<1>() / d_g.lpNorm<1>();
+  d_g = _lambda * d_g;
   gradient = wl_g + d_g;
-  if (iter % 10 == 0)
+  if (iter % 1 == 0)
     drawImage(variable, iter);
 }
 

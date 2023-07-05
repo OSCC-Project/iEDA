@@ -70,6 +70,7 @@ class MProblem final : public Problem
   int _num_types{};
   double _core_width{};
   double _core_height{};
+  mutable double _lambda;
 
   unordered_map<FPInst*, uint32_t> _inst2id{};
   vector<pair<double, double>> _bound{};
