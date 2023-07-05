@@ -68,7 +68,7 @@ class DrcAPI
   void add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list);
   void del(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list);
   std::map<std::string, std::vector<DrcViolationSpot*>> check(RegionQuery* region_query);
-  std::map<std::string, std::vector<DrcViolationSpot*>> check(std::vector<DrcRect*>& region_rect_list);
+  std::map<std::string, std::vector<DrcViolationSpot*>> check(std::vector<DrcRect*>& region_rect_list, RegionQuery* dr_region_query = nullptr);
   DrcRect* getDrcRect(int net_id, int lb_x, int lb_y, int rt_x, int rt_y, std::string layer_name, bool is_artificial = false);
   DrcRect* getDrcRect(ids::DRCRect drc_rect);
   ids::DRCRect getDrcRect(DrcRect* drc_rect);
