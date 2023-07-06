@@ -691,7 +691,7 @@ void GlobalRouter::initPathHead(GRModel& gr_model)
     start_node->set_estimated_cost(getEstimateCostToEnd(gr_model, start_node));
     pushToOpenList(gr_model, start_node);
   }
-  gr_model.set_path_head_node(popFromOpenList(gr_model));
+  resetPathHead(gr_model);
 }
 
 bool GlobalRouter::searchEnded(GRModel& gr_model)

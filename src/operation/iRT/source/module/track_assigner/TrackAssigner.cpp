@@ -602,7 +602,7 @@ void TrackAssigner::assignTAPanel(TAPanel& ta_panel)
 
 void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
 {
-  initSingleNet(ta_panel, ta_task);
+  initSingleTask(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     for (TARouteStrategy ta_route_strategy : {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringSelfPanelResult,
                                               TARouteStrategy::kIgnoringOtherPanelResult, TARouteStrategy::kIgnoringBlockage}) {
@@ -613,11 +613,11 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask& ta_task)
     resetStartAndEnd(ta_panel);
     resetSinglePath(ta_panel);
   }
-  updateNetResult(ta_panel, ta_task);
-  resetSingleNet(ta_panel);
+  updateTaskResult(ta_panel, ta_task);
+  resetSingleTask(ta_panel);
 }
 
-void TrackAssigner::initSingleNet(TAPanel& ta_panel, TATask& ta_task)
+void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
 {
   ScaleAxis& panel_scale_axis = ta_panel.get_panel_scale_axis();
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
@@ -707,7 +707,7 @@ void TrackAssigner::routeSinglePath(TAPanel& ta_panel)
 void TrackAssigner::initPathHead(TAPanel& ta_panel)
 {
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
-  std::vector<TANode*>& path_node_comb = ta_panel.get_path_node_comb();
+  std::vector<TANode*>& path_node_list = ta_panel.get_path_node_list();
 
   for (std::vector<TANode*>& start_node_comb : start_node_comb_list) {
     for (TANode* start_node : start_node_comb) {
@@ -715,11 +715,11 @@ void TrackAssigner::initPathHead(TAPanel& ta_panel)
       pushToOpenList(ta_panel, start_node);
     }
   }
-  for (TANode* path_node : path_node_comb) {
+  for (TANode* path_node : path_node_list) {
     path_node->set_estimated_cost(getEstimateCostToEnd(ta_panel, path_node));
     pushToOpenList(ta_panel, path_node);
   }
-  ta_panel.set_path_head_node(popFromOpenList(ta_panel));
+  resetPathHead(ta_panel);
 }
 
 bool TrackAssigner::searchEnded(TAPanel& ta_panel)
@@ -762,6 +762,9 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (!passCheckingSegment(ta_panel, path_head_node, neighbor_node)) {
       continue;
     }
+    if (!passCheckingByDynamicDRC(ta_panel, path_head_node, neighbor_node)) {
+      continue;
+    }
     if (neighbor_node->isOpen() && replaceParentNode(ta_panel, path_head_node, neighbor_node)) {
       neighbor_node->set_known_cost(getKnowCost(ta_panel, path_head_node, neighbor_node));
       neighbor_node->set_parent_node(path_head_node);
@@ -802,6 +805,64 @@ bool TrackAssigner::passCheckingSegment(TAPanel& ta_panel, TANode* start_node, T
   return true;
 }
 
+bool TrackAssigner::passCheckingByDynamicDRC(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+{
+  TARouteStrategy& ta_route_strategy = ta_panel.get_ta_route_strategy();
+
+  std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentListByPathHead(ta_panel);
+  routing_segment_list.emplace_back(*start_node, *end_node);
+
+  std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(routing_segment_list);
+
+  bool pass_checking = true;
+  if (ta_route_strategy == TARouteStrategy::kIgnoringBlockage) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !RTAPI_INST.hasViolation(ta_panel.get_source_region_query_map()[TASourceType::kBlockage], real_rect_list);
+  }
+  if (ta_route_strategy == TARouteStrategy::kIgnoringOtherPanelResult) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !RTAPI_INST.hasViolation(ta_panel.get_source_region_query_map()[TASourceType::kOtherPanelResult], real_rect_list);
+  }
+  if (ta_route_strategy == TARouteStrategy::kIgnoringSelfPanelResult) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !RTAPI_INST.hasViolation(ta_panel.get_source_region_query_map()[TASourceType::kSelfPanelResult], real_rect_list);
+  }
+  return pass_checking;
+}
+
+std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentListByPathHead(TAPanel& ta_panel)
+{
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+  TANode* path_head_node = ta_panel.get_path_head_node();
+
+  TANode* curr_node = path_head_node;
+  TANode* pre_node = curr_node->get_parent_node();
+
+  if (pre_node == nullptr) {
+    // 起点和终点重合
+    return routing_segment_list;
+  }
+  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
+  while (pre_node->get_parent_node() != nullptr) {
+    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
+    if (curr_orientation != pre_orientation) {
+      routing_segment_list.emplace_back(*curr_node, *pre_node);
+      curr_orientation = pre_orientation;
+      curr_node = pre_node;
+    }
+    pre_node = pre_node->get_parent_node();
+  }
+  routing_segment_list.emplace_back(*curr_node, *pre_node);
+
+  return routing_segment_list;
+}
+
 bool TrackAssigner::replaceParentNode(TAPanel& ta_panel, TANode* parent_node, TANode* child_node)
 {
   return getKnowCost(ta_panel, parent_node, child_node) < child_node->get_known_cost();
@@ -824,14 +885,14 @@ void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
   ta_panel.set_open_queue(empty_queue);
 
-  std::vector<TANode*>& visited_node_list = ta_panel.get_visited_node_list();
-  for (TANode* visited_node : visited_node_list) {
-    visited_node->set_state(TANodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
+  std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
+  for (TANode* single_path_visited_node : single_path_visited_node_list) {
+    single_path_visited_node->set_state(TANodeState::kNone);
+    single_path_visited_node->set_parent_node(nullptr);
+    single_path_visited_node->set_known_cost(0);
+    single_path_visited_node->set_estimated_cost(0);
   }
-  visited_node_list.clear();
+  single_path_visited_node_list.clear();
 
   ta_panel.set_path_head_node(nullptr);
   ta_panel.set_end_node_comb_idx(-1);
@@ -839,27 +900,9 @@ void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
 
 void TrackAssigner::updatePathResult(TAPanel& ta_panel)
 {
-  std::vector<Segment<TANode*>>& node_segment_list = ta_panel.get_node_segment_list();
-  TANode* path_head_node = ta_panel.get_path_head_node();
-
-  TANode* curr_node = path_head_node;
-  TANode* pre_node = curr_node->get_parent_node();
-
-  if (pre_node == nullptr) {
-    // 起点和终点重合
-    return;
+  for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByPathHead(ta_panel)) {
+    ta_panel.get_routing_segment_list().push_back(routing_segment);
   }
-  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
-  while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
-    if (curr_orientation != pre_orientation) {
-      node_segment_list.emplace_back(curr_node, pre_node);
-      curr_orientation = pre_orientation;
-      curr_node = pre_node;
-    }
-    pre_node = pre_node->get_parent_node();
-  }
-  node_segment_list.emplace_back(curr_node, pre_node);
 }
 
 void TrackAssigner::updateDirectionSet(TAPanel& ta_panel)
@@ -880,7 +923,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 {
   std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
   std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
-  std::vector<TANode*>& path_node_comb = ta_panel.get_path_node_comb();
+  std::vector<TANode*>& path_node_list = ta_panel.get_path_node_list();
   TANode* path_head_node = ta_panel.get_path_head_node();
   irt_int end_node_comb_idx = ta_panel.get_end_node_comb_idx();
 
@@ -894,7 +937,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   } else {
     // 起点和终点不重合
     while (path_node->get_parent_node() != nullptr) {
-      path_node_comb.push_back(path_node);
+      path_node_list.push_back(path_node);
       path_node = path_node->get_parent_node();
     }
   }
@@ -908,35 +951,26 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   end_node_comb_list.erase(end_node_comb_list.begin() + end_node_comb_idx);
 }
 
-void TrackAssigner::updateNetResult(TAPanel& ta_panel, TATask& ta_task)
+void TrackAssigner::updateTaskResult(TAPanel& ta_panel, TATask& ta_task)
 {
-  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
-    ta_task.get_routing_segment_list().emplace_back(*node_segment.get_first(), *node_segment.get_second());
-  }
+  ta_task.set_routing_segment_list(ta_panel.get_routing_segment_list());
 }
 
-void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
+void TrackAssigner::resetSingleTask(TAPanel& ta_panel)
 {
   ta_panel.set_ta_task_ref(nullptr);
   ta_panel.get_start_node_comb_list().clear();
   ta_panel.get_end_node_comb_list().clear();
-  ta_panel.get_path_node_comb().clear();
+  ta_panel.get_routing_offset_set().clear();
+  ta_panel.get_path_node_list().clear();
 
-  for (Segment<TANode*>& node_segment : ta_panel.get_node_segment_list()) {
-    TANode* first_node = node_segment.get_first();
-    TANode* second_node = node_segment.get_second();
-    Orientation orientation = RTUtil::getOrientation(*first_node, *second_node);
-
-    TANode* node_i = first_node;
-    while (true) {
-      node_i->get_direction_set().clear();
-      if (node_i == second_node) {
-        break;
-      }
-      node_i = node_i->getNeighborNode(orientation);
-    }
+  std::vector<TANode*>& single_task_visited_node_list = ta_panel.get_single_task_visited_node_list();
+  for (TANode* single_task_visited_node : single_task_visited_node_list) {
+    single_task_visited_node->get_direction_set().clear();
   }
-  ta_panel.get_node_segment_list().clear();
+  single_task_visited_node_list.clear();
+
+  ta_panel.get_routing_segment_list().clear();
 }
 
 // manager open list
@@ -944,11 +978,13 @@ void TrackAssigner::resetSingleNet(TAPanel& ta_panel)
 void TrackAssigner::pushToOpenList(TAPanel& ta_panel, TANode* curr_node)
 {
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue = ta_panel.get_open_queue();
-  std::vector<TANode*>& visited_node_list = ta_panel.get_visited_node_list();
+  std::vector<TANode*>& single_task_visited_node_list = ta_panel.get_single_task_visited_node_list();
+  std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
 
   open_queue.push(curr_node);
   curr_node->set_state(TANodeState::kOpen);
-  visited_node_list.push_back(curr_node);
+  single_task_visited_node_list.push_back(curr_node);
+  single_path_visited_node_list.push_back(curr_node);
 }
 
 TANode* TrackAssigner::popFromOpenList(TAPanel& ta_panel)
@@ -1566,7 +1602,7 @@ void TrackAssigner::reportTable(TAModel& ta_model)
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
   double total_wire_length = ta_model_stat.get_total_wire_length();
-  irt_int total_drc_number  = ta_model_stat.get_total_drc_number();
+  irt_int total_drc_number = ta_model_stat.get_total_drc_number();
 
   // report wire info
   fort::char_table wire_table;
