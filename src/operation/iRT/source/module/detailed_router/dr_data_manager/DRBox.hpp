@@ -75,8 +75,9 @@ class DRBox : public DRSpaceRegion
   DRSpaceRegion& get_routing_region() { return _routing_region; }
   std::vector<std::vector<DRNode*>>& get_start_node_comb_list() { return _start_node_comb_list; }
   std::vector<std::vector<DRNode*>>& get_end_node_comb_list() { return _end_node_comb_list; }
-  std::vector<DRNode*>& get_path_node_comb() { return _path_node_comb; }
-  std::vector<Segment<DRNode*>>& get_node_segment_list() { return _node_segment_list; }
+  std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
+  std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
+  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_dr_task_ref(DRTask* dr_task_ref) { _dr_task_ref = dr_task_ref; }
   void set_routing_region(const DRSpaceRegion& routing_region) { _routing_region = routing_region; }
   void set_start_node_comb_list(const std::vector<std::vector<DRNode*>>& start_node_comb_list)
@@ -84,17 +85,27 @@ class DRBox : public DRSpaceRegion
     _start_node_comb_list = start_node_comb_list;
   }
   void set_end_node_comb_list(const std::vector<std::vector<DRNode*>>& end_node_comb_list) { _end_node_comb_list = end_node_comb_list; }
-  void set_path_node_comb(const std::vector<DRNode*>& path_node_comb) { _path_node_comb = path_node_comb; }
-  void set_node_segment_list(const std::vector<Segment<DRNode*>>& node_segment_list) { _node_segment_list = node_segment_list; }
+  void set_path_node_list(const std::vector<DRNode*>& path_node_list) { _path_node_list = path_node_list; }
+  void set_single_task_visited_node_list(const std::vector<DRNode*>& single_task_visited_node_list)
+  {
+    _single_task_visited_node_list = single_task_visited_node_list;
+  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
+  {
+    _routing_segment_list = routing_segment_list;
+  }
   // single path
   DRRouteStrategy& get_dr_route_strategy() { return _dr_route_strategy; }
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
-  std::vector<DRNode*>& get_visited_node_list() { return _visited_node_list; }
+  std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
   void set_dr_route_strategy(const DRRouteStrategy& dr_route_strategy) { _dr_route_strategy = dr_route_strategy; }
   void set_open_queue(const std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
-  void set_visited_node_list(const std::vector<DRNode*>& visited_node_list) { _visited_node_list = visited_node_list; }
+  void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
+  {
+    _single_path_visited_node_list = single_path_visited_node_list;
+  }
   void set_path_head_node(DRNode* path_head_node) { _path_head_node = path_head_node; }
   void set_end_node_comb_idx(const irt_int end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
 #endif
@@ -123,12 +134,13 @@ class DRBox : public DRSpaceRegion
   DRSpaceRegion _routing_region;
   std::vector<std::vector<DRNode*>> _start_node_comb_list;
   std::vector<std::vector<DRNode*>> _end_node_comb_list;
-  std::vector<DRNode*> _path_node_comb;
-  std::vector<Segment<DRNode*>> _node_segment_list;
+  std::vector<DRNode*> _path_node_list;
+  std::vector<DRNode*> _single_task_visited_node_list;
+  std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
   DRRouteStrategy _dr_route_strategy = DRRouteStrategy::kNone;
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
-  std::vector<DRNode*> _visited_node_list;
+  std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
   irt_int _end_node_comb_idx = -1;
 #endif
