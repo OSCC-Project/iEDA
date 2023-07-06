@@ -82,7 +82,7 @@ class DetailedRouter
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
-  void initSingleNet(DRBox& dr_box, DRTask& dr_task);
+  void initSingleTask(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
   void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void routeSinglePath(DRBox& dr_box);
@@ -90,6 +90,8 @@ class DetailedRouter
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
   bool passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  bool passCheckingByDynamicDRC(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(DRBox& dr_box);
   bool replaceParentNode(DRBox& dr_box, DRNode* parent_node, DRNode* child_node);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
@@ -97,8 +99,8 @@ class DetailedRouter
   void updatePathResult(DRBox& dr_box);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
-  void updateNetResult(DRBox& dr_box, DRTask& dr_task);
-  void resetSingleNet(DRBox& dr_box);
+  void updateTaskResult(DRBox& dr_box, DRTask& dr_task);
+  void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
