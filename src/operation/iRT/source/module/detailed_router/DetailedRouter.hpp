@@ -79,6 +79,14 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
 #endif
 
+#if 1  // sort dr_task_list
+  void resetDRBox(DRBox& dr_box);
+#endif
+
+#if 1  // init dr_task_list
+  void sortDRTaskList(DRBox& dr_box);
+#endif
+
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
@@ -114,6 +122,14 @@ class DetailedRouter
 
 #if 1  // count dr_box
   void countDRBox(DRBox& dr_box);
+#endif
+
+#if 1  // sort dr_task_list
+  void updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
+#endif
+
+#if 1  // sort dr_task_list
+  void updateDRRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
 #if 1  // plot dr_box
