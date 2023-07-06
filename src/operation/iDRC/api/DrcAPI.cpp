@@ -879,22 +879,30 @@ std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(RegionQuery*
   return check(region_query->getRegionRectList());
 }
 
-std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(std::vector<DrcRect*>& region_rect_list)
+std::map<std::string, std::vector<DrcViolationSpot*>> DrcAPI::check(std::vector<DrcRect*>& region_rect_list, RegionQuery* dr_region_query)
 {
   std::vector<DrcRect*> cut_rect_list;
   std::vector<DrcRect*> routing_rect_list;
   std::map<int, DrcNet> nets;
-  RegionQuery* region_query = new RegionQuery();
-  for (auto& drc_rect : region_rect_list) {
-    int layer_id = drc_rect->get_layer_id();
-    if (drc_rect->get_owner_type() == RectOwnerType::kViaCut) {
-      cut_rect_list.push_back(drc_rect);
-      region_query->add_cut_rect_to_rtree(layer_id, drc_rect);
-    } else if (drc_rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
-      routing_rect_list.push_back(drc_rect);
-      region_query->add_routing_rect_to_rtree(layer_id, drc_rect);
+
+  RegionQuery* region_query = nullptr;
+  if (dr_region_query == nullptr) {
+    /* init region*/
+    region_query = new RegionQuery();
+    for (auto& drc_rect : region_rect_list) {
+      int layer_id = drc_rect->get_layer_id();
+      if (drc_rect->get_owner_type() == RectOwnerType::kViaCut) {
+        cut_rect_list.push_back(drc_rect);
+        region_query->add_cut_rect_to_rtree(layer_id, drc_rect);
+      } else if (drc_rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
+        routing_rect_list.push_back(drc_rect);
+        region_query->add_routing_rect_to_rtree(layer_id, drc_rect);
+      }
     }
+  } else {
+    region_query = dr_region_query;
   }
+
   initNets(region_rect_list, nets);
   initPoly(nets, region_query);
   auto jog_spacing_check = new JogSpacingCheck(_tech, region_query);
