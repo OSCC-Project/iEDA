@@ -16,8 +16,9 @@
 | [updateRCTreeInfo](#updateRCTreeInfo) | xxx | update the RC info after making the RC tree |
 | [buildRCTree](#buildRCTree) | xxx | build the RC tree according to the spef file |
 | [initRcTree](#initRcTree) | xxx | init one RC tree |
+| [initRcTree](#initRcTree) | xxx | init all net RC tree |
 | [resetRcTree](#resetRcTree) | xxx | reset the RC tree to nullptr |
-| [buildGraph](#buildGraph) | xxx | build the STA graph data |
+| [buildGraph](#buildGraph) | xxx | Build the STA graph according to the netlist |
 | [isBuildGraph](#isBuildGraph) | xxx | judge whether the STA steps has build the STA graph |
 | [resetGraph](#resetGraph) | xxx | reset the STA graph |
 | [resetGraphData](#resetGraphData) | xxx | reset the STA graph data |
@@ -143,7 +144,7 @@ TimingEngine &readSdc(const char *sdc_file)
 - sdc_file : the file path of the sdc file to read
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
 **Notes** <br>
 xxxxxxxxxxxxxxxxxxxx
@@ -153,16 +154,15 @@ xxxxxxxxxxxxxxxxxxxx
 ---
 
 ### readAocv <a id="readAocv"></a>
-Read the sdc file. <br>
+Read the aocv files. <br>
 ```C++
-readDesign
+TimingEngine &readAocv(std::vector<std::string> &aocv_files)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- aocv_files : the file paths of the aocv files to read
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
 **Notes** <br>
 xxxxxxxxxxxxxxxxxxxx
@@ -174,17 +174,15 @@ xxxxxxxxxxxxxxxxxxxx
 ### makeOrFindRCTreeNode <a id="makeOrFindRCTreeNode"></a>
 Make RC tree internal node. <br>
 ```C++
-readDesign
+RctNode* makeOrFindRCTreeNode(Net* net, int id)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- net : the pointer of the data structure of Net 
+- id : the id of the node in the Net
 
 **Return Value** <br>
--value : xxx
+-value : a pointer to the data structure of RctNode
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -193,17 +191,13 @@ xxxxxxxxxxxxxxxxxxxx
 ### makeOrFindRCTreeNode <a id="makeOrFindRCTreeNode"></a>
 Make RC tree internal node. <br>
 ```C++
-readDesign
+RctNode* makeOrFindRCTreeNode(DesignObject* pin_or_port)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- pin_or_port : the pointer of the data structure of DesignObject(pin/port)
 
 **Return Value** <br>
--value : xxx
-
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
+-value : a pointer to the data structure of RctNode
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -212,17 +206,16 @@ xxxxxxxxxxxxxxxxxxxx
 ### incrCap <a id="incrCap"></a>
 Set the node’s cap. <br>
 ```C++
-readDesign
+void incrCap(RctNode* node, double cap, bool is_incremental)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- node : the pointer of the data structure of RctNode
+- cap : the capacitance value
+- is_incremental : add the capacitance value at is_incremental or is_not_incremental
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -231,17 +224,17 @@ xxxxxxxxxxxxxxxxxxxx
 ### makeResistor <a id="makeResistor"></a>
 Make resistor edge of RC tree. <br>
 ```C++
-readDesign
+void makeResistor(Net* net, RctNode* from_node, RctNode* to_node, double res)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- net : the pointer of the data structure of Net
+- from_node : the pointer of the data structure of RctNode, denote the from_node of the RcNet
+- to_node : the pointer of the data structure of RctNode, denote the to_node of the RcNet
+- res : the resistance value
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -250,17 +243,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### updateRCTreeInfo <a id="updateRCTreeInfo"></a>
 Update the RC info after making the RC tree. <br>
 ```C++
-readDesign
+void updateRCTreeInfo(Net* net)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- net : the pointer of the data structure of Net
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -269,17 +259,15 @@ xxxxxxxxxxxxxxxxxxxx
 ### buildRCTree <a id="buildRCTree"></a>
 Build the RC tree according to the spef file. <br>
 ```C++
-readDesign
+TimingEngine& buildRCTree(const char* spef_file, DelayCalcMethod kmethod)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- spef_file : the file path of the spef file to read
+- kmethod : build the RC tree according to the enum-type(kElmore,kArnoldi) which decides the delay model.
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -288,17 +276,32 @@ xxxxxxxxxxxxxxxxxxxx
 ### initRcTree <a id="initRcTree"></a>
 Init one RC tree. <br>
 ```C++
-readDesign
+void initRcTree(Net* net)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- net : the pointer of the data structure of Net
+
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
+
+<div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
+
+---
+
+### initRcTree <a id="initRcTree"></a>
+Init all net rc tree. <br>
+```C++
+void initRcTree()
+```
+**Parameters** <br>
+- param : void
+
+
+**Return Value** <br>
+-value : void
+
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -307,36 +310,30 @@ xxxxxxxxxxxxxxxxxxxx
 ### resetRcTree <a id="resetRcTree"></a>
 Reset the RC tree to nullptr. <br>
 ```C++
-readDesign
+void resetRcTree(Net* net)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- net : the pointer of the data structure of Net
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
 ---
 
 ### buildGraph <a id="buildGraph"></a>
-Build the STA graph data. <br>
+Build the STA graph according to the netlist. <br>
 ```C++
-readDesign
+unsigned buildGraph()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value : unsigned(1 denotes success, 0 denotes failure)
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -345,17 +342,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### isBuildGraph <a id="isBuildGraph"></a>
 Judge whether the STA steps has build the STA graph. <br>
 ```C++
-readDesign
+bool isBuildGraph()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value : bool
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -364,17 +358,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### resetGraph <a id="resetGraph"></a>
 Reset the STA graph. <br>
 ```C++
-readDesign
+TimingEngine &resetGraph()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value :*this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -383,17 +374,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### resetGraphData <a id="resetGraphData"></a>
 Reset the STA graph data. <br>
 ```C++
-readDesign
+TimingEngine &resetGraphData()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -402,17 +390,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### insertBuffer <a id="insertBuffer"></a>
 Insert the buffer need to change the netlist. <br>
 ```C++
-readDesign
+void insertBuffer(const char *instance_name)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- instance_name : the name of the buffer
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -421,17 +406,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### removeBuffer <a id="removeBuffer"></a>
 Remove buffer need to change the netlist. <br>
 ```C++
-readDesign
+void removeBuffer(const char *instance_name)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- instance_name : the name of the buffer
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -440,17 +422,17 @@ xxxxxxxxxxxxxxxxxxxx
 ### repowerInstance <a id="repowerInstance"></a>
 Change the size or  the level of an existing instance. <br>
 ```C++
-readDesign
+void repowerInstance(const char *instance_name, const char *cell_name)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- instance_name : the name of the buffer
+- cell_name : the name of liberty cell
 
 **Return Value** <br>
--value : xxx
+-value : void
 
 **Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
+ E.G., NAND2_X2 to NAND2_X3. The instance's logic function and topology is guaranteed to be the same, along with the currently-connected nets. However, the pin capacitances of the new cell type might be different.
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -459,17 +441,16 @@ xxxxxxxxxxxxxxxxxxxx
 ### moveInstance <a id="moveInstance"></a>
 Move the instance to a new location. <br>
 ```C++
-readDesign
+void moveInstance(const char *instance_name, std::optional<unsigned> update_level = std::nullopt, PropType prop_type = PropType::kFwdAndBwd)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- instance_name : the name of instance
+- update_level : specifies the level of vertex to which the data is updated，the default value is std::nullopt
+- prop_type: the default value is PropType::kFwdAndBwd
 
 **Return Value** <br>
--value : xxx
+-value : void
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -478,17 +459,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### writeVerilog <a id="writeVerilog"></a>
 Write the verilog file according to the netlist data structure. <br>
 ```C++
-readDesign
+void writeVerilog(const char *verilog_file_name, std::set<std::string> &&exclude_cell_names = {})
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- verilog_file_name : the file path of the verilog file to write
+- exclude_cell_names : specifies the cell that need not be written to the verilog file
 
 **Return Value** <br>
--value : xxx
-
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
+-value : void
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -497,17 +475,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### incrUpdateTiming <a id="incrUpdateTiming"></a>
 Incremental propagation to update the timing data. <br>
 ```C++
-readDesign
+TimingEngine &incrUpdateTiming()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -516,17 +491,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### updateTiming <a id="updateTiming"></a>
 Update the timing data. <br>
 ```C++
-readDesign
+TimingEngine &updateTiming()
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- param : void
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -535,17 +507,14 @@ xxxxxxxxxxxxxxxxxxxx
 ### setSignificantDigits <a id="setSignificantDigits"></a>
 Set the significant digits of the timing report. <br>
 ```C++
-readDesign
+TimingEngine &setSignificantDigits(unsigned significant_digits)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- significant_digits : the number of significant digits
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
@@ -554,17 +523,16 @@ xxxxxxxxxxxxxxxxxxxx
 ### reportTiming <a id="reportTiming"></a>
 Generate the timing report. <br>
 ```C++
-readDesign
+TimingEngine &reportTiming(std::set<std::string> &&exclude_cell_names = {}, bool is_derate = true, bool is_clock_cap = false)
 ```
 **Parameters** <br>
-- param_1 : xxx
-- param_2 : xxx
+- exclude_cell_names : specifies the cell that need not be written to the verilog file
+- is_derate : specifies whether the timing path report outputs the derate value.
+- is_clock_cap : specifies whether the capacitance report outputs all capacitance values or the capacitance value of the clock pin
 
 **Return Value** <br>
--value : xxx
+-value : *this
 
-**Notes** <br>
-xxxxxxxxxxxxxxxxxxxx
 
 <div align="right"><b><a href="#iSTA API">↥ back to top</a></b></div>
 
