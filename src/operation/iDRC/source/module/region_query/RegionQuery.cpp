@@ -569,6 +569,10 @@ void RegionQuery::getRegionReport(std::map<std::string, int>& viotype_to_nums_ma
 
 void RegionQuery::addPolyEdge_NotAddToRegion(DrcPoly* new_poly)
 {
+  if (new_poly == nullptr) {
+    return;
+  }
+
   initPolyOuterEdges_NotAddToRegion(new_poly->getNet(), new_poly, new_poly->getPolygon(), new_poly->get_layer_id());
   // pending
 
@@ -1026,6 +1030,10 @@ std::vector<DrcPoly*> RegionQuery::rebuildPoly_del(std::set<DrcPoly*>& intersect
 
 void RegionQuery::addPolyEdge(DrcPoly* new_poly)
 {
+  if (new_poly == nullptr) {
+    return;
+  }
+
   initPolyOuterEdges(new_poly->getNet(), new_poly, new_poly->getPolygon(), new_poly->get_layer_id());
   // pending
 
