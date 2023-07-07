@@ -32,13 +32,19 @@ class FFT
   ~FFT();
 
   void init();
-
   void updateDensity(int x, int y, float density);
 
   void doFFT(bool is_calculate_phi);
 
   void set_thread_nums(int thread_nums) { _thread_nums = thread_nums; }
+
   // return func
+
+  float** get_density_2d_ptr() const { return _bin_density; }
+  float** get_electro_x_2d_ptr() const { return _electroForce_x; }
+  float** get_electro_y_2d_ptr() const { return _electroForce_y; }
+  float** get_phi_2d_ptr() const { return _electro_phi; }
+
   std::pair<float, float> get_electro_force(int x, int y);
   float get_electro_phi(int x, int y);
 

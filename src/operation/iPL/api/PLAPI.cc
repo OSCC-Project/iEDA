@@ -37,6 +37,7 @@
 #include "MacroPlacer.hh"
 #include "NesterovPlace.hh"
 #include "PlacerDB.hh"
+#include "RandomPlace.hh"
 #include "SteinerWirelength.hh"
 #include "src/MapFiller.h"
 #include "timing/TimingEval.hpp"
@@ -318,7 +319,8 @@ void PLAPI::runMP()
 
 void PLAPI::runGP()
 {
-  CenterPlace(&PlacerDBInst).runCenterPlace();
+  // CenterPlace(&PlacerDBInst).runCenterPlace();
+  RandomPlace(&PlacerDBInst).runRandomPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   nesterov_place.printNesterovDatabase();
   nesterov_place.runNesterovPlace();

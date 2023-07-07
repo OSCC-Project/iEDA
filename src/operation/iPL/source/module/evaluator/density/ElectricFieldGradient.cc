@@ -54,9 +54,13 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_p
 
   // const auto& row_list = _grid_manager->get_row_list();
 
-  float** dct_density_map = _dct->get_density_2d_ptr();
-  float** dct_electro_x_map = _dct->get_electro_x_2d_ptr();
-  float** dct_electro_y_map = _dct->get_electro_y_2d_ptr();
+  // float** dct_density_map = _dct->get_density_2d_ptr();
+  // float** dct_electro_x_map = _dct->get_electro_x_2d_ptr();
+  // float** dct_electro_y_map = _dct->get_electro_y_2d_ptr();
+
+  float** fft_density_map = _fft->get_density_2d_ptr();
+  float** fft_electro_x_map = _fft->get_electro_x_2d_ptr();
+  float** fft_electro_y_map = _fft->get_electro_y_2d_ptr();
 
   // copy density to utilize DCT
   int32_t grid_cnt_x = _grid_manager->get_grid_cnt_x();
@@ -67,7 +71,8 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_p
 #pragma omp parallel for num_threads(thread_num)
   for (int32_t i = 0; i < grid_cnt_y; i++) {
     for (int32_t j = 0; j < grid_cnt_x; j++) {
-      dct_density_map[j][i] = grid_2d_list[i][j].obtainGridDensity() / available_ratio;
+      // dct_density_map[j][i] = grid_2d_list[i][j].obtainGridDensity() / available_ratio;
+      fft_density_map[j][i] = grid_2d_list[i][j].obtainGridDensity() / available_ratio;
     }
   }
 
@@ -94,12 +99,12 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_p
 
   // ieda::Stats test_runtime;
 
-  _dct->set_thread_nums(thread_num);
-  _dct->doDCT(is_cal_phi);
+  // _dct->set_thread_nums(thread_num);
+  // _dct->doDCT(is_cal_phi);
 
   // LOG_WARNING << "do DCT runtime: " << test_runtime.elapsedRunTime();
-  // _fft->set_thread_nums(thread_num);
-  // _fft->doFFT(is_cal_phi);
+  _fft->set_thread_nums(thread_num);
+  _fft->doFFT(is_cal_phi);
 
   // update electro phi and electro force
   // update _sum_phi for nesterov loop
@@ -126,8 +131,11 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_p
 #pragma omp parallel for num_threads(thread_num)
   for (int32_t i = 0; i < grid_cnt_y; i++) {
     for (int32_t j = 0; j < grid_cnt_x; j++) {
-      _force_2d_x_list[i][j] = dct_electro_y_map[j][i];
-      _force_2d_y_list[i][j] = dct_electro_x_map[j][i];
+      // _force_2d_x_list[i][j] = dct_electro_y_map[j][i];
+      // _force_2d_y_list[i][j] = dct_electro_x_map[j][i];
+
+      _force_2d_x_list[i][j] = fft_electro_x_map[j][i];
+      _force_2d_y_list[i][j] = fft_electro_y_map[j][i];
     }
   }
 
@@ -141,11 +149,13 @@ void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_p
   //   }
 
   if (is_cal_phi) {
-    float** dct_phi_map = _dct->get_phi_2d_ptr();
+    // float** dct_phi_map = _dct->get_phi_2d_ptr();
+    float** fft_phi_map = _fft->get_phi_2d_ptr();
 
     for (int32_t i = 0; i < grid_cnt_y; i++) {
       for (int32_t j = 0; j < grid_cnt_x; j++) {
-        float electro_phi = dct_phi_map[j][i];
+        // float electro_phi = dct_phi_map[j][i];
+        float electro_phi = fft_phi_map[j][i];
         _phi_2d_list[i][j] = electro_phi;
         _sum_phi += electro_phi * grid_2d_list[i][j].occupied_area;
       }

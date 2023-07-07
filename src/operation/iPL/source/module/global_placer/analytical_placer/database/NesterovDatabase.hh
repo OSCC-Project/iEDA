@@ -61,7 +61,6 @@ class NesterovDatabase
 
  private:
   PlacerDB* _placer_db;
-
   std::vector<NesInstance*> _nInstance_list;
   std::vector<NesNet*> _nNet_list;
   std::vector<NesPin*> _nPin_list;

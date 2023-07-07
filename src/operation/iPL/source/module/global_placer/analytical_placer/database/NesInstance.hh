@@ -129,7 +129,7 @@ inline void NesInstance::updateDensityCenterLocation(Point<int32_t>& center_coor
 
 inline void NesInstance::updateDensityCenterLocation(int32_t x_coordi, int32_t y_coordi)
 {
-  _density_shape.set_center(x_coordi,y_coordi);
+  _density_shape.set_center(x_coordi, y_coordi);
 
   updateNesPinListLocation();
 }
