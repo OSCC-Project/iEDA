@@ -569,6 +569,10 @@ void RegionQuery::getRegionReport(std::map<std::string, int>& viotype_to_nums_ma
 
 void RegionQuery::addPolyEdge_NotAddToRegion(DrcPoly* new_poly)
 {
+  if (new_poly == nullptr) {
+    return;
+  }
+
   initPolyOuterEdges_NotAddToRegion(new_poly->getNet(), new_poly, new_poly->getPolygon(), new_poly->get_layer_id());
   // pending
 
