@@ -753,7 +753,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
       }
       std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
       DRBoxStat best_stat;
-      int iter_number = 10;
+      int iter_number = 5;
       while (iter_number--) {
         sortDRTaskList(dr_box);
         resetDRBox(dr_box);
@@ -1423,7 +1423,7 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
 
 #endif
 
-#if 1  // sort dr_task_list
+#if 1  // update best route result
 
 void DetailedRouter::updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat,
                                            std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)
@@ -1452,6 +1452,10 @@ void DetailedRouter::updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat,
     best_stat = curr_stat;
   }
 }
+
+#endif
+
+#if 1  // sort dr route result
 
 void DetailedRouter::updateDRRouteResult(DRBox& dr_box, DRBoxStat& best_stat,
                                          std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)

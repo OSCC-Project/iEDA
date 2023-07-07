@@ -126,11 +126,11 @@ class DetailedRouter
   void countDRBox(DRBox& dr_box);
 #endif
 
-#if 1  // sort dr_task_list
+#if 1  // update best route result
   void updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
-#if 1  // sort dr_task_list
+#if 1  // sort dr route result
   void updateDRRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
