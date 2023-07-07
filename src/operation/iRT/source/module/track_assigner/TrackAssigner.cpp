@@ -563,17 +563,63 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
       if (ta_panel.skipAssigning()) {
         continue;
       }
-      int n = 1;
-      while (n--) {
+      std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
+      TAPanelStat best_stat;
+      int iter_number = 5;
+      while (iter_number--) {
+        sortTATaskList(ta_panel);
+        resetTAPanel(ta_panel);
         assignTAPanel(ta_panel);
         countTAPanel(ta_panel);
+        updateBestAssignResult(ta_panel, best_stat, best_route_result);
+        if (ta_panel.get_ta_panel_stat().get_total_drc_number() == 0) {
+          break;
+        }
       }
+      updateTAAssignResult(ta_panel, best_stat, best_route_result);
       updateTAPanel(ta_model, ta_panel);
     }
     total_panel_num += ta_schedule_list.size();
     LOG_INST.info(Loc::current(), "Processed ", ta_schedule_list.size(), " panels", stage_monitor.getStatsInfo());
   }
   LOG_INST.info(Loc::current(), "Processed ", total_panel_num, " panels", monitor.getStatsInfo());
+}
+
+#endif
+
+#if 1  // sort ta_task_list
+
+void TrackAssigner::sortTATaskList(TAPanel& ta_panel)
+{
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  std::srand(std::time(NULL));
+  std::random_shuffle(ta_task_list.begin(), ta_task_list.end());
+}
+
+#endif
+
+#if 1  // reset ta panel
+
+void TrackAssigner::resetTAPanel(TAPanel& ta_panel)
+{
+  for (auto& [source, net_rect_map] : ta_panel.get_source_net_rect_map()) {
+    if (source != TASourceType::kSelfPanelResult) {
+      continue;
+    }
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      RTAPI_INST.delEnvRectList(ta_panel.get_source_region_query_map()[source], rect_list);
+    }
+    net_rect_map.clear();
+  }
+
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    ta_task.get_routing_segment_list().clear();
+  }
+
+  TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
+  ta_panel_stat.set_total_wire_length(0);
+  ta_panel_stat.get_source_drc_number_map().clear();
+  ta_panel_stat.set_total_drc_number(0);
 }
 
 #endif
@@ -1170,6 +1216,50 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
     }
   }
   ta_panel_stat.set_total_drc_number(total_drc_number);
+}
+
+#endif
+
+#if 1  // update best assign result
+
+void TrackAssigner::updateBestAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                                           std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)
+{
+  if (best_route_result.empty()) {
+    for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+      best_route_result[ta_task.get_task_idx()] = ta_task.get_routing_segment_list();
+    }
+    best_stat = ta_panel.get_ta_panel_stat();
+  }
+
+  bool is_better = false;
+  TAPanelStat& curr_stat = ta_panel.get_ta_panel_stat();
+  if (curr_stat.get_total_drc_number() != best_stat.get_total_drc_number()) {
+    is_better = curr_stat.get_total_drc_number() < best_stat.get_total_drc_number();
+  } else if (curr_stat.get_total_wire_length() != best_stat.get_total_wire_length()) {
+    is_better = curr_stat.get_total_wire_length() < best_stat.get_total_wire_length();
+  }
+
+  if (is_better) {
+    for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+      best_route_result[ta_task.get_task_idx()] = ta_task.get_routing_segment_list();
+    }
+    best_stat = curr_stat;
+  }
+}
+
+#endif
+
+#if 1  // update ta_panel assign result
+
+void TrackAssigner::updateTAAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                                         std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)
+{
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    ta_task.set_routing_segment_list(best_route_result[ta_task.get_task_idx()]);
+  }
+  TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
+  ta_panel_stat = best_stat;
 }
 
 #endif

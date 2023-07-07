@@ -74,6 +74,14 @@ class TrackAssigner
   void assignTAModel(TAModel& ta_model);
 #endif
 
+#if 1  // sort ta_task_list
+  void sortTATaskList(TAPanel& ta_panel);
+#endif
+
+#if 1  // reset ta panel
+  void resetTAPanel(TAPanel& ta_panel);
+#endif
+
 #if 1  // assign ta_panel
   void assignTAPanel(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask& ta_task);
@@ -111,6 +119,16 @@ class TrackAssigner
 
 #if 1  // count ta_panel
   void countTAPanel(TAPanel& ta_panel);
+#endif
+
+#if 1  // update best assign result
+  void updateBestAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                              std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
+#endif
+
+#if 1  // update ta_panel assign result
+  void updateTAAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                            std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
 #if 1  // plot ta_panel
