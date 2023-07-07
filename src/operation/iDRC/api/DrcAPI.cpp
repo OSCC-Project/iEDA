@@ -197,6 +197,11 @@ bool DrcAPI::checkSpacing_rect(DrcRect* check_rect, RegionQuery* region_query)
   region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
   DrcPoly* poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
 
+  /// 无法构建成 1 个poly，无法检测，暂时忽略处理
+  if (poly == nullptr) {
+    return true;
+  }
+
   // 给poly build edge
   region_query->addPolyEdge_NotAddToRegion(poly);
   EOLSpacingCheck* eol_spacing_check = new EOLSpacingCheck(_tech, region_query);
@@ -366,15 +371,27 @@ bool DrcAPI::check(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_re
 
 void DrcAPI::del(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list)
 {
+  // std::set<DrcPoly*> intersect_poly_set;
+  // region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
+  // region_query->deleteIntersectPoly(intersect_poly_set);
+  // auto new_poly_list = region_query->rebuildPoly_del(intersect_poly_set, drc_rect_list);
+  // if (!new_poly_list.empty()) {
+  //   region_query->addPolyList(new_poly_list);
+  // }
+  // for (auto& drc_rect : drc_rect_list) {
+  //   region_query->removeDrcRect(drc_rect);
+  // }
   std::set<DrcPoly*> intersect_poly_set;
   region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
-  region_query->deleteIntersectPoly(intersect_poly_set);
-  auto new_poly_list = region_query->rebuildPoly_del(intersect_poly_set, drc_rect_list);
-  if (!new_poly_list.empty()) {
-    region_query->addPolyList(new_poly_list);
-  }
+
   for (auto& drc_rect : drc_rect_list) {
     region_query->removeDrcRect(drc_rect);
+  }
+
+  if (!intersect_poly_set.empty()) {
+    std::vector<DrcPoly*> intersect_poly_list;
+    intersect_poly_list.assign(intersect_poly_set.begin(), intersect_poly_set.end());
+    region_query->addPolyList(intersect_poly_list);
   }
 }
 

@@ -41,6 +41,10 @@ void RoutingAreaCheck::checkArea(DrcNet* target_net)
 
 void RoutingAreaCheck::checkArea(DrcPoly* target_poly)
 {
+  if (target_poly == nullptr) {
+    return;
+  }
+
   int layer_id = target_poly->get_layer_id();
   _lef58_rules = _tech->get_drc_routing_layer_list()[layer_id]->get_lef58_area_rule_list();
 
