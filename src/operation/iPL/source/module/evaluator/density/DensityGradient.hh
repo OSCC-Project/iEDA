@@ -46,6 +46,10 @@ class DensityGradient
   virtual void updateDensityForce(int32_t thread_num, bool is_cal_phi) = 0;
   virtual Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale, bool is_add_quad_penalty, float quad_lamda) = 0;
 
+  // tmp for debug
+  virtual std::vector<std::vector<float>>& get_force_2d_x_list() = 0;
+  virtual std::vector<std::vector<float>>& get_force_2d_y_list() = 0;
+
   virtual float get_sum_phi() = 0;
 
  protected:

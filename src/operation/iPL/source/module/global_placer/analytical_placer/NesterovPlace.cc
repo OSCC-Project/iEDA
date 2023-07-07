@@ -240,7 +240,7 @@ void NesterovPlace::initGridManager()
   // BinGrid specially need to parallel
   _nes_database->_bin_grid = new BinGrid(grid_manager);
   _nes_database->_bin_grid->set_thread_nums(_nes_config.get_thread_num());
-  _nes_database->_bin_grid->initNesInstanceTypeList(_nes_database->_nInstance_list);
+  // _nes_database->_bin_grid->initNesInstanceTypeList(_nes_database->_nInstance_list);
 
   _nes_database->_density = new Density(grid_manager);
   _nes_database->_density_gradient = new ElectricFieldGradient(grid_manager);  // TODO : be optional.
@@ -367,7 +367,10 @@ void NesterovPlace::initFillerNesInstance()
   // rand()'s RAND_MAX is only 32767
   std::mt19937 rand_val(0);
 
-  int32_t filler_cnt = total_filler_area / (avg_edge_x * avg_edge_y);
+  // int32_t filler_cnt = total_filler_area / (avg_edge_x * avg_edge_y);
+
+  // test
+  int32_t filler_cnt = std::ceil(static_cast<int32_t>(static_cast<float>(total_filler_area / (avg_edge_x * avg_edge_y))));
 
   for (int i = 0; i < filler_cnt; i++) {
     // instability problem between g++ and clang++!
@@ -488,6 +491,7 @@ void NesterovPlace::initNesterovPlace(std::vector<NesInstance*>& inst_list)
 
   // initial coordi vector.
   Rectangle<int32_t> core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
+  // Rectangle<int32_t> core_shape = _nes_database->_core_shape;
 
 #pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (size_t i = 0; i < inst_size; i++) {
@@ -608,6 +612,7 @@ void NesterovPlace::updateDensityCenterCoordiLayoutInside(NesInstance* n_inst, P
 {
   int32_t target_edge_x = n_inst->get_density_shape().get_width();
   int32_t target_edge_y = n_inst->get_density_shape().get_height();
+
   int32_t target_lower_x = center_coordi.get_x() - 0.5 * target_edge_x;
   int32_t target_lower_y = center_coordi.get_y() - 0.5 * target_edge_y;
 
@@ -636,7 +641,7 @@ void NesterovPlace::initGridFixedArea()
 
   grid_manager->clearAllOccupiedArea();
 
-#pragma omp parallel for num_threads(_nes_config.get_thread_num())
+  // #pragma omp parallel for num_threads(_nes_config.get_thread_num())
   for (auto* n_inst : _nes_database->_nInstance_list) {
     if (!n_inst->isFixed()) {
       continue;
@@ -648,7 +653,7 @@ void NesterovPlace::initGridFixedArea()
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = grid_manager->obtainOverlapArea(grid, n_inst->get_origin_shape());
 
-#pragma omp atomic
+      // #pragma omp atomic
       grid->fixed_area += overlap_area * grid->available_ratio;
       // grid->add_fixed_area(overlap_area * grid->get_available_ratio());
     }
@@ -666,6 +671,7 @@ void NesterovPlace::initGridFixedArea()
           if (grid->fixed_area != 0) {
             continue;
           }
+
           // if (grid->get_fixed_area() != 0) {
           //   continue;
           // }
@@ -753,7 +759,7 @@ void NesterovPlace::initBaseWirelengthCoef()
 {
   Rectangle<int32_t> first_grid_shape = this->obtainFirstGridShape();
   _nes_database->_base_wirelength_coef
-      = _nes_config.get_init_wirelength_coef() / (static_cast<float>(first_grid_shape.get_half_perimeter()) * 0.5);
+      = _nes_config.get_init_wirelength_coef() / (static_cast<float>(first_grid_shape.get_half_perimeter()));
 }
 
 void NesterovPlace::updateWirelengthCoef(float overflow)
@@ -1055,6 +1061,7 @@ float NesterovPlace::obtainPhiCoef(float scaled_diff_hpwl, int32_t iteration_num
 {
   float ret_coef = (scaled_diff_hpwl < 0) ? _nes_config.get_max_phi_coef() * std::max(std::pow(0.9999, float(iteration_num)), 0.98)
                                           : _nes_config.get_max_phi_coef() * pow(_nes_config.get_max_phi_coef(), scaled_diff_hpwl * -1.0);
+  ret_coef = std::min(_nes_config.get_max_phi_coef(), ret_coef);
   ret_coef = std::max(_nes_config.get_min_phi_coef(), ret_coef);
   return ret_coef;
 }
@@ -1202,6 +1209,7 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
     float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
     prev_hpwl = hpwl;
+    LOG_ERROR << "Phi_coef: " << phi_coef;
 
     _nes_database->_density_penalty *= phi_coef;
 
@@ -1215,8 +1223,15 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
         printAcrossLongNet(long_net_stream, long_width, long_height);
       }
 
+      LOG_WARNING << "WireLength Grad Sum: " << _nes_database->_wirelength_grad_sum;
+      LOG_WARNING << "Density Grad Sum: " << _nes_database->_density_grad_sum;
+      LOG_WARNING << "Density Weight: " << _nes_database->_density_penalty;
+      LOG_WARNING << "StepLength: " << solver->get_next_steplength();
+      LOG_WARNING << "Wirelength Gamma:" << _nes_database->_wirelength_coef;
+
       if (PLOT_IMAGE) {
-        plotImage(PLOT_IMAGE, std::to_string(iter_num));
+        plotInstImage("inst_" + std::to_string(iter_num));
+        plotBinForceLine("bin_" + std::to_string(iter_num));
       }
     }
 
@@ -1293,25 +1308,114 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
   writeBackPlacerDB();
 }
 
-void NesterovPlace::plotImage(bool is_plot, std::string file_name)
+void NesterovPlace::plotInstImage(std::string file_name)
 {
   auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
-  std::vector<NesInstance*> inst_wofiller;
-  for (auto* inst : _nes_database->_nInstance_list) {
-    if (!inst->isFiller()) {
-      inst_wofiller.push_back(inst);
-    }
-  }
+  // auto core_shape = _nes_database->_core_shape;
+  std::vector<NesInstance*>& inst_list = _nes_database->_nInstance_list;
 
-  Image image_ploter(core_shape.get_width(), core_shape.get_height(), inst_wofiller.size());
-  for (auto* inst : inst_wofiller) {
+  Image image_ploter(core_shape.get_width(), core_shape.get_height(), _nes_database->_nInstance_list.size());
+
+  int32_t core_shift_x = core_shape.get_ll_x();
+  int32_t core_shift_y = core_shape.get_ll_y();
+
+  // plot bin
+  auto bin_grid_shape = _nes_database->_grid_manager->get_shape();
+  int32_t bin_cnt_x = _nes_database->_grid_manager->get_grid_cnt_x();
+  int32_t bin_cnt_y = _nes_database->_grid_manager->get_grid_cnt_y();
+  int32_t bin_width = _nes_database->_grid_manager->get_grid_size_x();
+  int32_t bin_height = _nes_database->_grid_manager->get_grid_size_y();
+  int32_t bin_grid_x = 0;
+  int32_t bin_grid_y = 0;
+
+  for (int32_t i = 0; i < bin_cnt_x; i++) {
+    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
+    bin_grid_x += bin_width;
+  }
+  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
+
+  bin_grid_x = 0;
+  for (int32_t i = 0; i < bin_cnt_y; i++) {
+    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
+    bin_grid_y += bin_height;
+  }
+  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
+
+  for (auto* inst : inst_list = _nes_database->_nInstance_list) {
     int32_t inst_real_width = inst->get_origin_shape().get_width();
     int32_t inst_real_height = inst->get_origin_shape().get_height();
     auto inst_center = inst->get_density_center_coordi();
-    image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height);
+    inst_center.set_x(inst_center.get_x() - core_shift_x);
+    inst_center.set_y(inst_center.get_y() - core_shift_y);
+
+    if (inst->isFiller()) {
+      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0, IMAGE_COLOR::kBule);
+    } else if (inst->isMacro()) {
+      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0, IMAGE_COLOR::kRed);
+    } else {
+      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0);
+    }
   }
 
-  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".png");
+  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".jpg");
+}
+
+void NesterovPlace::plotBinForceLine(std::string file_name)
+{
+  auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
+  // auto core_shape = _nes_database->_core_shape;
+  auto& force_2d_x_list = _nes_database->_density_gradient->get_force_2d_x_list();
+  auto& force_2d_y_list = _nes_database->_density_gradient->get_force_2d_y_list();
+
+  Image image_ploter(core_shape.get_width(), core_shape.get_height(), _nes_database->_nInstance_list.size());
+
+  // plot bin
+  auto bin_grid_shape = _nes_database->_grid_manager->get_shape();
+  int32_t bin_cnt_x = _nes_database->_grid_manager->get_grid_cnt_x();
+  int32_t bin_cnt_y = _nes_database->_grid_manager->get_grid_cnt_y();
+  int32_t bin_width = _nes_database->_grid_manager->get_grid_size_x();
+  int32_t bin_height = _nes_database->_grid_manager->get_grid_size_y();
+  int32_t bin_grid_x = 0;
+  int32_t bin_grid_y = 0;
+
+  for (int32_t i = 0; i < bin_cnt_x; i++) {
+    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
+    bin_grid_x += bin_width;
+  }
+  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
+
+  bin_grid_x = 0;
+  for (int32_t i = 0; i < bin_cnt_y; i++) {
+    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
+    bin_grid_y += bin_height;
+  }
+  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
+
+  float efMax = 0;
+  int max_len = std::numeric_limits<int>::max();
+  for (int i = 0; i < bin_cnt_y; i++) {
+    for (int j = 0; j < bin_cnt_x; j++) {
+      efMax = std::max(efMax, std::hypot(force_2d_x_list[i][j], force_2d_y_list[i][j]));
+      max_len = std::min({max_len, bin_width, bin_height});
+    }
+  }
+
+  for (int i = 0; i < bin_cnt_y; i++) {
+    for (int j = 0; j < bin_cnt_x; j++) {
+      float fx = force_2d_x_list[i][j];
+      float fy = force_2d_y_list[i][j];
+      float f = std::hypot(fx, fy);
+      float ratio = f / efMax;
+      float dx = fx / f * max_len * ratio;
+      float dy = fy / f * max_len * ratio;
+
+      int cx = j * bin_width + bin_width / 2;
+      int cy = i * bin_height + bin_height / 2;
+
+      image_ploter.drawArc(cx, cy, cx + dx, cy + dy);
+    }
+  }
+  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".jpg");
 }
 
 /*****************************Congestion-driven Placement: START*****************************/

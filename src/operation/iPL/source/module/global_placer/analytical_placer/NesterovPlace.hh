@@ -62,7 +62,7 @@ class NesterovPlace
   // For convergence acceleration and non-convergence treatment
   std::vector<float> _overflow_record_list;
   std::vector<float> _hpwl_record_list;
-  float _quad_penalty_coeff = 0.002;
+  float _quad_penalty_coeff = 0.2;
   int64_t _total_inst_area = 0;
 
   void resetOverflowRecordList();
@@ -123,7 +123,8 @@ class NesterovPlace
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);
   void printIterationCoordi(std::ofstream& file_stream, int32_t cur_iter);
   void saveNesterovPlaceData(int32_t cur_iter);
-  void plotImage(bool is_plot, std::string file_name);
+  void plotInstImage(std::string file_name);
+  void plotBinForceLine(std::string file_name);
 
   // Precondition Test
   std::vector<double> _global_diagonal_list;
@@ -139,8 +140,11 @@ inline NesterovPlace::NesterovPlace(Config* config, PlacerDB* placer_db) : _nes_
 {
   initNesConfig(config);
   initNesDatabase(placer_db);
-  initFillerNesInstance();
+  // initFillerNesInstance();
   initNesInstanceDensitySize();
+
+  // init bin inst type
+  _nes_database->_bin_grid->initNesInstanceTypeList(_nes_database->_nInstance_list);
 }
 inline NesterovPlace::~NesterovPlace()
 {

@@ -42,6 +42,7 @@ void GridManager::obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle
 
   std::pair<int, int> y_range = _utility.obtainMinMaxIdx(_shape.get_ll_y(), _grid_size_y, rect.get_ll_y(), rect.get_ur_y());
   std::pair<int, int> x_range = _utility.obtainMinMaxIdx(_shape.get_ll_x(), _grid_size_x, rect.get_ll_x(), rect.get_ur_x());
+
   int32_t y_cnt = y_range.second - y_range.first;
   int32_t x_cnt = x_range.second - x_range.first;
   grid_list.resize(y_cnt * x_cnt);
