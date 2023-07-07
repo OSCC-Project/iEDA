@@ -751,17 +751,66 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
       if (dr_box.skipRouting()) {
         continue;
       }
-      int n = 1;
-      while (n--) {
+      std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
+      DRBoxStat best_stat;
+      int iter_number = 5;
+      while (iter_number--) {
+        sortDRTaskList(dr_box);
+        resetDRBox(dr_box);
         routeDRBox(dr_box);
         countDRBox(dr_box);
+        updateBestRouteResult(dr_box, best_stat, best_route_result);
+        if (dr_box.get_dr_box_stat().get_total_drc_number() == 0) {
+          break;
+        }
       }
+      updateDRRouteResult(dr_box, best_stat, best_route_result);
       updateDRBox(dr_model, dr_box);
     }
     total_box_num += dr_schedule_list.size();
     LOG_INST.info(Loc::current(), "Processed ", dr_schedule_list.size(), " boxes", stage_monitor.getStatsInfo());
   }
   LOG_INST.info(Loc::current(), "Processed ", total_box_num, " boxes", monitor.getStatsInfo());
+}
+
+#endif
+
+#if 1  // sort dr_task_list
+
+void DetailedRouter::sortDRTaskList(DRBox& dr_box)
+{
+  std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
+  std::srand(std::time(NULL));
+  std::random_shuffle(dr_task_list.begin(), dr_task_list.end());
+}
+
+#endif
+
+#if 1  // init dr_task_list
+
+void DetailedRouter::resetDRBox(DRBox& dr_box)
+{
+  for (auto& [source, net_rect_map] : dr_box.get_source_net_rect_map()) {
+    if (source != DRSourceType::kSelfBoxResult) {
+      continue;
+    }
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      RTAPI_INST.delEnvRectList(dr_box.get_source_region_query_map()[source], rect_list);
+    }
+    net_rect_map.clear();
+  }
+
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    dr_task.get_routing_segment_list().clear();
+  }
+
+  DRBoxStat& dr_box_stat = dr_box.get_dr_box_stat();
+  dr_box_stat.get_routing_wire_length_map().clear();
+  dr_box_stat.get_cut_via_number_map().clear();
+  dr_box_stat.get_source_drc_number_map().clear();
+  dr_box_stat.set_total_wire_length(0);
+  dr_box_stat.set_total_via_number(0);
+  dr_box_stat.set_total_drc_number(0);
 }
 
 #endif
@@ -1370,6 +1419,52 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   dr_box_stat.set_total_wire_length(total_wire_length);
   dr_box_stat.set_total_via_number(total_via_number);
   dr_box_stat.set_total_drc_number(total_drc_number);
+}
+
+#endif
+
+#if 1  // update best route result
+
+void DetailedRouter::updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat,
+                                           std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)
+{
+  if (best_route_result.empty()) {
+    for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+      best_route_result[dr_task.get_task_idx()] = dr_task.get_routing_segment_list();
+    }
+    best_stat = dr_box.get_dr_box_stat();
+  }
+
+  bool is_better = false;
+  DRBoxStat& curr_stat = dr_box.get_dr_box_stat();
+  if (curr_stat.get_total_drc_number() != best_stat.get_total_drc_number()) {
+    is_better = curr_stat.get_total_drc_number() < best_stat.get_total_drc_number();
+  } else if (curr_stat.get_total_wire_length() != best_stat.get_total_wire_length()) {
+    is_better = curr_stat.get_total_wire_length() < best_stat.get_total_wire_length();
+  } else {
+    is_better = curr_stat.get_cut_via_number_map() < best_stat.get_cut_via_number_map();
+  }
+
+  if (is_better) {
+    for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+      best_route_result[dr_task.get_task_idx()] = dr_task.get_routing_segment_list();
+    }
+    best_stat = curr_stat;
+  }
+}
+
+#endif
+
+#if 1  // sort dr route result
+
+void DetailedRouter::updateDRRouteResult(DRBox& dr_box, DRBoxStat& best_stat,
+                                         std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result)
+{
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    dr_task.set_routing_segment_list(best_route_result[dr_task.get_task_idx()]);
+  }
+  DRBoxStat& box_stat = dr_box.get_dr_box_stat();
+  box_stat = best_stat;
 }
 
 #endif
