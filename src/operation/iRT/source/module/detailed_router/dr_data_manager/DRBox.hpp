@@ -27,7 +27,7 @@
 
 namespace irt {
 
-class DRBox : public DRSpaceRegion
+class DRBox : public SpaceRegion
 {
  public:
   DRBox() = default;
@@ -70,16 +70,16 @@ class DRBox : public DRSpaceRegion
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single task
   const irt_int get_curr_task_idx() const { return _dr_task_ref->get_task_idx(); }
-  const DRSpaceRegion& get_curr_bounding_box() const { return _dr_task_ref->get_bounding_box(); }
+  const SpaceRegion& get_curr_bounding_box() const { return _dr_task_ref->get_bounding_box(); }
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& get_curr_coord_cost_map() const { return _dr_task_ref->get_coord_cost_map(); }
-  DRSpaceRegion& get_routing_region() { return _routing_region; }
+  SpaceRegion& get_routing_region() { return _routing_region; }
   std::vector<std::vector<DRNode*>>& get_start_node_comb_list() { return _start_node_comb_list; }
   std::vector<std::vector<DRNode*>>& get_end_node_comb_list() { return _end_node_comb_list; }
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_dr_task_ref(DRTask* dr_task_ref) { _dr_task_ref = dr_task_ref; }
-  void set_routing_region(const DRSpaceRegion& routing_region) { _routing_region = routing_region; }
+  void set_routing_region(const SpaceRegion& routing_region) { _routing_region = routing_region; }
   void set_start_node_comb_list(const std::vector<std::vector<DRNode*>>& start_node_comb_list)
   {
     _start_node_comb_list = start_node_comb_list;
@@ -131,7 +131,7 @@ class DRBox : public DRSpaceRegion
   double _via_unit = 1;
   // single task
   DRTask* _dr_task_ref = nullptr;
-  DRSpaceRegion _routing_region;
+  SpaceRegion _routing_region;
   std::vector<std::vector<DRNode*>> _start_node_comb_list;
   std::vector<std::vector<DRNode*>> _end_node_comb_list;
   std::vector<DRNode*> _path_node_list;
