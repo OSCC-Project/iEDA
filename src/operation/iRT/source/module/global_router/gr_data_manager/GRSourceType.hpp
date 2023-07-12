@@ -16,25 +16,36 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerRect.hpp"
-#include "RTU.hpp"
-#include "RoutingLayer.hpp"
-#include "ViaMaster.hpp"
+#include <string>
+
+#include "Logger.hpp"
 
 namespace irt {
 
-class Blockage : public EXTLayerRect
+enum class GRSourceType
 {
- public:
-  Blockage() = default;
-  ~Blockage() = default;
-  // getter
+  kNone,
+  kBlockage
+};
 
-  // setter
-
-  // function
-
- private:
+struct GetGRSourceTypeName
+{
+  std::string operator()(const GRSourceType& ta_source_type) const
+  {
+    std::string ta_source_type_name;
+    switch (ta_source_type) {
+      case GRSourceType::kNone:
+        ta_source_type_name = "none";
+        break;
+      case GRSourceType::kBlockage:
+        ta_source_type_name = "blockage";
+        break;
+      default:
+        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return ta_source_type_name;
+  }
 };
 
 }  // namespace irt

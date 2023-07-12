@@ -89,7 +89,7 @@ class RTAPI
   std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
   std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
   LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing, bool is_artificial = false);
+  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
 
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
