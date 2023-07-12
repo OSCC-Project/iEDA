@@ -42,7 +42,7 @@ COPY --from=iedabase ${BASE_TEMP} ${IEDA_WORKSPACE}
 ENV LD_LIBRARY_PATH=${IEDA_WORKSPACE}/lib:${LD_LIBRARY_PATH}
 ENV PATH=${IEDA_WORKSPACE}/bin:${PATH}
 
-# WORKDIR ${IEDA_WORKSPACE}
+WORKDIR ${IEDA_WORKSPACE}
 
-# ENTRYPOINT ["sh"]
-# CMD ["-script", "./script/hello.tcl"]
+ENTRYPOINT ["iEDA"]
+CMD ["-script", "./script/hello.tcl"]
