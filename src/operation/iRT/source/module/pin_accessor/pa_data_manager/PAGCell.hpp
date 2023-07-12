@@ -16,36 +16,30 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "SpaceRegion.hpp"
+#include "PASourceType.hpp"
 
 namespace irt {
 
-class PAGCell : public LayerCoord
+class PAGCell : public SpaceRegion
 {
  public:
   PAGCell() = default;
   ~PAGCell() = default;
-
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  void* get_net_blockage_region_query() { return _net_blockage_region_query; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_enclosure_map() { return _net_enclosure_map; }
-  void* get_net_enclosure_region_query() { return _net_enclosure_region_query; }
+  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_routing_net_rect_map() { return _source_routing_net_rect_map; }
+  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_cut_net_rect_map() { return _source_cut_net_rect_map; }
+  std::map<PASourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_blockage_region_query(void* net_blockage_region_query) { _net_blockage_region_query = net_blockage_region_query; }
-  void set_net_enclosure_map(const std::map<irt_int, std::vector<LayerRect>>& net_enclosure_map) { _net_enclosure_map = net_enclosure_map; }
-  void set_net_enclosure_region_query(void* net_enclosure_region_query) { _net_enclosure_region_query = net_enclosure_region_query; }
+  void set_source_routing_net_rect_map(const std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_routing_net_rect_map) { _source_routing_net_rect_map = source_routing_net_rect_map; }
+  void set_source_cut_net_rect_map(const std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_cut_net_rect_map) { _source_cut_net_rect_map = source_cut_net_rect_map; }
+  void set_source_region_query_map(const std::map<PASourceType, void*>& source_region_query_map) { _source_region_query_map = source_region_query_map; }
   // function
 
  private:
-  PlanarRect _real_rect;
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
-  void* _net_blockage_region_query;
-  std::map<irt_int, std::vector<LayerRect>> _net_enclosure_map;
-  void* _net_enclosure_region_query;
+  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_routing_net_rect_map;
+  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_cut_net_rect_map;
+  std::map<PASourceType, void*> _source_region_query_map;
 };
 
 }  // namespace irt

@@ -16,18 +16,15 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRNode.hpp"
-#include "DRTask.hpp"
-#include "LayerCoord.hpp"
-#include "LayerRect.hpp"
+#include "PlanarRect.hpp"
 
 namespace irt {
 
-class DRSpaceRegion
+class SpaceRegion
 {
  public:
-  DRSpaceRegion() = default;
-  ~DRSpaceRegion() = default;
+  SpaceRegion() = default;
+  ~SpaceRegion() = default;
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   irt_int get_top_layer_idx() const { return _top_layer_idx; }
