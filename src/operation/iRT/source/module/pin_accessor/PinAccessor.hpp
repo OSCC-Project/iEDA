@@ -55,8 +55,7 @@ class PinAccessor
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
   void updateNetBlockageMap(PAModel& pa_model);
-  void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing,
-                    bool is_artificial = false);
+  void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing);
   void cutBlockageList(PAModel& pa_model);
 #endif
 

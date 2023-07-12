@@ -672,7 +672,7 @@ LayerRect RTAPI::convertToLayerRect(ids::DRCRect ids_rect)
   return rt_rect;
 }
 
-ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing, bool is_artificial)
+ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -692,7 +692,7 @@ ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_rou
     ids_rect.layer_name = cut_layer_list[rt_rect.get_layer_idx()].get_layer_name();
   }
 
-  ids_rect.is_artificial = is_artificial;
+  ids_rect.is_artificial = false;
 
   return ids_rect;
 }

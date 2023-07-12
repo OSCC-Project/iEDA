@@ -195,23 +195,31 @@ void EGRDataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
 
 void EGRDataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
 {
-  std::vector<Blockage>& routing_blockage_list = _egr_database.get_routing_blockage_list();
-
   // Artificial
   idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
-  for (idb::IdbBlockage* idb_blockage : idb_blockage_list->get_blockage_list()) {
-    if (idb_blockage->is_routing_blockage()) {
-      idb::IdbRoutingBlockage* idb_routing_blockage = dynamic_cast<idb::IdbRoutingBlockage*>(idb_blockage);
-      for (idb::IdbRect* rect : idb_routing_blockage->get_rect_list()) {
-        Blockage blockage;
-        blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-        blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-        blockage.set_layer_idx(idb_routing_blockage->get_layer()->get_id());
-        blockage.set_is_artificial(true);
-        routing_blockage_list.push_back(std::move(blockage));
-      }
-    }
+  if (!idb_blockage_list->get_blockage_list().empty()) {
+    LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
   }
+
+  // std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+
+  // LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+
+  // // Artificial
+  // idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
+  // for (idb::IdbBlockage* idb_blockage : idb_blockage_list->get_blockage_list()) {
+  //   if (idb_blockage->is_routing_blockage()) {
+  //     idb::IdbRoutingBlockage* idb_routing_blockage = dynamic_cast<idb::IdbRoutingBlockage*>(idb_blockage);
+  //     for (idb::IdbRect* rect : idb_routing_blockage->get_rect_list()) {
+  //       Blockage blockage;
+  //       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+  //       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+  //       blockage.set_layer_idx(idb_routing_blockage->get_layer()->get_id());
+  //       blockage.set_is_artificial(true);
+  //       routing_blockage_list.push_back(std::move(blockage));
+  //     }
+  //   }
+  // }
 }
 
 void EGRDataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
@@ -240,7 +248,6 @@ void EGRDataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
       blockage.set_layer_idx(layer_shape->get_layer()->get_id());
-      blockage.set_is_artificial(false);
       if (layer_shape->get_layer()->is_routing()) {
         routing_blockage_list.push_back(std::move(blockage));
       }
@@ -268,7 +275,6 @@ void EGRDataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
               blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
               blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
               blockage.set_layer_idx(layer_shape.get_layer()->get_id());
-              blockage.set_is_artificial(false);
               if (layer_shape.get_layer()->is_routing()) {
                 routing_blockage_list.push_back(std::move(blockage));
               }
@@ -281,7 +287,6 @@ void EGRDataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
           blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
           blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
           blockage.set_layer_idx(idb_segment->get_layer()->get_id());
-          blockage.set_is_artificial(false);
           routing_blockage_list.push_back(std::move(blockage));
         }
       }
@@ -621,14 +626,12 @@ void EGRDataManager::buildBlockageList()
     irt_int layer_idx = getEGRRoutingLayerIndexByDB(blockage.get_layer_idx());
     irt_int half_wire_width = routing_layer_list[layer_idx].get_min_width() / 2;
 
-    if (!blockage.isArtificial()) {
-      blockage.set_real_rect(RTUtil::getEnlargedRect(blockage.get_real_rect(), half_wire_width));
-      if (blockage.get_real_rt_x() > die_real_rt_x) {
-        blockage.get_real_rect().set_rt_x(die_real_rt_x);
-      }
-      if (blockage.get_real_rt_y() > die_real_rt_y) {
-        blockage.get_real_rect().set_rt_y(die_real_rt_y);
-      }
+    blockage.set_real_rect(RTUtil::getEnlargedRect(blockage.get_real_rect(), half_wire_width));
+    if (blockage.get_real_rt_x() > die_real_rt_x) {
+      blockage.get_real_rect().set_rt_x(die_real_rt_x);
+    }
+    if (blockage.get_real_rt_y() > die_real_rt_y) {
+      blockage.get_real_rect().set_rt_y(die_real_rt_y);
     }
     blockage.set_grid_rect(getGridRect(blockage.get_real_rect()));
     blockage.set_layer_idx(layer_idx);
