@@ -385,19 +385,19 @@ std::map<std::string, irt_int> RTAPI::getViolation(void* region_query, const std
 {
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 1));
-    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Short", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("MinStep", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Area", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 1));
+    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("MinStep", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
     return violation_name_num_map;
   }
   addEnvRectList(region_query, drc_rect_list);
@@ -556,19 +556,19 @@ std::map<std::string, int> RTAPI::getViolation(void* region_query, const std::ve
 {
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 1));
-    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Short", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("MinStep", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Area", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 1));
+    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("MinStep", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
     return violation_name_num_map;
   }
   addEnvRectList(region_query, drc_rect_list);
@@ -581,19 +581,19 @@ std::map<std::string, int> RTAPI::getViolation(void* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 1));
-    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Short", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("MinStep", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Area", 1));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 1));
-    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 1));
+    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("MinStep", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
     return violation_name_num_map;
   }
 
