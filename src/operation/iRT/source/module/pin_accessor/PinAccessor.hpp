@@ -54,8 +54,9 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
-  void initGCellRealRect(PAModel& pa_model);
   void updateNetBlockageMap(PAModel& pa_model);
+  void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing,
+                    bool is_artificial = false);
   void cutBlockageList(PAModel& pa_model);
 #endif
 
@@ -74,7 +75,9 @@ class PinAccessor
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
+  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   void updateNetEnclosureMap(PAModel& pa_model);
+  void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);

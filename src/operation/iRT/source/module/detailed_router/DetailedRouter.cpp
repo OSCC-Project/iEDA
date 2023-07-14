@@ -384,7 +384,7 @@ here:
       }
     }
   }
-  DRSpaceRegion& bounding_box = dr_task.get_bounding_box();
+  SpaceRegion& bounding_box = dr_task.get_bounding_box();
   bounding_box.set_base_region(dr_box.get_base_region());
   bounding_box.set_top_layer_idx(top_layer_idx);
   bounding_box.set_bottom_layer_idx(bottom_layer_idx);
@@ -753,7 +753,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
       }
       std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
       DRBoxStat best_stat;
-      int iter_number = 5;
+      int iter_number = 1;
       while (iter_number--) {
         sortDRTaskList(dr_box);
         resetDRBox(dr_box);
@@ -975,7 +975,7 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
     if (neighbor_node == nullptr) {
       continue;
     }
-    DRSpaceRegion& routing_region = dr_box.get_routing_region();
+    SpaceRegion& routing_region = dr_box.get_routing_region();
     if (!RTUtil::isInside(routing_region.get_base_region(), *neighbor_node)) {
       continue;
     }
@@ -1194,7 +1194,7 @@ void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask& dr_task)
 void DetailedRouter::resetSingleTask(DRBox& dr_box)
 {
   dr_box.set_dr_task_ref(nullptr);
-  dr_box.set_routing_region(DRSpaceRegion());
+  dr_box.set_routing_region(SpaceRegion());
   dr_box.get_start_node_comb_list().clear();
   dr_box.get_end_node_comb_list().clear();
   dr_box.get_path_node_list().clear();
@@ -1382,7 +1382,7 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
         double wire_length = RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
         routing_wire_length_map[first_layer_idx] += wire_length;
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::sortASC(first_layer_idx, second_layer_idx); 
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
         }
