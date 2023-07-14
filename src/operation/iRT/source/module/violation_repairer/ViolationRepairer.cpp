@@ -450,14 +450,19 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     }
   }
 
-  for (GridMap<VRGCell>& gcell_map : vr_model.get_layer_gcell_map()) {
-    for (irt_int x_idx = 0; x_idx < gcell_map.get_x_size(); x_idx++) {
-      for (irt_int y_idx = 0; y_idx < gcell_map.get_y_size(); y_idx++) {
-        for (auto& [source, region_query] : gcell_map[x_idx][y_idx].get_source_region_query_map()) {
-          for (auto& [drc, number] : RTAPI_INST.getViolation(region_query)) {
-            source_drc_number_map[source][drc] += number;
-          }
-        }
+  std::map<VRSourceType, void*> source_region_query_map;
+  for (auto& [source, ids_rect_list] : getSourceIDSRectMap(vr_model)) {
+    source_region_query_map[source] = RTAPI_INST.initRegionQuery();
+    RTAPI_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    std::vector<ids::DRCRect> ids_rect_list;
+    for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+      ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true));
+    }
+    for (auto& [source, region_query] : source_region_query_map) {
+      for (auto& [drc, number] : RTAPI_INST.getViolation(region_query, ids_rect_list)) {
+        source_drc_number_map[source][drc] += number;
       }
     }
   }
@@ -479,6 +484,32 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   vr_model_stat.set_total_wire_length(total_wire_length);
   vr_model_stat.set_total_via_number(total_via_number);
   vr_model_stat.set_total_drc_number(total_drc_number);
+}
+
+std::map<VRSourceType, std::vector<ids::DRCRect>> ViolationRepairer::getSourceIDSRectMap(VRModel& vr_model)
+{
+  std::map<VRSourceType, std::vector<ids::DRCRect>> source_ids_rect_map;
+  for (const Blockage& routing_blockage : DM_INST.getDatabase().get_routing_blockage_list()) {
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(-1, blockage_real_rect, true);
+    source_ids_rect_map[VRSourceType::kBlockage].push_back(ids_rect);
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), shape_real_rect, true);
+        source_ids_rect_map[VRSourceType::kBlockage].push_back(ids_rect);
+      }
+    }
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+      ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true);
+      source_ids_rect_map[VRSourceType::kNet].push_back(ids_rect);
+    }
+  }
+  return source_ids_rect_map;
 }
 
 void ViolationRepairer::reportTable(VRModel& vr_model)

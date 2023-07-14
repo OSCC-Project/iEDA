@@ -83,6 +83,7 @@ class ViolationRepairer
 #if 1  // report ra_model
   void reportVRModel(VRModel& vr_model);
   void countVRModel(VRModel& vr_model);
+  std::map<VRSourceType, std::vector<ids::DRCRect>> getSourceIDSRectMap(VRModel& vr_model);
   void reportTable(VRModel& vr_model);
 #endif
 };
