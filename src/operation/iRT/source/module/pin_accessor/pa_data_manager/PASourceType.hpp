@@ -16,32 +16,40 @@
 // ***************************************************************************************
 #pragma once
 
-#include <vector>
+#include <string>
 
-#include "PAGCell.hpp"
-#include "PAModelStat.hpp"
-#include "PANet.hpp"
+#include "Logger.hpp"
 
 namespace irt {
 
-class PAModel
+enum class PASourceType
 {
- public:
-  PAModel() = default;
-  ~PAModel() = default;
-  // getter
-  GridMap<PAGCell>& get_gcell_map() { return _gcell_map; }
-  std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
-  PAModelStat& get_pa_mode_stat() { return _pa_mode_stat; }
-  // setter
-  void set_gcell_map(const GridMap<PAGCell>& gcell_map) { _gcell_map = gcell_map; }
-  void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-  void set_pa_mode_stat(const PAModelStat& pa_mode_stat) { _pa_mode_stat = pa_mode_stat; }
+  kNone,
+  kBlockage,
+  kEnclosure
+};
 
- private:
-  GridMap<PAGCell> _gcell_map;
-  std::vector<PANet> _pa_net_list;
-  PAModelStat _pa_mode_stat;
+struct GetPASourceTypeName
+{
+  std::string operator()(const PASourceType& ta_source_type) const
+  {
+    std::string ta_source_type_name;
+    switch (ta_source_type) {
+      case PASourceType::kNone:
+        ta_source_type_name = "none";
+        break;
+      case PASourceType::kBlockage:
+        ta_source_type_name = "blockage";
+        break;
+      case PASourceType::kEnclosure:
+        ta_source_type_name = "enclosure";
+        break;
+      default:
+        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return ta_source_type_name;
+  }
 };
 
 }  // namespace irt
