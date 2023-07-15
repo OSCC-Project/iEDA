@@ -37,7 +37,7 @@ class GRNode : public LayerCoord
   ~GRNode() = default;
 
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
+  PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
@@ -50,7 +50,7 @@ class GRNode : public LayerCoord
   std::map<irt_int, std::set<Orientation>>& get_net_access_map() { return _net_access_map; }
   std::queue<irt_int>& get_net_queue() { return _net_queue; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
   void set_whole_wire_demand(const irt_int whole_wire_demand) { _whole_wire_demand = whole_wire_demand; }
@@ -215,7 +215,7 @@ class GRNode : public LayerCoord
 #endif
 
  private:
-  PlanarRect _real_rect;
+  PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
   std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
   /**
