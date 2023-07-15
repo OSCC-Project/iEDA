@@ -155,40 +155,37 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
 
 void ResourceAllocator::updateNetBlockageMap(RAModel& ra_model)
 {
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
-  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
   for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
-    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-          ra_gcell.get_layer_net_routing_blockage_map()[blockage_layer_idx][-1].push_back(blockage_real_rect);
-        }
-      }
-    }
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    addRectToEnv(ra_model, -1, blockage_real_rect);
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        irt_int shape_layer_idx = routing_shape.get_layer_idx();
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
-        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
-          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-              ra_gcell.get_layer_net_routing_blockage_map()[shape_layer_idx][ra_net.get_net_idx()].push_back(shape_real_rect);
-            }
-          }
-        }
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(ra_model, ra_net.get_net_idx(), shape_real_rect);
+      }
+    }
+  }
+}
+
+void ResourceAllocator::addRectToEnv(RAModel& ra_model, irt_int net_idx, LayerRect real_rect)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+
+  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
+
+  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, true);
+  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+        RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
+        ra_gcell.get_layer_net_routing_blockage_map()[real_rect.get_layer_idx()][net_idx].push_back(real_rect);
       }
     }
   }
@@ -252,7 +249,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
       for (auto& [net_idx, blockage_list] : ra_gcell.get_layer_net_routing_blockage_map()[routing_layer.get_layer_idx()]) {
         for (LayerRect& blockage : blockage_list) {
-          for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
+          for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, blockage, true))) {
             std::vector<PlanarRect> new_wire_list;
             for (PlanarRect& wire : wire_list) {
               if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
