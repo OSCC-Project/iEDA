@@ -127,6 +127,7 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
 {
   buildNeighborMap(gr_model);
   updateNetBlockageMap(gr_model);
+  cutBlockageList(gr_model);
   updateWholeDemand(gr_model);
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
@@ -194,7 +195,7 @@ void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          layer_node_map[blockage_layer_idx][x][y].get_net_blockage_map()[-1].push_back(blockage_real_rect);
+          layer_node_map[blockage_layer_idx][x][y].get_net_routing_blockage_map()[-1].push_back(blockage_real_rect);
         }
       }
     }
@@ -209,10 +210,61 @@ void GlobalRouter::updateNetBlockageMap(GRModel& gr_model)
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              layer_node_map[shape_layer_idx][x][y].get_net_blockage_map()[gr_net.get_net_idx()].push_back(shape_real_rect);
+              layer_node_map[shape_layer_idx][x][y].get_net_routing_blockage_map()[gr_net.get_net_idx()].push_back(shape_real_rect);
             }
           }
         }
+      }
+    }
+  }
+}
+
+void GlobalRouter::cutBlockageList(GRModel& gr_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
+    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
+        GRNode& gr_node = node_map[x][y];
+
+        std::map<irt_int, std::vector<LayerRect>>& net_routing_blockage_map = gr_node.get_net_routing_blockage_map();
+
+        std::vector<LayerRect> new_blockage_list;
+        new_blockage_list.reserve(net_routing_blockage_map[-1].size());
+        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
+
+        for (LayerRect& blockage : net_routing_blockage_map[-1]) {
+          bool is_cutting = false;
+          for (auto& [net_idx, net_shape_list] : net_routing_blockage_map) {
+            if (net_idx == -1) {
+              continue;
+            }
+            for (LayerRect& net_shape : net_shape_list) {
+              if (!RTUtil::isInside(blockage, net_shape)) {
+                continue;
+              }
+              for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
+                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
+              }
+              is_cutting = true;
+            }
+          }
+          if (!is_cutting) {
+            new_blockage_list.push_back(blockage);
+          }
+        }
+        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
+          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
+            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
+          }
+        }
+        net_routing_blockage_map[-1] = new_blockage_list;
       }
     }
   }
@@ -316,7 +368,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real whole_wire_demand and node whole_wire_demand are not equal!");
           }
         }
-        for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
+        for (auto& [net_idx, blockage_list] : gr_node.get_net_routing_blockage_map()) {
           for (LayerRect& blockage : blockage_list) {
             for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
               std::vector<PlanarRect> new_wire_list;
@@ -1163,27 +1215,27 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         gr_node_map_struct.push(gp_text_node_coord);
 
         y -= y_reduced_span;
-        GPText gp_text_net_blockage_map;
-        gp_text_net_blockage_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_blockage_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-        gp_text_net_blockage_map.set_message("net_blockage_map: ");
-        gp_text_net_blockage_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-        gp_text_net_blockage_map.set_presentation(GPTextPresentation::kLeftMiddle);
-        gr_node_map_struct.push(gp_text_net_blockage_map);
+        GPText gp_text_net_routing_blockage_map;
+        gp_text_net_routing_blockage_map.set_coord(real_rect.get_lb_x(), y);
+        gp_text_net_routing_blockage_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_net_routing_blockage_map.set_message("net_routing_blockage_map: ");
+        gp_text_net_routing_blockage_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_net_routing_blockage_map.set_presentation(GPTextPresentation::kLeftMiddle);
+        gr_node_map_struct.push(gp_text_net_routing_blockage_map);
 
-        if (!gr_node.get_net_blockage_map().empty()) {
+        if (!gr_node.get_net_routing_blockage_map().empty()) {
           y -= y_reduced_span;
-          GPText gp_text_net_blockage_map_info;
-          gp_text_net_blockage_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_blockage_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
-          std::string net_blockage_map_message = "--";
-          for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
-            net_blockage_map_message += RTUtil::getString("(", net_idx, ")");
+          GPText gp_text_net_routing_blockage_map_info;
+          gp_text_net_routing_blockage_map_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_net_routing_blockage_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string net_routing_blockage_map_message = "--";
+          for (auto& [net_idx, blockage_list] : gr_node.get_net_routing_blockage_map()) {
+            net_routing_blockage_map_message += RTUtil::getString("(", net_idx, ")");
           }
-          gp_text_net_blockage_map_info.set_message(net_blockage_map_message);
-          gp_text_net_blockage_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
-          gp_text_net_blockage_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          gr_node_map_struct.push(gp_text_net_blockage_map_info);
+          gp_text_net_routing_blockage_map_info.set_message(net_routing_blockage_map_message);
+          gp_text_net_routing_blockage_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_net_routing_blockage_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          gr_node_map_struct.push(gp_text_net_routing_blockage_map_info);
         }
 
         y -= y_reduced_span;
@@ -1428,12 +1480,12 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   }
   gp_gds.addStruct(neighbor_map_struct);
 
-  // net_blockage_map
+  // net_routing_blockage_map
   for (GridMap<GRNode>& node_map : gr_model.get_layer_node_map()) {
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
-        for (auto& [net_idx, blockage_list] : gr_node.get_net_blockage_map()) {
+        for (auto& [net_idx, blockage_list] : gr_node.get_net_routing_blockage_map()) {
           GPStruct blockage_struct(RTUtil::getString("blockage@", net_idx));
           for (const LayerRect& blockage : blockage_list) {
             GPBoundary gp_boundary;
