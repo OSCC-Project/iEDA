@@ -39,7 +39,7 @@ class GRNode : public LayerCoord
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
+  std::map<irt_int, std::vector<LayerRect>>& get_net_routing_blockage_map() { return _net_routing_blockage_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orientation_wire_demand_map() { return _net_orientation_wire_demand_map; }
@@ -52,7 +52,7 @@ class GRNode : public LayerCoord
   // setter
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
+  void set_net_routing_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_routing_blockage_map) { _net_routing_blockage_map = net_routing_blockage_map; }
   void set_whole_wire_demand(const irt_int whole_wire_demand) { _whole_wire_demand = whole_wire_demand; }
   void set_whole_via_demand(const irt_int whole_via_demand) { _whole_via_demand = whole_via_demand; }
   void set_net_orientation_wire_demand_map(const std::map<irt_int, std::map<Orientation, irt_int>>& net_orientation_wire_demand_map)
@@ -217,7 +217,7 @@ class GRNode : public LayerCoord
  private:
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
+  std::map<irt_int, std::vector<LayerRect>> _net_routing_blockage_map;
   /**
    * 布线结果该算多少demand
    *

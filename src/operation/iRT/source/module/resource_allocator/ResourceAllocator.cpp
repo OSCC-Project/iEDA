@@ -104,7 +104,8 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  updateLayerBlockageMap(ra_model);
+  updateNetBlockageMap(ra_model);
+  cutBlockageList(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -148,11 +149,11 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
     RAGCell& ra_gcell = ra_gcell_list[i];
     irt_int grid_x = static_cast<irt_int>(i) / die.getYSize();
     irt_int grid_y = static_cast<irt_int>(i) % die.getYSize();
-    ra_gcell.set_real_rect(RTUtil::getRealRect(grid_x, grid_y, gcell_axis));
+    ra_gcell.set_base_region(RTUtil::getRealRect(grid_x, grid_y, gcell_axis));
   }
 }
 
-void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
+void ResourceAllocator::updateNetBlockageMap(RAModel& ra_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -168,7 +169,7 @@ void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
           RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-          ra_gcell.get_layer_blockage_map()[blockage_layer_idx].push_back(blockage_real_rect);
+          ra_gcell.get_layer_net_routing_blockage_map()[blockage_layer_idx][-1].push_back(blockage_real_rect);
         }
       }
     }
@@ -184,7 +185,7 @@ void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
               RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-              ra_gcell.get_layer_blockage_map()[shape_layer_idx].push_back(shape_real_rect);
+              ra_gcell.get_layer_net_routing_blockage_map()[shape_layer_idx][ra_net.get_net_idx()].push_back(shape_real_rect);
             }
           }
         }
@@ -193,47 +194,99 @@ void ResourceAllocator::updateLayerBlockageMap(RAModel& ra_model)
   }
 }
 
+void ResourceAllocator::cutBlockageList(RAModel& ra_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
+  for (RAGCell& ra_gcell : ra_gcell_list) {
+    for (auto& [routing_layer_idx, net_rect_map] : ra_gcell.get_layer_net_routing_blockage_map()) {
+      RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
+
+      std::vector<LayerRect> new_blockage_list;
+      new_blockage_list.reserve(net_rect_map[-1].size());
+      std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
+
+      for (LayerRect& blockage : net_rect_map[-1]) {
+        bool is_cutting = false;
+        for (auto& [net_idx, net_shape_list] : net_rect_map) {
+          if (net_idx == -1) {
+            continue;
+          }
+          for (LayerRect& net_shape : net_shape_list) {
+            if (!RTUtil::isInside(blockage, net_shape)) {
+              continue;
+            }
+            for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+              PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
+              blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
+            }
+            is_cutting = true;
+          }
+        }
+        if (!is_cutting) {
+          new_blockage_list.push_back(blockage);
+        }
+      }
+      for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
+        for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
+          new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
+        }
+      }
+      net_rect_map[-1] = new_blockage_list;
+    }
+  }
+}
+
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
 #pragma omp parallel for
   for (RAGCell& ra_gcell : ra_gcell_list) {
-    irt_int public_track_supply = 0;
+    irt_int resource_supply = 0;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      irt_int layer_idx = routing_layer.get_layer_idx();
-      if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-        continue;
-      }
+      irt_int whole_via_demand = routing_layer.get_min_area() / routing_layer.get_min_width();
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
-      irt_int layer_public_track_supply = static_cast<irt_int>(wire_list.size());
-      for (PlanarRect& wire : wire_list) {
-        for (PlanarRect& blockage : ra_gcell.get_layer_blockage_map()[layer_idx]) {
-          if (RTUtil::isOpenOverlap(blockage, wire)) {
-            layer_public_track_supply--;
-            break;
+      for (auto& [net_idx, blockage_list] : ra_gcell.get_layer_net_routing_blockage_map()[routing_layer.get_layer_idx()]) {
+        for (LayerRect& blockage : blockage_list) {
+          for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(blockage)) {
+            std::vector<PlanarRect> new_wire_list;
+            for (PlanarRect& wire : wire_list) {
+              if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
+                // 要切
+                std::vector<PlanarRect> split_rect_list
+                    = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
+              } else {
+                // 不切
+                new_wire_list.push_back(wire);
+              }
+            }
+            wire_list = new_wire_list;
           }
         }
       }
-      if (layer_public_track_supply < 0) {
-        LOG_INST.error(Loc::current(), "The layer_public_track_supply < 0!");
+      for (PlanarRect& wire : wire_list) {
+        irt_int supply = wire.getArea() / routing_layer.get_min_width();
+        if (supply < whole_via_demand) {
+          continue;
+        }
+        resource_supply += supply;
       }
-      public_track_supply += layer_public_track_supply;
     }
-    ra_gcell.set_public_track_supply(public_track_supply);
+    ra_gcell.set_resource_supply(resource_supply);
   }
 }
 
 std::vector<PlanarRect> ResourceAllocator::getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer)
 {
-  irt_int real_lb_x = ra_gcell.get_real_rect().get_lb_x();
-  irt_int real_lb_y = ra_gcell.get_real_rect().get_lb_y();
-  irt_int real_rt_x = ra_gcell.get_real_rect().get_rt_x();
-  irt_int real_rt_y = ra_gcell.get_real_rect().get_rt_y();
+  irt_int real_lb_x = ra_gcell.get_base_region().get_lb_x();
+  irt_int real_lb_y = ra_gcell.get_base_region().get_lb_y();
+  irt_int real_rt_x = ra_gcell.get_base_region().get_rt_x();
+  irt_int real_rt_y = ra_gcell.get_base_region().get_rt_y();
   std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList());
   std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList());
   irt_int half_width = routing_layer.get_min_width() / 2;
@@ -311,23 +364,9 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
-    PlanarRect& gcell_rect = ra_gcell.get_real_rect();
-    for (auto& [layer_idx, blockage_list] : ra_gcell.get_layer_blockage_map()) {
-      if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
-        LOG_INST.error(Loc::current(), "The layer idx is illegal!");
-      }
-      for (PlanarRect& blockage : blockage_list) {
-        if (RTUtil::isClosedOverlap(gcell_rect, blockage)) {
-          continue;
-        }
-        LOG_INST.error(Loc::current(), "The net blockage is outside the node region!");
-      }
-    }
-    if (ra_gcell.get_public_track_supply() < 0) {
-      LOG_INST.error(Loc::current(), "The public_track_supply < 0!");
+    if (ra_gcell.get_resource_supply() < 0) {
+      LOG_INST.error(Loc::current(), "The resource_supply < 0!");
     }
   }
 }
@@ -429,7 +468,7 @@ void ResourceAllocator::calcNablaF(RAModel& ra_model, double penalty_para)
     // 由于有 f(x) = (1/2) * x' * Q * x + b' * x 中存在 "1/2" 故要 "*2"
     gcell_q_temp *= 2;
     // calculate "+F_ra_gcell_i"
-    gcell_q_temp += (-2) * ra_gcell.get_public_track_supply();
+    gcell_q_temp += (-2) * ra_gcell.get_resource_supply();
     // update nabla_f_row
     nabla_f_row[i] = gcell_q_temp;
   }
