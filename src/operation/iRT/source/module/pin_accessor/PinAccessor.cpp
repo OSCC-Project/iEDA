@@ -84,11 +84,11 @@ PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   PAModel pa_model;
-  GridMap<PAGCell>& gcell_map = pa_model.get_gcell_map();
-  gcell_map.init(die.getXSize(), die.getYSize());
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+  pa_gcell_map.init(die.getXSize(), die.getYSize());
   for (irt_int x = 0; x < die.getXSize(); x++) {
     for (irt_int y = 0; y < die.getYSize(); y++) {
-      PAGCell& pa_gcell = gcell_map[x][y];
+      PAGCell& pa_gcell = pa_gcell_map[x][y];
       pa_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
       pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
@@ -164,7 +164,7 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, i
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
-  GridMap<PAGCell>& gcell_map = pa_model.get_gcell_map();
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
   ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, is_routing);
   for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
@@ -173,11 +173,11 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, i
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         if (is_routing) {
-          gcell_map[x][y].get_source_routing_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
+          pa_gcell_map[x][y].get_source_routing_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
         } else {
-          gcell_map[x][y].get_source_cut_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
+          pa_gcell_map[x][y].get_source_cut_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
         }
-        RTAPI_INST.addEnvRectList(gcell_map[x][y].get_source_region_query_map()[pa_source_type], ids_drc_rect);
+        RTAPI_INST.addEnvRectList(pa_gcell_map[x][y].get_source_region_query_map()[pa_source_type], ids_drc_rect);
       }
     }
   }
@@ -187,11 +187,11 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  GridMap<PAGCell>& gcell_map = pa_model.get_gcell_map();
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
-  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
-      PAGCell& pa_gcell = gcell_map[x][y];
+  for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
+      PAGCell& pa_gcell = pa_gcell_map[x][y];
 
       for (auto& [routing_layer_idx, net_rect_map] : pa_gcell.get_source_routing_net_rect_map()[PASourceType::kBlockage]) {
         RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
@@ -383,7 +383,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  GridMap<PAGCell>& gcell_map = pa_model.get_gcell_map();
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
   if (via_below_layer_idx < routing_layer_list.front().get_layer_idx()
       || routing_layer_list.back().get_layer_idx() <= via_below_layer_idx) {
@@ -427,7 +427,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
           for (auto& [curr_net_idx, net_blockage_list] :
-               gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockage][enclosure.get_layer_idx()]) {
+               pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockage][enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
@@ -594,7 +594,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
-  GridMap<PAGCell>& gcell_map = pa_model.get_gcell_map();
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
   std::vector<ids::DRCRect> ids_drc_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
@@ -641,7 +641,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
   }
   bool has_violation = false;
   for (const PlanarCoord& grid_coord : grid_coord_set) {
-    PAGCell& pa_gcell = gcell_map[grid_coord.get_x()][grid_coord.get_y()];
+    PAGCell& pa_gcell = pa_gcell_map[grid_coord.get_x()][grid_coord.get_y()];
     if (RTAPI_INST.hasViolation(pa_gcell.get_source_region_query_map()[pa_source_type], ids_drc_rect_list)) {
       has_violation = true;
       break;

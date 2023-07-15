@@ -57,7 +57,9 @@ class ResourceAllocator
   void buildRAModel(RAModel& ra_model);
   void initRANetDemand(RAModel& ra_model);
   void initRAGCellList(RAModel& ra_model);
-  void updateLayerBlockageMap(RAModel& ra_model);
+  void updateNetBlockageMap(RAModel& ra_model);
+  void addRectToEnv(RAModel& ra_model, RASourceType ra_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing);
+  void cutBlockageList(RAModel& ra_model);
   void buildAccessMap(RAModel& ra_model);
   void calcRAGCellSupply(RAModel& ra_model);
   std::vector<PlanarRect> getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer);
