@@ -89,7 +89,7 @@ GRModel GlobalRouter::initGRModel(std::vector<Net>& net_list)
         GRNode& gr_node = node_map[x][y];
         gr_node.set_coord(x, y);
         gr_node.set_layer_idx(static_cast<irt_int>(layer_idx));
-        gr_node.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
+        gr_node.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
       }
     }
   }
@@ -234,9 +234,9 @@ void GlobalRouter::updateWholeDemand(GRModel& gr_model)
         GRNode& gr_node = node_map[x][y];
         irt_int whole_wire_demand = 0;
         if (routing_layer.isPreferH()) {
-          whole_wire_demand = gr_node.get_real_rect().getXSpan();
+          whole_wire_demand = gr_node.get_base_region().getXSpan();
         } else {
-          whole_wire_demand = gr_node.get_real_rect().getYSpan();
+          whole_wire_demand = gr_node.get_base_region().getYSpan();
         }
         gr_node.set_whole_wire_demand(whole_wire_demand);
 
@@ -268,15 +268,15 @@ void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
         RoutingLayer& routing_layer = routing_layer_list[layer_idx];
 
         GRNode& gr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        PlanarRect& real_rect = gr_node.get_real_rect();
+        PlanarRect& base_region = gr_node.get_base_region();
         std::map<irt_int, std::map<Orientation, irt_int>>& net_orientation_wire_demand_map = gr_node.get_net_orientation_wire_demand_map();
 
         if (routing_layer.isPreferH()) {
           irt_int min_west_demand = INT_MAX;
           irt_int min_east_demand = INT_MAX;
           for (PlanarCoord& pin_coord : pin_coord_list) {
-            min_west_demand = std::min(min_west_demand, std::abs(pin_coord.get_x() - real_rect.get_lb_x()));
-            min_east_demand = std::min(min_east_demand, std::abs(pin_coord.get_x() - real_rect.get_rt_x()));
+            min_west_demand = std::min(min_west_demand, std::abs(pin_coord.get_x() - base_region.get_lb_x()));
+            min_east_demand = std::min(min_east_demand, std::abs(pin_coord.get_x() - base_region.get_rt_x()));
           }
           net_orientation_wire_demand_map[gr_net.get_net_idx()][Orientation::kWest] = min_west_demand;
           net_orientation_wire_demand_map[gr_net.get_net_idx()][Orientation::kEast] = min_east_demand;
@@ -284,8 +284,8 @@ void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
           irt_int min_south_demand = INT_MAX;
           irt_int min_north_demand = INT_MAX;
           for (PlanarCoord& pin_coord : pin_coord_list) {
-            min_south_demand = std::min(min_south_demand, std::abs(pin_coord.get_x() - real_rect.get_lb_x()));
-            min_north_demand = std::min(min_north_demand, std::abs(pin_coord.get_x() - real_rect.get_rt_x()));
+            min_south_demand = std::min(min_south_demand, std::abs(pin_coord.get_x() - base_region.get_lb_x()));
+            min_north_demand = std::min(min_north_demand, std::abs(pin_coord.get_x() - base_region.get_rt_x()));
           }
           net_orientation_wire_demand_map[gr_net.get_net_idx()][Orientation::kSouth] = min_south_demand;
           net_orientation_wire_demand_map[gr_net.get_net_idx()][Orientation::kNorth] = min_north_demand;
@@ -363,10 +363,10 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
 
 std::vector<PlanarRect> GlobalRouter::getWireList(GRNode& gr_node, RoutingLayer& routing_layer)
 {
-  irt_int real_lb_x = gr_node.get_real_rect().get_lb_x();
-  irt_int real_lb_y = gr_node.get_real_rect().get_lb_y();
-  irt_int real_rt_x = gr_node.get_real_rect().get_rt_x();
-  irt_int real_rt_y = gr_node.get_real_rect().get_rt_y();
+  irt_int real_lb_x = gr_node.get_base_region().get_lb_x();
+  irt_int real_lb_y = gr_node.get_base_region().get_lb_y();
+  irt_int real_rt_x = gr_node.get_base_region().get_rt_x();
+  irt_int real_rt_y = gr_node.get_base_region().get_rt_y();
   std::vector<irt_int> x_list = RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList());
   std::vector<irt_int> y_list = RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList());
   irt_int half_width = routing_layer.get_min_width() / 2;
