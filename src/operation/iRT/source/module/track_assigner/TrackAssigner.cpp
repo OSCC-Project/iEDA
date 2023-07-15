@@ -565,7 +565,7 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
       }
       std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
       TAPanelStat best_stat;
-      int iter_number = 5;
+      int iter_number = 1;
       while (iter_number--) {
         sortTATaskList(ta_panel);
         resetTAPanel(ta_panel);

@@ -1683,10 +1683,10 @@ class RTUtil
     return scale_list;
   }
 
-  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-  static PlanarRect getTrackLineRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
+  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
-    if (!isInside(border, rect)) {
+    if (!isOpenOverlap(rect, border)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
     irt_int real_lb_x = rect.get_lb_x();
@@ -1694,11 +1694,12 @@ class RTUtil
     irt_int real_lb_y = rect.get_lb_y();
     irt_int real_rt_y = rect.get_rt_y();
     if (getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_x_grid_list());
       scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
       scale_list.push_back(border.get_rt_x());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_x) {
           continue;
@@ -1709,11 +1710,12 @@ class RTUtil
       }
     }
     if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
-      scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_y_grid_list());
+      scale_list.push_back(border.get_lb_y());
       scale_list.push_back(border.get_rt_y());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_y) {
           continue;
