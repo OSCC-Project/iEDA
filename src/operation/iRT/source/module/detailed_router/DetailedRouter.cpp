@@ -753,7 +753,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
       }
       std::map<irt_int, std::vector<Segment<LayerCoord>>> best_route_result;
       DRBoxStat best_stat;
-      int iter_number = 5;
+      int iter_number = 1;
       while (iter_number--) {
         sortDRTaskList(dr_box);
         resetDRBox(dr_box);
