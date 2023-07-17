@@ -54,7 +54,7 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
-  void updateNetBlockageMap(PAModel& pa_model);
+  void updateNetRectMap(PAModel& pa_model);
   void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing);
   void cutBlockageList(PAModel& pa_model);
 #endif

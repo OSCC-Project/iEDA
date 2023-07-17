@@ -128,11 +128,11 @@ PANet PinAccessor::convertToPANet(Net& net)
 
 void PinAccessor::buildPAModel(PAModel& pa_model)
 {
-  updateNetBlockageMap(pa_model);
+  updateNetRectMap(pa_model);
   cutBlockageList(pa_model);
 }
 
-void PinAccessor::updateNetBlockageMap(PAModel& pa_model)
+void PinAccessor::updateNetRectMap(PAModel& pa_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
@@ -426,13 +426,13 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
     for (EXTLayerRect& pin_shape : pin_shape_list) {
       for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
-          for (auto& [curr_net_idx, net_blockage_list] :
+          for (auto& [curr_net_idx, net_rect_list] :
                pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockage][enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
-            for (LayerRect& net_blockage : net_blockage_list) {
-              for (LayerRect& min_scope_blockage : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(curr_net_idx, net_blockage, true))) {
+            for (LayerRect& net_rect : net_rect_list) {
+              for (LayerRect& min_scope_blockage : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(curr_net_idx, net_rect, true))) {
                 PlanarRect enlarged_rect = RTUtil::getEnlargedRect(min_scope_blockage, half_x_span, half_y_span, half_x_span, half_y_span);
                 if (!RTUtil::isOpenOverlap(pin_shape.get_real_rect(), enlarged_rect)) {
                   continue;
