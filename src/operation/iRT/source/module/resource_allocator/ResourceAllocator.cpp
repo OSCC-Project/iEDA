@@ -362,6 +362,16 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
+    for (auto& [layer_idx, net_rect_map] : ra_gcell.get_routing_net_rect_map()) {
+      for (auto& [net_idx, rect_list] : net_rect_map) {
+        for (LayerRect& rect : rect_list) {
+          if (layer_idx == rect.get_layer_idx()) {
+            continue;
+          }
+          LOG_INST.error(Loc::current(), "The layer of source routing net rect is different!");
+        }
+      }
+    }
     if (ra_gcell.get_resource_supply() < 0) {
       LOG_INST.error(Loc::current(), "The resource_supply < 0!");
     }
