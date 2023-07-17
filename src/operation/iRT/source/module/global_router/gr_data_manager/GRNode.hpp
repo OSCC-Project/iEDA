@@ -170,7 +170,9 @@ class GRNode : public LayerCoord
         || RTUtil::exist(orientation_set, Orientation::kSouth) || RTUtil::exist(orientation_set, Orientation::kNorth)) {
       orientation_set.erase(Orientation::kUp);
       orientation_set.erase(Orientation::kDown);
-
+      if (orientation_set.size() > 2) {
+        LOG_INST.error(Loc::current(), "The size of orientation_set > 2!");
+      }
       bool has_net_demand = false;
       irt_int wire_demand = 0;
       if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {

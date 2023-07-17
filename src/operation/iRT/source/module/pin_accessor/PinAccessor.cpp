@@ -92,7 +92,7 @@ PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
       pa_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
       pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
-      for (PASourceType pa_source_type : {PASourceType::kBlockage, PASourceType::kEnclosure}) {
+      for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kEnclosure}) {
         pa_gcell.get_source_region_query_map()[pa_source_type] = RTAPI_INST.initRegionQuery();
       }
     }
@@ -139,21 +139,21 @@ void PinAccessor::updateNetRectMap(PAModel& pa_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockage, -1, blockage_real_rect, true);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, true);
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockage, -1, blockage_real_rect, false);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, false);
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, true);
       }
       for (EXTLayerRect& cut_shape : pa_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), shape_real_rect, false);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, false);
       }
     }
   }
@@ -193,7 +193,7 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
     for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
-      for (auto& [routing_layer_idx, net_rect_map] : pa_gcell.get_source_routing_net_rect_map()[PASourceType::kBlockage]) {
+      for (auto& [routing_layer_idx, net_rect_map] : pa_gcell.get_source_routing_net_rect_map()[PASourceType::kBlockAndPin]) {
         RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
 
         std::vector<LayerRect> new_blockage_list;
@@ -427,7 +427,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
           for (auto& [curr_net_idx, net_rect_list] :
-               pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockage][enclosure.get_layer_idx()]) {
+               pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockAndPin][enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
@@ -574,7 +574,7 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                   LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
-        if (!hasViolation(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), segment_list)) {
+        if (!hasViolation(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), segment_list)) {
           legal_access_point_list.push_back(access_point);
           break;
         }

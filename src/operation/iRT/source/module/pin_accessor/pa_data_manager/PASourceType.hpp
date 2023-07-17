@@ -25,7 +25,7 @@ namespace irt {
 enum class PASourceType
 {
   kNone,
-  kBlockage,
+  kBlockAndPin,
   kEnclosure
 };
 
@@ -38,8 +38,8 @@ struct GetPASourceTypeName
       case PASourceType::kNone:
         ta_source_type_name = "none";
         break;
-      case PASourceType::kBlockage:
-        ta_source_type_name = "blockage";
+      case PASourceType::kBlockAndPin:
+        ta_source_type_name = "block_and_pin";
         break;
       case PASourceType::kEnclosure:
         ta_source_type_name = "enclosure";
