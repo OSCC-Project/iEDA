@@ -788,6 +788,37 @@ void PinAccessor::selectByNetDistance(PANet& pa_net)
 
 void PinAccessor::checkPAModel(PAModel& pa_model)
 {
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+  for (irt_int x_idx = 0; x_idx < pa_gcell_map.get_x_size(); x_idx++) {
+    for (irt_int y_idx = 0; y_idx < pa_gcell_map.get_y_size(); y_idx++) {
+      PAGCell& pa_gcell = pa_gcell_map[x_idx][y_idx];
+      for (auto& [source, routing_net_rect_map] : pa_gcell.get_source_routing_net_rect_map()) {
+        for (auto& [layer_idx, net_rect_map] : routing_net_rect_map) {
+          for (auto& [net_idx, rect_list] : net_rect_map) {
+            for (LayerRect& rect : rect_list) {
+              if (layer_idx == rect.get_layer_idx()) {
+                continue;
+              }
+              LOG_INST.error(Loc::current(), "The layer of source routing net rect is different!");
+            }
+          }
+        }
+      }
+      for (auto& [source, cut_net_rect_map] : pa_gcell.get_source_cut_net_rect_map()) {
+        for (auto& [layer_idx, net_rect_map] : cut_net_rect_map) {
+          for (auto& [net_idx, rect_list] : net_rect_map) {
+            for (LayerRect& rect : rect_list) {
+              if (layer_idx == rect.get_layer_idx()) {
+                continue;
+              }
+              LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
+            }
+          }
+        }
+      }
+    }
+  }
+
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
