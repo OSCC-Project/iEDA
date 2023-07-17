@@ -30,10 +30,7 @@ class RAGCell
   ~RAGCell() = default;
   // getter
   PlanarRect& get_base_region() { return _base_region; }
-  std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>& get_layer_net_routing_blockage_map()
-  {
-    return _layer_net_routing_blockage_map;
-  }
+  std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>& get_routing_net_rect_map() { return _routing_net_rect_map; }
   irt_int get_resource_supply() const { return _resource_supply; }
   std::vector<RANetNode>& get_ra_net_node_list() { return _ra_net_node_list; }
   // setter
@@ -44,7 +41,7 @@ class RAGCell
 
  private:
   PlanarRect _base_region;
-  std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>> _layer_net_routing_blockage_map;
+  std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>> _routing_net_rect_map;
   irt_int _resource_supply = 0;
   std::vector<RANetNode> _ra_net_node_list;
 };

@@ -57,7 +57,7 @@ class GlobalRouter
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
   void buildNodeSupply(GRModel& gr_model);
-  void updateNetBlockageMap(GRModel& gr_model);
+  void updateNetRectMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect real_rect);
   void cutBlockageList(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
