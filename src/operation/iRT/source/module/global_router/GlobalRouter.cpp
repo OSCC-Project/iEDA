@@ -541,6 +541,14 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The access_map is empty!");
           }
         }
+        for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
+          for (LayerRect& rect : rect_list) {
+            if (rect.get_layer_idx() == layer_idx) {
+              continue;
+            }
+            LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
+          }
+        }
       }
     }
   }
