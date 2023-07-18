@@ -62,15 +62,20 @@ GlobalRouter* GlobalRouter::_gr_instance = nullptr;
 
 void GlobalRouter::routeNetList(std::vector<Net>& net_list)
 {
+  GRModel gr_model = init(net_list);
+  iterative(gr_model);
+  update(gr_model);
+}
+
+#if 1  // init
+
+GRModel GlobalRouter::init(std::vector<Net>& net_list)
+{
   GRModel gr_model = initGRModel(net_list);
   buildGRModel(gr_model);
   checkGRModel(gr_model);
-  routeGRModel(gr_model);
-  updateGRModel(gr_model);
-  reportGRModel(gr_model);
+  return gr_model;
 }
-
-#if 1  // build gr_model
 
 GRModel GlobalRouter::initGRModel(std::vector<Net>& net_list)
 {
@@ -453,10 +458,6 @@ void GlobalRouter::buildAccessMap(GRModel& gr_model)
   }
 }
 
-#endif
-
-#if 1  // check gr_model
-
 void GlobalRouter::checkGRModel(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -556,7 +557,23 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
 
 #endif
 
-#if 1  // route gr_model
+#if 1  // iterative
+
+void GlobalRouter::iterative(GRModel& gr_model)
+{
+  irt_int gr_iter_num = 10;
+  for (irt_int stage = 1; stage <= gr_iter_num; stage++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Global Routing Iteration(", stage, "/", gr_iter_num, ") ******");
+
+    // sortGRModel(gr_model);
+    // resetGRModel(gr_model);
+    routeGRModel(gr_model);
+    reportGRModel(gr_model);
+
+    LOG_INST.info(Loc::current(), "****** End Iteration(", stage, "/", gr_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+  }
+}
 
 void GlobalRouter::routeGRModel(GRModel& gr_model)
 {
@@ -721,8 +738,9 @@ void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_s
     gr_model.set_gr_route_strategy(GRRouteStrategy::kNone);
     if (!isRoutingFailed(gr_model)) {
       if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
-                      " successfully!");
+        // LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ",
+        // GetGRRouteStrategyName()(gr_route_strategy),
+        //               " successfully!");
       }
     } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
       LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
@@ -1160,9 +1178,274 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
   return corner_cost;
 }
 
+void GlobalRouter::reportGRModel(GRModel& gr_model)
+{
+  countGRModel(gr_model);
+  reportTable(gr_model);
+}
+
+void GlobalRouter::countGRModel(GRModel& gr_model)
+{
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+
+  GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
+  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
+
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
+      Guide& first_guide = node->value().get_first_guide();
+      irt_int first_layer_idx = first_guide.get_layer_idx();
+      Guide& second_guide = node->value().get_second_guide();
+      irt_int second_layer_idx = second_guide.get_layer_idx();
+
+      if (first_layer_idx == second_layer_idx) {
+        double wire_length = RTUtil::getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_layer_idx] += wire_length;
+      } else {
+        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+        }
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    GridMap<GRNode>& node_map = gr_model.get_layer_node_map()[routing_layer.get_layer_idx()];
+    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
+        GRNode& gr_node = node_map[grid_x][grid_y];
+        double remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
+        overflow_list.push_back(remain != 0 ? (-1 * remain / gr_node.get_resource_supply()) : 0);
+      }
+    }
+  }
+  double total_wire_length = 0;
+  irt_int total_via_number = 0;
+  double max_overflow = -DBL_MAX;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  for (double overflow : overflow_list) {
+    max_overflow = std::max(max_overflow, overflow);
+  }
+  gr_model_stat.set_total_wire_length(total_wire_length);
+  gr_model_stat.set_total_via_number(total_via_number);
+  gr_model_stat.set_max_overflow(max_overflow);
+}
+
+void GlobalRouter::reportTable(GRModel& gr_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+
+  GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
+  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
+  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
+  double total_wire_length = gr_model_stat.get_total_wire_length();
+  irt_int total_via_number = gr_model_stat.get_total_via_number();
+  double max_overflow = gr_model_stat.get_max_overflow();
+
+  // report wire info
+  fort::char_table wire_table;
+  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table << fort::header << "Routing Layer"
+             << "Wire Length / um" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
+    wire_table << routing_layer.get_layer_name()
+               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
+  }
+  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+
+  // report via info
+  fort::char_table via_table;
+  via_table.set_border_style(FT_SOLID_STYLE);
+  via_table << fort::header << "Cut Layer"
+            << "Via Number" << fort::endr;
+  for (CutLayer& cut_layer : cut_layer_list) {
+    irt_int via_number = cut_via_number_map[cut_layer.get_layer_idx()];
+    via_table << cut_layer.get_layer_name() << RTUtil::getString(via_number, "(", RTUtil::getPercentage(via_number, total_via_number), "%)")
+              << fort::endr;
+  }
+  via_table << fort::header << "Total" << total_via_number << fort::endr;
+
+  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
+  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
+  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
+    std::string table_str;
+    if (i < wire_str_list.size()) {
+      table_str += wire_str_list[i];
+    }
+    table_str += " ";
+    if (i < via_str_list.size()) {
+      table_str += via_str_list[i];
+    }
+    LOG_INST.info(Loc::current(), table_str);
+  }
+
+  // report overflow info
+  GridMap<double> overflow_map = RTUtil::getRangeNumRatioMap(overflow_list);
+
+  fort::char_table overflow_table;
+  overflow_table.set_border_style(FT_SOLID_STYLE);
+  overflow_table << fort::header << "Overflow"
+                 << "GCell Number" << fort::endr;
+  for (irt_int y_idx = 0; y_idx < overflow_map.get_y_size(); y_idx++) {
+    double left = overflow_map[0][y_idx];
+    double right = overflow_map[1][y_idx];
+    std::string range_str;
+    if (y_idx == overflow_map.get_y_size() - 1) {
+      range_str = RTUtil::getString("[", left, ",", max_overflow, "]");
+    } else {
+      range_str = RTUtil::getString("[", left, ",", right, ")");
+    }
+    overflow_table << range_str << RTUtil::getString(overflow_map[2][y_idx], "(", overflow_map[3][y_idx], "%)") << fort::endr;
+  }
+  overflow_table << fort::header << "Total" << overflow_list.size() << fort::endr;
+  for (std::string table_str : RTUtil::splitString(overflow_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
+}
+
 #endif
 
-#if 1  // plot gr_model
+#if 1  // update
+
+void GlobalRouter::update(GRModel& gr_model)
+{
+#pragma omp parallel for
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    initRoutingResult(gr_net);
+    buildRoutingResult(gr_net);
+  }
+  updateOriginGRResultTree(gr_model);
+}
+
+void GlobalRouter::initRoutingResult(GRNet& gr_net)
+{
+  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
+  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
+      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
+    }
+  }
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
+  std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
+      = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
+  gr_net.set_gr_result_tree(RTUtil::convertTree(coord_tree, convert, key_coord_pin_map));
+}
+
+RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+
+  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
+
+  RTNode rt_node;
+  rt_node.set_first_guide(guide);
+  rt_node.set_second_guide(guide);
+  if (RTUtil::exist(key_coord_pin_map, coord)) {
+    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
+  }
+  return rt_node;
+}
+
+void GlobalRouter::buildRoutingResult(GRNet& gr_net)
+{
+  if (gr_net.get_gr_result_tree().get_root() == nullptr) {
+    return;
+  }
+  std::vector<TNode<RTNode>*> delete_node_list;
+  std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
+  std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
+  while (!node_queue.empty()) {
+    TNode<RTNode>* curr_node = RTUtil::getFrontAndPop(node_queue);
+    RTUtil::addListToQueue(node_queue, curr_node->get_child_list());
+
+    std::vector<TNode<RTNode>*> box_node_list;
+    std::vector<TNode<RTNode>*> bridge_node_list;
+    for (TNode<RTNode>* child_node : curr_node->get_child_list()) {
+      PlanarCoord& curr_grid_coord = curr_node->value().get_first_guide().get_grid_coord();
+      PlanarCoord& child_grid_coord = child_node->value().get_first_guide().get_grid_coord();
+      if (curr_grid_coord == child_grid_coord) {
+        box_node_list.push_back(child_node);
+      } else {
+        bridge_node_list.push_back(child_node);
+      }
+    }
+    TNode<RTNode>* merged_node = curr_node;
+    if (RTUtil::exist(origin_to_merged_map, curr_node)) {
+      merged_node = origin_to_merged_map[curr_node];
+    }
+    for (TNode<RTNode>* child_node : box_node_list) {
+      buildDRNode(merged_node, child_node);
+      origin_to_merged_map[child_node] = merged_node;
+      delete_node_list.push_back(child_node);
+    }
+    for (TNode<RTNode>* child_node : bridge_node_list) {
+      buildTANode(merged_node, child_node);
+    }
+  }
+  for (TNode<RTNode>* delete_node : delete_node_list) {
+    delete delete_node;
+  }
+}
+
+void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
+{
+  irt_int child_layer_idx = child_node->value().get_first_guide().get_layer_idx();
+  Guide& first_guide = parent_node->value().get_first_guide();
+  Guide& second_guide = parent_node->value().get_second_guide();
+  first_guide.set_layer_idx(std::min(first_guide.get_layer_idx(), child_layer_idx));
+  second_guide.set_layer_idx(std::max(second_guide.get_layer_idx(), child_layer_idx));
+
+  std::set<irt_int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
+  std::set<irt_int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
+  parent_pin_idx_set.insert(child_pin_idx_set.begin(), child_pin_idx_set.end());
+
+  parent_node->addChildren(child_node->get_child_list());
+  parent_node->delChild(child_node);
+}
+
+void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
+{
+  Guide first_guide = parent_node->value().get_first_guide();
+  Guide second_guide = child_node->value().get_first_guide();
+  first_guide.set_layer_idx(second_guide.get_layer_idx());
+  if (!CmpPlanarCoordByXASC()(first_guide.get_grid_coord(), second_guide.get_grid_coord())) {
+    std::swap(first_guide, second_guide);
+  }
+  RTNode rt_node;
+  rt_node.set_first_guide(first_guide);
+  rt_node.set_second_guide(second_guide);
+
+  TNode<RTNode>* bridge_node = new TNode<RTNode>(rt_node);
+  parent_node->addChild(bridge_node);
+  bridge_node->addChild(child_node);
+  parent_node->delChild(child_node);
+}
+
+void GlobalRouter::updateOriginGRResultTree(GRModel& gr_model)
+{
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    Net* origin_net = gr_net.get_origin_net();
+    origin_net->set_gr_result_tree(gr_net.get_gr_result_tree());
+  }
+}
+
+#endif
+
+#if 0  // plot gr_model
 
 void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 {
@@ -1556,275 +1839,6 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     gp_gds.addStruct(net_struct);
   }
   GP_INST.plot(gp_gds, gr_temp_directory_path + "gr_model.gds", false, false);
-}
-
-#endif
-
-#if 1  // update gr_model
-
-void GlobalRouter::updateGRModel(GRModel& gr_model)
-{
-#pragma omp parallel for
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    initRoutingResult(gr_net);
-    buildRoutingResult(gr_net);
-  }
-  updateOriginGRResultTree(gr_model);
-}
-
-void GlobalRouter::initRoutingResult(GRNet& gr_net)
-{
-  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
-  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
-  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
-    }
-  }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
-  std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
-      = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
-  gr_net.set_gr_result_tree(RTUtil::convertTree(coord_tree, convert, key_coord_pin_map));
-}
-
-RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-
-  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
-
-  RTNode rt_node;
-  rt_node.set_first_guide(guide);
-  rt_node.set_second_guide(guide);
-  if (RTUtil::exist(key_coord_pin_map, coord)) {
-    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
-  }
-  return rt_node;
-}
-
-void GlobalRouter::buildRoutingResult(GRNet& gr_net)
-{
-  if (gr_net.get_gr_result_tree().get_root() == nullptr) {
-    return;
-  }
-  std::vector<TNode<RTNode>*> delete_node_list;
-  std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
-  std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
-  while (!node_queue.empty()) {
-    TNode<RTNode>* curr_node = RTUtil::getFrontAndPop(node_queue);
-    RTUtil::addListToQueue(node_queue, curr_node->get_child_list());
-
-    std::vector<TNode<RTNode>*> box_node_list;
-    std::vector<TNode<RTNode>*> bridge_node_list;
-    for (TNode<RTNode>* child_node : curr_node->get_child_list()) {
-      PlanarCoord& curr_grid_coord = curr_node->value().get_first_guide().get_grid_coord();
-      PlanarCoord& child_grid_coord = child_node->value().get_first_guide().get_grid_coord();
-      if (curr_grid_coord == child_grid_coord) {
-        box_node_list.push_back(child_node);
-      } else {
-        bridge_node_list.push_back(child_node);
-      }
-    }
-    TNode<RTNode>* merged_node = curr_node;
-    if (RTUtil::exist(origin_to_merged_map, curr_node)) {
-      merged_node = origin_to_merged_map[curr_node];
-    }
-    for (TNode<RTNode>* child_node : box_node_list) {
-      buildDRNode(merged_node, child_node);
-      origin_to_merged_map[child_node] = merged_node;
-      delete_node_list.push_back(child_node);
-    }
-    for (TNode<RTNode>* child_node : bridge_node_list) {
-      buildTANode(merged_node, child_node);
-    }
-  }
-  for (TNode<RTNode>* delete_node : delete_node_list) {
-    delete delete_node;
-  }
-}
-
-void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
-{
-  irt_int child_layer_idx = child_node->value().get_first_guide().get_layer_idx();
-  Guide& first_guide = parent_node->value().get_first_guide();
-  Guide& second_guide = parent_node->value().get_second_guide();
-  first_guide.set_layer_idx(std::min(first_guide.get_layer_idx(), child_layer_idx));
-  second_guide.set_layer_idx(std::max(second_guide.get_layer_idx(), child_layer_idx));
-
-  std::set<irt_int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
-  std::set<irt_int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
-  parent_pin_idx_set.insert(child_pin_idx_set.begin(), child_pin_idx_set.end());
-
-  parent_node->addChildren(child_node->get_child_list());
-  parent_node->delChild(child_node);
-}
-
-void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
-{
-  Guide first_guide = parent_node->value().get_first_guide();
-  Guide second_guide = child_node->value().get_first_guide();
-  first_guide.set_layer_idx(second_guide.get_layer_idx());
-  if (!CmpPlanarCoordByXASC()(first_guide.get_grid_coord(), second_guide.get_grid_coord())) {
-    std::swap(first_guide, second_guide);
-  }
-  RTNode rt_node;
-  rt_node.set_first_guide(first_guide);
-  rt_node.set_second_guide(second_guide);
-
-  TNode<RTNode>* bridge_node = new TNode<RTNode>(rt_node);
-  parent_node->addChild(bridge_node);
-  bridge_node->addChild(child_node);
-  parent_node->delChild(child_node);
-}
-
-void GlobalRouter::updateOriginGRResultTree(GRModel& gr_model)
-{
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    Net* origin_net = gr_net.get_origin_net();
-    origin_net->set_gr_result_tree(gr_net.get_gr_result_tree());
-  }
-}
-
-#endif
-
-#if 1  // report gr_model
-
-void GlobalRouter::reportGRModel(GRModel& gr_model)
-{
-  countGRModel(gr_model);
-  reportTable(gr_model);
-}
-
-void GlobalRouter::countGRModel(GRModel& gr_model)
-{
-  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-  GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
-  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
-  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
-
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
-      Guide& first_guide = node->value().get_first_guide();
-      irt_int first_layer_idx = first_guide.get_layer_idx();
-      Guide& second_guide = node->value().get_second_guide();
-      irt_int second_layer_idx = second_guide.get_layer_idx();
-
-      if (first_layer_idx == second_layer_idx) {
-        double wire_length = RTUtil::getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
-        routing_wire_length_map[first_layer_idx] += wire_length;
-      } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
-        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-          cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
-        }
-      }
-    }
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    GridMap<GRNode>& node_map = gr_model.get_layer_node_map()[routing_layer.get_layer_idx()];
-    for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
-      for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
-        GRNode& gr_node = node_map[grid_x][grid_y];
-        double remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
-        overflow_list.push_back(remain != 0 ? (-1 * remain / gr_node.get_resource_supply()) : 0);
-      }
-    }
-  }
-  double total_wire_length = 0;
-  irt_int total_via_number = 0;
-  double max_overflow = -DBL_MAX;
-  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    total_wire_length += wire_length;
-  }
-  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
-    total_via_number += via_number;
-  }
-  for (double overflow : overflow_list) {
-    max_overflow = std::max(max_overflow, overflow);
-  }
-  gr_model_stat.set_total_wire_length(total_wire_length);
-  gr_model_stat.set_total_via_number(total_via_number);
-  gr_model_stat.set_max_overflow(max_overflow);
-}
-
-void GlobalRouter::reportTable(GRModel& gr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-
-  GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
-  std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
-  std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
-  double total_wire_length = gr_model_stat.get_total_wire_length();
-  irt_int total_via_number = gr_model_stat.get_total_via_number();
-  double max_overflow = gr_model_stat.get_max_overflow();
-
-  // report wire info
-  fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
-  wire_table << fort::header << "Routing Layer"
-             << "Wire Length / um" << fort::endr;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
-    wire_table << routing_layer.get_layer_name()
-               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
-  }
-  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
-
-  // report via info
-  fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_STYLE);
-  via_table << fort::header << "Cut Layer"
-            << "Via Number" << fort::endr;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    irt_int via_number = cut_via_number_map[cut_layer.get_layer_idx()];
-    via_table << cut_layer.get_layer_name() << RTUtil::getString(via_number, "(", RTUtil::getPercentage(via_number, total_via_number), "%)")
-              << fort::endr;
-  }
-  via_table << fort::header << "Total" << total_via_number << fort::endr;
-
-  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
-  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
-  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
-    std::string table_str;
-    if (i < wire_str_list.size()) {
-      table_str += wire_str_list[i];
-    }
-    table_str += " ";
-    if (i < via_str_list.size()) {
-      table_str += via_str_list[i];
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
-
-  // report overflow info
-  GridMap<double> overflow_map = RTUtil::getRangeNumRatioMap(overflow_list);
-
-  fort::char_table overflow_table;
-  overflow_table.set_border_style(FT_SOLID_STYLE);
-  overflow_table << fort::header << "Overflow"
-                 << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < overflow_map.get_y_size(); y_idx++) {
-    double left = overflow_map[0][y_idx];
-    double right = overflow_map[1][y_idx];
-    std::string range_str;
-    if (y_idx == overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_overflow, "]");
-    } else {
-      range_str = RTUtil::getString("[", left, ",", right, ")");
-    }
-    overflow_table << range_str << RTUtil::getString(overflow_map[2][y_idx], "(", overflow_map[3][y_idx], "%)") << fort::endr;
-  }
-  overflow_table << fort::header << "Total" << overflow_list.size() << fort::endr;
-  for (std::string table_str : RTUtil::splitString(overflow_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
 }
 
 #endif
