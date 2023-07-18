@@ -14,17 +14,16 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "HierPartition.hh"
-namespace ipl::imp {
-void HierParttion::init()
+#pragma once
+
+namespace imp {
+
+enum class LogLevel
 {
-  std::vector<FPInst*> std_cell_list = _mdb->get_design()->get_std_cell_list();
-  std::vector<FPInst*> macro_list = _mdb->get_design()->get_macro_list();
-  for (FPInst* std_cell : std_cell_list) {
-    _top_module->add_inst(std_cell);
-  }
-  for (FPInst* macro : macro_list) {
-    _top_module->add_inst(macro);
-  }
-}
-}  // namespace ipl::imp
+  kNone = 0,
+  kInfo = 1,
+  kWarning = 2,
+  kError = 3
+};
+
+}  // namespace imp

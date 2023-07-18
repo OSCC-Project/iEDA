@@ -11,14 +11,14 @@ add_subdirectory(${IMP_SOLVER})
 add_subdirectory(${IMP_UTILITY})
 
 add_library(imp_source
-    ${IMP_SOURCE}/MacroPlacer2.cc
+    ${IMP_SOURCE}/MP.cc
 )
 
 target_link_libraries(imp_source
-    PUBLIC
+    PRIVATE
         imp-datamanager
-        # imp_module
-        # imp_solver
+        imp-structure
+        imp-module
         # imp_utility
 )
 
