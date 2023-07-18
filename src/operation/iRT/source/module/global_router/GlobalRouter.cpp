@@ -569,6 +569,7 @@ void GlobalRouter::iterative(GRModel& gr_model)
     // sortGRModel(gr_model);
     // resetGRModel(gr_model);
     routeGRModel(gr_model);
+    processGRModel(gr_model);
     reportGRModel(gr_model);
 
     LOG_INST.info(Loc::current(), "****** End Iteration(", stage, "/", gr_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
@@ -1178,6 +1179,121 @@ double GlobalRouter::getEstimateCornerCost(GRModel& gr_model, GRNode* start_node
   return corner_cost;
 }
 
+void GlobalRouter::processGRModel(GRModel& gr_model)
+{
+#pragma omp parallel for
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    initRoutingResult(gr_net);
+    buildRoutingResult(gr_net);
+  }
+}
+
+void GlobalRouter::initRoutingResult(GRNet& gr_net)
+{
+  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
+  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
+      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
+    }
+  }
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
+  std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
+      = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
+  gr_net.set_gr_result_tree(RTUtil::convertTree(coord_tree, convert, key_coord_pin_map));
+}
+
+RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+
+  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
+
+  RTNode rt_node;
+  rt_node.set_first_guide(guide);
+  rt_node.set_second_guide(guide);
+  if (RTUtil::exist(key_coord_pin_map, coord)) {
+    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
+  }
+  return rt_node;
+}
+
+void GlobalRouter::buildRoutingResult(GRNet& gr_net)
+{
+  if (gr_net.get_gr_result_tree().get_root() == nullptr) {
+    return;
+  }
+  std::vector<TNode<RTNode>*> delete_node_list;
+  std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
+  std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
+  while (!node_queue.empty()) {
+    TNode<RTNode>* curr_node = RTUtil::getFrontAndPop(node_queue);
+    RTUtil::addListToQueue(node_queue, curr_node->get_child_list());
+
+    std::vector<TNode<RTNode>*> box_node_list;
+    std::vector<TNode<RTNode>*> bridge_node_list;
+    for (TNode<RTNode>* child_node : curr_node->get_child_list()) {
+      PlanarCoord& curr_grid_coord = curr_node->value().get_first_guide().get_grid_coord();
+      PlanarCoord& child_grid_coord = child_node->value().get_first_guide().get_grid_coord();
+      if (curr_grid_coord == child_grid_coord) {
+        box_node_list.push_back(child_node);
+      } else {
+        bridge_node_list.push_back(child_node);
+      }
+    }
+    TNode<RTNode>* merged_node = curr_node;
+    if (RTUtil::exist(origin_to_merged_map, curr_node)) {
+      merged_node = origin_to_merged_map[curr_node];
+    }
+    for (TNode<RTNode>* child_node : box_node_list) {
+      buildDRNode(merged_node, child_node);
+      origin_to_merged_map[child_node] = merged_node;
+      delete_node_list.push_back(child_node);
+    }
+    for (TNode<RTNode>* child_node : bridge_node_list) {
+      buildTANode(merged_node, child_node);
+    }
+  }
+  for (TNode<RTNode>* delete_node : delete_node_list) {
+    delete delete_node;
+  }
+}
+
+void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
+{
+  irt_int child_layer_idx = child_node->value().get_first_guide().get_layer_idx();
+  Guide& first_guide = parent_node->value().get_first_guide();
+  Guide& second_guide = parent_node->value().get_second_guide();
+  first_guide.set_layer_idx(std::min(first_guide.get_layer_idx(), child_layer_idx));
+  second_guide.set_layer_idx(std::max(second_guide.get_layer_idx(), child_layer_idx));
+
+  std::set<irt_int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
+  std::set<irt_int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
+  parent_pin_idx_set.insert(child_pin_idx_set.begin(), child_pin_idx_set.end());
+
+  parent_node->addChildren(child_node->get_child_list());
+  parent_node->delChild(child_node);
+}
+
+void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
+{
+  Guide first_guide = parent_node->value().get_first_guide();
+  Guide second_guide = child_node->value().get_first_guide();
+  first_guide.set_layer_idx(second_guide.get_layer_idx());
+  if (!CmpPlanarCoordByXASC()(first_guide.get_grid_coord(), second_guide.get_grid_coord())) {
+    std::swap(first_guide, second_guide);
+  }
+  RTNode rt_node;
+  rt_node.set_first_guide(first_guide);
+  rt_node.set_second_guide(second_guide);
+
+  TNode<RTNode>* bridge_node = new TNode<RTNode>(rt_node);
+  parent_node->addChild(bridge_node);
+  bridge_node->addChild(child_node);
+  parent_node->delChild(child_node);
+}
+
 void GlobalRouter::reportGRModel(GRModel& gr_model)
 {
   countGRModel(gr_model);
@@ -1320,122 +1436,6 @@ void GlobalRouter::reportTable(GRModel& gr_model)
 #if 1  // update
 
 void GlobalRouter::update(GRModel& gr_model)
-{
-#pragma omp parallel for
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    initRoutingResult(gr_net);
-    buildRoutingResult(gr_net);
-  }
-  updateOriginGRResultTree(gr_model);
-}
-
-void GlobalRouter::initRoutingResult(GRNet& gr_net)
-{
-  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
-  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
-  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
-    }
-  }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
-  std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
-      = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
-  gr_net.set_gr_result_tree(RTUtil::convertTree(coord_tree, convert, key_coord_pin_map));
-}
-
-RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-
-  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
-
-  RTNode rt_node;
-  rt_node.set_first_guide(guide);
-  rt_node.set_second_guide(guide);
-  if (RTUtil::exist(key_coord_pin_map, coord)) {
-    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
-  }
-  return rt_node;
-}
-
-void GlobalRouter::buildRoutingResult(GRNet& gr_net)
-{
-  if (gr_net.get_gr_result_tree().get_root() == nullptr) {
-    return;
-  }
-  std::vector<TNode<RTNode>*> delete_node_list;
-  std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
-  std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
-  while (!node_queue.empty()) {
-    TNode<RTNode>* curr_node = RTUtil::getFrontAndPop(node_queue);
-    RTUtil::addListToQueue(node_queue, curr_node->get_child_list());
-
-    std::vector<TNode<RTNode>*> box_node_list;
-    std::vector<TNode<RTNode>*> bridge_node_list;
-    for (TNode<RTNode>* child_node : curr_node->get_child_list()) {
-      PlanarCoord& curr_grid_coord = curr_node->value().get_first_guide().get_grid_coord();
-      PlanarCoord& child_grid_coord = child_node->value().get_first_guide().get_grid_coord();
-      if (curr_grid_coord == child_grid_coord) {
-        box_node_list.push_back(child_node);
-      } else {
-        bridge_node_list.push_back(child_node);
-      }
-    }
-    TNode<RTNode>* merged_node = curr_node;
-    if (RTUtil::exist(origin_to_merged_map, curr_node)) {
-      merged_node = origin_to_merged_map[curr_node];
-    }
-    for (TNode<RTNode>* child_node : box_node_list) {
-      buildDRNode(merged_node, child_node);
-      origin_to_merged_map[child_node] = merged_node;
-      delete_node_list.push_back(child_node);
-    }
-    for (TNode<RTNode>* child_node : bridge_node_list) {
-      buildTANode(merged_node, child_node);
-    }
-  }
-  for (TNode<RTNode>* delete_node : delete_node_list) {
-    delete delete_node;
-  }
-}
-
-void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
-{
-  irt_int child_layer_idx = child_node->value().get_first_guide().get_layer_idx();
-  Guide& first_guide = parent_node->value().get_first_guide();
-  Guide& second_guide = parent_node->value().get_second_guide();
-  first_guide.set_layer_idx(std::min(first_guide.get_layer_idx(), child_layer_idx));
-  second_guide.set_layer_idx(std::max(second_guide.get_layer_idx(), child_layer_idx));
-
-  std::set<irt_int>& parent_pin_idx_set = parent_node->value().get_pin_idx_set();
-  std::set<irt_int>& child_pin_idx_set = child_node->value().get_pin_idx_set();
-  parent_pin_idx_set.insert(child_pin_idx_set.begin(), child_pin_idx_set.end());
-
-  parent_node->addChildren(child_node->get_child_list());
-  parent_node->delChild(child_node);
-}
-
-void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
-{
-  Guide first_guide = parent_node->value().get_first_guide();
-  Guide second_guide = child_node->value().get_first_guide();
-  first_guide.set_layer_idx(second_guide.get_layer_idx());
-  if (!CmpPlanarCoordByXASC()(first_guide.get_grid_coord(), second_guide.get_grid_coord())) {
-    std::swap(first_guide, second_guide);
-  }
-  RTNode rt_node;
-  rt_node.set_first_guide(first_guide);
-  rt_node.set_second_guide(second_guide);
-
-  TNode<RTNode>* bridge_node = new TNode<RTNode>(rt_node);
-  parent_node->addChild(bridge_node);
-  bridge_node->addChild(child_node);
-  parent_node->delChild(child_node);
-}
-
-void GlobalRouter::updateOriginGRResultTree(GRModel& gr_model)
 {
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     Net* origin_net = gr_net.get_origin_net();

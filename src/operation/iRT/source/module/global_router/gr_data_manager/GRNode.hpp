@@ -35,7 +35,6 @@ class GRNode : public LayerCoord
  public:
   GRNode() = default;
   ~GRNode() = default;
-
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
