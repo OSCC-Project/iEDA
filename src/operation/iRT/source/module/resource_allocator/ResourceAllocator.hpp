@@ -68,8 +68,8 @@ void initTempObject(RAModel& ra_model);
 void checkRAModel(RAModel& ra_model);
 #endif
 
-#if 1  // allocate
-void allocate(RAModel& ra_model);
+#if 1  // iterative
+void iterative(RAModel& ra_model);
 void allocateRAModel(RAModel& ra_model);
 void calcNablaF(RAModel& ra_model, double penalty_para);
 double calcAlpha(RAModel& ra_model, double penalty_para);
