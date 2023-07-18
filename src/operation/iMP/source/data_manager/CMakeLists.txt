@@ -3,8 +3,9 @@ add_library(imp-datamanager
 )
 
 target_link_libraries(imp-datamanager
-    PUBLIC
+    PRIVATE
     imp-wrapper
+    imp-logger
 )
 target_include_directories(imp-datamanager
     PUBLIC

@@ -29,6 +29,7 @@
 #include <iostream>
 
 #include "IDBWrapper.hh"
+#include "Logger.hpp"
 #include "Rectangle.hh"
 
 namespace imp {
@@ -104,14 +105,12 @@ void DataManager::printLayoutInfo() const
   int32_t row_height = layout->get_row_height();
   int32_t site_width = layout->get_site_width();
 
-  std::cout << "Design name : " << design_name;
-  std::cout << "Database unit : " << database_unit;
-  std::cout << "Die rectangle : " << die_rect.get_ll_x() << "," << die_rect.get_ll_y() << " " << die_rect.get_ur_x() << ","
-            << die_rect.get_ur_y();
-  std::cout << "Core rectangle : " << core_rect.get_ll_x() << "," << core_rect.get_ll_y() << " " << core_rect.get_ur_x() << ","
-            << core_rect.get_ur_y();
-  std::cout << "Row height : " << row_height;
-  std::cout << "Site width : " << site_width;
+  INFO("Design name : ", design_name);
+  INFO("Database unit : ", database_unit);
+  INFO("Die rectangle : ", die_rect.get_ll_x(), ",", die_rect.get_ll_y(), " ", die_rect.get_ur_x(), ",", die_rect.get_ur_y());
+  INFO("Core rectangle : ", core_rect.get_ll_x(), ",", core_rect.get_ll_y(), " ", core_rect.get_ur_x(), ",", core_rect.get_ur_y());
+  INFO("Row height : ", row_height);
+  INFO("Site width : ", site_width);
 
   int64_t core_area = static_cast<int64_t>(core_rect.get_width()) * static_cast<int64_t>(core_rect.get_height());
   int64_t place_instance_area = 0;
@@ -149,14 +148,14 @@ void DataManager::printLayoutInfo() const
     }
   }
 
-  std::cout << "Core area : " << core_area;
-  std::cout << "Non place instance area : " << non_place_instance_area;
-  std::cout << "Place instance area : " << place_instance_area;
+  INFO("Core area : ", core_area);
+  INFO("Non place instance area : ", non_place_instance_area);
+  INFO("Place instance area : ", place_instance_area);
 
   double util = static_cast<double>(place_instance_area) / (core_area - non_place_instance_area) * 100;
-  std::cout << "Uitization(%) : " << util;
+  INFO("Uitization(%) : ", util);
   if (util > 100.1)
-    std::cerr << "Utilization exceeds 100%";
+    WARNING("Utilization exceeds 100%");
 }
 
 float DataManager::obtainUtilization()
@@ -235,7 +234,7 @@ void DataManager::printInstanceInfo() const
       } else if (cell_master->isPhysicalFiller()) {
         num_physical_insts++;
       } else {
-        std::cerr << "Instance : " + inst->get_name() + " doesn't have a cell type.";
+        ERROR("Instance : " + inst->get_name() + " doesn't have a cell type.");
       }
     }
 
@@ -246,7 +245,7 @@ void DataManager::printInstanceInfo() const
     } else if (inst->isOutsideInstance()) {
       num_outside_insts++;
     } else {
-      // std::cerr << "Instance : " + inst->get_name() + " doesn't have a instance type.";
+      ERROR("Instance : " + inst->get_name() + " doesn't have a instance type.");
     }
 
     if (inst->isUnPlaced()) {
@@ -256,25 +255,25 @@ void DataManager::printInstanceInfo() const
     } else if (inst->isFixed()) {
       num_fixed_instances++;
     } else {
-      std::cerr << "Instance : " + inst->get_name() + " doesn't have a instance state.";
+      ERROR("Instance : " + inst->get_name() + " doesn't have a instance state.");
     }
   }
 
-  std::cout << "Instances Num : " << num_instances;
-  std::cout << "1. Macro Num : " << num_macros;
-  std::cout << "2. Stdcell Num : " << num_instances - num_macros;
-  std::cout << "2.1 Logic Instances : " << num_logic_insts;
-  std::cout << "2.2 Flipflops : " << num_flipflop_cells;
-  std::cout << "2.3 Clock Buffers : " << num_clock_buffers;
-  std::cout << "2.4 Logic Buffers : " << num_logic_buffers;
-  std::cout << "2.5 IO Cells : " << num_io_cells;
-  std::cout << "2.6 Physical Instances : " << num_physical_insts;
-  std::cout << "Core Outside Instances : " << num_outside_insts;
-  std::cout << "Fake Instances : " << num_fake_instances;
-  std::cout << "Unplaced Instances Num : " << num_unplaced_instances;
-  std::cout << "Placed Instances Num : " << num_placed_instances;
-  std::cout << "Fixed Instances Num : " << num_fixed_instances;
-  std::cout << "Optional CellMaster Num : " << num_cell_masters;
+  INFO("Instances Num : ", num_instances);
+  INFO("1. Macro Num : ", num_macros);
+  INFO("2. Stdcell Num : ", num_instances - num_macros);
+  INFO("2.1 Logic Instances : ", num_logic_insts);
+  INFO("2.2 Flipflops : ", num_flipflop_cells);
+  INFO("2.3 Clock Buffers : ", num_clock_buffers);
+  INFO("2.4 Logic Buffers : ", num_logic_buffers);
+  INFO("2.5 IO Cells : ", num_io_cells);
+  INFO("2.6 Physical Instances : ", num_physical_insts);
+  INFO("Core Outside Instances : ", num_outside_insts);
+  INFO("Fake Instances : ", num_fake_instances);
+  INFO("Unplaced Instances Num : ", num_unplaced_instances);
+  INFO("Placed Instances Num : ", num_placed_instances);
+  INFO("Fixed Instances Num : ", num_fixed_instances);
+  INFO("Optional CellMaster Num : ", num_cell_masters);
 }
 
 void DataManager::printNetInfo() const
@@ -315,18 +314,18 @@ void DataManager::printNetInfo() const
     }
   }
 
-  std::cout << "Nets Num : " << num_nets;
-  std::cout << "1. ClockNets Num : " << num_clock_nets;
-  std::cout << "2. ResetNets Num : " << num_reset_nets;
-  std::cout << "3. SignalNets Num : " << num_signal_nets;
-  std::cout << "4. FakeNets Num : " << num_fake_nets;
-  std::cout << "Don't Care Net Num : " << num_dontcare_nets;
+  INFO("Nets Num : ", num_nets);
+  INFO("1. ClockNets Num : ", num_clock_nets);
+  INFO("2. ResetNets Num : ", num_reset_nets);
+  INFO("3. SignalNets Num : ", num_signal_nets);
+  INFO("4. FakeNets Num : ", num_fake_nets);
+  INFO("Don't Care Net Num : ", num_dontcare_nets);
 
   if (num_no_type_nets != 0) {
-    std::cerr << "Existed Nets don't have NET_TYPE : " << num_no_type_nets;
+    ERROR("Existed Nets don't have NET_TYPE : ", num_no_type_nets);
   }
   if (num_no_state_nets != 0) {
-    std::cerr << "Existed Nets don't have NET_STATE : " << num_no_state_nets;
+    ERROR("Existed Nets don't have NET_STATE : ", num_no_state_nets);
   }
 }
 
@@ -348,14 +347,14 @@ void DataManager::printPinInfo() const
     } else if (pin->isFakePin()) {
       num_fake_pins++;
     } else {
-      std::cerr << "Pin : " + pin->get_name() + " doesn't have a pin type.";
+      ERROR("Pin : " + pin->get_name() + " doesn't have a pin type.");
     }
   }
 
-  std::cout << "Pins Num : " << num_pins;
-  std::cout << "1. IO Ports Num : " << num_io_ports;
-  std::cout << "2. Instance Ports Num : " << num_instance_ports;
-  std::cout << "3. Fake Pins Num : " << num_fake_pins;
+  INFO("Pins Num : ", num_pins);
+  INFO("1. IO Ports Num : ", num_io_ports);
+  INFO("2. Instance Ports Num : ", num_instance_ports);
+  INFO("3. Fake Pins Num : ", num_fake_pins);
 }
 
 void DataManager::printRegionInfo() const
@@ -365,7 +364,7 @@ void DataManager::printRegionInfo() const
   int32_t num_regions = 0;
   num_regions = design->get_region_list().size();
 
-  std::cout << "Regions Num : " << num_regions;
+  INFO("Regions Num : ", num_regions);
 }
 
 // void DataManager::saveVerilogForDebug(std::string path)

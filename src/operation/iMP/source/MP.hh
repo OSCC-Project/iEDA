@@ -16,15 +16,9 @@ class MacroPlacer
 
   void setDataManager(DataManager* dm);
   void setDataManager(const std::string& idb_json);
-  // open functions
-  void runMacroPlacer();
 
  private:
   //   void setConfig(Option* opt);
-  void updateDensity();
-  void addHalo();
-  void deleteHalo();
-  void writeSummary();
   void plot();
 
  private:
