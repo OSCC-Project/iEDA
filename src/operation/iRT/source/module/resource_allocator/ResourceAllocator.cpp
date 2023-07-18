@@ -62,7 +62,7 @@ ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
   RAModel ra_model = init(net_list);
-  allocate(ra_model);
+  iterative(ra_model);
   update(ra_model);
 }
 
@@ -381,9 +381,9 @@ void ResourceAllocator::checkRAModel(RAModel& ra_model)
 
 #endif
 
-#if 1  // allocate
+#if 1  // iterative
 
-void ResourceAllocator::allocate(RAModel& ra_model)
+void ResourceAllocator::iterative(RAModel& ra_model)
 {
   allocateRAModel(ra_model);
   processGRModel(ra_model);
