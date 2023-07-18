@@ -101,6 +101,12 @@ class GlobalRouter
   double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  void processGRModel(GRModel& gr_model);
+  void initRoutingResult(GRNet& gr_net);
+  RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
+  void buildRoutingResult(GRNet& gr_net);
+  void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
+  void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void reportGRModel(GRModel& gr_model);
   void countGRModel(GRModel& gr_model);
   void reportTable(GRModel& gr_model);
@@ -108,12 +114,6 @@ class GlobalRouter
 
 #if 1  // update
   void update(GRModel& gr_model);
-  void initRoutingResult(GRNet& gr_net);
-  RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
-  void buildRoutingResult(GRNet& gr_net);
-  void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void updateOriginGRResultTree(GRModel& gr_model);
 #endif
 
 #if 0  // plot gr_model

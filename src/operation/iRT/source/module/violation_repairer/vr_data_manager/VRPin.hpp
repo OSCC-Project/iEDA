@@ -29,7 +29,6 @@ class VRPin : public Pin
   VRPin() = default;
   explicit VRPin(const Pin& pin) : Pin(pin) {}
   ~VRPin() = default;
-
   // getter
 
   // setter
