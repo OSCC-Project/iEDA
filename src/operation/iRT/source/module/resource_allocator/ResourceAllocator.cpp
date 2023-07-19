@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "ResourceAllocator.hpp"
 
+#include "GDSPlotter.hpp"
 #include "RTAPI.hpp"
 #include "RTUtil.hpp"
 
@@ -386,7 +387,7 @@ void ResourceAllocator::checkRAModel(RAModel& ra_model)
 void ResourceAllocator::iterative(RAModel& ra_model)
 {
   allocateRAModel(ra_model);
-  processGRModel(ra_model);
+  processRAModel(ra_model);
   reportRAModel(ra_model);
 }
 
@@ -423,7 +424,7 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model)
   irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;       //!< 外层循环数
   irt_int ra_inner_iter_num = DM_INST.getConfig().ra_inner_iter_num;       //!< 内层循环数
 
-  for (irt_int i = 0, stage = 1; i < ra_outer_iter_num; i++, stage++) {
+  for (irt_int i = 0, epoch = 1; i < ra_outer_iter_num; i++, epoch++) {
     double penalty_para = (1 / (2 * ra_initial_penalty));
     LOG_INST.info(Loc::current(), "************* Start iteration penalty_para=", penalty_para, " *************");
     for (irt_int j = 0, iter = 1; j < ra_inner_iter_num; j++, iter++) {
@@ -433,9 +434,10 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model)
       double norm_nabla_f = calcAlpha(ra_model, penalty_para);
       double norm_square_step = updateResult(ra_model);
 
-      LOG_INST.info(Loc::current(), "Stage(", stage, "/", ra_outer_iter_num, ") Iter(", iter, "/", ra_inner_iter_num,
+      LOG_INST.info(Loc::current(), "Epoch(", epoch, "/", ra_outer_iter_num, ") Iter(", iter, "/", ra_inner_iter_num,
                     "), norm_nabla_f=", norm_nabla_f, ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
     }
+    plotRAModel(ra_model, epoch);
     ra_initial_penalty *= ra_penalty_drop_rate;
   }
 
@@ -612,7 +614,7 @@ double ResourceAllocator::updateResult(RAModel& ra_model)
   return norm_square_step;
 }
 
-void ResourceAllocator::processGRModel(RAModel& ra_model)
+void ResourceAllocator::processRAModel(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
 
@@ -772,6 +774,48 @@ void ResourceAllocator::update(RAModel& ra_model)
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
   }
+}
+
+#endif
+
+#if 1  // plot ra_model
+
+void ResourceAllocator::plotRAModel(RAModel& ra_model, irt_int epoch)
+{
+  processRAModel(ra_model);
+
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  Die& die = DM_INST.getDatabase().get_die();
+  std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+
+  GridMap<double> global_cost_map;
+  global_cost_map.init(die.getXSize(), die.getYSize());
+
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    irt_int grid_lb_x = ra_net.get_bounding_box().get_grid_lb_x();
+    irt_int grid_lb_y = ra_net.get_bounding_box().get_grid_lb_y();
+
+    GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
+    for (irt_int x = 0; x < ra_cost_map.get_x_size(); ++x) {
+      for (irt_int y = 0; y < ra_cost_map.get_y_size(); ++y) {
+        global_cost_map[grid_lb_x + x][grid_lb_y + y] += ra_cost_map[x][y];
+      }
+    }
+  }
+  GPGDS gp_gds;
+  GPStruct global_cost_map_struct("global_cost_map");
+  for (irt_int x = 0; x < global_cost_map.get_x_size(); ++x) {
+    for (irt_int y = 0; y < global_cost_map.get_y_size(); ++y) {
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(static_cast<irt_int>(global_cost_map[x][y] * 20));
+      gp_boundary.set_data_type(0);
+      gp_boundary.set_rect(RTUtil::getRealRect(PlanarCoord(x, y), gcell_axis));
+      global_cost_map_struct.push(gp_boundary);
+    }
+  }
+  gp_gds.addStruct(global_cost_map_struct);
+
+  GP_INST.plot(gp_gds, RTUtil::getString(ra_temp_directory_path, "ra_model_", epoch, ".gds"), false, false);
 }
 
 #endif
