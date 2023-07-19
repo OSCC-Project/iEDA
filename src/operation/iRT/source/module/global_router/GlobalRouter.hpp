@@ -47,16 +47,15 @@ class GlobalRouter
   GlobalRouter& operator=(const GlobalRouter& other) = delete;
   GlobalRouter& operator=(GlobalRouter&& other) = delete;
   // function
-  void init(Config& config, Database& database);
   void routeNetList(std::vector<Net>& net_list);
 
-#if 1  // build gr_model
+#if 1  // init
+  GRModel init(std::vector<Net>& net_list);
   GRModel initGRModel(std::vector<Net>& net_list);
   std::vector<GRNet> convertToGRNetList(std::vector<Net>& net_list);
   GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
-  void buildNodeSupply(GRModel& gr_model);
   void updateNetRectMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect real_rect);
   void cutBlockageList(GRModel& gr_model);
@@ -65,13 +64,11 @@ class GlobalRouter
   void updateNodeSupply(GRModel& gr_model);
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
   void buildAccessMap(GRModel& gr_model);
-#endif
-
-#if 1  // check gr_model
   void checkGRModel(GRModel& gr_model);
 #endif
 
-#if 1  // route gr_model
+#if 1  // iterative
+  void iterative(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void initSingleNet(GRModel& gr_model, GRNet& gr_net);
@@ -104,26 +101,23 @@ class GlobalRouter
   double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-#endif
-
-#if 1  // plot gr_model
-  void plotGRModel(GRModel& gr_model, irt_int curr_net_idx = -1);
-#endif
-
-#if 1  // update gr_model
-  void updateGRModel(GRModel& gr_model);
+  void processGRModel(GRModel& gr_model);
   void initRoutingResult(GRNet& gr_net);
   RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
   void buildRoutingResult(GRNet& gr_net);
   void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void updateOriginGRResultTree(GRModel& gr_model);
-#endif
-
-#if 1  // report gr_model
   void reportGRModel(GRModel& gr_model);
   void countGRModel(GRModel& gr_model);
   void reportTable(GRModel& gr_model);
+#endif
+
+#if 1  // update
+  void update(GRModel& gr_model);
+#endif
+
+#if 0  // plot gr_model
+void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
 #endif
 };
 

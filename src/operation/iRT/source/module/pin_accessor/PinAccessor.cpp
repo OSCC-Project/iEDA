@@ -66,16 +66,20 @@ PinAccessor* PinAccessor::_pa_instance = nullptr;
 
 void PinAccessor::accessNetList(std::vector<Net>& net_list)
 {
-  PAModel pa_model = initPAModel(net_list);
-  buildPAModel(pa_model);
-  accessPAModel(pa_model);
-  checkPAModel(pa_model);
-  updatePAModel(pa_model);
-  countPAModel(pa_model);
-  reportPAModel(pa_model);
+  PAModel pa_model = init(net_list);
+  iterative(pa_model);
+  update(pa_model);
 }
 
-#if 1  // build pa_model
+#if 1  // init
+
+PAModel PinAccessor::init(std::vector<Net>& net_list)
+{
+  PAModel pa_model = initPAModel(net_list);
+  buildPAModel(pa_model);
+  checkPAModel(pa_model);
+  return pa_model;
+}
 
 PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
 {
@@ -92,7 +96,7 @@ PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
       pa_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
       pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
-      for (PASourceType pa_source_type : {PASourceType::kBlockage, PASourceType::kEnclosure}) {
+      for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kEnclosure}) {
         pa_gcell.get_source_region_query_map()[pa_source_type] = RTAPI_INST.initRegionQuery();
       }
     }
@@ -139,21 +143,21 @@ void PinAccessor::updateNetRectMap(PAModel& pa_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockage, -1, blockage_real_rect, true);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, true);
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockage, -1, blockage_real_rect, false);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, false);
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, true);
       }
       for (EXTLayerRect& cut_shape : pa_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), shape_real_rect, false);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, false);
       }
     }
   }
@@ -193,7 +197,7 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
     for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
-      for (auto& [routing_layer_idx, net_rect_map] : pa_gcell.get_source_routing_net_rect_map()[PASourceType::kBlockage]) {
+      for (auto& [routing_layer_idx, net_rect_map] : pa_gcell.get_source_routing_net_rect_map()[PASourceType::kBlockAndPin]) {
         RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
 
         std::vector<LayerRect> new_blockage_list;
@@ -232,9 +236,58 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
   }
 }
 
+void PinAccessor::checkPAModel(PAModel& pa_model)
+{
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+  for (irt_int x_idx = 0; x_idx < pa_gcell_map.get_x_size(); x_idx++) {
+    for (irt_int y_idx = 0; y_idx < pa_gcell_map.get_y_size(); y_idx++) {
+      PAGCell& pa_gcell = pa_gcell_map[x_idx][y_idx];
+      for (auto& [source, routing_net_rect_map] : pa_gcell.get_source_routing_net_rect_map()) {
+        for (auto& [layer_idx, net_rect_map] : routing_net_rect_map) {
+          for (auto& [net_idx, rect_list] : net_rect_map) {
+            for (LayerRect& rect : rect_list) {
+              if (layer_idx == rect.get_layer_idx()) {
+                continue;
+              }
+              LOG_INST.error(Loc::current(), "The layer of source routing net rect is different!");
+            }
+          }
+        }
+      }
+      for (auto& [source, cut_net_rect_map] : pa_gcell.get_source_cut_net_rect_map()) {
+        for (auto& [layer_idx, net_rect_map] : cut_net_rect_map) {
+          for (auto& [net_idx, rect_list] : net_rect_map) {
+            for (LayerRect& rect : rect_list) {
+              if (layer_idx == rect.get_layer_idx()) {
+                continue;
+              }
+              LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 #endif
 
-#if 1  // access pa_model
+#if 1  // iterative
+
+void PinAccessor::iterative(PAModel& pa_model)
+{
+  irt_int pa_iter_num = 1;
+  for (irt_int stage = 1; stage <= pa_iter_num; stage++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start PinAccessor Iteration(", stage, "/", pa_iter_num, ") ******");
+
+    accessPAModel(pa_model);
+    processPAModel(pa_model);
+    reportPAModel(pa_model);
+
+    LOG_INST.info(Loc::current(), "****** End Iteration(", stage, "/", pa_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+  }
+}
 
 void PinAccessor::accessPAModel(PAModel& pa_model)
 {
@@ -427,7 +480,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
           for (auto& [curr_net_idx, net_rect_list] :
-               pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockage][enclosure.get_layer_idx()]) {
+               pa_gcell_map[x][y].get_source_routing_net_rect_map()[PASourceType::kBlockAndPin][enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
@@ -574,7 +627,7 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                   LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
-        if (!hasViolation(pa_model, PASourceType::kBlockage, pa_net.get_net_idx(), segment_list)) {
+        if (!hasViolation(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), segment_list)) {
           legal_access_point_list.push_back(access_point);
           break;
         }
@@ -652,6 +705,34 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
 
 void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
 {
+  // check access point
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+      if (access_point_list.empty()) {
+        LOG_INST.error(Loc::current(), "The pin ", pa_pin.get_pin_idx(), " access point list is empty!");
+      }
+
+      for (AccessPoint& access_point : access_point_list) {
+        if (access_point.get_type() == AccessPointType::kNone) {
+          LOG_INST.error(Loc::current(), "The access point type is wrong!");
+        }
+        bool is_legal = false;
+        for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
+              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
+            is_legal = true;
+            break;
+          }
+        }
+        if (!is_legal) {
+          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
+        }
+      }
+    }
+  }
+
+  // update enclosure
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
@@ -782,75 +863,7 @@ void PinAccessor::selectByNetDistance(PANet& pa_net)
   }
 }
 
-#endif
-
-#if 1  // check pa_model
-
-void PinAccessor::checkPAModel(PAModel& pa_model)
-{
-  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
-  for (irt_int x_idx = 0; x_idx < pa_gcell_map.get_x_size(); x_idx++) {
-    for (irt_int y_idx = 0; y_idx < pa_gcell_map.get_y_size(); y_idx++) {
-      PAGCell& pa_gcell = pa_gcell_map[x_idx][y_idx];
-      for (auto& [source, routing_net_rect_map] : pa_gcell.get_source_routing_net_rect_map()) {
-        for (auto& [layer_idx, net_rect_map] : routing_net_rect_map) {
-          for (auto& [net_idx, rect_list] : net_rect_map) {
-            for (LayerRect& rect : rect_list) {
-              if (layer_idx == rect.get_layer_idx()) {
-                continue;
-              }
-              LOG_INST.error(Loc::current(), "The layer of source routing net rect is different!");
-            }
-          }
-        }
-      }
-      for (auto& [source, cut_net_rect_map] : pa_gcell.get_source_cut_net_rect_map()) {
-        for (auto& [layer_idx, net_rect_map] : cut_net_rect_map) {
-          for (auto& [net_idx, rect_list] : net_rect_map) {
-            for (LayerRect& rect : rect_list) {
-              if (layer_idx == rect.get_layer_idx()) {
-                continue;
-              }
-              LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "The pin ", pa_pin.get_pin_idx(), " access point list is empty!");
-      }
-
-      for (AccessPoint& access_point : access_point_list) {
-        if (access_point.get_type() == AccessPointType::kNone) {
-          LOG_INST.error(Loc::current(), "The access point type is wrong!");
-        }
-        bool is_legal = false;
-        for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
-              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
-            is_legal = true;
-            break;
-          }
-        }
-        if (!is_legal) {
-          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
-        }
-      }
-    }
-  }
-}
-
-#endif
-
-#if 1  // update pa_model
-
-void PinAccessor::updatePAModel(PAModel& pa_model)
+void PinAccessor::processPAModel(PAModel& pa_model)
 {
 #pragma omp parallel for
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
@@ -858,7 +871,6 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
     buildAccessPointList(pa_net);
     buildDrivingPin(pa_net);
   }
-  updateOriginPAResult(pa_model);
 }
 
 void PinAccessor::buildDrivingPin(PANet& pa_net)
@@ -874,32 +886,11 @@ void PinAccessor::buildDrivingPin(PANet& pa_net)
   LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
 }
 
-void PinAccessor::updateOriginPAResult(PAModel& pa_model)
+void PinAccessor::reportPAModel(PAModel& pa_model)
 {
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    std::vector<Pin>& pin_list = pa_net.get_origin_net()->get_pin_list();
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      Pin& pin = pin_list[pa_pin.get_pin_idx()];
-      if (pin.get_pin_idx() != pa_pin.get_pin_idx()) {
-        LOG_INST.error(Loc::current(), "The pin idx is not equal!");
-      }
-      pin.set_access_point_list(pa_pin.get_access_point_list());
-    }
-
-    Pin& driving_pin = pa_net.get_origin_net()->get_driving_pin();
-    PAPin& pa_driving_pin = pa_net.get_pa_driving_pin();
-    if (driving_pin.get_pin_idx() != pa_driving_pin.get_pin_idx()) {
-      LOG_INST.error(Loc::current(), "The pin idx is not equal!");
-    }
-    driving_pin.set_access_point_list(pa_driving_pin.get_access_point_list());
-
-    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
-  }
+  countPAModel(pa_model);
+  reportTable(pa_model);
 }
-
-#endif
-
-#if 1  // report pa_model
 
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
@@ -945,7 +936,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   pa_mode_stat.set_total_access_point_num(total_access_point_num);
 }
 
-void PinAccessor::reportPAModel(PAModel& pa_model)
+void PinAccessor::reportTable(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -1000,4 +991,30 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
 
 #endif
 
+#if 1  // update
+
+void PinAccessor::update(PAModel& pa_model)
+{
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    std::vector<Pin>& pin_list = pa_net.get_origin_net()->get_pin_list();
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      Pin& pin = pin_list[pa_pin.get_pin_idx()];
+      if (pin.get_pin_idx() != pa_pin.get_pin_idx()) {
+        LOG_INST.error(Loc::current(), "The pin idx is not equal!");
+      }
+      pin.set_access_point_list(pa_pin.get_access_point_list());
+    }
+
+    Pin& driving_pin = pa_net.get_origin_net()->get_driving_pin();
+    PAPin& pa_driving_pin = pa_net.get_pa_driving_pin();
+    if (driving_pin.get_pin_idx() != pa_driving_pin.get_pin_idx()) {
+      LOG_INST.error(Loc::current(), "The pin idx is not equal!");
+    }
+    driving_pin.set_access_point_list(pa_driving_pin.get_access_point_list());
+
+    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
+  }
+}
+
+#endif
 }  // namespace irt
