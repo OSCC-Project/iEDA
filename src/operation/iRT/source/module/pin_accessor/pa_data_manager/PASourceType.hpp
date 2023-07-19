@@ -22,41 +22,33 @@
 
 namespace irt {
 
-enum class SortType
+enum class PASourceType
 {
   kNone,
-  kClockPriority,
-  kRoutingAreaASC,
-  kLengthWidthRatioDESC,
-  kPinNumDESC
+  kBlockAndPin,
+  kEnclosure
 };
 
-struct GetSortTypeName
+struct GetPASourceTypeName
 {
-  std::string operator()(const SortType& sort_type) const
+  std::string operator()(const PASourceType& ta_source_type) const
   {
-    std::string sort_name;
-    switch (sort_type) {
-      case SortType::kNone:
-        sort_name = "none";
+    std::string ta_source_type_name;
+    switch (ta_source_type) {
+      case PASourceType::kNone:
+        ta_source_type_name = "none";
         break;
-      case SortType::kClockPriority:
-        sort_name = "clock_priority";
+      case PASourceType::kBlockAndPin:
+        ta_source_type_name = "block_and_pin";
         break;
-      case SortType::kRoutingAreaASC:
-        sort_name = "routing_area_asc";
-        break;
-      case SortType::kLengthWidthRatioDESC:
-        sort_name = "length_width_ratio_desc";
-        break;
-      case SortType::kPinNumDESC:
-        sort_name = "pin_num_desc";
+      case PASourceType::kEnclosure:
+        ta_source_type_name = "enclosure";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return sort_name;
+    return ta_source_type_name;
   }
 };
 

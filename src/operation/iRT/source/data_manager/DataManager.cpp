@@ -21,8 +21,6 @@
 #include "RTUtil.hpp"
 #include "file_rt.hpp"
 
-using namespace std;
-
 namespace irt {
 
 // public
@@ -333,23 +331,31 @@ void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
 
 void DataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
 {
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-
   // Artificial
   idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
-  for (idb::IdbBlockage* idb_blockage : idb_blockage_list->get_blockage_list()) {
-    if (idb_blockage->is_routing_blockage()) {
-      idb::IdbRoutingBlockage* idb_routing_blockage = dynamic_cast<idb::IdbRoutingBlockage*>(idb_blockage);
-      for (idb::IdbRect* rect : idb_routing_blockage->get_rect_list()) {
-        Blockage blockage;
-        blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-        blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-        blockage.set_layer_idx(idb_routing_blockage->get_layer()->get_id());
-        blockage.set_is_artificial(true);
-        routing_blockage_list.push_back(std::move(blockage));
-      }
-    }
+  if (!idb_blockage_list->get_blockage_list().empty()) {
+    LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
   }
+
+  // std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+
+  // LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+
+  // // Artificial
+  // idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
+  // for (idb::IdbBlockage* idb_blockage : idb_blockage_list->get_blockage_list()) {
+  //   if (idb_blockage->is_routing_blockage()) {
+  //     idb::IdbRoutingBlockage* idb_routing_blockage = dynamic_cast<idb::IdbRoutingBlockage*>(idb_blockage);
+  //     for (idb::IdbRect* rect : idb_routing_blockage->get_rect_list()) {
+  //       Blockage blockage;
+  //       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+  //       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+  //       blockage.set_layer_idx(idb_routing_blockage->get_layer()->get_id());
+  //       blockage.set_is_artificial(true);
+  //       routing_blockage_list.push_back(std::move(blockage));
+  //     }
+  //   }
+  // }
 }
 
 void DataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
@@ -379,7 +385,6 @@ void DataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
       blockage.set_layer_idx(layer_shape->get_layer()->get_id());
-      blockage.set_is_artificial(false);
       if (layer_shape->get_layer()->is_routing()) {
         routing_blockage_list.push_back(std::move(blockage));
       } else if (layer_shape->get_layer()->is_cut()) {
@@ -411,7 +416,6 @@ void DataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
               blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
               blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
               blockage.set_layer_idx(layer_shape.get_layer()->get_id());
-              blockage.set_is_artificial(false);
               if (layer_shape.get_layer()->is_routing()) {
                 routing_blockage_list.push_back(std::move(blockage));
               } else if (layer_shape.get_layer()->is_cut()) {
@@ -426,7 +430,6 @@ void DataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
           blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
           blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
           blockage.set_layer_idx(idb_segment->get_layer()->get_id());
-          blockage.set_is_artificial(false);
           routing_blockage_list.push_back(std::move(blockage));
         }
       }

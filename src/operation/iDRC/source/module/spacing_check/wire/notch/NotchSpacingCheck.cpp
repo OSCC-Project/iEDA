@@ -88,6 +88,10 @@ bool NotchSpacingCheck::isEdgeNotchBottom(DrcEdge* edge)
 
 void NotchSpacingCheck::checkNotchSpacing(DrcPoly* target_poly)
 {
+  if (target_poly == nullptr) {
+    return;
+  }
+
   // test
   int layer_id = target_poly->get_layer_id();
   _lef58_notch_spacing_rule = _tech->get_drc_routing_layer_list()[layer_id]->get_lef58_notch_spacing_rule();

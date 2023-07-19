@@ -24,7 +24,6 @@
 #include "Database.hpp"
 #include "Net.hpp"
 #include "RTU.hpp"
-#include "SortStatus.hpp"
 
 namespace irt {
 
@@ -69,8 +68,8 @@ class DetailedRouter
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildOBSTaskMap(DRBox& dr_box);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(DRBox& dr_box,
-                                                                                           LayerRect& min_scope_regular_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> getGridOrientationMap(DRBox& dr_box,
+                                                                                             LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(DRBox& dr_box, LayerRect& min_scope_regular_rect);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);
@@ -80,10 +79,18 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
 #endif
 
+#if 1  // sort dr_task_list
+  void resetDRBox(DRBox& dr_box);
+#endif
+
+#if 1  // init dr_task_list
+  void sortDRTaskList(DRBox& dr_box);
+#endif
+
 #if 1  // route dr_box
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
-  void initRoutingInfo(DRBox& dr_box, DRTask& dr_task);
+  void initSingleTask(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
   void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void routeSinglePath(DRBox& dr_box);
@@ -91,6 +98,8 @@ class DetailedRouter
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
   bool passCheckingSegment(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  bool passCheckingByDynamicDRC(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(DRBox& dr_box);
   bool replaceParentNode(DRBox& dr_box, DRNode* parent_node, DRNode* child_node);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
@@ -98,9 +107,8 @@ class DetailedRouter
   void updatePathResult(DRBox& dr_box);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
-  void updateNetResult(DRBox& dr_box, DRTask& dr_task);
-  void updateResult(DRBox& dr_box, DRTask& dr_task);
-  void resetSingleNet(DRBox& dr_box);
+  void updateTaskResult(DRBox& dr_box, DRTask& dr_task);
+  void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
@@ -116,6 +124,14 @@ class DetailedRouter
 
 #if 1  // count dr_box
   void countDRBox(DRBox& dr_box);
+#endif
+
+#if 1  // update best route result
+  void updateBestRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
+#endif
+
+#if 1  // sort dr route result
+  void updateDRRouteResult(DRBox& dr_box, DRBoxStat& best_stat, std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
 #if 1  // plot dr_box

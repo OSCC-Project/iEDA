@@ -35,11 +35,10 @@ class GRNode : public LayerCoord
  public:
   GRNode() = default;
   ~GRNode() = default;
-
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
+  PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
+  std::map<irt_int, std::vector<LayerRect>>& get_net_rect_map() { return _net_rect_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orientation_wire_demand_map() { return _net_orientation_wire_demand_map; }
@@ -50,9 +49,9 @@ class GRNode : public LayerCoord
   std::map<irt_int, std::set<Orientation>>& get_net_access_map() { return _net_access_map; }
   std::queue<irt_int>& get_net_queue() { return _net_queue; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
+  void set_net_rect_map(const std::map<irt_int, std::vector<LayerRect>>& net_rect_map) { _net_rect_map = net_rect_map; }
   void set_whole_wire_demand(const irt_int whole_wire_demand) { _whole_wire_demand = whole_wire_demand; }
   void set_whole_via_demand(const irt_int whole_via_demand) { _whole_via_demand = whole_via_demand; }
   void set_net_orientation_wire_demand_map(const std::map<irt_int, std::map<Orientation, irt_int>>& net_orientation_wire_demand_map)
@@ -170,7 +169,9 @@ class GRNode : public LayerCoord
         || RTUtil::exist(orientation_set, Orientation::kSouth) || RTUtil::exist(orientation_set, Orientation::kNorth)) {
       orientation_set.erase(Orientation::kUp);
       orientation_set.erase(Orientation::kDown);
-
+      if (orientation_set.size() > 2) {
+        LOG_INST.error(Loc::current(), "The size of orientation_set > 2!");
+      }
       bool has_net_demand = false;
       irt_int wire_demand = 0;
       if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {
@@ -195,16 +196,19 @@ class GRNode : public LayerCoord
     _net_queue.push(net_idx);
   }
 #if 1  // astar
+  // single net
   std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   GRNodeState& get_state() { return _state; }
   GRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(GRNodeState state) { _state = state; }
   void set_parent_node(GRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == GRNodeState::kNone; }
   bool isOpen() { return _state == GRNodeState::kOpen; }
   bool isClose() { return _state == GRNodeState::kClose; }
@@ -212,9 +216,9 @@ class GRNode : public LayerCoord
 #endif
 
  private:
-  PlanarRect _real_rect;
+  PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
+  std::map<irt_int, std::vector<LayerRect>> _net_rect_map;
   /**
    * 布线结果该算多少demand
    *

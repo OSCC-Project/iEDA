@@ -29,7 +29,6 @@ class TAPin : public Pin
   TAPin() = default;
   explicit TAPin(const Pin& pin) : Pin(pin) {}
   ~TAPin() = default;
-
   // getter
 
   // setter

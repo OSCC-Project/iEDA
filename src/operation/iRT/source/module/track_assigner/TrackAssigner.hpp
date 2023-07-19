@@ -20,7 +20,6 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
-#include "SortStatus.hpp"
 #include "TAModel.hpp"
 #include "TAPanel.hpp"
 
@@ -64,8 +63,8 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildOBSTaskMap(TAPanel& ta_panel);
-  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getGridOrientationMap(TAPanel& ta_panel,
-                                                                                           LayerRect& min_scope_regular_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByLayerASC> getGridOrientationMap(TAPanel& ta_panel,
+                                                                                             LayerRect& min_scope_regular_rect);
   std::vector<Segment<LayerCoord>> getRealSegmentList(TAPanel& ta_panel, LayerRect& min_scope_regular_rect);
   void checkTAPanel(TAPanel& ta_panel);
   void saveTAPanel(TAPanel& ta_panel);
@@ -75,10 +74,18 @@ class TrackAssigner
   void assignTAModel(TAModel& ta_model);
 #endif
 
+#if 1  // sort ta_task_list
+  void sortTATaskList(TAPanel& ta_panel);
+#endif
+
+#if 1  // reset ta panel
+  void resetTAPanel(TAPanel& ta_panel);
+#endif
+
 #if 1  // assign ta_panel
   void assignTAPanel(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask& ta_task);
-  void initRoutingInfo(TAPanel& ta_panel, TATask& ta_task);
+  void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
   void routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void routeSinglePath(TAPanel& ta_panel);
@@ -86,6 +93,8 @@ class TrackAssigner
   bool searchEnded(TAPanel& ta_panel);
   void expandSearching(TAPanel& ta_panel);
   bool passCheckingSegment(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  bool passCheckingByDynamicDRC(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(TAPanel& ta_panel);
   bool replaceParentNode(TAPanel& ta_panel, TANode* parent_node, TANode* child_node);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
@@ -93,9 +102,8 @@ class TrackAssigner
   void updatePathResult(TAPanel& ta_panel);
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
-  void updateNetResult(TAPanel& ta_panel, TATask& ta_task);
-  void updateResult(TAPanel& ta_panel, TATask& ta_task);
-  void resetSingleNet(TAPanel& ta_panel);
+  void updateTaskResult(TAPanel& ta_panel, TATask& ta_task);
+  void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
@@ -111,6 +119,16 @@ class TrackAssigner
 
 #if 1  // count ta_panel
   void countTAPanel(TAPanel& ta_panel);
+#endif
+
+#if 1  // update best assign result
+  void updateBestAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                              std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
+#endif
+
+#if 1  // update ta_panel assign result
+  void updateTAAssignResult(TAPanel& ta_panel, TAPanelStat& best_stat,
+                            std::map<irt_int, std::vector<Segment<LayerCoord>>>& best_route_result);
 #endif
 
 #if 1  // plot ta_panel
