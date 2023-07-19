@@ -14,44 +14,49 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 /**
- * @File Name: tcl_register.h
+ * @File Name: tcl_web.cpp
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
  * @Creat Date : 2022-04-15
  *
  */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_gui.h"
-#include "tcl_qt/tcl_qt.h"
 #include "tcl_web.h"
-#include "tool_manager.h"
 
-using namespace ieda;
+#include "gui_io.h"
+#include "tool_manager.h"
 
 namespace tcl {
 
-int registerCmdGUI()
+CmdCaptureDesign::CmdCaptureDesign(const char* cmd_name) : TclCmd(cmd_name)
 {
-  registerTclCmd(CmdGuiStart, "gui_start");
-  registerTclCmd(CmdGuiShow, "gui_show");
-  registerTclCmd(CmdGuiHide, "gui_hide");
-  registerTclCmd(CmdGuiShowDrc, "gui_show_drc");
-  registerTclCmd(CmdGuiShowClockTree, "gui_show_cts");
-  registerTclCmd(CmdGuiShowPlacement, "gui_show_pl");
+  auto* type = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(type);
+}
 
-  // web
-  registerTclCmd(CmdCaptureDesign, "capture_design");
+unsigned CmdCaptureDesign::check()
+{
+  // TclOption *file_name_option = getOptionOrArg("-path");
+  // LOG_FATAL_IF(!file_name_option);
+  return 1;
+}
 
-  GuiTclNotifier::setup();
-  // run Qt's event loop
-  Tcl_SetMainLoop([]() { iplf::tmInst->guiExec(); });
-  std::cout << "Tcl_SetMainLoop......" << std::endl;
+unsigned CmdCaptureDesign::exec()
+{
+  if (!check()) {
+    return 0;
+  }
 
-  return EXIT_SUCCESS;
+  std::string path = "";
+  TclOption* opt = getOptionOrArg(TCL_PATH);
+  if (opt->getStringVal() != nullptr) {
+    path = opt->getStringVal();
+  }
+
+  iplf::tmInst->guiCaptrueDesign(path);
+
+  return 1;
 }
 
 }  // namespace tcl
