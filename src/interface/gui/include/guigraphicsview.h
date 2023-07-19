@@ -43,6 +43,8 @@ class GuiGraphicsView : public QGraphicsView {
   void zoomDown();
   void zoomFit();
 
+  bool captureDesign(std::string path = "");
+
   /// Timer
   bool is_need_timer() { return _scale < _scale_fit * 5 ? true : false; }
   void timerCreate() {

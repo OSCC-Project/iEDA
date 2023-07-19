@@ -17,6 +17,8 @@
 #include "guigraphicsscene.h"
 
 #include <QApplication>
+#include <QImage>
+#include <QString>
 #include <iostream>
 
 #include "dbsetup.h"

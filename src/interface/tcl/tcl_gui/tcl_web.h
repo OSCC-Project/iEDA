@@ -16,42 +16,38 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: tcl_register.h
+ * @File Name: tcl_web.h
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
  * @Creat Date : 2022-04-15
  *
  */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_gui.h"
-#include "tcl_qt/tcl_qt.h"
-#include "tcl_web.h"
-#include "tool_manager.h"
+#include <iostream>
+#include <string>
 
-using namespace ieda;
+#include "ScriptEngine.hh"
+#include "tcl_definition.h"
+
+using ieda::TclCmd;
+using ieda::TclIntOption;
+using ieda::TclOption;
+using ieda::TclStringOption;
 
 namespace tcl {
 
-int registerCmdGUI()
+class CmdCaptureDesign : public TclCmd
 {
-  registerTclCmd(CmdGuiStart, "gui_start");
-  registerTclCmd(CmdGuiShow, "gui_show");
-  registerTclCmd(CmdGuiHide, "gui_hide");
-  registerTclCmd(CmdGuiShowDrc, "gui_show_drc");
-  registerTclCmd(CmdGuiShowClockTree, "gui_show_cts");
-  registerTclCmd(CmdGuiShowPlacement, "gui_show_pl");
+ public:
+  explicit CmdCaptureDesign(const char* cmd_name);
+  ~CmdCaptureDesign() override = default;
 
-  // web
-  registerTclCmd(CmdCaptureDesign, "capture_design");
+  unsigned check() override;
+  unsigned exec() override;
 
-  GuiTclNotifier::setup();
-  // run Qt's event loop
-  Tcl_SetMainLoop([]() { iplf::tmInst->guiExec(); });
-  std::cout << "Tcl_SetMainLoop......" << std::endl;
-
-  return EXIT_SUCCESS;
-}
+ private:
+  // private function
+  // private data
+};
 
 }  // namespace tcl
