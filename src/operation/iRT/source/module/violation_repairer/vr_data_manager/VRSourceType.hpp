@@ -16,26 +16,40 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "PlanarCoord.hpp"
-#include "RTU.hpp"
+#include <string>
+
+#include "Logger.hpp"
 
 namespace irt {
 
-class VRPin : public Pin
+enum class VRSourceType
 {
- public:
-  VRPin() = default;
-  explicit VRPin(const Pin& pin) : Pin(pin) {}
-  ~VRPin() = default;
-  // getter
+  kNone,
+  kBlockage,
+  kNet
+};
 
-  // setter
-
-  // function
-
- private:
+struct GetVRSourceTypeName
+{
+  std::string operator()(const VRSourceType& vr_source_type) const
+  {
+    std::string vr_source_type_name;
+    switch (vr_source_type) {
+      case VRSourceType::kNone:
+        vr_source_type_name = "none";
+        break;
+      case VRSourceType::kBlockage:
+        vr_source_type_name = "blockage";
+        break;
+      case VRSourceType::kNet:
+        vr_source_type_name = "net";
+        break;
+      default:
+        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return vr_source_type_name;
+  }
 };
 
 }  // namespace irt

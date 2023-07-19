@@ -1683,10 +1683,10 @@ class RTUtil
     return scale_list;
   }
 
-  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-  static PlanarRect getTrackLineRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
+  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
-    if (!isInside(border, rect)) {
+    if (!isOpenOverlap(rect, border)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
     irt_int real_lb_x = rect.get_lb_x();
@@ -1694,11 +1694,12 @@ class RTUtil
     irt_int real_lb_y = rect.get_lb_y();
     irt_int real_rt_y = rect.get_rt_y();
     if (getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_x_grid_list());
       scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
       scale_list.push_back(border.get_rt_x());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_x) {
           continue;
@@ -1709,11 +1710,12 @@ class RTUtil
       }
     }
     if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
-      scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_y_grid_list());
+      scale_list.push_back(border.get_lb_y());
       scale_list.push_back(border.get_rt_y());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_y) {
           continue;
@@ -1778,8 +1780,18 @@ class RTUtil
     return scale_line_list;
   }
 
+  static std::vector<irt_int> getOpenEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  {
+    if (scale_grid_list.empty()) {
+      LOG_INST.error(Loc::current(), "The scale grid list is empty!");
+    }
+    begin_line = std::min(begin_line + 1, scale_grid_list.back().get_end_line());
+    end_line = std::max(end_line - 1, scale_grid_list.front().get_start_line());
+    return getClosedEnlargedScaleList(begin_line, end_line, scale_grid_list);
+  }
+
   // 计算刻度，原有基础上扩大一个scale
-  static std::vector<irt_int> getEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  static std::vector<irt_int> getClosedEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
   {
     std::vector<irt_int> scale_list;
     std::vector<irt_int> track_scale_list = getTrackScaleList(scale_grid_list);
@@ -3151,15 +3163,21 @@ class RTUtil
   {
     GridMap<double> value_map;
     std::map<T, irt_int> range_num_map = getRangeNumMap(value_list);
-    value_map.init(3, static_cast<irt_int>(range_num_map.size()));
+    value_map.init(4, static_cast<irt_int>(range_num_map.size()));
 
     irt_int idx = 0;
-    for (auto& [range_scale, num] : range_num_map) {
+    T range = getScaleRange(value_list);
+    for (auto& [left, num] : range_num_map) {
       double ratio_value = num / 1.0 / static_cast<T>(value_list.size());
       double ratio = retainPlaces(ratio_value, 3);
-      value_map[0][idx] = range_scale;
-      value_map[1][idx] = num;
-      value_map[2][idx] = ratio * 100;
+      T right = left + range;
+      if (equalDoubleByError(right, 0, DBL_ERROR)) {
+        right = 0;
+      }
+      value_map[0][idx] = left;
+      value_map[1][idx] = right;
+      value_map[2][idx] = num;
+      value_map[3][idx] = ratio * 100;
       ++idx;
     }
     return value_map;
@@ -3179,6 +3197,9 @@ class RTUtil
     }
 
     for (T left = min_value; left < max_value; left += range) {
+      if (equalDoubleByError(left, max_value, DBL_ERROR)) {
+        break;
+      }
       scale_num_map[left] = 0;
     }
 

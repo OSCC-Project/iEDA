@@ -44,6 +44,10 @@ void MinStepCheck::checkMinStep(DrcNet* target_net)
 
 void MinStepCheck::checkMinStep(DrcPoly* target_poly)
 {
+  if (target_poly == nullptr) {
+    return;
+  }
+
   int layer_id = target_poly->get_layer_id();
   _lef58_rule = _tech->get_drc_routing_layer_list()[layer_id]->get_lef58_min_step_rule();
   _rule = _tech->get_drc_routing_layer_list()[layer_id]->get_min_step_rule();

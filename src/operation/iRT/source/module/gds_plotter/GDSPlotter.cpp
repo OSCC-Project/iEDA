@@ -742,7 +742,6 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
 
-  GPStruct artificial_blockage_struct("artificial_blockage");
   GPStruct layout_blockage_struct("layout_blockage");
 
   for (Blockage& blockage : routing_blockage_list) {
@@ -753,12 +752,7 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(blockage.get_layer_idx()));
     blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
   for (Blockage& blockage : cut_blockage_list) {
     if (!RTUtil::isOpenOverlap(blockage.get_real_rect(), clipping_window)) {
@@ -768,18 +762,11 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(blockage.get_layer_idx()));
     blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
-  gp_gds.addStruct(artificial_blockage_struct);
   gp_gds.addStruct(layout_blockage_struct);
 
   GPStruct blockage_list_struct("blockage_list");
-  blockage_list_struct.push(artificial_blockage_struct.get_name());
   blockage_list_struct.push(layout_blockage_struct.get_name());
   gp_gds.addStruct(blockage_list_struct);
 }
