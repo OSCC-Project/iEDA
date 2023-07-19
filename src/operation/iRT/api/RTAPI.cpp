@@ -97,16 +97,21 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
   }
 
   GlobalRouter::initInst();
+  GR_INST.route(net_list);
+  GlobalRouter::destroyInst();
+  if (enable_output_gds_files == 1) {
+    GP_INST.plot(net_list, Stage::kGlobalRouter, true, false);
+  }
+
+  return;
+  
   TrackAssigner::initInst();
   DetailedRouter::initInst();
-  GR_INST.route(net_list);
   TA_INST.assign(net_list);
   DR_INST.route(net_list);
-  GlobalRouter::destroyInst();
   TrackAssigner::destroyInst();
   DetailedRouter::destroyInst();
   if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kGlobalRouter, true, false);
     GP_INST.plot(net_list, Stage::kTrackAssigner, true, false);
     GP_INST.plot(net_list, Stage::kDetailedRouter, true, false);
   }

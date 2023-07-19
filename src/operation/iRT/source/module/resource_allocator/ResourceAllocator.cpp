@@ -61,15 +61,20 @@ ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 
 void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
+  RAModel ra_model = init(net_list);
+  iterative(ra_model);
+  update(ra_model);
+}
+
+#if 1  // init
+
+RAModel ResourceAllocator::init(std::vector<Net>& net_list)
+{
   RAModel ra_model = initRAModel(net_list);
   buildRAModel(ra_model);
   checkRAModel(ra_model);
-  allocateRAModel(ra_model);
-  updateRAModel(ra_model);
-  reportRAModel(ra_model);
+  return ra_model;
 }
-
-#if 1  // build ra_model
 
 RAModel ResourceAllocator::initRAModel(std::vector<Net>& net_list)
 {
@@ -355,10 +360,6 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
   }
 }
 
-#endif
-
-#if 1  // check ra_model
-
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
@@ -380,7 +381,14 @@ void ResourceAllocator::checkRAModel(RAModel& ra_model)
 
 #endif
 
-#if 1  // allocate ra_model
+#if 1  // iterative
+
+void ResourceAllocator::iterative(RAModel& ra_model)
+{
+  allocateRAModel(ra_model);
+  processGRModel(ra_model);
+  reportRAModel(ra_model);
+}
 
 /**
  * @description: 使用二次规划 罚方法
@@ -604,17 +612,7 @@ double ResourceAllocator::updateResult(RAModel& ra_model)
   return norm_square_step;
 }
 
-#endif
-
-#if 1  // update ra_model
-
-void ResourceAllocator::updateRAModel(RAModel& ra_model)
-{
-  updateAllocationMap(ra_model);
-  updateOriginRACostMap(ra_model);
-}
-
-void ResourceAllocator::updateAllocationMap(RAModel& ra_model)
+void ResourceAllocator::processGRModel(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
 
@@ -707,17 +705,6 @@ void ResourceAllocator::normalizeCostMap(GridMap<double>& cost_map, double lower
   }
 }
 
-void ResourceAllocator::updateOriginRACostMap(RAModel& ra_model)
-{
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
-  }
-}
-
-#endif
-
-#if 1  // report ra_model
-
 void ResourceAllocator::reportRAModel(RAModel& ra_model)
 {
   countRAModel(ra_model);
@@ -773,6 +760,17 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
 
   for (std::string table_str : RTUtil::splitString(avg_cost_table.to_string(), '\n')) {
     LOG_INST.info(Loc::current(), table_str);
+  }
+}
+
+#endif
+
+#if 1  // update
+
+void ResourceAllocator::update(RAModel& ra_model)
+{
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
   }
 }
 

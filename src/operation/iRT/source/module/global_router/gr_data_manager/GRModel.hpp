@@ -28,7 +28,6 @@ class GRModel
  public:
   GRModel() = default;
   ~GRModel() = default;
-
   // getter
   std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<GRNet>& get_gr_net_list() { return _gr_net_list; }
