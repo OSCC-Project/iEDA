@@ -886,7 +886,8 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
 
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
-  PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
+  PAModelStat pa_mode_stat;
+
   std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
   std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
   std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
@@ -926,6 +927,8 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   pa_mode_stat.set_total_pin_num(total_pin_num);
   pa_mode_stat.set_total_port_num(total_port_num);
   pa_mode_stat.set_total_access_point_num(total_access_point_num);
+  
+  pa_model.set_pa_mode_stat(pa_mode_stat);
 }
 
 void PinAccessor::reportTable(PAModel& pa_model)

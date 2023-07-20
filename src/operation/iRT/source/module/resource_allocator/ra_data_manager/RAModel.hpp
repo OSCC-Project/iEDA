@@ -37,8 +37,12 @@ class RAModel
   RAModelStat& get_ra_model_stat() { return _ra_model_stat; }
   // setter
   void set_ra_net_list(const std::vector<RANet>& ra_net_list) { _ra_net_list = ra_net_list; }
+  void set_ra_gcell_list(const std::vector<RAGCell>& ra_gcell_list) { _ra_gcell_list = ra_gcell_list; }
+  void set_result_list(const std::vector<double>& result_list) { _result_list = result_list; }
+  void set_nabla_f_col(const std::vector<double>& nabla_f_col) { _nabla_f_col = nabla_f_col; }
+  void set_nabla_f_row(const std::vector<double>& nabla_f_row) { _nabla_f_row = nabla_f_row; }
   void set_alpha(const double alpha) { _alpha = alpha; }
-
+  void set_ra_model_stat(const RAModelStat& ra_model_stat) { _ra_model_stat = ra_model_stat; }
   // function
 
  private:

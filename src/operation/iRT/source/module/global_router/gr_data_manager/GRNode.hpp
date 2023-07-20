@@ -223,8 +223,8 @@ class GRNode : public LayerCoord
    * 布线结果该算多少demand
    *
    * _whole_via_demand  一个完整的gr_via所需要的资源(以当前层最小面积做为参考)，不是真via
-   * _wire_demand 一个完整的贯穿gcell的wire，中间布线结果用这个，包括T字或十字
-   * _net_orientation_wire_demand_map 布线端点处使用的wire_demand，减少直接使用wire_demand的浪费
+   * _whole_wire_demand 一个完整的贯穿gcell的wire，中间布线结果用这个，包括T字或十字
+   * _net_orientation_wire_demand_map 布线端点处使用此资源，减少直接使用whole_wire_demand的浪费
    */
   irt_int _whole_wire_demand = 0;
   irt_int _whole_via_demand = 0;
