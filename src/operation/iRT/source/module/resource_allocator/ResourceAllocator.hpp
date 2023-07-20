@@ -70,7 +70,7 @@ class ResourceAllocator
 
 #if 1  // iterative
   void iterative(RAModel& ra_model);
-  void allocateRAModel(RAModel& ra_model);
+  void allocateRAModel(RAModel& ra_model, double penalty_para);
   void calcNablaF(RAModel& ra_model, double penalty_para);
   double calcAlpha(RAModel& ra_model, double penalty_para);
   double updateResult(RAModel& ra_model);
@@ -87,7 +87,8 @@ class ResourceAllocator
 #endif
 
 #if 1  // plot ra_model
-  void plotRAModel(RAModel& ra_model, irt_int epoch);
+  void writeRAModel(RAModel& ra_model, irt_int epoch);
+  void writePYScript();
 #endif
 };
 

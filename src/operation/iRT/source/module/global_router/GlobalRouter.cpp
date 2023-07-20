@@ -564,7 +564,7 @@ void GlobalRouter::iterative(GRModel& gr_model)
   irt_int gr_iter_num = 10;
   for (irt_int iter = 1; iter <= gr_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Global Routing Iteration(", iter, "/", gr_iter_num, ") ******");
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", gr_iter_num, ") ******");
 
     // sortGRModel(gr_model);
     // resetGRModel(gr_model);
