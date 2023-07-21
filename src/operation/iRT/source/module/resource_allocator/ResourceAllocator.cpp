@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "ResourceAllocator.hpp"
 
+#include "GDSPlotter.hpp"
 #include "RTAPI.hpp"
 #include "RTUtil.hpp"
 
@@ -385,9 +386,22 @@ void ResourceAllocator::checkRAModel(RAModel& ra_model)
 
 void ResourceAllocator::iterative(RAModel& ra_model)
 {
-  allocateRAModel(ra_model);
-  processGRModel(ra_model);
-  reportRAModel(ra_model);
+  double ra_initial_penalty = DM_INST.getConfig().ra_initial_penalty;      //!< 罚函数的参数
+  double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;  //!< 罚函数的参数下降系数
+  irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;       //!< 外层循环数
+
+  for (irt_int iter = 1; iter <= ra_outer_iter_num; iter++) {
+    Monitor iter_monitor;
+    double penalty_para = (1 / (2 * ra_initial_penalty));
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", ra_outer_iter_num, "), penalty_para=", penalty_para, " ******");
+
+    allocateRAModel(ra_model, penalty_para);
+    processRAModel(ra_model);
+    reportRAModel(ra_model);
+
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", ra_outer_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    ra_initial_penalty *= ra_penalty_drop_rate;
+  }
 }
 
 /**
@@ -413,33 +427,20 @@ void ResourceAllocator::iterative(RAModel& ra_model)
  *     (1/(2 * u)) * [(x0 + x1 - C1)^2 + (x2 + x3 - C2)^2]
  *
  */
-void ResourceAllocator::allocateRAModel(RAModel& ra_model)
+void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
 {
-  Monitor monitor;
+  irt_int ra_inner_iter_num = DM_INST.getConfig().ra_inner_iter_num;  //!< 内层循环数
 
-  // 迭代参数
-  double ra_initial_penalty = DM_INST.getConfig().ra_initial_penalty;      //!< 罚函数的参数
-  double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;  //!< 罚函数的参数下降系数
-  irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;       //!< 外层循环数
-  irt_int ra_inner_iter_num = DM_INST.getConfig().ra_inner_iter_num;       //!< 内层循环数
+  for (irt_int iter = 1; iter <= ra_inner_iter_num; iter++) {
+    Monitor iter_monitor;
 
-  for (irt_int i = 0, stage = 1; i < ra_outer_iter_num; i++, stage++) {
-    double penalty_para = (1 / (2 * ra_initial_penalty));
-    LOG_INST.info(Loc::current(), "************* Start iteration penalty_para=", penalty_para, " *************");
-    for (irt_int j = 0, iter = 1; j < ra_inner_iter_num; j++, iter++) {
-      Monitor iter_monitor;
+    calcNablaF(ra_model, penalty_para);
+    double norm_nabla_f = calcAlpha(ra_model, penalty_para);
+    double norm_square_step = updateResult(ra_model);
 
-      calcNablaF(ra_model, penalty_para);
-      double norm_nabla_f = calcAlpha(ra_model, penalty_para);
-      double norm_square_step = updateResult(ra_model);
-
-      LOG_INST.info(Loc::current(), "Stage(", stage, "/", ra_outer_iter_num, ") Iter(", iter, "/", ra_inner_iter_num,
-                    "), norm_nabla_f=", norm_nabla_f, ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
-    }
-    ra_initial_penalty *= ra_penalty_drop_rate;
+    LOG_INST.info(Loc::current(), "Iter(", iter, "/", ra_inner_iter_num, "), norm_nabla_f=", norm_nabla_f,
+                  ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
   }
-
-  LOG_INST.info(Loc::current(), "The resource model iteration was completed!", monitor.getStatsInfo());
 }
 
 /**
@@ -612,7 +613,7 @@ double ResourceAllocator::updateResult(RAModel& ra_model)
   return norm_square_step;
 }
 
-void ResourceAllocator::processGRModel(RAModel& ra_model)
+void ResourceAllocator::processRAModel(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
 
@@ -676,9 +677,6 @@ GridMap<double> ResourceAllocator::getCostMap(GridMap<double>& allocation_map, d
       sum_cost += cost_map[i][j];
     }
   }
-  if (!RTUtil::equalDoubleByError(sum_allocation, sum_cost, DBL_ERROR)) {
-    LOG_INST.error(Loc::current(), "The total allocation '", sum_allocation, "' is not equal to the total cost '", sum_cost, "'!");
-  }
   return cost_map;
 }
 
@@ -713,10 +711,10 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
 
 void ResourceAllocator::countRAModel(RAModel& ra_model)
 {
-  RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
-  std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
+  RAModelStat ra_model_stat;
 
-  double max_cost = -DBL_MAX;
+  std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
+  double max_avg_cost = -DBL_MAX;
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   for (RANet& ra_net : ra_net_list) {
     double total_cost = 0;
@@ -727,10 +725,12 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
       }
     }
     double cost_value = total_cost / (ra_cost_map.get_x_size() * ra_cost_map.get_y_size());
-    max_cost = std::max(max_cost, cost_value);
+    max_avg_cost = std::max(max_avg_cost, cost_value);
     avg_cost_list.push_back(cost_value);
   }
-  ra_model_stat.set_max_avg_cost(max_cost);
+  ra_model_stat.set_max_avg_cost(max_avg_cost);
+
+  ra_model.set_ra_model_stat(ra_model_stat);
 }
 
 void ResourceAllocator::reportTable(RAModel& ra_model)
@@ -772,6 +772,87 @@ void ResourceAllocator::update(RAModel& ra_model)
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
   }
+}
+
+#endif
+
+#if 1  // plot ra_model
+
+void ResourceAllocator::writeRAModel(RAModel& ra_model, irt_int iter)
+{
+  Die& die = DM_INST.getDatabase().get_die();
+  std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+
+  GridMap<double> global_cost_map;
+  global_cost_map.init(die.getXSize(), die.getYSize());
+
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    irt_int grid_lb_x = ra_net.get_bounding_box().get_grid_lb_x();
+    irt_int grid_lb_y = ra_net.get_bounding_box().get_grid_lb_y();
+
+    GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
+    for (irt_int x = 0; x < ra_cost_map.get_x_size(); ++x) {
+      for (irt_int y = 0; y < ra_cost_map.get_y_size(); ++y) {
+        global_cost_map[grid_lb_x + x][grid_lb_y + y] += ra_cost_map[x][y];
+      }
+    }
+  }
+
+  std::ofstream* csv_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "ra_model_", iter, ".csv"));
+  for (irt_int y = global_cost_map.get_y_size() - 1; y >= 0; y--) {
+    for (irt_int x = 0; x < global_cost_map.get_x_size(); x++) {
+      RTUtil::pushStream(csv_file, global_cost_map[x][y], ",");
+    }
+    RTUtil::pushStream(csv_file, "\n");
+  }
+  RTUtil::closeFileStream(csv_file);
+
+  writePYScript();
+}
+
+void ResourceAllocator::writePYScript()
+{
+  std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+  irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;
+
+  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "plot.py"));
+
+  RTUtil::pushStream(python_file, "## 导入绘图需要用到的python库", "\n");
+  RTUtil::pushStream(python_file, "from concurrent.futures import process", "\n");
+  RTUtil::pushStream(python_file, "import numpy as np", "\n");
+  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+  RTUtil::pushStream(python_file, "from PIL import Image", "\n");
+  RTUtil::pushStream(python_file, "import glob", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "for i in range(1,", ra_outer_iter_num + 1, "):", "\n");
+  RTUtil::pushStream(python_file, "    csv_data = pd.read_csv('ra_model_'+ str(i) +'.csv')", "\n");
+  RTUtil::pushStream(python_file, "    array_data = np.array(csv_data)", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
+  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
+  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data,cmap='Greens')", "\n");
+  RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
+  RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
+  RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");
+  RTUtil::pushStream(python_file, "    # plt.show()", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "images = glob.glob('ra_model_*.png')", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "# 提取文件名中的id数字部分,并转换为整数", "\n");
+  RTUtil::pushStream(python_file, "sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "frames = []", "\n");
+  RTUtil::pushStream(python_file, "for image in sorted_images:", "\n");
+  RTUtil::pushStream(python_file, "    img = Image.open(image)", "\n");
+  RTUtil::pushStream(python_file, "    img = img.resize((800, 600))", "\n");
+  RTUtil::pushStream(python_file, "    frames.append(img)", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file,
+                     "frames[0].save('output.gif', format='GIF', append_images=frames[1:], save_all=True, duration=300, loop=0)", "\n");
+  RTUtil::closeFileStream(python_file);
 }
 
 #endif

@@ -277,15 +277,15 @@ void PinAccessor::checkPAModel(PAModel& pa_model)
 void PinAccessor::iterative(PAModel& pa_model)
 {
   irt_int pa_iter_num = 1;
-  for (irt_int stage = 1; stage <= pa_iter_num; stage++) {
+  for (irt_int iter = 1; iter <= pa_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start PinAccessor Iteration(", stage, "/", pa_iter_num, ") ******");
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", pa_iter_num, ") ******");
 
     accessPAModel(pa_model);
     processPAModel(pa_model);
     reportPAModel(pa_model);
 
-    LOG_INST.info(Loc::current(), "****** End Iteration(", stage, "/", pa_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", pa_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
   }
 }
 
@@ -894,7 +894,8 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
 
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
-  PAModelStat& pa_mode_stat = pa_model.get_pa_mode_stat();
+  PAModelStat pa_mode_stat;
+
   std::map<AccessPointType, irt_int>& type_pin_num_map = pa_mode_stat.get_type_pin_num_map();
   std::map<irt_int, irt_int>& routing_port_num_map = pa_mode_stat.get_routing_port_num_map();
   std::map<irt_int, irt_int>& routing_access_point_num_map = pa_mode_stat.get_routing_access_point_num_map();
@@ -934,6 +935,8 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   pa_mode_stat.set_total_pin_num(total_pin_num);
   pa_mode_stat.set_total_port_num(total_port_num);
   pa_mode_stat.set_total_access_point_num(total_access_point_num);
+
+  pa_model.set_pa_mode_stat(pa_mode_stat);
 }
 
 void PinAccessor::reportTable(PAModel& pa_model)

@@ -69,11 +69,16 @@ class GlobalRouter
 
 #if 1  // iterative
   void iterative(GRModel& gr_model);
+  void sortGRModel(GRModel& gr_model);
+  bool sortByMultiLevel(GRNet& net1, GRNet& net2);
+  SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
+  SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
+  SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);
+  void resetGRModel(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void initSingleNet(GRModel& gr_model, GRNet& gr_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(
-      std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC>& planar_layer_map);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
   void initSinglePath(GRModel& gr_model, std::pair<std::vector<GRNode*>, std::vector<GRNode*>>& node_topo);
   void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
@@ -116,8 +121,9 @@ class GlobalRouter
   void update(GRModel& gr_model);
 #endif
 
-#if 0  // plot gr_model
-void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
+#if 1  // plot gr_model
+  void plotCongestionMap(GRModel& gr_model, irt_int iter);
+  void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
 #endif
 };
 
