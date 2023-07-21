@@ -988,15 +988,24 @@ void PinAccessor::reportTable(PAModel& pa_model)
   std::vector<std::vector<std::string>> table_list;
   table_list.push_back(RTUtil::splitString(pin_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(port_table.to_string(), '\n'));
-  std::sort(table_list.begin(), table_list.end(),
-            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
-  for (size_t i = 0; i < table_list.front().size(); i++) {
+  
+  int max_size = INT_MIN;
+  for (std::vector<std::string>& table : table_list) {
+    max_size = std::max(max_size, static_cast<int>(table.size()));
+  }
+  for (std::vector<std::string>& table : table_list) {
+    for (irt_int i = table.size(); i < max_size; i++) {
+      std::string table_str;
+      table_str.append(table.front().length() / 3, ' ');
+      table.push_back(table_str);
+    }
+  }
+
+  for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
     for (std::vector<std::string>& table : table_list) {
-      if (i < table.size()) {
-        table_str += table[i];
-        table_str += " ";
-      }
+      table_str += table[i];
+      table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
   }
