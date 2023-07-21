@@ -65,6 +65,7 @@ class GlobalRouter
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
   void buildAccessMap(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
+  void writePYScript();
 #endif
 
 #if 1  // iterative
@@ -122,6 +123,7 @@ class GlobalRouter
 #endif
 
 #if 1  // plot gr_model
+  void writeGRModel(GRModel& gr_model, irt_int iter);
   void plotCongestionMap(GRModel& gr_model, irt_int iter);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
 #endif
