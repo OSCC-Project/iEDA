@@ -58,14 +58,56 @@ void GridManager::obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle
 std::vector<Rectangle<int32_t>> GridManager::obtainAvailableRectList(int32_t row_low, int32_t row_high, int32_t grid_left,
                                                                      int32_t grid_right, float available_ratio)
 {
+  if (row_low < 0) {
+    LOG_WARNING << "Required Available Rectangle Row Range Less Than Zero!";
+    row_low = 0;
+  }
+  if (row_high > (_grid_cnt_y - 1)) {
+    LOG_WARNING << "Required Available Rectangle Row Range More Than (GridCntY-1)!";
+    row_high = (_grid_cnt_y - 1);
+  }
+  if (grid_left < 0) {
+    LOG_WARNING << "Required Available Rectangle Column Range Less Than Zero!";
+    grid_left = 0;
+  }
+  if (grid_right > (_grid_cnt_x - 1)) {
+    LOG_WARNING << "Required Available Rectangle Column Range More Than (GridCntX-1)!";
+    grid_right = (_grid_cnt_x - 1);
+  }
+  int64_t target_available_area = static_cast<int64_t>(_grid_size_x) * static_cast<int64_t>(_grid_size_y) * available_ratio;
+
   std::vector<Rectangle<int32_t>> available_list;
-  // TODO.
+  for (int32_t i = row_low; i <= row_high; i++) {
+    int32_t lly = row_low * _grid_size_y;
+    int32_t ury = lly + _grid_size_y;
+    int32_t llx_idx = grid_left;
+    int32_t urx_idx = llx_idx;
+    for (int32_t j = grid_left; j <= grid_right; j++) {
+      if (_grid_2d_list[i][j].obtainAvailableArea() < target_available_area) {
+        if (llx_idx != urx_idx) {
+          available_list.push_back(Rectangle<int32_t>(llx_idx * _grid_size_x, lly, urx_idx * _grid_size_x, ury));
+        }
+        llx_idx = j + 1;  // next idx
+        urx_idx = llx_idx;
+      } else {
+        urx_idx = j + 1;
+      }
+    }
+  }
+
   return available_list;
 }
 
 void GridManager::obtainOverflowIllegalGridList(std::vector<Grid*>& gird_list)
 {
-  // TODO.
+  for (auto& row_vec : _grid_2d_list) {
+    for (auto& grid : row_vec) {
+      int64_t overflow_area = grid.obtainGridOverflowArea();
+      if (overflow_area > 0) {
+        gird_list.push_back(&grid);
+      }
+    }
+  }
 }
 
 void GridManager::clearAllOccupiedArea()
@@ -104,6 +146,7 @@ int64_t GridManager::obtainTotalOverflowArea()
       total_overflow_area += _grid_2d_list[i][j].obtainGridOverflowArea();
     }
   }
+  return total_overflow_area;
 }
 
 float GridManager::obtainPeakGridDensity()

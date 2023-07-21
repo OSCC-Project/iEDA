@@ -80,16 +80,6 @@ bool LayoutChecker::checkAlignPower(Instance* inst)
   }
 
   return true;
-
-  // std::vector<GridRow*> grid_row_list;
-  // _grid_manager->obtainOverlapRowList(grid_row_list, inst->get_shape().get_ll_y(), inst->get_shape().get_ur_y());
-  // LOG_ERROR_IF(grid_row_list.size() != 1) << "Instance is not in the Row!"
-  //                                         << " " << inst->get_name();
-  // Orient row_orient = this->obtainLayoutRowOrient(grid_row_list[0]);
-  // if (row_orient != inst->get_orient()) {
-  //   return false;
-  // }
-  // return true;
 }
 
 bool LayoutChecker::isAllPlacedInstInsideCore()

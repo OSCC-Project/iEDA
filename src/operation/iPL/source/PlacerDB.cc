@@ -251,7 +251,7 @@ void PlacerDB::updateGridManager()
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst_shape);
 
-      grid->fixed_area += overlap_area;
+      grid->occupied_area += overlap_area;
 
       // grid->add_area(overlap_area);
     }
