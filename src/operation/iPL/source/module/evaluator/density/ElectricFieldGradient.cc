@@ -190,15 +190,16 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
     // float grid_grad_x = overlap_area * _force_2d_x_list[grid->get_row_idx()][grid->get_grid_idx()];
     // float grid_grad_y = overlap_area * _force_2d_y_list[grid->get_row_idx()][grid->get_grid_idx()];
 
-    if (is_add_quad_penalty) {
-      grid_grad_x *= (1.0 + 2 * quad_lamda * _sum_phi);
-      grid_grad_y *= (1.0 + 2 * quad_lamda * _sum_phi);
-    }
+    // if (is_add_quad_penalty) {
+    //   grid_grad_x *= (1.0 + 2 * quad_lamda * _sum_phi);
+    //   grid_grad_y *= (1.0 + 2 * quad_lamda * _sum_phi);
+    // }
 
     gradient_x += grid_grad_x;
     gradient_y += grid_grad_y;
   }
 
+  // test
   return Point<float>(gradient_x, gradient_y);
 }
 

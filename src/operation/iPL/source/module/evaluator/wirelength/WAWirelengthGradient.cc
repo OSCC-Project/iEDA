@@ -310,6 +310,7 @@ Point<float> WAWirelengthGradient::obtainWirelengthGradient_OLD(int32_t inst_id,
 Point<float> WAWirelengthGradient::obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y)
 {
   float gradient_x = 0.0F;
+
   float gradient_y = 0.0F;
 
   auto* group = _topology_manager->findGroupById(inst_id);
