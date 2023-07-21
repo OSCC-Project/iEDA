@@ -713,6 +713,30 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
 {
   RAModelStat ra_model_stat;
 
+  Die& die = DM_INST.getDatabase().get_die();
+
+  GridMap<double> global_cost_map;
+  global_cost_map.init(die.getXSize(), die.getYSize());
+
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    irt_int grid_lb_x = ra_net.get_bounding_box().get_grid_lb_x();
+    irt_int grid_lb_y = ra_net.get_bounding_box().get_grid_lb_y();
+
+    GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
+    for (irt_int x = 0; x < ra_cost_map.get_x_size(); ++x) {
+      for (irt_int y = 0; y < ra_cost_map.get_y_size(); ++y) {
+        global_cost_map[grid_lb_x + x][grid_lb_y + y] += ra_cost_map[x][y];
+      }
+    }
+  }
+  double max_global_cost = DBL_MIN;
+  for (int x = 0; x < global_cost_map.get_x_size(); x++) {
+    for (int y = 0; y < global_cost_map.get_y_size(); y++) {
+      max_global_cost = std::max(max_global_cost, global_cost_map[x][y]);
+    }
+  }
+  ra_model_stat.set_max_global_cost(max_global_cost);
+
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
   double max_avg_cost = -DBL_MAX;
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
@@ -758,7 +782,25 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
   }
   avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
 
-  for (std::string table_str : RTUtil::splitString(avg_cost_table.to_string(), '\n')) {
+  fort::char_table global_cost_table;
+  global_cost_table.set_border_style(FT_SOLID_STYLE);
+  global_cost_table << fort::header << "Max Global Cost" << fort::endr;
+  global_cost_table << ra_model_stat.get_max_global_cost() << fort::endr;
+
+  // print
+  std::vector<std::vector<std::string>> table_list;
+  table_list.push_back(RTUtil::splitString(avg_cost_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(global_cost_table.to_string(), '\n'));
+  std::sort(table_list.begin(), table_list.end(),
+            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
+  for (size_t i = 0; i < table_list.front().size(); i++) {
+    std::string table_str;
+    for (std::vector<std::string>& table : table_list) {
+      if (i < table.size()) {
+        table_str += table[i];
+        table_str += " ";
+      }
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 }
