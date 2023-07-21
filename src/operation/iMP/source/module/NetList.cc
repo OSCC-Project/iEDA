@@ -1,75 +1,40 @@
 #include "NetList.hh"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <numeric>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "Partitionner.hh"
+
+namespace rv = std::views;
+template <typename T>
+bool isEqual(T arg)
+{
+  return true;
+}
+
+template <typename T, typename... Args>
+bool isEqual(T arg1, Args... args)
+{
+  return (arg1 == isEqual(args...));
+}
 namespace imp {
-NetList::NetList(size_t numVertexs, size_t numMoveableVertexs, size_t numFixedVertexs, size_t numNets)
-    : _num_vertexs(numVertexs), _num_moveable(numMoveableVertexs), _num_fixed(numFixedVertexs), _num_nets(numNets)
-{
-  // Initialize vectors with appropriate sizes
-  _lx.resize(_num_vertexs);
-  _ly.resize(_num_vertexs);
-  _dx.resize(_num_vertexs);
-  _dy.resize(_num_vertexs);
-  _pin_x_off.resize(_num_vertexs);
-  _pin_y_off.resize(_num_vertexs);
-  _net_span.resize(_num_nets);
-  _pin2vertex.resize(_num_vertexs);
-  _vertex_span.resize(_num_vertexs);
-  _pin2net.resize(_num_vertexs);
-  _row2col.resize(_num_vertexs);
-}
 
-NetList::NetList(size_t numVertexs, size_t numMoveableVertexs, size_t numFixedVertexs, size_t numNets, const std::vector<VertexType>& vType,
-                 const std::vector<int32_t>& vLx, const std::vector<int32_t>& vLy, const std::vector<int32_t>& vXSize,
-                 const std::vector<int32_t>& vYSize, const std::vector<int32_t>& pinXOff, const std::vector<int32_t>& pinYOff,
-                 const std::vector<size_t>& netSpan, const std::vector<size_t>& pin2Vertex)
-    : _num_vertexs(numVertexs),
-      _num_moveable(numMoveableVertexs),
-      _num_fixed(numFixedVertexs),
-      _num_nets(numNets),
-      _type(vType),
-      _lx(vLx),
-      _ly(vLy),
-      _dx(vXSize),
-      _dy(vYSize),
-      _pin_x_off(pinXOff),
-      _pin_y_off(pinYOff),
-      _net_span(netSpan),
-      _pin2vertex(pin2Vertex)
+NetList NetList::make_clusters(const std::vector<size_t>& parts)
 {
-  initVertexSpan();
-}
+  assert(parts.size() == _num_vertexs);
 
-NetList::NetList(size_t numVertexs, size_t numMoveableVertexs, size_t numFixedVertexs, size_t numNets, std::vector<VertexType>&& vType,
-                 std::vector<int32_t>&& vLx, std::vector<int32_t>&& vLy, std::vector<int32_t>&& vXSize, std::vector<int32_t>&& vYSize,
-                 std::vector<int32_t>&& pinXOff, std::vector<int32_t>&& pinYOff, std::vector<size_t>&& netSpan,
-                 std::vector<size_t>&& pin2Vertex)
-    : _num_vertexs(numVertexs),
-      _num_moveable(numMoveableVertexs),
-      _num_fixed(numFixedVertexs),
-      _num_nets(numNets),
-      _type(vType),
-      _lx(vLx),
-      _ly(vLy),
-      _dx(vXSize),
-      _dy(vYSize),
-      _pin_x_off(pinXOff),
-      _pin_y_off(pinYOff),
-      _net_span(netSpan),
-      _pin2vertex(pin2Vertex)
-{
-  initVertexSpan();
-}
+  NetList clusters;
+  clusters.set_region(_region_lx, _region_ly, _region_dx, _region_dy);
 
-NetList NetList::make_clusters(const std::vector<size_t> parts)
-{
-  size_t num_clusters = *std::max_element(parts.begin(), parts.end()) + 1;
+  size_t clusters_num_vertex = *std::max_element(parts.begin(), parts.end()) + 1;
   // Determate area of clusters
-  std::vector<int32_t> cluster_area(num_clusters, 0);
-  std::vector<VertexType> cluster_type(num_clusters);
+  std::vector<int32_t> cluster_area(clusters_num_vertex, 0);
+  std::vector<VertexType> cluster_type(clusters_num_vertex);
   std::unordered_map<size_t, size_t> single_cluster;
   for (size_t i = 0; i < parts.size(); i++) {
     if (single_cluster.contains(parts[i])) {
@@ -80,17 +45,22 @@ NetList NetList::make_clusters(const std::vector<size_t> parts)
     }
     cluster_area[parts[i]] += _area[i];
   }
+
+  std::vector<size_t> cluster_id_map(_id_map.size());
+  for (size_t i = 0; i < _id_map.size(); i++) {
+    cluster_id_map[i] = parts[_id_map[i]];
+  }
+
   // Determate shape of clusters
-  std::vector<int32_t> cluster_lx(num_clusters, 0);
-  std::vector<int32_t> cluster_ly(num_clusters, 0);
-  std::vector<int32_t> cluster_dx(num_clusters);
-  std::vector<int32_t> cluster_dy(num_clusters);
-  double aspect_ratio = (double) _canvas_dy / (double) _canvas_dx;
-  for (size_t i = 0; i < num_clusters; i++) {
+  std::vector<int32_t> cluster_lx(clusters_num_vertex, 0);
+  std::vector<int32_t> cluster_ly(clusters_num_vertex, 0);
+  std::vector<int32_t> cluster_dx(clusters_num_vertex);
+  std::vector<int32_t> cluster_dy(clusters_num_vertex);
+  for (size_t i = 0; i < clusters_num_vertex; i++) {
     if (cluster_type[i] == kCluster) {
       // Make each cluster aspect ratio be canvas aspect ratio.
       cluster_area[i] /= _utilization;
-      cluster_dy[i] = std::round(std::sqrt(cluster_area[i] * aspect_ratio));
+      cluster_dy[i] = std::round(std::sqrt(cluster_area[i] * _region_aspect_ratio));
       cluster_dx[i] = std::round(cluster_area[i] / cluster_dy[i]);
     } else {
       // Keep original aspect ratio.
@@ -129,21 +99,188 @@ NetList NetList::make_clusters(const std::vector<size_t> parts)
       cluster_net_span.push_back(cluster_pin2vertex.size());
     }
   }
-  size_t num_clusters_net = cluster_net_span.size() - 1;
-  return NetList(num_clusters, num_clusters - _num_fixed, _num_fixed, num_clusters_net, std::move(cluster_type), std::move(cluster_lx),
-                 std::move(cluster_ly), std::move(cluster_dx), std::move(cluster_dy), std::move(cluster_pin_x_off),
-                 std::move(cluster_pin_y_off), std::move(cluster_net_span), std::move(cluster_pin2vertex));
+  clusters.set_vertex_property(std::move(cluster_type), std::move(cluster_lx), std::move(cluster_ly), std::move(cluster_dx),
+                               std::move(cluster_dy), std::move(cluster_area), std::move(cluster_id_map));
+
+  clusters.set_connectivity(std::move(cluster_net_span), std::move(cluster_pin2vertex), std::move(cluster_pin_x_off),
+                            std::move(cluster_pin_y_off));
+  clusters.sort_to_fit();
+
+  return clusters;
 }
 
-void NetList::clustering(const std::vector<size_t> parts)
+void NetList::autoCellsClustering()
+{
+  if (_is_fit)
+    sort_to_fit();
+}
+
+void NetList::clustering(const std::vector<size_t>& parts)
 {
   *this = make_clusters(parts);
 }
 
-void NetList::initVertexSpan()
+void NetList::set_region(int32_t lx, int32_t ly, int32_t dx, int32_t dy)
+{
+  _region_lx = lx;
+  _region_ly = ly;
+  _region_dx = dx;
+  _region_dy = dy;
+  _region_aspect_ratio = (double) dy / (double) dx;
+}
+
+void NetList::set_vertex_property(std::vector<VertexType>&& type, std::vector<int32_t>&& lx, std::vector<int32_t>&& ly,
+                                  std::vector<int32_t>&& dx, std::vector<int32_t>&& dy, std::vector<int32_t>&& area,
+                                  std::vector<size_t>&& id_map)
+{
+  assert(isEqual(type.size(), lx.size(), ly.size(), dx.size(), dy.size(), area.size()));
+
+  _lx = std::move(lx);
+  _ly = std::move(ly);
+  _dx = std::move(dx);
+  _dy = std::move(dy);
+  _type = std::move(type);
+  _area = std::move(area);
+  _sum_vertex_area = 0;
+  _sum_cells_area = 0;
+  _sum_cluster_area = 0;
+  _sum_macro_area = 0;
+  _sum_fix_area = 0;
+
+  for (auto i : rv::iota((size_t) 0, _num_vertexs)) {
+    auto i_type = _type[i];
+    int32_t i_area = _area[i];
+    if (i_type == kStdCell)
+      _sum_cells_area += i_area;
+    else if (i_type == kCluster)
+      _sum_cluster_area += i_area;
+    else if (i_type == kMacro)
+      _sum_macro_area += i_area;
+    else
+      _sum_fix_area += i_area;
+  }
+  _sum_vertex_area = _sum_cells_area + _sum_cluster_area + _sum_macro_area + _sum_fix_area;
+
+  _num_vertexs = _type.size();
+  if (id_map.empty()) {
+    _id_map.resize(_num_vertexs);
+    std::iota(_id_map.begin(), _id_map.end(), 0);
+  } else {
+    _id_map = std::move(id_map);
+  }
+}
+
+void NetList::set_connectivity(std::vector<size_t>&& net_span, std::vector<size_t>&& pin2vertex, std::vector<int32_t>&& pin_x_off,
+                               std::vector<int32_t>&& pin_y_off)
+{
+  assert(isEqual(net_span.back(), pin2vertex.size(), pin_x_off.size(), pin_y_off.size()));
+  assert(_num_vertexs == *std::max_element(pin2vertex.begin(), pin2vertex.end()));
+  _net_span = std::move(net_span);
+  _pin2vertex = std::move(pin2vertex);
+  _pin_x_off = std::move(pin_x_off);
+  _pin_y_off = std::move(pin_y_off);
+  _num_nets = _net_span.size() - 1;
+}
+
+void NetList::sort_to_fit()
+{
+  std::vector<size_t> map(_num_vertexs);
+  _num_cells = 0;
+  _num_clusters = 0;
+  _num_macros = 0;
+  _num_fixed = 0;
+  for (auto type : _type) {
+    if (type == kStdCell)
+      _num_cells++;
+    else if (type == kCluster)
+      _num_clusters++;
+    else if (type == kMacro)
+      _num_macros++;
+    else
+      _num_fixed++;
+  }
+  _num_moveable = _num_cells + _num_clusters + _num_macros;
+  size_t i_cell = 0;
+  size_t i_cluster = _num_cells;
+  size_t i_macro = _num_cells + _num_clusters;
+  size_t i_fix = _num_moveable;
+  for (size_t i : rv::iota((size_t) 0, _num_vertexs)) {
+    auto type = _type[i];
+    if (type == kStdCell)
+      map[i] = i_cell++;
+    else if (type == kCluster)
+      map[i] = i_cluster++;
+    else if (type == kMacro)
+      map[i] = i_macro++;
+    else
+      map[i] = i_fix++;
+  }
+  assert(i_cell == _num_cells);
+  assert(i_cluster - i_cell == _num_clusters);
+  assert(i_macro - i_cluster == _num_macros);
+  assert(i_fix - i_macro == _num_fixed);
+  std::vector<VertexType> type(_num_vertexs);
+  std::vector<int32_t> lx(_num_vertexs);
+  std::vector<int32_t> ly(_num_vertexs);
+  std::vector<int32_t> dx(_num_vertexs);
+  std::vector<int32_t> dy(_num_vertexs);
+  std::vector<int32_t> area(_num_vertexs);
+  for (size_t i : rv::iota((size_t) 0, _num_vertexs)) {
+    lx[map[i]] = _lx[i];
+    ly[map[i]] = _ly[i];
+    dx[map[i]] = _dx[i];
+    dy[map[i]] = _dy[i];
+    area[map[i]] = _area[i];
+    type[map[i]] = _type[i];
+  }
+  _lx = std::move(lx);
+  _ly = std::move(ly);
+  _dx = std::move(dx);
+  _dy = std::move(dy);
+  _type = std::move(type);
+  _area = std::move(area);
+
+  for (size_t i = 0; i < _num_vertexs; i++) {
+    _id_map[i] = map[_id_map[i]];
+  }
+
+  for (size_t i = 0; i < _pin2vertex.size(); i++) {
+    _pin2vertex[i] = map[_pin2vertex[i]];
+  }
+  updateVertexSpan();
+  _is_fit = true;
+}
+
+std::vector<size_t> NetList::cellsPartition(size_t npart)
+{
+  std::vector<size_t> eptr;
+  std::vector<size_t> eind;
+  std::vector<int32_t> vwgt(_area.begin(), _area.begin() + _num_cells);
+  eptr.push_back(0);
+  auto pin2v = [&](size_t i) { return _pin2vertex[i]; };
+  std::vector<size_t> he;
+  for (size_t i : rv::iota((size_t) 0, _num_nets)) {
+    he.clear();
+    for (size_t j : rv::iota(_net_span[i], _net_span[i + 1]) | rv::transform(pin2v)) {
+      if (j < _num_cells)
+        he.push_back(j);
+    }
+    if (he.size() < 2)
+      continue;
+    eind.insert(eind.end(), he.begin(), he.end());
+    eptr.push_back(eind.size());
+  }
+  std::vector<size_t> parts = std::move(Partitionner::hmetisSolve(_num_cells, eptr.size() - 1, eptr, eind, npart, 5, vwgt));
+  size_t index = *std::max_element(parts.begin(), parts.end());
+  parts.resize(_num_vertexs, 0);
+  std::iota(parts.begin() + _num_cells, parts.end(), index);
+  return parts;
+}
+
+void NetList::updateVertexSpan()
 {
   std::vector<std::vector<std::pair<size_t, size_t>>> temp_hmatrix(_num_vertexs, std::vector<std::pair<size_t, size_t>>());
-  for (size_t i = 0; i < _net_span.size() - 1; i++) {
+  for (size_t i = 0; i < _num_nets; i++) {
     for (size_t j = _net_span[i]; j < _net_span[i + 1]; j++) {
       temp_hmatrix[_pin2vertex[j]].emplace_back(i, j);
     }

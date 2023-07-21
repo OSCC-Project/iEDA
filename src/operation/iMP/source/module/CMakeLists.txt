@@ -4,7 +4,7 @@ add_library(imp-module
             ${IMP_MODULE}/NetList.cc)
 
 target_link_libraries(imp-module
-                      PUBLIC
+                      PRIVATE
                       imp-solver)
 target_include_directories(imp-module
                            PUBLIC

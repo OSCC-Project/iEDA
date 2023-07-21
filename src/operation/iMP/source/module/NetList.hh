@@ -31,17 +31,10 @@ class NetList
 
  public:
   // Constructor
-  NetList(size_t, size_t, size_t, size_t);
-
-  NetList(size_t, size_t, size_t, size_t, const std::vector<VertexType>&, const std::vector<int32_t>&, const std::vector<int32_t>&,
-          const std::vector<int32_t>&, const std::vector<int32_t>&, const std::vector<int32_t>&, const std::vector<int32_t>&,
-          const std::vector<size_t>&, const std::vector<size_t>&);
-
-  NetList(size_t, size_t, size_t, size_t, std::vector<VertexType>&&, std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<int32_t>&&,
-          std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<size_t>&&, std::vector<size_t>&&);
+  NetList() = default;
+  NetList(size_t num_vertexs, size_t num_nets) : _num_vertexs(num_vertexs), _num_nets(num_nets) {}
 
   // Getter functions for vectors
-
   const std::vector<int32_t>& get_lx() const { return _lx; }
 
   const std::vector<int32_t>& get_ly() const { return _ly; }
@@ -64,36 +57,70 @@ class NetList
 
   const std::vector<size_t>& get_row2col() const { return _row2col; }
 
-  NetList make_clusters(const std::vector<size_t> parts);
+  void set_region(int32_t lx, int32_t ly, int32_t dx, int32_t dy);
 
-  void clustering(const std::vector<size_t> parts);
+  void set_vertex_property(std::vector<VertexType>&& type, std::vector<int32_t>&& lx, std::vector<int32_t>&& ly, std::vector<int32_t>&& dx,
+                           std::vector<int32_t>&& dy, std::vector<int32_t>&& area, std::vector<size_t>&& id_map = {});
+
+  void set_connectivity(std::vector<size_t>&& net_span, std::vector<size_t>&& pin2vertex, std::vector<int32_t>&& pin_x_off,
+                        std::vector<int32_t>&& pin_y_off);
+  void sort_to_fit();
+
+  std::vector<size_t> cellsPartition(size_t npart);
+
+  NetList make_clusters(const std::vector<size_t>& parts);
+
+  void autoCellsClustering();
+
+  void cell_Clustering(size_t npart) { clustering(cellsPartition(npart)); }
+
+  void clustering(const std::vector<size_t>& parts);
 
  private:
-  void initVertexSpan();
+  void updateVertexSpan();
 
  private:
   size_t _num_vertexs;
-  size_t _num_moveable;
-  size_t _num_fixed;
   size_t _num_nets;
-  int32_t _canvas_lx;
-  int32_t _canvas_ly;
-  int32_t _canvas_dx;
-  int32_t _canvas_dy;
+
+  size_t _num_moveable;
+  size_t _num_cells;
+  size_t _num_clusters;
+  size_t _num_macros;
+  size_t _num_fixed;
+
+  bool _is_fit = false;
+
+  int32_t _region_lx;
+  int32_t _region_ly;
+  int32_t _region_dx;
+  int32_t _region_dy;
+  double _region_aspect_ratio;
   double _utilization;
+
+  std::vector<size_t> _id_map;
+
   std::vector<VertexType> _type;
   std::vector<int32_t> _lx;
   std::vector<int32_t> _ly;
   std::vector<int32_t> _dx;
   std::vector<int32_t> _dy;
   std::vector<int32_t> _area;
-  std::vector<int32_t> _pin_x_off;   // A column-wise pin list, indicating the offset of each pin in the x-direction.
-  std::vector<int32_t> _pin_y_off;   // A column-wise pin list, indicating the offset of each pin in the y-direction.
-  std::vector<size_t> _net_span;     // A net list, indicating the span of each net in the column-wise pin list.
-  std::vector<size_t> _pin2vertex;   // A column-wise pin list, mapping the vertex corresponding to each pin.
+  int32_t _sum_vertex_area;
+  int32_t _sum_cells_area;
+  int32_t _sum_macro_area;
+  int32_t _sum_cluster_area;
+  int32_t _sum_fix_area;
+
+  std::vector<size_t> _net_span;    // A net list, indicating the span of each net in the column-wise pin list.
+  std::vector<size_t> _pin2vertex;  // A column-wise pin list, mapping the vertex corresponding to each pin.
+
   std::vector<size_t> _vertex_span;  // A vertex list, indicating the span of each vertex in the row-wise pin list.
   std::vector<size_t> _pin2net;      // A row-wise pin list, mapping the net corresponding to each pin.
+
   std::vector<size_t> _row2col;  // A row-wise pin list, mapping each pin in the row-wise pin list to an index in the column-wise pin list.
+  std::vector<int32_t> _pin_x_off;  // A column-wise pin list, indicating the offset of each pin in the x-direction.
+  std::vector<int32_t> _pin_y_off;  // A column-wise pin list, indicating the offset of each pin in the y-direction.
 };
 
 }  // namespace imp
