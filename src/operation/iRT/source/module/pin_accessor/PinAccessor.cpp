@@ -965,9 +965,6 @@ void PinAccessor::reportTable(PAModel& pa_model)
                                  RTUtil::getPercentage(type_pin_num_map[AccessPointType::kOnShape], total_pin_num), "%)")
             << fort::endr;
   pin_table << fort::header << "Total" << total_pin_num << fort::endr;
-  for (std::string table_str : RTUtil::splitString(pin_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
 
   fort::char_table port_table;
   port_table.set_border_style(FT_SOLID_STYLE);
@@ -984,7 +981,20 @@ void PinAccessor::reportTable(PAModel& pa_model)
                << fort::endr;
   }
   port_table << fort::header << "Total" << total_port_num << total_access_point_num << fort::endr;
-  for (std::string table_str : RTUtil::splitString(port_table.to_string(), '\n')) {
+
+  std::vector<std::vector<std::string>> table_list;
+  table_list.push_back(RTUtil::splitString(pin_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(port_table.to_string(), '\n'));
+  std::sort(table_list.begin(), table_list.end(),
+            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
+  for (size_t i = 0; i < table_list.front().size(); i++) {
+    std::string table_str;
+    for (std::vector<std::string>& table : table_list) {
+      if (i < table.size()) {
+        table_str += table[i];
+        table_str += " ";
+      }
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 }

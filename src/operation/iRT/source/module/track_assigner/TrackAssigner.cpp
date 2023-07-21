@@ -1705,9 +1705,7 @@ void TrackAssigner::reportTable(TAModel& ta_model)
                << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
   }
   wire_table << fort::header << "Total" << total_wire_length << fort::endr;
-  for (std::string table_str : RTUtil::splitString(wire_table.to_string(), '\n')) {
-    LOG_INST.info(Loc::current(), table_str);
-  }
+
   // report drc info
   // init item column/row map
   irt_int column = 0;
@@ -1776,7 +1774,19 @@ void TrackAssigner::reportTable(TAModel& ta_model)
   }
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
-  for (std::string table_str : RTUtil::splitString(drc_table.to_string(), '\n')) {
+  std::vector<std::vector<std::string>> table_list;
+  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
+  std::sort(table_list.begin(), table_list.end(),
+            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
+  for (size_t i = 0; i < table_list.front().size(); i++) {
+    std::string table_str;
+    for (std::vector<std::string>& table : table_list) {
+      if (i < table.size()) {
+        table_str += table[i];
+        table_str += " ";
+      }
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 }
