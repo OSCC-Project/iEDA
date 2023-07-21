@@ -276,9 +276,17 @@ void PinAccessor::checkPAModel(PAModel& pa_model)
 
 void PinAccessor::iterative(PAModel& pa_model)
 {
-  accessPAModel(pa_model);
-  processPAModel(pa_model);
-  reportPAModel(pa_model);
+  irt_int pa_iter_num = 1;
+  for (irt_int iter = 1; iter <= pa_iter_num; iter++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", pa_iter_num, ") ******");
+
+    accessPAModel(pa_model);
+    processPAModel(pa_model);
+    reportPAModel(pa_model);
+
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", pa_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+  }
 }
 
 void PinAccessor::accessPAModel(PAModel& pa_model)
@@ -927,7 +935,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   pa_mode_stat.set_total_pin_num(total_pin_num);
   pa_mode_stat.set_total_port_num(total_port_num);
   pa_mode_stat.set_total_access_point_num(total_access_point_num);
-  
+
   pa_model.set_pa_mode_stat(pa_mode_stat);
 }
 

@@ -1035,54 +1035,6 @@ void DataManager::makeLayerViaMasterList()
     }
     std::sort(via_master_list.begin(), via_master_list.end(),
               [&](ViaMaster& via_master1, ViaMaster& via_master2) { return sortByMultiLevel(via_master1, via_master2); });
-
-    std::sort(via_master_list.begin(), via_master_list.end(), [&](ViaMaster& a, ViaMaster& b) {
-      std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-      LayerRect& a_above = a.get_above_enclosure();
-      LayerRect& a_below = a.get_below_enclosure();
-      LayerRect& b_above = b.get_above_enclosure();
-      LayerRect& b_below = b.get_below_enclosure();
-      // 方向
-      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_direction();
-      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_direction();
-      if (a.get_above_direction() == a_above_layer_direction && b.get_above_direction() != b_above_layer_direction) {
-        return true;
-      } else if (a.get_above_direction() != a_above_layer_direction && b.get_above_direction() == b_above_layer_direction) {
-        return false;
-      }
-      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_direction();
-      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_direction();
-      if (a.get_below_direction() == a_below_layer_direction && b.get_below_direction() != b_below_layer_direction) {
-        return true;
-      } else if (a.get_below_direction() != a_below_layer_direction && b.get_below_direction() == b_below_layer_direction) {
-        return false;
-      }
-      // 宽度
-      if (a_above.getWidth() != b_above.getWidth()) {
-        return a_above.getWidth() < b_above.getWidth();
-      }
-      if (a_below.getWidth() != b_below.getWidth()) {
-        return a_below.getWidth() < b_below.getWidth();
-      }
-      // 对称
-      irt_int a_above_center_diff = std::abs(a_above.get_lb_x() + a_above.get_rt_x());
-      irt_int b_above_center_diff = std::abs(b_above.get_lb_x() + b_above.get_rt_x());
-      if (a_above_center_diff != b_above_center_diff) {
-        return a_above_center_diff < b_above_center_diff;
-      }
-      irt_int a_below_center_diff = std::abs(a_below.get_lb_x() + a_below.get_rt_x());
-      irt_int b_below_center_diff = std::abs(b_below.get_lb_x() + b_below.get_rt_x());
-      if (a_below_center_diff != b_below_center_diff) {
-        return a_below_center_diff < b_below_center_diff;
-      }
-      // 长度
-      if (a_above.getLength() != b_above.getLength()) {
-        return a_above.getLength() < b_above.getLength();
-      } else {
-        return a_below.getLength() < b_below.getLength();
-      }
-    });
     for (size_t i = 0; i < via_master_list.size(); i++) {
       via_master_list[i].set_via_master_idx(layer_idx, i);
     }

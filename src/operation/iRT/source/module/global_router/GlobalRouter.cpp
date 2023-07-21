@@ -561,13 +561,13 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
 
 void GlobalRouter::iterative(GRModel& gr_model)
 {
-  irt_int gr_iter_num = 10;
+  irt_int gr_iter_num = 1;
   for (irt_int iter = 1; iter <= gr_iter_num; iter++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", gr_iter_num, ") ******");
 
-    // sortGRModel(gr_model);
-    // resetGRModel(gr_model);
+    sortGRModel(gr_model);
+    resetGRModel(gr_model);
     routeGRModel(gr_model);
     processGRModel(gr_model);
     reportGRModel(gr_model);
@@ -577,13 +577,98 @@ void GlobalRouter::iterative(GRModel& gr_model)
   }
 }
 
-// void GlobalRouter::sortGRModel(GRModel& gr_model){
+void GlobalRouter::sortGRModel(GRModel& gr_model)
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Sorting all nets beginning...");
 
-// }
+  std::vector<GRNet>& gr_net_list = gr_model.get_gr_net_list();
+  std::sort(gr_net_list.begin(), gr_net_list.end(), [&](GRNet& net1, GRNet& net2) { return sortByMultiLevel(net1, net2); });
 
-// void GlobalRouter::resetGRModel(GRModel& gr_model){
+  LOG_INST.info(Loc::current(), "Sorting all nets completed!", monitor.getStatsInfo());
+}
 
-// }
+bool GlobalRouter::sortByMultiLevel(GRNet& net1, GRNet& net2)
+{
+  SortStatus sort_status = SortStatus::kNone;
+
+  sort_status = sortByRoutingAreaASC(net1, net2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByLengthWidthRatioDESC(net1, net2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByPinNumDESC(net1, net2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  return false;
+}
+
+// RoutingArea 升序
+SortStatus GlobalRouter::sortByRoutingAreaASC(GRNet& net1, GRNet& net2)
+{
+  double net1_routing_area = net1.get_bounding_box().getTotalSize();
+  double net2_routing_area = net2.get_bounding_box().getTotalSize();
+
+  if (net1_routing_area < net2_routing_area) {
+    return SortStatus::kTrue;
+  } else if (net1_routing_area == net2_routing_area) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
+}
+
+// 长宽比 降序
+SortStatus GlobalRouter::sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2)
+{
+  BoundingBox& net1_bounding_box = net1.get_bounding_box();
+  BoundingBox& net2_bounding_box = net2.get_bounding_box();
+
+  double net1_length_width_ratio = net1_bounding_box.getXSize() / 1.0 / net1_bounding_box.getYSize();
+  if (net1_length_width_ratio < 1) {
+    net1_length_width_ratio = 1 / net1_length_width_ratio;
+  }
+  double net2_length_width_ratio = net2_bounding_box.getXSize() / 1.0 / net2_bounding_box.getYSize();
+  if (net2_length_width_ratio < 1) {
+    net2_length_width_ratio = 1 / net2_length_width_ratio;
+  }
+  if (net1_length_width_ratio > net2_length_width_ratio) {
+    return SortStatus::kTrue;
+  } else if (net1_length_width_ratio == net2_length_width_ratio) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
+}
+
+// PinNum 降序
+SortStatus GlobalRouter::sortByPinNumDESC(GRNet& net1, GRNet& net2)
+{
+  irt_int net1_pin_num = static_cast<irt_int>(net1.get_gr_pin_list().size());
+  irt_int net2_pin_num = static_cast<irt_int>(net2.get_gr_pin_list().size());
+
+  if (net1_pin_num > net2_pin_num) {
+    return SortStatus::kTrue;
+  } else if (net1_pin_num == net2_pin_num) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
+}
+
+void GlobalRouter::resetGRModel(GRModel& gr_model)
+{
+}
 
 void GlobalRouter::routeGRModel(GRModel& gr_model)
 {
@@ -632,6 +717,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
   gr_model.set_gr_net_ref(&gr_net);
   gr_model.set_routing_region(gr_model.get_curr_bounding_box());
   gr_model.get_node_segment_list().clear();
+
   // key_node_set
   std::set<GRNode*>& key_node_set = gr_model.get_key_node_set();
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
@@ -640,6 +726,17 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       key_node_set.insert(gr_node);
     }
   }
+
+  std::vector<PlanarCoord> planar_coord_list;
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+      planar_coord_list.push_back(coord.get_planar_coord());
+    }
+  }
+  std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
+  planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
+  std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_coord_list);
+
   // planar_layer_map
   std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> planar_layer_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
@@ -647,8 +744,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       planar_layer_map[coord.get_planar_coord()].insert(coord);
     }
   }
-  std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_layer_map);
-
+  // 补充拐点，斯坦纳点
   for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
     if (!RTUtil::exist(planar_layer_map, planar_topo.get_first())) {
       for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
@@ -692,13 +788,8 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
   }
 }
 
-std::vector<Segment<PlanarCoord>> GlobalRouter::getPlanarTopoListByFlute(
-    std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC>& planar_layer_map)
+std::vector<Segment<PlanarCoord>> GlobalRouter::getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list)
 {
-  std::vector<PlanarCoord> planar_coord_list;
-  for (auto& [planar_coord, layer_coord_set] : planar_layer_map) {
-    planar_coord_list.push_back(planar_coord);
-  }
   size_t point_num = planar_coord_list.size();
   if (point_num == 1) {
     return {};

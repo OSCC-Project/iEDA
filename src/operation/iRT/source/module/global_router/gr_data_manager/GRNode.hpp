@@ -89,39 +89,39 @@ class GRNode : public LayerCoord
       // net在node中有引导，但是方向不对，视为障碍
       is_obs = RTUtil::exist(_net_access_map[net_idx], orientation) ? false : true;
     }
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringENV) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        // 对于up和down来说 只有via_demand
-        irt_int via_remain = _resource_supply - _resource_demand;
-        is_obs = (via_remain < _whole_via_demand);
-      } else {
-        // 对于平面来说 需要先判断方向
-        irt_int access_supply = 0;
-        irt_int access_demand = 0;
-        if (RTUtil::exist(_orientation_access_supply_map, orientation)) {
-          access_supply = _orientation_access_supply_map[orientation];
-        }
-        if (RTUtil::exist(_orientation_access_demand_map, orientation)) {
-          access_demand = _orientation_access_demand_map[orientation];
-        }
-        is_obs = (access_supply <= access_demand);
-        if (!is_obs) {
-          // 再判断平面资源
-          irt_int wire_remain = _resource_supply - _resource_demand;
-          // 需要区分是整根线还是线网内demand
-          irt_int wire_demand = _whole_wire_demand;
-          if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {
-            if (RTUtil::exist(_net_orientation_wire_demand_map[net_idx], orientation)) {
-              wire_demand = _net_orientation_wire_demand_map[net_idx][orientation];
-            }
-          }
-          is_obs = (wire_remain < wire_demand);
-        }
-      }
-    }
+    // if (gr_route_strategy == GRRouteStrategy::kIgnoringENV) {
+    //   return is_obs;
+    // }
+    // if (!is_obs) {
+    //   if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+    //     // 对于up和down来说 只有via_demand
+    //     irt_int via_remain = _resource_supply - _resource_demand;
+    //     is_obs = (via_remain < _whole_via_demand);
+    //   } else {
+    //     // 对于平面来说 需要先判断方向
+    //     irt_int access_supply = 0;
+    //     irt_int access_demand = 0;
+    //     if (RTUtil::exist(_orientation_access_supply_map, orientation)) {
+    //       access_supply = _orientation_access_supply_map[orientation];
+    //     }
+    //     if (RTUtil::exist(_orientation_access_demand_map, orientation)) {
+    //       access_demand = _orientation_access_demand_map[orientation];
+    //     }
+    //     is_obs = (access_supply <= access_demand);
+    //     if (!is_obs) {
+    //       // 再判断平面资源
+    //       irt_int wire_remain = _resource_supply - _resource_demand;
+    //       // 需要区分是整根线还是线网内demand
+    //       irt_int wire_demand = _whole_wire_demand;
+    //       if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {
+    //         if (RTUtil::exist(_net_orientation_wire_demand_map[net_idx], orientation)) {
+    //           wire_demand = _net_orientation_wire_demand_map[net_idx][orientation];
+    //         }
+    //       }
+    //       is_obs = (wire_remain < wire_demand);
+    //     }
+    //   }
+    // }
     return is_obs;
   }
   double getCost(irt_int net_idx, Orientation orientation)
@@ -130,35 +130,34 @@ class GRNode : public LayerCoord
     if (RTUtil::exist(_net_access_map, net_idx)) {
       // net在node中有引导，但是方向不对，视为障碍
       cost += !RTUtil::exist(_net_access_map[net_idx], orientation) ? 1 : 0;
+    }
+    if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
+      // 对于up和down来说 只有via_demand
+      irt_int via_remain = _resource_supply - _resource_demand;
+      cost += RTUtil::sigmoid(_whole_via_demand, via_remain);
     } else {
-      if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
-        // 对于up和down来说 只有via_demand
-        irt_int via_remain = _resource_supply - _resource_demand;
-        cost += RTUtil::sigmoid(_whole_via_demand, via_remain);
-      } else {
-        // 对于平面来说 需要先判断方向
-        irt_int access_supply = 0;
-        irt_int access_demand = 0;
-        if (RTUtil::exist(_orientation_access_supply_map, orientation)) {
-          access_supply = _orientation_access_supply_map[orientation];
-        }
-        if (RTUtil::exist(_orientation_access_demand_map, orientation)) {
-          access_demand = _orientation_access_demand_map[orientation];
-        }
-        cost += RTUtil::sigmoid(access_demand, access_supply);
-        if (access_supply > access_demand) {
-          // 再判断平面资源
-          irt_int wire_remain = _resource_supply - _resource_demand;
+      // 对于平面来说 需要先判断方向
+      irt_int access_supply = 0;
+      irt_int access_demand = 0;
+      if (RTUtil::exist(_orientation_access_supply_map, orientation)) {
+        access_supply = _orientation_access_supply_map[orientation];
+      }
+      if (RTUtil::exist(_orientation_access_demand_map, orientation)) {
+        access_demand = _orientation_access_demand_map[orientation];
+      }
+      cost += RTUtil::sigmoid(access_demand, access_supply);
+      if (access_supply > access_demand) {
+        // 再判断平面资源
+        irt_int wire_remain = _resource_supply - _resource_demand;
 
-          // 需要区分是整根线还是线网内demand
-          irt_int wire_demand = _whole_wire_demand;
-          if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {
-            if (RTUtil::exist(_net_orientation_wire_demand_map[net_idx], orientation)) {
-              wire_demand = _net_orientation_wire_demand_map[net_idx][orientation];
-            }
+        // 需要区分是整根线还是线网内demand
+        irt_int wire_demand = _whole_wire_demand;
+        if (RTUtil::exist(_net_orientation_wire_demand_map, net_idx)) {
+          if (RTUtil::exist(_net_orientation_wire_demand_map[net_idx], orientation)) {
+            wire_demand = _net_orientation_wire_demand_map[net_idx][orientation];
           }
-          cost += RTUtil::sigmoid(wire_demand, wire_remain);
         }
+        cost += RTUtil::sigmoid(wire_demand, wire_remain);
       }
     }
     return cost;
