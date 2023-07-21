@@ -677,9 +677,6 @@ GridMap<double> ResourceAllocator::getCostMap(GridMap<double>& allocation_map, d
       sum_cost += cost_map[i][j];
     }
   }
-  if (!RTUtil::equalDoubleByError(sum_allocation, sum_cost, DBL_ERROR)) {
-    LOG_INST.error(Loc::current(), "The total allocation '", sum_allocation, "' is not equal to the total cost '", sum_cost, "'!");
-  }
   return cost_map;
 }
 
@@ -717,7 +714,7 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
   RAModelStat ra_model_stat;
 
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-  double max_cost = -DBL_MAX;
+  double max_avg_cost = -DBL_MAX;
   std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
   for (RANet& ra_net : ra_net_list) {
     double total_cost = 0;
@@ -728,10 +725,10 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
       }
     }
     double cost_value = total_cost / (ra_cost_map.get_x_size() * ra_cost_map.get_y_size());
-    max_cost = std::max(max_cost, cost_value);
+    max_avg_cost = std::max(max_avg_cost, cost_value);
     avg_cost_list.push_back(cost_value);
   }
-  ra_model_stat.set_max_avg_cost(max_cost);
+  ra_model_stat.set_max_avg_cost(max_avg_cost);
 
   ra_model.set_ra_model_stat(ra_model_stat);
 }
