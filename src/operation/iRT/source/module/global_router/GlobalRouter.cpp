@@ -1410,6 +1410,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
   std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
+  std::vector<double> access_overflow_list;
 
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
@@ -1434,8 +1435,14 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = node_map[grid_x][grid_y];
-        double remain = gr_node.get_resource_supply() - gr_node.get_resource_demand();
-        overflow_list.push_back(remain != 0 ? (-1 * remain / gr_node.get_resource_supply()) : 0);
+
+        double resource_overflow = gr_node.calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
+        overflow_list.push_back(resource_overflow);
+        for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+          double access_overflow = gr_node.calcCost(gr_node.get_orientation_access_demand_map()[orientation],
+                                                    gr_node.get_orientation_access_supply_map()[orientation]);
+          access_overflow_list.push_back(access_overflow);
+        }
       }
     }
   }
@@ -1546,6 +1553,81 @@ void GlobalRouter::update(GRModel& gr_model)
 #endif
 
 #if 1  // plot gr_model
+
+// void GlobalRouter::writeGRModel(GRModel& gr_model, irt_int iter)
+// {
+//   Die& die = DM_INST.getDatabase().get_die();
+//   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+//   std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+
+//   GridMap<double> planar_congestion_map;
+//   planar_congestion_map.init(die.getXSize(), die.getYSize());
+
+//   for (RoutingLayer& routing_layer : routing_layer_list) {
+//     GridMap<GRNode>& node_map = gr_model.get_layer_node_map()[routing_layer.get_layer_idx()];
+//     for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
+//       for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
+//         GRNode& gr_node = node_map[grid_x][grid_y];
+
+//         double congestion = 3;
+//         if (gr_node.get_resource_supply() != 0) {
+//           congestion = (gr_node.get_resource_demand() / gr_node.get_resource_supply());
+//         }
+
+//         GPBoundary gp_boundary;
+//         gp_boundary.set_layer_idx(static_cast<irt_int>(congestion * 20));
+//         gp_boundary.set_data_type(0);
+//         gp_boundary.set_rect(RTUtil::getRealRect(PlanarCoord(grid_x, grid_y), gcell_axis));
+//         congestion_map_struct.push(gp_boundary);
+//       }
+//     }
+//   }
+// }
+
+// void GlobalRouter::writePYScript()
+// {
+//   std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+//   irt_int ra_outer_iter_num = DM_INST.getConfig().ra_outer_iter_num;
+
+//   std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "plot.py"));
+
+//   RTUtil::pushStream(python_file, "## 导入绘图需要用到的python库", "\n");
+//   RTUtil::pushStream(python_file, "from concurrent.futures import process", "\n");
+//   RTUtil::pushStream(python_file, "import numpy as np", "\n");
+//   RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+//   RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+//   RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+//   RTUtil::pushStream(python_file, "from PIL import Image", "\n");
+//   RTUtil::pushStream(python_file, "import glob", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "for i in range(1,", ra_outer_iter_num + 1, "):", "\n");
+//   RTUtil::pushStream(python_file, "    csv_data = pd.read_csv('ra_model_'+ str(i) +'.csv')", "\n");
+//   RTUtil::pushStream(python_file, "    array_data = np.array(csv_data)", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
+//   RTUtil::pushStream(python_file, "    plt.clf()", "\n");
+//   RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data,cmap='Greens')", "\n");
+//   RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
+//   RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
+//   RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");
+//   RTUtil::pushStream(python_file, "    # plt.show()", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "images = glob.glob('ra_model_*.png')", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "# 提取文件名中的id数字部分,并转换为整数", "\n");
+//   RTUtil::pushStream(python_file, "sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file, "frames = []", "\n");
+//   RTUtil::pushStream(python_file, "for image in sorted_images:", "\n");
+//   RTUtil::pushStream(python_file, "    img = Image.open(image)", "\n");
+//   RTUtil::pushStream(python_file, "    img = img.resize((800, 600))", "\n");
+//   RTUtil::pushStream(python_file, "    frames.append(img)", "\n");
+//   RTUtil::pushStream(python_file, "", "\n");
+//   RTUtil::pushStream(python_file,
+//                      "frames[0].save('output.gif', format='GIF', append_images=frames[1:], save_all=True, duration=300, loop=0)", "\n");
+//   RTUtil::closeFileStream(python_file);
+// }
 
 void GlobalRouter::plotCongestionMap(GRModel& gr_model, irt_int iter)
 {
