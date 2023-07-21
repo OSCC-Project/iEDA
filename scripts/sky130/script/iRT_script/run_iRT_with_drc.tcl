@@ -47,8 +47,8 @@ init_rt -temp_directory_path $temp_folder_path \
         -enable_idrc_interfaces 1 \
         -ra_initial_penalty 100 \
         -ra_penalty_drop_rate 0.8 \
-        -ra_outer_iter_num 10 \
-        -ra_inner_iter_num 10
+        -ra_outer_max_iter_num 10 \
+        -ra_inner_max_iter_num 10
 
 run_rt -flow "dr"
 

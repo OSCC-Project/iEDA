@@ -37,8 +37,9 @@ class Config
   irt_int enable_idrc_interfaces;    // optional
   double ra_initial_penalty;         // optional
   double ra_penalty_drop_rate;       // optional
-  irt_int ra_outer_iter_num;         // optional
-  irt_int ra_inner_iter_num;         // optional
+  irt_int ra_outer_max_iter_num;         // optional
+  irt_int ra_inner_max_iter_num;         // optional
+  irt_int gr_max_iter_num;               // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building

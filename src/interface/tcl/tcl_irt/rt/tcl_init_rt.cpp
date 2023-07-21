@@ -42,10 +42,12 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ra_initial_penalty", ValueType::kDouble));
   // double ra_penalty_drop_rate;             // optional
   _config_list.push_back(std::make_pair("-ra_penalty_drop_rate", ValueType::kDouble));
-  // irt_int ra_outer_iter_num;               // optional
-  _config_list.push_back(std::make_pair("-ra_outer_iter_num", ValueType::kInt));
-  // irt_int ra_inner_iter_num;               // optional
-  _config_list.push_back(std::make_pair("-ra_inner_iter_num", ValueType::kInt));
+  // irt_int ra_outer_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ra_outer_max_iter_num", ValueType::kInt));
+  // irt_int ra_inner_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ra_inner_max_iter_num", ValueType::kInt));
+  // irt_int gr_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
 
   TclUtil::addOption(this, _config_list);
 }

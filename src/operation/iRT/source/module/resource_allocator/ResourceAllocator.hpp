@@ -66,6 +66,7 @@ class ResourceAllocator
   void buildRelation(RAModel& ra_model);
   void initTempObject(RAModel& ra_model);
   void checkRAModel(RAModel& ra_model);
+  void writePYScript();
 #endif
 
 #if 1  // iterative
@@ -88,7 +89,6 @@ class ResourceAllocator
 
 #if 1  // plot ra_model
   void writeRAModel(RAModel& ra_model, irt_int epoch);
-  void writePYScript();
 #endif
 };
 
