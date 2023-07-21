@@ -48,7 +48,7 @@ void DensityModel::setConstant(const Vec& width, const Vec& height, double core_
   _height = height;
   _num_var = width.rows();
   _sum_macro_area = _width.dot(_height);
-  double ar = std::floor(core_h / core_w);
+  double ar = core_h / core_w;
   _num_bins_x = std::pow(2, static_cast<int>(std::ceil(std::log2(std::sqrt(10 * _num_var / ar)))));
   _num_bins_y = std::pow(2, static_cast<int>(std::ceil(std::log2(std::sqrt(10 * _num_var * ar)))));
   // _num_bins_x = 512;
@@ -56,6 +56,7 @@ void DensityModel::setConstant(const Vec& width, const Vec& height, double core_
   _bin_size_x = std::round(core_w / _num_bins_x);
   _bin_size_y = std::round(core_h / _num_bins_y);
   _dct = new DCT(_num_bins_x, _num_bins_y, _bin_size_x, _bin_size_y);
+  // _dct->set_thread_nums(_num_threads);
   // _dct->set_thread_nums(8);
   _area_bin = static_cast<float>(_bin_size_x * _bin_size_y);
   _ploygonlist.resize(_num_var);
@@ -82,8 +83,9 @@ void DensityModel::evaluate(const Mat& variable, Mat& grad, double& cost) const
 void DensityModel::updateDensityMap(const Vec& x, const Vec& y, const Vec& r) const
 {
   float** density_map = _dct->get_density_2d_ptr();
+#pragma omp parallel for num_threads(_num_threads)
   for (int i = 0; i < _num_bins_x; i++) {
-    std::fill_n(density_map[i], _num_bins_y, 0);
+    std::fill_n(density_map[i], _num_bins_y, 0.0f);
   }
 #pragma omp parallel for num_threads(_num_threads)
   for (int i = 0; i < _num_var; i++) {
@@ -188,9 +190,9 @@ void DensityModel::lineDraing(const Coordinate<int>& a, const Coordinate<int>& b
     ystep = -1;
   }
   for (int x = lx; x <= ux; x++) {
-    if (x < 0 || x >= _num_bins_x) {
-      std::cout << x;
-    }
+    // if (x < 0 || x >= _num_bins_x) {
+    //   std::cout << x;
+    // }
     if (steep) {
       set.emplace(y, x);
     } else {
