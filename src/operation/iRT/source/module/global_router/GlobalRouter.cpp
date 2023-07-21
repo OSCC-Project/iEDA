@@ -1409,8 +1409,8 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
-  std::vector<double> access_overflow_list;
+  std::vector<double>& resource_overflow_list = gr_model_stat.get_resource_overflow_list();
+  std::vector<double>& access_overflow_list = gr_model_stat.get_access_overflow_list();
 
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (TNode<RTNode>* node : RTUtil::getNodeList(gr_net.get_gr_result_tree())) {
@@ -1437,7 +1437,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
         GRNode& gr_node = node_map[grid_x][grid_y];
 
         double resource_overflow = gr_node.calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
-        overflow_list.push_back(resource_overflow);
+        resource_overflow_list.push_back(resource_overflow);
         for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
           double access_overflow = gr_node.calcCost(gr_node.get_orientation_access_demand_map()[orientation],
                                                     gr_node.get_orientation_access_supply_map()[orientation]);
@@ -1448,19 +1448,24 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   }
   double total_wire_length = 0;
   irt_int total_via_number = 0;
-  double max_overflow = -DBL_MAX;
+  double max_resource_overflow = -DBL_MAX;
+  double max_access_overflow = -DBL_MAX;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
   }
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
-  for (double overflow : overflow_list) {
-    max_overflow = std::max(max_overflow, overflow);
+  for (double resource_overflow : resource_overflow_list) {
+    max_resource_overflow = std::max(max_resource_overflow, resource_overflow);
+  }
+  for (double access_overflow : access_overflow_list) {
+    max_access_overflow = std::max(max_access_overflow, access_overflow);
   }
   gr_model_stat.set_total_wire_length(total_wire_length);
   gr_model_stat.set_total_via_number(total_via_number);
-  gr_model_stat.set_max_overflow(max_overflow);
+  gr_model_stat.set_max_resource_overflow(max_resource_overflow);
+  gr_model_stat.set_max_access_overflow(max_access_overflow);
 }
 
 void GlobalRouter::reportTable(GRModel& gr_model)
@@ -1471,10 +1476,12 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   GRModelStat& gr_model_stat = gr_model.get_gr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = gr_model_stat.get_routing_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = gr_model_stat.get_cut_via_number_map();
-  std::vector<double>& overflow_list = gr_model_stat.get_overflow_list();
+  std::vector<double>& resource_overflow_list = gr_model_stat.get_resource_overflow_list();
+  std::vector<double>& access_overflow_list = gr_model_stat.get_access_overflow_list();
   double total_wire_length = gr_model_stat.get_total_wire_length();
   irt_int total_via_number = gr_model_stat.get_total_via_number();
-  double max_overflow = gr_model_stat.get_max_overflow();
+  double max_resource_overflow = gr_model_stat.get_max_resource_overflow();
+  double max_access_overflow = gr_model_stat.get_max_access_overflow();
 
   // report wire info
   fort::char_table wire_table;
@@ -1500,39 +1507,71 @@ void GlobalRouter::reportTable(GRModel& gr_model)
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
-  // report overflow info
-  GridMap<double> overflow_map = RTUtil::getRangeNumRatioMap(overflow_list);
+  // report resource overflow info
+  GridMap<double> resource_overflow_map = RTUtil::getRangeNumRatioMap(resource_overflow_list);
 
-  fort::char_table overflow_table;
-  overflow_table.set_border_style(FT_SOLID_STYLE);
-  overflow_table << fort::header << "Overflow"
-                 << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < overflow_map.get_y_size(); y_idx++) {
-    double left = overflow_map[0][y_idx];
-    double right = overflow_map[1][y_idx];
+  fort::char_table resource_overflow_table;
+  resource_overflow_table.set_border_style(FT_SOLID_STYLE);
+  resource_overflow_table << fort::header << "Resource Overflow"
+                          << "GCell Number" << fort::endr;
+  for (irt_int y_idx = 0; y_idx < resource_overflow_map.get_y_size(); y_idx++) {
+    double left = resource_overflow_map[0][y_idx];
+    double right = resource_overflow_map[1][y_idx];
     std::string range_str;
-    if (y_idx == overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_overflow, "]");
+    if (y_idx == resource_overflow_map.get_y_size() - 1) {
+      range_str = RTUtil::getString("[", left, ",", max_resource_overflow, "]");
     } else {
       range_str = RTUtil::getString("[", left, ",", right, ")");
     }
-    overflow_table << range_str << RTUtil::getString(overflow_map[2][y_idx], "(", overflow_map[3][y_idx], "%)") << fort::endr;
+    resource_overflow_table << range_str << RTUtil::getString(resource_overflow_map[2][y_idx], "(", resource_overflow_map[3][y_idx], "%)")
+                            << fort::endr;
   }
-  overflow_table << fort::header << "Total" << overflow_list.size() << fort::endr;
+  resource_overflow_table << fort::header << "Total" << resource_overflow_list.size() << fort::endr;
+
+  // report access overflow info
+  GridMap<double> access_overflow_map = RTUtil::getRangeNumRatioMap(access_overflow_list);
+
+  fort::char_table access_overflow_table;
+  access_overflow_table.set_border_style(FT_SOLID_STYLE);
+  access_overflow_table << fort::header << "Access Overflow"
+                        << "GCell Number" << fort::endr;
+  for (irt_int y_idx = 0; y_idx < access_overflow_map.get_y_size(); y_idx++) {
+    double left = access_overflow_map[0][y_idx];
+    double right = access_overflow_map[1][y_idx];
+    std::string range_str;
+    if (y_idx == access_overflow_map.get_y_size() - 1) {
+      range_str = RTUtil::getString("[", left, ",", max_access_overflow, "]");
+    } else {
+      range_str = RTUtil::getString("[", left, ",", right, ")");
+    }
+    access_overflow_table << range_str << RTUtil::getString(access_overflow_map[2][y_idx], "(", access_overflow_map[3][y_idx], "%)")
+                          << fort::endr;
+  }
+  access_overflow_table << fort::header << "Total" << access_overflow_list.size() << fort::endr;
 
   std::vector<std::vector<std::string>> table_list;
   table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(overflow_table.to_string(), '\n'));
-  std::sort(table_list.begin(), table_list.end(),
-            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
-  for (size_t i = 0; i < table_list.front().size(); i++) {
+  table_list.push_back(RTUtil::splitString(resource_overflow_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(access_overflow_table.to_string(), '\n'));
+
+  int max_size = INT_MIN;
+  for (std::vector<std::string>& table : table_list) {
+    max_size = std::max(max_size, static_cast<int>(table.size()));
+  }
+  for (std::vector<std::string>& table : table_list) {
+    for (irt_int i = table.size(); i < max_size; i++) {
+      std::string table_str;
+      table_str.append(table.front().length() / 3, ' ');
+      table.push_back(table_str);
+    }
+  }
+
+  for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
     for (std::vector<std::string>& table : table_list) {
-      if (i < table.size()) {
-        table_str += table[i];
-        table_str += " ";
-      }
+      table_str += table[i];
+      table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
   }
