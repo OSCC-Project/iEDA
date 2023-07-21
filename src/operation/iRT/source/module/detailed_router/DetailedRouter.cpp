@@ -1942,20 +1942,6 @@ void DetailedRouter::reportTable(DRModel& dr_model)
               << fort::endr;
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
-  // report wire via info
-  std::vector<std::string> wire_str_list = RTUtil::splitString(wire_table.to_string(), '\n');
-  std::vector<std::string> via_str_list = RTUtil::splitString(via_table.to_string(), '\n');
-  for (size_t i = 0; i < std::max(wire_str_list.size(), via_str_list.size()); i++) {
-    std::string table_str;
-    if (i < wire_str_list.size()) {
-      table_str += wire_str_list[i];
-    }
-    table_str += " ";
-    if (i < via_str_list.size()) {
-      table_str += via_str_list[i];
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
 
   // init item column/row map
   irt_int column = 0;
@@ -2024,7 +2010,21 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   }
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
-  for (std::string table_str : RTUtil::splitString(drc_table.to_string(), '\n')) {
+  // print
+  std::vector<std::vector<std::string>> table_list;
+  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
+  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
+  std::sort(table_list.begin(), table_list.end(),
+            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
+  for (size_t i = 0; i < table_list.front().size(); i++) {
+    std::string table_str;
+    for (std::vector<std::string>& table : table_list) {
+      if (i < table.size()) {
+        table_str += table[i];
+        table_str += " ";
+      }
+    }
     LOG_INST.info(Loc::current(), table_str);
   }
 }
