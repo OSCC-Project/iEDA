@@ -16,40 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
+#include "GRNode.hpp"
 
 namespace irt {
 
-enum class GRRouteStrategy
+class GRGroup
 {
-  kNone = 0,
-  kFullyConsider = 1,
-  kIgnoringOBS = 2
-};
+ public:
+  GRGroup() = default;
+  ~GRGroup() = default;
+  // getter
+  std::vector<GRNode*>& get_gr_node_list() { return _gr_node_list; }
+  // setter
+  void set_gr_node_list(const std::vector<GRNode*>& gr_node_list) { _gr_node_list = gr_node_list; }
+  // function
 
-struct GetGRRouteStrategyName
-{
-  std::string operator()(const GRRouteStrategy& gr_route_strategy) const
-  {
-    std::string gr_route_strategy_name;
-    switch (gr_route_strategy) {
-      case GRRouteStrategy::kNone:
-        gr_route_strategy_name = "none";
-        break;
-      case GRRouteStrategy::kFullyConsider:
-        gr_route_strategy_name = "fully_consider";
-        break;
-      case GRRouteStrategy::kIgnoringOBS:
-        gr_route_strategy_name = "ignoring_obs";
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return gr_route_strategy_name;
-  }
+ private:
+  std::vector<GRNode*> _gr_node_list;
 };
 
 }  // namespace irt

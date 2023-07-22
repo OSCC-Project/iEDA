@@ -47,7 +47,7 @@ class GRNode : public LayerCoord
   irt_int get_resource_supply() const { return _resource_supply; }
   irt_int get_resource_demand() const { return _resource_demand; }
   std::map<irt_int, std::set<Orientation>>& get_net_access_map() { return _net_access_map; }
-  std::queue<irt_int>& get_net_queue() { return _net_queue; }
+  std::set<irt_int>& get_contribution_net_set() { return _contribution_net_set; }
   // setter
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
@@ -69,7 +69,7 @@ class GRNode : public LayerCoord
   void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_resource_demand(const irt_int resource_demand) { _resource_demand = resource_demand; }
   void set_net_access_map(const std::map<irt_int, std::set<Orientation>>& net_access_map) { _net_access_map = net_access_map; }
-  void set_net_queue(const std::queue<irt_int>& net_queue) { _net_queue = net_queue; }
+  void set_contribution_net_set(const std::set<irt_int>& contribution_net_set) { _contribution_net_set = contribution_net_set; }
   // function
   GRNode* getNeighborNode(Orientation orientation)
   {
@@ -139,7 +139,7 @@ class GRNode : public LayerCoord
     }
     return cost;
   }
-  void addDemand(irt_int net_idx, std::set<Orientation> orientation_set)
+  void updateDemand(irt_int net_idx, std::set<Orientation> orientation_set, ChangeType change_type)
   {
     if (RTUtil::exist(orientation_set, Orientation::kEast) || RTUtil::exist(orientation_set, Orientation::kWest)
         || RTUtil::exist(orientation_set, Orientation::kSouth) || RTUtil::exist(orientation_set, Orientation::kNorth)) {
@@ -161,15 +161,31 @@ class GRNode : public LayerCoord
       if (!has_net_demand) {
         wire_demand = _whole_wire_demand;
       }
-      _resource_demand += wire_demand;
+      if (change_type == ChangeType::kAdd) {
+        _resource_demand += wire_demand;
+      } else if (change_type == ChangeType::kDel) {
+        _resource_demand -= wire_demand;
+      }
 
       for (Orientation orientation : orientation_set) {
-        _orientation_access_demand_map[orientation]++;
+        if (change_type == ChangeType::kAdd) {
+          _orientation_access_demand_map[orientation]++;
+        } else if (change_type == ChangeType::kDel) {
+          _orientation_access_demand_map[orientation]--;
+        }
       }
     } else if (RTUtil::exist(orientation_set, Orientation::kUp) || RTUtil::exist(orientation_set, Orientation::kDown)) {
-      _resource_demand += _whole_via_demand;
+      if (change_type == ChangeType::kAdd) {
+        _resource_demand += _whole_via_demand;
+      } else if (change_type == ChangeType::kDel) {
+        _resource_demand -= _whole_via_demand;
+      }
     }
-    _net_queue.push(net_idx);
+    if (change_type == ChangeType::kAdd) {
+      _contribution_net_set.insert(net_idx);
+    } else if (change_type == ChangeType::kDel) {
+      _contribution_net_set.erase(net_idx);
+    }
   }
 #if 1  // astar
   // single net
@@ -227,7 +243,7 @@ class GRNode : public LayerCoord
    *  当对应net不在引导中时，视为普通线网布线
    */
   std::map<irt_int, std::set<Orientation>> _net_access_map;
-  std::queue<irt_int> _net_queue;
+  std::set<irt_int> _contribution_net_set;
 #if 1  // astar
   // single net
   std::set<Direction> _direction_set;

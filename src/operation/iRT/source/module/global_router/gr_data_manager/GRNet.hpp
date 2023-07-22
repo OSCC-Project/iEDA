@@ -21,6 +21,7 @@
 #include "LayerCoord.hpp"
 #include "MTree.hpp"
 #include "Net.hpp"
+#include "RoutingState.hpp"
 
 namespace irt {
 
@@ -38,6 +39,7 @@ class GRNet
   GRPin& get_gr_driving_pin() { return _gr_driving_pin; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
   GridMap<double>& get_ra_cost_map() { return _ra_cost_map; }
+  RoutingState get_routing_state() const { return _routing_state; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   MTree<RTNode>& get_gr_result_tree() { return _gr_result_tree; }
   // setter
@@ -48,6 +50,7 @@ class GRNet
   void set_gr_driving_pin(const GRPin& gr_driving_pin) { _gr_driving_pin = gr_driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }
+  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; };
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
   {
     _routing_segment_list = routing_segment_list;
@@ -62,6 +65,7 @@ class GRNet
   GRPin _gr_driving_pin;
   BoundingBox _bounding_box;
   GridMap<double> _ra_cost_map;
+  RoutingState _routing_state = RoutingState::kNone;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   MTree<RTNode> _gr_result_tree;
 };
