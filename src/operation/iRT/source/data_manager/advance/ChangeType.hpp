@@ -16,39 +16,37 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
 #include "Logger.hpp"
 
 namespace irt {
 
-enum class GRRouteStrategy
+enum class ChangeType
 {
   kNone = 0,
-  kFullyConsider = 1,
-  kIgnoringOBS = 2
+  kAdd = 1,
+  kDel = 2
 };
 
-struct GetGRRouteStrategyName
+struct GetChangeTypeName
 {
-  std::string operator()(const GRRouteStrategy& gr_route_strategy) const
+  std::string operator()(const ChangeType& connect_type) const
   {
-    std::string gr_route_strategy_name;
-    switch (gr_route_strategy) {
-      case GRRouteStrategy::kNone:
-        gr_route_strategy_name = "none";
+    std::string connect_name;
+    switch (connect_type) {
+      case ChangeType::kNone:
+        connect_name = "none";
         break;
-      case GRRouteStrategy::kFullyConsider:
-        gr_route_strategy_name = "fully_consider";
+      case ChangeType::kAdd:
+        connect_name = "add";
         break;
-      case GRRouteStrategy::kIgnoringOBS:
-        gr_route_strategy_name = "ignoring_obs";
+      case ChangeType::kDel:
+        connect_name = "del";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return gr_route_strategy_name;
+    return connect_name;
   }
 };
 
