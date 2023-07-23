@@ -17,9 +17,10 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
-#include "VRDataManager.hpp"
+#include "VRModel.hpp"
 
 namespace irt {
 
@@ -28,7 +29,7 @@ namespace irt {
 class ViolationRepairer
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static ViolationRepairer& getInst();
   static void destroyInst();
   // function
@@ -37,19 +38,31 @@ class ViolationRepairer
  private:
   // self
   static ViolationRepairer* _vr_instance;
-  // config & database
-  VRDataManager _vr_data_manager;
 
-  ViolationRepairer(Config& config, Database& database) { init(config, database); }
+  ViolationRepairer() = default;
   ViolationRepairer(const ViolationRepairer& other) = delete;
   ViolationRepairer(ViolationRepairer&& other) = delete;
   ~ViolationRepairer() = default;
   ViolationRepairer& operator=(const ViolationRepairer& other) = delete;
   ViolationRepairer& operator=(ViolationRepairer&& other) = delete;
   // function
-  void init(Config& config, Database& database);
-  void repairVRNetList(std::vector<VRNet>& vr_net_list);
-  void buildVRResultTree(std::vector<VRNet>& vr_net_list);
+  void repairNetList(std::vector<Net>& net_list);
+
+#if 1  // build vr_model
+  VRModel initVRModel(std::vector<Net>& net_list);
+  std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
+  VRNet convertToVRNet(Net& net);
+  void buildVRModel(VRModel& vr_model);
+  void updateNetBlockageMap(VRModel& vr_model);
+#endif
+
+#if 1  // check ra_model
+  void checkVRModel(VRModel& vr_model);
+#endif
+
+#if 1  // repair ra_model
+  void repairVRModel(VRModel& vr_model);
+  void repairVRNet(VRModel& vr_model, VRNet& vr_net);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);
   void buildPHYNodeResult(VRNet& vr_net);
@@ -58,8 +71,21 @@ class ViolationRepairer
   TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
-  void repairVRResultTree(std::vector<VRNet>& vr_net_list);
-  void updateOriginVRResultTree(std::vector<VRNet>& vr_net_list);
+  void repairMinArea(VRNet& vr_net);
+  void updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net);
+#endif
+
+#if 1  // update ra_model
+  void updateVRModel(VRModel& vr_model);
+  void updateOriginVRResultTree(VRModel& vr_model);
+#endif
+
+#if 1  // report ra_model
+  void reportVRModel(VRModel& vr_model);
+  void countVRModel(VRModel& vr_model);
+  std::map<VRSourceType, std::vector<ids::DRCRect>> getSourceIDSRectMap(VRModel& vr_model);
+  void reportTable(VRModel& vr_model);
+#endif
 };
 
 }  // namespace irt

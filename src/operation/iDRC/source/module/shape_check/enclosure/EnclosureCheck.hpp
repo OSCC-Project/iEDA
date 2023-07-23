@@ -88,6 +88,11 @@ class EnclosureCheck
   int _right_overhang_above = -1;
   int _top_overhang_above = -1;
   int _bottom_overhang_above = -1;
+  DrcEdge* _left_overhang_edge_above = nullptr;
+  DrcEdge* _right_overhang_edge_above = nullptr;
+  DrcEdge* _top_overhang_edge_above = nullptr;
+  DrcEdge* _bottom_overhang_edge_above = nullptr;
+
   DrcRect* _left_overhang_rect_above = nullptr;
   DrcRect* _right_overhang_rect_above = nullptr;
   DrcRect* _top_overhang_rect_above = nullptr;
@@ -97,6 +102,11 @@ class EnclosureCheck
   int _right_overhang_below = -1;
   int _top_overhang_below = -1;
   int _bottom_overhang_below = -1;
+  DrcEdge* _left_overhang_edge_below = nullptr;
+  DrcEdge* _right_overhang_edge_below = nullptr;
+  DrcEdge* _top_overhang_edge_below = nullptr;
+  DrcEdge* _bottom_overhang_edge_below = nullptr;
+
   DrcRect* _left_overhang_rect_below = nullptr;
   DrcRect* _right_overhang_rect_below = nullptr;
   DrcRect* _top_overhang_rect_below = nullptr;
@@ -107,6 +117,9 @@ class EnclosureCheck
   RegionQuery* _region_query;
   DrcPoly* _cut_above_poly = nullptr;
   DrcPoly* _cut_below_poly = nullptr;
+
+  idb::IdbLayerCutEnclosure* _enclosure_below = nullptr;
+  idb::IdbLayerCutEnclosure* _enclosure_above = nullptr;
   std::vector<std::shared_ptr<idb::cutlayer::Lef58Enclosure>> _lef58_enclosure_list;
   std::vector<std::shared_ptr<idb::cutlayer::Lef58EnclosureEdge>> _lef58_enclosure_edge_list;
   std::vector<std::shared_ptr<idb::cutlayer::Lef58Cutclass>> _lef58_cut_class_list;
@@ -123,23 +136,32 @@ class EnclosureCheck
   // refresh
   void reFresh()
   {
-    _left_overhang_above = -1;
-    _right_overhang_above = -1;
-    _top_overhang_above = -1;
-    _bottom_overhang_above = -1;
-    _left_overhang_rect_above = nullptr;
-    _right_overhang_rect_above = nullptr;
-    _top_overhang_rect_above = nullptr;
-    _bottom_overhang_rect_above = nullptr;
+    _left_overhang_above = 0;
+    _right_overhang_above = 0;
+    _top_overhang_above = 0;
+    _bottom_overhang_above = 0;
+    // _left_overhang_rect_above = nullptr;
+    // _right_overhang_rect_above = nullptr;
+    // _top_overhang_rect_above = nullptr;
+    // _bottom_overhang_rect_above = nullptr;
+    _left_overhang_edge_above = nullptr;
+    _right_overhang_edge_above = nullptr;
+    _top_overhang_edge_above = nullptr;
+    _bottom_overhang_edge_above = nullptr;
 
-    _left_overhang_below = -1;
-    _right_overhang_below = -1;
-    _top_overhang_below = -1;
-    _bottom_overhang_below = -1;
-    _left_overhang_rect_below = nullptr;
-    _right_overhang_rect_below = nullptr;
-    _top_overhang_rect_below = nullptr;
-    _bottom_overhang_rect_below = nullptr;
+    _left_overhang_below = 0;
+    _right_overhang_below = 0;
+    _top_overhang_below = 0;
+    _bottom_overhang_below = 0;
+    // _left_overhang_rect_below = nullptr;
+    // _right_overhang_rect_below = nullptr;
+    // _top_overhang_rect_below = nullptr;
+    // _bottom_overhang_rect_below = nullptr;
+    _left_overhang_edge_below = nullptr;
+    _right_overhang_edge_below = nullptr;
+    _top_overhang_edge_below = nullptr;
+    _bottom_overhang_edge_below = nullptr;
+
     _cut_above_poly = nullptr;
     _cut_below_poly = nullptr;
   }
@@ -168,12 +190,15 @@ class EnclosureCheck
   void addViolationBox(int layerId, DrcRect* target_rect, DrcRect* result_rect);
   void initEnclosureSpotListFromRtree();
 
-  bool checkOverhang_above(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect);
-  bool checkOverhang_below(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect);
+  bool checkOverhang_above(DrcRect* target_cut_rect);
+  bool checkOverhang_below(DrcRect* target_cut_rect);
+
+  // bool checkOverhang_above(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect);
+  // bool checkOverhang_below(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect);
   std::string getCutClassName(DrcRect* cut_rect);
 
-  void getBelowMetalRectList(DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
-  void getAboveMetalRectList(DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
+  void getBelowMetalRectList(int routing_layer_id, DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
+  void getAboveMetalRectList(int routing_layer_id, DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
 
   // edge enclosure
   bool checkEdgeEnclosure(DrcRect* target_cut_rect);

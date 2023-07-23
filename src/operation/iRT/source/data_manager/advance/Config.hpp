@@ -28,24 +28,23 @@ class Config
   ~Config() = default;
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  std::string output_def_file_path;                       // required
-  std::string temp_directory_path;                        // required
-  irt_int log_level;                                      // optional
-  irt_int thread_number;                                  // optional
-  std::string bottom_routing_layer;                       // optional
-  std::string top_routing_layer;                          // optional
-  std::map<std::string, double> layer_utilization_ratio;  // optional
-  irt_int enable_output_gds_files;                        // optional
-  double resource_allocate_initial_penalty;               // optional
-  double resource_allocate_penalty_drop_rate;             // optional
-  irt_int resource_allocate_outer_iter_num;               // optional
-  irt_int resource_allocate_inner_iter_num;               // optional
+  std::string temp_directory_path;   // required
+  irt_int log_level;                 // optional
+  irt_int thread_number;             // optional
+  std::string bottom_routing_layer;  // optional
+  std::string top_routing_layer;     // optional
+  irt_int enable_output_gds_files;   // optional
+  irt_int enable_idrc_interfaces;    // optional
+  double ra_initial_penalty;         // optional
+  double ra_penalty_drop_rate;       // optional
+  irt_int ra_outer_max_iter_num;         // optional
+  irt_int ra_inner_max_iter_num;         // optional
+  irt_int gr_max_iter_num;               // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  std::string log_file_path;                              // building
-  irt_int bottom_routing_layer_idx;                       // building
-  irt_int top_routing_layer_idx;                          // building
-  std::map<irt_int, double> layer_idx_utilization_ratio;  // building
+  std::string log_file_path;         // building
+  irt_int bottom_routing_layer_idx;  // building
+  irt_int top_routing_layer_idx;     // building
   // **********    DataManager    ********** //
   std::string dm_temp_directory_path;  // building
   // **********  DetailedRouter   ********** //

@@ -35,7 +35,7 @@ TimingCalculator::TimingCalculator()
   // init timing model from api
   _delay_libs = CTSAPIInst.getAllBufferLibs();
   _skew_bound = config->get_skew_bound();
-  _db_unit = config->get_micron_dbu();
+  _db_unit = CTSAPIInst.getDbUnit();
   _max_buf_tran = config->get_max_buf_tran();
   _max_sink_tran = config->get_max_sink_tran();
   _max_cap = config->get_max_cap();
@@ -135,6 +135,7 @@ double TimingCalculator::calcMaxIdealSlew(TimingNode* i, TimingNode* j) const
       = Polygon({i->get_join_segment().low(), i->get_join_segment().high(), j->get_join_segment().low(), j->get_join_segment().high()});
   auto mid_js_point = pgl::center(region);
   temp_k->set_join_segment(Segment({mid_js_point, mid_js_point}));
+  temp_k->set_merge_region(Polygon({mid_js_point, mid_js_point}));
   auto ideal_i = calcIdealSlew(temp_k, i);
   auto ideal_j = calcIdealSlew(temp_k, j);
   delete temp_k;
@@ -146,7 +147,6 @@ double TimingCalculator::endPointByZeroSkew(TimingNode* i, TimingNode* j, const 
 {
   auto delay_i = init_delay_i ? init_delay_i.value() : i->get_delay_max();
   auto delay_j = init_delay_j ? init_delay_j.value() : j->get_delay_max();
-  joinSegment(i, j);
   auto length = calcShortestLength(i, j);
   auto factor = (i->get_cap_out() + j->get_cap_out() + _unit_cap * length);
   auto length_to_i
@@ -232,8 +232,14 @@ int TimingCalculator::guideDist(const std::vector<TimingNode*>& nodes) const
 std::pair<double, double> TimingCalculator::calcEndpointLoc(TimingNode* i, TimingNode* j, const double& skew_bound) const
 {
   // check skew whether in bound (el_l <= el_r)
+  joinSegment(i, j);
   auto ep_l = endPointByZeroSkew(i, j, i->get_delay_min() + skew_bound, j->get_delay_max());
   auto ep_r = endPointByZeroSkew(i, j, i->get_delay_max(), j->get_delay_min() + skew_bound);
+  if (ep_l > ep_r) {
+    if (std::fabs(ep_l - ep_r) < 1e-6) {
+      ep_r = ep_l;
+    }
+  }
   return std::make_pair(ep_l, ep_r);
 }
 
@@ -362,16 +368,19 @@ double TimingCalculator::calcMergeWireSlew(TimingNode* i, TimingNode* j) const
 double TimingCalculator::calcMergeCost(TimingNode* i, TimingNode* j) const
 {
   joinSegment(i, j);
-  // return calcShortestLength(i, j);
-  auto length = calcShortestLength(i, j);
-  auto length_i = endPointByZeroSkew(i, j);
-  if (length_i < 0) {
-    return i->get_delay_max() + (i->get_delay_max() - j->get_delay_max());
-  }
-  if (length_i > length) {
-    return j->get_delay_max() + (j->get_delay_max() - i->get_delay_max());
-  }
-  return i->get_delay_max() + 0.5 * _unit_res * _unit_cap * length_i * length_i + _unit_res * length_i * i->get_cap_out();
+  return calcShortestLength(i, j);
+  // auto length = calcShortestLength(i, j);
+  // auto length_i = endPointByZeroSkew(i, j);
+  // if (length_i < 0) {
+  //   return i->get_delay_max() + (i->get_delay_max() - j->get_delay_max()) + 0.5 * _unit_res * _unit_cap * length_i * length_i
+  //          - _unit_res * length_i * (i->get_cap_out() + j->get_cap_out()) / 2;
+  // }
+  // if (length_i > length) {
+  //   return j->get_delay_max() + (j->get_delay_max() - i->get_delay_max())
+  //          + 0.5 * _unit_res * _unit_cap * (length_i - length) * (length_i - length)
+  //          + _unit_res * (length_i - length) * (i->get_cap_out() + j->get_cap_out()) / 2;
+  // }
+  // return i->get_delay_max() + 0.5 * _unit_res * _unit_cap * length_i * length_i + _unit_res * length_i * i->get_cap_out();
 }
 
 TimingNode* TimingCalculator::calcMergeNode(TimingNode* i, TimingNode* j) const
@@ -403,6 +412,9 @@ TimingNode* TimingCalculator::calcMergeNode(TimingNode* i, TimingNode* j) const
     calcBestSlewMergeRegion(merge_region, left, right);
     k->set_join_segment(Segment(merge_region.get_points().front(), merge_region.get_points().back()));
     k->set_merge_region(merge_region);
+    // calcMergeRegion(merge_region, left, right);
+    // k->set_join_segment(Segment(merge_region.get_points().front(), merge_region.get_points().back()));
+    // k->set_merge_region(merge_region);
   }
   updateTiming(k);
   k->set_merged();
@@ -472,7 +484,6 @@ void TimingCalculator::mergeNode(TimingNode* k) const
 
 void TimingCalculator::calcMergeRegion(Polygon& merge_region, TimingNode* i, TimingNode* j) const
 {
-  joinSegment(i, j);
   updateDelay(i);
   updateDelay(j);
   auto ep_pair = calcEndpointLoc(i, j, _skew_bound);
@@ -497,6 +508,9 @@ void TimingCalculator::calcMergeRegion(Polygon& merge_region, TimingNode* i, Tim
   // Type 1: rectilinear line
   int left_radius = std::floor(ep_r * _db_unit);
   int right_radius = std::floor((length - ep_l) * _db_unit);
+  if (left_radius + right_radius < length * _db_unit) {
+    ++right_radius;
+  }
   if (sdr.size() == 2) {
     auto pair_point = pgl::cutSegment(Segment(sdr.get_points()[0], sdr.get_points()[1]), left_radius, right_radius);
     merge_region = Polygon({pair_point.first, pair_point.second});
@@ -757,6 +771,10 @@ void TimingCalculator::updateTiming(TimingNode* k, const bool& update_cap, const
   k->set_fanout(fanout);
   k->set_level(level);
   k->set_net_length(net_length);
+  // remain delay
+  if (!skewFeasible(k) && k->get_delay_max() - k->get_delay_min() < _skew_bound + 1e-6) {
+    k->set_delay_max(k->get_delay_min() + _skew_bound);
+  }
 }
 
 void TimingCalculator::updateCap(TimingNode* k) const
@@ -899,6 +917,7 @@ void TimingCalculator::simplePropagate(TimingNode* k, const bool& propagate_head
 
 void TimingCalculator::wireSnaking(TimingNode* s, TimingNode* t, const double& incre_delay) const
 {
+  LOG_FATAL_IF(incre_delay < 0) << "incre_delay: " << incre_delay << " less than 0";
   // incre_delay means the delay increase of the path
   auto length = calcShortestLength(s, t) + t->get_need_snake();
   auto factor = length + t->get_cap_out() / _unit_cap;
@@ -961,6 +980,9 @@ void TimingCalculator::insertBuffer(TimingNode* k, std::optional<Point> guide_po
     auto feasible_dist = remain_cap > 0 ? std::min(pgl::manhattan_distance(guide, js_seg) / 2, remain_cap_dist) : 0;
     feasible_dist = std::min(guide_dist, feasible_dist);
     feasible_dist = calcSlewDivenDist(k, feasible_dist);
+    int remain_net_dist = (_max_length - k->get_net_length()) * _db_unit;
+    remain_net_dist = std::max(0, remain_net_dist);
+    feasible_dist = std::min(feasible_dist, remain_net_dist);
     auto js = intersectJS(center_js, js_seg, feasible_dist);
     k->set_join_segment(js);
     k->set_merge_region(js);
@@ -1050,9 +1072,7 @@ void TimingCalculator::insertBuffer(TimingNode* s, TimingNode* t) const
   if (s->is_buffer()) {
     timingPropagate(s);
   }
-  if (s->get_left() && s->get_right()) {
-    balanceTiming(s);
-  }
+  fixTiming(s);
   // add init head insertion delay (TBD with level change, cap, slew, sub delay)
 }
 

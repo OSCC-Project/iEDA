@@ -104,7 +104,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   // rc net update timing information.
   auto& spef_nets = parser.getNets();
 
-#if 1
+#if 0
   {
     ThreadPool pool(num_threads);
 

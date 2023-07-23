@@ -1,5 +1,7 @@
 .vscode
 .VSCodeCounter/
+.idea
+cmake-build-debug/
 
 bin
 build
@@ -16,3 +18,4 @@ catboost_info
 *.def
 *.lef
 *.log
+*.pwr

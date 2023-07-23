@@ -8,6 +8,7 @@
 !slute.txt
 *.log
 *.rpt
+*.spef
 iEDA
 iEDA_gui
 

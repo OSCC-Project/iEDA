@@ -37,10 +37,6 @@ set(CMAKE_CXX_STANDARD 20)
 # set(DEBUG_IRT_MONITOR ON)
 # set(DEBUG_IRT_REPORTER ON)
 
-############################ debug source RT ############################
-
-# set(DEBUG_IRT_RT ON)
-
 ############################ setting path ############################
 
 set(HOME_IRT ${HOME_OPERATION}/iRT)

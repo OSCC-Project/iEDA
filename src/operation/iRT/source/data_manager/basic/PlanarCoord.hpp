@@ -43,6 +43,7 @@ class PlanarCoord
     _x = x;
     _y = y;
   }
+  void set_coord(const PlanarCoord& coord) { set_coord(coord.get_x(), coord.get_y()); }
   // function
  private:
   irt_int _x = -1;
