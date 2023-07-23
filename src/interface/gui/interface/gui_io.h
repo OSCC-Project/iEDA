@@ -50,6 +50,8 @@ namespace igui {
     void readDrcDb(std::map<std::string, std::vector<idrc::DrcViolationSpot*>>& drc_db, int max_num = -1);
     void readClockTreeDb(std::vector<iplf::CtsTreeNodeMap*>& node_list);
 
+    bool captureDesign(std::string path);
+
     /// iFP
     bool autoRunFloorplan();
 

@@ -69,6 +69,7 @@ class ToolManager
   void guiShowDrc(std::string detail_drc_path = "", int max_num = 100000);
   void guiShowClockTree();
 
+  void guiCaptrueDesign(std::string path = "");
   /// Eval
   int64_t evalTotalWL(const std::vector<eval::WLNet*>& net_list, const std::string& wl_type);
   void estimateDelay(std::vector<eval::TimingNet*> timing_net_list, const char* sta_workspace_path, const char* sdc_file_path,

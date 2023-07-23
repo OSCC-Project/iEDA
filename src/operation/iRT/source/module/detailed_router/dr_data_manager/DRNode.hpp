@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRRouteStrategy.hpp"
+#include "Direction.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTU.hpp"
@@ -37,17 +39,12 @@ class DRNode : public LayerCoord
  public:
   DRNode() = default;
   ~DRNode() = default;
-
   // getter
   std::map<Orientation, DRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
-  std::map<Orientation, std::set<irt_int>>& get_cost_task_map() { return _cost_task_map; }
-  std::queue<irt_int>& get_task_queue() { return _task_queue; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, DRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
-  void set_cost_task_map(const std::map<Orientation, std::set<irt_int>>& cost_task_map) { _cost_task_map = cost_task_map; }
-  void set_task_queue(const std::queue<irt_int>& task_queue) { _task_queue = task_queue; }
   // function
   DRNode* getNeighborNode(Orientation orientation)
   {
@@ -57,9 +54,12 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation)
+  bool isOBS(irt_int task_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
   {
     bool is_obs = false;
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockage) {
+      return is_obs;
+    }
     if (RTUtil::exist(_obs_task_map, orientation)) {
       if (_obs_task_map[orientation].size() >= 2) {
         is_obs = true;
@@ -67,23 +67,13 @@ class DRNode : public LayerCoord
         is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
       }
     }
-    if (!is_obs) {
-      is_obs = !_task_queue.empty();
-    }
     return is_obs;
   }
-  double getCost(irt_int task_idx, Orientation orientation)
-  {
-    double cost = 0;
-    if (RTUtil::exist(_cost_task_map, orientation)) {
-      std::set<irt_int>& task_idx_set = _cost_task_map[orientation];
-      cost += RTUtil::exist(task_idx_set, task_idx) ? 0 : task_idx_set.size();
-    }
-    cost *= std::pow(_task_queue.size(), 2);
-    return cost;
-  }
-  void addDemand(irt_int task_idx) { _task_queue.push(task_idx); }
 #if 1  // astar
+  // single task
+  std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   DRNodeState& get_state() { return _state; }
   DRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
@@ -92,6 +82,7 @@ class DRNode : public LayerCoord
   void set_parent_node(DRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == DRNodeState::kNone; }
   bool isOpen() { return _state == DRNodeState::kOpen; }
   bool isClose() { return _state == DRNodeState::kClose; }
@@ -101,9 +92,10 @@ class DRNode : public LayerCoord
  private:
   std::map<Orientation, DRNode*> _neighbor_ptr_map;
   std::map<Orientation, std::set<irt_int>> _obs_task_map;
-  std::map<Orientation, std::set<irt_int>> _cost_task_map;
-  std::queue<irt_int> _task_queue;
 #if 1  // astar
+  // single task
+  std::set<Direction> _direction_set;
+  // single path
   DRNodeState _state = DRNodeState::kNone;
   DRNode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr

@@ -39,17 +39,17 @@ def_init -path ./result/iFP_result.def
 run_no_fixfanout -config ./iEDA_config/no_default_config_fixfanout.json
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/iTO_fix_fanout_result.def
 
 #===========================================================
-##   Save netlist 
+##   save netlist 
 #===========================================================
 netlist_save -path ./result/iTO_fix_fanout_result.v -exclude_cell_names {}
 
 #===========================================================
-##   report 
+##   report db summary
 #===========================================================
 report_db -path "./result/report/fixfanout_db.rpt"
 

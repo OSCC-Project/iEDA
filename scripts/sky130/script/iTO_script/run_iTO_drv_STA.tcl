@@ -34,9 +34,8 @@ source ./script/DB_script/db_init_lef.tcl
 def_init -path ./result/iTO_drv_result.def
 
 #===========================================================
-##   run STA
+##   run STA and report
 #===========================================================
-
 run_sta -output ./result/to/drv/sta/
 
 #===========================================================

@@ -172,6 +172,9 @@ class DrcCutLayer : public DrcLayer
   {
     _lef58_enclosure_edge_list = in;
   }
+  void set_enclosure_above(idb::IdbLayerCutEnclosure* in) { _enclosure_above = in; }
+  void set_enclosure_below(idb::IdbLayerCutEnclosure* in) { _enclosure_below = in; }
+
   // getter
   int get_cut_spacing() const { return _cut_spacing; }
   int get_default_width() const { return _width; }
@@ -181,6 +184,8 @@ class DrcCutLayer : public DrcLayer
   std::shared_ptr<idb::cutlayer::Lef58EolSpacing> get_lef58_cut_eol_spacing() { return _lef58_cut_eol_spacing; }
   std::vector<std::shared_ptr<idb::cutlayer::Lef58Enclosure>>& get_lef58_enclosure_list() { return _lef58_enclosure_list; }
   std::vector<std::shared_ptr<idb::cutlayer::Lef58EnclosureEdge>>& get_lef58_enclosure_edge_list() { return _lef58_enclosure_edge_list; }
+  idb::IdbLayerCutEnclosure* get_enclosure_above() { return _enclosure_above; }
+  idb::IdbLayerCutEnclosure* get_enclosure_below() { return _enclosure_below; }
 
   // std::vector<EnclosureRule*>& getEnclosureRuleList() { return _enclosure_rule_list; }
   // std::vector<EnclosureRule*>& getBelowEnclosureRuleList() { return _below_enclosure_rule_list; }
@@ -189,6 +194,9 @@ class DrcCutLayer : public DrcLayer
  private:
   int _cut_spacing;
   int _width;
+
+  idb::IdbLayerCutEnclosure* _enclosure_below;
+  idb::IdbLayerCutEnclosure* _enclosure_above;
   std::vector<std::shared_ptr<idb::cutlayer::Lef58SpacingTable>> _lef58_spacing_table_list;
   std::vector<std::shared_ptr<idb::cutlayer::Lef58Cutclass>> _lef58_cut_class_list;
   std::shared_ptr<idb::cutlayer::Lef58EolSpacing> _lef58_cut_eol_spacing;

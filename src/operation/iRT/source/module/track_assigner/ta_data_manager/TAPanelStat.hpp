@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RTU.hpp"
+#include "TASourceType.hpp"
 
 namespace irt {
 
@@ -27,18 +28,17 @@ class TAPanelStat
   ~TAPanelStat() = default;
   // getter
   double get_total_wire_length() { return _total_wire_length; }
-  double get_net_and_net_violation_area() { return _net_and_net_violation_area; }
-  double get_net_and_obs_violation_area() { return _net_and_obs_violation_area; }
+  std::map<TASourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
+  irt_int get_total_drc_number() { return _total_drc_number; }
   // setter
+  void set_total_wire_length(const double total_wire_length) { _total_wire_length = total_wire_length; }
+  void set_total_drc_number(const double total_drc_number) { _total_drc_number = total_drc_number; }
   // function
-  void addTotalWireLength(const double wire_length) { _total_wire_length += wire_length; }
-  void addNetAndNetViolation(const double violation_area) { _net_and_net_violation_area += violation_area; }
-  void addNetAndObsViolation(const double violation_area) { _net_and_obs_violation_area += violation_area; }
 
  private:
   double _total_wire_length = 0;
-  double _net_and_net_violation_area = 0;
-  double _net_and_obs_violation_area = 0;
+  std::map<TASourceType, std::map<std::string, irt_int>> _source_drc_number_map;
+  irt_int _total_drc_number = 0;
 };
 
 }  // namespace irt

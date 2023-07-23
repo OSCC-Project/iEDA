@@ -112,6 +112,7 @@ class DrcRect
   //     }
   //   }
   // }
+  void set_layer_order(int layer_order) { _layer_order = layer_order; }
   void set_layer_id(int layer_id) { _layer_id = layer_id; }
   void set_net_id(int net_id) { _net_id = net_id; }
   void set_is_fixed(bool isFixed) { _is_fixed = isFixed; }
@@ -134,6 +135,7 @@ class DrcRect
   void setScopeType(ScopeType in) { _scope_type = in; }
 
   // getter
+  int get_layer_order() const { return _layer_order; }
   int get_layer_id() const { return _layer_id; }
   int get_net_id() const { return _net_id; }
   // int get_via_idx() const { return _via_idx; }
@@ -167,6 +169,7 @@ class DrcRect
   int getLength() const { return std::max(getXSpan(), getYSpan()); }
 
  private:
+  int _layer_order = -1;
   int _layer_id = -1;
   int _net_id = -1;
   bool _is_fixed = false;

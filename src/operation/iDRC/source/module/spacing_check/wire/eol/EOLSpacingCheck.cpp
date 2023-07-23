@@ -216,6 +216,10 @@ void EOLSpacingCheck::checkEOLSpacingEnd2End(DrcEdge* edge)
     }
     auto span_box = DRCUtil::getSpanBoxBetweenTwoEdges(edge, result_edge);
     std::vector<std::pair<RTreeBox, DrcRect*>> span_box_query_result;
+    // _region_query->queryIntersectsInRoutingLayer(edge->get_layer_id(),
+    //                                              RTreeBox(RTreePoint(span_box.min_corner().x() + 1, span_box.min_corner().y() + 1),
+    //                                                       RTreePoint(span_box.max_corner().x() - 1, span_box.max_corner().y() - 1)),
+    //                                              span_box_query_result);
     _region_query->queryIntersectsInRoutingLayer(edge->get_layer_id(), span_box, span_box_query_result);
     // _region_query->queryEdgeInRoutingLayer(routingLayerId, span_box, span_box_query_result);
     if (!span_box_query_result.empty()) {
@@ -876,6 +880,10 @@ void EOLSpacingCheck::checkEOLSpacingHelper(DrcEdge* edge)
     }
     auto span_box = DRCUtil::getSpanBoxBetweenEdgeAndRect(edge, result_rect);
     std::vector<std::pair<RTreeBox, DrcRect*>> span_box_query_result;
+    // _region_query->queryIntersectsInRoutingLayer(edge->get_layer_id(),
+    //                                              RTreeBox(RTreePoint(span_box.min_corner().x() + 1, span_box.min_corner().y() + 1),
+    //                                                       RTreePoint(span_box.max_corner().x() - 1, span_box.max_corner().y() - 1)),
+    //                                              span_box_query_result);
     _region_query->queryIntersectsInRoutingLayer(edge->get_layer_id(), span_box, span_box_query_result);
     // _region_query->queryEdgeInRoutingLayer(routingLayerId, span_box, span_box_query_result);
     if (!span_box_query_result.empty()) {

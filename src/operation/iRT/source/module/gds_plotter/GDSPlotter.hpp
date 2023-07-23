@@ -17,11 +17,13 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DataManager.hpp"
 #include "Database.hpp"
 #include "GPBoundary.hpp"
-#include "GPDataManager.hpp"
-#include "GPDataType.hpp"
 #include "GPGDS.hpp"
+#include "GPGraphType.hpp"
+#include "GPLYPLayer.hpp"
+#include "GPLayoutType.hpp"
 #include "GPPath.hpp"
 #include "GPStruct.hpp"
 #include "Stage.hpp"
@@ -33,7 +35,7 @@ namespace irt {
 class GDSPlotter
 {
  public:
-  static void initInst(Config& config, Database& database);
+  static void initInst();
   static GDSPlotter& getInst();
   static void destroyInst();
   // function
@@ -46,10 +48,12 @@ class GDSPlotter
  private:
   // self
   static GDSPlotter* _gp_instance;
-  // config & database
-  GPDataManager _gp_data_manager;
+  std::map<irt_int, irt_int> _routing_layer_gds_map;
+  std::map<irt_int, irt_int> _cut_layer_gds_map;
+  std::map<irt_int, irt_int> _gds_routing_layer_map;
+  std::map<irt_int, irt_int> _gds_cut_layer_map;
 
-  GDSPlotter(Config& config, Database& database) { init(config, database); }
+  GDSPlotter() { init(); }
   GDSPlotter(const GDSPlotter& other) = delete;
   GDSPlotter(GDSPlotter&& other) = delete;
   ~GDSPlotter() = default;
@@ -60,7 +64,11 @@ class GDSPlotter
   // setter
 
   // function
-  void init(Config& config, Database& database);
+  void init();
+  void buildGDSLayerMap();
+  void buildLayoutLypFile();
+  void buildGraphLypFile();
+  void writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list);
   void addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage stage);
   void addPinList(GPGDS& gp_gds, GPStruct& net_struct, std::vector<Pin>& pin_list);
   void addPinShapeList(GPStruct& pin_struct, Pin& pin);
@@ -68,6 +76,8 @@ class GDSPlotter
   void addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box);
   void addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree);
   void addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNode>& node_tree);
+  void addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list);
+  void addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map);
   void plotGDS(GPGDS& gp_gds, std::string gds_file_path, bool add_layout, bool need_clipping);
   PlanarRect getClippingWindow(GPGDS& gp_gds);
   void addLayout(GPGDS& gp_gds, PlanarRect& clipping_window);

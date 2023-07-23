@@ -65,7 +65,9 @@ class EarlyGlobalRouter
   void routeNearestCoordPair(EGRRoutingPackage& egr_routing_package);
   void routeByGradual(EGRRoutingPackage& egr_routing_package);
   void routeByTopo(EGRRoutingPackage& egr_routing_package);
-  void generateTopoCoordPairList(EGRRoutingPackage& egr_routing_package);
+  void generateFluteTree(EGRRoutingPackage& egr_routing_package);
+  void generateCoordPairList(EGRRoutingPackage& egr_routing_package);
+  irt_int getMinCostLayerIdx(const PlanarCoord& planar_coord);
   LayerCoord getNearestCoordOnSegment(LayerCoord& coord, Segment<LayerCoord>& segment);
   void routeAllCoordPairs(EGRRoutingPackage& egr_routing_package);
   void initTempData(EGRRoutingPackage& egr_routing_package);
@@ -88,9 +90,13 @@ class EarlyGlobalRouter
   void updateRoutingSegmentList(EGRNet& egr_net, EGRRoutingPackage& egr_routing_package);
   void updateLayerResourceMap(EGRNet& egr_net);
   void addDemandBySegmentList(std::vector<Segment<TNode<LayerCoord>*>>& segment_list);
+  // report
   void reportEGRNetList();
+  void calcuResult();
+  void calcuCongestion();
+  void calcuWireViaStatistics();
+  void reportResult();
   void reportCongestion();
-  void compressMap(std::map<irt_int, irt_int>& origin_map, irt_int lower_remain_num, irt_int upper_remain_num);
   void reportWireViaStatistics();
 };
 }  // namespace irt

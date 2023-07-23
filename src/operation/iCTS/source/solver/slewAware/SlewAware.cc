@@ -122,6 +122,9 @@ void SlewAware::slewAware()
     node->set_slew_constraint(max_sink_tran);
     node->set_cap_out(CTSAPIInst.getSinkCap(inst));
     node->set_type(TimingNodeType::kSink);
+    auto loc = inst->get_location();
+    node->set_join_segment(Segment(loc, loc));
+    node->set_merge_region({Polygon({loc, loc})});
     timing_nodes.emplace_back(node);
   }
 
@@ -180,6 +183,9 @@ void SlewAware::slewAwareByKmeans()
       auto pin_cap = CTSAPIInst.getSinkCap(inst);
       node->set_cap_out(pin_cap);
       node->set_type(TimingNodeType::kSink);
+      auto loc = inst->get_location();
+      node->set_join_segment(Segment(loc, loc));
+      node->set_merge_region({Polygon({loc, loc})});
       timing_nodes.emplace_back(node);
     }
 
@@ -302,12 +308,12 @@ void SlewAware::topDown(TimingNode* root)
     auto center = pgl::center(root->get_merge_region());
     root->set_location(center);
   }
-  auto loc = root->get_location();
-  root->set_join_segment(Segment(loc, loc));
-  root->set_merge_region({Polygon({loc})});
   if (root->is_buffer()) {
     CTSAPIInst.placeInstance(root->get_inst());
   }
+  auto loc = root->get_location();
+  root->set_join_segment(Segment(loc, loc));
+  root->set_merge_region({Polygon({loc})});
   auto* left = root->get_left();
   auto* right = root->get_right();
   topDown(left);
@@ -358,9 +364,8 @@ ClockTopo SlewAware::makeTopo(TimingNode* root, const std::string& net_name)
     auto current_loc = current->get_location();
     auto* parent = current->get_parent();
     auto parent_loc = parent->get_location();
-    auto* config = CTSAPIInst.get_config();
     if (current->get_need_snake() > 0) {
-      auto require_snake = std::ceil(current->get_need_snake() * config->get_micron_dbu());
+      auto require_snake = std::ceil(current->get_need_snake() * CTSAPIInst.getDbUnit());
       auto delta_x = std::abs(current_loc.x() - parent_loc.x());
       auto trunk_x = (parent_loc.x() + current_loc.x() + delta_x + require_snake) / 2;
       auto snake_p1 = Point(trunk_x, parent_loc.y());
@@ -445,6 +450,9 @@ TimingNode* SlewAware::biCluster(const std::vector<CtsInstance*>& insts)
     node->set_type(TimingNodeType::kSink);
     node->set_slew_constraint(max_sink_tran);
     node->set_cap_out(sink_cap);
+    auto loc = insts[0]->get_location();
+    node->set_join_segment(Segment(loc, loc));
+    node->set_merge_region({Polygon({loc, loc})});
     return node;
   }
   if (insts.size() == 2) {
@@ -621,6 +629,7 @@ void SlewAware::timingLog() const
   double total_snake_length = 0;
   double max_slew_in = 0;
   double max_cap_out = 0;
+  int max_fanout = 0;
   auto timing_rpt = CtsReportTable::createReportTable("Timing Log", CtsReportType::kTIMING_NODE_LOG);
   for (auto [_, node] : _timing_node_map) {
     auto timer = TimingCalculator();
@@ -629,19 +638,21 @@ void SlewAware::timingLog() const
     auto net_part = net_length_pair.first;
     auto snake_part = net_length_pair.second;
     auto loc_str = CTSAPIInst.toString("(", node->get_location().x(), ",", node->get_location().y(), ")");
-    (*timing_rpt) << node->get_id() << node->get_name() << net_part << snake_part << net_part + snake_part << loc_str
+    (*timing_rpt) << node->get_id() << node->get_name() << net_part << snake_part << net_part + snake_part << loc_str << node->get_fanout()
                   << node->get_delay_min() << node->get_delay_max() << getInsertTypeStr(node) << node->get_slew_in() << cap_out
                   << node->get_insertion_delay() << TABLE_ENDLINE;
     total_net_length += net_part;
     total_snake_length += snake_part;
     max_slew_in = std::max(max_slew_in, node->get_slew_in());
     max_cap_out = std::max(max_cap_out, cap_out);
+    max_fanout = std::max(max_fanout, node->get_fanout());
   }
   CTSAPIInst.saveToLog("\n[Slew Aware Timing Log] For net: ", _net_name);
   CTSAPIInst.saveToLog("[Slew Aware Timing Log] Total net length: ", total_net_length);
   CTSAPIInst.saveToLog("[Slew Aware Timing Log] Total snake length: ", total_snake_length);
   CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max slew in: ", max_slew_in);
-  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max cap out: ", max_cap_out, "\n");
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max cap out: ", max_cap_out);
+  CTSAPIInst.saveToLog("[Slew Aware Timing Log] Max fanout: ", max_fanout, "\n");
 
   auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/timing_log";
   auto file_name = _net_name + "_timing_log.rpt";
