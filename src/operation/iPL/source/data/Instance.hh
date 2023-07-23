@@ -62,7 +62,8 @@ class Instance
  public:
   Instance() = delete;
   explicit Instance(std::string inst_name)
-      : _instance_name(std::move(inst_name)),
+      : _inst_id(-1),
+        _instance_name(std::move(inst_name)),
         _cell_master(nullptr),
         _belong_region(nullptr),
         _instance_type(INSTANCE_TYPE::kNone),
@@ -95,6 +96,7 @@ class Instance
   Instance& operator=(Instance&&) = delete;
 
   // getter.
+  int32_t get_inst_id() const { return _inst_id; }
   std::string get_name() const { return _instance_name; }
   Cell* get_cell_master() const { return _cell_master; }
   Region* get_belong_region() const { return _belong_region; }
@@ -108,7 +110,7 @@ class Instance
   Point<int32_t> get_coordi() { return _shape.get_lower_left(); }
   Point<int32_t> get_center_coordi() { return _shape.get_center(); }
 
-  std::vector<Pin*> get_pins() const { return _pin_list; }
+  const std::vector<Pin*>& get_pins() const { return _pin_list; }
   std::vector<Pin*> get_inpins() const;
   std::vector<Pin*> get_outpins() const;
 
@@ -121,6 +123,7 @@ class Instance
   bool isFixed() { return _instance_state == INSTANCE_STATE::kFixed; }
 
   // setter.
+  void set_inst_id(int32_t id) { _inst_id = id; }
   void set_cell_master(Cell* cell_master) { _cell_master = cell_master; }
   void set_shape(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y) { _shape.set_rectangle(ll_x, ll_y, ur_x, ur_y); }
   void set_instance_type(INSTANCE_TYPE type) { _instance_type = type; }
@@ -139,6 +142,7 @@ class Instance
   }
 
  private:
+  int32_t _inst_id;
   std::string _instance_name;
   Cell* _cell_master;
 

@@ -16,11 +16,26 @@
 // ***************************************************************************************
 #include "SequencePair.hh"
 
-#include <unordered_map>
-
-using namespace std;
-
 namespace ipl::imp {
+
+SequencePair::SequencePair(std::vector<FPInst*> macro_list, Setting* set) : MPSolution(macro_list)
+{
+  // set
+  _swap_pos_pro = set->get_swap_pos_pro();
+  _swap_neg_pro = set->get_swap_neg_pro();
+  _rotate_pro = set->get_rotate_pro();
+  _rotate = false;
+  _rotate_macro_index = 0;
+  _old_orient = Orient::kN;
+
+  for (int i = 0; i < _num_macro; ++i) {
+    _pos_seq.emplace_back(i);
+    _neg_seq.emplace_back(i);
+    _pre_pos_seq.emplace_back(i);
+    _pre_neg_seq.emplace_back(i);
+  }
+  pack();
+}
 
 void SequencePair::perturb()
 {
@@ -31,9 +46,9 @@ void SequencePair::perturb()
     int block_b = int((_num_macro - 1) * (rand() / (RAND_MAX + 1.0)));
     block_b = (block_b >= block_a) ? block_b + 1 : block_b;
     if (rand_num < _swap_pos_pro) {
-      swap(_pos_seq[block_a], _pos_seq[block_b]);
+      std::swap(_pos_seq[block_a], _pos_seq[block_b]);
     } else if (rand_num < _swap_pos_pro + _swap_neg_pro) {
-      swap(_neg_seq[block_a], _neg_seq[block_b]);
+      std::swap(_neg_seq[block_a], _neg_seq[block_b]);
     } else {
       doubleSwap(block_a, block_b);
     }
@@ -55,13 +70,13 @@ void SequencePair::pack()
   }
 
   // calculate x position
-  vector<pair<int, int>> match(_num_macro);
+  std::vector<std::pair<int, int>> match(_num_macro);
   for (size_t i = 0; i < _pos_seq.size(); ++i) {
     match[_pos_seq[i]].first = i;
     match[_neg_seq[i]].second = i;
   }
 
-  vector<uint32_t> length(_num_macro);
+  std::vector<uint32_t> length(_num_macro);
   for (int i = 0; i < _num_macro; ++i) {
     length[i] = 0;
   }
@@ -83,7 +98,7 @@ void SequencePair::pack()
   _total_width = length[_num_macro - 1];
 
   // calculate Y position
-  vector<int> pos_seq(_pos_seq.size());
+  std::vector<int> pos_seq(_pos_seq.size());
   for (int i = 0; i < _num_macro; ++i) {
     pos_seq[i] = _pos_seq[_num_macro - 1 - i];
   }
@@ -138,7 +153,7 @@ void SequencePair::update()
 
 void SequencePair::doubleSwap(int index1, int index2)
 {
-  swap(_pos_seq[index1], _pos_seq[index2]);
+  std::swap(_pos_seq[index1], _pos_seq[index2]);
   size_t neg_index1 = 0;
   size_t neg_index2 = 0;
   for (int i = 0; i < _num_macro; ++i) {
@@ -149,7 +164,7 @@ void SequencePair::doubleSwap(int index1, int index2)
       neg_index2 = i;
     }
   }
-  swap(_neg_seq[neg_index1], _neg_seq[neg_index2]);
+  std::swap(_neg_seq[neg_index1], _neg_seq[neg_index2]);
 }
 
 void SequencePair::printSolution()
@@ -170,11 +185,11 @@ void SequencePair::printSolution()
   }
   for (FPInst* macro : _macro_list) {
     LOG_INFO << "(" << macro->get_x() << ", " << macro->get_y() << ")"
-              << " ";
+             << " ";
   }
 }
 
-void SequencePair::pl2sp(vector<FPInst*> macro_list)
+void SequencePair::pl2sp(std::vector<FPInst*> macro_list)
 {
   _pos_seq.clear();
   _neg_seq.clear();
@@ -200,8 +215,8 @@ void SequencePair::pl2sp(vector<FPInst*> macro_list)
     macro_list[i]->set_y(reqd_row * row_height);
   }
 
-  vector<vector<RowElem>> row_list;
-  vector<RowElem> single_row_list;
+  std::vector<std::vector<RowElem>> row_list;
+  std::vector<RowElem> single_row_list;
   RowElem temp_row_elem;
 
   float curr_height = 0;
@@ -235,7 +250,7 @@ void SequencePair::pl2sp(vector<FPInst*> macro_list)
   }
 
   if (_pos_seq.size() != macro_list.size() || _neg_seq.size() != macro_list.size()) {
-    LOG_ERROR << "generated sequence pair of not correct sizes " << _pos_seq.size() << " & " << _neg_seq.size() << " vs " << size << endl;
+    LOG_ERROR << "generated sequence pair of not correct sizes " << _pos_seq.size() << " & " << _neg_seq.size() << " vs " << size;
   }
 
   pack();

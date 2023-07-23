@@ -27,6 +27,8 @@
 #ifndef IPL_OPERATOR_GP_NESTEROV_PLACE_H
 #define IPL_OPERATOR_GP_NESTEROV_PLACE_H
 
+#include <float.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -35,7 +37,6 @@
 #include "PlacerDB.hh"
 #include "config/NesterovPlaceConfig.hh"
 #include "database/NesterovDatabase.hh"
-
 namespace ipl {
 
 class NesterovPlace
@@ -58,6 +59,21 @@ class NesterovPlace
  private:
   NesterovPlaceConfig _nes_config;
   NesterovDatabase* _nes_database;
+
+  // For convergence acceleration and non-convergence treatment
+  int64_t _best_hpwl = INT64_MAX;
+  float _best_overflow = FLT_MAX;
+  std::vector<float> _overflow_record_list;
+  std::vector<float> _hpwl_record_list;
+  float _quad_penalty_coeff = 0.005;
+  int64_t _total_inst_area = 0;
+
+  void resetOverflowRecordList();
+  void resetHPWLRecordList();
+  void initQuadPenaltyCoeff();
+  bool checkPlateau(int32_t window, float threshold);
+  void entropyInjection(float shrink_factor, float noise_intensity);
+  bool checkDivergence(int32_t window, float threshold);
 
   void initNesConfig(Config* config);
   void initNesDatabase(PlacerDB* placer_db);
@@ -91,14 +107,15 @@ class NesterovPlace
   void updateWirelengthCoef(float overflow);
 
   void updatePenaltyGradient(std::vector<NesInstance*>& nInst_list, std::vector<Point<float>>& sum_grads,
-                             std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads);
+                             std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads,
+                             bool is_add_quad_penalty);
 
   Point<float> obtainWirelengthPrecondition(NesInstance* nInst);
   Point<float> obtainDensityPrecondition(NesInstance* nInst);
 
   Rectangle<int32_t> obtainFirstGridShape();
   int64_t obtainTotalArea(std::vector<NesInstance*>& inst_list);
-  float obtainPhiCoef(float scaled_diff_hpwl);
+  float obtainPhiCoef(float scaled_diff_hpwl, int32_t iteration_num);
   int64_t obtainTotalFillerArea(std::vector<NesInstance*>& inst_list);
 
   void writeBackPlacerDB();
@@ -109,6 +126,10 @@ class NesterovPlace
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);
   void printIterationCoordi(std::ofstream& file_stream, int32_t cur_iter);
   void saveNesterovPlaceData(int32_t cur_iter);
+  void plotInstImage(std::string file_name);
+  void plotBinForceLine(std::string file_name);
+  void printIterInfoToCsv(std::ofstream& file_stream, int32_t iter_num);
+  void printDensityMapToCsv(std::string file_name);
 
   // Precondition Test
   std::vector<double> _global_diagonal_list;
@@ -126,6 +147,9 @@ inline NesterovPlace::NesterovPlace(Config* config, PlacerDB* placer_db) : _nes_
   initNesDatabase(placer_db);
   initFillerNesInstance();
   initNesInstanceDensitySize();
+
+  // init bin inst type
+  _nes_database->_bin_grid->initNesInstanceTypeList(_nes_database->_nInstance_list);
 }
 inline NesterovPlace::~NesterovPlace()
 {
