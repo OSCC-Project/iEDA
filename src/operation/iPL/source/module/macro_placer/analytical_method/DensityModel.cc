@@ -10,7 +10,10 @@
 #include <vector>
 
 #include "dct_process/DCT.hh"
+
 namespace ipl {
+// NOLINTBEGIN
+
 vector<Coordinate<double>> getEndpoint(double cx, double cy, double w, double h, double r)
 {
   vector<Coordinate<double>> endpoint(4);
@@ -224,7 +227,7 @@ void DensityModel::geteDensityGradient(Mat& grad) const
   float** xi_x = _dct->get_electro_x_2d_ptr();
   float** xi_y = _dct->get_electro_y_2d_ptr();
 #pragma omp parallel for num_threads(_num_threads)
-  for (size_t i = 0; i < _num_var; i++) {
+  for (int i = 0; i < _num_var; i++) {
     float util = _utilization[i];
     grad(i, 0) = 0;
     grad(i, 1) = 0;
@@ -237,4 +240,5 @@ void DensityModel::geteDensityGradient(Mat& grad) const
   }
 }
 
+// NOLINTEND
 }  // namespace ipl
