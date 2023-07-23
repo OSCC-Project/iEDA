@@ -1,6 +1,5 @@
 add_library(ipl-module-grid_manager 
                 GridManager.cc
-                # GridManagerTMP.cc
                 )
 
 target_link_libraries(ipl-module-grid_manager

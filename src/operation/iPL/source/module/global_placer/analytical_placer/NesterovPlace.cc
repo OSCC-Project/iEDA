@@ -1395,11 +1395,11 @@ void NesterovPlace::plotBinForceLine(std::string file_name)
   }
   image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
 
-  float efMax = 0;
+  float electro_force_max = 0;
   int max_len = std::numeric_limits<int>::max();
   for (int i = 0; i < bin_cnt_y; i++) {
     for (int j = 0; j < bin_cnt_x; j++) {
-      efMax = std::max(efMax, std::hypot(force_2d_x_list[i][j], force_2d_y_list[i][j]));
+      electro_force_max = std::max(electro_force_max, std::hypot(force_2d_x_list[i][j], force_2d_y_list[i][j]));
       max_len = std::min({max_len, bin_width, bin_height});
     }
   }
@@ -1409,7 +1409,7 @@ void NesterovPlace::plotBinForceLine(std::string file_name)
       float fx = force_2d_x_list[i][j];
       float fy = force_2d_y_list[i][j];
       float f = std::hypot(fx, fy);
-      float ratio = f / efMax;
+      float ratio = f / electro_force_max;
       float dx = fx / f * max_len * ratio;
       float dy = fy / f * max_len * ratio;
 
