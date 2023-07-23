@@ -27,71 +27,102 @@
 #include "ElectricFieldGradient.hh"
 
 #include "omp.h"
+#include "usage/usage.hh"
 
 namespace ipl {
 
-void ElectricFieldGradient::initElectroMap()
+void ElectricFieldGradient::initElectro2DList()
 {
-  for (auto* row : _grid_manager->get_row_list()) {
-    for (auto* grid : row->get_grid_list()) {
-      _electro_map.emplace(grid, ElectroInfo());
-    }
+  size_t row_cnt = static_cast<size_t>(_grid_manager->get_grid_cnt_y());
+  size_t grid_cnt = static_cast<size_t>(_grid_manager->get_grid_cnt_x());
+  // _force_2d_list.resize(row_cnt);
+  _force_2d_x_list.resize(row_cnt);
+  _force_2d_y_list.resize(row_cnt);
+  _phi_2d_list.resize(row_cnt);
+  for (size_t i = 0; i < row_cnt; i++) {
+    // _force_2d_list[i].resize(grid_cnt, std::make_pair(0.0f, 0.0f));
+    _force_2d_x_list[i].resize(grid_cnt, 0.0f);
+    _force_2d_y_list[i].resize(grid_cnt, 0.0f);
+    _phi_2d_list[i].resize(grid_cnt, 0.0f);
   }
 }
 
-void ElectricFieldGradient::updateDensityForce(int32_t thread_num)
+void ElectricFieldGradient::updateDensityForce(int32_t thread_num, bool is_cal_phi)
 {
   // reset all variables.
   this->reset();
 
-// copy density to utilize FFT
+  // const auto& row_list = _grid_manager->get_row_list();
+
+  // float** dct_density_map = _dct->get_density_2d_ptr();
+  // float** dct_electro_x_map = _dct->get_electro_x_2d_ptr();
+  // float** dct_electro_y_map = _dct->get_electro_y_2d_ptr();
+
+  float** fft_density_map = _fft->get_density_2d_ptr();
+  float** fft_electro_x_map = _fft->get_electro_x_2d_ptr();
+  float** fft_electro_y_map = _fft->get_electro_y_2d_ptr();
+
+  // copy density to utilize DCT
+  int32_t grid_cnt_x = _grid_manager->get_grid_cnt_x();
+  int32_t grid_cnt_y = _grid_manager->get_grid_cnt_y();
+  float available_ratio = _grid_manager->get_available_ratio();
+  auto& grid_2d_list = _grid_manager->get_grid_2d_list();
+
 #pragma omp parallel for num_threads(thread_num)
-  for (auto* row : _grid_manager->get_row_list()) {
-    for (auto* grid : row->get_grid_list()) {
-      _fft->updateDensity(grid->get_grid_idx(), grid->get_row_idx(), grid->obtainGridDensity() / grid->get_available_ratio());
+  for (int32_t i = 0; i < grid_cnt_y; i++) {
+    for (int32_t j = 0; j < grid_cnt_x; j++) {
+      // dct_density_map[j][i] = grid_2d_list[i][j].obtainGridDensity() / available_ratio;
+      fft_density_map[j][i] = grid_2d_list[i][j].obtainGridDensity() / available_ratio;
     }
   }
 
-  // do FFT
-  _fft->doFFT();
+  // _dct->set_thread_nums(thread_num);
+  // _dct->doDCT(is_cal_phi);
+  _fft->set_thread_nums(thread_num);
+  _fft->doFFT(is_cal_phi);
 
-// update electro phi and electro force
-// update _sum_phi for nesterov loop
 #pragma omp parallel for num_threads(thread_num)
-  for (auto* row : _grid_manager->get_row_list()) {
-    for (auto* grid : row->get_grid_list()) {
-      ElectroInfo electro_info;
+  for (int32_t i = 0; i < grid_cnt_y; i++) {
+    for (int32_t j = 0; j < grid_cnt_x; j++) {
+      // _force_2d_x_list[i][j] = dct_electro_y_map[j][i];
+      // _force_2d_y_list[i][j] = dct_electro_x_map[j][i];
 
-      std::pair<float, float> e_force_pair = _fft->get_electro_force(grid->get_grid_idx(), grid->get_row_idx());
-      electro_info.electro_force_x = e_force_pair.first;
-      electro_info.electro_force_y = e_force_pair.second;
+      _force_2d_x_list[i][j] = fft_electro_x_map[j][i];
+      _force_2d_y_list[i][j] = fft_electro_y_map[j][i];
+    }
+  }
 
-      float electro_phi = _fft->get_electro_phi(grid->get_grid_idx(), grid->get_row_idx());
-      electro_info.electro_phi = electro_phi;
+  if (is_cal_phi) {
+    // float** dct_phi_map = _dct->get_phi_2d_ptr();
+    float** fft_phi_map = _fft->get_phi_2d_ptr();
 
-      _sum_phi += electro_phi * static_cast<float>(grid->get_occupied_area());
-
-      auto it = _electro_map.find(grid);
-      if (it != _electro_map.end()) {
-        it->second = std::move(electro_info);
+    for (int32_t i = 0; i < grid_cnt_y; i++) {
+      for (int32_t j = 0; j < grid_cnt_x; j++) {
+        // float electro_phi = dct_phi_map[j][i];
+        float electro_phi = fft_phi_map[j][i];
+        _phi_2d_list[i][j] = electro_phi;
+        _sum_phi += electro_phi * grid_2d_list[i][j].occupied_area;
       }
     }
   }
 }
 
-Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> shape, float scale)
+Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> shape, float scale, bool is_add_quad_penalty, float quad_lamda)
 {
   float gradient_x = 0;
   float gradient_y = 0;
 
   std::vector<Grid*> overlap_grid_list;
   _grid_manager->obtainOverlapGridList(overlap_grid_list, shape);
+
   for (auto* grid : overlap_grid_list) {
     float overlap_area = _grid_manager->obtainOverlapArea(grid, shape) * scale;
 
-    ElectroInfo electro_info = _electro_map.find(grid)->second;
-    gradient_x += overlap_area * electro_info.electro_force_x;
-    gradient_y += overlap_area * electro_info.electro_force_y;
+    float grid_grad_x = overlap_area * _force_2d_x_list[grid->row_idx][grid->grid_idx];
+    float grid_grad_y = overlap_area * _force_2d_y_list[grid->row_idx][grid->grid_idx];
+
+    gradient_x += grid_grad_x;
+    gradient_y += grid_grad_y;
   }
 
   return Point<float>(gradient_x, gradient_y);
@@ -100,11 +131,6 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
 void ElectricFieldGradient::reset()
 {
   _sum_phi = 0;
-
-  // _electro_map.clear();
-  // for (auto pair : _electro_map) {
-  //   pair.second.reset();
-  // }
 }
 
 }  // namespace ipl

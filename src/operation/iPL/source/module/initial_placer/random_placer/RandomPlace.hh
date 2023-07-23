@@ -15,18 +15,35 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#pragma once
-#include "MPDB.h"
-namespace ipl::imp {
-class Checker
+#ifndef IPL_RANDOM_PLACE_H
+#define IPL_RANDOM_PLACE_H
+
+#include "Log.hh"
+#include "PlacerDB.hh"
+
+namespace ipl {
+
+class RandomPlace
 {
  public:
-  Checker(){};
-  ~Checker(){};
+  RandomPlace() = delete;
+  explicit RandomPlace(PlacerDB* placer_db);
+  RandomPlace(const RandomPlace&) = delete;
+  RandomPlace(RandomPlace&&) = delete;
+  ~RandomPlace() = default;
+
+  RandomPlace& operator=(const RandomPlace&) = delete;
+  RandomPlace& operator=(RandomPlace&&) = delete;
+
+  void runRandomPlace();
 
  private:
-  bool checkOverlape(vector<FPInst*> macro_list);
-  bool checkOutborder(vector<FPInst*> macro_list, Coordinate* ld, Coordinate* ru);
+  PlacerDB* _placer_db;
 };
+inline RandomPlace::RandomPlace(PlacerDB* placer_db) : _placer_db(placer_db)
+{
+}
 
-}  // namespace ifp
+}  // namespace ipl
+
+#endif

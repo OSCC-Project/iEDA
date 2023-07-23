@@ -15,9 +15,6 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "HierPartition.hh"
-
-#include <map>
-
 namespace ipl::imp {
 void HierParttion::init()
 {

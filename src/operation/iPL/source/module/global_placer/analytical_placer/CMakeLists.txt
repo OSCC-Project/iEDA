@@ -9,6 +9,7 @@ target_link_libraries(ipl-analytical_placer
         ipl-configurator
         ipl-module-evaluator
         ipl-solver
+        ipl-bridge
         ipl-utility
 )
 

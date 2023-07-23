@@ -33,20 +33,20 @@ class MacroPlacerConfig
   MacroPlacerConfig& operator=(MacroPlacerConfig&& other) = default;
 
   // getter.
-  const std::vector<std::string>& get_fixed_macro() { return _fixed_macro; }
-  const std::vector<int32_t>& get_fixed_macro_coordinate() { return _fixed_macro_coordinate; }
-  const std::vector<int32_t>& get_blockage() { return _blockage; }
-  const std::vector<std::string>& get_guidance_macro() { return _guidance_macro; }
-  const std::vector<int32_t>& get_guidance() { return _guidance; }
-  std::string get_solution_tpye() { return _solution_type; }
-  int32_t get_perturb_per_step() { return _perturb_per_step; }
-  float get_cool_rate() { return _cool_rate; }
-  int32_t get_parts() { return _parts; }
-  int32_t get_ufactor() { return _ufactor; }
-  float get_new_macro_density() { return _new_macro_density; }
-  int32_t get_halo_x() { return _halo_x; }
-  int32_t get_halo_y() { return _halo_y; }
-  std::string get_output_path() { return _output_path; }
+  const std::vector<std::string>& get_fixed_macro() const { return _fixed_macro; }
+  const std::vector<int32_t>& get_fixed_macro_coordinate() const { return _fixed_macro_coordinate; }
+  const std::vector<int32_t>& get_blockage() const { return _blockage; }
+  const std::vector<std::string>& get_guidance_macro() const { return _guidance_macro; }
+  const std::vector<int32_t>& get_guidance() const { return _guidance; }
+  std::string get_solution_tpye() const { return _solution_type; }
+  int32_t get_perturb_per_step() const { return _perturb_per_step; }
+  float get_cool_rate() const { return _cool_rate; }
+  int32_t get_parts() const { return _parts; }
+  int32_t get_ufactor() const { return _ufactor; }
+  float get_new_macro_density() const { return _new_macro_density; }
+  int32_t get_halo_x() const { return _halo_x; }
+  int32_t get_halo_y() const { return _halo_y; }
+  std::string get_output_path() const { return _output_path; }
 
   // setter.
   void set_fixed_macro(std::vector<std::string> fixed_macro) { _fixed_macro = fixed_macro; }

@@ -25,24 +25,29 @@
  */
 
 #include "HPWirelength.hh"
+#include "omp.h"
 
 namespace ipl {
 
 int64_t HPWirelength::obtainTotalWirelength()
 {
   int64_t total_hpwl = 0;
+
+#pragma omp parallel for num_threads(8)
   for (auto* network : _topology_manager->get_network_list()) {
     Rectangle<int32_t> network_shape = std::move(network->obtainNetWorkShape());
+
+#pragma omp atomic
     total_hpwl += network_shape.get_half_perimeter();
   }
   return total_hpwl;
 }
 
-int64_t HPWirelength::obtainNetWirelength(std::string net_name)
+int64_t HPWirelength::obtainNetWirelength(int32_t net_id)
 {
   int64_t hpwl = 0;
 
-  auto* network = _topology_manager->findNetwork(net_name);
+  auto* network = _topology_manager->findNetworkById(net_id);
   if (network) {
     hpwl = network->obtainNetWorkShape().get_half_perimeter();
   }
@@ -50,17 +55,18 @@ int64_t HPWirelength::obtainNetWirelength(std::string net_name)
   return hpwl;
 }
 
-int64_t HPWirelength::obtainPartOfNetWirelength(std::string net_name, std::string sink_pin_name)
+int64_t HPWirelength::obtainPartOfNetWirelength(int32_t net_id, int32_t sink_pin_id)
 {
   int64_t wirelength = 0;
 
-  auto* network = _topology_manager->findNetwork(net_name);
+  auto* network = _topology_manager->findNetworkById(net_id);
   if (network) {
     auto* transmitter = network->get_transmitter();
     if (transmitter) {
       for (auto* receiver : network->get_receiver_list()) {
-        if (receiver->get_name() == sink_pin_name) {
-          wirelength = (std::abs(transmitter->get_location().get_x() - receiver->get_location().get_x()) + std::abs(transmitter->get_location().get_y() - receiver->get_location().get_y()));
+        if (receiver->get_node_id() == sink_pin_id) {
+          wirelength = (std::abs(transmitter->get_location().get_x() - receiver->get_location().get_x())
+                        + std::abs(transmitter->get_location().get_y() - receiver->get_location().get_y()));
         }
       }
     }

@@ -37,8 +37,8 @@ class GridManagerTest : public testing::Test
 {
   void SetUp()
   {
-    char  config[] = "gridmanager test";
-    char* argv[]   = {config};
+    char config[] = "gridmanager test";
+    char* argv[] = {config};
     Log::init(argv);
   }
   void TearDown() { Log::end(); }
@@ -48,8 +48,8 @@ TEST_F(GridManagerTest, sample)
 {
   GridManager* grid_manager = new GridManager(Rectangle<int32_t>(0, 0, 12, 12), 3, 3, 1.0);
 
-  LOG_INFO << "Grid X Cnt : " << grid_manager->obtainGridCntX();
-  LOG_INFO << "Row Y Cnt : " << grid_manager->obtainRowCntY();
+  LOG_INFO << "Grid X Cnt : " << grid_manager->get_grid_cnt_x();
+  LOG_INFO << "Row Y Cnt : " << grid_manager->get_grid_cnt_y();
 
   LOG_INFO << "Add Row/Site Rectangle";
   Rectangle<int32_t> rect1(4, 0, 8, 4);

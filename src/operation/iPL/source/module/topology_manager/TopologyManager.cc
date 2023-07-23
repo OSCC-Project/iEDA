@@ -39,7 +39,8 @@ std::vector<Node*> NetWork::get_node_list() const
   return node_list;
 }
 
-bool NetWork::isIgnoreNetwork(){
+bool NetWork::isIgnoreNetwork()
+{
   return (_net_weight - 0.0f) < 1e-9;
 }
 
@@ -62,51 +63,51 @@ Rectangle<int32_t> NetWork::obtainNetWorkShape()
   return Rectangle<int32_t>(lower_x, lower_y, upper_x, upper_y);
 }
 
-void TopologyManager::add_node(std::string name, Node* node)
+void TopologyManager::add_node(Node* node)
 {
   _node_list.push_back(node);
-  _node_map.emplace(name, node);
+  node->set_node_id(_nodes_range);
+  _nodes_range += 1;
 }
 
-void TopologyManager::add_network(std::string name, NetWork* network)
+void TopologyManager::add_network(NetWork* network)
 {
   _network_list.push_back(network);
-  _network_map.emplace(name, network);
+  network->set_network_id(_networks_range);
+  _networks_range += 1;
 }
 
-void TopologyManager::add_group(std::string name, Group* group)
+void TopologyManager::add_group(Group* group)
 {
   _group_list.push_back(group);
-  _group_map.emplace(name, group);
+  group->set_group_id(_groups_range);
+  _groups_range += 1;
 }
 
-Node* TopologyManager::findNode(std::string name)
+Node* TopologyManager::findNodeById(int32_t node_id)
 {
-  auto node_it = _node_map.find(name);
-  if (node_it == _node_map.end()) {
+  if (node_id < 0 || node_id >= _nodes_range) {
     return nullptr;
   } else {
-    return node_it->second;
+    return _node_list[node_id];
   }
 }
 
-NetWork* TopologyManager::findNetwork(std::string name)
+NetWork* TopologyManager::findNetworkById(int32_t network_id)
 {
-  auto network_it = _network_map.find(name);
-  if (network_it == _network_map.end()) {
+  if (network_id < 0 || network_id >= _networks_range) {
     return nullptr;
   } else {
-    return network_it->second;
+    return _network_list[network_id];
   }
 }
 
-Group* TopologyManager::findGroup(std::string name)
+Group* TopologyManager::findGroupById(int32_t group_id)
 {
-  auto group_it = _group_map.find(name);
-  if (group_it == _group_map.end()) {
+  if (group_id < 0 || group_id >= _groups_range) {
     return nullptr;
   } else {
-    return group_it->second;
+    return _group_list[group_id];
   }
 }
 
