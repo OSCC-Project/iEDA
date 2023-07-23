@@ -116,8 +116,6 @@ TEST_F(DCTTestInterface, diff_test)
     }
     std::cout << std::endl;
   }
-
-  test_matrix;
 }
 
 }  // namespace ipl

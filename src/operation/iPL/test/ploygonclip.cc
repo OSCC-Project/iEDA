@@ -3,6 +3,8 @@
 #include <iostream>
 #include <span>
 #include <vector>
+
+// NOLINTBEGIN
 struct vec2
 {
   float x = 0.0f, y = 0.0f;
@@ -114,3 +116,5 @@ int main(int argc, char** argv)
 
   return EXIT_SUCCESS;
 }
+
+// NOLINTEND
