@@ -78,6 +78,7 @@ class DetailedRouter
 #if 1  // iterative
 
   void iterative(DRModel& dr_model);
+  void resetDRModel(DRModel& dr_model);
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRSchedule& dr_schedule);
   void sortDRBox(DRBox& dr_box);
