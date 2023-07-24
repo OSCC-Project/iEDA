@@ -2653,9 +2653,9 @@ class RTUtil
     if (total_size < 0) {
       LOG_INST.error(Loc::current(), "The total of size < 0!");
     } else if (total_size <= 10) {
-      batch_size = 1;
+      batch_size = 5;
     } else if (total_size < 100000) {
-      batch_size = total_size / 10;
+      batch_size = std::max(5, total_size / 10);
       irt_int factor = static_cast<irt_int>(std::pow(10, getDigitNum(batch_size) - 1));
       batch_size = batch_size / factor * factor;
     }

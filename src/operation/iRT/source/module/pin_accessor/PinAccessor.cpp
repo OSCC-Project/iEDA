@@ -309,11 +309,11 @@ void PinAccessor::accessPANetList(PAModel& pa_model)
   for (size_t i = 0; i < pa_net_list.size(); i++) {
     accessPANet(pa_model, pa_net_list[i]);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Accessed ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
   if (omp_get_num_threads() == 1) {
-    LOG_INST.info(Loc::current(), "Processed ", pa_net_list.size(), " nets", monitor.getStatsInfo());
+    LOG_INST.info(Loc::current(), "Accessed ", pa_net_list.size(), " nets", monitor.getStatsInfo());
   }
 }
 
@@ -988,7 +988,7 @@ void PinAccessor::reportTable(PAModel& pa_model)
   std::vector<std::vector<std::string>> table_list;
   table_list.push_back(RTUtil::splitString(pin_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(port_table.to_string(), '\n'));
-  
+
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
     max_size = std::max(max_size, static_cast<int>(table.size()));

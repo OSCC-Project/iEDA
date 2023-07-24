@@ -39,6 +39,7 @@ class TAPanel : public LayerRect
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
+  irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   void set_source_net_rect_map(const std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>>& source_net_rect_map)
@@ -52,6 +53,8 @@ class TAPanel : public LayerRect
   void set_panel_scale_axis(const ScaleAxis& panel_scale_axis) { _panel_scale_axis = panel_scale_axis; }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
+  void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
+  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
   bool skipAssigning() { return _ta_task_list.empty(); }
   void addRect(TASourceType ta_source_type, irt_int net_idx, const LayerRect& rect)
@@ -124,6 +127,7 @@ class TAPanel : public LayerRect
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
   TAPanelStat _ta_panel_stat;
+  irt_int _curr_iter;
 #if 1  // astar
   // config
   double _wire_unit = 1;

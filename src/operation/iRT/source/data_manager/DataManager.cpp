@@ -169,6 +169,10 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.ra_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_max_iter_num", 10);
   _config.ra_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_max_iter_num", 10);
   _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
+  _config.ta_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_outer_max_iter_num", 1);
+  _config.ta_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_inner_max_iter_num", 1);
+  _config.dr_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_outer_max_iter_num", 1);
+  _config.dr_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_inner_max_iter_num", 1);
   /////////////////////////////////////////////
 }
 
@@ -1370,6 +1374,14 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_outer_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_outer_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_inner_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_inner_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_outer_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_outer_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_inner_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_inner_max_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");

@@ -89,7 +89,7 @@ class GlobalRouter
   void initPathHead(GRModel& gr_model);
   bool searchEnded(GRModel& gr_model);
   void expandSearching(GRModel& gr_model);
-  bool passCheckingSegment(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  bool passChecking(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   bool replaceParentNode(GRModel& gr_model, GRNode* parent_node, GRNode* child_node);
   void resetPathHead(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
@@ -109,11 +109,12 @@ class GlobalRouter
   double getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
   double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  double getKnowViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node);
   double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
+  double getEstimateViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   void processGRModel(GRModel& gr_model);
   void initRoutingResult(GRNet& gr_net);
   RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
