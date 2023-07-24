@@ -8,7 +8,7 @@ target_include_directories(ipl-configurator
     ${iPL_SOURCE}/module/detail_placer/config
     ${iPL_SOURCE}/module/buffer/config
     ${iPL_SOURCE}/module/filler/config
-    ${iPL_SOURCE}/module/global_placer/analytical_placer/config
+    ${iPL_SOURCE}/module/global_placer/electrostatic_placer/config
     ${iPL_SOURCE}/module/legalizer/config
     ${iPL_SOURCE}/module/macro_placer/config
 )
