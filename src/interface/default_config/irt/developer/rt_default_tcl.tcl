@@ -17,7 +17,11 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -ra_penalty_drop_rate 0.8 \
         -ra_outer_max_iter_num 10 \
         -ra_inner_max_iter_num 10 \
-        -gr_max_iter_num 10
+        -gr_max_iter_num 1 \
+        -ta_outer_max_iter_num 1 \
+        -ta_inner_max_iter_num 1 \
+        -dr_outer_max_iter_num 1 \
+        -dr_inner_max_iter_num 1
 
 run_rt -flow "pa ra gr ta dr vr"
 

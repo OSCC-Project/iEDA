@@ -217,10 +217,10 @@ void ViolationRepairer::repairVRModel(VRModel& vr_model)
   for (size_t i = 0; i < vr_net_list.size(); i++) {
     repairVRNet(vr_model, vr_net_list[i]);
     if ((i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Repaired ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
-  LOG_INST.info(Loc::current(), "Processed ", vr_net_list.size(), " nets", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Repaired ", vr_net_list.size(), " nets", monitor.getStatsInfo());
 }
 
 void ViolationRepairer::repairVRNet(VRModel& vr_model, VRNet& vr_net)
