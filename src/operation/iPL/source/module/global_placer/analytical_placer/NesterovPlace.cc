@@ -38,13 +38,16 @@
 #include "omp.h"
 #include "tool_manager.h"
 #include "usage/usage.hh"
+
+#ifdef BUILD_QT
 #include "utility/Image.hh"
+#endif
 
 namespace ipl {
 
 #define PRINT_LONG_NET 0
 #define PRINT_COORDI 0
-#define PLOT_IMAGE 0
+#define PLOT_IMAGE 1
 #define RECORD_ITER_INFO 0
 #define PRINT_DENSITY_MAP 0
 
@@ -1314,6 +1317,7 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
 void NesterovPlace::plotInstImage(std::string file_name)
 {
+#ifdef BUILD_QT
   auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
   // auto core_shape = _nes_database->_core_shape;
   std::vector<NesInstance*>& inst_list = _nes_database->_nInstance_list;
@@ -1361,11 +1365,13 @@ void NesterovPlace::plotInstImage(std::string file_name)
     }
   }
 
-  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".jpg");
+  image_ploter.save("./result/pl/plot/" + file_name + ".jpg");
+#endif
 }
 
 void NesterovPlace::plotBinForceLine(std::string file_name)
 {
+#ifdef BUILD_QT
   auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
   // auto core_shape = _nes_database->_core_shape;
   auto& force_2d_x_list = _nes_database->_density_gradient->get_force_2d_x_list();
@@ -1419,7 +1425,8 @@ void NesterovPlace::plotBinForceLine(std::string file_name)
       image_ploter.drawArc(cx, cy, cx + dx, cy + dy);
     }
   }
-  image_ploter.save("/home/chenshijian/iEDA/bin/result/pl/plot/" + file_name + ".jpg");
+  image_ploter.save("./result/pl/plot/" + file_name + ".jpg");
+#endif
 }
 
 void NesterovPlace::printIterInfoToCsv(std::ofstream& file_stream, int32_t iter_num)
