@@ -1,7 +1,7 @@
 add_library(ipl-source_external_libs INTERFACE)
-
 target_link_libraries(ipl-source_external_libs
     INTERFACE
+        fftsg_library
         flute
         idb
         IdbBuilder
@@ -25,4 +25,5 @@ target_include_directories(ipl-source_external_libs
     SYSTEM INTERFACE
         ${HOME_THIRDPARTY}/flute3
         ${HOME_THIRDPARTY}/json
+        ${HOME_THIRDPARTY}/fft
 )

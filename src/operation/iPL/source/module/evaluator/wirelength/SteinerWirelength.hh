@@ -57,8 +57,8 @@ class SteinerWirelength : public Wirelength
   MultiTree* obtainMultiTree(NetWork* network);
 
   int64_t obtainTotalWirelength();
-  int64_t obtainNetWirelength(std::string net_name);
-  int64_t obtainPartOfNetWirelength(std::string net_name, std::string sink_pin_name);
+  int64_t obtainNetWirelength(int32_t net_id);
+  int64_t obtainPartOfNetWirelength(int32_t net_id, int32_t sink_pin_id);
 
  private:
   std::unordered_map<NetWork*, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> _point_pair_map;

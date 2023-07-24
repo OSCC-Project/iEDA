@@ -16,14 +16,14 @@ add_executable(iPLTest
     ${iPL_SOURCE}/PlacerDB.cc
     ${iPL_API}/PLAPI.cc
     ${iPL_TEST}/APITest.cc
-    ${iPL_TEST}/ReportCongTest.cc
+    # ${iPL_TEST}/ReportCongTest.cc
+    ${iPL_TEST}/DCTTest.cc
     # ${iPL_TEST}/ComputationCheck.cc
     # ${iPL_TEST}/GlogTest.cc
     # ${iPL_TEST}/CongEvalAPITest.cc
     # ${iPL_TEST}/GridManagerTest.cc
     # ${iPL_TEST}/MPTest.cc
 )
-
 set(OPENMP ON)
 if(OPENMP)
     # Find OpenMP package
@@ -36,10 +36,11 @@ endif()
 
 target_link_libraries(iPLTest
     PUBLIC
-    ipl-api
-    ipl-source
     ipl-api_external_libs
     ipl-test_external_libs
+    ipl-api
+    ipl-source_external_libs
+    ipl-source
 
     tool_api_icts
     icts_api
@@ -62,3 +63,16 @@ target_link_libraries(MacroPlacer
     ipl-source
     ipl-api_external_libs
 )
+
+add_executable(MPLseTest
+    ${iPL_TEST}/MPLseTest.cc)
+
+
+target_link_libraries(MPLseTest
+    PUBLIC
+    ipl-api
+    ipl-source
+    ipl-api_external_libs
+)
+add_executable(ployclip
+    ${iPL_TEST}/ploygonclip.cc)

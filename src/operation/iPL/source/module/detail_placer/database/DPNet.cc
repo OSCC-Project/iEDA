@@ -20,26 +20,25 @@
  * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
  * @LastEditTime: 2023-03-10 16:05:03
  * @FilePath: /irefactor/src/operation/iPL/source/module/detail_refactor/database/DPNet.cc
- * @Description: 
- * 
- * 
+ * @Description:
+ *
+ *
  */
 #include "DPNet.hh"
 
-namespace ipl{
+namespace ipl {
 
-DPNet::DPNet(std::string name): _name(name),_netweight(1.0f),_driver_pin(nullptr)
+DPNet::DPNet(std::string name) : _dp_net_id(-1), _name(name), _netweight(1.0f), _driver_pin(nullptr)
 {
-
 }
 
 DPNet::~DPNet()
 {
-
 }
 
-int64_t DPNet::calCurrentHPWL(){
-  if(_pins.empty()){
+int64_t DPNet::calCurrentHPWL()
+{
+  if (_pins.empty()) {
     return 0;
   }
 
@@ -48,19 +47,20 @@ int64_t DPNet::calCurrentHPWL(){
   int32_t upper_x = INT32_MIN;
   int32_t upper_y = INT32_MIN;
 
-    for(auto* pin : _pins){
-        pin->get_x_coordi() < lower_x ? lower_x = pin->get_x_coordi() : lower_x;
-        pin->get_y_coordi() < lower_y ? lower_y = pin->get_y_coordi() : lower_y;
-        pin->get_x_coordi() > upper_x ? upper_x = pin->get_x_coordi() : upper_x;
-        pin->get_y_coordi() > upper_y ? upper_y = pin->get_y_coordi() : upper_y;
-    }
+  for (auto* pin : _pins) {
+    pin->get_x_coordi() < lower_x ? lower_x = pin->get_x_coordi() : lower_x;
+    pin->get_y_coordi() < lower_y ? lower_y = pin->get_y_coordi() : lower_y;
+    pin->get_x_coordi() > upper_x ? upper_x = pin->get_x_coordi() : upper_x;
+    pin->get_y_coordi() > upper_y ? upper_y = pin->get_y_coordi() : upper_y;
+  }
 
-    return (upper_x - lower_x) + (upper_y - lower_y);
+  return (upper_x - lower_x) + (upper_y - lower_y);
 }
 
-Rectangle<int32_t> DPNet::obtainBoundingBox(){
-  if(_pins.empty()){
-    return Rectangle<int32_t>(0,0,0,0);
+Rectangle<int32_t> DPNet::obtainBoundingBox()
+{
+  if (_pins.empty()) {
+    return Rectangle<int32_t>(0, 0, 0, 0);
   }
 
   int32_t lower_x = INT32_MAX;
@@ -68,14 +68,14 @@ Rectangle<int32_t> DPNet::obtainBoundingBox(){
   int32_t upper_x = INT32_MIN;
   int32_t upper_y = INT32_MIN;
 
-    for(auto* pin : _pins){
-        pin->get_x_coordi() < lower_x ? lower_x = pin->get_x_coordi() : lower_x;
-        pin->get_y_coordi() < lower_y ? lower_y = pin->get_y_coordi() : lower_y;
-        pin->get_x_coordi() > upper_x ? upper_x = pin->get_x_coordi() : upper_x;
-        pin->get_y_coordi() > upper_y ? upper_y = pin->get_y_coordi() : upper_y;
-    }
+  for (auto* pin : _pins) {
+    pin->get_x_coordi() < lower_x ? lower_x = pin->get_x_coordi() : lower_x;
+    pin->get_y_coordi() < lower_y ? lower_y = pin->get_y_coordi() : lower_y;
+    pin->get_x_coordi() > upper_x ? upper_x = pin->get_x_coordi() : upper_x;
+    pin->get_y_coordi() > upper_y ? upper_y = pin->get_y_coordi() : upper_y;
+  }
 
-    return Rectangle<int32_t>(lower_x,lower_y,upper_x,upper_y);
+  return Rectangle<int32_t>(lower_x, lower_y, upper_x, upper_y);
 }
 
-}
+}  // namespace ipl

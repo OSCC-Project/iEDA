@@ -81,7 +81,8 @@ inline float Utility::getDistance(const std::vector<Point<int32_t>>& a, const st
     sumDistance += static_cast<float>(a[i].get_y() - b[i].get_y()) * static_cast<float>(a[i].get_y() - b[i].get_y());
   }
 
-  return std::sqrt(sumDistance / (2.0 * a.size()));
+  // return std::sqrt(sumDistance / (2.0 * a.size()));
+  return std::sqrt(sumDistance);
 }
 
 inline float Utility::getDistance(const std::vector<Point<float>>& a, const std::vector<Point<float>>& b)
@@ -92,7 +93,8 @@ inline float Utility::getDistance(const std::vector<Point<float>>& a, const std:
     sumDistance += (a[i].get_y() - b[i].get_y()) * (a[i].get_y() - b[i].get_y());
   }
 
-  return std::sqrt(sumDistance / (2.0 * a.size()));
+  // return std::sqrt(sumDistance / (2.0 * a.size()));
+  return std::sqrt(sumDistance);
 }
 
 struct PointCMP

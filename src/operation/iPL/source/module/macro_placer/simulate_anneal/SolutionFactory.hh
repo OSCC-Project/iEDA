@@ -27,13 +27,13 @@ namespace ipl::imp {
 class SolutionFactory
 {
  public:
-  MPSolution* createSolution(vector<FPInst*> macro_list, Setting* set)
+  MPSolution* createSolution(std::vector<FPInst*> macro_list, Setting* set)
   {
     switch (set->get_solution_type()) {
-      case SolutionTYPE::BST:
+      case SolutionType::kBStar_tree:
         return new BStarTree(macro_list, set);
         break;
-      case SolutionTYPE::SP:
+      case SolutionType::kSequence_pair:
         return new SequencePair(macro_list, set);
         break;
       default:
