@@ -45,7 +45,7 @@ class WirelengthGradient
   WirelengthGradient& operator=(WirelengthGradient&&) = delete;
 
   virtual void updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num) = 0;
-  virtual Point<float> obtainWirelengthGradient(std::string inst_name, float coeff_x, float coeff_y) = 0;
+  virtual Point<float> obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y) = 0;
 
   // Debug
   virtual void waWLAnalyzeForDebug(float coeff_x, float coeff_y) = 0;

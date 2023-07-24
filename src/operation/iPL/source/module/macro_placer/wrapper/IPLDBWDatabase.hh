@@ -31,11 +31,6 @@ class IPLDBWDatabase
  public:
   IPLDBWDatabase(ipl::PlacerDB* db) : _ipl_db(db), _layout(new FPLayout()), _design(new FPDesign()) {}
   ~IPLDBWDatabase();
-
-  // function
-  // ipl::Instance* find_ipl_inst(FPInst* imp_inst) { return _ipl_inst_map[imp_inst]; }
-  // ipl::Net* find_ipl_net(FPNet* imp_net) { return _ipl_net_map[imp_net]; }
-  // ipl::Pin* find_ipl_pin(FPPin* imp_pin) { return _ipl_pin_map[imp_pin]; }
   FPInst* find_imp_inst(ipl::Instance* ipl_inst)
   {
     FPInst* imp_inst = nullptr;
@@ -45,8 +40,6 @@ class IPLDBWDatabase
     }
     return imp_inst;
   }
-  // FPNet* find_imp_Net(ipl::Net* ipl_net) { return _fp_net_map[ipl_net]; }
-  // FPPin* find_imp_pin(ipl::Pin* ipl_pin) { return _fp_pin_map[ipl_pin]; }
 
  private:
   ipl::PlacerDB* _ipl_db;

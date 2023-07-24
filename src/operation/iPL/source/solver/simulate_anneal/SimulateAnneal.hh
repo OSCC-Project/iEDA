@@ -16,6 +16,7 @@
 // ***************************************************************************************
 
 #pragma once
+#include <math.h>
 
 #include "Evaluation.hh"
 #include "SAParam.hh"
@@ -26,12 +27,7 @@ namespace ipl {
 class SimulateAnneal
 {
  public:
-  SimulateAnneal(SAParam* param, Evaluation* evaluation)
-  {
-    _param = param;
-    _evaluation = evaluation;
-    _solution = _evaluation->get_solution();
-  }
+  SimulateAnneal(SAParam* param, Evaluation* evaluation);
   ~SimulateAnneal(){};
   void runAnneal();
 

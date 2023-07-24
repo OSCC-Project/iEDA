@@ -64,6 +64,15 @@ class UserShell
    */
   static int userMain(const char* file_path);
 
+  /**
+   * @brief read and execute a Tcl script file, or open an interative tcl shell
+   * @param argc int - number counts of command arguments
+   * @param argv char** - command arguments. If nullptr, run interactively
+   * @return 0(EXIT_SUCCESS) if succeed, 1(EXIT_FAILURE) if failed
+   * @note see `static int userMain(const char* file_path);`
+   */
+  static int userMain(int argc, char** argv);
+
   static void displayHello(const std::string& hello_info) { std::cout << hello_info << std::endl; }
 
   /**

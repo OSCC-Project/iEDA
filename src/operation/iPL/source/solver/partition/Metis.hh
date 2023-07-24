@@ -15,6 +15,8 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+#include <time.h>
+
 #include <vector>
 
 #include "metis.h"
@@ -50,15 +52,8 @@ class Metis
   void set_nparts(int nparts) { *_nparts = nparts; }
   void set_ufactor(int ufactor) { _options[METIS_OPTION_UFACTOR] = ufactor; }
 
-  void partition(const std::vector<std::vector<int>> adjacent_edge_list); // Index of adjacent node
-  std::vector<int> get_result()
-  {
-    std::vector<int> result;
-    for (idx_t part_index : _part) {
-      result.emplace_back(int(part_index));
-    }
-    return result;
-  }
+  void partition(const std::vector<std::vector<int>> adjacent_edge_list);  // Index of adjacent node
+  std::vector<int> get_result();
 
  private:
   // data

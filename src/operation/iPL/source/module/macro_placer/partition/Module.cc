@@ -16,9 +16,27 @@
 // ***************************************************************************************
 #include "Module.hh"
 
-#include <cstring>
-
 namespace ipl::imp {
+
+Module::Module()
+{
+  _name = "top";
+  _layer = 0;
+}
+
+Module::~Module()
+{
+  for (Module* child_module : _child_module_list) {
+    if (child_module != nullptr) {
+      delete child_module;
+      child_module = nullptr;
+    }
+    _child_module_list.clear();
+  }
+
+  _stdcell_list.clear();
+}
+
 void Module::add_inst(FPInst* inst, std::queue<std::string> level_name_list, std::string father_name)
 {
   if (level_name_list.empty()) {
@@ -50,7 +68,7 @@ void Module::add_inst(FPInst* inst, std::queue<std::string> level_name_list, std
   child_module->add_inst(inst, level_name_list, level_name);
 }
 
-Module* Module::findChildMoudle(std::string module_name)
+Module* Module::findChildMoudle(std::string module_name) const
 {
   Module* child_module = nullptr;
   auto module_iter = _name_to_module_map.find(module_name);
@@ -60,7 +78,7 @@ Module* Module::findChildMoudle(std::string module_name)
   return child_module;
 }
 
-std::queue<std::string> Module::split(const string& str)
+std::queue<std::string> Module::split(const std::string& str)
 {
   std::queue<std::string> result;
   if ("" == str) {

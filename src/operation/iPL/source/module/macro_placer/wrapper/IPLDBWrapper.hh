@@ -39,7 +39,7 @@ class IPLDBWrapper : public DBWrapper
   FPDesign* get_design() const { return _iplw_database->_design; }
 
   // Function
-  void writeDef(string file_name) override{};
+  void writeDef(std::string file_name) override{};
   void writeBackSourceDataBase() override;
 
  private:

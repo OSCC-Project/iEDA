@@ -3,7 +3,7 @@ add_library(ipl-module-wrapper
 
 target_link_libraries(ipl-module-wrapper
     PRIVATE
-        ipl-utility
+        ipl-bridge
         ipl-module-logger
 )
 

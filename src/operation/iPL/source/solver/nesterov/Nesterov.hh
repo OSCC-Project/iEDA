@@ -66,8 +66,8 @@ class Nesterov
                     std::vector<Point<int32_t>> current_coordis, std::vector<Point<float>> current_grads);
   void calculateNextSteplength(std::vector<Point<float>> next_grads);
 
-  void runNextIter(int next_iter);
-  void runBackTrackIter();
+  void runNextIter(int next_iter, int32_t thread_num);
+  void runBackTrackIter(int32_t thread_num);
 
   void correctNextCoordi(int index, Point<int32_t> new_coordi);
   void correctNextSLPCoordi(int index, Point<int32_t> new_slp_coordi);
@@ -107,7 +107,7 @@ class Nesterov
   void cleanNextGradients();
   void cleanNextParameter();
 
-  void calculateNextCoordis();
+  void calculateNextCoordis(int32_t thread_num);
   float calculateSteplength(const std::vector<Point<int32_t>>& prev_slp_coordis, const std::vector<Point<float>>& prev_slp_sum_grads,
                             const std::vector<Point<int32_t>>& cur_slp_coordis, const std::vector<Point<float>>& cur_slp_sum_grads);
 
