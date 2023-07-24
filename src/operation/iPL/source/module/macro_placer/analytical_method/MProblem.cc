@@ -9,7 +9,11 @@
 
 #include "DensityModel.hh"
 #include "LSEWirelength.hh"
+
+#ifdef BUILD_QT
 #include "utility/Image.hh"
+#endif
+
 // #include "MPDB.hh"
 namespace ipl {
 void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization)
@@ -146,12 +150,14 @@ double MProblem::getPenaltyFactor() const
 
 void MProblem::drawImage(const Mat& variable, int index) const
 {
+#ifdef BUILD_QT
   Image img(_core_width, _core_height, _num_macros);
   img.drawRect(_core_width / 2, _core_height / 2, _core_width, _core_height);
   for (int i = 0; i < _num_macros; i++) {
     img.drawRect(variable(i, 0), variable(i, 1), _width(i), _height(i), variable(i, 2));
   }
-  img.save("/home/huangfuxing/Prog_cpp/iEDA/bin/img" + std::to_string(index) + ".jpg");
+  img.save("./Prog_cpp/iEDA/bin/img" + std::to_string(index) + ".jpg");
+#endif
 }
 
 void MProblem::setThreads(size_t n)
