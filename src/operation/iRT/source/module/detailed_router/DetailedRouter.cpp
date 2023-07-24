@@ -660,10 +660,9 @@ void DetailedRouter::iterative(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::resetDRModel(DRModel& dr_model){
-
+void DetailedRouter::resetDRModel(DRModel& dr_model)
+{
 }
-
 
 void DetailedRouter::routeDRModel(DRModel& dr_model)
 {
