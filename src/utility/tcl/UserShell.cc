@@ -49,6 +49,15 @@ int UserShell::userMain(const char* file_path)
   return EXIT_SUCCESS;
 }
 
+int UserShell::userMain(int argc, char** argv)
+{
+  auto* script_engine = ScriptEngine::getOrCreateInstance();
+
+  Tcl_MainEx(argc, argv, initUserSetting, script_engine->get_interp());
+
+  return EXIT_SUCCESS;
+}
+
 void UserShell::displayHelp()
 {
   std::cerr << "\033[49;32m"

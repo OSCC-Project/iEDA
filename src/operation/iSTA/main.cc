@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
       " | |/\\__/ /  | |  | | | |\n"
       " |_|\\____/   \\_/  \\_| |_/\n"
       "***************************\n"
-      "WELCOME TO iSTA TCL-shell interface. \n";
+      "WELCOME TO iSTA TCL-shell interface. \e[0m\n";
 
   // get an UserShell (singleton) instance
   auto shell = ieda::UserShell::getShell();
@@ -98,18 +98,16 @@ int main(int argc, char** argv) {
   // set call back for register commands
   shell->set_init_func(registerCommands);
 
-  // get Tcl file path from main args
-  char* tcl_file_path = nullptr;
-  if (argc == 2) {
-    tcl_file_path = argv[1];
-  } else {
+  // if no args, run interactively
+  if (argc == 1) {
     shell->displayHelp();
   }
 
   // tcl_file_path = "/home/smtao/90bak/iEDA/src/iSTA/run_ista.tcl";
+  // shell->userMain(tcl_file_path);
 
-  // start a user shell
-  shell->userMain(tcl_file_path);
+  // start user shell
+  shell->userMain(argc, argv);
 
   Log::end();
 
