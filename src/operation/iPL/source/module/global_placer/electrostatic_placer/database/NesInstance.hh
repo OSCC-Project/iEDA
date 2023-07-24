@@ -160,4 +160,4 @@ inline void NesInstance::changeSize(int width, int height)
 
 }  // namespace ipl
 
-#endif  // SRC_OPERATION_IPL_SOURCE_MODULE_GLOBAL_PLACER_ANALYTICAL_PLACER_DATABASE_NESINSTANCE_HH_
+#endif  // SRC_OPERATION_IPL_SOURCE_MODULE_GLOBAL_PLACER_electrostatic_placer_DATABASE_NESINSTANCE_HH_

@@ -20,7 +20,7 @@
  * @LastEditTime: 2023-03-09 10:04:58
  * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
  * @Description:
- * @FilePath: /irefactor/src/operation/iPL/source/module/global_placer/analytical_placer/NesterovPlace.cc
+ * @FilePath: /irefactor/src/operation/iPL/source/module/global_placer/electrostatic_placer/NesterovPlace.cc
  * Contact : https://github.com/sjchanson
  */
 
