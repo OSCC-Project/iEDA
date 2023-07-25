@@ -10,7 +10,7 @@
  */
 #ifndef IMP_SA_H
 #define IMP_SA_H
-#include "Annealer.hh"
+// #include "Annealer.hh"
 #include "NetList.hh"
 namespace imp {
 

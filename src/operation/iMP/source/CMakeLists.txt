@@ -19,6 +19,7 @@ target_link_libraries(imp_source
         imp-datamanager
         imp-structure
         imp-module
+        imp-logger
         # imp_utility
 )
 

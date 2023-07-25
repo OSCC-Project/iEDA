@@ -2,9 +2,12 @@
 #define IMP_MACROPLACER
 #include <string>
 namespace imp {
+
 class Option;
 class DataManager;
 class Summary;
+class NetList;
+class Design;
 
 class MacroPlacer
 {
@@ -13,6 +16,10 @@ class MacroPlacer
   MacroPlacer(const std::string& idb_json, const std::string& opt_json);
   MacroPlacer();
   ~MacroPlacer();
+
+  void runMP();
+
+  NetList pl_to_netlist();
 
   void setDataManager(DataManager* dm);
   void setDataManager(const std::string& idb_json);
