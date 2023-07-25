@@ -79,48 +79,62 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
 
 void RTAPI::runRT(std::vector<Tool> tool_list)
 {
+  std::set<Stage> stage_set;
+  for (Tool tool : tool_list) {
+    stage_set.insert(convertToStage(tool));
+  }
+  std::vector<Stage> stage_list = {Stage::kNone,          Stage::kPinAccessor,    Stage::kResourceAllocator, Stage::kGlobalRouter,
+                                   Stage::kTrackAssigner, Stage::kDetailedRouter, Stage::kViolationRepairer, Stage::kNone};
+  irt_int stage_idx = 1;
+  while (!RTUtil::exist(stage_set, stage_list[stage_idx])) {
+    stage_idx++;
+  }
+  if (stage_list[stage_idx - 1] != Stage::kNone) {
+    DM_INST.load(stage_list[stage_idx - 1]);
+  }
+
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-  irt_int enable_output_gds_files = DM_INST.getConfig().enable_output_gds_files;
 
-  PinAccessor::initInst();
-  PA_INST.access(net_list);
-  PinAccessor::destroyInst();
-  if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kPinAccessor, true, false);
-  }
-
-  ResourceAllocator::initInst();
-  RA_INST.allocate(net_list);
-  ResourceAllocator::destroyInst();
-  if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kResourceAllocator, true, false);
-  }
-
-  GlobalRouter::initInst();
-  GR_INST.route(net_list);
-  GlobalRouter::destroyInst();
-  if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kGlobalRouter, true, false);
-  }
-
-  return;
-  
-  TrackAssigner::initInst();
-  DetailedRouter::initInst();
-  TA_INST.assign(net_list);
-  DR_INST.route(net_list);
-  TrackAssigner::destroyInst();
-  DetailedRouter::destroyInst();
-  if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kTrackAssigner, true, false);
-    GP_INST.plot(net_list, Stage::kDetailedRouter, true, false);
-  }
-
-  ViolationRepairer::initInst();
-  VR_INST.repair(net_list);
-  ViolationRepairer::destroyInst();
-  if (enable_output_gds_files == 1) {
-    GP_INST.plot(net_list, Stage::kViolationRepairer, true, false);
+  while (RTUtil::exist(stage_set, stage_list[stage_idx])) {
+    switch (stage_list[stage_idx]) {
+      case Stage::kPinAccessor:
+        PinAccessor::initInst();
+        PA_INST.access(net_list);
+        PinAccessor::destroyInst();
+        break;
+      case Stage::kResourceAllocator:
+        ResourceAllocator::initInst();
+        RA_INST.allocate(net_list);
+        ResourceAllocator::destroyInst();
+        break;
+      case Stage::kGlobalRouter:
+        GlobalRouter::initInst();
+        GR_INST.route(net_list);
+        GlobalRouter::destroyInst();
+        break;
+      case Stage::kTrackAssigner:
+        TrackAssigner::initInst();
+        TA_INST.assign(net_list);
+        TrackAssigner::destroyInst();
+        break;
+      case Stage::kDetailedRouter:
+        DetailedRouter::initInst();
+        DR_INST.route(net_list);
+        DetailedRouter::destroyInst();
+        break;
+      case Stage::kViolationRepairer:
+        ViolationRepairer::initInst();
+        VR_INST.repair(net_list);
+        ViolationRepairer::destroyInst();
+        break;
+      default:
+        break;
+    }
+    if (DM_INST.getConfig().enable_output_gds_files == 1) {
+      GP_INST.plot(net_list, stage_list[stage_idx], true, false);
+    }
+    DM_INST.save(stage_list[stage_idx]);
+    stage_idx++;
   }
 }
 
