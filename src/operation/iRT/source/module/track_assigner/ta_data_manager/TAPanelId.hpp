@@ -20,27 +20,39 @@
 
 namespace irt {
 
-class DRSchedule
+class TAPanelId
 {
  public:
-  DRSchedule() = default;
-  DRSchedule(const irt_int x, const irt_int y)
+  TAPanelId() = default;
+  TAPanelId(const irt_int layer_idx, const irt_int panel_idx)
   {
-    _x = x;
-    _y = y;
+    _layer_idx = layer_idx;
+    _panel_idx = panel_idx;
   }
-  ~DRSchedule() = default;
+  ~TAPanelId() = default;
   // getter
-  irt_int get_x() const { return _x; }
-  irt_int get_y() const { return _y; }
+  irt_int get_layer_idx() const { return _layer_idx; }
+  irt_int get_panel_idx() const { return _panel_idx; }
   // setter
-  void set_x(const irt_int x) { _x = x; }
-  void set_y(const irt_int y) { _y = y; }
+  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
   // function
 
  private:
-  irt_int _x = -1;
-  irt_int _y = -1;
+  irt_int _layer_idx = -1;
+  irt_int _panel_idx = -1;
+};
+
+struct CmpTAPanelId
+{
+  bool operator()(const TAPanelId& a, const TAPanelId& b) const
+  {
+    if (a.get_layer_idx() != b.get_layer_idx()) {
+      return a.get_layer_idx() < b.get_layer_idx();
+    } else {
+      return a.get_panel_idx() < b.get_panel_idx();
+    }
+  }
 };
 
 }  // namespace irt

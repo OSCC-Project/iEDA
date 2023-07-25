@@ -53,7 +53,7 @@ class ViolationRepairer
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
-  void updateNetBlockageMap(VRModel& vr_model);
+  void updateNetRectMap(VRModel& vr_model);
 #endif
 
 #if 1  // check ra_model
@@ -72,7 +72,7 @@ class ViolationRepairer
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
   void repairMinArea(VRNet& vr_net);
-  void updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net);
+  void updateNetRectMap(VRModel& vr_model, VRNet& vr_net);
 #endif
 
 #if 1  // update ra_model

@@ -22,7 +22,6 @@
 #include "Net.hpp"
 #include "TAModel.hpp"
 #include "TAPanel.hpp"
-#include "TASchedule.hpp"
 
 namespace irt {
 
@@ -56,8 +55,10 @@ class TrackAssigner
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
-  void buildScheduleList(TAModel& ta_model);
-  void updateNetBlockageMap(TAModel& ta_model);
+  void buildSchedule(TAModel& ta_model);
+  void updateNetRectMap(TAModel& ta_model);
+  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx, LayerRect real_rect);
+  void cutBlockageList(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
@@ -76,7 +77,7 @@ class TrackAssigner
 #if 1  // iterative
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
-  void iterativeTAPanel(TAModel& ta_model, TASchedule& ta_schedule);
+  void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
   void sortTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAPanel& ta_panel);
   void assignTAPanel(TAPanel& ta_panel);
@@ -117,6 +118,8 @@ class TrackAssigner
   void countTAPanel(TAPanel& ta_panel);
   void reportTable(TAPanel& ta_panel);
   void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
+                    std::vector<Segment<LayerCoord>>& segment_list);
   void reportTAModel(TAModel& ta_model);
   void countTAModel(TAModel& ta_model);
   void reportTable(TAModel& ta_model);
