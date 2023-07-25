@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RTU.hpp"
+#include "RoutingState.hpp"
 
 namespace irt {
 
@@ -24,23 +25,28 @@ class TASchedule
 {
  public:
   TASchedule() = default;
-  TASchedule(const irt_int layer_idx, const irt_int panel_idx)
+  TASchedule(const irt_int layer_idx, const irt_int panel_idx, const RoutingState& routing_state)
   {
     _layer_idx = layer_idx;
     _panel_idx = panel_idx;
+    _routing_state = routing_state;
   }
   ~TASchedule() = default;
   // getter
   irt_int get_layer_idx() const { return _layer_idx; }
   irt_int get_panel_idx() const { return _panel_idx; }
+  RoutingState get_routing_state() const { return _routing_state; }
   // setter
   void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
   void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
+  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; }
+
   // function
 
  private:
   irt_int _layer_idx = -1;
   irt_int _panel_idx = -1;
+  RoutingState _routing_state = RoutingState::kNone;
 };
 
 }  // namespace irt

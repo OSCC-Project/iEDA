@@ -48,6 +48,14 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ra_inner_max_iter_num", ValueType::kInt));
   // irt_int gr_max_iter_num;               // optional
   _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
+  // irt_int ta_outer_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ta_outer_max_iter_num", ValueType::kInt));
+  // irt_int ta_inner_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ta_inner_max_iter_num", ValueType::kInt));
+  // irt_int dr_outer_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-dr_outer_max_iter_num", ValueType::kInt));
+  // irt_int dr_inner_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-dr_inner_max_iter_num", ValueType::kInt));
 
   TclUtil::addOption(this, _config_list);
 }

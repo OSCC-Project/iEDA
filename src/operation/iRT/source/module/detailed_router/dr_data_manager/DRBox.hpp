@@ -40,6 +40,7 @@ class DRBox : public SpaceRegion
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   DRBoxStat& get_dr_box_stat() { return _dr_box_stat; }
+  irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_grid_coord(const PlanarCoord& grid_coord) { _grid_coord = grid_coord; }
   void set_source_net_rect_map(const std::map<DRSourceType, std::map<irt_int, std::vector<LayerRect>>>& source_net_rect_map)
@@ -53,6 +54,8 @@ class DRBox : public SpaceRegion
   void set_box_scale_axis(const ScaleAxis& box_scale_axis) { _box_scale_axis = box_scale_axis; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
+  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
   bool skipRouting() { return _dr_task_list.empty(); }
   void addRect(DRSourceType dr_source_type, irt_int net_idx, const LayerRect& rect)
@@ -124,6 +127,7 @@ class DRBox : public SpaceRegion
   std::vector<DRTask> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;
   DRBoxStat _dr_box_stat;
+  irt_int _curr_iter;
 #if 1  // astar
   // config
   double _wire_unit = 1;
