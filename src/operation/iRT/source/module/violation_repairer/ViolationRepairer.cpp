@@ -430,9 +430,12 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
+  std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
   std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
 
@@ -441,7 +444,13 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
       PHYNode& phy_node = phy_node_node->value();
       if (phy_node.isType<WireNode>()) {
         WireNode& wire_node = phy_node.getNode<WireNode>();
+        irt_int layer_idx = wire_node.get_layer_idx();
         double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
+        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
+          routing_prefer_wire_length_map[layer_idx] += wire_length;
+        } else {
+          routing_nonprefer_wire_length_map[layer_idx] += wire_length;
+        }
         routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
       } else if (phy_node.isType<ViaNode>()) {
         ViaNode& via_node = phy_node.getNode<ViaNode>();
@@ -468,10 +477,18 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   }
 
   double total_wire_length = 0;
+  double total_prefer_wire_length = 0;
+  double total_nonprefer_wire_length = 0;
   irt_int total_via_number = 0;
   irt_int total_drc_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
+  }
+  for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
+    total_prefer_wire_length += prefer_wire_length;
+  }
+  for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
+    total_nonprefer_wire_length += nonprefer_wire_length;
   }
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
@@ -482,6 +499,8 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     }
   }
   vr_model_stat.set_total_wire_length(total_wire_length);
+  vr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
   vr_model_stat.set_total_via_number(total_via_number);
   vr_model_stat.set_total_drc_number(total_drc_number);
 }
@@ -520,26 +539,32 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
   // wire table
   VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
+  std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
   std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
   double total_wire_length = vr_model_stat.get_total_wire_length();
+  double total_prefer_wire_length = vr_model_stat.get_total_prefer_wire_length();
+  double total_nonprefer_wire_length = vr_model_stat.get_total_nonprefer_wire_length();
   irt_int total_via_number = vr_model_stat.get_total_via_number();
   irt_int total_drc_number = vr_model_stat.get_total_drc_number();
 
   // wire table
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
+             << "Prefer Wire Length"
+             << "Nonprefer Wire Length"
              << "Wire Length / um" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
-    wire_table << routing_layer.get_layer_name()
-               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
+    double layer_idx = routing_layer.get_layer_idx();
+    wire_table << routing_layer.get_layer_name() << routing_prefer_wire_length_map[layer_idx]
+               << routing_nonprefer_wire_length_map[layer_idx] << routing_wire_length_map[layer_idx] << fort::endr;
   }
-  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+  wire_table << fort::header << "Total" << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length << fort::endr;
   // via table
   fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_STYLE);
+  via_table.set_border_style(FT_SOLID_ROUND_STYLE);
   via_table << fort::header << "Cut Layer"
             << "Via number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
@@ -621,15 +646,23 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
   table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
-  std::sort(table_list.begin(), table_list.end(),
-            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
-  for (size_t i = 0; i < table_list.front().size(); i++) {
+  int max_size = INT_MIN;
+  for (std::vector<std::string>& table : table_list) {
+    max_size = std::max(max_size, static_cast<int>(table.size()));
+  }
+  for (std::vector<std::string>& table : table_list) {
+    for (irt_int i = table.size(); i < max_size; i++) {
+      std::string table_str;
+      table_str.append(table.front().length() / 3, ' ');
+      table.push_back(table_str);
+    }
+  }
+
+  for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
     for (std::vector<std::string>& table : table_list) {
-      if (i < table.size()) {
-        table_str += table[i];
-        table_str += " ";
-      }
+      table_str += table[i];
+      table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
   }
