@@ -123,10 +123,10 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
 {
-  updateNetBlockageMap(vr_model);
+  updateNetRectMap(vr_model);
 }
 
-void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model)
+void ViolationRepairer::updateNetRectMap(VRModel& vr_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -229,7 +229,7 @@ void ViolationRepairer::repairVRNet(VRModel& vr_model, VRNet& vr_net)
   buildCoordTree(vr_net);
   buildPHYNodeResult(vr_net);
   repairMinArea(vr_net);
-  updateNetBlockageMap(vr_model, vr_net);
+  updateNetRectMap(vr_model, vr_net);
 }
 
 void ViolationRepairer::buildKeyCoordPinMap(VRNet& vr_net)
@@ -381,7 +381,7 @@ void ViolationRepairer::repairMinArea(VRNet& vr_net)
 {
 }
 
-void ViolationRepairer::updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net)
+void ViolationRepairer::updateNetRectMap(VRModel& vr_model, VRNet& vr_net)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();

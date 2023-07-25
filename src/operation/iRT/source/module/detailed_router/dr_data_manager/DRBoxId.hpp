@@ -17,36 +17,42 @@
 #pragma once
 
 #include "RTU.hpp"
-#include "RoutingState.hpp"
 
 namespace irt {
 
-class TASchedule
+class DRBoxId
 {
  public:
-  TASchedule() = default;
-  TASchedule(const irt_int layer_idx, const irt_int panel_idx, const RoutingState& routing_state)
+  DRBoxId() = default;
+  DRBoxId(const irt_int x, const irt_int y)
   {
-    _layer_idx = layer_idx;
-    _panel_idx = panel_idx;
-    _routing_state = routing_state;
+    _x = x;
+    _y = y;
   }
-  ~TASchedule() = default;
+  ~DRBoxId() = default;
   // getter
-  irt_int get_layer_idx() const { return _layer_idx; }
-  irt_int get_panel_idx() const { return _panel_idx; }
-  RoutingState get_routing_state() const { return _routing_state; }
+  irt_int get_x() const { return _x; }
+  irt_int get_y() const { return _y; }
   // setter
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
-  void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
-  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; }
-
+  void set_x(const irt_int x) { _x = x; }
+  void set_y(const irt_int y) { _y = y; }
   // function
 
  private:
-  irt_int _layer_idx = -1;
-  irt_int _panel_idx = -1;
-  RoutingState _routing_state = RoutingState::kNone;
+  irt_int _x = -1;
+  irt_int _y = -1;
+};
+
+struct CmpDRBoxId
+{
+  bool operator()(const DRBoxId& a, const DRBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

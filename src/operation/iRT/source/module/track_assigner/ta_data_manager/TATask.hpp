@@ -19,6 +19,7 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "RTNode.hpp"
+#include "RoutingState.hpp"
 #include "TAGroup.hpp"
 
 namespace irt {
@@ -56,6 +57,7 @@ class TATask
   std::vector<TAGroup> _ta_group_list;
   std::map<LayerCoord, double, CmpLayerCoordByXASC> _coord_cost_map;
   PlanarRect _bounding_box;
+  RoutingState _routing_state = RoutingState::kNone;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
 };
 

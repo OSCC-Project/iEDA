@@ -218,7 +218,8 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect re
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        layer_node_map[real_rect.get_layer_idx()][x][y].get_net_rect_map()[net_idx].push_back(real_rect);
+        GRNode& gr_node = layer_node_map[real_rect.get_layer_idx()][x][y];
+        gr_node.get_net_rect_map()[net_idx].push_back(real_rect);
       }
     }
   }
