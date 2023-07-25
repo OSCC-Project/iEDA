@@ -86,7 +86,6 @@ void EnclosureCheck::checkEnclosure(DrcNet* target_net)
       checkEnclosure(target_rect);
     }
   }
-
   // initEnclosureSpotListFromRtree();
   // _layer_to_violation_box_tree.clear();
 }
@@ -140,151 +139,354 @@ void EnclosureCheck::checkEnclosure(DrcNet* target_net)
 //   storeViolationResult(cutLayerId, target_rect);
 // }
 
-void EnclosureCheck::getAboveMetalRectList(DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
+void EnclosureCheck::getAboveMetalRectList(int routing_layer_id, DrcRect* target_cut_rect,
+                                           std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
 {
-  int layer_id = target_cut_rect->get_layer_id();
-  // cut上层金属的layer_id与其自身layer_id相同
-  _region_query->queryEnclosureInRoutingLayer(layer_id, DRCUtil::getRTreeBox(target_cut_rect), query_result);
+  _region_query->queryEnclosureInRoutingLayer(routing_layer_id, DRCUtil::getRTreeBox(target_cut_rect), query_result);
 }
 
-void EnclosureCheck::getBelowMetalRectList(DrcRect* target_cut_rect, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
+void EnclosureCheck::getBelowMetalRectList(int routing_layer_id, DrcRect* target_cut_rect,
+                                           std::vector<std::pair<RTreeBox, DrcRect*>>& query_result)
 {
-  int layer_id = target_cut_rect->get_layer_id();
-  // cut上层金属的layer_id与其自身layer_id相同
-  _region_query->queryEnclosureInRoutingLayer(layer_id - 1, DRCUtil::getRTreeBox(target_cut_rect), query_result);
+  _region_query->queryEnclosureInRoutingLayer(routing_layer_id, DRCUtil::getRTreeBox(target_cut_rect), query_result);
 }
 
-bool EnclosureCheck::checkOverhang_below(std::vector<std::pair<RTreeBox, DrcRect*>>& below_metal_rect_list, DrcRect* target_cut_rect)
+bool EnclosureCheck::checkOverhang_above(DrcRect* target_cut_rect)
 {
   int cut_left = target_cut_rect->get_left();
   int cut_right = target_cut_rect->get_right();
   int cut_top = target_cut_rect->get_top();
   int cut_bottom = target_cut_rect->get_bottom();
-  for (auto [rtree_box, above_metal_rect] : below_metal_rect_list) {
-    int metal_left = above_metal_rect->get_left();
-    int metal_right = above_metal_rect->get_right();
-    int metal_bottom = above_metal_rect->get_bottom();
-    int metal_top = above_metal_rect->get_top();
+  if (_cut_above_poly) {
+    for (auto& edges : _cut_above_poly->getEdges()) {
+      for (auto& edge : edges) {
+        if (edge->isHorizontal() && edge->get_min_x() <= cut_left && edge->get_max_x() >= cut_right) {
+          if (edge->get_max_y() >= cut_top) {
+            if (edge->get_max_y() - cut_top > _top_overhang_above) {
+              _top_overhang_above = edge->get_max_y() - cut_top;
+              _top_overhang_edge_above = edge.get();
+              break;
+            }
+          }
+          if (edge->get_max_y() <= cut_bottom) {
+            if (cut_bottom - edge->get_max_y() > _bottom_overhang_above) {
+              _bottom_overhang_above = cut_bottom - edge->get_max_y();
+              _bottom_overhang_edge_above = edge.get();
+              break;
+            }
+          }
+        }
 
-    if (cut_left - metal_left > _left_overhang_below) {
-      _left_overhang_below = cut_left - metal_left;
-      _left_overhang_rect_below = above_metal_rect;
-    }
-    if (metal_right - cut_right > _right_overhang_below) {
-      _right_overhang_below = metal_right - cut_right;
-      _right_overhang_rect_below = above_metal_rect;
-    }
-    if (cut_bottom - metal_bottom > _bottom_overhang_below) {
-      _bottom_overhang_below = cut_bottom - metal_bottom;
-      _bottom_overhang_rect_below = above_metal_rect;
-    }
-    if (metal_top - cut_top > _top_overhang_below) {
-      _top_overhang_below = metal_top - cut_top;
-      _top_overhang_rect_below = above_metal_rect;
+        if (edge->isVertical() && edge->get_min_y() <= cut_bottom && edge->get_max_y() >= cut_top) {
+          if (edge->get_max_x() >= cut_right) {
+            if (edge->get_max_x() - cut_right > _top_overhang_above) {
+              _right_overhang_above = edge->get_max_x() - cut_right;
+              _right_overhang_edge_above = edge.get();
+              break;
+            }
+          }
+          if (edge->get_max_x() <= cut_left) {
+            if (cut_left - edge->get_max_x() > _left_overhang_above) {
+              _left_overhang_above = cut_left - edge->get_max_x();
+              _left_overhang_edge_above = edge.get();
+              break;
+            }
+          }
+        }
+      }
     }
   }
-
-  for (auto enclosure_rule : _lef58_enclosure_list) {
-    auto target_cut_class_name = getCutClassName(target_cut_rect);
-    auto rule_cut_class_name = enclosure_rule->get_class_name();
-    if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
-      continue;
-    }
-    if (enclosure_rule->get_overhang1().has_value()) {
-      int overhang1 = enclosure_rule->get_overhang1().value();
-      int overhang2 = enclosure_rule->get_overhang2().value();
-      if ((_left_overhang_below >= overhang1 && _right_overhang_below >= overhang1 && _top_overhang_below >= overhang2
-           && _bottom_overhang_below >= overhang2)
-          || (_left_overhang_below >= overhang2 && _right_overhang_below >= overhang2 && _top_overhang_below >= overhang1
-              && _bottom_overhang_below >= overhang1)) {
-        return true;
+  if (!_lef58_enclosure_list.empty()) {
+    for (auto enclosure_rule : _lef58_enclosure_list) {
+      auto target_cut_class_name = getCutClassName(target_cut_rect);
+      auto rule_cut_class_name = enclosure_rule->get_class_name();
+      if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
+        continue;
       }
-    }
-    if (enclosure_rule->get_end_overhang1().has_value()) {
-      int end_overhang1 = enclosure_rule->get_end_overhang1().value();
-      int side_overhang2 = enclosure_rule->get_side_overhang2().value();
-      if (target_cut_rect->isHorizontal()) {
-        if (_left_overhang_below >= end_overhang1 && _right_overhang_below >= end_overhang1 && _top_overhang_below >= side_overhang2
-            && _bottom_overhang_below >= side_overhang2) {
+      if (enclosure_rule->get_overhang1().has_value()) {
+        int overhang1 = enclosure_rule->get_overhang1().value();
+        int overhang2 = enclosure_rule->get_overhang2().value();
+        if ((_left_overhang_above >= overhang1 && _right_overhang_above >= overhang1 && _top_overhang_above >= overhang2
+             && _bottom_overhang_above >= overhang2)
+            || (_left_overhang_above >= overhang2 && _right_overhang_above >= overhang2 && _top_overhang_above >= overhang1
+                && _bottom_overhang_above >= overhang1)) {
           return true;
         }
       }
-      if (target_cut_rect->isVertical()) {
-        if (_left_overhang_below >= side_overhang2 && _right_overhang_below >= side_overhang2 && _top_overhang_below >= end_overhang1
-            && _bottom_overhang_below >= end_overhang1) {
-          return true;
+      if (enclosure_rule->get_end_overhang1().has_value()) {
+        int end_overhang1 = enclosure_rule->get_end_overhang1().value();
+        int side_overhang2 = enclosure_rule->get_side_overhang2().value();
+        if (target_cut_rect->isHorizontal()) {
+          if (_left_overhang_above >= end_overhang1 && _right_overhang_above >= end_overhang1 && _top_overhang_above >= side_overhang2
+              && _bottom_overhang_above >= side_overhang2) {
+            return true;
+          }
+        }
+        if (target_cut_rect->isVertical()) {
+          if (_left_overhang_above >= side_overhang2 && _right_overhang_above >= side_overhang2 && _top_overhang_above >= end_overhang1
+              && _bottom_overhang_above >= end_overhang1) {
+            return true;
+          }
         }
       }
+    }
+  } else if (_enclosure_above) {
+    int overhang1 = _enclosure_above->get_overhang_1();
+    int overhang2 = _enclosure_above->get_overhang_2();
+    if ((_left_overhang_above >= overhang1 && _right_overhang_above >= overhang1 && _top_overhang_above >= overhang2
+         && _bottom_overhang_above >= overhang2)
+        || (_left_overhang_above >= overhang2 && _right_overhang_above >= overhang2 && _top_overhang_above >= overhang1
+            && _bottom_overhang_above >= overhang1)) {
+      return true;
     }
   }
   return false;
 }
 
-bool EnclosureCheck::checkOverhang_above(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect)
+bool EnclosureCheck::checkOverhang_below(DrcRect* target_cut_rect)
 {
   int cut_left = target_cut_rect->get_left();
   int cut_right = target_cut_rect->get_right();
   int cut_top = target_cut_rect->get_top();
   int cut_bottom = target_cut_rect->get_bottom();
-  for (auto [rtree_box, above_metal_rect] : above_metal_rect_list) {
-    int metal_left = above_metal_rect->get_left();
-    int metal_right = above_metal_rect->get_right();
-    int metal_bottom = above_metal_rect->get_bottom();
-    int metal_top = above_metal_rect->get_top();
-
-    if (cut_left - metal_left > _left_overhang_above) {
-      _left_overhang_above = cut_left - metal_left;
-      _left_overhang_rect_above = above_metal_rect;
-    }
-    if (metal_right - cut_right > _right_overhang_above) {
-      _right_overhang_above = metal_right - cut_right;
-      _right_overhang_rect_above = above_metal_rect;
-    }
-    if (cut_bottom - metal_bottom > _bottom_overhang_above) {
-      _bottom_overhang_above = cut_bottom - metal_bottom;
-      _bottom_overhang_rect_above = above_metal_rect;
-    }
-    if (metal_top - cut_top > _top_overhang_above) {
-      _top_overhang_above = metal_top - cut_top;
-      _top_overhang_rect_above = above_metal_rect;
+  if (_cut_below_poly) {
+    for (auto& edges : _cut_below_poly->getEdges()) {
+      for (auto& edge : edges) {
+        if (edge->isHorizontal() && edge->get_min_x() <= cut_left && edge->get_max_x() >= cut_right) {
+          if (edge->get_max_y() >= cut_top) {
+            if (edge->get_max_y() - cut_top > _top_overhang_below) {
+              _top_overhang_below = edge->get_max_y() - cut_top;
+              _top_overhang_edge_below = edge.get();
+              break;
+            }
+          }
+          if (edge->get_max_y() <= cut_bottom) {
+            if (cut_bottom - edge->get_max_y() > _bottom_overhang_below) {
+              _bottom_overhang_below = cut_bottom - edge->get_max_y();
+              _bottom_overhang_edge_below = edge.get();
+              break;
+            }
+          }
+        }
+        if (edge->isVertical() && edge->get_min_y() <= cut_bottom && edge->get_max_y() >= cut_top) {
+          if (edge->get_max_x() >= cut_right) {
+            if (edge->get_max_x() - cut_right > _top_overhang_below) {
+              _right_overhang_below = edge->get_max_x() - cut_right;
+              _right_overhang_edge_below = edge.get();
+              break;
+            }
+          }
+          if (edge->get_max_x() <= cut_left) {
+            if (cut_left - edge->get_max_x() > _left_overhang_below) {
+              _left_overhang_below = cut_left - edge->get_max_x();
+              _left_overhang_edge_below = edge.get();
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
-  for (auto enclosure_rule : _lef58_enclosure_list) {
-    auto target_cut_class_name = getCutClassName(target_cut_rect);
-    auto rule_cut_class_name = enclosure_rule->get_class_name();
-    if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
-      continue;
-    }
-    if (enclosure_rule->get_overhang1().has_value()) {
-      int overhang1 = enclosure_rule->get_overhang1().value();
-      int overhang2 = enclosure_rule->get_overhang2().value();
-      if ((_left_overhang_above >= overhang1 && _right_overhang_above >= overhang1 && _top_overhang_above >= overhang2
-           && _bottom_overhang_above >= overhang2)
-          || (_left_overhang_above >= overhang2 && _right_overhang_above >= overhang2 && _top_overhang_above >= overhang1
-              && _bottom_overhang_above >= overhang1)) {
-        return true;
+  if (!_lef58_enclosure_list.empty()) {
+    for (auto enclosure_rule : _lef58_enclosure_list) {
+      auto target_cut_class_name = getCutClassName(target_cut_rect);
+      auto rule_cut_class_name = enclosure_rule->get_class_name();
+      if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
+        continue;
       }
-    }
-    if (enclosure_rule->get_end_overhang1().has_value()) {
-      int end_overhang1 = enclosure_rule->get_end_overhang1().value();
-      int side_overhang2 = enclosure_rule->get_side_overhang2().value();
-      if (target_cut_rect->isHorizontal()) {
-        if (_left_overhang_above >= end_overhang1 && _right_overhang_above >= end_overhang1 && _top_overhang_above >= side_overhang2
-            && _bottom_overhang_above >= side_overhang2) {
+      if (enclosure_rule->get_overhang1().has_value()) {
+        int overhang1 = enclosure_rule->get_overhang1().value();
+        int overhang2 = enclosure_rule->get_overhang2().value();
+        if ((_left_overhang_below >= overhang1 && _right_overhang_below >= overhang1 && _top_overhang_below >= overhang2
+             && _bottom_overhang_below >= overhang2)
+            || (_left_overhang_below >= overhang2 && _right_overhang_below >= overhang2 && _top_overhang_below >= overhang1
+                && _bottom_overhang_below >= overhang1)) {
           return true;
         }
       }
-      if (target_cut_rect->isVertical()) {
-        if (_left_overhang_above >= side_overhang2 && _right_overhang_above >= side_overhang2 && _top_overhang_above >= end_overhang1
-            && _bottom_overhang_above >= end_overhang1) {
-          return true;
+      if (enclosure_rule->get_end_overhang1().has_value()) {
+        int end_overhang1 = enclosure_rule->get_end_overhang1().value();
+        int side_overhang2 = enclosure_rule->get_side_overhang2().value();
+        if (target_cut_rect->isHorizontal()) {
+          if (_left_overhang_below >= end_overhang1 && _right_overhang_below >= end_overhang1 && _top_overhang_below >= side_overhang2
+              && _bottom_overhang_below >= side_overhang2) {
+            return true;
+          }
+        }
+        if (target_cut_rect->isVertical()) {
+          if (_left_overhang_below >= side_overhang2 && _right_overhang_below >= side_overhang2 && _top_overhang_below >= end_overhang1
+              && _bottom_overhang_below >= end_overhang1) {
+            return true;
+          }
         }
       }
+    }
+  } else if (_enclosure_below) {
+    int overhang1 = _enclosure_below->get_overhang_1();
+    int overhang2 = _enclosure_below->get_overhang_2();
+    if ((_left_overhang_below >= overhang1 && _right_overhang_below >= overhang1 && _top_overhang_below >= overhang2
+         && _bottom_overhang_below >= overhang2)
+        || (_left_overhang_below >= overhang2 && _right_overhang_below >= overhang2 && _top_overhang_below >= overhang1
+            && _bottom_overhang_below >= overhang1)) {
+      return true;
     }
   }
   return false;
 }
+
+// bool EnclosureCheck::checkOverhang_below(std::vector<std::pair<RTreeBox, DrcRect*>>& below_metal_rect_list, DrcRect* target_cut_rect)
+// {
+//   int cut_left = target_cut_rect->get_left();
+//   int cut_right = target_cut_rect->get_right();
+//   int cut_top = target_cut_rect->get_top();
+//   int cut_bottom = target_cut_rect->get_bottom();
+//   for (auto [rtree_box, above_metal_rect] : below_metal_rect_list) {
+//     int metal_left = above_metal_rect->get_left();
+//     int metal_right = above_metal_rect->get_right();
+//     int metal_bottom = above_metal_rect->get_bottom();
+//     int metal_top = above_metal_rect->get_top();
+
+//     if (cut_left - metal_left > _left_overhang_below) {
+//       _left_overhang_below = cut_left - metal_left;
+//       _left_overhang_rect_below = above_metal_rect;
+//     }
+//     if (metal_right - cut_right > _right_overhang_below) {
+//       _right_overhang_below = metal_right - cut_right;
+//       _right_overhang_rect_below = above_metal_rect;
+//     }
+//     if (cut_bottom - metal_bottom > _bottom_overhang_below) {
+//       _bottom_overhang_below = cut_bottom - metal_bottom;
+//       _bottom_overhang_rect_below = above_metal_rect;
+//     }
+//     if (metal_top - cut_top > _top_overhang_below) {
+//       _top_overhang_below = metal_top - cut_top;
+//       _top_overhang_rect_below = above_metal_rect;
+//     }
+//   }
+//   if (!_lef58_enclosure_list.empty()) {
+//     for (auto enclosure_rule : _lef58_enclosure_list) {
+//       auto target_cut_class_name = getCutClassName(target_cut_rect);
+//       auto rule_cut_class_name = enclosure_rule->get_class_name();
+//       if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
+//         continue;
+//       }
+//       if (enclosure_rule->get_overhang1().has_value()) {
+//         int overhang1 = enclosure_rule->get_overhang1().value();
+//         int overhang2 = enclosure_rule->get_overhang2().value();
+//         if ((_left_overhang_below >= overhang1 && _right_overhang_below >= overhang1 && _top_overhang_below >= overhang2
+//              && _bottom_overhang_below >= overhang2)
+//             || (_left_overhang_below >= overhang2 && _right_overhang_below >= overhang2 && _top_overhang_below >= overhang1
+//                 && _bottom_overhang_below >= overhang1)) {
+//           return true;
+//         }
+//       }
+//       if (enclosure_rule->get_end_overhang1().has_value()) {
+//         int end_overhang1 = enclosure_rule->get_end_overhang1().value();
+//         int side_overhang2 = enclosure_rule->get_side_overhang2().value();
+//         if (target_cut_rect->isHorizontal()) {
+//           if (_left_overhang_below >= end_overhang1 && _right_overhang_below >= end_overhang1 && _top_overhang_below >= side_overhang2
+//               && _bottom_overhang_below >= side_overhang2) {
+//             return true;
+//           }
+//         }
+//         if (target_cut_rect->isVertical()) {
+//           if (_left_overhang_below >= side_overhang2 && _right_overhang_below >= side_overhang2 && _top_overhang_below >= end_overhang1
+//               && _bottom_overhang_below >= end_overhang1) {
+//             return true;
+//           }
+//         }
+//       }
+//     }
+//   } else if (_enclosure_below) {
+//     int overhang1 = _enclosure_below->get_overhang_1();
+//     int overhang2 = _enclosure_below->get_overhang_2();
+//     if ((_left_overhang_below >= overhang1 && _right_overhang_below >= overhang1 && _top_overhang_below >= overhang2
+//          && _bottom_overhang_below >= overhang2)
+//         || (_left_overhang_below >= overhang2 && _right_overhang_below >= overhang2 && _top_overhang_below >= overhang1
+//             && _bottom_overhang_below >= overhang1)) {
+//       return true;
+//     }
+//   }
+
+//   return false;
+// }
+
+// bool EnclosureCheck::checkOverhang_above(std::vector<std::pair<RTreeBox, DrcRect*>>& above_metal_rect_list, DrcRect* target_cut_rect)
+// {
+//   int cut_left = target_cut_rect->get_left();
+//   int cut_right = target_cut_rect->get_right();
+//   int cut_top = target_cut_rect->get_top();
+//   int cut_bottom = target_cut_rect->get_bottom();
+//   for (auto [rtree_box, above_metal_rect] : above_metal_rect_list) {
+//     int metal_left = above_metal_rect->get_left();
+//     int metal_right = above_metal_rect->get_right();
+//     int metal_bottom = above_metal_rect->get_bottom();
+//     int metal_top = above_metal_rect->get_top();
+
+//     if (cut_left - metal_left > _left_overhang_above) {
+//       _left_overhang_above = cut_left - metal_left;
+//       _left_overhang_rect_above = above_metal_rect;
+//     }
+//     if (metal_right - cut_right > _right_overhang_above) {
+//       _right_overhang_above = metal_right - cut_right;
+//       _right_overhang_rect_above = above_metal_rect;
+//     }
+//     if (cut_bottom - metal_bottom > _bottom_overhang_above) {
+//       _bottom_overhang_above = cut_bottom - metal_bottom;
+//       _bottom_overhang_rect_above = above_metal_rect;
+//     }
+//     if (metal_top - cut_top > _top_overhang_above) {
+//       _top_overhang_above = metal_top - cut_top;
+//       _top_overhang_rect_above = above_metal_rect;
+//     }
+//   }
+//   if (!_lef58_enclosure_list.empty()) {
+//     for (auto enclosure_rule : _lef58_enclosure_list) {
+//       auto target_cut_class_name = getCutClassName(target_cut_rect);
+//       auto rule_cut_class_name = enclosure_rule->get_class_name();
+//       if (target_cut_class_name.compare(rule_cut_class_name) != 0) {
+//         continue;
+//       }
+//       if (enclosure_rule->get_overhang1().has_value()) {
+//         int overhang1 = enclosure_rule->get_overhang1().value();
+//         int overhang2 = enclosure_rule->get_overhang2().value();
+//         if ((_left_overhang_above >= overhang1 && _right_overhang_above >= overhang1 && _top_overhang_above >= overhang2
+//              && _bottom_overhang_above >= overhang2)
+//             || (_left_overhang_above >= overhang2 && _right_overhang_above >= overhang2 && _top_overhang_above >= overhang1
+//                 && _bottom_overhang_above >= overhang1)) {
+//           return true;
+//         }
+//       }
+//       if (enclosure_rule->get_end_overhang1().has_value()) {
+//         int end_overhang1 = enclosure_rule->get_end_overhang1().value();
+//         int side_overhang2 = enclosure_rule->get_side_overhang2().value();
+//         if (target_cut_rect->isHorizontal()) {
+//           if (_left_overhang_above >= end_overhang1 && _right_overhang_above >= end_overhang1 && _top_overhang_above >= side_overhang2
+//               && _bottom_overhang_above >= side_overhang2) {
+//             return true;
+//           }
+//         }
+//         if (target_cut_rect->isVertical()) {
+//           if (_left_overhang_above >= side_overhang2 && _right_overhang_above >= side_overhang2 && _top_overhang_above >= end_overhang1
+//               && _bottom_overhang_above >= end_overhang1) {
+//             return true;
+//           }
+//         }
+//       }
+//     }
+//   } else if (_enclosure_above) {
+//     int overhang1 = _enclosure_above->get_overhang_1();
+//     int overhang2 = _enclosure_above->get_overhang_2();
+//     if ((_left_overhang_above >= overhang1 && _right_overhang_above >= overhang1 && _top_overhang_above >= overhang2
+//          && _bottom_overhang_above >= overhang2)
+//         || (_left_overhang_above >= overhang2 && _right_overhang_above >= overhang2 && _top_overhang_above >= overhang1
+//             && _bottom_overhang_above >= overhang1)) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
 std::string EnclosureCheck::getCutClassName(DrcRect* cut_rect)
 {
@@ -311,92 +513,135 @@ void EnclosureCheck::checkEnclosure(DrcRect* target_cut_rect)
   _lef58_enclosure_list = _tech->get_drc_cut_layer_list()[layer_id]->get_lef58_enclosure_list();
   _lef58_cut_class_list = _tech->get_drc_cut_layer_list()[layer_id]->get_lef58_cut_class_list();
   _lef58_enclosure_edge_list = _tech->get_drc_cut_layer_list()[layer_id]->get_lef58_enclosure_edge_list();
+  _enclosure_above = _tech->get_drc_cut_layer_list()[layer_id]->get_enclosure_above();
+  _enclosure_below = _tech->get_drc_cut_layer_list()[layer_id]->get_enclosure_below();
+  std::vector<std::pair<RTreeBox, DrcRect*>> above_query_result;
+  std::vector<std::pair<RTreeBox, DrcRect*>> below_query_result;
 
-  std::vector<std::pair<RTreeBox, DrcRect*>> query_result;
-  // check above metal;
-  getAboveMetalRectList(target_cut_rect, query_result);
-  if (!query_result.empty()) {
-    std::vector<std::pair<RTreeSegment, DrcEdge*>> edges_query_result;
-    int layer_id = target_cut_rect->get_layer_id();
-    int size = query_result.size();
-    for (int i = 0; i < size; i++) {
-      _region_query->queryEdgeInRoutingLayer(layer_id, query_result[i].first, edges_query_result);
-      if (!edges_query_result.empty()) {
-        break;
-      }
-    }
-    if (!edges_query_result.empty()) {
-      int size = edges_query_result.size();
+  if (!_lef58_enclosure_list.empty()) {
+    int layer_order = target_cut_rect->get_layer_order();
+    int above_layer_id = _tech->getLayerIdByOrder(layer_order + 1);
+    // check above metal;
+
+    getAboveMetalRectList(above_layer_id, target_cut_rect, above_query_result);
+    if (!above_query_result.empty()) {
+      std::vector<std::pair<RTreeSegment, DrcEdge*>> edges_query_result;
+      int size = above_query_result.size();
       for (int i = 0; i < size; i++) {
-        //避免取到short的poly
-        if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
-          _cut_below_poly = edges_query_result[i].second->get_owner_polygon();
+        _region_query->queryEdgeInRoutingLayer(above_layer_id, above_query_result[i].first, edges_query_result);
+
+        if (!edges_query_result.empty()) {
           break;
         }
       }
-    } else {
-      std::cout << "[DRC CutEnclosure Warning]: Get cut below poly failed!" << std::endl;
-    }
-  } else {
-    std::cout << "[DRC CutEnclosure Warning]: Get cut below rect failed!" << std::endl;
-  }
-
-  // if (!above_metal_rect) {
-  //   std::cout << "[DRC CutEolSpacingCheck Warning]:cut has no above metal" << std::endl;
-  // }
-  if (!checkOverhang_above(query_result, target_cut_rect)) {
-    _check_result = false;
-    // std::cout << "above_enclosure vio!!!!" << std::endl;
-    _region_query->addViolation(ViolationType::kEnclosure);
-    addSpot(target_cut_rect);
-    // return;
-  }
-
-  // check below metal
-  query_result.clear();
-  getBelowMetalRectList(target_cut_rect, query_result);
-  if (!query_result.empty()) {
-    std::vector<std::pair<RTreeSegment, DrcEdge*>> edges_query_result;
-    int layer_id = target_cut_rect->get_layer_id();
-    int size = query_result.size();
-    for (int i = 0; i < size; i++) {
-      _region_query->queryEdgeInRoutingLayer(layer_id - 1, query_result[i].first, edges_query_result);
       if (!edges_query_result.empty()) {
-        break;
+        int size = edges_query_result.size();
+        for (int i = 0; i < size; i++) {
+          //避免取到short的poly
+          if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
+            _cut_above_poly = edges_query_result[i].second->get_owner_polygon();
+            break;
+          }
+        }
+        if (_cut_above_poly == nullptr) {
+          std::cout << "[DRC CutEnclosure Warning]: Get cut Above poly failed!" << std::endl;
+          return;
+        }
+      } else {
+        std::cout << "[DRC CutEnclosure Warning]: Get cut Above poly failed!" << std::endl;
+        return;
       }
+    } else {
+      std::cout << "[DRC CutEnclosure Warning]: Get cut above rect failed!" << std::endl;
+      return;
     }
-    if (!edges_query_result.empty()) {
-      int size = edges_query_result.size();
+
+    // if (!above_metal_rect) {
+    //   std::cout << "[DRC CutEolSpacingCheck Warning]:cut has no above metal" << std::endl;
+    // }
+    if (!checkOverhang_above(target_cut_rect)) {
+      _check_result = false;
+      // std::cout << "above_enclosure vio!!!!" << std::endl;
+      _region_query->addViolation(ViolationType::kEnclosure);
+      addSpot(target_cut_rect);
+      return;
+    }
+
+    // check below metal
+    int below_layer_id = _tech->getLayerIdByOrder(layer_order - 1);
+
+    getBelowMetalRectList(below_layer_id, target_cut_rect, below_query_result);
+
+    if (!below_query_result.empty()) {
+      std::vector<std::pair<RTreeSegment, DrcEdge*>> edges_query_result;
+      int size = below_query_result.size();
       for (int i = 0; i < size; i++) {
-        //避免取到short的poly
-        if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
-          _cut_below_poly = edges_query_result[i].second->get_owner_polygon();
+        _region_query->queryEdgeInRoutingLayer(below_layer_id, below_query_result[i].first, edges_query_result);
+        if (!edges_query_result.empty()) {
           break;
         }
       }
+      if (!edges_query_result.empty()) {
+        int size = edges_query_result.size();
+        for (int i = 0; i < size; i++) {
+          //避免取到short的poly
+          if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
+            _cut_below_poly = edges_query_result[i].second->get_owner_polygon();
+            break;
+          }
+        }
+        if (_cut_below_poly == nullptr) {
+          std::cout << "[DRC CutEnclosure Warning]: Get cut below poly failed!" << std::endl;
+          return;
+        }
+      } else {
+        std::cout << "[DRC CutEnclosure Warning]: Get cut below poly failed!" << std::endl;
+        return;
+      }
     } else {
-      std::cout << "[DRC CutEnclosure Warning]: Get cut below poly failed!" << std::endl;
+      std::cout << "[DRC CutEnclosure Warning]: Get cut below rect failed!" << std::endl;
+      return;
     }
-  } else {
-    std::cout << "[DRC CutEnclosure Warning]: Get cut below rect failed!" << std::endl;
+    // if (!above_metal_rect) {
+    //   std::cout << "[DRC CutEolSpacingCheck Warning]:cut has no above metal" << std::endl;
+    // }
+    if (!checkOverhang_below(target_cut_rect)) {
+      _check_result = false;
+      // std::cout << "below_enclosure vio!!!!" << std::endl;
+      _region_query->addViolation(ViolationType::kEnclosure);
+      addSpot(target_cut_rect);
+      return;
+    }
   }
-
-  // if (!above_metal_rect) {
-  //   std::cout << "[DRC CutEolSpacingCheck Warning]:cut has no above metal" << std::endl;
+  // if (!_lef58_enclosure_edge_list.empty()) {
+  //   if (!checkEdgeEnclosure(target_cut_rect)) {
+  //     _check_result = false;
+  //     // std::cout << "edge enclosure vio!!" << std::endl;
+  //     _region_query->addViolation(ViolationType::kEnclosureEdge);
+  //     addEdgeEnclosureSpot(target_cut_rect);
+  //   }
   // }
-  if (!checkOverhang_below(query_result, target_cut_rect)) {
-    _check_result = false;
-    // std::cout << "below_enclosure vio!!!!" << std::endl;
-    _region_query->addViolation(ViolationType::kEnclosure);
-    addSpot(target_cut_rect);
-    // return;
+
+  if (_enclosure_above) {
+    if (!checkOverhang_above(target_cut_rect)) {
+      _check_result = false;
+      // std::cout << "above_enclosure vio!!!!" << std::endl;
+      _region_query->addViolation(ViolationType::kEnclosure);
+      addSpot(target_cut_rect);
+      return;
+    }
+    // checkOverhang();
   }
 
-  if (!checkEdgeEnclosure(target_cut_rect)) {
-    _check_result = false;
-    // std::cout << "edge enclosure vio!!" << std::endl;
-    _region_query->addViolation(ViolationType::kEnclosureEdge);
-    addEdgeEnclosureSpot(target_cut_rect);
+  if (_enclosure_below) {
+    if (!checkOverhang_below(target_cut_rect)) {
+      _check_result = false;
+      // std::cout << "above_enclosure vio!!!!" << std::endl;
+      _region_query->addViolation(ViolationType::kEnclosure);
+      addSpot(target_cut_rect);
+      return;
+    }
+    // checkOverhang();
   }
 }
 

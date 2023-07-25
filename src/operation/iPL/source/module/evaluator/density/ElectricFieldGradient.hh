@@ -32,8 +32,8 @@
 #include <vector>
 
 #include "DensityGradient.hh"
-// #include "dct_process/FFT.hh"
-#include "dct_process/DCT.hh"
+#include "dct_process/FFT.hh"
+// #include "dct_process/DCT.hh"
 
 namespace ipl {
 
@@ -49,15 +49,20 @@ class ElectricFieldGradient : public DensityGradient
   ElectricFieldGradient& operator=(const ElectricFieldGradient&) = delete;
   ElectricFieldGradient& operator=(ElectricFieldGradient&&) = delete;
 
-  void updateDensityForce(int32_t thread_num) override;
-  Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale) override;
+  std::vector<std::vector<float>>& get_force_2d_x_list() override { return _force_2d_x_list; }
+  std::vector<std::vector<float>>& get_force_2d_y_list() override { return _force_2d_y_list; }
+
+  float get_sum_phi() override { return _sum_phi; }
+
+  void updateDensityForce(int32_t thread_num, bool is_cal_phi) override;
+  Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale, bool is_add_quad_penalty, float quad_lamda) override;
 
   void reset();
 
  private:
   float _sum_phi;
-  // FFT* _fft;
-  DCT* _dct;
+  FFT* _fft;
+  // DCT* _dct;
 
   std::vector<std::vector<float>> _force_2d_x_list;
   std::vector<std::vector<float>> _force_2d_y_list;
@@ -70,8 +75,8 @@ inline ElectricFieldGradient::ElectricFieldGradient(GridManager* grid_manager) :
   int32_t grid_size_x = grid_manager->get_grid_size_x();
   int32_t grid_size_y = grid_manager->get_grid_size_y();
 
-  // _fft = new FFT(_grid_manager->obtainGridCntX(), _grid_manager->obtainRowCntY(), grid_size_x, grid_size_y);
-  _dct = new DCT(_grid_manager->obtainGridCntX(), _grid_manager->obtainRowCntY(), grid_size_x, grid_size_y);
+  _fft = new FFT(_grid_manager->get_grid_cnt_x(), _grid_manager->get_grid_cnt_y(), grid_size_x, grid_size_y);
+  // _dct = new DCT(_grid_manager->get_grid_cnt_x(), _grid_manager->get_grid_cnt_y(), grid_size_x, grid_size_y);
 
   initElectro2DList();
 }

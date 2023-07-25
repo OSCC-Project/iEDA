@@ -8,7 +8,6 @@ endif()
 
 add_library(irt_pin_accessor
     ## module pin_accessor
-    ${IRT_MODULE}/pin_accessor/pa_data_manager/PADataManager.cpp
     ${IRT_MODULE}/pin_accessor/PinAccessor.cpp
 )
 

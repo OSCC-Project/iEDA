@@ -32,14 +32,10 @@ void initConfigList()
   _config_list.push_back(std::make_pair("-rt_temp_directory_path", ValueType::kString));
   // std::string log_file_path;
   _config_list.push_back(std::make_pair("-log_file_path", ValueType::kString));
-  // std::string rt_output_def_file_path;
-  _config_list.push_back(std::make_pair("-rt_output_def_file_path", ValueType::kString));
   // std::string gw_temp_directory_path;
   _config_list.push_back(std::make_pair("-gw_temp_directory_path", ValueType::kString));
   // double gm_global_utilization_ratio;
   _config_list.push_back(std::make_pair("-gm_global_utilization_ratio", ValueType::kDouble));
-  // std::map<std::string, double> gm_layer_utilization_ratio;
-  _config_list.push_back(std::make_pair("-gm_layer_utilization_ratio", ValueType::kStringDoubleMap));
   // std::string gm_temp_directory_path;
   _config_list.push_back(std::make_pair("-gm_temp_directory_path", ValueType::kString));
   // irt_int gp_routing_size;

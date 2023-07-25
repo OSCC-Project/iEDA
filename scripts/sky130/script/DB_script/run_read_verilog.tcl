@@ -24,7 +24,7 @@ source ./script/DB_script/db_init_lef.tcl
 verilog_init -path ./result/iRT_result.v -top gcd
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/data_out.def
 #netlist_save -path ./result/iRT_result.v

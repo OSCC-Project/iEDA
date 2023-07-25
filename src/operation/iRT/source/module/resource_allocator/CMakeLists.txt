@@ -8,7 +8,6 @@ endif()
 
 add_library(irt_resource_allocator
     ## module resource_allocator
-    ${IRT_MODULE}/resource_allocator/ra_data_manager/RADataManager.cpp
     ${IRT_MODULE}/resource_allocator/ResourceAllocator.cpp
 )
 

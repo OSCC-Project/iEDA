@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "EarlyGlobalRouter.hpp"
 
-using namespace std;
 namespace irt {
+
 // public
 
 void EarlyGlobalRouter::initInst(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
@@ -223,7 +223,7 @@ void EarlyGlobalRouter::plot()
 
 void EarlyGlobalRouter::plotCongstLoc()
 {
-  const int kLevel = 9;
+  const irt_int kLevel = 9;
   irt_int node_data_type = 0;
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
   std::ofstream* gds_file = RTUtil::getOutputFileStream(_egr_data_manager.getConfig().temp_directory_path + "egr_congst_loc.gds");
@@ -237,7 +237,7 @@ void EarlyGlobalRouter::plotCongstLoc()
   irt_int x_size = layer_resource_map[0].get_x_size();
   irt_int y_size = layer_resource_map[0].get_y_size();
 
-  std::vector<std::vector<irt_int>> cong_map(x_size, std::vector<int>(y_size, 0));
+  std::vector<std::vector<irt_int>> cong_map(x_size, std::vector<irt_int>(y_size, 0));
   irt_int max_congestion_val = 0;
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); layer_idx++) {
     GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
@@ -256,7 +256,7 @@ void EarlyGlobalRouter::plotCongstLoc()
       }
     }
   }
-  irt_int interval = max(max_congestion_val / kLevel, 1);
+  irt_int interval = std::max(max_congestion_val / kLevel, 1);
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
   RTUtil::pushStream(gds_file, "STRNAME ", "congstion_map", "\n");
 
@@ -304,6 +304,7 @@ void EarlyGlobalRouter::init(std::map<std::string, std::any>& config_map, idb::I
   _idb_builder = idb_builder;
   Logger::initInst();
   _egr_data_manager.input(config_map, idb_builder);
+  Flute::readLUT();
 }
 
 void EarlyGlobalRouter::destroy()
@@ -319,13 +320,14 @@ void EarlyGlobalRouter::routeEGRNetList(std::vector<EGRNet>& egr_net_list)
 
   Monitor stage_monitor;
   for (size_t i = 0; i < egr_net_list.size(); i++) {
+    // for (size_t i = 34; i < 36; i++) {
     routeEGRNet(egr_net_list[i]);
     if ((i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Routed ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
 
-  LOG_INST.info(Loc::current(), "Processed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Routed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
 }
 
 void EarlyGlobalRouter::routeEGRNet(EGRNet& egr_net)
@@ -361,9 +363,9 @@ EGRRoutingPackage EarlyGlobalRouter::initEGRRoutingPackage(EGRNet& egr_net)
 
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map = egr_routing_package.get_min_distance_map();
   for (LayerCoord& pin_coord : pin_coord_list) {
-    min_distance_map[pin_coord] = make_pair(INT_MAX, LayerCoord());
+    min_distance_map[pin_coord] = std::make_pair(INT_MAX, LayerCoord());
   }
-  egr_routing_package.set_number_already_counted(0);
+  egr_routing_package.set_number_calculated(0);
   return egr_routing_package;
 }
 
@@ -379,30 +381,28 @@ void EarlyGlobalRouter::routeEGRRoutingPackage(EGRRoutingPackage& egr_routing_pa
 
 void EarlyGlobalRouter::routeByTopo(EGRRoutingPackage& egr_routing_package)
 {
-  generateTopoCoordPairList(egr_routing_package);
+  generateFluteTree(egr_routing_package);
+  generateCoordPairList(egr_routing_package);
   routeAllCoordPairs(egr_routing_package);
 }
 
-void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing_package)
+void EarlyGlobalRouter::generateFluteTree(EGRRoutingPackage& egr_routing_package)
 {
   std::vector<std::pair<LayerCoord, LayerCoord>>& topo_coord_pair_list = egr_routing_package.get_topo_coord_pair_list();
-  irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
   std::vector<LayerCoord>& pin_coord_list = egr_routing_package.get_pin_coord_list();
+  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC>& planar_coord_layer_map = egr_routing_package.get_planar_coord_layer_map();
+  Flute::Tree& flute_tree = egr_routing_package.get_flute_tree();
 
-  static std::once_flag init_flag;
-  std::call_once(init_flag, Flute::readLUT);
-
+  // get tree
   size_t pin_size = pin_coord_list.size();
   Flute::DTYPE x[pin_size];
   Flute::DTYPE y[pin_size];
   irt_int coord_num = 0;
-  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC> planar_coord_layer_map;
   for (LayerCoord& pin_coord : pin_coord_list) {
     if (RTUtil::exist(planar_coord_layer_map, PlanarCoord(pin_coord))) {
       LayerCoord existed_coord = pin_coord;
       existed_coord.set_layer_idx(planar_coord_layer_map[pin_coord]);
-      topo_coord_pair_list.push_back(make_pair(pin_coord, existed_coord));
+      topo_coord_pair_list.push_back(std::make_pair(pin_coord, existed_coord));
       continue;
     }
     planar_coord_layer_map[pin_coord] = pin_coord.get_layer_idx();
@@ -412,86 +412,75 @@ void EarlyGlobalRouter::generateTopoCoordPairList(EGRRoutingPackage& egr_routing
   }
 
   if (coord_num == 1) {
+    flute_tree.deg = 1;
     return;
   }
-  Flute::Tree flute_tree = Flute::flute(coord_num, x, y, FLUTE_ACCURACY);
+  flute_tree = Flute::flute(coord_num, x, y, FLUTE_ACCURACY);
+}
+
+void EarlyGlobalRouter::generateCoordPairList(EGRRoutingPackage& egr_routing_package)
+{
+  std::vector<std::pair<LayerCoord, LayerCoord>>& topo_coord_pair_list = egr_routing_package.get_topo_coord_pair_list();
+  std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC>& planar_coord_layer_map = egr_routing_package.get_planar_coord_layer_map();
+  Flute::Tree& flute_tree = egr_routing_package.get_flute_tree();
+
   irt_int deg = flute_tree.deg;
-  for (irt_int i = 0; i < deg; i++) {
+  for (irt_int i = 0; i < 2 * deg - 2; ++i) {
     irt_int n_id = flute_tree.branch[i].n;
     PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
     PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
     if (first_coord == second_coord) {  // check
       continue;
     }
-    if (!RTUtil::exist(planar_coord_layer_map, first_coord)) {
-      LOG_INST.error(Loc::current(), "Pin coord doesn't exist");
-    }
-    LayerCoord pin_coord(first_coord, planar_coord_layer_map[first_coord]);
-    LayerCoord steiner_coord(second_coord);
-    if (RTUtil::exist(planar_coord_layer_map, second_coord)) {  ///< choose the old layer_idx
-      steiner_coord.set_layer_idx(planar_coord_layer_map[second_coord]);
+    LayerCoord first_layer_coord(first_coord);
+    LayerCoord second_layer_coord(second_coord);
+    if (RTUtil::exist(planar_coord_layer_map, first_coord)) {  ///< choose the old layer_idx
+      first_layer_coord.set_layer_idx(planar_coord_layer_map[first_coord]);
     } else {
-      LayerCoord bottom_steiner_coord(second_coord, bottom_routing_layer_idx);
-      LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
-      Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
-      steiner_coord = getNearestCoordOnSegment(pin_coord, steiner_segment);
-      planar_coord_layer_map[second_coord] = steiner_coord.get_layer_idx();
+      irt_int layer_idx = getMinCostLayerIdx(first_coord);
+      first_layer_coord.set_layer_idx(layer_idx);
+      planar_coord_layer_map[first_coord] = layer_idx;
     }
-    topo_coord_pair_list.push_back(make_pair(pin_coord, steiner_coord));
-  }
 
-  std::set<irt_int> remain_seg_set;
-  for (irt_int i = deg; i < 2 * deg - 2; i++) {
-    remain_seg_set.insert(i);
+    if (RTUtil::exist(planar_coord_layer_map, second_coord)) {  ///< choose the old layer_idx
+      second_layer_coord.set_layer_idx(planar_coord_layer_map[second_coord]);
+    } else {
+      irt_int layer_idx = getMinCostLayerIdx(second_coord);
+      second_layer_coord.set_layer_idx(layer_idx);
+      planar_coord_layer_map[second_coord] = layer_idx;
+    }
+    topo_coord_pair_list.push_back(std::make_pair(first_layer_coord, second_layer_coord));
   }
-  irt_int pre_size = remain_seg_set.size() + 1;
-  irt_int curr_size = remain_seg_set.size();
-  while (!remain_seg_set.empty() && pre_size != curr_size) {
-    pre_size = curr_size;
-    for (auto it = remain_seg_set.begin(); it != remain_seg_set.end();) {
-      irt_int i = *it;
-      irt_int n_id = flute_tree.branch[i].n;
-      PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
-      PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
-      if (first_coord == second_coord) {  // check
-        it = remain_seg_set.erase(it);
-        curr_size--;
-        continue;
-      }
-      bool first_exist = RTUtil::exist(planar_coord_layer_map, first_coord);
-      bool second_exist = RTUtil::exist(planar_coord_layer_map, second_coord);
-      if (!first_exist && !second_exist) {
-        it++;
-        continue;
-      }
-      LayerCoord first_steiner_coord(first_coord);
-      LayerCoord second_steiner_coord(second_coord);
-      if (first_exist && second_exist) {
-        first_steiner_coord.set_layer_idx(planar_coord_layer_map[first_steiner_coord]);
-        second_steiner_coord.set_layer_idx(planar_coord_layer_map[second_steiner_coord]);
-      } else if (first_exist) {
-        first_steiner_coord.set_layer_idx(planar_coord_layer_map[first_steiner_coord]);
-        LayerCoord bottom_steiner_coord(second_coord, bottom_routing_layer_idx);
-        LayerCoord top_steiner_coord(second_coord, top_routing_layer_idx);
-        Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
-        second_steiner_coord = getNearestCoordOnSegment(first_steiner_coord, steiner_segment);
-        planar_coord_layer_map[second_coord] = second_steiner_coord.get_layer_idx();
-      } else {
-        second_steiner_coord.set_layer_idx(planar_coord_layer_map[second_steiner_coord]);
-        LayerCoord bottom_steiner_coord(first_coord, bottom_routing_layer_idx);
-        LayerCoord top_steiner_coord(first_coord, top_routing_layer_idx);
-        Segment<LayerCoord> steiner_segment(bottom_steiner_coord, top_steiner_coord);
-        first_steiner_coord = getNearestCoordOnSegment(second_steiner_coord, steiner_segment);
-        planar_coord_layer_map[first_coord] = first_steiner_coord.get_layer_idx();
-      }
-      topo_coord_pair_list.push_back(make_pair(first_steiner_coord, second_steiner_coord));
-      it = remain_seg_set.erase(it);
-      curr_size--;
+}
+
+irt_int EarlyGlobalRouter::getMinCostLayerIdx(const PlanarCoord& planar_coord)
+{
+  std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
+  std::vector<RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
+
+  irt_int x = planar_coord.get_x();
+  irt_int y = planar_coord.get_y();
+
+  irt_int best_layer_idx = -1;
+  double min_cost = DBL_MAX;
+  for (irt_int layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; ++layer_idx) {
+    EGRNode& egr_node = layer_resource_map[layer_idx][x][y];
+    double curr_layer_cost = egr_node.getCost(EGRResourceType::kTrack);
+    if (routing_layer_list[layer_idx].isPreferH()) {
+      curr_layer_cost += egr_node.getCost(EGRResourceType::kWest);
+      curr_layer_cost += egr_node.getCost(EGRResourceType::kEast);
+    } else {
+      curr_layer_cost += egr_node.getCost(EGRResourceType::kNorth);
+      curr_layer_cost += egr_node.getCost(EGRResourceType::kSouth);
+    }
+    if (curr_layer_cost < min_cost) {
+      min_cost = curr_layer_cost;
+      best_layer_idx = layer_idx;
     }
   }
-  if (!remain_seg_set.empty()) {
-    LOG_INST.error(Loc::current(), "Steiner coord doesn't connected");
-  }
+  return best_layer_idx;
 }
 
 LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, Segment<LayerCoord>& segment)
@@ -573,20 +562,20 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
 {
   std::vector<LayerCoord>& pin_coord_list = egr_routing_package.get_pin_coord_list();
   std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
-  irt_int number_already_counted = egr_routing_package.get_number_already_counted();
+  irt_int number_calculated = egr_routing_package.get_number_calculated();
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map = egr_routing_package.get_min_distance_map();
 
-  for (size_t i = number_already_counted; i < routing_segment_list.size(); i++) {
+  for (size_t i = number_calculated; i < routing_segment_list.size(); i++) {
     Segment<LayerCoord>& routing_segment = routing_segment_list[i];
     for (LayerCoord& pin_coord : pin_coord_list) {
       LayerCoord seg_coord = getNearestCoordOnSegment(pin_coord, routing_segment);
       irt_int distance = RTUtil::getManhattanDistance(pin_coord, seg_coord);
       if (min_distance_map[pin_coord].first > distance) {
-        min_distance_map[pin_coord] = make_pair(distance, seg_coord);
+        min_distance_map[pin_coord] = std::make_pair(distance, seg_coord);
       }
     }
   }
-  egr_routing_package.set_number_already_counted(static_cast<irt_int>(routing_segment_list.size()));
+  egr_routing_package.set_number_calculated(static_cast<irt_int>(routing_segment_list.size()));
 
   irt_int min_distance = INT32_MAX;
   LayerCoord best_pin_coord;
@@ -614,7 +603,7 @@ void EarlyGlobalRouter::updateNearestCoordPair(EGRRoutingPackage& egr_routing_pa
 void EarlyGlobalRouter::routeNearestCoordPair(EGRRoutingPackage& egr_routing_package)
 {
   std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
-  std::pair<LayerCoord, LayerCoord> coord_pair = make_pair(egr_routing_package.get_pin_coord(), egr_routing_package.get_seg_coord());
+  std::pair<LayerCoord, LayerCoord> coord_pair = std::make_pair(egr_routing_package.get_pin_coord(), egr_routing_package.get_seg_coord());
   std::vector<Segment<LayerCoord>> path_segment_list = routeInPattern(coord_pair);
   routing_segment_list.insert(routing_segment_list.end(), path_segment_list.begin(), path_segment_list.end());
 }
@@ -651,14 +640,14 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
 
   irt_int comb_size = static_cast<irt_int>(routing_segment_comb_list.size());
-  std::vector<int> pass_list(comb_size, 1);
+  std::vector<irt_int> pass_list(comb_size, 1);
   std::vector<double> cost_list(comb_size, 0);
   std::vector<double> avg_cost_list(comb_size, 0);
 #pragma omp parallel for schedule(static)
   for (size_t i = 0; i < routing_segment_comb_list.size(); ++i) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_comb_list[i];
     double& path_cost = cost_list[i];
-    int& pass = pass_list[i];
+    irt_int& pass = pass_list[i];
     for (size_t j = 0; j < routing_segment_list.size(); ++j) {
       Segment<LayerCoord>& routing_segment = routing_segment_list[j];
       LayerCoord& first_coord = routing_segment.get_first();
@@ -716,7 +705,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
 
   double min_path_cost = DBL_MAX;
   irt_int best_path_idx = -1;
-  for (int i = 0; i < comb_size; i++) {
+  for (irt_int i = 0; i < comb_size; i++) {
     if (pass_list[i] == 1) {
       best_routing_segment_list = routing_segment_comb_list[i];
       return true;
@@ -824,7 +813,7 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
 
   std::vector<irt_int> inflection_x_list;
   std::vector<irt_int> inflection_y_list;
-  for (int i = 1; i <= scope; ++i) {
+  for (irt_int i = 1; i <= scope; ++i) {
     if (!RTUtil::isHorizontal(start_coord, end_coord)) {
       if (start_x - i > die_lb_x) {
         inflection_x_list.push_back(start_x - i);
@@ -1225,29 +1214,33 @@ void EarlyGlobalRouter::addDemandBySegmentList(std::vector<Segment<TNode<LayerCo
 
 void EarlyGlobalRouter::reportEGRNetList()
 {
-  reportCongestion();
-  reportWireViaStatistics();
+  calcuResult();
+  reportResult();
 }
 
-void EarlyGlobalRouter::reportCongestion()
+void EarlyGlobalRouter::calcuResult()
 {
-  std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
-  std::vector<RoutingLayer>& routing_layer_list = _egr_data_manager.getDatabase().get_routing_layer_list();
+  calcuCongestion();
+  calcuWireViaStatistics();
+}
 
-  std::vector<std::map<irt_int, irt_int, std::greater<int>>> layer_overflow_map;
-  std::map<irt_int, irt_int, std::greater<int>> total_overflow_map;
-  layer_overflow_map.resize(routing_layer_list.size());
-  irt_int total_overflow = 0;
+void EarlyGlobalRouter::calcuCongestion()
+{
+  EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
+  std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
+  std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  irt_int& total_track_overflow = egr_stat.get_total_track_overflow();
+  std::map<irt_int, irt_int, std::greater<irt_int>>& total_overflow_map = egr_stat.get_total_overflow_map();
 
+  overflow_map_list.resize(routing_layer_list.size());
   std::vector<EGRResourceType> resource_types(
       {EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kWest, EGRResourceType::kEast});
-  irt_int cell_num
-      = layer_resource_map.front().get_x_size() * layer_resource_map.front().get_y_size() * static_cast<irt_int>(resource_types.size());
-
   // statistics
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); ++layer_idx) {
     GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
-    std::map<irt_int, irt_int, std::greater<int>>& overflow_map = layer_overflow_map[layer_idx];
+    std::map<irt_int, irt_int, std::greater<irt_int>>& overflow_map = overflow_map_list[layer_idx];
     for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
       for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
         EGRNode& resource_node = resource_map[x][y];
@@ -1257,19 +1250,88 @@ void EarlyGlobalRouter::reportCongestion()
           overflow_map[overflow]++;
           total_overflow_map[overflow]++;
           if (overflow > 0) {
-            grid_overflow = max(grid_overflow, overflow);
+            grid_overflow = std::max(grid_overflow, overflow);
           }
         }
-        total_overflow += grid_overflow;
+        total_track_overflow += grid_overflow;
       }
     }
   }
+}
+
+void EarlyGlobalRouter::calcuWireViaStatistics()
+{
+  EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
+  irt_int cell_width = _egr_data_manager.getConfig().cell_width;
+  irt_int cell_height = _egr_data_manager.getConfig().cell_height;
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = egr_database.get_layer_via_master_list();
+  irt_int routing_layer_size = static_cast<irt_int>(egr_database.get_routing_layer_list().size());
+  irt_int cut_layer_size = static_cast<irt_int>(egr_database.get_cut_layer_list().size());
+  std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
+  std::vector<irt_int>& via_num_list = egr_stat.get_via_num_list();
+  irt_int& total_via_num = egr_stat.get_total_via_num();
+  double& total_wire_length = egr_stat.get_total_wire_length();
+
+  wire_length_list.resize(routing_layer_size, 0);
+  via_num_list.resize(cut_layer_size, 0);
+  for (EGRNet& egr_net : egr_database.get_egr_net_list()) {
+    MTree<LayerCoord>& coord_tree = egr_net.get_coord_tree();
+    std::vector<Segment<TNode<LayerCoord>*>> routing_segment_list = RTUtil::getSegListByTree(coord_tree);
+    if (routing_segment_list.empty()) {
+      double local_net_wire_length = (cell_width + cell_height) / 2.0;
+      total_wire_length += local_net_wire_length;
+      LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().getGridCoordList().front();
+      irt_int layer_idx = driving_pin_grid_coord.get_layer_idx();
+      wire_length_list[layer_idx] += local_net_wire_length;
+      continue;
+    }
+
+    for (Segment<TNode<LayerCoord>*>& segment : routing_segment_list) {
+      LayerCoord& first_coord = segment.get_first()->value();
+      LayerCoord& second_coord = segment.get_second()->value();
+      irt_int first_layer_idx = first_coord.get_layer_idx();
+      irt_int second_layer_idx = second_coord.get_layer_idx();
+      if (first_layer_idx != second_layer_idx) {
+        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        total_via_num += std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx());
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; ++layer_idx) {
+          irt_int via_layer_idx = layer_via_master_list[layer_idx].front().get_cut_layer_idx();
+          via_num_list[via_layer_idx]++;
+        }
+      } else {
+        double wire_length = RTUtil::getManhattanDistance(first_coord, second_coord);
+        total_wire_length += wire_length;
+        wire_length_list[first_layer_idx] += wire_length;
+      }
+    }
+  }
+}
+
+void EarlyGlobalRouter::reportResult()
+{
+  reportCongestion();
+  reportWireViaStatistics();
+}
+
+void EarlyGlobalRouter::reportCongestion()
+{
+  EGRDatabase& egr_database = _egr_data_manager.getDatabase();
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
+  std::vector<GridMap<EGRNode>>& layer_resource_map = egr_database.get_layer_resource_map();
+  std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
+  std::vector<std::map<irt_int, irt_int, std::greater<irt_int>>>& overflow_map_list = egr_stat.get_overflow_map_list();
+  irt_int total_track_overflow = egr_stat.get_total_track_overflow();
+  std::map<irt_int, irt_int, std::greater<irt_int>>& total_overflow_map = egr_stat.get_total_overflow_map();
+  std::vector<EGRResourceType> resource_types(
+      {EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kWest, EGRResourceType::kEast});
+  irt_int cell_num
+      = layer_resource_map.front().get_x_size() * layer_resource_map.front().get_y_size() * static_cast<irt_int>(resource_types.size());
 
   std::vector<irt_int> overflow_num_list;
   for (auto [overflow_num, quantity] : total_overflow_map) {
     overflow_num_list.push_back(overflow_num);
   }
-
   fort::char_table table;
   table.set_border_style(FT_SOLID_STYLE);
   // report header
@@ -1286,7 +1348,7 @@ void EarlyGlobalRouter::reportCongestion()
   irt_int v_overflow = 0;
   // report every layer
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); ++layer_idx) {
-    std::map<irt_int, irt_int, std::greater<int>>& overflow_map = layer_overflow_map[layer_idx];
+    std::map<irt_int, irt_int, std::greater<irt_int>>& overflow_map = overflow_map_list[layer_idx];
     table << routing_layer_list[layer_idx].get_layer_name();
     for (irt_int i : overflow_num_list) {
       sprintf(c_buffer, "%d(%.2f%%)", overflow_map[i], overflow_map[i] * 100.0 / cell_num);
@@ -1311,7 +1373,7 @@ void EarlyGlobalRouter::reportCongestion()
       ++v_layer_num;
     }
   }
-  table << "Total";
+  table << fort::header << "Total";
   for (irt_int i : overflow_num_list) {
     sprintf(c_buffer, "%d(%.2f%%)", total_overflow_map[i],
             total_overflow_map[i] * 100.0 / cell_num / static_cast<irt_int>(routing_layer_list.size()));
@@ -1331,37 +1393,52 @@ void EarlyGlobalRouter::reportCongestion()
   sprintf(c_buffer, "Overflow Edge num after earlyGlobalRoute is :%d(%5.2f%%)H + %d(%5.2f%%)V", h_overflow,
           h_overflow * 100.0 / h_layer_num / cell_num, v_overflow, v_overflow * 100.0 / v_layer_num / cell_num);
   LOG_INST.info(Loc::current(), c_buffer);
-  LOG_INST.info(Loc::current(), "Total overflow is : ", total_overflow);
+  LOG_INST.info(Loc::current(), "Total overflow is : ", total_track_overflow);
 }
 
 void EarlyGlobalRouter::reportWireViaStatistics()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
-  irt_int cell_width = _egr_data_manager.getConfig().cell_width;
-  irt_int cell_height = _egr_data_manager.getConfig().cell_height;
+  EGRStat& egr_stat = _egr_data_manager.getEGRStat();
+  irt_int micron_dbu = egr_database.get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = egr_database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = egr_database.get_cut_layer_list();
+  std::vector<double>& wire_length_list = egr_stat.get_wire_length_list();
+  std::vector<irt_int>& via_num_list = egr_stat.get_via_num_list();
+  double& total_wire_length = egr_stat.get_total_wire_length();
+  irt_int& total_via_num = egr_stat.get_total_via_num();
 
-  for (EGRNet& egr_net : egr_database.get_egr_net_list()) {
-    MTree<LayerCoord>& coord_tree = egr_net.get_coord_tree();
-    std::vector<Segment<TNode<LayerCoord>*>> routing_segment_list = RTUtil::getSegListByTree(coord_tree);
-
-    if (routing_segment_list.empty()) {
-      egr_database.addWireLength((cell_width + cell_height) / 2.0);
-    }
-    for (Segment<TNode<LayerCoord>*>& segment : routing_segment_list) {
-      LayerCoord& first_coord = segment.get_first()->value();
-      LayerCoord& second_coord = segment.get_second()->value();
-      if (RTUtil::isProximal(first_coord, second_coord)) {
-        egr_database.addViaNum(std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx()));
-      } else if (RTUtil::isVertical(first_coord, second_coord) || RTUtil::isHorizontal(first_coord, second_coord)) {
-        egr_database.addWireLength(std::abs(first_coord.get_x() - second_coord.get_x()) * cell_width
-                                   + std::abs(first_coord.get_y() - second_coord.get_y()) * cell_height);
-      } else {
-        LOG_INST.error(Loc::current(), "The segment is oblique!");
-      }
-    }
+  fort::char_table wire_table;
+  wire_table.set_border_style(FT_SOLID_STYLE);
+  // report header
+  wire_table << fort::header << "Routing Layer"
+             << "Wire Length / um" << fort::endr;
+  for (size_t layer_idx = 0; layer_idx < routing_layer_list.size(); ++layer_idx) {
+    wire_table << routing_layer_list[layer_idx].get_layer_name()
+               << RTUtil::getString(wire_length_list[layer_idx] / micron_dbu, "(",
+                                    RTUtil::getPercentage(wire_length_list[layer_idx], total_wire_length), "%)")
+               << fort::endr;
   }
-  LOG_INST.info(Loc::current(), "Wire length: ", static_cast<long long int>(egr_database.get_total_wire_length()));
-  LOG_INST.info(Loc::current(), "Via num: ", static_cast<long long int>(egr_database.get_total_via_num()));
+  wire_table << fort::header << "Total" << total_wire_length / micron_dbu << fort::endr;
+  for (std::string table_str : RTUtil::splitString(wire_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
+
+  fort::char_table cut_table;
+  cut_table.set_border_style(FT_SOLID_STYLE);
+  // report header
+  cut_table << fort::header << "Cut Layer"
+            << "Via Number" << fort::endr;
+  for (size_t layer_idx = 0; layer_idx < cut_layer_list.size(); ++layer_idx) {
+    cut_table << cut_layer_list[layer_idx].get_layer_name()
+              << RTUtil::getString(via_num_list[layer_idx], "(", RTUtil::getPercentage(via_num_list[layer_idx], total_via_num), "%)")
+              << fort::endr;
+  }
+  cut_table << fort::header << "Total" << total_via_num << fort::endr;
+  for (std::string table_str : RTUtil::splitString(cut_table.to_string(), '\n')) {
+    LOG_INST.info(Loc::current(), table_str);
+  }
+  std::cout << micron_dbu << std::endl;
 }
 
 }  // namespace irt

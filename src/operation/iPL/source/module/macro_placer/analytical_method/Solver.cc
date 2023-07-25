@@ -7,6 +7,8 @@
 #include "Log.hh"
 #include "Problem.hh"
 namespace ipl {
+// NOLINTBEGIN
+
 template <typename T>
 void log(const T& val)
 {
@@ -21,10 +23,8 @@ void log(const T& val, const Args&... args)
 }
 void fitBoundConstriant(Mat& variable, const Mat& lower, const Mat& upper)
 {
-  for (size_t i = 0; i < variable.rows(); i++) {
-    for (size_t j = 0; j < variable.cols(); j++) {
-      double l = lower(i, j);
-      double u = upper(i, j);
+  for (Eigen::Index i = 0; i < variable.rows(); i++) {
+    for (Eigen::Index j = 0; j < variable.cols(); j++) {
       variable(i, j) = std::clamp(variable(i, j), lower(i, j), upper(i, j));
     }
   }
@@ -117,4 +117,7 @@ void Solver::solve(Problem& problem, Mat& solution, const Option& opt)
   }
   solution = std::move(major);
 }
+
+// NOLINTEND
+
 }  // namespace ipl

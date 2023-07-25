@@ -95,6 +95,7 @@ void EnclosedAreaCheck::checkEnclosedAreaFromHolePlygonList(const std::vector<Po
       int hole_area = bp::area(hole_polygon);
       if (hole_area < requre_enclosed_area) {
         _region_query->addViolation(ViolationType::kEnclosedArea);
+        addSpot(hole_polygon, layerId);
         // BoostRect bounding_box;
         // bp::extents(bounding_box, hole_polygon);
         // Rectangle violation_box = DRCUtil::getRectangleFromBoostRect(bounding_box);
@@ -110,6 +111,21 @@ void EnclosedAreaCheck::checkEnclosedAreaFromHolePlygonList(const std::vector<Po
       // add_spot(layerId, violation_box, ViolationType::kEnclosedArea);
     }
   }
+}
+
+void EnclosedAreaCheck::addSpot(bp::polygon_90_data<int>& hole_polygon, int layer_id)
+{
+  BoostRect bounding_box;
+  bp::extents(bounding_box, hole_polygon);
+  auto box = DRCUtil::getRTreeBox(bounding_box);
+
+  DrcViolationSpot* spot = new DrcViolationSpot();
+
+  spot->set_layer_id(layer_id);
+  spot->set_layer_name(_tech->getCutLayerNameById(layer_id));
+  spot->set_vio_type(ViolationType::kEnclosedArea);
+  spot->setCoordinate(box.min_corner().x(), box.min_corner().y(), box.max_corner().x(), box.max_corner().y());
+  _region_query->_min_hole_spot_list.emplace_back(spot);
 }
 
 /**

@@ -1,6 +1,7 @@
 add_subdirectory(${ICTS_SOLVER}/clustering)
 add_subdirectory(${ICTS_SOLVER}/DME)
 add_subdirectory(${ICTS_SOLVER}/HCTS)
+add_subdirectory(${ICTS_SOLVER}/GOCA)
 add_subdirectory(${ICTS_SOLVER}/polygon)
 add_subdirectory(${ICTS_SOLVER}/slewAware)
 add_subdirectory(${ICTS_SOLVER}/costCalculator)
@@ -15,6 +16,7 @@ target_link_libraries(
             icts_dme
             icts_polygon
             icts_hcts
+            icts_goca
             icts_slew_aware
             icts_cost_calculator
             icts_timing_calculator
@@ -26,6 +28,7 @@ target_include_directories(
             ${ICTS_SOLVER}/DME
             ${ICTS_SOLVER}/polygon
             ${ICTS_SOLVER}/HCTS
+            ${ICTS_SOLVER}/GOCA
             ${ICTS_SOLVER}/slewAware
             ${ICTS_SOLVER}/costCalculator
             ${ICTS_SOLVER}/timingCalculator)

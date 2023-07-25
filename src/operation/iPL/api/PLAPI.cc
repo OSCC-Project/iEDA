@@ -37,6 +37,7 @@
 #include "MacroPlacer.hh"
 #include "NesterovPlace.hh"
 #include "PlacerDB.hh"
+#include "RandomPlace.hh"
 #include "SteinerWirelength.hh"
 #include "src/MapFiller.h"
 #include "timing/TimingEval.hpp"
@@ -83,7 +84,7 @@ PLAPI::~PLAPI()
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
-  char config[] = "iPL log supported by gLog";
+  char config[] = "info_ipl_glog";
   char* argv[] = {config};
   Log::init(argv);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
@@ -318,7 +319,8 @@ void PLAPI::runMP()
 
 void PLAPI::runGP()
 {
-  CenterPlace(&PlacerDBInst).runCenterPlace();
+  // CenterPlace(&PlacerDBInst).runCenterPlace();
+  RandomPlace(&PlacerDBInst).runRandomPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   nesterov_place.printNesterovDatabase();
   nesterov_place.runNesterovPlace();
@@ -504,8 +506,8 @@ std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<i
   assert(row_range.first < row_range.second && site_range.first < site_range.second);
 
   auto* grid_manager = PlacerDBInst.get_grid_manager();
-  int32_t row_num = grid_manager->obtainRowCntY();
-  int32_t site_num = grid_manager->obtainGridCntX();
+  int32_t row_num = grid_manager->get_grid_cnt_y();
+  int32_t site_num = grid_manager->get_grid_cnt_x();
 
   row_range.first < 0 ? row_range.first = 0 : row_range.first;
   row_range.second >= row_num ? row_range.second = (row_num - 1) : row_range.second;

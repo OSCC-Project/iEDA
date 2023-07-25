@@ -1,21 +1,17 @@
 # syntax=docker/dockerfile:1
 ARG BASE_IMAGE=iedaopensource/base:debian
-ARG SECOND_STAGE=gcr.lank8s.cn/distroless/cc-debian11:nonroot
+ARG SECOND_STAGE=gcr.lank8s.cn/distroless/cc-debian11:debug-nonroot
 # copy files from base
 FROM ${BASE_IMAGE} AS iedabase
 
 ARG IEDA_TEMP=/tmp/ieda
 
 # collect iEDA binary, runtime shared libs and tcl script
-RUN mkdir -p ${IEDA_TEMP}/bin ${IEDA_TEMP}/lib \
-    ${IEDA_TEMP}/sky130/result/verilog ${IEDA_TEMP}/sky130/sdc      && \
-    cd ${IEDA_TEMP}                                                 && \
-    cp -R ${IEDA_WORKSPACE}/scripts/sky130/common ./sky130/                 && \
-    cp -R ${IEDA_WORKSPACE}/scripts/sky130/iEDA_config ./sky130/            && \
-    cp -R ${IEDA_WORKSPACE}/scripts/sky130/result/verilog/gcd.v ./sky130/result/verilog/   && \
-    cp -R ${IEDA_WORKSPACE}/scripts/sky130/sdc/gcd.sdc ./sky130/            && \
-    cp ${IEDA_WORKSPACE}/bin/iEDA ./bin                             && \
-    ln -s ./bin/iEDA iEDA                                           && \
+RUN mkdir -p ${IEDA_TEMP}/bin ${IEDA_TEMP}/lib          && \
+    cd ${IEDA_TEMP}                                     && \
+    cp -R ${IEDA_WORKSPACE}/scripts/sky130/* ./sky130/  && \
+    cp ${IEDA_WORKSPACE}/bin/iEDA ./bin                 && \
+    ln -s ./bin/iEDA iEDA                               && \
     ldd ${IEDA_WORKSPACE}/bin/iEDA | awk '{print $3}' | xargs -I % cp % ./lib
 
 # docker build second stage
@@ -31,7 +27,9 @@ ENV PATH=${IEDA_WORKSPACE}/bin:${PATH}
 
 WORKDIR ${IEDA_WORKSPACE}
 
-ENTRYPOINT ["./sky130/run_iEDA.sh"]
+ENTRYPOINT ["sh"]
+
+CMD ["iEDA", "-script", "./sky130/run_iEDA.tcl"]
 
 # usage : docker run --rm iedaopensource/demo:gcd
 # ${IEDA_WORKSPACE}
@@ -42,7 +40,6 @@ ENTRYPOINT ["./sky130/run_iEDA.sh"]
 # │   ├── iEDA_dep_libs0.so
 # │   └── iEDA_dep_libs1.so
 # └── sky130
-#     ├── common
 #     ├── iEDA_config
 #     ├── lef
 #     ├── lib

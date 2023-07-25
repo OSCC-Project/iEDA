@@ -21,15 +21,15 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read verilog
 #===========================================================
-verilog_init -path $VERILOG_PATH -top gcd
+verilog_init -path ./result/verilog/gcd.v -top gcd
 
 #===========================================================
-##   Save def 
+##   save def 
 #===========================================================
 def_save -path ./result/netlist_result.def
 
 #===========================================================
-##   Save netlist 
+##   save verilog 
 #===========================================================
 netlist_save -path ./result/netlist_result.v -exclude_cell_names {}
 

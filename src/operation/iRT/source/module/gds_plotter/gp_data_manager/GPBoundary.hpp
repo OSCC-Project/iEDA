@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "GPDataType.hpp"
+#include "GPLayoutType.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
 #include "RTU.hpp"

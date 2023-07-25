@@ -15,8 +15,8 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#pragma once
 #include "MPDB.h"
+
 namespace ipl::imp {
 class Checker
 {
@@ -29,4 +29,4 @@ class Checker
   bool checkOutborder(vector<FPInst*> macro_list, Coordinate* ld, Coordinate* ru);
 };
 
-}  // namespace ifp
+}  // namespace ipl::imp

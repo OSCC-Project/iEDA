@@ -29,7 +29,7 @@
 #include "EOLSpacingCheck.hpp"
 #include "EnclosedAreaCheck.h"
 #include "EnclosureCheck.hpp"
-#include "IDRWrapper.h"
+// #include "IDRWrapper.h"
 #include "JogSpacingCheck.hpp"
 #include "MinStepCheck.hpp"
 #include "MultiPatterning.h"
@@ -302,8 +302,6 @@ void DRC::run()
     _enclosed_area_check->checkEnclosedArea(drc_net);
 
     _cut_spacing_check->checkCutSpacing(drc_net);
-
-    _enclosure_check->checkEnclosure(drc_net);
 
     _eol_spacing_check->checkEOLSpacing(drc_net);
 
