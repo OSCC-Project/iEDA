@@ -1193,21 +1193,32 @@ void TrackAssigner::reportTAPanel(TAPanel& ta_panel)
 void TrackAssigner::countTAPanel(TAPanel& ta_panel)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   TAPanelStat ta_panel_stat;
 
   double total_wire_length = 0;
+  double total_prefer_wire_length = 0;
+  double total_nonprefer_wire_length = 0;
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
     for (Segment<LayerCoord>& routing_segment : ta_task.get_routing_segment_list()) {
-      irt_int first_layer_idx = routing_segment.get_first().get_layer_idx();
-      irt_int second_layer_idx = routing_segment.get_second().get_layer_idx();
-      if (first_layer_idx != second_layer_idx) {
+      LayerCoord& first = routing_segment.get_first();
+      LayerCoord& second = routing_segment.get_second();
+      if (first.get_layer_idx() != second.get_layer_idx()) {
         LOG_INST.error(Loc::current(), "The layer of TA Segment is different!");
       }
-      total_wire_length += RTUtil::getManhattanDistance(routing_segment.get_first(), routing_segment.get_second()) / 1.0 / micron_dbu;
+      irt_int distance = RTUtil::getManhattanDistance(first, second) / 1.0 / micron_dbu;
+      if (RTUtil::getDirection(first, second) == routing_layer_list[ta_panel.get_layer_idx()].get_direction()) {
+        total_prefer_wire_length += distance;
+      } else {
+        total_nonprefer_wire_length += distance;
+      }
+      total_wire_length += distance;
     }
   }
   ta_panel_stat.set_total_wire_length(total_wire_length);
+  ta_panel_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  ta_panel_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
 
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
@@ -1242,16 +1253,28 @@ void TrackAssigner::reportTable(TAPanel& ta_panel)
 
   TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
   double total_wire_length = ta_panel_stat.get_total_wire_length();
+  double total_prefer_wire_length = ta_panel_stat.get_total_prefer_wire_length();
+  double total_nonprefer_wire_length = ta_panel_stat.get_total_nonprefer_wire_length();
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
   irt_int total_drc_number = ta_panel_stat.get_total_drc_number();
 
   // report wire info
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
+             << "Prefer Wire Length"
+             << "Nonprefer Wire Length"
              << "Wire Length / um" << fort::endr;
-  wire_table << routing_layer_list[ta_panel.get_layer_idx()].get_layer_name() << total_wire_length << fort::endr;
-  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    wire_table << routing_layer.get_layer_name();
+    if (routing_layer.get_layer_idx() == ta_panel.get_layer_idx()) {
+      wire_table << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length << fort::endr;
+    } else {
+      wire_table << 0 << 0 << 0 << fort::endr;
+    }
+    wire_table << fort::endr;
+  }
+  wire_table << fort::header << "Total" << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length << fort::endr;
 
   // report drc info
   // init item column/row map
@@ -1321,18 +1344,27 @@ void TrackAssigner::reportTable(TAPanel& ta_panel)
   }
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
+  // print
   std::vector<std::vector<std::string>> table_list;
   table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
-  std::sort(table_list.begin(), table_list.end(),
-            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
-  for (size_t i = 0; i < table_list.front().size(); i++) {
+  int max_size = INT_MIN;
+  for (std::vector<std::string>& table : table_list) {
+    max_size = std::max(max_size, static_cast<int>(table.size()));
+  }
+  for (std::vector<std::string>& table : table_list) {
+    for (irt_int i = table.size(); i < max_size; i++) {
+      std::string table_str;
+      table_str.append(table.front().length() / 3, ' ');
+      table.push_back(table_str);
+    }
+  }
+
+  for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
     for (std::vector<std::string>& table : table_list) {
-      if (i < table.size()) {
-        table_str += table[i];
-        table_str += " ";
-      }
+      table_str += table[i];
+      table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
   }
@@ -1387,11 +1419,16 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   TAModelStat ta_model_stat;
 
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
+  std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
 
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : ta_panel_list) {
-      routing_wire_length_map[ta_panel.get_layer_idx()] += ta_panel.get_ta_panel_stat().get_total_wire_length();
+      TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
+      routing_wire_length_map[ta_panel.get_layer_idx()] += ta_panel_stat.get_total_wire_length();
+      routing_prefer_wire_length_map[ta_panel.get_layer_idx()] += ta_panel_stat.get_total_prefer_wire_length();
+      routing_nonprefer_wire_length_map[ta_panel.get_layer_idx()] += ta_panel_stat.get_total_nonprefer_wire_length();
     }
   }
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
@@ -1406,9 +1443,17 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   }
 
   double total_wire_length = 0;
+  double total_prefer_wire_length = 0;
+  double total_nonprefer_wire_length = 0;
   irt_int total_drc_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
+  }
+  for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
+    total_prefer_wire_length += prefer_wire_length;
+  }
+  for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
+    total_nonprefer_wire_length += nonprefer_wire_length;
   }
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     for (auto& [drc, number] : drc_number_map) {
@@ -1416,6 +1461,8 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
     }
   }
   ta_model_stat.set_total_wire_length(total_wire_length);
+  ta_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  ta_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
   ta_model_stat.set_total_drc_number(total_drc_number);
 
   ta_model.set_ta_model_stat(ta_model_stat);
@@ -1427,21 +1474,27 @@ void TrackAssigner::reportTable(TAModel& ta_model)
 
   TAModelStat& ta_model_stat = ta_model.get_ta_model_stat();
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
+  std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
   double total_wire_length = ta_model_stat.get_total_wire_length();
+  double total_prefer_wire_length = ta_model_stat.get_total_prefer_wire_length();
+  double total_nonprefer_wire_length = ta_model_stat.get_total_nonprefer_wire_length();
   irt_int total_drc_number = ta_model_stat.get_total_drc_number();
 
   // report wire info
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
+  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
+             << "Prefer Wire Length"
+             << "Nonprefer Wire Length"
              << "Wire Length / um" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    double wire_length = routing_wire_length_map[routing_layer.get_layer_idx()];
-    wire_table << routing_layer.get_layer_name()
-               << RTUtil::getString(wire_length, "(", RTUtil::getPercentage(wire_length, total_wire_length), "%)") << fort::endr;
+    double layer_idx = routing_layer.get_layer_idx();
+    wire_table << routing_layer.get_layer_name() << routing_prefer_wire_length_map[layer_idx]
+               << routing_nonprefer_wire_length_map[layer_idx] << routing_wire_length_map[layer_idx] << fort::endr;
   }
-  wire_table << fort::header << "Total" << total_wire_length << fort::endr;
+  wire_table << fort::header << "Total" << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length << fort::endr;
 
   // report drc info
   // init item column/row map
@@ -1511,18 +1564,27 @@ void TrackAssigner::reportTable(TAModel& ta_model)
   }
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
+  // print
   std::vector<std::vector<std::string>> table_list;
   table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
   table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
-  std::sort(table_list.begin(), table_list.end(),
-            [](std::vector<std::string>& a, std::vector<std::string>& b) { return a.size() > b.size(); });
-  for (size_t i = 0; i < table_list.front().size(); i++) {
+  int max_size = INT_MIN;
+  for (std::vector<std::string>& table : table_list) {
+    max_size = std::max(max_size, static_cast<int>(table.size()));
+  }
+  for (std::vector<std::string>& table : table_list) {
+    for (irt_int i = table.size(); i < max_size; i++) {
+      std::string table_str;
+      table_str.append(table.front().length() / 3, ' ');
+      table.push_back(table_str);
+    }
+  }
+
+  for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
     for (std::vector<std::string>& table : table_list) {
-      if (i < table.size()) {
-        table_str += table[i];
-        table_str += " ";
-      }
+      table_str += table[i];
+      table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
   }
