@@ -132,9 +132,9 @@ class GRNode : public LayerCoord
   {
     double cost = 0;
     if (supply != 0) {
-      cost = demand / supply;
+      cost = static_cast<double>(demand) / supply;
     } else {
-      cost = demand;
+      cost = static_cast<double>(demand);
     }
     cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
     return cost;
