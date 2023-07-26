@@ -32,27 +32,18 @@ void RegionQuery::init()
 
 // void* RegionQuery::initRegionQuery()
 // {
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-//     return nullptr;
-//   }
 //   // return idrc::DrcAPIInst.init();
 //   return nullptr;
 // }
 
 void RegionQuery::addEnvRectList(const ids::DRCRect& env_rect)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return;
-  }
   std::vector<ids::DRCRect> env_rect_list{env_rect};
   addEnvRectList(env_rect_list);
 }
 
 void RegionQuery::addEnvRectList(const std::vector<ids::DRCRect>& env_rect_list)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return;
-  }
   std::vector<RQShape> rq_shape_list = getRQShapeList(env_rect_list);
   for (RQShape& rq_shape : rq_shape_list) {
     _obj_id_shape_map[rq_shape.get_net_id()].push_back(rq_shape);
@@ -93,18 +84,12 @@ BoostBox RegionQuery::convertBoostBox(ids::DRCRect ids_rect)
 
 void RegionQuery::delEnvRectList(const ids::DRCRect& env_rect)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return;
-  }
   std::vector<ids::DRCRect> env_rect_list{env_rect};
   delEnvRectList(env_rect_list);
 }
 
 void RegionQuery::delEnvRectList(const std::vector<ids::DRCRect>& env_rect_list)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return;
-  }
   std::set<irt_int> del_net_id_set;
   for (const ids::DRCRect& ids_rect : env_rect_list) {
     del_net_id_set.insert(ids_rect.so_id);
@@ -125,18 +110,12 @@ void RegionQuery::delEnvRectList(const std::vector<ids::DRCRect>& env_rect_list)
 
 bool RegionQuery::hasViolation(const ids::DRCRect& drc_rect)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return false;
-  }
   std::vector<ids::DRCRect> drc_rect_list = {drc_rect};
   return hasViolation(drc_rect_list);
 }
 
 bool RegionQuery::hasViolation(const std::vector<ids::DRCRect>& drc_rect_list)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return false;
-  }
   for (auto [drc, num] : getViolation(drc_rect_list)) {
     if (num > 0) {
       return true;
@@ -161,9 +140,6 @@ std::map<std::string, int> RegionQuery::getViolation(const std::vector<ids::DRCR
   violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
   violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
   violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return violation_name_num_map;
-  }
 
   std::map<irt_int, std::vector<RQShape>> net_shape_list_map;
   for (RQShape& rq_shape : getRQShapeList(drc_rect_list)) {
@@ -294,8 +270,16 @@ std::map<std::string, int> RegionQuery::getViolation()
   violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
   violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
   violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return violation_name_num_map;
+
+  for (auto& [net_id, shape_list] : _obj_id_shape_map) {
+    // check drc by other
+    for (auto [violation_name, num] : checkByOther(shape_list)) {
+      violation_name_num_map[violation_name] += num;
+    }
+    // check drc by self
+    for (auto [violation_name, num] : checkBySelf(shape_list)) {
+      violation_name_num_map[violation_name] += num;
+    }
   }
 
   return violation_name_num_map;
@@ -309,13 +293,6 @@ std::vector<LayerRect> RegionQuery::getMaxScope(const ids::DRCRect& drc_rect)
 
 std::vector<LayerRect> RegionQuery::getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    std::vector<LayerRect> max_scope_list;
-    for (ids::DRCRect max_scope : drc_rect_list) {
-      max_scope_list.push_back(convertToLayerRect(max_scope));
-    }
-    return max_scope_list;
-  }
   std::vector<LayerRect> max_scope_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
     PlanarRect rect(drc_rect.lb_x, drc_rect.lb_y, drc_rect.rt_x, drc_rect.rt_y);
@@ -334,13 +311,6 @@ std::vector<LayerRect> RegionQuery::getMinScope(const ids::DRCRect& drc_rect)
 
 std::vector<LayerRect> RegionQuery::getMinScope(const std::vector<ids::DRCRect>& drc_rect_list)
 {
-  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    std::vector<LayerRect> min_scope_list;
-    for (const ids::DRCRect& drc_rect : drc_rect_list) {
-      min_scope_list.push_back(convertToLayerRect(drc_rect));
-    }
-    return min_scope_list;
-  }
   std::vector<LayerRect> min_scope_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
     PlanarRect rect(drc_rect.lb_x, drc_rect.lb_y, drc_rect.rt_x, drc_rect.rt_y);
