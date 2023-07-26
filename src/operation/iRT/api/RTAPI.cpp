@@ -26,6 +26,7 @@
 #include "GlobalRouter.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
+#include "RegionQuery.hpp"
 #include "ResourceAllocator.hpp"
 #include "Stage.hpp"
 #include "TimingEval.hpp"
@@ -452,6 +453,7 @@ void RTAPI::addEnvRectList(void* region_query, const ids::DRCRect& env_rect)
 void RTAPI::addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    static_cast<RegionQuery*>(region_query)->addEnvRectList(env_rect_list);
     return;
   }
   std::vector<idrc::DrcRect*> idrc_env_rect_list;
@@ -473,6 +475,7 @@ void RTAPI::delEnvRectList(void* region_query, const ids::DRCRect& env_rect)
 void RTAPI::delEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    static_cast<RegionQuery*>(region_query)->delEnvRectList(env_rect_list);
     return;
   }
   std::vector<idrc::DrcRect*> idrc_env_rect_list;
@@ -494,7 +497,7 @@ bool RTAPI::hasViolation(void* region_query, const ids::DRCRect& drc_rect)
 bool RTAPI::hasViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return false;
+    return static_cast<RegionQuery*>(region_query)->hasViolation(drc_rect_list);
   }
   std::vector<idrc::DrcRect*> idrc_drc_rect_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
@@ -506,21 +509,22 @@ bool RTAPI::hasViolation(void* region_query, const std::vector<ids::DRCRect>& dr
 std::map<std::string, int> RTAPI::getViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int> violation_name_num_map;
+  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("MinStep", 0));
-    violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
-    return violation_name_num_map;
+    return static_cast<RegionQuery*>(region_query)->getViolation(drc_rect_list);
   }
   addEnvRectList(region_query, drc_rect_list);
   violation_name_num_map = getViolation(region_query);
@@ -531,21 +535,22 @@ std::map<std::string, int> RTAPI::getViolation(void* region_query, const std::ve
 std::map<std::string, int> RTAPI::getViolation(void* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
+  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-    violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("MinStep", 0));
-    violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-    violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-    violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
-    return violation_name_num_map;
+    return static_cast<RegionQuery*>(region_query)->getViolation();
   }
 
   for (auto [rule_name, violation_list] : idrc::DrcAPIInst.check(static_cast<idrc::RegionQuery*>(region_query))) {
@@ -563,12 +568,10 @@ std::vector<LayerRect> RTAPI::getMaxScope(const ids::DRCRect& drc_rect)
 std::vector<LayerRect> RTAPI::getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    std::vector<LayerRect> max_scope_list;
-    for (ids::DRCRect max_scope : drc_rect_list) {
-      max_scope_list.push_back(convertToLayerRect(max_scope));
-    }
-    return max_scope_list;
+    RegionQuery irt_region_query;
+    return irt_region_query.getMaxScope(drc_rect_list);
   }
+
   std::vector<idrc::DrcRect*> drc_rect_ptr_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
     drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(drc_rect));
@@ -589,12 +592,10 @@ std::vector<LayerRect> RTAPI::getMinScope(const ids::DRCRect& drc_rect)
 std::vector<LayerRect> RTAPI::getMinScope(const std::vector<ids::DRCRect>& drc_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    std::vector<LayerRect> min_scope_list;
-    for (const ids::DRCRect& drc_rect : drc_rect_list) {
-      min_scope_list.push_back(convertToLayerRect(drc_rect));
-    }
-    return min_scope_list;
+    RegionQuery irt_region_query;
+    return irt_region_query.getMinScope(drc_rect_list);
   }
+
   std::vector<idrc::DrcRect*> drc_rect_ptr_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
     drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(drc_rect));
