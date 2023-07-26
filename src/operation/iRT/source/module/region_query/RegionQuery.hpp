@@ -17,7 +17,6 @@
 #pragma once
 
 #include "../../../../database/interaction/ids.hpp"
-#include "Boost.hpp"
 #include "LayerRect.hpp"
 #include "RQShape.hpp"
 #include "RTU.hpp"

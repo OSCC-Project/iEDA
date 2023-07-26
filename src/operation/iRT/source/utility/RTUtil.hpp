@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Boost.hpp"
 #include "Direction.hpp"
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"

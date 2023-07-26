@@ -96,9 +96,6 @@ PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
       pa_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
       pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
-      for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kEnclosure}) {
-        pa_gcell.get_source_region_query_map()[pa_source_type] = RTAPI_INST.initRegionQuery();
-      }
     }
   }
   pa_model.set_pa_net_list(convertToPANetList(net_list));
@@ -176,12 +173,17 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, i
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+        PAGCell& pa_gcell = pa_gcell_map[x][y];
         if (is_routing) {
-          pa_gcell_map[x][y].get_source_routing_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
+          pa_gcell.get_source_routing_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
         } else {
-          pa_gcell_map[x][y].get_source_cut_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
+          pa_gcell.get_source_cut_net_rect_map()[pa_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
         }
-        RTAPI_INST.addEnvRectList(pa_gcell_map[x][y].get_source_region_query_map()[pa_source_type], ids_drc_rect);
+        void*& region_query = pa_gcell.get_source_region_query_map()[pa_source_type];
+        if (region_query == nullptr) {
+          region_query = RTAPI_INST.initRegionQuery();
+        }
+        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
       }
     }
   }

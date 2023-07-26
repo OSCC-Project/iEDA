@@ -17,10 +17,10 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRBoxId.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
-#include "DRSchedule.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -58,9 +58,14 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
-  void buildScheduleList(DRModel& dr_model);
-  void updateNetBlockageMap(DRModel& dr_model);
+  void buildSchedule(DRModel& dr_model);
+  void updateNetRectMap(DRModel& dr_model);
+  void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, irt_int net_idx, LayerRect real_rect,
+                    bool is_routing);
+  void cutBlockageList(DRModel& dr_model);
   void updateNetPanelResultMap(DRModel& dr_model);
+  void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, irt_int net_idx,
+                    std::vector<Segment<LayerCoord>>& segment_list);
   void buildBoxScaleAxis(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
@@ -76,11 +81,10 @@ class DetailedRouter
 #endif
 
 #if 1  // iterative
-
   void iterative(DRModel& dr_model);
   void resetDRModel(DRModel& dr_model);
   void routeDRModel(DRModel& dr_model);
-  void iterativeDRBox(DRModel& dr_model, DRSchedule& dr_schedule);
+  void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
   void sortDRBox(DRBox& dr_box);
   void resetDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
