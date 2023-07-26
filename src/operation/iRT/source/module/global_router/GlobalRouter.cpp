@@ -770,6 +770,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   if (gr_net.get_routing_state() == RoutingState::kRouted) {
     return;
   }
+  // ouputAIDataset(gr_model, gr_net);
   initSingleNet(gr_model, gr_net);
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
@@ -792,93 +793,68 @@ void GlobalRouter::ouputAIDataset(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  static nlohmann::json ai_json;
   static size_t record_net_num = 0;
+  static std::string ai_file_path;
+  static std::ofstream* ai_file;
 
   if (record_net_num == 0) {
-    ai_json["def_file_path"] = DM_INST.getHelper().get_def_file_path();
+    std::string def_file_path = DM_INST.getHelper().get_def_file_path();
+    ai_file_path = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".ai.txt");
+    ai_file = RTUtil::getOutputFileStream(ai_file_path);
+    RTUtil::pushStream(ai_file, "def_file_path", " ", def_file_path, "\n");
   }
-
-  nlohmann::json net_json;
-
+  RTUtil::pushStream(ai_file, "net", " ", gr_net.get_net_idx(), "\n");
+  RTUtil::pushStream(ai_file, "{", "\n");
+  RTUtil::pushStream(ai_file, "pin_list", "\n");
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    nlohmann::json pin_json;
-    std::vector<LayerCoord> grid_coord_list = gr_pin.getGridCoordList();
+    RTUtil::pushStream(ai_file, "pin", " ", gr_pin.get_pin_idx(), "\n");
     for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      nlohmann::json coord_json;
-      coord_json["X"] = coord.get_x();
-      coord_json["Y"] = coord.get_y();
-      coord_json["Z"] = coord.get_layer_idx();
-      pin_json[RTUtil::getString("pin", gr_pin.get_pin_idx())].push_back(coord_json);
+      RTUtil::pushStream(ai_file, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
     }
-    net_json[RTUtil::getString("net", gr_net.get_net_idx())]["pin_list"].push_back(pin_json);
   }
-
+  RTUtil::pushStream(ai_file, "cost_map", "\n");
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   BoundingBox& bounding_box = gr_net.get_bounding_box();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-    std::vector<Orientation> orientation_list;
-    if (layer_idx != 0) {
-      orientation_list.push_back(Orientation::kDown);
-    }
-    if (layer_idx != (static_cast<irt_int>(layer_node_map.size()) - 1)) {
-      orientation_list.push_back(Orientation::kUp);
-    }
-    if (routing_layer_list[layer_idx].isPreferH()) {
-      orientation_list.push_back(Orientation::kEast);
-      orientation_list.push_back(Orientation::kWest);
-    } else {
-      orientation_list.push_back(Orientation::kNorth);
-      orientation_list.push_back(Orientation::kSouth);
-    }
     for (irt_int x = bounding_box.get_grid_lb_x(); x <= bounding_box.get_grid_rt_x(); x++) {
       for (irt_int y = bounding_box.get_grid_lb_y(); y <= bounding_box.get_grid_rt_y(); y++) {
-        nlohmann::json cost_json;
-        cost_json["X"] = x;
-        cost_json["Y"] = y;
-        cost_json["Z"] = layer_idx;
-
         GRNode& gr_node = layer_node_map[layer_idx][x][y];
-        for (Orientation orientation : orientation_list) {
-          std::string orientation_name;
-          switch (orientation) {
-            case Orientation::kEast:
-              orientation_name = "E";
-              break;
-            case Orientation::kWest:
-              orientation_name = "W";
-              break;
-            case Orientation::kSouth:
-              orientation_name = "S";
-              break;
-            case Orientation::kNorth:
-              orientation_name = "N";
-              break;
-            case Orientation::kUp:
-              orientation_name = "U";
-              break;
-            case Orientation::kDown:
-              orientation_name = "D";
-              break;
-            default:
-              break;
-          }
-          cost_json[orientation_name] = gr_node.getCost(gr_net.get_net_idx(), orientation);
+        double east_cost = -1;
+        double west_cost = -1;
+        double south_cost = -1;
+        double north_cost = -1;
+        double up_cost = -1;
+        double down_cost = -1;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          east_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kEast);
+          west_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kWest);
+        } else {
+          south_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kSouth);
+          north_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kNorth);
         }
-        net_json[RTUtil::getString("net", gr_net.get_net_idx())]["cost_map"].push_back(cost_json);
+        if (layer_idx != 0) {
+          down_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kDown);
+        }
+        if (layer_idx != (static_cast<irt_int>(layer_node_map.size()) - 1)) {
+          up_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kUp);
+        }
+        RTUtil::pushStream(ai_file, x, " ", y, " ", layer_idx);
+        RTUtil::pushStream(ai_file, " ", "E", " ", east_cost);
+        RTUtil::pushStream(ai_file, " ", "W", " ", west_cost);
+        RTUtil::pushStream(ai_file, " ", "S", " ", south_cost);
+        RTUtil::pushStream(ai_file, " ", "N", " ", north_cost);
+        RTUtil::pushStream(ai_file, " ", "U", " ", up_cost);
+        RTUtil::pushStream(ai_file, " ", "D", " ", down_cost);
+        RTUtil::pushStream(ai_file, "\n");
       }
     }
   }
-
-  ai_json["net_list"].push_back(net_json);
+  RTUtil::pushStream(ai_file, "}", "\n");
   record_net_num++;
 
   if (record_net_num == gr_model.get_gr_net_list().size()) {
-    std::string aaa = RTUtil::splitString(DM_INST.getHelper().get_def_file_path(), '/').back();
-    std::string ai_json_file_path = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, aaa, ".ai.json");
-    std::ofstream ai_json_stream(ai_json_file_path);
-    ai_json_stream << ai_json << std::endl;
-    LOG_INST.info(Loc::current(), "The result has been written to '", ai_json_file_path, "'!");
+    RTUtil::closeFileStream(ai_file);
+    LOG_INST.info(Loc::current(), "The result has been written to '", ai_file_path, "'!");
     exit(0);
   }
 }
