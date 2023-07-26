@@ -429,7 +429,7 @@ class RTUtil
       double mpy = py - my;
       double mqx = qx - mx;
       double mqy = qy - my;
-      return fabs(double(0.5) * cross(mpx, mpy, mqx, mqy));
+      return fabs(static_cast<double>(0.5) * cross(mpx, mpy, mqx, mqy));
     };
     // 定比分点
     double ck = get_coord_area(ax, ay, bx, by, cx, cy);
