@@ -438,6 +438,8 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
   std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
 
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
@@ -474,6 +476,18 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         source_drc_number_map[source][drc] += number;
       }
     }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      rule_number_map[drc] += number;
+    }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    irt_int total_number = 0;
+    for (auto& [drc, number] : drc_number_map) {
+      total_number += number;
+    }
+    source_number_map[GetVRSourceTypeName()(source)] = total_number;
   }
 
   double total_wire_length = 0;
@@ -543,6 +557,8 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
   std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
   double total_wire_length = vr_model_stat.get_total_wire_length();
   double total_prefer_wire_length = vr_model_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = vr_model_stat.get_total_nonprefer_wire_length();
@@ -575,67 +591,52 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
   // init item column/row map
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  item_column_map["DRC\\Source"] = column++;
-  // report drc info
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    item_column_map[GetVRSourceTypeName()(source)] = column++;
-  }
-  item_column_map["Total"] = column;
-
   irt_int row = 0;
   std::map<std::string, irt_int> item_row_map;
   item_row_map["DRC\\Source"] = row++;
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    item_row_map[drc] = row++;
+  for (auto& [drc_rule, drc_number] : rule_number_map) {
+    item_row_map[drc_rule] = row++;
   }
   item_row_map["Total"] = row;
+
+  irt_int column = 0;
+  std::map<std::string, irt_int> item_column_map;
+  item_column_map["DRC\\Source"] = column++;
+  for (auto& [source, drc_number_map] : source_number_map) {
+    item_column_map[source] = column++;
+  }
+  item_column_map["Total"] = column;
 
   // build table
   fort::char_table drc_table;
   drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
-
-  drc_table[0][0] = "DRC\\Source";
-
-  // column item
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    std::string source_name = GetVRSourceTypeName()(source);
-    drc_table[0][item_column_map[source_name]] = source_name;
+  // first row item
+  for (auto& [drc_rule, row] : item_row_map) {
+    drc_table[row][0] = drc_rule;
   }
-  drc_table[0][item_column_map["Total"]] = "Total";
-  // row item
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    drc_table[item_row_map[drc]][0] = drc;
+  // first column item
+  for (auto& [source_name, column] : item_column_map) {
+    drc_table[0][column] = source_name;
   }
-  drc_table[item_row_map["Total"]][0] = "Total";
   drc_table << fort::header;
   // element
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int column = item_column_map[GetVRSourceTypeName()(source)];
     for (auto& [drc, number] : drc_number_map) {
-      drc_table[item_row_map[drc]][column] = RTUtil::getString(number);
+      irt_int row = item_row_map[drc];
+      drc_table[row][column] = RTUtil::getString(number);
     }
   }
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
-    }
+  // last row
+  for (auto& [source, total_number] : source_number_map) {
     irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[GetVRSourceTypeName()(source)];
+    irt_int column = item_column_map[source];
     drc_table[row][column] = RTUtil::getString(total_number);
   }
-
-  std::map<std::string, irt_int> drc_total_number_map;
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      drc_total_number_map[drc] += number;
-    }
-  }
-  for (auto& [drc, total_number] : drc_total_number_map) {
-    irt_int row = item_row_map[drc];
+  // last column
+  for (auto& [drc_rule, total_number] : rule_number_map) {
+    irt_int row = item_row_map[drc_rule];
     irt_int column = item_column_map["Total"];
     drc_table[row][column] = RTUtil::getString(total_number);
   }
