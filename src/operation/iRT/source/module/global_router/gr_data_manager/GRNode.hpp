@@ -94,6 +94,10 @@ class GRNode : public LayerCoord
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
+    if (RTUtil::exist(_net_access_map, net_idx)) {
+      // net在node中有引导，但是方向不对，视为障碍
+      cost += RTUtil::exist(_net_access_map[net_idx], orientation) ? 0 : 1;
+    }
     if (orientation == Orientation::kUp || orientation == Orientation::kDown) {
       // 对于up和down来说 只有via_demand
       cost += calcCost(_whole_via_demand + _resource_demand, _resource_supply);
@@ -132,11 +136,7 @@ class GRNode : public LayerCoord
     } else {
       cost = demand;
     }
-    if (cost <= 1) {
-      cost = std::pow(cost, 2);
-    } else {
-      cost = 1 + std::log(cost);
-    }
+    cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
     return cost;
   }
   void updateDemand(irt_int net_idx, std::set<Orientation> orientation_set, ChangeType change_type)
