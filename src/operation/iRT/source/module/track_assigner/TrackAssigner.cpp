@@ -20,7 +20,6 @@
 #include "LayerCoord.hpp"
 #include "RTAPI.hpp"
 #include "TAPanel.hpp"
-#include "TASchedule.hpp"
 
 namespace irt {
 
@@ -95,10 +94,12 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           TAPanel ta_panel;
           ta_panel.set_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
-          ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
-          for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kOtherPanelResult, TASourceType::kSelfPanelResult}) {
-            ta_panel.get_source_region_query_map()[ta_source_type] = RTAPI_INST.initRegionQuery();
-          }
+
+          TAPanelId ta_panel_id;
+          ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
+          ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          ta_panel.set_ta_panel_id(ta_panel_id);
+
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -108,10 +109,12 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           TAPanel ta_panel;
           ta_panel.set_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
-          ta_panel.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
-          for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kOtherPanelResult, TASourceType::kSelfPanelResult}) {
-            ta_panel.get_source_region_query_map()[ta_source_type] = RTAPI_INST.initRegionQuery();
-          }
+
+          TAPanelId ta_panel_id;
+          ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
+          ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          ta_panel.set_ta_panel_id(ta_panel_id);
+
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -148,81 +151,135 @@ TANet TrackAssigner::convertToTANet(Net& net)
 
 void TrackAssigner::buildTAModel(TAModel& ta_model)
 {
-  buildScheduleList(ta_model);
-  updateNetBlockageMap(ta_model);
+  buildSchedule(ta_model);
+  updateNetRectMap(ta_model);
+  cutBlockageList(ta_model);
   buildPanelScaleAxis(ta_model);
   buildTATaskList(ta_model);
   buildLayerPanelList(ta_model);
 }
 
-void TrackAssigner::buildScheduleList(TAModel& ta_model)
+void TrackAssigner::buildSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   irt_int range = 2;
 
-  std::vector<std::vector<TASchedule>> ta_schedule_comb_list;
+  std::vector<std::vector<TAPanelId>> ta_panel_id_comb_list;
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_panel_list.size()); layer_idx++) {
     for (irt_int start_i = 0; start_i < range; start_i++) {
-      std::vector<TASchedule> ta_schedule_list;
+      std::vector<TAPanelId> ta_panel_id_list;
       for (irt_int i = start_i; i < static_cast<irt_int>(layer_panel_list[layer_idx].size()); i += range) {
-        ta_schedule_list.emplace_back(layer_idx, i, RoutingState::kUnrouted);
+        ta_panel_id_list.emplace_back(layer_idx, i);
       }
-      ta_schedule_comb_list.push_back(ta_schedule_list);
+      ta_panel_id_comb_list.push_back(ta_panel_id_list);
     }
   }
-  ta_model.set_ta_schedule_comb_list(ta_schedule_comb_list);
+  ta_model.set_ta_panel_id_comb_list(ta_panel_id_comb_list);
 }
 
-void TrackAssigner::updateNetBlockageMap(TAModel& ta_model)
+void TrackAssigner::updateNetRectMap(TAModel& ta_model)
 {
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
-  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
-
   for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
-    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      if (routing_layer_list[blockage_layer_idx].isPreferH()) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          TAPanel& ta_panel = layer_panel_list[blockage_layer_idx][y];
-          ta_panel.addRect(TASourceType::kBlockage, -1, blockage_real_rect);
-        }
-      } else {
-        for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-          TAPanel& ta_panel = layer_panel_list[blockage_layer_idx][x];
-          ta_panel.addRect(TASourceType::kBlockage, -1, blockage_real_rect);
-        }
-      }
-    }
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), -1, blockage_real_rect);
   }
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
       for (const EXTLayerRect& routing_shape : ta_pin.get_routing_shape_list()) {
-        irt_int shape_layer_idx = routing_shape.get_layer_idx();
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
-        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
-          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-          if (routing_layer_list[shape_layer_idx].isPreferH()) {
-            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              TAPanel& ta_panel = layer_panel_list[shape_layer_idx][y];
-              ta_panel.addRect(TASourceType::kBlockage, ta_net.get_net_idx(), shape_real_rect);
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), ta_net.get_net_idx(), shape_real_rect);
+      }
+    }
+  }
+}
+
+void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
+                                 LayerRect real_rect)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
+
+  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, true);
+  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    if (routing_layer_list[real_rect.get_layer_idx()].isPreferH()) {
+      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+        TAPanel& ta_panel = layer_panel_list[real_rect.get_layer_idx()][y];
+        if (ta_source_type == TASourceType::kBlockAndPin) {
+          ta_panel_id = ta_panel.get_ta_panel_id();
+        }
+        ta_panel.get_source_panel_net_rect_map()[ta_source_type][ta_panel_id][net_idx].push_back(real_rect);
+        void*& region_query = ta_panel.get_source_panel_region_query_map()[ta_source_type][ta_panel_id];
+        if (region_query == nullptr) {
+          region_query = RTAPI_INST.initRegionQuery();
+        }
+        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+      }
+    } else {
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        TAPanel& ta_panel = layer_panel_list[real_rect.get_layer_idx()][x];
+        if (ta_source_type == TASourceType::kBlockAndPin) {
+          ta_panel_id = ta_panel.get_ta_panel_id();
+        }
+        ta_panel.get_source_panel_net_rect_map()[ta_source_type][ta_panel_id][net_idx].push_back(real_rect);
+        void*& region_query = ta_panel.get_source_panel_region_query_map()[ta_source_type][ta_panel_id];
+        if (region_query == nullptr) {
+          region_query = RTAPI_INST.initRegionQuery();
+        }
+        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+      }
+    }
+  }
+}
+
+void TrackAssigner::cutBlockageList(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      RoutingLayer& routing_layer = routing_layer_list[ta_panel.get_layer_idx()];
+      std::map<irt_int, std::vector<LayerRect>>& net_rect_map
+          = ta_panel.get_source_panel_net_rect_map()[TASourceType::kBlockAndPin][ta_panel.get_ta_panel_id()];
+
+      std::vector<LayerRect> new_blockage_list;
+      new_blockage_list.reserve(net_rect_map[-1].size());
+      std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
+
+      for (LayerRect& blockage : net_rect_map[-1]) {
+        bool is_cutting = false;
+        for (auto& [net_idx, net_shape_list] : net_rect_map) {
+          if (net_idx == -1) {
+            continue;
+          }
+          for (LayerRect& net_shape : net_shape_list) {
+            if (!RTUtil::isInside(blockage, net_shape)) {
+              continue;
             }
-          } else {
-            for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-              TAPanel& ta_panel = layer_panel_list[shape_layer_idx][x];
-              ta_panel.addRect(TASourceType::kBlockage, ta_net.get_net_idx(), shape_real_rect);
+            for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+              PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
+              blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
             }
+            is_cutting = true;
           }
         }
+        if (!is_cutting) {
+          new_blockage_list.push_back(blockage);
+        }
       }
+      for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
+        for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
+          new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
+        }
+      }
+      net_rect_map[-1] = new_blockage_list;
     }
   }
 }
@@ -457,18 +514,18 @@ void TrackAssigner::buildLayerPanelList(TAModel& ta_model)
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   size_t total_panel_num = 0;
-  for (std::vector<TASchedule>& ta_schedule_list : ta_model.get_ta_schedule_comb_list()) {
+  for (std::vector<TAPanelId>& ta_panel_id_list : ta_model.get_ta_panel_id_comb_list()) {
     Monitor stage_monitor;
 #pragma omp parallel for
-    for (TASchedule& ta_schedule : ta_schedule_list) {
-      TAPanel& ta_panel = layer_panel_list[ta_schedule.get_layer_idx()][ta_schedule.get_panel_idx()];
+    for (TAPanelId& ta_panel_id : ta_panel_id_list) {
+      TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
       initTANodeMap(ta_panel);
       buildNeighborMap(ta_panel);
       checkTAPanel(ta_panel);
       saveTAPanel(ta_panel);
     }
-    total_panel_num += ta_schedule_list.size();
-    LOG_INST.info(Loc::current(), "Built ", ta_schedule_list.size(), " panels", stage_monitor.getStatsInfo());
+    total_panel_num += ta_panel_id_list.size();
+    LOG_INST.info(Loc::current(), "Built ", ta_panel_id_list.size(), " panels", stage_monitor.getStatsInfo());
   }
   LOG_INST.info(Loc::current(), "Built ", total_panel_num, " panels", monitor.getStatsInfo());
 }
@@ -516,8 +573,8 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
 
 void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
 {
-  if (ta_panel.get_panel_idx() < 0) {
-    LOG_INST.error(Loc::current(), "The panel_idx ", ta_panel.get_panel_idx(), " is error!");
+  if (ta_panel.get_ta_panel_id().get_layer_idx() < 0 || ta_panel.get_ta_panel_id().get_panel_idx() < 0) {
+    LOG_INST.error(Loc::current(), "The ta_panel_id is error!");
   }
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   for (irt_int x_idx = 0; x_idx < ta_node_map.get_x_size(); x_idx++) {
@@ -595,28 +652,25 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
   Monitor monitor;
 
   size_t total_panel_num = 0;
-  for (std::vector<TASchedule>& ta_schedule_list : ta_model.get_ta_schedule_comb_list()) {
+  for (std::vector<TAPanelId>& ta_panel_id_list : ta_model.get_ta_panel_id_comb_list()) {
     Monitor stage_monitor;
 #pragma omp parallel for
-    for (TASchedule& ta_schedule : ta_schedule_list) {
-      iterativeTAPanel(ta_model, ta_schedule);
+    for (TAPanelId& ta_panel_id : ta_panel_id_list) {
+      iterativeTAPanel(ta_model, ta_panel_id);
     }
-    total_panel_num += ta_schedule_list.size();
-    LOG_INST.info(Loc::current(), "Assigned ", ta_schedule_list.size(), " panels", stage_monitor.getStatsInfo());
+    total_panel_num += ta_panel_id_list.size();
+    LOG_INST.info(Loc::current(), "Assigned ", ta_panel_id_list.size(), " panels", stage_monitor.getStatsInfo());
   }
   LOG_INST.info(Loc::current(), "Assigned ", total_panel_num, " panels", monitor.getStatsInfo());
 }
 
-void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TASchedule& ta_schedule)
+void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
 {
   irt_int ta_inner_max_iter_num = DM_INST.getConfig().ta_inner_max_iter_num;
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
+  TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
 
-  TAPanel& ta_panel = layer_panel_list[ta_schedule.get_layer_idx()][ta_schedule.get_panel_idx()];
-  if (ta_panel.skipAssigning()) {
-    return;
-  }
   for (irt_int iter = 1; iter <= ta_inner_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
@@ -1221,20 +1275,20 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
   ta_panel_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
 
   std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(ta_task.get_routing_segment_list());
-    for (auto& [source, region_query] : ta_panel.get_source_region_query_map()) {
-      std::map<std::string, irt_int> drc_number_map;
-      if (source == TASourceType::kSelfPanelResult) {
-        drc_number_map = RTAPI_INST.getViolation(region_query);
-      } else {
-        drc_number_map = RTAPI_INST.getViolation(region_query, real_rect_list);
-      }
-      for (auto& [drc, number] : drc_number_map) {
-        source_drc_number_map[source][drc] += number;
-      }
-    }
-  }
+  // for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+  //   std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(ta_task.get_routing_segment_list());
+  //   for (auto& [source, region_query] : ta_panel.get_source_region_query_map()) {
+  //     std::map<std::string, irt_int> drc_number_map;
+  //     if (source == TASourceType::kSelfPanelResult) {
+  //       drc_number_map = RTAPI_INST.getViolation(region_query);
+  //     } else {
+  //       drc_number_map = RTAPI_INST.getViolation(region_query, real_rect_list);
+  //     }
+  //     for (auto& [drc, number] : drc_number_map) {
+  //       source_drc_number_map[source][drc] += number;
+  //     }
+  //   }
+  // }
 
   irt_int total_drc_number = 0;
   for (auto& [source, drc_number_map] : source_drc_number_map) {
@@ -1372,38 +1426,30 @@ void TrackAssigner::reportTable(TAPanel& ta_panel)
 
 void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), ta_task.get_origin_net_idx(),
+                 ta_task.get_routing_segment_list());
+  }
+}
+
+void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
+                                 std::vector<Segment<LayerCoord>>& segment_list)
+{
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
+  std::vector<ids::DRCRect> ids_drc_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
 
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    for (LayerRect& real_rect : DM_INST.getRealRectList(ta_task.get_routing_segment_list())) {
-      irt_int real_rect_layer_idx = real_rect.get_layer_idx();
-      for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
-        LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-        PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-        if (routing_layer_list[real_rect_layer_idx].isPreferH()) {
-          for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-            TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][y];
-            if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
-              target_panel.addRect(TASourceType::kSelfPanelResult, ta_task.get_origin_net_idx(), real_rect);
-            } else {
-              target_panel.addRect(TASourceType::kOtherPanelResult, ta_task.get_origin_net_idx(), real_rect);
-            }
-          }
-        } else {
-          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-            TAPanel& target_panel = layer_panel_list[real_rect_layer_idx][x];
-            if (target_panel.get_layer_idx() == ta_panel.get_layer_idx() && target_panel.get_panel_idx() == ta_panel.get_panel_idx()) {
-              target_panel.addRect(TASourceType::kSelfPanelResult, ta_task.get_origin_net_idx(), real_rect);
-            } else {
-              target_panel.addRect(TASourceType::kOtherPanelResult, ta_task.get_origin_net_idx(), real_rect);
-            }
-          }
-        }
-      }
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    if (first_layer_idx != second_layer_idx) {
+      LOG_INST.error(Loc::current(), "The segments are on different layers!");
+    } else {
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
+      addRectToEnv(ta_model, ta_source_type, ta_panel_id, net_idx, wire_rect);
     }
   }
 }
