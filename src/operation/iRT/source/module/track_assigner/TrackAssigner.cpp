@@ -184,21 +184,25 @@ void TrackAssigner::updateNetRectMap(TAModel& ta_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), -1, blockage_real_rect);
+    addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), -1, blockage_real_rect, true);
   }
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
       for (const EXTLayerRect& routing_shape : ta_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), ta_net.get_net_idx(), shape_real_rect);
+        addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), ta_net.get_net_idx(), shape_real_rect, true);
       }
     }
   }
 }
 
 void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
-                                 LayerRect real_rect)
+                                 LayerRect real_rect, bool is_routing)
 {
+  if (is_routing == false) {
+    return;
+  }
+
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -1276,8 +1280,8 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
 
   std::vector<ids::DRCRect> ids_rect_list;
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    for (LayerRect& real_rect : DM_INST.getRealRectList(ta_task.get_routing_segment_list())) {
-      ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(ta_task.get_origin_net_idx(), real_rect, true));
+    for (DRCRect& drc_rect : DM_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+      ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing()));
     }
   }
 
@@ -1436,29 +1440,9 @@ void TrackAssigner::reportTable(TAPanel& ta_panel)
 void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), ta_task.get_origin_net_idx(),
-                 ta_task.get_routing_segment_list());
-  }
-}
-
-void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
-                                 std::vector<Segment<LayerCoord>>& segment_list)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::vector<ids::DRCRect> ids_drc_rect_list;
-  for (Segment<LayerCoord>& segment : segment_list) {
-    LayerCoord& first_coord = segment.get_first();
-    LayerCoord& second_coord = segment.get_second();
-
-    irt_int first_layer_idx = first_coord.get_layer_idx();
-    irt_int second_layer_idx = second_coord.get_layer_idx();
-    if (first_layer_idx != second_layer_idx) {
-      LOG_INST.error(Loc::current(), "The segments are on different layers!");
-    } else {
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
-      LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
-      addRectToEnv(ta_model, ta_source_type, ta_panel_id, net_idx, wire_rect);
+    for (DRCRect& drc_rect : DM_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+      addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
+                   drc_rect.get_is_routing());
     }
   }
 }

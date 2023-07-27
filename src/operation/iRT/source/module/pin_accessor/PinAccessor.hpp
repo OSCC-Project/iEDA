@@ -80,8 +80,6 @@ void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
 bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx,
                                std::vector<Segment<LayerCoord>>& segment_list);
 void updateNetEnclosureMap(PAModel& pa_model);
-void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx,
-                               std::vector<Segment<LayerCoord>>& segment_list);
 void eliminateViaConflict(PAModel& pa_model);
 void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
 void selectByNetDistance(PANet& pa_net);

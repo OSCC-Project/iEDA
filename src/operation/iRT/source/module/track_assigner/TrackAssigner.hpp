@@ -57,7 +57,8 @@ class TrackAssigner
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
   void updateNetRectMap(TAModel& ta_model);
-  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx, LayerRect real_rect);
+  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx, LayerRect real_rect,
+                    bool is_routing);
   void cutBlockageList(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
@@ -118,8 +119,6 @@ class TrackAssigner
   void countTAPanel(TAPanel& ta_panel);
   void reportTable(TAPanel& ta_panel);
   void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
-                    std::vector<Segment<LayerCoord>>& segment_list);
   void reportTAModel(TAModel& ta_model);
   void countTAModel(TAModel& ta_model);
   void reportTable(TAModel& ta_model);

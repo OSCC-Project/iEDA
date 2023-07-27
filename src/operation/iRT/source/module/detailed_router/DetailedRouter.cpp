@@ -292,46 +292,10 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
       for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node_node->value().get_routing_tree())) {
         segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
       }
-      addRectToEnv(dr_model, DRSourceType::kPanelResult, DRBoxId(), dr_net.get_net_idx(), segment_list);
-    }
-  }
-}
-
-void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, irt_int net_idx,
-                                  std::vector<Segment<LayerCoord>>& segment_list)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-  std::vector<ids::DRCRect> ids_drc_rect_list;
-  for (Segment<LayerCoord>& segment : segment_list) {
-    LayerCoord& first_coord = segment.get_first();
-    LayerCoord& second_coord = segment.get_second();
-
-    irt_int first_layer_idx = first_coord.get_layer_idx();
-    irt_int second_layer_idx = second_coord.get_layer_idx();
-    if (first_layer_idx != second_layer_idx) {
-      RTUtil::sortASC(first_layer_idx, second_layer_idx);
-      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
-
-        LayerRect& above_enclosure = via_master.get_above_enclosure();
-        LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
-        addRectToEnv(dr_model, dr_source_type, dr_box_id, net_idx, offset_above_enclosure, true);
-
-        LayerRect& below_enclosure = via_master.get_below_enclosure();
-        LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
-        addRectToEnv(dr_model, dr_source_type, dr_box_id, net_idx, offset_below_enclosure, true);
-
-        for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
-          LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
-          addRectToEnv(dr_model, dr_source_type, dr_box_id, net_idx, offset_cut_shape, false);
-        }
+      for (DRCRect& drc_rect : DM_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
+        addRectToEnv(dr_model, DRSourceType::kPanelResult, DRBoxId(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
+                     drc_rect.get_is_routing());
       }
-    } else {
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
-      LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
-      addRectToEnv(dr_model, dr_source_type, dr_box_id, net_idx, wire_rect, true);
     }
   }
 }
@@ -1028,7 +992,7 @@ bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end
   // std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentListByPathHead(dr_box);
   // routing_segment_list.emplace_back(*start_node, *end_node);
 
-  // std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(routing_segment_list);
+  // std::vector<LayerRect> real_rect_list = DM_INST.getDRCRectList(routing_segment_list);
 
   // bool pass_checking = true;
   // if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockage) {
@@ -1419,7 +1383,7 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
         }
       }
     }
-    // std::vector<LayerRect> real_rect_list = DM_INST.getRealRectList(routing_segment_list);
+    // std::vector<LayerRect> real_rect_list = DM_INST.getDRCRectList(routing_segment_list);
     // for (auto& [source, region_query] : dr_box.get_source_region_query_map()) {
     //   std::map<std::string, irt_int> drc_num_map;
     //   if (source == DRSourceType::kSelfBoxResult) {
@@ -1615,8 +1579,10 @@ void DetailedRouter::reportTable(DRBox& dr_box)
 void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
 {
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    addRectToEnv(dr_model, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), dr_task.get_origin_net_idx(),
-                 dr_task.get_routing_segment_list());
+    for (DRCRect& drc_rect : DM_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
+      addRectToEnv(dr_model, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
+                   drc_rect.get_is_routing());
+    }
   }
 }
 
