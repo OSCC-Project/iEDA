@@ -390,21 +390,9 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 
 void ViolationRepairer::updateVRGCellMap(VRModel& vr_model, VRNet& vr_net)
 {
-  // ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  // EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  // std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
-  // for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
-  //   for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
-  //     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-  //     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-  //     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-  //       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-  //         layer_gcell_map[real_rect.get_layer_idx()][x][y].addRect(VRSourceType::kNet, vr_net.get_net_idx(), real_rect);
-  //       }
-  //     }
-  //   }
-  // }
+  for (DRCRect& drc_rect : DM_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+    addRectToEnv(vr_model, VRSourceType::kNetResult, drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing());
+  }
 }
 
 void ViolationRepairer::checkVRModel(VRModel& vr_model)
@@ -506,7 +494,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   // }
   // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
   //   std::vector<ids::DRCRect> ids_rect_list;
-  //   for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+  //   for (const LayerRect& real_rect : DM_INST.getDRCRectList(vr_net.get_vr_result_tree())) {
   //     ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true));
   //   }
   //   for (auto& [source, region_query] : source_region_query_map) {
