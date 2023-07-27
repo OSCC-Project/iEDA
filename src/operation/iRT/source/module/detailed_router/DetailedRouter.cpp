@@ -1395,6 +1395,8 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = dr_box_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_box_stat.get_cut_via_number_map();
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = dr_box_stat.get_source_number_map();
 
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = dr_task.get_routing_segment_list();
@@ -1429,6 +1431,19 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
     //     source_drc_number_map[source][drc] += num;
     //   }
     // }
+  }
+
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      rule_number_map[drc] += number;
+    }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    irt_int total_number = 0;
+    for (auto& [drc, number] : drc_number_map) {
+      total_number += number;
+    }
+    source_number_map[GetDRSourceTypeName()(source)] = total_number;
   }
 
   double total_wire_length = 0;
@@ -1473,6 +1488,8 @@ void DetailedRouter::reportTable(DRBox& dr_box)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = dr_box_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_box_stat.get_cut_via_number_map();
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = dr_box_stat.get_source_number_map();
   double total_wire_length = dr_box_stat.get_total_wire_length();
   double total_prefer_wire_length = dr_box_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = dr_box_stat.get_total_nonprefer_wire_length();
@@ -1505,68 +1522,64 @@ void DetailedRouter::reportTable(DRBox& dr_box)
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
-  // init item column/row map
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  item_column_map["DRC\\Source"] = column++;
-  // report drc info
+  // count drc rule
+  std::set<std::string> drc_rule_set;
   for (auto& [source, drc_number_map] : source_drc_number_map) {
-    item_column_map[GetDRSourceTypeName()(source)] = column++;
+    for (auto& [drc_rule, number] : drc_number_map) {
+      drc_rule_set.insert(drc_rule);
+    }
   }
-  item_column_map["Total"] = column;
+  std::vector<std::string> drc_rule_list(drc_rule_set.begin(), drc_rule_set.end());
 
+  // init item column/row map
   irt_int row = 0;
   std::map<std::string, irt_int> item_row_map;
-  item_row_map["DRC\\Source"] = row++;
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    item_row_map[drc] = row++;
+  for (auto& [drc_rule, drc_number] : rule_number_map) {
+    item_row_map[drc_rule] = ++row;
   }
-  item_row_map["Total"] = row;
+  item_row_map["Total"] = ++row;
+
+  irt_int column = 0;
+  std::map<std::string, irt_int> item_column_map;
+  for (auto& [source, drc_number_map] : source_number_map) {
+    item_column_map[source] = ++column;
+  }
+  item_column_map["Total"] = ++column;
 
   // build table
   fort::char_table drc_table;
   drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
-
   drc_table[0][0] = "DRC\\Source";
-
-  // column item
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    std::string source_name = GetDRSourceTypeName()(source);
-    drc_table[0][item_column_map[source_name]] = source_name;
+  // first row item
+  for (auto& [drc_rule, row] : item_row_map) {
+    drc_table[row][0] = drc_rule;
   }
-  drc_table[0][item_column_map["Total"]] = "Total";
-  // row item
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    drc_table[item_row_map[drc]][0] = drc;
-  }
-  drc_table[item_row_map["Total"]][0] = "Total";
+  // first column item
   drc_table << fort::header;
+  for (auto& [source_name, column] : item_column_map) {
+    drc_table[0][column] = source_name;
+  }
   // element
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int column = item_column_map[GetDRSourceTypeName()(source)];
-    for (auto& [drc, number] : drc_number_map) {
-      drc_table[item_row_map[drc]][column] = RTUtil::getString(number);
+    for (auto& [drc_rule, row] : item_row_map) {
+      if (RTUtil::exist(source_drc_number_map[source], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_number_map[source][drc_rule]);
+      } else {
+        drc_table[row][column] = "0";
+      }
     }
   }
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
-    }
+  // last row
+  for (auto& [source, total_number] : source_number_map) {
     irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[GetDRSourceTypeName()(source)];
+    irt_int column = item_column_map[source];
     drc_table[row][column] = RTUtil::getString(total_number);
   }
-
-  std::map<std::string, irt_int> drc_total_number_map;
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      drc_total_number_map[drc] += number;
-    }
-  }
-  for (auto& [drc, total_number] : drc_total_number_map) {
-    irt_int row = item_row_map[drc];
+  // last column
+  for (auto& [drc_rule, total_number] : rule_number_map) {
+    irt_int row = item_row_map[drc_rule];
     irt_int column = item_column_map["Total"];
     drc_table[row][column] = RTUtil::getString(total_number);
   }
@@ -1622,6 +1635,8 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = dr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_model_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = dr_model_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = dr_model_stat.get_source_number_map();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
@@ -1645,6 +1660,18 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
         }
       }
     }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      rule_number_map[drc] += number;
+    }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    irt_int total_number = 0;
+    for (auto& [drc, number] : drc_number_map) {
+      total_number += number;
+    }
+    source_number_map[GetDRSourceTypeName()(source)] = total_number;
   }
 
   double total_wire_length = 0;
@@ -1689,6 +1716,8 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = dr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_model_stat.get_cut_via_number_map();
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_model_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = dr_model_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = dr_model_stat.get_source_number_map();
   double total_wire_length = dr_model_stat.get_total_wire_length();
   double total_prefer_wire_length = dr_model_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = dr_model_stat.get_total_nonprefer_wire_length();
@@ -1722,67 +1751,54 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
   // init item column/row map
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  item_column_map["DRC\\Source"] = column++;
-  // report drc info
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    item_column_map[GetDRSourceTypeName()(source)] = column++;
-  }
-  item_column_map["Total"] = column;
-
   irt_int row = 0;
   std::map<std::string, irt_int> item_row_map;
-  item_row_map["DRC\\Source"] = row++;
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    item_row_map[drc] = row++;
+  for (auto& [drc_rule, drc_number] : rule_number_map) {
+    item_row_map[drc_rule] = ++row;
   }
-  item_row_map["Total"] = row;
+  item_row_map["Total"] = ++row;
+
+  irt_int column = 0;
+  std::map<std::string, irt_int> item_column_map;
+  for (auto& [source, drc_number_map] : source_number_map) {
+    item_column_map[source] = ++column;
+  }
+  item_column_map["Total"] = ++column;
 
   // build table
   fort::char_table drc_table;
   drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
-
   drc_table[0][0] = "DRC\\Source";
-
-  // column item
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    std::string source_name = GetDRSourceTypeName()(source);
-    drc_table[0][item_column_map[source_name]] = source_name;
+  // first row item
+  for (auto& [drc_rule, row] : item_row_map) {
+    drc_table[row][0] = drc_rule;
   }
-  drc_table[0][item_column_map["Total"]] = "Total";
-  // row item
-  for (auto& [drc, number] : source_drc_number_map.begin()->second) {
-    drc_table[item_row_map[drc]][0] = drc;
-  }
-  drc_table[item_row_map["Total"]][0] = "Total";
+  // first column item
   drc_table << fort::header;
+  for (auto& [source_name, column] : item_column_map) {
+    drc_table[0][column] = source_name;
+  }
   // element
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int column = item_column_map[GetDRSourceTypeName()(source)];
-    for (auto& [drc, number] : drc_number_map) {
-      drc_table[item_row_map[drc]][column] = RTUtil::getString(number);
+    for (auto& [drc_rule, row] : item_row_map) {
+      if (RTUtil::exist(source_drc_number_map[source], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_number_map[source][drc_rule]);
+      } else {
+        drc_table[row][column] = "0";
+      }
     }
   }
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
-    }
+  // last row
+  for (auto& [source, total_number] : source_number_map) {
     irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[GetDRSourceTypeName()(source)];
+    irt_int column = item_column_map[source];
     drc_table[row][column] = RTUtil::getString(total_number);
   }
-
-  std::map<std::string, irt_int> drc_total_number_map;
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      drc_total_number_map[drc] += number;
-    }
-  }
-  for (auto& [drc, total_number] : drc_total_number_map) {
-    irt_int row = item_row_map[drc];
+  // last column
+  for (auto& [drc_rule, total_number] : rule_number_map) {
+    irt_int row = item_row_map[drc_rule];
     irt_int column = item_column_map["Total"];
     drc_table[row][column] = RTUtil::getString(total_number);
   }

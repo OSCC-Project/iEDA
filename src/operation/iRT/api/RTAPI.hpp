@@ -90,6 +90,7 @@ class RTAPI
   std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
   LayerRect convertToLayerRect(ids::DRCRect ids_rect);
   ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
+  void plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
 
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
