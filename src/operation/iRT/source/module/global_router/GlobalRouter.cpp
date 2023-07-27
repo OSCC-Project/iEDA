@@ -770,6 +770,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   if (gr_net.get_routing_state() == RoutingState::kRouted) {
     return;
   }
+  // ouputAIDataset(gr_model, gr_net);
   initSingleNet(gr_model, gr_net);
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
@@ -786,6 +787,76 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   }
   updateNetResult(gr_model, gr_net);
   resetSingleNet(gr_model);
+}
+
+void GlobalRouter::ouputAIDataset(GRModel& gr_model, GRNet& gr_net)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  static size_t record_net_num = 0;
+  static std::string ai_file_path;
+  static std::ofstream* ai_file;
+
+  if (record_net_num == 0) {
+    std::string def_file_path = DM_INST.getHelper().get_def_file_path();
+    ai_file_path = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".ai.txt");
+    ai_file = RTUtil::getOutputFileStream(ai_file_path);
+    RTUtil::pushStream(ai_file, "def_file_path", " ", def_file_path, "\n");
+  }
+  RTUtil::pushStream(ai_file, "net", " ", gr_net.get_net_idx(), "\n");
+  RTUtil::pushStream(ai_file, "{", "\n");
+  RTUtil::pushStream(ai_file, "pin_list", "\n");
+  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+    RTUtil::pushStream(ai_file, "pin", " ", gr_pin.get_pin_idx(), "\n");
+    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+      RTUtil::pushStream(ai_file, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
+    }
+  }
+  RTUtil::pushStream(ai_file, "cost_map", "\n");
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+  BoundingBox& bounding_box = gr_net.get_bounding_box();
+  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+    for (irt_int x = bounding_box.get_grid_lb_x(); x <= bounding_box.get_grid_rt_x(); x++) {
+      for (irt_int y = bounding_box.get_grid_lb_y(); y <= bounding_box.get_grid_rt_y(); y++) {
+        GRNode& gr_node = layer_node_map[layer_idx][x][y];
+        double east_cost = -1;
+        double west_cost = -1;
+        double south_cost = -1;
+        double north_cost = -1;
+        double up_cost = -1;
+        double down_cost = -1;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          east_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kEast);
+          west_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kWest);
+        } else {
+          south_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kSouth);
+          north_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kNorth);
+        }
+        if (layer_idx != 0) {
+          down_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kDown);
+        }
+        if (layer_idx != (static_cast<irt_int>(layer_node_map.size()) - 1)) {
+          up_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kUp);
+        }
+        RTUtil::pushStream(ai_file, x, " ", y, " ", layer_idx);
+        RTUtil::pushStream(ai_file, " ", "E", " ", east_cost);
+        RTUtil::pushStream(ai_file, " ", "W", " ", west_cost);
+        RTUtil::pushStream(ai_file, " ", "S", " ", south_cost);
+        RTUtil::pushStream(ai_file, " ", "N", " ", north_cost);
+        RTUtil::pushStream(ai_file, " ", "U", " ", up_cost);
+        RTUtil::pushStream(ai_file, " ", "D", " ", down_cost);
+        RTUtil::pushStream(ai_file, "\n");
+      }
+    }
+  }
+  RTUtil::pushStream(ai_file, "}", "\n");
+  record_net_num++;
+
+  if (record_net_num == gr_model.get_gr_net_list().size()) {
+    RTUtil::closeFileStream(ai_file);
+    LOG_INST.info(Loc::current(), "The result has been written to '", ai_file_path, "'!");
+    exit(0);
+  }
 }
 
 void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)

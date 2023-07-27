@@ -80,6 +80,7 @@ class GlobalRouter
   void resetGRModel(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
+  void ouputAIDataset(GRModel& gr_model, GRNet& gr_net);
   void initSingleNet(GRModel& gr_model, GRNet& gr_net);
   std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
   void initSingleTask(GRModel& gr_model, GRTask& gr_task);
