@@ -52,7 +52,7 @@ class RegionQuery
   std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
   std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
   LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
+  void plotRegionQuery(const std::vector<ids::DRCRect>& drc_rect_list);
 
  private:
   std::map<irt_int, std::vector<RQShape>> _obj_id_shape_map;
