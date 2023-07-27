@@ -60,15 +60,20 @@ ViolationRepairer* ViolationRepairer::_vr_instance = nullptr;
 
 void ViolationRepairer::repairNetList(std::vector<Net>& net_list)
 {
+  VRModel vr_model = init(net_list);
+  iterative(vr_model);
+  update(vr_model);
+}
+
+#if 1  // init
+
+VRModel ViolationRepairer::init(std::vector<Net>& net_list)
+{
   VRModel vr_model = initVRModel(net_list);
   buildVRModel(vr_model);
   checkVRModel(vr_model);
-  repairVRModel(vr_model);
-  updateVRModel(vr_model);
-  reportVRModel(vr_model);
+  return vr_model;
 }
-
-#if 1  // build vr_model
 
 VRModel ViolationRepairer::initVRModel(std::vector<Net>& net_list)
 {
@@ -77,19 +82,14 @@ VRModel ViolationRepairer::initVRModel(std::vector<Net>& net_list)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   VRModel vr_model;
-  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
-  layer_gcell_map.resize(routing_layer_list.size());
-  for (size_t layer_idx = 0; layer_idx < layer_gcell_map.size(); layer_idx++) {
-    GridMap<VRGCell>& gcell_map = layer_gcell_map[layer_idx];
-    gcell_map.init(die.getXSize(), die.getYSize());
-    for (irt_int x = 0; x < die.getXSize(); x++) {
-      for (irt_int y = 0; y < die.getYSize(); y++) {
-        VRGCell& vr_gcell = gcell_map[x][y];
-        vr_gcell.set_real_rect(RTUtil::getRealRect(x, y, gcell_axis));
-        for (VRSourceType vr_source_type : {VRSourceType::kBlockage, VRSourceType::kNet}) {
-          vr_gcell.get_source_region_query_map()[vr_source_type] = RTAPI_INST.initRegionQuery();
-        }
-      }
+  GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
+  vr_gcell_map.init(die.getXSize(), die.getYSize());
+  for (irt_int x = 0; x < die.getXSize(); x++) {
+    for (irt_int y = 0; y < die.getYSize(); y++) {
+      VRGCell& vr_gcell = vr_gcell_map[x][y];
+      vr_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
+      vr_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
+      vr_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
     }
   }
   vr_model.set_vr_net_list(convertToVRNetList(net_list));
@@ -124,112 +124,123 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
 {
   updateNetRectMap(vr_model);
+  cutBlockageList(vr_model);
+  updateVRResultTree(vr_model);
 }
 
 void ViolationRepairer::updateNetRectMap(VRModel& vr_model)
 {
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
+  std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
+
+  for (Blockage& routing_blockage : routing_blockage_list) {
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, -1, blockage_real_rect, true);
+  }
+  for (Blockage& cut_blockage : cut_blockage_list) {
+    LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
+    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, -1, blockage_real_rect, false);
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, vr_net.get_net_idx(), shape_real_rect, true);
+      }
+      for (EXTLayerRect& cut_shape : vr_pin.get_cut_shape_list()) {
+        LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
+        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, vr_net.get_net_idx(), shape_real_rect, false);
+      }
+    }
+  }
+}
+
+void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing)
+{
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
-  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
+  GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
 
-  for (const Blockage& routing_blockage : routing_blockage_list) {
-    irt_int blockage_layer_idx = routing_blockage.get_layer_idx();
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), blockage_layer_idx);
-    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(blockage_real_rect)) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          layer_gcell_map[blockage_layer_idx][x][y].addRect(VRSourceType::kBlockage, -1, blockage_real_rect);
+  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, is_routing);
+  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+        VRGCell& vr_gcell = vr_gcell_map[x][y];
+        if (is_routing) {
+          vr_gcell.get_source_routing_net_rect_map()[vr_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
+        } else {
+          vr_gcell.get_source_cut_net_rect_map()[vr_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
         }
+        void*& region_query = vr_gcell.get_source_region_query_map()[vr_source_type];
+        if (region_query == nullptr) {
+          region_query = RTAPI_INST.initRegionQuery();
+        }
+        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
       }
     }
   }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        irt_int shape_layer_idx = routing_shape.get_layer_idx();
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), shape_layer_idx);
-        for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(shape_real_rect)) {
-          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              layer_gcell_map[shape_layer_idx][x][y].addRect(VRSourceType::kBlockage, vr_net.get_net_idx(), shape_real_rect);
+}
+
+void ViolationRepairer::cutBlockageList(VRModel& vr_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
+
+  for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
+      VRGCell& vr_gcell = vr_gcell_map[x][y];
+
+      for (auto& [routing_layer_idx, net_rect_map] : vr_gcell.get_source_routing_net_rect_map()[VRSourceType::kBlockAndPin]) {
+        RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
+
+        std::vector<LayerRect> new_blockage_list;
+        new_blockage_list.reserve(net_rect_map[-1].size());
+        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
+
+        for (LayerRect& blockage : net_rect_map[-1]) {
+          bool is_cutting = false;
+          for (auto& [net_idx, net_shape_list] : net_rect_map) {
+            if (net_idx == -1) {
+              continue;
+            }
+            for (LayerRect& net_shape : net_shape_list) {
+              if (!RTUtil::isInside(blockage, net_shape)) {
+                continue;
+              }
+              for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
+                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
+              }
+              is_cutting = true;
             }
           }
-        }
-      }
-    }
-  }
-}
-
-#endif
-
-#if 1  // check ra_model
-
-void ViolationRepairer::checkVRModel(VRModel& vr_model)
-{
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    if (vr_net.get_net_idx() < 0) {
-      LOG_INST.error(Loc::current(), "The net idx : ", vr_net.get_net_idx(), " is illegal!");
-    }
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = vr_pin.get_access_point_list();
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "The pin ", vr_pin.get_pin_idx(), " access point list is empty!");
-      }
-      for (AccessPoint& access_point : access_point_list) {
-        if (access_point.get_type() == AccessPointType::kNone) {
-          LOG_INST.error(Loc::current(), "The access point type is wrong!");
-        }
-        bool is_legal = false;
-        for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
-              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
-            is_legal = true;
-            break;
+          if (!is_cutting) {
+            new_blockage_list.push_back(blockage);
           }
         }
-        if (!is_legal) {
-          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
+        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
+          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
+            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
+          }
         }
+        net_rect_map[-1] = new_blockage_list;
       }
     }
   }
 }
 
-#endif
-
-#if 1  // repair ra_model
-
-void ViolationRepairer::repairVRModel(VRModel& vr_model)
+void ViolationRepairer::updateVRResultTree(VRModel& vr_model)
 {
-  Monitor monitor;
-
-  std::vector<VRNet>& vr_net_list = vr_model.get_vr_net_list();
-
-  irt_int batch_size = RTUtil::getBatchSize(vr_net_list.size());
-
-  Monitor stage_monitor;
-  for (size_t i = 0; i < vr_net_list.size(); i++) {
-    repairVRNet(vr_model, vr_net_list[i]);
-    if ((i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Repaired ", (i + 1), " nets", stage_monitor.getStatsInfo());
-    }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    buildKeyCoordPinMap(vr_net);
+    buildCoordTree(vr_net);
+    buildPHYNodeResult(vr_net);
+    updateVRGCellMap(vr_model, vr_net);
   }
-  LOG_INST.info(Loc::current(), "Repaired ", vr_net_list.size(), " nets", monitor.getStatsInfo());
-}
-
-void ViolationRepairer::repairVRNet(VRModel& vr_model, VRNet& vr_net)
-{
-  buildKeyCoordPinMap(vr_net);
-  buildCoordTree(vr_net);
-  buildPHYNodeResult(vr_net);
-  repairMinArea(vr_net);
-  updateNetRectMap(vr_model, vr_net);
 }
 
 void ViolationRepairer::buildKeyCoordPinMap(VRNet& vr_net)
@@ -377,23 +388,50 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
   return (new TNode<PHYNode>(phy_node));
 }
 
-void ViolationRepairer::repairMinArea(VRNet& vr_net)
+void ViolationRepairer::updateVRGCellMap(VRModel& vr_model, VRNet& vr_net)
 {
+  // ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  // EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+
+  // std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
+  // for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+  //   for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
+  //     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+  //     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+  //     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+  //       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+  //         layer_gcell_map[real_rect.get_layer_idx()][x][y].addRect(VRSourceType::kNet, vr_net.get_net_idx(), real_rect);
+  //       }
+  //     }
+  //   }
+  // }
 }
 
-void ViolationRepairer::updateNetRectMap(VRModel& vr_model, VRNet& vr_net)
+void ViolationRepairer::checkVRModel(VRModel& vr_model)
 {
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  std::vector<GridMap<VRGCell>>& layer_gcell_map = vr_model.get_layer_gcell_map();
-  for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
-    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(real_rect)) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          layer_gcell_map[real_rect.get_layer_idx()][x][y].addRect(VRSourceType::kNet, vr_net.get_net_idx(), real_rect);
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    if (vr_net.get_net_idx() < 0) {
+      LOG_INST.error(Loc::current(), "The net idx : ", vr_net.get_net_idx(), " is illegal!");
+    }
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      std::vector<AccessPoint>& access_point_list = vr_pin.get_access_point_list();
+      if (access_point_list.empty()) {
+        LOG_INST.error(Loc::current(), "The pin ", vr_pin.get_pin_idx(), " access point list is empty!");
+      }
+      for (AccessPoint& access_point : access_point_list) {
+        if (access_point.get_type() == AccessPointType::kNone) {
+          LOG_INST.error(Loc::current(), "The access point type is wrong!");
+        }
+        bool is_legal = false;
+        for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
+              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
+            is_legal = true;
+            break;
+          }
+        }
+        if (!is_legal) {
+          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
         }
       }
     }
@@ -402,24 +440,25 @@ void ViolationRepairer::updateNetRectMap(VRModel& vr_model, VRNet& vr_net)
 
 #endif
 
-#if 1  // update ra_model
+#if 1  // iterative
 
-void ViolationRepairer::updateVRModel(VRModel& vr_model)
+void ViolationRepairer::iterative(VRModel& vr_model)
 {
-  updateOriginVRResultTree(vr_model);
-}
+  irt_int vr_iter_num = 1;
+  for (irt_int iter = 1; iter <= vr_iter_num; iter++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_iter_num, ") ******");
 
-void ViolationRepairer::updateOriginVRResultTree(VRModel& vr_model)
-{
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    Net* origin_net = vr_net.get_origin_net();
-    origin_net->set_vr_result_tree(vr_net.get_vr_result_tree());
+    repairVRModel(vr_model);
+    reportVRModel(vr_model);
+
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
   }
 }
 
-#endif
-
-#if 1  // report ra_model
+void ViolationRepairer::repairVRModel(VRModel& vr_model)
+{
+}
 
 void ViolationRepairer::reportVRModel(VRModel& vr_model)
 {
@@ -429,106 +468,83 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
-  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  // irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  // std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  VRModelStat& vr_model_stat = vr_model.get_vr_model_stat();
-  std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
-  std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
-  std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
-  std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
-  std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
+  // VRModelStat vr_model_stat;
 
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
-      PHYNode& phy_node = phy_node_node->value();
-      if (phy_node.isType<WireNode>()) {
-        WireNode& wire_node = phy_node.getNode<WireNode>();
-        irt_int layer_idx = wire_node.get_layer_idx();
-        double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
-        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
-          routing_prefer_wire_length_map[layer_idx] += wire_length;
-        } else {
-          routing_nonprefer_wire_length_map[layer_idx] += wire_length;
-        }
-        routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
-      } else if (phy_node.isType<ViaNode>()) {
-        ViaNode& via_node = phy_node.getNode<ViaNode>();
-        cut_via_number_map[via_node.get_via_master_idx().get_below_layer_idx()]++;
-      }
-    }
-  }
+  // std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
+  // std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
+  // std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
+  // std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
+  // std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
 
-  std::map<VRSourceType, void*> source_region_query_map;
-  for (auto& [source, ids_rect_list] : getSourceIDSRectMap(vr_model)) {
-    source_region_query_map[source] = RTAPI_INST.initRegionQuery();
-    RTAPI_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    std::vector<ids::DRCRect> ids_rect_list;
-    for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
-      ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true));
-    }
-    for (auto& [source, region_query] : source_region_query_map) {
-      for (auto& [drc, number] : RTAPI_INST.getViolation(region_query, ids_rect_list)) {
-        source_drc_number_map[source][drc] += number;
-      }
-    }
-  }
+  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+  //   for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
+  //     PHYNode& phy_node = phy_node_node->value();
+  //     if (phy_node.isType<WireNode>()) {
+  //       WireNode& wire_node = phy_node.getNode<WireNode>();
+  //       irt_int layer_idx = wire_node.get_layer_idx();
+  //       double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
+  //       if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
+  //         routing_prefer_wire_length_map[layer_idx] += wire_length;
+  //       } else {
+  //         routing_nonprefer_wire_length_map[layer_idx] += wire_length;
+  //       }
+  //       routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
+  //     } else if (phy_node.isType<ViaNode>()) {
+  //       ViaNode& via_node = phy_node.getNode<ViaNode>();
+  //       cut_via_number_map[via_node.get_via_master_idx().get_below_layer_idx()]++;
+  //     }
+  //   }
+  // }
 
-  double total_wire_length = 0;
-  double total_prefer_wire_length = 0;
-  double total_nonprefer_wire_length = 0;
-  irt_int total_via_number = 0;
-  irt_int total_drc_number = 0;
-  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    total_wire_length += wire_length;
-  }
-  for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
-    total_prefer_wire_length += prefer_wire_length;
-  }
-  for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
-    total_nonprefer_wire_length += nonprefer_wire_length;
-  }
-  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
-    total_via_number += via_number;
-  }
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
-    }
-  }
-  vr_model_stat.set_total_wire_length(total_wire_length);
-  vr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
-  vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
-  vr_model_stat.set_total_via_number(total_via_number);
-  vr_model_stat.set_total_drc_number(total_drc_number);
-}
+  // std::map<VRSourceType, void*> source_region_query_map;
+  // for (auto& [source, ids_rect_list] : getSourceIDSRectMap(vr_model)) {
+  //   source_region_query_map[source] = RTAPI_INST.initRegionQuery();
+  //   RTAPI_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
+  // }
+  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+  //   std::vector<ids::DRCRect> ids_rect_list;
+  //   for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
+  //     ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true));
+  //   }
+  //   for (auto& [source, region_query] : source_region_query_map) {
+  //     for (auto& [drc, number] : RTAPI_INST.getViolation(region_query, ids_rect_list)) {
+  //       source_drc_number_map[source][drc] += number;
+  //     }
+  //   }
+  // }
 
-std::map<VRSourceType, std::vector<ids::DRCRect>> ViolationRepairer::getSourceIDSRectMap(VRModel& vr_model)
-{
-  std::map<VRSourceType, std::vector<ids::DRCRect>> source_ids_rect_map;
-  for (const Blockage& routing_blockage : DM_INST.getDatabase().get_routing_blockage_list()) {
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(-1, blockage_real_rect, true);
-    source_ids_rect_map[VRSourceType::kBlockage].push_back(ids_rect);
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), shape_real_rect, true);
-        source_ids_rect_map[VRSourceType::kBlockage].push_back(ids_rect);
-      }
-    }
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (const LayerRect& real_rect : DM_INST.getRealRectList(vr_net.get_vr_result_tree())) {
-      ids::DRCRect ids_rect = RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true);
-      source_ids_rect_map[VRSourceType::kNet].push_back(ids_rect);
-    }
-  }
-  return source_ids_rect_map;
+  // double total_wire_length = 0;
+  // double total_prefer_wire_length = 0;
+  // double total_nonprefer_wire_length = 0;
+  // irt_int total_via_number = 0;
+  // irt_int total_drc_number = 0;
+  // for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+  //   total_wire_length += wire_length;
+  // }
+  // for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
+  //   total_prefer_wire_length += prefer_wire_length;
+  // }
+  // for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
+  //   total_nonprefer_wire_length += nonprefer_wire_length;
+  // }
+  // for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+  //   total_via_number += via_number;
+  // }
+  // for (auto& [source, drc_number_map] : source_drc_number_map) {
+  //   for (auto& [drc, number] : drc_number_map) {
+  //     total_drc_number += number;
+  //   }
+  // }
+  // vr_model_stat.set_total_wire_length(total_wire_length);
+  // vr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  // vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
+  // vr_model_stat.set_total_via_number(total_via_number);
+  // vr_model_stat.set_total_drc_number(total_drc_number);
+
+  // vr_model.set_vr_model_stat(vr_model_stat);
 }
 
 void ViolationRepairer::reportTable(VRModel& vr_model)
@@ -665,6 +681,18 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
       table_str += " ";
     }
     LOG_INST.info(Loc::current(), table_str);
+  }
+}
+
+#endif
+
+#if 1  // update
+
+void ViolationRepairer::update(VRModel& vr_model)
+{
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    Net* origin_net = vr_net.get_origin_net();
+    origin_net->set_vr_result_tree(vr_net.get_vr_result_tree());
   }
 }
 
