@@ -30,6 +30,8 @@ class TAPanelId
     _panel_idx = panel_idx;
   }
   ~TAPanelId() = default;
+  bool operator==(const TAPanelId& other) { return this->_layer_idx == other._layer_idx && this->_panel_idx == other._panel_idx; }
+  bool operator!=(const TAPanelId& other) { return !((*this) == other); }
   // getter
   irt_int get_layer_idx() const { return _layer_idx; }
   irt_int get_panel_idx() const { return _panel_idx; }

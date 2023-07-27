@@ -1534,39 +1534,41 @@ void DetailedRouter::reportTable(DRBox& dr_box)
   // init item column/row map
   irt_int row = 0;
   std::map<std::string, irt_int> item_row_map;
-  item_row_map["DRC\\Source"] = row++;
-  for (std::string& drc_rule : drc_rule_list) {
-    item_row_map[drc_rule] = row++;
+  for (auto& [drc_rule, drc_number] : rule_number_map) {
+    item_row_map[drc_rule] = ++row;
   }
-  item_row_map["Total"] = row;
+  item_row_map["Total"] = ++row;
 
   irt_int column = 0;
   std::map<std::string, irt_int> item_column_map;
-  item_column_map["DRC\\Source"] = column++;
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    item_column_map[GetDRSourceTypeName()(source)] = column++;
+  for (auto& [source, drc_number_map] : source_number_map) {
+    item_column_map[source] = ++column;
   }
-  item_column_map["Total"] = column;
+  item_column_map["Total"] = ++column;
 
   // build table
   fort::char_table drc_table;
   drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
+  drc_table[0][0] = "DRC\\Source";
   // first row item
   for (auto& [drc_rule, row] : item_row_map) {
     drc_table[row][0] = drc_rule;
   }
   // first column item
+  drc_table << fort::header;
   for (auto& [source_name, column] : item_column_map) {
     drc_table[0][column] = source_name;
   }
-  drc_table << fort::header;
   // element
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int column = item_column_map[GetDRSourceTypeName()(source)];
-    for (auto& [drc, number] : drc_number_map) {
-      irt_int row = item_row_map[drc];
-      drc_table[row][column] = RTUtil::getString(number);
+    for (auto& [drc_rule, row] : item_row_map) {
+      if (RTUtil::exist(source_drc_number_map[source], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_number_map[source][drc_rule]);
+      } else {
+        drc_table[row][column] = "0";
+      }
     }
   }
   // last row
@@ -1751,39 +1753,41 @@ void DetailedRouter::reportTable(DRModel& dr_model)
   // init item column/row map
   irt_int row = 0;
   std::map<std::string, irt_int> item_row_map;
-  item_row_map["DRC\\Source"] = row++;
   for (auto& [drc_rule, drc_number] : rule_number_map) {
-    item_row_map[drc_rule] = row++;
+    item_row_map[drc_rule] = ++row;
   }
-  item_row_map["Total"] = row;
+  item_row_map["Total"] = ++row;
 
   irt_int column = 0;
   std::map<std::string, irt_int> item_column_map;
-  item_column_map["DRC\\Source"] = column++;
   for (auto& [source, drc_number_map] : source_number_map) {
-    item_column_map[source] = column++;
+    item_column_map[source] = ++column;
   }
-  item_column_map["Total"] = column;
+  item_column_map["Total"] = ++column;
 
   // build table
   fort::char_table drc_table;
   drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
+  drc_table[0][0] = "DRC\\Source";
   // first row item
   for (auto& [drc_rule, row] : item_row_map) {
     drc_table[row][0] = drc_rule;
   }
   // first column item
+  drc_table << fort::header;
   for (auto& [source_name, column] : item_column_map) {
     drc_table[0][column] = source_name;
   }
-  drc_table << fort::header;
   // element
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int column = item_column_map[GetDRSourceTypeName()(source)];
-    for (auto& [drc, number] : drc_number_map) {
-      irt_int row = item_row_map[drc];
-      drc_table[row][column] = RTUtil::getString(number);
+    for (auto& [drc_rule, row] : item_row_map) {
+      if (RTUtil::exist(source_drc_number_map[source], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_number_map[source][drc_rule]);
+      } else {
+        drc_table[row][column] = "0";
+      }
     }
   }
   // last row

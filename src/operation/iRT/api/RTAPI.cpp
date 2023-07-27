@@ -435,10 +435,22 @@ ids::DRCRect RTAPI::convertToIDSRect(LayerRect rt_rect)
 
 void* RTAPI::initRegionQuery()
 {
+  void* region_query = nullptr;
   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-    return nullptr;
+    region_query = new RegionQuery();
+  } else {
+    region_query = idrc::DrcAPIInst.init();
   }
-  return idrc::DrcAPIInst.init();
+  return region_query;
+}
+
+void destroyRegionQuery(void* region_query)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    delete static_cast<irt::RegionQuery*>(region_query);
+    region_query = nullptr;
+  } else {
+  }
 }
 
 void RTAPI::addEnvRectList(void* region_query, const ids::DRCRect& env_rect)
@@ -644,6 +656,13 @@ ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_rou
   return ids_rect;
 }
 
+void RTAPI::plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
+    static_cast<RegionQuery*>(region_query)->plotRegionQuery(drc_rect_list);
+  } else {
+  }
+}
 // CTS
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)
