@@ -16,37 +16,46 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
-#include "RTAPI.hpp"
 #include "VRSourceType.hpp"
+#include "SpaceRegion.hpp"
 
 namespace irt {
 
-class VRGCell
+class VRGCell : public SpaceRegion
 {
  public:
   VRGCell() = default;
   ~VRGCell() = default;
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<VRSourceType, std::map<irt_int, std::vector<LayerRect>>>& get_source_net_rect_map() { return _source_net_rect_map; }
+  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_routing_net_rect_map()
+  {
+    return _source_routing_net_rect_map;
+  }
+  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_cut_net_rect_map()
+  {
+    return _source_cut_net_rect_map;
+  }
   std::map<VRSourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
-  // function
-  void addRect(VRSourceType vr_source_type, irt_int net_idx, const LayerRect& rect)
+  void set_source_routing_net_rect_map(
+      const std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_routing_net_rect_map)
   {
-    _source_net_rect_map[vr_source_type][net_idx].push_back(rect);
-    RTAPI_INST.addEnvRectList(_source_region_query_map[vr_source_type], rect);
+    _source_routing_net_rect_map = source_routing_net_rect_map;
   }
+  void set_source_cut_net_rect_map(
+      const std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_cut_net_rect_map)
+  {
+    _source_cut_net_rect_map = source_cut_net_rect_map;
+  }
+  void set_source_region_query_map(const std::map<VRSourceType, void*>& source_region_query_map)
+  {
+    _source_region_query_map = source_region_query_map;
+  }
+  // function
 
  private:
-  PlanarRect _real_rect;
-  /**
-   * VRSourceType::kBlockage 存储blockage
-   * VRSourceType::kPanelResult 存储net布线的结果
-   */
-  std::map<VRSourceType, std::map<irt_int, std::vector<LayerRect>>> _source_net_rect_map;
+  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_routing_net_rect_map;
+  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_cut_net_rect_map;
   std::map<VRSourceType, void*> _source_region_query_map;
 };
 
