@@ -18,6 +18,7 @@
 
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
+#include "RegionQuery.hpp"
 
 namespace irt {
 
@@ -35,17 +36,29 @@ class DRCChecker
   void* initRegionQuery();
   void addEnvRectList(void* region_query, const DRCRect& env_rect);
   void addEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list);
+  std::vector<ids::DRCRect> convertToIDSRect(const std::vector<DRCRect>& drc_rect_list);
+  void addEnvRectListByRTDRC(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
+  std::vector<RQShape> getRQShapeList(const std::vector<ids::DRCRect>& env_rect_list);
+  BoostBox convertBoostBox(ids::DRCRect ids_rect);
   void delEnvRectList(void* region_query, const DRCRect& env_rect);
   void delEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list);
+  void delEnvRectListByRTDRC(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
   bool hasViolation(void* region_query, const DRCRect& drc_rect);
   bool hasViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, int> getViolation(void* region_query);
+  std::map<std::string, int> getViolationByRTDRC(void* region_query);
   std::map<std::string, int> getViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, int> getViolationByRTDRC(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
+  std::map<std::string, int> checkByOtherByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list);
+  std::map<std::string, int> checkBySelfByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list);
+  bool checkMinSpacingByRTDRC(RQShape& net_shape1, RQShape& net_shape2, std::vector<RQShape>& net_shape_list);
   std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
   std::vector<LayerRect> getMinScope(const std::vector<DRCRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const DRCRect& drc_rect);
   std::vector<LayerRect> getMinScope(const DRCRect& drc_rect);
+  std::vector<LayerRect> getMinSpacingRect(const std::vector<ids::DRCRect>& drc_rect_list);
   void plotRegionQuery(void* region_query, const std::vector<DRCRect>& drc_rect_list);
+  void plotRegionQueryByRTDRC(RegionQuery* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
 
  private:
   // self
