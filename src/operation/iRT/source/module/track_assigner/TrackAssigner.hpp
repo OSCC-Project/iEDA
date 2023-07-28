@@ -69,7 +69,7 @@ class TrackAssigner
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
-  void ouputTADataset(TAModel& ta_model);
+  void outputTADataset(TAModel& ta_model);
   void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);

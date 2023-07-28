@@ -778,7 +778,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   if (gr_net.get_routing_state() == RoutingState::kRouted) {
     return;
   }
-  // ouputGRDataset(gr_model, gr_net);
+  // outputGRDataset(gr_model, gr_net);
   initSingleNet(gr_model, gr_net);
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
@@ -797,7 +797,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   resetSingleNet(gr_model);
 }
 
-void GlobalRouter::ouputGRDataset(GRModel& gr_model, GRNet& gr_net)
+void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
