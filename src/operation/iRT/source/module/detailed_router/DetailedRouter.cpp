@@ -51,6 +51,8 @@ void DetailedRouter::destroyInst()
   }
 }
 
+// function
+
 void DetailedRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;

@@ -47,6 +47,8 @@ void ResourceAllocator::destroyInst()
   }
 }
 
+// function
+
 void ResourceAllocator::allocate(std::vector<Net>& net_list)
 {
   Monitor monitor;

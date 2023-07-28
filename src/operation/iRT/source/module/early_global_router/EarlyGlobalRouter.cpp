@@ -43,6 +43,8 @@ void EarlyGlobalRouter::destroyInst()
   }
 }
 
+// function
+
 void EarlyGlobalRouter::route()
 {
   Monitor monitor;

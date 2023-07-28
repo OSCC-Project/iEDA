@@ -47,6 +47,8 @@ void GlobalRouter::destroyInst()
   }
 }
 
+// function
+
 void GlobalRouter::route(std::vector<Net>& net_list)
 {
   Monitor monitor;
