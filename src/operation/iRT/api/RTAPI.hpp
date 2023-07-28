@@ -58,21 +58,21 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  // void* initRegionQuery();
-  // void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  // void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  // void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  // void delEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  // bool hasViolation(void* region_query, const ids::DRCRect& drc_rect);
-  // bool hasViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  // std::map<std::string, int> getViolation(void* region_query);
-  // std::map<std::string, int> getViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  // std::vector<LayerRect> getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  // std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  // std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
-  // std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
-  // LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  // ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
+  void* initRegionQuery();
+  void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
+  void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
+  void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);
+  void delEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
+  bool hasViolation(void* region_query, const ids::DRCRect& drc_rect);
+  bool hasViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
+  std::map<std::string, int> getViolation(void* region_query);
+  std::map<std::string, int> getViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
+  std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
+  LayerRect convertToLayerRect(ids::DRCRect ids_rect);
+  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
   // void plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
 
   // CTS
