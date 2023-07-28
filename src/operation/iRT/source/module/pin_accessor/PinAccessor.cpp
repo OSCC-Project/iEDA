@@ -131,11 +131,11 @@ PANet PinAccessor::convertToPANet(Net& net)
 
 void PinAccessor::buildPAModel(PAModel& pa_model)
 {
-  updateNetRectMap(pa_model);
+  updateNetFixedRectMap(pa_model);
   cutBlockageList(pa_model);
 }
 
-void PinAccessor::updateNetRectMap(PAModel& pa_model)
+void PinAccessor::updateNetFixedRectMap(PAModel& pa_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
@@ -330,6 +330,7 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
   mergeAccessPointList(pa_net);
   selectAccessPointList(pa_net);
   eliminateDRCViolation(pa_model, pa_net);
+  checkAccessPointList(pa_net);
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
@@ -710,50 +711,48 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
   return has_violation;
 }
 
-void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
+void PinAccessor::checkAccessPointList(PANet& pa_net)
 {
-  // check access point
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "The pin ", pa_pin.get_pin_idx(), " access point list is empty!");
-      }
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+    if (access_point_list.empty()) {
+      LOG_INST.error(Loc::current(), "The pin ", pa_pin.get_pin_idx(), " access point list is empty!");
+    }
 
-      for (AccessPoint& access_point : access_point_list) {
-        if (access_point.get_type() == AccessPointType::kNone) {
-          LOG_INST.error(Loc::current(), "The access point type is wrong!");
+    for (AccessPoint& access_point : access_point_list) {
+      if (access_point.get_type() == AccessPointType::kNone) {
+        LOG_INST.error(Loc::current(), "The access point type is wrong!");
+      }
+      bool is_legal = false;
+      for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+        if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
+            && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
+          is_legal = true;
+          break;
         }
-        bool is_legal = false;
-        for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
-              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
-            is_legal = true;
-            break;
-          }
-        }
-        if (!is_legal) {
-          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
-        }
+      }
+      if (!is_legal) {
+        LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
       }
     }
   }
+}
 
-  // update enclosure
+void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
+{
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    std::vector<LayerCoord> real_coord_list;
+    std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (LayerCoord& real_coord : pa_pin.getRealCoordList()) {
-        real_coord_list.push_back(real_coord);
+        real_coord_set.insert(real_coord);
       }
     }
-    std::vector<LayerRect> real_rect_list;
-    for (LayerCoord& real_coord : real_coord_list) {
+    for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+      for (irt_int via_below_layer_idx : RTUtil::getAllViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -799,8 +798,10 @@ void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
     std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
     for (AccessPoint& access_point : pin_access_point_list) {
       irt_int via_num = 0;
+      std::vector<irt_int> all_via_below_layer_idx_list
+          = RTUtil::getAllViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
       for (std::vector<irt_int> via_below_layer_idx_list :
-           RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
+           RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), all_via_below_layer_idx_list)) {
         for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
           std::vector<Segment<LayerCoord>> segment_list;
           segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
