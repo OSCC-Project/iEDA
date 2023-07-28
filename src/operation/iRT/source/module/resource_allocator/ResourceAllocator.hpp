@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "GridMap.hpp"
@@ -59,7 +60,7 @@ class ResourceAllocator
   void initRANetDemand(RAModel& ra_model);
   void initRAGCellList(RAModel& ra_model);
   void updateNetRectMap(RAModel& ra_model);
-  void addRectToEnv(RAModel& ra_model, irt_int net_idx, LayerRect real_rect);
+  void addRectToEnv(RAModel& ra_model, DRCRect drc_rect);
   void cutBlockageList(RAModel& ra_model);
   void calcRAGCellSupply(RAModel& ra_model);
   std::vector<PlanarRect> getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer);

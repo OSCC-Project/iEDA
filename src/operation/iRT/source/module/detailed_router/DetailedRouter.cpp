@@ -178,35 +178,37 @@ void DetailedRouter::updateNetRectMap(DRModel& dr_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), -1, blockage_real_rect, true);
+    addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), -1, blockage_real_rect, false);
+    addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), DRCRect(-1, blockage_real_rect, false));
   }
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
     for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
       for (EXTLayerRect& routing_shape : dr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), dr_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), DRCRect(dr_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : dr_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), dr_net.get_net_idx(), shape_real_rect, false);
+        addRectToEnv(dr_model, DRSourceType::kBlockAndPin, DRBoxId(), DRCRect(dr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
 }
 
-void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, irt_int net_idx, LayerRect real_rect,
-                                  bool is_routing)
+void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  DRCRect drc_rect(net_idx, real_rect, is_routing);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -293,8 +295,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
         segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
       }
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
-        addRectToEnv(dr_model, DRSourceType::kPanelResult, DRBoxId(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
-                     drc_rect.get_is_routing());
+        addRectToEnv(dr_model, DRSourceType::kPanelResult, DRBoxId(), drc_rect);
       }
     }
   }
@@ -1521,8 +1522,7 @@ void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
 {
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
-      addRectToEnv(dr_model, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
-                   drc_rect.get_is_routing());
+      addRectToEnv(dr_model, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect);
     }
   }
 }

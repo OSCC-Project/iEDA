@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #include "TrackAssigner.hpp"
 
+#include "DRCChecker.hpp"
 #include "GDSPlotter.hpp"
 #include "LayerCoord.hpp"
-#include "DRCChecker.hpp"
 #include "TAPanel.hpp"
 
 namespace irt {
@@ -184,32 +184,33 @@ void TrackAssigner::updateNetRectMap(TAModel& ta_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), -1, blockage_real_rect, true);
+    addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), DRCRect(-1, blockage_real_rect, true));
   }
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
       for (const EXTLayerRect& routing_shape : ta_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), ta_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(ta_model, TASourceType::kBlockAndPin, TAPanelId(), DRCRect(ta_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, irt_int net_idx,
-                                 LayerRect real_rect, bool is_routing)
+void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect)
 {
-  if (is_routing == false) {
-    return;
-  }
-
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  DRCRect drc_rect(net_idx, real_rect, true);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+  if (is_routing == false) {
+    return;
+  }
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -1441,8 +1442,7 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
-      addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
-                   drc_rect.get_is_routing());
+      addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect);
     }
   }
 }

@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "GlobalRouter.hpp"
 
-#include "GDSPlotter.hpp"
 #include "DRCChecker.hpp"
+#include "GDSPlotter.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -193,26 +193,32 @@ void GlobalRouter::updateNetRectMap(GRModel& gr_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(gr_model, -1, blockage_real_rect);
+    addRectToEnv(gr_model, DRCRect(-1, blockage_real_rect, true));
   }
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(gr_model, gr_net.get_net_idx(), shape_real_rect);
+        addRectToEnv(gr_model, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void GlobalRouter::addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect real_rect)
+void GlobalRouter::addRectToEnv(GRModel& gr_model, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  DRCRect drc_rect(net_idx, real_rect, true);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+  if (is_routing == false) {
+    return;
+  }
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);

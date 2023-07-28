@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "VRSourceType.hpp"
 #include "SpaceRegion.hpp"
+#include "VRSourceType.hpp"
 
 namespace irt {
 

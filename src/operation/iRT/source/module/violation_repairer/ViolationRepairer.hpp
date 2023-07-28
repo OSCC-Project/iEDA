@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -55,7 +56,7 @@ class ViolationRepairer
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
   void updateNetRectMap(VRModel& vr_model);
-  void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing);
+  void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
   void cutBlockageList(VRModel& vr_model);
   void updateVRResultTree(VRModel& vr_model);
   void buildKeyCoordPinMap(VRNet& vr_net);
