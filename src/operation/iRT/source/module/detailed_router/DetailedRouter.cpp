@@ -143,9 +143,10 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
 void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
   buildSchedule(dr_model);
-  updateNetRectMap(dr_model);
+  updateNetFixedRectMap(dr_model);
   cutBlockageList(dr_model);
   updateNetPanelResultMap(dr_model);
+  updateNetEnclosureMap(dr_model);
   buildBoxScaleAxis(dr_model);
   buildDRTaskList(dr_model);
   buildDRBoxMap(dr_model);
@@ -173,7 +174,7 @@ void DetailedRouter::buildSchedule(DRModel& dr_model)
   dr_model.set_dr_box_id_comb_list(dr_box_id_comb_list);
 }
 
-void DetailedRouter::updateNetRectMap(DRModel& dr_model)
+void DetailedRouter::updateNetFixedRectMap(DRModel& dr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
@@ -217,7 +218,8 @@ void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         DRBox& dr_box = dr_box_map[x][y];
-        if (dr_source_type == DRSourceType::kBlockAndPin || dr_source_type == DRSourceType::kPanelResult) {
+        if (dr_source_type == DRSourceType::kBlockAndPin || dr_source_type == DRSourceType::kPanelResult
+            || dr_source_type == DRSourceType::kEnclosure) {
           dr_box_id = dr_box.get_dr_box_id();
         }
         if (is_routing) {
@@ -298,6 +300,32 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
       }
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
         addRectToEnv(dr_model, DRSourceType::kPanelResult, DRBoxId(), drc_rect);
+      }
+    }
+  }
+}
+
+void DetailedRouter::updateNetEnclosureMap(DRModel& dr_model)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
+    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
+      for (LayerCoord& real_coord : dr_pin.getRealCoordList()) {
+        real_coord_set.insert(real_coord);
+      }
+    }
+    for (const LayerCoord& real_coord : real_coord_set) {
+      irt_int layer_idx = real_coord.get_layer_idx();
+      for (irt_int via_below_layer_idx : RTUtil::getAdjViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        std::vector<Segment<LayerCoord>> segment_list;
+        segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
+                                  LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
+        for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
+          addRectToEnv(dr_model, DRSourceType::kEnclosure, DRBoxId(), drc_rect);
+        }
       }
     }
   }

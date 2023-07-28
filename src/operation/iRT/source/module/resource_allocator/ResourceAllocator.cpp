@@ -113,7 +113,7 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  updateNetRectMap(ra_model);
+  updateNetFixedRectMap(ra_model);
   cutBlockageList(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
@@ -162,7 +162,7 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::updateNetRectMap(RAModel& ra_model)
+void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
@@ -449,9 +449,11 @@ void ResourceAllocator::iterative(RAModel& ra_model)
     double penalty_para = (1 / (2 * ra_initial_penalty));
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", ra_outer_max_iter_num, "), penalty_para=", penalty_para, " ******");
 
+    ra_model.set_curr_iter(iter);
     allocateRAModel(ra_model, penalty_para);
     processRAModel(ra_model);
     reportRAModel(ra_model);
+    // writeRAModel(ra_model);
 
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     ra_initial_penalty *= ra_penalty_drop_rate;
@@ -882,7 +884,7 @@ void ResourceAllocator::update(RAModel& ra_model)
 
 #if 1  // plot ra_model
 
-void ResourceAllocator::writeRAModel(RAModel& ra_model, irt_int iter)
+void ResourceAllocator::writeRAModel(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
   std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
@@ -902,7 +904,8 @@ void ResourceAllocator::writeRAModel(RAModel& ra_model, irt_int iter)
     }
   }
 
-  std::ofstream* csv_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "ra_model_", iter, ".csv"));
+  std::ofstream* csv_file
+      = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "ra_model_", ra_model.get_curr_iter(), ".csv"));
   for (irt_int y = global_cost_map.get_y_size() - 1; y >= 0; y--) {
     for (irt_int x = 0; x < global_cost_map.get_x_size(); x++) {
       RTUtil::pushStream(csv_file, global_cost_map[x][y], ",");
