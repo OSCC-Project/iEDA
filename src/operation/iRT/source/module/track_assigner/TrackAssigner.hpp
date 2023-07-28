@@ -57,9 +57,10 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
-  void updateNetRectMap(TAModel& ta_model);
+  void updateNetFixedRectMap(TAModel& ta_model);
   void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
   void cutBlockageList(TAModel& ta_model);
+  void updateNetEnclosureMap(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
@@ -68,6 +69,7 @@ class TrackAssigner
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
+  void ouputTADataset(TAModel& ta_model);
   void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);

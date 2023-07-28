@@ -27,6 +27,7 @@ enum class DRSourceType
   kNone,
   kBlockAndPin,
   kPanelResult,
+  kEnclosure,
   kBoxResult
 };
 
@@ -44,6 +45,9 @@ struct GetDRSourceTypeName
         break;
       case DRSourceType::kPanelResult:
         dr_source_type_name = "panel_result";
+        break;
+      case DRSourceType::kEnclosure:
+        dr_source_type_name = "enclosure";
         break;
       case DRSourceType::kBoxResult:
         dr_source_type_name = "box_result";

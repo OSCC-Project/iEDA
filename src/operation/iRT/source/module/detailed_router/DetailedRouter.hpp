@@ -60,10 +60,11 @@ class DetailedRouter
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
-  void updateNetRectMap(DRModel& dr_model);
+  void updateNetFixedRectMap(DRModel& dr_model);
   void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
   void cutBlockageList(DRModel& dr_model);
   void updateNetPanelResultMap(DRModel& dr_model);
+  void updateNetEnclosureMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
