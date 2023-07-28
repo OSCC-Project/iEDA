@@ -48,6 +48,8 @@ void DataManager::destroyInst()
   }
 }
 
+// function
+
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
