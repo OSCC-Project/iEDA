@@ -55,7 +55,7 @@ class ViolationRepairer
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
-  void updateNetRectMap(VRModel& vr_model);
+  void updateNetFixedRectMap(VRModel& vr_model);
   void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
   void cutBlockageList(VRModel& vr_model);
   void updateVRResultTree(VRModel& vr_model);

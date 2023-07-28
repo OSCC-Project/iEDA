@@ -125,12 +125,12 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
 {
-  updateNetRectMap(vr_model);
+  updateNetFixedRectMap(vr_model);
   cutBlockageList(vr_model);
   updateVRResultTree(vr_model);
 }
 
-void ViolationRepairer::updateNetRectMap(VRModel& vr_model)
+void ViolationRepairer::updateNetFixedRectMap(VRModel& vr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();

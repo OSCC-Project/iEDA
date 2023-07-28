@@ -2316,10 +2316,9 @@ class RTUtil
    *     return: [4 3 2 1]
    *             [5 6 7 8]
    */
-  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
-                                                                        irt_int top_layer_idx)
+  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx,
+                                                                        std::vector<irt_int> via_below_layer_idx_list)
   {
-    std::vector<irt_int> via_below_layer_idx_list = getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
 
     std::vector<irt_int> down_via_below_layer_idx_list;
@@ -2346,7 +2345,7 @@ class RTUtil
   }
 
   // 考虑的全部via below层
-  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  static std::vector<irt_int> getAllViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
@@ -2369,26 +2368,18 @@ class RTUtil
     return layer_idx_list;
   }
 
-  // 获得可用的布线层
-  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // 考虑的相邻via below层
+  static std::vector<irt_int> getAdjViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
     std::vector<irt_int> layer_idx_list;
-    if (curr_layer_idx < bottom_layer_idx) {
-      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    } else if (top_layer_idx < curr_layer_idx) {
-      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    } else {
-      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    }
+    layer_idx_list.push_back(std::max(curr_layer_idx - 1, bottom_layer_idx));
+    layer_idx_list.push_back(std::min(curr_layer_idx, top_layer_idx - 1));
+
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
     return layer_idx_list;
   }
 
