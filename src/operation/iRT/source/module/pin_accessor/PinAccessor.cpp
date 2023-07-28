@@ -22,7 +22,7 @@
 #include "GPGDS.hpp"
 #include "PAModel.hpp"
 #include "PANet.hpp"
-#include "RTAPI.hpp"
+#include "DRCChecker.hpp"
 
 namespace irt {
 
@@ -167,8 +167,8 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, i
 
   GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
-  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, is_routing);
-  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+  DRCRect drc_rect(net_idx, real_rect, is_routing);
+  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
@@ -181,9 +181,9 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, i
         }
         void*& region_query = pa_gcell.get_source_region_query_map()[pa_source_type];
         if (region_query == nullptr) {
-          region_query = RTAPI_INST.initRegionQuery();
+          region_query = DC_INST.initRegionQuery();
         }
-        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
     }
   }
@@ -216,7 +216,7 @@ void PinAccessor::cutBlockageList(PAModel& pa_model)
               if (!RTUtil::isInside(blockage, net_shape)) {
                 continue;
               }
-              for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
                 PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
                 blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
               }
@@ -487,7 +487,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
               continue;
             }
             for (LayerRect& net_rect : net_rect_list) {
-              for (LayerRect& min_scope_blockage : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(curr_net_idx, net_rect, true))) {
+              for (LayerRect& min_scope_blockage : DC_INST.getMinScope(DRCRect(curr_net_idx, net_rect, true))) {
                 PlanarRect enlarged_rect = RTUtil::getEnlargedRect(min_scope_blockage, half_x_span, half_y_span, half_x_span, half_y_span);
                 if (!RTUtil::isOpenOverlap(pin_shape.get_real_rect(), enlarged_rect)) {
                   continue;
@@ -651,7 +651,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
 
   GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
-  std::vector<ids::DRCRect> ids_drc_rect_list;
+  std::vector<DRCRect> drc_rect_list;
   for (Segment<LayerCoord>& segment : segment_list) {
     LayerCoord& first_coord = segment.get_first();
     LayerCoord& second_coord = segment.get_second();
@@ -665,26 +665,26 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
 
         LayerRect& above_enclosure = via_master.get_above_enclosure();
         LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
-        ids_drc_rect_list.push_back(RTAPI_INST.convertToIDSRect(net_idx, offset_above_enclosure, true));
+        drc_rect_list.push_back(DRCRect(net_idx, offset_above_enclosure, true));
 
         LayerRect& below_enclosure = via_master.get_below_enclosure();
         LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
-        ids_drc_rect_list.push_back(RTAPI_INST.convertToIDSRect(net_idx, offset_below_enclosure, true));
+        drc_rect_list.push_back(DRCRect(net_idx, offset_below_enclosure, true));
 
         for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
           LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
-          ids_drc_rect_list.push_back(RTAPI_INST.convertToIDSRect(net_idx, offset_cut_shape, false));
+          drc_rect_list.push_back(DRCRect(net_idx, offset_cut_shape, false));
         }
       }
     } else {
       irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
       LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
-      ids_drc_rect_list.push_back(RTAPI_INST.convertToIDSRect(net_idx, wire_rect, true));
+      drc_rect_list.push_back(DRCRect(net_idx, wire_rect, true));
     }
   }
   std::set<PlanarCoord, CmpPlanarCoordByXASC> grid_coord_set;
-  for (ids::DRCRect& ids_drc_rect : ids_drc_rect_list) {
-    for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+  for (DRCRect& drc_rect : drc_rect_list) {
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
       PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
@@ -697,7 +697,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
   bool has_violation = false;
   for (const PlanarCoord& grid_coord : grid_coord_set) {
     PAGCell& pa_gcell = pa_gcell_map[grid_coord.get_x()][grid_coord.get_y()];
-    if (RTAPI_INST.hasViolation(pa_gcell.get_source_region_query_map()[pa_source_type], ids_drc_rect_list)) {
+    if (DC_INST.hasViolation(pa_gcell.get_source_region_query_map()[pa_source_type], drc_rect_list)) {
       has_violation = true;
       break;
     }
@@ -752,7 +752,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
-        for (DRCRect& drc_rect : DM_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
+        for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
           addRectToEnv(pa_model, PASourceType::kEnclosure, drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing());
         }
       }

@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD 20)
 ############################ debug source module ############################
 
 # set(DEBUG_IRT_DETAILED_ROUTER ON)
+# set(DEBUG_IRT_DRC_CHECKER ON)
 # set(DEBUG_IRT_EARLY_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_GDS_PLOTTER ON)
 # set(DEBUG_IRT_GLOBAL_ROUTER ON)

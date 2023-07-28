@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include "ViolationRepairer.hpp"
 
-#include "RTAPI.hpp"
+#include "DRCChecker.hpp"
 
 namespace irt {
 
@@ -162,8 +162,8 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
 
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
 
-  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, is_routing);
-  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+  DRCRect drc_rect(net_idx, real_rect, is_routing);
+  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
@@ -176,9 +176,9 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
         }
         void*& region_query = vr_gcell.get_source_region_query_map()[vr_source_type];
         if (region_query == nullptr) {
-          region_query = RTAPI_INST.initRegionQuery();
+          region_query = DC_INST.initRegionQuery();
         }
-        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
     }
   }
@@ -211,7 +211,7 @@ void ViolationRepairer::cutBlockageList(VRModel& vr_model)
               if (!RTUtil::isInside(blockage, net_shape)) {
                 continue;
               }
-              for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
                 PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
                 blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
               }
@@ -390,7 +390,7 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 
 void ViolationRepairer::updateVRGCellMap(VRModel& vr_model, VRNet& vr_net)
 {
-  for (DRCRect& drc_rect : DM_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
     addRectToEnv(vr_model, VRSourceType::kNetResult, drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing());
   }
 }
@@ -489,16 +489,16 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
 
   // std::map<VRSourceType, void*> source_region_query_map;
   // for (auto& [source, ids_rect_list] : getSourceIDSRectMap(vr_model)) {
-  //   source_region_query_map[source] = RTAPI_INST.initRegionQuery();
-  //   RTAPI_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
+  //   source_region_query_map[source] = DC_INST.initRegionQuery();
+  //   DC_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
   // }
   // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
   //   std::vector<ids::DRCRect> ids_rect_list;
-  //   for (const LayerRect& real_rect : DM_INST.getDRCRectList(vr_net.get_vr_result_tree())) {
-  //     ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(vr_net.get_net_idx(), real_rect, true));
+  //   for (const LayerRect& real_rect : DC_INST.getDRCRectList(vr_net.get_vr_result_tree())) {
+  //     ids_rect_list.push_back(DRCRect(vr_net.get_net_idx(), real_rect, true));
   //   }
   //   for (auto& [source, region_query] : source_region_query_map) {
-  //     for (auto& [drc, number] : RTAPI_INST.getViolation(region_query, ids_rect_list)) {
+  //     for (auto& [drc, number] : DC_INST.getViolation(region_query, ids_rect_list)) {
   //       source_drc_number_map[source][drc] += number;
   //     }
   //   }
