@@ -30,6 +30,8 @@ class DRBoxId
     _y = y;
   }
   ~DRBoxId() = default;
+  bool operator==(const DRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const DRBoxId& other) { return !((*this) == other); }
   // getter
   irt_int get_x() const { return _x; }
   irt_int get_y() const { return _y; }
