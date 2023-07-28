@@ -456,83 +456,107 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
-  // irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
-  // std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  Die& die = DM_INST.getDatabase().get_die();
+  irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  // VRModelStat vr_model_stat;
+  VRModelStat vr_model_stat;
 
-  // std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
-  // std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
-  // std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
-  // std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
-  // std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
+  std::map<irt_int, double>& routing_wire_length_map = vr_model_stat.get_routing_wire_length_map();
+  std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
+  std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
+  std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
+  std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
+  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
+  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
 
-  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-  //   for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
-  //     PHYNode& phy_node = phy_node_node->value();
-  //     if (phy_node.isType<WireNode>()) {
-  //       WireNode& wire_node = phy_node.getNode<WireNode>();
-  //       irt_int layer_idx = wire_node.get_layer_idx();
-  //       double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
-  //       if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
-  //         routing_prefer_wire_length_map[layer_idx] += wire_length;
-  //       } else {
-  //         routing_nonprefer_wire_length_map[layer_idx] += wire_length;
-  //       }
-  //       routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
-  //     } else if (phy_node.isType<ViaNode>()) {
-  //       ViaNode& via_node = phy_node.getNode<ViaNode>();
-  //       cut_via_number_map[via_node.get_via_master_idx().get_below_layer_idx()]++;
-  //     }
-  //   }
-  // }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
+      PHYNode& phy_node = phy_node_node->value();
+      if (phy_node.isType<WireNode>()) {
+        WireNode& wire_node = phy_node.getNode<WireNode>();
+        irt_int layer_idx = wire_node.get_layer_idx();
+        double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
+        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
+          routing_prefer_wire_length_map[layer_idx] += wire_length;
+        } else {
+          routing_nonprefer_wire_length_map[layer_idx] += wire_length;
+        }
+        routing_wire_length_map[wire_node.get_layer_idx()] += wire_length;
+      } else if (phy_node.isType<ViaNode>()) {
+        ViaNode& via_node = phy_node.getNode<ViaNode>();
+        cut_via_number_map[via_node.get_via_master_idx().get_below_layer_idx()]++;
+      }
+    }
+  }
 
-  // std::map<VRSourceType, void*> source_region_query_map;
-  // for (auto& [source, ids_rect_list] : getSourceIDSRectMap(vr_model)) {
-  //   source_region_query_map[source] = DC_INST.initRegionQuery();
-  //   DC_INST.addEnvRectList(source_region_query_map[source], ids_rect_list);
-  // }
-  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-  //   std::vector<ids::DRCRect> ids_rect_list;
-  //   for (const LayerRect& real_rect : DC_INST.getDRCRectList(vr_net.get_vr_result_tree())) {
-  //     ids_rect_list.push_back(DRCRect(vr_net.get_net_idx(), real_rect, true));
-  //   }
-  //   for (auto& [source, region_query] : source_region_query_map) {
-  //     for (auto& [drc, number] : DC_INST.getViolation(region_query, ids_rect_list)) {
-  //       source_drc_number_map[source][drc] += number;
-  //     }
-  //   }
-  // }
+  std::vector<DRCRect> drc_rect_list;
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      drc_rect_list.push_back(drc_rect);
+    }
+  }
 
-  // double total_wire_length = 0;
-  // double total_prefer_wire_length = 0;
-  // double total_nonprefer_wire_length = 0;
-  // irt_int total_via_number = 0;
-  // irt_int total_drc_number = 0;
-  // for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-  //   total_wire_length += wire_length;
-  // }
-  // for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
-  //   total_prefer_wire_length += prefer_wire_length;
-  // }
-  // for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
-  //   total_nonprefer_wire_length += nonprefer_wire_length;
-  // }
-  // for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
-  //   total_via_number += via_number;
-  // }
-  // for (auto& [source, drc_number_map] : source_drc_number_map) {
-  //   for (auto& [drc, number] : drc_number_map) {
-  //     total_drc_number += number;
-  //   }
-  // }
-  // vr_model_stat.set_total_wire_length(total_wire_length);
-  // vr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
-  // vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
-  // vr_model_stat.set_total_via_number(total_via_number);
-  // vr_model_stat.set_total_drc_number(total_drc_number);
+  GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
+  for (irt_int x = 0; x < die.getXSize(); x++) {
+    for (irt_int y = 0; y < die.getYSize(); y++) {
+      VRGCell& vr_gcell = vr_gcell_map[x][y];
+      for (auto& [source, region_query] : vr_gcell.get_source_region_query_map()) {
+        std::map<std::string, irt_int> drc_number_map;
+        if (source == VRSourceType::kBlockAndPin) {
+          drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
+        } else {
+          drc_number_map = DC_INST.getViolation(region_query);
+        }
+        for (auto& [drc, number] : drc_number_map) {
+          source_drc_number_map[source][drc] += number;
+        }
+      }
+    }
+  }
 
-  // vr_model.set_vr_model_stat(vr_model_stat);
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      rule_number_map[drc] += number;
+    }
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    irt_int total_number = 0;
+    for (auto& [drc, number] : drc_number_map) {
+      total_number += number;
+    }
+    source_number_map[GetVRSourceTypeName()(source)] = total_number;
+  }
+
+  double total_wire_length = 0;
+  double total_prefer_wire_length = 0;
+  double total_nonprefer_wire_length = 0;
+  irt_int total_via_number = 0;
+  irt_int total_drc_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
+    total_prefer_wire_length += prefer_wire_length;
+  }
+  for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
+    total_nonprefer_wire_length += nonprefer_wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+  for (auto& [source, drc_number_map] : source_drc_number_map) {
+    for (auto& [drc, number] : drc_number_map) {
+      total_drc_number += number;
+    }
+  }
+  vr_model_stat.set_total_wire_length(total_wire_length);
+  vr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
+  vr_model_stat.set_total_via_number(total_via_number);
+  vr_model_stat.set_total_drc_number(total_drc_number);
+
+  vr_model.set_vr_model_stat(vr_model_stat);
 }
 
 void ViolationRepairer::reportTable(VRModel& vr_model)

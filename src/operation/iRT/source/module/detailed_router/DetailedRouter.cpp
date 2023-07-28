@@ -18,11 +18,11 @@
 
 #include "DRBox.hpp"
 #include "DRBoxId.hpp"
+#include "DRCChecker.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
 #include "DetailedRouter.hpp"
 #include "GDSPlotter.hpp"
-#include "DRCChecker.hpp"
 
 namespace irt {
 
@@ -1324,18 +1324,27 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
         }
       }
     }
-    // std::vector<LayerRect> real_rect_list = DC_INST.getDRCRectList(routing_segment_list);
-    // for (auto& [source, region_query] : dr_box.get_source_region_query_map()) {
-    //   std::map<std::string, irt_int> drc_num_map;
-    //   if (source == DRSourceType::kSelfBoxResult) {
-    //     drc_num_map = DC_INST.getViolation(region_query);
-    //   } else {
-    //     drc_num_map = DC_INST.getViolation(region_query, real_rect_list);
-    //   }
-    //   for (auto& [drc, num] : drc_num_map) {
-    //     source_drc_number_map[source][drc] += num;
-    //   }
-    // }
+  }
+
+  std::vector<DRCRect> drc_rect_list;
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
+      drc_rect_list.push_back(drc_rect);
+    }
+  }
+
+  for (auto& [source, panel_region_query_map] : dr_box.get_source_box_region_query_map()) {
+    std::map<std::string, irt_int> drc_number_map;
+    for (auto& [box_id, region_query] : panel_region_query_map) {
+      if (source == DRSourceType::kBoxResult && box_id == dr_box.get_dr_box_id()) {
+        drc_number_map = DC_INST.getViolation(region_query);
+      } else {
+        drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
+      }
+    }
+    for (auto& [drc, number] : drc_number_map) {
+      source_drc_number_map[source][drc] += number;
+    }
   }
 
   for (auto& [source, drc_number_map] : source_drc_number_map) {
@@ -1426,15 +1435,6 @@ void DetailedRouter::reportTable(DRBox& dr_box)
               << fort::endr;
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
-
-  // count drc rule
-  std::set<std::string> drc_rule_set;
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc_rule, number] : drc_number_map) {
-      drc_rule_set.insert(drc_rule);
-    }
-  }
-  std::vector<std::string> drc_rule_list(drc_rule_set.begin(), drc_rule_set.end());
 
   // init item column/row map
   irt_int row = 0;
