@@ -17,7 +17,6 @@
 #pragma once
 
 #include "Config.hpp"
-#include "DRCRect.hpp"
 #include "Database.hpp"
 #include "Helper.hpp"
 #include "Logger.hpp"
@@ -41,8 +40,6 @@ class DataManager
   void output(idb::IdbBuilder* idb_builder);
   void save(Stage stage);
   void load(Stage stage);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree);
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Helper& getHelper() { return _helper; }

@@ -18,7 +18,7 @@
 
 #include "GDSPlotter.hpp"
 #include "LayerCoord.hpp"
-#include "RTAPI.hpp"
+#include "DRCChecker.hpp"
 #include "TAPanel.hpp"
 
 namespace irt {
@@ -209,8 +209,8 @@ void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type,
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, true);
-  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+  DRCRect drc_rect(net_idx, real_rect, true);
+  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     if (routing_layer_list[real_rect.get_layer_idx()].isPreferH()) {
@@ -222,9 +222,9 @@ void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type,
         ta_panel.get_source_panel_net_rect_map()[ta_source_type][ta_panel_id][net_idx].push_back(real_rect);
         void*& region_query = ta_panel.get_source_panel_region_query_map()[ta_source_type][ta_panel_id];
         if (region_query == nullptr) {
-          region_query = RTAPI_INST.initRegionQuery();
+          region_query = DC_INST.initRegionQuery();
         }
-        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
     } else {
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
@@ -235,9 +235,9 @@ void TrackAssigner::addRectToEnv(TAModel& ta_model, TASourceType ta_source_type,
         ta_panel.get_source_panel_net_rect_map()[ta_source_type][ta_panel_id][net_idx].push_back(real_rect);
         void*& region_query = ta_panel.get_source_panel_region_query_map()[ta_source_type][ta_panel_id];
         if (region_query == nullptr) {
-          region_query = RTAPI_INST.initRegionQuery();
+          region_query = DC_INST.initRegionQuery();
         }
-        RTAPI_INST.addEnvRectList(region_query, ids_drc_rect);
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
     }
   }
@@ -267,7 +267,7 @@ void TrackAssigner::cutBlockageList(TAModel& ta_model)
             if (!RTUtil::isInside(blockage, net_shape)) {
               continue;
             }
-            for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+            for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
               PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
               blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
             }
@@ -1278,10 +1278,10 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
   ta_panel_stat.set_total_prefer_wire_length(total_prefer_wire_length);
   ta_panel_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
 
-  std::vector<ids::DRCRect> ids_rect_list;
+  std::vector<DRCRect> drc_rect_list;
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    for (DRCRect& drc_rect : DM_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
-      ids_rect_list.push_back(RTAPI_INST.convertToIDSRect(drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing()));
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+      drc_rect_list.push_back(drc_rect);
     }
   }
 
@@ -1290,9 +1290,9 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
     std::map<std::string, irt_int> drc_number_map;
     for (auto& [panel_id, region_query] : panel_region_query_map) {
       if (source == TASourceType::kPanelResult && panel_id == ta_panel.get_ta_panel_id()) {
-        drc_number_map = RTAPI_INST.getViolation(region_query);
+        drc_number_map = DC_INST.getViolation(region_query);
       } else {
-        drc_number_map = RTAPI_INST.getViolation(region_query, ids_rect_list);
+        drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
       }
     }
     for (auto& [drc, number] : drc_number_map) {
@@ -1440,7 +1440,7 @@ void TrackAssigner::reportTable(TAPanel& ta_panel)
 void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    for (DRCRect& drc_rect : DM_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
       addRectToEnv(ta_model, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect.get_net_idx(), drc_rect.get_layer_rect(),
                    drc_rect.get_is_routing());
     }

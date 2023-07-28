@@ -50,6 +50,8 @@ void GDSPlotter::destroyInst()
   }
 }
 
+// function
+
 void GDSPlotter::plot(Net& net, Stage stage, bool add_layout, bool need_clipping)
 {
   std::vector<Net> net_list = {net};

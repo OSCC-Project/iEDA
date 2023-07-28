@@ -17,7 +17,7 @@
 #include "GlobalRouter.hpp"
 
 #include "GDSPlotter.hpp"
-#include "RTAPI.hpp"
+#include "DRCChecker.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -212,8 +212,8 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect re
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  ids::DRCRect ids_drc_rect = RTAPI_INST.convertToIDSRect(net_idx, real_rect, true);
-  for (const LayerRect& max_scope_real_rect : RTAPI_INST.getMaxScope(ids_drc_rect)) {
+  DRCRect drc_rect(net_idx, real_rect, true);
+  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
@@ -254,7 +254,7 @@ void GlobalRouter::cutBlockageList(GRModel& gr_model)
               if (!RTUtil::isInside(blockage, net_shape)) {
                 continue;
               }
-              for (LayerRect& min_scope_net_shape : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, net_shape, true))) {
+              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
                 PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
                 blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
               }
@@ -376,7 +376,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
         }
         for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
           for (LayerRect& rect : rect_list) {
-            for (const LayerRect& min_scope_real_rect : RTAPI_INST.getMinScope(RTAPI_INST.convertToIDSRect(net_idx, rect, true))) {
+            for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
               std::vector<PlanarRect> new_wire_list;
               for (PlanarRect& wire : wire_list) {
                 if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
