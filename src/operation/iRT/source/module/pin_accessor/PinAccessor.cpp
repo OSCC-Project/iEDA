@@ -18,11 +18,11 @@
 
 #include <sstream>
 
+#include "DRCChecker.hpp"
 #include "GDSPlotter.hpp"
 #include "GPGDS.hpp"
 #include "PAModel.hpp"
 #include "PANet.hpp"
-#include "DRCChecker.hpp"
 
 namespace irt {
 
@@ -140,34 +140,37 @@ void PinAccessor::updateNetRectMap(PAModel& pa_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, true);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockAndPin, -1, blockage_real_rect, false);
+    addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, false));
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(pa_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : pa_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockAndPin, pa_net.get_net_idx(), shape_real_rect, false);
+        addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(pa_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
 }
 
-void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing)
+void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
-  DRCRect drc_rect(net_idx, real_rect, is_routing);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -753,7 +756,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
-          addRectToEnv(pa_model, PASourceType::kEnclosure, drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing());
+          addRectToEnv(pa_model, PASourceType::kEnclosure, drc_rect);
         }
       }
     }

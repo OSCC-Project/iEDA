@@ -18,6 +18,7 @@
 
 #include "Config.hpp"
 #include "DRBoxId.hpp"
+#include "DRCRect.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
@@ -60,8 +61,7 @@ class DetailedRouter
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
   void updateNetRectMap(DRModel& dr_model);
-  void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, irt_int net_idx, LayerRect real_rect,
-                    bool is_routing);
+  void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
   void cutBlockageList(DRModel& dr_model);
   void updateNetPanelResultMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);

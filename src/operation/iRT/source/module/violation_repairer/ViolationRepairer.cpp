@@ -135,34 +135,37 @@ void ViolationRepairer::updateNetRectMap(VRModel& vr_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, -1, blockage_real_rect, true);
+    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, -1, blockage_real_rect, false);
+    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, false));
   }
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
       for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, vr_net.get_net_idx(), shape_real_rect, true);
+        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(vr_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : vr_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, vr_net.get_net_idx(), shape_real_rect, false);
+        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(vr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
 }
 
-void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, irt_int net_idx, LayerRect real_rect, bool is_routing)
+void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
 
-  DRCRect drc_rect(net_idx, real_rect, is_routing);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -391,7 +394,7 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 void ViolationRepairer::updateVRGCellMap(VRModel& vr_model, VRNet& vr_net)
 {
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-    addRectToEnv(vr_model, VRSourceType::kNetResult, drc_rect.get_net_idx(), drc_rect.get_layer_rect(), drc_rect.get_is_routing());
+    addRectToEnv(vr_model, VRSourceType::kNetResult, drc_rect);
   }
 }
 

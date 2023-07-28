@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "ResourceAllocator.hpp"
 
-#include "GDSPlotter.hpp"
 #include "DRCChecker.hpp"
+#include "GDSPlotter.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -166,26 +166,32 @@ void ResourceAllocator::updateNetRectMap(RAModel& ra_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, -1, blockage_real_rect);
+    addRectToEnv(ra_model, DRCRect(-1, blockage_real_rect, true));
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, ra_net.get_net_idx(), shape_real_rect);
+        addRectToEnv(ra_model, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void ResourceAllocator::addRectToEnv(RAModel& ra_model, irt_int net_idx, LayerRect real_rect)
+void ResourceAllocator::addRectToEnv(RAModel& ra_model, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 
-  DRCRect drc_rect(net_idx, real_rect, true);
+  irt_int net_idx = drc_rect.get_net_idx();
+  LayerRect& real_rect = drc_rect.get_layer_rect();
+  bool is_routing = drc_rect.get_is_routing();
+  if (is_routing == false) {
+    return;
+  }
+
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);

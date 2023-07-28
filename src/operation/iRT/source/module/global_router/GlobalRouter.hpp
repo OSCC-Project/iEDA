@@ -18,6 +18,7 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
+#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "GRModel.hpp"
@@ -58,7 +59,7 @@ class GlobalRouter
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
   void updateNetRectMap(GRModel& gr_model);
-  void addRectToEnv(GRModel& gr_model, irt_int net_idx, LayerRect real_rect);
+  void addRectToEnv(GRModel& gr_model, DRCRect drc_rect);
   void cutBlockageList(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);

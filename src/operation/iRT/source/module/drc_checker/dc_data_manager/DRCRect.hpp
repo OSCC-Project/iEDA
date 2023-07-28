@@ -22,11 +22,11 @@
 
 namespace irt {
 
-class DRCRect 
+class DRCRect
 {
  public:
   DRCRect() = default;
-  DRCRect(irt_int net_idx, const LayerRect& layer_rect, bool is_routing) 
+  DRCRect(irt_int net_idx, const LayerRect& layer_rect, bool is_routing)
   {
     _net_idx = net_idx;
     _layer_rect = layer_rect;
@@ -35,7 +35,7 @@ class DRCRect
   ~DRCRect() = default;
   // getter
   irt_int get_net_idx() const { return _net_idx; }
-  LayerRect& get_layer_rect()  { return _layer_rect; }
+  LayerRect& get_layer_rect() { return _layer_rect; }
   bool get_is_routing() const { return _is_routing; }
   // setter
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
