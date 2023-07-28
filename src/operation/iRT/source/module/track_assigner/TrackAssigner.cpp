@@ -159,7 +159,7 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
   updateNetEnclosureMap(ta_model);
   buildPanelScaleAxis(ta_model);
   buildTATaskList(ta_model);
-  outputTADataset(ta_model);
+  // outputTADataset(ta_model);
   buildLayerPanelList(ta_model);
 }
 
@@ -574,19 +574,16 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       // track_list
       RTUtil::pushStream(ta_dataset, "track_list", "\n");
       for (ScaleGrid& x_grid : ta_panel.get_panel_scale_axis().get_x_grid_list()) {
-        RTUtil::pushStream(ta_dataset, "X", x_grid.get_start_line(), x_grid.get_step_length(), x_grid.get_end_line(), "\n");
+        RTUtil::pushStream(ta_dataset, "X", " ", x_grid.get_start_line(), " ", x_grid.get_step_length(), " ", x_grid.get_end_line(), "\n");
       }
       for (ScaleGrid& y_grid : ta_panel.get_panel_scale_axis().get_y_grid_list()) {
-        RTUtil::pushStream(ta_dataset, "Y", y_grid.get_start_line(), y_grid.get_step_length(), y_grid.get_end_line(), "\n");
+        RTUtil::pushStream(ta_dataset, "Y", " ", y_grid.get_start_line(), " ", y_grid.get_step_length(), " ", y_grid.get_end_line(), "\n");
       }
 
       // wire_list
       RTUtil::pushStream(ta_dataset, "wire_list", "\n");
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
         std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
-        if (ta_group_list.size() != 2) {
-          LOG_INST.error(Loc::current(), "11");
-        }
         LayerCoord first_coord = ta_group_list.front().get_coord_list().front();
         LayerCoord second_coord = ta_group_list.back().get_coord_list().front();
         if (routing_layer.isPreferH()) {
