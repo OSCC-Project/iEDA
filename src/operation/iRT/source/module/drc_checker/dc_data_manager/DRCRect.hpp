@@ -36,6 +36,7 @@ class DRCRect
   // getter
   irt_int get_net_idx() const { return _net_idx; }
   LayerRect& get_layer_rect() { return _layer_rect; }
+  const LayerRect& get_layer_rect() const { return _layer_rect; }
   bool get_is_routing() const { return _is_routing; }
   // setter
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
