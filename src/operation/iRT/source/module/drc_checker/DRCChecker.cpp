@@ -150,6 +150,125 @@ void DRCChecker::addEnvRectList(void* region_query, const std::vector<DRCRect>& 
   }
 }
 
+void DRCChecker::delEnvRectList(void* region_query, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list{drc_rect};
+  delEnvRectList(region_query, drc_rect_list);
+}
+
+void DRCChecker::delEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    RTAPI_INST.delEnvRectList(region_query, ids_rect_list);
+  } else {
+    delEnvRectListByRTDRC(region_query, ids_rect_list);
+  }
+}
+
+bool DRCChecker::hasViolation(void* region_query, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list{drc_rect};
+  return hasViolation(region_query, drc_rect_list);
+}
+
+bool DRCChecker::hasViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  bool has_violation = false;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    has_violation = RTAPI_INST.hasViolation(region_query, ids_rect_list);
+  } else {
+    for (auto [drc, num] : getViolationByRTDRC(region_query, ids_rect_list)) {
+      if (num > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return has_violation;
+}
+
+std::map<std::string, int> DRCChecker::getViolation(void* region_query)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    violation_name_num_map = RTAPI_INST.getViolation(region_query);
+  } else {
+    violation_name_num_map = getViolationByRTDRC(region_query);
+  }
+  return violation_name_num_map;
+}
+
+std::map<std::string, int> DRCChecker::getViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  std::map<std::string, irt_int> violation_name_num_map;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    violation_name_num_map = RTAPI_INST.getViolation(region_query, ids_rect_list);
+  } else {
+    violation_name_num_map = getViolationByRTDRC(region_query, ids_rect_list);
+  }
+  return violation_name_num_map;
+}
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  std::vector<LayerRect> max_scope_list;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    max_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
+  } else {
+    max_scope_list = getMinSpacingRect(ids_rect_list);
+  }
+  return max_scope_list;
+}
+
+std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  std::vector<LayerRect> min_scope_list;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    min_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
+  } else {
+    min_scope_list = getMinSpacingRect(ids_rect_list);
+  }
+  return min_scope_list;
+}
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list{drc_rect};
+  return getMaxScope(drc_rect_list);
+}
+
+std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list{drc_rect};
+  return getMinScope(drc_rect_list);
+}
+
+void DRCChecker::plotRegionQuery(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    return;
+  } else {
+    RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
+    std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+    plotRegionQueryByRTDRC(rt_region_query, ids_rect_list);
+  }
+}
+
+// private
+
+DRCChecker* DRCChecker::_dc_instance = nullptr;
+
+// function
 std::vector<ids::DRCRect> DRCChecker::convertToIDSRect(const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<ids::DRCRect> ids_rect_list;
@@ -208,23 +327,6 @@ BoostBox DRCChecker::convertBoostBox(ids::DRCRect ids_rect)
   return BoostBox(BoostPoint(ids_rect.lb_x, ids_rect.lb_y), BoostPoint(ids_rect.rt_x, ids_rect.rt_y));
 }
 
-void DRCChecker::delEnvRectList(void* region_query, const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  delEnvRectList(region_query, drc_rect_list);
-}
-
-void DRCChecker::delEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    RTAPI_INST.delEnvRectList(region_query, ids_rect_list);
-  } else {
-    delEnvRectListByRTDRC(region_query, ids_rect_list);
-  }
-}
-
 void DRCChecker::delEnvRectListByRTDRC(void* region_query, const std::vector<ids::DRCRect>& env_rect_list)
 {
   RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
@@ -247,41 +349,6 @@ void DRCChecker::delEnvRectListByRTDRC(void* region_query, const std::vector<ids
     // 从obj map中删除数据
     obj_id_shape_map.erase(net_id);
   }
-}
-
-bool DRCChecker::hasViolation(void* region_query, const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  return hasViolation(region_query, drc_rect_list);
-}
-
-bool DRCChecker::hasViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  bool has_violation = false;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    has_violation = RTAPI_INST.hasViolation(region_query, ids_rect_list);
-  } else {
-    for (auto [drc, num] : getViolationByRTDRC(region_query, ids_rect_list)) {
-      if (num > 0) {
-        return true;
-      }
-    }
-    return false;
-  }
-  return has_violation;
-}
-
-std::map<std::string, int> DRCChecker::getViolation(void* region_query)
-{
-  std::map<std::string, irt_int> violation_name_num_map;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    violation_name_num_map = RTAPI_INST.getViolation(region_query);
-  } else {
-    violation_name_num_map = getViolationByRTDRC(region_query);
-  }
-  return violation_name_num_map;
 }
 
 std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query)
@@ -315,19 +382,6 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query)
     }
   }
 
-  return violation_name_num_map;
-}
-
-std::map<std::string, int> DRCChecker::getViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  std::map<std::string, irt_int> violation_name_num_map;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    violation_name_num_map = RTAPI_INST.getViolation(region_query, ids_rect_list);
-  } else {
-    violation_name_num_map = getViolationByRTDRC(region_query, ids_rect_list);
-  }
   return violation_name_num_map;
 }
 
@@ -467,44 +521,6 @@ bool DRCChecker::checkMinSpacingByRTDRC(RQShape& net_shape1, RQShape& net_shape2
   return true;
 }
 
-std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  std::vector<LayerRect> max_scope_list;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    max_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
-  } else {
-    max_scope_list = getMinSpacingRect(ids_rect_list);
-  }
-  return max_scope_list;
-}
-
-std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  std::vector<LayerRect> min_scope_list;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    min_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
-  } else {
-    min_scope_list = getMinSpacingRect(ids_rect_list);
-  }
-  return min_scope_list;
-}
-
-std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  return getMaxScope(drc_rect_list);
-}
-
-std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  return getMinScope(drc_rect_list);
-}
-
 std::vector<LayerRect> DRCChecker::getMinSpacingRect(const std::vector<ids::DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int>& routing_layer_name_to_idx_map = DM_INST.getHelper().get_routing_layer_name_to_idx_map();
@@ -520,17 +536,6 @@ std::vector<LayerRect> DRCChecker::getMinSpacingRect(const std::vector<ids::DRCR
     min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, routing_layer.getMinSpacing(rect)), layer_idx);
   }
   return min_scope_list;
-}
-
-void DRCChecker::plotRegionQuery(void* region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    return;
-  } else {
-    RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-    std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-    plotRegionQueryByRTDRC(rt_region_query, ids_rect_list);
-  }
 }
 
 void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
@@ -604,9 +609,5 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   std::string gds_file_path = RTUtil::getString(gp_temp_directory_path, "region_query_.gds");
   GP_INST.plot(gp_gds, gds_file_path, false, false);
 }
-
-// private
-
-DRCChecker* DRCChecker::_dc_instance = nullptr;
 
 }  // namespace irt
