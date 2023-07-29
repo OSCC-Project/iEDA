@@ -741,6 +741,18 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
       }
     }
   }
+  for (auto& [source, panel_net_rect_map] : ta_panel.get_source_panel_net_rect_map()) {
+    for (auto& [panel_id, net_rect_map] : panel_net_rect_map) {
+      for (auto& [net_id, rect_list] : net_rect_map) {
+        for (LayerRect& rect : rect_list) {
+          if (rect.get_layer_idx() != ta_panel.get_layer_idx()) {
+            LOG_INST.error(Loc::current(), "The net rect layer ", rect.get_layer_idx(), " is different with panel layer ",
+                           ta_panel.get_layer_idx());
+          }
+        }
+      }
+    }
+  }
 }
 
 void TrackAssigner::saveTAPanel(TAPanel& ta_panel)
