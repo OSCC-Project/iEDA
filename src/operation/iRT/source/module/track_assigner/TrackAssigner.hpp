@@ -117,13 +117,13 @@ class TrackAssigner
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void processTAPanel(TAPanel& ta_panel);
   void buildRoutingResult(TATask& ta_task);
-  void reportTAPanel(TAPanel& ta_panel);
   void countTAPanel(TAPanel& ta_panel);
-  void reportTable(TAPanel& ta_panel);
+  void reportTAPanel(TAPanel& ta_panel);
   void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void reportTAModel(TAModel& ta_model);
+  bool stopTAPanel(TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
-  void reportTable(TAModel& ta_model);
+  void reportTAModel(TAModel& ta_model);
+  bool stopTAModel(TAModel& ta_model);
 #endif
 
 #if 1  // update

@@ -79,9 +79,9 @@ class ResourceAllocator
   void processRAModel(RAModel& ra_model);
   GridMap<double> getCostMap(GridMap<double>& allocation_map, double lower_cost);
   void normalizeCostMap(GridMap<double>& cost_map, double lower_cost);
-  void reportRAModel(RAModel& ra_model);
   void countRAModel(RAModel& ra_model);
-  void reportTable(RAModel& ra_model);
+  void reportRAModel(RAModel& ra_model);
+  bool stopRAModel(RAModel& ra_model);
 #endif
 
 #if 1  // update

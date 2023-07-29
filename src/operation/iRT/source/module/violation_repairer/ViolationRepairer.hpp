@@ -74,9 +74,9 @@ class ViolationRepairer
 #if 1  // iterative
   void iterative(VRModel& vr_model);
   void repairVRModel(VRModel& vr_model);
-  void reportVRModel(VRModel& vr_model);
   void countVRModel(VRModel& vr_model);
-  void reportTable(VRModel& vr_model);
+  void reportVRModel(VRModel& vr_model);
+  bool stopVRModel(VRModel& vr_model);
 #endif
 
 #if 1  // update

@@ -120,13 +120,13 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void processDRBox(DRBox& dr_box);
   void buildRoutingResult(DRTask& dr_task);
-  void reportDRBox(DRBox& dr_box);
   void countDRBox(DRBox& dr_box);
-  void reportTable(DRBox& dr_box);
+  void reportDRBox(DRBox& dr_box);
   void updateDRBox(DRModel& dr_model, DRBox& dr_box);
-  void reportDRModel(DRModel& dr_model);
+  bool stopDRBox(DRBox& dr_box);
   void countDRModel(DRModel& dr_model);
-  void reportTable(DRModel& dr_model);
+  void reportDRModel(DRModel& dr_model);
+  bool stopDRModel(DRModel& dr_model);
 #endif
 
 #if 1  // update

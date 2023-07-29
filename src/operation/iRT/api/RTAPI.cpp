@@ -408,7 +408,7 @@ std::vector<LayerRect> RTAPI::getMinScope(const std::vector<ids::DRCRect>& drc_r
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
     drc_rect_ptr_list.push_back(idrc::DrcAPIInst.getDrcRect(drc_rect));
   }
-  
+
   std::vector<LayerRect> min_scope_list;
   for (idrc::DrcRect* min_scope : idrc::DrcAPIInst.getMinScope(drc_rect_ptr_list)) {
     min_scope_list.push_back(convertToLayerRect(idrc::DrcAPIInst.getDrcRect(min_scope)));

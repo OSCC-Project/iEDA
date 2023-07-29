@@ -159,7 +159,7 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
   updateNetEnclosureMap(ta_model);
   buildPanelScaleAxis(ta_model);
   buildTATaskList(ta_model);
-  // outputTADataset(ta_model);
+  outputTADataset(ta_model);
   buildLayerPanelList(ta_model);
 }
 
@@ -558,6 +558,9 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
 
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : ta_panel_list) {
+      if (ta_panel.get_ta_task_list().empty()) {
+        continue;
+      }
       TAPanelId& ta_panel_id = ta_panel.get_ta_panel_id();
       RoutingLayer& routing_layer = routing_layer_list[ta_panel_id.get_layer_idx()];
 
@@ -596,7 +599,7 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
         irt_int half_width = routing_layer.get_min_width() / 2;
         LayerRect rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), ta_panel_id.get_layer_idx());
         RTUtil::pushStream(ta_dataset, ta_task.get_origin_net_idx(), " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ",
-                           rect.get_rt_y(), " ", rect.get_layer_idx(), "\n");
+                           rect.get_rt_y(), "\n");
       }
 
       // soft_shape_list
@@ -604,7 +607,7 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       for (auto& [net_idx, rect_list] : ta_panel.get_source_panel_net_rect_map()[TASourceType::kEnclosure][ta_panel_id]) {
         for (const LayerRect& rect : rect_list) {
           RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
-                             " ", rect.get_layer_idx(), "\n");
+                             "\n");
         }
       }
 
@@ -613,13 +616,13 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       for (auto& [net_idx, rect_list] : ta_panel.get_source_panel_net_rect_map()[TASourceType::kBlockAndPin][ta_panel_id]) {
         for (const LayerRect& rect : rect_list) {
           RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
-                             " ", rect.get_layer_idx(), "\n");
+                             "\n");
         }
       }
 
       RTUtil::pushStream(ta_dataset, "}", "\n");
       record_net_num++;
-      if (record_net_num == 10) {
+      if (record_net_num == 3) {
         RTUtil::closeFileStream(ta_dataset);
         LOG_INST.info(Loc::current(), "The result has been written to '", ta_dataset_path, "'!");
         exit(0);
@@ -753,18 +756,20 @@ void TrackAssigner::saveTAPanel(TAPanel& ta_panel)
 
 void TrackAssigner::iterative(TAModel& ta_model)
 {
-  irt_int ta_outer_max_iter_num = DM_INST.getConfig().ta_outer_max_iter_num;
+  irt_int ta_model_max_iter_num = DM_INST.getConfig().ta_model_max_iter_num;
 
-  for (irt_int iter = 1; iter <= ta_outer_max_iter_num; iter++) {
+  for (irt_int iter = 1; iter <= ta_model_max_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", ta_outer_max_iter_num, ") ******");
-
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", ta_model_max_iter_num, ") ******");
     ta_model.set_curr_iter(iter);
     assignTAModel(ta_model);
+    countTAModel(ta_model);
     reportTAModel(ta_model);
-
-    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", ta_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
+    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", ta_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
+    if (stopTAModel(ta_model)) {
+      break;
+    }
   }
 }
 
@@ -787,28 +792,32 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
 
 void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
 {
-  irt_int ta_inner_max_iter_num = DM_INST.getConfig().ta_inner_max_iter_num;
+  irt_int ta_panel_max_iter_num = DM_INST.getConfig().ta_panel_max_iter_num;
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
   TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
 
-  for (irt_int iter = 1; iter <= ta_inner_max_iter_num; iter++) {
+  for (irt_int iter = 1; iter <= ta_panel_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_inner_max_iter_num, ") ******");
+      LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_panel_max_iter_num, ") ******");
     }
     ta_panel.set_curr_iter(iter);
     sortTAPanel(ta_panel);
     resetTAPanel(ta_panel);
     assignTAPanel(ta_panel);
     processTAPanel(ta_panel);
+    countTAPanel(ta_panel);
     reportTAPanel(ta_panel);
+    updateTAPanel(ta_model, ta_panel);
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_inner_max_iter_num, ")", iter_monitor.getStatsInfo(),
+      LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
     }
+    if (stopTAPanel(ta_panel)) {
+      break;
+    }
   }
-  updateTAPanel(ta_model, ta_panel);
 }
 
 void TrackAssigner::sortTAPanel(TAPanel& ta_panel)
@@ -1333,14 +1342,6 @@ void TrackAssigner::buildRoutingResult(TATask& ta_task)
   rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
 }
 
-void TrackAssigner::reportTAPanel(TAPanel& ta_panel)
-{
-  countTAPanel(ta_panel);
-  if (omp_get_num_threads() == 1) {
-    reportTable(ta_panel);
-  }
-}
-
 void TrackAssigner::countTAPanel(TAPanel& ta_panel)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
@@ -1419,7 +1420,7 @@ void TrackAssigner::countTAPanel(TAPanel& ta_panel)
   ta_panel.set_ta_panel_stat(ta_panel_stat);
 }
 
-void TrackAssigner::reportTable(TAPanel& ta_panel)
+void TrackAssigner::reportTAPanel(TAPanel& ta_panel)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -1539,10 +1540,9 @@ void TrackAssigner::updateTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   }
 }
 
-void TrackAssigner::reportTAModel(TAModel& ta_model)
+bool TrackAssigner::stopTAPanel(TAPanel& ta_panel)
 {
-  countTAModel(ta_model);
-  reportTable(ta_model);
+  return false;
 }
 
 void TrackAssigner::countTAModel(TAModel& ta_model)
@@ -1613,7 +1613,7 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   ta_model.set_ta_model_stat(ta_model_stat);
 }
 
-void TrackAssigner::reportTable(TAModel& ta_model)
+void TrackAssigner::reportTAModel(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -1721,6 +1721,11 @@ void TrackAssigner::reportTable(TAModel& ta_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool TrackAssigner::stopTAModel(TAModel& ta_model)
+{
+  return false;
 }
 
 #endif

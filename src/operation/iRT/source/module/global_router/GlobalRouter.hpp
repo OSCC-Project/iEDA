@@ -123,9 +123,9 @@ class GlobalRouter
   void buildRoutingResult(GRNet& gr_net);
   void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void reportGRModel(GRModel& gr_model);
   void countGRModel(GRModel& gr_model);
-  void reportTable(GRModel& gr_model);
+  void reportGRModel(GRModel& gr_model);
+  bool stopGRModel(GRModel& gr_model);
 #endif
 
 #if 1  // update

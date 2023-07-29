@@ -444,19 +444,23 @@ void ResourceAllocator::iterative(RAModel& ra_model)
   double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;     //!< 罚函数的参数下降系数
   irt_int ra_outer_max_iter_num = DM_INST.getConfig().ra_outer_max_iter_num;  //!< 外层循环数
 
-  for (irt_int iter = 1; iter <= ra_outer_max_iter_num; iter++) {
+  for (irt_int outer_iter = 1; outer_iter <= ra_outer_max_iter_num; outer_iter++) {
     Monitor iter_monitor;
     double penalty_para = (1 / (2 * ra_initial_penalty));
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", ra_outer_max_iter_num, "), penalty_para=", penalty_para, " ******");
-
-    ra_model.set_curr_iter(iter);
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", outer_iter, "/", ra_outer_max_iter_num, "), penalty_para=", penalty_para,
+                  " ******");
+    ra_model.set_curr_outer_iter(outer_iter);
     allocateRAModel(ra_model, penalty_para);
     processRAModel(ra_model);
+    countRAModel(ra_model);
     reportRAModel(ra_model);
     // writeRAModel(ra_model);
-
-    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
+                  " ******");
     ra_initial_penalty *= ra_penalty_drop_rate;
+    if (stopRAModel(ra_model)) {
+      break;
+    }
   }
 }
 
@@ -487,14 +491,15 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
 {
   irt_int ra_inner_max_iter_num = DM_INST.getConfig().ra_inner_max_iter_num;  //!< 内层循环数
 
-  for (irt_int iter = 1; iter <= ra_inner_max_iter_num; iter++) {
+  for (irt_int inner_iter = 1; inner_iter <= ra_inner_max_iter_num; inner_iter++) {
     Monitor iter_monitor;
 
+    ra_model.set_curr_inner_iter(inner_iter);
     calcNablaF(ra_model, penalty_para);
     double norm_nabla_f = calcAlpha(ra_model, penalty_para);
     double norm_square_step = updateResult(ra_model);
 
-    LOG_INST.info(Loc::current(), "Iter(", iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
+    LOG_INST.info(Loc::current(), "Iter(", inner_iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
                   ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
   }
 }
@@ -759,12 +764,6 @@ void ResourceAllocator::normalizeCostMap(GridMap<double>& cost_map, double lower
   }
 }
 
-void ResourceAllocator::reportRAModel(RAModel& ra_model)
-{
-  countRAModel(ra_model);
-  reportTable(ra_model);
-}
-
 void ResourceAllocator::countRAModel(RAModel& ra_model)
 {
   RAModelStat ra_model_stat;
@@ -813,7 +812,7 @@ void ResourceAllocator::countRAModel(RAModel& ra_model)
   ra_model.set_ra_model_stat(ra_model_stat);
 }
 
-void ResourceAllocator::reportTable(RAModel& ra_model)
+void ResourceAllocator::reportRAModel(RAModel& ra_model)
 {
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
 
@@ -869,6 +868,11 @@ void ResourceAllocator::reportTable(RAModel& ra_model)
   }
 }
 
+bool ResourceAllocator::stopRAModel(RAModel& ra_model)
+{
+  return false;
+}
+
 #endif
 
 #if 1  // update
@@ -905,7 +909,7 @@ void ResourceAllocator::writeRAModel(RAModel& ra_model)
   }
 
   std::ofstream* csv_file
-      = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "ra_model_", ra_model.get_curr_iter(), ".csv"));
+      = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "ra_model_", ra_model.get_curr_outer_iter(), ".csv"));
   for (irt_int y = global_cost_map.get_y_size() - 1; y >= 0; y--) {
     for (irt_int x = 0; x < global_cost_map.get_x_size(); x++) {
       RTUtil::pushStream(csv_file, global_cost_map[x][y], ",");

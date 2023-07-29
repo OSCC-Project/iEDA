@@ -734,19 +734,21 @@ void DetailedRouter::saveDRBox(DRBox& dr_box)
 
 void DetailedRouter::iterative(DRModel& dr_model)
 {
-  irt_int dr_outer_max_iter_num = DM_INST.getConfig().dr_outer_max_iter_num;
+  irt_int dr_model_max_iter_num = DM_INST.getConfig().dr_model_max_iter_num;
 
-  for (irt_int iter = 1; iter <= dr_outer_max_iter_num; iter++) {
+  for (irt_int iter = 1; iter <= dr_model_max_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", dr_outer_max_iter_num, ") ******");
-
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", dr_model_max_iter_num, ") ******");
     dr_model.set_curr_iter(iter);
     resetDRModel(dr_model);
     routeDRModel(dr_model);
+    countDRModel(dr_model);
     reportDRModel(dr_model);
-
-    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", dr_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
+    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", dr_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
+    if (stopDRModel(dr_model)) {
+      break;
+    }
   }
 }
 
@@ -773,28 +775,32 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
 {
-  irt_int ta_inner_max_iter_num = DM_INST.getConfig().ta_inner_max_iter_num;
+  irt_int ta_panel_max_iter_num = DM_INST.getConfig().ta_panel_max_iter_num;
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
 
-  for (irt_int iter = 1; iter <= ta_inner_max_iter_num; iter++) {
+  for (irt_int iter = 1; iter <= ta_panel_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_inner_max_iter_num, ") ******");
+      LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_panel_max_iter_num, ") ******");
     }
     dr_box.set_curr_iter(iter);
     sortDRBox(dr_box);
     resetDRBox(dr_box);
     routeDRBox(dr_box);
     processDRBox(dr_box);
+    countDRBox(dr_box);
     reportDRBox(dr_box);
+    updateDRBox(dr_model, dr_box);
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_inner_max_iter_num, ")", iter_monitor.getStatsInfo(),
+      LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
     }
+    if (stopDRBox(dr_box)) {
+      break;
+    }
   }
-  updateDRBox(dr_model, dr_box);
 }
 
 void DetailedRouter::sortDRBox(DRBox& dr_box)
@@ -1310,14 +1316,6 @@ void DetailedRouter::buildRoutingResult(DRTask& dr_task)
   rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
 }
 
-void DetailedRouter::reportDRBox(DRBox& dr_box)
-{
-  countDRBox(dr_box);
-  if (omp_get_num_threads() == 1) {
-    reportTable(dr_box);
-  }
-}
-
 void DetailedRouter::countDRBox(DRBox& dr_box)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
@@ -1422,8 +1420,11 @@ void DetailedRouter::countDRBox(DRBox& dr_box)
   dr_box.set_dr_box_stat(dr_box_stat);
 }
 
-void DetailedRouter::reportTable(DRBox& dr_box)
+void DetailedRouter::reportDRBox(DRBox& dr_box)
 {
+  if (omp_get_num_threads() == 1) {
+    return;
+  }
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
@@ -1557,10 +1558,9 @@ void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
   }
 }
 
-void DetailedRouter::reportDRModel(DRModel& dr_model)
+bool DetailedRouter::stopDRBox(DRBox& dr_box)
 {
-  countDRModel(dr_model);
-  reportTable(dr_model);
+  return false;
 }
 
 void DetailedRouter::countDRModel(DRModel& dr_model)
@@ -1642,7 +1642,7 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
   dr_model.set_dr_model_stat(dr_model_stat);
 }
 
-void DetailedRouter::reportTable(DRModel& dr_model)
+void DetailedRouter::reportDRModel(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -1766,6 +1766,11 @@ void DetailedRouter::reportTable(DRModel& dr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool DetailedRouter::stopDRModel(DRModel& dr_model)
+{
+  return false;
 }
 
 #endif
