@@ -437,26 +437,24 @@ void ViolationRepairer::checkVRModel(VRModel& vr_model)
 
 void ViolationRepairer::iterative(VRModel& vr_model)
 {
-  irt_int vr_iter_num = 1;
-  for (irt_int iter = 1; iter <= vr_iter_num; iter++) {
+  irt_int vr_max_iter_num = DM_INST.getConfig().vr_max_iter_num;
+
+  for (irt_int iter = 1; iter <= vr_max_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_iter_num, ") ******");
-
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_max_iter_num, ") ******");
+    vr_model.set_curr_iter(iter);
     repairVRModel(vr_model);
+    countVRModel(vr_model);
     reportVRModel(vr_model);
-
-    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    if (stopVRModel(vr_model)) {
+      break;
+    }
   }
 }
 
 void ViolationRepairer::repairVRModel(VRModel& vr_model)
 {
-}
-
-void ViolationRepairer::reportVRModel(VRModel& vr_model)
-{
-  countVRModel(vr_model);
-  reportTable(vr_model);
 }
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
@@ -564,7 +562,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   vr_model.set_vr_model_stat(vr_model_stat);
 }
 
-void ViolationRepairer::reportTable(VRModel& vr_model)
+void ViolationRepairer::reportVRModel(VRModel& vr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -688,6 +686,11 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool ViolationRepairer::stopVRModel(VRModel& vr_model)
+{
+  return false;
 }
 
 #endif

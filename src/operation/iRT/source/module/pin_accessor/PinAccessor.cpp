@@ -283,16 +283,20 @@ void PinAccessor::checkPAModel(PAModel& pa_model)
 
 void PinAccessor::iterative(PAModel& pa_model)
 {
-  irt_int pa_iter_num = 1;
-  for (irt_int iter = 1; iter <= pa_iter_num; iter++) {
-    Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", pa_iter_num, ") ******");
+  irt_int pa_max_iter_num = DM_INST.getConfig().pa_max_iter_num;
 
+  for (irt_int iter = 1; iter <= pa_max_iter_num; iter++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", pa_max_iter_num, ") ******");
+    pa_model.set_curr_iter(iter);
     accessPAModel(pa_model);
     processPAModel(pa_model);
+    countPAModel(pa_model);
     reportPAModel(pa_model);
-
-    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", pa_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", pa_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    if (stopPAModel(pa_model)) {
+      break;
+    }
   }
 }
 
@@ -857,12 +861,6 @@ void PinAccessor::buildDrivingPin(PANet& pa_net)
   LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
 }
 
-void PinAccessor::reportPAModel(PAModel& pa_model)
-{
-  countPAModel(pa_model);
-  reportTable(pa_model);
-}
-
 void PinAccessor::countPAModel(PAModel& pa_model)
 {
   PAModelStat pa_mode_stat;
@@ -910,7 +908,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   pa_model.set_pa_mode_stat(pa_mode_stat);
 }
 
-void PinAccessor::reportTable(PAModel& pa_model)
+void PinAccessor::reportPAModel(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -980,6 +978,11 @@ void PinAccessor::reportTable(PAModel& pa_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool PinAccessor::stopPAModel(PAModel& pa_model)
+{
+  return false;
 }
 
 #endif

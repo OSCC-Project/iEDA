@@ -86,9 +86,9 @@ class PinAccessor
   void selectByNetDistance(PANet& pa_net);
   void processPAModel(PAModel& pa_model);
   void buildDrivingPin(PANet& pa_net);
-  void reportPAModel(PAModel& pa_model);
   void countPAModel(PAModel& pa_model);
-  void reportTable(PAModel& pa_model);
+  void reportPAModel(PAModel& pa_model);
+  bool stopPAModel(PAModel& pa_model);
 #endif
 
 #if 1  // update

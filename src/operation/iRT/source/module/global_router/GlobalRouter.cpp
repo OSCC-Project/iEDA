@@ -636,16 +636,18 @@ void GlobalRouter::iterative(GRModel& gr_model)
   for (irt_int iter = 1; iter <= gr_max_iter_num; iter++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", gr_max_iter_num, ") ******");
-
     gr_model.set_curr_iter(iter);
     sortGRModel(gr_model);
     resetGRModel(gr_model);
     routeGRModel(gr_model);
     processGRModel(gr_model);
+    countGRModel(gr_model);
     reportGRModel(gr_model);
     // writeGRModel(gr_model);
-
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    if (stopGRModel(gr_model)) {
+      break;
+    }
   }
 }
 
@@ -1687,12 +1689,6 @@ void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_
   parent_node->delChild(child_node);
 }
 
-void GlobalRouter::reportGRModel(GRModel& gr_model)
-{
-  countGRModel(gr_model);
-  reportTable(gr_model);
-}
-
 void GlobalRouter::countGRModel(GRModel& gr_model)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
@@ -1773,7 +1769,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   gr_model.set_gr_model_stat(gr_model_stat);
 }
 
-void GlobalRouter::reportTable(GRModel& gr_model)
+void GlobalRouter::reportGRModel(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -1880,6 +1876,11 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool GlobalRouter::stopGRModel(GRModel& gr_model)
+{
+  return false;
 }
 
 #endif
