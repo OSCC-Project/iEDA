@@ -16,28 +16,36 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PASourceType.hpp"
-#include "RegionQuery.hpp"
-#include "SpaceRegion.hpp"
+#include <string>
+
+#include "Logger.hpp"
 
 namespace irt {
 
-class PAGCell : public SpaceRegion
+enum class GRSourceType
 {
- public:
-  PAGCell() = default;
-  ~PAGCell() = default;
-  // getter
-  std::map<PASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
-  // setter
-  void set_source_region_query_map(const std::map<PASourceType, RegionQuery*>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
-  }
-  // function
+  kNone,
+  kBlockAndPin
+};
 
- private:
-  std::map<PASourceType, RegionQuery*> _source_region_query_map;
+struct GetGRSourceTypeName
+{
+  std::string operator()(const GRSourceType& gr_source_type) const
+  {
+    std::string gr_source_type_name;
+    switch (gr_source_type) {
+      case GRSourceType::kNone:
+        gr_source_type_name = "none";
+        break;
+      case GRSourceType::kBlockAndPin:
+        gr_source_type_name = "block_and_pin";
+        break;
+      default:
+        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return gr_source_type_name;
+  }
 };
 
 }  // namespace irt

@@ -24,6 +24,7 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "RTAPI.hpp"
+#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 
 namespace irt {
@@ -35,17 +36,10 @@ class DRBox : public SpaceRegion
   ~DRBox() = default;
   // getter
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
-  std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>&
-  get_source_box_routing_net_rect_map()
+  std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>>& get_source_box_region_query_map()
   {
-    return _source_box_routing_net_rect_map;
+    return _source_box_region_query_map;
   }
-  std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>&
-  get_source_box_cut_net_rect_map()
-  {
-    return _source_box_cut_net_rect_map;
-  }
-  std::map<DRSourceType, std::map<DRBoxId, void*, CmpDRBoxId>>& get_source_box_region_query_map() { return _source_box_region_query_map; }
   ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -53,19 +47,8 @@ class DRBox : public SpaceRegion
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
-  void set_source_box_routing_net_rect_map(
-      const std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>&
-          source_box_routing_net_rect_map)
-  {
-    _source_box_routing_net_rect_map = source_box_routing_net_rect_map;
-  }
-  void set_source_box_cut_net_rect_map(
-      const std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>&
-          source_box_cut_net_rect_map)
-  {
-    _source_box_cut_net_rect_map = source_box_cut_net_rect_map;
-  }
-  void set_source_box_region_query_map(const std::map<DRSourceType, std::map<DRBoxId, void*, CmpDRBoxId>>& source_box_region_query_map)
+  void set_source_box_region_query_map(
+      const std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>>& source_box_region_query_map)
   {
     _source_box_region_query_map = source_box_region_query_map;
   }
@@ -126,11 +109,7 @@ class DRBox : public SpaceRegion
 
  private:
   DRBoxId _dr_box_id;
-  std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>
-      _source_box_routing_net_rect_map;
-  std::map<DRSourceType, std::map<DRBoxId, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>, CmpDRBoxId>>
-      _source_box_cut_net_rect_map;
-  std::map<DRSourceType, std::map<DRBoxId, void*, CmpDRBoxId>> _source_box_region_query_map;
+  std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>> _source_box_region_query_map;
   ScaleAxis _box_scale_axis;
   std::vector<DRTask> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;

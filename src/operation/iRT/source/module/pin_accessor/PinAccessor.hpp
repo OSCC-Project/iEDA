@@ -58,7 +58,6 @@ class PinAccessor
   void buildPAModel(PAModel& pa_model);
   void updateNetFixedRectMap(PAModel& pa_model);
   void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect);
-  void cutBlockageList(PAModel& pa_model);
   void checkPAModel(PAModel& pa_model);
 #endif
 
