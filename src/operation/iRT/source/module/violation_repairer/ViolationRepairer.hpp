@@ -57,7 +57,6 @@ class ViolationRepairer
   void buildVRModel(VRModel& vr_model);
   void updateNetFixedRectMap(VRModel& vr_model);
   void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
-  void cutBlockageList(VRModel& vr_model);
   void updateVRResultTree(VRModel& vr_model);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);

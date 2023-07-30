@@ -136,7 +136,6 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
 {
   buildNeighborMap(gr_model);
   updateNetFixedRectMap(gr_model);
-  cutBlockageList(gr_model);
   updateWholeDemand(gr_model);
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
@@ -195,90 +194,39 @@ void GlobalRouter::updateNetFixedRectMap(GRModel& gr_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(gr_model, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
   }
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(gr_model, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void GlobalRouter::addRectToEnv(GRModel& gr_model, DRCRect drc_rect)
+void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  irt_int net_idx = drc_rect.get_net_idx();
-  LayerRect& real_rect = drc_rect.get_layer_rect();
-  bool is_routing = drc_rect.get_is_routing();
-  if (is_routing == false) {
+  if (drc_rect.get_is_routing() == false) {
     return;
   }
-
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        GRNode& gr_node = layer_node_map[real_rect.get_layer_idx()][x][y];
-        gr_node.get_net_rect_map()[net_idx].push_back(real_rect);
-      }
-    }
-  }
-}
-
-void GlobalRouter::cutBlockageList(GRModel& gr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        GRNode& gr_node = node_map[x][y];
-
-        std::map<irt_int, std::vector<LayerRect>>& net_rect_map = gr_node.get_net_rect_map();
-
-        std::vector<LayerRect> new_blockage_list;
-        new_blockage_list.reserve(net_rect_map[-1].size());
-        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
-
-        for (LayerRect& blockage : net_rect_map[-1]) {
-          bool is_cutting = false;
-          for (auto& [net_idx, net_shape_list] : net_rect_map) {
-            if (net_idx == -1) {
-              continue;
-            }
-            for (LayerRect& net_shape : net_shape_list) {
-              if (!RTUtil::isInside(blockage, net_shape)) {
-                continue;
-              }
-              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
-                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
-                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
-              }
-              is_cutting = true;
-            }
-          }
-          if (!is_cutting) {
-            new_blockage_list.push_back(blockage);
-          }
+        GRNode& gr_node = layer_node_map[drc_rect.get_layer_rect().get_layer_idx()][x][y];
+        RegionQuery*& region_query = gr_node.get_source_region_query_map()[gr_source_type];
+        if (region_query == nullptr) {
+          region_query = DC_INST.initRegionQuery();
         }
-        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
-          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
-            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
-          }
-        }
-        net_rect_map[-1] = new_blockage_list;
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
     }
   }
@@ -382,8 +330,9 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real whole_wire_demand and node whole_wire_demand are not equal!");
           }
         }
-        for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
-          for (LayerRect& rect : rect_list) {
+        for (const auto& [net_idx, rect_set] :
+             DC_INST.getRoutingNetRectMap(gr_node.get_source_region_query_map()[GRSourceType::kBlockAndPin], true)[layer_idx]) {
+          for (const LayerRect& rect : rect_set) {
             for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
               std::vector<PlanarRect> new_wire_list;
               for (PlanarRect& wire : wire_list) {
@@ -560,14 +509,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
         for (auto& [net_idx, access_map] : gr_node.get_net_access_map()) {
           if (access_map.empty()) {
             LOG_INST.error(Loc::current(), "The access_map is empty!");
-          }
-        }
-        for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
-          for (LayerRect& rect : rect_list) {
-            if (rect.get_layer_idx() == layer_idx) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
           }
         }
       }

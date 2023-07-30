@@ -114,7 +114,6 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
   updateNetFixedRectMap(ra_model);
-  cutBlockageList(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -168,84 +167,40 @@ void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void ResourceAllocator::addRectToEnv(RAModel& ra_model, DRCRect drc_rect)
+void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 
-  irt_int net_idx = drc_rect.get_net_idx();
-  LayerRect& real_rect = drc_rect.get_layer_rect();
-  bool is_routing = drc_rect.get_is_routing();
-  if (is_routing == false) {
+  if (drc_rect.get_is_routing() == false) {
     return;
   }
-
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        ra_gcell.get_routing_net_rect_map()[real_rect.get_layer_idx()][net_idx].push_back(real_rect);
-      }
-    }
-  }
-}
-
-void ResourceAllocator::cutBlockageList(RAModel& ra_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
-  for (RAGCell& ra_gcell : ra_gcell_list) {
-    for (auto& [routing_layer_idx, net_rect_map] : ra_gcell.get_routing_net_rect_map()) {
-      RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-
-      std::vector<LayerRect> new_blockage_list;
-      new_blockage_list.reserve(net_rect_map[-1].size());
-      std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
-
-      for (LayerRect& blockage : net_rect_map[-1]) {
-        bool is_cutting = false;
-        for (auto& [net_idx, net_shape_list] : net_rect_map) {
-          if (net_idx == -1) {
-            continue;
-          }
-          for (LayerRect& net_shape : net_shape_list) {
-            if (!RTUtil::isInside(blockage, net_shape)) {
-              continue;
-            }
-            for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
-              PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
-              blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
-            }
-            is_cutting = true;
-          }
+        RegionQuery*& region_query = ra_gcell.get_source_region_query_map()[ra_source_type];
+        if (region_query == nullptr) {
+          region_query = DC_INST.initRegionQuery();
         }
-        if (!is_cutting) {
-          new_blockage_list.push_back(blockage);
-        }
+        DC_INST.addEnvRectList(region_query, drc_rect);
       }
-      for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
-        for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
-          new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
-        }
-      }
-      net_rect_map[-1] = new_blockage_list;
     }
   }
 }
@@ -262,9 +217,10 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
     for (RoutingLayer& routing_layer : routing_layer_list) {
       irt_int whole_via_demand = routing_layer.get_min_area() / routing_layer.get_min_width();
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
-      for (auto& [net_idx, net_rect_list] : ra_gcell.get_routing_net_rect_map()[routing_layer.get_layer_idx()]) {
-        for (LayerRect& net_rect : net_rect_list) {
-          for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, net_rect, true))) {
+      for (const auto& [net_idx, rect_set] : DC_INST.getRoutingNetRectMap(
+               ra_gcell.get_source_region_query_map()[RASourceType::kBlockAndPin], true)[routing_layer.get_layer_idx()]) {
+        for (const LayerRect& rect : rect_set) {
+          for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
             std::vector<PlanarRect> new_wire_list;
             for (PlanarRect& wire : wire_list) {
               if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
@@ -373,16 +329,6 @@ void ResourceAllocator::initTempObject(RAModel& ra_model)
 void ResourceAllocator::checkRAModel(RAModel& ra_model)
 {
   for (RAGCell& ra_gcell : ra_model.get_ra_gcell_list()) {
-    for (auto& [layer_idx, net_rect_map] : ra_gcell.get_routing_net_rect_map()) {
-      for (auto& [net_idx, rect_list] : net_rect_map) {
-        for (LayerRect& rect : rect_list) {
-          if (layer_idx == rect.get_layer_idx()) {
-            continue;
-          }
-          LOG_INST.error(Loc::current(), "The layer of source routing net rect is different!");
-        }
-      }
-    }
     if (ra_gcell.get_resource_supply() < 0) {
       LOG_INST.error(Loc::current(), "The resource_supply < 0!");
     }

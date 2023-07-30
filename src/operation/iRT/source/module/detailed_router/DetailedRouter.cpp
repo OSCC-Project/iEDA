@@ -144,7 +144,6 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
   buildSchedule(dr_model);
   updateNetFixedRectMap(dr_model);
-  cutBlockageList(dr_model);
   updateNetPanelResultMap(dr_model);
   updateNetEnclosureMap(dr_model);
   buildBoxScaleAxis(dr_model);
@@ -208,10 +207,6 @@ void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  irt_int net_idx = drc_rect.get_net_idx();
-  LayerRect& real_rect = drc_rect.get_layer_rect();
-  bool is_routing = drc_rect.get_is_routing();
-
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -222,66 +217,11 @@ void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type
             || dr_source_type == DRSourceType::kEnclosure) {
           dr_box_id = dr_box.get_dr_box_id();
         }
-        if (is_routing) {
-          dr_box.get_source_box_routing_net_rect_map()[dr_source_type][dr_box_id][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
-        } else {
-          dr_box.get_source_box_cut_net_rect_map()[dr_source_type][dr_box_id][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
-        }
-        void*& region_query = dr_box.get_source_box_region_query_map()[dr_source_type][dr_box_id];
+        RegionQuery*& region_query = dr_box.get_source_box_region_query_map()[dr_source_type][dr_box_id];
         if (region_query == nullptr) {
           region_query = DC_INST.initRegionQuery();
         }
         DC_INST.addEnvRectList(region_query, drc_rect);
-      }
-    }
-  }
-}
-
-void DetailedRouter::cutBlockageList(DRModel& dr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-
-  for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < dr_box_map.get_y_size(); y++) {
-      DRBox& dr_box = dr_box_map[x][y];
-
-      for (auto& [routing_layer_idx, net_rect_map] :
-           dr_box.get_source_box_routing_net_rect_map()[DRSourceType::kBlockAndPin][dr_box.get_dr_box_id()]) {
-        RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-
-        std::vector<LayerRect> new_blockage_list;
-        new_blockage_list.reserve(net_rect_map[-1].size());
-        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
-
-        for (LayerRect& blockage : net_rect_map[-1]) {
-          bool is_cutting = false;
-          for (auto& [net_idx, net_shape_list] : net_rect_map) {
-            if (net_idx == -1) {
-              continue;
-            }
-            for (LayerRect& net_shape : net_shape_list) {
-              if (!RTUtil::isInside(blockage, net_shape)) {
-                continue;
-              }
-              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
-                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
-                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
-              }
-              is_cutting = true;
-            }
-          }
-          if (!is_cutting) {
-            new_blockage_list.push_back(blockage);
-          }
-        }
-        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
-          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
-            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
-          }
-        }
-        net_rect_map[-1] = new_blockage_list;
       }
     }
   }

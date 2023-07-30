@@ -19,6 +19,7 @@
 #include "LayerRect.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
+#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
@@ -35,11 +36,7 @@ class TAPanel : public LayerRect
   ~TAPanel() = default;
   // getter
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>>& get_source_panel_net_rect_map()
-  {
-    return _source_panel_net_rect_map;
-  }
-  std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>>& get_source_panel_region_query_map()
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& get_source_panel_region_query_map()
   {
     return _source_panel_region_query_map;
   }
@@ -50,13 +47,8 @@ class TAPanel : public LayerRect
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_source_panel_net_rect_map(
-      const std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>>& source_panel_net_rect_map)
-  {
-    _source_panel_net_rect_map = source_panel_net_rect_map;
-  }
   void set_source_panel_region_query_map(
-      const std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>>& source_panel_region_query_map)
+      const std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& source_panel_region_query_map)
   {
     _source_panel_region_query_map = source_panel_region_query_map;
   }
@@ -119,8 +111,7 @@ class TAPanel : public LayerRect
 
  private:
   TAPanelId _ta_panel_id;
-  std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>> _source_panel_net_rect_map;
-  std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>> _source_panel_region_query_map;
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>> _source_panel_region_query_map;
   ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;

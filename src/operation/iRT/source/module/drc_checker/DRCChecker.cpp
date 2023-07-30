@@ -122,15 +122,22 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, MTree<PHYNode>&
   return drc_rect_list;
 }
 
-void* DRCChecker::initRegionQuery()
+// void* DRCChecker::initRegionQuery()
+// {
+//   void* region_query = nullptr;
+//   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+//     region_query = RTAPI_INST.initRegionQuery();
+//   } else {
+//     region_query = new RegionQuery();
+//   }
+//   return region_query;
+// }
+
+std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> DRCChecker::getRoutingNetRectMap(void* region_query,
+                                                                                                               bool is_routing)
 {
-  void* region_query = nullptr;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    region_query = RTAPI_INST.initRegionQuery();
-  } else {
-    region_query = new RegionQuery();
-  }
-  return region_query;
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> routing_net_rect_map;
+  return routing_net_rect_map;
 }
 
 void DRCChecker::addEnvRectList(void* region_query, const DRCRect& drc_rect)

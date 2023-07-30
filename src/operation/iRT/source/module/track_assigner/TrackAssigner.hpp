@@ -59,7 +59,6 @@ class TrackAssigner
   void buildSchedule(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
-  void cutBlockageList(TAModel& ta_model);
   void updateNetEnclosureMap(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
