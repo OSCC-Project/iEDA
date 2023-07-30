@@ -29,7 +29,7 @@ class RegionQuery
 {
  public:
   RegionQuery() {}
-  ~RegionQuery() {}
+  ~RegionQuery() { destroy(); }
   // getter
   std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>>& get_routing_net_rect_map()
   {
@@ -43,6 +43,24 @@ class RegionQuery
   std::map<irt_int, bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>>& get_cut_region_map() { return _cut_region_map; }
   // setters
   // function
+  void destroy() {
+    for (auto& [net_id, layer_shape_map] : _routing_net_rect_map) {
+      for(auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          delete shape_ptr;
+          shape_ptr = nullptr;
+        }
+      }
+    }
+    for (auto& [net_id, layer_shape_map] : _cut_net_rect_map) {
+      for(auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          delete shape_ptr;
+          shape_ptr = nullptr;
+        }
+      }
+    }
+  }
 
  private:
   std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>> _routing_net_rect_map;
