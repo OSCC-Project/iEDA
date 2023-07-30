@@ -122,34 +122,36 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, MTree<PHYNode>&
   return drc_rect_list;
 }
 
-// void* DRCChecker::initRegionQuery()
-// {
-//   void* region_query = nullptr;
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-//     region_query = RTAPI_INST.initRegionQuery();
-//   } else {
-//     region_query = new RegionQuery();
-//   }
-//   return region_query;
-// }
-
-std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> DRCChecker::getRoutingNetRectMap(void* region_query,
-                                                                                                               bool is_routing)
+RegionQuery* DRCChecker::initRegionQuery()
 {
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> routing_net_rect_map;
-  return routing_net_rect_map;
+  RegionQuery* region_query = new RegionQuery();
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    region_query->set_idrc_region_query(RTAPI_INST.initRegionQuery());
+  }
+  return region_query;
 }
 
-void DRCChecker::addEnvRectList(void* region_query, const DRCRect& drc_rect)
+std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getRoutingNetRectMap(RegionQuery* region_query,
+                                                                                                                bool is_routing)
+{
+  if (is_routing) {
+    return region_query->get_routing_net_rect_map();
+  } else {
+    return region_query->get_cut_net_rect_map();
+  }
+}
+
+void DRCChecker::addEnvRectList(RegionQuery* region_query, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   addEnvRectList(region_query, drc_rect_list);
 }
 
-void DRCChecker::addEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
 
+  addNetRectMap(region_query, drc_rect_list);
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
     RTAPI_INST.addEnvRectList(region_query, ids_rect_list);
   } else {
@@ -157,36 +159,37 @@ void DRCChecker::addEnvRectList(void* region_query, const std::vector<DRCRect>& 
   }
 }
 
-void DRCChecker::delEnvRectList(void* region_query, const DRCRect& drc_rect)
+void DRCChecker::delEnvRectList(RegionQuery* region_query, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   delEnvRectList(region_query, drc_rect_list);
 }
 
-void DRCChecker::delEnvRectList(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
 
+  delNetRectMap(region_query, drc_rect_list);
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    RTAPI_INST.delEnvRectList(region_query, ids_rect_list);
+    RTAPI_INST.delEnvRectList(region_query->get_idrc_region_query(), ids_rect_list);
   } else {
     delEnvRectListByRTDRC(region_query, drc_rect_list);
   }
 }
 
-bool DRCChecker::hasViolation(void* region_query, const DRCRect& drc_rect)
+bool DRCChecker::hasViolation(RegionQuery* region_query, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return hasViolation(region_query, drc_rect_list);
 }
 
-bool DRCChecker::hasViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+bool DRCChecker::hasViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
 
   bool has_violation = false;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    has_violation = RTAPI_INST.hasViolation(region_query, ids_rect_list);
+    has_violation = RTAPI_INST.hasViolation(region_query->get_idrc_region_query(), ids_rect_list);
   } else {
     for (auto [drc, num] : getViolationByRTDRC(region_query, drc_rect_list)) {
       if (num > 0) {
@@ -198,24 +201,24 @@ bool DRCChecker::hasViolation(void* region_query, const std::vector<DRCRect>& dr
   return has_violation;
 }
 
-std::map<std::string, int> DRCChecker::getViolation(void* region_query)
+std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    violation_name_num_map = RTAPI_INST.getViolation(region_query);
+    violation_name_num_map = RTAPI_INST.getViolation(region_query->get_idrc_region_query());
   } else {
     violation_name_num_map = getViolationByRTDRC(region_query);
   }
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::getViolation(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
 
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    violation_name_num_map = RTAPI_INST.getViolation(region_query, ids_rect_list);
+    violation_name_num_map = RTAPI_INST.getViolation(region_query->get_idrc_region_query(), ids_rect_list);
   } else {
     violation_name_num_map = getViolationByRTDRC(region_query, drc_rect_list);
   }
@@ -260,7 +263,7 @@ std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
   return getMinScope(drc_rect_list);
 }
 
-void DRCChecker::plotRegionQuery(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::plotRegionQuery(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
     return;
@@ -285,13 +288,26 @@ std::vector<ids::DRCRect> DRCChecker::convertToIDSRect(const std::vector<DRCRect
   return ids_rect_list;
 }
 
-void DRCChecker::addEnvRectListByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::addNetRectMap(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    irt_int net_id = drc_rect.get_net_idx();
+    const LayerRect& rect = drc_rect.get_layer_rect();
+    irt_int layer_idx = rect.get_layer_idx();
+    if (drc_rect.get_is_routing()) {
+      region_query->get_routing_net_rect_map()[layer_idx][net_id].insert(rect);
+    } else {
+      region_query->get_cut_net_rect_map()[layer_idx][net_id].insert(rect);
+    }
+  }
+}
+
+void DRCChecker::addEnvRectListByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-  auto& routing_net_rect_map = rt_region_query->get_routing_net_rect_map();
-  auto& routing_region_map = rt_region_query->get_routing_region_map();
+  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
+  auto& routing_region_map = region_query->get_routing_region_map();
 
   for (const DRCRect& drc_rect : drc_rect_list) {
 #if 1
@@ -317,11 +333,27 @@ void DRCChecker::addEnvRectListByRTDRC(void* region_query, const std::vector<DRC
   }
 }
 
-void DRCChecker::delEnvRectListByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::delNetRectMap(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
-  RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-  auto& routing_net_rect_map = rt_region_query->get_routing_net_rect_map();
-  auto& routing_region_map = rt_region_query->get_routing_region_map();
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    irt_int net_id = drc_rect.get_net_idx();
+    const LayerRect& rect = drc_rect.get_layer_rect();
+    irt_int layer_idx = rect.get_layer_idx();
+
+    auto& net_rect_map = drc_rect.get_is_routing() ? region_query->get_routing_net_rect_map() : region_query->get_cut_net_rect_map();
+
+    if (!RTUtil::exist(net_rect_map, layer_idx) || !RTUtil::exist(net_rect_map[layer_idx], net_id)
+        || !RTUtil::exist(net_rect_map[layer_idx][net_id], rect)) {
+      LOG_INST.error(Loc::current(), "There is no rect net : ", net_id, " layer idx :", layer_idx, "!");
+    }
+    net_rect_map[layer_idx][net_id].erase(rect);
+  }
+}
+
+void DRCChecker::delEnvRectListByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
+  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
+  auto& routing_region_map = region_query->get_routing_region_map();
 
   for (const DRCRect& drc_rect : drc_rect_list) {
     irt_int net_id = drc_rect.get_net_idx();
@@ -340,7 +372,7 @@ void DRCChecker::delEnvRectListByRTDRC(void* region_query, const std::vector<DRC
     if (!RTUtil::exist(routing_region_map, layer_idx)) {
       LOG_INST.error(Loc::current(), "There is no rect net : ", net_id, " layer idx :", layer_idx, "!");
     }
-    if (!routing_region_map[net_id].remove(std::make_pair<>(rq_shape->get_enlarged_shape(), rq_shape))) {
+    if (!routing_region_map[layer_idx].remove(std::make_pair<>(rq_shape->get_enlarged_shape(), rq_shape))) {
       LOG_INST.error(Loc::current(), "There is no rect net : ", net_id, " layer idx :", layer_idx, "!");
     }
     // 释放资源
@@ -349,7 +381,7 @@ void DRCChecker::delEnvRectListByRTDRC(void* region_query, const std::vector<DRC
   }
 }
 
-std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query)
+std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
   violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
@@ -366,8 +398,7 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query)
   violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
   violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
 
-  RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-  auto& routing_net_rect_map = rt_region_query->get_routing_net_rect_map();
+  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
 
   for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
     std::vector<RQShape> rq_shape_list;
@@ -389,7 +420,7 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query)
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int> violation_name_num_map;
   violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
@@ -440,10 +471,9 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(void* region_query, c
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::checkByOtherByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list)
+std::map<std::string, int> DRCChecker::checkByOtherByRTDRC(RegionQuery* region_query, std::vector<RQShape>& drc_shape_list)
 {
-  RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-  auto& routing_region_map = rt_region_query->get_routing_region_map();
+  auto& routing_region_map = region_query->get_routing_region_map();
 
   std::map<std::string, int> violation_name_num_map;
   for (RQShape& drc_shape : drc_shape_list) {
@@ -469,10 +499,9 @@ std::map<std::string, int> DRCChecker::checkByOtherByRTDRC(void* region_query, s
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list)
+std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(RegionQuery* region_query, std::vector<RQShape>& drc_shape_list)
 {
-  RegionQuery* rt_region_query = static_cast<RegionQuery*>(region_query);
-  auto& region_map = rt_region_query->get_routing_region_map();
+  auto& region_map = region_query->get_routing_region_map();
 
   std::map<std::string, int> violation_name_num_map;
 
@@ -564,7 +593,7 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
 
-  auto& routing_net_rect_map = region_query->get_routing_net_rect_map();
+  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
 
   GPGDS gp_gds;
 
