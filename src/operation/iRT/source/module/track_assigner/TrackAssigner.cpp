@@ -495,9 +495,9 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  static size_t record_net_num = 0;
-  static std::string ta_dataset_path;
-  static std::ofstream* ta_dataset;
+  size_t written_panel_num = 0;
+  std::string ta_dataset_path;
+  std::ofstream* ta_dataset;
 
   std::string def_file_path = DM_INST.getHelper().get_def_file_path();
   ta_dataset_path
@@ -522,7 +522,6 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
         RTUtil::pushStream(ta_dataset, " ", "V", "\n");
       }
       RTUtil::pushStream(ta_dataset, "{", "\n");
-
       // track_list
       RTUtil::pushStream(ta_dataset, "track_list", "\n");
       for (ScaleGrid& x_grid : ta_panel.get_panel_scale_axis().get_x_grid_list()) {
@@ -531,7 +530,6 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       for (ScaleGrid& y_grid : ta_panel.get_panel_scale_axis().get_y_grid_list()) {
         RTUtil::pushStream(ta_dataset, "Y", " ", y_grid.get_start_line(), " ", y_grid.get_step_length(), " ", y_grid.get_end_line(), "\n");
       }
-
       // wire_list
       RTUtil::pushStream(ta_dataset, "wire_list", "\n");
       for (TATask& ta_task : ta_panel.get_ta_task_list()) {
@@ -550,7 +548,6 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
         RTUtil::pushStream(ta_dataset, ta_task.get_origin_net_idx(), " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ",
                            rect.get_rt_y(), "\n");
       }
-
       // soft_shape_list
       RTUtil::pushStream(ta_dataset, "soft_shape_list", "\n");
       for (const auto& [net_idx, rect_set] : DC_INST.getRoutingNetRectMap(
@@ -560,7 +557,6 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
                              "\n");
         }
       }
-
       // hard_shape_list
       RTUtil::pushStream(ta_dataset, "hard_shape_list", "\n");
       for (const auto& [net_idx, rect_set] : DC_INST.getRoutingNetRectMap(
@@ -570,16 +566,17 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
                              "\n");
         }
       }
-
       RTUtil::pushStream(ta_dataset, "}", "\n");
-      record_net_num++;
-      if (record_net_num == 3) {
-        RTUtil::closeFileStream(ta_dataset);
-        LOG_INST.info(Loc::current(), "The result has been written to '", ta_dataset_path, "'!");
-        exit(0);
+      written_panel_num++;
+      if (written_panel_num % 10000 == 0) {
+        LOG_INST.info(Loc::current(), "Written ", written_panel_num, " panels");
       }
     }
   }
+  LOG_INST.info(Loc::current(), "Written ", written_panel_num, " panels");
+  RTUtil::closeFileStream(ta_dataset);
+  LOG_INST.info(Loc::current(), "The result has been written to '", ta_dataset_path, "'!");
+  exit(0);
 }
 
 void TrackAssigner::buildLayerPanelList(TAModel& ta_model)
