@@ -744,11 +744,11 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  static size_t record_net_num = 0;
+  static size_t written_net_num = 0;
   static std::string gr_dataset_path;
   static std::ofstream* gr_dataset;
 
-  if (record_net_num == 0) {
+  if (written_net_num == 0) {
     std::string def_file_path = DM_INST.getHelper().get_def_file_path();
     gr_dataset_path
         = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".gr.txt");
@@ -802,9 +802,13 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
     }
   }
   RTUtil::pushStream(gr_dataset, "}", "\n");
-  record_net_num++;
 
-  if (record_net_num == gr_model.get_gr_net_list().size()) {
+  written_net_num++;
+  if (written_net_num % 10000 == 0) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
+  }
+  if (written_net_num == gr_model.get_gr_net_list().size()) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
     RTUtil::closeFileStream(gr_dataset);
     LOG_INST.info(Loc::current(), "The result has been written to '", gr_dataset_path, "'!");
     exit(0);
