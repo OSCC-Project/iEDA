@@ -90,12 +90,10 @@ class DRCChecker
   DRCChecker& operator=(DRCChecker&& other) = delete;
   // function
   std::vector<ids::DRCRect> convertToIDSRect(const std::vector<DRCRect>& drc_rect_list);
-  void addEnvRectListByRTDRC(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  std::vector<RQShape> getRQShapeList(const std::vector<ids::DRCRect>& env_rect_list);
-  BoostBox convertBoostBox(ids::DRCRect ids_rect);
-  void delEnvRectListByRTDRC(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
+  void addEnvRectListByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list);
+  void delEnvRectListByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, int> getViolationByRTDRC(void* region_query);
-  std::map<std::string, int> getViolationByRTDRC(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
+  std::map<std::string, int> getViolationByRTDRC(void* region_query, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, int> checkByOtherByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list);
   std::map<std::string, int> checkBySelfByRTDRC(void* region_query, std::vector<RQShape>& drc_shape_list);
   bool checkMinSpacingByRTDRC(RQShape& net_shape1, RQShape& net_shape2, std::vector<RQShape>& net_shape_list);
