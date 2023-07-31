@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
 #include "VRSourceType.hpp"
@@ -35,6 +36,14 @@ class VRGCell : public SpaceRegion
     _source_region_query_map = source_region_query_map;
   }
   // function
+  RegionQuery* getRegionQuery(VRSourceType vr_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[vr_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
   std::map<VRSourceType, RegionQuery*> _source_region_query_map;

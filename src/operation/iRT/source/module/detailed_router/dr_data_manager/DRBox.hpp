@@ -18,6 +18,7 @@
 
 #include "DRBoxId.hpp"
 #include "DRBoxStat.hpp"
+#include "DRCChecker.hpp"
 #include "DRNode.hpp"
 #include "DRSourceType.hpp"
 #include "DRTask.hpp"
@@ -57,6 +58,15 @@ class DRBox : public SpaceRegion
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
+  // function
+  RegionQuery* getRegionQuery(DRSourceType dr_source_type, DRBoxId dr_box_id)
+  {
+    RegionQuery*& region_query = _source_box_region_query_map[dr_source_type][dr_box_id];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 #if 1  // astar
   // config
   double get_wire_unit() const { return _wire_unit; }
