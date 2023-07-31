@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "../../../../database/interaction/ids.hpp"
 #include "LayerRect.hpp"
 #include "RQShape.hpp"
 #include "RTU.hpp"
@@ -28,8 +27,8 @@ using StaticBox = std::pair<BoostBox, RQShape*>;
 class RegionQuery
 {
  public:
-  RegionQuery() {}
-  ~RegionQuery() { destroy(); }
+  RegionQuery() = default;
+  ~RegionQuery() = default;
   // getter
   void* get_idrc_region_query() { return _idrc_region_query; }
   std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_routing_net_rect_map()
@@ -50,25 +49,6 @@ class RegionQuery
   // setters
   void set_idrc_region_query(void* idrc_region_query) { _idrc_region_query = idrc_region_query; }
   // function
-  void destroy()
-  {
-    for (auto& [net_id, layer_shape_map] : _routing_net_shape_map) {
-      for (auto& [layer_idx, shape_map] : layer_shape_map) {
-        for (auto& [rect, shape_ptr] : shape_map) {
-          delete shape_ptr;
-          shape_ptr = nullptr;
-        }
-      }
-    }
-    for (auto& [net_id, layer_shape_map] : _cut_net_shape_map) {
-      for (auto& [layer_idx, shape_map] : layer_shape_map) {
-        for (auto& [rect, shape_ptr] : shape_map) {
-          delete shape_ptr;
-          shape_ptr = nullptr;
-        }
-      }
-    }
-  }
 
  private:
   void* _idrc_region_query = nullptr;

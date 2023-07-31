@@ -59,6 +59,7 @@ class RTAPI
 
   // DRC
   void* initRegionQuery();
+  void destroyRegionQuery(void* region_query);
   void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
   void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
   void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);

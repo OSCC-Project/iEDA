@@ -276,14 +276,13 @@ void* RTAPI::initRegionQuery()
   return idrc::DrcAPIInst.init();
 }
 
-// void destroyRegionQuery(void* region_query)
-// {
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-//     delete static_cast<irt::RegionQuery*>(region_query);
-//     region_query = nullptr;
-//   } else {
-//   }
-// }
+void RTAPI::destroyRegionQuery(void* region_query)
+{
+  if (region_query != nullptr) {
+    idrc::DrcAPIInst.destroy(static_cast<idrc::RegionQuery*>(region_query));
+    region_query = nullptr;
+  }
+}
 
 void RTAPI::addEnvRectList(void* region_query, const ids::DRCRect& env_rect)
 {
