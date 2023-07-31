@@ -84,6 +84,9 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
   void sortDRBox(DRBox& dr_box);
+  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
+  SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
+  SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
   void resetDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);

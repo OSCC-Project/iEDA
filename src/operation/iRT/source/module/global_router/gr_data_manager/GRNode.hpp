@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "GRRouteStrategy.hpp"
 #include "GRSourceType.hpp"
 #include "LayerCoord.hpp"
@@ -83,6 +84,14 @@ class GRNode : public LayerCoord
       neighbor_node = _neighbor_ptr_map[orientation];
     }
     return neighbor_node;
+  }
+  RegionQuery* getRegionQuery(GRSourceType gr_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[gr_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
   }
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {

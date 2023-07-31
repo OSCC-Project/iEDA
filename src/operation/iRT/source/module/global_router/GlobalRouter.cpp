@@ -222,11 +222,7 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, 
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         GRNode& gr_node = layer_node_map[drc_rect.get_layer_rect().get_layer_idx()][x][y];
-        RegionQuery*& region_query = gr_node.get_source_region_query_map()[gr_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(gr_node.getRegionQuery(gr_source_type), drc_rect);
       }
     }
   }
@@ -331,7 +327,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
           }
         }
         for (const auto& [net_idx, rect_set] :
-             DC_INST.getRoutingNetRectMap(gr_node.get_source_region_query_map()[GRSourceType::kBlockAndPin], true)[layer_idx]) {
+             DC_INST.getRoutingNetRectMap(gr_node.getRegionQuery(GRSourceType::kBlockAndPin), true)[layer_idx]) {
           for (const LayerRect& rect : rect_set) {
             for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
               std::vector<PlanarRect> new_wire_list;

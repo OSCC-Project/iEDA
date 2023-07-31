@@ -169,11 +169,7 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         VRGCell& vr_gcell = vr_gcell_map[x][y];
-        RegionQuery*& region_query = vr_gcell.get_source_region_query_map()[vr_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(vr_gcell.getRegionQuery(vr_source_type), drc_rect);
       }
     }
   }
