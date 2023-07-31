@@ -222,11 +222,7 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, 
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         GRNode& gr_node = layer_node_map[drc_rect.get_layer_rect().get_layer_idx()][x][y];
-        RegionQuery*& region_query = gr_node.get_source_region_query_map()[gr_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(gr_node.getRegionQuery(gr_source_type), drc_rect);
       }
     }
   }
@@ -331,7 +327,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
           }
         }
         for (const auto& [net_idx, rect_set] :
-             DC_INST.getRoutingNetRectMap(gr_node.get_source_region_query_map()[GRSourceType::kBlockAndPin], true)[layer_idx]) {
+             DC_INST.getRoutingNetRectMap(gr_node.getRegionQuery(GRSourceType::kBlockAndPin), true)[layer_idx]) {
           for (const LayerRect& rect : rect_set) {
             for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
               std::vector<PlanarRect> new_wire_list;
@@ -744,11 +740,11 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  static size_t record_net_num = 0;
+  static size_t written_net_num = 0;
   static std::string gr_dataset_path;
   static std::ofstream* gr_dataset;
 
-  if (record_net_num == 0) {
+  if (written_net_num == 0) {
     std::string def_file_path = DM_INST.getHelper().get_def_file_path();
     gr_dataset_path
         = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".gr.txt");
@@ -802,9 +798,13 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
     }
   }
   RTUtil::pushStream(gr_dataset, "}", "\n");
-  record_net_num++;
 
-  if (record_net_num == gr_model.get_gr_net_list().size()) {
+  written_net_num++;
+  if (written_net_num % 10000 == 0) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
+  }
+  if (written_net_num == gr_model.get_gr_net_list().size()) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
     RTUtil::closeFileStream(gr_dataset);
     LOG_INST.info(Loc::current(), "The result has been written to '", gr_dataset_path, "'!");
     exit(0);

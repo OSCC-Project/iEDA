@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "PASourceType.hpp"
 #include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
@@ -35,6 +36,14 @@ class PAGCell : public SpaceRegion
     _source_region_query_map = source_region_query_map;
   }
   // function
+  RegionQuery* getRegionQuery(PASourceType pa_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[pa_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
   std::map<PASourceType, RegionQuery*> _source_region_query_map;

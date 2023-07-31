@@ -174,11 +174,7 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, D
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         PAGCell& pa_gcell = pa_gcell_map[x][y];
-        RegionQuery*& region_query = pa_gcell.get_source_region_query_map()[pa_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(pa_gcell.getRegionQuery(pa_source_type), drc_rect);
       }
     }
   }
@@ -403,8 +399,8 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
           PAGCell& pa_gcell = pa_gcell_map[x][y];
-          for (const auto& [curr_net_idx, rect_list] : DC_INST.getRoutingNetRectMap(
-                   pa_gcell.get_source_region_query_map()[PASourceType::kBlockAndPin], true)[enclosure.get_layer_idx()]) {
+          for (const auto& [curr_net_idx, rect_list] :
+               DC_INST.getRoutingNetRectMap(pa_gcell.getRegionQuery(PASourceType::kBlockAndPin), true)[enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
@@ -619,7 +615,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, i
   bool has_violation = false;
   for (const PlanarCoord& grid_coord : grid_coord_set) {
     PAGCell& pa_gcell = pa_gcell_map[grid_coord.get_x()][grid_coord.get_y()];
-    if (DC_INST.hasViolation(pa_gcell.get_source_region_query_map()[pa_source_type], drc_rect_list)) {
+    if (DC_INST.hasViolation(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list)) {
       has_violation = true;
       break;
     }
