@@ -1,3 +1,5 @@
+set -e
+
 WORKSPACE="$(cd "$(dirname "$0")";pwd)"
 LOG_DIR="${WORKSPACE}/log"
 TCL_SCRIPT_DIR="${WORKSPACE}/script"
@@ -21,6 +23,8 @@ iRT_script/run_iRT_DRC.tcl
 iPL_script/run_iPL_filler.tcl
 DB_script/run_def_to_gds_text.tcl"
 
+mkdir -p $LOG_DIR
+
 for SCRIPT in $TCL_SCRIPTS; do
-    time iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}" 2>&1 | tee "${LOG_DIR}/$(basename $SCRIPT .tcl).log"
+    time ./iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}" 2>&1 | tee "${LOG_DIR}/$(basename $SCRIPT .tcl).log"
 done
