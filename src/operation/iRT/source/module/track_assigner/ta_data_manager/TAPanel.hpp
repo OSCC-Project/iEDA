@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "LayerRect.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
@@ -57,6 +58,15 @@ class TAPanel : public LayerRect
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
+  // function
+  RegionQuery* getRegionQuery(TASourceType ta_source_type, TAPanelId ta_panel_id)
+  {
+    RegionQuery*& region_query = _source_panel_region_query_map[ta_source_type][ta_panel_id];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 #if 1  // astar
   // config
   double get_wire_unit() const { return _wire_unit; }

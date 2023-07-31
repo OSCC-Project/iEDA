@@ -195,11 +195,7 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        RegionQuery*& region_query = ra_gcell.get_source_region_query_map()[ra_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(ra_gcell.getRegionQuery(ra_source_type), drc_rect);
       }
     }
   }
@@ -217,8 +213,8 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
     for (RoutingLayer& routing_layer : routing_layer_list) {
       irt_int whole_via_demand = routing_layer.get_min_area() / routing_layer.get_min_width();
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
-      for (const auto& [net_idx, rect_set] : DC_INST.getRoutingNetRectMap(
-               ra_gcell.get_source_region_query_map()[RASourceType::kBlockAndPin], true)[routing_layer.get_layer_idx()]) {
+      for (const auto& [net_idx, rect_set] :
+           DC_INST.getRoutingNetRectMap(ra_gcell.getRegionQuery(RASourceType::kBlockAndPin), true)[routing_layer.get_layer_idx()]) {
         for (const LayerRect& rect : rect_set) {
           for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
             std::vector<PlanarRect> new_wire_list;

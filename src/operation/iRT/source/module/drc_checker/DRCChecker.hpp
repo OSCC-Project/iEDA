@@ -34,7 +34,8 @@ class DRCChecker
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree);
   RegionQuery* initRegionQuery();
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getRoutingNetRectMap(RegionQuery* region_query, bool is_routing);
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getRoutingNetRectMap(RegionQuery* region_query,
+                                                                                                      bool is_routing);
   void addEnvRectList(RegionQuery* region_query, const DRCRect& env_rect);
   void addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
   void delEnvRectList(RegionQuery* region_query, const DRCRect& env_rect);

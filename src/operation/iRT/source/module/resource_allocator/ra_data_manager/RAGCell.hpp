@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "PlanarRect.hpp"
 #include "RANet.hpp"
 #include "RANetNode.hpp"
@@ -40,6 +41,14 @@ class RAGCell
   void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_ra_net_node_list(const std::vector<RANetNode>& ra_net_node_list) { _ra_net_node_list = ra_net_node_list; }
   // function
+  RegionQuery* getRegionQuery(RASourceType ra_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[ra_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
   PlanarRect _base_region;

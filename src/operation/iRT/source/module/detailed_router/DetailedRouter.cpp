@@ -217,11 +217,7 @@ void DetailedRouter::addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type
             || dr_source_type == DRSourceType::kEnclosure) {
           dr_box_id = dr_box.get_dr_box_id();
         }
-        RegionQuery*& region_query = dr_box.get_source_box_region_query_map()[dr_source_type][dr_box_id];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
+        DC_INST.addEnvRectList(dr_box.getRegionQuery(dr_source_type, dr_box_id), drc_rect);
       }
     }
   }
@@ -732,12 +728,12 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
     processDRBox(dr_box);
     countDRBox(dr_box);
     reportDRBox(dr_box);
-    updateDRBox(dr_model, dr_box);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
     }
     if (stopDRBox(dr_box)) {
+      updateDRBox(dr_model, dr_box);
       break;
     }
   }
@@ -745,10 +741,80 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
 
 void DetailedRouter::sortDRBox(DRBox& dr_box)
 {
+  if (dr_box.get_curr_iter() != 1) {
+    return;
+  }
+  Monitor monitor;
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.info(Loc::current(), "Sorting all tasks beginning...");
+  }
+
+  std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
+  std::sort(dr_task_list.begin(), dr_task_list.end(), [&](DRTask& task1, DRTask& task2) { return sortByMultiLevel(task1, task2); });
+
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.info(Loc::current(), "Sorting all tasks completed!", monitor.getStatsInfo());
+  }
+}
+
+bool DetailedRouter::sortByMultiLevel(DRTask& task1, DRTask& task2)
+{
+  SortStatus sort_status = SortStatus::kNone;
+
+  sort_status = sortByRoutingVolumeASC(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByPinNumDESC(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  return false;
+}
+
+// RoutingArea 升序
+SortStatus DetailedRouter::sortByRoutingVolumeASC(DRTask& task1, DRTask& task2)
+{
+  SpaceRegion& task1_bounding_box = task1.get_bounding_box();
+  double task1_routing_volume = task1_bounding_box.get_base_region().getArea()
+                                * std::abs(task1_bounding_box.get_top_layer_idx() - task1_bounding_box.get_bottom_layer_idx());
+  SpaceRegion& task2_bounding_box = task2.get_bounding_box();
+  double task2_routing_volume = task2_bounding_box.get_base_region().getArea()
+                                * std::abs(task2_bounding_box.get_top_layer_idx() - task2_bounding_box.get_bottom_layer_idx());
+
+  if (task1_routing_volume < task2_routing_volume) {
+    return SortStatus::kTrue;
+  } else if (task1_routing_volume == task2_routing_volume) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
+}
+
+// PinNum 降序
+SortStatus DetailedRouter::sortByPinNumDESC(DRTask& task1, DRTask& task2)
+{
+  irt_int task1_pin_num = static_cast<irt_int>(task1.get_dr_group_list().size());
+  irt_int task2_pin_num = static_cast<irt_int>(task2.get_dr_group_list().size());
+
+  if (task1_pin_num > task2_pin_num) {
+    return SortStatus::kTrue;
+  } else if (task1_pin_num == task2_pin_num) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
 }
 
 void DetailedRouter::resetDRBox(DRBox& dr_box)
 {
+  if (dr_box.get_curr_iter() == 1) {
+    return;
+  }
 }
 
 void DetailedRouter::routeDRBox(DRBox& dr_box)
@@ -1058,6 +1124,10 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask& dr_task)
 {
   dr_task.set_routing_segment_list(dr_box.get_routing_segment_list());
+  // 将临时结果只给到self的panel内
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
+    DC_INST.addEnvRectList(dr_box.getRegionQuery(DRSourceType::kBoxResult, dr_box.get_dr_box_id()), drc_rect);
+  }
 }
 
 void DetailedRouter::resetSingleTask(DRBox& dr_box)
@@ -1491,6 +1561,9 @@ void DetailedRouter::reportDRBox(DRBox& dr_box)
 
 void DetailedRouter::updateDRBox(DRModel& dr_model, DRBox& dr_box)
 {
+  // 需要先把内部的结果给清空
+  dr_box.getRegionQuery(DRSourceType::kBoxResult, dr_box.get_dr_box_id());
+  // 再将结果传到model内
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
       addRectToEnv(dr_model, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect);
