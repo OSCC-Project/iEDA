@@ -32,6 +32,8 @@ namespace ista {
  * @return unsigned 1 if success, 0 else fail.
  */
 unsigned StaFindEnd::operator()(StaVertex* the_vertex) {
+  std::lock_guard<std::mutex> lk(the_vertex->get_fwd_mutex());
+
   if (the_vertex->is_foward_find()) {
     return 1;
   }
@@ -66,7 +68,40 @@ unsigned StaFindEnd::operator()(StaVertex* the_vertex) {
   return 1;
 }
 
-unsigned StaFindEnd::operator()(StaGraph* the_graph) {}
+/**
+ * @brief Find the end pins from the graph start_vertexes.
+ *
+ * @param the_graph
+ * @return unsigned
+ */
+unsigned StaFindEnd::operator()(StaGraph* the_graph) {
+  LOG_INFO << "start finding end";
+  unsigned is_ok = 1;
+#if 1
+  unsigned num_threads = getNumThreads();
+  ThreadPool pool(num_threads);
+  StaVertex* start_vertex;
+  FOREACH_START_VERTEX(the_graph, start_vertex) {
+    if (start_vertex->is_clock()) {
+      pool.enqueue(
+          [](StaFunc& func, StaVertex* start_vertex) {
+            return start_vertex->exec(func);
+          },
+          *this, start_vertex);
+    }
+  }
+
+#else
+  StaVertex* start_vertex;
+  FOREACH_START_VERTEX(the_graph, start_vertex) {
+    if (start_vertex->is_clock()) {
+      start_vertex->exec(*this);
+    }
+  }
+#endif
+  LOG_INFO << "end finding end";
+  return is_ok;
+}
 
 /**
  * @brief Find the start pins from the vertex.
@@ -75,14 +110,13 @@ unsigned StaFindEnd::operator()(StaGraph* the_graph) {}
  * @return unsigned 1 if success, 0 else fail.
  */
 unsigned StaFindStart::operator()(StaVertex* the_vertex) {
+  std::lock_guard<std::mutex> lk(the_vertex->get_bwd_mutex());
+
   if (the_vertex->is_backward_find()) {
     return 1;
   }
 
   if (the_vertex->is_start()) {
-    if (the_vertex->is_clock()) {
-      LOG_INFO << "Debug";
-    }
     the_vertex->addStartVertex(the_vertex);
     the_vertex->set_is_backward_find();
     return 1;
@@ -108,5 +142,36 @@ unsigned StaFindStart::operator()(StaVertex* the_vertex) {
   return 1;
 }
 
-unsigned StaFindStart::operator()(StaGraph* the_graph) {}
+/**
+ * @brief Find the start pins from the graph end_vertexes.
+ *
+ * @param the_graph
+ * @return unsigned
+ */
+unsigned StaFindStart::operator()(StaGraph* the_graph) {
+  LOG_INFO << "start finding start";
+  unsigned is_ok = 1;
+#if 1
+  unsigned num_threads = getNumThreads();
+  ThreadPool pool(num_threads);
+  StaVertex* end_vertex;
+  FOREACH_END_VERTEX(the_graph, end_vertex) {
+    if (end_vertex->is_end()) {
+      pool.enqueue([](StaFunc& func,
+                      StaVertex* end_vertex) { return end_vertex->exec(func); },
+                   *this, end_vertex);
+    }
+  }
+#else
+  StaVertex* end_vertex;
+  FOREACH_END_VERTEX(the_graph, end_vertex) {
+    if (end_vertex->is_end()) {
+      end_vertex->exec(*this);
+    }
+  }
+
+#endif
+  LOG_INFO << "end finding start";
+  return is_ok;
+}
 }  // namespace ista
