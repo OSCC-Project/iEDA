@@ -22,41 +22,29 @@
 
 namespace irt {
 
-enum class DRSourceType
+enum class GRSourceType
 {
   kNone,
-  kBlockAndPin,
-  kPanelResult,
-  kEnclosure,
-  kBoxResult
+  kBlockAndPin
 };
 
-struct GetDRSourceTypeName
+struct GetGRSourceTypeName
 {
-  std::string operator()(const DRSourceType& dr_source_type) const
+  std::string operator()(const GRSourceType& gr_source_type) const
   {
-    std::string dr_source_type_name;
-    switch (dr_source_type) {
-      case DRSourceType::kNone:
-        dr_source_type_name = "none";
+    std::string gr_source_type_name;
+    switch (gr_source_type) {
+      case GRSourceType::kNone:
+        gr_source_type_name = "none";
         break;
-      case DRSourceType::kBlockAndPin:
-        dr_source_type_name = "block_and_pin";
-        break;
-      case DRSourceType::kPanelResult:
-        dr_source_type_name = "panel_result";
-        break;
-      case DRSourceType::kEnclosure:
-        dr_source_type_name = "enclosure";
-        break;
-      case DRSourceType::kBoxResult:
-        dr_source_type_name = "box_result";
+      case GRSourceType::kBlockAndPin:
+        gr_source_type_name = "block_and_pin";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return dr_source_type_name;
+    return gr_source_type_name;
   }
 };
 

@@ -56,9 +56,8 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
-  void updateNetRectMap(PAModel& pa_model);
+  void updateNetFixedRectMap(PAModel& pa_model);
   void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect);
-  void cutBlockageList(PAModel& pa_model);
   void checkPAModel(PAModel& pa_model);
 #endif
 
@@ -79,15 +78,16 @@ class PinAccessor
   void selectGCellAccessPoint(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
   bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  void checkAccessPointList(PANet& pa_net);
   void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);
   void processPAModel(PAModel& pa_model);
   void buildDrivingPin(PANet& pa_net);
-  void reportPAModel(PAModel& pa_model);
   void countPAModel(PAModel& pa_model);
-  void reportTable(PAModel& pa_model);
+  void reportPAModel(PAModel& pa_model);
+  bool stopPAModel(PAModel& pa_model);
 #endif
 
 #if 1  // update

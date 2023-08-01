@@ -108,15 +108,18 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
   _config.enable_idrc_interfaces = RTUtil::getConfigValue<irt_int>(config_map, "-enable_idrc_interfaces", 0);
+  _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
   _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
   _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
   _config.ra_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_max_iter_num", 10);
   _config.ra_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_max_iter_num", 10);
   _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
-  _config.ta_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_outer_max_iter_num", 1);
-  _config.ta_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_inner_max_iter_num", 1);
-  _config.dr_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_outer_max_iter_num", 1);
-  _config.dr_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_inner_max_iter_num", 1);
+  _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
+  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 1);
+  _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
+  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 1);
+  _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
+
   /////////////////////////////////////////////
 }
 
@@ -1308,6 +1311,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_idrc_interfaces");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_idrc_interfaces);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.pa_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_initial_penalty);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_penalty_drop_rate");
@@ -1318,14 +1323,16 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_outer_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_outer_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_inner_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_inner_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_outer_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_outer_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_inner_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_inner_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_model_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_model_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_panel_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_panel_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_model_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_model_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_box_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_box_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "vr_max_iter_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.vr_max_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");

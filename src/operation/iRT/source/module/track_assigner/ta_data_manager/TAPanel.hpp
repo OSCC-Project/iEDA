@@ -16,9 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "LayerRect.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
+#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
@@ -35,11 +37,7 @@ class TAPanel : public LayerRect
   ~TAPanel() = default;
   // getter
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>>& get_source_panel_net_rect_map()
-  {
-    return _source_panel_net_rect_map;
-  }
-  std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>>& get_source_panel_region_query_map()
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& get_source_panel_region_query_map()
   {
     return _source_panel_region_query_map;
   }
@@ -50,13 +48,8 @@ class TAPanel : public LayerRect
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_source_panel_net_rect_map(
-      const std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>>& source_panel_net_rect_map)
-  {
-    _source_panel_net_rect_map = source_panel_net_rect_map;
-  }
   void set_source_panel_region_query_map(
-      const std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>>& source_panel_region_query_map)
+      const std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& source_panel_region_query_map)
   {
     _source_panel_region_query_map = source_panel_region_query_map;
   }
@@ -65,6 +58,15 @@ class TAPanel : public LayerRect
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
+  // function
+  RegionQuery* getRegionQuery(TASourceType ta_source_type, TAPanelId ta_panel_id)
+  {
+    RegionQuery*& region_query = _source_panel_region_query_map[ta_source_type][ta_panel_id];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 #if 1  // astar
   // config
   double get_wire_unit() const { return _wire_unit; }
@@ -119,8 +121,7 @@ class TAPanel : public LayerRect
 
  private:
   TAPanelId _ta_panel_id;
-  std::map<TASourceType, std::map<TAPanelId, std::map<irt_int, std::vector<LayerRect>>, CmpTAPanelId>> _source_panel_net_rect_map;
-  std::map<TASourceType, std::map<TAPanelId, void*, CmpTAPanelId>> _source_panel_region_query_map;
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>> _source_panel_region_query_map;
   ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;

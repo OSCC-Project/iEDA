@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
+#include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
 #include "VRSourceType.hpp"
 
@@ -27,36 +29,24 @@ class VRGCell : public SpaceRegion
   VRGCell() = default;
   ~VRGCell() = default;
   // getter
-  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_routing_net_rect_map()
-  {
-    return _source_routing_net_rect_map;
-  }
-  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_cut_net_rect_map()
-  {
-    return _source_cut_net_rect_map;
-  }
-  std::map<VRSourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<VRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_source_routing_net_rect_map(
-      const std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_routing_net_rect_map)
-  {
-    _source_routing_net_rect_map = source_routing_net_rect_map;
-  }
-  void set_source_cut_net_rect_map(
-      const std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_cut_net_rect_map)
-  {
-    _source_cut_net_rect_map = source_cut_net_rect_map;
-  }
-  void set_source_region_query_map(const std::map<VRSourceType, void*>& source_region_query_map)
+  void set_source_region_query_map(const std::map<VRSourceType, RegionQuery*>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
   // function
+  RegionQuery* getRegionQuery(VRSourceType vr_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[vr_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
-  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_routing_net_rect_map;
-  std::map<VRSourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_cut_net_rect_map;
-  std::map<VRSourceType, void*> _source_region_query_map;
+  std::map<VRSourceType, RegionQuery*> _source_region_query_map;
 };
 
 }  // namespace irt

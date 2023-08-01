@@ -135,8 +135,7 @@ GRNet GlobalRouter::convertToGRNet(Net& net)
 void GlobalRouter::buildGRModel(GRModel& gr_model)
 {
   buildNeighborMap(gr_model);
-  updateNetRectMap(gr_model);
-  cutBlockageList(gr_model);
+  updateNetFixedRectMap(gr_model);
   updateWholeDemand(gr_model);
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
@@ -189,96 +188,41 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::updateNetRectMap(GRModel& gr_model)
+void GlobalRouter::updateNetFixedRectMap(GRModel& gr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(gr_model, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
   }
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(gr_model, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void GlobalRouter::addRectToEnv(GRModel& gr_model, DRCRect drc_rect)
+void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  irt_int net_idx = drc_rect.get_net_idx();
-  LayerRect& real_rect = drc_rect.get_layer_rect();
-  bool is_routing = drc_rect.get_is_routing();
-  if (is_routing == false) {
+  if (drc_rect.get_is_routing() == false) {
     return;
   }
-
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        GRNode& gr_node = layer_node_map[real_rect.get_layer_idx()][x][y];
-        gr_node.get_net_rect_map()[net_idx].push_back(real_rect);
-      }
-    }
-  }
-}
-
-void GlobalRouter::cutBlockageList(GRModel& gr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-    GridMap<GRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        GRNode& gr_node = node_map[x][y];
-
-        std::map<irt_int, std::vector<LayerRect>>& net_rect_map = gr_node.get_net_rect_map();
-
-        std::vector<LayerRect> new_blockage_list;
-        new_blockage_list.reserve(net_rect_map[-1].size());
-        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
-
-        for (LayerRect& blockage : net_rect_map[-1]) {
-          bool is_cutting = false;
-          for (auto& [net_idx, net_shape_list] : net_rect_map) {
-            if (net_idx == -1) {
-              continue;
-            }
-            for (LayerRect& net_shape : net_shape_list) {
-              if (!RTUtil::isInside(blockage, net_shape)) {
-                continue;
-              }
-              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
-                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
-                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
-              }
-              is_cutting = true;
-            }
-          }
-          if (!is_cutting) {
-            new_blockage_list.push_back(blockage);
-          }
-        }
-        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
-          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
-            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
-          }
-        }
-        net_rect_map[-1] = new_blockage_list;
+        GRNode& gr_node = layer_node_map[drc_rect.get_layer_rect().get_layer_idx()][x][y];
+        DC_INST.addEnvRectList(gr_node.getRegionQuery(gr_source_type), drc_rect);
       }
     }
   }
@@ -382,8 +326,9 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real whole_wire_demand and node whole_wire_demand are not equal!");
           }
         }
-        for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
-          for (LayerRect& rect : rect_list) {
+        for (const auto& [net_idx, rect_set] :
+             DC_INST.getRoutingNetRectMap(gr_node.getRegionQuery(GRSourceType::kBlockAndPin), true)[layer_idx]) {
+          for (const LayerRect& rect : rect_set) {
             for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
               std::vector<PlanarRect> new_wire_list;
               for (PlanarRect& wire : wire_list) {
@@ -562,14 +507,6 @@ void GlobalRouter::checkGRModel(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The access_map is empty!");
           }
         }
-        for (auto& [net_idx, rect_list] : gr_node.get_net_rect_map()) {
-          for (LayerRect& rect : rect_list) {
-            if (rect.get_layer_idx() == layer_idx) {
-              continue;
-            }
-            LOG_INST.error(Loc::current(), "The layer of source cut net rect is different!");
-          }
-        }
       }
     }
   }
@@ -636,16 +573,18 @@ void GlobalRouter::iterative(GRModel& gr_model)
   for (irt_int iter = 1; iter <= gr_max_iter_num; iter++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", gr_max_iter_num, ") ******");
-
     gr_model.set_curr_iter(iter);
     sortGRModel(gr_model);
     resetGRModel(gr_model);
     routeGRModel(gr_model);
     processGRModel(gr_model);
+    countGRModel(gr_model);
     reportGRModel(gr_model);
-    writeGRModel(gr_model);
-
+    // writeGRModel(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    if (stopGRModel(gr_model)) {
+      break;
+    }
   }
 }
 
@@ -778,7 +717,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   if (gr_net.get_routing_state() == RoutingState::kRouted) {
     return;
   }
-  // ouputAIDataset(gr_model, gr_net);
+  // outputGRDataset(gr_model, gr_net);
   initSingleNet(gr_model, gr_net);
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
@@ -797,30 +736,31 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   resetSingleNet(gr_model);
 }
 
-void GlobalRouter::ouputAIDataset(GRModel& gr_model, GRNet& gr_net)
+void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  static size_t record_net_num = 0;
-  static std::string ai_file_path;
-  static std::ofstream* ai_file;
+  static size_t written_net_num = 0;
+  static std::string gr_dataset_path;
+  static std::ofstream* gr_dataset;
 
-  if (record_net_num == 0) {
+  if (written_net_num == 0) {
     std::string def_file_path = DM_INST.getHelper().get_def_file_path();
-    ai_file_path = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".ai.txt");
-    ai_file = RTUtil::getOutputFileStream(ai_file_path);
-    RTUtil::pushStream(ai_file, "def_file_path", " ", def_file_path, "\n");
+    gr_dataset_path
+        = RTUtil::getString(DM_INST.getConfig().gr_temp_directory_path, RTUtil::splitString(def_file_path, '/').back(), ".gr.txt");
+    gr_dataset = RTUtil::getOutputFileStream(gr_dataset_path);
+    RTUtil::pushStream(gr_dataset, "def_file_path", " ", def_file_path, "\n");
   }
-  RTUtil::pushStream(ai_file, "net", " ", gr_net.get_net_idx(), "\n");
-  RTUtil::pushStream(ai_file, "{", "\n");
-  RTUtil::pushStream(ai_file, "pin_list", "\n");
+  RTUtil::pushStream(gr_dataset, "net", " ", gr_net.get_net_idx(), "\n");
+  RTUtil::pushStream(gr_dataset, "{", "\n");
+  RTUtil::pushStream(gr_dataset, "pin_list", "\n");
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    RTUtil::pushStream(ai_file, "pin", " ", gr_pin.get_pin_idx(), "\n");
+    RTUtil::pushStream(gr_dataset, "pin", " ", gr_pin.get_pin_idx(), "\n");
     for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      RTUtil::pushStream(ai_file, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
+      RTUtil::pushStream(gr_dataset, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
     }
   }
-  RTUtil::pushStream(ai_file, "cost_map", "\n");
+  RTUtil::pushStream(gr_dataset, "cost_map", "\n");
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   BoundingBox& bounding_box = gr_net.get_bounding_box();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
@@ -846,23 +786,27 @@ void GlobalRouter::ouputAIDataset(GRModel& gr_model, GRNet& gr_net)
         if (layer_idx != (static_cast<irt_int>(layer_node_map.size()) - 1)) {
           up_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kUp);
         }
-        RTUtil::pushStream(ai_file, x, " ", y, " ", layer_idx);
-        RTUtil::pushStream(ai_file, " ", "E", " ", east_cost);
-        RTUtil::pushStream(ai_file, " ", "W", " ", west_cost);
-        RTUtil::pushStream(ai_file, " ", "S", " ", south_cost);
-        RTUtil::pushStream(ai_file, " ", "N", " ", north_cost);
-        RTUtil::pushStream(ai_file, " ", "U", " ", up_cost);
-        RTUtil::pushStream(ai_file, " ", "D", " ", down_cost);
-        RTUtil::pushStream(ai_file, "\n");
+        RTUtil::pushStream(gr_dataset, x, " ", y, " ", layer_idx);
+        RTUtil::pushStream(gr_dataset, " ", "E", " ", east_cost);
+        RTUtil::pushStream(gr_dataset, " ", "W", " ", west_cost);
+        RTUtil::pushStream(gr_dataset, " ", "S", " ", south_cost);
+        RTUtil::pushStream(gr_dataset, " ", "N", " ", north_cost);
+        RTUtil::pushStream(gr_dataset, " ", "U", " ", up_cost);
+        RTUtil::pushStream(gr_dataset, " ", "D", " ", down_cost);
+        RTUtil::pushStream(gr_dataset, "\n");
       }
     }
   }
-  RTUtil::pushStream(ai_file, "}", "\n");
-  record_net_num++;
+  RTUtil::pushStream(gr_dataset, "}", "\n");
 
-  if (record_net_num == gr_model.get_gr_net_list().size()) {
-    RTUtil::closeFileStream(ai_file);
-    LOG_INST.info(Loc::current(), "The result has been written to '", ai_file_path, "'!");
+  written_net_num++;
+  if (written_net_num % 10000 == 0) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
+  }
+  if (written_net_num == gr_model.get_gr_net_list().size()) {
+    LOG_INST.info(Loc::current(), "Written ", written_net_num, " nets");
+    RTUtil::closeFileStream(gr_dataset);
+    LOG_INST.info(Loc::current(), "The result has been written to '", gr_dataset_path, "'!");
     exit(0);
   }
 }
@@ -1686,12 +1630,6 @@ void GlobalRouter::buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_
   parent_node->delChild(child_node);
 }
 
-void GlobalRouter::reportGRModel(GRModel& gr_model)
-{
-  countGRModel(gr_model);
-  reportTable(gr_model);
-}
-
 void GlobalRouter::countGRModel(GRModel& gr_model)
 {
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
@@ -1772,7 +1710,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
   gr_model.set_gr_model_stat(gr_model_stat);
 }
 
-void GlobalRouter::reportTable(GRModel& gr_model)
+void GlobalRouter::reportGRModel(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -1879,6 +1817,11 @@ void GlobalRouter::reportTable(GRModel& gr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool GlobalRouter::stopGRModel(GRModel& gr_model)
+{
+  return false;
 }
 
 #endif

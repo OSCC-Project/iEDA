@@ -59,9 +59,8 @@ class ResourceAllocator
   void buildRAModel(RAModel& ra_model);
   void initRANetDemand(RAModel& ra_model);
   void initRAGCellList(RAModel& ra_model);
-  void updateNetRectMap(RAModel& ra_model);
-  void addRectToEnv(RAModel& ra_model, DRCRect drc_rect);
-  void cutBlockageList(RAModel& ra_model);
+  void updateNetFixedRectMap(RAModel& ra_model);
+  void addRectToEnv(RAModel& ra_model, RASourceType ra_source_type, DRCRect drc_rect);
   void calcRAGCellSupply(RAModel& ra_model);
   std::vector<PlanarRect> getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer);
   void buildRelation(RAModel& ra_model);
@@ -79,9 +78,9 @@ class ResourceAllocator
   void processRAModel(RAModel& ra_model);
   GridMap<double> getCostMap(GridMap<double>& allocation_map, double lower_cost);
   void normalizeCostMap(GridMap<double>& cost_map, double lower_cost);
-  void reportRAModel(RAModel& ra_model);
   void countRAModel(RAModel& ra_model);
-  void reportTable(RAModel& ra_model);
+  void reportRAModel(RAModel& ra_model);
+  bool stopRAModel(RAModel& ra_model);
 #endif
 
 #if 1  // update
@@ -89,7 +88,7 @@ class ResourceAllocator
 #endif
 
 #if 1  // plot ra_model
-  void writeRAModel(RAModel& ra_model, irt_int epoch);
+  void writeRAModel(RAModel& ra_model);
 #endif
 };
 

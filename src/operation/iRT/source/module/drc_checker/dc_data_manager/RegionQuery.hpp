@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "../../../../database/interaction/ids.hpp"
 #include "LayerRect.hpp"
 #include "RQShape.hpp"
 #include "RTU.hpp"
@@ -28,35 +27,37 @@ using StaticBox = std::pair<BoostBox, RQShape*>;
 class RegionQuery
 {
  public:
-  RegionQuery() { init(); }
-  ~RegionQuery() {}
+  RegionQuery() = default;
+  ~RegionQuery() = default;
   // getter
+  void* get_idrc_region_query() { return _idrc_region_query; }
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_routing_net_rect_map()
+  {
+    return _routing_net_rect_map;
+  }
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_cut_net_rect_map() { return _cut_net_rect_map; }
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>>& get_routing_net_shape_map()
+  {
+    return _routing_net_shape_map;
+  }
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>>& get_cut_net_shape_map()
+  {
+    return _cut_net_shape_map;
+  }
+  std::map<irt_int, bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>>& get_routing_region_map() { return _routing_region_map; }
+  std::map<irt_int, bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>>& get_cut_region_map() { return _cut_region_map; }
   // setters
+  void set_idrc_region_query(void* idrc_region_query) { _idrc_region_query = idrc_region_query; }
   // function
-  void init();
-  void addEnvRectList(const ids::DRCRect& env_rect);
-  void addEnvRectList(const std::vector<ids::DRCRect>& env_rect_list);
-  std::vector<RQShape> getRQShapeList(const std::vector<ids::DRCRect>& env_rect_list);
-  BoostBox convertBoostBox(ids::DRCRect ids_rect);
-  void delEnvRectList(const ids::DRCRect& env_rect);
-  void delEnvRectList(const std::vector<ids::DRCRect>& env_rect_list);
-  bool hasViolation(const ids::DRCRect& drc_rect);
-  bool hasViolation(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::map<std::string, int> getViolation(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::map<std::string, int> getViolation();
-  std::map<std::string, int> checkByOther(std::vector<RQShape>& drc_shape_list);
-  std::map<std::string, int> checkBySelf(std::vector<RQShape>& drc_shape_list);
-  bool checkMinSpacing(RQShape& net_shape1, RQShape& net_shape2, std::vector<RQShape>& net_shape_list);
-  std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
-  std::vector<LayerRect> getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
-  std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  void plotRegionQuery(const std::vector<ids::DRCRect>& drc_rect_list);
 
  private:
-  std::map<irt_int, std::vector<RQShape>> _obj_id_shape_map;
-  std::vector<bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>> _region_map;
+  void* _idrc_region_query = nullptr;
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> _routing_net_rect_map;                 // layer-net-rect
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> _cut_net_rect_map;                     // layer-net-rect
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>> _routing_net_shape_map;  // net-layer-rect
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, RQShape*, CmpLayerRectByLayerASC>>> _cut_net_shape_map;      // net-layer-rect
+  std::map<irt_int, bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>> _routing_region_map;
+  std::map<irt_int, bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16>>> _cut_region_map;
 };
 
 }  // namespace irt
