@@ -40,9 +40,9 @@ namespace ipl {
 class Layout
 {
  public:
-  Layout()              = default;
+  Layout() = default;
   Layout(const Layout&) = delete;
-  Layout(Layout&&)      = delete;
+  Layout(Layout&&) = delete;
   ~Layout();
 
   Layout& operator=(const Layout&) = delete;
@@ -52,17 +52,17 @@ class Layout
   int32_t get_database_unit() const { return _database_unit; }
 
   Rectangle<int32_t> get_die_shape() const { return _die_shape; }
-  int32_t            get_die_width() { return _die_shape.get_width(); }
-  int32_t            get_die_height() { return _die_shape.get_height(); }
+  int32_t get_die_width() { return _die_shape.get_width(); }
+  int32_t get_die_height() { return _die_shape.get_height(); }
 
   Rectangle<int32_t> get_core_shape() const { return _core_shape; }
-  int32_t            get_core_width() { return _core_shape.get_width(); }
-  int32_t            get_core_height() { return _core_shape.get_height(); }
+  int32_t get_core_width() { return _core_shape.get_width(); }
+  int32_t get_core_height() { return _core_shape.get_height(); }
 
   int32_t get_row_height() const { return _row_list[0]->get_site_height(); }
   int32_t get_site_width() const { return _row_list[0]->get_site_width(); }
 
-  const std::vector<Row*>  get_row_list() const { return _row_list; }
+  const std::vector<Row*> get_row_list() const { return _row_list; }
   const std::vector<Cell*> get_cell_list() const { return _cell_list; }
 
   // setter.
@@ -74,18 +74,19 @@ class Layout
   void add_cell(Cell* cell);
 
   // function.
-  Row*  find_row(const std::string& row_name) const;
+  Row* find_row(const std::string& row_name) const;
+  Row* find_row(int32_t row_id) const;
   Cell* find_cell(const std::string& cell_name) const;
 
  private:
-  int32_t            _database_unit = -1;
+  int32_t _database_unit = -1;
   Rectangle<int32_t> _die_shape;
   Rectangle<int32_t> _core_shape;
 
-  std::vector<Row*>  _row_list;
+  std::vector<Row*> _row_list;
   std::vector<Cell*> _cell_list;
 
-  std::map<std::string, Row*>  _name_to_row_map;
+  std::map<std::string, Row*> _name_to_row_map;
   std::map<std::string, Cell*> _name_to_cell_map;
 };
 
@@ -118,7 +119,7 @@ inline void Layout::add_cell(Cell* cell)
 
 inline Row* Layout::find_row(const std::string& row_name) const
 {
-  Row* row      = nullptr;
+  Row* row = nullptr;
   auto row_iter = _name_to_row_map.find(row_name);
   if (row_iter != _name_to_row_map.end()) {
     row = (*row_iter).second;
@@ -126,10 +127,15 @@ inline Row* Layout::find_row(const std::string& row_name) const
   return row;
 }
 
+inline Row* Layout::find_row(int32_t row_id) const
+{
+  return _row_list[row_id];
+}
+
 inline Cell* Layout::find_cell(const std::string& cell_name) const
 {
-  Cell* cell      = nullptr;
-  auto  cell_iter = _name_to_cell_map.find(cell_name);
+  Cell* cell = nullptr;
+  auto cell_iter = _name_to_cell_map.find(cell_name);
   if (cell_iter != _name_to_cell_map.end()) {
     cell = (*cell_iter).second;
   }

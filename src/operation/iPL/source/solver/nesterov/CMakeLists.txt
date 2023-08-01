@@ -2,7 +2,7 @@ add_library(ipl-solver-nesterov Nesterov.cc)
 
 target_link_libraries(ipl-solver-nesterov
     PRIVATE
-    ipl-utility
+    ipl-bridge
     ipl-module-logger
 )
 

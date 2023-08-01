@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "Log.hh"
+#include "omp.h"
 #include "utility/Utility.hh"
 
 namespace ipl {
@@ -65,7 +66,7 @@ void Nesterov::calculateNextSteplength(std::vector<Point<float>> next_grads)
   _next_steplength = calculateSteplength(_current_slp_coordis, _current_gradients, _next_slp_coordis, _next_gradients);
 }
 
-void Nesterov::runNextIter(int next_iter)
+void Nesterov::runNextIter(int next_iter, int32_t thread_num)
 {
   checkIterOrder(next_iter);
 
@@ -76,17 +77,17 @@ void Nesterov::runNextIter(int next_iter)
   swapParameter();
 
   calculateNextParameter();
-  calculateNextCoordis();
+  calculateNextCoordis(thread_num);
 }
 
-void Nesterov::runBackTrackIter()
+void Nesterov::runBackTrackIter(int32_t thread_num)
 {
   cleanNextCoordis();
   cleanNextSLPCoordis();
   swapSteplength();
   cleanNextGradients();
 
-  calculateNextCoordis();
+  calculateNextCoordis(thread_num);
 }
 
 void Nesterov::correctNextCoordi(int index, Point<int32_t> new_coordi)
@@ -112,21 +113,26 @@ void Nesterov::calculateNextParameter()
   _next_parameter = (1.0 + sqrt(4.0 * _current_parameter * _current_parameter + 1.0)) * 0.5;
 }
 
-void Nesterov::calculateNextCoordis()
+void Nesterov::calculateNextCoordis(int32_t thread_num)
 {
-  if (!_next_coordis.empty() || !_next_slp_coordis.empty()) {
-    LOG_ERROR << "Error in calculateNextCoordis : _next_coordis/_next_slp_coordis is not empty!";
-  }
+  // if (!_next_coordis.empty() || !_next_slp_coordis.empty()) {
+  //   // LOG_ERROR << "Error in calculateNextCoordis : _next_coordis/_next_slp_coordis is not empty!";
+  // }
 
   float coeff = (_current_parameter - 1.0) / _next_parameter;
 
+#pragma omp parallel for num_threads(thread_num)
   for (size_t i = 0; i < _current_coordis.size(); i++) {
     Point<int32_t> next_coordi(_current_slp_coordis[i].get_x() + _current_steplength * _current_gradients[i].get_x(),
                                _current_slp_coordis[i].get_y() + _current_steplength * _current_gradients[i].get_y());
     Point<int32_t> next_slp_coordi(next_coordi.get_x() + coeff * (next_coordi.get_x() - _current_coordis[i].get_x()),
                                    next_coordi.get_y() + coeff * (next_coordi.get_y() - _current_coordis[i].get_y()));
-    _next_coordis.push_back(std::move(next_coordi));
-    _next_slp_coordis.push_back(std::move(next_slp_coordi));
+
+    _next_coordis[i] = std::move(next_coordi);
+    _next_slp_coordis[i] = std::move(next_slp_coordi);
+
+    // _next_coordis.push_back(std::move(next_coordi));
+    // _next_slp_coordis.push_back(std::move(next_slp_coordi));
   }
 }
 
@@ -202,12 +208,12 @@ void Nesterov::swapParameter()
 
 void Nesterov::cleanNextCoordis()
 {
-  _next_coordis.clear();
+  // _next_coordis.clear();
 }
 
 void Nesterov::cleanNextSLPCoordis()
 {
-  _next_slp_coordis.clear();
+  // _next_slp_coordis.clear();
 }
 
 void Nesterov::cleanNextSteplength()

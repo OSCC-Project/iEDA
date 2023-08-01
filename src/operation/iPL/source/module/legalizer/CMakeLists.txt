@@ -13,7 +13,7 @@ add_library(ipl-module-legalizer
 target_link_libraries(ipl-module-legalizer 
     PRIVATE
         ipl-module-logger
-        ipl-utility
+        ipl-bridge
         ipl-configurator
 
 )

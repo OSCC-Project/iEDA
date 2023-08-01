@@ -1,7 +1,6 @@
 *.gds
 *.lyp
 *.gz
-*.lef
 *.lib
 *.v
 *.def
@@ -20,3 +19,4 @@
 *.drc
 *.dat
 pl/log
+*.py

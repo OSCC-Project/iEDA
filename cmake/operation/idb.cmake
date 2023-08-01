@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(
+include_directories(
     ##basic
     ${HOME_DATABASE}/basic/geometry
     ## iDB
@@ -14,7 +14,7 @@ INCLUDE_DIRECTORIES(
     ${HOME_DATABASE}/manager/service/lef_service
 )
 
-LINK_LIBRARIES(
+link_libraries(
     geometry_db
     
     idb

@@ -34,7 +34,7 @@ class DBWrapper
   virtual FPDesign* get_design() const = 0;
 
   // Function
-  virtual void writeDef(string file_name) = 0;
+  virtual void writeDef(std::string file_name) = 0;
   virtual void writeBackSourceDataBase() = 0;
 };
 

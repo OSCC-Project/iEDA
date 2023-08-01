@@ -1,6 +1,6 @@
-SET(IDRC_HOME ${HOME_OPERATION}/iDRC)
+set(IDRC_HOME ${HOME_OPERATION}/iDRC)
 
-INCLUDE_DIRECTORIES(
+include_directories(
   ##iDRC
   ${IDRC_HOME}
   ${IDRC_HOME}/src
@@ -19,4 +19,4 @@ INCLUDE_DIRECTORIES(
   ${IDRC_HOME}/src/module/MultiPatterning
 )
 
-LINK_LIBRARIES(DRC)
+link_libraries(DRC)

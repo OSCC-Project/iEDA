@@ -65,14 +65,20 @@ bool LayoutChecker::checkAlignRowSite(Rectangle<int32_t> shape)
 
 bool LayoutChecker::checkAlignPower(Instance* inst)
 {
-  std::vector<GridRow*> grid_row_list;
-  _grid_manager->obtainOverlapRowList(grid_row_list, inst->get_shape().get_ll_y(), inst->get_shape().get_ur_y());
-  LOG_ERROR_IF(grid_row_list.size() != 1) << "Instance is not in the Row!"
-                                          << " " << inst->get_name();
-  Orient row_orient = this->obtainLayoutRowOrient(grid_row_list[0]);
-  if (row_orient != inst->get_orient()) {
+  int32_t inst_lly = inst->get_shape().get_ll_y();
+  int32_t core_lly = _core_y_range.first;
+
+  // make sure the inst is allign in row
+  if ((inst_lly - core_lly) % _row_height == 0) {
+    int32_t row_id = (inst_lly - core_lly) / _row_height;
+    auto* row = _placer_db->get_layout()->find_row(row_id);
+    if (inst->get_orient() != row->get_orient()) {
+      return false;
+    }
+  } else {
     return false;
   }
+
   return true;
 }
 
@@ -136,7 +142,8 @@ bool LayoutChecker::isAllPlacedInstAlignPower()
 
 bool LayoutChecker::isNoOverlapAmongInsts()
 {
-  std::vector<Grid*> overlap_site_list = _grid_manager->obtainOverflowIllegalGridList();
+  std::vector<Grid*> overlap_site_list;
+  _grid_manager->obtainOverflowIllegalGridList(overlap_site_list);
 
   if (!overlap_site_list.empty()) {
     return false;
@@ -210,7 +217,8 @@ std::vector<std::vector<Instance*>> LayoutChecker::obtainOverlapInstClique()
   updateSiteInstConnection();
 
   std::vector<std::vector<Instance*>> clique_list;
-  std::vector<Grid*> overflow_site_list = _grid_manager->obtainOverflowIllegalGridList();
+  std::vector<Grid*> overflow_site_list;
+  _grid_manager->obtainOverflowIllegalGridList(overflow_site_list);
   for (auto* site : overflow_site_list) {
     clique_list.push_back(obtainOccupiedInstList(site));
   }
@@ -221,13 +229,23 @@ std::vector<std::vector<Instance*>> LayoutChecker::obtainOverlapInstClique()
 std::vector<Rectangle<int32_t>> LayoutChecker::obtainWhiteSiteList()
 {
   std::vector<Rectangle<int32_t>> white_site_list;
-  for (auto* grid_row : _grid_manager->get_row_list()) {
-    for (auto* grid : grid_row->get_grid_list()) {
-      if ((grid->get_occupied_area() + grid->get_fixed_area()) == 0) {
-        white_site_list.push_back(grid->get_shape());
+
+  auto& grid_2d_list = _grid_manager->get_grid_2d_list();
+  for (auto& grid_row : grid_2d_list) {
+    for (auto& grid : grid_row) {
+      if (grid.occupied_area + grid.fixed_area == 0) {
+        white_site_list.push_back(grid.shape);
       }
     }
   }
+
+  // for (auto* grid_row : _grid_manager->get_row_list()) {
+  //   for (auto* grid : grid_row->get_grid_list()) {
+  //     if ((grid->get_occupied_area() + grid->get_fixed_area()) == 0) {
+  //       white_site_list.push_back(grid->get_shape());
+  //     }
+  //   }
+  // }
   return white_site_list;
 }
 
@@ -247,7 +265,8 @@ void LayoutChecker::connectInstSite(Instance* inst)
 {
   // add inst position.
   std::vector<Grid*> overlap_site_list;
-  _grid_manager->obtainOverlapGridList(overlap_site_list, inst->get_shape());
+  auto inst_shape = std::move(inst->get_shape());
+  _grid_manager->obtainOverlapGridList(overlap_site_list, inst_shape);
 
   for (auto* site : overlap_site_list) {
     addSiteInstConnection(site, inst);
@@ -306,22 +325,22 @@ std::vector<Instance*> LayoutChecker::obtainOccupiedInstList(Grid* site)
   return inst_list;
 }
 
-Orient LayoutChecker::obtainLayoutRowOrient(GridRow* grid_row)
-{
-  int32_t row_ll_y = grid_row->get_shape().get_ll_y();
-  int32_t row_ur_y = grid_row->get_shape().get_ur_y();
+// Orient LayoutChecker::obtainLayoutRowOrient(GridRow* grid_row)
+// {
+//   int32_t row_ll_y = grid_row->get_shape().get_ll_y();
+//   int32_t row_ur_y = grid_row->get_shape().get_ur_y();
 
-  auto layout_row_list = _placer_db->get_layout()->get_row_list();
+//   auto layout_row_list = _placer_db->get_layout()->get_row_list();
 
-  Orient row_orient = Orient::kN_R0;
-  for (auto* layout_row : layout_row_list) {
-    if (layout_row->get_shape().get_ll_y() == row_ll_y && layout_row->get_shape().get_ur_y() == row_ur_y) {
-      row_orient = layout_row->get_orient();
-      break;
-    }
-  }
+//   Orient row_orient = Orient::kN_R0;
+//   for (auto* layout_row : layout_row_list) {
+//     if (layout_row->get_shape().get_ll_y() == row_ll_y && layout_row->get_shape().get_ur_y() == row_ur_y) {
+//       row_orient = layout_row->get_orient();
+//       break;
+//     }
+//   }
 
-  return row_orient;
-}
+//   return row_orient;
+// }
 
 }  // namespace ipl

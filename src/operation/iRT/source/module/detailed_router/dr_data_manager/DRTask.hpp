@@ -17,10 +17,10 @@
 #pragma once
 
 #include "DRGroup.hpp"
-#include "SpaceRegion.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "RTNode.hpp"
+#include "SpaceRegion.hpp"
 
 namespace irt {
 

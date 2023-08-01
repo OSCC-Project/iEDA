@@ -43,6 +43,8 @@ void EarlyGlobalRouter::destroyInst()
   }
 }
 
+// function
+
 void EarlyGlobalRouter::route()
 {
   Monitor monitor;
@@ -323,11 +325,11 @@ void EarlyGlobalRouter::routeEGRNetList(std::vector<EGRNet>& egr_net_list)
     // for (size_t i = 34; i < 36; i++) {
     routeEGRNet(egr_net_list[i]);
     if ((i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Routed ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
 
-  LOG_INST.info(Loc::current(), "Processed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Routed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
 }
 
 void EarlyGlobalRouter::routeEGRNet(EGRNet& egr_net)

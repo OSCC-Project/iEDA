@@ -28,18 +28,35 @@ class TAModelStat
   ~TAModelStat() = default;
   // getter
   std::map<irt_int, double>& get_routing_wire_length_map() { return _routing_wire_length_map; }
+  std::map<irt_int, double>& get_routing_prefer_wire_length_map() { return _routing_prefer_wire_length_map; }
+  std::map<irt_int, double>& get_routing_nonprefer_wire_length_map() { return _routing_nonprefer_wire_length_map; }
   std::map<TASourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
+  std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
+  std::map<std::string, irt_int>& get_source_number_map() { return _source_number_map; }
   double get_total_wire_length() { return _total_wire_length; }
+  double get_total_prefer_wire_length() { return _total_prefer_wire_length; }
+  double get_total_nonprefer_wire_length() { return _total_nonprefer_wire_length; }
   irt_int get_total_drc_number() { return _total_drc_number; }
   // setter
   void set_total_wire_length(const double total_wire_length) { _total_wire_length = total_wire_length; }
+  void set_total_prefer_wire_length(const double total_prefer_wire_length) { _total_prefer_wire_length = total_prefer_wire_length; }
+  void set_total_nonprefer_wire_length(const double total_nonprefer_wire_length)
+  {
+    _total_nonprefer_wire_length = total_nonprefer_wire_length;
+  }
   void set_total_drc_number(const double total_drc_number) { _total_drc_number = total_drc_number; }
   // function
 
  private:
   std::map<irt_int, double> _routing_wire_length_map;
+  std::map<irt_int, double> _routing_prefer_wire_length_map;
+  std::map<irt_int, double> _routing_nonprefer_wire_length_map;
   std::map<TASourceType, std::map<std::string, irt_int>> _source_drc_number_map;
+  std::map<std::string, irt_int> _drc_number_map;
+  std::map<std::string, irt_int> _source_number_map;
   double _total_wire_length = 0;
+  double _total_prefer_wire_length = 0;
+  double _total_nonprefer_wire_length = 0;
   irt_int _total_drc_number = 0;
 };
 
