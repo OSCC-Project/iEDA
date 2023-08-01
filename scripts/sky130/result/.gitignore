@@ -1,7 +1,6 @@
 *.gds
 *.lyp
 *.gz
-*.lef
 *.lib
 *.v
 *.def
