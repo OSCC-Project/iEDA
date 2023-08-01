@@ -65,6 +65,10 @@ RegionQuery* DrcAPI::init()
   return region_query;
 }
 
+void DrcAPI::destroy(RegionQuery* region_query)
+{
+}
+
 std::map<std::string, int> DrcAPI::getCheckResult()
 {
   runDrc();

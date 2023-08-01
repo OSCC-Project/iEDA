@@ -29,47 +29,13 @@
 
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 #include "DensityGradient.hh"
-#include "fft/fft.h"
+#include "dct_process/FFT.hh"
+// #include "dct_process/DCT.hh"
 
 namespace ipl {
-
-struct ElectroInfo
-{
-  ElectroInfo()                   = default;
-  ElectroInfo(const ElectroInfo&) = default;
-  ElectroInfo(ElectroInfo&& other)
-  {
-    electro_phi     = other.electro_phi;
-    electro_force_x = other.electro_force_x;
-    electro_force_y = other.electro_force_y;
-    other.reset();
-  }
-
-  ElectroInfo& operator=(const ElectroInfo&) = default;
-
-  ElectroInfo& operator=(ElectroInfo&& other)
-  {
-    electro_phi     = other.electro_phi;
-    electro_force_x = other.electro_force_x;
-    electro_force_y = other.electro_force_y;
-    other.reset();
-    return (*this);
-  }
-
-  void reset();
-
-  float electro_phi     = 0.0F;
-  float electro_force_x = 0.0F;
-  float electro_force_y = 0.0F;
-};
-inline void ElectroInfo::reset()
-{
-  electro_phi     = 0.0F;
-  electro_force_x = 0.0F;
-  electro_force_y = 0.0F;
-}
 
 class ElectricFieldGradient : public DensityGradient
 {
@@ -77,32 +43,42 @@ class ElectricFieldGradient : public DensityGradient
   ElectricFieldGradient() = delete;
   explicit ElectricFieldGradient(GridManager* grid_manager);
   ElectricFieldGradient(const ElectricFieldGradient&) = delete;
-  ElectricFieldGradient(ElectricFieldGradient&&)      = delete;
-  ~ElectricFieldGradient() override                   = default;
+  ElectricFieldGradient(ElectricFieldGradient&&) = delete;
+  ~ElectricFieldGradient() override = default;
 
   ElectricFieldGradient& operator=(const ElectricFieldGradient&) = delete;
   ElectricFieldGradient& operator=(ElectricFieldGradient&&) = delete;
 
-  void         updateDensityForce(int32_t thread_num) override;
-  Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale) override;
+  std::vector<std::vector<float>>& get_force_2d_x_list() override { return _force_2d_x_list; }
+  std::vector<std::vector<float>>& get_force_2d_y_list() override { return _force_2d_y_list; }
+
+  float get_sum_phi() override { return _sum_phi; }
+
+  void updateDensityForce(int32_t thread_num, bool is_cal_phi) override;
+  Point<float> obtainDensityGradient(Rectangle<int32_t> shape, float scale, bool is_add_quad_penalty, float quad_lamda) override;
 
   void reset();
 
  private:
   float _sum_phi;
-  FFT*  _fft;
+  FFT* _fft;
+  // DCT* _dct;
 
-  std::unordered_map<Grid*, ElectroInfo> _electro_map;
-  void                                   initElectroMap();
+  std::vector<std::vector<float>> _force_2d_x_list;
+  std::vector<std::vector<float>> _force_2d_y_list;
+  // std::vector<std::vector<std::pair<float, float>>> _force_2d_list;
+  std::vector<std::vector<float>> _phi_2d_list;
+  void initElectro2DList();
 };
 inline ElectricFieldGradient::ElectricFieldGradient(GridManager* grid_manager) : DensityGradient(grid_manager), _sum_phi(0.0F)
 {
   int32_t grid_size_x = grid_manager->get_grid_size_x();
   int32_t grid_size_y = grid_manager->get_grid_size_y();
 
-  _fft = new FFT(_grid_manager->obtainGridCntX(), _grid_manager->obtainRowCntY(), grid_size_x, grid_size_y);
+  _fft = new FFT(_grid_manager->get_grid_cnt_x(), _grid_manager->get_grid_cnt_y(), grid_size_x, grid_size_y);
+  // _dct = new DCT(_grid_manager->get_grid_cnt_x(), _grid_manager->get_grid_cnt_y(), grid_size_x, grid_size_y);
 
-  initElectroMap();
+  initElectro2DList();
 }
 
 }  // namespace ipl

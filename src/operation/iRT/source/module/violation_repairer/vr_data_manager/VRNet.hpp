@@ -40,7 +40,7 @@ class VRNet
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
   void set_vr_pin_list(const std::vector<VRPin>& vr_pin_list) { _vr_pin_list = vr_pin_list; }
-  void set_vr_driving_pin(const VRPin& vr_driving_pin) { _vr_driving_pin = vr_driving_pin; };
+  void set_vr_driving_pin(const VRPin& vr_driving_pin) { _vr_driving_pin = vr_driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   void set_dr_result_tree(const MTree<RTNode>& dr_result_tree) { _dr_result_tree = dr_result_tree; }
   void set_key_coord_pin_map(const std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)

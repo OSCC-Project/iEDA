@@ -16,10 +16,14 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "LayerRect.hpp"
 #include "RTAPI.hpp"
+#include "RTU.hpp"
+#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
+#include "TAPanelId.hpp"
 #include "TAPanelStat.hpp"
 #include "TASourceType.hpp"
 #include "TATask.hpp"
@@ -32,32 +36,36 @@ class TAPanel : public LayerRect
   TAPanel() = default;
   ~TAPanel() = default;
   // getter
-  irt_int get_panel_idx() const { return _panel_idx; }
-  std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>>& get_source_net_rect_map() { return _source_net_rect_map; }
-  std::map<TASourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
+  TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& get_source_panel_region_query_map()
+  {
+    return _source_panel_region_query_map;
+  }
   ScaleAxis& get_panel_scale_axis() { return _panel_scale_axis; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
+  irt_int get_curr_iter() { return _curr_iter; }
   // setter
-  void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
-  void set_source_net_rect_map(const std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>>& source_net_rect_map)
+  void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
+  void set_source_panel_region_query_map(
+      const std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& source_panel_region_query_map)
   {
-    _source_net_rect_map = source_net_rect_map;
-  }
-  void set_source_region_query_map(const std::map<TASourceType, void*>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
+    _source_panel_region_query_map = source_panel_region_query_map;
   }
   void set_panel_scale_axis(const ScaleAxis& panel_scale_axis) { _panel_scale_axis = panel_scale_axis; }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
+  void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
+  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-  bool skipAssigning() { return _ta_task_list.empty(); }
-  void addRect(TASourceType ta_source_type, irt_int net_idx, const LayerRect& rect)
+  RegionQuery* getRegionQuery(TASourceType ta_source_type, TAPanelId ta_panel_id)
   {
-    _source_net_rect_map[ta_source_type][net_idx].push_back(rect);
-    RTAPI_INST.addEnvRectList(_source_region_query_map[ta_source_type], rect);
+    RegionQuery*& region_query = _source_panel_region_query_map[ta_source_type][ta_panel_id];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
   }
 #if 1  // astar
   // config
@@ -112,18 +120,13 @@ class TAPanel : public LayerRect
 #endif
 
  private:
-  irt_int _panel_idx = -1;
-  /**
-   * TASourceType::kBlockage 存储blockage
-   * TASourceType::kOtherPanelResult 存储其他panel的结果
-   * TASourceType::kSelfPanelResult 存储自己panel的结果
-   */
-  std::map<TASourceType, std::map<irt_int, std::vector<LayerRect>>> _source_net_rect_map;
-  std::map<TASourceType, void*> _source_region_query_map;
+  TAPanelId _ta_panel_id;
+  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>> _source_panel_region_query_map;
   ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
   TAPanelStat _ta_panel_stat;
+  irt_int _curr_iter;
 #if 1  // astar
   // config
   double _wire_unit = 1;
