@@ -20,3 +20,4 @@
 *.drc
 *.dat
 pl/log
+*.py
