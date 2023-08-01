@@ -125,12 +125,11 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
 {
-  updateNetRectMap(vr_model);
-  cutBlockageList(vr_model);
+  updateNetFixedRectMap(vr_model);
   updateVRResultTree(vr_model);
 }
 
-void ViolationRepairer::updateNetRectMap(VRModel& vr_model)
+void ViolationRepairer::updateNetFixedRectMap(VRModel& vr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
@@ -164,75 +163,13 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
 
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
 
-  irt_int net_idx = drc_rect.get_net_idx();
-  LayerRect& real_rect = drc_rect.get_layer_rect();
-  bool is_routing = drc_rect.get_is_routing();
-
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         VRGCell& vr_gcell = vr_gcell_map[x][y];
-        if (is_routing) {
-          vr_gcell.get_source_routing_net_rect_map()[vr_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
-        } else {
-          vr_gcell.get_source_cut_net_rect_map()[vr_source_type][real_rect.get_layer_idx()][net_idx].push_back(real_rect);
-        }
-        void*& region_query = vr_gcell.get_source_region_query_map()[vr_source_type];
-        if (region_query == nullptr) {
-          region_query = DC_INST.initRegionQuery();
-        }
-        DC_INST.addEnvRectList(region_query, drc_rect);
-      }
-    }
-  }
-}
-
-void ViolationRepairer::cutBlockageList(VRModel& vr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
-
-  for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
-      VRGCell& vr_gcell = vr_gcell_map[x][y];
-
-      for (auto& [routing_layer_idx, net_rect_map] : vr_gcell.get_source_routing_net_rect_map()[VRSourceType::kBlockAndPin]) {
-        RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-
-        std::vector<LayerRect> new_blockage_list;
-        new_blockage_list.reserve(net_rect_map[-1].size());
-        std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_shape_list_map;
-
-        for (LayerRect& blockage : net_rect_map[-1]) {
-          bool is_cutting = false;
-          for (auto& [net_idx, net_shape_list] : net_rect_map) {
-            if (net_idx == -1) {
-              continue;
-            }
-            for (LayerRect& net_shape : net_shape_list) {
-              if (!RTUtil::isInside(blockage, net_shape)) {
-                continue;
-              }
-              for (LayerRect& min_scope_net_shape : DC_INST.getMinScope(DRCRect(net_idx, net_shape, true))) {
-                PlanarRect enlarge_net_shape = RTUtil::getEnlargedRect(min_scope_net_shape, routing_layer.get_min_width());
-                blockage_shape_list_map[blockage].push_back(enlarge_net_shape);
-              }
-              is_cutting = true;
-            }
-          }
-          if (!is_cutting) {
-            new_blockage_list.push_back(blockage);
-          }
-        }
-        for (auto& [blockage, enlarge_net_shape_list] : blockage_shape_list_map) {
-          for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage, enlarge_net_shape_list)) {
-            new_blockage_list.emplace_back(cutting_rect, blockage.get_layer_idx());
-          }
-        }
-        net_rect_map[-1] = new_blockage_list;
+        DC_INST.addEnvRectList(vr_gcell.getRegionQuery(vr_source_type), drc_rect);
       }
     }
   }
@@ -437,26 +374,24 @@ void ViolationRepairer::checkVRModel(VRModel& vr_model)
 
 void ViolationRepairer::iterative(VRModel& vr_model)
 {
-  irt_int vr_iter_num = 1;
-  for (irt_int iter = 1; iter <= vr_iter_num; iter++) {
+  irt_int vr_max_iter_num = DM_INST.getConfig().vr_max_iter_num;
+
+  for (irt_int iter = 1; iter <= vr_max_iter_num; iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_iter_num, ") ******");
-
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_max_iter_num, ") ******");
+    vr_model.set_curr_iter(iter);
     repairVRModel(vr_model);
+    countVRModel(vr_model);
     reportVRModel(vr_model);
-
-    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
+    if (stopVRModel(vr_model)) {
+      break;
+    }
   }
 }
 
 void ViolationRepairer::repairVRModel(VRModel& vr_model)
 {
-}
-
-void ViolationRepairer::reportVRModel(VRModel& vr_model)
-{
-  countVRModel(vr_model);
-  reportTable(vr_model);
 }
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
@@ -564,7 +499,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   vr_model.set_vr_model_stat(vr_model_stat);
 }
 
-void ViolationRepairer::reportTable(VRModel& vr_model)
+void ViolationRepairer::reportVRModel(VRModel& vr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
@@ -688,6 +623,11 @@ void ViolationRepairer::reportTable(VRModel& vr_model)
     }
     LOG_INST.info(Loc::current(), table_str);
   }
+}
+
+bool ViolationRepairer::stopVRModel(VRModel& vr_model)
+{
+  return false;
 }
 
 #endif

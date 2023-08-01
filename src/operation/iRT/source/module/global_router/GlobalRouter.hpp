@@ -58,9 +58,8 @@ class GlobalRouter
   GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
-  void updateNetRectMap(GRModel& gr_model);
-  void addRectToEnv(GRModel& gr_model, DRCRect drc_rect);
-  void cutBlockageList(GRModel& gr_model);
+  void updateNetFixedRectMap(GRModel& gr_model);
+  void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeSupply(GRModel& gr_model);
@@ -81,7 +80,7 @@ class GlobalRouter
   void resetGRModel(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
-  void ouputAIDataset(GRModel& gr_model, GRNet& gr_net);
+  void outputGRDataset(GRModel& gr_model, GRNet& gr_net);
   void initSingleNet(GRModel& gr_model, GRNet& gr_net);
   std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
   void initSingleTask(GRModel& gr_model, GRTask& gr_task);
@@ -123,9 +122,9 @@ class GlobalRouter
   void buildRoutingResult(GRNet& gr_net);
   void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void reportGRModel(GRModel& gr_model);
   void countGRModel(GRModel& gr_model);
-  void reportTable(GRModel& gr_model);
+  void reportGRModel(GRModel& gr_model);
+  bool stopGRModel(GRModel& gr_model);
 #endif
 
 #if 1  // update

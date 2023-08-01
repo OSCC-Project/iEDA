@@ -16,8 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "GRRouteStrategy.hpp"
+#include "GRSourceType.hpp"
 #include "LayerCoord.hpp"
+#include "RegionQuery.hpp"
 
 namespace irt {
 
@@ -38,7 +41,7 @@ class GRNode : public LayerCoord
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_rect_map() { return _net_rect_map; }
+  std::map<GRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orientation_wire_demand_map() { return _net_orientation_wire_demand_map; }
@@ -51,7 +54,10 @@ class GRNode : public LayerCoord
   // setter
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_net_rect_map(const std::map<irt_int, std::vector<LayerRect>>& net_rect_map) { _net_rect_map = net_rect_map; }
+  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery*>& source_region_query_map)
+  {
+    _source_region_query_map = source_region_query_map;
+  }
   void set_whole_wire_demand(const irt_int whole_wire_demand) { _whole_wire_demand = whole_wire_demand; }
   void set_whole_via_demand(const irt_int whole_via_demand) { _whole_via_demand = whole_via_demand; }
   void set_net_orientation_wire_demand_map(const std::map<irt_int, std::map<Orientation, irt_int>>& net_orientation_wire_demand_map)
@@ -78,6 +84,14 @@ class GRNode : public LayerCoord
       neighbor_node = _neighbor_ptr_map[orientation];
     }
     return neighbor_node;
+  }
+  RegionQuery* getRegionQuery(GRSourceType gr_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[gr_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
   }
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
@@ -210,9 +224,9 @@ class GRNode : public LayerCoord
  private:
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<irt_int, std::vector<LayerRect>> _net_rect_map;
+  std::map<GRSourceType, RegionQuery*> _source_region_query_map;
   /**
-   * 布线结果该算多少demand
+   * gcell 布线结果该算多少demand?
    *
    * _whole_via_demand  一个完整的gr_via所需要的资源(以当前层最小面积做为参考)，不是真via
    * _whole_wire_demand 一个完整的贯穿gcell的wire，中间布线结果用这个，包括T字或十字
@@ -238,7 +252,7 @@ class GRNode : public LayerCoord
   irt_int _resource_supply = 0;
   irt_int _resource_demand = 0;
   /**
-   * 路线引导
+   * gcell 路线引导
    *  当对应net出现在引导中时，必须按照引导的方向布线，否则视为障碍
    *  当对应net不在引导中时，视为普通线网布线
    */

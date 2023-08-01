@@ -60,10 +60,10 @@ class DetailedRouter
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
-  void updateNetRectMap(DRModel& dr_model);
+  void updateNetFixedRectMap(DRModel& dr_model);
   void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
-  void cutBlockageList(DRModel& dr_model);
   void updateNetPanelResultMap(DRModel& dr_model);
+  void updateNetEnclosureMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
@@ -84,6 +84,9 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
   void sortDRBox(DRBox& dr_box);
+  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
+  SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
+  SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
   void resetDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask& dr_task);
@@ -119,13 +122,13 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void processDRBox(DRBox& dr_box);
   void buildRoutingResult(DRTask& dr_task);
-  void reportDRBox(DRBox& dr_box);
   void countDRBox(DRBox& dr_box);
-  void reportTable(DRBox& dr_box);
+  void reportDRBox(DRBox& dr_box);
   void updateDRBox(DRModel& dr_model, DRBox& dr_box);
-  void reportDRModel(DRModel& dr_model);
+  bool stopDRBox(DRBox& dr_box);
   void countDRModel(DRModel& dr_model);
-  void reportTable(DRModel& dr_model);
+  void reportDRModel(DRModel& dr_model);
+  bool stopDRModel(DRModel& dr_model);
 #endif
 
 #if 1  // update

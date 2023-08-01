@@ -57,9 +57,9 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
-  void updateNetRectMap(TAModel& ta_model);
+  void updateNetFixedRectMap(TAModel& ta_model);
   void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
-  void cutBlockageList(TAModel& ta_model);
+  void updateNetEnclosureMap(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
@@ -68,6 +68,7 @@ class TrackAssigner
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
+  void outputTADataset(TAModel& ta_model);
   void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
@@ -80,6 +81,8 @@ class TrackAssigner
   void assignTAModel(TAModel& ta_model);
   void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
   void sortTAPanel(TAPanel& ta_panel);
+  bool sortByMultiLevel(TATask& task1, TATask& task2);
+  SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
   void resetTAPanel(TAPanel& ta_panel);
   void assignTAPanel(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask& ta_task);
@@ -115,13 +118,13 @@ class TrackAssigner
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void processTAPanel(TAPanel& ta_panel);
   void buildRoutingResult(TATask& ta_task);
-  void reportTAPanel(TAPanel& ta_panel);
   void countTAPanel(TAPanel& ta_panel);
-  void reportTable(TAPanel& ta_panel);
+  void reportTAPanel(TAPanel& ta_panel);
   void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void reportTAModel(TAModel& ta_model);
+  bool stopTAPanel(TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
-  void reportTable(TAModel& ta_model);
+  void reportTAModel(TAModel& ta_model);
+  bool stopTAModel(TAModel& ta_model);
 #endif
 
 #if 1  // update
