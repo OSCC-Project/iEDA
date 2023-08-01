@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -233,6 +233,31 @@ class StaVertex {
   unsigned is_assistant() const { return _is_assistant; }
   void reset_is_assistant() { _is_assistant = 0; }
 
+  // whether need reset?
+  void set_is_foward_find() { _is_foward_find = 1; }
+  unsigned is_foward_find() const { return _is_foward_find; }
+  void addEndVertex(StaVertex* end_vertex) {
+    LOG_FATAL_IF(!end_vertex) << "insert end vertex:nullptr.";
+    _end_vertexes.insert(end_vertex);
+  }
+  void addEndVertex(const Set<StaVertex*>& end_vertex_set) {
+    std::copy(end_vertex_set.begin(), end_vertex_set.end(),
+              std::inserter(_end_vertexes, _end_vertexes.begin()));
+  }
+  Set<StaVertex*>& get_end_vertexes() { return _end_vertexes; }
+
+  void set_is_backward_find() { _is_backward_find = 1; }
+  unsigned is_backward_find() const { return _is_backward_find; }
+  void addStartVertex(StaVertex* start_vertex) {
+    LOG_FATAL_IF(!start_vertex) << "insert start vertex:nullptr.";
+    _start_vertexes.insert(start_vertex);
+  }
+  void addStartVertex(const Set<StaVertex*>& start_vertex_set) {
+    std::copy(start_vertex_set.begin(), start_vertex_set.end(),
+              std::inserter(_start_vertexes, _start_vertexes.begin()));
+  }
+  Set<StaVertex*>& get_start_vertexes() { return _start_vertexes; }
+
   void set_prop_tag(StaPropagationTag&& prop_tag) {
     _prop_tag = std::move(prop_tag);
   }
@@ -376,6 +401,10 @@ class StaVertex {
   unsigned _is_bidirection : 1 = 0;          //!< The vertex is inout pin.
   unsigned _is_assistant : 1 = 0;  // for the inout node, split two node, input
                                    // main, output assistant.
+  unsigned _is_foward_find : 1 =
+      0;  //!< The vertex forward propagate to find end.
+  unsigned _is_backward_find : 1 =
+      0;  //!< The vetex backward propagate to find start.
 
   unsigned _reserverd : 4 = 0;
 
@@ -392,6 +421,9 @@ class StaVertex {
   std::optional<double> _max_fanout;
 
   StaPropagationTag _prop_tag;  //!< The propagation tag.
+
+  Set<StaVertex*> _end_vertexes;  //<! The endpoint vertexes of the timing path.
+  Set<StaVertex*> _start_vertexes;  //<! The start vertexes of the timing path.
 
   DISALLOW_COPY_AND_ASSIGN(StaVertex);
 };
