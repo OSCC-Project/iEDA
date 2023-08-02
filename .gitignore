@@ -16,6 +16,5 @@ catboost_info
 *.dot
 *.gds
 *.def
-*.lef
 *.log
 *.pwr

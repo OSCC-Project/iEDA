@@ -1,6 +1,6 @@
-SET(IPLF_HOME ${HOME_PLATFORM})
+set(IPLF_HOME ${HOME_PLATFORM})
 
-INCLUDE_DIRECTORIES(
+include_directories(
     ${IPLF_HOME}/tool_manager
     ${IPLF_HOME}/tool_manager/tool_api
     ${IPLF_HOME}/data_manager
