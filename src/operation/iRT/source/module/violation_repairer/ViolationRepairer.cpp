@@ -385,6 +385,7 @@ void ViolationRepairer::iterative(VRModel& vr_model)
     reportVRModel(vr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopVRModel(vr_model)) {
+      vr_model.set_curr_iter(-1);
       break;
     }
   }
