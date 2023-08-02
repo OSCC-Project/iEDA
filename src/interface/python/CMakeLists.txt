@@ -1,7 +1,7 @@
 # add_subdirectory(${HOME_THIRDPARTY}/pybind11 binary_dir)
 
 
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/sky130)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/design/sky130_gcd)
 # DEFINE PYTHON MODULE & CMAKE TARGET
 pybind11_add_module(ieda_py)
 
