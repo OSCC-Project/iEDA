@@ -17,7 +17,7 @@
 /**
  * @file StaFindStartOrEnd.hh
  * @author shy long (longshy@pcl.ac.cn)
- * @brief
+ * @brief The class for finding start or end points of the timing path.
  * @version 0.1
  * @date 2023-07-21
  */
