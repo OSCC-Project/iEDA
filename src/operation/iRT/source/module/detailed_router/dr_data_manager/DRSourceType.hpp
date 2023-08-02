@@ -28,7 +28,9 @@ enum class DRSourceType
   kBlockAndPin,
   kPanelResult,
   kEnclosure,
-  kBoxResult
+  kBoxResult,
+  kOtherBox,
+  kSelfBox
 };
 
 struct GetDRSourceTypeName
@@ -51,6 +53,12 @@ struct GetDRSourceTypeName
         break;
       case DRSourceType::kBoxResult:
         dr_source_type_name = "box_result";
+        break;
+      case DRSourceType::kOtherBox:
+        dr_source_type_name = "other_box";
+        break;
+      case DRSourceType::kSelfBox:
+        dr_source_type_name = "self_box";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

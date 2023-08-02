@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRBoxId.hpp"
 #include "DRCRect.hpp"
@@ -61,7 +62,7 @@ class DetailedRouter
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
   void updateNetFixedRectMap(DRModel& dr_model);
-  void addRectToEnv(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
+  void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
   void updateNetPanelResultMap(DRModel& dr_model);
   void updateNetEnclosureMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);
@@ -74,44 +75,44 @@ class DetailedRouter
   void buildDRBoxMap(DRModel& dr_model);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
+  void makeRoutingState(DRBox& dr_box);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);
 #endif
 
 #if 1  // iterative
   void iterative(DRModel& dr_model);
-  void resetDRModel(DRModel& dr_model);
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
-  void sortDRBox(DRBox& dr_box);
+  void sortDRBox(DRModel& dr_model, DRBox& dr_box);
   bool sortByMultiLevel(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
   SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
-  void resetDRBox(DRBox& dr_box);
-  void routeDRBox(DRBox& dr_box);
-  void routeDRTask(DRBox& dr_box, DRTask& dr_task);
+  void resetDRBox(DRModel& dr_model, DRBox& dr_box);
+  void routeDRBox(DRModel& dr_model, DRBox& dr_box);
+  void routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task);
   void initSingleTask(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
-  void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
-  void routeSinglePath(DRBox& dr_box);
+  void routeByStrategy(DRModel& dr_model, DRBox& dr_box, DRRouteStrategy dr_route_strategy);
+  void routeSinglePath(DRModel& dr_model, DRBox& dr_box);
   void initPathHead(DRBox& dr_box);
   bool searchEnded(DRBox& dr_box);
-  void expandSearching(DRBox& dr_box);
-  bool passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(DRBox& dr_box);
-  bool replaceParentNode(DRBox& dr_box, DRNode* parent_node, DRNode* child_node);
+  void expandSearching(DRModel& dr_model, DRBox& dr_box);
+  bool passChecking(DRModel& dr_model, DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
-  void updateTaskResult(DRBox& dr_box, DRTask& dr_task);
+  void updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getJointCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
+  double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
@@ -120,12 +121,11 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  void processDRBox(DRBox& dr_box);
+  void processDRBox(DRModel& dr_model, DRBox& dr_box);
   void buildRoutingResult(DRTask& dr_task);
-  void countDRBox(DRBox& dr_box);
-  void reportDRBox(DRBox& dr_box);
-  void updateDRBox(DRModel& dr_model, DRBox& dr_box);
-  bool stopDRBox(DRBox& dr_box);
+  void countDRBox(DRModel& dr_model, DRBox& dr_box);
+  void reportDRBox(DRModel& dr_model, DRBox& dr_box);
+  bool stopDRBox(DRModel& dr_model, DRBox& dr_box);
   void countDRModel(DRModel& dr_model);
   void reportDRModel(DRModel& dr_model);
   bool stopDRModel(DRModel& dr_model);

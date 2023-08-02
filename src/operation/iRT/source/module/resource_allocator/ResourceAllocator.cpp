@@ -401,6 +401,7 @@ void ResourceAllocator::iterative(RAModel& ra_model)
                   " ******");
     ra_initial_penalty *= ra_penalty_drop_rate;
     if (stopRAModel(ra_model)) {
+      ra_model.set_curr_outer_iter(-1);
       break;
     }
   }
@@ -444,6 +445,7 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
     LOG_INST.info(Loc::current(), "Iter(", inner_iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
                   ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
   }
+  ra_model.set_curr_inner_iter(-1);
 }
 
 /**
