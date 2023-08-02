@@ -18,7 +18,6 @@
 
 #include "DRCRect.hpp"
 #include "GDSPlotter.hpp"
-#include "RTAPI.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -129,6 +128,51 @@ RegionQuery* DRCChecker::initRegionQuery()
     region_query->set_idrc_region_query(RTAPI_INST.initRegionQuery());
   }
   return region_query;
+}
+
+void DRCChecker::destoryRegionQuery(RegionQuery* region_query)
+{
+  if (region_query != nullptr) {
+    void* idrc_region_query = region_query->get_idrc_region_query();
+    if (idrc_region_query != nullptr) {
+      RTAPI_INST.destroyRegionQuery(idrc_region_query);
+      idrc_region_query = nullptr;
+    }
+
+    region_query->get_routing_net_rect_map().clear();
+    region_query->get_cut_net_rect_map().clear();
+
+    auto& routing_net_shape_map = region_query->get_routing_net_shape_map();
+    auto& cut_net_shape_map = region_query->get_cut_net_shape_map();
+    for (auto& [net_id, layer_shape_map] : routing_net_shape_map) {
+      for (auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          if (shape_ptr != nullptr) {
+            delete shape_ptr;
+            shape_ptr = nullptr;
+          }
+        }
+      }
+    }
+    for (auto& [net_id, layer_shape_map] : cut_net_shape_map) {
+      for (auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          if (shape_ptr != nullptr) {
+            delete shape_ptr;
+            shape_ptr = nullptr;
+          }
+        }
+      }
+    }
+    routing_net_shape_map.clear();
+    cut_net_shape_map.clear();
+
+    region_query->get_routing_region_map().clear();
+    region_query->get_cut_region_map().clear();
+
+    delete region_query;
+    region_query = nullptr;
+  }
 }
 
 std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getRoutingNetRectMap(RegionQuery* region_query,
