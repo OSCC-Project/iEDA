@@ -16,21 +16,40 @@
 // ***************************************************************************************
 #include "MPEvaluation.hh"
 
-#include "time.h"
-
-using namespace std;
-
 namespace ipl::imp {
+
+MPEvaluation::MPEvaluation(MPDB* mdb, Setting* set, MPSolution* solution)
+{
+  _solution = solution;
+  FPRect* core_rect = mdb->get_layout()->get_core_shape();
+  _core_width = core_rect->get_width();
+  _core_height = core_rect->get_height();
+  _net_list = mdb->get_new_net_list();
+
+  _weight_area = set->get_weight_area();
+  _weight_e_area = set->get_weight_e_area();
+  _weight_wl = set->get_weight_wl();
+  _weight_boundary = set->get_weight_boundary();
+  _weight_notch = set->get_weight_notch();
+  _weight_guidance = set->get_weight_guidance();
+
+  _blockage_list = mdb->get_blockage_list();
+  _guidance_to_macro_map = mdb->get_guidance_to_macro_map();
+  _macro_list = mdb->get_place_macro_list();
+
+  init_norm(set);  // NOLINT
+}
+
 float MPEvaluation::evaluate()
 {
   float cost = 0;
   float hpwl = evalHPWL();
   float e_area = evalEArea();
-  float guidance_penalty = evalLocationPenalty();
+  // float guidance_penalty = evalLocationPenalty();
   cost += _weight_wl * hpwl / _norm_wl;
   cost += _weight_area * _solution->get_total_area() / _norm_area;
   cost += _weight_e_area * e_area / _norm_e_area;
-  cost += _weight_guidance * guidance_penalty / _norm_guidance;
+  // cost += _weight_guidance * guidance_penalty / _norm_guidance;
   return cost;
 }
 
@@ -50,7 +69,7 @@ float MPEvaluation::evalHPWL()
   float hpwl = 0;
   int32_t min_x, min_y, max_x, max_y, pin_x, pin_y;
   for (FPNet* net : _net_list) {
-    vector<FPPin*> pin_list = net->get_pin_list();
+    std::vector<FPPin*> pin_list = net->get_pin_list();
     min_x = INT32_MAX;
     min_y = INT32_MAX;
     max_x = INT32_MIN;
@@ -58,10 +77,10 @@ float MPEvaluation::evalHPWL()
     for (FPPin* pin : pin_list) {
       pin_x = pin->get_x();
       pin_y = pin->get_y();
-      min_x = min(pin_x, min_x);
-      min_y = min(pin_y, min_y);
-      max_x = max(pin_x, max_x);
-      max_y = max(pin_y, max_y);
+      min_x = std::min(pin_x, min_x);
+      min_y = std::min(pin_y, min_y);
+      max_x = std::max(pin_x, max_x);
+      max_y = std::max(pin_y, max_y);
     }
     hpwl += (max_x - min_x) + (max_y - min_y);
   }
@@ -74,9 +93,9 @@ float MPEvaluation::evalEArea()
   float e_area = 0;
   uint32_t placement_width = _solution->get_total_width();
   uint32_t placement_height = _solution->get_total_height();
-  const float max_width = max(_core_width, placement_width);
-  const float max_height = max(_core_height, placement_height);
-  e_area = max(e_area, max_width * max_height - float(_core_width) * float(_core_height));
+  const float max_width = std::max(_core_width, placement_width);
+  const float max_height = std::max(_core_height, placement_height);
+  e_area = std::max(e_area, max_width * max_height - float(_core_width) * float(_core_height));
   return e_area;
 }
 
@@ -94,14 +113,14 @@ float MPEvaluation::evalBlockagePenalty()
       float uy_two = macro->get_y() + macro->get_height();
       float lx_two = macro->get_x();
       float ly_two = macro->get_y();
-      float lx = max(lx_one, lx_two);
-      float ly = max(ly_one, ly_two);
-      float ux = min(ux_one, ux_two);
-      float uy = min(uy_one, uy_two);
+      float lx = std::max(lx_one, lx_two);
+      float ly = std::max(ly_one, ly_two);
+      float ux = std::min(ux_one, ux_two);
+      float uy = std::min(uy_one, uy_two);
       float overflow_x = ux - lx;
       float overflow_y = uy - ly;
-      overflow_x = max(overflow_x, zero);
-      overflow_y = max(overflow_y, zero);
+      overflow_x = std::max(overflow_x, zero);
+      overflow_y = std::max(overflow_y, zero);
       total_overflow += overflow_x * overflow_y;
     }
   }
@@ -118,9 +137,9 @@ float MPEvaluation::evalBoundaryPenalty()
       float ux = lx + macro->get_width();
       float uy = ly + macro->get_height();
 
-      lx = min(lx, abs(_core_width - ux));
-      ly = min(ly, abs(_core_height - uy));
-      lx = min(lx, ly);
+      lx = std::min(lx, abs(_core_width - ux));
+      ly = std::min(ly, abs(_core_height - uy));
+      lx = std::min(lx, ly);
       boundary_penalty += lx * lx;
     }
   }
@@ -153,7 +172,7 @@ float MPEvaluation::evalLocationPenalty()
     x_dist = x_dist - width > 0.0 ? x_dist - width : 0.0;
     y_dist = y_dist - height > 0.0 ? y_dist - height : 0.0;
     if (x_dist >= 0.0 && y_dist >= 0.0) {
-      location_penalty += max(x_dist, y_dist);
+      location_penalty += std::max(x_dist, y_dist);
     }
   }
   return location_penalty;
@@ -165,13 +184,13 @@ float MPEvaluation::evalNotchPenalty()
   uint32_t placement_width = _solution->get_total_width();
   uint32_t placement_height = _solution->get_total_height();
   if (placement_width > _core_width || placement_height > _core_height) {
-    const float area = max(placement_width, _core_width) * max(placement_height, _core_height);
+    const float area = std::max(placement_width, _core_width) * std::max(placement_height, _core_height);
     notch_penalty = sqrt(area / (_core_width * _core_height));
     return notch_penalty;
   }
   alignMacro();
-  vector<float> x_vec;
-  vector<float> y_vec;
+  std::vector<float> x_vec;
+  std::vector<float> y_vec;
   for (FPInst* macro : _macro_list) {
     if (macro->isMacro()) {
       const float lx = macro->get_x();
@@ -194,8 +213,8 @@ float MPEvaluation::evalNotchPenalty()
   sort(x_vec.begin(), x_vec.end());
   sort(y_vec.begin(), y_vec.end());
 
-  vector<float> x_grid;
-  vector<float> y_grid;
+  std::vector<float> x_grid;
+  std::vector<float> y_grid;
 
   float temp_x = 0.0;
   x_grid.emplace_back(x_vec[0]);
@@ -219,7 +238,7 @@ float MPEvaluation::evalNotchPenalty()
 
   const int num_x = x_grid.size() - 1;
   const int num_y = y_grid.size() - 1;
-  vector<vector<bool>> grid(num_x);
+  std::vector<std::vector<bool>> grid(num_x);
   for (int i = 0; i < num_x; i++) {
     grid[i].resize(num_y);
   }
@@ -324,10 +343,10 @@ float MPEvaluation::evalNotchPenalty()
 void MPEvaluation::init_norm(SAParam* param)
 {
   int perturb_per_step = param->get_perturb_per_step();
-  vector<float> area_list;
-  vector<float> wl_list;
-  vector<float> e_area_list;
-  vector<float> guidance_list;
+  std::vector<float> area_list;
+  std::vector<float> wl_list;
+  std::vector<float> e_area_list;
+  std::vector<float> guidance_list;
   _norm_area = 0;
   _norm_wl = 0;
   _norm_e_area = 0;
@@ -339,7 +358,7 @@ void MPEvaluation::init_norm(SAParam* param)
     area = _solution->get_total_area();
     wl = evalHPWL();
     e_area = evalEArea();
-    guidance = evalLocationPenalty();
+    // guidance = evalLocationPenalty();
     area_list.emplace_back(area);
     wl_list.emplace_back(wl);
     e_area_list.emplace_back(e_area);
@@ -347,21 +366,21 @@ void MPEvaluation::init_norm(SAParam* param)
     _norm_area += area;
     _norm_wl += wl;
     _norm_e_area += e_area;
-    _norm_guidance += guidance;
+    // _norm_guidance += guidance;
   }
 
   _norm_area = _norm_area / perturb_per_step;
   _norm_wl = _norm_wl / perturb_per_step;
   _norm_e_area = _norm_e_area / perturb_per_step;
-  _norm_guidance = _norm_guidance / perturb_per_step;
+  // _norm_guidance = _norm_guidance / perturb_per_step;
 
-  vector<float> cost_list;
+  std::vector<float> cost_list;
   for (size_t i = 0; i < area_list.size(); ++i) {
     float cost = 0;
     cost += _weight_area * area_list[i] / _norm_area;
     cost += _weight_wl * wl_list[i] / _norm_wl;
     cost += _weight_e_area * e_area_list[i] / _norm_e_area;
-    cost += _weight_guidance * guidance_list[i] / _norm_guidance;
+    // cost += _weight_guidance * guidance_list[i] / _norm_guidance;
 
     cost_list.emplace_back(cost);
   }
@@ -389,8 +408,8 @@ void MPEvaluation::alignMacro()
     if (weight > 0) {
       const float width = _macro_list[i]->get_width();
       const float height = _macro_list[i]->get_height();
-      threshold_h = min(threshold_h, width);
-      threshold_v = min(threshold_v, height);
+      threshold_h = std::min(threshold_h, width);
+      threshold_v = std::min(threshold_v, height);
     }
   }
 
@@ -415,8 +434,8 @@ void MPEvaluation::alignMacro()
     }
   }
 
-  vector<int> macro_id_list;
-  queue<int> macro_queue;  // seeds for alignment
+  std::vector<int> macro_id_list;
+  std::queue<int> macro_queue;  // seeds for alignment
 
   // Align macros according to X
   // left alignment
@@ -608,8 +627,8 @@ void MPEvaluation::alignMacro()
 
 bool MPEvaluation::isOverlap()
 {
-  vector<pair<float, float>> macro_block_x_list;
-  vector<pair<float, float>> macro_block_y_list;
+  std::vector<std::pair<float, float>> macro_block_x_list;
+  std::vector<std::pair<float, float>> macro_block_y_list;
 
   for (size_t i = 0; i < _macro_list.size(); i++)
     if (_macro_list[i]->isMacro()) {
@@ -617,20 +636,20 @@ bool MPEvaluation::isOverlap()
       const float ux = lx + _macro_list[i]->get_width();
       const float ly = _macro_list[i]->get_y();
       const float uy = ly + _macro_list[i]->get_height();
-      macro_block_x_list.emplace_back(pair<float, float>(lx, ux));
-      macro_block_y_list.emplace_back(pair<float, float>(ly, uy));
+      macro_block_x_list.emplace_back(std::pair<float, float>(lx, ux));
+      macro_block_y_list.emplace_back(std::pair<float, float>(ly, uy));
     }
 
   float overlap = 0.0;
   for (size_t i = 0; i < macro_block_x_list.size(); i++)
     for (size_t j = i + 1; j < macro_block_x_list.size(); j++) {
-      const float x1 = max(macro_block_x_list[i].first, macro_block_x_list[j].first);
-      const float x2 = min(macro_block_x_list[i].second, macro_block_x_list[j].second);
-      const float y1 = max(macro_block_y_list[i].first, macro_block_y_list[j].first);
-      const float y2 = min(macro_block_y_list[i].second, macro_block_y_list[j].second);
+      const float x1 = std::max(macro_block_x_list[i].first, macro_block_x_list[j].first);
+      const float x2 = std::min(macro_block_x_list[i].second, macro_block_x_list[j].second);
+      const float y1 = std::max(macro_block_y_list[i].first, macro_block_y_list[j].first);
+      const float y2 = std::min(macro_block_y_list[i].second, macro_block_y_list[j].second);
       const float x = 0.0;
       const float y = 0.0;
-      overlap += max(x2 - x1, x) * max(y2 - y1, y);
+      overlap += std::max(x2 - x1, x) * std::max(y2 - y1, y);
     }
 
   return overlap > 0.0;

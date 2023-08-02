@@ -136,7 +136,7 @@ void RegionQuery::queryInMaxScope(int layer_id, RTreeBox check_rect,
 {
   std::vector<std::pair<RTreeBox, DrcRect*>> origin_result;
   _layer_to_routing_max_region_tree_map[layer_id].query(bgi::overlaps(check_rect), std::back_inserter(origin_result));
-  for (auto [rtree_box, drc_rect] : origin_result) {
+  for (auto& [rtree_box, drc_rect] : origin_result) {
     query_result[drc_rect->get_scope_owner()][drc_rect->getScopeType()].push_back(drc_rect);
   }
 }
@@ -146,7 +146,7 @@ void RegionQuery::queryInMinScope(int layer_id, RTreeBox check_rect,
 {
   std::vector<std::pair<RTreeBox, DrcRect*>> origin_result;
   _layer_to_routing_min_region_tree_map[layer_id].query(bgi::overlaps(check_rect), std::back_inserter(origin_result));
-  for (auto [rtree_box, drc_rect] : origin_result) {
+  for (auto& [rtree_box, drc_rect] : origin_result) {
     query_result[drc_rect->get_scope_owner()][drc_rect->getScopeType()].push_back(drc_rect);
   }
 }
@@ -275,6 +275,10 @@ bool RegionQuery::addCutDiffLayerSpacingViolation(DrcRect* target_rect, DrcRect*
 
 void RegionQuery::initPrlVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_prl_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -292,6 +296,10 @@ void RegionQuery::initPrlVioSpot()
 
 void RegionQuery::initMetalEOLVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_metal_EOL_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -308,6 +316,10 @@ void RegionQuery::initMetalEOLVioSpot()
 
 void RegionQuery::initShortVioSpot()
 {
+  if (_tech == nullptr) {
+    return;
+  }
+
   for (auto& [layer_id, _rtree] : _layer_to_short_vio_box_tree) {
     for (auto it = _rtree.begin(); it != _rtree.end(); ++it) {
       RTreeBox box = *it;
@@ -557,6 +569,10 @@ void RegionQuery::getRegionReport(std::map<std::string, int>& viotype_to_nums_ma
 
 void RegionQuery::addPolyEdge_NotAddToRegion(DrcPoly* new_poly)
 {
+  if (new_poly == nullptr) {
+    return;
+  }
+
   initPolyOuterEdges_NotAddToRegion(new_poly->getNet(), new_poly, new_poly->getPolygon(), new_poly->get_layer_id());
   // pending
 
@@ -866,6 +882,11 @@ void RegionQuery::deletePolyInNet(DrcPoly* poly)
 
 void RegionQuery::removeFromMaxScopeRTree(DrcRect* scope_rect)
 {
+  if (scope_rect == nullptr) {
+    std::cout << "[DrcAPI Warning]: scope_rect is null, removeFromMaxScopeRTree failed" << std::endl;
+    return;
+  }
+
   int layer_id = scope_rect->get_layer_id();
   RTreeBox scope_rtree_box = DRCUtil::getRTreeBox(scope_rect);
   if (_layer_to_routing_max_region_tree_map[layer_id].remove(std::make_pair(scope_rtree_box, scope_rect)) == 0) {
@@ -876,6 +897,11 @@ void RegionQuery::removeFromMaxScopeRTree(DrcRect* scope_rect)
 
 void RegionQuery::removeFromMinScopeRTree(DrcRect* scope_rect)
 {
+  if (scope_rect == nullptr) {
+    std::cout << "[DrcAPI Warning]: scope_rect is null, removeFromMaxScopeRTree failed" << std::endl;
+    return;
+  }
+
   int layer_id = scope_rect->get_layer_id();
   RTreeBox scope_rtree_box = DRCUtil::getRTreeBox(scope_rect);
 
@@ -914,6 +940,34 @@ void RegionQuery::deleteIntersectPoly(std::set<DrcPoly*>& intersect_poly_set)
   }
 }
 
+std::vector<DrcPoly*> RegionQuery::rebuildPoly_add_list(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list)
+{
+  std::vector<PolygonWithHoles> new_polygon_list;
+  for (auto poly : intersect_poly_set) {
+    std::vector<bp::rectangle_data<int>> rects;
+    auto boost_polygon = poly->getPolygon()->get_polygon();
+    new_polygon_list += boost_polygon;
+  }
+  for (auto rect : drc_rect_list) {
+    if (rect->get_owner_type() == RectOwnerType::kRoutingMetal) {
+      new_polygon_list += DRCUtil::getBoostRect(rect);
+    }
+  }
+
+  std::vector<DrcPoly*> poly_list;
+  for (auto new_poly_with_hole : new_polygon_list) {
+    DrcPoly* poly = new DrcPoly();
+    int layer_id = drc_rect_list[0]->get_layer_id();
+    int net_id = drc_rect_list[0]->get_net_id();
+    poly->setNetId(net_id);
+    poly->set_layer_id(layer_id);
+    DrcPolygon* polygon = new DrcPolygon(new_polygon_list[0], layer_id, poly, net_id);
+    poly->setPolygon(polygon);
+    poly_list.push_back(poly);
+  }
+  return poly_list;
+}
+
 DrcPoly* RegionQuery::rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list)
 {
   std::vector<PolygonWithHoles> new_polygon_list;
@@ -931,6 +985,7 @@ DrcPoly* RegionQuery::rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, st
     std::cout << "[iDRC API] Warning : Rect list merge failed!" << std::endl;
     return nullptr;
   }
+
   DrcPoly* poly = new DrcPoly();
   int layer_id = drc_rect_list[0]->get_layer_id();
   int net_id = drc_rect_list[0]->get_net_id();
@@ -975,6 +1030,10 @@ std::vector<DrcPoly*> RegionQuery::rebuildPoly_del(std::set<DrcPoly*>& intersect
 
 void RegionQuery::addPolyEdge(DrcPoly* new_poly)
 {
+  if (new_poly == nullptr) {
+    return;
+  }
+
   initPolyOuterEdges(new_poly->getNet(), new_poly, new_poly->getPolygon(), new_poly->get_layer_id());
   // pending
 

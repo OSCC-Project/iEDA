@@ -43,6 +43,7 @@ class MainWindow : public QMainWindow {
 
   /// getter
   GuiGraphicsScene* get_scene() { return _scene; }
+  GuiGraphicsView* get_View() { return _graphicsView; }
 
   /// operator
   void initView();

@@ -41,10 +41,8 @@ class TANode : public LayerCoord
 
   // getter
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<Orientation, std::set<irt_int>>& get_obs_task_map() { return _obs_task_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_obs_task_map(const std::map<Orientation, std::set<irt_int>>& obs_task_map) { _obs_task_map = obs_task_map; }
   // function
   TANode* getNeighborNode(Orientation orientation)
   {
@@ -54,32 +52,21 @@ class TANode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
-  {
-    bool is_obs = false;
-    if (ta_route_strategy == TARouteStrategy::kIgnoringBlockage) {
-      return is_obs;
-    }
-    if (RTUtil::exist(_obs_task_map, orientation)) {
-      if (_obs_task_map[orientation].size() >= 2) {
-        is_obs = true;
-      } else {
-        is_obs = RTUtil::exist(_obs_task_map[orientation], task_idx) ? false : true;
-      }
-    }
-    return is_obs;
-  }
+  double getCost(irt_int task_idx, Orientation orientation) { return 0; }
 #if 1  // astar
+  // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
+  // single path
   TANodeState& get_state() { return _state; }
   TANode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   void set_state(TANodeState state) { _state = state; }
   void set_parent_node(TANode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
+  // function
   bool isNone() { return _state == TANodeState::kNone; }
   bool isOpen() { return _state == TANodeState::kOpen; }
   bool isClose() { return _state == TANodeState::kClose; }
@@ -88,7 +75,6 @@ class TANode : public LayerCoord
 
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
-  std::map<Orientation, std::set<irt_int>> _obs_task_map; // 只存obs_task_map，可以不管增量式
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

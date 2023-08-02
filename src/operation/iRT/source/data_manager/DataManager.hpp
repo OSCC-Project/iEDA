@@ -21,7 +21,6 @@
 #include "Helper.hpp"
 #include "Logger.hpp"
 #include "SortStatus.hpp"
-#include "SortType.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
@@ -41,8 +40,6 @@ class DataManager
   void output(idb::IdbBuilder* idb_builder);
   void save(Stage stage);
   void load(Stage stage);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
-  std::vector<LayerRect> getRealRectList(MTree<PHYNode>& phy_node_tree);
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Helper& getHelper() { return _helper; }

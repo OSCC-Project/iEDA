@@ -25,34 +25,42 @@ namespace irt {
 enum class TARouteStrategy
 {
   kNone,
-  kIgnoringSelfPanelResult,
-  kIgnoringOtherPanelResult,
-  kIgnoringBlockage
+  kFullyConsider,
+  kIgnoringSelfPanel,
+  kIgnoringOtherPanel,
+  kIgnoringEnclosure,
+  kIgnoringBlockAndPin
 };
 
 struct GetTARouteStrategyName
 {
-  std::string operator()(const TARouteStrategy& dr_route_strategy) const
+  std::string operator()(const TARouteStrategy& ta_route_strategy) const
   {
-    std::string dr_route_strategy_name;
-    switch (dr_route_strategy) {
+    std::string ta_route_strategy_name;
+    switch (ta_route_strategy) {
       case TARouteStrategy::kNone:
-        dr_route_strategy_name = "none";
+        ta_route_strategy_name = "none";
         break;
-      case TARouteStrategy::kIgnoringSelfPanelResult:
-        dr_route_strategy_name = "ignoring_self_panel_result";
+      case TARouteStrategy::kFullyConsider:
+        ta_route_strategy_name = "fully_consider";
         break;
-      case TARouteStrategy::kIgnoringOtherPanelResult:
-        dr_route_strategy_name = "ignoring_other_panel_result";
+      case TARouteStrategy::kIgnoringSelfPanel:
+        ta_route_strategy_name = "ignoring_self_panel";
         break;
-      case TARouteStrategy::kIgnoringBlockage:
-        dr_route_strategy_name = "ignoring_blockage";
+      case TARouteStrategy::kIgnoringOtherPanel:
+        ta_route_strategy_name = "ignoring_other_panel";
+        break;
+      case TARouteStrategy::kIgnoringEnclosure:
+        ta_route_strategy_name = "ignoring_enclosure";
+        break;
+      case TARouteStrategy::kIgnoringBlockAndPin:
+        ta_route_strategy_name = "ignoring_block_and_pin";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return dr_route_strategy_name;
+    return ta_route_strategy_name;
   }
 };
 

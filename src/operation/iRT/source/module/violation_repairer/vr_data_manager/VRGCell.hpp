@@ -16,26 +16,37 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "DRCChecker.hpp"
+#include "RegionQuery.hpp"
+#include "SpaceRegion.hpp"
+#include "VRSourceType.hpp"
 
 namespace irt {
 
-class VRGCell
+class VRGCell : public SpaceRegion
 {
  public:
   VRGCell() = default;
   ~VRGCell() = default;
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_net_blockage_map() { return _net_blockage_map; }
+  std::map<VRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<PlanarRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
+  void set_source_region_query_map(const std::map<VRSourceType, RegionQuery*>& source_region_query_map)
+  {
+    _source_region_query_map = source_region_query_map;
+  }
   // function
+  RegionQuery* getRegionQuery(VRSourceType vr_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[vr_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
-  PlanarRect _real_rect;
-  std::map<irt_int, std::vector<PlanarRect>> _net_blockage_map;
+  std::map<VRSourceType, RegionQuery*> _source_region_query_map;
 };
 
 }  // namespace irt

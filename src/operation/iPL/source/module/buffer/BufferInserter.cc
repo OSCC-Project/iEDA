@@ -73,7 +73,7 @@ void BufferInserter::runBufferInsertionForMaxWireLength()
     if (iPLAPIInst.isClockNet(network->get_name())) {
       continue;
     }
-    int32_t hpwl = hpwl_eval.obtainNetWirelength(network->get_name());
+    int32_t hpwl = hpwl_eval.obtainNetWirelength(network->get_network_id());
     if (hpwl > max_wirelength) {
       violated_network_list.push_back(network);
     }

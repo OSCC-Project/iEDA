@@ -59,16 +59,17 @@ class Pin
   Pin() = delete;
   explicit Pin(std::string name);
   Pin(const Pin&) = delete;
-  Pin(Pin&&)      = delete;
-  ~Pin()          = default;
+  Pin(Pin&&) = delete;
+  ~Pin() = default;
 
   Pin& operator=(const Pin&) = delete;
   Pin& operator=(Pin&&) = delete;
 
   // getter.
+  int32_t get_pin_id() const { return _pin_id; }
   std::string get_name() const { return _name; }
-  Net*        get_net() const { return _net; }
-  Instance*   get_instance() const { return _instance; }
+  Net* get_net() const { return _net; }
+  Instance* get_instance() const { return _instance; }
 
   Point<int32_t> get_offset_coordi() const { return _offset_coordi; }
   Point<int32_t> get_center_coordi() const { return _center_coordi; }
@@ -86,9 +87,8 @@ class Pin
   bool isFakePin() const { return _pin_type == PIN_TYPE::kFakePin; }
 
   // setter.
-  void set_net(Net* net) { 
-    _net = net;
-  }
+  void set_pin_id(int32_t id) { _pin_id = id; }
+  void set_net(Net* net) { _net = net; }
   void set_instance(Instance* inst) { _instance = inst; }
 
   void set_offset_coordi(int32_t x, int32_t y)
@@ -108,23 +108,24 @@ class Pin
   void set_pin_io_type(PIN_IO_TYPE type) { _pin_io_type = type; }
 
  private:
+  int32_t _pin_id;
   /* _name format as "instace name" + separator(e.g. ":","/") + "port name"  */
   std::string _name;
-  Net*        _net;
-  Instance*   _instance;
+  Net* _net;
+  Instance* _instance;
 
   /* (0,0) for io port ; offset is relative to instance center */
   Point<int32_t> _offset_coordi;
   Point<int32_t> _center_coordi;
 
-  PIN_TYPE    _pin_type;
+  PIN_TYPE _pin_type;
   PIN_IO_TYPE _pin_io_type;
 };
 
-inline Pin::Pin(std::string name) : _name(std::move(name)), _net(nullptr), _instance(nullptr), _pin_type(PIN_TYPE::kNone), _pin_io_type(PIN_IO_TYPE::kNone)
+inline Pin::Pin(std::string name)
+    : _name(std::move(name)), _net(nullptr), _instance(nullptr), _pin_type(PIN_TYPE::kNone), _pin_io_type(PIN_IO_TYPE::kNone)
 {
 }
-
 
 }  // namespace ipl
 

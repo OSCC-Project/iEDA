@@ -16,33 +16,41 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "DRCChecker.hpp"
+#include "PAGCellId.hpp"
+#include "PASourceType.hpp"
+#include "RegionQuery.hpp"
+#include "SpaceRegion.hpp"
 
 namespace irt {
 
-class PAGCell : public LayerCoord
+class PAGCell : public SpaceRegion
 {
  public:
   PAGCell() = default;
   ~PAGCell() = default;
-
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_blockage_map() { return _net_blockage_map; }
-  std::map<irt_int, std::vector<LayerRect>>& get_net_enclosure_map() { return _net_enclosure_map; }
+  PAGCellId& get_pa_gcell_id() { return _pa_gcell_id; }
+  std::map<PASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
-  void set_net_blockage_map(const std::map<irt_int, std::vector<LayerRect>>& net_blockage_map) { _net_blockage_map = net_blockage_map; }
-  void set_net_enclosure_map(const std::map<irt_int, std::vector<LayerRect>>& net_enclosure_map)
+  void set_pa_gcell_id(const PAGCellId& pa_gcell_id) { _pa_gcell_id = pa_gcell_id; }
+  void set_source_region_query_map(const std::map<PASourceType, RegionQuery*>& source_region_query_map)
   {
-    _net_enclosure_map = net_enclosure_map;
+    _source_region_query_map = source_region_query_map;
   }
   // function
+  RegionQuery* getRegionQuery(PASourceType pa_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[pa_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
-  PlanarRect _real_rect;
-  std::map<irt_int, std::vector<LayerRect>> _net_blockage_map;
-  std::map<irt_int, std::vector<LayerRect>> _net_enclosure_map;
+  PAGCellId _pa_gcell_id;
+  std::map<PASourceType, RegionQuery*> _source_region_query_map;
 };
 
 }  // namespace irt

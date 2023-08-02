@@ -78,7 +78,7 @@ class LayoutChecker
   std::vector<Instance*> obtainOccupiedInstList(Grid* site);
   void connectInstSite(Instance* inst);
 
-  Orient obtainLayoutRowOrient(GridRow* grid_row);
+  // Orient obtainLayoutRowOrient(GridRow* grid_row);
 };
 
 }  // namespace ipl

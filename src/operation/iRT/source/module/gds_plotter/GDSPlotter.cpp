@@ -50,6 +50,8 @@ void GDSPlotter::destroyInst()
   }
 }
 
+// function
+
 void GDSPlotter::plot(Net& net, Stage stage, bool add_layout, bool need_clipping)
 {
   std::vector<Net> net_list = {net};
@@ -152,7 +154,7 @@ void GDSPlotter::buildLayoutLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPLayoutType, bool> routing_data_type_visible_map
-      = {{GPLayoutType::kText, false},  {GPLayoutType::kPort, true},         {GPLayoutType::kAccessPoint, true},
+      = {{GPLayoutType::kText, false},  {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
          {GPLayoutType::kGuide, false}, {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
          {GPLayoutType::kWire, true},   {GPLayoutType::kEnclosure, true},    {GPLayoutType::kBlockage, true}};
   std::map<GPLayoutType, bool> cut_data_type_visible_map
@@ -338,14 +340,14 @@ void GDSPlotter::addPinShapeList(GPStruct& pin_struct, Pin& pin)
   for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(routing_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
   for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(cut_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(cut_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
@@ -469,7 +471,7 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
       wire_boundary.set_rect(wire_rect);
       wire_list_struct.push(wire_boundary);
-      
+
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
       ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
@@ -742,7 +744,6 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
 
-  GPStruct artificial_blockage_struct("artificial_blockage");
   GPStruct layout_blockage_struct("layout_blockage");
 
   for (Blockage& blockage : routing_blockage_list) {
@@ -753,12 +754,7 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(blockage.get_layer_idx()));
     blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
   for (Blockage& blockage : cut_blockage_list) {
     if (!RTUtil::isOpenOverlap(blockage.get_real_rect(), clipping_window)) {
@@ -768,18 +764,11 @@ void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(blockage.get_layer_idx()));
     blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
-  gp_gds.addStruct(artificial_blockage_struct);
   gp_gds.addStruct(layout_blockage_struct);
 
   GPStruct blockage_list_struct("blockage_list");
-  blockage_list_struct.push(artificial_blockage_struct.get_name());
   blockage_list_struct.push(layout_blockage_struct.get_name());
   gp_gds.addStruct(blockage_list_struct);
 }
