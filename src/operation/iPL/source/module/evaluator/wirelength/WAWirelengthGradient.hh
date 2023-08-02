@@ -27,7 +27,7 @@
 #ifndef IPL_EVALUATOR_WA_WIRELENGTH_GRADIENT_H
 #define IPL_EVALUATOR_WA_WIRELENGTH_GRADIENT_H
 
-#include <map>
+#include <vector>
 
 #include "WirelengthGradient.hh"
 #include "data/Rectangle.hh"
@@ -38,15 +38,15 @@ struct WAPinInfo
 {
   WAPinInfo();
   WAPinInfo(const WAPinInfo&) = default;
-  WAPinInfo(WAPinInfo&&)      = default;
+  WAPinInfo(WAPinInfo&&) = default;
 
   WAPinInfo& operator=(const WAPinInfo&) = delete;
-  WAPinInfo& operator                    =(WAPinInfo&& other)
+  WAPinInfo& operator=(WAPinInfo&& other)
   {
-    max_ExpSum_x    = other.max_ExpSum_x;
-    max_ExpSum_y    = other.max_ExpSum_y;
-    min_ExpSum_x    = other.min_ExpSum_x;
-    min_ExpSum_y    = other.min_ExpSum_y;
+    max_ExpSum_x = other.max_ExpSum_x;
+    max_ExpSum_y = other.max_ExpSum_y;
+    min_ExpSum_x = other.min_ExpSum_x;
+    min_ExpSum_y = other.min_ExpSum_y;
     has_MaxExpSum_x = other.has_MaxExpSum_x;
     has_MaxExpSum_y = other.has_MaxExpSum_y;
     has_MinExpSum_x = other.has_MinExpSum_x;
@@ -81,10 +81,10 @@ inline WAPinInfo::WAPinInfo() : has_MaxExpSum_x(0), has_MaxExpSum_y(0), has_MinE
 
 inline void WAPinInfo::reset()
 {
-  max_ExpSum_x    = 0;
-  max_ExpSum_y    = 0;
-  min_ExpSum_x    = 0;
-  min_ExpSum_y    = 0;
+  max_ExpSum_x = 0;
+  max_ExpSum_y = 0;
+  min_ExpSum_x = 0;
+  min_ExpSum_y = 0;
   has_MaxExpSum_x = 0;
   has_MaxExpSum_y = 0;
   has_MinExpSum_x = 0;
@@ -93,21 +93,21 @@ inline void WAPinInfo::reset()
 
 struct WANetInfo
 {
-  WANetInfo()                 = default;
+  WANetInfo() = default;
   WANetInfo(const WANetInfo&) = default;
-  WANetInfo(WANetInfo&&)      = default;
+  WANetInfo(WANetInfo&&) = default;
 
   WANetInfo& operator=(const WANetInfo&) = delete;
-  WANetInfo& operator                    =(WANetInfo&& other)
+  WANetInfo& operator=(WANetInfo&& other)
   {
-    wa_ExpMinSum_x   = other.wa_ExpMinSum_x;
+    wa_ExpMinSum_x = other.wa_ExpMinSum_x;
     wa_X_ExpMinSum_x = other.wa_X_ExpMinSum_x;
-    wa_ExpMaxSum_x   = other.wa_ExpMaxSum_x;
+    wa_ExpMaxSum_x = other.wa_ExpMaxSum_x;
     wa_X_ExpMaxSum_x = other.wa_X_ExpMaxSum_x;
 
-    wa_ExpMinSum_y   = other.wa_ExpMinSum_y;
+    wa_ExpMinSum_y = other.wa_ExpMinSum_y;
     wa_Y_ExpMinSum_y = other.wa_Y_ExpMinSum_y;
-    wa_ExpMaxSum_y   = other.wa_ExpMaxSum_y;
+    wa_ExpMaxSum_y = other.wa_ExpMaxSum_y;
     wa_Y_ExpMaxSum_y = other.wa_Y_ExpMaxSum_y;
 
     return (*this);
@@ -121,9 +121,9 @@ struct WANetInfo
   // waExpMaxSumX_ : store sigma {exp(-x_i/gamma)}
   // waXExpMaxSumX_: store sigma {x_i*exp(-x_i/gamma)}
   //
-  float wa_ExpMinSum_x   = 0;
+  float wa_ExpMinSum_x = 0;
   float wa_X_ExpMinSum_x = 0;
-  float wa_ExpMaxSum_x   = 0;
+  float wa_ExpMaxSum_x = 0;
   float wa_X_ExpMaxSum_x = 0;
   // Y forces
   // waExpMinSumY_: store sigma {exp(y_i/gamma)}
@@ -131,20 +131,20 @@ struct WANetInfo
   // waExpMaxSumY_ : store sigma {exp(-y_i/gamma)}
   // waYExpMaxSumY_: store sigma {y_i*exp(-y_i/gamma)}
   //
-  float wa_ExpMinSum_y   = 0;
+  float wa_ExpMinSum_y = 0;
   float wa_Y_ExpMinSum_y = 0;
-  float wa_ExpMaxSum_y   = 0;
+  float wa_ExpMaxSum_y = 0;
   float wa_Y_ExpMaxSum_y = 0;
 };
 inline void WANetInfo::reset()
 {
-  wa_ExpMinSum_x   = 0;
+  wa_ExpMinSum_x = 0;
   wa_X_ExpMinSum_x = 0;
-  wa_ExpMaxSum_x   = 0;
+  wa_ExpMaxSum_x = 0;
   wa_X_ExpMaxSum_x = 0;
-  wa_ExpMinSum_y   = 0;
+  wa_ExpMinSum_y = 0;
   wa_Y_ExpMinSum_y = 0;
-  wa_ExpMaxSum_y   = 0;
+  wa_ExpMaxSum_y = 0;
   wa_Y_ExpMaxSum_y = 0;
 }
 
@@ -154,29 +154,32 @@ class WAWirelengthGradient : public WirelengthGradient
   WAWirelengthGradient() = delete;
   explicit WAWirelengthGradient(TopologyManager* topology_manager);
   WAWirelengthGradient(const WAWirelengthGradient&) = delete;
-  WAWirelengthGradient(WAWirelengthGradient&&)      = delete;
-  ~WAWirelengthGradient() override                  = default;
+  WAWirelengthGradient(WAWirelengthGradient&&) = delete;
+  ~WAWirelengthGradient() override = default;
 
   WAWirelengthGradient& operator=(const WAWirelengthGradient&) = delete;
   WAWirelengthGradient& operator=(WAWirelengthGradient&&) = delete;
 
+  void updateWirelengthForce_OLD(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num);
   void updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num) override;
 
-  Point<float> obtainWirelengthGradient(std::string inst_name, float coeff_x, float coeff_y) override;
+  Point<float> obtainWirelengthGradient_OLD(int32_t inst_id, float coeff_x, float coeff_y);
+  Point<float> obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y) override;
   Point<float> obtainPinWirelengthGradient(Node* pin, float coeff_x, float coeff_y);
 
   // Debug
   void waWLAnalyzeForDebug(float coeff_x, float coeff_y) override;
 
  private:
-  std::map<Node*, WAPinInfo>    _wa_pin_map;
-  std::map<NetWork*, WANetInfo> _wa_net_map;
+  std::vector<WAPinInfo> _wa_pin_info_list;
+  std::vector<WANetInfo> _wa_net_info_list;
+
+  std::vector<float> _pin_grad_x_list;
+  std::vector<float> _pin_grad_y_list;
 
   void initWAInfo();
   void resetWAPinInfo() {}
   void resetWANetInfo() {}
-
-
 };
 
 }  // namespace ipl

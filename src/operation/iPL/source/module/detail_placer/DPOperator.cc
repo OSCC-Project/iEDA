@@ -349,7 +349,7 @@ void DPOperator::initTopoManager()
   for (auto* pin : design->get_pin_list()) {
     Node* node = new Node(pin->get_name());
     node->set_location(Point<int32_t>(pin->get_x_coordi(), pin->get_y_coordi()));
-    _topo_manager->add_node(node->get_name(), node);
+    _topo_manager->add_node(node);
   }
 
   for (auto* net : design->get_net_list()) {
@@ -357,7 +357,7 @@ void DPOperator::initTopoManager()
     network->set_net_weight(net->get_netwight());
     DPPin* driver_pin = net->get_driver_pin();
     if (driver_pin) {
-      Node* transmitter = _topo_manager->findNode(driver_pin->get_name());
+      Node* transmitter = _topo_manager->findNodeById(driver_pin->get_pin_id());
       transmitter->set_network(network);
       network->set_transmitter(transmitter);
     }
@@ -366,28 +366,28 @@ void DPOperator::initTopoManager()
         continue;
         ;
       }
-      Node* receiver = _topo_manager->findNode(load_pin->get_name());
+      Node* receiver = _topo_manager->findNodeById(load_pin->get_pin_id());
       receiver->set_network(network);
       network->add_receiver(receiver);
     }
-    _topo_manager->add_network(network->get_name(), network);
+    _topo_manager->add_network(network);
   }
 
   for (auto* inst : design->get_inst_list()) {
     Group* group = new Group(inst->get_name());
     for (auto* pin : inst->get_pin_list()) {
-      Node* node = _topo_manager->findNode(pin->get_name());
+      Node* node = _topo_manager->findNodeById(pin->get_pin_id());
       node->set_group(group);
       group->add_node(node);
     }
-    _topo_manager->add_group(group->get_name(), group);
+    _topo_manager->add_group(group);
   }
 }
 
 void DPOperator::initGridManager()
 {
   _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), 128,
-                                  128, 0.8);
+                                  128, 0.8, 1);
   initGridManagerFixedArea();
 }
 
@@ -414,7 +414,9 @@ void DPOperator::initGridManagerFixedArea()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst->get_shape());
-      grid->add_fixed_area(overlap_area);
+      grid->fixed_area += overlap_area;
+
+      // grid->add_fixed_area(overlap_area);
     }
   }
 
@@ -424,14 +426,21 @@ void DPOperator::initGridManagerFixedArea()
     if (region->get_type() == DPREGION_TYPE::kFence) {
       std::vector<Grid*> overlap_grid_list;
       for (auto& boundary : region->get_shape_list()) {
-        _grid_manager->obtainOverlapGridList(overlap_grid_list, boundary);
+        auto boundary_shape = boundary;
+        _grid_manager->obtainOverlapGridList(overlap_grid_list, boundary_shape);
         for (auto* grid : overlap_grid_list) {
           // tmp fix overlap area between fixed inst and blockage.
-          if (grid->get_fixed_area() != 0) {
+          if (grid->fixed_area != 0) {
             continue;
           }
+
+          // if (grid->get_fixed_area() != 0) {
+          //   continue;
+          // }
           int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, boundary);
-          grid->add_fixed_area(overlap_area);
+
+          grid->fixed_area += overlap_area;
+          // grid->add_fixed_area(overlap_area);
         }
       }
     }
@@ -441,7 +450,7 @@ void DPOperator::initGridManagerFixedArea()
 void DPOperator::updateTopoManager()
 {
   for (auto* pin : _database->get_design()->get_pin_list()) {
-    auto* node = _topo_manager->findNode(pin->get_name());
+    auto* node = _topo_manager->findNodeById(pin->get_pin_id());
     node->set_location(Point<int32_t>(pin->get_x_coordi(), pin->get_y_coordi()));
   }
 }
@@ -463,7 +472,9 @@ void DPOperator::updateGridManager()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst_shape);
-      grid->add_area(overlap_area);
+
+      grid->occupied_area += overlap_area;
+      // grid->add_area(overlap_area);
     }
   }
 }

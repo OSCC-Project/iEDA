@@ -16,10 +16,13 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
 #include "PlanarRect.hpp"
 #include "RANet.hpp"
 #include "RANetNode.hpp"
+#include "RASourceType.hpp"
 #include "RTU.hpp"
+#include "RegionQuery.hpp"
 
 namespace irt {
 
@@ -29,20 +32,28 @@ class RAGCell
   RAGCell() = default;
   ~RAGCell() = default;
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<irt_int, std::vector<PlanarRect>>& get_layer_blockage_map() { return _layer_blockage_map; }
-  irt_int get_public_track_supply() const { return _public_track_supply; }
+  PlanarRect& get_base_region() { return _base_region; }
+  std::map<RASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  irt_int get_resource_supply() const { return _resource_supply; }
   std::vector<RANetNode>& get_ra_net_node_list() { return _ra_net_node_list; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
-  void set_public_track_supply(const irt_int public_track_supply) { _public_track_supply = public_track_supply; }
+  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
+  void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_ra_net_node_list(const std::vector<RANetNode>& ra_net_node_list) { _ra_net_node_list = ra_net_node_list; }
   // function
+  RegionQuery* getRegionQuery(RASourceType ra_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[ra_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
-  PlanarRect _real_rect;
-  std::map<irt_int, std::vector<PlanarRect>> _layer_blockage_map;
-  irt_int _public_track_supply = 0;
+  PlanarRect _base_region;
+  std::map<RASourceType, RegionQuery*> _source_region_query_map;
+  irt_int _resource_supply = 0;
   std::vector<RANetNode> _ra_net_node_list;
 };
 

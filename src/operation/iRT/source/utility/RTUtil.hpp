@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Boost.hpp"
 #include "Direction.hpp"
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"
@@ -430,7 +429,7 @@ class RTUtil
       double mpy = py - my;
       double mqx = qx - mx;
       double mqy = qy - my;
-      return fabs(double(0.5) * cross(mpx, mpy, mqx, mqy));
+      return fabs(static_cast<double>(0.5) * cross(mpx, mpy, mqx, mqy));
     };
     // 定比分点
     double ck = get_coord_area(ax, ay, bx, by, cx, cy);
@@ -1683,10 +1682,10 @@ class RTUtil
     return scale_list;
   }
 
-  // 先将矩形按照x/y track pitch膨胀，膨胀后的矩形边界收缩到最近的track line上
-  static PlanarRect getTrackLineRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
+  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
-    if (!isInside(border, rect)) {
+    if (!isOpenOverlap(rect, border)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
     irt_int real_lb_x = rect.get_lb_x();
@@ -1694,11 +1693,12 @@ class RTUtil
     irt_int real_lb_y = rect.get_lb_y();
     irt_int real_rt_y = rect.get_rt_y();
     if (getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_x_grid_list());
       scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
       scale_list.push_back(border.get_rt_x());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_x) {
           continue;
@@ -1709,11 +1709,12 @@ class RTUtil
       }
     }
     if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
-      std::vector<irt_int> scale_list;
-      scale_list.push_back(border.get_lb_x());
-      std::vector<irt_int> track_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      scale_list.insert(scale_list.end(), track_scale_list.begin(), track_scale_list.end());
+      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_y_grid_list());
+      scale_list.push_back(border.get_lb_y());
       scale_list.push_back(border.get_rt_y());
+      std::sort(scale_list.begin(), scale_list.end());
+      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+
       for (size_t i = 0; i < scale_list.size(); i++) {
         if (scale_list[i] < real_lb_y) {
           continue;
@@ -1778,8 +1779,18 @@ class RTUtil
     return scale_line_list;
   }
 
+  static std::vector<irt_int> getOpenEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  {
+    if (scale_grid_list.empty()) {
+      LOG_INST.error(Loc::current(), "The scale grid list is empty!");
+    }
+    begin_line = std::min(begin_line + 1, scale_grid_list.back().get_end_line());
+    end_line = std::max(end_line - 1, scale_grid_list.front().get_start_line());
+    return getClosedEnlargedScaleList(begin_line, end_line, scale_grid_list);
+  }
+
   // 计算刻度，原有基础上扩大一个scale
-  static std::vector<irt_int> getEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  static std::vector<irt_int> getClosedEnlargedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
   {
     std::vector<irt_int> scale_list;
     std::vector<irt_int> track_scale_list = getTrackScaleList(scale_grid_list);
@@ -2305,10 +2316,9 @@ class RTUtil
    *     return: [4 3 2 1]
    *             [5 6 7 8]
    */
-  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
-                                                                        irt_int top_layer_idx)
+  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx,
+                                                                        std::vector<irt_int> via_below_layer_idx_list)
   {
-    std::vector<irt_int> via_below_layer_idx_list = getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
 
     std::vector<irt_int> down_via_below_layer_idx_list;
@@ -2335,7 +2345,7 @@ class RTUtil
   }
 
   // 考虑的全部via below层
-  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  static std::vector<irt_int> getAllViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
@@ -2358,26 +2368,18 @@ class RTUtil
     return layer_idx_list;
   }
 
-  // 获得可用的布线层
-  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // 考虑的相邻via below层
+  static std::vector<irt_int> getAdjViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
     std::vector<irt_int> layer_idx_list;
-    if (curr_layer_idx < bottom_layer_idx) {
-      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    } else if (top_layer_idx < curr_layer_idx) {
-      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    } else {
-      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    }
+    layer_idx_list.push_back(std::max(curr_layer_idx - 1, bottom_layer_idx));
+    layer_idx_list.push_back(std::min(curr_layer_idx, top_layer_idx - 1));
+
+    std::sort(layer_idx_list.begin(), layer_idx_list.end());
+    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
     return layer_idx_list;
   }
 
@@ -2641,9 +2643,9 @@ class RTUtil
     if (total_size < 0) {
       LOG_INST.error(Loc::current(), "The total of size < 0!");
     } else if (total_size <= 10) {
-      batch_size = 1;
+      batch_size = 5;
     } else if (total_size < 100000) {
-      batch_size = total_size / 10;
+      batch_size = std::max(5, total_size / 10);
       irt_int factor = static_cast<irt_int>(std::pow(10, getDigitNum(batch_size) - 1));
       batch_size = batch_size / factor * factor;
     }
@@ -3151,15 +3153,21 @@ class RTUtil
   {
     GridMap<double> value_map;
     std::map<T, irt_int> range_num_map = getRangeNumMap(value_list);
-    value_map.init(3, static_cast<irt_int>(range_num_map.size()));
+    value_map.init(4, static_cast<irt_int>(range_num_map.size()));
 
     irt_int idx = 0;
-    for (auto& [range_scale, num] : range_num_map) {
+    T range = getScaleRange(value_list);
+    for (auto& [left, num] : range_num_map) {
       double ratio_value = num / 1.0 / static_cast<T>(value_list.size());
       double ratio = retainPlaces(ratio_value, 3);
-      value_map[0][idx] = range_scale;
-      value_map[1][idx] = num;
-      value_map[2][idx] = ratio * 100;
+      T right = left + range;
+      if (equalDoubleByError(right, 0, DBL_ERROR)) {
+        right = 0;
+      }
+      value_map[0][idx] = left;
+      value_map[1][idx] = right;
+      value_map[2][idx] = num;
+      value_map[3][idx] = ratio * 100;
       ++idx;
     }
     return value_map;
@@ -3179,6 +3187,9 @@ class RTUtil
     }
 
     for (T left = min_value; left < max_value; left += range) {
+      if (equalDoubleByError(left, max_value, DBL_ERROR)) {
+        break;
+      }
       scale_num_map[left] = 0;
     }
 

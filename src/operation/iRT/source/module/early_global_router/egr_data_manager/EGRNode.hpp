@@ -25,7 +25,6 @@ class EGRNode : public PlanarRect
  public:
   EGRNode(/* args */) = default;
   ~EGRNode() = default;
-
   // getter
   double get_north_supply() const { return _north_supply; }
   double get_south_supply() const { return _south_supply; }

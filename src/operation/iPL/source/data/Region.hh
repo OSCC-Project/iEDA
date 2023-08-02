@@ -46,14 +46,15 @@ class Region
 {
  public:
   Region() = delete;
-  explicit Region(std::string name) : _name(std::move(name)), _type(REGION_TYPE::kNone) {}
+  explicit Region(std::string name) : _region_id(-1), _name(std::move(name)), _type(REGION_TYPE::kNone) {}
   Region(const Region&) = default;
   Region(Region&& other) noexcept
   {
-    _name       = std::move(other._name);
+    _region_id = std::move(other._region_id);
+    _name = std::move(other._name);
     _boundaries = std::move(other._boundaries);
-    _instances  = std::move(other._instances);
-    _type       = other._type;
+    _instances = std::move(other._instances);
+    _type = other._type;
 
     other._name = "";
     other._boundaries.clear();
@@ -63,12 +64,13 @@ class Region
   ~Region() = default;
 
   Region& operator=(const Region&) = default;
-  Region& operator                 =(Region&& other) noexcept
+  Region& operator=(Region&& other) noexcept
   {
-    _name       = std::move(other._name);
+    _region_id = std::move(other._region_id);
+    _name = std::move(other._name);
     _boundaries = std::move(other._boundaries);
-    _instances  = std::move(other._instances);
-    _type       = other._type;
+    _instances = std::move(other._instances);
+    _type = other._type;
 
     other._name = "";
     other._boundaries.clear();
@@ -79,24 +81,25 @@ class Region
   }
 
   // getter.
-  std::string                     get_name() const { return _name; }
+  int32_t get_region_id() const { return _region_id; }
+  std::string get_name() const { return _name; }
   std::vector<Rectangle<int32_t>> get_boundaries() const { return _boundaries; }
-  std::vector<Instance*>          get_instances() const { return _instances; }
-
-  
+  std::vector<Instance*> get_instances() const { return _instances; }
 
   bool isFence() const { return _type == REGION_TYPE::kFence; }
   bool isGuide() const { return _type == REGION_TYPE::kGuide; }
 
   // setter.
+  void set_region_id(int32_t id) { _region_id = id; }
   void set_type(REGION_TYPE type) { _type = type; }
   void add_boundary(Rectangle<int32_t> boundary) { _boundaries.push_back(std::move(boundary)); }
   void add_instance(Instance* inst) { _instances.push_back(inst); }
 
  private:
-  std::string                     _name;
+  int32_t _region_id;
+  std::string _name;
   std::vector<Rectangle<int32_t>> _boundaries;
-  std::vector<Instance*>          _instances;
+  std::vector<Instance*> _instances;
 
   REGION_TYPE _type;
 };

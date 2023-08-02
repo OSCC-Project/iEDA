@@ -175,26 +175,28 @@ VerilogInst& VerilogInst::operator=(const VerilogInst& orig)
 std::unique_ptr<VerilogNetExpr> VerilogInst::getPortConnectNet(VerilogModule* parent_module, VerilogModule* inst_module, VerilogID* port_id,
                                                                std::optional<std::pair<int, int>> port_bus_wide_range)
 {
-  // The function for process the concate connection.
+  // The function for process the concate connection, port_concat_connect_net is inst connect net, index is inst module port index.
   auto get_concat_connect_net
-      = [parent_module, &port_bus_wide_range](VerilogNetConcatExpr* port_concat_connect_net, int index) -> VerilogNetExpr* {
+      = [parent_module, &port_bus_wide_range](VerilogNetConcatExpr* port_concat_connect_net, int port_index) -> VerilogNetExpr* {
     auto& concat_expr_nets = port_concat_connect_net->get_verilog_id_concat();
     LOG_FATAL_IF(!port_bus_wide_range);
-    // i is the bus max beyond range.
-    int i = std::max(port_bus_wide_range->first, port_bus_wide_range->second) + 1;
-    index += std::min(port_bus_wide_range->first, port_bus_wide_range->second);
+
+    int bus_range_min = std::min(port_bus_wide_range->first, port_bus_wide_range->second);
+    // bus_range_max is the bus max beyond range.
+    int bus_range_max = std::max(port_bus_wide_range->first, port_bus_wide_range->second) + 1;
+
     std::optional<int> net_index;
     VerilogNetExpr* connect_net_expr = nullptr;
     for (auto& expr_net : concat_expr_nets) {
       if (expr_net->get_verilog_id()->isBusIndexID()) {
-        --i;
+        --bus_range_max;
       } else if (expr_net->get_verilog_id()->isBusSliceID()) {
         auto* slice_id = dynamic_cast<VerilogSliceID*>(expr_net->get_verilog_id());
         int from = slice_id->get_range_from();
         int to = slice_id->get_range_to();
         for (int j = from; ((from > to) ? j >= to : j <= to); from > to ? --j : ++j) {
-          --i;
-          if (i == index) {
+          --bus_range_max;
+          if (bus_range_max == port_index) {
             net_index = j;
             break;
           }
@@ -208,14 +210,14 @@ std::unique_ptr<VerilogNetExpr> VerilogInst::getPortConnectNet(VerilogModule* pa
             auto range = dcl_stmt->get_range();
             if (range) {
               for (int j = range->first; j >= range->second; range->first > range->second ? --j : ++j) {
-                --i;
-                if (i == index) {
+                --bus_range_max;
+                if (bus_range_max == port_index) {
                   net_index = j;
                   break;
                 }
               }
             } else {
-              --i;
+              --bus_range_max;
             }
           } else if (stmt->isVerilogDclsStmt()) {
             auto* dcls = dynamic_cast<VerilogDcls*>(stmt);
@@ -225,26 +227,29 @@ std::unique_ptr<VerilogNetExpr> VerilogInst::getPortConnectNet(VerilogModule* pa
                 if (range) {
                   for (int j = range->first; ((range->first > range->second) ? j >= range->second : j <= range->second);
                        range->first > range->second ? --j : ++j) {
-                    --i;
-                    if (i == index) {
+                    --bus_range_max;
+                    if (bus_range_max == port_index) {
                       net_index = j;
                       break;
                     }
                   }
                 } else {
-                  --i;
+                  --bus_range_max;
                 }
                 break;
               }
             }
           }
         } else {
-          --i;
+          --bus_range_max;
         }
       }
 
-      if (i == index) {
+      if (bus_range_max == port_index) {
         connect_net_expr = expr_net.get();
+        break;
+      } else if (bus_range_max < bus_range_min) {
+        // should not beyond bus range min.
         break;
       }
     }
