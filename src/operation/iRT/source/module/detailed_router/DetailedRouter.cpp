@@ -700,6 +700,7 @@ void DetailedRouter::iterative(DRModel& dr_model)
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", dr_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
     if (stopDRModel(dr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       dr_model.set_curr_iter(-1);
       break;
     }
@@ -749,6 +750,7 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
                     " ******");
     }
     if (stopDRBox(dr_model, dr_box)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       dr_box.set_curr_iter(-1);
       break;
     }
@@ -1652,7 +1654,7 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
 
 bool DetailedRouter::stopDRBox(DRModel& dr_model, DRBox& dr_box)
 {
-  return false;
+  return (dr_box.get_dr_box_stat().get_total_drc_number() == 0);
 }
 
 void DetailedRouter::countDRModel(DRModel& dr_model)
@@ -1862,7 +1864,7 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
 bool DetailedRouter::stopDRModel(DRModel& dr_model)
 {
-  return false;
+  return (dr_model.get_dr_model_stat().get_total_drc_number() == 0);
 }
 
 #endif

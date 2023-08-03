@@ -583,6 +583,7 @@ void GlobalRouter::iterative(GRModel& gr_model)
     // writeGRModel(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopGRModel(gr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       gr_model.set_curr_iter(-1);
       break;
     }
@@ -1829,7 +1830,7 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
 
 bool GlobalRouter::stopGRModel(GRModel& gr_model)
 {
-  return false;
+  return (gr_model.get_gr_model_stat().get_max_resource_overflow() <= 1 && gr_model.get_gr_model_stat().get_max_access_overflow() <= 1);
 }
 
 #endif
