@@ -190,7 +190,7 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | def lef    | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
 | ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                    | C++11模板库实现的多线程池.                                        |
 | fft        | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                       | 快速傅立叶变换库.                                                 |
-| hmetics    | [hmetics](https://web.archive.org/web/20190312213616/http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                                    | 高效的图划分算法.                                                 |
+| hmetics    | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                                    | 高效的图划分算法.                                                 |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
