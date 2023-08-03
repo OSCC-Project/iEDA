@@ -55,7 +55,7 @@ class TAPanel : public LayerRect
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-    bool skipAssigning() { return _ta_task_list.empty(); }
+  bool skipAssigning() { return _ta_task_list.empty(); }
   RegionQuery* getRegionQuery(TASourceType ta_source_type)
   {
     if (ta_source_type == TASourceType::kPanelResult) {

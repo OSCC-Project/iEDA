@@ -202,6 +202,7 @@ void PinAccessor::iterative(PAModel& pa_model)
     reportPAModel(pa_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", pa_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopPAModel(pa_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       pa_model.set_curr_iter(-1);
       break;
     }

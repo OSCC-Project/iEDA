@@ -719,6 +719,7 @@ void TrackAssigner::iterative(TAModel& ta_model)
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", ta_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
     if (stopTAModel(ta_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       ta_model.set_curr_iter(-1);
       break;
     }
@@ -768,6 +769,7 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
                     " ******");
     }
     if (stopTAPanel(ta_model, ta_panel)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       ta_panel.set_curr_iter(-1);
       break;
     }
@@ -1629,7 +1631,7 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
 bool TrackAssigner::stopTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
-  return false;
+  return (ta_panel.get_ta_panel_stat().get_total_drc_number() == 0);
 }
 
 void TrackAssigner::countTAModel(TAModel& ta_model)
@@ -1812,7 +1814,7 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
 
 bool TrackAssigner::stopTAModel(TAModel& ta_model)
 {
-  return false;
+  return (ta_model.get_ta_model_stat().get_total_drc_number() == 0);
 }
 
 #endif

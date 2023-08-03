@@ -388,19 +388,19 @@ void ResourceAllocator::iterative(RAModel& ra_model)
 
   for (irt_int outer_iter = 1; outer_iter <= ra_outer_max_iter_num; outer_iter++) {
     Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Iteration(", outer_iter, "/", ra_outer_max_iter_num, ") ******");
     double penalty_para = (1 / (2 * ra_initial_penalty));
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", outer_iter, "/", ra_outer_max_iter_num, "), penalty_para=", penalty_para,
-                  " ******");
     ra_model.set_curr_outer_iter(outer_iter);
     allocateRAModel(ra_model, penalty_para);
     processRAModel(ra_model);
     countRAModel(ra_model);
     reportRAModel(ra_model);
     // writeRAModel(ra_model);
+    ra_initial_penalty *= ra_penalty_drop_rate;
     LOG_INST.info(Loc::current(), "****** End Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
-    ra_initial_penalty *= ra_penalty_drop_rate;
-    if (stopRAModel(ra_model)) {
+    if (stopOuterRAModel(ra_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       ra_model.set_curr_outer_iter(-1);
       break;
     }
@@ -436,16 +436,18 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
 
   for (irt_int inner_iter = 1; inner_iter <= ra_inner_max_iter_num; inner_iter++) {
     Monitor iter_monitor;
-
     ra_model.set_curr_inner_iter(inner_iter);
     calcNablaF(ra_model, penalty_para);
     double norm_nabla_f = calcAlpha(ra_model, penalty_para);
     double norm_square_step = updateResult(ra_model);
-
     LOG_INST.info(Loc::current(), "Iter(", inner_iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
                   ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
+    if (stopInnerRAModel(ra_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      ra_model.set_curr_inner_iter(-1);
+      break;
+    }
   }
-  ra_model.set_curr_inner_iter(-1);
 }
 
 /**
@@ -588,7 +590,6 @@ double ResourceAllocator::calcAlpha(RAModel& ra_model, double penalty_para)
   ra_model.set_alpha(norm_nabla_f / nabla_f_q_nabla_f);
   return norm_nabla_f;
 }
-
 // x = x + (-nabla_f) * alpha
 double ResourceAllocator::updateResult(RAModel& ra_model)
 {
@@ -616,6 +617,11 @@ double ResourceAllocator::updateResult(RAModel& ra_model)
     }
   }
   return norm_square_step;
+}
+
+bool ResourceAllocator::stopInnerRAModel(RAModel& ra_model)
+{
+  return false;
 }
 
 void ResourceAllocator::processRAModel(RAModel& ra_model)
@@ -812,7 +818,7 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
   }
 }
 
-bool ResourceAllocator::stopRAModel(RAModel& ra_model)
+bool ResourceAllocator::stopOuterRAModel(RAModel& ra_model)
 {
   return false;
 }
