@@ -16,35 +16,45 @@
 // ***************************************************************************************
 #pragma once
 
-#include <vector>
-
-#include "PAGCell.hpp"
-#include "PAModelStat.hpp"
-#include "PANet.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-class PAModel
+class PAGCellId
 {
  public:
-  PAModel() = default;
-  ~PAModel() = default;
+  PAGCellId() = default;
+  PAGCellId(const irt_int x, const irt_int y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~PAGCellId() = default;
+  bool operator==(const PAGCellId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const PAGCellId& other) { return !((*this) == other); }
   // getter
-  GridMap<PAGCell>& get_pa_gcell_map() { return _pa_gcell_map; }
-  std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
-  PAModelStat& get_pa_mode_stat() { return _pa_mode_stat; }
-  irt_int get_curr_iter() { return _curr_iter; }
+  irt_int get_x() const { return _x; }
+  irt_int get_y() const { return _y; }
   // setter
-  void set_pa_gcell_map(const GridMap<PAGCell>& pa_gcell_map) { _pa_gcell_map = pa_gcell_map; }
-  void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-  void set_pa_mode_stat(const PAModelStat& pa_mode_stat) { _pa_mode_stat = pa_mode_stat; }
-  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
+  void set_x(const irt_int x) { _x = x; }
+  void set_y(const irt_int y) { _y = y; }
+  // function
 
  private:
-  GridMap<PAGCell> _pa_gcell_map;
-  std::vector<PANet> _pa_net_list;
-  PAModelStat _pa_mode_stat;
-  irt_int _curr_iter = -1;
+  irt_int _x = -1;
+  irt_int _y = -1;
+};
+
+struct CmpPAGCellId
+{
+  bool operator()(const PAGCellId& a, const PAGCellId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

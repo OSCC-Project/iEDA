@@ -58,7 +58,7 @@ class RAModel
   std::vector<double> _nabla_f_row;
   double _alpha = 0;
   RAModelStat _ra_model_stat;
-  irt_int _curr_outer_iter;
-  irt_int _curr_inner_iter;
+  irt_int _curr_outer_iter = -1;
+  irt_int _curr_inner_iter = -1;
 };
 }  // namespace irt

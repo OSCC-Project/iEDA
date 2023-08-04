@@ -63,7 +63,7 @@ TEST_F(PyTest, PyLoadModel)
   LOG_INFO << "build PyTest for load python model";
   auto* model_factory = new icts::ModelFactory();
 
-  auto* xgb_model = model_factory->pyLoad("./scripts/sky130/result/cts/model/chiplink_rx_clk.joblib.dat");
+  auto* xgb_model = model_factory->pyLoad("./scripts/design/sky130_gcd/result/cts/model/chiplink_rx_clk.joblib.dat");
   EXPECT_TRUE(xgb_model->predict({1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
 
   delete model_factory;

@@ -46,7 +46,7 @@ class DRModel
   std::vector<DRNet> _dr_net_list;
   std::vector<std::vector<DRBoxId>> _dr_box_id_comb_list;
   DRModelStat _dr_model_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt

@@ -233,30 +233,31 @@ class StaVertex {
   unsigned is_assistant() const { return _is_assistant; }
   void reset_is_assistant() { _is_assistant = 0; }
 
-  // whether need reset?
   void set_is_foward_find() { _is_foward_find = 1; }
   unsigned is_foward_find() const { return _is_foward_find; }
-  void addEndVertex(StaVertex* end_vertex) {
-    LOG_FATAL_IF(!end_vertex) << "insert end vertex:nullptr.";
-    _end_vertexes.insert(end_vertex);
+  void addFanoutEndVertex(StaVertex* fanout_end_vertex) {
+    LOG_FATAL_IF(!fanout_end_vertex) << "insert end vertex:nullptr.";
+    _fanout_end_vertexes.insert(fanout_end_vertex);
   }
-  void addEndVertex(const Set<StaVertex*>& end_vertex_set) {
-    std::copy(end_vertex_set.begin(), end_vertex_set.end(),
-              std::inserter(_end_vertexes, _end_vertexes.begin()));
+  void addFanoutEndVertex(const Set<StaVertex*>& fanout_end_vertex_set) {
+    std::copy(
+        fanout_end_vertex_set.begin(), fanout_end_vertex_set.end(),
+        std::inserter(_fanout_end_vertexes, _fanout_end_vertexes.begin()));
   }
-  Set<StaVertex*>& get_end_vertexes() { return _end_vertexes; }
+  Set<StaVertex*>& get_fanout_end_vertexes() { return _fanout_end_vertexes; }
 
   void set_is_backward_find() { _is_backward_find = 1; }
   unsigned is_backward_find() const { return _is_backward_find; }
-  void addStartVertex(StaVertex* start_vertex) {
-    LOG_FATAL_IF(!start_vertex) << "insert start vertex:nullptr.";
-    _start_vertexes.insert(start_vertex);
+  void addFaninStartVertex(StaVertex* fanin_start_vertex) {
+    LOG_FATAL_IF(!fanin_start_vertex) << "insert start vertex:nullptr.";
+    _fanin_start_vertexes.insert(fanin_start_vertex);
   }
-  void addStartVertex(const Set<StaVertex*>& start_vertex_set) {
-    std::copy(start_vertex_set.begin(), start_vertex_set.end(),
-              std::inserter(_start_vertexes, _start_vertexes.begin()));
+  void addFaninStartVertex(const Set<StaVertex*>& fanin_start_vertex_set) {
+    std::copy(
+        fanin_start_vertex_set.begin(), fanin_start_vertex_set.end(),
+        std::inserter(_fanin_start_vertexes, _fanin_start_vertexes.begin()));
   }
-  Set<StaVertex*>& get_start_vertexes() { return _start_vertexes; }
+  Set<StaVertex*>& get_fanin_start_vertexes() { return _fanin_start_vertexes; }
 
   void set_prop_tag(StaPropagationTag&& prop_tag) {
     _prop_tag = std::move(prop_tag);
@@ -406,7 +407,7 @@ class StaVertex {
   unsigned _is_backward_find : 1 =
       0;  //!< The vetex backward propagate to find start.
 
-  unsigned _reserverd : 4 = 0;
+  unsigned _reserverd : 2 = 0;
 
   std::vector<StaArc*> _src_arcs;  //!< The timing arc sourced from the vertex.
   std::vector<StaArc*> _snk_arcs;  //!< The timing arc sinked to the vertex.
@@ -422,8 +423,10 @@ class StaVertex {
 
   StaPropagationTag _prop_tag;  //!< The propagation tag.
 
-  Set<StaVertex*> _end_vertexes;  //<! The endpoint vertexes of the timing path.
-  Set<StaVertex*> _start_vertexes;  //<! The start vertexes of the timing path.
+  Set<StaVertex*>
+      _fanout_end_vertexes;  //<! The endpoint vertexes of the timing path.
+  Set<StaVertex*>
+      _fanin_start_vertexes;  //<! The start vertexes of the timing path.
 
   DISALLOW_COPY_AND_ASSIGN(StaVertex);
 };
