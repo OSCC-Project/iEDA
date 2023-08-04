@@ -385,6 +385,8 @@ void ViolationRepairer::iterative(VRModel& vr_model)
     reportVRModel(vr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopVRModel(vr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      vr_model.set_curr_iter(-1);
       break;
     }
   }
@@ -627,7 +629,7 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
 bool ViolationRepairer::stopVRModel(VRModel& vr_model)
 {
-  return false;
+  return (vr_model.get_vr_model_stat().get_total_drc_number() == 0);
 }
 
 #endif

@@ -91,7 +91,6 @@ class GlobalRouter
   bool searchEnded(GRModel& gr_model);
   void expandSearching(GRModel& gr_model);
   bool passChecking(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  bool replaceParentNode(GRModel& gr_model, GRNode* parent_node, GRNode* child_node);
   void resetPathHead(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);
@@ -107,7 +106,7 @@ class GlobalRouter
   void pushToOpenList(GRModel& gr_model, GRNode* curr_node);
   GRNode* popFromOpenList(GRModel& gr_model);
   double getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
+  double getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
   double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);

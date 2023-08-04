@@ -171,6 +171,9 @@ unsigned StaBwdPropagation::operator()(StaVertex* the_vertex) {
     if (!src_arc->isDelayArc()) {
       continue;
     }
+    if (src_arc->is_loop_disable()) {
+      continue;
+    }
 
     if (src_arc->is_disable_arc()) {
       continue;
@@ -534,6 +537,10 @@ unsigned StaFwdPropagation::operator()(StaVertex* the_vertex) {
 
   FOREACH_SNK_ARC(the_vertex, snk_arc) {
     if (!snk_arc->isDelayArc()) {
+      continue;
+    }
+
+    if (snk_arc->is_loop_disable()) {
       continue;
     }
 
