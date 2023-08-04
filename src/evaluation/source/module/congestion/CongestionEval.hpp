@@ -49,7 +49,7 @@ class CongestionEval
 
   void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
   void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
-  void evalNetCong(INSTANCE_STATUS inst_status);
+  void evalNetDens(INSTANCE_STATUS inst_status);
 
   void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
 
@@ -58,6 +58,8 @@ class CongestionEval
   std::vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
   vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
 
+  void evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
+  /////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);
 
@@ -126,13 +128,18 @@ class CongestionEval
   int32_t getOverlapArea(CongBin* bin, CongInst* inst);
   int32_t getOverlapArea(CongBin* bin, CongNet* net);
 
-  double getRudy(CongBin* bin, CongNet* net);
+  double getRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
   double getRudyDev(CongBin* bin, CongNet* net);
-  double getPinRudy(CongBin* bin, CongNet* net);
+  double getPinRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
   double getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
-  double getLUTRUDY(CongBin* bin, CongNet* net);
+  float calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax);
+  int64_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin);
+  int64_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymin);
+  int64_t calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymax);
+  int64_t calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymax);
+  double getLUT(const int32_t& pin_num, const int32_t& aspect_ratio, const float& l_ness);
 
   float getUsageCapacityRatio(Tile* tile);
   CongPin* wrapCongPin(idb::IdbPin* idb_pin);

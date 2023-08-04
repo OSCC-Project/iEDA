@@ -66,16 +66,26 @@ TEST_F(CongAPITest, sample)
              << macro_info.second.second;
   }
 
-  inst_status = INSTANCE_STATUS::kPlaced;
-  eval_api.evalInstDens(inst_status);
-  eval_api.plotBinValue(plot_path, "stdcell_density", CONGESTION_TYPE::kInstDens);
-  eval_api.evalInstDens(inst_status, true);
-  eval_api.plotBinValue(plot_path, "flipflop_density", CONGESTION_TYPE::kInstDens);
-  eval_api.evalPinDens(inst_status);
-  eval_api.plotBinValue(plot_path, "stdcell_pin_density", CONGESTION_TYPE::kPinDens);
-  eval_api.evalPinDens(inst_status, 1);
-  eval_api.plotBinValue(plot_path, "stdcell_level_pin_density", CONGESTION_TYPE::kPinDens);
+  // inst_status = INSTANCE_STATUS::kPlaced;
+  // eval_api.evalInstDens(inst_status);
+  // eval_api.plotBinValue(plot_path, "stdcell_density", CONGESTION_TYPE::kInstDens);
+  // eval_api.evalInstDens(inst_status, true);
+  // eval_api.plotBinValue(plot_path, "flipflop_density", CONGESTION_TYPE::kInstDens);
+  // eval_api.evalPinDens(inst_status);
+  // eval_api.plotBinValue(plot_path, "stdcell_pin_density", CONGESTION_TYPE::kPinDens);
+  // eval_api.evalPinDens(inst_status, 1);
+  // eval_api.plotBinValue(plot_path, "stdcell_level_pin_density", CONGESTION_TYPE::kPinDens);
 
+  // eval_api.evalNetCong(RUDY_TYPE::kRUDY);
+  // eval_api.plotBinValue(plot_path, "RUDY", CONGESTION_TYPE::kNetCong);
+  // eval_api.evalNetCong(RUDY_TYPE::kPinRUDY);
+  // eval_api.plotBinValue(plot_path, "PinRUDY", CONGESTION_TYPE::kNetCong);
+  // eval_api.evalNetCong(RUDY_TYPE::kLUTRUDY);
+  // eval_api.plotBinValue(plot_path, "LUTRUDY", CONGESTION_TYPE::kNetCong);
+  eval_api.evalNetCong(RUDY_TYPE::kRUDY, NET_DIRECTION::kH);
+  eval_api.plotBinValue(plot_path, "RUDY_Hori", CONGESTION_TYPE::kNetCong);
+  eval_api.evalNetCong(RUDY_TYPE::kRUDY, NET_DIRECTION::kV);
+  eval_api.plotBinValue(plot_path, "RUDY_Verti", CONGESTION_TYPE::kNetCong);
   EvalAPI::destroyInst();
 }
 

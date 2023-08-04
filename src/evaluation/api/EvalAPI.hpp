@@ -57,6 +57,7 @@ class EvalAPI
   int32_t evalRoutingLayerNum();
   vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
   vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+  void evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
 
   void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
   vector<float> evalPinDens();
@@ -65,7 +66,7 @@ class EvalAPI
   vector<float> evalInstDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalNetCong(const string& rudy_type);
   vector<float> evalNetCong(CongGrid* grid, const vector<CongNet*>& net_list, const string& rudy_type);
-  pair<vector<float>, vector<float>> evalHVNetCong(const int& bin_cnt_x, const int& bin_cnt_y);
+  // pair<vector<float>, vector<float>> evalHVNetCong();
   vector<float> evalGRCong();
   vector<float> getUseCapRatioList();
   vector<int> getTileGridCoordSizeCntXY();

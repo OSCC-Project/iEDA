@@ -120,7 +120,7 @@ void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status, int level)
 
 void EvalAPI::evalNetDens(INSTANCE_STATUS inst_status)
 {
-  _congestion_eval_inst->evalNetCong(inst_status);
+  _congestion_eval_inst->evalNetDens(inst_status);
 }
 
 void EvalAPI::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
@@ -148,6 +148,12 @@ vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalInstSize(INSTANCE_STAT
   return _congestion_eval_inst->evalInstSize(inst_status);
 }
 
+void EvalAPI::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction)
+{
+  _congestion_eval_inst->evalNetCong(rudy_type, net_direction);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()
 {
@@ -196,23 +202,9 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
   return congestion_eval.getNetCong(rudy_type);
 }
 
-pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong(const int& bin_cnt_x, const int& bin_cnt_y)
-{
-  // initialize cong_grid
-  _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
-  // transfrom idb_net to cong_net
-  _congestion_eval_inst->initCongNetList();
-  // map CongNet to each CongBin
-  _congestion_eval_inst->mapNetCoord2Grid();
-  // eval RUDY,  return Horizontal utilzation map and Vertical utilization map
-  _congestion_eval_inst->evalNetCong("LUTRUDY");
-
-  vector<float> a, b;
-  a.push_back(0.3);
-  b.push_back(0.5);
-
-  return std::make_pair(a, b);
-}
+// pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong()
+// {
+// }
 
 void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
 {
