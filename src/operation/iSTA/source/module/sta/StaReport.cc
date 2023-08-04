@@ -35,6 +35,7 @@
 #include "StaDump.hh"
 #include "StaFunc.hh"
 #include "StaVertex.hh"
+#include "include/Version.hh"
 #include "sta/StaPathData.hh"
 #include "time/Time.hh"
 
@@ -912,8 +913,8 @@ unsigned StaReportTrans::operator()(Sta* ista) {
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(_rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
-
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
   std::fprintf(f.get(), "%s", report_tbl->c_str());
 
   return is_ok;
@@ -1090,8 +1091,8 @@ unsigned StaReportCap::operator()(Sta* ista) {
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(_rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
-
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
   std::fprintf(f.get(), "%s", report_tbl->c_str());
 
   return is_ok;
@@ -1242,8 +1243,8 @@ unsigned StaReportFanout::operator()(Sta* ista) {
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(_rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
-
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
   std::fprintf(f.get(), "%s", report_tbl->c_str());
 
   return is_ok;

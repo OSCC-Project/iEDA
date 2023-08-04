@@ -51,6 +51,7 @@
 #include "StaReport.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "include/Version.hh"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
@@ -1273,8 +1274,8 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
-
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
@@ -1352,7 +1353,8 @@ unsigned Sta::reportSkew(const char *rpt_file_name,
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
 
   for (auto &report_tbl_skew : report_skew_summary.get_report_path_skews()) {
     std::fprintf(f.get(), "Clock: %s\n", report_tbl_skew->get_tbl_name());
@@ -1389,7 +1391,8 @@ unsigned Sta::reportFromThroughTo(const char *rpt_file_name,
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
 
   for (auto &report_tbl_detail : _report_tbl_details) {
     std::fprintf(f.get(), "%s", report_tbl_detail->c_str());
