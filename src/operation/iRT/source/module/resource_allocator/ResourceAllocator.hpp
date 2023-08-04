@@ -75,12 +75,13 @@ class ResourceAllocator
   void calcNablaF(RAModel& ra_model, double penalty_para);
   double calcAlpha(RAModel& ra_model, double penalty_para);
   double updateResult(RAModel& ra_model);
+  bool stopInnerRAModel(RAModel& ra_model);
   void processRAModel(RAModel& ra_model);
   GridMap<double> getCostMap(GridMap<double>& allocation_map, double lower_cost);
   void normalizeCostMap(GridMap<double>& cost_map, double lower_cost);
   void countRAModel(RAModel& ra_model);
   void reportRAModel(RAModel& ra_model);
-  bool stopRAModel(RAModel& ra_model);
+  bool stopOuterRAModel(RAModel& ra_model);
 #endif
 
 #if 1  // update

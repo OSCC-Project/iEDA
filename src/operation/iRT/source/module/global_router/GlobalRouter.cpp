@@ -583,6 +583,8 @@ void GlobalRouter::iterative(GRModel& gr_model)
     // writeGRModel(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopGRModel(gr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      gr_model.set_curr_iter(-1);
       break;
     }
   }
@@ -688,9 +690,13 @@ void GlobalRouter::resetGRModel(GRModel& gr_model)
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     std::srand(std::time(NULL));
     if (rand() % 2) {
-      updateDemand(gr_model, gr_net, ChangeType::kDel);
-      gr_net.set_routing_state(RoutingState::kUnrouted);
+      continue;
     }
+    // 将env中的布线结果清空
+    updateDemand(gr_model, gr_net, ChangeType::kDel);
+    // 清空routing_segment_list
+    gr_net.get_routing_segment_list().clear();
+    gr_net.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
@@ -717,8 +723,8 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   if (gr_net.get_routing_state() == RoutingState::kRouted) {
     return;
   }
-  // outputGRDataset(gr_model, gr_net);
   initSingleNet(gr_model, gr_net);
+  // outputGRDataset(gr_model, gr_net);
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
     while (!isConnectedAllEnd(gr_model)) {
@@ -774,17 +780,17 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
         double up_cost = -1;
         double down_cost = -1;
         if (routing_layer_list[layer_idx].isPreferH()) {
-          east_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kEast);
-          west_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kWest);
+          east_cost = getNodeCost(gr_model, &gr_node, Orientation::kEast);
+          west_cost = getNodeCost(gr_model, &gr_node, Orientation::kWest);
         } else {
-          south_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kSouth);
-          north_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kNorth);
+          south_cost = getNodeCost(gr_model, &gr_node, Orientation::kSouth);
+          north_cost = getNodeCost(gr_model, &gr_node, Orientation::kNorth);
         }
         if (layer_idx != 0) {
-          down_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kDown);
+          down_cost = getNodeCost(gr_model, &gr_node, Orientation::kDown);
         }
         if (layer_idx != (static_cast<irt_int>(layer_node_map.size()) - 1)) {
-          up_cost = gr_node.getCost(gr_net.get_net_idx(), Orientation::kUp);
+          up_cost = getNodeCost(gr_model, &gr_node, Orientation::kUp);
         }
         RTUtil::pushStream(gr_dataset, x, " ", y, " ", layer_idx);
         RTUtil::pushStream(gr_dataset, " ", "E", " ", east_cost);
@@ -1068,11 +1074,12 @@ void GlobalRouter::expandSearching(GRModel& gr_model)
     if (!passChecking(gr_model, path_head_node, neighbor_node)) {
       continue;
     }
-    if (neighbor_node->isOpen() && replaceParentNode(gr_model, path_head_node, neighbor_node)) {
-      neighbor_node->set_known_cost(getKnowCost(gr_model, path_head_node, neighbor_node));
+    double know_cost = getKnowCost(gr_model, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(getKnowCost(gr_model, path_head_node, neighbor_node));
+      neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(gr_model, neighbor_node));
       pushToOpenList(gr_model, neighbor_node);
@@ -1106,11 +1113,6 @@ bool GlobalRouter::passChecking(GRModel& gr_model, GRNode* start_node, GRNode* e
     }
   }
   return true;
-}
-
-bool GlobalRouter::replaceParentNode(GRModel& gr_model, GRNode* parent_node, GRNode* child_node)
-{
-  return getKnowCost(gr_model, parent_node, child_node) < child_node->get_known_cost();
 }
 
 void GlobalRouter::resetPathHead(GRModel& gr_model)
@@ -1226,6 +1228,7 @@ void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
   updateRoutingSegmentList(gr_model, gr_net);
   optNodeSegmentListDueFlute(gr_model, gr_net);
   updateDemand(gr_model, gr_net, ChangeType::kAdd);
+  gr_net.set_routing_state(RoutingState::kRouted);
 }
 
 void GlobalRouter::updateRoutingSegmentList(GRModel& gr_model, GRNet& gr_net)
@@ -1237,7 +1240,6 @@ void GlobalRouter::updateRoutingSegmentList(GRModel& gr_model, GRNet& gr_net)
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
   }
-  gr_net.set_routing_state(RoutingState::kRouted);
 }
 
 void GlobalRouter::optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net)
@@ -1255,10 +1257,7 @@ void GlobalRouter::optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net)
 
   routing_segment_list.clear();
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
-    LayerCoord first_coord = coord_segment.get_first()->value();
-    LayerCoord second_coord = coord_segment.get_second()->value();
-
-    routing_segment_list.emplace_back(first_coord, second_coord);
+    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
   }
 }
 
@@ -1391,15 +1390,24 @@ double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* 
 
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getJointCost(gr_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
+  cost += getNodeCost(gr_model, start_node, RTUtil::getOrientation(*start_node, *end_node));
+  cost += getNodeCost(gr_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(gr_model, start_node, end_node);
   cost += getKnowCornerCost(gr_model, start_node, end_node);
   cost += getKnowViaCost(gr_model, start_node, end_node);
   return cost;
 }
 
-double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation)
+double GlobalRouter::getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation)
 {
+#if 1
+  double node_cost = 0;
+
+  double env_cost = curr_node->getCost(gr_model.get_curr_net_idx(), orientation);
+  node_cost += env_cost;
+
+  return node_cost;
+#else
   const PlanarRect& curr_bounding_box = gr_model.get_curr_bounding_box();
   const GridMap<double>& curr_cost_map = gr_model.get_curr_cost_map();
 
@@ -1414,6 +1422,7 @@ double GlobalRouter::getJointCost(GRModel& gr_model, GRNode* curr_node, Orientat
   double joint_cost = ((env_weight * env_cost + net_weight * net_cost)
                        * RTUtil::sigmoid((env_weight * env_cost + net_weight * net_cost), (env_weight + net_weight)));
   return joint_cost;
+#endif
 }
 
 double GlobalRouter::getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node)
@@ -1821,7 +1830,7 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
 
 bool GlobalRouter::stopGRModel(GRModel& gr_model)
 {
-  return false;
+  return (gr_model.get_gr_model_stat().get_max_resource_overflow() <= 1 && gr_model.get_gr_model_stat().get_max_access_overflow() <= 1);
 }
 
 #endif

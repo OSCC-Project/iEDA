@@ -17,7 +17,8 @@
 /**
  * @file StaFindStartOrEnd.cc
  * @author shy long (longshy@pcl.ac.cn)
- * @brief
+ * @brief The implemention of the class for finding start or end points of the
+ * timing path.
  * @version 0.1
  * @date 2023-07-21
  */
@@ -39,7 +40,7 @@ unsigned StaFindEnd::operator()(StaVertex* the_vertex) {
   }
 
   if (the_vertex->is_end()) {
-    the_vertex->addEndVertex(the_vertex);
+    the_vertex->addFanoutEndVertex(the_vertex);
     the_vertex->set_is_foward_find();
     return 1;
   }
@@ -57,10 +58,10 @@ unsigned StaFindEnd::operator()(StaVertex* the_vertex) {
     }
 
     if ((*this)(snk_vertex)) {
-      auto& end_vertexs = snk_vertex->get_end_vertexes();
+      auto& end_vertexs = snk_vertex->get_fanout_end_vertexes();
 
       if (!end_vertexs.empty()) {
-        the_vertex->addEndVertex(end_vertexs);
+        the_vertex->addFanoutEndVertex(end_vertexs);
       }
     }
   }
@@ -117,7 +118,7 @@ unsigned StaFindStart::operator()(StaVertex* the_vertex) {
   }
 
   if (the_vertex->is_start()) {
-    the_vertex->addStartVertex(the_vertex);
+    the_vertex->addFaninStartVertex(the_vertex);
     the_vertex->set_is_backward_find();
     return 1;
   }
@@ -131,10 +132,10 @@ unsigned StaFindStart::operator()(StaVertex* the_vertex) {
     StaVertex* src_vertex = snk_arc->get_src();
 
     if ((*this)(src_vertex)) {
-      auto& start_vertexs = src_vertex->get_start_vertexes();
+      auto& start_vertexs = src_vertex->get_fanin_start_vertexes();
 
       if (!start_vertexs.empty()) {
-        the_vertex->addStartVertex(start_vertexs);
+        the_vertex->addFaninStartVertex(start_vertexs);
       }
     }
   }
