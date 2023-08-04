@@ -2007,7 +2007,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
       LOG_FATAL << "Not the correct start pin of the timing path";
     }
 
-    auto &end_vertexes = the_vertex->get_end_vertexes();
+    auto &end_vertexes = the_vertex->get_fanout_end_vertexes();
     for (auto &end_vertex : end_vertexes) {
       std::string end_pin_name = end_vertex->getName();
       pin_names.insert(end_pin_name);
@@ -2020,7 +2020,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
       LOG_FATAL << "Not the correct end pin of the timing path";
     }
 
-    auto &start_vertexes = the_vertex->get_start_vertexes();
+    auto &start_vertexes = the_vertex->get_fanin_start_vertexes();
     for (auto &start_vertex : start_vertexes) {
       std::string start_pin_name = start_vertex->getName();
       pin_names.insert(start_pin_name);

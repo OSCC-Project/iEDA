@@ -37,10 +37,7 @@ class DRBox : public SpaceRegion
   ~DRBox() = default;
   // getter
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
-  std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>>& get_source_box_region_query_map()
-  {
-    return _source_box_region_query_map;
-  }
+  std::map<DRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -48,10 +45,9 @@ class DRBox : public SpaceRegion
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
-  void set_source_box_region_query_map(
-      const std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>>& source_box_region_query_map)
+  void set_source_region_query_map(const std::map<DRSourceType, RegionQuery*>& source_region_query_map)
   {
-    _source_box_region_query_map = source_box_region_query_map;
+    _source_region_query_map = source_region_query_map;
   }
   void set_box_scale_axis(const ScaleAxis& box_scale_axis) { _box_scale_axis = box_scale_axis; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
@@ -59,14 +55,18 @@ class DRBox : public SpaceRegion
   void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-  RegionQuery* getRegionQuery(DRSourceType dr_source_type, DRBoxId dr_box_id)
+  RegionQuery* getRegionQuery(DRSourceType dr_source_type)
   {
-    RegionQuery*& region_query = _source_box_region_query_map[dr_source_type][dr_box_id];
+    if (dr_source_type == DRSourceType::kBoxResult) {
+      LOG_INST.error(Loc::current(), "The dr_source_type is uncategorized!");
+    }
+    RegionQuery*& region_query = _source_region_query_map[dr_source_type];
     if (region_query == nullptr) {
       region_query = DC_INST.initRegionQuery();
     }
     return region_query;
   }
+  bool skipRouting() { return _dr_task_list.empty(); }
 #if 1  // astar
   // config
   double get_wire_unit() const { return _wire_unit; }
@@ -76,6 +76,7 @@ class DRBox : public SpaceRegion
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single task
+  const irt_int get_curr_net_idx() const { return _dr_task_ref->get_origin_net_idx(); }
   const irt_int get_curr_task_idx() const { return _dr_task_ref->get_task_idx(); }
   const SpaceRegion& get_curr_bounding_box() const { return _dr_task_ref->get_bounding_box(); }
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& get_curr_coord_cost_map() const { return _dr_task_ref->get_coord_cost_map(); }
@@ -119,12 +120,12 @@ class DRBox : public SpaceRegion
 
  private:
   DRBoxId _dr_box_id;
-  std::map<DRSourceType, std::map<DRBoxId, RegionQuery*, CmpDRBoxId>> _source_box_region_query_map;
+  std::map<DRSourceType, RegionQuery*> _source_region_query_map;
   ScaleAxis _box_scale_axis;
   std::vector<DRTask> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;
   DRBoxStat _dr_box_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 #if 1  // astar
   // config
   double _wire_unit = 1;

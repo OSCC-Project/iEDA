@@ -27,7 +27,9 @@ enum class TASourceType
   kNone,
   kBlockAndPin,
   kEnclosure,
-  kPanelResult
+  kPanelResult,
+  kOtherPanel,
+  kSelfPanel
 };
 
 struct GetTASourceTypeName
@@ -47,6 +49,12 @@ struct GetTASourceTypeName
         break;
       case TASourceType::kPanelResult:
         ta_source_type_name = "panel_result";
+        break;
+      case TASourceType::kOtherPanel:
+        ta_source_type_name = "other_panel";
+        break;
+      case TASourceType::kSelfPanel:
+        ta_source_type_name = "self_panel";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

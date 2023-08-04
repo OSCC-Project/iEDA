@@ -49,7 +49,7 @@ class TAModel
   std::vector<TANet> _ta_net_list;
   std::vector<std::vector<TAPanelId>> _ta_panel_id_comb_list;
   TAModelStat _ta_model_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt
