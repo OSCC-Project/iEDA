@@ -210,9 +210,12 @@ void CongestionEval::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_fl
 
 void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status, int level)
 {
+  // Reset pin numbers for all bins
   for (auto& bin : _cong_grid->get_bin_list()) {
     bin->set_pin_num(0);
   }
+
+  // Calculate pin numbers for each bin
   for (auto& bin : _cong_grid->get_bin_list()) {
     for (auto& inst : bin->get_inst_list()) {
       auto status = inst->get_status();
@@ -227,9 +230,37 @@ void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status, int level)
       }
     }
   }
+  // Update pin numbers for each bin using the pin sum in the square region
+  if (level != 0) {
+    int32_t x_cnt = _cong_grid->get_bin_cnt_x();
+    int32_t y_cnt = _cong_grid->get_bin_cnt_y();
+    vector<int32_t> pin_sum_temp(x_cnt * y_cnt);
+    for (int i = 0; i < y_cnt; i++) {
+      for (int j = 0; j < x_cnt; j++) {
+        int32_t pin_sum = 0;
+        for (int k = i - level; k <= i + level; k++) {
+          if (k >= 0 && k < y_cnt) {
+            auto bin_kl = _cong_grid->get_bin_list()[k * x_cnt + j];
+            for (int l = j - level; l <= l + level; l++) {
+              if (l >= 0 && l < x_cnt) {
+                auto bin = bin_kl + (l - j);
+                pin_sum += bin->get_pin_num();
+              }
+            }
+          }
+        }
+        pin_sum_temp[i * x_cnt + j] = pin_sum;
+      }
+    }
+    for (int i = 0; i < y_cnt; i++) {
+      for (int j = 0; j < x_cnt; j++) {
+        _cong_grid->get_bin_list()[i * x_cnt + j]->set_pin_num(pin_sum_temp[i * x_cnt + j]);
+      }
+    }
+  }
 }
 
-void CongestionEval::evalNetCong(INSTANCE_STATUS inst_status)
+void CongestionEval::evalNetDens(INSTANCE_STATUS inst_status)
 {
   for (auto& bin : _cong_grid->get_bin_list()) {
     bin->set_net_cong(0.0);
@@ -372,6 +403,695 @@ vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalInstSize(INSTAN
   return inst_name_to_size_list;
 }
 
+void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    int32_t overlap_area = 0;
+    double congestion = 0.0;
+    for (auto& net : bin->get_net_list()) {
+      overlap_area = getOverlapArea(bin, net);
+      if (rudy_type == RUDY_TYPE::kRUDY) {
+        congestion += overlap_area * getRudy(bin, net, net_direction);
+      } else if (rudy_type == RUDY_TYPE::kPinRUDY) {
+        congestion += overlap_area * getPinRudy(bin, net, net_direction);
+      } else if (rudy_type == RUDY_TYPE::kLUTRUDY) {
+        int32_t pin_num = net->get_pin_list().size();
+        int64_t net_width = net->get_width();
+        int64_t net_height = net->get_height();
+        int32_t aspect_ratio = 0;
+        if (net_width >= net_height && net_height != 0) {
+          aspect_ratio = std::round(net_width / net_height);
+        } else if (net_width < net_height && net_width != 0) {
+          aspect_ratio = std::round(net_height / net_width);
+        } else {
+          aspect_ratio = 1;
+        }
+        float l_ness = 0.0;
+        if (pin_num <= 3) {
+          l_ness = 1.0;
+        } else if (pin_num <= 15) {
+          std::vector<std::pair<int32_t, int32_t>> point_set;
+          for (int i = 0; i < pin_num; ++i) {
+            const int32_t pin_x = net->get_pin_list()[i]->get_x();
+            const int32_t pin_y = net->get_pin_list()[i]->get_y();
+            point_set.emplace_back(std::make_pair(pin_x, pin_y));
+          }
+          l_ness = calcLness(point_set, net->get_lx(), net->get_ux(), net->get_ly(), net->get_uy());
+        } else {
+          l_ness = 0.5;
+        }
+        congestion += overlap_area * getLUT(pin_num, aspect_ratio, l_ness) * getRudy(bin, net, net_direction);
+      }
+    }
+    bin->set_net_cong(congestion);
+  }
+}
+
+float CongestionEval::calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax)
+{
+  int64_t bbox = (xmax - xmin) * (ymax - ymin);
+  int64_t R1 = calcLowerLeftRP(point_set, xmin, ymin);
+  int64_t R2 = calcLowerRightRP(point_set, xmax, ymin);
+  int64_t R3 = calcUpperLeftRP(point_set, xmin, ymax);
+  int64_t R4 = calcUpperRightRP(point_set, xmax, ymax);
+  int64_t R = std::max({R1, R2, R3, R4});
+  float l_ness;
+  if (bbox != 0) {
+    l_ness = R / bbox;
+  } else {
+    l_ness = 1.0;
+  }
+  return l_ness;
+}
+
+int64_t CongestionEval::calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin)
+{
+  std::sort(point_set.begin(), point_set.end());  // Sort point_set with x-coordinates in ascending order
+  int64_t R = 0, y0 = point_set[0].second;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    int32_t xi = point_set[i].first;
+    if (point_set[i].second <= y0) {
+      R = std::max(R, (xi - xmin) * (y0 - ymin));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymin)
+{
+  std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
+                                                                                               // descending order
+  int64_t R = 0, y0 = point_set[0].second, xi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    xi = point_set[i].first;
+    if (point_set[i].second <= y0) {
+      R = std::max(R, (xmax - xi) * (y0 - ymin));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymax)
+{
+  std::sort(point_set.begin(), point_set.end(), [](const std::pair<int32_t, int32_t>& a, const std::pair<int32_t, int32_t>& b) {
+    return a.second > b.second;
+  });  // Sort point_set with y-coordinates in descending order
+  int64_t R = 0, x0 = point_set[0].first, yi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    yi = point_set[i].second;
+    if (point_set[i].first <= x0) {
+      R = std::max(R, (ymax - yi) * (x0 - xmin));
+      x0 = point_set[i].first;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymax)
+{
+  std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
+                                                                                               // descending order
+  int64_t R = 0, y0 = point_set[0].second, xi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    xi = point_set[i].first;
+    if (point_set[i].second >= y0) {
+      R = std::max(R, (ymax - y0) * (xmax - xi));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+double CongestionEval::getLUT(const int32_t& pin_num, const int32_t& aspect_ratio, const float& l_ness)
+{
+  switch (aspect_ratio) {
+    case 1:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.330;
+          if (l_ness <= 0.50)
+            return 1.115;
+          if (l_ness <= 0.75)
+            return 1.050;
+          if (l_ness <= 1.00)
+            return 1.020;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.330;
+          if (l_ness <= 0.50)
+            return 1.150;
+          if (l_ness <= 0.75)
+            return 1.080;
+          if (l_ness <= 1.00)
+            return 1.040;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.355;
+          if (l_ness <= 0.50)
+            return 1.185;
+          if (l_ness <= 0.75)
+            return 1.110;
+          if (l_ness <= 1.00)
+            return 1.050;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.390;
+          if (l_ness <= 0.50)
+            return 1.220;
+          if (l_ness <= 0.75)
+            return 1.135;
+          if (l_ness <= 1.00)
+            return 1.065;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.415;
+          if (l_ness <= 0.50)
+            return 1.250;
+          if (l_ness <= 0.75)
+            return 1.160;
+          if (l_ness <= 1.00)
+            return 1.080;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.450;
+          if (l_ness <= 0.50)
+            return 1.285;
+          if (l_ness <= 0.75)
+            return 1.185;
+          if (l_ness <= 1.00)
+            return 1.090;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.490;
+          if (l_ness <= 0.50)
+            return 1.325;
+          if (l_ness <= 0.75)
+            return 1.210;
+          if (l_ness <= 1.00)
+            return 1.105;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.515;
+          if (l_ness <= 0.50)
+            return 1.355;
+          if (l_ness <= 0.75)
+            return 1.235;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.555;
+          if (l_ness <= 0.50)
+            return 1.385;
+          if (l_ness <= 0.75)
+            return 1.260;
+          if (l_ness <= 1.00)
+            return 1.135;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.590;
+          if (l_ness <= 0.50)
+            return 1.420;
+          if (l_ness <= 0.75)
+            return 1.280;
+          if (l_ness <= 1.00)
+            return 1.145;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.620;
+          if (l_ness <= 0.50)
+            return 1.450;
+          if (l_ness <= 0.75)
+            return 1.310;
+          if (l_ness <= 1.00)
+            return 1.160;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.660;
+          if (l_ness <= 0.50)
+            return 1.485;
+          if (l_ness <= 0.75)
+            return 1.330;
+          if (l_ness <= 1.00)
+            return 1.175;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.660;
+          if (l_ness <= 0.50)
+            return 1.485;
+          if (l_ness <= 0.75)
+            return 1.330;
+          if (l_ness <= 1.00)
+            return 1.175;
+          break;
+      }
+      break;
+    case 2:
+    case 3:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.240;
+          if (l_ness <= 0.50)
+            return 1.094;
+          if (l_ness <= 0.75)
+            return 1.047;
+          if (l_ness <= 1.00)
+            return 1.023;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.240;
+          if (l_ness <= 0.50)
+            return 1.127;
+          if (l_ness <= 0.75)
+            return 1.070;
+          if (l_ness <= 1.00)
+            return 1.037;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.273;
+          if (l_ness <= 0.50)
+            return 1.155;
+          if (l_ness <= 0.75)
+            return 1.103;
+          if (l_ness <= 1.00)
+            return 1.051;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.306;
+          if (l_ness <= 0.50)
+            return 1.193;
+          if (l_ness <= 0.75)
+            return 1.127;
+          if (l_ness <= 1.00)
+            return 1.065;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.348;
+          if (l_ness <= 0.50)
+            return 1.221;
+          if (l_ness <= 0.75)
+            return 1.150;
+          if (l_ness <= 1.00)
+            return 1.080;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.377;
+          if (l_ness <= 0.50)
+            return 1.259;
+          if (l_ness <= 0.75)
+            return 1.174;
+          if (l_ness <= 1.00)
+            return 1.094;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.409;
+          if (l_ness <= 0.50)
+            return 1.287;
+          if (l_ness <= 0.75)
+            return 1.197;
+          if (l_ness <= 1.00)
+            return 1.103;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.447;
+          if (l_ness <= 0.50)
+            return 1.315;
+          if (l_ness <= 0.75)
+            return 1.221;
+          if (l_ness <= 1.00)
+            return 1.117;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.485;
+          if (l_ness <= 0.50)
+            return 1.344;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.131;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.513;
+          if (l_ness <= 0.50)
+            return 1.377;
+          if (l_ness <= 0.75)
+            return 1.263;
+          if (l_ness <= 1.00)
+            return 1.141;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.546;
+          if (l_ness <= 0.50)
+            return 1.405;
+          if (l_ness <= 0.75)
+            return 1.287;
+          if (l_ness <= 1.00)
+            return 1.150;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.579;
+          if (l_ness <= 0.50)
+            return 1.433;
+          if (l_ness <= 0.75)
+            return 1.306;
+          if (l_ness <= 1.00)
+            return 1.169;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.579;
+          if (l_ness <= 0.50)
+            return 1.433;
+          if (l_ness <= 0.75)
+            return 1.306;
+          if (l_ness <= 1.00)
+            return 1.169;
+          break;
+      }
+      break;
+    case 4:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.064;
+          if (l_ness <= 0.75)
+            return 1.032;
+          if (l_ness <= 1.00)
+            return 1.016;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.084;
+          if (l_ness <= 0.75)
+            return 1.052;
+          if (l_ness <= 1.00)
+            return 1.032;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.172;
+          if (l_ness <= 0.50)
+            return 1.108;
+          if (l_ness <= 0.75)
+            return 1.076;
+          if (l_ness <= 1.00)
+            return 1.044;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.200;
+          if (l_ness <= 0.50)
+            return 1.128;
+          if (l_ness <= 0.75)
+            return 1.092;
+          if (l_ness <= 1.00)
+            return 1.056;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.224;
+          if (l_ness <= 0.50)
+            return 1.156;
+          if (l_ness <= 0.75)
+            return 1.116;
+          if (l_ness <= 1.00)
+            return 1.068;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.252;
+          if (l_ness <= 0.50)
+            return 1.180;
+          if (l_ness <= 0.75)
+            return 1.132;
+          if (l_ness <= 1.00)
+            return 1.076;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.276;
+          if (l_ness <= 0.50)
+            return 1.204;
+          if (l_ness <= 0.75)
+            return 1.152;
+          if (l_ness <= 1.00)
+            return 1.088;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.308;
+          if (l_ness <= 0.50)
+            return 1.228;
+          if (l_ness <= 0.75)
+            return 1.164;
+          if (l_ness <= 1.00)
+            return 1.100;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.332;
+          if (l_ness <= 0.50)
+            return 1.252;
+          if (l_ness <= 0.75)
+            return 1.188;
+          if (l_ness <= 1.00)
+            return 1.108;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.360;
+          if (l_ness <= 0.50)
+            return 1.276;
+          if (l_ness <= 0.75)
+            return 1.208;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.388;
+          if (l_ness <= 0.50)
+            return 1.300;
+          if (l_ness <= 0.75)
+            return 1.220;
+          if (l_ness <= 1.00)
+            return 1.132;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+      }
+      break;
+    default:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.064;
+          if (l_ness <= 0.75)
+            return 1.032;
+          if (l_ness <= 1.00)
+            return 1.016;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.084;
+          if (l_ness <= 0.75)
+            return 1.052;
+          if (l_ness <= 1.00)
+            return 1.032;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.172;
+          if (l_ness <= 0.50)
+            return 1.108;
+          if (l_ness <= 0.75)
+            return 1.076;
+          if (l_ness <= 1.00)
+            return 1.044;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.200;
+          if (l_ness <= 0.50)
+            return 1.128;
+          if (l_ness <= 0.75)
+            return 1.092;
+          if (l_ness <= 1.00)
+            return 1.056;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.224;
+          if (l_ness <= 0.50)
+            return 1.156;
+          if (l_ness <= 0.75)
+            return 1.116;
+          if (l_ness <= 1.00)
+            return 1.068;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.252;
+          if (l_ness <= 0.50)
+            return 1.180;
+          if (l_ness <= 0.75)
+            return 1.132;
+          if (l_ness <= 1.00)
+            return 1.076;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.276;
+          if (l_ness <= 0.50)
+            return 1.204;
+          if (l_ness <= 0.75)
+            return 1.152;
+          if (l_ness <= 1.00)
+            return 1.088;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.308;
+          if (l_ness <= 0.50)
+            return 1.228;
+          if (l_ness <= 0.75)
+            return 1.164;
+          if (l_ness <= 1.00)
+            return 1.100;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.332;
+          if (l_ness <= 0.50)
+            return 1.252;
+          if (l_ness <= 0.75)
+            return 1.188;
+          if (l_ness <= 1.00)
+            return 1.108;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.360;
+          if (l_ness <= 0.50)
+            return 1.276;
+          if (l_ness <= 0.75)
+            return 1.208;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.388;
+          if (l_ness <= 0.50)
+            return 1.300;
+          if (l_ness <= 0.75)
+            return 1.220;
+          if (l_ness <= 1.00)
+            return 1.132;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+      }
+      break;
+  }
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 void CongestionEval::reportCongestion(const std::string& plot_path, const std::string& output_file_name)
 {
@@ -626,43 +1346,6 @@ CongPin* CongestionEval::wrapCongPin(idb::IdbPin* idb_pin)
 
 void CongestionEval::evalNetCong(const std::string& rudy_type)
 {
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    bin->set_net_cong(0.0);
-  }
-
-  std::map<std::string, int64_t> netname_steinerwl_map;
-  std::map<std::string, int64_t> netname_truewl_map;
-  if (rudy_type == "SteinerRUDY" || rudy_type == "PinSteinerRUDY") {
-    auto length_evaluator = Manager::getInst().getWirelengthEval();
-    netname_steinerwl_map = length_evaluator->getName2WLmap("SteinerRUDY");
-  }
-  if (rudy_type == "TrueRUDY") {
-    auto length_evaluator = Manager::getInst().getWirelengthEval();
-    netname_truewl_map = length_evaluator->getName2WLmap("TrueRUDY");
-  }
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    int32_t overlap_area = 0;
-    double congestion = 0.0;
-    for (auto& net : bin->get_net_list()) {
-      overlap_area = getOverlapArea(bin, net);
-      if (rudy_type == "RUDY") {
-        congestion += overlap_area * getRudy(bin, net);
-      } else if (rudy_type == "RUDYDev") {
-        congestion += overlap_area * getRudyDev(bin, net);
-      } else if (rudy_type == "PinRUDY") {
-        congestion += overlap_area * getPinRudy(bin, net);
-      } else if (rudy_type == "PinSteinerRUDY") {
-        congestion += overlap_area * getPinSteinerRudy(bin, net, netname_steinerwl_map);
-      } else if (rudy_type == "SteinerRUDY") {
-        congestion += overlap_area * getSteinerRudy(bin, net, netname_steinerwl_map);
-      } else if (rudy_type == "TrueRUDY") {
-        congestion += overlap_area * getTrueRudy(bin, net, netname_truewl_map);
-      } else if (rudy_type == "LUTRUDY") {
-        congestion += overlap_area * getLUTRUDY(bin, net);
-      }
-    }
-    bin->set_net_cong(congestion);
-  }
 }
 
 std::vector<float> CongestionEval::getNetCong(const std::string& rudy_type)
@@ -1237,31 +1920,37 @@ int32_t CongestionEval::getOverlapArea(CongBin* bin, CongNet* net)
 }
 
 // this idea is from the paper "Fast and Accurate Routing Demand Estimation for Efficient Routability-driven Placement"
-double CongestionEval::getRudy(CongBin* bin, CongNet* net)
+double CongestionEval::getRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
 
   if (net->get_height() == 0 || net->get_width() == 0) {
     return 1;
   }
 
   if (net->get_height() != 0) {
-    item_1 = bin->get_average_wire_width() / static_cast<double>(net->get_height());
+    horizontal = bin->get_average_wire_width() / static_cast<double>(net->get_height());
+    if (net_direction == NET_DIRECTION::kH) {
+      return horizontal;
+    }
   }
   if (net->get_width() != 0) {
-    item_2 = bin->get_average_wire_width() / static_cast<double>(net->get_width());
+    vertical = bin->get_average_wire_width() / static_cast<double>(net->get_width());
+    if (net_direction == NET_DIRECTION::kV) {
+      return vertical;
+    }
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 // this idea is from the paper "Routability-Driven Analytical Placement by Net Overlapping Removal for
 // Large-Scale Mixed-Size Designs"
 double CongestionEval::getRudyDev(CongBin* bin, CongNet* net)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
   int64_t net_height = net->get_height();
   int64_t net_width = net->get_width();
 
@@ -1272,23 +1961,23 @@ double CongestionEval::getRudyDev(CongBin* bin, CongNet* net)
   if (net_height != 0) {
     int bin_size_y = _cong_grid->get_bin_size_y();
     int capacity_hor = bin->get_horizontal_capacity();
-    item_1 = bin_size_y / capacity_hor / static_cast<double>(net_height);
+    horizontal = bin_size_y / capacity_hor / static_cast<double>(net_height);
   }
 
   if (net->get_width() != 0) {
     int bin_size_x = _cong_grid->get_bin_size_x();
     int capacity_ver = bin->get_vertical_capacity();
-    item_2 = bin_size_x / capacity_ver / static_cast<double>(net_width);
+    vertical = bin_size_x / capacity_ver / static_cast<double>(net_width);
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 // this idea is from the paper "Global Placement with Deep Learning-Enabled Explicit Routability Optimization"
-double CongestionEval::getPinRudy(CongBin* bin, CongNet* net)
+double CongestionEval::getPinRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
   int64_t net_height = net->get_height();
   int64_t net_width = net->get_width();
 
@@ -1297,15 +1986,15 @@ double CongestionEval::getPinRudy(CongBin* bin, CongNet* net)
     auto pin_y = pin->get_y();
     if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
       if (net_height != 0) {
-        item_1 += 1 / static_cast<double>(net_height);
+        horizontal += 1 / static_cast<double>(net_height);
       }
       if (net_width != 0) {
-        item_2 += 1 / static_cast<double>(net_width);
+        vertical += 1 / static_cast<double>(net_width);
       }
     }
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 double CongestionEval::getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map)
@@ -1379,10 +2068,6 @@ double CongestionEval::getTrueRudy(CongBin* bin, CongNet* net, const std::map<st
   }
   std::cout << "ture rudy :" << result << std::endl;
   return result;
-}
-
-double CongestionEval::getLUTRUDY(CongBin* bin, CongNet* net)
-{
 }
 
 float CongestionEval::getUsageCapacityRatio(Tile* tile)

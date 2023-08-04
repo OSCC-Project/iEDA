@@ -77,6 +77,21 @@ enum class CHIP_REGION_TYPE
   kCore
 };
 
+enum class RUDY_TYPE
+{
+  kNone,
+  kRUDY,
+  kPinRUDY,
+  kLUTRUDY
+};
+
+enum class NET_DIRECTION
+{
+  kNone,
+  kH,
+  kV
+};
+
 }  // namespace eval
 
 #endif  // SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
