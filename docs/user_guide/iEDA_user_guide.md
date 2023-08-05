@@ -249,7 +249,7 @@ flow_exit
 | 报告类型                   | 路径                 | 说明                                                               |
 | :------------------------- | :------------------- | :----------------------------------------------------------------- |
 | Tech LEF、LEF、DEF数据报告 | ./result/report      | 分析、统计 Design 文件的数据，并对PR过程单元、线网数据进行详细报告 |
-| 线长、拥塞评估报告         | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度等数据                     |
+| 线长、拥塞评估报告         | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度、布线拥塞等数据                     |
 | DRC报告                    | ./result/report/drc  | 主要检测布线后的DRC违例情况，已支持GUI可视化分析                   |
 
 ##### 基础信息
@@ -535,15 +535,15 @@ Congestion Report
 报告的参数说明如下表所示<br>
 | 参数名                 | 说明 |
 | :--------------------- | :--- |
-| Grid Bin Size          |      |
-| Bin Partition          |      |
-| Total Count            |      |
-| Instance Density Range |      |
-| Bins Count             |      |
-| Percentage             |      |
-| Pin Count Range        |      |
-| Bins Count             |      |
-| Percentage             |      |
+| Grid Bin Size          | 版图(core)区域所划分网格的：长度 * 宽度                       |
+| Bin Partition          | 版图(core)区域所划分网格数：水平数 by 竖直数                  |
+| Total Count            | 版图(core)区域所有网格数                                     |
+| Instance Density Range | 与网格重叠的单元面积总和除以单个网格面积，用于表征较高密度的网格 |
+| Bins Count             | 对应单元密度的网格数                                         |
+| Percentage             | 对应单元密度的网格数与所有网格数的比值                         |
+| Pin Count Range        | 单个网格内的引脚个数，用于表征较高引脚密度的网格                |
+| Bins Count             | 对应引脚密度的网格数                                         |
+| Percentage             | 对应引脚密度的网格数与所有网格数的比值                         |
 
 
 **Wire Length Report**<br>
