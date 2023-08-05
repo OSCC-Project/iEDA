@@ -146,7 +146,6 @@ TANet TrackAssigner::convertToTANet(Net& net)
   for (Pin& pin : net.get_pin_list()) {
     ta_net.get_ta_pin_list().push_back(TAPin(pin));
   }
-  ta_net.set_gr_result_tree(net.get_gr_result_tree());
   ta_net.set_ta_result_tree(net.get_gr_result_tree());
   return ta_net;
 }
@@ -769,7 +768,9 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
                     " ******");
     }
     if (stopTAPanel(ta_model, ta_panel)) {
-      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      }
       ta_panel.set_curr_iter(-1);
       break;
     }
@@ -841,11 +842,11 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
       continue;
     }
     // 将env中的布线结果清空
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
       updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect);
     }
-    // 清空routing_segment_list
-    ta_task.get_routing_segment_list().clear();
+    // 清空routing_tree
+    ta_task.get_routing_tree().clear();
     ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
@@ -1221,12 +1222,20 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 
 void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task)
 {
-  // 添加routing_segment_list
-  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_task.get_routing_segment_list();
-  routing_segment_list.clear();
-  routing_segment_list = ta_panel.get_routing_segment_list();
+  // 添加routing_tree
+  std::vector<LayerCoord> driving_grid_coord_list;
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
+  for (size_t i = 0; i < ta_group_list.size(); i++) {
+    for (LayerCoord& coord : ta_group_list[i].get_coord_list()) {
+      driving_grid_coord_list.push_back(coord);
+      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
+    }
+  }
+  std::vector<Segment<LayerCoord>> routing_segment_list = ta_panel.get_routing_segment_list();
+  ta_task.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
   // 将布线结果添加到env中
-  for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_segment_list())) {
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
     updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kPanelResult, ta_panel.get_ta_panel_id(), drc_rect);
   }
   ta_task.set_routing_state(RoutingState::kRouted);
@@ -1421,18 +1430,8 @@ void TrackAssigner::processTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
 void TrackAssigner::buildRoutingResult(TATask& ta_task)
 {
-  std::vector<LayerCoord> driving_grid_coord_list;
-  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
-  for (size_t i = 0; i < ta_group_list.size(); i++) {
-    for (LayerCoord& coord : ta_group_list[i].get_coord_list()) {
-      driving_grid_coord_list.push_back(coord);
-      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
-    }
-  }
-  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_task.get_routing_segment_list();
   RTNode& rt_node = ta_task.get_origin_node()->value();
-  rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
+  rt_node.set_routing_tree(ta_task.get_routing_tree());
 }
 
 void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
@@ -2081,7 +2080,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         task_struct.push(gp_boundary);
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));

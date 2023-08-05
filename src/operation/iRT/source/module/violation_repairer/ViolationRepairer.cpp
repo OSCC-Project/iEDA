@@ -286,7 +286,7 @@ TNode<PHYNode>* ViolationRepairer::makeWirePHYNode(VRNet& vr_net, LayerCoord fir
   if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
     LOG_INST.error(Loc::current(), "The wire layer_idx is illegal!");
   }
-  RTUtil::sort(first_coord, second_coord, CmpLayerCoordByXASC());
+  RTUtil::swapByCMP(first_coord, second_coord, CmpLayerCoordByXASC());
 
   PHYNode phy_node;
   WireNode& wire_node = phy_node.getNode<WireNode>();
