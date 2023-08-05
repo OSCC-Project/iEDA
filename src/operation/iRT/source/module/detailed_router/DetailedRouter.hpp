@@ -63,6 +63,11 @@ class DetailedRouter
   void buildSchedule(DRModel& dr_model);
   void updateNetFixedRectMap(DRModel& dr_model);
   void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
+  void decomposeLengthyTANode(DRModel& dr_model);
+  void decomposeTANode(DRNet& dr_net);
+  std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> getPreTaPostList(DRNet& dr_net);
+  std::vector<TNode<RTNode>*> getDecomposedNodeList(TNode<RTNode>* ta_node_node);
+  void shrinkTAResults(DRNet& dr_net);
   void updateNetPanelResultMap(DRModel& dr_model);
   void updateNetEnclosureMap(DRModel& dr_model);
   void buildBoxScaleAxis(DRModel& dr_model);

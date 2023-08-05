@@ -135,7 +135,6 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
   for (Pin& pin : net.get_pin_list()) {
     dr_net.get_dr_pin_list().push_back(DRPin(pin));
   }
-  dr_net.set_ta_result_tree(net.get_ta_result_tree());
   dr_net.set_dr_result_tree(net.get_ta_result_tree());
   return dr_net;
 }
@@ -144,6 +143,7 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
   buildSchedule(dr_model);
   updateNetFixedRectMap(dr_model);
+  decomposeLengthyTANode(dr_model);
   updateNetPanelResultMap(dr_model);
   updateNetEnclosureMap(dr_model);
   buildBoxScaleAxis(dr_model);
@@ -229,10 +229,193 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
   }
 }
 
+void DetailedRouter::decomposeLengthyTANode(DRModel& dr_model)
+{
+#pragma omp parallel for
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    decomposeTANode(dr_net);
+    shrinkTAResults(dr_net);
+  }
+}
+
+void DetailedRouter::decomposeTANode(DRNet& dr_net)
+{
+  std::vector<TNode<RTNode>*> delete_node_list;
+  for (auto& [pre_node_node, ta_node_node, post_node_node] : getPreTaPostList(dr_net)) {
+    std::vector<TNode<RTNode>*> decomposed_node_list = getDecomposedNodeList(ta_node_node);
+    if (decomposed_node_list.empty()) {
+      continue;
+    }
+    if (pre_node_node->value().get_second_guide().get_grid_coord()
+        != decomposed_node_list.front()->value().get_first_guide().get_grid_coord()) {
+      RTUtil::reverseList(decomposed_node_list);
+    }
+    pre_node_node->delChild(ta_node_node);
+    pre_node_node->addChild(decomposed_node_list.front());
+    for (size_t i = 1; i < decomposed_node_list.size(); i++) {
+      decomposed_node_list[i - 1]->addChild(decomposed_node_list[i]);
+    }
+    ta_node_node->delChild(post_node_node);
+    decomposed_node_list.back()->addChild(post_node_node);
+
+    delete_node_list.push_back(ta_node_node);
+  }
+  for (TNode<RTNode>* delete_node : delete_node_list) {
+    delete delete_node;
+  }
+}
+
+std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> DetailedRouter::getPreTaPostList(DRNet& dr_net)
+{
+  std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> pre_ta_post_list;
+
+  std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(dr_net.get_dr_result_tree().get_root());
+  while (!node_queue.empty()) {
+    TNode<RTNode>* pre_node_node = RTUtil::getFrontAndPop(node_queue);
+    if (!pre_node_node->value().isDRNode()) {
+      LOG_INST.error(Loc::current(), "The pre_node_node must be a DRNode!");
+    }
+    for (TNode<RTNode>* ta_node_node : pre_node_node->get_child_list()) {
+      if (!ta_node_node->value().isTANode()) {
+        LOG_INST.error(Loc::current(), "The ta_node_node must be a TANode!");
+      }
+      if (ta_node_node->getChildrenNum() != 1) {
+        LOG_INST.error(Loc::current(), "The ta_node_node must have only one child!");
+      }
+      for (TNode<RTNode>* post_node_node : ta_node_node->get_child_list()) {
+        if (!post_node_node->value().isDRNode()) {
+          LOG_INST.error(Loc::current(), "The post_node_node must be a DRNode!");
+        }
+        pre_ta_post_list.emplace_back(pre_node_node, ta_node_node, post_node_node);
+      }
+      RTUtil::addListToQueue(node_queue, ta_node_node->get_child_list());
+    }
+  }
+  return pre_ta_post_list;
+}
+
+std::vector<TNode<RTNode>*> DetailedRouter::getDecomposedNodeList(TNode<RTNode>* ta_node_node)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+
+  RTNode& ta_node = ta_node_node->value();
+  PlanarCoord& first_grid_coord = ta_node.get_first_guide().get_grid_coord();
+  PlanarCoord& second_grid_coord = ta_node.get_second_guide().get_grid_coord();
+  if (RTUtil::isProximal(first_grid_coord, second_grid_coord)) {
+    LOG_INST.error(Loc::current(), "The ta_node is proximal!");
+  }
+  if (RTUtil::getManhattanDistance(first_grid_coord, second_grid_coord) == 1) {
+    return {};
+  }
+  irt_int layer_idx = ta_node.get_first_guide().get_layer_idx();
+
+  std::vector<Guide> guide_list;
+  if (RTUtil::isHorizontal(first_grid_coord, second_grid_coord)) {
+    irt_int start_x = first_grid_coord.get_x();
+    irt_int end_x = second_grid_coord.get_x();
+    irt_int y = first_grid_coord.get_y();
+    RTUtil::swapASC(start_x, end_x);
+    for (irt_int x = start_x; x <= end_x; x++) {
+      guide_list.emplace_back(RTUtil::getRealRect(x, y, gcell_axis), layer_idx, PlanarCoord(x, y));
+    }
+  } else if (RTUtil::isVertical(first_grid_coord, second_grid_coord)) {
+    irt_int x = first_grid_coord.get_x();
+    irt_int start_y = first_grid_coord.get_y();
+    irt_int end_y = second_grid_coord.get_y();
+    RTUtil::swapASC(start_y, end_y);
+    for (irt_int y = start_y; y <= end_y; y++) {
+      guide_list.emplace_back(RTUtil::getRealRect(x, y, gcell_axis), layer_idx, PlanarCoord(x, y));
+    }
+  }
+
+  std::vector<TNode<RTNode>*> decomposed_node_list;
+  for (irt_int i = 1; i < static_cast<irt_int>(guide_list.size()); i++) {
+    // ta_node
+    RTNode ta_rt_node;
+    ta_rt_node.set_first_guide(guide_list[i - 1]);
+    ta_rt_node.set_second_guide(guide_list[i]);
+    ta_rt_node.set_routing_tree(ta_node.get_routing_tree());
+    decomposed_node_list.push_back(new TNode<RTNode>(ta_rt_node));
+    if (i != static_cast<irt_int>(guide_list.size()) - 1) {
+      // dr_node
+      RTNode dr_rt_node;
+      dr_rt_node.set_first_guide(guide_list[i]);
+      dr_rt_node.set_second_guide(guide_list[i]);
+      decomposed_node_list.push_back(new TNode<RTNode>(dr_rt_node));
+    }
+  }
+  return decomposed_node_list;
+}
+
+void DetailedRouter::shrinkTAResults(DRNet& dr_net)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  for (TNode<RTNode>* ta_node_node : RTUtil::getNodeList(dr_net.get_dr_result_tree())) {
+    RTNode& ta_node = ta_node_node->value();
+    if (ta_node.isDRNode()) {
+      continue;
+    }
+    PlanarCoord& lb_grid_coord = ta_node.get_first_guide().get_grid_coord();
+    PlanarCoord& rt_grid_coord = ta_node.get_second_guide().get_grid_coord();
+    irt_int layer_idx = ta_node.get_first_guide().get_layer_idx();
+
+    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+    std::vector<ScaleGrid>& x_track_grid_list = routing_layer.getXTrackGridList();
+    std::vector<ScaleGrid>& y_track_grid_list = routing_layer.getYTrackGridList();
+
+    if (RTUtil::isHorizontal(lb_grid_coord, rt_grid_coord)) {
+      Guide lb_guide = ta_node.get_first_guide();
+      Guide rt_guide = ta_node.get_second_guide();
+      if (!CmpPlanarCoordByXASC()(lb_grid_coord, rt_grid_coord)) {
+        std::swap(lb_guide, rt_guide);
+      }
+      irt_int lb_x = RTUtil::getClosedScaleList(lb_guide.get_lb_x(), rt_guide.get_lb_x(), x_track_grid_list).back();
+      irt_int rt_x = RTUtil::getClosedScaleList(lb_guide.get_rt_x(), rt_guide.get_rt_x(), x_track_grid_list).front();
+      Segment<LayerCoord> target_segment;
+      for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
+        target_segment.set_first(routing_segment.get_first()->value());
+        target_segment.set_second(routing_segment.get_second()->value());
+        SortSegmentInnerXASC()(target_segment);
+        if (target_segment.get_first().get_x() <= lb_x && rt_x <= target_segment.get_first().get_x()) {
+          break;
+        }
+      }
+      irt_int y = target_segment.get_first().get_y();
+      TNode<LayerCoord>* first_node = new TNode<LayerCoord>(LayerCoord(lb_x, y, layer_idx));
+      TNode<LayerCoord>* second_node = new TNode<LayerCoord>(LayerCoord(rt_x, y, layer_idx));
+      ta_node.get_routing_tree().set_root(first_node);
+      first_node->addChild(second_node);
+    } else if (RTUtil::isVertical(lb_grid_coord, rt_grid_coord)) {
+      Guide lb_guide = ta_node.get_first_guide();
+      Guide rt_guide = ta_node.get_second_guide();
+      if (!CmpPlanarCoordByYASC()(lb_grid_coord, rt_grid_coord)) {
+        std::swap(lb_guide, rt_guide);
+      }
+      irt_int lb_y = RTUtil::getClosedScaleList(lb_guide.get_lb_y(), rt_guide.get_lb_y(), y_track_grid_list).back();
+      irt_int rt_y = RTUtil::getClosedScaleList(lb_guide.get_rt_y(), rt_guide.get_rt_y(), y_track_grid_list).front();
+      Segment<LayerCoord> target_segment;
+      for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
+        target_segment.set_first(routing_segment.get_first()->value());
+        target_segment.set_second(routing_segment.get_second()->value());
+        SortSegmentInnerYASC()(target_segment);
+        if (target_segment.get_first().get_y() <= lb_y && rt_y <= target_segment.get_first().get_y()) {
+          break;
+        }
+      }
+      irt_int x = target_segment.get_first().get_x();
+      TNode<LayerCoord>* first_node = new TNode<LayerCoord>(LayerCoord(x, lb_y, layer_idx));
+      TNode<LayerCoord>* second_node = new TNode<LayerCoord>(LayerCoord(x, rt_y, layer_idx));
+      ta_node.get_routing_tree().set_root(first_node);
+      first_node->addChild(second_node);
+    }
+  }
+}
+
 void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
 {
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    for (TNode<RTNode>* ta_node_node : RTUtil::getNodeList(dr_net.get_ta_result_tree())) {
+    for (TNode<RTNode>* ta_node_node : RTUtil::getNodeList(dr_net.get_dr_result_tree())) {
       if (ta_node_node->value().isDRNode()) {
         continue;
       }
@@ -736,7 +919,7 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
   for (irt_int iter = 1; iter <= dr_box_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", dr_box_max_iter_num, ") ******");
+      LOG_INST.info(Loc::current(), "****** Start Box Iteration(", iter, "/", dr_box_max_iter_num, ") ******");
     }
     dr_box.set_curr_iter(iter);
     sortDRBox(dr_model, dr_box);
@@ -746,11 +929,13 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
     countDRBox(dr_model, dr_box);
     reportDRBox(dr_model, dr_box);
     if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
+      LOG_INST.info(Loc::current(), "****** End Box Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
     }
     if (stopDRBox(dr_model, dr_box)) {
-      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      }
       dr_box.set_curr_iter(-1);
       break;
     }
@@ -839,11 +1024,11 @@ void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
       continue;
     }
     // 将env中的布线结果清空
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
       updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect);
     }
-    // 清空routing_segment_list
-    dr_task.get_routing_segment_list().clear();
+    // 清空routing_tree
+    dr_task.get_routing_tree().clear();
     dr_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
@@ -1202,13 +1387,21 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 
 void DetailedRouter::updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task)
 {
-  // 添加routing_segment_list
-  std::vector<Segment<LayerCoord>>& routing_segment_list = dr_task.get_routing_segment_list();
-  routing_segment_list.clear();
-  routing_segment_list = dr_box.get_routing_segment_list();
+  // 添加routing_tree
+  std::vector<LayerCoord> driving_grid_coord_list;
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  std::vector<DRGroup>& dr_group_list = dr_task.get_dr_group_list();
+  for (size_t i = 0; i < dr_group_list.size(); i++) {
+    for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
+      driving_grid_coord_list.push_back(coord);
+      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
+    }
+  }
+  std::vector<Segment<LayerCoord>> routing_segment_list = dr_box.get_routing_segment_list();
+  dr_task.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
   // 将布线结果添加到env中
-  for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_segment_list())) {
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kPanelResult, dr_box.get_dr_box_id(), drc_rect);
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBoxResult, dr_box.get_dr_box_id(), drc_rect);
   }
   dr_task.set_routing_state(RoutingState::kRouted);
 }
@@ -1402,18 +1595,8 @@ void DetailedRouter::processDRBox(DRModel& dr_model, DRBox& dr_box)
 
 void DetailedRouter::buildRoutingResult(DRTask& dr_task)
 {
-  std::vector<LayerCoord> driving_grid_coord_list;
-  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<DRGroup>& dr_group_list = dr_task.get_dr_group_list();
-  for (size_t i = 0; i < dr_group_list.size(); i++) {
-    for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
-      driving_grid_coord_list.push_back(coord);
-      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
-    }
-  }
-  std::vector<Segment<LayerCoord>>& routing_segment_list = dr_task.get_routing_segment_list();
   RTNode& rt_node = dr_task.get_origin_node()->value();
-  rt_node.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
+  rt_node.set_routing_tree(dr_task.get_routing_tree());
 }
 
 void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -1444,7 +1627,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
         }
         routing_wire_length_map[first_layer_idx] += wire_length;
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
         }
@@ -2152,7 +2335,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         task_struct.push(gp_boundary);
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));

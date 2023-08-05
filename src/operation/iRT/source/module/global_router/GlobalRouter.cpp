@@ -694,8 +694,8 @@ void GlobalRouter::resetGRModel(GRModel& gr_model)
     }
     // 将env中的布线结果清空
     updateDemand(gr_model, gr_net, ChangeType::kDel);
-    // 清空routing_segment_list
-    gr_net.get_routing_segment_list().clear();
+    // 清空routing_tree
+    gr_net.get_routing_tree().clear();
     gr_net.set_routing_state(RoutingState::kUnrouted);
   }
 }
@@ -1225,27 +1225,19 @@ void GlobalRouter::resetSingleTask(GRModel& gr_model)
 
 void GlobalRouter::updateNetResult(GRModel& gr_model, GRNet& gr_net)
 {
-  updateRoutingSegmentList(gr_model, gr_net);
-  optNodeSegmentListDueFlute(gr_model, gr_net);
+  updateRoutingTree(gr_model, gr_net);
   updateDemand(gr_model, gr_net, ChangeType::kAdd);
   gr_net.set_routing_state(RoutingState::kRouted);
 }
 
-void GlobalRouter::updateRoutingSegmentList(GRModel& gr_model, GRNet& gr_net)
+void GlobalRouter::updateRoutingTree(GRModel& gr_model, GRNet& gr_net)
 {
   std::vector<Segment<GRNode*>>& node_segment_list = gr_model.get_node_segment_list();
 
-  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
-  routing_segment_list.clear();
+  std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
   }
-}
-
-void GlobalRouter::optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net)
-{
-  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
-
   std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
@@ -1253,12 +1245,7 @@ void GlobalRouter::optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net)
       key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
     }
   }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
-
-  routing_segment_list.clear();
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
-    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-  }
+  gr_net.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
 }
 
 void GlobalRouter::updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType change_type)
@@ -1273,9 +1260,9 @@ void GlobalRouter::updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType cha
     }
   }
   std::vector<Segment<GRNode*>> node_segment_list;
-  for (Segment<LayerCoord>& coord_segment : gr_net.get_routing_segment_list()) {
-    LayerCoord first_coord = coord_segment.get_first();
-    LayerCoord second_coord = coord_segment.get_second();
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(gr_net.get_routing_tree())) {
+    LayerCoord first_coord = coord_segment.get_first()->value();
+    LayerCoord second_coord = coord_segment.get_second()->value();
 
     GRNode* first_node = &layer_node_map[first_coord.get_layer_idx()][first_coord.get_x()][first_coord.get_y()];
     GRNode* second_node = &layer_node_map[second_coord.get_layer_idx()][second_coord.get_x()][second_coord.get_y()];
@@ -1528,47 +1515,25 @@ void GlobalRouter::processGRModel(GRModel& gr_model)
   }
 #pragma omp parallel for
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    initRoutingResult(gr_net);
     buildRoutingResult(gr_net);
   }
 }
 
-void GlobalRouter::initRoutingResult(GRNet& gr_net)
+void GlobalRouter::buildRoutingResult(GRNet& gr_net)
 {
-  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
-  std::vector<Segment<LayerCoord>>& routing_segment_list = gr_net.get_routing_segment_list();
+  if (gr_net.get_routing_tree().get_root() == nullptr) {
+    return;
+  }
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
     for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
       key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
     }
   }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
   std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
       = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
-  gr_net.set_gr_result_tree(RTUtil::convertTree(coord_tree, convert, key_coord_pin_map));
-}
+  gr_net.set_gr_result_tree(RTUtil::convertTree(gr_net.get_routing_tree(), convert, key_coord_pin_map));
 
-RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-
-  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
-
-  RTNode rt_node;
-  rt_node.set_first_guide(guide);
-  rt_node.set_second_guide(guide);
-  if (RTUtil::exist(key_coord_pin_map, coord)) {
-    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
-  }
-  return rt_node;
-}
-
-void GlobalRouter::buildRoutingResult(GRNet& gr_net)
-{
-  if (gr_net.get_gr_result_tree().get_root() == nullptr) {
-    return;
-  }
   std::vector<TNode<RTNode>*> delete_node_list;
   std::map<TNode<RTNode>*, TNode<RTNode>*> origin_to_merged_map;
   std::queue<TNode<RTNode>*> node_queue = RTUtil::initQueue(gr_net.get_gr_result_tree().get_root());
@@ -1603,6 +1568,21 @@ void GlobalRouter::buildRoutingResult(GRNet& gr_net)
   for (TNode<RTNode>* delete_node : delete_node_list) {
     delete delete_node;
   }
+}
+
+RTNode GlobalRouter::convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+
+  Guide guide(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx(), coord.get_planar_coord());
+
+  RTNode rt_node;
+  rt_node.set_first_guide(guide);
+  rt_node.set_second_guide(guide);
+  if (RTUtil::exist(key_coord_pin_map, coord)) {
+    rt_node.set_pin_idx_set(key_coord_pin_map[coord]);
+  }
+  return rt_node;
 }
 
 void GlobalRouter::buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node)
@@ -1663,7 +1643,7 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
         double wire_length = RTUtil::getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
         routing_wire_length_map[first_layer_idx] += wire_length;
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           cut_via_number_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
         }
@@ -2278,7 +2258,7 @@ void GlobalRouter::writeGRModel(GRModel& gr_model)
 //         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
 //         net_struct.push(gp_boundary);
 //       } else {
-//         RTUtil::sortASC(first_layer_idx, second_layer_idx);
+//         RTUtil::swapASC(first_layer_idx, second_layer_idx);
 //         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
 //           GPBoundary gp_boundary;
 //           gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));

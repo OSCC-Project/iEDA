@@ -33,7 +33,10 @@ class DRCChecker
   static void destroyInst();
   // function
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<DRCRect> getDRCRectList(irt_int net_idx, Segment<LayerCoord>& segment);
+  std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree);
+  std::vector<DRCRect> getDRCRectList(irt_int net_idx, PHYNode& phy_node);
   RegionQuery* initRegionQuery();
   void destoryRegionQuery(RegionQuery* region_query);
   std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getRoutingNetRectMap(RegionQuery* region_query,
