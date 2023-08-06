@@ -57,7 +57,7 @@ class DRBox : public SpaceRegion
   // function
   RegionQuery* getRegionQuery(DRSourceType dr_source_type)
   {
-    if (dr_source_type == DRSourceType::kBoxResult) {
+    if (dr_source_type == DRSourceType::kUnknownBox) {
       LOG_INST.error(Loc::current(), "The dr_source_type is uncategorized!");
     }
     RegionQuery*& region_query = _source_region_query_map[dr_source_type];

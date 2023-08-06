@@ -132,8 +132,8 @@ class TrackAssigner
   void update(TAModel& ta_model);
 #endif
 
-#if 0  // plot ta_panel
-void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx);
+#if 1  // plot ta_panel
+  void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 };
 

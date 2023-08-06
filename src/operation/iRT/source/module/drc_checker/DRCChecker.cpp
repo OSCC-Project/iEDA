@@ -205,8 +205,8 @@ void DRCChecker::destoryRegionQuery(RegionQuery* region_query)
   }
 }
 
-std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getRoutingNetRectMap(RegionQuery* region_query,
-                                                                                                                bool is_routing)
+std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getLayerNetRectMap(RegionQuery* region_query,
+                                                                                                              bool is_routing)
 {
   if (is_routing) {
     return region_query->get_routing_net_rect_map();
@@ -707,7 +707,7 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   // env shape
   for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
     GPStruct net_shape_struct(RTUtil::getString("env shape(net_", net_id, ")"));
-    GPGraphType type = net_id == -1 ? GPGraphType::kBlockage : GPGraphType::kPanelResult;
+    GPGraphType type = net_id == -1 ? GPGraphType::kBlockAndPin : GPGraphType::kKnownPanel;
     for (auto& [layer_idx, shape_map] : layer_shape_list) {
       for (auto& [rect, shape] : shape_map) {
         GPBoundary gp_boundary;

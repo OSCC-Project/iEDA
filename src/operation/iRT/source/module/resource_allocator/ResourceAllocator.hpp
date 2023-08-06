@@ -89,7 +89,7 @@ class ResourceAllocator
 #endif
 
 #if 1  // plot ra_model
-  void writeRAModel(RAModel& ra_model);
+  void outputResourceMap(RAModel& ra_model);
 #endif
 };
 
