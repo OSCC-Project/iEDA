@@ -443,15 +443,23 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   for (irt_int x = 0; x < die.getXSize(); x++) {
     for (irt_int y = 0; y < die.getYSize(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
-      for (auto& [source, region_query] : vr_gcell.get_source_region_query_map()) {
+
+      for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
+        RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
         std::map<std::string, irt_int> drc_number_map;
-        if (source == VRSourceType::kBlockAndPin) {
-          drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-        } else {
-          drc_number_map = DC_INST.getViolation(region_query);
+        switch (vr_source_type) {
+          case VRSourceType::kBlockAndPin:
+            drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
+            break;
+          case VRSourceType::kNetResult:
+            drc_number_map = DC_INST.getViolation(region_query);
+            break;
+          default:
+            LOG_INST.error(Loc::current(), "The type is error!");
+            break;
         }
         for (auto& [drc, number] : drc_number_map) {
-          source_drc_number_map[source][drc] += number;
+          source_drc_number_map[vr_source_type][drc] += number;
         }
       }
     }

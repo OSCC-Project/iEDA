@@ -129,7 +129,7 @@ class GlobalRouter
 #endif
 
 #if 1  // plot gr_model
-  void writeGRModel(GRModel& gr_model);
+  void outputCongestionMap(GRModel& gr_model);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
 #endif
 };

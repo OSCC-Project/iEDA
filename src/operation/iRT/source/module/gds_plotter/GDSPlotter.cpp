@@ -208,13 +208,11 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPGraphType, bool> routing_data_type_visible_map
-      = {{GPGraphType::kNone, false},           {GPGraphType::kOpen, false},
-         {GPGraphType::kClose, false},          {GPGraphType::kInfo, false},
-         {GPGraphType::kNeighbor, false},       {GPGraphType::kKey, true},
-         {GPGraphType::kScaleAxis, false},      {GPGraphType::kPath, true},
-         {GPGraphType::kBlockage, true},        {GPGraphType::kOtherPanelResult, true},
-         {GPGraphType::kSelfPanelResult, true}, {GPGraphType::kPanelResult, true},
-         {GPGraphType::kOtherBoxResult, true},  {GPGraphType::kSelfBoxResult, true}};
+      = {{GPGraphType::kNone, false},      {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},
+         {GPGraphType::kInfo, false},      {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},
+         {GPGraphType::kScaleAxis, false}, {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true},
+         {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},
+         {GPGraphType::kOtherBox, true},   {GPGraphType::kSelfBox, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());

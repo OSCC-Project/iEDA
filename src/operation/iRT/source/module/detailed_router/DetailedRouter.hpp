@@ -140,8 +140,8 @@ class DetailedRouter
   void update(DRModel& dr_model);
 #endif
 
-#if 0  // plot dr_box
-void plotDRBox(DRBox& dr_box, irt_int curr_task_idx);
+#if 1  // plot dr_box
+  void plotDRBox(DRBox& dr_box, irt_int curr_task_idx);
 #endif
 };
 

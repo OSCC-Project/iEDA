@@ -58,7 +58,7 @@ class TAPanel : public LayerRect
   bool skipAssigning() { return _ta_task_list.empty(); }
   RegionQuery* getRegionQuery(TASourceType ta_source_type)
   {
-    if (ta_source_type == TASourceType::kPanelResult) {
+    if (ta_source_type == TASourceType::kUnknownPanel) {
       LOG_INST.error(Loc::current(), "The ta_source_type is uncategorized!");
     }
     RegionQuery*& region_query = _source_region_query_map[ta_source_type];

@@ -214,7 +214,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
       irt_int whole_via_demand = routing_layer.get_min_area() / routing_layer.get_min_width();
       std::vector<PlanarRect> wire_list = getWireList(ra_gcell, routing_layer);
       for (const auto& [net_idx, rect_set] :
-           DC_INST.getRoutingNetRectMap(ra_gcell.getRegionQuery(RASourceType::kBlockAndPin), true)[routing_layer.get_layer_idx()]) {
+           DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(RASourceType::kBlockAndPin), true)[routing_layer.get_layer_idx()]) {
         for (const LayerRect& rect : rect_set) {
           for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
             std::vector<PlanarRect> new_wire_list;
@@ -395,7 +395,7 @@ void ResourceAllocator::iterative(RAModel& ra_model)
     processRAModel(ra_model);
     countRAModel(ra_model);
     reportRAModel(ra_model);
-    // writeRAModel(ra_model);
+    // outputResourceMap(ra_model);
     ra_initial_penalty *= ra_penalty_drop_rate;
     LOG_INST.info(Loc::current(), "****** End Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
@@ -838,7 +838,7 @@ void ResourceAllocator::update(RAModel& ra_model)
 
 #if 1  // plot ra_model
 
-void ResourceAllocator::writeRAModel(RAModel& ra_model)
+void ResourceAllocator::outputResourceMap(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
   std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
