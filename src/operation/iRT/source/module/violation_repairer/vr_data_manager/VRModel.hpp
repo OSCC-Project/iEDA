@@ -43,7 +43,7 @@ class VRModel
   GridMap<VRGCell> _vr_gcell_map;
   std::vector<VRNet> _vr_net_list;
   VRModelStat _vr_model_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt

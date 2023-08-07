@@ -30,12 +30,13 @@ enum class GPGraphType
   kKey,
   kScaleAxis,
   kPath,
-  kBlockage,
-  kOtherPanelResult,
-  kSelfPanelResult,
-  kPanelResult,
-  kOtherBoxResult,
-  kSelfBoxResult
+  kBlockAndPin,
+  kEnclosure,
+  kOtherPanel,
+  kSelfPanel,
+  kKnownPanel,
+  kOtherBox,
+  kSelfBox
 };
 
 struct GetGPGraphTypeName
@@ -68,23 +69,26 @@ struct GetGPGraphTypeName
       case GPGraphType::kPath:
         data_type_name = "path";
         break;
-      case GPGraphType::kBlockage:
-        data_type_name = "blockage";
+      case GPGraphType::kBlockAndPin:
+        data_type_name = "block_pin";
         break;
-      case GPGraphType::kOtherPanelResult:
-        data_type_name = "other_panel_result";
+      case GPGraphType::kEnclosure:
+        data_type_name = "enclosure";
         break;
-      case GPGraphType::kSelfPanelResult:
-        data_type_name = "self_panel_result";
+      case GPGraphType::kOtherPanel:
+        data_type_name = "other_panel";
         break;
-      case GPGraphType::kPanelResult:
-        data_type_name = "panel_result";
+      case GPGraphType::kSelfPanel:
+        data_type_name = "self_panel";
         break;
-      case GPGraphType::kOtherBoxResult:
-        data_type_name = "other_box_result";
+      case GPGraphType::kKnownPanel:
+        data_type_name = "known_panel";
         break;
-      case GPGraphType::kSelfBoxResult:
-        data_type_name = "self_box_result";
+      case GPGraphType::kOtherBox:
+        data_type_name = "other_box";
+        break;
+      case GPGraphType::kSelfBox:
+        data_type_name = "self_box";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

@@ -91,7 +91,6 @@ class GlobalRouter
   bool searchEnded(GRModel& gr_model);
   void expandSearching(GRModel& gr_model);
   bool passChecking(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  bool replaceParentNode(GRModel& gr_model, GRNode* parent_node, GRNode* child_node);
   void resetPathHead(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);
@@ -100,14 +99,13 @@ class GlobalRouter
   void resetStartAndEnd(GRModel& gr_model);
   void resetSingleTask(GRModel& gr_model);
   void updateNetResult(GRModel& gr_model, GRNet& gr_net);
-  void optNodeSegmentListDueFlute(GRModel& gr_model, GRNet& gr_net);
   void updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType change_type);
-  void updateRoutingSegmentList(GRModel& gr_model, GRNet& gr_net);
+  void updateRoutingTree(GRModel& gr_model, GRNet& gr_net);
   void resetSingleNet(GRModel& gr_model);
   void pushToOpenList(GRModel& gr_model, GRNode* curr_node);
   GRNode* popFromOpenList(GRModel& gr_model);
   double getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getJointCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
+  double getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
   double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getKnowViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
@@ -117,9 +115,8 @@ class GlobalRouter
   double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   double getEstimateViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   void processGRModel(GRModel& gr_model);
-  void initRoutingResult(GRNet& gr_net);
-  RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
   void buildRoutingResult(GRNet& gr_net);
+  RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
   void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void countGRModel(GRModel& gr_model);
@@ -132,7 +129,7 @@ class GlobalRouter
 #endif
 
 #if 1  // plot gr_model
-  void writeGRModel(GRModel& gr_model);
+  void outputCongestionMap(GRModel& gr_model);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx);
 #endif
 };

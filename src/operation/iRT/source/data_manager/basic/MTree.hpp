@@ -50,31 +50,13 @@ class MTree
     _root = root;
   }
   // function
-  void free()
-  {
-    if (_root == nullptr) {
-      return;
-    }
-    std::queue<TNode<T>*> node_queue;
-    node_queue.push(_root);
-
-    while (!node_queue.empty()) {
-      TNode<T>* node = node_queue.front();
-      node_queue.pop();
-
-      for (TNode<T>* child_node : node->get_child_list()) {
-        node_queue.push(child_node);
-      }
-
-      delete node;
-      node = nullptr;
-    }
-  }
+  void clear() { set_root(nullptr); }
 
  private:
   TNode<T>* _root = nullptr;
   // function
   inline void copy(const MTree& other);
+  inline void free();
   inline void copyTree(TNode<T>* other_root);
   inline void move(MTree&& other);
 };
@@ -84,6 +66,28 @@ inline void MTree<T>::copy(const MTree& other)
 {
   free();
   copyTree(other._root);
+}
+
+template <typename T>
+inline void MTree<T>::free()
+{
+  if (_root == nullptr) {
+    return;
+  }
+  std::queue<TNode<T>*> node_queue;
+  node_queue.push(_root);
+
+  while (!node_queue.empty()) {
+    TNode<T>* node = node_queue.front();
+    node_queue.pop();
+
+    for (TNode<T>* child_node : node->get_child_list()) {
+      node_queue.push(child_node);
+    }
+
+    delete node;
+    node = nullptr;
+  }
 }
 
 template <typename T>
