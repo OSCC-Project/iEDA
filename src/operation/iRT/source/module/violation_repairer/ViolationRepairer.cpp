@@ -286,7 +286,7 @@ TNode<PHYNode>* ViolationRepairer::makeWirePHYNode(VRNet& vr_net, LayerCoord fir
   if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
     LOG_INST.error(Loc::current(), "The wire layer_idx is illegal!");
   }
-  RTUtil::sort(first_coord, second_coord, CmpLayerCoordByXASC());
+  RTUtil::swapByCMP(first_coord, second_coord, CmpLayerCoordByXASC());
 
   PHYNode phy_node;
   WireNode& wire_node = phy_node.getNode<WireNode>();
@@ -385,6 +385,8 @@ void ViolationRepairer::iterative(VRModel& vr_model)
     reportVRModel(vr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopVRModel(vr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      vr_model.set_curr_iter(-1);
       break;
     }
   }
@@ -441,15 +443,23 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   for (irt_int x = 0; x < die.getXSize(); x++) {
     for (irt_int y = 0; y < die.getYSize(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
-      for (auto& [source, region_query] : vr_gcell.get_source_region_query_map()) {
+
+      for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
+        RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
         std::map<std::string, irt_int> drc_number_map;
-        if (source == VRSourceType::kBlockAndPin) {
-          drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-        } else {
-          drc_number_map = DC_INST.getViolation(region_query);
+        switch (vr_source_type) {
+          case VRSourceType::kBlockAndPin:
+            drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
+            break;
+          case VRSourceType::kNetResult:
+            drc_number_map = DC_INST.getViolation(region_query);
+            break;
+          default:
+            LOG_INST.error(Loc::current(), "The type is error!");
+            break;
         }
         for (auto& [drc, number] : drc_number_map) {
-          source_drc_number_map[source][drc] += number;
+          source_drc_number_map[vr_source_type][drc] += number;
         }
       }
     }
@@ -627,7 +637,7 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
 bool ViolationRepairer::stopVRModel(VRModel& vr_model)
 {
-  return false;
+  return (vr_model.get_vr_model_stat().get_total_drc_number() == 0);
 }
 
 #endif

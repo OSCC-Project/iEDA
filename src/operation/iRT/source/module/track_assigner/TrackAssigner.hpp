@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
@@ -58,7 +59,7 @@ class TrackAssigner
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
-  void addRectToEnv(TAModel& ta_model, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
+  void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
   void updateNetEnclosureMap(TAModel& ta_model);
   void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
@@ -72,6 +73,7 @@ class TrackAssigner
   void buildLayerPanelList(TAModel& ta_model);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
+  void makeRoutingState(TAPanel& ta_panel);
   void checkTAPanel(TAPanel& ta_panel);
   void saveTAPanel(TAPanel& ta_panel);
 #endif
@@ -80,34 +82,34 @@ class TrackAssigner
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
   void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
-  void sortTAPanel(TAPanel& ta_panel);
+  void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool sortByMultiLevel(TATask& task1, TATask& task2);
   SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
-  void resetTAPanel(TAPanel& ta_panel);
-  void assignTAPanel(TAPanel& ta_panel);
-  void routeTATask(TAPanel& ta_panel, TATask& ta_task);
+  void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
-  void routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
-  void routeSinglePath(TAPanel& ta_panel);
+  void routeByStrategy(TAModel& ta_model, TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
+  void routeSinglePath(TAModel& ta_model, TAPanel& ta_panel);
   void initPathHead(TAPanel& ta_panel);
   bool searchEnded(TAPanel& ta_panel);
-  void expandSearching(TAPanel& ta_panel);
-  bool passChecking(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(TAPanel& ta_panel);
-  bool replaceParentNode(TAPanel& ta_panel, TANode* parent_node, TANode* child_node);
+  void expandSearching(TAModel& ta_model, TAPanel& ta_panel);
+  bool passChecking(TAModel& ta_model, TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
-  void updateTaskResult(TAPanel& ta_panel, TATask& ta_task);
+  void updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getJointCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
+  double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
   double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
@@ -116,12 +118,11 @@ class TrackAssigner
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  void processTAPanel(TAPanel& ta_panel);
+  void processTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void buildRoutingResult(TATask& ta_task);
-  void countTAPanel(TAPanel& ta_panel);
-  void reportTAPanel(TAPanel& ta_panel);
-  void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  bool stopTAPanel(TAPanel& ta_panel);
+  void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void reportTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  bool stopTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
   void reportTAModel(TAModel& ta_model);
   bool stopTAModel(TAModel& ta_model);
@@ -131,8 +132,8 @@ class TrackAssigner
   void update(TAModel& ta_model);
 #endif
 
-#if 0  // plot ta_panel
-void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx);
+#if 1  // plot ta_panel
+  void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 };
 

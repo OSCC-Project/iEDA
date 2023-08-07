@@ -82,7 +82,7 @@ class GRModel
   std::vector<GridMap<GRNode>> _layer_node_map;
   std::vector<GRNet> _gr_net_list;
   GRModelStat _gr_model_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 #if 1  // astar
   // config
   double _wire_unit = 1;

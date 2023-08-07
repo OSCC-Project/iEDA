@@ -16,40 +16,45 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ConnectType.hpp"
-#include "DRBox.hpp"
-#include "DRPin.hpp"
-#include "GridMap.hpp"
-#include "Guide.hpp"
-#include "MTree.hpp"
-#include "Net.hpp"
-#include "PHYNode.hpp"
-#include "Pin.hpp"
-#include "TNode.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-class DRNet
+class PAGCellId
 {
  public:
-  DRNet() = default;
-  ~DRNet() = default;
+  PAGCellId() = default;
+  PAGCellId(const irt_int x, const irt_int y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~PAGCellId() = default;
+  bool operator==(const PAGCellId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const PAGCellId& other) { return !((*this) == other); }
   // getter
-  Net* get_origin_net() { return _origin_net; }
-  irt_int get_net_idx() const { return _net_idx; }
-  std::vector<DRPin>& get_dr_pin_list() { return _dr_pin_list; }
-  MTree<RTNode>& get_dr_result_tree() { return _dr_result_tree; }
+  irt_int get_x() const { return _x; }
+  irt_int get_y() const { return _y; }
   // setter
-  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_dr_pin_list(const std::vector<DRPin>& dr_pin_list) { _dr_pin_list = dr_pin_list; }
-  void set_dr_result_tree(const MTree<RTNode>& dr_result_tree) { _dr_result_tree = dr_result_tree; }
+  void set_x(const irt_int x) { _x = x; }
+  void set_y(const irt_int y) { _y = y; }
+  // function
 
  private:
-  Net* _origin_net = nullptr;
-  irt_int _net_idx = -1;
-  std::vector<DRPin> _dr_pin_list;
-  MTree<RTNode> _dr_result_tree;
+  irt_int _x = -1;
+  irt_int _y = -1;
+};
+
+struct CmpPAGCellId
+{
+  bool operator()(const PAGCellId& a, const PAGCellId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

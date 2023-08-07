@@ -208,13 +208,11 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPGraphType, bool> routing_data_type_visible_map
-      = {{GPGraphType::kNone, false},           {GPGraphType::kOpen, false},
-         {GPGraphType::kClose, false},          {GPGraphType::kInfo, false},
-         {GPGraphType::kNeighbor, false},       {GPGraphType::kKey, true},
-         {GPGraphType::kScaleAxis, false},      {GPGraphType::kPath, true},
-         {GPGraphType::kBlockage, true},        {GPGraphType::kOtherPanelResult, true},
-         {GPGraphType::kSelfPanelResult, true}, {GPGraphType::kPanelResult, true},
-         {GPGraphType::kOtherBoxResult, true},  {GPGraphType::kSelfBoxResult, true}};
+      = {{GPGraphType::kNone, false},      {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},
+         {GPGraphType::kInfo, false},      {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},
+         {GPGraphType::kScaleAxis, false}, {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true},
+         {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},
+         {GPGraphType::kOtherBox, true},   {GPGraphType::kSelfBox, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
@@ -407,7 +405,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       guide_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kGuide));
       guide_list_struct.push(guide_boundary);
     } else {
-      RTUtil::sortASC(first_layer_idx, second_layer_idx);
+      RTUtil::swapASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
         GPBoundary guide_boundary;
         guide_boundary.set_rect(real_rect);
@@ -435,7 +433,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
         wire_boundary.set_rect(wire_rect);
         routing_segment_list_struct.push(wire_boundary);
       } else {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           GPBoundary via_boundary;
           via_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, routing_layer_list[layer_idx].get_min_width() / 2));

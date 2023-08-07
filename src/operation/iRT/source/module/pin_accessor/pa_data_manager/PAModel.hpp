@@ -44,7 +44,7 @@ class PAModel
   GridMap<PAGCell> _pa_gcell_map;
   std::vector<PANet> _pa_net_list;
   PAModelStat _pa_mode_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt

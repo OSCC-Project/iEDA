@@ -26,7 +26,7 @@
 
 ### 通过tcl启动
 
-参考iPL_script/run_iPL.tcl： `<ieda_path>/scripts/sky130/script/iPL_script/run_iPL.tcl`
+参考iPL_script/run_iPL.tcl： `<ieda_path>/scripts/design/sky130_gcd/script/iPL_script/run_iPL.tcl`
 
 iPL支持使用的tcl命令
 
@@ -47,7 +47,7 @@ placer_run_dp // 进行标准单元详细布局
 
 ### Config配置文件
 
-参考iEDA_config/pl_default_config.json: `<ieda_path>/scripts/sky130/iEDA_config/pl_default_config.json`
+参考iEDA_config/pl_default_config.json: `<ieda_path>/scripts/design/sky130_gcd/iEDA_config/pl_default_config.json`
 
 | JSON参数                                      | 功能说明                                                                                                                    | 参数范围                     | 默认值        |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------- |
@@ -96,7 +96,7 @@ placer_run_dp // 进行标准单元详细布局
 
 ### 运行的Log、Report
 
-默认存放在目录：`<ieda_path>/scripts/sky130/result/pl/`
+默认存放在目录：`<ieda_path>/scripts/design/sky130_gcd/result/pl/`
 
 * report/violation_record.txt ：布局违例的单元
 * report/wirelength_record.txt ：布局的HPWL线长、STWL线长以及长线线长统计

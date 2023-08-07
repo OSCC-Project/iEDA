@@ -37,10 +37,7 @@ class TAPanel : public LayerRect
   ~TAPanel() = default;
   // getter
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& get_source_panel_region_query_map()
-  {
-    return _source_panel_region_query_map;
-  }
+  std::map<TASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   ScaleAxis& get_panel_scale_axis() { return _panel_scale_axis; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
@@ -48,10 +45,9 @@ class TAPanel : public LayerRect
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_source_panel_region_query_map(
-      const std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>>& source_panel_region_query_map)
+  void set_source_region_query_map(const std::map<TASourceType, RegionQuery*>& source_region_query_map)
   {
-    _source_panel_region_query_map = source_panel_region_query_map;
+    _source_region_query_map = source_region_query_map;
   }
   void set_panel_scale_axis(const ScaleAxis& panel_scale_axis) { _panel_scale_axis = panel_scale_axis; }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
@@ -59,9 +55,13 @@ class TAPanel : public LayerRect
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-  RegionQuery* getRegionQuery(TASourceType ta_source_type, TAPanelId ta_panel_id)
+  bool skipAssigning() { return _ta_task_list.empty(); }
+  RegionQuery* getRegionQuery(TASourceType ta_source_type)
   {
-    RegionQuery*& region_query = _source_panel_region_query_map[ta_source_type][ta_panel_id];
+    if (ta_source_type == TASourceType::kUnknownPanel) {
+      LOG_INST.error(Loc::current(), "The ta_source_type is uncategorized!");
+    }
+    RegionQuery*& region_query = _source_region_query_map[ta_source_type];
     if (region_query == nullptr) {
       region_query = DC_INST.initRegionQuery();
     }
@@ -76,6 +76,7 @@ class TAPanel : public LayerRect
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single task
+  const irt_int get_curr_net_idx() const { return _ta_task_ref->get_origin_net_idx(); }
   const irt_int get_curr_task_idx() const { return _ta_task_ref->get_task_idx(); }
   const PlanarRect& get_curr_bounding_box() const { return _ta_task_ref->get_bounding_box(); }
   const std::map<LayerCoord, double, CmpLayerCoordByXASC>& get_curr_coord_cost_map() const { return _ta_task_ref->get_coord_cost_map(); }
@@ -121,12 +122,12 @@ class TAPanel : public LayerRect
 
  private:
   TAPanelId _ta_panel_id;
-  std::map<TASourceType, std::map<TAPanelId, RegionQuery*, CmpTAPanelId>> _source_panel_region_query_map;
+  std::map<TASourceType, RegionQuery*> _source_region_query_map;
   ScaleAxis _panel_scale_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
   TAPanelStat _ta_panel_stat;
-  irt_int _curr_iter;
+  irt_int _curr_iter = -1;
 #if 1  // astar
   // config
   double _wire_unit = 1;
