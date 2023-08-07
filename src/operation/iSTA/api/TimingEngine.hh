@@ -152,7 +152,7 @@ class TimingEngine {
   StaVertex *findVertex(const char *pin_name) {
     return _ista->findVertex(pin_name);
   }
-  std::set<std::string> findStartOrEnd(const char *pin_name, bool is_find_end);
+  std::set<std::string> findStartOrEnd(const char *pin_name);
   std::string findClockPinName(const char *inst_name);
 
   void setIdealClockNetworkLatency(const char *clock_name, double latency) {
