@@ -31,6 +31,23 @@ include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 message(STATUS "Eigen3 ${EIGEN3_INCLUDE_DIR}")
 link_directories(${EIGEN3_LIBRARY})
 
+option(UPDATE_RELEASE_VERSION "update git version for release" OFF)
+
+if (UPDATE_RELEASE_VERSION)
+    find_package(Git QUIET)
+    if(GIT_FOUND)
+        execute_process(COMMAND ${GIT_EXECUTABLE} describe --abbrev=40 --always OUTPUT_VARIABLE GIT_VERSION)
+        string(STRIP "${GIT_VERSION}" GIT_VERSION)
+        message(STATUS "Git version: " ${GIT_VERSION})
+    endif()
+
+    configure_file(
+        "${HOME_OPERATION}/iSTA/source/module/include/Version.hh.in"
+        "${HOME_OPERATION}/iSTA/source/module/include/Version.hh"
+    )
+endif()
+
+
 add_subdirectory(api)
 add_subdirectory(source/module/netlist)
 add_subdirectory(source/module/sdc)
