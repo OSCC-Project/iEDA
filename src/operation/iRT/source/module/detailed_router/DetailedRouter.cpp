@@ -215,14 +215,17 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        DRBox& dr_box = dr_box_map[x][y];
+        DRBox& curr_box = dr_box_map[x][y];
+        DRSourceType curr_source_type = DRSourceType::kNone;
         if (dr_source_type == DRSourceType::kUnknownBox) {
-          dr_source_type = (dr_box_id == dr_box.get_dr_box_id() ? DRSourceType::kSelfBox : DRSourceType::kOtherBox);
+          curr_source_type = (dr_box_id == curr_box.get_dr_box_id() ? DRSourceType::kSelfBox : DRSourceType::kOtherBox);
+        } else {
+          curr_source_type = dr_source_type;
         }
         if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(dr_box.getRegionQuery(dr_source_type), drc_rect);
+          DC_INST.addEnvRectList(curr_box.getRegionQuery(curr_source_type), drc_rect);
         } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(dr_box.getRegionQuery(dr_source_type), drc_rect);
+          DC_INST.delEnvRectList(curr_box.getRegionQuery(curr_source_type), drc_rect);
         }
       }
     }
@@ -373,13 +376,18 @@ void DetailedRouter::shrinkTAResults(DRNet& dr_net)
       irt_int lb_x = RTUtil::getClosedScaleList(lb_guide.get_lb_x(), rt_guide.get_lb_x(), x_track_grid_list).back();
       irt_int rt_x = RTUtil::getClosedScaleList(lb_guide.get_rt_x(), rt_guide.get_rt_x(), x_track_grid_list).front();
       Segment<LayerCoord> target_segment;
+      bool found = false;
       for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
         target_segment.set_first(routing_segment.get_first()->value());
         target_segment.set_second(routing_segment.get_second()->value());
         SortSegmentInnerXASC()(target_segment);
-        if (target_segment.get_first().get_x() <= lb_x && rt_x <= target_segment.get_first().get_x()) {
+        if (target_segment.get_first().get_x() <= lb_x && rt_x <= target_segment.get_second().get_x()) {
+          found = true;
           break;
         }
+      }
+      if (!found) {
+        LOG_INST.warning(Loc::current(), "No valid ta result was found!");
       }
       irt_int y = target_segment.get_first().get_y();
       TNode<LayerCoord>* first_node = new TNode<LayerCoord>(LayerCoord(lb_x, y, layer_idx));
@@ -395,13 +403,18 @@ void DetailedRouter::shrinkTAResults(DRNet& dr_net)
       irt_int lb_y = RTUtil::getClosedScaleList(lb_guide.get_lb_y(), rt_guide.get_lb_y(), y_track_grid_list).back();
       irt_int rt_y = RTUtil::getClosedScaleList(lb_guide.get_rt_y(), rt_guide.get_rt_y(), y_track_grid_list).front();
       Segment<LayerCoord> target_segment;
+      bool found = false;
       for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
         target_segment.set_first(routing_segment.get_first()->value());
         target_segment.set_second(routing_segment.get_second()->value());
         SortSegmentInnerYASC()(target_segment);
-        if (target_segment.get_first().get_y() <= lb_y && rt_y <= target_segment.get_first().get_y()) {
+        if (target_segment.get_first().get_y() <= lb_y && rt_y <= target_segment.get_second().get_y()) {
+          found = true;
           break;
         }
+      }
+      if (!found) {
+        LOG_INST.warning(Loc::current(), "No valid ta result was found!");
       }
       irt_int x = target_segment.get_first().get_x();
       TNode<LayerCoord>* first_node = new TNode<LayerCoord>(LayerCoord(x, lb_y, layer_idx));
@@ -1650,24 +1663,22 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
        {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     RegionQuery* region_query = dr_box.getRegionQuery(dr_source_type);
     std::map<std::string, irt_int> drc_number_map;
-    switch (dr_source_type) {
-      case DRSourceType::kBlockAndPin:
-      case DRSourceType::kKnownPanel:
-      case DRSourceType::kEnclosure:
-      case DRSourceType::kOtherBox:
-        drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-        break;
-      case DRSourceType::kSelfBox:
-        drc_number_map = DC_INST.getViolation(region_query);
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "The type is error!");
-        break;
+    if (dr_source_type == DRSourceType::kSelfBox) {
+      drc_number_map = DC_INST.getViolation(region_query);
+    } else {
+      drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
     }
     for (auto& [drc, number] : drc_number_map) {
       source_drc_number_map[dr_source_type][drc] += number;
     }
   }
+
+  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kBlockAndPin)) {
+  //   if (source_drc_number_map[DRSourceType::kBlockAndPin]["RT Spacing"] > 0) {
+  //     plotDRBox(dr_box);
+  //     int a = 0;
+  //   }
+  // }
 
   std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {
