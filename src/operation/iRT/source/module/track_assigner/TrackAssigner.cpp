@@ -217,26 +217,32 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     if (routing_layer_list[routing_layer_idx].isPreferH()) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        TAPanel& ta_panel = layer_panel_list[routing_layer_idx][y];
+        TAPanel& curr_panel = layer_panel_list[routing_layer_idx][y];
+        TASourceType curr_source_type = TASourceType::kNone;
         if (ta_source_type == TASourceType::kUnknownPanel) {
-          ta_source_type = (ta_panel_id == ta_panel.get_ta_panel_id() ? TASourceType::kSelfPanel : TASourceType::kOtherPanel);
+          curr_source_type = (ta_panel_id == curr_panel.get_ta_panel_id() ? TASourceType::kSelfPanel : TASourceType::kOtherPanel);
+        } else {
+          curr_source_type = ta_source_type;
         }
         if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(ta_panel.getRegionQuery(ta_source_type), drc_rect);
+          DC_INST.addEnvRectList(curr_panel.getRegionQuery(curr_source_type), drc_rect);
         } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(ta_panel.getRegionQuery(ta_source_type), drc_rect);
+          DC_INST.delEnvRectList(curr_panel.getRegionQuery(curr_source_type), drc_rect);
         }
       }
     } else {
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        TAPanel& ta_panel = layer_panel_list[routing_layer_idx][x];
+        TAPanel& curr_panel = layer_panel_list[routing_layer_idx][x];
+        TASourceType curr_source_type = TASourceType::kNone;
         if (ta_source_type == TASourceType::kUnknownPanel) {
-          ta_source_type = (ta_panel_id == ta_panel.get_ta_panel_id() ? TASourceType::kSelfPanel : TASourceType::kOtherPanel);
+          curr_source_type = (ta_panel_id == curr_panel.get_ta_panel_id() ? TASourceType::kSelfPanel : TASourceType::kOtherPanel);
+        } else {
+          curr_source_type = ta_source_type;
         }
         if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(ta_panel.getRegionQuery(ta_source_type), drc_rect);
+          DC_INST.addEnvRectList(curr_panel.getRegionQuery(curr_source_type), drc_rect);
         } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(ta_panel.getRegionQuery(ta_source_type), drc_rect);
+          DC_INST.delEnvRectList(curr_panel.getRegionQuery(curr_source_type), drc_rect);
         }
       }
     }
@@ -1480,23 +1486,22 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
        {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
     std::map<std::string, irt_int> drc_number_map;
-    switch (ta_source_type) {
-      case TASourceType::kBlockAndPin:
-      case TASourceType::kEnclosure:
-      case TASourceType::kOtherPanel:
-        drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-        break;
-      case TASourceType::kSelfPanel:
-        drc_number_map = DC_INST.getViolation(region_query);
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "The type is error!");
-        break;
+    if (ta_source_type == TASourceType::kSelfPanel) {
+      drc_number_map = DC_INST.getViolation(region_query);
+    } else {
+      drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
     }
     for (auto& [drc, number] : drc_number_map) {
       source_drc_number_map[ta_source_type][drc] += number;
     }
   }
+
+  // if (RTUtil::exist(source_drc_number_map, TASourceType::kBlockAndPin)) {
+  //   if (source_drc_number_map[TASourceType::kBlockAndPin]["RT Spacing"] > 0) {
+  //     plotTAPanel(ta_panel);
+  //     int a = 0;
+  //   }
+  // }
 
   std::map<std::string, irt_int>& rule_number_map = ta_panel_stat.get_drc_number_map();
   for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
