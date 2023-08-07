@@ -224,9 +224,13 @@ LibertyTable* TimingEngine::getCellLibertyTable(
  * @param is_find_end
  * @return std::set<std::string>
  */
-std::set<std::string> TimingEngine::findStartOrEnd(const char* pin_name,
-                                                   bool is_find_end) {
+std::set<std::string> TimingEngine::findStartOrEnd(const char* pin_name) {
   auto* the_vertex = _ista->findVertex(pin_name);
+  LOG_FATAL_IF(!the_vertex) << pin_name << " vertex is not found.";
+  if (!the_vertex->is_start() && !the_vertex->is_end()) {
+    return {};
+  }
+  bool is_find_end = the_vertex->is_start();
   std::set<std::string> pin_names =
       _ista->findStartOrEnd(the_vertex, is_find_end);
   return pin_names;
