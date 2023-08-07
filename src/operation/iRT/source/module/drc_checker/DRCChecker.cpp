@@ -251,6 +251,23 @@ void DRCChecker::delEnvRectList(RegionQuery* region_query, const std::vector<DRC
   }
 }
 
+bool DRCChecker::hasViolation(RegionQuery* region_query)
+{
+  bool has_violation = false;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    std::vector<ids::DRCRect> ids_rect_list;
+    has_violation = RTAPI_INST.hasViolation(region_query->get_idrc_region_query(), ids_rect_list);
+  } else {
+    for (auto [drc, num] : getViolationByRTDRC(region_query)) {
+      if (num > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return has_violation;
+}
+
 bool DRCChecker::hasViolation(RegionQuery* region_query, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
@@ -482,9 +499,9 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_q
       }
     }
     // check drc by other
-    for (auto [violation_name, num] : checkByOtherByRTDRC(region_query, rq_shape_list)) {
-      violation_name_num_map[violation_name] += num;
-    }
+    // for (auto [violation_name, num] : checkByOtherByRTDRC(region_query, rq_shape_list)) {
+    //   violation_name_num_map[violation_name] += num;
+    // }
     // check drc by self
     for (auto [violation_name, num] : checkBySelfByRTDRC(region_query, rq_shape_list)) {
       violation_name_num_map[violation_name] += num;
@@ -610,7 +627,7 @@ std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(RegionQuery* region_qu
         if (checkMinSpacingByRTDRC(net_shape1, net_shape2, net_shape_list)) {
           continue;
         }
-        violation_name_num_map["RT: Self drc"]++;
+        violation_name_num_map["RT Self net"]++;
       }
     }
   }

@@ -45,6 +45,7 @@ class DRCChecker
   void addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
   void delEnvRectList(RegionQuery* region_query, const DRCRect& env_rect);
   void delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
+  bool hasViolation(RegionQuery* region_query);
   bool hasViolation(RegionQuery* region_query, const DRCRect& drc_rect);
   bool hasViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, int> getViolation(RegionQuery* region_query);
