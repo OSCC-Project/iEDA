@@ -1468,8 +1468,8 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     }
   }
 
-  // if (RTUtil::exist(source_drc_number_map, TASourceType::kBlockAndPin)) {
-  //   if (source_drc_number_map[TASourceType::kBlockAndPin]["RT Spacing"] > 0) {
+  // if (RTUtil::exist(source_drc_number_map, TASourceType::kSelfPanel)) {
+  //   if (source_drc_number_map[TASourceType::kSelfPanel]["RT Spacing"] > 0) {
   //     plotTAPanel(ta_panel);
   //     int a = 0;
   //   }
