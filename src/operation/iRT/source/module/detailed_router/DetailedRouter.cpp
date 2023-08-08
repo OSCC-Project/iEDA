@@ -1076,8 +1076,9 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     std::vector<DRRouteStrategy> strategy_list
-        = {DRRouteStrategy::kFullyConsider,     DRRouteStrategy::kIgnoringSelfBox,    DRRouteStrategy::kIgnoringOtherBox,
-           DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel, DRRouteStrategy::kIgnoringBlockAndPin};
+        = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
+           DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
+           DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_box, dr_route_strategy);
     }
@@ -1277,12 +1278,12 @@ bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end
   if (pass_checking) {
     pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
   }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(drc_rect_list);
-  // }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(drc_rect_list);
+  }
   return pass_checking;
 }
 
@@ -1659,13 +1660,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   for (DRSourceType dr_source_type :
        {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     RegionQuery* region_query = dr_box.getRegionQuery(dr_source_type);
-    std::map<std::string, irt_int> drc_number_map;
-    if (dr_source_type == DRSourceType::kSelfBox) {
-      drc_number_map = DC_INST.getViolation(region_query);
-    } else {
-      drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-    }
-    for (auto& [drc, number] : drc_number_map) {
+    for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
       source_drc_number_map[dr_source_type][drc] += number;
     }
   }

@@ -882,8 +882,8 @@ void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta
   initSingleTask(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     std::vector<TARouteStrategy> strategy_list
-        = {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringSelfPanel, TARouteStrategy::kIgnoringOtherPanel,
-           TARouteStrategy::kIgnoringEnclosure, TARouteStrategy::kIgnoringBlockAndPin};
+        = {TARouteStrategy::kFullyConsider,      TARouteStrategy::kIgnoringSelfTask,  TARouteStrategy::kIgnoringSelfPanel,
+           TARouteStrategy::kIgnoringOtherPanel, TARouteStrategy::kIgnoringEnclosure, TARouteStrategy::kIgnoringBlockAndPin};
     for (TARouteStrategy ta_route_strategy : strategy_list) {
       routeByStrategy(ta_panel, ta_route_strategy);
     }
@@ -1086,12 +1086,12 @@ bool TrackAssigner::passChecking(TAPanel& ta_panel, TANode* start_node, TANode* 
   if (pass_checking) {
     pass_checking = !DC_INST.hasViolation(ta_panel.getRegionQuery(TASourceType::kSelfPanel), drc_rect_list);
   }
-  // if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringSelfTask) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(drc_rect_list);
-  // }
+  if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringSelfTask) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(drc_rect_list);
+  }
   return pass_checking;
 }
 
@@ -1463,13 +1463,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   for (TASourceType ta_source_type :
        {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
-    std::map<std::string, irt_int> drc_number_map;
-    if (ta_source_type == TASourceType::kSelfPanel) {
-      drc_number_map = DC_INST.getViolation(region_query);
-    } else {
-      drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-    }
-    for (auto& [drc, number] : drc_number_map) {
+    for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
       source_drc_number_map[ta_source_type][drc] += number;
     }
   }
