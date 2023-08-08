@@ -885,7 +885,7 @@ void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta
         = {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringSelfPanel, TARouteStrategy::kIgnoringOtherPanel,
            TARouteStrategy::kIgnoringEnclosure, TARouteStrategy::kIgnoringBlockAndPin};
     for (TARouteStrategy ta_route_strategy : strategy_list) {
-      routeByStrategy(ta_model, ta_panel, ta_route_strategy);
+      routeByStrategy(ta_panel, ta_route_strategy);
     }
     updatePathResult(ta_panel);
     updateDirectionSet(ta_panel);
@@ -953,14 +953,14 @@ bool TrackAssigner::isConnectedAllEnd(TAPanel& ta_panel)
   return ta_panel.get_end_node_comb_list().empty();
 }
 
-void TrackAssigner::routeByStrategy(TAModel& ta_model, TAPanel& ta_panel, TARouteStrategy ta_route_strategy)
+void TrackAssigner::routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy)
 {
   if (ta_route_strategy == TARouteStrategy::kFullyConsider) {
-    routeSinglePath(ta_model, ta_panel);
+    routeSinglePath(ta_panel);
   } else if (isRoutingFailed(ta_panel)) {
     resetSinglePath(ta_panel);
     ta_panel.set_ta_route_strategy(ta_route_strategy);
-    routeSinglePath(ta_model, ta_panel);
+    routeSinglePath(ta_panel);
     ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
     if (!isRoutingFailed(ta_panel)) {
       if (omp_get_num_threads() == 1) {
@@ -974,11 +974,11 @@ void TrackAssigner::routeByStrategy(TAModel& ta_model, TAPanel& ta_panel, TARout
   }
 }
 
-void TrackAssigner::routeSinglePath(TAModel& ta_model, TAPanel& ta_panel)
+void TrackAssigner::routeSinglePath(TAPanel& ta_panel)
 {
   initPathHead(ta_panel);
   while (!searchEnded(ta_panel)) {
-    expandSearching(ta_model, ta_panel);
+    expandSearching(ta_panel);
     resetPathHead(ta_panel);
   }
 }
@@ -1021,7 +1021,7 @@ bool TrackAssigner::searchEnded(TAPanel& ta_panel)
   return false;
 }
 
-void TrackAssigner::expandSearching(TAModel& ta_model, TAPanel& ta_panel)
+void TrackAssigner::expandSearching(TAPanel& ta_panel)
 {
   TANode* path_head_node = ta_panel.get_path_head_node();
 
@@ -1038,7 +1038,7 @@ void TrackAssigner::expandSearching(TAModel& ta_model, TAPanel& ta_panel)
     if (neighbor_node->isClose()) {
       continue;
     }
-    if (!passChecking(ta_model, ta_panel, path_head_node, neighbor_node)) {
+    if (!passChecking(ta_panel, path_head_node, neighbor_node)) {
       continue;
     }
     double know_cost = getKnowCost(ta_panel, path_head_node, neighbor_node);
@@ -1054,27 +1054,37 @@ void TrackAssigner::expandSearching(TAModel& ta_model, TAPanel& ta_panel)
   }
 }
 
-bool TrackAssigner::passChecking(TAModel& ta_model, TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+bool TrackAssigner::passChecking(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentListByNode(start_node);
   routing_segment_list.emplace_back(*start_node, *end_node);
 
   std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(ta_panel.get_curr_net_idx(), routing_segment_list);
 
-  std::vector<std::pair<TARouteStrategy, TASourceType>> strategy_source_pair_list
-      = {{TARouteStrategy::kIgnoringBlockAndPin, TASourceType::kBlockAndPin},
-         {TARouteStrategy::kIgnoringEnclosure, TASourceType::kEnclosure},
-         {TARouteStrategy::kIgnoringOtherPanel, TASourceType::kOtherPanel},
-         {TARouteStrategy::kIgnoringSelfPanel, TASourceType::kSelfPanel}};
-
   bool pass_checking = true;
-  for (auto& [ta_route_strategy, ta_source_type] : strategy_source_pair_list) {
-    if (ta_panel.get_ta_route_strategy() == ta_route_strategy) {
-      return pass_checking;
-    }
-    if (pass_checking) {
-      pass_checking = !hasViolation(ta_model, ta_source_type, ta_panel.get_ta_panel_id(), drc_rect_list);
-    }
+  if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringBlockAndPin) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(ta_panel.getRegionQuery(TASourceType::kBlockAndPin), drc_rect_list);
+  }
+  if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringEnclosure) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(ta_panel.getRegionQuery(TASourceType::kEnclosure), drc_rect_list);
+  }
+  if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringOtherPanel) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(ta_panel.getRegionQuery(TASourceType::kOtherPanel), drc_rect_list);
+  }
+  if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringSelfPanel) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(ta_panel.getRegionQuery(TASourceType::kSelfPanel), drc_rect_list);
   }
   // if (ta_panel.get_ta_route_strategy() == TARouteStrategy::kIgnoringSelfTask) {
   //   return pass_checking;
@@ -1109,67 +1119,6 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentListByNode(TANo
   routing_segment_list.emplace_back(*curr_node, *pre_node);
 
   return routing_segment_list;
-}
-
-bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, TAPanelId& ta_panel_id,
-                                 std::vector<DRCRect>& drc_rect_list)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
-
-  std::map<TAPanelId, std::vector<DRCRect>, CmpTAPanelId> panel_rect_map;
-  for (DRCRect& drc_rect : drc_rect_list) {
-    if (drc_rect.get_is_routing() == false) {
-      continue;
-    }
-    irt_int routing_layer_idx = drc_rect.get_layer_rect().get_layer_idx();
-    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      if (routing_layer_list[routing_layer_idx].isPreferH()) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          panel_rect_map[TAPanelId(routing_layer_idx, y)].push_back(drc_rect);
-        }
-      } else {
-        for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-          panel_rect_map[TAPanelId(routing_layer_idx, x)].push_back(drc_rect);
-        }
-      }
-    }
-  }
-  bool has_violation = false;
-  for (const auto& [curr_panel_id, drc_rect_list] : panel_rect_map) {
-    TAPanel& curr_panel = layer_panel_list[curr_panel_id.get_layer_idx()][curr_panel_id.get_panel_idx()];
-    if (ta_source_type == TASourceType::kBlockAndPin && ta_source_type == TASourceType::kEnclosure) {
-      if (DC_INST.hasViolation(curr_panel.getRegionQuery(ta_source_type), drc_rect_list)) {
-        has_violation = true;
-        goto here;
-      }
-    } else if (ta_source_type == TASourceType::kOtherPanel) {
-      if (DC_INST.hasViolation(curr_panel.getRegionQuery(TASourceType::kOtherPanel), drc_rect_list)) {
-        has_violation = true;
-        goto here;
-      }
-      if (curr_panel_id != ta_panel_id) {
-        if (DC_INST.hasViolation(curr_panel.getRegionQuery(TASourceType::kSelfPanel), drc_rect_list)) {
-          has_violation = true;
-          goto here;
-        }
-      }
-    } else if (ta_source_type == TASourceType::kSelfPanel) {
-      if (curr_panel_id == ta_panel_id) {
-        if (DC_INST.hasViolation(curr_panel.getRegionQuery(TASourceType::kSelfPanel), drc_rect_list)) {
-          has_violation = true;
-          goto here;
-        }
-      }
-    }
-  }
-here:
-  return has_violation;
 }
 
 void TrackAssigner::resetPathHead(TAPanel& ta_panel)
