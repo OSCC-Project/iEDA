@@ -647,6 +647,10 @@ void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 here:
   irt_int top_layer_idx = INT_MIN;
   irt_int bottom_layer_idx = INT_MAX;
+#if 1
+  top_layer_idx = routing_layer_list.back().get_layer_idx();
+  bottom_layer_idx = routing_layer_list.front().get_layer_idx();
+#else
   if (is_local_task) {
     top_layer_idx = routing_layer_list.back().get_layer_idx();
     bottom_layer_idx = routing_layer_list.front().get_layer_idx();
@@ -658,6 +662,7 @@ here:
       }
     }
   }
+#endif
   SpaceRegion& bounding_box = dr_task.get_bounding_box();
   bounding_box.set_base_region(dr_box.get_base_region());
   bounding_box.set_top_layer_idx(top_layer_idx);
@@ -1071,8 +1076,8 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     std::vector<DRRouteStrategy> strategy_list
-        = {DRRouteStrategy::kFullyConsider,     DRRouteStrategy::kIgnoringSelfBox,     DRRouteStrategy::kIgnoringOtherBox,
-           DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringPanelResult, DRRouteStrategy::kIgnoringBlockAndPin};
+        = {DRRouteStrategy::kFullyConsider,     DRRouteStrategy::kIgnoringSelfBox,    DRRouteStrategy::kIgnoringOtherBox,
+           DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel, DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_model, dr_box, dr_route_strategy);
     }
@@ -1239,9 +1244,11 @@ bool DetailedRouter::passChecking(DRModel& dr_model, DRBox& dr_box, DRNode* star
   std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentListByNode(start_node);
   routing_segment_list.emplace_back(*start_node, *end_node);
 
+  std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(dr_box.get_curr_net_idx(), routing_segment_list);
+
   std::vector<std::pair<DRRouteStrategy, DRSourceType>> strategy_source_pair_list
       = {{DRRouteStrategy::kIgnoringBlockAndPin, DRSourceType::kBlockAndPin},
-         {DRRouteStrategy::kIgnoringPanelResult, DRSourceType::kKnownPanel},
+         {DRRouteStrategy::kIgnoringKnownPanel, DRSourceType::kKnownPanel},
          {DRRouteStrategy::kIgnoringEnclosure, DRSourceType::kEnclosure},
          {DRRouteStrategy::kIgnoringOtherBox, DRSourceType::kOtherBox},
          {DRRouteStrategy::kIgnoringSelfBox, DRSourceType::kSelfBox}};
@@ -1252,9 +1259,15 @@ bool DetailedRouter::passChecking(DRModel& dr_model, DRBox& dr_box, DRNode* star
       return pass_checking;
     }
     if (pass_checking) {
-      pass_checking = !hasViolation(dr_model, dr_source_type, dr_box.get_curr_net_idx(), routing_segment_list);
+      pass_checking = !hasViolation(dr_model, dr_source_type, dr_box.get_dr_box_id(), drc_rect_list);
     }
   }
+  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
+  //   return pass_checking;
+  // }
+  // if (pass_checking) {
+  //   pass_checking = !DC_INST.hasViolation(drc_rect_list);
+  // }
   return pass_checking;
 }
 
@@ -1284,8 +1297,7 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRN
   return routing_segment_list;
 }
 
-bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, irt_int net_idx,
-                                  std::vector<Segment<LayerCoord>>& segment_list)
+bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId& dr_box_id, std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -1293,7 +1305,7 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
   std::map<DRBoxId, std::vector<DRCRect>, CmpDRBoxId> box_rect_map;
-  for (DRCRect& drc_rect : DC_INST.getDRCRectList(net_idx, segment_list)) {
+  for (DRCRect& drc_rect : drc_rect_list) {
     for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
       LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
       PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -1305,13 +1317,35 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
     }
   }
   bool has_violation = false;
-  for (const auto& [dr_box_id, drc_rect_list] : box_rect_map) {
-    DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-    if (DC_INST.hasViolation(dr_box.getRegionQuery(dr_source_type), drc_rect_list)) {
-      has_violation = true;
-      break;
+  for (const auto& [curr_box_id, drc_rect_list] : box_rect_map) {
+    DRBox& curr_box = dr_box_map[curr_box_id.get_x()][curr_box_id.get_y()];
+    if (dr_source_type == DRSourceType::kBlockAndPin && dr_source_type == DRSourceType::kKnownPanel
+        && dr_source_type == DRSourceType::kEnclosure) {
+      if (DC_INST.hasViolation(curr_box.getRegionQuery(dr_source_type), drc_rect_list)) {
+        has_violation = true;
+        goto here;
+      }
+    } else if (dr_source_type == DRSourceType::kOtherBox) {
+      if (DC_INST.hasViolation(curr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list)) {
+        has_violation = true;
+        goto here;
+      }
+      if (curr_box_id != dr_box_id) {
+        if (DC_INST.hasViolation(curr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list)) {
+          has_violation = true;
+          goto here;
+        }
+      }
+    } else if (dr_source_type == DRSourceType::kSelfBox) {
+      if (curr_box_id == dr_box_id) {
+        if (DC_INST.hasViolation(curr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list)) {
+          has_violation = true;
+          goto here;
+        }
+      }
     }
   }
+here:
   return has_violation;
 }
 

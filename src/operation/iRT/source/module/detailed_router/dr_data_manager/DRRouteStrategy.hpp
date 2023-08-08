@@ -26,10 +26,11 @@ enum class DRRouteStrategy
 {
   kNone,
   kFullyConsider,
+  kIgnoringSelfTask,
   kIgnoringSelfBox,
   kIgnoringOtherBox,
   kIgnoringEnclosure,
-  kIgnoringPanelResult,
+  kIgnoringKnownPanel,
   kIgnoringBlockAndPin
 };
 
@@ -45,6 +46,9 @@ struct GetDRRouteStrategyName
       case DRRouteStrategy::kFullyConsider:
         dr_route_strategy_name = "fully_consider";
         break;
+      case DRRouteStrategy::kIgnoringSelfTask:
+        dr_route_strategy_name = "ignoring_self_task";
+        break;
       case DRRouteStrategy::kIgnoringSelfBox:
         dr_route_strategy_name = "ignoring_self_box";
         break;
@@ -54,8 +58,8 @@ struct GetDRRouteStrategyName
       case DRRouteStrategy::kIgnoringEnclosure:
         dr_route_strategy_name = "ignoring_enclosure";
         break;
-      case DRRouteStrategy::kIgnoringPanelResult:
-        dr_route_strategy_name = "ignoring_panel_result";
+      case DRRouteStrategy::kIgnoringKnownPanel:
+        dr_route_strategy_name = "ignoring_known_panel";
         break;
       case DRRouteStrategy::kIgnoringBlockAndPin:
         dr_route_strategy_name = "ignoring_block_and_pin";
