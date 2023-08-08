@@ -105,7 +105,7 @@ class DetailedRouter
   void expandSearching(DRModel& dr_model, DRBox& dr_box);
   bool passChecking(DRModel& dr_model, DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
-  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, DRBoxId& dr_box_id, std::vector<DRCRect>& drc_rect_list);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);

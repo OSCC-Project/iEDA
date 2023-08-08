@@ -97,7 +97,7 @@ class TrackAssigner
   void expandSearching(TAModel& ta_model, TAPanel& ta_panel);
   bool passChecking(TAModel& ta_model, TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
-  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, TAPanelId& ta_panel_id, std::vector<DRCRect>& drc_rect_list);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
