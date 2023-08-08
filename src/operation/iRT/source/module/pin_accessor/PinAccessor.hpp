@@ -77,7 +77,6 @@ class PinAccessor
   void buildAccessPointList(PANet& pa_net);
   void selectGCellAccessPoint(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
-  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   void checkAccessPointList(PANet& pa_net);
   void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
