@@ -446,19 +446,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
 
       for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
         RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
-        std::map<std::string, irt_int> drc_number_map;
-        switch (vr_source_type) {
-          case VRSourceType::kBlockAndPin:
-            drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-            break;
-          case VRSourceType::kNetResult:
-            drc_number_map = DC_INST.getViolation(region_query);
-            break;
-          default:
-            LOG_INST.error(Loc::current(), "The type is error!");
-            break;
-        }
-        for (auto& [drc, number] : drc_number_map) {
+        for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
           source_drc_number_map[vr_source_type][drc] += number;
         }
       }
