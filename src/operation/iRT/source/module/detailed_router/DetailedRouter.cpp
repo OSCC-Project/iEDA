@@ -634,7 +634,10 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
 void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
+#if 1
+  irt_int top_layer_idx = routing_layer_list.back().get_layer_idx();
+  irt_int bottom_layer_idx = routing_layer_list.front().get_layer_idx();
+#else
   bool is_local_task = true;
   for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
     for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
@@ -647,10 +650,6 @@ void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 here:
   irt_int top_layer_idx = INT_MIN;
   irt_int bottom_layer_idx = INT_MAX;
-#if 0
-  top_layer_idx = routing_layer_list.back().get_layer_idx();
-  bottom_layer_idx = routing_layer_list.front().get_layer_idx();
-#else
   if (is_local_task) {
     top_layer_idx = routing_layer_list.back().get_layer_idx();
     bottom_layer_idx = routing_layer_list.front().get_layer_idx();
@@ -1665,8 +1664,8 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
     }
   }
 
-  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kBlockAndPin)) {
-  //   if (source_drc_number_map[DRSourceType::kBlockAndPin]["RT Spacing"] > 0) {
+  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kEnclosure)) {
+  //   if (source_drc_number_map[DRSourceType::kEnclosure]["RT Spacing"] > 0) {
   //     plotDRBox(dr_box);
   //     int a = 0;
   //   }
