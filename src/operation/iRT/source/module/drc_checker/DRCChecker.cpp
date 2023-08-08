@@ -725,28 +725,28 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   gp_gds.addStruct(base_region_struct);
 
   // scale_axis
-  GPStruct box_scale_axis_struct("scale_axis");
+  GPStruct box_track_axis_struct("scale_axis");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
       for (irt_int x = x_grid.get_start_line(); x <= x_grid.get_end_line(); x += x_grid.get_step_length()) {
         GPPath gp_path;
-        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kScaleAxis));
+        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
         gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-        box_scale_axis_struct.push(gp_path);
+        box_track_axis_struct.push(gp_path);
       }
     }
     for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
       for (irt_int y = y_grid.get_start_line(); y <= y_grid.get_end_line(); y += y_grid.get_step_length()) {
         GPPath gp_path;
-        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kScaleAxis));
+        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
         gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-        box_scale_axis_struct.push(gp_path);
+        box_track_axis_struct.push(gp_path);
       }
     }
   }
-  gp_gds.addStruct(box_scale_axis_struct);
+  gp_gds.addStruct(box_track_axis_struct);
 
   // env shape
   for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {

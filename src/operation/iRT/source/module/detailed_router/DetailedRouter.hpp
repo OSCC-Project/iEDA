@@ -70,7 +70,7 @@ class DetailedRouter
   void shrinkTAResults(DRNet& dr_net);
   void updateNetPanelResultMap(DRModel& dr_model);
   void updateNetEnclosureMap(DRModel& dr_model);
-  void buildBoxScaleAxis(DRModel& dr_model);
+  void buildBoxTrackAxis(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRModel& dr_model, DRNet& dr_net);
