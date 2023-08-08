@@ -169,10 +169,10 @@ void GDSPlotter::buildLayoutLypFile()
     std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
 
     if (gds_layer_idx == 0) {
-      lyp_layer_list.emplace_back(color, pattern, false, "die", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, true, "die", gds_layer_idx, 0);
       lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
     } else if (gds_layer_idx == (gds_layer_size - 1)) {
-      lyp_layer_list.emplace_back(color, pattern, true, "gcell", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "gcell", gds_layer_idx, 0);
       lyp_layer_list.emplace_back(color, pattern, false, "gcell_text", gds_layer_idx, 1);
     } else {
       if (RTUtil::exist(_gds_routing_layer_map, gds_layer_idx)) {
@@ -209,7 +209,7 @@ void GDSPlotter::buildGraphLypFile()
 
   std::map<GPGraphType, bool> routing_data_type_visible_map = {
       {GPGraphType::kNone, false},       {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
-      {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kScaleAxis, false}, {GPGraphType::kPath, true},
+      {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
       {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
       {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
 
@@ -223,7 +223,8 @@ void GDSPlotter::buildGraphLypFile()
 
     if (gds_layer_idx == 0) {
       lyp_layer_list.emplace_back(color, pattern, true, "base_region", gds_layer_idx, 0);
-      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
+      lyp_layer_list.emplace_back(color, pattern, false, "gcell", gds_layer_idx, 1);
+      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 2);
     } else if (RTUtil::exist(_gds_routing_layer_map, gds_layer_idx)) {
       // routing
       std::string routing_layer_name = routing_layer_list[_gds_routing_layer_map[gds_layer_idx]].get_layer_name();

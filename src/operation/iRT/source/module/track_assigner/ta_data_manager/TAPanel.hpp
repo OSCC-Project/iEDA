@@ -38,7 +38,7 @@ class TAPanel : public LayerRect
   // getter
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
   std::map<TASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
-  ScaleAxis& get_panel_scale_axis() { return _panel_scale_axis; }
+  ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
@@ -49,7 +49,7 @@ class TAPanel : public LayerRect
   {
     _source_region_query_map = source_region_query_map;
   }
-  void set_panel_scale_axis(const ScaleAxis& panel_scale_axis) { _panel_scale_axis = panel_scale_axis; }
+  void set_panel_track_axis(const ScaleAxis& panel_track_axis) { _panel_track_axis = panel_track_axis; }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
@@ -123,7 +123,7 @@ class TAPanel : public LayerRect
  private:
   TAPanelId _ta_panel_id;
   std::map<TASourceType, RegionQuery*> _source_region_query_map;
-  ScaleAxis _panel_scale_axis;
+  ScaleAxis _panel_track_axis;
   std::vector<TATask> _ta_task_list;
   GridMap<TANode> _ta_node_map;
   TAPanelStat _ta_panel_stat;
