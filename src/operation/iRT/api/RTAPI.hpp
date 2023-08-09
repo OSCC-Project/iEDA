@@ -58,24 +58,8 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-
-#if 1
-  void addEnvRectList(void* region_query, const LayerRect& env_rect);
-  void addEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list);
-  void delEnvRectList(void* region_query, const LayerRect& env_rect);
-  void delEnvRectList(void* region_query, const std::vector<LayerRect>& env_rect_list);
-  bool hasViolation(void* region_query, const LayerRect& drc_rect);
-  bool hasViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list);
-  std::map<std::string, int> getViolation(void* region_query, const std::vector<LayerRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const std::vector<LayerRect>& drc_rect_list);
-  std::vector<LayerRect> getMinScope(const std::vector<LayerRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const LayerRect& drc_rect);
-  std::vector<LayerRect> getMinScope(const LayerRect& drc_rect);
-  LayerRect convertToRTRect(ids::DRCRect ids_rect);
-  ids::DRCRect convertToIDSRect(LayerRect rt_rect);
-#endif
-
   void* initRegionQuery();
+  void destroyRegionQuery(void* region_query);
   void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
   void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
   void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);
@@ -90,6 +74,7 @@ class RTAPI
   std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
   LayerRect convertToLayerRect(ids::DRCRect ids_rect);
   ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
+  // void plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
 
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);

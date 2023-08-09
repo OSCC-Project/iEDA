@@ -43,6 +43,8 @@ void EarlyGlobalRouter::destroyInst()
   }
 }
 
+// function
+
 void EarlyGlobalRouter::route()
 {
   Monitor monitor;
@@ -323,11 +325,11 @@ void EarlyGlobalRouter::routeEGRNetList(std::vector<EGRNet>& egr_net_list)
     // for (size_t i = 34; i < 36; i++) {
     routeEGRNet(egr_net_list[i]);
     if ((i + 1) % batch_size == 0) {
-      LOG_INST.info(Loc::current(), "Processed ", (i + 1), " nets", stage_monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Routed ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
   }
 
-  LOG_INST.info(Loc::current(), "Processed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Routed ", egr_net_list.size(), " nets", monitor.getStatsInfo());
 }
 
 void EarlyGlobalRouter::routeEGRNet(EGRNet& egr_net)
@@ -492,7 +494,7 @@ LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, 
   if (RTUtil::isHorizontal(first_coord, second_coord)) {
     irt_int first_x = first_coord.get_x();
     irt_int second_x = second_coord.get_x();
-    RTUtil::sortASC(first_x, second_x);
+    RTUtil::swapASC(first_x, second_x);
     if (first_x < start_coord.get_x() && start_coord.get_x() < second_x) {
       seg_coord.set_x(start_coord.get_x());
     } else if (start_coord.get_x() <= first_x) {
@@ -503,7 +505,7 @@ LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, 
   } else if (RTUtil::isVertical(first_coord, second_coord)) {
     irt_int first_y = first_coord.get_y();
     irt_int second_y = second_coord.get_y();
-    RTUtil::sortASC(first_y, second_y);
+    RTUtil::swapASC(first_y, second_y);
     if (first_y < start_coord.get_y() && start_coord.get_y() < second_y) {
       seg_coord.set_y(start_coord.get_y());
     } else if (start_coord.get_y() <= first_y) {
@@ -514,7 +516,7 @@ LayerCoord EarlyGlobalRouter::getNearestCoordOnSegment(LayerCoord& start_coord, 
   } else if (RTUtil::isProximal(first_coord, second_coord)) {
     irt_int first_layer_idx = first_coord.get_layer_idx();
     irt_int second_layer_idx = second_coord.get_layer_idx();
-    RTUtil::sortASC(first_layer_idx, second_layer_idx);
+    RTUtil::swapASC(first_layer_idx, second_layer_idx);
     if (first_layer_idx < start_coord.get_layer_idx() && start_coord.get_layer_idx() < second_layer_idx) {
       seg_coord.set_layer_idx(start_coord.get_layer_idx());
     } else if (start_coord.get_layer_idx() <= first_layer_idx) {
@@ -662,7 +664,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
       irt_int second_y = second_coord.get_y();
       irt_int second_layer_idx = second_coord.get_layer_idx();
       if (RTUtil::isProximal(first_coord, second_coord)) {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; ++layer_idx) {
           double node_cost = layer_resource_map[layer_idx][first_x][first_y].getCost(EGRResourceType::kTrack);
           if (layer_idx <= bottom_routing_layer_idx && layer_idx >= top_routing_layer_idx && node_cost >= 1) {
@@ -671,7 +673,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
           path_cost += node_cost;
         }
       } else if (RTUtil::isVertical(first_coord, second_coord)) {
-        RTUtil::sortASC(first_y, second_y);
+        RTUtil::swapASC(first_y, second_y);
         for (irt_int y = first_y; y <= second_y; ++y) {
           for (EGRResourceType resource_type : {EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kTrack}) {
             double node_cost = layer_resource_map[first_layer_idx][first_x][y].getCost(resource_type);
@@ -684,7 +686,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
         path_cost -= layer_resource_map[first_layer_idx][first_x][first_y].getCost(EGRResourceType::kSouth);
         path_cost -= layer_resource_map[first_layer_idx][first_x][second_y].getCost(EGRResourceType::kNorth);
       } else if (RTUtil::isHorizontal(first_coord, second_coord)) {
-        RTUtil::sortASC(first_x, second_x);
+        RTUtil::swapASC(first_x, second_x);
         for (irt_int x = first_x; x <= second_x; ++x) {
           for (EGRResourceType resource_type : {EGRResourceType::kWest, EGRResourceType::kEast, EGRResourceType::kTrack}) {
             double node_cost = layer_resource_map[first_layer_idx][x][first_y].getCost(resource_type);
@@ -804,8 +806,8 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
   irt_int end_x = end_coord.get_x();
   irt_int start_y = start_coord.get_y();
   irt_int end_y = end_coord.get_y();
-  RTUtil::sortASC(start_x, end_x);
-  RTUtil::sortASC(start_y, end_y);
+  RTUtil::swapASC(start_x, end_x);
+  RTUtil::swapASC(start_y, end_y);
 
   if (RTUtil::isProximal(start_coord, end_coord)) {
     return;
@@ -922,7 +924,7 @@ void EarlyGlobalRouter::routeByZPattern(std::vector<std::vector<Segment<LayerCoo
 std::vector<irt_int> EarlyGlobalRouter::getMidIndexList(irt_int start_idx, irt_int end_idx)
 {
   std::vector<irt_int> index_list;
-  RTUtil::sortASC(start_idx, end_idx);
+  RTUtil::swapASC(start_idx, end_idx);
   irt_int interval = (end_idx - start_idx - 1) / (_egr_data_manager.getConfig().accuracy + 1) + 1;
   for (irt_int i = (start_idx + interval); i <= (end_idx - 1); i += interval) {
     index_list.push_back(i);
@@ -1173,7 +1175,7 @@ void EarlyGlobalRouter::addDemandBySegmentList(std::vector<Segment<TNode<LayerCo
     irt_int second_layer_idx = second_coord.get_layer_idx();
 
     if (RTUtil::isProximal(first_coord, second_coord)) {
-      RTUtil::sortASC(first_layer_idx, second_layer_idx);
+      RTUtil::swapASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; ++layer_idx) {
         LayerCoord via_coord(first_x, first_y, layer_idx);
         if (RTUtil::exist(via_coord_set, via_coord)) {
@@ -1184,7 +1186,7 @@ void EarlyGlobalRouter::addDemandBySegmentList(std::vector<Segment<TNode<LayerCo
       }
     } else if (RTUtil::isVertical(first_coord, second_coord)) {
       GridMap<EGRNode>& resource_map = layer_resource_map[first_layer_idx];
-      RTUtil::sortASC(first_y, second_y);
+      RTUtil::swapASC(first_y, second_y);
       for (irt_int y = first_y; y <= second_y; ++y) {
         for (EGRResourceType resource_type : {EGRResourceType::kTrack, EGRResourceType::kNorth, EGRResourceType::kSouth}) {
           resource_map[first_x][y].addDemand(resource_type, wire_demand);
@@ -1196,7 +1198,7 @@ void EarlyGlobalRouter::addDemandBySegmentList(std::vector<Segment<TNode<LayerCo
       resource_map[first_x][second_y].addDemand(EGRResourceType::kTrack, -1 * half_wire_demand);
     } else if (RTUtil::isHorizontal(first_coord, second_coord)) {
       GridMap<EGRNode>& resource_map = layer_resource_map[first_layer_idx];
-      RTUtil::sortASC(first_x, second_x);
+      RTUtil::swapASC(first_x, second_x);
       for (irt_int x = first_x; x <= second_x; ++x) {
         for (EGRResourceType resource_type : {EGRResourceType::kTrack, EGRResourceType::kWest, EGRResourceType::kEast}) {
           resource_map[x][first_y].addDemand(resource_type, wire_demand);
@@ -1293,7 +1295,7 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
       irt_int first_layer_idx = first_coord.get_layer_idx();
       irt_int second_layer_idx = second_coord.get_layer_idx();
       if (first_layer_idx != second_layer_idx) {
-        RTUtil::sortASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapASC(first_layer_idx, second_layer_idx);
         total_via_num += std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx());
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; ++layer_idx) {
           irt_int via_layer_idx = layer_via_master_list[layer_idx].front().get_cut_layer_idx();
