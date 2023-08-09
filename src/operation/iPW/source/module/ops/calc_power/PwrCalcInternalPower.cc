@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -212,7 +212,8 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       double rise_power_mw = query_power(power_arc, TransType::kRise);
       double fall_power_mw = query_power(power_arc, TransType::kFall);
       // the internal power of this power arc.
-      double table_average_power_mw = CalcAveragePower(rise_power_mw, fall_power_mw);
+      double table_average_power_mw =
+          CalcAveragePower(rise_power_mw, fall_power_mw);
 
       double output_toggle = getToggleData(output_pin);
       double the_arc_power = output_toggle * table_average_power_mw;
@@ -220,8 +221,8 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       VERBOSE_LOG(1) << "output pin " << output_pin->getFullName()
                      << " arc power(mW) " << the_arc_power << " toggle "
                      << output_toggle << " table average power(mW) "
-                     << table_average_power_mw << " rise power(mW) " << rise_power_mw
-                     << " fall_power(mW) " << fall_power_mw;
+                     << table_average_power_mw << " rise power(mW) "
+                     << rise_power_mw << " fall_power(mW) " << fall_power_mw;
 
       auto* internal_power_info = power_arc->get_internal_power_info().get();
       auto& when = internal_power_info->get_when();
@@ -354,13 +355,10 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
     // the internal power of this condition.
     double the_internal_power = input_pin_toggle * average_power_mw;
 
-    VERBOSE_LOG(1)
-        << "input pin " << input_pin->getFullName() << " toggle "
-        << input_pin_toggle << " average power(mW) " << average_power_mw
-        << " rise power(mW) "
-        << rise_power_mw
-        << " fall_power(mW) "
-        << fall_power_mw;
+    VERBOSE_LOG(1) << "input pin " << input_pin->getFullName() << " toggle "
+                   << input_pin_toggle << " average power(mW) "
+                   << average_power_mw << " rise power(mW) " << rise_power_mw
+                   << " fall_power(mW) " << fall_power_mw;
 
     auto& when = internal_power->get_when();
     if (!when.empty()) {
@@ -488,10 +486,6 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
   FOREACH_PWR_CELL(the_graph, cell) {
     auto* design_inst = cell->get_design_inst();
     auto* inst_cell = design_inst->get_inst_cell();
-
-    if (Str::equal(design_inst->get_name(), "hold_buf_51173")) {
-      LOG_INFO << "DEBUG";
-    }
 
     if (inst_cell->isMacroCell()) {
       // TODO
