@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "MPDB.hh"
 #include "Problem.hh"
 
 using SpMat = Eigen::SparseMatrix<double>;
@@ -26,49 +27,55 @@ using std::pair;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
-namespace ipl::imp {
-class MPDB;
-class FPInst;
-class LSEWireLength;
+namespace ipl {
+using imp::FPInst;
+using imp::MPDB;
+class LSEWirelength;
+class DensityModel;
 class MProblem final : public Problem
 {
  public:
   explicit MProblem(MPDB* db) { set_db(db); }
+  MProblem() {}
   ~MProblem() {}
+  virtual void setThreads(size_t n) override;
   virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const override;
-  virtual double getLowerBound(int row, int col) const override { return _bound[_var_rows * col + row].first; }
-  virtual double getUpperBound(int row, int col) const override { return _bound[_var_rows * col + row].second; };
-  virtual int variableMatrixRows() const override { return _var_rows; };
-  virtual int variableMatrixcols() const override { return _var_cols; };
-  void set_db(MPDB* db);
+  virtual Vec getSolutionDistance(const Mat& lhs, const Mat& rhs) const override;
+  virtual Vec getGradientDistance(const Mat& lhs, const Mat& rhs) const override;
+  virtual void getVariableBounds(const Mat& variable, Mat& low, Mat& upper) const override;
+  virtual int variableMatrixRows() const override { return _num_macros; };
+  virtual int variableMatrixcols() const override { return _num_types; };
+  void setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization = 0.8);
+  // void setRandomNetlist(int num_macros, int num_nets, int netdgree);
 
  private:
+  void set_db(MPDB* db);
   void initWirelengthModel();
   void initDensityModel();
-  Mat getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const;
-  Mat getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const;
-  double evalHpwl(const Vec& x, const Vec& y, const Vec& r) const;
-  double evalOverflow(const Vec& x, const Vec& y, const Vec& r) const;
+  void evalWirelength(const Mat& variable, Mat& gradient, double& cost, const double& gamma) const;
+  void evalDensity(const Mat& variable, Mat& gradient, double& cost) const;
   double getPenaltyFactor() const;
-  void updateLowerBound(int row, int col, double lower) { _bound[_var_rows * col + row].first = lower; }
-  void updateUpperBound(int row, int col, double upper) { _bound[_var_rows * col + row].second = upper; }
+  void updateLowerBound(int row, int col, double lower) { _bound[_num_macros * col + row].first = lower; }
+  void updateUpperBound(int row, int col, double upper) { _bound[_num_macros * col + row].second = upper; }
+  void drawImage(const Mat& variable, int index) const;
 
  private:
-  MPDB* _db = {nullptr};
-  int _var_rows = {};
-  int _var_cols = {};
-  double _core_width = {};
-  double _core_height = {};
+  MPDB* _db{};
+  Vec _width;
+  Vec _height;
+  std::shared_ptr<LSEWirelength> _wl{};
+  std::shared_ptr<DensityModel> _density{};
+  int _num_macros{};
+  int _num_nets{};
+  int _num_types{};
+  double _core_width{};
+  double _core_height{};
+  mutable double _lambda;
 
-  unordered_map<FPInst*, uint32_t> _inst2id = {};
-  vector<pair<double, double>> _bound = {};
-  SpMat _connectivity;
-  SpMat _io_conn_x;
-  SpMat _io_conn_y;
-  Vec _sum_exp_x = {};
-  Vec _sum_exp_y = {};
+  unordered_map<FPInst*, uint32_t> _inst2id{};
+  vector<pair<double, double>> _bound{};
 };
 
-}  // namespace ipl::imp
+}  // namespace ipl
 
 #endif  // IPL_MP_MPROBLEM

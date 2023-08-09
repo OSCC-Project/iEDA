@@ -55,12 +55,14 @@ class Node
   int32_t get_node_id() const { return _node_id; }
   std::string get_name() const { return _name; }
   Point<int32_t> get_location() const { return _location; }
+
   NetWork* get_network() const { return _network; }
   Group* get_group() const { return _group; }
 
   // setter.
   void set_node_id(int32_t id) { _node_id = id; }
   void set_location(Point<int32_t> location) { _location = std::move(location); }
+
   void set_network(NetWork* network) { _network = network; }
   void set_group(Group* group) { _group = group; }
 
@@ -68,6 +70,7 @@ class Node
   int32_t _node_id;
   std::string _name;
   Point<int32_t> _location;
+
   NetWork* _network;
   Group* _group;
 };

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -165,10 +165,11 @@ unsigned StaDumpYaml::operator()(StaArc* the_arc) {
 
   arc_node["src"] = arc->get_src()->getName();
   arc_node["snk"] = arc->get_snk()->getName();
-  arc_node["arc_type"] =
-      arc->isDelayArc()
-          ? (arc->isInstArc() ? "cell Delay" : "net Delay")
-          : arc->isSetupArc() ? "Setup" : arc->isHoldArc() ? "Hold" : "Other";
+  arc_node["arc_type"] = arc->isDelayArc()
+                             ? (arc->isInstArc() ? "cell Delay" : "net Delay")
+                         : arc->isSetupArc() ? "Setup"
+                         : arc->isHoldArc()  ? "Hold"
+                                             : "Other";
 
   YAML::Node delay_node;
   arc_node["arc_delay_data"] = delay_node;
@@ -224,6 +225,75 @@ void StaDumpYaml::printText(const char* file_name) {
   std::ofstream file(file_name, std::ios::trunc);
   file << _node << std::endl;
   file.close();
+}
+
+/**
+ * @brief dump delay data of the vertex in yaml.
+ *
+ * @param the_vertex
+ * @return unsigned
+ */
+unsigned StaDumpDelayYaml::operator()(StaVertex* the_vertex) {
+  YAML::Node& node = _node;
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  unsigned& node_id = _node_id;
+  std::string node_name = Str::printf("node_%d", node_id++);
+  YAML::Node vertex_node;
+  node[node_name] = vertex_node;
+
+  vertex_node["Point"] = the_vertex->getNameWithCellName();
+  auto vertex_load = the_vertex->getLoad(analysis_mode, trans_type);
+  vertex_node["Capacitance"] = vertex_load;
+  auto vertex_slew = FS_TO_NS(the_vertex->getSlew(analysis_mode, trans_type));
+  vertex_node["slew"] = vertex_slew;
+  vertex_node["trans_type"] =
+      (trans_type == TransType::kRise) ? "rise" : "fall";
+
+  return 1;
+}
+
+/**
+ * @brief dump delay data of the arc in yaml.
+ *
+ * @param the_arc
+ * @return unsigned
+ */
+unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
+  YAML::Node& node = _node;
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  unsigned& arc_id = _arc_id;
+  const char* arc_type_str = the_arc->isNetArc() ? "net" : "inst";
+  std::string node_name = Str::printf("%s_arc_%d", arc_type_str, arc_id++);
+  YAML::Node arc_node;
+  node[node_name] = arc_node;
+
+  arc_node["Incr"] =
+      FS_TO_NS(the_arc->get_arc_delay(analysis_mode, trans_type));
+
+  if (the_arc->isNetArc()) {
+    auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+    auto* the_net = the_net_arc->get_net();
+
+    auto* rc_net = getSta()->getRcNet(the_net);
+    auto* snk_node = the_arc->get_snk();
+    auto* snk_obj = snk_node->get_design_obj();
+    arc_node["net_name"] = the_net->get_name();
+    arc_node["fanout"] = the_net->getLoads().size();
+    arc_node["Elmore"] =
+        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kElmore).value_or(0.0);
+    arc_node["D2M"] =
+        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2M).value_or(0.0);
+    arc_node["ECM"] =
+        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kECM).value_or(0.0);
+    arc_node["D2MC"] =
+        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2MC).value_or(0.0);
+  }
+
+  return 1;
 }
 
 /**

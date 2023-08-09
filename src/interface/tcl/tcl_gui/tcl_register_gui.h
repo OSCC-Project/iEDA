@@ -27,6 +27,7 @@
 #include "UserShell.hh"
 #include "tcl_gui.h"
 #include "tcl_qt/tcl_qt.h"
+#include "tcl_web.h"
 #include "tool_manager.h"
 
 using namespace ieda;
@@ -41,6 +42,9 @@ int registerCmdGUI()
   registerTclCmd(CmdGuiShowDrc, "gui_show_drc");
   registerTclCmd(CmdGuiShowClockTree, "gui_show_cts");
   registerTclCmd(CmdGuiShowPlacement, "gui_show_pl");
+
+  // web
+  registerTclCmd(CmdCaptureDesign, "capture_design");
 
   GuiTclNotifier::setup();
   // run Qt's event loop

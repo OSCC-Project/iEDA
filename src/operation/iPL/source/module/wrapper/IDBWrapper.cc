@@ -248,8 +248,10 @@ void IDBWrapper::wrapRows(IdbLayout* idb_layout)
   auto* ipl_layout = _idbw_database->_layout;
 
   IdbRows* idb_rows = idb_layout->get_rows();
+  int32_t row_id = 0;
   for (auto* idb_row : idb_rows->get_row_list()) {
     Row* ipl_row = new Row(idb_row->get_name());
+    ipl_row->set_row_id(row_id++);
     IdbRect* idb_row_rect = idb_row->get_bounding_box();
     ipl_row->set_shape(
         Rectangle<int32_t>(idb_row_rect->get_low_x(), idb_row_rect->get_low_y(), idb_row_rect->get_high_x(), idb_row_rect->get_high_y()));
@@ -412,6 +414,8 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
       inst_ptr->set_instance_type(INSTANCE_TYPE::kCross);
       Rectangle<int32_t> cross_shape = obtainCrossRect(idb_inst, ipl_layout->get_core_shape());
       inst_ptr->set_shape(cross_shape.get_ll_x(), cross_shape.get_ll_y(), cross_shape.get_ur_x(), cross_shape.get_ur_y());
+      cell_ptr->set_height(cross_shape.get_ur_y() - cross_shape.get_ll_y());
+      cell_ptr->set_width(cross_shape.get_ur_x() - cross_shape.get_ll_x());
     } else {
       inst_ptr->set_instance_type(INSTANCE_TYPE::kNormal);
     }

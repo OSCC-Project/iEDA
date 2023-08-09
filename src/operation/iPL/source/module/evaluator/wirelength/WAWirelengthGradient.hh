@@ -160,8 +160,10 @@ class WAWirelengthGradient : public WirelengthGradient
   WAWirelengthGradient& operator=(const WAWirelengthGradient&) = delete;
   WAWirelengthGradient& operator=(WAWirelengthGradient&&) = delete;
 
+  void updateWirelengthForce_OLD(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num);
   void updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num) override;
 
+  Point<float> obtainWirelengthGradient_OLD(int32_t inst_id, float coeff_x, float coeff_y);
   Point<float> obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y) override;
   Point<float> obtainPinWirelengthGradient(Node* pin, float coeff_x, float coeff_y);
 
@@ -171,6 +173,9 @@ class WAWirelengthGradient : public WirelengthGradient
  private:
   std::vector<WAPinInfo> _wa_pin_info_list;
   std::vector<WANetInfo> _wa_net_info_list;
+
+  std::vector<float> _pin_grad_x_list;
+  std::vector<float> _pin_grad_y_list;
 
   void initWAInfo();
   void resetWAPinInfo() {}

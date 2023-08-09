@@ -66,12 +66,13 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][3] = "Net Snake";
       (*report_tbl)[0][4] = "Total Net Length";
       (*report_tbl)[0][5] = "Location";
-      (*report_tbl)[0][6] = "Min Delay";
-      (*report_tbl)[0][7] = "Max Delay";
-      (*report_tbl)[0][8] = "Insertion Type";
-      (*report_tbl)[0][9] = "Slew In";
-      (*report_tbl)[0][10] = "Cap Out";
-      (*report_tbl)[0][11] = "Insertion Delay";
+      (*report_tbl)[0][6] = "Fanout";
+      (*report_tbl)[0][7] = "Min Delay";
+      (*report_tbl)[0][8] = "Max Delay";
+      (*report_tbl)[0][9] = "Insertion Type";
+      (*report_tbl)[0][10] = "Slew In";
+      (*report_tbl)[0][11] = "Cap Out";
+      (*report_tbl)[0][12] = "Insertion Delay";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kHCTS_LOG:

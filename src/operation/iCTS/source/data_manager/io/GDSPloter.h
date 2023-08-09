@@ -36,8 +36,8 @@ class GDSPloter
   explicit GDSPloter(const string& gds_file);
   GDSPloter(GDSPloter&) = default;
   ~GDSPloter() { _log_ofs.close(); }
-  void plotDesign() const;
-  void plotFlyLine() const;
+  void plotDesign();
+  void plotFlyLine();
 
   void plotInstances(vector<CtsInstance*>& insts);
   void insertInstance(CtsInstance* inst);

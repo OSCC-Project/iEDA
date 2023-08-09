@@ -194,7 +194,7 @@ void PLAPI::reportPeakBinDensity(std::ofstream& feed)
   int32_t bin_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
   float target_density = PlacerDBInst.get_placer_config()->get_nes_config().get_target_density();
 
-  GridManager grid_manager(core_shape, bin_cnt_x, bin_cnt_y, target_density);
+  GridManager grid_manager(core_shape, bin_cnt_x, bin_cnt_y, target_density, 1);
 
   // add inst
   for (auto* inst : PlacerDBInst.get_design()->get_instance_list()) {
@@ -209,7 +209,8 @@ void PLAPI::reportPeakBinDensity(std::ofstream& feed)
     grid_manager.obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = grid_manager.obtainOverlapArea(grid, inst_shape);
-      grid->add_area(overlap_area);
+      grid->occupied_area += overlap_area;
+      // grid->add_area(overlap_area);
     }
   }
 

@@ -20,27 +20,32 @@
 
 namespace irt {
 
-class ViaNode : public EXTPlanarCoord
+class ViaNode : public PlanarCoord
 {
  public:
   ViaNode() = default;
-  ViaNode(const ViaNode& other) : EXTPlanarCoord(other)
+  ViaNode(const ViaNode& other) : PlanarCoord(other)
   {
     _net_idx = other._net_idx;
-    _via_idx = other._via_idx;
+    _via_master_idx = other._via_master_idx;
   }
   ~ViaNode() = default;
   // getter
   irt_int get_net_idx() const { return _net_idx; }
-  std::pair<irt_int, irt_int>& get_via_idx() { return _via_idx; }
+  ViaMasterIdx& get_via_master_idx() { return _via_master_idx; }
   // setter
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_via_idx(const std::pair<irt_int, irt_int>& via_idx) { _via_idx = via_idx; }
+  void set_via_master_idx(const ViaMasterIdx& via_master_idx) { _via_master_idx = via_master_idx; }
+  void set_via_master_idx(const irt_int below_layer_idx, const irt_int via_idx)
+  {
+    _via_master_idx.set_below_layer_idx(below_layer_idx);
+    _via_master_idx.set_via_idx(via_idx);
+  }
   // function
 
  private:
   irt_int _net_idx = -1;
-  std::pair<irt_int, irt_int> _via_idx;
+  ViaMasterIdx _via_master_idx;
 };
 
 }  // namespace irt

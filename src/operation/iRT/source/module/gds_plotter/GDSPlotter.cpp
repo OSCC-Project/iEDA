@@ -16,6 +16,9 @@
 // ***************************************************************************************
 #include "GDSPlotter.hpp"
 
+#include "GPGraphType.hpp"
+#include "GPLYPLayer.hpp"
+#include "GPLayoutType.hpp"
 #include "MTree.hpp"
 #include "Monitor.hpp"
 #include "RTUtil.hpp"
@@ -24,10 +27,10 @@ namespace irt {
 
 // public
 
-void GDSPlotter::initInst(Config& config, Database& database)
+void GDSPlotter::initInst()
 {
   if (_gp_instance == nullptr) {
-    _gp_instance = new GDSPlotter(config, database);
+    _gp_instance = new GDSPlotter();
   }
 }
 
@@ -55,10 +58,17 @@ void GDSPlotter::plot(Net& net, Stage stage, bool add_layout, bool need_clipping
 
 void GDSPlotter::plot(std::vector<Net>& net_list, Stage stage, bool add_layout, bool need_clipping)
 {
-  std::string gds_file_path = _gp_data_manager.getConfig().temp_directory_path + GetStageName()(stage) + ".gds";
+  std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
 
   GPGDS gp_gds;
-  addNetList(gp_gds, net_list, stage);
+  if (stage == Stage::kResourceAllocator) {
+    addCostMap(gp_gds, net_list);
+    add_layout = false;
+    need_clipping = false;
+  } else {
+    addNetList(gp_gds, net_list, stage);
+  }
+  std::string gds_file_path = RTUtil::getString(gp_temp_directory_path, GetStageName()(stage), ".gds");
   plot(gp_gds, gds_file_path, add_layout, need_clipping);
 }
 
@@ -70,9 +80,8 @@ void GDSPlotter::plot(GPGDS& gp_gds, std::string gds_file_path, bool add_layout,
 irt_int GDSPlotter::getGDSIdxByRouting(irt_int routing_layer_idx)
 {
   irt_int gds_layer_idx = 0;
-  std::map<irt_int, irt_int>& routing_layer_gds_map = _gp_data_manager.getDatabase().get_routing_layer_gds_map();
-  if (RTUtil::exist(routing_layer_gds_map, routing_layer_idx)) {
-    gds_layer_idx = routing_layer_gds_map[routing_layer_idx];
+  if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
+    gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
     LOG_INST.warning(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
   }
@@ -82,9 +91,8 @@ irt_int GDSPlotter::getGDSIdxByRouting(irt_int routing_layer_idx)
 irt_int GDSPlotter::getGDSIdxByCut(irt_int cut_layer_idx)
 {
   irt_int gds_layer_idx = 0;
-  std::map<irt_int, irt_int>& cut_layer_gds_map = _gp_data_manager.getDatabase().get_cut_layer_gds_map();
-  if (RTUtil::exist(cut_layer_gds_map, cut_layer_idx)) {
-    gds_layer_idx = cut_layer_gds_map[cut_layer_idx];
+  if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
+    gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
     LOG_INST.warning(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
   }
@@ -95,9 +103,174 @@ irt_int GDSPlotter::getGDSIdxByCut(irt_int cut_layer_idx)
 
 GDSPlotter* GDSPlotter::_gp_instance = nullptr;
 
-void GDSPlotter::init(Config& config, Database& database)
+void GDSPlotter::init()
 {
-  _gp_data_manager.input(config, database);
+  buildGDSLayerMap();
+  buildLayoutLypFile();
+  buildGraphLypFile();
+}
+
+void GDSPlotter::buildGDSLayerMap()
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+
+  std::map<irt_int, irt_int> order_gds_map;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    order_gds_map[routing_layer.get_layer_order()] = -1;
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    order_gds_map[cut_layer.get_layer_order()] = -1;
+  }
+  // 0为die 最后一个为GCell 中间为cut+routing
+  irt_int gds_layer_idx = 1;
+  for (auto it = order_gds_map.begin(); it != order_gds_map.end(); it++) {
+    it->second = gds_layer_idx++;
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    irt_int gds_layer_idx = order_gds_map[routing_layer.get_layer_order()];
+    _routing_layer_gds_map[routing_layer.get_layer_idx()] = gds_layer_idx;
+    _gds_routing_layer_map[gds_layer_idx] = routing_layer.get_layer_idx();
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    irt_int gds_layer_idx = order_gds_map[cut_layer.get_layer_order()];
+    _cut_layer_gds_map[cut_layer.get_layer_idx()] = gds_layer_idx;
+    _gds_cut_layer_map[gds_layer_idx] = cut_layer.get_layer_idx();
+  }
+}
+
+void GDSPlotter::buildLayoutLypFile()
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
+
+  std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
+                                         "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
+                                         "#80fffb", "#80ff8d", "#afff80", "#f3ff80", "#ffc280", "#ffa080", "#00ffff", "#01ff6b", "#91ff00",
+                                         "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
+  std::vector<std::string> pattern_list = {"I5", "I9"};
+
+  std::map<GPLayoutType, bool> routing_data_type_visible_map
+      = {{GPLayoutType::kText, false},  {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
+         {GPLayoutType::kGuide, false}, {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
+         {GPLayoutType::kWire, true},   {GPLayoutType::kEnclosure, true},    {GPLayoutType::kBlockage, true}};
+  std::map<GPLayoutType, bool> cut_data_type_visible_map
+      = {{GPLayoutType::kText, false}, {GPLayoutType::kCut, true}, {GPLayoutType::kBlockage, true}};
+
+  // 0为die 最后一个为gcell 中间为cut+routing
+  irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
+
+  std::vector<GPLYPLayer> lyp_layer_list;
+  for (irt_int gds_layer_idx = 0; gds_layer_idx < gds_layer_size; gds_layer_idx++) {
+    std::string color = color_list[gds_layer_idx % color_list.size()];
+    std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
+
+    if (gds_layer_idx == 0) {
+      lyp_layer_list.emplace_back(color, pattern, false, "die", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
+    } else if (gds_layer_idx == (gds_layer_size - 1)) {
+      lyp_layer_list.emplace_back(color, pattern, true, "gcell", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "gcell_text", gds_layer_idx, 1);
+    } else {
+      if (RTUtil::exist(_gds_routing_layer_map, gds_layer_idx)) {
+        // routing
+        std::string routing_layer_name = routing_layer_list[_gds_routing_layer_map[gds_layer_idx]].get_layer_name();
+        for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
+          lyp_layer_list.emplace_back(color, pattern, visible,
+                                      RTUtil::getString(routing_layer_name, "_", GetGPLayoutTypeName()(routing_data_type)), gds_layer_idx,
+                                      static_cast<irt_int>(routing_data_type));
+        }
+      } else if (RTUtil::exist(_gds_cut_layer_map, gds_layer_idx)) {
+        // cut
+        std::string cut_layer_name = cut_layer_list[_gds_cut_layer_map[gds_layer_idx]].get_layer_name();
+        for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
+          lyp_layer_list.emplace_back(color, pattern, visible, RTUtil::getString(cut_layer_name, "_", GetGPLayoutTypeName()(cut_data_type)),
+                                      gds_layer_idx, static_cast<irt_int>(cut_data_type));
+        }
+      }
+    }
+  }
+  writeLypFile(gp_temp_directory_path + "layout.lyp", lyp_layer_list);
+}
+
+void GDSPlotter::buildGraphLypFile()
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
+
+  std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
+                                         "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
+                                         "#80fffb", "#80ff8d", "#afff80", "#f3ff80", "#ffc280", "#ffa080", "#00ffff", "#01ff6b", "#91ff00",
+                                         "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
+  std::vector<std::string> pattern_list = {"I5", "I9"};
+
+  std::map<GPGraphType, bool> routing_data_type_visible_map
+      = {{GPGraphType::kNone, false},           {GPGraphType::kOpen, false},
+         {GPGraphType::kClose, false},          {GPGraphType::kInfo, false},
+         {GPGraphType::kNeighbor, false},       {GPGraphType::kKey, true},
+         {GPGraphType::kScaleAxis, false},      {GPGraphType::kPath, true},
+         {GPGraphType::kBlockage, true},        {GPGraphType::kOtherPanelResult, true},
+         {GPGraphType::kSelfPanelResult, true}, {GPGraphType::kPanelResult, true},
+         {GPGraphType::kOtherBoxResult, true},  {GPGraphType::kSelfBoxResult, true}};
+
+  // 0为base_region 最后一个为GCell 中间为cut+routing
+  irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
+
+  std::vector<GPLYPLayer> lyp_layer_list;
+  for (irt_int gds_layer_idx = 0; gds_layer_idx < gds_layer_size; gds_layer_idx++) {
+    std::string color = color_list[gds_layer_idx % color_list.size()];
+    std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
+
+    if (gds_layer_idx == 0) {
+      lyp_layer_list.emplace_back(color, pattern, true, "base_region", gds_layer_idx, 0);
+      lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 1);
+    } else if (RTUtil::exist(_gds_routing_layer_map, gds_layer_idx)) {
+      // routing
+      std::string routing_layer_name = routing_layer_list[_gds_routing_layer_map[gds_layer_idx]].get_layer_name();
+      for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
+        lyp_layer_list.emplace_back(color, pattern, visible,
+                                    RTUtil::getString(routing_layer_name, "_", GetGPGraphTypeName()(routing_data_type)), gds_layer_idx,
+                                    static_cast<irt_int>(routing_data_type));
+      }
+    }
+  }
+  writeLypFile(gp_temp_directory_path + "graph.lyp", lyp_layer_list);
+}
+
+void GDSPlotter::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list)
+{
+  std::ofstream* lyp_file = RTUtil::getOutputFileStream(lyp_file_path);
+  RTUtil::pushStream(lyp_file, "<?xml version=\"1.0\" encoding=\"utf-8\"?>", "\n");
+  RTUtil::pushStream(lyp_file, "<layer-properties>", "\n");
+
+  for (size_t i = 0; i < lyp_layer_list.size(); i++) {
+    GPLYPLayer& lyp_layer = lyp_layer_list[i];
+    RTUtil::pushStream(lyp_file, "<properties>", "\n");
+    RTUtil::pushStream(lyp_file, "<frame-color>", lyp_layer.get_color(), "</frame-color>", "\n");
+    RTUtil::pushStream(lyp_file, "<fill-color>", lyp_layer.get_color(), "</fill-color>", "\n");
+    RTUtil::pushStream(lyp_file, "<frame-brightness>0</frame-brightness>", "\n");
+    RTUtil::pushStream(lyp_file, "<fill-brightness>0</fill-brightness>", "\n");
+    RTUtil::pushStream(lyp_file, "<dither-pattern>", lyp_layer.get_pattern(), "</dither-pattern>", "\n");
+    RTUtil::pushStream(lyp_file, "<line-style/>", "\n");
+    RTUtil::pushStream(lyp_file, "<valid>true</valid>", "\n");
+    if (lyp_layer.get_visible()) {
+      RTUtil::pushStream(lyp_file, "<visible>true</visible>", "\n");
+    } else {
+      RTUtil::pushStream(lyp_file, "<visible>false</visible>", "\n");
+    }
+    RTUtil::pushStream(lyp_file, "<transparent>false</transparent>", "\n");
+    RTUtil::pushStream(lyp_file, "<width/>", "\n");
+    RTUtil::pushStream(lyp_file, "<marked>false</marked>", "\n");
+    RTUtil::pushStream(lyp_file, "<xfill>false</xfill>", "\n");
+    RTUtil::pushStream(lyp_file, "<animation>0</animation>", "\n");
+    RTUtil::pushStream(lyp_file, "<name>", lyp_layer.get_layer_name(), " ", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(),
+                       "</name>", "\n");
+    RTUtil::pushStream(lyp_file, "<source>", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(), "@1</source>", "\n");
+    RTUtil::pushStream(lyp_file, "</properties>", "\n");
+  }
+  RTUtil::pushStream(lyp_file, "</layer-properties>", "\n");
+  RTUtil::closeFileStream(lyp_file);
 }
 
 void GDSPlotter::addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage stage)
@@ -131,7 +304,7 @@ void GDSPlotter::addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage sta
         addPHYNodeTree(gp_gds, net_struct, net.get_vr_result_tree());
         break;
       default:
-        // LOG_INST.error(Loc::current(), "Unknown process stage type!");
+        LOG_INST.error(Loc::current(), "Unknown stage type!");
         break;
     }
     net_list_struct.push(net_struct.get_name());
@@ -165,14 +338,14 @@ void GDSPlotter::addPinShapeList(GPStruct& pin_struct, Pin& pin)
   for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(routing_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
   for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
     GPBoundary shape_boundary;
     shape_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(cut_shape.get_layer_idx()));
-    shape_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPort));
+    shape_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPinShape));
     shape_boundary.set_rect(cut_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
@@ -186,7 +359,7 @@ void GDSPlotter::addAccessPointList(GPStruct& pin_struct, Pin& pin)
 
     GPBoundary access_point_boundary;
     access_point_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(access_point.get_layer_idx()));
-    access_point_boundary.set_data_type(static_cast<irt_int>(GPDataType::kAccessPoint));
+    access_point_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kAccessPoint));
     access_point_boundary.set_rect(x - 10, y - 10, x + 10, y + 10);
     pin_struct.push(access_point_boundary);
   }
@@ -194,13 +367,11 @@ void GDSPlotter::addAccessPointList(GPStruct& pin_struct, Pin& pin)
 
 void GDSPlotter::addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = _gp_data_manager.getDatabase().get_routing_layer_list();
-
   GPStruct bounding_box_struct(RTUtil::getString("bounding_box@", net_struct.get_alias_name()));
 
   GPBoundary bounding_box_boundary;
-  bounding_box_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer_list.front().get_layer_idx()));
-  bounding_box_boundary.set_data_type(static_cast<irt_int>(GPDataType::kBoundingBox));
+  bounding_box_boundary.set_layer_idx(0);
+  bounding_box_boundary.set_data_type(1);
   bounding_box_boundary.set_rect(bounding_box.get_real_rect());
   bounding_box_struct.push(bounding_box_boundary);
 
@@ -210,8 +381,8 @@ void GDSPlotter::addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox
 
 void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree)
 {
-  GCellAxis& gcell_axis = _gp_data_manager.getDatabase().get_gcell_axis();
-  std::vector<RoutingLayer>& routing_layer_list = _gp_data_manager.getDatabase().get_routing_layer_list();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   GPStruct guide_list_struct(RTUtil::getString("guide_list@", net_struct.get_alias_name()));
   GPStruct routing_segment_list_struct(RTUtil::getString("routing_segment_list@", net_struct.get_alias_name()));
@@ -231,7 +402,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       GPBoundary guide_boundary;
       guide_boundary.set_rect(real_rect);
       guide_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
-      guide_boundary.set_data_type(static_cast<irt_int>(GPDataType::kGuide));
+      guide_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kGuide));
       guide_list_struct.push(guide_boundary);
     } else {
       RTUtil::sortASC(first_layer_idx, second_layer_idx);
@@ -239,7 +410,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
         GPBoundary guide_boundary;
         guide_boundary.set_rect(real_rect);
         guide_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-        guide_boundary.set_data_type(static_cast<irt_int>(GPDataType::kGuide));
+        guide_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kGuide));
         guide_list_struct.push(guide_boundary);
       }
     }
@@ -253,19 +424,21 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       irt_int second_layer_idx = second_coord.get_layer_idx();
 
       if (first_layer_idx == second_layer_idx) {
-        GPPath wire_path;
-        wire_path.set_segment(first_coord, second_coord);
-        wire_path.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
-        wire_path.set_data_type(static_cast<irt_int>(GPDataType::kWire));
-        wire_path.set_width(routing_layer_list[first_layer_idx].get_min_width());
-        routing_segment_list_struct.push(wire_path);
+        irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+        PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+
+        GPBoundary wire_boundary;
+        wire_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
+        wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
+        wire_boundary.set_rect(wire_rect);
+        routing_segment_list_struct.push(wire_boundary);
       } else {
         RTUtil::sortASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           GPBoundary via_boundary;
           via_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, routing_layer_list[layer_idx].get_min_width() / 2));
           via_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
-          via_boundary.set_data_type(static_cast<irt_int>(GPDataType::kCut));
+          via_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kCut));
           routing_segment_list_struct.push(via_boundary);
         }
       }
@@ -279,7 +452,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
 
 void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNode>& node_tree)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _gp_data_manager.getDatabase().get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   GPStruct wire_list_struct(RTUtil::getString("wire_list@", net_struct.get_alias_name()));
   GPStruct via_list_struct(RTUtil::getString("via_list@", net_struct.get_alias_name()));
@@ -289,38 +462,39 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
 
     if (phy_node.isType<WireNode>()) {
       WireNode& wire_node = phy_node.getNode<WireNode>();
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
 
-      GPPath wire_path;
-      wire_path.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
-      wire_path.set_data_type(static_cast<irt_int>(GPDataType::kWire));
-      wire_path.set_width(wire_node.get_wire_width());
-      wire_path.set_segment(wire_node.get_first().get_real_coord(), wire_node.get_second().get_real_coord());
-      wire_list_struct.push(wire_path);
+      GPBoundary wire_boundary;
+      wire_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
+      wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
+      wire_boundary.set_rect(wire_rect);
+      wire_list_struct.push(wire_boundary);
 
     } else if (phy_node.isType<ViaNode>()) {
       ViaNode& via_node = phy_node.getNode<ViaNode>();
-      ViaMaster& via_master = layer_via_master_list[via_node.get_via_idx().first][via_node.get_via_idx().second];
+      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
 
       LayerRect& above_enclosure = via_master.get_above_enclosure();
       GPBoundary above_boundary;
       above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
-      above_boundary.set_data_type(static_cast<irt_int>(GPDataType::kEnclosure));
-      above_boundary.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node.get_real_coord()));
+      above_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
+      above_boundary.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node));
       via_list_struct.push(above_boundary);
 
       LayerRect& below_enclosure = via_master.get_below_enclosure();
       GPBoundary below_boundary;
       below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
-      below_boundary.set_data_type(static_cast<irt_int>(GPDataType::kEnclosure));
-      below_boundary.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node.get_real_coord()));
+      below_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
+      below_boundary.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node));
       via_list_struct.push(below_boundary);
 
       std::vector<PlanarRect>& cut_shape_list = via_master.get_cut_shape_list();
       for (PlanarRect& cut_shape : cut_shape_list) {
         GPBoundary cut_boundary;
         cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
-        cut_boundary.set_data_type(static_cast<irt_int>(GPDataType::kCut));
-        cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node.get_real_coord()));
+        cut_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kCut));
+        cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node));
         via_list_struct.push(cut_boundary);
       }
     } else if (phy_node.isType<PinNode>()) {
@@ -335,14 +509,59 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
   gp_gds.addStruct(via_list_struct);
 }
 
+void GDSPlotter::addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list)
+{
+  Monitor monitor;
+
+  GPStruct net_list_struct(RTUtil::getString("net_list(size:", net_list.size(), ")"));
+  for (size_t i = 0; i < net_list.size(); i++) {
+    Net& net = net_list[i];
+
+    GPStruct net_struct(
+        RTUtil::getString("net_", net.get_net_idx(), "(", net.get_net_name(), ")", "(", GetConnectTypeName()(net.get_connect_type()), ")"),
+        RTUtil::getString(net.get_net_idx()));
+
+    addBoundingBox(gp_gds, net_struct, net.get_bounding_box());
+    addCostMap(gp_gds, net_struct, net.get_bounding_box(), net.get_ra_cost_map());
+
+    net_list_struct.push(net_struct.get_name());
+    gp_gds.addStruct(net_struct);
+  }
+  gp_gds.addStruct(net_list_struct);
+
+  LOG_INST.info(Loc::current(), "Add ", net_list.size(), " nets to gds completed!", monitor.getStatsInfo());
+}
+
+void GDSPlotter::addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+
+  GPStruct cost_map_struct(RTUtil::getString("cost_map@", net_struct.get_alias_name()));
+
+  for (irt_int x = 0; x < cost_map.get_x_size(); ++x) {
+    for (irt_int y = 0; y < cost_map.get_y_size(); ++y) {
+      GPBoundary gp_boundary;
+      gp_boundary.set_layer_idx(static_cast<irt_int>(cost_map[x][y] * 100));
+      gp_boundary.set_data_type(0);
+      gp_boundary.set_rect(
+          RTUtil::getRealRect(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
+      cost_map_struct.push(gp_boundary);
+    }
+  }
+  net_struct.push(cost_map_struct.get_name());
+  gp_gds.addStruct(cost_map_struct);
+}
+
 void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path, bool add_layout, bool need_clipping)
 {
+  Die& die = DM_INST.getDatabase().get_die();
+
   if (add_layout) {
     PlanarRect clipping_window;
     if (need_clipping) {
       clipping_window = getClippingWindow(gp_gds);
     } else {
-      clipping_window = _gp_data_manager.getDatabase().get_die().get_real_rect();
+      clipping_window = die.get_real_rect();
     }
     addLayout(gp_gds, clipping_window);
   }
@@ -390,7 +609,7 @@ void GDSPlotter::addLayout(GPGDS& gp_gds, PlanarRect& clipping_window)
 
 void GDSPlotter::addDie(GPGDS& gp_gds, PlanarRect& clipping_window)
 {
-  EXTPlanarRect& die = _gp_data_manager.getDatabase().get_die();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   if (!RTUtil::isOpenOverlap(die.get_real_rect(), clipping_window)) {
     return;
@@ -400,7 +619,7 @@ void GDSPlotter::addDie(GPGDS& gp_gds, PlanarRect& clipping_window)
 
   GPBoundary gp_boundary;
   gp_boundary.set_layer_idx(0);
-  gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kNone));
+  gp_boundary.set_data_type(0);
   gp_boundary.set_rect(RTUtil::getOverlap(die.get_real_rect(), clipping_window));
   die_struct.push(gp_boundary);
   gp_gds.addStruct(die_struct);
@@ -408,10 +627,9 @@ void GDSPlotter::addDie(GPGDS& gp_gds, PlanarRect& clipping_window)
 
 void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
 {
-  GPDatabase& database = _gp_data_manager.getDatabase();
-  GCellAxis& gcell_axis = database.get_gcell_axis();
-  std::vector<RoutingLayer>& routing_layer_list = database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = database.get_cut_layer_list();
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
   irt_int gcell_axis_layer_idx = static_cast<irt_int>(routing_layer_list.size() + cut_layer_list.size() + 1);
   irt_int window_lb_x = clipping_window.get_lb_x();
@@ -420,38 +638,38 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
   irt_int window_rt_y = clipping_window.get_rt_y();
 
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<GCellGrid>& x_grid_list = gcell_axis.get_x_grid_list();
+  std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
   for (size_t i = 0; i < x_grid_list.size(); i++) {
-    GCellGrid& gcell_grid = x_grid_list[i];
+    ScaleGrid& gcell_grid = x_grid_list[i];
     for (irt_int x = gcell_grid.get_start_line(); x <= gcell_grid.get_end_line(); x += gcell_grid.get_step_length()) {
       if (x < window_lb_x || window_rt_x < x) {
         continue;
       }
       GPPath gp_path;
       gp_path.set_layer_idx(gcell_axis_layer_idx);
-      gp_path.set_data_type(static_cast<irt_int>(GPDataType::kNone));
+      gp_path.set_data_type(static_cast<irt_int>(GPLayoutType::kNone));
       gp_path.set_segment(x, window_lb_y, x, window_rt_y);
       gcell_axis_struct.push(gp_path);
     }
   }
-  std::vector<GCellGrid>& y_grid_list = gcell_axis.get_y_grid_list();
+  std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
   for (size_t i = 0; i < y_grid_list.size(); i++) {
-    GCellGrid& gcell_grid = y_grid_list[i];
+    ScaleGrid& gcell_grid = y_grid_list[i];
     for (irt_int y = gcell_grid.get_start_line(); y <= gcell_grid.get_end_line(); y += gcell_grid.get_step_length()) {
       if (y < window_lb_y || window_rt_y < y) {
         continue;
       }
       GPPath gp_path;
       gp_path.set_layer_idx(gcell_axis_layer_idx);
-      gp_path.set_data_type(static_cast<irt_int>(GPDataType::kNone));
+      gp_path.set_data_type(static_cast<irt_int>(GPLayoutType::kNone));
       gp_path.set_segment(window_lb_x, y, window_rt_x, y);
       gcell_axis_struct.push(gp_path);
     }
   }
   for (size_t i = 0; i < x_grid_list.size(); i++) {
-    GCellGrid& x_gcell_grid = x_grid_list[i];
+    ScaleGrid& x_gcell_grid = x_grid_list[i];
     for (size_t j = 0; j < y_grid_list.size(); j++) {
-      GCellGrid& y_gcell_grid = y_grid_list[j];
+      ScaleGrid& y_gcell_grid = y_grid_list[j];
       for (irt_int x = x_gcell_grid.get_start_line(); x < x_gcell_grid.get_end_line(); x += x_gcell_grid.get_step_length()) {
         for (irt_int y = y_gcell_grid.get_start_line(); y < y_gcell_grid.get_end_line(); y += y_gcell_grid.get_step_length()) {
           if (x < window_lb_x || window_rt_x < x || y < window_lb_y || window_rt_y < y) {
@@ -459,7 +677,7 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
           }
           GPText gp_text;
           gp_text.set_layer_idx(gcell_axis_layer_idx);
-          gp_text.set_text_type(static_cast<irt_int>(GPDataType::kText));
+          gp_text.set_text_type(static_cast<irt_int>(GPLayoutType::kText));
           gp_text.set_presentation(GPTextPresentation::kLeftBottom);
           gp_text.set_coord(x, y);
           gp_text.set_message(RTUtil::getString("grid(", RTUtil::getGridLB(x, x_grid_list), " , ", RTUtil::getGridLB(y, y_grid_list),
@@ -474,8 +692,8 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
 
 void GDSPlotter::addTrackGrid(GPGDS& gp_gds, PlanarRect& clipping_window)
 {
-  GPDatabase& database = _gp_data_manager.getDatabase();
-  std::vector<RoutingLayer>& routing_layer_list = database.get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   irt_int window_lb_x = clipping_window.get_lb_x();
   irt_int window_lb_y = clipping_window.get_lb_y();
   irt_int window_rt_x = clipping_window.get_rt_x();
@@ -487,11 +705,11 @@ void GDSPlotter::addTrackGrid(GPGDS& gp_gds, PlanarRect& clipping_window)
     RoutingLayer& routing_layer = routing_layer_list[i];
     irt_int layer_idx = routing_layer.get_layer_idx();
 
-    TrackGrid& x_track_grid = routing_layer.getXTrackGrid();
-    TrackGrid& y_track_grid = routing_layer.getYTrackGrid();
+    ScaleGrid& x_track_grid = routing_layer.getXTrackGrid();
+    ScaleGrid& y_track_grid = routing_layer.getYTrackGrid();
 
-    GPDataType x_data_type = GPDataType::kPreferTrack;
-    GPDataType y_data_type = GPDataType::kNonpreferTrack;
+    GPLayoutType x_data_type = GPLayoutType::kPreferTrack;
+    GPLayoutType y_data_type = GPLayoutType::kNonpreferTrack;
     if (routing_layer.isPreferH()) {
       std::swap(x_data_type, y_data_type);
     }
@@ -521,46 +739,34 @@ void GDSPlotter::addTrackGrid(GPGDS& gp_gds, PlanarRect& clipping_window)
 
 void GDSPlotter::addBlockageList(GPGDS& gp_gds, PlanarRect& clipping_window)
 {
-  GPDatabase& database = _gp_data_manager.getDatabase();
+  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
+  std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
 
-  GPStruct artificial_blockage_struct("artificial_blockage");
   GPStruct layout_blockage_struct("layout_blockage");
 
-  for (Blockage& blockage : database.get_routing_blockage_list()) {
+  for (Blockage& blockage : routing_blockage_list) {
     if (!RTUtil::isOpenOverlap(blockage.get_real_rect(), clipping_window)) {
       continue;
     }
     GPBoundary blockage_boundary;
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(blockage.get_layer_idx()));
-    blockage_boundary.set_data_type(static_cast<irt_int>(GPDataType::kBlockage));
+    blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
-  for (Blockage& blockage : database.get_cut_blockage_list()) {
+  for (Blockage& blockage : cut_blockage_list) {
     if (!RTUtil::isOpenOverlap(blockage.get_real_rect(), clipping_window)) {
       continue;
     }
     GPBoundary blockage_boundary;
     blockage_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(blockage.get_layer_idx()));
-    blockage_boundary.set_data_type(static_cast<irt_int>(GPDataType::kBlockage));
+    blockage_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kBlockage));
     blockage_boundary.set_rect(RTUtil::getOverlap(blockage.get_real_rect(), clipping_window));
-
-    if (blockage.isArtificial()) {
-      artificial_blockage_struct.push(blockage_boundary);
-    } else {
-      layout_blockage_struct.push(blockage_boundary);
-    }
+    layout_blockage_struct.push(blockage_boundary);
   }
-  gp_gds.addStruct(artificial_blockage_struct);
   gp_gds.addStruct(layout_blockage_struct);
 
   GPStruct blockage_list_struct("blockage_list");
-  blockage_list_struct.push(artificial_blockage_struct.get_name());
   blockage_list_struct.push(layout_blockage_struct.get_name());
   gp_gds.addStruct(blockage_list_struct);
 }

@@ -369,8 +369,21 @@ void HCTS::allocateRemainCap(HNode* node) const
   if (left && right) {
     // parameter
     auto remain_cap_ratio = left->get_sub_total_cap() > right->get_sub_total_cap() ? 1.5 : 0.5;
-    right->set_feasible_cap(remain_cap / (1 + remain_cap_ratio));
-    left->set_feasible_cap(remain_cap / (1 + remain_cap_ratio) * remain_cap_ratio);
+    auto right_cap = remain_cap / (1 + remain_cap_ratio);
+    auto left_cap = remain_cap - right_cap;
+
+    auto pin_cap = _lib->get_init_cap();
+    if (left_cap < pin_cap || right_cap < pin_cap) {
+      if (remain_cap >= 2 * pin_cap) {
+        left_cap = left_cap < pin_cap ? pin_cap : remain_cap - pin_cap;
+        right_cap = right_cap < pin_cap ? pin_cap : remain_cap - pin_cap;
+      } else {
+        left_cap = remain_cap / 2;
+        right_cap = remain_cap / 2;
+      }
+    }
+    left->set_feasible_cap(left_cap);
+    right->set_feasible_cap(right_cap);
     return;
   }
   if (left) {
@@ -398,7 +411,13 @@ HNode* HCTS::capFeasibleNode(HNode* parent, HNode* child) const
     child->set_feasible_cap(_max_cap);
     return child;
   }
-  // case 2: remain cap can't cover the wire cap
+  // case 2: remain cap can't cover the pin cap
+  if (remain_cap <= pin_cap) {
+    setBuffer(child);
+    child->set_feasible_cap(_max_cap);
+    return child;
+  }
+  // case 3: remain cap can't cover the wire cap
   if (remain_cap <= wire_cap + pin_cap) {
     auto dist_to_parent = static_cast<int>((remain_cap - pin_cap) / _unit_cap * _db_unit);
     auto loc = internalPoint(parent->getLocation(), child->getLocation(), dist_to_parent);
@@ -407,27 +426,27 @@ HNode* HCTS::capFeasibleNode(HNode* parent, HNode* child) const
     insert_node->set_sub_total_cap(calcLength(insert_node, child) * _unit_cap + child->get_sub_total_cap());
     return insert_node;
   }
-  // case 3: remain cap can cover the wire cap but not enough 2 pin cap
+  // case 4: remain cap can cover the wire cap but not enough 2 pin cap
   if (remain_cap <= wire_cap + 2 * pin_cap) {
     setBuffer(child);
     child->set_feasible_cap(_max_cap);
     return child;
   }
-  // case 4: sub total cap can be cover with a buffer between parent and child
-  if (remain_cap < child->get_sub_total_cap() + pin_cap && child->get_sub_total_cap() + pin_cap < remain_cap + wire_cap) {
-    auto dist_to_child = static_cast<int>((child->get_sub_total_cap() - remain_cap) / _unit_cap * _db_unit);
+  // case 5: sub total cap can be cover with a buffer between parent and child
+  if (remain_cap - wire_cap < child->get_sub_total_cap() + pin_cap && child->get_sub_total_cap() + pin_cap < remain_cap) {
+    auto dist_to_child = static_cast<int>((remain_cap - child->get_sub_total_cap() - pin_cap) / _unit_cap * _db_unit);
     auto loc = internalPoint(child->getLocation(), parent->getLocation(), dist_to_child);
     auto* insert_node = makeBuffer(parent, child, loc);
     insert_node->set_feasible_cap(_max_cap);
     insert_node->set_sub_total_cap(calcLength(insert_node, child) * _unit_cap + child->get_sub_total_cap());
     return insert_node;
   }
-  // case 5: sub total cap can't be cover but remain cap enough
+  // case 6: sub total cap can't be cover but remain cap enough
   if (remain_cap - wire_cap > 2 * pin_cap) {
     child->set_feasible_cap(remain_cap - wire_cap);
     return child;
   }
-  // case 6: child remian cap not enough
+  // case 7: child remian cap not enough
   auto dist_to_parent = static_cast<int>((remain_cap - pin_cap) / _unit_cap * _db_unit);
   auto loc = internalPoint(parent->getLocation(), child->getLocation(), dist_to_parent);
   auto* insert_node = makeBuffer(parent, child, loc);

@@ -30,37 +30,19 @@ namespace ipl {
 
 int64_t Density::obtainOverflowArea()
 {
-  int64_t overflow_area = 0;
-  for (auto* row : _grid_manager->get_row_list()) {
-    for (auto* grid : row->get_grid_list()) {
-      int64_t overflow = static_cast<int64_t>(grid->obtainGridOverflowArea());
-      if (overflow > 0) {
-        overflow_area += overflow;
-      }
-    }
-  }
-
-  return overflow_area;
+  return _grid_manager->obtainTotalOverflowArea();
 }
 
 std::vector<Grid*> Density::obtainOverflowIllegalGridList()
 {
-  return _grid_manager->obtainOverflowIllegalGridList();
+  std::vector<Grid*> illegal_grid_list;
+  _grid_manager->obtainOverflowIllegalGridList(illegal_grid_list);
+  return illegal_grid_list;
 }
 
-float Density::obtainPeakBinDensity(){
-  float peak_density = __FLT_MIN__;
-
-  for(auto* grid_row : _grid_manager->get_row_list()){
-    for(auto* grid : grid_row->get_grid_list()){
-      double grid_density = grid->obtainGridDensity() / grid->get_available_ratio();
-      if(grid_density > peak_density){
-        peak_density = grid_density;
-      }
-    }
-  }
-
-  return peak_density;
+float Density::obtainPeakBinDensity()
+{
+  return _grid_manager->obtainPeakGridDensity();
 }
 
 }  // namespace ipl
