@@ -380,9 +380,10 @@ void ViolationRepairer::iterative(VRModel& vr_model)
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", vr_max_iter_num, ") ******");
     vr_model.set_curr_iter(iter);
-    repairVRModel(vr_model);
-    countVRModel(vr_model);
-    reportVRModel(vr_model);
+    // zzs
+    // repairVRModel(vr_model);
+    // countVRModel(vr_model);
+    // reportVRModel(vr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", vr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopVRModel(vr_model)) {
       LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
@@ -446,19 +447,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
 
       for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
         RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
-        std::map<std::string, irt_int> drc_number_map;
-        switch (vr_source_type) {
-          case VRSourceType::kBlockAndPin:
-            drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-            break;
-          case VRSourceType::kNetResult:
-            drc_number_map = DC_INST.getViolation(region_query);
-            break;
-          default:
-            LOG_INST.error(Loc::current(), "The type is error!");
-            break;
-        }
-        for (auto& [drc, number] : drc_number_map) {
+        for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
           source_drc_number_map[vr_source_type][drc] += number;
         }
       }
