@@ -1,5 +1,4 @@
 add_library(ipl-source_external_libs INTERFACE)
-
 target_link_libraries(ipl-source_external_libs
     INTERFACE
         fftsg_library

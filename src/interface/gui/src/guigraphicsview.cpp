@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include "guigraphicsview.h"
 
-//#include <QGLWidget>
+// #include <QGLWidget>
 #include <QtMath>
 
 #include "mainwindow.h"
@@ -220,3 +220,12 @@ void GuiGraphicsView::viewRect(QRectF rect_item) {
 }
 
 void GuiGraphicsView::timerOut() { updateView(); }
+
+bool GuiGraphicsView::captureDesign(std::string path) {
+  if (path.empty()) {
+    path = "./result/capture/capture.png";
+  }
+
+  QPixmap img = grab();
+  img.save(QString::fromStdString(path));
+}

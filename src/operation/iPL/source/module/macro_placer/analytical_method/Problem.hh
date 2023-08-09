@@ -22,15 +22,20 @@ class Problem
  public:
   Problem(/* args */){};
   virtual ~Problem(){};
+  virtual void setThreads(size_t n) { _threads = n; }
   virtual void evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const = 0;
-  // virtual void updateParameter(VectorXf& parameter, int iter) = 0;
-  // virtual Mat hessianMatrix() = 0;
-  virtual double getLowerBound(int row, int col) const { return std::numeric_limits<double>::lowest(); }
-  virtual double getUpperBound(int row, int col) const { return std::numeric_limits<double>::max(); };
+  virtual Vec getSolutionDistance(const Mat& lhs, const Mat& rhs) const;
+  virtual Vec getGradientDistance(const Mat& lhs, const Mat& rhs) const;
+  virtual void getVariableBounds(const Mat& variable, Mat& low, Mat& upper) const
+  {
+    low.setConstant(std::numeric_limits<double>::lowest());
+    upper.setConstant(std::numeric_limits<double>::max());
+  }
   virtual int variableMatrixRows() const = 0;
   virtual int variableMatrixcols() const = 0;
 
  protected:
+  size_t _threads{1};
   // Mat _constant;
 };
 

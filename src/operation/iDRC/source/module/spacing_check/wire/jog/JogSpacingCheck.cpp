@@ -268,7 +268,8 @@ void JogSpacingCheck::checkSpacing_Vertical(DrcRect* intercept_result_rect, DrcR
   int jog_width = _rule->get_jog_width();
   if (span_rect.get_rt_y() - span_rect.get_lb_y() > jog_width) {
     if (span_rect.get_rt_x() - span_rect.get_lb_x() < long_jog_spacing) {
-      std::cout << "violation!" << std::endl;
+      addSpot(intercept_result_rect, check_rect);
+
       // add_spot();
     }
   } else {
@@ -279,10 +280,24 @@ void JogSpacingCheck::checkSpacing_Vertical(DrcRect* intercept_result_rect, DrcR
       }
     }
     if (span_rect.get_rt_x() - span_rect.get_lb_x() < short_jog_spacing) {
-      std::cout << "violation!" << std::endl;
+      addSpot(intercept_result_rect, check_rect);
+
       // add_spot();
     }
   }
+}
+
+void JogSpacingCheck::addSpot(DrcRect* trigger_rect, DrcRect* result_rect)
+{
+  auto box = DRCUtil::getSpanBoxBetweenTwoRects(trigger_rect, result_rect);
+  DrcViolationSpot* spot = new DrcViolationSpot();
+  int layer_id = trigger_rect->get_layer_id();
+  spot->set_layer_id(layer_id);
+  spot->set_layer_name(_tech->getCutLayerNameById(layer_id));
+  spot->set_net_id(trigger_rect->get_net_id());
+  spot->set_vio_type(ViolationType::kJogSpacing);
+  spot->setCoordinate(box.min_corner().x(), box.min_corner().y(), box.max_corner().x(), box.max_corner().y());
+  _region_query->_metal_jog_spacing_spot_list.emplace_back(spot);
 }
 
 void JogSpacingCheck::checkSpacing_Horizontal(DrcRect* intercept_result_rect, DrcRect* check_rect, DrcRect* rect,
@@ -301,7 +316,7 @@ void JogSpacingCheck::checkSpacing_Horizontal(DrcRect* intercept_result_rect, Dr
   int jog_width = _rule->get_jog_width();
   if (span_rect.get_rt_x() - span_rect.get_lb_x() > jog_width) {
     if (span_rect.get_rt_y() - span_rect.get_lb_y() < long_jog_spacing) {
-      std::cout << "violation!" << std::endl;
+      addSpot(intercept_result_rect, check_rect);
       // add_spot();
     }
   } else {
@@ -312,7 +327,7 @@ void JogSpacingCheck::checkSpacing_Horizontal(DrcRect* intercept_result_rect, Dr
       }
     }
     if (span_rect.get_rt_y() - span_rect.get_lb_y() < short_jog_spacing) {
-      std::cout << "violation!" << std::endl;
+      addSpot(intercept_result_rect, check_rect);
       // add_spot();
     }
   }

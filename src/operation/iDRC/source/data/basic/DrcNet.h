@@ -49,10 +49,22 @@ class DrcNet
   DrcNet& operator=(DrcNet&& other) = default;
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
-  void add_routing_rect(int routingLayerId, DrcRect* rect) { _layer_to_routing_rects_map[routingLayerId].push_back(rect); }
-  void add_pin_rect(int routingLayerId, DrcRect* rect) { _layer_to_pin_rects_map[routingLayerId].push_back(rect); }
+  void add_routing_rect(int routingLayerId, DrcRect* rect)
+  {
+    DrcRect* new_rect = new DrcRect(*rect);
+    _layer_to_routing_rects_map[routingLayerId].push_back(new_rect);
+  }
+  void add_pin_rect(int routingLayerId, DrcRect* rect)
+  {
+    DrcRect* new_rect = new DrcRect(*rect);
+    _layer_to_pin_rects_map[routingLayerId].push_back(new_rect);
+  }
   void add_rect_edge(int routingLayerId, DrcEdge* edge) { _layer_to_rect_edges_map[routingLayerId].push_back(edge); }
-  void add_cut_rect(int cutLayerId, DrcRect* rect) { _layer_to_cut_rects_map[cutLayerId].push_back(rect); }
+  void add_cut_rect(int cutLayerId, DrcRect* rect)
+  {
+    DrcRect* new_rect = new DrcRect(*rect);
+    _layer_to_cut_rects_map[cutLayerId].push_back(new_rect);
+  }
   // getter
   int get_net_id() const { return _net_id; }
   std::vector<DrcRect*>& get_layer_routing_rects(int routingLayerId) { return _layer_to_routing_rects_map[routingLayerId]; }
@@ -115,7 +127,7 @@ class DrcNet
   std::map<int, std::vector<std::unique_ptr<DrcPoly>>> _route_polys_list;
 
   ////////////////////////////
-  //工程上未用到，multi-patterning相关
+  // 工程上未用到，multi-patterning相关
   std::map<int, bp::polygon_90_set_data<int>> _layer_to_routing_polygon_set;
   std::map<int, bp::polygon_90_set_data<int>> _layer_to_pin_polygon_set;
 

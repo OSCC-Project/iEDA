@@ -4,4 +4,4 @@ add_library(ipl-dct
 
 target_link_libraries(ipl-dct 
     PUBLIC
-        ipl-utility)
+        ipl-bridge)

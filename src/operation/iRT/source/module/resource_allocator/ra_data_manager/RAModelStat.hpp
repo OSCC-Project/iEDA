@@ -28,13 +28,16 @@ class RAModelStat
   RAModelStat() = default;
   ~RAModelStat() = default;
   // getter
+  double get_max_global_cost() { return _max_global_cost; }
   double get_max_avg_cost() { return _max_avg_cost; }
   std::vector<double>& get_avg_cost_list() { return _avg_cost_list; }
   // setter
+  void set_max_global_cost(const double max_global_cost) { _max_global_cost = max_global_cost; }
   void set_max_avg_cost(const double max_avg_cost) { _max_avg_cost = max_avg_cost; }
   // function
 
  private:
+  double _max_global_cost;
   double _max_avg_cost;
   std::vector<double> _avg_cost_list;
 };

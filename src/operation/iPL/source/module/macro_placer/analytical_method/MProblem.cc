@@ -4,9 +4,83 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <random>
+#include <string>
 
-#include "MPDB.hh"
-namespace ipl::imp {
+#include "DensityModel.hh"
+#include "LSEWirelength.hh"
+
+#ifdef BUILD_QT
+#include "utility/Image.hh"
+#endif
+
+// #include "MPDB.hh"
+namespace ipl {
+void MProblem::setRandom(int num_macros, int num_nets, int netdgree, double core_w, double core_h, double utilization)
+{
+  _num_types = 3;
+  _num_macros = num_macros;
+  _num_nets = num_nets;
+  _core_width = core_w;
+  _core_height = core_h;
+  _width = Vec(_num_macros);
+  _height = Vec(_num_macros);
+
+  vector<Triplet<double>> moveable_x_offset;
+  vector<Triplet<double>> moveable_y_offset;
+  vector<Triplet<double>> fixed_x_location;
+  vector<Triplet<double>> fixed_y_location;
+
+  double area = core_w * core_h * utilization / num_macros;
+
+  std::random_device r;
+  std::default_random_engine e1(r());
+  std::uniform_int_distribution<int> rand_bool(0, 1);
+  std::uniform_int_distribution<int> rand_range(-5, 5);
+  std::uniform_real_distribution<double> rand_ar(1.0 / 3.0, 3.0);
+  std::uniform_int_distribution<int> rand_connect(0, _num_macros - 1);
+
+  for (int i = 0; i < _num_macros; i++) {
+    double h = std::sqrt(area * rand_ar(e1));
+    double w = area / h;
+    _width(i) = w;
+    _height(i) = h;
+  }
+
+  auto rand = [&](double& x, double& y) {
+    x = rand_bool(e1) ? 0.5 : -0.5;
+    y = (double) rand_range(e1) / 10;
+    (rand_bool(e1)) ? std::swap(x, y) : void();
+  };
+  double x = 0;
+  double y = 0;
+  double cx = core_w / 2;
+  double cy = core_h / 2;
+  for (int j = 0; j < _num_nets; j++) {
+    for (int i = 0; i < netdgree; i++) {
+      int v = rand_connect(e1);
+      rand(x, y);
+      if (v < _num_nets) {
+        moveable_x_offset.emplace_back(v, j, x * _width(i));
+        moveable_y_offset.emplace_back(v, j, y * _height(i));
+      } else {
+        fixed_x_location.emplace_back(v - _num_nets, i, cx * (1 + x));
+        fixed_y_location.emplace_back(v - _num_nets, i, cy * (1 + y));
+      }
+    }
+  }
+  for (int i = 0; i < _num_nets; i++) {
+    rand(x, y);
+    fixed_x_location.emplace_back(0, i, cx * (1 + x));
+    fixed_y_location.emplace_back(0, i, cy * (1 + y));
+    rand(x, y);
+    fixed_x_location.emplace_back(1, i, cx * (1 + x));
+    fixed_y_location.emplace_back(1, i, cy * (1 + y));
+  }
+  _wl = std::make_shared<LSEWirelength>(LSEWirelength(_num_macros, _num_nets));
+  _wl->setConstant(moveable_x_offset, moveable_y_offset, fixed_x_location, fixed_y_location);
+  initDensityModel();
+}
 
 void MProblem::set_db(MPDB* db)
 {
@@ -14,8 +88,9 @@ void MProblem::set_db(MPDB* db)
     return;
   }
   _db = db;
-  _var_cols = 3;
-  _var_rows = _db->get_total_macro_list().size();
+  _num_types = 3;
+  _num_macros = _db->get_total_macro_list().size();
+  _num_nets = _db->get_new_net_list().size();
   _core_width = _db->get_layout()->get_core_shape()->get_width();
   _core_height = _db->get_layout()->get_core_shape()->get_height();
   const auto& macro_list = _db->get_total_macro_list();
@@ -29,133 +104,43 @@ void MProblem::set_db(MPDB* db)
 
 void MProblem::initWirelengthModel()
 {
-  const auto& nets = _db->get_new_net_list();
-
-  std::vector<Eigen::Triplet<double>> macro_triplets;
-  std::vector<Eigen::Triplet<double>> io_triplets_x;
-  std::vector<Eigen::Triplet<double>> io_triplets_y;
-
-  Eigen::Index net_num = 0;
-  Eigen::Index max_io_num = 0;
-
-  for (const auto& net : nets) {
-    Eigen::Index io_num = 0;
+  vector<Triplet<double>> moveable_x_offset;
+  vector<Triplet<double>> moveable_y_offset;
+  vector<Triplet<double>> fixed_x_location;
+  vector<Triplet<double>> fixed_y_location;
+  uint32_t col = 0;
+  for (const auto& net : _db->get_new_net_list()) {
+    uint32_t fix_row = 0;
     for (const auto& pin : net->get_pin_list()) {
-      if (pin->is_io_pin()) {
-        io_triplets_x.emplace_back(io_num, net_num, pin->get_x());
-        io_triplets_y.emplace_back(io_num, net_num, pin->get_y());
-        max_io_num = std::max(max_io_num, io_num++);
+      if (!pin->is_io_pin()) {
+        uint32_t row = _inst2id.at(pin->get_instance());
+        moveable_x_offset.emplace_back(row, col, pin->get_orig_xoff());
+        moveable_y_offset.emplace_back(row, col, pin->get_orig_yoff());
       } else {
-        assert(pin->get_instance() != nullptr);
-        macro_triplets.emplace_back(_inst2id[pin->get_instance()], net_num, 1.0);
+        fixed_x_location.emplace_back(fix_row, col, pin->get_x());
+        fixed_y_location.emplace_back(fix_row, col, pin->get_x());
+        fix_row++;
       }
     }
-    net_num++;
+    col++;
   }
-
-  _io_conn_x = SpMat(max_io_num, nets.size());
-  _io_conn_y = SpMat(max_io_num, nets.size());
-  _connectivity = SpMat(_var_rows, nets.size());
-
-  _io_conn_x.setFromTriplets(io_triplets_x.begin(), io_triplets_x.end());
-  _io_conn_y.setFromTriplets(io_triplets_y.begin(), io_triplets_y.end());
-  _connectivity.setFromTriplets(macro_triplets.begin(), macro_triplets.end());
-
-  _io_conn_x.makeCompressed();
-  _io_conn_y.makeCompressed();
-  _connectivity.makeCompressed();
+  _wl = std::make_shared<LSEWirelength>(LSEWirelength(_num_macros, _num_nets));
+  _wl->setConstant(moveable_x_offset, moveable_y_offset, fixed_x_location, fixed_y_location);
 }
 void MProblem::initDensityModel()
 {
+  _density = std::make_shared<DensityModel>();
+  _density->setConstant(_width, _height, _core_width, _core_height);
 }
 
-Mat MProblem::getWirelengthGradient(const Vec& x, const Vec& y, const Vec& r, const double& gamma) const
+void MProblem::evalWirelength(const Mat& variable, Mat& gradient, double& cost, const double& gamma) const
 {
-  const auto& macros = _db->get_total_macro_list();
-  const auto& nets = _db->get_new_net_list();
-
-  auto exp_pos_div = [gamma](double val) { return std::exp(val / gamma); };
-  auto exp_neg_div = [gamma](double val) { return std::exp(val / -gamma); };
-  auto inverse = [](double val) { return (val == 0) ? 0 : 1 / val; };
-
-  const auto& pos_x_exp = x.unaryExpr(exp_pos_div);  // exp(x_i/gamma)
-  const auto& pos_y_exp = y.unaryExpr(exp_pos_div);  // exp(y_i/gamma)
-  // const auto& neg_x_exp = pos_x_exp.unaryExpr(inverse);  // exp(-x_i/gamma)
-  // const auto& neg_y_exp = pos_y_exp.unaryExpr(inverse);  // exp(-y_i/gamma)
-
-  Eigen::RowVectorXd ones_1 = Eigen::RowVectorXd::Ones(_io_conn_x.rows());
-
-  const auto& io_exp_pos_x = ones_1 * _io_conn_x.unaryExpr(exp_pos_div);
-  const auto& io_exp_neg_x = ones_1 * _io_conn_x.unaryExpr(exp_neg_div);
-  const auto& io_exp_pos_y = ones_1 * _io_conn_y.unaryExpr(exp_pos_div);
-  const auto& io_exp_neg_y = ones_1 * _io_conn_y.unaryExpr(exp_neg_div);
-
-  const Vec& rcos = r.array().cos();
-  const Vec& rsin = r.array().sin();
-
-  auto get_pin_off = [&](double& x_off, double& y_off, int id) {
-    double x_temp = x_off;
-    double y_temp = y_off;
-    x_off = x_temp * rcos(id) - y_temp * rsin(id);
-    y_off = x_temp * rsin(id) + y_temp * rcos(id);
-  };
-  // The hypergraph matrix of nets where the each coeff is the coordinate of the corresponding pin.
-  SpMat connectivity_x = _connectivity;
-  SpMat connectivity_y = _connectivity;
-
-  Eigen::Index net_num = 0;
-  for (const auto& net : nets) {
-    for (const auto& pin : net->get_pin_list()) {
-      if (pin->is_io_pin())
-        continue;
-      double x_off = (double) pin->get_orig_xoff();
-      double y_off = (double) pin->get_orig_yoff();
-      uint32_t id = _inst2id.at(pin->get_instance());
-      get_pin_off(x_off, y_off, id);
-      connectivity_x.coeffRef(id, net_num) = x_off;
-      connectivity_y.coeffRef(id, net_num) = y_off;
-    }
-    net_num++;
-  }
-  const SpMat& conn_pos_x = (pos_x_exp.asDiagonal() * connectivity_x.unaryExpr(exp_pos_div)).eval();  // exp((x+x_off)/gamma)
-  const SpMat& conn_pos_y = (pos_y_exp.asDiagonal() * connectivity_y.unaryExpr(exp_pos_div)).eval();  // exp((y+y_off)/gamma)
-  const SpMat& conn_neg_x = conn_pos_x.unaryExpr(inverse).eval();                                     // exp(-(x+x_off)/gamma)
-  const SpMat& conn_neg_y = conn_pos_y.unaryExpr(inverse).eval();                                     // exp(-(y+y_off)/gamma)
-  Eigen::RowVectorXd ones_2 = Eigen::RowVectorXd::Ones(_connectivity.rows());
-
-  const auto& sum_exp_pos_x = (ones_2 * conn_pos_x + io_exp_pos_x).unaryExpr(inverse).transpose();  // ∑ exp((x+x_off)/gamma)
-  const auto& sum_exp_neg_x = (ones_2 * conn_neg_x + io_exp_neg_x).unaryExpr(inverse).transpose();  // ∑ exp(-(x+x_off)/gamma)
-  const auto& sum_exp_pos_y = (ones_2 * conn_pos_y + io_exp_pos_y).unaryExpr(inverse).transpose();  // ∑ exp((y+y_off)/gamma)
-  const auto& sum_exp_neg_y = (ones_2 * conn_neg_y + io_exp_neg_y).unaryExpr(inverse).transpose();  // ∑ exp(-(y+y_off)/gamma)
-
-  Mat grad = Mat(_connectivity.rows(), 3);
-
-  Vec grad_x = conn_pos_x * sum_exp_pos_x - conn_neg_x * sum_exp_neg_x;
-  Vec grad_y = conn_pos_y * sum_exp_pos_y - conn_neg_y * sum_exp_neg_y;
-  Vec grad_r = (grad_x.asDiagonal() * connectivity_x * Vec::Ones(_connectivity.rows())
-                + grad_y.asDiagonal() * connectivity_y * Vec::Ones(_connectivity.rows()))
-                   .eval();
-
-  grad.col(0) = grad_x;
-  grad.col(1) = grad_y;
-  grad.col(2) = grad_r;
-
-  return grad;
+  _wl->evaluate(variable, gradient, cost, 100);
 }
 
-Mat MProblem::getDensityGradient(const Vec& x, const Vec& y, const Vec& r) const
+void MProblem::evalDensity(const Mat& variable, Mat& gradient, double& cost) const
 {
-  return Mat();
-}
-
-double MProblem::evalHpwl(const Vec& x, const Vec& y, const Vec& r) const
-{
-  return 0.0;
-}
-
-double MProblem::evalOverflow(const Vec& x, const Vec& y, const Vec& r) const
-{
-  return 0.0;
+  _density->evaluate(variable, gradient, cost);
 }
 
 double MProblem::getPenaltyFactor() const
@@ -163,16 +148,107 @@ double MProblem::getPenaltyFactor() const
   return 0.0;
 }
 
+void MProblem::drawImage(const Mat& variable, int index) const
+{
+#ifdef BUILD_QT
+  Image img(_core_width, _core_height, _num_macros);
+  img.drawRect(_core_width / 2, _core_height / 2, _core_width, _core_height);
+  for (int i = 0; i < _num_macros; i++) {
+    img.drawRect(variable(i, 0), variable(i, 1), _width(i), _height(i), variable(i, 2));
+  }
+  img.save("./Prog_cpp/iEDA/bin/img" + std::to_string(index) + ".jpg");
+#endif
+}
+
+void MProblem::setThreads(size_t n)
+{
+  _wl->setThreads(n);
+  _density->setThreads(n);
+  Problem::setThreads(n);
+}
+
 void MProblem::evaluate(const Mat& variable, Mat& gradient, double& cost, int iter) const
 {
   const Vec& x = variable.col(0);
   const Vec& y = variable.col(1);
   const Vec& r = variable.col(2);
-  const Mat& wirelength_grad = getWirelengthGradient(x, y, r, 100);
-  const Mat& density_grad = getDensityGradient(x, y, r);
-  double penalty = getPenaltyFactor();
-  gradient = wirelength_grad + penalty * density_grad;
-  cost = evalHpwl(x, y, r);
+  double hpwl = 0;
+  Mat wl_g = Mat::Zero(variableMatrixRows(), variableMatrixcols());
+  Mat d_g = Mat::Zero(variableMatrixRows(), variableMatrixcols());
+  evalDensity(variable, d_g, hpwl);
+  cost = hpwl;
+  evalWirelength(variable, wl_g, hpwl, 100);
+  if (iter == 0)
+    _lambda = wl_g.lpNorm<1>() / d_g.lpNorm<1>();
+  d_g = _lambda * d_g;
+  gradient = wl_g + d_g;
+  if (iter % 1 == 0)
+    drawImage(variable, iter);
 }
 
-}  // namespace ipl::imp
+Vec MProblem::getSolutionDistance(const Mat& lhs, const Mat& rhs) const
+{
+  constexpr double k_2pi = 2 * M_PI;
+  auto angle_dis = [](double a, double b) {
+    double angle_a = std::fmod(a, k_2pi);
+    double angle_b = std::fmod(b, k_2pi);
+    double dis = std::fabs(angle_a - angle_b);
+    dis = std::min(dis, k_2pi - dis);
+    return dis;
+  };
+  Vec dis(lhs.cols());
+  auto lhs_xy = lhs.leftCols(2);
+  auto rhs_xy = rhs.leftCols(2);
+  double dis_xy = (lhs_xy - rhs_xy).norm();
+  dis(0) = dis_xy;
+  dis(1) = dis_xy;
+  dis(2) = lhs.col(2).binaryExpr(rhs.col(2), angle_dis).norm();
+  return dis;
+}
+
+Vec MProblem::getGradientDistance(const Mat& lhs, const Mat& rhs) const
+{
+  Vec dis(3);
+  double dis_xy = (lhs.leftCols(2) - rhs.leftCols(2)).norm();
+  dis(0) = dis_xy;
+  dis(1) = dis_xy;
+  dis(2) = (lhs.col(2) - rhs.col(2)).norm();
+  return dis;
+}
+
+void MProblem::getVariableBounds(const Mat& variable, Mat& low, Mat& upper) const
+{
+  const auto& w_2 = _width / 2;
+  const auto& y_2 = _height / 2;
+  const auto& cos = variable.col(2).array().cos();
+  const auto& sin = variable.col(2).array().sin();
+  for (int i = 0; i < variableMatrixRows(); i++) {
+    // double cx = variable(i, 0);
+    // double cy = variable(i, 1);
+    double x_off = std::max(std::abs(w_2(i) * cos(i) - y_2(i) * sin(i)), std::abs(w_2(i) * cos(i) + y_2(i) * sin(i)));
+    double y_off = std::max(std::abs(w_2(i) * sin(i) - y_2(i) * cos(i)), std::abs(w_2(i) * sin(i) + y_2(i) * cos(i)));
+    assert(x_off > 0 || y_off > 0);
+    low(i, 0) = 0.0 + x_off + 1;
+    upper(i, 0) = _core_width - x_off - 1;
+    low(i, 1) = 0.0 + y_off + 1;
+    upper(i, 1) = _core_height - y_off - 1;
+    low(i, 2) = std::numeric_limits<double>::lowest();
+    upper(i, 2) = std::numeric_limits<double>::max();
+  }
+}
+
+// double SolutionDistance(const Vec& a, const Vec& b, int col) const
+// {
+//   constexpr double k_2pi = 2 * M_PI;
+//   auto angle_dis = [](double a, double b) {
+//     double angle_a = std::fmod(a, k_2pi);
+//     double angle_b = std::fmod(b, k_2pi);
+//     double dis = std::fabs(angle_a - angle_b);
+//     dis = std::min(dis, k_2pi - dis);
+//     return dis;
+//   };
+//   return (col != 2 ? (a - b).norm() : a.binaryExpr(b, angle_dis).norm());
+//   // return (col != 2 ? (a - b).norm() : a.dot(b) / a.norm() / b.norm());
+// }
+
+}  // namespace ipl

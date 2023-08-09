@@ -143,7 +143,7 @@ void PlacerDB::initGridManager()
   int32_t row_height = this->get_layout()->get_row_height();
   int32_t site_width = this->get_layout()->get_site_width();
 
-  _grid_manager = new GridManager(core_shape, core_shape.get_width() / site_width, core_shape.get_height() / row_height, 1.0);
+  _grid_manager = new GridManager(core_shape, core_shape.get_width() / site_width, core_shape.get_height() / row_height, 1.0, 1);
   initGridManagerFixedArea();
 }
 
@@ -169,7 +169,9 @@ void PlacerDB::initGridManagerFixedArea()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst->get_shape());
-      grid->add_fixed_area(overlap_area);
+
+      grid->fixed_area += overlap_area;
+      // grid->add_fixed_area(overlap_area);
     }
   }
 
@@ -182,11 +184,17 @@ void PlacerDB::initGridManagerFixedArea()
         _grid_manager->obtainOverlapGridList(overlap_grid_list, boundary);
         for (auto* grid : overlap_grid_list) {
           // tmp fix overlap area between fixed inst and blockage.
-          if (grid->get_fixed_area() != 0) {
+          if (grid->fixed_area != 0) {
             continue;
           }
+
+          // if (grid->get_fixed_area() != 0) {
+          //   continue;
+          // }
           int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, boundary);
-          grid->add_fixed_area(overlap_area);
+          grid->fixed_area += overlap_area;
+
+          // grid->add_fixed_area(overlap_area);
         }
       }
     }
@@ -242,7 +250,10 @@ void PlacerDB::updateGridManager()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst_shape);
-      grid->add_area(overlap_area);
+
+      grid->occupied_area += overlap_area;
+
+      // grid->add_area(overlap_area);
     }
   }
 }

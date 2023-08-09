@@ -33,10 +33,25 @@ class DCTTestInterface : public testing::Test
 TEST_F(DCTTestInterface, diff_test)
 {
   static const int matrix_size = 4;
-  float test_matrix[matrix_size][matrix_size] = {{1.9968, 8.0812, 4.6889, 5.5983},
-                                                 {9.7861, 4.2651, 9.3779, 8.6842},
-                                                 {5.7838, 4.1267, 5.0219, 9.0164},
-                                                 {4.1550, 5.3115, 7.4724, 3.0068}};
+  // float test_matrix[matrix_size][matrix_size] = {
+  //     {15.5, -1.4979, -1.7678, 1.0031}, {2.6363, 1.3624, 1.4022, -1.5821}, {0.00, 0.00, 2.50, 0.00}, {0.82141, 0.16789, 0.77217,
+  //     -1.1124}};
+
+  float test_matrix[matrix_size][matrix_size] = {{4.5808, 4.8286, 3.1250, 6.1502},
+                                                 {2.1395, 4.1183, 6.9379, 9.6931},
+                                                 {6.1780, 3.3037, 5.4794, 4.4396},
+                                                 {7.0409, 5.5725, 6.9586, 9.8493}};
+
+  // float test_matrix[matrix_size][matrix_size]
+  //     = {{7.00, 5.00, 2.00, 7.00}, {2.00, 5.00, 7.00, 2.00}, {1.00, 5.00, 6.00, 3.00}, {1.00, 0.00, 6.00, 3.00}};
+
+  std::cout << "iPL Origin input_value" << std::endl;
+  for (int i = 0; i < matrix_size; i++) {
+    for (int j = 0; j < matrix_size; j++) {
+      std::cout << test_matrix[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
 
   FFT origin_fft(matrix_size, matrix_size, 2, 2);
   origin_fft.updateDensity(0, 0, test_matrix[0][0]);
@@ -59,6 +74,8 @@ TEST_F(DCTTestInterface, diff_test)
   origin_fft.set_thread_nums(1);
   origin_fft.doFFT(false);
 
+  std::cout << std::endl;
+  std::cout << "iPL FFT Electro Force Calculation:" << std::endl;
   for (int i = 0; i < matrix_size; i++) {
     for (int j = 0; j < matrix_size; j++) {
       auto pair = origin_fft.get_electro_force(j, i);
@@ -66,8 +83,6 @@ TEST_F(DCTTestInterface, diff_test)
     }
     std::cout << std::endl;
   }
-
-  std::cout << std::endl;
 
   DCT modify_dct(matrix_size, matrix_size, 2, 2);
   modify_dct.updateDensity(0, 0, test_matrix[0][0]);
@@ -90,15 +105,17 @@ TEST_F(DCTTestInterface, diff_test)
   modify_dct.set_thread_nums(1);
   modify_dct.doDCT(false);
 
+  std::cout << std::endl;
+  std::cout << "iPL DCT Electro Force Calculation:" << std::endl;
   for (int i = 0; i < matrix_size; i++) {
     for (int j = 0; j < matrix_size; j++) {
-      auto pair = modify_dct.get_electro_force(j, i);
+      auto pair = modify_dct.get_electro_force(i, j);
       std::cout << "(" << pair.first << " , " << pair.second << ") ";
+      // std::cout << pair.first << " ";
+      // std::cout << modify_dct.get_electro_phi(i, j) << " ";
     }
     std::cout << std::endl;
   }
-
-  // test_matrix;
 }
 
 }  // namespace ipl

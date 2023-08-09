@@ -113,6 +113,7 @@ set(sources
     ${CMAKE_CURRENT_SOURCE_DIR}/interface/irt_io.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/interface/icts_io.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/interface/idrc_io.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/interface/web_io.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/config/guiConfig.cpp
 
@@ -255,4 +256,4 @@ endif()
 
 
 #     add_subdirectory(${IDB_HOME} idb.out)
-# SET(CMAKE_BUILD_TYPE "Release")
+SET(CMAKE_BUILD_TYPE "debug")

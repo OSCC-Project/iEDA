@@ -20,13 +20,31 @@
 
 namespace irt {
 
+class ViaMasterIdx
+{
+ public:
+  ViaMasterIdx() = default;
+  ~ViaMasterIdx() = default;
+  // getter
+  irt_int get_below_layer_idx() const { return _below_layer_idx; }
+  irt_int get_via_idx() const { return _via_idx; }
+  // setter
+  void set_below_layer_idx(const irt_int below_layer_idx) { _below_layer_idx = below_layer_idx; }
+  void set_via_idx(const irt_int via_idx) { _via_idx = via_idx; }
+  // function
+
+ private:
+  irt_int _below_layer_idx = -1;
+  irt_int _via_idx = -1;
+};
+
 class ViaMaster
 {
  public:
   ViaMaster() = default;
   ~ViaMaster() = default;
   // getter
-  std::pair<irt_int, irt_int>& get_via_idx() { return _via_idx; }
+  ViaMasterIdx& get_via_master_idx() { return _via_master_idx; }
   std::string& get_via_name() { return _via_name; }
   LayerRect& get_above_enclosure() { return _above_enclosure; }
   Direction get_above_direction() const { return _above_direction; }
@@ -35,7 +53,12 @@ class ViaMaster
   std::vector<PlanarRect>& get_cut_shape_list() { return _cut_shape_list; }
   irt_int get_cut_layer_idx() const { return _cut_layer_idx; }
   // setter
-  void set_via_idx(const std::pair<irt_int, irt_int>& via_idx) { _via_idx = via_idx; }
+  void set_via_master_idx(const ViaMasterIdx& via_master_idx) { _via_master_idx = via_master_idx; }
+  void set_via_master_idx(const irt_int below_layer_idx, const irt_int via_idx)
+  {
+    _via_master_idx.set_below_layer_idx(below_layer_idx);
+    _via_master_idx.set_via_idx(via_idx);
+  }
   void set_via_name(const std::string& via_name) { _via_name = via_name; }
   void set_above_enclosure(const LayerRect& above_enclosure) { _above_enclosure = above_enclosure; }
   void set_above_direction(const Direction& above_direction) { _above_direction = above_direction; }
@@ -46,7 +69,7 @@ class ViaMaster
   // function
 
  private:
-  std::pair<irt_int, irt_int> _via_idx;  //<! below_layer_idx, idx
+  ViaMasterIdx _via_master_idx;
   std::string _via_name;
   LayerRect _above_enclosure;
   Direction _above_direction = Direction::kNone;

@@ -65,6 +65,7 @@ class RegionQuery
   void getIntersectPoly(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   void deleteIntersectPoly(std::set<DrcPoly*>& intersect_poly_set);
   DrcPoly* rebuildPoly_add(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
+  std::vector<DrcPoly*> rebuildPoly_add_list(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   std::vector<DrcPoly*> rebuildPoly_del(std::set<DrcPoly*>& intersect_poly_set, std::vector<DrcRect*> drc_rect_list);
   void addPoly(DrcPoly* new_polygon);
   void addPolyEdge_NotAddToRegion(DrcPoly* new_poly);
@@ -86,6 +87,7 @@ class RegionQuery
 
   // setter
   // getter
+  std::vector<DrcRect*>& getRegionRectList() { return _region_rect_list; }
   std::set<DrcRect*>& getCutRectSet() { return _cut_rect_set; }
   std::set<DrcRect*>& getRoutingRectSet() { return _routing_rect_set; }
   std::map<int, std::map<int, std::set<DrcPoly*>>>& getRegionPolysMap() { return _region_polys_map; }
@@ -128,7 +130,7 @@ class RegionQuery
   void addRectScope(DrcRect* drc_rect, Tech* tech);
   void removeRectScope(DrcRect* drc_rect);
 
-  /************下面都是没用到的**********/
+  void queryContainsInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryIntersectsInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryInCutLayer(int cutLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   void queryEdgeInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeSegment, DrcEdge*>>& result);
@@ -158,34 +160,38 @@ class RegionQuery
   std::vector<DrcViolationSpot*> _cut_diff_layer_spacing_spot_list;
   std::vector<DrcViolationSpot*> _cut_enclosure_spot_list;
   std::vector<DrcViolationSpot*> _cut_enclosure_edge_spot_list;
-
   std::vector<DrcViolationSpot*> _prl_run_length_spacing_spot_list;
 
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_prl_vio_box_tree;
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_short_vio_box_tree;
   std::map<int, bgi::rtree<RTreeBox, bgi::quadratic<16>>> _layer_to_metal_EOL_vio_box_tree;
 
+  std::vector<DrcViolationSpot*> _metal_corner_fill_spacing_spot_list;
+  std::vector<DrcViolationSpot*> _metal_jog_spacing_spot_list;
   std::vector<DrcViolationSpot*> _metal_eol_spacing_spot_list;
   std::vector<DrcViolationSpot*> _metal_notch_spacing_spot_list;
   std::vector<DrcViolationSpot*> _min_area_spot_list;
   std::vector<DrcViolationSpot*> _min_step_spot_list;
+  std::vector<DrcViolationSpot*> _min_hole_spot_list;
 
  private:
-  int _cut_diff_layer_spacing_count;
-  int _common_spacing_count;
-  int _eol_spacing_count;
-  int _short_count;
-  int _corner_fill_spacing_count;
-  int _notch_spacing_count;
-  int _jog_spacing_count;
-  int _cut_common_spacing_count;
-  int _cut_eol_spacing_count;
-  int _area_count;
-  int _common_enclosure_count;
-  int _egde_enclosure_count;
-  int _width_count;
-  int _minstep_count;
-  int _min_hole_count;
+  int _cut_diff_layer_spacing_count = 0;
+  int _common_spacing_count = 0;
+  int _eol_spacing_count = 0;
+  int _short_count = 0;
+  int _corner_fill_spacing_count = 0;
+  int _notch_spacing_count = 0;
+  int _jog_spacing_count = 0;
+  int _cut_common_spacing_count = 0;
+  int _cut_eol_spacing_count = 0;
+  int _area_count = 0;
+  int _common_enclosure_count = 0;
+  int _egde_enclosure_count = 0;
+  int _width_count = 0;
+  int _minstep_count = 0;
+  int _min_hole_count = 0;
+
+  std::vector<DrcRect*> _region_rect_list;
 
   std::set<std::pair<DrcRect*, DrcRect*>> _prl_spacing_vio_set;
   std::set<std::pair<DrcRect*, DrcRect*>> _short_vio_set;

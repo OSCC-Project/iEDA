@@ -25,14 +25,19 @@
  */
 
 #include "HPWirelength.hh"
+#include "omp.h"
 
 namespace ipl {
 
 int64_t HPWirelength::obtainTotalWirelength()
 {
   int64_t total_hpwl = 0;
+
+#pragma omp parallel for num_threads(8)
   for (auto* network : _topology_manager->get_network_list()) {
     Rectangle<int32_t> network_shape = std::move(network->obtainNetWorkShape());
+
+#pragma omp atomic
     total_hpwl += network_shape.get_half_perimeter();
   }
   return total_hpwl;

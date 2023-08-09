@@ -40,7 +40,11 @@ static float fastExp(float a);
 
 WAWirelengthGradient::WAWirelengthGradient(TopologyManager* topology_manager) : WirelengthGradient(topology_manager)
 {
-  initWAInfo();
+  size_t pin_size = _topology_manager->get_node_list().size();
+  _pin_grad_x_list.resize(pin_size);
+  _pin_grad_y_list.resize(pin_size);
+
+  // initWAInfo();
 }
 
 void WAWirelengthGradient::initWAInfo()
@@ -49,7 +53,7 @@ void WAWirelengthGradient::initWAInfo()
   _wa_pin_info_list.resize(_topology_manager->get_node_list().size());
 }
 
-void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num)
+void WAWirelengthGradient::updateWirelengthForce_OLD(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num)
 {
   // reset all WA variables.
   for (auto& wa_pin_info : _wa_pin_info_list) {
@@ -120,6 +124,107 @@ void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, f
   }
 }
 
+void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num)
+{
+  // NOLINTNEXTLINE
+  int32_t net_chunk_size = std::max(int(_topology_manager->get_network_list().size() / thread_num / 16), 1);
+#pragma omp parallel for num_threads(thread_num) schedule(dynamic, net_chunk_size)
+  for (auto* network : _topology_manager->get_network_list()) {
+    if (network->isIgnoreNetwork()) {
+      continue;
+    }
+
+    float net_expminsum_x, net_expmaxsum_x, net_expminsum_y, net_expmaxsum_y;
+    float net_x_expminsum_x, net_x_expmaxsum_x, net_y_expminsum_y, net_y_expmaxsum_y;
+
+    net_expminsum_x = net_expmaxsum_x = net_expminsum_y = net_expmaxsum_y = 0.0f;
+    net_x_expminsum_x = net_x_expmaxsum_x = net_y_expminsum_y = net_y_expmaxsum_y = 0.0f;
+
+    Rectangle<int32_t> network_shape = std::move(network->obtainNetWorkShape());
+    for (auto* node : network->get_node_list()) {
+      Point<int32_t> node_loc = std::move(node->get_location());
+      float exp_min_x = (network_shape.get_ll_x() - node_loc.get_x()) * coeff_x;
+      float exp_max_x = (node_loc.get_x() - network_shape.get_ur_x()) * coeff_x;
+      float exp_min_y = (network_shape.get_ll_y() - node_loc.get_y()) * coeff_y;
+      float exp_max_y = (node_loc.get_y() - network_shape.get_ur_y()) * coeff_y;
+
+      // min x.
+      if (exp_min_x > min_force_bar) {
+        float pin_expmin_x = fastExp(exp_min_x);
+        net_expminsum_x += pin_expmin_x;
+        net_x_expminsum_x += node_loc.get_x() * pin_expmin_x;
+      }
+
+      // max x.
+      if (exp_max_x > min_force_bar) {
+        float pin_expmax_x = fastExp(exp_max_x);
+        net_expmaxsum_x += pin_expmax_x;
+        net_x_expmaxsum_x += node_loc.get_x() * pin_expmax_x;
+      }
+
+      // min y.
+      if (exp_min_y > min_force_bar) {
+        float pin_expmin_y = fastExp(exp_min_y);
+        net_expminsum_y += pin_expmin_y;
+        net_y_expminsum_y += node_loc.get_y() * pin_expmin_y;
+      }
+
+      // max y.
+      if (exp_max_y > min_force_bar) {
+        float pin_expmax_y = fastExp(exp_max_y);
+        net_expmaxsum_y += pin_expmax_y;
+        net_y_expmaxsum_y += node_loc.get_y() * pin_expmax_y;
+      }
+    }
+
+    for (auto* node : network->get_node_list()) {
+      Point<int32_t> node_loc = std::move(node->get_location());
+      float exp_min_x = (network_shape.get_ll_x() - node_loc.get_x()) * coeff_x;
+      float exp_max_x = (node_loc.get_x() - network_shape.get_ur_x()) * coeff_x;
+      float exp_min_y = (network_shape.get_ll_y() - node_loc.get_y()) * coeff_y;
+      float exp_max_y = (node_loc.get_y() - network_shape.get_ur_y()) * coeff_y;
+
+      float pin_grad_min_x, pin_grad_max_x, pin_grad_min_y, pin_grad_max_y;
+      pin_grad_min_x = pin_grad_max_x = pin_grad_min_y = pin_grad_max_y = 0.0f;
+
+      // min x.
+      if (exp_min_x > min_force_bar) {
+        float pin_expmin_x = fastExp(exp_min_x);
+        pin_grad_min_x
+            = (net_expminsum_x * (pin_expmin_x * (1.0 - coeff_x * node_loc.get_x())) + coeff_x * pin_expmin_x * net_x_expminsum_x)
+              / (net_expminsum_x * net_expminsum_x);
+      }
+
+      // max x.
+      if (exp_max_x > min_force_bar) {
+        float pin_expmax_x = fastExp(exp_max_x);
+        pin_grad_max_x
+            = (net_expmaxsum_x * (pin_expmax_x * (1.0 + coeff_x * node_loc.get_x())) - coeff_x * pin_expmax_x * net_x_expmaxsum_x)
+              / (net_expmaxsum_x * net_expmaxsum_x);
+      }
+
+      // min y.
+      if (exp_min_y > min_force_bar) {
+        float pin_expmin_y = fastExp(exp_min_y);
+        pin_grad_min_y
+            = (net_expminsum_y * (pin_expmin_y * (1.0 - coeff_y * node_loc.get_y())) + coeff_y * pin_expmin_y * net_y_expminsum_y)
+              / (net_expminsum_y * net_expminsum_y);
+      }
+
+      // max y.
+      if (exp_max_y > min_force_bar) {
+        float pin_expmax_y = fastExp(exp_max_y);
+        pin_grad_max_y
+            = (net_expmaxsum_y * (pin_expmax_y * (1.0 + coeff_y * node_loc.get_y())) - coeff_y * pin_expmax_y * net_y_expmaxsum_y)
+              / (net_expmaxsum_y * net_expmaxsum_y);
+      }
+
+      _pin_grad_x_list[node->get_node_id()] = (pin_grad_min_x - pin_grad_max_x);
+      _pin_grad_y_list[node->get_node_id()] = (pin_grad_min_y - pin_grad_max_y);
+    }
+  }
+}
+
 void WAWirelengthGradient::waWLAnalyzeForDebug(float coeff_x, float coeff_y)
 {
   std::ofstream file_stream;
@@ -164,7 +269,7 @@ void WAWirelengthGradient::waWLAnalyzeForDebug(float coeff_x, float coeff_y)
   std::cout << "append gradientAnalyze_4pins.txt to ./result/pl/" << std::endl;
 }
 
-Point<float> WAWirelengthGradient::obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y)
+Point<float> WAWirelengthGradient::obtainWirelengthGradient_OLD(int32_t inst_id, float coeff_x, float coeff_y)
 {
   float gradient_x = 0.0F;
   float gradient_y = 0.0F;
@@ -192,6 +297,28 @@ Point<float> WAWirelengthGradient::obtainWirelengthGradient(int32_t inst_id, flo
 
   // std::cout << "DEBUG: wl grad collecting outer runtime: " << outer_collect_status.elapsedRunTime() << " s" << std::endl;
   // std::cout << "DEBUG: wl grad collecting inner runtime: " << wl_collect_inner_runtime << " s" << std::endl;
+
+  return Point<float>(gradient_x, gradient_y);
+}
+
+Point<float> WAWirelengthGradient::obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y)
+{
+  float gradient_x = 0.0F;
+
+  float gradient_y = 0.0F;
+
+  auto* group = _topology_manager->findGroupById(inst_id);
+  if (group) {
+    for (auto* node : group->get_node_list()) {
+      // add net weight.
+      float net_weight = node->get_network()->get_net_weight();
+      float pin_gradient_x = _pin_grad_x_list[node->get_node_id()] * net_weight;
+      float pin_gradient_y = _pin_grad_y_list[node->get_node_id()] * net_weight;
+
+      gradient_x += pin_gradient_x;
+      gradient_y += pin_gradient_y;
+    }
+  }
 
   return Point<float>(gradient_x, gradient_y);
 }
