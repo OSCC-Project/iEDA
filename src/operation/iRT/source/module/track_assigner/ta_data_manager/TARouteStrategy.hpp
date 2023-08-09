@@ -26,9 +26,11 @@ enum class TARouteStrategy
 {
   kNone,
   kFullyConsider,
-  kIgnoringSelfPanelResult,
-  kIgnoringOtherPanelResult,
-  kIgnoringBlockage
+  kIgnoringSelfTask,
+  kIgnoringSelfPanel,
+  kIgnoringOtherPanel,
+  kIgnoringEnclosure,
+  kIgnoringBlockAndPin
 };
 
 struct GetTARouteStrategyName
@@ -43,14 +45,20 @@ struct GetTARouteStrategyName
       case TARouteStrategy::kFullyConsider:
         ta_route_strategy_name = "fully_consider";
         break;
-      case TARouteStrategy::kIgnoringSelfPanelResult:
-        ta_route_strategy_name = "ignoring_self_panel_result";
+      case TARouteStrategy::kIgnoringSelfTask:
+        ta_route_strategy_name = "ignoring_self_task";
         break;
-      case TARouteStrategy::kIgnoringOtherPanelResult:
-        ta_route_strategy_name = "ignoring_other_panel_result";
+      case TARouteStrategy::kIgnoringSelfPanel:
+        ta_route_strategy_name = "ignoring_self_panel";
         break;
-      case TARouteStrategy::kIgnoringBlockage:
-        ta_route_strategy_name = "ignoring_blockage";
+      case TARouteStrategy::kIgnoringOtherPanel:
+        ta_route_strategy_name = "ignoring_other_panel";
+        break;
+      case TARouteStrategy::kIgnoringEnclosure:
+        ta_route_strategy_name = "ignoring_enclosure";
+        break;
+      case TARouteStrategy::kIgnoringBlockAndPin:
+        ta_route_strategy_name = "ignoring_block_and_pin";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

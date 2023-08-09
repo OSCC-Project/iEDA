@@ -38,6 +38,8 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
   // irt_int enable_idrc_interfaces;  // optional
   _config_list.push_back(std::make_pair("-enable_idrc_interfaces", ValueType::kInt));
+  // irt_int pa_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-pa_max_iter_num", ValueType::kInt));
   // double ra_initial_penalty;               // optional
   _config_list.push_back(std::make_pair("-ra_initial_penalty", ValueType::kDouble));
   // double ra_penalty_drop_rate;             // optional
@@ -48,6 +50,16 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ra_inner_max_iter_num", ValueType::kInt));
   // irt_int gr_max_iter_num;               // optional
   _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
+  // irt_int ta_model_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ta_model_max_iter_num", ValueType::kInt));
+  // irt_int ta_panel_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-ta_panel_max_iter_num", ValueType::kInt));
+  // irt_int dr_model_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-dr_model_max_iter_num", ValueType::kInt));
+  // irt_int dr_box_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-dr_box_max_iter_num", ValueType::kInt));
+  // irt_int vr_max_iter_num;               // optional
+  _config_list.push_back(std::make_pair("-vr_max_iter_num", ValueType::kInt));
 
   TclUtil::addOption(this, _config_list);
 }

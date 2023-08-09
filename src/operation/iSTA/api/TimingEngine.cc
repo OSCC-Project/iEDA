@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -214,6 +214,26 @@ LibertyTable* TimingEngine::getCellLibertyTable(
     return table;
   }
   return nullptr;
+}
+
+/**
+ * @brief find the end/start pins in the given start/ pin in the
+ * timing path. (after running the step:updateTiming(StaClockPropagation))
+ *
+ * @param pin_name
+ * @param is_find_end
+ * @return std::set<std::string>
+ */
+std::set<std::string> TimingEngine::findStartOrEnd(const char* pin_name) {
+  auto* the_vertex = _ista->findVertex(pin_name);
+  LOG_FATAL_IF(!the_vertex) << pin_name << " vertex is not found.";
+  if (!the_vertex->is_start() && !the_vertex->is_end()) {
+    return {};
+  }
+  bool is_find_end = the_vertex->is_start();
+  std::set<std::string> pin_names =
+      _ista->findStartOrEnd(the_vertex, is_find_end);
+  return pin_names;
 }
 
 /**

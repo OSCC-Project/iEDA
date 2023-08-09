@@ -25,8 +25,8 @@ namespace irt {
 enum class VRSourceType
 {
   kNone,
-  kBlockage,
-  kNet
+  kBlockAndPin,
+  kNetResult
 };
 
 struct GetVRSourceTypeName
@@ -38,11 +38,11 @@ struct GetVRSourceTypeName
       case VRSourceType::kNone:
         vr_source_type_name = "none";
         break;
-      case VRSourceType::kBlockage:
-        vr_source_type_name = "blockage";
+      case VRSourceType::kBlockAndPin:
+        vr_source_type_name = "block_and_pin";
         break;
-      case VRSourceType::kNet:
-        vr_source_type_name = "net";
+      case VRSourceType::kNetResult:
+        vr_source_type_name = "net_result";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
