@@ -37,19 +37,19 @@ class DRBox : public SpaceRegion
   ~DRBox() = default;
   // getter
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
+  ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::map<DRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
-  ScaleAxis& get_box_scale_axis() { return _box_scale_axis; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   DRBoxStat& get_dr_box_stat() { return _dr_box_stat; }
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
+  void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_source_region_query_map(const std::map<DRSourceType, RegionQuery*>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
-  void set_box_scale_axis(const ScaleAxis& box_scale_axis) { _box_scale_axis = box_scale_axis; }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
@@ -120,8 +120,8 @@ class DRBox : public SpaceRegion
 
  private:
   DRBoxId _dr_box_id;
+  ScaleAxis _box_track_axis;
   std::map<DRSourceType, RegionQuery*> _source_region_query_map;
-  ScaleAxis _box_scale_axis;
   std::vector<DRTask> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;
   DRBoxStat _dr_box_stat;
