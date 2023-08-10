@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
       "[___]|_____|       \\/  \\/  \n"
       "********************************\n"
 
-      "WELCOME TO iPower TCL-shell interface. \n";
+      "WELCOME TO iPower TCL-shell interface. \e[0m";
 
   // get an UserShell (singleton) instance
   auto* shell = ieda::UserShell::getShell();
