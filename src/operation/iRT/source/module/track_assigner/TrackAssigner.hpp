@@ -58,10 +58,10 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
+  void buildPanelTrackAxis(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
   void updateNetEnclosureMap(TAModel& ta_model);
-  void buildPanelScaleAxis(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net);
@@ -71,6 +71,7 @@ class TrackAssigner
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void outputTADataset(TAModel& ta_model);
   void buildLayerPanelList(TAModel& ta_model);
+  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void makeRoutingState(TAPanel& ta_panel);
@@ -121,6 +122,7 @@ class TrackAssigner
   void buildRoutingResult(TATask& ta_task);
   void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void reportTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool stopTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
   void reportTAModel(TAModel& ta_model);

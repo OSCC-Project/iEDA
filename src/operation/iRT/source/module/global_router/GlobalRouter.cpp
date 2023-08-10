@@ -1896,6 +1896,26 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   base_region_struct.push(gp_boundary);
   gp_gds.addStruct(base_region_struct);
 
+  // gcell_axis
+  GPStruct gcell_axis_struct("gcell_axis");
+  std::vector<irt_int> gcell_x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
+  std::vector<irt_int> gcell_y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
+  for (irt_int x : gcell_x_list) {
+    GPPath gp_path;
+    gp_path.set_layer_idx(0);
+    gp_path.set_data_type(1);
+    gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
+    gcell_axis_struct.push(gp_path);
+  }
+  for (irt_int y : gcell_y_list) {
+    GPPath gp_path;
+    gp_path.set_layer_idx(0);
+    gp_path.set_data_type(1);
+    gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
+    gcell_axis_struct.push(gp_path);
+  }
+  gp_gds.addStruct(gcell_axis_struct);
+
   // gr_node_map
   GPStruct gr_node_map_struct("gr_node_map");
   for (GridMap<GRNode>& gr_node_map : gr_model.get_layer_node_map()) {
@@ -2222,7 +2242,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
       // bounding_box
       GPBoundary gp_boundary;
       gp_boundary.set_layer_idx(0);
-      gp_boundary.set_data_type(1);
+      gp_boundary.set_data_type(2);
       gp_boundary.set_rect(gr_net.get_bounding_box().get_real_rect());
       net_struct.push(gp_boundary);
     }
