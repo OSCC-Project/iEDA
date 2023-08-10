@@ -600,6 +600,8 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, DRPin& dr_pin)
 
 DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   PlanarRect& dr_base_region = dr_box.get_base_region();
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
 
@@ -608,6 +610,10 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
 
   DRGroup dr_group;
   for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
+    Direction direction = RTUtil::getDirection(routing_segment.get_first()->value(), routing_segment.get_second()->value());
+    if (direction == Direction::kProximal) {
+      direction = routing_layer_list[ta_layer_idx].get_direction();
+    }
     Segment<PlanarCoord> cutting_segment(routing_segment.get_first()->value(), routing_segment.get_second()->value());
     if (!RTUtil::isOverlap(dr_base_region, cutting_segment)) {
       continue;
@@ -617,7 +623,6 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
     irt_int first_x = first_coord.get_x();
     irt_int first_y = first_coord.get_y();
     PlanarCoord& second_coord = cutting_segment.get_second();
-    Direction direction = RTUtil::getDirection(first_coord, second_coord);
     if (direction == Direction::kHorizontal) {
       for (irt_int x : RTUtil::getClosedScaleList(first_x, second_coord.get_x(), box_track_axis.get_x_grid_list())) {
         dr_group.get_coord_direction_map()[LayerCoord(x, first_y, ta_layer_idx)].insert(direction);
@@ -626,8 +631,6 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
       for (irt_int y : RTUtil::getClosedScaleList(first_y, second_coord.get_y(), box_track_axis.get_y_grid_list())) {
         dr_group.get_coord_direction_map()[LayerCoord(first_x, y, ta_layer_idx)].insert(direction);
       }
-    } else if (RTUtil::isProximal(first_coord, second_coord)) {
-      LOG_INST.error(Loc::current(), "The ta segment is proximal!");
     }
   }
   return dr_group;
@@ -636,7 +639,7 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
 void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask& dr_task)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-#if 0 // zzs
+#if 1
   irt_int top_layer_idx = routing_layer_list.back().get_layer_idx();
   irt_int bottom_layer_idx = routing_layer_list.front().get_layer_idx();
 #else

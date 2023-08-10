@@ -26,7 +26,8 @@ enum class PASourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure
+  kEnclosure,
+  kAccessPoint
 };
 
 struct GetPASourceTypeName
@@ -43,6 +44,9 @@ struct GetPASourceTypeName
         break;
       case PASourceType::kEnclosure:
         pa_source_type_name = "enclosure";
+        break;
+      case PASourceType::kAccessPoint:
+        pa_source_type_name = "access_point";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
