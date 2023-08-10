@@ -214,8 +214,15 @@ unsigned StaResetPropagation::operator()(StaArc* the_arc) {
   StaVertex* the_vertex;
   if (_is_fwd) {
     the_vertex = the_arc->get_snk();
+    if (the_vertex->is_end()) {
+      return 1;
+    }
   } else {
     the_vertex = the_arc->get_src();
+
+    if (the_vertex->is_start()) {
+      return 1;
+    }
   }
   return the_vertex->exec(*this);
 }
