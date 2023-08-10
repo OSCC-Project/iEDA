@@ -28,7 +28,7 @@ enum class GPGraphType
   kInfo,
   kNeighbor,
   kKey,
-  kScaleAxis,
+  kTrackAxis,
   kPath,
   kBlockAndPin,
   kEnclosure,
@@ -63,7 +63,7 @@ struct GetGPGraphTypeName
       case GPGraphType::kKey:
         data_type_name = "key";
         break;
-      case GPGraphType::kScaleAxis:
+      case GPGraphType::kTrackAxis:
         data_type_name = "scale_axis";
         break;
       case GPGraphType::kPath:
