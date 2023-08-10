@@ -77,7 +77,7 @@ unsigned PwrBuildGraph::annotateInternalPower(PwrInstArc* inst_power_arc,
  */
 unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
   ieda::Stats stats;
-  LOG_INFO << "build graph start";
+  LOG_INFO << "build power graph start";
 
   _power_graph.set_sta_graph(sta_graph);
   // build power vertex based on sta vertex.
@@ -163,11 +163,11 @@ unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
     }
   }
 
-  LOG_INFO << "build graph end";
+  LOG_INFO << "build power graph end";
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "build graph memory usage " << memory_delta << "MB";
+  LOG_INFO << "build power graph memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
-  LOG_INFO << "build graph time elapsed " << time_delta << "s";
+  LOG_INFO << "build power graph time elapsed " << time_delta << "s";
 
   return 1;
 }
