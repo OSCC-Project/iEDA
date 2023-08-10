@@ -829,8 +829,9 @@ void TimingEngine::repowerInstance(const char* instance_name,
 /**
  * @brief move the instance to a new location.
  *
- * @param instance_name
- * @param cell_name
+ * @param instance_name the moved instance name.
+ * @param update_level the propgate end level minus current prop start level.
+ * @param prop_type bwd or fwd or both incr update.
  */
 void TimingEngine::moveInstance(const char* instance_name,
                                 std::optional<unsigned> update_level,
@@ -854,7 +855,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           reset_fwd_prop.set_incr_func(&_incr_func);
           if (update_level) {
             reset_fwd_prop.set_max_min_level((*the_vertex)->get_level() +
-                                             ((*update_level) << 1));
+                                             (*update_level));
           }
           src_vertex->exec(reset_fwd_prop);
         }
@@ -871,7 +872,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           if (update_level &&
               ((*the_vertex)->get_level() > ((*update_level) << 1))) {
             reset_bwd_prop.set_max_min_level((*the_vertex)->get_level() -
-                                             ((*update_level) << 1));
+                                             (*update_level));
           }
           snk_vertex->exec(reset_bwd_prop);
         }

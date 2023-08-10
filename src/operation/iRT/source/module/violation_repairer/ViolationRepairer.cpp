@@ -398,7 +398,6 @@ void ViolationRepairer::repairVRModel(VRModel& vr_model)
 
 void ViolationRepairer::countVRModel(VRModel& vr_model)
 {
-  Die& die = DM_INST.getDatabase().get_die();
   irt_int micron_dbu = DM_INST.getDatabase().get_micron_dbu();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -408,9 +407,6 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   std::map<irt_int, double>& routing_prefer_wire_length_map = vr_model_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
-  std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
-  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
-  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
 
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(vr_net.get_vr_result_tree())) {
@@ -432,44 +428,50 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     }
   }
 
-  std::vector<DRCRect> drc_rect_list;
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      drc_rect_list.push_back(drc_rect);
-    }
-  }
-
+  std::map<VRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = vr_model_stat.get_source_drc_number_map();
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
-  for (irt_int x = 0; x < die.getXSize(); x++) {
-    for (irt_int y = 0; y < die.getYSize(); y++) {
+  for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
+
+      std::vector<DRCRect> drc_rect_list;
+      for (bool is_routing : {true, false}) {
+        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(vr_gcell.getRegionQuery(VRSourceType::kNetResult), is_routing)) {
+          for (auto& [net_idx, rect_set] : net_rect_map) {
+            for (const LayerRect& layer_rect : rect_set) {
+              drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);
+            }
+          }
+        }
+      }
 
       for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
         RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
-        std::map<std::string, irt_int> drc_number_map;
-        switch (vr_source_type) {
-          case VRSourceType::kBlockAndPin:
-            drc_number_map = DC_INST.getViolation(region_query, drc_rect_list);
-            break;
-          case VRSourceType::kNetResult:
-            drc_number_map = DC_INST.getViolation(region_query);
-            break;
-          default:
-            LOG_INST.error(Loc::current(), "The type is error!");
-            break;
-        }
-        for (auto& [drc, number] : drc_number_map) {
+        for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
           source_drc_number_map[vr_source_type][drc] += number;
         }
       }
     }
   }
 
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    std::vector<DRCRect> drc_rect_list;
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      drc_rect_list.push_back(drc_rect);
+    }
+    for (auto& [drc, number] : DC_INST.getViolation(drc_rect_list)) {
+      source_drc_number_map[VRSourceType::kNetResult][drc] += number;
+    }
+  }
+
+  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     for (auto& [drc, number] : drc_number_map) {
       rule_number_map[drc] += number;
     }
   }
+
+  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {
     irt_int total_number = 0;
     for (auto& [drc, number] : drc_number_map) {

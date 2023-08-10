@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -68,22 +68,8 @@ TEST_F(AnnotateToggleSPTest, calc_tc_sp) {
   Power ipower(&(timing_engine->get_ista()->get_graph()));
   ipower.buildGraph();
 
-  // vcd parser
-  VcdParserWrapper vcd_parser_wrapper;
-  vcd_parser_wrapper.readVCD("/home/shaozheqing/benchmark/asic_top.vcd",
-                             std::make_pair(0, 326034000000));
-  std::string top_instance_name = "u0_asic_top";
-  vcd_parser_wrapper.buildAnnotateDB(top_instance_name);
-  vcd_parser_wrapper.calcScopeToggleAndSp();
-
-  std::ofstream out_file;
-  out_file.open("/home/shaozheqing/iSO/src/iPower/test/file.txt",
-                std::ios::out | std::ios::trunc);
-
-  vcd_parser_wrapper.printAnnotateDB(out_file);
-  out_file.close();
-  auto* annotate_db = vcd_parser_wrapper.get_annotate_db();
-  ipower.annotateToggleSP(annotate_db);
+  ipower.readVCD("/home/shaozheqing/benchmark/asic_top.vcd", "u0_asic_top");
+  ipower.annotateToggleSP();
 
   // timing_engine->updateTiming();
 
