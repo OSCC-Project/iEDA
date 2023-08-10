@@ -112,18 +112,17 @@ unsigned Power::setupClock(PwrClock&& fastest_clock,
 unsigned Power::readVCD(
     std::string_view vcd_path, std::string top_instance_name,
     std::optional<std::pair<int64_t, int64_t>> begin_end_time) {
-  VcdParserWrapper vcd_parser_wrapper;
+  LOG_INFO << "read vcd start";
+  _vcd_wrapper.readVCD(vcd_path, begin_end_time);
+  _vcd_wrapper.buildAnnotateDB(top_instance_name);
+  _vcd_wrapper.calcScopeToggleAndSp();
 
-  vcd_parser_wrapper.readVCD(vcd_path, begin_end_time);
-  vcd_parser_wrapper.buildAnnotateDB(top_instance_name);
-  vcd_parser_wrapper.calcScopeToggleAndSp();
-
-  std::ofstream out_file;
   // TODO make a opt for out file
-  out_file.open("vcd_out_file.txt", std::ios::out | std::ios::trunc);
-  vcd_parser_wrapper.printAnnotateDB(out_file);
-  out_file.close();
-
+  // std::ofstream out_file;
+  // out_file.open("vcd_out_file.txt", std::ios::out | std::ios::trunc);
+  // _vcd_wrapper.printAnnotateDB(out_file);
+  // out_file.close();
+  LOG_INFO << "read vcd end";
   return 1;
 }
 
@@ -133,10 +132,16 @@ unsigned Power::readVCD(
  * @param annotate_db
  * @return unsigned
  */
-unsigned Power::annotateToggleSP(AnnotateDB* annotate_db) {
+unsigned Power::annotateToggleSP() {
+  LOG_INFO << "annotate toggle sp start";
+
   AnnotateToggleSP annotate_toggle_SP;
-  annotate_toggle_SP.set_annotate_db(annotate_db);
-  return annotate_toggle_SP(&_power_graph);
+  annotate_toggle_SP.set_annotate_db(_vcd_wrapper.get_annotate_db());
+
+  unsigned is_ok = annotate_toggle_SP(&_power_graph);
+  LOG_INFO << "annotate toggle sp end";
+
+  return is_ok;
 }
 
 /**
