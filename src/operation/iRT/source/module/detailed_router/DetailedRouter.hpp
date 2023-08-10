@@ -61,16 +61,16 @@ class DetailedRouter
   DRNet convertToDRNet(Net& net);
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
+  void buildBoxTrackAxis(DRModel& dr_model);
   void updateNetFixedRectMap(DRModel& dr_model);
   void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
   void decomposeLengthyTANode(DRModel& dr_model);
-  void decomposeTANode(DRNet& dr_net);
+  void decomposeTANode(DRModel& dr_model, DRNet& dr_net);
   std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> getPreTaPostList(DRNet& dr_net);
   std::vector<TNode<RTNode>*> getDecomposedNodeList(TNode<RTNode>* ta_node_node);
-  void shrinkTAResults(DRNet& dr_net);
+  void shrinkTAResults(DRModel& dr_model, DRNet& dr_net);
   void updateNetPanelResultMap(DRModel& dr_model);
   void updateNetEnclosureMap(DRModel& dr_model);
-  void buildBoxScaleAxis(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRModel& dr_model, DRNet& dr_net);
@@ -78,6 +78,7 @@ class DetailedRouter
   DRGroup makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void buildDRBoxMap(DRModel& dr_model);
+  void buildDRBox(DRModel& dr_model, DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void makeRoutingState(DRBox& dr_box);
@@ -129,6 +130,7 @@ class DetailedRouter
   void buildRoutingResult(DRTask& dr_task);
   void countDRBox(DRModel& dr_model, DRBox& dr_box);
   void reportDRBox(DRModel& dr_model, DRBox& dr_box);
+  void freeDRBox(DRModel& dr_model, DRBox& dr_box);
   bool stopDRBox(DRModel& dr_model, DRBox& dr_box);
   void countDRModel(DRModel& dr_model);
   void reportDRModel(DRModel& dr_model);

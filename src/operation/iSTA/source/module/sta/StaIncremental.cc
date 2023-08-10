@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -22,9 +22,10 @@
  * @date 2022-01-08
  */
 
+#include "StaIncremental.hh"
+
 #include "StaDataPropagation.hh"
 #include "StaDelayPropagation.hh"
-#include "StaIncremental.hh"
 #include "StaSlewPropagation.hh"
 #include "log/Log.hh"
 #include "sta/StaVertex.hh"
@@ -174,11 +175,30 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
 
     _incr_func->insertFwdQueue(the_vertex);
 
-    FOREACH_SRC_ARC(the_vertex, src_arc) { src_arc->exec(*this); }
+    FOREACH_SRC_ARC(the_vertex, src_arc) {
+      if (!src_arc->isDelayArc()) {
+        continue;
+      }
+
+      if (src_arc->is_loop_disable()) {
+        continue;
+      }
+
+      src_arc->exec(*this);
+    }
   } else {
     the_vertex->reset_is_bwd();
     _incr_func->insertBwdQueue(the_vertex);
-    FOREACH_SNK_ARC(the_vertex, snk_arc) { snk_arc->exec(*this); }
+    FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      if (!snk_arc->isDelayArc()) {
+        continue;
+      }
+
+      if (snk_arc->is_loop_disable()) {
+        continue;
+      }
+      snk_arc->exec(*this);
+    }
   }
 
   return 1;
