@@ -28,6 +28,7 @@
 #include <optional>
 
 #include "HashSet.hh"
+#include "TimingIDBAdapter.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
@@ -410,6 +411,42 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
       rct->updateRcTiming();
     }
   }
+}
+
+/**
+ * @brief build balanced rc tree of the net and update rc tree info.
+ *
+ * @param net_name
+ * @param loadname2wl
+ */
+void TimingEngine::buildRcTreeAndupdateRcTreeInfo(
+    const char* net_name, std::map<std::string, double>& loadname2wl) {
+  auto* ista = _ista;
+  auto* design_netlist = ista->get_netlist();
+  auto* net = design_netlist->findNet(net_name);
+
+  auto* driver = net->getDriver();
+  auto driver_node = makeOrFindRCTreeNode(driver);
+  auto loads = net->getLoads();
+  auto* db_adapter = get_db_adapter();
+  std::optional<double> width = std::nullopt;
+  double unit_res =
+      dynamic_cast<TimingIDBAdapter*>(db_adapter)->getAverageResistance(width);
+  double unit_cap =
+      dynamic_cast<TimingIDBAdapter*>(db_adapter)->getAverageCapacitance(width);
+
+  for (const auto& load : loads) {
+    auto load_node = makeOrFindRCTreeNode(load);
+    std::string load_name = load->get_name();
+    double load_net_wl = loadname2wl[load_name];
+    double cap = unit_cap * load_net_wl;
+    double res = unit_res * load_net_wl;
+    makeResistor(net, driver_node, load_node, res / loads.size());
+    bool is_incremental = true;
+    incrCap(driver_node, cap / (2 * loads.size()), is_incremental);
+    incrCap(load_node, cap / (2 * loads.size()), is_incremental);
+  }
+  updateRCTreeInfo(net);
 }
 
 /**
