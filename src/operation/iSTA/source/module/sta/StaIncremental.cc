@@ -170,9 +170,14 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
 
   LOG_FATAL_IF(!_incr_func) << "incr_func is nullptr";
   if (_is_fwd) {
+    if (the_vertex->is_fwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_slew_prop();
     the_vertex->reset_is_delay_prop();
     the_vertex->reset_is_fwd();
+    the_vertex->set_is_fwd_reset();
 
     _incr_func->insertFwdQueue(the_vertex);
 
@@ -192,7 +197,12 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
       src_arc->exec(*this);
     }
   } else {
+    if (the_vertex->is_bwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_bwd();
+    the_vertex->set_is_bwd_reset();
 
     _incr_func->insertBwdQueue(the_vertex);
 
