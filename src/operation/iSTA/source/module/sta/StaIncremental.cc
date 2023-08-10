@@ -32,7 +32,8 @@
 
 namespace ista {
 
-StaIncremental::StaIncremental() : _fwd_queue(cmp), _bwd_queue(cmp) {}
+StaIncremental::StaIncremental()
+    : _fwd_queue(min_heap_cmp), _bwd_queue(max_heap_cmp) {}
 
 /**
  * @brief propagate the slew from the vertex to its fanout.
@@ -175,6 +176,10 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
 
     _incr_func->insertFwdQueue(the_vertex);
 
+    if (the_vertex->is_end()) {
+      return 1;
+    }
+
     FOREACH_SRC_ARC(the_vertex, src_arc) {
       if (!src_arc->isDelayArc()) {
         continue;
@@ -188,7 +193,13 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
     }
   } else {
     the_vertex->reset_is_bwd();
+
     _incr_func->insertBwdQueue(the_vertex);
+
+    if (the_vertex->is_start()) {
+      return 1;
+    }
+
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
       if (!snk_arc->isDelayArc()) {
         continue;
@@ -214,15 +225,9 @@ unsigned StaResetPropagation::operator()(StaArc* the_arc) {
   StaVertex* the_vertex;
   if (_is_fwd) {
     the_vertex = the_arc->get_snk();
-    if (the_vertex->is_end()) {
-      return 1;
-    }
+
   } else {
     the_vertex = the_arc->get_src();
-
-    if (the_vertex->is_start()) {
-      return 1;
-    }
   }
   return the_vertex->exec(*this);
 }
