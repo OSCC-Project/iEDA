@@ -55,6 +55,7 @@ class CTSAPI
   // flow API
   void resetAPI();
   void init(const std::string& config_file);
+  void testInit(const std::string& config_file);
   void readData();
   void routing();
   void synthesis();
@@ -84,7 +85,7 @@ class CTSAPI
   void convertDBToTimingEngine();
   void reportTiming() const;
   void refresh();
-  icts::CtsPin* findDiverPin(icts::CtsNet* net);
+  icts::CtsPin* findDriverPin(icts::CtsNet* net);
   std::map<std::string, double> elmoreDelay(const icts::EvalNet& eval_net);
   std::vector<std::vector<double>> queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
                                                      const std::string& from_port = "", const std::string& to_port = "");
@@ -115,6 +116,7 @@ class CTSAPI
   int32_t getDbUnit() const;
   bool isInDie(const icts::Point& point) const;
   void placeInstance(icts::CtsInstance* inst);
+  void cancelPlaceInstance(icts::CtsInstance* inst);
   idb::IdbInstance* makeIdbInstance(const std::string& inst_name, const std::string& cell_master);
   idb::IdbNet* makeIdbNet(const std::string& net_name);
   void linkIdbNetToSta(idb::IdbNet* idb_net);
@@ -123,8 +125,9 @@ class CTSAPI
   void insertBuffer(const std::string& name);
   void resetId();
   int genId();
-  void genShallowLightTree(const std::vector<Node*>& loads, Node* driver, const std::string& net_name = "salt");
-
+  void genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, const std::string& net_name = "salt");
+  Net* findGocaNet(const std::string& net_name);
+  
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);

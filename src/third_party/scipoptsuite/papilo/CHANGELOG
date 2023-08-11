@@ -1,0 +1,258 @@
+@page RN Release notes for PAPILO NEXT
+
+@section RN212 PaPILO 2.1.2
+***************************
+
+Fixed bugs
+----------
+
+- SimpleSubstitution: fixing bug in the infeasibility detection of the extended euclidean
+
+@section RN211 PaPILO 2.1.1
+***************************
+
+Fixed bugs
+----------
+- SimpleSubstitution: avoid abort because of calling extended_euclidean with negative coefficients
+
+
+@section RN210 PaPILO 2.1.0
+***************************
+
+Performance improvements
+------------------------
+
+- ParallelCol: reducing the amount of redundant transactions in case of multiple parallel integer columns
+- Probing: checks the time limit condition before propagating a variable
+- Probing: introduce new parameter to cap the badgesize
+- SequentialMode: execute functions like trivialPresolve only once per round and not after every presolver
+
+Interface changes
+-----------------
+
+- Wrapper in Julia for PaPILO: https://github.com/scipopt/PaPILO.jl
+- ProblemBuilder - setColImplInt(int,boolean): (un)sets the Flag Implied Integer for a variable
+
+### New parameters with default values
+
+- probing.maxbadgesize = -1 : maximal number of probing candidates probed in a single badge of candidates (-1 deactivated)
+- ortools.solver_id = PDLP : LP solver of or-tools
+- dualfix.is_fix_to_infinity_allowed = true : should unbounded variables with objective value zero be fixed to infinity?
+
+### Data structures
+
+Fixed bugs
+----------
+
+- ParallelRowDetection: lhs is updated correctly
+- fix fmt error: use correct amount of arguments for print statement
+- copy extended_euclidean.hpp during installation
+- fix bug in FindTBB module
+- ranged rows in MPS Files can now be parsed if they are specified as 'E'
+- postsolving FixInfinityCol works also in primal case
+- store data for FixInfinityCol correct if bounds are both infinity
+- PaPILO shows some behavior on different OS
+
+Miscellaneous
+-------------
+
+- Providing a way to build PaPILO without TBB (warning parallel design can not be used anymore)
+- Providing an interface to gurobi
+- Providing an interface to ortools (GLOP/PDLP)
+- Install all files (also externals) to the include/papilo folder
+- Presolving is aborted if presolvers are activated that do not support dual postsolve
+
+@page RN20 Release notes for PAPILO 2.0
+
+@section RN200 PaPILO 2.0.0
+***************************
+
+Features
+--------
+
+- supporting dual postsolving for presolvers: DomCol, Dualfix, SingletonCol, ParallelCol, ParallelRow, Propagation, FixContinuous, SingletonCol, SingletonStuffing
+    - dual postsolve is activated if original problem has no integer variable
+    - note to turn off componentsmaxint = -1 and presolve.detectlindep = 0
+    - if calculate_basis_for_dual is activated (default), tightening the bounds (f.e. in Propagation and Dualfix) are avoided due to computional overhead to postsolve the basis information
+- applying the reductions of the presolver found immediately to the problem so that the next presolver can work with the reduced problem if PaPILO is used with one thread.
+    This feature can be turned off by parameter (presolve.apply_results_immediately_if_run_sequentially).
+- DualFix: setting the variable to infinity, if objective is zero and the bound unbounded
+- ParallelRowDetection: adding new ReductionType RHS_LESS_RESTRICTIVE/LHS_LESS_RESTRICTIVE to reduce the number of conflicts to other presolvers
+- SimpleSubstitution: adding detection for infeasibility
+- ConstraintPropagation, DualFix, SimplifyInequality, CoefficientStrengthening, SimpleSubstitution, SimpleProbing, ImpliedInteger: parallelising presolver internally
+- ParallelRowDetection, ParallelCol, DominatedCol: reordering the results to avoid internal conflicts
+- Updated cmake system for dependency on TBB 2021. Older TBB versions might still work though.
+- supporting backend solver HiGHS 1.0.0 (git hash: ca0c21da)
+
+Performance improvements
+------------------------
+
+- reordering solvers to avoid conflicts and hence speed up the process
+
+
+Interface changes
+-----------------
+### Deleted and changed API methods
+
+- extracted postsolve storage from Postsolve to a new class PostsolveStorage to store the steps required for Postsolving
+- Function undo in Postsolve requires now reducedSolution, originalSolution and PostsolveStorage
+- moved class Postsolve.hpp to src/core/postsolve
+- extracted class PostsolveType.hpp to src/core/postsolve
+- extracted class ReductionType.hpp to src/core/postsolve
+- extracted class PostsolveStatus.hpp to src/core/postsolve
+
+### New API functions
+
+- new ReductionType in Postsolve: kFixedInfCol
+- new ReductionType in Postsolve for dual-postsolve: kSubstitutedColWithDual
+- new ReductionType in Postsolve for dual-postsolve: kVarBoundChange
+- new ReductionType in Postsolve for dual-postsolve: kRedundantRow
+- new ReductionType in Postsolve for dual-postsolve: kRowBoundChange
+- new ReductionType in Postsolve for dual-postsolve: kReasonForRowBoundChangeForcedByRow
+- new ReductionType in Postsolve for dual-postsolve: kRowBoundChangeForcedByRow
+- new ReductionType in Postsolve for dual-postsolve: kSaveRow
+- new ReductionType in Postsolve for dual-postsolve: kReducedBoundsCost
+- new ReductionType in Postsolve for dual-postsolve: kColumnDualValue
+- new ReductionType in Postsolve for dual-postsolve: kRowDualValue
+- new ReductionType in Postsolve for dual-postsolve: kCoefficientChange
+
+
+### Changed parameters
+
+-
+
+
+### New parameters with default values
+
+- calculate_basis_for_dual = 1: Should the basis be calculated if dual postsolve is possible (1: yes 0: no)
+- bound_tightening_offset = 0.0001: What is the offset for variable bound tightening (only if dual-postsolving is enabled)?
+- validation_after_every_postsolving_step = 0: Should the primal/dual solution be validated during after every postsolving step? (1:yes 0: no)
+- presolve.apply_results_immediately_if_run_sequentially = 1: If only one thread is used, should the results be applied immediately after the presolver returned the reductions? (1: yes 0: no)
+- coefftightening.parallel = 1: Should the presolver be run in parallel internally (1: yes 0: no)
+- doubletoneq.parallel = 0: Should the presolver be run in parallel internally (1: yes 0: no)
+- dualfix.parallel = 0: Should the presolver be run in parallel internally (1: yes 0: no)
+- implint.parallel = 0: Should the presolver be run in parallel internally (1: yes 0: no)
+- propagation.parallel = 1: Should the presolver be run in parallel internally (1: yes 0: no)
+- simpleprobing.parallel = 0: Should the presolver be run in parallel internally (1: yes 0: no)
+- simplifyineq.parallel = 1: Should the presolver be run in parallel internally (1: yes 0: no)
+
+### Data structures
+
+Unit tests
+----------
+
+Testing
+-------
+- while building with CMake PaPILO checks if a file solution.test exists in the build directory and
+    scans every line of the file with the format PATH_TO_INSTANCE\,PATH_TO_SOL.
+    Running make test checks for all instances in the specified file if the solution fits the reduced problem and
+    further the original solution can be postsolved from the reduced solution
+
+Build system
+------------
+
+
+Fixed bugs
+----------
+
+- DomCol: adding additional locks in DomCol to prevent applying false reductions
+- SingletonCol: reordering bound changes in presolvers to avoid infeasibility when applying the changes to the data structure
+- SingletonCol: using Numerics functions (including epsilon) for Less/greater-or-equal to avoid slightly false objective values
+- SingletonStuffing: reordering bound changes in presolvers to avoid infeasibility when applying the changes to the data structure
+- SimpleProbing: handling the case (coefficients <= 0) correctly
+- recalculating the activities if the activity is huge to avoid numerical problems
+- fixing bug in stated solutions of solver as infeasible due to numerical issues
+- parsing instance files in rational mode with empty rows successfully
+- SingletonRows: handling values close to zero does not lead to infeasibility anymore
+- setting the time-limit via the parameter file is not clashing with the command time-limit any more
+- ParallelRowDetection: using epsilon tolerance to avoid that the lhs is greater than the rhs
+- DualInfer: consider case if reduced costs indicate an unbounded variable
+
+
+Miscellaneous
+-------------
+
+- adding a new command line option -b to check if the solution still fits the presolved problem
+- supporting parsing gzipped solution files
+- printing information about reductions if message verbosity level 'detailed' is selected
+- printing the objective value if the problem can be solved during presolving
+- printing the header containing the version of the configured backend solver
+- boost minimum is 1.72 on mac, 1.65 otherwise
+- supporting boost version 1.78
+
+Known bugs
+----------
+
+- parsing MPS Files where in the Bound section the rows doesn't start with an identifier (for example: "R") fail
+- solution value for the instance etamarco differs slightly (-755.7152333749133350792583667773 vs -755.715233354415 )
+
+@page RN10 Release notes for PAPILO 1.0
+
+Features
+--------
+- providing presolve and (primal) postsolve methods for MIP and LP
+- providing a transaction-based design allowing the presolvers to run in parallel within a round and also allowing internal parallelisation
+- providing an header-only library to be integrate MIP/LP solvers
+- providing an interface to wrap MIP/LP solvers to solve instances immediately after presolving
+- CoefficientStrengthening: (fast) tightens the coefficients in a constraint in order to strengthen the LP relaxation
+- ConstraintPropagation (fast) tightens the variable bounds
+- DomCol: (exhaustive) detects and handles dominated variables
+- DualFix (medium) counts up- and downlocks on variables and proceeds this information
+- DualInfer: (exhaustive) exploits complementary slackness and derives bound changes or fixes on variables
+- FixContinuous: (medium) tries to fix continuous variables whose bounds are very close
+- ParallelColDetection: (medium) detects parallel columns and merges them into a new variable
+- ParallelRowDetection: (medium) detects parallel rows in the matrix and merges them into one
+- Probing: (exhaustive) tries to find implications by probing on binary variables
+- SimpleProbing: (medium) detects implications for binary variables on equations with special requirements
+- SimpleSubstitution: (medium) searches for equations with exactly two variables and substitutes one of these variables
+- SimplifyInequalities: (medium) deletes variables in a constraint that will never contribute to the outcome of the constraint
+- SingletonCols: (fast) removes variables appearing in only one constraint
+- SingletonStuffing: (medium) removes variables appearing in only one constraint if SingletonCols fails to remove them
+- Sparsify: (exhaustive) adds up constraint to reduce the amount of nonzeros
+- Substitution: (exhaustive) substitutes equations while maintaining a sparse data structure
+
+
+### Parameters with default values
+
+- coefftightening.enabled = 1: is presolver coefftightening enabled  (1: yes 0: no)
+- colsingleton.enabled = 1: is presolver colsingleton enabled  (1: yes 0: no)
+- domcol.enabled = 1: is presolver domcol enabled  (1: yes 0: no)
+- doubletoneq.enabled = 1: is presolver doubletoneq enabled  (1: yes 0: no)
+- dualfix.enabled = 1: is presolver dualfix enabled  (1: yes 0: no)
+- dualinfer.enabled = 1: is presolver dualinfer enabled  (1: yes 0: no)
+- fixcontinuous.enabled = 1: is presolver fixcontinuous enabled  (1: yes 0: no)
+- implint.enabled = 1: is presolver implint enabled  (1: yes 0: no)
+- message.verbosity = 3: verbosity to be used. (0: quiet 1: errors 2: warnings 3: normal 4: detailed)
+- numerics.epsilon = 1.0000000000000001e-09: epsilon tolerance to consider two values equal
+- numerics.feastol = 9.9999999999999995e-07: the feasibility tolerance
+- numerics.hugeval = 100000000: absolute bound value that is considered too huge for activitity based calculations
+- parallelcols.enabled = 1: is presolver parallelcols enabled  (1: yes 0: no)
+- parallelrows.enabled = 1: is presolver parallelrows enabled  (1: yes 0: no)
+- presolve.abortfac = 0.00080000000000000004: abort factor of weighted number of reductions for presolving
+- presolve.boundrelax = 0: relax bounds of implied free variables after presolving  (1: yes 0: no)
+- presolve.componentsmaxint = 0: maximum number of integral variables for trying to solve disconnected components of the problem in presolving (-1: disabled)
+- presolve.compressfac = 0.84999999999999998: compress the problem if fewer than compressfac times the number of rows or columns are active
+- presolve.detectlindep = 1: detect and remove linearly dependent equations and free columns (0: off 1: for LPs 2: always)
+- presolve.dualreds = 2: 0: disable dual reductions (0: diable dual reducions 1: allow dual reductions that never cut off optimal solutions, 2: allow all dual reductions)
+- presolve.lpabortfac = 0.01: abort factor of weighted number of reductions for presolving LPs
+- presolve.minabscoeff = 1e-10: minimum absolute coefficient value allowed in matrix, before it is set to zero
+- presolve.randomseed = 0: random seed value
+- presolve.removeslackvars = 1: remove slack variables in equations  (1: yes 0: no)
+- presolve.threads = 0: maximal number of threads to use (0: automatic)
+- presolve.tlim = 1.7976931348623157e+308: time limit for presolve
+- presolve.weakenlpvarbounds = 0: weaken bounds obtained by constraint propagation by this factor of the feasibility tolerance if the problem is an LP
+- probing.enabled = 1: is presolver probing enabled  (1: yes 0: no)
+- probing.maxinitialbadgesize = 1000: maximum number of probing candidates probed in the first badge of candidates
+- probing.minbadgesize = 10: minimum number of probing candidates probed in a single badge of candidates
+- probing.mincontdomred = 0.29999999999999999: minimum fraction of domain that needs to be reduced for continuous variables to accept a bound change in probing  [Numerical: [0,1]]
+- propagation.enabled = 1: is presolver propagation enabled  (1: yes 0: no)
+- simpleprobing.enabled = 1: is presolver simpleprobing enabled  (1: yes 0: no)
+- simplifyineq.enabled = 1: is presolver simplifyineq enabled  (1: yes 0: no)
+- sparsify.enabled = 1: is presolver sparsify enabled  (1: yes 0: no)
+- sparsify.maxscale = 1000: maximum absolute scale to use for cancelling nonzeros  [Numerical: [1,1.7976931348623157e+308]]
+- stuffing.enabled = 1: is presolver stuffing enabled  (1: yes 0: no)
+- substitution.binarieswithints = 1: should substitution of binary variables with general integers be allowed  (1: yes 0: no)
+- substitution.enabled = 1: is presolver substitution enabled  (1: yes 0: no)
+- substitution.markowitz_tolerance = 0.01: markowitz tolerance value for allowing a substitution  [Numerical: [0,1]]
+- substitution.maxfillin = 10: maximum estimated fillin for variable substitutions  [Integer: [0,2147483647]]
+- substitution.maxshiftperrow = 10: maximum amount of nonzeros being moved to make space for fillin from substitutions within a row  [Integer: [0,2147483647]]

@@ -1,0 +1,21 @@
+lu6sol
+| var_name | c_type  | length | comment            |
+|----------+---------+--------+--------------------|
+| mode     | int64_t | 1      | subroutine mode    |
+| m        | int64_t | 1      | number of rows     |
+| n        | int64_t | 1      | number of rows     |
+| v        | double  | m      | io vector          |
+| w        | double  | n      | io vector          |
+| lena     | int64_t | 1      | length of storage  |
+| luparm   | int64_t | 30     | integer parameters |
+| parmlu   | double  | 30     | double parameters  |
+| a        | double  | lena   | non-zeros          |
+| indc     | int64_t | lena   | indices            |
+| indr     | int64_t | lena   | indices            |
+| p        | int64_t | m      | row permutation    |
+| q        | int64_t | n      | col permutation    |
+| lenc     | int64_t | n      |                    |
+| lenr     | int64_t | m      |                    |
+| locc     | int64_t | n      |                    |
+| locr     | int64_t | m      |                    |
+| inform   | int64_t | 1      |                    |

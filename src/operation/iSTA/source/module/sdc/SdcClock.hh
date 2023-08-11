@@ -28,6 +28,7 @@
 #include <utility>
 
 #include "SdcCommand.hh"
+#include "netlist/DesignObject.hh"
 #include "netlist/Netlist.hh"
 
 namespace ista {
@@ -87,9 +88,18 @@ class SdcGenerateCLock : public SdcClock {
   }
   void set_source_name(const char* source_name) { _source_name = source_name; }
   const char* get_source_name() const { return _source_name.c_str(); }
+  void set_source_pins(std::set<DesignObject*> source_pins) {
+    _source_pins = std::move(source_pins);
+  }
+  std::set<DesignObject*> get_source_pins() { return _source_pins; }
+
+  void set_divide_by(const char* divide_by) { _divide_by = divide_by; }
+  const char* get_divide_by() const { return _divide_by.c_str(); }
 
  private:
   std::string _source_name;
+  std::set<DesignObject*> _source_pins;
+  std::string _divide_by;
 };
 
 /**

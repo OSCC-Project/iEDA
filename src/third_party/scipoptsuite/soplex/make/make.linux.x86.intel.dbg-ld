@@ -1,0 +1,10 @@
+CXX	=	icpc
+LINKCXX	=	icpc
+DCXX	=	icpc
+CPPFLAGS=	-Isrc -DWITH_LONG_DOUBLE \
+		-DDEFAULT_BND_VIOL=1e-8 -DDEFAULT_EPS_ZERO=1e-22
+CXXFLAGS=	-g -mp -Xc -w2 -wd279,383,444,810,981 -std=c++11
+LDFLAGS	=	-lm -lstdc++
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

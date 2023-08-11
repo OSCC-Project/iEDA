@@ -1,0 +1,168 @@
+zimpl	v       0	a$a             	"a$a"
+zimpl	v       1	a$b             	"a$b"
+zimpl	v       2	a$c             	"a$c"
+zimpl	v       3	b#1             	"b#1"
+zimpl	v       4	b#2             	"b#2"
+zimpl	v       5	b#3             	"b#3"
+zimpl	v       6	c#1             	"c#1"
+zimpl	v       7	c#2             	"c#2"
+zimpl	v       8	c#3             	"c#3"
+zimpl	v       9	c#4             	"c#4"
+zimpl	v      10	d#7             	"d#7"
+zimpl	v      11	e#1$a           	"e#1$a"
+zimpl	v      12	e#1$b           	"e#1$b"
+zimpl	v      13	e#1$c           	"e#1$c"
+zimpl	v      14	e#2$a           	"e#2$a"
+zimpl	v      15	e#2$b           	"e#2$b"
+zimpl	v      16	e#2$c           	"e#2$c"
+zimpl	v      17	e#3$a           	"e#3$a"
+zimpl	v      18	e#3$b           	"e#3$b"
+zimpl	v      19	e#3$c           	"e#3$c"
+zimpl	v      20	e#4$a           	"e#4$a"
+zimpl	v      21	e#4$b           	"e#4$b"
+zimpl	v      22	e#4$c           	"e#4$c"
+zimpl	v      23	f#1             	"f#1"
+zimpl	v      24	f#2             	"f#2"
+zimpl	v      25	f#3             	"f#3"
+zimpl	v      26	g#4             	"g#4"
+zimpl	v      27	g#5             	"g#5"
+zimpl	v      28	g#7             	"g#7"
+zimpl	v      29	h#3             	"h#3"
+zimpl	v      30	h#4             	"h#4"
+zimpl	v      31	h#7             	"h#7"
+zimpl	v      32	h#8             	"h#8"
+zimpl	v      33	j#4             	"j#4"
+zimpl	v      34	j#5             	"j#5"
+zimpl	v      35	j#7             	"j#7"
+zimpl	v      36	k$a#1           	"k$a#1"
+zimpl	v      37	k$b#7           	"k$b#7"
+zimpl	v      38	k$c#9           	"k$c#9"
+zimpl	v      39	l$a             	"l$a"
+zimpl	v      40	l$b             	"l$b"
+zimpl	v      41	l$c             	"l$c"
+zimpl	v      42	l$d             	"l$d"
+zimpl	v      43	l$e             	"l$e"
+zimpl	v      44	l$f             	"l$f"
+zimpl	v      45	m#21#7$d        	"m#21#7$d"
+zimpl	v      46	m#9#9$c         	"m#9#9$c"
+zimpl	v      47	n#1             	"n#1"
+zimpl	v      48	n#2             	"n#2"
+zimpl	v      49	n#3             	"n#3"
+zimpl	v      50	n#4             	"n#4"
+zimpl	v      51	n#5             	"n#5"
+zimpl	v      52	n#6             	"n#6"
+zimpl	v      53	n#7             	"n#7"
+zimpl	v      54	n#8             	"n#8"
+zimpl	v      58	n#12            	"n#12"
+zimpl	v     147	p#1             	"p#1"
+zimpl	v     148	p#2             	"p#2"
+zimpl	v     149	p#3             	"p#3"
+zimpl	v     150	p#4             	"p#4"
+zimpl	v     151	q#1             	"q#1"
+zimpl	v     152	q#2             	"q#2"
+zimpl	v     153	q#3             	"q#3"
+zimpl	v     154	q#4             	"q#4"
+zimpl	v     155	u$B#7           	"u$B#7"
+zimpl	v     156	u$B#8           	"u$B#8"
+zimpl	v     157	u$B#9           	"u$B#9"
+zimpl	v     158	u$A#8           	"u$A#8"
+zimpl	v     159	u$A#9           	"u$A#9"
+zimpl	v     160	v$a#2           	"v$a#2"
+zimpl	v     161	v$b#2           	"v$b#2"
+zimpl	v     162	xabcdefghijkl@a2	"xabcdefghijklmno#4"
+zimpl	v     163	y#_2@a3         	"y#-2"
+zimpl	v     164	y#_4@a4         	"y#-4"
+zimpl	v     165	y#_6@a5         	"y#-6"
+zimpl	v     166	y#_8@a6         	"y#-8"
+zimpl	v     167	y#_16@a7        	"y#-16"
+zimpl	v     168	y#_14@a8        	"y#-14"
+zimpl	v     169	y#_12@a9        	"y#-12"
+zimpl	v     170	y#_10@aa        	"y#-10"
+zimpl	v     171	y#7             	"y#7"
+zimpl	v     172	y#6             	"y#6"
+zimpl	v     173	y#5             	"y#5"
+zimpl	v     174	y#4             	"y#4"
+zimpl	v     175	y#3             	"y#3"
+zimpl	v     176	y#2             	"y#2"
+zimpl	v     177	y#1             	"y#1"
+zimpl	v     178	y2#_2@b2        	"y2#-2"
+zimpl	v     185	z#1$c#1         	"z#1$c#1"
+zimpl	v     186	z#1$c#2         	"z#1$c#2"
+zimpl	v     187	z#1$c#3         	"z#1$c#3"
+zimpl	v     194	z#2$c#1         	"z#2$c#1"
+zimpl	v     195	z#2$c#2         	"z#2$c#2"
+zimpl	v     196	z#2$c#3         	"z#2$c#3"
+zimpl	v     203	z#3$c#1         	"z#3$c#1"
+zimpl	v     204	z#3$c#2         	"z#3$c#2"
+zimpl	v     205	z#3$c#3         	"z#3$c#3"
+zimpl	v     212	z#4$c#1         	"z#4$c#1"
+zimpl	v     213	z#4$c#2         	"z#4$c#2"
+zimpl	v     214	z#4$c#3         	"z#4$c#3"
+zimpl	v     215	aa#2            	"aa#2"
+zimpl	v     216	aa#4            	"aa#4"
+zimpl	v     217	aa#6            	"aa#6"
+zimpl	v     218	bb$a#3          	"bb$a#3"
+zimpl	v     219	bb$a#4          	"bb$a#4"
+zimpl	v     220	bb$a#5          	"bb$a#5"
+zimpl	v     221	bb$b#3          	"bb$b#3"
+zimpl	v     222	bb$b#4          	"bb$b#4"
+zimpl	v     223	bb$b#5          	"bb$b#5"
+zimpl	v     224	bb$c#3          	"bb$c#3"
+zimpl	v     225	bb$c#4          	"bb$c#4"
+zimpl	v     226	bb$c#5          	"bb$c#5"
+zimpl	c       0	a1_1            	"a1_1"	0.0000000000000000e+00
+zimpl	c       1	b1_1            	"b1_1"	0.0000000000000000e+00
+zimpl	c       2	c1_1            	"c1_1"	0.0000000000000000e+00
+zimpl	c       3	d1_1            	"d1_1"	0.0000000000000000e+00
+zimpl	c       4	e1_1            	"e1_1"	0.0000000000000000e+00
+zimpl	c       5	f1_1            	"f1_1"	0.0000000000000000e+00
+zimpl	c       6	g1_1            	"g1_1"	0.0000000000000000e+00
+zimpl	c       7	h1_1            	"h1_1"	0.0000000000000000e+00
+zimpl	c       8	j1_1            	"j1_1"	0.0000000000000000e+00
+zimpl	c       9	k1_1            	"k1_1"	0.0000000000000000e+00
+zimpl	c      10	l1_1            	"l1_1"	0.0000000000000000e+00
+zimpl	c      11	l1_2            	"l1_2"	0.0000000000000000e+00
+zimpl	c      12	l1_3            	"l1_3"	0.0000000000000000e+00
+zimpl	c      13	m1_1            	"m1_1"	0.0000000000000000e+00
+zimpl	c      14	n1_1            	"n1_1"	0.0000000000000000e+00
+zimpl	c      15	n1_2            	"n1_2"	0.0000000000000000e+00
+zimpl	c      16	n1_3            	"n1_3"	0.0000000000000000e+00
+zimpl	c      17	n1_4            	"n1_4"	0.0000000000000000e+00
+zimpl	c      18	n1_5            	"n1_5"	0.0000000000000000e+00
+zimpl	c      19	n1_6            	"n1_6"	0.0000000000000000e+00
+zimpl	c      20	p1_1            	"p1_1"	0.0000000000000000e+00
+zimpl	c      21	p1_2            	"p1_2"	0.0000000000000000e+00
+zimpl	c      22	p1_3            	"p1_3"	0.0000000000000000e+00
+zimpl	c      23	p1_4            	"p1_4"	0.0000000000000000e+00
+zimpl	c      24	p1_5            	"p1_5"	0.0000000000000000e+00
+zimpl	c      25	p1_6            	"p1_6"	0.0000000000000000e+00
+zimpl	c      26	p1_7            	"p1_7"	0.0000000000000000e+00
+zimpl	c      27	p1_8            	"p1_8"	0.0000000000000000e+00
+zimpl	c      28	p1_9            	"p1_9"	0.0000000000000000e+00
+zimpl	c      29	p1_10           	"p1_10"	0.0000000000000000e+00
+zimpl	c      30	p1_11           	"p1_11"	0.0000000000000000e+00
+zimpl	c      31	p1_12           	"p1_12"	0.0000000000000000e+00
+zimpl	c      32	p1_13           	"p1_13"	0.0000000000000000e+00
+zimpl	c      33	p1_14           	"p1_14"	0.0000000000000000e+00
+zimpl	c      34	p1_15           	"p1_15"	0.0000000000000000e+00
+zimpl	c      35	q1_1            	"q1_1"	0.0000000000000000e+00
+zimpl	c      36	q1_2            	"q1_2"	0.0000000000000000e+00
+zimpl	c      37	q1_3            	"q1_3"	0.0000000000000000e+00
+zimpl	c      38	q1_4            	"q1_4"	0.0000000000000000e+00
+zimpl	c      39	u1_1            	"u1_1"	0.0000000000000000e+00
+zimpl	c      40	u1_2            	"u1_2"	0.0000000000000000e+00
+zimpl	c      41	u1_3            	"u1_3"	0.0000000000000000e+00
+zimpl	c      42	u1_4            	"u1_4"	0.0000000000000000e+00
+zimpl	c      43	u1_5            	"u1_5"	0.0000000000000000e+00
+zimpl	c      44	v1_1            	"v1_1"	0.0000000000000000e+00
+zimpl	c      45	w1_1            	"w1_1"	0.0000000000000000e+00
+zimpl	c      46	w1_2            	"w1_2"	0.0000000000000000e+00
+zimpl	c      47	w1_3            	"w1_3"	0.0000000000000000e+00
+zimpl	c      48	x1_1            	"x1_1"	0.0000000000000000e+00
+zimpl	c      49	y1_1            	"y1_1"	0.0000000000000000e+00
+zimpl	c      50	y2_1            	"y2_1"	0.0000000000000000e+00
+zimpl	c      51	z1_1            	"z1_1"	0.0000000000000000e+00
+zimpl	c      52	z2_1            	"z2_1"	0.0000000000000000e+00
+zimpl	c      53	aa1_1           	"aa1_1"	0.0000000000000000e+00
+zimpl	c      54	bb1_1           	"bb1_1"	0.0000000000000000e+00
+zimpl	c      55	dd1_1           	"dd1_1"	0.0000000000000000e+00

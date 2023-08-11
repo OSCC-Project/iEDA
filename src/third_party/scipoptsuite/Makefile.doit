@@ -1,0 +1,309 @@
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *#
+#*                                                                           *#
+#*                  This file is part of the program and library             *#
+#*         SCIP --- Solving Constraint Integer Programs                      *#
+#*                                                                           *#
+#*  Copyright 2002-2022 Zuse Institute Berlin                                *#
+#*                                                                           *#
+#*  Licensed under the Apache License, Version 2.0 (the "License");          *#
+#*  you may not use this file except in compliance with the License.         *#
+#*  You may obtain a copy of the License at                                  *#
+#*                                                                           *#
+#*      http://www.apache.org/licenses/LICENSE-2.0                           *#
+#*                                                                           *#
+#*  Unless required by applicable law or agreed to in writing, software      *#
+#*  distributed under the License is distributed on an "AS IS" BASIS,        *#
+#*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *#
+#*  See the License for the specific language governing permissions and      *#
+#*  limitations under the License.                                           *#
+#*                                                                           *#
+#*  You should have received a copy of the Apache-2.0 license                *#
+#*  along with SCIP; see the file LICENSE. If not visit scipopt.org.         *#
+#*                                                                           *#
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *#
+
+#@file    Makefile.doit
+#@brief   SCIP Optimization Suite Makefile
+#@author  Tobias Achterberg
+#@author  Ambros Gleixner
+#@author  Gerald Gamrath
+#@author  Matthias Miltenberger
+
+
+BASEDIR		:=	$(CURDIR)
+
+LIBS		=
+DIRECTORIES	=
+SOFTLINKS	=
+
+#-----------------------------------------------------------------------------
+# include SCIP make environment
+#-----------------------------------------------------------------------------
+include $(SCIPDIR)/make/make.project
+
+MAKESOFTLINKS	=	true
+
+ifeq ($(LPS), spx2)
+ifeq ($(IPOPT), false)
+MAKESOFTLINKS	=	false
+endif
+endif
+
+#-----------------------------------------------------------------------------
+# SCIPOPT library settings
+#-----------------------------------------------------------------------------
+
+SCIPOPTNAME	=	scipopt-$(VERSION)
+SCIPOPTLIB	= 	$(SCIPOPTNAME).$(BASE)
+SCIPOPTLIBFILE	=	lib/lib$(SCIPOPTLIB).$(LIBEXT)
+SCIPOPTLIBSHORT	=	libscipopt.$(LIBEXT)
+
+SCIPOPTOBJFILES	=	$(SCIPDIR)/$(LIBOBJDIR)/*/*.o
+
+ifeq ($(LPS),spx2)
+SCIPOPTOBJFILES	+=	$(SOPLEXDIR)/obj/O.$(OSTYPE).$(ARCH).$(COMP).$(LPSOPT)/lib/soplex/*o
+endif
+
+ZIMPLOBJECTS =          blkmem.o bound.o code.o conname.o define.o elem.o entry.o \
+                        hash.o heap.o idxset.o inst.o iread.o list.o \
+                        load.o local.o metaio.o mmlparse2.o mmlscan.o mono.o \
+                        mshell.o prog.o random.o rdefpar.o source.o \
+                        setempty.o setpseudo.o setlist.o setrange.o setprod.o \
+                        setmulti.o set4.o stmt.o stkchk.o strstore2.o symbol.o \
+                        term2.o tuple.o vinst.o zimpllib.o gmpmisc.o numbgmp.o
+
+
+ifeq ($(ZIMPL),true)
+SCIPOPTOBJFILES	+=	$(addprefix $(ZIMPLDIR)/obj/O.$(OSTYPE).$(ARCH).$(COMP).$(LIBTYPE).$(ZIMPLOPT)/,$(ZIMPLOBJECTS))
+endif
+
+ifeq ($(LIBBUILD),$(LINKCC))
+LIBBUILD	=	$(LINKCXX)
+endif
+
+#-----------------------------------------------------------------------------
+# GCG environment
+#-----------------------------------------------------------------------------
+
+ifneq ($(GCGDIR),)
+GCGDIRECTORIES	=	$(GCGDIR)/$(LIBDIR)
+GCGSCIPLINK	=	$(GCGDIR)/$(LIBDIR)/scip
+endif
+
+#-----------------------------------------------------------------------------
+# UG environment
+#-----------------------------------------------------------------------------
+
+ifneq ($(UGDIR),)
+UGDIRECTORIES	=	$(UGDIR)/$(LIBDIR)
+UGSCIPLINK	=	$(UGDIR)/$(LIBDIR)/scip
+endif
+
+#-----------------------------------------------------------------------------
+# SOPLEX environment
+#-----------------------------------------------------------------------------
+
+DIRECTORIES	+=	$(SCIPDIR)/$(LIBDIR)/$(LIBTYPE)
+DIRECTORIES	+=	$(SCIPDIR)/$(LIBDIR)/include
+SOPLEXINC	=	$(SOPLEXDIR)/src
+SOPLEXLIB	=	$(SOPLEXDIR)/lib/libsoplex.$(OSTYPE).$(ARCH).$(COMP).$(LPSOPT).$(LIBEXT)
+SOPLEXINCLINK	=	$(SCIPDIR)/lib/include/spxinc
+SOPLEXLIBLINK	=	$(SCIPDIR)/lib/$(LIBTYPE)/libsoplex.$(OSTYPE).$(ARCH).$(COMP).$(LPSOPT).$(LIBEXT)
+LIBS		+=	$(SOPLEXLIB)
+SOFTLINKS	+=	$(SOPLEXINCLINK)
+SOFTLINKS	+=	$(SOPLEXLIBLINK)
+
+#-----------------------------------------------------------------------------
+# ZIMPL environment
+#-----------------------------------------------------------------------------
+
+DIRECTORIES	+=	$(SCIPDIR)/$(LIBDIR)/include/zimplinc
+ZIMPLINC	=	$(ZIMPLDIR)/src/zimpl
+ZIMPLLIB	=	$(ZIMPLDIR)/lib/libzimpl.$(OSTYPE).$(ARCH).$(COMP).$(ZIMPLOPT).$(STATICLIBEXT)
+ZIMPLINCLINK	=	$(SCIPDIR)/lib/include/zimplinc/zimpl
+ZIMPLLIBLINK	=	$(SCIPDIR)/lib/$(LIBTYPE)/libzimpl.$(OSTYPE).$(ARCH).$(COMP).$(ZIMPLOPT).$(STATICLIBEXT)
+LIBS		+=	$(ZIMPLLIB)
+SOFTLINKS	+=	$(ZIMPLINCLINK)
+SOFTLINKS	+=	$(ZIMPLLIBLINK)
+
+#-----------------------------------------------------------------------------
+# PAPILO environment
+#-----------------------------------------------------------------------------
+
+DIRECTORIES	+=	$(SCIPDIR)/$(LIBDIR)/include/
+PAPILOINC	=	$(PAPILODIR)
+PAPILOINCLINK	=	$(SCIPDIR)/lib/include/papilo
+SOFTLINKS	+=	$(PAPILOINCLINK)
+
+#-----------------------------------------------------------------------------
+# external libraries
+#-----------------------------------------------------------------------------
+
+ifeq ($(IPOPT),true)
+IPOPTLIBS	=	$(shell cat $(SCIPDIR)/$(LIBDIR)/$(LIBTYPE)/ipopt.$(OSTYPE).$(ARCH).$(COMP).$(IPOPTOPT)/share/coin/doc/Ipopt/ipopt_addlibs_cpp.txt)
+IPOPTLIBS	+=	-Wl,-rpath,$(realpath $(SCIPDIR)/$(LIBDIR)/$(LIBTYPE)/ipopt.$(OSTYPE).$(ARCH).$(COMP).$(IPOPTOPT)/lib)
+endif
+
+ifeq ($(WORHP),true)
+WORHPLIBS	=	$(LINKCC_L)$(realpath $(SCIPDIR)/$(LIBDIR)/$(LIBTYPE)/worhp.$(OSTYPE).$(ARCH).$(COMP).$(WORHPOPT)/lib) $(LINKCC_l)worhp
+WORHPLIBS	+=	-Wl,-rpath,$(realpath $(SCIPDIR)/$(LIBDIR)/$(LIBTYPE)/worhp.$(OSTYPE).$(ARCH).$(COMP).$(WORHPOPT)/lib)
+endif
+
+ifeq ($(SHARED),true)
+ifeq ($(ZLIB),true)
+EXT_LIBS	=	$(ZLIB_LDFLAGS)
+endif
+ifeq ($(GMP),true)
+EXT_LIBS	+=	$(GMP_LDFLAGS)
+endif
+ifeq ($(READLINE),true)
+EXT_LIBS	+=	$(READLINE_LDFLAGS)
+endif
+EXT_LIBS	+=	$(IPOPTLIBS)
+EXT_LIBS	+=	$(WORHPLIBS)
+endif
+
+
+#-----------------------------------------------------------------------------
+
+ifeq ($(VERBOSE),false)
+.SILENT:	scipoptlib
+endif
+
+.PHONY:		all
+all: scipbinary
+
+
+
+$(DIRECTORIES):	$(SCIPDIR) $(SOPLEXDIR) $(ZIMPLDIR) $(PAPILODIR)
+		@echo "** Creating directory \"$@\"."
+		@-mkdir -p $@
+
+$(GCGDIRECTORIES): $(GCGDIR)
+		@echo "** Creating directory \"$@\"."
+		@-mkdir -p $@
+
+$(UGDIRECTORIES): $(UGDIR)
+		@echo "** Creating directory \"$@\"."
+		@-mkdir -p $@
+
+
+# declare lib to be phony to force building it - dependencies are not available here
+.PHONY:		$(SOPLEXLIB)
+$(SOPLEXLIB):   $(SOPLEXDIR)
+		@echo ""
+		@echo "** Building SoPlex library \"$@\"."
+		@$(MAKE) -C $(SOPLEXDIR) OPT=$(LPSOPT) ZLIB=$(ZLIB)
+
+
+# declare lib to be phony to force building it - dependencies are not available here
+.PHONY:		$(ZIMPLLIB)
+$(ZIMPLLIB):	$(ZIMPLDIR)
+		@echo ""
+ifeq ($(ZIMPL),true)
+		@echo "** Building ZIMPL library \"$@\"."
+		@$(MAKE) -C $(ZIMPLDIR) OPT=$(ZIMPLOPT)
+else
+		@echo "** ZIMPL support disabled."
+endif
+
+.PHONY:		softlinkmsg
+softlinkmsg:
+		@echo ""
+		@echo "** Creating necessary soft-links."
+
+$(SOPLEXINCLINK):	softlinkmsg $(SCIPDIR)
+		@rm -rf $@
+		@$(LN_s) $(SOPLEXINC) $@
+
+$(SOPLEXLIBLINK):	softlinkmsg $(SCIPDIR)
+		@rm -f $@
+		@$(LN_s) $(SOPLEXLIB) $@
+
+$(ZIMPLINCLINK):	softlinkmsg $(SCIPDIR)
+		@rm -rf $@
+		@$(LN_s) $(ZIMPLINC) $@
+
+$(PAPILOINCLINK):	softlinkmsg $(SCIPDIR)
+		@rm -rf $@
+		@$(LN_s) $(PAPILOINC) $@
+
+$(ZIMPLLIBLINK):	softlinkmsg $(SCIPDIR)
+ifeq ($(ZIMPL),true)
+		@rm -f $@
+		@$(LN_s) $(ZIMPLLIB) $@
+endif
+
+$(GCGSCIPLINK):	softlinkmsg $(SCIPDIR)
+		@rm -rf $@
+		@$(LN_s) $(SCIPDIR) $@
+
+$(UGSCIPLINK):	softlinkmsg $(UGDIR)
+		@rm -rf $@
+		@$(LN_s) $(SCIPDIR) $@
+
+
+.PHONY:		sciplibs
+sciplibs:	$(DIRECTORIES) $(LIBS) $(SOFTLINKS)
+		@echo ""
+		@echo "** Building SCIP libraries."
+		@$(MAKE) -C $(SCIPDIR) libs READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS) OPT=$(OPT) SYM=$(SYM) SPX_LEGACY=$(SPX_LEGACY) SHARED=$(SHARED) PAPILO=$(PAPILO)
+		@echo ""
+
+.PHONY:		scipbinary
+scipbinary:	$(DIRECTORIES) $(LIBS) $(SOFTLINKS)
+		@echo ""
+		@echo "** Building SCIP libraries and executable."
+		@$(MAKE) -C $(SCIPDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS) OPT=$(OPT) SYM=$(SYM) SPX_LEGACY=$(SPX_LEGACY) PAPILO=$(PAPILO)
+		@echo ""
+		@echo "** Build complete."
+		@echo "** Find your SCIP binary in \"$(SCIPDIR)/bin\"."
+		@echo "** Enter \"make test\" to solve a number of easy instances in order to verify that SCIP runs correctly."
+		@echo ""
+
+.PHONY: scipoptlib
+scipoptlib:
+		$(LIBBUILD) $(LIBBUILDFLAGS) $(LIBBUILD_o)$(SCIPOPTLIBFILE) \
+		$(SCIPOPTOBJFILES) $(EXT_LIBS)
+ifneq ($(RANLIB),)
+		$(RANLIB) $(SCIPOPTLIBFILE)
+endif
+		@echo "-> generating short link $(SCIPOPTLIBSHORT)"
+		@-(cd lib && ln -fs $(notdir $(SCIPOPTLIBFILE)) $(SCIPOPTLIBSHORT))
+
+.PHONY: installscipopt
+installscipopt:
+		@echo "-> install SCIPOpt libraries into INSTALLDIR <$(INSTALLDIR)>"
+		@-install -m 644 -p $(SCIPOPTLIBFILE) $(INSTALLDIR)/$(LIBDIR)/
+		@-(cd $(INSTALLDIR)/$(LIBDIR)/ && rm -f $(notdir $(SCIPOPTLIBSHORT)) && $(LN_s) $(notdir $(SCIPOPTLIBFILE)) $(notdir $(SCIPOPTLIBSHORT)));
+
+
+.PHONY:		soplex
+soplex:   $(SOPLEXDIR)
+		@echo ""
+		@echo "** Building SoPlex library and executable \"$@\"."
+		@$(MAKE) -C $(SOPLEXDIR) OPT=$(LPSOPT) ZLIB=$(ZLIB)
+		@echo ""
+		@echo "** Build complete."
+		@echo "** Find your SoPlex binary in \"$(SOPLEXDIR)/bin\"."
+		@echo ""
+
+.PHONY:		gcg
+gcg:		sciplibs $(GCGDIRECTORIES) $(GCGSCIPLINK)
+		@echo ""
+		@echo "** Building GCG executable."
+		@$(MAKE) -C $(GCGDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) OPT=$(OPT) PAPILO=$(PAPILO)
+		@echo ""
+		@echo "** Build complete."
+		@echo "** Find your GCG binary in \"$(GCGDIR)/bin\"."
+		@echo ""
+
+.PHONY:		ug
+ug:		sciplibs $(UGDIRECTORIES) $(UGSCIPLINK)
+		@echo ""
+		@echo "** Building UG executable."
+		@$(MAKE) -C $(UGDIR) READLINE=$(READLINE) LPS=$(LPS) LPSOPT=$(LPSOPT) ZIMPL=$(ZIMPL) ZIMPLOPT=$(ZIMPLOPT) ZLIB=$(ZLIB) MAKESOFTLINKS=$(MAKESOFTLINKS) OPT=$(OPT) PAPILO=$(PAPILO)
+		@echo ""
+		@echo "** Build complete."
+		@echo "** Find your UG binary in \"$(UGDIR)/bin\"."
+		@echo ""

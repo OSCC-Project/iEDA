@@ -118,6 +118,7 @@ class Router
   void DMEBuild();
   void slewAwareBuild();
   void hctsBuild();
+  void gocaBuild();
   template <typename T>
   void topoligize(Topology<T>& topo, const std::vector<CtsInstance*>& cluster) const
   {
@@ -153,9 +154,9 @@ class Router
     std::string delay_type = config->get_delay_type();
     DelayModel delay_model;
     if (delay_type == "elmore") {
-      delay_model = DelayModel::kELMORE;
+      delay_model = DelayModel::kElmore;
     } else {
-      delay_model = DelayModel::kLINEAR;
+      delay_model = DelayModel::kLinear;
     }
     ZstParams params(delay_model, CTSAPIInst.getDbUnit(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());
     icts::dme(topo, params);
@@ -169,6 +170,7 @@ class Router
   void comfortRouting(CtsNet* clock_net);
   void slewAwareRouting(CtsNet* clock_net);
   void hctsRouting(CtsNet* clk_net);
+  void gocaRouting(CtsNet* clk_net);
   void clustering(std::vector<std::vector<CtsInstance*>>& clusters, const std::vector<CtsInstance*>& insts) const;
   int calFeasibleFanout(const double& avg_wirelength) const;
   template <typename T>

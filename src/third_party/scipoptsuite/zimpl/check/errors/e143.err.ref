@@ -1,0 +1,4 @@
+*** Error 143: Size for subsets 1.5 is too big or not an integer
+*** File: e143.zpl Line 2
+*** set S[]:=subsets({1..5}, 1.5);
+***                             ^^^

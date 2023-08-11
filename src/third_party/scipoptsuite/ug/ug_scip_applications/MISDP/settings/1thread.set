@@ -1,0 +1,16 @@
+relaxing/SDP/sdpsolverthreads = 1
+limits/restarts = 0
+timing/clocktype = 2
+lp/solvefreq = -1
+relaxing/SDP/freq = 1
+numerics/epsilon = 1e-9
+numerics/sumepsilon = 1e-6
+numerics/feastol = 1e-6
+lp/cleanuprows = FALSE
+lp/cleanuprowsroot = FALSE
+lp/rowagelimit = 10
+separating/cutagelimit = 10
+separating/maxrounds = 20
+nodeselection/hybridestim/stdpriority = 1000000
+nodeselection/hybridestim/maxplungedepth = 0
+nodeselection/hybridestim/estimweight = 0.0

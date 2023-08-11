@@ -1,0 +1,128 @@
+# $Id: Makefile,v 1.82 2011/10/31 08:48:56 bzfkocht Exp $
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+#*                                                                           *
+#*   File....: Makefile                                                      *
+#*   Name....: Zimpl Makefile                                                *
+#*   Author..: Thorsten Koch                                                 *
+#*   Copyright by Author, All rights reserved                                *
+#*                                                                           *
+#* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+#*
+#* Copyright (C) 2005-2022 by Thorsten Koch <koch@zib.de>
+#*
+#* This program is free software; you can redistribute it and/or
+#* modify it under the terms of the GNU General Public License
+#* as published by the Free Software Foundation; either version 2
+#* of the License, or (at your option) any later version.
+#*
+#* This program is distributed in the hope that it will be useful,
+#* but WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#* GNU General Public License for more details.
+#*
+#* You should have received a copy of the GNU General Public License
+#* along with this program; if not, write to the Free Software
+#* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#*
+#
+#.PHONY:		all clean
+
+ARCH        =  x86
+OSTYPE      =  win
+VERSION		=  3.5.3
+VERBOSE		=	0
+LINK		   =	normal
+OPT		   =	opt
+COMP		   =	msvc
+CC		      =	cl
+AR          =  lib
+LD          =  link
+
+SRCDIR		=	src
+BINDIR		=	bin
+LIBDIR		=	lib
+
+CPPFLAGS	=  /DVERSION=\"$(VERSION)\" \
+            /I$(SRCDIR) /I$(SRCDIR)\WIN \
+            /Dpopen=_popen /Dpclose=_pclose /DWITH_PCRE=1 \
+            /Ilib\zlib \
+            /Ilib\pcre \
+            /Ilib\mpir.$(ARCH) \
+             /D_CRT_SECURE_NO_WARNINGS
+
+CFLAGS		=
+ARFLAGS     =  /nologo
+LIBS  		=  lib\libz.$(ARCH).lib \
+               lib\libpcre.$(ARCH).lib \
+               lib\libmpir.$(ARCH).lib
+
+LDFLAGS     =  /NODEFAULTLIB:LIBCMT /NODEFAULTLIB:LIBCMTD /STACK:67108864 /OPT:REF /OPT:ICF /NOLOGO
+
+BASE		   =	$(OSTYPE).$(ARCH).$(COMP).$(OPT)
+OBJDIR		=	obj\O.$(OSTYPE).$(ARCH).$(COMP).$(LINK).$(OPT)
+NAME		   =	zimpl
+BINNAME		=	$(NAME)-$(VERSION).$(OSTYPE).$(ARCH).$(COMP).$(LINK).$(OPT)
+LIBNAME		=	$(NAME)-$(VERSION).$(BASE)
+LIBRARY		=	$(LIBDIR)\lib$(LIBNAME).lib
+BINARY		=	$(BINDIR)\$(BINNAME).exe
+DEPEND		=	$(SRCDIR)\depend
+
+#-----------------------------------------------------------------------------
+
+OBJECT  	   =  $(OBJDIR)\zimpl.obj $(OBJDIR)\xlpglue.obj $(OBJDIR)\zlpglue.obj \
+			$(OBJDIR)\ratlpstore.obj $(OBJDIR)\ratlpfwrite.obj $(OBJDIR)\ratmpswrite.obj $(OBJDIR)\ratmstwrite.obj \
+			$(OBJDIR)\ratordwrite.obj $(OBJDIR)\ratpresolve.obj
+LIBBASE		=	$(OBJDIR)\getopt.obj $(OBJDIR)\blkmem.obj $(OBJDIR)\bound.obj $(OBJDIR)\code.obj $(OBJDIR)\conname.obj \
+         $(OBJDIR)\define.obj $(OBJDIR)\elem.obj $(OBJDIR)\entry.obj \
+			$(OBJDIR)\hash.obj $(OBJDIR)\heap.obj $(OBJDIR)\idxset.obj $(OBJDIR)\inst.obj $(OBJDIR)\iread.obj $(OBJDIR)\list.obj \
+			$(OBJDIR)\load.obj $(OBJDIR)\local.obj $(OBJDIR)\metaio.obj $(OBJDIR)\mmlparse2.obj $(OBJDIR)\mmlscan.obj $(OBJDIR)\mono.obj \
+			$(OBJDIR)\mshell.obj $(OBJDIR)\prog.obj $(OBJDIR)\random.obj $(OBJDIR)\rdefpar.obj $(OBJDIR)\source.obj \
+			$(OBJDIR)\setempty.obj $(OBJDIR)\setpseudo.obj $(OBJDIR)\setlist.obj $(OBJDIR)\setrange.obj $(OBJDIR)\setprod.obj \
+			$(OBJDIR)\setmulti.obj $(OBJDIR)\set4.obj $(OBJDIR)\stmt.obj $(OBJDIR)\stkchk.obj $(OBJDIR)\strstore2.obj $(OBJDIR)/symbol.obj \
+			$(OBJDIR)\term2.obj $(OBJDIR)\tuple.obj $(OBJDIR)\vinst.obj $(OBJDIR)\zimpllib.obj
+LIBOBJ		=	$(LIBBASE) $(OBJDIR)\gmpmisc.obj $(OBJDIR)\numbgmp.obj
+
+#-----------------------------------------------------------------------------
+!include make/nmake.$(OSTYPE).$(ARCH).$(COMP).$(OPT)
+#-----------------------------------------------------------------------------
+
+!if $(VERBOSE) == 0
+!CMDSWITCHES +S
+!endif
+
+all:		$(LIBRARY) $(BINARY)
+
+$(BINARY):	$(OBJDIR) $(BINDIR) $(OBJECT) $(LIBRARY)
+		@echo "-> linking $@"
+		$(LD) $(LDFLAGS) /OUT:$@ $(OBJECT) $(LIBRARY) $(LIBS)
+
+$(LIBRARY):	$(OBJDIR) $(LIBDIR) $(LIBOBJ)
+		@echo "-> generating library $@"
+		@del $(LIBRARY)
+		$(AR) $(ARFLAGS) /OUT:$@ $(LIBOBJ)
+
+$(OBJDIR):
+		@echo "** creating directory \"$@\""
+		@mkdir $(OBJDIR)
+
+$(LIBDIR):
+		@echo "** creating directory \"$@\""
+		@mkdir $(LIBDIR)
+
+$(BINDIR):
+		@echo "** creating directory \"$@\""
+		@mkdir $(BINDIR)
+
+clean:
+		del /Q $(OBJDIR)\*.* $(BINARY) $(LIBRARY)
+
+!include	$(DEPEND)
+
+{$(SRCDIR)}.c{$(OBJDIR)}.obj:
+		@echo "-> compiling $@"
+		$(CC) $(CPPFLAGS) $(CFLAGS) /c $< /Fo$@
+
+$(OBJDIR)\getopt.obj: $(SRCDIR)\WIN\getopt.c $(SRCDIR)\WIN\getopt.h
+		$(CC) $(CPPFLAGS) $(CFLAGS) /c $(SRCDIR)\WIN\getopt.c /Fo$@
+
+# --- EOF ---------------------------------------------------------------------
