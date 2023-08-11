@@ -35,11 +35,17 @@ class Config
   std::string top_routing_layer;     // optional
   irt_int enable_output_gds_files;   // optional
   irt_int enable_idrc_interfaces;    // optional
+  irt_int pa_max_iter_num;           // optional
   double ra_initial_penalty;         // optional
   double ra_penalty_drop_rate;       // optional
-  irt_int ra_outer_max_iter_num;         // optional
-  irt_int ra_inner_max_iter_num;         // optional
-  irt_int gr_max_iter_num;               // optional
+  irt_int ra_outer_max_iter_num;     // optional
+  irt_int ra_inner_max_iter_num;     // optional
+  irt_int gr_max_iter_num;           // optional
+  irt_int ta_model_max_iter_num;     // optional
+  irt_int ta_panel_max_iter_num;     // optional
+  irt_int dr_model_max_iter_num;     // optional
+  irt_int dr_box_max_iter_num;       // optional
+  irt_int vr_max_iter_num;           // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building

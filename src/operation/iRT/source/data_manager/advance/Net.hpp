@@ -53,11 +53,11 @@ class Net
 
   // setter
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_net_name(const std::string& net_name) { _net_name = net_name; };
-  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; };
+  void set_net_name(const std::string& net_name) { _net_name = net_name; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   // PinAccessor
   void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
-  void set_driving_pin(const Pin& driving_pin) { _driving_pin = driving_pin; };
+  void set_driving_pin(const Pin& driving_pin) { _driving_pin = driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   // ResourceAllocator
   void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }

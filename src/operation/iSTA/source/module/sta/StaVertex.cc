@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -111,25 +111,6 @@ bool StaPropagationTag::isTagSet(TagType tag_type) const {
 
 StaVertex::StaVertex(DesignObject* obj)
     : _obj(obj),
-      _is_clock(0),
-      _is_clock_gate_clock(0),
-      _is_port(0),
-      _is_start(0),
-      _is_end(0),
-      _is_clock_gate_end(0),
-      _is_const(0),
-      _color(kWhite),
-      _is_slew_prop(0),
-      _is_delay_prop(0),
-      _is_bwd(0),
-      _is_fwd(0),
-      _is_crosstalk_prop(0),
-      _level(0),
-      _is_sdc_clock_pin(0),
-      _is_ideal_clock_latency(0),
-      _is_bidirection(0),
-      _is_assistant(0),
-      _reserverd(0),
       _slew_bucket(c_vertex_slew_data_bucket_size),
       _path_delay_bucket(c_vertex_path_delay_data_bucket_size) {
   if (!obj) {

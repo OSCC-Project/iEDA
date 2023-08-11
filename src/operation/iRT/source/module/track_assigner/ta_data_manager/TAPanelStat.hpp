@@ -28,16 +28,29 @@ class TAPanelStat
   ~TAPanelStat() = default;
   // getter
   double get_total_wire_length() { return _total_wire_length; }
+  double get_total_prefer_wire_length() { return _total_prefer_wire_length; }
+  double get_total_nonprefer_wire_length() { return _total_nonprefer_wire_length; }
   std::map<TASourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
+  std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
+  std::map<std::string, irt_int>& get_source_number_map() { return _source_number_map; }
   irt_int get_total_drc_number() { return _total_drc_number; }
   // setter
   void set_total_wire_length(const double total_wire_length) { _total_wire_length = total_wire_length; }
+  void set_total_prefer_wire_length(const double total_prefer_wire_length) { _total_prefer_wire_length = total_prefer_wire_length; }
+  void set_total_nonprefer_wire_length(const double total_nonprefer_wire_length)
+  {
+    _total_nonprefer_wire_length = total_nonprefer_wire_length;
+  }
   void set_total_drc_number(const double total_drc_number) { _total_drc_number = total_drc_number; }
   // function
 
  private:
   double _total_wire_length = 0;
+  double _total_prefer_wire_length = 0;
+  double _total_nonprefer_wire_length = 0;
   std::map<TASourceType, std::map<std::string, irt_int>> _source_drc_number_map;
+  std::map<std::string, irt_int> _drc_number_map;
+  std::map<std::string, irt_int> _source_number_map;
   irt_int _total_drc_number = 0;
 };
 

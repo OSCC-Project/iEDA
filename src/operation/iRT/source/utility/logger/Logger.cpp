@@ -43,6 +43,8 @@ void Logger::destroyInst()
   }
 }
 
+// function
+
 void Logger::openLogFileStream(const std::string& log_file_path)
 {
   _log_file_path = log_file_path;
