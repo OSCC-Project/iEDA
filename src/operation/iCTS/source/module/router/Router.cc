@@ -17,9 +17,8 @@
 #include "Router.h"
 
 #include "CTSAPI.hpp"
+#include "GOCA.hh"
 #include "HCTS.h"
-
-
 namespace icts {
 
 void Router::update()
@@ -44,6 +43,10 @@ void Router::build()
   }
   if (router_type == "HCTS") {
     hctsBuild();
+    return;
+  }
+  if (router_type == "GOCA") {
+    gocaBuild();
     return;
   }
 }
@@ -131,6 +134,30 @@ void Router::hctsBuild()
       }
       clk_net->setClockRouted();
       hctsRouting(clk_net);
+      // find root node
+      auto root_topo = _clk_topos.back();
+      ClockTopo root_clk_topo = create_clock_topo(clk_net);
+      root_clk_topo.connect_load(root_topo.get_driver());
+      _clk_topos.emplace_back(root_clk_topo);
+    }
+  }
+}
+
+void Router::gocaBuild()
+{
+  for (auto* clock : _clocks) {
+    auto& clock_nets = clock->get_clock_nets();
+    for (auto* clk_net : clock_nets) {
+      auto insts = get_clustering_insts(clk_net);
+      if (insts.size() <= 1) {
+        continue;
+      }
+      clk_net->setClockRouted();
+      // debug
+      if (insts.size() < 32) {
+        continue;
+      }
+      gocaRouting(clk_net);
       // find root node
       auto root_topo = _clk_topos.back();
       ClockTopo root_clk_topo = create_clock_topo(clk_net);
@@ -266,6 +293,22 @@ void Router::hctsRouting(CtsNet* clk_net)
   }
 }
 
+void Router::gocaRouting(CtsNet* clk_net)
+{
+  std::string net_name = clk_net->get_net_name();
+  std::vector<CtsInstance*> insts = get_clustering_insts(clk_net);
+  if (insts.size() <= 1) {
+    return;
+  }
+  // total topology
+  auto goca = GOCA(net_name, insts);
+  goca.run();
+  auto clk_topos = goca.get_clk_topos();
+  for (auto& clk_topo : clk_topos) {
+    _clk_topos.emplace_back(clk_topo);
+  }
+}
+
 std::vector<CtsInstance*> Router::get_clustering_insts(CtsNet* clk_net)
 {
   std::vector<CtsInstance*> insts;
@@ -387,15 +430,15 @@ void Router::dme(Topology<T>& topo) const
   std::string delay_type = config->get_delay_type();
   DelayModel delay_model;
   if (delay_type == "elmore") {
-    delay_model = DelayModel::kELMORE;
+    delay_model = DelayModel::kElmore;
   } else {
-    delay_model = DelayModel::kLINEAR;
+    delay_model = DelayModel::kLinear;
   }
 
   std::string router_type = config->get_router_type();
   if (router_type == "BST") {
     double skew_bound = config->get_skew_bound();
-    BstParams params(BstType::kIME, CTSAPIInst.getDbUnit(), skew_bound, DelayModel::kLINEAR);
+    BstParams params(BstType::kIME, CTSAPIInst.getDbUnit(), skew_bound, DelayModel::kLinear);
     icts::dme(topo, params);
   } else if (router_type == "ZST") {
     ZstParams params(delay_model, CTSAPIInst.getDbUnit(), CTSAPIInst.getClockUnitRes(), CTSAPIInst.getClockUnitCap());

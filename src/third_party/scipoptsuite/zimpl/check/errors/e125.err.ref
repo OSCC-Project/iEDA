@@ -1,0 +1,4 @@
+*** Error 125: "step" value 0.5 is too big or not an integer
+*** File: e125.zpl Line 2
+*** set A := {1 to 5 by 0.5};
+***                        ^^^

@@ -1,0 +1,158 @@
+# is presolver coefftightening enabled  [Boolean: {0,1}]
+coefftightening.enabled = 1
+
+# is the iteration over the rows in coefftightening parallelised? [Boolean: {0,1}]
+coefftightening.parallel = 1
+
+# is presolver colsingleton enabled  [Boolean: {0,1}]
+colsingleton.enabled = 1
+
+# is presolver domcol enabled  [Boolean: {0,1}]
+domcol.enabled = 1
+
+# is presolver doubletoneq enabled  [Boolean: {0,1}]
+doubletoneq.enabled = 1
+
+# is the iteration over the rows in doubletoneq parallelised? [Boolean: {0,1}]
+doubletoneq.parallel = 0
+
+# is presolver dualfix enabled  [Boolean: {0,1}]
+dualfix.enabled = 1
+
+# is the iteration over the columns in dualfix parallelised? [Boolean: {0,1}]
+dualfix.parallel = 0
+
+# is presolver dualinfer enabled  [Boolean: {0,1}]
+dualinfer.enabled = 1
+
+# is presolver fixcontinuous enabled  [Boolean: {0,1}]
+fixcontinuous.enabled = 1
+
+# is presolver implint enabled  [Boolean: {0,1}]
+implint.enabled = 1
+
+# is the iteration over the rows in implied integer parallelised? [Boolean: {0,1}]
+implint.parallel = 0
+
+# verbosity to be used: 0 - quiet, 1 - errors, 2 - warnings, 3 - normal, 4 - detailed  [Integer: [0,4]]
+message.verbosity = 3
+
+# epsilon tolerance to consider two values equal  [Numerical: [0,0.10000000000000001]]
+numerics.epsilon = 1.0000000000000001e-09
+
+# the feasibility tolerance  [Numerical: [0,0.10000000000000001]]
+numerics.feastol = 9.9999999999999995e-07
+
+# absolute bound value that is considered too huge for activitity based calculations  [Numerical: [0,1.7976931348623157e+308]]
+numerics.hugeval = 100000000
+
+# is presolver parallelcols enabled  [Boolean: {0,1}]
+parallelcols.enabled = 1
+
+# is presolver parallelrows enabled  [Boolean: {0,1}]
+parallelrows.enabled = 1
+
+# abort factor of weighted number of reductions for presolving  [Numerical: [0,1]]
+presolve.abortfac = 0.00080000000000000004
+
+# relax bounds of implied free variables after presolving  [Boolean: {0,1}]
+presolve.boundrelax = 0
+
+# maximum number of integral variables for trying to solve disconnected components of the problem in presolving (-1: disabled)  [Integer: [-1,2147483647]]
+presolve.componentsmaxint = 0
+
+# compress the problem if fewer than compressfac times the number of rows or columns are active  [Numerical: [0,1]]
+presolve.compressfac = 0.84999999999999998
+
+# detect and remove linearly dependent equations and free columns (0: off, 1: for LPs, 2: always)  [Integer: [0,2]]
+presolve.detectlindep = 1
+
+# 0: disable dual reductions, 1: allow dual reductions that never cut off optimal solutions, 2: allow all dual reductions  [Integer: [0,2]]
+presolve.dualreds = 2
+
+# abort factor of weighted number of reductions for presolving LPs  [Numerical: [0,1]]
+presolve.lpabortfac = 0.01
+
+# minimum absolute coefficient value allowed in matrix, before it is set to zero  [Numerical: [0,0.10000000000000001]]
+presolve.minabscoeff = 1e-10
+
+# random seed value  [Integer: [0,4294967295]]
+presolve.randomseed = 0
+
+# remove slack variables in equations  [Boolean: {0,1}]
+presolve.removeslackvars = 1
+
+# maximal number of threads to use (0: automatic)  [Integer: [0,2147483647]]
+presolve.threads = 0
+
+# if only one thread (presolve.threads = 1) is used, apply the reductions immediately afterwards
+presolve.apply_results_immediately_if_run_sequentially = 1
+
+# time limit for presolve  [Numerical: [0,1.7976931348623157e+308]]
+presolve.tlim = 1.7976931348623157e+308
+
+# weaken bounds obtained by constraint propagation by this factor of the feasibility tolerance if the problem is an LP  [Integer: [-2147483648,2147483647]]
+presolve.weakenlpvarbounds = 0
+
+# is presolver probing enabled  [Boolean: {0,1}]
+probing.enabled = 1
+
+# maximum number of probing candidates probed in the first badge of candidates  [Integer: [1,2147483647]]
+probing.maxinitialbadgesize = 1000
+
+# minimum number of probing candidates probed in a single badge of candidates  [Integer: [1,2147483647]]
+probing.minbadgesize = 10
+
+# minimum fraction of domain that needs to be reduced for continuous variables to accept a bound change in probing  [Numerical: [0,1]]
+probing.mincontdomred = 0.29999999999999999
+
+# is presolver propagation enabled  [Boolean: {0,1}]
+propagation.enabled = 1
+
+# is the iteration over the rows in propagation parallelised? [Boolean: {0,1}]
+propagation.parallel = 1
+
+# is presolver simpleprobing enabled  [Boolean: {0,1}]
+simpleprobing.enabled = 1
+
+# is the iteration over the rows in simpleprobing parallelised? [Boolean: {0,1}]
+simpleprobing.parallel = 0
+
+# is presolver simplifyineq enabled  [Boolean: {0,1}]
+simplifyineq.enabled = 1
+
+# is the iteration over the rows in simplifyineq parallelised?    [Boolean: {0,1}]
+simplifyineq.parallel = 1
+
+# is presolver sparsify enabled  [Boolean: {0,1}]
+sparsify.enabled = 1
+
+# maximum absolute scale to use for cancelling nonzeros  [Numerical: [1,1.7976931348623157e+308]]
+sparsify.maxscale = 1000
+
+# is presolver stuffing enabled  [Boolean: {0,1}]
+stuffing.enabled = 1
+
+# should substitution of binary variables with general integers be allowed  [Boolean: {0,1}]
+substitution.binarieswithints = 1
+
+# is presolver substitution enabled  [Boolean: {0,1}]
+substitution.enabled = 1
+
+# markowitz tolerance value for allowing a substitution  [Numerical: [0,1]]
+substitution.markowitz_tolerance = 0.01
+
+# maximum estimated fillin for variable substitutions  [Integer: [0,2147483647]]
+substitution.maxfillin = 10
+
+# maximum amount of nonzeros being moved to make space for fillin from substitutions within a row  [Integer: [0,2147483647]]
+substitution.maxshiftperrow = 10
+
+# should the basis be calculated during postsolve? Deactivates variable bound tightening due to computational overhead.
+calculate_basis_for_dual = 1
+
+# should the primal/dual solution be validated during after every postsolving step?
+validation_after_every_postsolving_step = 0
+
+# defines the offset for bound tightening
+bound_tightening_offset = 0.0001

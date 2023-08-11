@@ -57,10 +57,20 @@ void Placer::placeInstance(CtsInstance* inst)
   auto new_bounding_box = findPlacedLocation(inst_bounding_box);
 
   // place instance to suitable location
-  inst->set_location(Point(gtl::xl(new_bounding_box), gtl::yl(new_bounding_box)));
+  auto loc = Point(gtl::xl(new_bounding_box), gtl::yl(new_bounding_box));
+
+  inst->set_location(loc);
 
   // set blocakage to grid graph
   setBlockage(new_bounding_box);
+}
+
+void Placer::cancelPlaceInstance(CtsInstance* inst)
+{
+  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
+  // get the bounding box of instance
+  Rectangle inst_bounding_box = db_wrapper->get_bounding_box(inst);
+  resetBlockage(inst_bounding_box);
 }
 
 Rectangle Placer::findPlacedLocation(const Rectangle& rect) const
@@ -82,7 +92,11 @@ Rectangle Placer::coordToGrid(const Rectangle& rect) const
 {
   auto min_coord = coordToGrid(Point(gtl::xl(rect), gtl::yl(rect)));
   auto max_coord = coordToGrid(Point(gtl::xh(rect), gtl::yh(rect)));
-  return Rectangle(min_coord.x(), min_coord.y(), max_coord.x(), max_coord.y());
+  if (min_coord == max_coord) {
+    return Rectangle(min_coord.x(), min_coord.y(), max_coord.x(), max_coord.y());
+  } else {
+    return Rectangle(min_coord.x(), min_coord.y(), max_coord.x() - 1, max_coord.y() - 1);
+  }
 }
 
 Point Placer::coordToGrid(const Point& point) const
@@ -110,6 +124,12 @@ void Placer::setBlockage(const Rectangle& rect)
 {
   Rectangle grid_rect = coordToGrid(rect);
   _grid_graph.setBlockage(grid_rect);
+}
+
+void Placer::resetBlockage(const Rectangle& rect)
+{
+  Rectangle grid_rect = coordToGrid(rect);
+  _grid_graph.resetBlockage(grid_rect);
 }
 
 bool Placer::isInCore(const Point& location) const

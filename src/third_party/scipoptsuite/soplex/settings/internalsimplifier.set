@@ -1,0 +1,2 @@
+# simplifier (0 - off, 1 - internal, 2 - PaPILO)
+int:simplifier = 1

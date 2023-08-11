@@ -1,0 +1,4 @@
+*** Error 700: log(0.000000): Numerical result out of range
+*** File: e700_3.zpl Line 2
+*** param x := log(1/10^400);
+***                        ^^^

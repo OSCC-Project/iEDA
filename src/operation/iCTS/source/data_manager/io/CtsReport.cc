@@ -90,6 +90,86 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][10] = "Level [T]";
       (*report_tbl) << TABLE_ENDLINE;
       break;
+    case CtsReportType::kLEVEL_LOG:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Avg Fanout";
+      (*report_tbl)[0][3] = "Max Delay";
+      (*report_tbl)[0][4] = "Max Skew";
+      (*report_tbl)[0][5] = "Max Insert Delay";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_FANOUT:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Fanout";
+      (*report_tbl)[0][3] = "Max Fanout";
+      (*report_tbl)[0][4] = "Avg Fanout";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_NET_LEN:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Net Length";
+      (*report_tbl)[0][3] = "Max Net Length";
+      (*report_tbl)[0][4] = "Avg Net Length";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_CAP:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Cap";
+      (*report_tbl)[0][3] = "Max Cap";
+      (*report_tbl)[0][4] = "Avg Cap";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_SLEW:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Slew";
+      (*report_tbl)[0][3] = "Max Slew";
+      (*report_tbl)[0][4] = "Avg Slew";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_DELAY:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Delay";
+      (*report_tbl)[0][3] = "Max Delay";
+      (*report_tbl)[0][4] = "Avg Delay";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_INSERT_DELAY:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Insert Delay";
+      (*report_tbl)[0][3] = "Max Insert Delay";
+      (*report_tbl)[0][4] = "Avg Insert Delay";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
+    case CtsReportType::kLEVEL_SKEW:
+      (*report_tbl) << TABLE_HEAD;
+      (*report_tbl)[0][0] = "Level";
+      (*report_tbl)[0][1] = "Inst Num";
+      (*report_tbl)[0][2] = "Min Skew";
+      (*report_tbl)[0][3] = "Max Skew";
+      (*report_tbl)[0][4] = "Avg Skew";
+      (*report_tbl)[0][5] = "Violation";
+      (*report_tbl) << TABLE_ENDLINE;
+      break;
     default:
       break;
   }

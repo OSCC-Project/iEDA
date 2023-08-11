@@ -1,0 +1,9 @@
+presolve.componentsmaxint = -1
+presolve.detectlindep = 0
+
+doubletoneq.enabled = 0
+dualinfer.enabled = 0
+substitution.enabled = 0
+sparsify.enabled = 0
+
+calculate_basis_for_dual = 0
