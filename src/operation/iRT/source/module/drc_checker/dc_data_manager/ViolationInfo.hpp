@@ -16,38 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LayerRect.hpp"
 #include "RTU.hpp"
+#include "RTUtil.hpp"
 
 namespace irt {
 
-class RQShape
+class ViolationInfo
 {
  public:
-  RQShape() {}
-  ~RQShape() {}
+  ViolationInfo() = default;
+  ~ViolationInfo() = default;
   // getter
-  irt_int get_net_id() { return _net_id; }
-  BoostBox& get_shape() { return _shape; }
-  bool get_is_routing() const { return _is_routing; }
-  irt_int get_routing_layer_idx() const { return _routing_layer_idx; }
-  irt_int get_min_spacing() const { return _min_spacing; }
-  BoostBox& get_enlarged_shape() { return _enlarged_shape; }
-  // setters
-  void set_net_id(const irt_int net_id) { _net_id = net_id; }
-  void set_shape(const BoostBox& shape) { _shape = shape; }
+  std::string get_rule_name() { return _rule_name; }
+  LayerRect& get_violation_region() { return _violation_region; }
+  std::map<irt_int, std::vector<LayerRect>>& get_net_shape_map() { return _net_shape_map; }
+  // setter
   void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
-  void set_routing_layer_idx(const irt_int layer_idx) { _routing_layer_idx = layer_idx; }
-  void set_min_spacing(const irt_int min_spacing) { _min_spacing = min_spacing; }
-  void set_enlarged_shape(const BoostBox& enlarged_shape) { _enlarged_shape = enlarged_shape; }
+  void set_rule_name(const std::string& rule_name) { _rule_name = rule_name; }
+  void set_violation_region(const LayerRect& violation_region) { _violation_region = violation_region; }
+  void set_net_shape_map(const std::map<irt_int, std::vector<LayerRect>>& net_shape_map) { _net_shape_map = net_shape_map; }
   // function
+  bool isRouting() { return _is_routing; }
 
  private:
-  irt_int _net_id;
-  BoostBox _shape;
   bool _is_routing = true;
-  irt_int _routing_layer_idx = -1;
-  irt_int _min_spacing = -1;
-  BoostBox _enlarged_shape;
+  std::string _rule_name;
+  LayerRect _violation_region;
+  std::map<irt_int, std::vector<LayerRect>> _net_shape_map;
 };
 
 }  // namespace irt
