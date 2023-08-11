@@ -52,9 +52,9 @@ class SdcConstrain {
   ~SdcConstrain();
 
   void addClock(SdcClock* clock);
-  void addGeneratedClock(SdcGenerateCLock* clock);
+  // void addGeneratedClock(SdcGenerateCLock* clock);
   auto& get_sdc_clocks() { return _sdc_clocks; }
-  auto& get_generated_source_pins() { return _generated_source_pins; }
+  // auto& get_generated_source_pins() { return _generated_source_pins; }
   SdcClock* findClock(const char* clock_name);
   SdcClock* findClock(DesignObject* design_obj);
 
@@ -90,7 +90,7 @@ class SdcConstrain {
 
  private:
   StrMap<std::unique_ptr<SdcClock>> _sdc_clocks;
-  std::set<DesignObject*> _generated_source_pins;
+  // std::set<DesignObject*> _generated_source_pins;
 
   std::vector<std::unique_ptr<SdcIOConstrain>> _sdc_io_constraints;
   std::vector<std::unique_ptr<SdcTimingDerate>> _sdc_timing_derates;

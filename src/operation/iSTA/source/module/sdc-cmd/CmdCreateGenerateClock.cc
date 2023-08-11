@@ -261,10 +261,10 @@ unsigned CmdCreateGeneratedClock::exec() {
 
   // add generate clock to constrain
   // _the_constrain->addGeneratedClock(_the_generate_clock);
-  for (auto* iter : _the_generate_clock->get_source_pins()) {
-    LOG_INFO << "the generate_clock full pin name: " << iter->getFullName()
-             << std::endl;
-  }
+  // for (auto* iter : _the_generate_clock->get_source_pins()) {
+  //   LOG_INFO << "the generate_clock full pin name: " << iter->getFullName()
+  //            << std::endl;
+  // }
   _the_constrain->addClock(_the_generate_clock);
   // for (auto iter = _the_constrain->get_generated_sdc_clocks().begin();
   //      iter != _the_constrain->get_generated_sdc_clocks().end(); iter++)
