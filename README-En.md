@@ -194,8 +194,8 @@ In the development of iEDA, some sub-modules from the open-source community are 
 | lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | Efficient modeling and optimization in graphs and networks.                                                   |
 | SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | Generating VLSI routing topology, It trades off between path length (shallowness) and wirelength (lightness). |
 | scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | It is used to quickly solve mixed integer programming (MIP) and mixed integer nonlinear programming (MINLP).                                                 |
-| parser/liberty | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | It is used to parse .lib file .     |
-| parser/verilog | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | It is used to parse netlist file .     |
+| parser/liberty | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            |  parse .lib file .     |
+| parser/verilog | [verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | parse netlist file .     |
 
 We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
 
