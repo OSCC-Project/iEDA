@@ -1,0 +1,69 @@
+Regions In the Layout : 
+
+Illegal Overlap Instance Cliques Count : 22
+Overlap Clique : 0
+Inst PHY_65 Coordinate : 79200,29970 79680,33300
+Inst uart_rx_inst/_499_ Coordinate : 79200,32014 92160,35344
+Overlap Clique : 1
+Inst PHY_69 Coordinate : 190560,29970 191040,33300
+Inst uart_rx_inst/_463_ Coordinate : 181440,27260 194400,30590
+Overlap Clique : 2
+Inst PHY_72 Coordinate : 37440,33300 37920,36630
+Inst uart_rx_inst/_737_ Coordinate : 37440,34281 50400,37611
+Overlap Clique : 3
+Inst PHY_73 Coordinate : 65280,33300 65760,36630
+Inst uart_rx_inst/_672_ Coordinate : 61440,30599 74400,33929
+Overlap Clique : 4
+Inst PHY_78 Coordinate : 204480,33300 204960,36630
+Inst uart_rx_inst/_464_ Coordinate : 197280,34020 210240,37350
+Overlap Clique : 5
+Inst PHY_87 Coordinate : 190560,36630 191040,39960
+Inst uart_rx_inst/_484_ Coordinate : 180480,38651 193440,41981
+Overlap Clique : 6
+Inst PHY_101 Coordinate : 79200,43290 79680,46620
+Inst uart_rx_inst/_460_ Coordinate : 66720,41486 79680,44816
+Overlap Clique : 7
+Inst PHY_113 Coordinate : 176640,46620 177120,49950
+Inst uart_rx_inst/_530_ Coordinate : 174240,49352 187200,52682
+Overlap Clique : 8
+Inst PHY_136 Coordinate : 51360,56610 51840,59940
+Inst uart_rx_inst/_458_ Coordinate : 50400,53911 63360,57241
+Overlap Clique : 9
+Inst PHY_176 Coordinate : 162720,69930 163200,73260
+Inst uart_rx_inst/_606_ Coordinate : 159360,71708 172320,75038
+Overlap Clique : 10
+Inst PHY_220 Coordinate : 148800,86580 149280,89910
+Inst uart_rx_inst/_497_ Coordinate : 136800,85001 149760,88331
+Overlap Clique : 11
+Inst PHY_307 Coordinate : 65280,119880 65760,123210
+Inst uart_rx_inst/_569_ Coordinate : 52800,117820 65760,121150
+Overlap Clique : 12
+Inst PHY_317 Coordinate : 79200,123210 79680,126540
+Inst uart_rx_inst/_476_ Coordinate : 66720,126100 79680,129430
+Overlap Clique : 13
+Inst PHY_324 Coordinate : 37440,126540 37920,129870
+Inst uart_rx_inst/_483_ Coordinate : 37440,123660 50400,126990
+Overlap Clique : 14
+Inst PHY_338 Coordinate : 162720,129870 163200,133200
+Inst uart_rx_inst/_466_ Coordinate : 162240,132662 175200,135992
+Overlap Clique : 15
+Inst PHY_339 Coordinate : 190560,129870 191040,133200
+Inst uart_rx_inst/_583_ Coordinate : 178080,126545 191040,129875
+Overlap Clique : 16
+Inst PHY_352 Coordinate : 51360,136530 51840,139860
+Inst uart_rx_inst/_470_ Coordinate : 42240,134675 55200,138005
+Overlap Clique : 17
+Inst PHY_542 Coordinate : 93120,206460 93600,209790
+Inst uart_tx_inst/_479_ Coordinate : 87840,207403 100800,210733
+Overlap Clique : 18
+Inst PHY_552 Coordinate : 107040,209790 107520,213120
+Inst uart_tx_inst/_389_ Coordinate : 106560,207197 119520,210527
+Overlap Clique : 19
+Inst PHY_608 Coordinate : 162720,229770 163200,233100
+Inst uart_tx_inst/_447_ Coordinate : 150720,227495 163680,230825
+Overlap Clique : 20
+Inst PHY_617 Coordinate : 176640,233100 177120,236430
+Inst uart_tx_inst/_425_ Coordinate : 173760,229933 186720,233263
+Overlap Clique : 21
+Inst PHY_626 Coordinate : 162720,236430 163200,239760
+Inst uart_tx_inst/_412_ Coordinate : 160320,237948 173280,241278
