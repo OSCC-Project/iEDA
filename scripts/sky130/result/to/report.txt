@@ -1,0 +1,38 @@
+
+
+======================= Program start time 2023-03-24 11:22:05=======================
+path
+Worst Slack: -0.052859
+Found 0 slew violations.
+Found 0 capacitance violations.
+Found 0 fanout violations.
+Found 0 long wires.
+Before ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0
+The 1th check
+After ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0
+Inserted 0 buffers in 0 nets.
+Resized 0 instances.
+======================= Program end time 2023-03-24 11:22:11=======================
+
+
+======================= Program start time 2023-03-24 11:22:26=======================
+path
+
+---------------------------------------------------------------------------
+Clock Group                                    Hold TNS            Hold WNS
+---------------------------------------------------------------------------
+core_clock                                            0                   0
+---------------------------------------------------------------------------
+
+Worst Hold Path Launch : dpath/a_reg/_146_:CLK
+Worst Hold Path Capture: dpath/a_reg/_146_:CLK
+
+Finish hold optimization!
+Total inserted 0 hold buffers and 0 load buffers.
+
+---------------------------------------------------------------------------
+Clock Group                                    Hold TNS            Hold WNS
+---------------------------------------------------------------------------
+core_clock                                            0                   0
+---------------------------------------------------------------------------
+======================= Program end time 2023-03-24 11:22:32=======================
