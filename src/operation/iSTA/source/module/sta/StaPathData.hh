@@ -28,7 +28,6 @@
 #include <memory>
 #include <vector>
 
-#include "DisallowCopyAssign.hh"
 #include "Map.hh"
 #include "StaClock.hh"
 
