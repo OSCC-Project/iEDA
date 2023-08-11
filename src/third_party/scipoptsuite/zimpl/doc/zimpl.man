@@ -1,0 +1,170 @@
+.\" Process this file with
+.\" groff -man -Tascii zimpl.man
+.\"
+.TH ZIMPL 1 "14 Mar 2017" Linux "User Manuals"
+.SH NAME
+zimpl \- Zuse Institute Mathematical Programming Language
+.SH SYNOPSIS
+.B zimpl  [ \-b ] [ \-D
+.I name=value
+.B ] [ \-f ] [ \-F
+.I filter
+.B ] [ \-h ] [ \-m ] [ \-l
+.I length
+.B [ \-n
+.I cm|cn|cf
+.B ] [ \-o
+.I outfile
+.B ] [ \-O ] [ \-P
+.I filter
+.B [ \-r ] [ \-t
+.I lp|mps|hum|rlp|pip
+.B ] [ \-s
+.I seed
+.B ] [ \-v
+.I 0-5
+.B ] [ \-V ]
+.I file
+.B ...
+.SH DESCRIPTION
+.B Zimpl
+is a little language to translate the mathematical model of a problem
+into a linear or (mixed-)integer mathematical program expressed in LPF
+or MPS file format which can be read by a LP or MIP solver.
+
+None of the options is necessary. All input files in 
+.B zpl
+format that are given are concatenated and processed as if they are
+one big file. This makes is possible to combine different parts of a
+model on the command line. In this case the first filename given will
+be used as basename for the output files in absence of an 
+.B \-o
+option.
+
+The 
+.B \-t
+option is to select the output format. 
+.B mps 
+can be read by every
+solver. 
+.B lpf 
+is a CPLEX format, but can also read by several solvers.
+BE aware that for example Range-rows can not be expressed in 
+.B lpf . 
+If you would like to inspected the output yourself, 
+.B hum
+format is a variant of 
+.B lpf
+with no name mangeling whatever, but unfortunately this violates
+several format restrictions, so no solver will read this in.
+If
+.B rlp
+is specified the output is in 
+.B lpf 
+format, but rows and columns are randomly permuted.
+ 
+.SH OPTIONS
+.IP \-b
+Enable 
+.BR bison (1)
+debugging output.
+.IP "\-D name=value"
+Sets the parameter
+.I name
+to the specified value. This is equivalent with having this line in the
+Zimpl program: param name:=val .
+.IP -f
+Enable
+.BR flex (1)
+debugging output.
+.IP "\-F filter"
+The output is piped through a filter. A %s in the
+string is replaced by the output filename. For example: 
+-F "gzip \-c >%s.gz" would compress all the 
+output files.
+.IP -h
+Show program help.
+.IP "\-l length"
+Sets the maximum length for variable names in LPF output files.
+.IP -m
+Write a CPLEX .mst Mip STart file.
+.IP "\-n cm|cn|cf"
+Select the format for the generation of constraint
+names. Can be either 
+.I cm 
+which will number them 
+1 ... n with a `c' in front. 
+.I cn 
+will use the name supplied in the subto statement and 
+number them 1 ... n within the statement. 
+.I cf 
+will use the name given with the subto,
+then a 1 .. n number like in 
+.I cm 
+and then append all the local variables from the forall statements.
+.IP "-o outfile"
+Sets the base-name for the output files. Default is the name of the
+input file without extension.
+.IP \-O 
+Optimize the generated LP by doing some presolve analysis (experimental).
+.IP "\-P filter" 
+The input is piped through a filter. A %s in the
+string is replaced by the input filename. For example: 
+\-F "cpp -DWITH_C1 %s" would pass the input file through the
+C-preprocessor.
+.IP \-r 
+Write a CPLEX .ord branching order file.
+.IP "\-s seed"
+Set the random number generator seed.
+.IP "\-t lp|mps|hum|rlp|pip"
+Selects the output format. Can be either 
+.I lp
+which is default, or 
+.I mps 
+, or
+.I hum 
+, which is (only) human readable, or 
+.I rlp
+, which is randomly permuted, or
+.I pip
+, which means polynimial IP.
+.IP "\-v 0-5"
+Set the verbosity level. 0 is quiet, 1 is default,
+2 is verbose, 3 is chatter, and 5 is debug.
+.IP \-V
+Prints the version number.
+.\".SH FILES
+.\".SH ENVIRONMENT
+.SH DIAGNOSTICS
+The following diagnostics may be issued on stderr:
+
+101 Bad filename
+.RS
+The name given with the 
+.B \-o option 
+is either missing, a directory name, or starts with a dot.
+.RE
+175 Illegal syntax for command line define -- ignored
+.RS
+The parameter of a 
+.B \-D 
+option was either not of the form 
+.I "name=value"
+or the name was not a legal identifier.
+.RE
+There are about a hundred other possible error messages, but these are
+either about the contend of the input file, or system messages.
+.SH BUGS
+Please report any bug to the author.
+.SH AUTHOR
+Thorsten Koch <koch@zib.de>
+.SH "WEBSITE"
+The lastest version of Zimpl is always available at <http://zimpl.zib.de>.
+.SH "SEE ALSO"
+The Zimpl User Guide at <http://zimpl.zib.de/download/zimpl.pdf>.
+.\".BR zpl (5),
+.\".BR lpf (5),
+.\".BR mps (5)
+
+
+

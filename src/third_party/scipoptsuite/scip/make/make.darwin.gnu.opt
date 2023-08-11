@@ -1,0 +1,4 @@
+FLAGS		+=	-DNDEBUG -DSCIP_ROUNDING_FE
+OFLAGS		+=	-O3 -fomit-frame-pointer
+CFLAGS		+=	$(GCCWARN) -Wno-strict-aliasing -Wno-missing-declarations -Wno-missing-prototypes
+CXXFLAGS	+=	$(GXXWARN) -Wno-strict-aliasing

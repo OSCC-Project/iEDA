@@ -1,0 +1,4 @@
+*** Error 189: Tuple number 1000000000000 is too big or not an integer
+*** File: e189.zpl Line 2
+*** param x := ord({1..5},1000000000000,1);
+***                                      ^^^

@@ -1,0 +1,2 @@
+CPPFLAGS	+=	-DNDEBUG
+CXXFLAGS	+=	-O3 -fomit-frame-pointer # -g -malign-double -ffast-math

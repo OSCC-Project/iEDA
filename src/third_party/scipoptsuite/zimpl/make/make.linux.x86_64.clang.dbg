@@ -1,0 +1,26 @@
+CC   	  	=	clang
+LINKCC   	=	clang
+CPPFLAGS	+=	-DFREEMEM #-D__NO_MATH_INLINES 
+CFLAGS		=	-std=gnu99 -O0 -m64 -g -Weverything -Wno-padded -Wno-switch-enum -Wno-covered-switch-default \
+			-Wno-static-in-inline -Wno-pedantic -Wno-format-nonliteral -Wno-shorten-64-to-32 \
+			-Wno-disabled-macro-expansion -Wno-reserved-id-macro -Wno-unused-macros \
+			-Wno-bad-function-cast -Wno-unused-function -Wno-unused-parameter \
+			-Wno-strict-prototypes
+LDFLAGS		=	-lgmp -lm
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+
+ifeq ($(LINK),shared)
+LIBRARY		=	$(LIBDIR)/lib$(LIBNAME).so
+LIBLINK		=	$(LIBDIR)/lib$(NAME).$(BASE).so
+CFLAGS		+=	-fPIC
+AR		=	gcc -m64 -shared -o # the trailing space is important
+ARFLAGS		=       $(LDFLAGS)
+RANLIB		=	true
+endif
+
+ifeq ($(LINK),static)
+LDFLAGS		+=	-static
+endif

@@ -1,0 +1,3 @@
+*** Error 800: File e800.zpl Line 2 : syntax error, unexpected $undefined, expecting ASGN or '['
+*** param x = 5;
+***         ^^^

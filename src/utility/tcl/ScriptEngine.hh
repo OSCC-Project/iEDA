@@ -29,13 +29,13 @@
 #include <memory>
 #include <mutex>
 
-#include "DisallowCopyAssign.hh"
 #include "Vector.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
 #include "string/StrMap.hh"
 
 namespace ieda {
+
 bool matchWildcardWithtarget(const char* const pattern, const char* const target);
 bool containWildcard(const char* pattern);
 /**
@@ -199,8 +199,6 @@ class TclOption
  private:
   const char* _option_name;
   unsigned _is_arg;
-
-  DISALLOW_COPY_AND_ASSIGN(TclOption);
 };
 
 /**
@@ -218,8 +216,6 @@ class TclSwitchOption : public TclOption
   void setVal(const char* /*val*/) override { _is_set_val = 1; }
 
   void resetVal() override { _is_set_val = 0; }
-
-  DISALLOW_COPY_AND_ASSIGN(TclSwitchOption);
 };
 
 /**
@@ -247,8 +243,6 @@ class TclDoubleOption : public TclOption
  private:
   double _default_val = 0.0;
   double _val;
-
-  DISALLOW_COPY_AND_ASSIGN(TclDoubleOption);
 };
 
 /**
@@ -283,8 +277,6 @@ class TclStringOption : public TclOption
  private:
   char* _default_val = nullptr;
   char* _val = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(TclStringOption);
 };
 
 /**
@@ -311,8 +303,6 @@ class TclIntOption : public TclOption
  private:
   int _default_val = 0;
   int _val;
-
-  DISALLOW_COPY_AND_ASSIGN(TclIntOption);
 };
 
 /**
@@ -346,8 +336,6 @@ class TclIntListOption : public TclOption
  private:
   std::vector<int> _default_val = {};
   std::vector<int> _val;
-
-  DISALLOW_COPY_AND_ASSIGN(TclIntListOption);
 };
 
 /**
@@ -382,8 +370,6 @@ class TclStringListOption : public TclOption
  private:
   std::vector<std::string> _default_val = {};
   std::vector<std::string> _val;
-
-  DISALLOW_COPY_AND_ASSIGN(TclStringListOption);
 };
 
 /**
@@ -421,8 +407,6 @@ class TclDoubleListOption : public TclOption
  private:
   std::vector<double> _default_val = {};
   std::vector<double> _val;
-
-  DISALLOW_COPY_AND_ASSIGN(TclDoubleListOption);
 };
 
 /**

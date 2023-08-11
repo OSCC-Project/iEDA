@@ -1,0 +1,24 @@
+lu1fac
+| var_name | c_type  | length | comment                                                     |
+|----------+---------+--------+-------------------------------------------------------------|
+| m        | int64_t | 1      | number of rows                                              |
+| n        | int64_t | 1      | number of columns                                           |
+| nelem    | int64_t | 1      | number of matrix entries                                    |
+| lena     | int64_t | 1      | dimension of a, indc, and indr                              |
+| luparm   | int64_t | 30     | parameter vector                                            |
+| parmlu   | double  | 30     | parameter vector                                            |
+| a        | double  | lena   | nonzero entries                                             |
+| indc     | int64_t | lena   | indices                                                     |
+| indr     | int64_t | lena   | indices                                                     |
+| p        | int64_t | m      | row permutations                                            |
+| q        | int64_t | n      | column permutations                                         |
+| lenc     | int64_t | n      | number of entries in nontrivial columns of L in pivot order |
+| lenr     | int64_t | m      | number of entries in each row of U in original order        |
+| locc     | int64_t | n      | "ready for LU update routines"                              |
+| locr     | int64_t | m      | "points to the beginning of the rows of U in a, indr"       |
+| iploc    | int64_t | n      |                                                             |
+| iqloc    | int64_t | m      |                                                             |
+| ipinv    | int64_t | m      |                                                             |
+| iqinv    | int64_t | n      |                                                             |
+| w        | double  | n      |                                                             |
+| inform   | int64_t | 1      |                                                             |

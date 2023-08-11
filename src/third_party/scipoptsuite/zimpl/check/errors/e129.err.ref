@@ -1,0 +1,4 @@
+*** Error 129: Illegal index 3,  set has only dimension 2
+*** File: e129.zpl Line 3
+*** set B := proj(A, <3>);
+***                     ^^^

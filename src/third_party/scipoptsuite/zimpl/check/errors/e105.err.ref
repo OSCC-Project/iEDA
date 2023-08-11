@@ -1,0 +1,4 @@
+*** Error 105: Duplicate constraint name "c1"
+*** File: e105.zpl Line 4
+*** subto c1: x <= 6;
+***                 ^^^

@@ -1,0 +1,25 @@
+CPPFLAGS	+=	-DNO_MSHELL -D__NO_MATH_INLINES -D_DLL
+CFLAGS		=
+LDFLAGS		=	-NODEFAULTLIB:LIBCMT -NODEFAULTLIB:LIBCMTD -STACK:67108864 -OPT:REF -OPT:ICF -NOLOGO -LTCG
+
+
+CC		=	cl
+CC_o  = -Fo
+CFLAGS		=
+LINKCC      = link
+LINKCC_o    = -OUT:
+
+AR          = lib -nologo
+AR_o        = /OUT:
+
+RANLIB      =
+LIBEXT      = .lib
+
+CPPFLAGS += -Dpopen=_popen -Dpclose=_pclose -Dinline=_inline -DNDEBUG -DWITH_PCRE=1 -D_WIN32 -W2 -wd4272 -Ox -nologo
+CPPFLAGS += -Isrc/WIN -Ilib/pcre -Ilib/zlib -Ilib/pcre -Ilib/mpir.$(ARCH)
+
+LDFLAGS  		+=  lib/libz.$(ARCH).$(OPT).lib \
+                   lib/libpcre.$(ARCH).$(OPT).lib \
+                   lib/libmpir.$(ARCH).$(OPT).lib
+
+LIBBASE        +=  getopt.o

@@ -24,7 +24,7 @@ target_link_libraries(
 
 target_include_directories(
   icts_solver
-  INTERFACE ${ICTS_SOLVER}/cluster
+  INTERFACE ${ICTS_SOLVER}/clustering
             ${ICTS_SOLVER}/DME
             ${ICTS_SOLVER}/polygon
             ${ICTS_SOLVER}/HCTS

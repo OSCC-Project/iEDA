@@ -1,0 +1,12 @@
+--- Warning 215: Startvals violate constraint, sum of LHS (6) <= RHS (5)
+*** File: w215 Line 4
+*** subto c1: sum <i> in I : x[i] <= 5;
+***                                   ^^^
+--- Warning 215: Startvals violate constraint, sum of LHS (6) >= RHS (7)
+*** File: w215 Line 5
+*** subto c2: sum <i> in I : x[i] >= 7;
+***                                   ^^^
+--- Warning 215: Startvals violate constraint, sum of LHS (6) == RHS (8)
+*** File: w215 Line 6
+*** subto c3: sum <i> in I : x[i] == 8;
+***                                   ^^^

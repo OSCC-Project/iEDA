@@ -1,0 +1,3 @@
+CPPFLAGS	   = $(CPPFLAGS) /Dinline= /DWIN64
+CFLAGS		= $(CFLAGS) /W4 /Zi /wd4001 /wd4127 /wd4206 /wd4701 /wd4702 /wd4274 /nologo
+

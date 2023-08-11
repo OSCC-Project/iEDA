@@ -40,4 +40,6 @@ target_include_directories(ito_module
         ${ITO_SOURCE_PATH}/module/placer
         ${ITO_DATA_PATH}
         ${ITO_IO_PATH}
+        ${HOME_THIRDPARTY}/parser/liberty/
+        ${HOME_DATABASE}/manager/parser/liberty
 )
