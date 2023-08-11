@@ -662,8 +662,8 @@ static const flex_int16_t yy_chk[62] =
 
 
 #include "string/Str.hh"
-#include "LibertyExprParse.hh"
-#include "LibertyExpr.hh"
+#include "mLibertyExprParse.hh"
+#include "mLibertyExpr.hh"
 
 using namespace ista;
 

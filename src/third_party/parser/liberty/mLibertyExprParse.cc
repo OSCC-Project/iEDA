@@ -54,7 +54,7 @@
 #define YYSKELETON_NAME "yacc.c"
 
 /* Pure parsers.  */
-#define YYPURE 0
+#define YYPURE 2
 
 /* Push parsers.  */
 #define YYPUSH 0
@@ -62,41 +62,15 @@
 /* Pull parsers.  */
 #define YYPULL 1
 
-
+/* Substitute the type names.  */
+#define YYSTYPE         LIB_EXPR_STYPE
 /* Substitute the variable and function names.  */
-#define yyparse         Sdf_parse
-#define yylex           Sdf_lex
-#define yyerror         Sdf_error
-#define yydebug         Sdf_debug
-#define yynerrs         Sdf_nerrs
-#define yylval          Sdf_lval
-#define yychar          Sdf_char
+#define yyparse         lib_expr_parse
+#define yylex           lib_expr_lex
+#define yyerror         lib_expr_error
+#define yydebug         lib_expr_debug
+#define yynerrs         lib_expr_nerrs
 
-/* First part of user prologue.  */
-#line 1 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-
-
-
-#include <ctype.h>
-
-#include "SdfReader.hh"
-#include "string/Str.hh"
-#include "log/Log.hh"
-
-using namespace ista;
-
-int Sdf_lex();
-
-extern int g_sdf_line;
-SdfReader* g_sdf_reader = nullptr;
-
-// use yacc generated parser errors
-#define YYERROR_VERBOSE
-
-void yyerror(const char* s);
-
-
-#line 115 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -129,101 +103,88 @@ void yyerror(const char* s);
 
 /* Use api.header.include to #include this header
    instead of duplicating it here.  */
-#ifndef YY_SDF_PROJECT_HOME_CHENSHIJIAN_IEDA_SRC_ISTA_SDF_PARSER_SDFPARSE_HH_INCLUDED
-# define YY_SDF_PROJECT_HOME_CHENSHIJIAN_IEDA_SRC_ISTA_SDF_PARSER_SDFPARSE_HH_INCLUDED
+#ifndef YY_LIB_EXPR_HOME_TAOSIMIN_IEDA_SRC_DATABASE_MANAGER_PARSER_LIBERTY_LIBERTYEXPRPARSE_HH_INCLUDED
+# define YY_LIB_EXPR_HOME_TAOSIMIN_IEDA_SRC_DATABASE_MANAGER_PARSER_LIBERTY_LIBERTYEXPRPARSE_HH_INCLUDED
 /* Debug traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 0
-#endif
+#ifndef LIB_EXPR_DEBUG
+# if defined YYDEBUG
 #if YYDEBUG
-extern int Sdf_debug;
+#   define LIB_EXPR_DEBUG 1
+#  else
+#   define LIB_EXPR_DEBUG 0
+#  endif
+# else /* ! defined YYDEBUG */
+#  define LIB_EXPR_DEBUG 0
+# endif /* ! defined YYDEBUG */
+#endif  /* ! defined LIB_EXPR_DEBUG */
+#if LIB_EXPR_DEBUG
+extern int lib_expr_debug;
 #endif
+/* "%code requires" blocks.  */
+#line 1 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+
+
+// Liberty function expression parser.
+#include "log/Log.hh"
+#include "mLibertyExpr.hh"
+
+using namespace ista;
+
+#define YYDEBUG 1
+
+typedef void* yyscan_t;
+
+
+#line 139 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
 
 /* Token type.  */
-#ifndef YYTOKENTYPE
-# define YYTOKENTYPE
-  enum yytokentype
+#ifndef LIB_EXPR_TOKENTYPE
+# define LIB_EXPR_TOKENTYPE
+  enum lib_expr_tokentype
   {
-    DELAYFILE = 258,
-    SDFVERSION = 259,
-    DESIGN = 260,
-    DATE = 261,
-    VENDOR = 262,
-    PROGRAM = 263,
-    PVERSION = 264,
-    DIVIDER = 265,
-    VOLTAGE = 266,
-    PROCESS = 267,
-    TEMPERATURE = 268,
-    TIMESCALE = 269,
-    CELL = 270,
-    CELLTYPE = 271,
-    INSTANCE = 272,
-    DELAY = 273,
-    ABSOLUTE = 274,
-    INCREMENTAL = 275,
-    INTERCONNECT = 276,
-    PORT = 277,
-    DEVICE = 278,
-    RETAIN = 279,
-    IOPATH = 280,
-    TIMINGCHECK = 281,
-    SETUP = 282,
-    HOLD = 283,
-    SETUPHOLD = 284,
-    RECOVERY = 285,
-    REMOVAL = 286,
-    RECREM = 287,
-    WIDTH = 288,
-    PERIOD = 289,
-    SKEW = 290,
-    NOCHANGE = 291,
-    POSEDGE = 292,
-    NEGEDGE = 293,
-    COND = 294,
-    CONDELSE = 295,
-    QSTRING = 296,
-    ID = 297,
-    PATH = 298,
-    NUMBER = 299,
-    EXPR_OPEN_IOPATH = 300,
-    EXPR_OPEN = 301,
-    EXPR_ID_CLOSE = 302
+    PORT = 258
   };
 #endif
 
 /* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-union YYSTYPE
+#if ! defined LIB_EXPR_STYPE && ! defined LIB_EXPR_STYPE_IS_DECLARED
+union LIB_EXPR_STYPE
 {
-#line 42 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
+#line 23 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
 
-  char character;
-  char *string;
-  int integer;
-  float number;
-  void *obj;
+  int int_val;
+  const char *string;
+  void *expr;
 
-#line 223 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 160 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
 
 };
-typedef union YYSTYPE YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
+typedef union LIB_EXPR_STYPE LIB_EXPR_STYPE;
+# define LIB_EXPR_STYPE_IS_TRIVIAL 1
+# define LIB_EXPR_STYPE_IS_DECLARED 1
 #endif
 
 
-extern YYSTYPE Sdf_lval;
 
-int Sdf_parse (void);
+int lib_expr_parse (yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder);
+/* "%code provides" blocks.  */
+#line 15 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
 
-#endif /* !YY_SDF_PROJECT_HOME_CHENSHIJIAN_IEDA_SRC_ISTA_SDF_PARSER_SDFPARSE_HH_INCLUDED  */
+#undef  YY_DECL
+#define YY_DECL int lib_expr_lex(LIB_EXPR_STYPE *yylval_param, yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
+YY_DECL;
+
+void yyerror(yyscan_t scanner, ista::LibertyExprBuilder *lib_expr_builder, const char *str);
+
+#line 180 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
+
+#endif /* !YY_LIB_EXPR_HOME_TAOSIMIN_IEDA_SRC_DATABASE_MANAGER_PARSER_LIBERTY_LIBERTYEXPRPARSE_HH_INCLUDED  */
 
 /* Second part of user prologue.  */
-#line 73 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
+#line 45 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
 
 
-#line 242 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 188 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
 
 
 #ifdef short
@@ -323,7 +284,7 @@ typedef int yytype_uint16;
 #define YYSIZEOF(X) YY_CAST (YYPTRDIFF_T, sizeof (X))
 
 /* Stored state numbers (used for stacks). */
-typedef yytype_uint8 yy_state_t;
+typedef yytype_int8 yy_state_t;
 
 /* State numbers in computations.  */
 typedef int yy_state_fast_t;
@@ -467,7 +428,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
-         || (defined YYSTYPE_IS_TRIVIAL && YYSTYPE_IS_TRIVIAL)))
+         || (defined LIB_EXPR_STYPE_IS_TRIVIAL && LIB_EXPR_STYPE_IS_TRIVIAL)))
 
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
@@ -526,21 +487,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  4
+#define YYFINAL  13
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   241
+#define YYLAST   37
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  54
+#define YYNTOKENS  16
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  40
+#define YYNNTS  6
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  94
+#define YYNRULES  19
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  241
+#define YYNSTATES  29
 
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   302
+#define YYMAXUTOK   258
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -555,18 +516,16 @@ static const yytype_int8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      48,    49,    52,     2,     2,     2,    51,    50,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,    53,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     9,     2,     2,     2,     2,     7,    10,
+      14,    15,     6,     4,     2,     2,     2,     2,    12,    13,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    11,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     8,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     5,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -577,51 +536,28 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     1,     2,     3
 };
 
-#if YYDEBUG
+#if LIB_EXPR_DEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_int16 yyrline[] =
+static const yytype_int8 yyrline[] =
 {
-       0,    79,    79,    83,    84,    89,    90,    91,    92,    93,
-      94,    95,    96,    97,    98,    99,   100,   101,   102,   103,
-     104,   109,   111,   115,   116,   120,   121,   125,   130,   135,
-     136,   137,   141,   143,   147,   149,   160,   161,   166,   165,
-     169,   168,   173,   174,   178,   179,   183,   185,   188,   191,
-     193,   195,   197,   203,   204,   208,   213,   220,   231,   232,
-     247,   247,   261,   261,   275,   275,   291,   291,   305,   305,
-     319,   319,   335,   335,   350,   350,   364,   364,   378,   378,
-     394,   398,   403,   405,   410,   411,   416,   418,   423,   431,
-     436,   442,   446,   458,   470
+       0,    51,    51,    52,    56,    57,    58,    59,    60,    61,
+      62,    66,    67,    68,    72,    74,    79,    80,    81,    82
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || 0
+#if LIB_EXPR_DEBUG || YYERROR_VERBOSE || 0
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "DELAYFILE", "SDFVERSION", "DESIGN",
-  "DATE", "VENDOR", "PROGRAM", "PVERSION", "DIVIDER", "VOLTAGE", "PROCESS",
-  "TEMPERATURE", "TIMESCALE", "CELL", "CELLTYPE", "INSTANCE", "DELAY",
-  "ABSOLUTE", "INCREMENTAL", "INTERCONNECT", "PORT", "DEVICE", "RETAIN",
-  "IOPATH", "TIMINGCHECK", "SETUP", "HOLD", "SETUPHOLD", "RECOVERY",
-  "REMOVAL", "RECREM", "WIDTH", "PERIOD", "SKEW", "NOCHANGE", "POSEDGE",
-  "NEGEDGE", "COND", "CONDELSE", "QSTRING", "ID", "PATH", "NUMBER",
-  "EXPR_OPEN_IOPATH", "EXPR_OPEN", "EXPR_ID_CLOSE", "'('", "')'", "'/'",
-  "'.'", "'*'", "':'", "$accept", "file", "header", "header_stmt", "hchar",
-  "number_opt", "cells", "cell", "celltype", "cell_instance",
-  "timing_specs", "timing_spec", "deltypes", "deltype", "$@1", "$@2",
-  "del_defs", "path", "del_def", "retains", "retain", "delval_list",
-  "tchk_defs", "tchk_def", "$@3", "$@4", "$@5", "$@6", "$@7", "$@8", "$@9",
-  "$@10", "$@11", "$@12", "port_instance", "port_spec", "port_transition",
-  "port_tchk", "value", "triple", YY_NULLPTR
+  "$end", "error", "$undefined", "PORT", "'+'", "'|'", "'*'", "'&'",
+  "'^'", "'!'", "'\\''", "';'", "'0'", "'1'", "'('", "')'", "$accept",
+  "result_expr", "expr", "terminal_expr", "implicit_and", "terminal", YY_NULLPTR
 };
 #endif
 
@@ -630,16 +566,12 @@ static const char *const yytname[] =
    (internal) symbol number NUM (which must be that of a token).  */
 static const yytype_int16 yytoknum[] =
 {
-       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
-     275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-     285,   286,   287,   288,   289,   290,   291,   292,   293,   294,
-     295,   296,   297,   298,   299,   300,   301,   302,    40,    41,
-      47,    46,    42,    58
+       0,   256,   257,   258,    43,   124,    42,    38,    94,    33,
+      39,    59,    48,    49,    40,    41
 };
 # endif
 
-#define YYPACT_NINF (-181)
+#define YYPACT_NINF (-8)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -651,33 +583,11 @@ static const yytype_int16 yytoknum[] =
 
   /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
      STATE-NUM.  */
-static const yytype_int16 yypact[] =
+static const yytype_int8 yypact[] =
 {
-     -37,    23,    48,     3,  -181,   133,    16,  -181,    54,    56,
-      58,   107,   128,   130,    36,    26,   -21,    27,    70,   121,
-    -181,    40,  -181,    35,   125,   132,   139,   140,   141,  -181,
-    -181,   142,     8,  -181,   117,   143,   144,  -181,    28,  -181,
-     145,   153,   148,   182,  -181,  -181,  -181,  -181,  -181,  -181,
-    -181,  -181,  -181,  -181,   154,   155,  -181,  -181,  -181,  -181,
-     151,   185,   156,  -181,   149,   150,   152,  -181,   165,   190,
-    -181,   154,   154,   164,   160,    13,    43,  -181,  -181,  -181,
-    -181,  -181,  -181,  -181,   161,   162,    12,  -181,  -181,  -181,
-    -181,  -181,  -181,    45,    62,    93,  -181,  -181,   122,  -181,
-    -181,  -181,  -181,  -181,  -181,  -181,  -181,  -181,  -181,  -181,
-    -181,  -181,  -181,  -181,  -181,   -19,   -19,   -19,   -19,   -19,
-     -19,   -19,   -19,   -19,   -19,    73,   111,  -181,   -29,  -181,
-     -19,   -19,   -19,   -19,   -19,   -19,   166,   166,   -19,   -19,
-      20,  -181,  -181,  -181,  -181,  -181,   115,   170,   166,   166,
-     166,   166,   166,   166,    30,   167,   168,   166,   166,   123,
-     123,    25,    -2,   173,   171,   126,  -181,   172,   174,   175,
-     166,   176,   177,   166,    29,  -181,   178,  -181,  -181,   179,
-     166,  -181,  -181,   123,   166,   119,   166,  -181,   126,   123,
-      -2,   188,   180,  -181,  -181,  -181,   181,  -181,  -181,   183,
-    -181,  -181,  -181,   184,   166,   124,  -181,  -181,   127,  -181,
-     123,    -2,   186,  -181,  -181,  -181,   129,  -181,  -181,   189,
-    -181,   123,   187,  -181,   -17,  -181,   131,   189,  -181,  -181,
-     166,  -181,   134,   189,   136,   191,   138,  -181,  -181,   192,
-    -181
+      12,    -8,     5,    -8,    -8,    12,    16,    23,    12,    12,
+      10,    -8,    -1,    -8,    12,    12,    12,    12,    12,    -8,
+      -8,    -8,    -8,    -8,    29,    29,    14,    14,    -8
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -685,171 +595,63 @@ static const yytype_int16 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,     0,     0,     0,     1,     0,     0,     3,     0,     0,
-       0,     0,     0,     0,     0,    23,     0,    23,     0,     0,
-       4,     0,    25,     0,     0,     0,     0,     0,     0,    21,
-      22,     0,     0,    14,     0,     0,     0,    16,     0,    19,
-       0,     0,     0,     0,     2,    26,     5,     6,     7,     8,
-       9,    10,    11,    13,    23,    23,    12,    15,    17,    18,
-       0,     0,     0,    24,     0,     0,     0,    20,     0,     0,
-      32,    23,    23,     0,     0,     0,     0,    92,    93,    94,
-      28,    44,    45,    29,     0,     0,     0,    27,    33,    30,
-      31,    36,    58,     0,     0,     0,    34,    37,     0,    35,
-      59,    38,    40,    60,    62,    64,    66,    68,    70,    74,
-      76,    72,    78,    42,    42,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    82,     0,    86,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    39,    43,    41,    84,    85,     0,     0,     0,     0,
-       0,     0,     0,     0,    23,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    87,     0,     0,     0,
-       0,     0,     0,     0,     0,    89,     0,    75,    77,     0,
-       0,    80,    81,     0,     0,     0,     0,    56,     0,     0,
-       0,     0,     0,    83,    61,    63,     0,    67,    69,     0,
-      90,    91,    73,     0,     0,     0,    51,    57,     0,    53,
-       0,     0,     0,    65,    71,    79,     0,    50,    52,     0,
-      53,     0,     0,    49,    23,    54,     0,     0,    53,    88,
-       0,    46,     0,     0,     0,     0,     0,    55,    48,     0,
-      47
+       0,    16,     0,    17,    18,     0,     0,     2,     4,     5,
+      11,    12,     0,     1,     0,     0,     0,     0,     0,     3,
+      14,    15,    13,    19,     6,     7,     8,     9,    10
 };
 
   /* YYPGOTO[NTERM-NUM].  */
-static const yytype_int16 yypgoto[] =
+static const yytype_int8 yypgoto[] =
 {
-    -181,  -181,  -181,   209,  -181,   -36,  -181,   199,  -181,  -181,
-    -181,  -181,  -181,  -181,  -181,  -181,   120,  -181,  -181,  -162,
-    -181,  -180,  -181,  -181,  -181,  -181,  -181,  -181,  -181,  -181,
-    -181,  -181,  -181,  -181,  -158,  -157,    64,   -15,  -136,    68
+      -8,    -8,    -5,    -7,    -8,    21
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
-static const yytype_int16 yydefgoto[] =
+static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     6,     7,    31,    34,    21,    22,    62,    70,
-      76,    88,    93,    97,   113,   114,   125,    85,   142,   219,
-     225,   185,    94,   100,   115,   116,   117,   118,   119,   120,
-     123,   121,   122,   124,   183,   129,   147,   130,   187,   176
+      -1,     6,     7,     8,     9,    10
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
      positive, shift that token.  If negative, reduce the rule whose
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
-static const yytype_uint8 yytable[] =
+static const yytype_int8 yytable[] =
 {
-     155,   156,   184,   186,   205,   189,   208,   230,   144,   145,
-     146,     1,   168,   169,   170,   171,   172,   173,    64,    66,
-      36,   179,   180,   127,   216,   204,     3,   174,    37,   128,
-      91,   209,   175,   210,   196,    77,    78,   199,    92,   226,
-     127,   159,   160,   161,   203,   162,   188,   232,     4,   207,
-     234,     5,   220,   236,   221,    81,    82,    53,   227,   163,
-     164,    54,    83,   228,    19,    84,   233,   181,   182,   207,
-      32,    38,   207,   154,   174,    33,    39,    58,   200,   175,
-     207,    54,    54,    35,    46,    40,    29,    30,    43,    44,
-     207,    86,    87,    95,    96,    23,   207,    24,   207,    25,
-     207,   131,   132,   133,   134,   135,   136,   137,   138,   139,
-      98,    99,   101,   102,    41,   148,   149,   150,   151,   152,
-     153,   140,   141,   157,   158,     8,     9,    10,    11,    12,
-      13,    14,    15,    16,    17,    18,    42,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    26,   103,
-     104,   105,   106,   107,   108,   109,   110,   111,   112,   140,
-     143,   165,   166,   144,   145,   181,   182,   154,   206,    27,
-      55,    28,   154,   217,    47,   154,   218,   154,   223,   154,
-     231,    48,   154,   235,   154,   237,   154,   239,    49,    50,
-      51,    52,    56,    57,    59,    60,    61,    42,    63,    65,
-      67,    68,    71,    72,    69,    73,    74,    75,    79,    80,
-      89,    90,   167,   211,   154,    20,   177,   178,   190,   191,
-      45,   193,   212,   194,   195,   197,   198,   201,   202,   192,
-     213,     0,   214,   215,   126,   222,   229,   224,     0,     0,
-     238,   240
+      12,    20,    21,    14,    15,    16,    17,    18,     1,    24,
+      25,    26,    27,    28,    23,     1,    13,     3,     4,     5,
+      22,     2,    18,    11,     3,     4,     5,    14,    15,    16,
+      17,    18,     0,     0,    19,    16,    17,    18
 };
 
-static const yytype_int16 yycheck[] =
+static const yytype_int8 yycheck[] =
 {
-     136,   137,   160,   161,   184,   162,   186,    24,    37,    38,
-      39,    48,   148,   149,   150,   151,   152,   153,    54,    55,
-      41,   157,   158,    42,   204,   183,     3,    44,    49,    48,
-      18,   189,    49,   190,   170,    71,    72,   173,    26,   219,
-      42,    21,    22,    23,   180,    25,    48,   227,     0,   185,
-     230,    48,   210,   233,   211,    42,    43,    49,   220,    39,
-      40,    53,    49,   221,    48,    52,   228,    42,    43,   205,
-      44,    44,   208,    48,    44,    49,    49,    49,    49,    49,
-     216,    53,    53,    15,    49,    17,    50,    51,    48,    49,
-     226,    48,    49,    48,    49,    41,   232,    41,   234,    41,
-     236,   116,   117,   118,   119,   120,   121,   122,   123,   124,
-      48,    49,    19,    20,    44,   130,   131,   132,   133,   134,
-     135,    48,    49,   138,   139,     4,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,     4,     5,     6,
-       7,     8,     9,    10,    11,    12,    13,    14,    41,    27,
-      28,    29,    30,    31,    32,    33,    34,    35,    36,    48,
-      49,    46,    47,    37,    38,    42,    43,    48,    49,    41,
-      53,    41,    48,    49,    49,    48,    49,    48,    49,    48,
-      49,    49,    48,    49,    48,    49,    48,    49,    49,    49,
-      49,    49,    49,    49,    49,    42,    48,    15,    44,    44,
-      49,    16,    53,    53,    48,    53,    41,    17,    44,    49,
-      49,    49,    42,    25,    48,     6,    49,    49,    45,    48,
-      21,    49,    42,    49,    49,    49,    49,    49,    49,   165,
-      49,    -1,    49,    49,   114,    49,    49,    48,    -1,    -1,
-      49,    49
+       5,     8,     9,     4,     5,     6,     7,     8,     3,    14,
+      15,    16,    17,    18,    15,     3,     0,    12,    13,    14,
+      10,     9,     8,     2,    12,    13,    14,     4,     5,     6,
+       7,     8,    -1,    -1,    11,     6,     7,     8
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    48,    55,     3,     0,    48,    56,    57,     4,     5,
-       6,     7,     8,     9,    10,    11,    12,    13,    14,    48,
-      57,    60,    61,    41,    41,    41,    41,    41,    41,    50,
-      51,    58,    44,    49,    59,    93,    41,    49,    44,    49,
-      93,    44,    15,    48,    49,    61,    49,    49,    49,    49,
-      49,    49,    49,    49,    53,    53,    49,    49,    49,    49,
-      42,    48,    62,    44,    59,    44,    59,    49,    16,    48,
-      63,    53,    53,    53,    41,    17,    64,    59,    59,    44,
-      49,    42,    43,    49,    52,    71,    48,    49,    65,    49,
-      49,    18,    26,    66,    76,    48,    49,    67,    48,    49,
-      77,    19,    20,    27,    28,    29,    30,    31,    32,    33,
-      34,    35,    36,    68,    69,    78,    79,    80,    81,    82,
-      83,    85,    86,    84,    87,    70,    70,    42,    48,    89,
-      91,    91,    91,    91,    91,    91,    91,    91,    91,    91,
-      48,    49,    72,    49,    37,    38,    39,    90,    91,    91,
-      91,    91,    91,    91,    48,    92,    92,    91,    91,    21,
-      22,    23,    25,    39,    40,    46,    47,    42,    92,    92,
-      92,    92,    92,    92,    44,    49,    93,    49,    49,    92,
-      92,    42,    43,    88,    88,    75,    88,    92,    48,    89,
-      45,    48,    90,    49,    49,    49,    92,    49,    49,    92,
-      49,    49,    49,    92,    88,    75,    49,    92,    75,    88,
-      89,    25,    42,    49,    49,    49,    75,    49,    49,    73,
-      88,    89,    49,    49,    48,    74,    75,    73,    88,    49,
-      24,    49,    75,    73,    75,    49,    75,    49,    49,    49,
-      49
+       0,     3,     9,    12,    13,    14,    17,    18,    19,    20,
+      21,    21,    18,     0,     4,     5,     6,     7,     8,    11,
+      19,    19,    10,    15,    18,    18,    18,    18,    18
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    54,    55,    56,    56,    57,    57,    57,    57,    57,
-      57,    57,    57,    57,    57,    57,    57,    57,    57,    57,
-      57,    58,    58,    59,    59,    60,    60,    61,    62,    63,
-      63,    63,    64,    64,    65,    65,    66,    66,    68,    67,
-      69,    67,    70,    70,    71,    71,    72,    72,    72,    72,
-      72,    72,    72,    73,    73,    74,    75,    75,    76,    76,
-      78,    77,    79,    77,    80,    77,    81,    77,    82,    77,
-      83,    77,    84,    77,    85,    77,    86,    77,    87,    77,
-      88,    88,    89,    89,    90,    90,    91,    91,    91,    92,
-      92,    92,    93,    93,    93
+       0,    16,    17,    17,    18,    18,    18,    18,    18,    18,
+      18,    19,    19,    19,    20,    20,    21,    21,    21,    21
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     5,     1,     2,     4,     4,     4,     4,     4,
-       4,     4,     4,     4,     3,     4,     3,     4,     4,     3,
-       5,     1,     1,     0,     1,     1,     2,     6,     4,     3,
-       4,     4,     0,     2,     4,     4,     0,     2,     0,     5,
-       0,     5,     0,     2,     1,     1,     7,    10,     9,     6,
-       5,     4,     5,     0,     2,     4,     1,     2,     0,     2,
-       0,     7,     0,     7,     0,     8,     0,     7,     0,     7,
-       0,     8,     0,     7,     0,     6,     0,     6,     0,     8,
-       1,     1,     1,     4,     1,     1,     1,     3,     7,     2,
-       3,     3,     5,     5,     5
+       0,     2,     1,     2,     1,     1,     3,     3,     3,     3,
+       3,     1,     2,     2,     2,     2,     1,     1,     1,     3
 };
 
 
@@ -877,7 +679,7 @@ static const yytype_int8 yyr2[] =
       }                                                           \
     else                                                          \
       {                                                           \
-        yyerror (YY_("syntax error: cannot back up")); \
+        yyerror (yyscanner, lib_expr_builder, YY_("syntax error: cannot back up")); \
         YYERROR;                                                  \
       }                                                           \
   while (0)
@@ -889,7 +691,7 @@ static const yytype_int8 yyr2[] =
 
 
 /* Enable debugging if requested.  */
-#if YYDEBUG
+#if LIB_EXPR_DEBUG
 
 # ifndef YYFPRINTF
 #  include <stdio.h> /* INFRINGES ON USER NAME SPACE */
@@ -914,7 +716,7 @@ do {                                                                      \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Type, Value); \
+                  Type, Value, yyscanner, lib_expr_builder); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -925,10 +727,12 @@ do {                                                                      \
 `-----------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
 {
   FILE *yyoutput = yyo;
   YYUSE (yyoutput);
+  YYUSE (yyscanner);
+  YYUSE (lib_expr_builder);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
@@ -946,12 +750,12 @@ yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
 `---------------------------*/
 
 static void
-yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
 {
   YYFPRINTF (yyo, "%s %s (",
              yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
 
-  yy_symbol_value_print (yyo, yytype, yyvaluep);
+  yy_symbol_value_print (yyo, yytype, yyvaluep, yyscanner, lib_expr_builder);
   YYFPRINTF (yyo, ")");
 }
 
@@ -984,7 +788,7 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, int yyrule)
+yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
 {
   int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -998,7 +802,7 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, int yyrule)
       yy_symbol_print (stderr,
                        yystos[+yyssp[yyi + 1 - yynrhs]],
                        &yyvsp[(yyi + 1) - (yynrhs)]
-                                              );
+                                              , yyscanner, lib_expr_builder);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -1006,18 +810,18 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, int yyrule)
 # define YY_REDUCE_PRINT(Rule)          \
 do {                                    \
   if (yydebug)                          \
-    yy_reduce_print (yyssp, yyvsp, Rule); \
+    yy_reduce_print (yyssp, yyvsp, Rule, yyscanner, lib_expr_builder); \
 } while (0)
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
    multiple parsers can coexist.  */
 int yydebug;
-#else /* !YYDEBUG */
+#else /* !LIB_EXPR_DEBUG */
 # define YYDPRINTF(Args)
 # define YY_SYMBOL_PRINT(Title, Type, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
-#endif /* !YYDEBUG */
+#endif /* !LIB_EXPR_DEBUG */
 
 
 /* YYINITDEPTH -- initial size of the parser's stacks.  */
@@ -1274,9 +1078,11 @@ yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
 {
   YYUSE (yyvaluep);
+  YYUSE (yyscanner);
+  YYUSE (lib_expr_builder);
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
@@ -1289,22 +1095,26 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
 
 
 
-/* The lookahead symbol.  */
-int yychar;
-
-/* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
-/* Number of syntax errors so far.  */
-int yynerrs;
-
-
 /*----------.
 | yyparse.  |
 `----------*/
 
 int
-yyparse (void)
+yyparse (yyscan_t yyscanner, ista::LibertyExprBuilder *lib_expr_builder)
 {
+/* The lookahead symbol.  */
+int yychar;
+
+
+/* The semantic value of the lookahead symbol.  */
+/* Default value used for initialization, for pacifying older GCCs
+   or non-GCC compilers.  */
+YY_INITIAL_VALUE (static YYSTYPE yyval_default;)
+YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);
+
+    /* Number of syntax errors so far.  */
+    int yynerrs;
+
     yy_state_fast_t yystate;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
@@ -1468,7 +1278,7 @@ yybackup:
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token: "));
-      yychar = yylex ();
+      yychar = yylex (&yylval, yyscanner, lib_expr_builder);
     }
 
   if (yychar <= YYEOF)
@@ -1545,630 +1355,97 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 79 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                                    {}
-#line 1566 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 51 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+         { lib_expr_builder->set_result_expr(static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1361 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
-  case 5:
-#line 89 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                               { Str::free((char*)(yyvsp[-1].string)); }
-#line 1572 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+  case 3:
+#line 52 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+           { lib_expr_builder->set_result_expr(static_cast<LibertyExpr*>((yyvsp[-1].expr))); }
+#line 1367 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 6:
-#line 90 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                           { Str::free((char*)(yyvsp[-1].string)); }
-#line 1578 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 58 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                  { (yyval.expr) = lib_expr_builder->makePlusExpr(static_cast<LibertyExpr*>((yyvsp[-2].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1373 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 7:
-#line 91 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                         { Str::free((char*)(yyvsp[-1].string)); }
-#line 1584 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 59 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                  { (yyval.expr) = lib_expr_builder->makeOrExpr(static_cast<LibertyExpr*>((yyvsp[-2].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1379 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 8:
-#line 92 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                           { Str::free((char*)(yyvsp[-1].string)); }
-#line 1590 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 60 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                   { (yyval.expr) = lib_expr_builder->makeMultExpr(static_cast<LibertyExpr*>((yyvsp[-2].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1385 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 9:
-#line 93 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                            { Str::free((char*)(yyvsp[-1].string)); }
-#line 1596 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 61 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                   { (yyval.expr) = lib_expr_builder->makeAndExpr(static_cast<LibertyExpr*>((yyvsp[-2].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1391 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 10:
-#line 94 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                             { Str::free((char*)(yyvsp[-1].string)); }
-#line 1602 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 11:
-#line 95 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                          {  }
-#line 1608 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 62 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                  { (yyval.expr) = lib_expr_builder->makeXorExpr(static_cast<LibertyExpr*>((yyvsp[-2].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1397 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 12:
-#line 96 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                           {  }
-#line 1614 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 67 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                 { (yyval.expr) = lib_expr_builder->makeNotExpr(static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1403 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
+    break;
+
+  case 13:
+#line 68 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                  { (yyval.expr) = nullptr; }
+#line 1409 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
+    break;
+
+  case 14:
+#line 73 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+    { (yyval.expr) = lib_expr_builder->makeAndExpr(static_cast<LibertyExpr*>((yyvsp[-1].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1415 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 15:
-#line 99 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                            { Str::free((yyvsp[-1].string)); }
-#line 1620 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 75 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+    { (yyval.expr) = lib_expr_builder->makeAndExpr(static_cast<LibertyExpr*>((yyvsp[-1].expr)), static_cast<LibertyExpr*>((yyvsp[0].expr))); }
+#line 1421 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
+    break;
+
+  case 16:
+#line 79 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+            { (yyval.expr) = lib_expr_builder->makeBufferExpr(static_cast<const char*>((yyvsp[0].string))); lib_expr_builder->stringDelete(static_cast<const char*>((yyvsp[0].string)));}
+#line 1427 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
+    break;
+
+  case 17:
+#line 80 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+          { (yyval.expr) = lib_expr_builder->makeZeroExpr(); }
+#line 1433 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
   case 18:
-#line 102 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                               {  }
-#line 1626 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 81 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+          { (yyval.expr) = lib_expr_builder->makeOneExpr(); }
+#line 1439 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
-  case 20:
-#line 105 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1632 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 21:
-#line 110 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.character) = '/'; }
-#line 1638 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 22:
-#line 112 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.character) = '.'; }
-#line 1644 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 23:
-#line 115 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-            { (yyval.obj) = nullptr; }
-#line 1650 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 24:
-#line 116 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-             { (yyval.obj) = new float((yyvsp[0].number)); }
-#line 1656 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 27:
-#line 126 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1662 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 28:
-#line 131 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1668 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 29:
-#line 135 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                       {  }
-#line 1674 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 30:
-#line 136 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                           {  }
-#line 1680 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 31:
-#line 138 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1686 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 34:
-#line 148 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-     { (yyval.obj) = nullptr; }
-#line 1692 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 35:
-#line 150 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {
-        auto* tchk_defs = static_cast<std::vector<std::unique_ptr<SdfTimingCheckDef>>*>((yyvsp[-1].obj));
-        auto* timing_spec = g_sdf_reader->makeTimingSpec(std::move(*tchk_defs));
-
-        delete tchk_defs;
-
-        (yyval.obj) = timing_spec;
-    }
-#line 1705 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 38:
-#line 166 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1711 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 40:
-#line 169 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1717 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 46:
-#line 184 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1723 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 47:
-#line 187 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1729 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 48:
-#line 190 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1735 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 49:
-#line 192 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1741 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 50:
-#line 194 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1747 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 51:
-#line 196 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1753 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 52:
-#line 198 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1759 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 53:
-#line 203 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = nullptr; }
-#line 1765 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 55:
-#line 209 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {  }
-#line 1771 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 56:
-#line 214 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-        auto* delay_values = new std::vector<std::unique_ptr<SdfTripleValue>>();
-        auto* delay_value = static_cast<SdfTripleValue*>((yyvsp[0].obj));
-        delay_values->emplace_back(delay_value);
-        (yyval.obj) = delay_values; 
-    }
-#line 1782 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 57:
-#line 221 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {   
-        auto* delay_values = static_cast<std::vector<std::unique_ptr<SdfTripleValue>>*>((yyvsp[-1].obj));
-        auto* delay_value = static_cast<SdfTripleValue*>((yyvsp[0].obj));
-        delay_values->emplace_back(delay_value);
-        (yyval.obj) = delay_values; 
-    }
-#line 1793 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 58:
-#line 231 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = nullptr; }
-#line 1799 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 59:
-#line 233 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-        auto* timing_check_defs = static_cast<std::vector<std::unique_ptr<SdfTimingCheckDef>>*>((yyvsp[-1].obj));
-        if (!timing_check_defs) {
-            timing_check_defs = new std::vector<std::unique_ptr<SdfTimingCheckDef>>();
-        }
-
-        auto* timing_check_def = static_cast<SdfTimingCheckDef*>((yyvsp[0].obj));
-        timing_check_defs->emplace_back(timing_check_def);
-
-        (yyval.obj) = timing_check_defs;
-    }
-#line 1815 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 60:
-#line 247 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-              { g_sdf_reader->set_parse_timing_check(true); }
-#line 1821 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 61:
-#line 249 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kSetup, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1838 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 62:
-#line 261 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-             { g_sdf_reader->set_parse_timing_check(true); }
-#line 1844 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 63:
-#line 263 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kHold, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1861 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 64:
-#line 275 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                  { g_sdf_reader->set_parse_timing_check(true); }
-#line 1867 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 65:
-#line 277 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-4].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-2].obj));
-      SdfTripleValue* value1 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kSetupHold, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::move(*value1));
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      delete value1;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1886 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 66:
-#line 291 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                 { g_sdf_reader->set_parse_timing_check(true); }
-#line 1892 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 67:
-#line 293 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kRecovery, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1909 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 68:
-#line 305 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                { g_sdf_reader->set_parse_timing_check(true); }
-#line 1915 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 69:
-#line 307 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kRemoval, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1932 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 70:
-#line 319 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-               { g_sdf_reader->set_parse_timing_check(true); }
-#line 1938 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 71:
-#line 321 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-4].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-2].obj));
-      SdfTripleValue* value1 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kRecRem, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::move(*value1));
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      delete value1;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1957 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 72:
-#line 335 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-             { g_sdf_reader->set_parse_timing_check(true); }
-#line 1963 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 73:
-#line 338 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kSkew, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 1980 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 74:
-#line 350 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-              { g_sdf_reader->set_parse_timing_check(true); }
-#line 1986 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 75:
-#line 352 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kWidth, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 2003 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 76:
-#line 364 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-               { g_sdf_reader->set_parse_timing_check(true); }
-#line 2009 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 77:
-#line 366 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-2].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-1].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kPeriod, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-      
-    }
-#line 2026 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 78:
-#line 378 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                 { g_sdf_reader->set_parse_timing_check(true); }
-#line 2032 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 79:
-#line 380 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-      SdfPortSpec* snk_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-4].obj));
-      SdfPortSpec* src_port_tchk = static_cast<SdfPortSpec*>((yyvsp[-3].obj));
-      SdfTripleValue* value0 = static_cast<SdfTripleValue*>((yyvsp[-2].obj));
-      auto* timing_check_def = g_sdf_reader->makeTimingCheckDef(SdfTimingCheckDef::SdfCheckType::kNoChange, std::move(*snk_port_tchk), std::move(*src_port_tchk), 
-      std::move(*value0), std::nullopt);
-      delete snk_port_tchk;
-      delete src_port_tchk;
-      delete value0;
-      (yyval.obj) = timing_check_def;
-    }
-#line 2048 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 80:
-#line 395 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-        (yyval.obj) = g_sdf_reader->makePortInstance(static_cast<const char*>((yyvsp[0].string)));
-    }
-#line 2056 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 81:
-#line 399 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = g_sdf_reader->makePortInstance(static_cast<const char*>((yyvsp[0].string)));}
-#line 2062 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 82:
-#line 404 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = g_sdf_reader->makePortSpec(static_cast<const char*>((yyvsp[0].string))); }
-#line 2068 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 83:
-#line 406 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = g_sdf_reader->makePortSpec(static_cast<SdfPortSpec::TransitionType>((yyvsp[-2].integer)), static_cast<const char*>((yyvsp[-1].string))); }
-#line 2074 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 84:
-#line 410 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-              { (yyval.integer) = static_cast<int>(SdfPortSpec::TransitionType::kPOSEDGE); }
-#line 2080 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 85:
-#line 411 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-              { (yyval.integer) = static_cast<int>(SdfPortSpec::TransitionType::kNEGEDGE); }
-#line 2086 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 86:
-#line 417 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { (yyval.obj) = (yyvsp[0].obj); }
-#line 2092 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 87:
-#line 419 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-        /* (COND expr port) */
-        (yyval.obj) = nullptr; 
-    }
-#line 2101 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 88:
-#line 424 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    { 
-        /* (COND expr (posedge port)) */
-        (yyval.obj) = nullptr; 
-    }
-#line 2110 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 89:
-#line 432 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {
-      std::array<std::optional<float>, 3> triple_value;
-      (yyval.obj) = g_sdf_reader->makeTriple(triple_value);
-    }
-#line 2119 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 90:
-#line 437 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {
-      float n = (float)(yyvsp[-1].number);
-      std::array<std::optional<float>, 3> triple_value = {n, n, n};
-      (yyval.obj) = g_sdf_reader->makeTriple(triple_value);
-    }
-#line 2129 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 91:
-#line 442 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-                   { (yyval.obj) = (yyvsp[-1].obj); }
-#line 2135 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 92:
-#line 447 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {      
-      float n1 = (float)(yyvsp[-4].number);
-      std::optional<float> n2 = (yyvsp[-2].obj) ? std::optional<float>(*((float*)(yyvsp[-2].obj))) : std::nullopt; 
-      std::optional<float> n3 = (yyvsp[0].obj) ? std::optional<float>(*((float*)(yyvsp[0].obj))) : std::nullopt; 
-
-      delete (float*)(yyvsp[-2].obj);
-      delete (float*)(yyvsp[0].obj);
-
-      std::array<std::optional<float>, 3> triple_value = {n1, n2, n3};
-      (yyval.obj) = g_sdf_reader->makeTriple(triple_value);
-    }
-#line 2151 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 93:
-#line 459 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {
-      std::optional<float> n1 = (yyvsp[-4].obj) ? std::optional<float>(*((float*)(yyvsp[-4].obj))) : std::nullopt; 
-      float n2 = (float)(yyvsp[-2].number);      
-      std::optional<float> n3 = (yyvsp[0].obj) ? std::optional<float>(*((float*)(yyvsp[0].obj))) : std::nullopt; 
-
-      delete (float*)(yyvsp[-4].obj);
-      delete (float*)(yyvsp[0].obj);
-
-      std::array<std::optional<float>, 3> triple_value = {n1, n2, n3};
-      (yyval.obj) = g_sdf_reader->makeTriple(triple_value);
-    }
-#line 2167 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
-    break;
-
-  case 94:
-#line 471 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
-    {      
-      std::optional<float> n1 = (yyvsp[-4].obj) ? std::optional<float>(*((float*)(yyvsp[-4].obj))) : std::nullopt; 
-      std::optional<float> n2 = (yyvsp[-2].obj) ? std::optional<float>(*((float*)(yyvsp[-2].obj))) : std::nullopt; 
-      float n3 = (float)(yyvsp[0].number);
-
-      delete (float*)(yyvsp[-4].obj);
-      delete (float*)(yyvsp[-2].obj);
-
-      std::array<std::optional<float>, 3> triple_value = {n1, n2, n3};
-      (yyval.obj) = g_sdf_reader->makeTriple(triple_value);
-    }
-#line 2183 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+  case 19:
+#line 82 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
+                 { (yyval.expr) = (yyvsp[-1].expr); }
+#line 1445 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
     break;
 
 
-#line 2187 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.cc"
+#line 1449 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.cc"
 
       default: break;
     }
@@ -2218,7 +1495,7 @@ yyerrlab:
     {
       ++yynerrs;
 #if ! YYERROR_VERBOSE
-      yyerror (YY_("syntax error"));
+      yyerror (yyscanner, lib_expr_builder, YY_("syntax error"));
 #else
 # define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
                                         yyssp, yytoken)
@@ -2245,7 +1522,7 @@ yyerrlab:
                 yymsgp = yymsg;
               }
           }
-        yyerror (yymsgp);
+        yyerror (yyscanner, lib_expr_builder, yymsgp);
         if (yysyntax_error_status == 2)
           goto yyexhaustedlab;
       }
@@ -2269,7 +1546,7 @@ yyerrlab:
       else
         {
           yydestruct ("Error: discarding",
-                      yytoken, &yylval);
+                      yytoken, &yylval, yyscanner, lib_expr_builder);
           yychar = YYEMPTY;
         }
     }
@@ -2323,7 +1600,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-                  yystos[yystate], yyvsp);
+                  yystos[yystate], yyvsp, yyscanner, lib_expr_builder);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -2362,7 +1639,7 @@ yyabortlab:
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
 yyexhaustedlab:
-  yyerror (YY_("memory exhausted"));
+  yyerror (yyscanner, lib_expr_builder, YY_("memory exhausted"));
   yyresult = 2;
   /* Fall through.  */
 #endif
@@ -2378,7 +1655,7 @@ yyreturn:
          user semantic actions for why this is necessary.  */
       yytoken = YYTRANSLATE (yychar);
       yydestruct ("Cleanup: discarding lookahead",
-                  yytoken, &yylval);
+                  yytoken, &yylval, yyscanner, lib_expr_builder);
     }
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYABORT or YYACCEPT.  */
@@ -2387,7 +1664,7 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  yystos[+*yyssp], yyvsp);
+                  yystos[+*yyssp], yyvsp, yyscanner, lib_expr_builder);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -2400,17 +1677,10 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 484 "/Project/home/chenshijian/iEDA/src/iSTA/sdf-parser/SdfParse.y"
+#line 85 "/home/taosimin/iEDA/src/database/manager/parser/liberty/LibertyExprParse.y"
 
 
-// Global namespace
-
-void sdfFlushBuffer();
-
-void yyerror(const char *msg) {
-
-  sdfFlushBuffer();
-
-  LOG_ERROR << "error line " << g_sdf_line << " " << msg;
-
+void lib_expr_error(yyscan_t scanner, ista::LibertyExprBuilder *lib_expr_builder, const char *str)
+{
+   LOG_ERROR << "Error found" << str;
 }
