@@ -1,0 +1,14 @@
+instances/miplib/noswot.mps
+instances/bpp/N1C1W4_M.BPP.lp
+instances/bpp/N1C2W2_O.BPP.lp
+instances/bpp/N1C3W1_A.lp
+instances/cpmp/p1250-2.lp
+instances/cpmp/p1650-2.txt.lp
+instances/cpmp/p2050-1.txt.lp
+instances/cs/TEST0055.lp
+instances/cs/TEST0059.lp
+instances/gap/gap4_2.txt.lp
+instances/gap/gap8_4.txt.lp
+instances/mkp/strong_d_45_15_12.lp
+instances/mkp/strong_s_75_15_14.lp
+instances/mkp/strong_s_75_15_18.lp

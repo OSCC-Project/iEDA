@@ -1,0 +1,124 @@
+<?xml version="1.0" ?>
+<Evaluation comparecolformat="%.3f" index="ProblemName LogFileName" indexsplit="-1">
+    <Column active="True" alternative="-1" name="Presolve_time" origcolname="presolve_time" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+
+    <Column active="True" alternative="1e+30" name="time%colsingleton" origcolname="time%colsingleton"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="1e+30" name="tsx%colsingleton" origcolname="tsx%colsingleton"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1e+30" name="time%coefftightening" origcolname="time%coefftightening"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1e+30" name="tsx%coefftightening" origcolname="tsx%coefftightening"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%propagation" origcolname="time%propagation"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%propagation" origcolname="tsx%propagation"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%simplifyineq" origcolname="time%simplifyineq"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%simplifyineq" origcolname="tsx%simplifyineq"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%simpleprobing" origcolname="time%simpleprobing"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%simpleprobing" origcolname="tsx%simpleprobing"
+            reduction="meanOrConcat"/>
+
+
+    <Column active="True" alternative="-1" name="time%stuffing" origcolname="time%stuffing" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%stuffing" origcolname="tsx%stuffing" reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%dualfix" origcolname="time%dualfix" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%dualfix" origcolname="tsx%dualfix" reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%fixcontinuous" origcolname="time%fixcontinuous"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%fixcontinuous" origcolname="tsx%fixcontinuous"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%parallelrows" origcolname="time%parallelrows"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%parallelrows" origcolname="tsx%parallelrows"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%parallelcols" origcolname="time%parallelcols"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%parallelcols" origcolname="tsx%parallelcols"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%doubletoneq" origcolname="time%doubletoneq"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%doubletoneq" origcolname="tsx%doubletoneq"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%dualinfer" origcolname="time%dualinfer" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%dualinfer" origcolname="tsx%dualinfer" reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%substitution" origcolname="time%substitution"
+            reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%substitution" origcolname="tsx%substitution"
+            reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%probing" origcolname="time%probing" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%probing" origcolname="tsx%probing" reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%domcol" origcolname="time%domcol" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%domcol" origcolname="tsx%domcol" reduction="meanOrConcat"/>
+
+    <Column active="True" alternative="-1" name="time%sparsify" origcolname="time%sparsify" reduction="meanOrConcat">
+        <Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+    </Column>
+    <Column active="True" alternative="-1" name="tsx%sparsify" origcolname="tsx%sparsify" reduction="meanOrConcat"/>
+
+    <FilterGroup active="True" filtertype="intersection" name="all"/>
+    <FilterGroup name="[0.01,tilim]">
+        <Filter anytestrun="one" expression1="Presolve_time" expression2="0.01" operator="ge"/>
+    </FilterGroup>
+    <FilterGroup name="[0.1,tilim]">
+        <Filter anytestrun="one" expression1="Presolve_time" expression2="0.1" operator="ge"/>
+    </FilterGroup>
+    <FilterGroup name="[1,tilim]">
+        <Filter anytestrun="one" expression1="Presolve_time" expression2="1" operator="ge"/>
+    </FilterGroup>
+    <FilterGroup name="[10,tilim]">
+        <Filter anytestrun="one" expression1="Presolve_time" expression2="10" operator="ge"/>
+    </FilterGroup>
+    <FilterGroup name="[100,tilim]">
+        <Filter anytestrun="one" expression1="Presolve_time" expression2="100" operator="ge"/>
+    </FilterGroup>
+</Evaluation>

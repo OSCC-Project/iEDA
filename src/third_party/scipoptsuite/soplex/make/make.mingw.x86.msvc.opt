@@ -1,0 +1,25 @@
+CXX		=	cl -nologo
+CXX_o		=	-Fo
+LINKCXX		=	link -nologo
+LINKCXX_L	=	-LIBPATH:
+LINKCXX_l	=	lib
+LINKCXX_o	=	-out:
+CXXFLAGS	=	-Ox -Oi -EHsc -GR -fp:precise -D_CRT_SECURE_NO_WARNINGS -DNDEBUG  -wd4274
+LDFLAGS		=	
+EXEEXTENSION	=	.exe
+AR		=	lib -nologo
+AR_o		=	-OUT:
+ARFLAGS		=	
+RANLIB		=	
+LN_s		=	cp -r
+LIBEXT		=	lib
+LINKLIBSUFFIX	=	.lib
+
+ZLIB_LDFLAGS	=	lib/libz.$(ARCH).$(OPT).lib -NODEFAULTLIB:LIBCMT -NODEFAULTLIB:LIBCMTD
+ZLIB_FLAGS	=	-Ilib/zlib
+
+GMP_CPPFLAGS  = -Ilib/mpir.$(ARCH)
+GMP_LDFLAGS   =  lib/libmpir.$(ARCH).$(OPT).lib
+
+# NOTE: use this flag throughout the whole compilation process
+CXXFLAGS    +=  -MD

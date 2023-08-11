@@ -1,0 +1,19 @@
+#--- $Id: make.linux.x86.intel.opt,v 1.14 2014/01/12 11:07:04 bzfkocht Exp $
+CC		=	icc
+LINKCC		=	icc
+CPPFLAGS	+=	-DNDEBUG -DNO_MSHELL
+CFLAGS		=	-O3 -ip -fp-model precise -w1 -wd161,1173
+LDFLAGS         =       -lgmp -lm -static
+
+#ifeq ($(LINK),shared)
+#LINK		=	normal
+#endif
+
+#ifeq ($(LINK),static)
+LDFLAGS		+=	-static
+#endif
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

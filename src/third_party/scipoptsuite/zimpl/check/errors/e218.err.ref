@@ -1,0 +1,4 @@
+*** Error 218: Length value 123456789012 is too big or not an integer
+*** File: e218.zpl Line 2
+*** param n := substr("hallo", 2,123456789012);
+***                                          ^^^

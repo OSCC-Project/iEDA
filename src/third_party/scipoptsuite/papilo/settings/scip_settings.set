@@ -1,0 +1,14 @@
+substitution.maxfillin = 3
+
+substitution.binarieswithints = 0
+
+presolve.removeslackvars = 0
+
+presolve.detectlindep = 1
+
+presolve.threads = 1
+
+parallelcols.enabled = 0
+
+
+

@@ -1,0 +1,4 @@
+*** Error 133: Unknown symbol "j"
+*** File: e133_10.zpl Line 2
+*** set A := { <i> in {1..10} : j };
+***                               ^^^

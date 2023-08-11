@@ -1,0 +1,4 @@
+Error 802: Unmatched [ or [^
+*** File: e802.zpl Line 2
+*** set D := { read "read3.dat" as "<3n>" match " [0+}" };
+***                                                     ^^^

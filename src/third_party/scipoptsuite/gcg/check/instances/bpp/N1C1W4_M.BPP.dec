@@ -1,0 +1,155 @@
+PRESOLVED
+1
+NBLOCKS
+50
+BLOCK 1
+b_Capacity_1
+BLOCK 2
+b_Capacity_2
+BLOCK 3
+b_Capacity_3
+BLOCK 4
+b_Capacity_4
+BLOCK 5
+b_Capacity_5
+BLOCK 6
+b_Capacity_6
+BLOCK 7
+b_Capacity_7
+BLOCK 8
+b_Capacity_8
+BLOCK 9
+b_Capacity_9
+BLOCK 10
+b_Capacity_10
+BLOCK 11
+b_Capacity_11
+BLOCK 12
+b_Capacity_12
+BLOCK 13
+b_Capacity_13
+BLOCK 14
+b_Capacity_14
+BLOCK 15
+b_Capacity_15
+BLOCK 16
+b_Capacity_16
+BLOCK 17
+b_Capacity_17
+BLOCK 18
+b_Capacity_18
+BLOCK 19
+b_Capacity_19
+BLOCK 20
+b_Capacity_20
+BLOCK 21
+b_Capacity_21
+BLOCK 22
+b_Capacity_22
+BLOCK 23
+b_Capacity_23
+BLOCK 24
+b_Capacity_24
+BLOCK 25
+b_Capacity_25
+BLOCK 26
+b_Capacity_26
+BLOCK 27
+b_Capacity_27
+BLOCK 28
+b_Capacity_28
+BLOCK 29
+b_Capacity_29
+BLOCK 30
+b_Capacity_30
+BLOCK 31
+b_Capacity_31
+BLOCK 32
+b_Capacity_32
+BLOCK 33
+b_Capacity_33
+BLOCK 34
+b_Capacity_34
+BLOCK 35
+b_Capacity_35
+BLOCK 36
+b_Capacity_36
+BLOCK 37
+b_Capacity_37
+BLOCK 38
+b_Capacity_38
+BLOCK 39
+b_Capacity_39
+BLOCK 40
+b_Capacity_40
+BLOCK 41
+b_Capacity_41
+BLOCK 42
+b_Capacity_42
+BLOCK 43
+b_Capacity_43
+BLOCK 44
+b_Capacity_44
+BLOCK 45
+b_Capacity_45
+BLOCK 46
+b_Capacity_46
+BLOCK 47
+b_Capacity_47
+BLOCK 48
+b_Capacity_48
+BLOCK 49
+b_Capacity_49
+BLOCK 50
+b_Capacity_50
+MASTERCONSS
+m_Allocate_1
+m_Allocate_2
+m_Allocate_3
+m_Allocate_4
+m_Allocate_5
+m_Allocate_6
+m_Allocate_7
+m_Allocate_8
+m_Allocate_9
+m_Allocate_10
+m_Allocate_11
+m_Allocate_12
+m_Allocate_13
+m_Allocate_14
+m_Allocate_15
+m_Allocate_16
+m_Allocate_17
+m_Allocate_18
+m_Allocate_19
+m_Allocate_20
+m_Allocate_21
+m_Allocate_22
+m_Allocate_23
+m_Allocate_24
+m_Allocate_25
+m_Allocate_26
+m_Allocate_27
+m_Allocate_28
+m_Allocate_29
+m_Allocate_30
+m_Allocate_31
+m_Allocate_32
+m_Allocate_33
+m_Allocate_34
+m_Allocate_35
+m_Allocate_36
+m_Allocate_37
+m_Allocate_38
+m_Allocate_39
+m_Allocate_40
+m_Allocate_41
+m_Allocate_42
+m_Allocate_43
+m_Allocate_44
+m_Allocate_45
+m_Allocate_46
+m_Allocate_47
+m_Allocate_48
+m_Allocate_49
+m_Allocate_50

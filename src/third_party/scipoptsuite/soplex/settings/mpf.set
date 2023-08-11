@@ -1,0 +1,2 @@
+# solving mode (0 - floating-point solve, 1 - auto, 2 - force iterative refinement, 3 - multi precision solve)
+solvemode = 3

@@ -1,0 +1,4 @@
+*** Error 124: "upto" value 5.5 is too big or not an integer
+*** File: e124.zpl Line 2
+*** set A := {1 to 5.5};
+***                   ^^^

@@ -1,0 +1,27 @@
+Notes for GCG Release 2.0.0
+
+General
+================
+We are proud to release GCG in version 2.0.0. The major version number
+increase from 1.1.1 is justified, as we include major new features. Check
+both the feature list as well as the CHANGELOG for the changes
+
+Features
+================
+
+ * parallelization of the pricing process: compile GCG with OPENMP=true and
+   benefit from concurrently solving the pricing problems (you need to compile
+   SCIP with PARASCIP=true) greatly reducing the time to solve difficult
+   problems to optimality.
+
+ * Generic branching: We can branch on arbitrary, bounded instances with
+   discretization with and without aggregation. That enables us to solve
+   cutting stock type instances much faster.
+
+ * New detectors: We can now detect staircase structures as well as identical
+   pricing problems that can be aggregated, thus removing some of the
+   symmetry. Check out the staircase and isomorph detectors!
+
+ * New heuristics: We can find even better solutions using a variety of diving
+   and other heuristics in both the master and original space. See if we can
+   find good solutions to your problem.

@@ -1,0 +1,4 @@
+*** Error 133: Unknown symbol "i"
+*** File: e133_2.zpl Line 3
+*** param p[I] := <1> i;
+***                   ^^^

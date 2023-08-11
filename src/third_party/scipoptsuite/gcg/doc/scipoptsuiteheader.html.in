@@ -1,0 +1,27 @@
+  <header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" role="banner">
+    <div class="container">
+      <div class="navbar-header">
+        <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse"> <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button> <a href="http://scipopt.org/#scipoptsuite" class="navbar-brand">SCIP Optimization Suite</a>
+      </div>
+      <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+        <ul class="nav navbar-nav">
+          <li> <a href="https://scipopt.org">SCIP</a></li>
+          <li> <a href="http://soplex.zib.de">SoPlex</a></li>
+          <li> <a href="http://zimpl.zib.de">ZIMPL</a></li>
+          <li> <a href="http://ug.zib.de">UG</a></li>
+          <li class="active"> <a href="http://www.or.rwth-aachen.de/gcg">GCG</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown"> <a href="doc/html" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <DOCVERSIONS/>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>

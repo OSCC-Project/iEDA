@@ -1,0 +1,5 @@
+*** Error 156: Not enough fields in data
+***            File: e156.dat line 1
+*** File: e156.zpl Line 2
+*** set A:={read "e156.dat" as "<2n>"};
+***                                  ^^^
