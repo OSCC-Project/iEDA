@@ -35,6 +35,8 @@ class RAModel
   std::vector<double>& get_nabla_f_row() { return _nabla_f_row; }
   double get_alpha() const { return _alpha; }
   RAModelStat& get_ra_model_stat() { return _ra_model_stat; }
+  irt_int get_curr_outer_iter() { return _curr_outer_iter; }
+  irt_int get_curr_inner_iter() { return _curr_inner_iter; }
   // setter
   void set_ra_net_list(const std::vector<RANet>& ra_net_list) { _ra_net_list = ra_net_list; }
   void set_ra_gcell_list(const std::vector<RAGCell>& ra_gcell_list) { _ra_gcell_list = ra_gcell_list; }
@@ -43,6 +45,8 @@ class RAModel
   void set_nabla_f_row(const std::vector<double>& nabla_f_row) { _nabla_f_row = nabla_f_row; }
   void set_alpha(const double alpha) { _alpha = alpha; }
   void set_ra_model_stat(const RAModelStat& ra_model_stat) { _ra_model_stat = ra_model_stat; }
+  void set_curr_outer_iter(const irt_int curr_outer_iter) { _curr_outer_iter = curr_outer_iter; }
+  void set_curr_inner_iter(const irt_int curr_inner_iter) { _curr_inner_iter = curr_inner_iter; }
   // function
 
  private:
@@ -54,5 +58,7 @@ class RAModel
   std::vector<double> _nabla_f_row;
   double _alpha = 0;
   RAModelStat _ra_model_stat;
+  irt_int _curr_outer_iter = -1;
+  irt_int _curr_inner_iter = -1;
 };
 }  // namespace irt

@@ -1,3 +1,3 @@
-SET(IPL_HOME ${HOME_OPERATION}/iPL)
+set(IPL_HOME ${HOME_OPERATION}/iPL)
 
-INCLUDE(${IPL_HOME}/ipl.cmake)
+include(${IPL_HOME}/ipl.cmake)

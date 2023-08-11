@@ -1,5 +1,5 @@
-SET(DB_ROOT ${HOME_DATABASE}/iDB)
-SET(FP_ROOT ${HOME_OPERATION}/iFP)
+set(DB_ROOT ${HOME_DATABASE}/iDB)
+set(FP_ROOT ${HOME_OPERATION}/iFP)
 
 enable_testing()
 include_directories(${DB_ROOT})

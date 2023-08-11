@@ -16,7 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCChecker.hpp"
+#include "PAGCellId.hpp"
 #include "PASourceType.hpp"
+#include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
 
 namespace irt {
@@ -27,36 +30,27 @@ class PAGCell : public SpaceRegion
   PAGCell() = default;
   ~PAGCell() = default;
   // getter
-  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_routing_net_rect_map()
-  {
-    return _source_routing_net_rect_map;
-  }
-  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& get_source_cut_net_rect_map()
-  {
-    return _source_cut_net_rect_map;
-  }
-  std::map<PASourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
+  PAGCellId& get_pa_gcell_id() { return _pa_gcell_id; }
+  std::map<PASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
-  void set_source_routing_net_rect_map(
-      const std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_routing_net_rect_map)
-  {
-    _source_routing_net_rect_map = source_routing_net_rect_map;
-  }
-  void set_source_cut_net_rect_map(
-      const std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>>& source_cut_net_rect_map)
-  {
-    _source_cut_net_rect_map = source_cut_net_rect_map;
-  }
-  void set_source_region_query_map(const std::map<PASourceType, void*>& source_region_query_map)
+  void set_pa_gcell_id(const PAGCellId& pa_gcell_id) { _pa_gcell_id = pa_gcell_id; }
+  void set_source_region_query_map(const std::map<PASourceType, RegionQuery*>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
   // function
+  RegionQuery* getRegionQuery(PASourceType pa_source_type)
+  {
+    RegionQuery*& region_query = _source_region_query_map[pa_source_type];
+    if (region_query == nullptr) {
+      region_query = DC_INST.initRegionQuery();
+    }
+    return region_query;
+  }
 
  private:
-  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_routing_net_rect_map;
-  std::map<PASourceType, std::map<irt_int, std::map<irt_int, std::vector<LayerRect>>>> _source_cut_net_rect_map;
-  std::map<PASourceType, void*> _source_region_query_map;
+  PAGCellId _pa_gcell_id;
+  std::map<PASourceType, RegionQuery*> _source_region_query_map;
 };
 
 }  // namespace irt

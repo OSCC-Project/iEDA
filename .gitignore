@@ -2,6 +2,8 @@
 .VSCodeCounter/
 .idea
 cmake-build-debug/
+tags
+
 
 bin
 build
@@ -16,6 +18,5 @@ catboost_info
 *.dot
 *.gds
 *.def
-*.lef
 *.log
 *.pwr

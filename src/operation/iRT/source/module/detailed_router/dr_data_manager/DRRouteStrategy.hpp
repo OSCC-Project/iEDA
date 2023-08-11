@@ -26,10 +26,12 @@ enum class DRRouteStrategy
 {
   kNone,
   kFullyConsider,
-  kIgnoringSelfBoxResult,
-  kIgnoringOtherBoxResult,
-  kIgnoringPanelResult,
-  kIgnoringBlockage
+  kIgnoringSelfTask,
+  kIgnoringSelfBox,
+  kIgnoringOtherBox,
+  kIgnoringEnclosure,
+  kIgnoringKnownPanel,
+  kIgnoringBlockAndPin
 };
 
 struct GetDRRouteStrategyName
@@ -44,17 +46,23 @@ struct GetDRRouteStrategyName
       case DRRouteStrategy::kFullyConsider:
         dr_route_strategy_name = "fully_consider";
         break;
-      case DRRouteStrategy::kIgnoringSelfBoxResult:
-        dr_route_strategy_name = "ignoring_self_box_result";
+      case DRRouteStrategy::kIgnoringSelfTask:
+        dr_route_strategy_name = "ignoring_self_task";
         break;
-      case DRRouteStrategy::kIgnoringOtherBoxResult:
-        dr_route_strategy_name = "ignoring_other_box_result";
+      case DRRouteStrategy::kIgnoringSelfBox:
+        dr_route_strategy_name = "ignoring_self_box";
         break;
-      case DRRouteStrategy::kIgnoringPanelResult:
-        dr_route_strategy_name = "ignoring_panel_result";
+      case DRRouteStrategy::kIgnoringOtherBox:
+        dr_route_strategy_name = "ignoring_other_box";
         break;
-      case DRRouteStrategy::kIgnoringBlockage:
-        dr_route_strategy_name = "ignoring_blockage";
+      case DRRouteStrategy::kIgnoringEnclosure:
+        dr_route_strategy_name = "ignoring_enclosure";
+        break;
+      case DRRouteStrategy::kIgnoringKnownPanel:
+        dr_route_strategy_name = "ignoring_known_panel";
+        break;
+      case DRRouteStrategy::kIgnoringBlockAndPin:
+        dr_route_strategy_name = "ignoring_block_and_pin";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

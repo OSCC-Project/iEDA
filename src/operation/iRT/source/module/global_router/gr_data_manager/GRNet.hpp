@@ -40,21 +40,18 @@ class GRNet
   BoundingBox& get_bounding_box() { return _bounding_box; }
   GridMap<double>& get_ra_cost_map() { return _ra_cost_map; }
   RoutingState get_routing_state() const { return _routing_state; }
-  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
   MTree<RTNode>& get_gr_result_tree() { return _gr_result_tree; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; };
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_gr_pin_list(std::vector<GRPin>& gr_pin_list) { _gr_pin_list = gr_pin_list; }
   void set_gr_driving_pin(const GRPin& gr_driving_pin) { _gr_driving_pin = gr_driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }
-  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; };
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; }
+  void set_routing_tree(const MTree<LayerCoord>& routing_tree) { _routing_tree = routing_tree; }
   void set_gr_result_tree(const MTree<RTNode>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
 
  private:
@@ -66,7 +63,7 @@ class GRNet
   BoundingBox _bounding_box;
   GridMap<double> _ra_cost_map;
   RoutingState _routing_state = RoutingState::kNone;
-  std::vector<Segment<LayerCoord>> _routing_segment_list;
+  MTree<LayerCoord> _routing_tree;
   MTree<RTNode> _gr_result_tree;
 };
 
