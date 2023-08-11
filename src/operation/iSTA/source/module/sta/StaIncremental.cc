@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -22,16 +22,18 @@
  * @date 2022-01-08
  */
 
+#include "StaIncremental.hh"
+
 #include "StaDataPropagation.hh"
 #include "StaDelayPropagation.hh"
-#include "StaIncremental.hh"
 #include "StaSlewPropagation.hh"
 #include "log/Log.hh"
 #include "sta/StaVertex.hh"
 
 namespace ista {
 
-StaIncremental::StaIncremental() : _fwd_queue(cmp), _bwd_queue(cmp) {}
+StaIncremental::StaIncremental()
+    : _fwd_queue(min_heap_cmp), _bwd_queue(max_heap_cmp) {}
 
 /**
  * @brief propagate the slew from the vertex to its fanout.
@@ -168,17 +170,56 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
 
   LOG_FATAL_IF(!_incr_func) << "incr_func is nullptr";
   if (_is_fwd) {
+    if (the_vertex->is_fwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_slew_prop();
     the_vertex->reset_is_delay_prop();
     the_vertex->reset_is_fwd();
+    the_vertex->set_is_fwd_reset();
 
     _incr_func->insertFwdQueue(the_vertex);
 
-    FOREACH_SRC_ARC(the_vertex, src_arc) { src_arc->exec(*this); }
+    if (the_vertex->is_end()) {
+      return 1;
+    }
+
+    FOREACH_SRC_ARC(the_vertex, src_arc) {
+      if (!src_arc->isDelayArc()) {
+        continue;
+      }
+
+      if (src_arc->is_loop_disable()) {
+        continue;
+      }
+
+      src_arc->exec(*this);
+    }
   } else {
+    if (the_vertex->is_bwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_bwd();
+    the_vertex->set_is_bwd_reset();
+
     _incr_func->insertBwdQueue(the_vertex);
-    FOREACH_SNK_ARC(the_vertex, snk_arc) { snk_arc->exec(*this); }
+
+    if (the_vertex->is_start()) {
+      return 1;
+    }
+
+    FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      if (!snk_arc->isDelayArc()) {
+        continue;
+      }
+
+      if (snk_arc->is_loop_disable()) {
+        continue;
+      }
+      snk_arc->exec(*this);
+    }
   }
 
   return 1;
@@ -194,6 +235,7 @@ unsigned StaResetPropagation::operator()(StaArc* the_arc) {
   StaVertex* the_vertex;
   if (_is_fwd) {
     the_vertex = the_arc->get_snk();
+
   } else {
     the_vertex = the_arc->get_src();
   }
