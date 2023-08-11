@@ -131,7 +131,7 @@ vector<float> EvalAPI::evalInstDens(CongGrid* grid, const vector<CongInst*>& ins
 vector<float> EvalAPI::evalNetCong(const string& rudy_type)
 {
   _congestion_eval_inst->checkRUDYType(rudy_type);
-  _congestion_eval_inst->mapNet2Bin();
+  _congestion_eval_inst->mapNetCoord2Grid();
   return _congestion_eval_inst->getNetCong(rudy_type);
 }
 
@@ -141,7 +141,7 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   return congestion_eval.getNetCong(rudy_type);
 }
 
@@ -210,7 +210,7 @@ void EvalAPI::plotNetCong(const string& plot_path, const string& output_file_nam
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.evalNetCong(rudy_type);
   congestion_eval.plotNetCong(plot_path, output_file_name, rudy_type);
 }
@@ -223,7 +223,7 @@ void EvalAPI::reportCongestion(const string& plot_path, const string& output_fil
   congestion_eval.set_cong_inst_list(inst_list);
   congestion_eval.set_cong_net_list(net_list);
   congestion_eval.mapInst2Bin();
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.reportCongestion(plot_path, output_file_name);
 }
 /******************************Congestion Eval: END******************************/
