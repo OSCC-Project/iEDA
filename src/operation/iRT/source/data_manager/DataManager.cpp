@@ -1613,12 +1613,12 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
 
 void DataManager::saveStageResult(Stage stage)
 {
-  // Monitor monitor;
-  // std::string current_stage = GetStageName()(stage);
-  // std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  // iplf::RtPersister ps(data_path);
-  // ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  // LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
+  Monitor monitor;
+  std::string current_stage = GetStageName()(stage);
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
 }
 
 std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
@@ -1633,16 +1633,16 @@ std::tuple<std::string, std::string, std::set<std::string>, std::string> DataMan
 
 void DataManager::loadStageResult(Stage stage)
 {
-  // Monitor monitor;
+  Monitor monitor;
 
-  // std::string current_stage = GetStageName()(stage);
-  // std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  // iplf::RtPersister ps(data_path);
-  // auto header = ps.loadHeader<decltype(getHeadInfo(current_stage))>();
-  // // check header
+  std::string current_stage = GetStageName()(stage);
+  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
+  iplf::RtPersister ps(data_path);
+  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage))>();
+  // check header
 
-  // ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  // LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
+  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
+  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
 }
 
 #endif
