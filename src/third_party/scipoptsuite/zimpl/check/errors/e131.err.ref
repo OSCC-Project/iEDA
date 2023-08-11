@@ -1,0 +1,4 @@
+*** Error 131: Illegal element <6> for symbol
+*** File: e131.zpl Line 2
+*** set A[{1..5}] := <1> {1}, <6> {2};
+***                                  ^^^

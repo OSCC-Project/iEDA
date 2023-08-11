@@ -1,0 +1,12 @@
+if(NOT TARGET libgcg)
+  include("${CMAKE_CURRENT_LIST_DIR}/gcg-targets.cmake")
+endif()
+
+if(@SCIP_NEEDED@)
+   set(SCIP_DIR "@CONF_SCIP_DIR@")
+   find_package(SCIP QUIET CONFIG)
+endif()
+
+set(GCG_LIBRARIES libgcg)
+set(GCG_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+set(GCG_FOUND TRUE)

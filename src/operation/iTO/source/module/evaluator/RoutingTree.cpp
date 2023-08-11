@@ -675,23 +675,23 @@ void RoutingTree::updateBranch() {
   _middle_branch.resize(numb_pts, _null_pt);
   _right_branch.resize(numb_pts, _null_pt);
   preOrderTraversal(_root);
-  printf("      ");
-  for (int i = 0; i < numb_pts; i++) {
-    printf("  %-2d", i);
-  }
-  printf("\nleft  ");
-  for (int i = 0; i < numb_pts; i++) {
-    printf("  %-2d", _left_branch[i]);
-  }
-  printf("\nmiddle");
-  for (int i = 0; i < numb_pts; i++) {
-    printf("  %-2d", _middle_branch[i]);
-  }
-  printf("\nright ");
-  for (int i = 0; i < numb_pts; i++) {
-    printf("  %-2d", _right_branch[i]);
-  }
-  printf("\n");
+  // printf("      ");
+  // for (int i = 0; i < numb_pts; i++) {
+  //   printf("  %-2d", i);
+  // }
+  // printf("\nleft  ");
+  // for (int i = 0; i < numb_pts; i++) {
+  //   printf("  %-2d", _left_branch[i]);
+  // }
+  // printf("\nmiddle");
+  // for (int i = 0; i < numb_pts; i++) {
+  //   printf("  %-2d", _middle_branch[i]);
+  // }
+  // printf("\nright ");
+  // for (int i = 0; i < numb_pts; i++) {
+  //   printf("  %-2d", _right_branch[i]);
+  // }
+  // printf("\n");
 }
 
 /**

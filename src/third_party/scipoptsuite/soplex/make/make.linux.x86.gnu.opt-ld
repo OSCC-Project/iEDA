@@ -1,0 +1,9 @@
+CXX	=	g++
+CPPFLAGS=	-Isrc -DNDEBUG  -m32 -DWITH_LONG_DOUBLE \
+                -DDEFAULT_BND_VIOL=1e-8 -DDEFAULT_EPS_ZERO=1e-22 \
+CXXFLAGS=	-g -O -mtune=native  \
+		-m128bit-long-double #-ffast-math
+LDFLAGS	=	-m32 -lm # -static
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

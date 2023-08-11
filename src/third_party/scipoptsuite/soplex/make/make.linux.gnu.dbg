@@ -1,0 +1,51 @@
+CPPFLAGS	+=
+CXXFLAGS	+=	-O0 -g -fomit-frame-pointer # -malign-double -ffast-math
+
+# enable sanitizers if GCC >= 5
+# the default is to only enable the UndefinedBehaviorSanitizer (SANITIZE=true)
+# if user specifies SANITIZE=full, then also other sanitizers are enabled
+GCCVERSION := $(shell $(CXX) -dumpversion | cut -f1 -d.)
+SANITIZE = $(word $(shell expr \( $(GCCVERSION) \>= 5 \) + 1), false, true)
+
+ifeq ($(SANITIZE),full)
+
+# -fsanitize=address does not work together with -fsanitize=thread
+# -fsanitize=leak is included in -fsanitize=address, but works together with -fsanitize=thread
+
+ifeq ($(PARASCIP),true)
+# enable ThreadSanitizer (https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual)
+SANITIZERFLAGS = -fsanitize=thread
+
+# enable LeakSanitizer (https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer)
+SANITIZERFLAGS += -fsanitize=leak
+
+else
+# enable AddressSanitizer (https://github.com/google/sanitizers/wiki/AddressSanitizer)
+SANITIZERFLAGS = -fsanitize=address
+
+endif
+
+# enable UndefinedBehaviorSanitizer
+SANITIZERFLAGS += -fsanitize=float-cast-overflow -fsanitize=float-divide-by-zero
+
+endif
+
+ifeq ($(SANITIZE),true)
+
+# enable UndefinedBehaviorSanitizer
+SANITIZERFLAGS = -fsanitize=float-cast-overflow -fsanitize=float-divide-by-zero
+
+# do not enable LeakSanitizer (https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer)
+# it may prevent usage of valgrind while also not replacing it
+#SANITIZERFLAGS += -fsanitize=leak
+
+endif
+
+CXXFLAGS += $(SANITIZERFLAGS)
+ifeq ($(SHARED),true)
+  LIBBUILDFLAGS += $(SANITIZERFLAGS)
+endif
+LDFLAGS += $(SANITIZERFLAGS)
+
+# deprecated
+SANITZERFLAGS = $(SANITIZERFLAGS)

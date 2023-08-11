@@ -1,0 +1,102 @@
+************************************************************************
+*     File src/lusol.txt
+*
+*     This file describes the files in the Fortran 77 version
+*     of the sparse LU package LUSOL.
+*
+*     lusol.txt   Documentation (this file).
+*     lusol1.f    Factor routines: lu1fac and most subsidiaries.
+*     lusol2.f    Heap management: Required by lu1fac for TCP.
+*                 Perhaps useful in other applications.
+*     lusol6a.f   Solve routines:  lu6sol, lu6chk.
+*     lusol6b.f   Extras:          lu6mul, lu6prt, lu6set.
+*     lusol7a.f   Utilities for all update routines.
+*     lusol7b.f   Utilities for the update routines in lusol8b.f.
+*     lusol8a.f   The most used update: Replace column (Bartels-Golub).
+*     lusol8b.f   All other update routines.
+*
+*     LUSOL reference:
+*     P. E. Gill, W. Murray, M. A. Saunders and M. H. Wright (1987),
+*     Maintaining LU factors of a general sparse matrix,
+*     Linear Algebra and its Applications 88/89, 239-270.
+*
+*     LUSOL documentation:
+*     Mostly in-line comments within each file.
+*
+*     LUSOL is maintained by
+*     Michael Saunders, Systems Optimization Laboratory,
+*     Dept of Management Science & Engineering, Stanford University.
+*     (saunders@stanford.edu)
+*
+* 1985 - 1987: Original development, described in above reference.
+*              SOL, Dept of Operations Research, Stanford University.
+*        1989: lu1fac overhauled to improve efficiency and modularity.
+*        1993: keepLU implemented.
+*        1994: densLU implemented.
+* 12 Nov 1999: Changed integer*4 to integer throughout.
+*              We assume that integers will be at least 4 bytes.
+* 27 Apr 2000: Revised lu1mar to fix failure on Todd Munson's case.
+*              Markowitz merit test now implemented without multiply
+*              (to remove danger of integer overflow).  The true
+*              merit (nzrow - 1)*(nzcol - 1) for a potential pivot
+*              is computed only if the pivot is the best so far.
+* 13 Sep 2000: Revised lu1fac (lu1fad, lu1mar) to allow choice between
+*              Threshold Partial  Pivoting (TPP) and
+*              Threshold Complete Pivoting (TCP).
+*              Controlled by luparm(6) = 0 or 1 respectively.
+*              TCP gives a rank-revealing sparse LU factorization.
+*              (Joint research with Michael O'Sullivan.)
+* 16 Oct 2000: Revised lu8rpc to test for instability
+*              (revealed by Philip Gill's runs on the
+*              5001 x 5000 CUTE problem SVANBERG).
+* 17 Oct 2000: Initialization errors fixed (detected by Todd Munson).
+* 08 Nov 2000: Revised lu1fad to speed up search for aijmax.
+* 21 Nov 2000: Had to make TCP safe on deceptive triangular systems
+*              that have 1 on diags but bigger than 1 above diag.
+*              E.g., repeated columns like (-1 4 -1 -1)'.
+*              (Revealed by Philip Gill's run on the
+*              5901-row CUTE problem BRATU2D.
+*              Enormous growth on first basis after Crash!)
+*              lu1slk implemented to mark slack columns in original A.
+*              In Utri phase, TCP accepts slacks
+*              (otherwise the basis repair gets confused)
+*              but applies normal aijtol test to all other pivots.
+* 28 Nov 2000: TCP failed with empty cols (detected by Todd Munson).
+*              Safeguarded the calls to lu1max and lu2max.
+* 11 Mar 2001: lu1fac (and lu6chk) now report singularities
+*              even if keepLU = 0.
+* 23 Mar 2001: lu1fac: Bug with TCP if a column has length 0
+*              during elimination, and previous column fills-in.
+*              (Revealed by Philip Gill's run on the
+*              1301 x 270 CUTE problem NUFFIELD.)
+*              Caused many changes to lu1fad, lu1gau, lu1pen, lu1rec.
+*              Introduced ilast, jlast to keep track of the last
+*              row/column in the row/column files.
+*              lu1rec mustn't delete entries with len(i) = 0.
+* 27 Mar 2001: Finalized 23 Mar changes.
+* 10 Oct 2001: lu1fad: Simplified aijmod coding.
+* 17 Nov 2001: lu6chk: Briefer output for singular factors.
+* 10 Apr 2002: Created files lusol1.f, lusol2.f, etc.
+* 11 Jun 2002: Threshold Rook Pivoting implemented (TRP).
+*
+* 06 Mar 2004: C reincarnation created by Kjell Eikland.  Includes
+*              data wrappers, parametric constants, various
+*              helper routines, and dynamic memory reallocation.
+*              Incorporated into lp_solve as a new BFP
+*              (Basis Factorization Package).
+*              Old reference: http://www.geocities.com/lpsolve/
+*              New reference: http://sourceforge.net/projects/lpsolve
+*
+* 23 Apr 2004: lu6chk modified.  TRP can judge singularity better
+*              by comparing all diagonals to DUmax.
+*
+* 02 Jan 2005: LUSOL's TPP, TRP, TCP options and use within SNOPT
+*              documented in SIAM Review (see sections 4 and 5):
+*
+*    P. E. Gill, W. Murray and M. A. Saunders,
+*    SNOPT: An SQP algorithm for large-scale constrained optimization,
+*    SIGEST article, SIAM Review 47(1), 99-131 (2005).
+*    http://www.stanford.edu/group/SOL/papers/SNOPT-SIGEST.pdf
+*
+* 01 Dec 2005: New cmex files contributed by Yin Zhang.
+************************************************************************

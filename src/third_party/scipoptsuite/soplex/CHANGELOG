@@ -1,0 +1,940 @@
+December 2022 Release 6.0.3
+=============================
+
+miscellaneous:
+- changed license to Apache 2.0, see https://www.apache.org/licenses/LICENSE-2.0.
+
+October 2022 - Release 6.0.2
+=============================
+
+- version bump
+
+June 2022 - Release 6.0.1
+=============================
+
+fixed bugs:
+- fix bug in varStatusToBasisStatusCol when setting Basis for implicitly free variables
+
+January 2022 - Release 6.0.0
+=============================
+
+features:
+- integrated PaPILO as new simplifier option
+- improved the buildsystem by adding a cmake-configurable `config.h.in` header in the same fashion
+  as it is handled in SCIP
+- replaced SoPlex internal `Rational` class by the boost multiprecision library for rational numbers;
+  this enables the possibility of performing a rational LP solve, even without linking GMP
+- restored classic command line interface to remove dependency on the Boost program options library
+- changed the command-line argument for running soplex with higher precision;
+  formerly the multiprecision mode was triggered by setting `solvemode=3` (multiprecision),
+  or `solvemode=4` (quadprecision); Now higher precision arithmetic has its own
+  argument `arithmetic` (0 - double, 1 - quadprecision, 2 - multiprecision);
+  This makes it possible to also use rational solving mode in combination with multiprecision
+
+interface & parameters:
+- added interrupt flag to optimize() (default NULL)
+- added new simplifier enum SIMPLIFIER_PAPILO and SIMPLFIER_INTERNAL (replacing the deprecated SIMPLIFIER_AUTO)
+
+performance:
+
+code quality:
+- fixed deprecated copy compiler warnings that occur with newer compilers
+- added a ClassSet<T> class that functions in the same way as DataSet<T> for types that are not data-types
+
+fixed bugs:
+
+December 2020 - Release 5.0.2
+===============================
+
+performance:
+- stricter limitation of refinement rounds with failed or slow progress in accuracy
+
+fixed bugs:
+- add missing invalidations of nonBasicValue (these led to incorrect cutoffs due to objective limit)
+- fix comparison in postsolving of row singleton simplifier
+- fixed overly conservative assert in postsolving of row objective simplifier
+- always clear rational LU factorization when changing the problem to avoid inconsistent basis data
+- ensure consistent basis data when floating-point solves fail during iterative refinement
+- fixed bug regarding objective sense when starting SYNCMODE_MANUAL
+- handle infinity values in IdxCompare of pricers
+- fixed incorrect assert in devex and steepest edge pricer
+
+23 June 2020 - Release 5.0.1
+===============================
+
+fixed bugs:
+- add missing case of `scale = true` in spxlpbase.h change functions
+- corrected feasibility checks for rational solution in debug mode
+- Makefiles: fix a typo in SANITIZERFLAGS, if SHARED=true, add SANITZERFLAGS also to LIBBUILDFLAGS
+  and always add SANITZERFLAGS to LDFLAGS
+- Makefiles: fix BOOST=false SHARED=true case
+- CMake: add minimum gcc requirement
+- CMake: fix for older cmake versions and for building without boost
+- iterative refinement: fixed possible infinite loop and consistency issue
+
+30 March 2020 - Release 5.0.0
+=============================
+
+interface & parameters:
+- show number of violations in log to improve understanding of solving progress
+- new parameter 'int:printbasismetric' to replace 'int:printcondition'
+  (-1: off, 0: condition estimate, 1: trace, 2: determinant, 3: condition)
+- new parameter 'real:min_markowitz' to limit the Markowitz stability threshold
+  (range 0.0001 to 0.9999, high values sacrifice performance for stability)
+- new parameter 'int:stattimer' to control time measurement for statistics during solving
+  (0: off, 1: user time, 2: wallclock time)
+- new parameter 'bool:forcebasic', determines whether optimal solution has to be basic when performing
+  rational solve with iterative refinement, triggers rational factorization if reconstruction optimal
+  but not basic
+- SoPlex can now do a multiprecision solve, i.e., `SoPlex<R>` with `R =
+  boost::multiprecision::number<T>` will work. In particular, for Linux and Mac,
+  SoPlex can do a multiprecision solve with `mpfr_float` and on windows with
+  `cpp_float`.
+- extended parameter 'solvemode' with value (3 - multiprecision solve, 4 - solve with Quadruple precision (128bit))
+- new parameter 'precision' (only active in solvemode 3) to set the precision
+- Templated SoPlex, SPxSolver, and SPxBasis.
+- Renamed SoPlex<R>, SPxSolver<R>, and SPxBasis<R> to SoPlexBase<R>,
+  SPxSolverBase<R>, SPxBasisBase<R> respectively for backwards compatibility
+  (and for SCIP.)
+- Following renames:
+  | From                   | To                    |
+  |------------------------|-----------------------|
+  | `getDualFarkas`        | `getDualFarkasSol`    |
+  | `getDualFarkasT`       | `getDualFarkas`       |
+  | `getBoundViolationT`   | `getBoundViolation`   |
+  | `numColsT`             | `numCols`             |
+  | `numRowsT`             | `numRows`             |
+  | `getRedCost`           | `getRedCostSol`       |
+  | `getRedCostT`          | `getRedCost`          |
+  | `writeFile`            | `writeFileLPBase`     |
+  | `writeFileT`           | `writeFile`           |
+  | `getRowViolationT`     | `getRowViolation`     |
+  | `getDualViolationT`    | `getDualViolation`    |
+  | `getRedCostViolationT` | `getRedCostViolation` |
+  | `getDual`              | `getDualSol`          |
+  | `getDualT`             | `getDual`             |
+  | `getPrimal`            | `getPrimalSol`        |
+  | `getPrimalT`           | `getPrimal`           |
+  | `numNonZerosT`         | `numNonZeros`         |
+  | `_optimizeT`           | `_optimize`           |
+  | `getPrimalRay`         | `getPrimalRaySol`     |
+  | `getPrimalRayT`        | `getPrimalRay`        |
+
+- Wrapped the following functions:
+  1. `getDualFarkasReal`
+  2. `numColsReal`
+  3. `getRedCostReal`
+  4. `getDualReal`
+  5. `getPrimalReal`
+
+- Renamed `SPxSolverBase<R>::getDualfarkas` to `SPxSolverBase<R>::getDualFarkas`
+  (for consistency.) Note that there is a method with the same name in `SoPlexBase<R>`.
+- Rewrote the code for command line argument parsing. Current code uses Boost Program Options.
+   Note that you do not need Program Options if you just want to build the SoPlex library.
+- Some of the memory allocation from heap (using spx_alloc) changed to static memory.
+- Improvements in exception handling in `src/soplexmain.cpp`
+- Renamed `int numNonzeros` to `nNonzeros`
+- Moved definitions of generic functions from a `.cpp` file to corresponding
+  `.hpp` file
+- New features for Rational class:
+  1. Constructor from `boost::multiprecision::number<T>`.
+  2. Conversion from Rational to `boost::multiprecision::number<T>`, provided
+     that boost can handle `mpq_t` to `T` conversion.
+- Changes to `VectorBase<T>` and `DVectorBase<T>`:
+  1. `VectorBase<T>` is now a wrapper of `std::vector<T>`, it no longer uses
+      pre-allocated memory.
+  2. The class can handle the additional functionality `DVectorBase<T>`, e.g.,
+     `memSize()`, `reSize()`, `scaleAssign(,,).`
+  3. internal member `int dimen` *removed*. `val.size()` or `VectorBase<R>::dim()`
+     is a replacement.
+  4. Replaced calls to memcpy and memmove with `std::copy().` Former functions
+     are not compatible with Types that are not trivially copyable.
+  5. Defined move constructor and move assignment.
+  6. Added begin() and end() iterators that return the corresponding iterator of
+     the internal std::vector.
+  7. Added vec() function that returns a const reference to the underlying vector.
+  8. *Reason for changes*: VectorBase previously used to manage a pointer and
+     DVectorBase managed memory allocation by doing malloc, realloc and free
+     calls. But this is only guaranteed to work with trivially copyable data types,
+     the new g++ compilers were already issuing warnings about this for some time.
+     The multiprecision vectors were not working. The same is also true for changes
+     inside CLUFactor classes.
+  8. *Removed* `isConsistent()`, which used to check a vector was empty and had no
+     memory allocated at the same time. This never happens with the std::vector
+     wrapper, hence the removal.
+  9. *Removed* DVectorBase. Replaced by VectorBase. The alias DVector is replaced by
+     the alias Vector. (This has the same problem as VectorBase<T>)
+- DataArray now checks if template type is trivially copyable via `static_assert`.
+  Changed all instances of DataArray where this is not the case to Array.
+- Changed Array to wrap std::vector to be more efficient and easier to use.
+- Changed spxmainsm to use smart pointers inside of Array
+- The following internal objects of the CLUFactor class was changed from a raw
+  pointer to a std::vector
+  1. `u.col.val`, `u.row.val`
+  2. `l.val`, `l.rval`
+  3. `diag`
+  4. `s_max`
+- Replaced several instances of "`spx_alloc` an object, then `spx_realloc` the
+  object" with using `std::vector`. Because `realloc` is not guaranteed to work
+  on objects with non-trivial copy constructors, in particular, with
+  `boost::multiprecision::number.`
+
+fixed bugs:
+- use center value for very close bounds in singleton postsolver
+- enable initial/crash basis methods again
+- adjust bounds if they are equal within epsilon
+- fix untriggered bug in copy constructor of UnitVector
+
+10 July 2019 - Release 4.0.2
+============================
+
+fixed bugs:
+- resolve compiler warning about data loss during implicit type conversion for timers
+- return correct basis status when aborting a solve early
+- ensure basis status is set correctly when aborting a solve early
+- fix memory leak when copying SoPlex
+- correct getBasisInverseCol for row representation
+
+code quality:
+- merge SoPlex::hasDual() and SoPlex::hasPrimal() into SoPlex::hasSol() and mark old methods deprecated
+
+09 January 2019 - Release 4.0.1
+===============================
+
+fixed bugs:
+- correct objective function update in aggregation simplifier
+- use center value when fixing variables with slightly different bounds
+- MPS reader: print error message and terminate in case of duplicate column names or not column-wise ordering
+- LP reader: fix reading of infinite bounds and right-hand sides
+- return clean solution values according to optimal basis (e.g. reduced cost 0 for basic variables)
+- avoid unsuccessful termination when cycling and rather return sub-optimal solution
+
+code quality:
+- hide symbols in library to avoid symbol collisions and reduce library size
+
+13 June 2018 - Release 4.0.0
+============================
+
+features:
+- new simplifier step to perform variable aggregation for equations with two variables
+
+interface & parameters:
+- new option bool:ensureray to re-solve the original problem in case of
+  infeasibility/unboundedness to get a valid proof/ray (default: false)
+- new status OPTIMAL_UNSCALED_VIOLATIONS to signal unresolved violations in original space
+  (use method SoPlex::ignoreUnscaledViolations() to reset the status to OPTIMAL)
+- problem statistics distinguish ranged rows from equalities and show intuitive type counters
+  for variables and constraints
+- remove LEGACY mode (C++11 standard is mandatory)
+
+fixed bugs:
+- allow only one clean up round to avoid cycling on numerically difficult infeasible/unbounded instances
+- improved numeric stability in fixColumn and aggregation presolving steps
+
+code quality:
+- install all header files except for soplex.h into a subdirectory soplex/
+
+
+05 February 2018 - Release 3.1.1
+================================
+
+fixed bugs:
+- correct accumulation of shifted or relaxed bounds
+- allow termination despite violations to prevent cycling on numerically difficult models
+- add missing forward declarations of template specializations to spxlpbase.h
+- changed all string copy methods to use spxSnprintf which is both safe and more efficient
+  than strncpy.
+- set correct basis status for removed free variables (e.g. column singletons without objective)
+- use consistent generic constraint names when writing .mps files
+
+
+21 December 2017 - Release 3.1.0
+================================
+
+features:
+- new scaling method combining geometric and equilibrium scaling (command line option '-g6')
+
+interface & parameters:
+- also print reduced cost values when passing '-y' on the command line
+
+fixed bugs:
+- correct API method for multiplication with basis matrix for sparse vectors
+- fixed bug when setting and getting dual pricing norms
+- don't print infeasible primal/dual solutions
+- properly clear update vectors in initialization step
+- fix bug in geometric scaling
+- respect the time limit during solution polishing
+- automatically remove zeros in sparse vector class SVector
+
+
+01 September 2017 - Release 3.0.1
+=================================
+
+features:
+- new condition number estimate based on the quotient of max and min diagonal element of LU factorization
+  (final condition number is also printed in statistics)
+- new CMake build system alongside existing Makefiles
+
+interface & parameters:
+- allow arbitrary order of inputs/parameters, esp. filename is not required to be last
+- new bool parameter 'printcondition' to print condition number in iteration log
+- new option 'extsol' to validate objective value using an external solution
+- new option 'l' to adjust the tolerance used in the external validation process
+
+fixed bugs:
+- fixed compilation error with WITH_LONG_DOUBLE
+- fixed wrong objective value when using an obj offset
+- use correct row and column names when writing the dual problem
+
+
+08 March 2017 - Release 3.0.0
+=============================
+
+features:
+- new scaler: Least Squares, aka Curtis-Reid-Scaling
+- solution polishing: perform additional primal pivots at optimal basis
+  turn on with parameter 'int:solution_polishing'
+    0 - off
+    1 - try to increase number of basic slack vars
+    2 - try to decrease number of basic slack vars
+- persistent scaling:
+  - keep scaled LP for multiple reoptimizations
+  - modifications to LP are correctly transformed
+  - access to (inverse of) basis matrix is correctly handled
+  - enabled by default
+- decomposition based dual simplex:
+  - an experimental version of the a decomposition based approach to avoid degeneracy in the dual simplex method
+  - activated by setting the parameter bool:decompositiondualsimplex to true.
+    - this sets the basis representation to 'row', the solve mode to 'real', and the algorithm to 'dual'.
+  - additional parameters include:
+    usecompdual: setting to true using the dual formulation of the complementary problem, default is false.
+    explicitviol: setting to true explicitly computes the violation of the reduced problem solution instead of using the
+      complementary problem to identify violated rows, default is false.
+    decomp_iterlimit: the number of algorithm iterations for the decomposition based simplex.
+    decomp_maxaddedrows: the maximum number of rows added to the reduced problem in each algorithm iteration.
+    decomp_displayfreq: the frequency of output for the decomposition based simplex.
+    decomp_verbosity: the verbosity level of the decomposition based simplex.
+- computing the degeneracy of a basis in each iteration:
+  - the parameter computedegen, when set to true will compute the degeneracy of each basis.
+- write dual formulation to file: additional command line option "--writedual" is provided to write the dual formulation
+  to a file. When providing this option only the file is output, the problem is not solved.
+- new condition number estimate based on the quotient of max and min diagonal element of LU factorization
+
+performance:
+- more efficient SoPlex class with better usability:
+  - avoid unnecessary resolves of problem after unsimplifying
+  - access to solution data also when suboptimal
+- use exact weight initialization when switching to steepest edge in auto pricing
+
+interface & parameters:
+- new parameters to control refactorization triggers
+- random seed for perturbation can be set from outside and is not reset in between
+- set default representation switch to 1.2
+- setTerminationTime() in SPxSolver will convert a negative limit to 0 (was set to infinity before)
+- new interface methods to access rational factorization of basis matrix
+- allow parsing of "inf" bounds in MPS reader
+- new method to reset parameters to default values
+- new method to change the objective function offset
+- setParam() methods use default parameter 'init=true' to force updates in solver settings
+- print primal ray and dual farkas proof with '-x' and '-y'
+- submakefile for CrayXC systems added
+- converted many error messages to info messages that can be turned off using low verbosity
+- correct output of primal and dual solution values depending on set precision
+- solve() is now called optimize() to distinguish it from solves with the basis matrix; solve() is deprecated
+- LPs can be loaded into the solver w/o setting up a slack basis (new default param in loadLP() method)
+- persistent scaling can be disabled by setting bool:persistentscaling to 0
+- new bool parameter 'fullperturbation' to perturb the entire problem instead of only the bounds relevant
+  for the current pivot
+- new bool parameter 'isOptimal' for unsimplify() to disable some debug checks that are only valid for optimal solutions
+- remove static members Rational::{ZERO,POSONE,NEGONE} when compiling without GMP; make private when compiling with GMP
+
+fixed bugs:
+- fix inconsistent basis status in Basis and Solver
+- correct definition of numeric constants when using LONG_DOUBLE mode
+- fix bug in class SemiSparseVector
+- correctly define WIN flags for Cygwin
+- fix bug in left solve with rational LU factorization
+- shared library knows its dependencies (GMP, ZLIB)
+- when compiling with SHARED=true, the binary will link to libsoplex.so, resulting in a smaller file
+- fixed memory bug in class DSVectorBase when resizing zero length vectors
+- restore initial basis when given basis has too many basic variables
+- improve behaviour for LPs with zero constraints
+- cleaned up and corrected steepest edge pricing implementation
+- check for very small weights in devex pricing (just like for steepest edge)
+- forbid setting termination tolerances to zero when not compiled with rational GMP support
+- fixed and simplified updating of range types for the rational LP
+
+code quality:
+- SoPlex is thread-safe by using the storage class specifier thread-local for static variables
+- disabling verbosity when using PARASCIP is not necessary anymore
+- use inline function to compute pricing values
+- enable the user to compile without thread_local by setting USRCXXFLAGS=-DTHREADLOCAL=""
+
+
+29 February 2016 - Release 2.2.1
+================================
+
+performance:
+- faster updateFtest() by exploiting sparsity in solveVector3
+- new method noViols() for checking violations, that terminates faster than maxInfeas()
+- new refactorization trigger that takes basis size into account
+
+interface & parameters:
+- show current dual (primal) violation of dual (primal) simplex in log
+- options -X and -Y to print primal and dual solution as rationals
+- add new compiling flag OPENSOURCE to allow/forbid the usage of third party software
+- improve Makefiles for better usage of MSVC on MinGW
+
+fixed bugs:
+- correct initialization of objective offset in simplifier
+- fix for compilation with Visual Studio 2010
+- allow to extend also empty SVectors
+- better internal handling of singular bases
+- check whether the solver is available when setting dual norms
+- fix removing rows/cols in SoPlex interface
+- check objective limit also when presolving is activated
+- fixed compilation problems under Windows with MSVC
+
+code quality:
+- removed some hard float comparisons (use 'EQ()' instead of '==' )
+- check scripts are now python3 compliant
+
+
+30 June 2015 - Release 2.2.0
+============================
+
+features:
+- support for accessing objective coefficients of implicit slack variables in column representation ("row objectives")
+- rational solves with basis matrix based on a rational LU factorization
+- rational reconstruction routines during iterative refinement
+
+performance:
+- iterative refinement for ranged rows without introducing explicit slack variables
+- more efficient rational arithmetic through EGlib's memory allocator (available when building with EG=true)
+- use sparse data structures (SSVector instead of Vector) for LU solves with 2 or 3 right hand sides
+  (necessary for steepest edge weights and/or bound flipping ratio test updates)
+- do not remove bounds of boxed variables or sides of ranged rows if bound flipping is used
+- faster file reader due to better hashing (increase hash table size earlier and use more prime numbers)
+- more efficient arithmetic in class Rational by checking special cases
+- faster iterative refinement by using powers of two as scaling factors
+- reuse factorization during iterative refinement
+- no transformation of objective sense for rational solve
+- simplifier makes fewer constructor/destructor calls to DSVector class by reusing the data structures
+- update nonbasic part of objective function value instead of completely recomputing it every time
+- activate hyper sparse pricing per default
+- faster solve methods by clearing temporary vectors more efficiently (esp. useful for steepest edge pricing)
+- steepest edge and devex pricer share the same norm/weight array to avoid the initialization phase after a pricer switch
+
+interface & parameters:
+- new parameter bool:eqtrans to control transformation to equality form before rational solving
+- new make option EG={true,false} to build with EGlib
+- bound flipping is now enabled by default when using column representation
+- new command line option --writefile to save LP file as read by SoPlex
+- new parameter bool:testdualinf to decide dual feasibility even if LP is primal infeasible and farkas ray is available
+- improved printing of rationals in limited precision
+- added possibility to write basis file in original Cplex definition
+- new parameter bool:ratfac to control whether rational factorization is attempted during iterative refinement
+- new parameter int:ratfac_minstalls for minimum number of stalling refinements since last pivot to trigger rational
+  factorization
+- new parameter bool:ratrec to control whether rational reconstruction is attempted during iterative refinement
+- new statistics section on rational reconstruction
+- new statistics section on size of rational solution in base 2 and base 10
+- new parameter real:ratreq_freq for geometric frequency at which to apply rational reconstruction
+- new parameter bool:powerscaling for rounding scaling factors during iterative refinement to powers of two
+- new parameter bool:ratfacjump whether to continue iterative refinement with exact basic solution if not optimal
+- new methods to store and set dual norms for pricing
+- new parameter real:minred to control the minimal reduction factor in the simplifier to continue presolving (default 1e-4)
+- new parameter bool:rowboundlfips to enable bound flipping also for row representation
+
+fixed bugs:
+- do not categorically remove nonzeros with small absolute value in simplifier
+- allow empty lines in MPS files
+- fixed default bounds of integer variables in MPS reader
+- adjust basis status of nonbasic rows automatically to row type when reading basis file
+- fix compiler error from missing operators between Rational and ints for GMP=false
+- fix memory leak with static rational numbers Rational::{ZERO,POSONE,NEGONE} and list memory
+- fix uninitialized value in class SPxWeightST
+- fix wrong basis status in postsolving of aggregated variables
+- eliminate incorrect switching of primal and dual feasibility tolerance when changing representation
+- force recomputation of nonbasic objective value when reloading SPxSolver
+- correct counting of LU solves (when solving with more than one rhs this is counted accordingly)
+
+code quality:
+- change flag DEBUGGING to SOPLEX_DEBUG
+- deactivate SOPLEX_DEBUG flag in header files if defined externally
+- SPxOut output stream is no longer a global variable
+- hyper pricing parameters (i.e. candidate list size and activation threshold) are not linked to maxUpdates of factorization anymore
+
+
+18 Feb 2015 - Release 2.1.0
+===========================
+
+SoPlex 2.1 is an internal release that was packed for installing an 80bit extended-precision version on the NEOS Server
+for Optimization.  It contains many of the features of SoPlex 2.2, in particular for solving LPs with rational input
+data exactly.
+
+
+18 Dec 2014 - Release 2.0.1
+===========================
+
+features:
+- restore basis of original LP after performing iterative refinement on feasibility LP
+
+performance:
+- more efficient memory allocation of elements of class Rational (can be deactivated at compile time by defining
+  SOPLEX_NOLISTMEM or by Rational::disableListMem() at run time)
+- more efficient assignment operators for class Rational
+- return computed primal and dual activities by reference
+- Real and Rational arguments passed by reference in changexyz methods
+
+interface:
+- new method Rational::freeListMem() to free unused GMP memory manually (usage optional)
+- more statistics on type of refinement rounds
+- type of timing can now be switched between CPU time and wallclock time
+
+fixed bugs:
+- fix Rational::isAdjacentTo() when GMP=false
+- fix MPS reader for files without blank line at EOF
+- fix pointer of activepricer in copy constructor and assignment operator of auto pricer SPxAutoPR
+- fix bug from uninitialized Farkas vector when simplifier detected infeasibility during iterative refinement
+- fix bug when perturbing fixed variables
+- fix bug with incorrect index incrementation in sparse inner vector product
+- fix compiler error with class Rational::Private and GMP=false
+
+
+27 Feb 2014 - Release 2.0.0
+===========================
+
+new interface class SoPlex:
+- (optional) handling of rational LPs: exact parsing, extended-precision solutions, exact computation of violations,
+  parallel handling of rational and floating-point versions of LP and solution data
+- improved iterative refinement algorithm, handling also unbounded and infeasible LPs
+- new command line interface
+- customization via parameter system
+- compatibility mode: old class SoPlex available as SoPlexLegacy; compile with make LEGACY=true to typedef
+  SoPlexLegacy to SoPlex and effectively use the 1.x interface
+
+further interface changes:
+- renamed class MpqReal to Rational
+- new simplifier method to return result of the last simplification
+- new SPxSolver status INForUNBD
+- own objective sense enumerator in MPS parser
+- improved iteration log
+
+new features & performance:
+- faster loops in vector classes
+- implemented hyper sparse pricing (reduces the length of the 'for'-loops in pricing by only checking a
+  short list of good pricing candidates and all updates/changes introduced with the previous iteration)
+- implemented bound flipping ratio test for row representation
+- simplifier keeps relevant bounds if bound flipping ratio test is used
+- new method to calculate the condition number of the current basis matrix (2-norm, estimate)
+- new auto pricing switching from devex to steep after a set number of iterations
+
+fixed bugs:
+- refinement step to improve feasibility/optimality also for steep pricer (was devex only)
+- allow instable enter pivot when no other is available; only after a fresh factorization
+- ensure that problem is not perturbed when concluding optimality
+- fixed numerical bug in unsimplification of doubleton equations
+- (co)solve calls in SPxBasis do not trigger factorization() of SPxSolver but of SPxBasis
+- fixed bug in unShift(): shifted bounds were not set to their original value even if the corresponding value was within
+  the original bounds (feasibility tolerance was checked in wrong direction)
+- fixed behaviour in instable leave/enter: pricing values are now restored, before the instable pivot is performed
+- do a better check in precisionReached() by first recomputing correct test/coTest/fTest values
+- fixed MSG system to prevent unnecessary executions/operations in non-printed calls
+- throw exception if immediately after a restart the basis matrix is infeasible
+- correct update of infeasibilities after dual bound flips
+
+code quality:
+- new/delete calls are modified to channel memory (de)allocation through spx_alloc calls (-> "placement new")
+- fixed make install for older Mac systems where install command does not have option -t
+- fixed installation of headers by make install
+- replaced preprocessor define WITH_ZLIB by SOPLEX_WITH_ZLIB
+- new python scripts for evaluating and comparing test runs
+
+
+
+16 Oct 2013 - Release 1.7.2
+===========================
+
+fixed bugs:
+- fixed minor bug in SVSet::add()
+- restore slack basis if a basis with too many or too few basic entries is loaded
+- higher precison when writing .lp or .mps files, similar to SCIP standards
+
+
+
+04 Jan 2013 - Release 1.7.1
+===========================
+
+code quality & new features:
+- unfied members/methods of CLUFactor in new file clufactor.cpp (contains factor.cpp, forest.cpp, update.cpp, (v)solve.cpp)
+- moved code from message.h,cpp to spxdefines.h,cpp to avoid name clashes with SCIP
+
+fixed bugs:
+- fixed inconsistent generic column and row names
+- fixed bug in adjusting basis statuses to sides/bounds when loading or reloading the basis
+- fixed bug in refactorization in the case when update detects singularity: invalidate only the factorization, not the
+  matrix since this would change the order of colums/rows in the basis
+- catch possible exception when finally performing basis update
+- fixed inconsistency in "Fast" ratiotester when "short" leave is possible
+- fixed bugs in unsimplification of zero objective singleton columns and row singletons
+- relaxed wrong assert in SPxSolver::unShift()
+- fixed bug in ratio test: consider only nonbasic entering variables in leaving algorithm, also in row representation
+- reverted wrong bugfix (99f913d7) in computeLeaveCoPrhs4Col() for column status D_UNDEFINED
+
+interface:
+- new methods in SPxSolver to set and get maximum number of updates before next refactorization
+- implemented writing of basis file for row representation
+- implemented Farkas ray (for infeasible LPs) and primal ray (for unbounded LPs) for row representation
+
+
+31 Jul 2012 - Release 1.7.0
+===========================
+
+code quality & new features:
+- partial pricing can be switched on for dantzig-, devex- and steep-pricing by defining PARTIAL_PRICING (only LEAVING mode)
+- current basis matrix can be written to a file in MatrixMarket format using SPxBasis::printMatrixMTX
+- exact initialization of steepest edge weights possible by calling setupWeights of SPxSteepPR
+- option -bw writes the basis of the original problem to a file; works now with simplifier as well
+- allowed primal and dual feasibility tolerance to be set independently in simplifier and simplex routines
+- added GMP support and data type MpqReal, a wrapper for mpq_class if compiled with GMP=true, soplex::Real otherwise
+- implemented iterative refinement for feasible and bounded LPs, applied when a feasibility or optimality tolerance below
+  the new parameter SPxSolver::irthreshold() is requested
+- reduced and commented code by adding "void deleteVec(DLPSV* ps);" method in svset.{h,cpp}
+
+fixed bugs:
+- variables that do not appear in the objective function or any constraint are not printed anymore in the BOUNDS section
+  of the mps file
+- allow instable leave iterations, i.e., leave iterations with pivot element below default stability threshold, only
+  after a fresh factorization
+- check redundant variable bounds implied by rows more carefully: do not apply if max/min activity exceeds sides by a
+  factor greater than 1.0/epsilon to avoid roundoff errors
+- initialize basis descriptor to statuses D_UNDEFINED in order to avoid access of uninitialized values at time out
+- fixed bug in stalling detection: SoPlex incorrectly assumed that pricing had been finished and hence claimed optimality
+- handled setting FIXED basis status when bounds are only approximately equal
+- using a starting basis from file disables simplifier
+- fixed bug in computeLeaveCoPrhs4Col() for column status D_UNDEFINED
+- fixed bug in unsimplifying singleton rows
+- fixed cycling caused by refactorization after pricer finds no more candidates
+- fixed bug that bound changes were not performed if new bound deviates by only epsilon; this can lead to slightly
+  inconsistent bounds which trigger asserts later
+- sparse pricing stores only infeasibilities > entertol() in leaving or > leavetol() in entering (was epsilon() before)
+- fixed false infeasibility detection in ratiotest after fresh factorization
+- fixed bug in the svset data array, when removing the first vector, the memory was not 'freed' and therefore the memory
+  consumption could have increased to a very huge value (bug 319)
+- also fixed wrong ensureMem() call in SVSet create(), which lead to a to big data array and change an unnecessary
+  insert() call to an reSize() call
+- corrected a memcpy() to a memmove() call due to possible overlapping memory
+- fixed bug in counting unsuccessful pivots
+
+interface:
+- info message in case a fresh factorization is not stable enough and has to be done again with higher Markowitz threshold
+- new command line option -p6 to use steepest edge pricer with exact initialization
+- verb levels v4 and higher display current pricing mode (sparse or conventional)
+- additional simplify() method with independent primal and dual feasibility tolerance as parameters
+- new exception SPxInterfaceException to be thrown if inconsistent parameters are passed to interface methods
+- new methods feastol(), opttol(), setFeastol(), setOpttol() in classes SoPlex and SPxSolver to get/set primal and dual
+  feasibility tolerance; delta() and setDelta() still exist and work as before
+- new command line options -f and -o to set primal feasibility and optimality tolerance, respectively; -d still exists and
+  works as before
+- exact steepest edge is the new default pricing strategy and is implemented as separate class (inherited from SPxSteepPR)
+- correct dual statuses when loading a basis with SPxBasis::loadDesc(); they might have become inconsistent when bounds
+  or sides had been changed
+- new methods SPxLP::computePrimalActivity() and SPxLP::computeDualActivity() for given primal and dual solution vectors
+  using exact arithmetic
+- new methods irthreshold() and setIrthreshold() for threshold parameter below which iterative refinement is applied
+- new command line option -R to set parameter irthreshold()
+
+performance:
+- sparse pricing for leaving and entering simplex is activated depending on ratio of basis dimension and number of infeasibilities
+- fixed performance issue removing (all) vectors from a SVSet where it is better to delete the elements from behind to
+  the front
+
+
+28 Oct 2011 - Release 1.6.0
+===========================
+
+code quality & new features:
+- time for basis updates can now be measured by defining flag MEASUREUPDATETIME in spxbasis.h (off by default)
+- removed "-static" option from Makefile due to linking troubles on newer systems without static libraries; can still be
+  added using the make option "USRLDFLAGS=-static"
+- added -fp:precise and -Oi to make.mingw.x86.{cl,intel}.opt
+- added define SOPLEX_SUBVERSION to track internal development version (src/spxdefines.h)
+- added SHARED variable in Makefile for creating shared libraries and binaries
+- added functionality to solve systems with three right hand sides
+- added partial quicksort to sorter.h
+- increased priority of debugging output
+- added "install" target to Makefile; this target can be used to install SoPlex into certain directory on the system
+  (works for Linux and Mac); for this, you have to specify INSTALLDIR (make install INSTALLDIR=/urs/local/)
+- removed compiler flag NO_ADDITIONAL_CHECKS in code and makefile options: now, additional checks are only performed
+  when ENABLE_ADDITIONAL_CHECKS or ENABLE_CONSISTENCY_CHECKS is explicitly defined (globally or in a specific file)
+- githash of current commit is displayed (also in check mode)
+
+interface:
+- LP reader: print warning when encountering a floating point number with empty exponent (hints at variable name with
+  initial 'e' or 'E')
+- methods selectEnter() and selectLeave() in ratio testers now receive index/id of leaving/entering variable as input
+  parameter
+- added methods to solve the linear systems of equations for 3 right hand sides simultaneously
+- added method getPrimalray() to classes SoPlex and SPxSolver for primal unbounded LPs
+- added command line option '-L' to set iteration limit
+- allowed free basis status (SPxSolver::ZERO, SPxBasis::Desc::P_FREE) for variables and constraints with finite bounds
+- adapted method to read/write basis for free nonbasic variables
+- added command line option '-t3' to use the bound flipping ratio test (long step dual)
+- number of performed bound flips during ratio test are displayed as 'flips=' in line 'Finished solving...'
+- added method to clear starting basis in class SoPlex (SoPlex::clearBasis())
+
+performance:
+- increased default Markowitz threshold to 0.04 to increase numerical stability of the factorization
+- implemented bound flipping ratio test ("long step dual") for column representation
+
+fixed bugs:
+- added missing -m64 in LDFLAGS of make.{darwin,sunos}.x86_64.gnu.* and make.{linux,freebsd}.x86_64.gnu.opt*
+- added missing -DNDEBUG in make.mingw.x86.{cl,intel}.opt
+- fixed incorrect access to member variables in constructors of class DataHashTable
+- fixed bug in SPxFastRT: also in the first phase consider only nonbasic entering variables in COLUMN/LEAVING mode
+- fixed bug in COLUMN/ENTERING algorithm yielding incorrect detection of unboundedness or inverted primal ray: when
+  deciding whether a free variable entering the basis should increase or decrease from zero, we have to look at the
+  reduced cost, not the objective function
+- fixed too early check of iteration limit (now not checked in SPxSolver::terminate() anymore, but at beginning of each
+  iteration)
+- fixed bug in unsimplifcation of duplicate rows presolving
+- fixed bug when setting basis through class SoPlex
+- fixed bug occuring with large column/row bounds: if we refactorize, we also have to recompute the right hand side of
+  Bx=b, because roundoff errors might have occured during its update
+- fixed segmentation fault in simplifier when postsolving is interrupted with an exception
+- fixed wrong error output in statistics when an instance is solved during presolve
+- pricer SPxDevex now performs one additional pivot if only slightly feasible/optimal; this helps to prevent suboptimal
+  results on some unsimplified instances
+- fixed potential NULL pointer dereference in nameset.h, when name is not found in hashtable
+- fixed potential segmentation fault when calling sorting routines on empty arrays (sorter.h)
+- send debugging output to standard out instead of error stream
+- fixed bug in unsimplification of duplicate columns (do not replace two linearly dependent columns by one if free basis
+  status can not be resolved in unsimplification)
+- fixed several bugs when unsimplifying infeasible bases
+- fixed counting of removed rows during simplifier
+
+
+30 Sep 2010 - Release 1.5.0
+===========================
+
+code quality & new features:
+- changed memory handling in class DataKey: replacing bitfield implementation by two int's
+- improved handling of singular bases and cycling: automatically restart from initial basis with tighter tolerances
+- major rework of simplifier SPxMainSM: "localized" postsolving steps; several bugfixes concerning basis statuses, dual
+  values and reduced costs
+- performance improved in simplifier SPxMainSM: always processing singleton rows before finding duplicate rows; ignoring
+  singleton rows and columns when checking for linear dependency
+
+interface:
+- submakefile for FreeBSD added
+- added command line option '-y' to output dual row multipliers
+- additional interface method SoPlex::setBasis to set starting basis if no simplifer present
+
+fixed bugs:
+- bug in class SoPlex appearing when LP is solved completely in simplifier and optimal solution retrieved
+- bug in spxbasis.cpp: when basis is detected as singular during update step, now we refactorize to double check; if the
+  singularity is not resolved we exit with correct status
+- bug in simplifier postsolving: empty columns may not only be fixed to bounds but also to zero for free variable
+- bug in SPxSolver::setPricer() appearing when switching pricers in initialized state
+- bug in simplifier SPxMainSM yielding incorrect dual values and reduced costs for maximization problems
+- bug in simplifier SPxMainSM for postsolving of free columns with zero objective
+- bug in factorization triggered by column singletons with nonzeros below numerical zero tolerance
+
+
+11 Sep 2009 - Release 1.4.2
+===========================
+
+code quality & new features:
+- in class SoPlex, enabled getBasis... methods also when simplifier is present and basis suboptimal, but regular
+- added check for stalling in main solve loop SPxSolver::solve(): if objective value and shift haven't changed after a
+  large number of iterations, switch algorithm; this fixes a timeout of SCIP/SoPlex on instance glass4 (MIPLIB2003)
+
+interface:
+- small change in spxmpswrite.cpp: always write the default upper bound of 1.0 for integer variables, since CPLEX seems
+  to set infinity otherwise
+- added method 'std::string statistics() const' to classes SoPlex, SPxSolver, SPxBasis, SLinSolver, SLUFactor, returning
+  statistical information like number of factorizations etc.
+- added method 'Real cumulativeTime() const' to class SPxSolver returning time used in all calls to method solve() since
+  beginning or last call of 'resetCumulativeTime()'
+- implemented copy constructors and assignment operators for almost all classes, especially SoPlex and SPxSolver
+- the set methods (for pricer, ratiotester, ...) in classes SoPlex and SPxSolver now have an optional boolean parameter
+  (false by default) controlling whether the memory of the object handed over shall be managed internally; this does not
+  affect the default behaviour of the interface methods
+- the constructor of class SPxSolver does not have parameters for pricer, ratiotester and starter, anymore; use the set
+  methods instead
+
+fixed bugs:
+- now correctly resetting basis status to REGULAR in method SPxSolver::loadBasis()
+- memory bug in function memPack() in svset.cpp; this method is now called to clean up memory, in case too much memory
+  is wasted; this removes a large increase of the use of memory as tested in tests/testMemory.cpp
+- bug in formulas for triggering refactorizations after increased relative/absolute fill
+- memory leak in class SPxMainSM when calling simplify() multiple times
+- bug in class DataKey leading to a segmentation fault when reading LPs with more than 8,388,607 variables or
+  constraints: now the maximum number allowed is 536,870,911 and asserted in debug mode
+- numerical bug in SPxFastRT leading to failed assert 'rep() == ROW' (in leave.cpp): in column/leaving algorithm, now we
+  only consider nonbasic variables for entering the basis
+
+
+20 Feb 2009 - Release 1.4.1
+===========================
+
+code quality & new features:
+- speed up of the simplifier due to combined removal of rows/columns and combined updates of lhs and rhs in some cases
+- overworked spxfastrt.h, spxfastrt.cpp
+- added method isDescValid() in class SPxBasis to check if a descriptor is valid w.r.t. to the bounds of the loaded LP;
+  use this to check whether previous/given basis can be loaded in SoPlex::solve()
+
+interface:
+- small changes in spxlpfwrite.cpp: make bounds LP-format conform, output 'generals' only if integer variables present
+- added new method writeState() to classes SoPlex and SPxSolver for dumping LP, basis, and parameter settings at once
+
+fixed bugs:
+- bug in simplifier spxmainsm.cpp: wrong init for postsolving free column singletons fixed
+- wrong bugfix in spxsolver.cpp:maxInfeas(): the leave and entering case were switched back
+- endless loop triggered by different values of feasibility/optimality tolerance for pricer in spxsolve.cpp
+- memory handling in class UnitVector
+- bug when resolving in SoPlex::solve() after change of LP
+
+
+30 Sep 2008 - Release 1.4.0
+===========================
+
+code quality & new features:
+- split the main() method in example.cpp into several smaller methods
+- created directory 'tests' that should contain small programs that illustrate a (former) bug in SoPlex or something
+  like unit tests
+- added member function precision() in spxout.h
+- changed main target to soplexmain (from example)
+- soplexmain.cpp now contains the main function, the output of this function should be more readable than the one of
+  example; original output can be turned on with the "-C" command line argument, the example is now available as target
+  'example' in the makefile
+- name unification:
+  + moved SPxLP::readFile() from spxfileio.cpp to spxio.cpp
+  + renamed SPxLP::dumpFile() to SPxLP::writeFile(), included default params, moved it from spxlpfwrite.cpp to spxio.cpp
+- simplified postsolving in spxmainsm.cpp (do not recompute reduced costs)
+- overworked spxbasis.cpp:readBasis(): fixed bug and removed superflous code at end
+- added fixing of the basis status if ZERO/P_FREE is not appropriate anymore, see varStatusToBasisStatusCol() and
+  varStatusToBasisStatusRow() in spxsolver.cpp
+- removed superfluous variable 'count' in spxparmultpr.cpp/h
+- modifications in the simplifier SPxMainSM to avoid numerical problems
+- modified reading and writing of basis: the row and column names are now passed as pointers; default names are
+  entered if the pointers are 0; the changes appear in soplexmain.cpp, spxbasis.cpp, soplex.cpp, soplex.h
+
+interface:
+- introduced exceptions for all unrecoverable errors (lack of memory, no pricer, singular basis, etc.) to allow a
+  calling application to clean up
+- command line options "-V" and "-h" of example solver now output info on compilation flags
+- replaced SPxLP::operator<< by SPxLP::writeLPF()
+- implemented basic handling of reading a basis file (not yet thoroughly tested); the basic changes are in example.cpp,
+  spxbasis.cpp, soplex.cpp, soplex.h
+- added option to produce shared libraries with x86-Linux (OPT=opt-shared)
+- constructor interface for the scalers SPxEquiliSC and SPxGeometSC changed: parameter colFirst is removed since the
+  corresponding member is not used; printed names of the scalars are slightly changed; there are only 5 command line
+  options for the scalar left since two of the previous 6 options coincided
+
+fixed bugs:
+- two bugs in spxlpfread.cpp: variables appearing in the bounds and general/integer/binary section
+- bug in changeElement(): it now works also in the initial phase (NO_PROBLEM); aA corresponding test file is
+  'tests/testChangeElement.cpp'
+- bug in forest.cpp: use proper array access instead of pointer iteration
+- bug concerning the termination value (objective limit) in spxsolve.cpp
+- memory leak in postsolving of spxmainsm.cpp
+- bug in spxchangebasis.cpp, addedRows(), addedCols(): need to call loadMatrixVecs in all cases, since the references to
+  the matrix might have been invalided due to reallocation
+- bug with detecting infeasible instances if scaling theCoTest does not help
+- bug in spxlpfread.cpp with bounds on binary (old bounds were discarded)
+- bug in spxsolver.cpp:maxInfeas(): the leave and entering case were switched
+- bug in SLUFactor::solveRight4update(): now variable n is storing ssvec's size correctly
+- bug in leave.cpp, left over from previous correction dealing with infeasible instances
+
+
+27 Aug 2007 - Release 1.3.2
+===========================
+
+interface:
+- keyword RANGES added in MPS format output (spxmpswrite.cpp)
+- extended FAQ
+
+fixed bugs:
+- bug in spxmainsm.cpp concerning index mapping
+- bug in unsimplify() if the problem has vanished in preprocessing
+- missing check for singular basis at the end of factorize() in spxsolver.cpp
+- assertion bug in FreeZeroObjVariablePS::execute() of spxmainsm.cpp
+- bug in SVector::dim(): has to return the dimension and not the maximal index
+
+
+21 Sep 2006 - Release 1.3.1
+===========================
+
+code quality & new features:
+- made writeBasis() and writeBasisFile() in SoPlex and SPxSolver const-methods
+- added SPxLP::writeLPF() with some parameters to dump an LP in .lp-format with variable and row names; this also fixes
+  some output bugs; the still existing SPxLP::operator<< uses self-created default names
+- check for necessary rounding added to spxmainsm
+
+interface:
+- restructured example.cpp and added a small example on constructing an LP using the callable library methods
+
+fixed bugs:
+- bug in spxmainsm: IDs of rows and columns are not used anymore
+- bug in spxmainsm in connection with free variables
+- bug in soplex method unsimplify(): check whether problem vanished in preprocessing added
+- bug in spxlpfreader in connection with strange input (unconstrained rows)
+- bug in ssvector: use ssvec.size() instead of b.size() (the former may be smaller due to flattened near-zero values)
+
+
+03 Feb 2006 - Release 1.3.0
+===========================
+
+code quality & new features:
+- a lot of stuff we have already forgotten about
+- new preprocessing
+- the number of warnings issued for ignored entries in MPS files is now limited to 1000 per file
+- improved stability of textbook ratio tester
+- added reference solution files for further LP suites
+- extensive testing: coverage analysis and valgrind; new binary "exercise_LP_changes" performs kind of unit tests for LP
+  change interface
+- some assertions may be converted to generate warnings if NDEBUG is given; compile with "-DWITH_WARNINGS" to achieve this
+- revised the whole documentation and made it doxygen-compatible
+- made one-argument constructors explicit, added virtual destructors, blocked copy constructors and assignment operators
+- rewrote major parts of ssvector.cpp to avoid pointer arithmetic
+- added the spxout class to redirect output depending on the error level, provided all messages with a unique code for
+  finding it with grep
+- improvement of the LPF and MPS readers
+- dropped all unused functions from the SLinSolver interface
+
+interface:
+- status output is now human-readable
+- methods obj(), rhs(), lhs(), upper(), lower(), maxObj() of SPxLP that returned a non const reference renamed to *_w and
+  made protected; use changeXXX() methods outside the class
+- methods nofCols(), nofRows(), nofNZEs() deleted; use nCols(), nRows(), nNzos() instead
+- methods obj(), rhs(), lhs(), upper(), lower(), maxObj() of LPColSet and LPRowSet that returned a non const reference
+  renamed to *_w
+- LPColSet: renamed obj() methods to maxObj()/maxObj_w(), renamed writable lower(), upper() methods to
+  lower_w()/upper_w(), removed SPxLP::obj()
+- LPRowSet: renamed writable lhs()/rhs() methods to lhs_w()/rhs_w()
+- SPxSolver has got an additional NOT_INIT (not properly initialized) status
+- renamed SPxDefaultPR to SPxDantzigPR
+
+fixed bugs:
+- bug in SPxSumST
+- bug in memory allocation of SVSet: now uses doubling strategy correctly; the bug led to serious performance
+  degradation on large LPs under Windows, which is now fixed
+- some bugs in LP change interface
+- segmentation fault in Forrest-Tomlin update
+- bug in SSVector where zero vectors were not handled properly
+- bug in example.cpp which resulting in ignoring the update type switch
+
+
+10 Apr 2002 - Release 1.2.1
+===========================
+
+- interface of SoPlex::terminate() changed
+- SoPlex::setRep(int) changed to SoPlex::setRep(Representation)
+
+
+16 Jan 2002 - Release 1.2.0
+===========================
+
+(empty)

@@ -1,0 +1,9 @@
+CXX	=	xlC_r
+CPPFLAGS=	-Isrc
+CXXFLAGS=	-g -q32 -bnoquiet \
+		-qsuppress=1540-1405:1540-5314 
+# -qheapdebug -qflttrap -qcheck=all -qinfo=all -qwarn64 -extchk
+LDFLAGS	=	-lm
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

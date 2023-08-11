@@ -1,0 +1,7 @@
+CXX	=	g++
+CPPFLAGS=	-I/usr/local/include -Isrc -DNDEBUG 
+CXXFLAGS=	-O3 -mtune=native  -fomit-frame-pointer # -malign-double -ffast-math
+LDFLAGS	=	-lm -L/usr/local/lib
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

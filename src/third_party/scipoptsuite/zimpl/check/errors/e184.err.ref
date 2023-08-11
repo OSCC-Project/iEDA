@@ -1,0 +1,4 @@
+*** Error 184: vabs term not bounded
+*** File: e184.zpl Line 4
+*** subto c1: vabs(a) <= 2;
+***                 ^^^

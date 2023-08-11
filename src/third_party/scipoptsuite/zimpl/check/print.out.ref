@@ -1,0 +1,52 @@
+Test: 3
+Product: |2|{<1,"a">,<1,"b">,<1,"c">,<2,"a">,<2,"b">,<2,"c">,<3,"a">,<3,"b">,<3,"c">,<4,"a">,<4,"b">,<4,"c">,<5,"a">,<5,"b">,<5,"c">}
+<1,"a">
+<1,"b">
+<1,"c">
+<2,"a">
+<2,"b">
+<2,"c">
+<3,"a">
+<3,"b">
+<3,"c">
+<4,"a">
+<4,"b">
+<4,"c">
+<5,"a">
+<5,"b">
+<5,"c">
+Name  : x
+Type  : Var
+Index : Range: |1|{<1>,<2>,<3>,<4>,<5>}
+Entries:
+	  0: <1> -> "x#1" real [-oo,oo] 
+	  1: <2> -> "x#2" real [-oo,20] 
+	  2: <3> -> "x#3" real [6,oo] 
+	  3: <4> -> "x#4" real [6,20] 
+	  4: <5> -> "x#5" real [6,oo] 
+
+
+Name  : y
+Type  : Var
+Index : Pseudo: |0|{<>}
+Entries:
+	  0: <> -> "y" integer [0,1] 
+
+
+Name  : z
+Type  : Var
+Index : Pseudo: |0|{<>}
+Entries:
+	  0: <> -> "z" integer [-5,7] 
+
+
+Name  : w
+Type  : Var
+Index : Pseudo: |0|{<>}
+Entries:
+	  0: <> -> "w" implicit integer [8,oo] 
+
+
+unknown
+false
+true

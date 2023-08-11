@@ -1,0 +1,9 @@
+#--- $Id: make.mingw.x86.gnu.dbg,v 1.2 2014/01/12 11:07:04 bzfkocht Exp $
+CPPFLAGS	+=	-DWINDOWS -DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-O -g $(GCCWARN) -std=gnu99
+LDFLAGS		=	-lgmp -lpcreposix -lpcre -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

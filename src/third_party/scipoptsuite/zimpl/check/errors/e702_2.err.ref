@@ -1,0 +1,4 @@
+*** Error 702: ln(-1.000000): Numerical argument out of domain
+*** File: e702_2.zpl Line 2
+*** param x := ln(-1);
+***                 ^^^
