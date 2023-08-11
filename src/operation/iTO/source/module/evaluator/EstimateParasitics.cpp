@@ -175,7 +175,7 @@ void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
 }
 
 void EstimateParasitics::parasiticsInvalid(Net *net) {
-  printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
+  // printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
   _parasitics_invalid.insert(net);
 }
 
