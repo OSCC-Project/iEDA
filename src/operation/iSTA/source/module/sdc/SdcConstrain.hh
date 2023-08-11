@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -52,7 +52,9 @@ class SdcConstrain {
   ~SdcConstrain();
 
   void addClock(SdcClock* clock);
+  // void addGeneratedClock(SdcGenerateCLock* clock);
   auto& get_sdc_clocks() { return _sdc_clocks; }
+  // auto& get_generated_source_pins() { return _generated_source_pins; }
   SdcClock* findClock(const char* clock_name);
   SdcClock* findClock(DesignObject* design_obj);
 
@@ -88,6 +90,8 @@ class SdcConstrain {
 
  private:
   StrMap<std::unique_ptr<SdcClock>> _sdc_clocks;
+  // std::set<DesignObject*> _generated_source_pins;
+
   std::vector<std::unique_ptr<SdcIOConstrain>> _sdc_io_constraints;
   std::vector<std::unique_ptr<SdcTimingDerate>> _sdc_timing_derates;
   std::vector<std::unique_ptr<SdcTimingDRC>> _sdc_timing_drcs;
