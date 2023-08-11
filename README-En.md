@@ -87,11 +87,9 @@ PS: about how to install Docker，you can refer [Docker install and initilizatio
 
 We provide two methods for source code construction of iEDA as examples.
 
-
 ### Method 1. Use  the iEDA mirror (Redommended)
 
 Download the latest “iedaopensource/base” mirror from Dockerhub, which includes the latest master branch code and dependencies (build tools and dependency libraries). You can also use the ‘-v’ command to mount your own downloaded iEDA code repository. The build will only use the compile tools and dependency libraries provided by the mirror.
-
 
 The current directory after entering the container is the iEDA master branch code, refering the following commands:
 
@@ -107,7 +105,6 @@ bash build.sh
 We have ubuntu（Ubuntu20.04）and debian（Debian11）mirror tag.
 
 ### Method 2.  Install dependencies and compile
-
 
 installing command on Ubuntu 20.04:
 
@@ -125,7 +122,6 @@ bash build.sh
 ## 2. Design chip by using iEDA
 
 Here, two iEDA operation methods are provided for reference
-
 
 About how to use iEDA, please refer [Tcl command manual][Tcl-menu-xls]  and the tool instruction docs of `readme.md` in `src/operation`.
 
@@ -198,6 +194,8 @@ In the development of iEDA, some sub-modules from the open-source community are 
 | lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | Efficient modeling and optimization in graphs and networks.                                                   |
 | SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | Generating VLSI routing topology, It trades off between path length (shallowness) and wirelength (lightness). |
 | scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | It is used to quickly solve mixed integer programming (MIP) and mixed integer nonlinear programming (MINLP).                                                 |
+| parser/liberty | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | It is used to parse .lib file .     |
+| parser/verilog | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | It is used to parse netlist file .     |
 
 We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
 
@@ -207,10 +205,7 @@ We are grateful for the support of the open-source community and encourage other
 
 <!-- links -->
 
-[License-icon]: https://s2.d2scdn.com/static/imgs/favicon.ico
-[License-img]: docs/resources/license-Mulan%20PSL%20v2-blue.svg
 [License-url]: LICENSE
-[README-path]: README-En.md
 [README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
@@ -220,4 +215,3 @@ We are grateful for the support of the open-source community and encourage other
 [ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
-[iFlow-repo-url]: https://gitee.com/oscc-project/iFlow
