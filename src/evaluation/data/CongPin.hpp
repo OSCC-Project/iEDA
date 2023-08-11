@@ -39,6 +39,7 @@ class CongPin
   int64_t get_y() const { return _coord.get_y(); }
   PIN_TYPE get_type() const { return _type; }
   int64_t get_area() const { return _area; }
+  int get_two_pin_net_num() const { return _two_pin_net_num; }
 
   // setter
   void set_name(const std::string& pin_name) { _name = pin_name; }
@@ -47,6 +48,7 @@ class CongPin
   void set_y(const int64_t& y) { _coord.set_y(y); }
   void set_type(const PIN_TYPE& pin_type) { _type = pin_type; }
   void set_area(const int64_t& pin_area) { _area = pin_area; }
+  void set_two_pin_net_num(const int32_t& two_pin_net_num) { _two_pin_net_num = two_pin_net_num; }
 
   // booler
   bool isIOPort() const { return _type == PIN_TYPE::kIOPort; }
@@ -57,8 +59,9 @@ class CongPin
   Point<int64_t> _coord;
   PIN_TYPE _type;
   int64_t _area;
+  int32_t _two_pin_net_num;
 };
 
 }  // namespace eval
 
-#endif // SRC_PLATFORM_EVALUATOR_DATA_CONGPIN_HPP_
+#endif  // SRC_PLATFORM_EVALUATOR_DATA_CONGPIN_HPP_

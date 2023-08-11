@@ -68,7 +68,7 @@ class EvalWrapper
   static eval::CongNet* wrapCongNet(idb::IdbNet* idb_net);
   static eval::CongPin* wrapCongPin(idb::IdbPin* idb_pin);
 
-  static eval::INSTANCE_TYPE computeInstType(idb::IdbInstance* idb_inst);
+  static eval::INSTANCE_LOC_TYPE computeInstType(idb::IdbInstance* idb_inst);
   template <typename TT, typename ST, typename F>
   static void wrapRange(std::vector<TT*>& target, const std::vector<ST*>& src, ssize_t begin, ssize_t end, F wrapper);
   template <typename TT, typename ST, typename F>

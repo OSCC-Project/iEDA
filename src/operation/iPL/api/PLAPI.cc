@@ -569,7 +569,6 @@ void PLAPI::runRoutabilityGP()
 std::vector<float> PLAPI::evalGRCong()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initCongestionEval();
 
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
