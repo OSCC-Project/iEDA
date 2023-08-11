@@ -82,6 +82,19 @@ void CongGrid::initBins(idb::IdbLayers* idb_layer)
   }
 }
 
+void CongGrid::initTracksNum(idb::IdbLayers* idb_layer)
+{
+  for (int i = 0; i < _routing_layers_number; i++) {
+    idb::IdbLayerRouting* layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer->find_routing_layer(i));
+    bool is_horizontal = layer->is_horizontal();
+    if (is_horizontal) {
+      _track_num_h += layer->get_prefer_track_grid()->get_track_num();
+    } else {
+      _track_num_v += layer->get_prefer_track_grid()->get_track_num();
+    }
+  }
+}
+
 int CongGrid::getRouteCapacity(const int& bin_size, idb::IdbLayerRouting* idb_layer_routing)
 {
   int capacity = 0;
