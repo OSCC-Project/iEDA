@@ -104,7 +104,7 @@ std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assi
   auto max_dist = assign.max_dist;
   auto max_net_len = 1.0 * max_dist / TimingPropagator::getDbUnit();
   auto max_fanout = assign.max_fanout;
-  auto max_cap = assign.max_cap;
+  // auto max_cap = assign.max_cap;
   auto cluster_ratio = assign.ratio;
   auto skew_bound = assign.skew_bound;
 
