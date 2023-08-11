@@ -336,14 +336,14 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
     LOG_INFO << "propagated clock propagation end";
   }
 
-  SdcConstrain* _the_constrain = ista->getConstrain();
-  auto _sdc_generated_pin_set = _the_constrain->get_generated_source_pins();
-  LOG_INFO << "=====generated source clock pin num: "
-           << _sdc_generated_pin_set.size() << std::endl;
-  for (auto* iter : _sdc_generated_pin_set) {
-    LOG_INFO << "generated source pin name: " << iter->get_name() << " \n";
-    LOG_INFO << "" << ista->findVertex(iter->get_name());
-  }
+  // SdcConstrain* _the_constrain = ista->getConstrain();
+  // auto _sdc_generated_pin_set = _the_constrain->get_generated_source_pins();
+  // LOG_INFO << "=====generated source clock pin num: "
+  //          << _sdc_generated_pin_set.size() << std::endl;
+  // for (auto* iter : _sdc_generated_pin_set) {
+  //   LOG_INFO << "generated source pin name: " << iter->get_name() << " \n";
+  //   LOG_INFO << "" << ista->findVertex(iter->get_name());
+  // }
 
   return is_ok;
 }

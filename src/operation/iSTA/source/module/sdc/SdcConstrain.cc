@@ -50,13 +50,13 @@ void SdcConstrain::addClock(SdcClock* clock) {
   _sdc_clocks.insert(clock->get_clock_name(), std::unique_ptr<SdcClock>(clock));
 }
 
-void SdcConstrain::addGeneratedClock(SdcGenerateCLock* clock) {
-  addClock(clock);
-  std::set<DesignObject*> iter = clock->get_source_pins();
-  _generated_source_pins.insert(iter.begin(), iter.end());
-  LOG_INFO << "-------------------current generated source pin num: "
-           << _generated_source_pins.size() << std::endl;
-}
+// void SdcConstrain::addGeneratedClock(SdcGenerateCLock* clock) {
+//   addClock(clock);
+//   std::set<DesignObject*> iter = clock->get_source_pins();
+//   _generated_source_pins.insert(iter.begin(), iter.end());
+//   LOG_INFO << "-------------------current generated source pin num: "
+//            << _generated_source_pins.size() << std::endl;
+// }
 
 /**
  * @brief Find sdc clock.
