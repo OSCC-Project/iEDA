@@ -123,6 +123,16 @@ void EvalAPI::evalNetDens(INSTANCE_STATUS inst_status)
   _congestion_eval_inst->evalNetDens(inst_status);
 }
 
+void EvalAPI::evalLocalNetDens()
+{
+  _congestion_eval_inst->evalLocalNetDens();
+}
+
+void EvalAPI::evalGlobalNetDens()
+{
+  _congestion_eval_inst->evalGlobalNetDens();
+}
+
 void EvalAPI::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
 {
   _congestion_eval_inst->plotBinValue(plot_path, output_file_name, cong_type);
@@ -133,9 +143,24 @@ int32_t EvalAPI::evalInstNum(INSTANCE_STATUS inst_status)
   return _congestion_eval_inst->evalInstNum(inst_status);
 }
 
+int32_t EvalAPI::evalNetNum(NET_CONNECT_TYPE net_type)
+{
+  return _congestion_eval_inst->evalNetNum(net_type);
+}
+
+int32_t EvalAPI::evalPinNum()
+{
+  return _congestion_eval_inst->evalPinTotalNum();
+}
+
 int32_t EvalAPI::evalRoutingLayerNum()
 {
   return _congestion_eval_inst->evalRoutingLayerNum();
+}
+
+int32_t EvalAPI::evalTrackNum(DIRECTION direction)
+{
+  return _congestion_eval_inst->evalTrackNum(direction);
 }
 
 vector<int64_t> EvalAPI::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
@@ -148,9 +173,19 @@ vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalInstSize(INSTANCE_STAT
   return _congestion_eval_inst->evalInstSize(inst_status);
 }
 
-void EvalAPI::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction)
+vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalNetSize()
 {
-  _congestion_eval_inst->evalNetCong(rudy_type, net_direction);
+  return _congestion_eval_inst->evalNetSize();
+}
+
+void EvalAPI::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
+{
+  _congestion_eval_inst->evalNetCong(rudy_type, direction);
+}
+
+void EvalAPI::plotTileValue(const string& plot_path, const string& output_file_name)
+{
+  _congestion_eval_inst->plotTileValue(plot_path, output_file_name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

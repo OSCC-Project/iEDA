@@ -85,11 +85,20 @@ enum class RUDY_TYPE
   kLUTRUDY
 };
 
-enum class NET_DIRECTION
+enum class DIRECTION
 {
   kNone,
   kH,
   kV
+};
+
+enum class NET_CONNECT_TYPE
+{
+  kNone,
+  kSignal,
+  kClock,
+  kPower,
+  kGround
 };
 
 }  // namespace eval

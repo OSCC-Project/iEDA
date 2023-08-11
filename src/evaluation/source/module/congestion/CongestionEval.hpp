@@ -50,15 +50,23 @@ class CongestionEval
   void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
   void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
   void evalNetDens(INSTANCE_STATUS inst_status);
+  void evalLocalNetDens();
+  void evalGlobalNetDens();
 
   void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
 
   int32_t evalInstNum(INSTANCE_STATUS inst_status);
+  int32_t evalNetNum(NET_CONNECT_TYPE net_type);
+  int32_t evalPinTotalNum();
   int32_t evalRoutingLayerNum();
+  int32_t evalTrackNum(DIRECTION direction);
   std::vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
   vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+  vector<pair<string, pair<int32_t, int32_t>>> evalNetSize();
 
-  void evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
+  void evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction = DIRECTION::kNone);
+  void plotTileValue(const string& plot_path, const string& output_file_name);
+
   /////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);
@@ -128,9 +136,9 @@ class CongestionEval
   int32_t getOverlapArea(CongBin* bin, CongInst* inst);
   int32_t getOverlapArea(CongBin* bin, CongNet* net);
 
-  double getRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
+  double getRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
   double getRudyDev(CongBin* bin, CongNet* net);
-  double getPinRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction = NET_DIRECTION::kNone);
+  double getPinRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
   double getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);

@@ -46,6 +46,7 @@ void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
   _cong_grid->set_bin_size_y(ceil(height / (float) bin_cnt_y));
   _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
   _cong_grid->initBins(idb_layers);
+  _cong_grid->initTracksNum(idb_layers);
 }
 
 void CongestionEval::initCongInst()
@@ -112,6 +113,19 @@ void CongestionEval::initCongNetList()
     std::string net_name = fixSlash(idb_net->get_net_name());
     CongNet* net_ptr = new CongNet();
     net_ptr->set_name(net_name);
+
+    auto connect_type = idb_net->get_connect_type();
+    if (connect_type == IdbConnectType::kSignal) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kSignal);
+    } else if (connect_type == IdbConnectType::kClock) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kClock);
+    } else if (connect_type == IdbConnectType::kPower) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kPower);
+    } else if (connect_type == IdbConnectType::kGround) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kGround);
+    } else {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kNone);
+    }
 
     auto* idb_driving_pin = idb_net->get_driving_pin();
     if (idb_driving_pin) {
@@ -232,29 +246,30 @@ void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status, int level)
   }
   // Update pin numbers for each bin using the pin sum in the square region
   if (level != 0) {
-    int32_t x_cnt = _cong_grid->get_bin_cnt_x();
-    int32_t y_cnt = _cong_grid->get_bin_cnt_y();
-    vector<int32_t> pin_sum_temp(x_cnt * y_cnt);
-    for (int i = 0; i < y_cnt; i++) {
-      for (int j = 0; j < x_cnt; j++) {
-        int32_t pin_sum = 0;
-        for (int k = i - level; k <= i + level; k++) {
-          if (k >= 0 && k < y_cnt) {
-            auto bin_kl = _cong_grid->get_bin_list()[k * x_cnt + j];
-            for (int l = j - level; l <= l + level; l++) {
-              if (l >= 0 && l < x_cnt) {
-                auto bin = bin_kl + (l - j);
-                pin_sum += bin->get_pin_num();
-              }
-            }
-          }
-        }
-        pin_sum_temp[i * x_cnt + j] = pin_sum;
+    const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    const int height = _cong_grid->get_bin_cnt_y();
+    const int width = _cong_grid->get_bin_cnt_x();
+    std::vector<std::vector<int>> padded_matrix(height + 2, std::vector<int>(width + 2, 0));
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        padded_matrix[i + 1][j + 1] = _cong_grid->get_bin_list()[i * width + j]->get_pin_num();
       }
     }
-    for (int i = 0; i < y_cnt; i++) {
-      for (int j = 0; j < x_cnt; j++) {
-        _cong_grid->get_bin_list()[i * x_cnt + j]->set_pin_num(pin_sum_temp[i * x_cnt + j]);
+    std::vector<std::vector<int>> output_matrix(height, std::vector<int>(width, 0));
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        int sum = 0;
+        for (int k = 0; k < 3; k++) {
+          for (int l = 0; l < 3; l++) {
+            sum += padded_matrix[i + k][j + l] * kernel[k][l];
+          }
+        }
+        output_matrix[i][j] = sum;
+      }
+    }
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        _cong_grid->get_bin_list()[i * width + j]->set_pin_num(output_matrix[i][j]);
       }
     }
   }
@@ -276,6 +291,36 @@ void CongestionEval::evalNetDens(INSTANCE_STATUS inst_status)
             bin->increNetCong(pin->get_two_pin_net_num());
           }
         }
+      }
+    }
+  }
+}
+
+void CongestionEval::evalLocalNetDens()
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& net : bin->get_net_list()) {
+      auto net_bbox = net->get_height() * net->get_width();
+      if (getOverlapArea(bin, net) == net_bbox) {
+        bin->increNetCong(1);
+      }
+    }
+  }
+}
+
+void CongestionEval::evalGlobalNetDens()
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& net : bin->get_net_list()) {
+      auto net_bbox = net->get_height() * net->get_width();
+      if (getOverlapArea(bin, net) != net_bbox) {
+        bin->increNetCong(1);
       }
     }
   }
@@ -358,9 +403,40 @@ int32_t CongestionEval::evalInstNum(INSTANCE_STATUS inst_status)
   return inst_num;
 }
 
+int32_t CongestionEval::evalNetNum(NET_CONNECT_TYPE net_type)
+{
+  int32_t net_num = 0;
+  for (auto& net : _cong_net_list) {
+    if (net_type == net->get_connect_type()) {
+      net_num++;
+    }
+  }
+  return net_num;
+}
+
+int32_t CongestionEval::evalPinTotalNum()
+{
+  int32_t pin_num = 0;
+  for (auto& net : _cong_net_list) {
+    pin_num += net->get_pin_list().size();
+  }
+  return pin_num;
+}
+
 int32_t CongestionEval::evalRoutingLayerNum()
 {
   return _cong_grid->get_routing_layers_number();
+}
+
+int32_t CongestionEval::evalTrackNum(DIRECTION direction)
+{
+  if (direction == DIRECTION::kH) {
+    return _cong_grid->get_track_num_h();
+  } else if (direction == DIRECTION::kV) {
+    return _cong_grid->get_track_num_v();
+  } else {
+    return _cong_grid->get_track_num_h() + _cong_grid->get_track_num_v();
+  }
 }
 
 std::vector<int64_t> CongestionEval::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
@@ -403,7 +479,18 @@ vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalInstSize(INSTAN
   return inst_name_to_size_list;
 }
 
-void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_direction)
+vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalNetSize()
+{
+  vector<pair<string, pair<int32_t, int32_t>>> net_name_to_size_list;
+  for (auto& net : _cong_net_list) {
+    pair<string, pair<int32_t, int32_t>> name_to_size
+        = std::make_pair(net->get_name(), std::make_pair(net->get_width(), net->get_height()));
+    net_name_to_size_list.emplace_back(name_to_size);
+  }
+  return net_name_to_size_list;
+}
+
+void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
 {
   for (auto& bin : _cong_grid->get_bin_list()) {
     bin->set_net_cong(0.0);
@@ -414,9 +501,9 @@ void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_directio
     for (auto& net : bin->get_net_list()) {
       overlap_area = getOverlapArea(bin, net);
       if (rudy_type == RUDY_TYPE::kRUDY) {
-        congestion += overlap_area * getRudy(bin, net, net_direction);
+        congestion += overlap_area * getRudy(bin, net, direction);
       } else if (rudy_type == RUDY_TYPE::kPinRUDY) {
-        congestion += overlap_area * getPinRudy(bin, net, net_direction);
+        congestion += overlap_area * getPinRudy(bin, net, direction);
       } else if (rudy_type == RUDY_TYPE::kLUTRUDY) {
         int32_t pin_num = net->get_pin_list().size();
         int64_t net_width = net->get_width();
@@ -443,11 +530,19 @@ void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, NET_DIRECTION net_directio
         } else {
           l_ness = 0.5;
         }
-        congestion += overlap_area * getLUT(pin_num, aspect_ratio, l_ness) * getRudy(bin, net, net_direction);
+        congestion += overlap_area * getLUT(pin_num, aspect_ratio, l_ness) * getRudy(bin, net, direction);
       }
     }
     bin->set_net_cong(congestion);
   }
+}
+
+void CongestionEval::plotTileValue(const string& plot_path, const string& output_file_name)
+{
+  // plot each layer congestion map
+  plotGRCong(plot_path, output_file_name);
+  // plot two congestion map:  TOF/MOF
+  plotOverflow(plot_path, output_file_name);
 }
 
 float CongestionEval::calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax)
@@ -1644,6 +1739,7 @@ void CongestionEval::plotGRCongOneLayer(const string& plot_path, const string& o
       for (int j = 0; j < x_cnt; j++) {
         auto tile = _tile_grid->get_tiles()[i * x_cnt + j + layer_index * x_cnt * y_cnt];
         int congestion_overflow = std::max((tile->get_east_use() - tile->get_east_cap()), (tile->get_west_use() - tile->get_west_cap()));
+        congestion_overflow = std::max(0, congestion_overflow);
         if (j == x_cnt - 1) {
           feed << congestion_overflow;
         } else {
@@ -1659,6 +1755,7 @@ void CongestionEval::plotGRCongOneLayer(const string& plot_path, const string& o
         auto tile = _tile_grid->get_tiles()[i * x_cnt + j + layer_index * x_cnt * y_cnt];
         int congestion_overflow
             = std::max((tile->get_north_use() - tile->get_north_cap()), (tile->get_south_use() - tile->get_south_cap()));
+        congestion_overflow = std::max(0, congestion_overflow);
         if (j == x_cnt - 1) {
           feed << congestion_overflow;
         } else {
@@ -1920,7 +2017,7 @@ int32_t CongestionEval::getOverlapArea(CongBin* bin, CongNet* net)
 }
 
 // this idea is from the paper "Fast and Accurate Routing Demand Estimation for Efficient Routability-driven Placement"
-double CongestionEval::getRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction)
+double CongestionEval::getRudy(CongBin* bin, CongNet* net, DIRECTION direction)
 {
   double horizontal = 0.0;
   double vertical = 0.0;
@@ -1931,13 +2028,13 @@ double CongestionEval::getRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_dir
 
   if (net->get_height() != 0) {
     horizontal = bin->get_average_wire_width() / static_cast<double>(net->get_height());
-    if (net_direction == NET_DIRECTION::kH) {
+    if (direction == DIRECTION::kH) {
       return horizontal;
     }
   }
   if (net->get_width() != 0) {
     vertical = bin->get_average_wire_width() / static_cast<double>(net->get_width());
-    if (net_direction == NET_DIRECTION::kV) {
+    if (direction == DIRECTION::kV) {
       return vertical;
     }
   }
@@ -1974,7 +2071,7 @@ double CongestionEval::getRudyDev(CongBin* bin, CongNet* net)
 }
 
 // this idea is from the paper "Global Placement with Deep Learning-Enabled Explicit Routability Optimization"
-double CongestionEval::getPinRudy(CongBin* bin, CongNet* net, NET_DIRECTION net_direction)
+double CongestionEval::getPinRudy(CongBin* bin, CongNet* net, DIRECTION direction)
 {
   double horizontal = 0.0;
   double vertical = 0.0;
