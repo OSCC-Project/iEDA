@@ -51,38 +51,60 @@ void DRCChecker::destroyInst()
 
 std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list)
 {
+  std::vector<DRCRect> drc_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    for (DRCRect& drc_rect : getDRCRectList(net_idx, segment)) {
+      drc_rect_list.push_back(drc_rect);
+    }
+  }
+  return drc_rect_list;
+}
+
+std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, Segment<LayerCoord>& segment)
+{
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   std::vector<DRCRect> drc_rect_list;
-  for (Segment<LayerCoord>& segment : segment_list) {
-    LayerCoord& first_coord = segment.get_first();
-    LayerCoord& second_coord = segment.get_second();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
+  irt_int first_layer_idx = first_coord.get_layer_idx();
+  irt_int second_layer_idx = second_coord.get_layer_idx();
+  if (first_layer_idx != second_layer_idx) {
+    RTUtil::swapASC(first_layer_idx, second_layer_idx);
+    for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+      ViaMaster& via_master = layer_via_master_list[layer_idx].front();
 
-    irt_int first_layer_idx = first_coord.get_layer_idx();
-    irt_int second_layer_idx = second_coord.get_layer_idx();
-    if (first_layer_idx != second_layer_idx) {
-      RTUtil::sortASC(first_layer_idx, second_layer_idx);
-      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+      drc_rect_list.emplace_back(net_idx, offset_above_enclosure, true);
 
-        LayerRect& above_enclosure = via_master.get_above_enclosure();
-        LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
-        drc_rect_list.emplace_back(net_idx, offset_above_enclosure, true);
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+      drc_rect_list.emplace_back(net_idx, offset_below_enclosure, true);
 
-        LayerRect& below_enclosure = via_master.get_below_enclosure();
-        LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
-        drc_rect_list.emplace_back(net_idx, offset_below_enclosure, true);
-
-        for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
-          LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
-          drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
-        }
+      for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+        LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+        drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
       }
-    } else {
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
-      LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
-      drc_rect_list.emplace_back(net_idx, wire_rect, true);
+    }
+  } else {
+    irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+    LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
+    drc_rect_list.emplace_back(net_idx, wire_rect, true);
+  }
+  return drc_rect_list;
+}
+
+std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, MTree<LayerCoord>& coord_tree)
+{
+  std::vector<DRCRect> drc_rect_list;
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
+    LayerCoord first_coord = coord_segment.get_first()->value();
+    LayerCoord second_coord = coord_segment.get_second()->value();
+    Segment<LayerCoord> segment(first_coord, second_coord);
+    for (DRCRect& drc_rect : getDRCRectList(net_idx, segment)) {
+      drc_rect_list.push_back(drc_rect);
     }
   }
   return drc_rect_list;
@@ -90,32 +112,40 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, std::vector<Seg
 
 std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree)
 {
+  std::vector<DRCRect> drc_rect_list;
+  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
+    for (DRCRect& drc_rect : getDRCRectList(net_idx, phy_node_node->value())) {
+      drc_rect_list.push_back(drc_rect);
+    }
+  }
+  return drc_rect_list;
+}
+
+std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, PHYNode& phy_node)
+{
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   std::vector<DRCRect> drc_rect_list;
-  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(phy_node_tree)) {
-    PHYNode& phy_node = phy_node_node->value();
-    if (phy_node.isType<WireNode>()) {
-      WireNode& wire_node = phy_node.getNode<WireNode>();
-      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
-      drc_rect_list.emplace_back(net_idx, LayerRect(wire_rect, wire_node.get_layer_idx()), true);
-    } else if (phy_node.isType<ViaNode>()) {
-      ViaNode& via_node = phy_node.getNode<ViaNode>();
-      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
+  if (phy_node.isType<WireNode>()) {
+    WireNode& wire_node = phy_node.getNode<WireNode>();
+    PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
+    drc_rect_list.emplace_back(net_idx, LayerRect(wire_rect, wire_node.get_layer_idx()), true);
+  } else if (phy_node.isType<ViaNode>()) {
+    ViaNode& via_node = phy_node.getNode<ViaNode>();
+    ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
+    ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
 
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, via_node), above_enclosure.get_layer_idx());
-      drc_rect_list.emplace_back(net_idx, offset_above_enclosure, true);
+    LayerRect& above_enclosure = via_master.get_above_enclosure();
+    LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, via_node), above_enclosure.get_layer_idx());
+    drc_rect_list.emplace_back(net_idx, offset_above_enclosure, true);
 
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, via_node), below_enclosure.get_layer_idx());
-      drc_rect_list.emplace_back(net_idx, offset_below_enclosure, true);
+    LayerRect& below_enclosure = via_master.get_below_enclosure();
+    LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, via_node), below_enclosure.get_layer_idx());
+    drc_rect_list.emplace_back(net_idx, offset_below_enclosure, true);
 
-      for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
-        LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, via_node), via_master.get_cut_layer_idx());
-        drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
-      }
+    for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+      LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, via_node), via_master.get_cut_layer_idx());
+      drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
     }
   }
   return drc_rect_list;
@@ -175,8 +205,8 @@ void DRCChecker::destoryRegionQuery(RegionQuery* region_query)
   }
 }
 
-std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getRoutingNetRectMap(RegionQuery* region_query,
-                                                                                                                bool is_routing)
+std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getLayerNetRectMap(RegionQuery* region_query,
+                                                                                                              bool is_routing)
 {
   if (is_routing) {
     return region_query->get_routing_net_rect_map();
@@ -229,20 +259,45 @@ bool DRCChecker::hasViolation(RegionQuery* region_query, const DRCRect& drc_rect
 
 bool DRCChecker::hasViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
+  for (auto [drc, num] : getViolation(region_query, drc_rect_list)) {
+    if (num > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DRCChecker::hasViolation(RegionQuery* region_query)
+{
+  for (auto [drc, num] : getViolationByRTDRC(region_query)) {
+    if (num > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DRCChecker::hasViolation(const std::vector<DRCRect>& drc_rect_list)
+{
+  for (auto [drc, num] : getViolation(drc_rect_list)) {
+    if (num > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+{
   std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
 
-  bool has_violation = false;
+  std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    has_violation = RTAPI_INST.hasViolation(region_query->get_idrc_region_query(), ids_rect_list);
+    violation_name_num_map = RTAPI_INST.getViolation(region_query->get_idrc_region_query(), ids_rect_list);
   } else {
-    for (auto [drc, num] : getViolationByRTDRC(region_query, drc_rect_list)) {
-      if (num > 0) {
-        return true;
-      }
-    }
-    return false;
+    violation_name_num_map = getViolationByRTDRC(region_query, drc_rect_list);
   }
-  return has_violation;
+  return violation_name_num_map;
 }
 
 std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query)
@@ -256,15 +311,13 @@ std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query)
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::getViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, int> DRCChecker::getViolation(const std::vector<DRCRect>& drc_rect_list)
 {
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
   std::map<std::string, irt_int> violation_name_num_map;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    violation_name_num_map = RTAPI_INST.getViolation(region_query->get_idrc_region_query(), ids_rect_list);
+    // violation_name_num_map = RTAPI_INST.getViolation(region_query->get_idrc_region_query());
   } else {
-    violation_name_num_map = getViolationByRTDRC(region_query, drc_rect_list);
+    violation_name_num_map = getViolationByRTDRC(drc_rect_list);
   }
   return violation_name_num_map;
 }
@@ -425,45 +478,6 @@ void DRCChecker::delEnvRectListByRTDRC(RegionQuery* region_query, const std::vec
   }
 }
 
-std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query)
-{
-  std::map<std::string, irt_int> violation_name_num_map;
-  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("MinStep", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
-
-  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
-
-  for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
-    std::vector<RQShape> rq_shape_list;
-    for (auto& [layer_idx, shape_map] : layer_shape_list) {
-      for (auto& [real_rect, rq_shape] : shape_map) {
-        rq_shape_list.push_back(*rq_shape);
-      }
-    }
-    // check drc by other
-    for (auto [violation_name, num] : checkByOtherByRTDRC(region_query, rq_shape_list)) {
-      violation_name_num_map[violation_name] += num;
-    }
-    // check drc by self
-    for (auto [violation_name, num] : checkBySelfByRTDRC(region_query, rq_shape_list)) {
-      violation_name_num_map[violation_name] += num;
-    }
-  }
-
-  return violation_name_num_map;
-}
-
 std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int> violation_name_num_map;
@@ -506,10 +520,87 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_q
     for (auto [violation_name, num] : checkByOtherByRTDRC(region_query, shape_list)) {
       violation_name_num_map[violation_name] += num;
     }
+  }
+
+  return violation_name_num_map;
+}
+
+std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+
+  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
+
+  for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
+    std::vector<RQShape> rq_shape_list;
+    for (auto& [layer_idx, shape_map] : layer_shape_list) {
+      for (auto& [real_rect, rq_shape] : shape_map) {
+        rq_shape_list.push_back(*rq_shape);
+      }
+    }
     // check drc by self
-    // for (auto [violation_name, num] : checkBySelfByRTDRC(shape_list)) {
-    //   violation_name_num_map[violation_name] += num;
-    // }
+    for (auto [violation_name, num] : checkBySelfByRTDRC(rq_shape_list)) {
+      violation_name_num_map[violation_name] += num;
+    }
+  }
+
+  return violation_name_num_map;
+}
+
+std::map<std::string, int> DRCChecker::getViolationByRTDRC(const std::vector<DRCRect>& drc_shape_list)
+{
+  std::map<std::string, irt_int> violation_name_num_map;
+  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::map<irt_int, std::vector<RQShape>> net_shape_list_map;
+  for (const DRCRect& drc_shape : drc_shape_list) {
+    const LayerRect& layer_rect = drc_shape.get_layer_rect();
+    BoostBox shape = RTUtil::convertToBoostBox(layer_rect);
+    irt_int layer_idx = layer_rect.get_layer_idx();
+    irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(layer_rect);
+    BoostBox enlarged_shape = RTUtil::enlargeBoostBox(shape, min_spacing);
+
+    RQShape rq_shape;
+    rq_shape.set_shape(shape);
+    rq_shape.set_net_id(drc_shape.get_net_idx());
+    rq_shape.set_routing_layer_idx(layer_idx);
+    rq_shape.set_min_spacing(min_spacing);
+    rq_shape.set_enlarged_shape(enlarged_shape);
+
+    net_shape_list_map[rq_shape.get_net_id()].push_back(rq_shape);
+  }
+
+  for (auto& [net_id, shape_list] : net_shape_list_map) {
+    for (auto [violation_name, num] : checkBySelfByRTDRC(shape_list)) {
+      violation_name_num_map[violation_name] += num;
+    }
   }
 
   return violation_name_num_map;
@@ -543,30 +634,13 @@ std::map<std::string, int> DRCChecker::checkByOtherByRTDRC(RegionQuery* region_q
   return violation_name_num_map;
 }
 
-std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(RegionQuery* region_query, std::vector<RQShape>& drc_shape_list)
+std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(std::vector<RQShape>& drc_shape_list)
 {
-  auto& region_map = region_query->get_routing_region_map();
-
   std::map<std::string, int> violation_name_num_map;
 
   std::map<irt_int, std::vector<RQShape>> layer_net_shape_list_map;
   for (RQShape& drc_shape : drc_shape_list) {
-    irt_int layer_idx = drc_shape.get_routing_layer_idx();
-    layer_net_shape_list_map[layer_idx].push_back(drc_shape);
-
-    bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = region_map[layer_idx];
-
-    // 查询重叠
-    std::vector<std::pair<BoostBox, RQShape*>> result_list;
-    rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
-
-    for (size_t i = 0; i < result_list.size(); i++) {
-      RQShape* overlap_shape = result_list[i].second;
-      if (overlap_shape->get_net_id() != drc_shape.get_net_id()) {
-        continue;
-      }
-      layer_net_shape_list_map[layer_idx].push_back(*overlap_shape);
-    }
+    layer_net_shape_list_map[drc_shape.get_routing_layer_idx()].push_back(drc_shape);
   }
 
   for (auto& [layer_idx, net_shape_list] : layer_net_shape_list_map) {
@@ -580,7 +654,7 @@ std::map<std::string, int> DRCChecker::checkBySelfByRTDRC(RegionQuery* region_qu
         if (checkMinSpacingByRTDRC(net_shape1, net_shape2, net_shape_list)) {
           continue;
         }
-        violation_name_num_map["RT: Self drc"]++;
+        violation_name_num_map["RT Self net"]++;
       }
     }
   }
@@ -651,33 +725,33 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   gp_gds.addStruct(base_region_struct);
 
   // scale_axis
-  GPStruct box_scale_axis_struct("scale_axis");
+  GPStruct box_track_axis_struct("scale_axis");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
       for (irt_int x = x_grid.get_start_line(); x <= x_grid.get_end_line(); x += x_grid.get_step_length()) {
         GPPath gp_path;
-        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kScaleAxis));
+        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
         gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-        box_scale_axis_struct.push(gp_path);
+        box_track_axis_struct.push(gp_path);
       }
     }
     for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
       for (irt_int y = y_grid.get_start_line(); y <= y_grid.get_end_line(); y += y_grid.get_step_length()) {
         GPPath gp_path;
-        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kScaleAxis));
+        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
         gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-        box_scale_axis_struct.push(gp_path);
+        box_track_axis_struct.push(gp_path);
       }
     }
   }
-  gp_gds.addStruct(box_scale_axis_struct);
+  gp_gds.addStruct(box_track_axis_struct);
 
   // env shape
   for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
     GPStruct net_shape_struct(RTUtil::getString("env shape(net_", net_id, ")"));
-    GPGraphType type = net_id == -1 ? GPGraphType::kBlockage : GPGraphType::kPanelResult;
+    GPGraphType type = net_id == -1 ? GPGraphType::kBlockAndPin : GPGraphType::kKnownPanel;
     for (auto& [layer_idx, shape_map] : layer_shape_list) {
       for (auto& [rect, shape] : shape_map) {
         GPBoundary gp_boundary;

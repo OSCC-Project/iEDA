@@ -126,7 +126,7 @@ class GRNode : public LayerCoord
         if (RTUtil::exist(_orientation_access_demand_map, orientation)) {
           access_demand = _orientation_access_demand_map[orientation];
         }
-        cost += calcCost(access_demand, access_supply);
+        cost += calcCost(1 + access_demand, access_supply);
       }
       // 再判断平面资源
       {
