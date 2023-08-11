@@ -190,10 +190,12 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | def lef      | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
 | ThreadPool   | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11模板库实现的多线程池.                                        |
 | fft          | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | 快速傅立叶变换库.                                                 |
-| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | 高效的图划分算法.   
+| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | 高效的图划分算法.
 | lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | 图、网络中的高效建模和优化.                                       |
 | SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | 生成VLSI路由拓扑，在路径长度(浅度)和总线长(亮度)之间进行权衡.     |
 | scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | 用于快速求解混合整数规划 (MIP) 和混合整数非线性规划 (MINLP) .     |
+| parser/liberty | [liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | 用于解析.lib文件 .     |
+| parser/verilog | [verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | 用于解析netlist文件 .     |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
@@ -203,11 +205,8 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 
 <!-- links -->
 
-[License-icon]: https://s2.d2scdn.com/static/imgs/favicon.ico
-[License-img]: docs/resources/license-Mulan%20PSL%20v2-blue.svg
 [License-url]: LICENSE
 [README-path]: README-En.md
-[README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/
@@ -215,4 +214,3 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 [ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
-[iFlow-repo-url]: https://gitee.com/oscc-project/iFlow
