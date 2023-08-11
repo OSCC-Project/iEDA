@@ -1,0 +1,244 @@
+SECTION:Frequently asked questions about SoPlex
+
+    QUESTION: I have installation problems. What can I do?
+    LABEL:installationproblems
+    ANSWER:
+    <p>
+        Please have a look at the <code>INSTALL</code> file.
+    </p>
+
+    QUESTION: How can I contribute?
+    LABEL:howtocontribute
+    ANSWER:
+    <p>
+        Please report
+        <a href="http://soplex.zib.de/#bugs">bugs and problems</a>.<br/>
+
+        In fact, a couple of improvements of SoPlex are
+        possible. If you are interested in helping please contact
+        us.
+    </p>
+
+    QUESTION:So, how do I start working with SoPlex?
+    LABEL:howtostart
+    ANSWER:
+    <p>
+        To just read LPs from a file and solve them without modifying the LPs,
+        compile SoPlex and use it on the command line. Calling the binary
+        without parameters gives you some usage information. To use SoPlex as a
+        callable library, see src/example.cpp or src/soplexmain.cpp (from which
+        the SoPlex binary is compiled) on how to construct an LP, solve it, and
+        extract the solution. For further details, you have to consult the doxygen
+        documentation of the code (or even the code itself).
+        Another good starting point might also be
+        the SoPlex interface of <a href="http://scipopt.org">SCIP</a>.
+   </p>
+
+    QUESTION:Can I use SoPlex with Branch-and-cut or MIP solvers?
+    LABEL:usesoplexinsidemipsolvers
+    ANSWER:
+    <p>
+        Yes, but the corresponding software needs an interface.
+
+        Currently, the following frameworks have an
+        interface to SoPlex.
+    </p>
+    <ul>
+        <li>
+            <a  href="http://scipopt.org">SCIP</a> - Solving
+            Constraint Integer Programs.
+        </li>
+        <li>
+            <a href="http://www.informatik.uni-koeln.de/abacus/">ABACUS</a>
+            has an older interface to 1.2.1 only.
+        </li>
+        <li>
+            There is also an interface to <a
+            href="https://projects.coin-or.org/Osi">COIN
+            OSI</a>.
+        </li>
+    </ul>
+
+    QUESTION:Why is &lt;iostream&gt; used but &lt;assert.h&gt; and not &lt;cassert&gt;?
+    LABEL:assertvscassert
+
+    <p>
+        The reason is twofold. From the theoretical point we were not
+        able to exactly find out in TC++PL in what namespace cassert
+        should load its declarations. Surely in std. But since these are
+        normally functions with C linkage, this won't work.
+        Then some of them, like assert, are macros which have no namespace.
+        The practical point is that the compiler vendors seem to be
+        unsure as well. Most of them put everything in both namespaces std
+        and global. So there is no advantage in using &lt;cassert&gt;. Compaq
+        even left them off because it seemed unclear to them.
+        So our reasoning was: If it is a C++ header we use the correct form
+        without the .h and in std. If it is a C header, according to the
+        standard the .h header has to be there and uses the global namespace.
+        That seems acceptable to us, especially for C functions.
+    </p>
+
+    QUESTION:Why is malloc/free sometimes used and not new/delete?
+    LABEL:mallocvsnew
+    ANSWER:
+    <p>
+        Because there is no realloc with new/delete. Because malloc
+        is faster. And we only use it for builtin types or so called
+        "Data Objects" .
+        If you do not like this decision, it is quite easy to change
+        spxalloc.h such as to use new/delete.
+    </p>
+
+    QUESTION:Can SoPlex solve Integer Programs (IPs)?
+    LABEL:solvingips
+    ANSWER:
+    <p>
+        No. You need an IP-Solver for this. Most IP-Solver use LP-Solvers
+        as a subroutine and do some kind of Branch-and-Bound. For
+        instance, you can use  SCIP (Solving Constraint Integer Programs)
+        together with SoPlex to solve IPs.  SCIP can be obtained at
+        <a href="http://scipopt.org/">here</a>.
+    </p>
+
+
+    QUESTION:Is there a Windows version?
+    LABEL:windoof
+    ANSWER:
+    <p>
+        The code is tested to compile under Microsoft Visual Studio 2008 and 2010.
+        It should also be possible to create a Windows version by compiling it
+        with the GCC under <a href="http://www.cygwin.com/">Cygwin</a> or minGW
+    </p>
+
+    QUESTION:I want a primal and a dual simplex, where are they?
+    LABEL:primaldualsimplex
+    ANSWER:
+    <p>
+        SoPlex implements a composite simplex, i.e., it switches between primal and dual
+        simplex and the user can only specify the starting algorithm via the integer
+        parameter "int:algorithm = 0 (primal) / 1 (dual)".
+    </p>
+    <p>
+        When using the low-level class SPxSolver, you can specify to use the
+        ENTERing and LEAVEing algorithm and COLUMN and ROW representation.
+    </p>
+    <center>
+        <table border="1" rules="all">
+            <tr><td>&nbsp;</td><td>ENTER </td><td>LEAVE </td></tr>
+            <tr><td>COLUMN</td><td>Primal</td><td>Dual  </td></tr>
+            <tr><td>ROW   </td><td>Dual  </td><td>Primal</td></tr>
+        </table>
+    </center>
+    <p>
+        COLUMN oriented is the "usual" representation.
+        Then Entering is the Primal and Leaving is the Dual algorithm.
+        In ROW oriented representation, we have in principle the
+        explicit dual and then the algorithms are reversed.
+    </p>
+
+    QUESTION:I got a segment violation or a signal 11.
+    LABEL:segmentationfault
+    ANSWER:
+    <p>
+        If all of the test instances from Netlib work, but your LP gives this
+        problem, mail your LP in as an gzip'ed MPS of LP file and we will
+        check. If you have this problem also with the test instances, check your
+        stack space:  ulimit  -s will report the current size in kilobytes.
+        Try a higher value. If this doesn't help, maybe your compiler is broken.
+        Try compiling without optimization.
+    </p>
+
+    QUESTION:I got messages or exceptions stating &quot;This shall not be.&quot; or similar.
+    LABEL:numericaltroubles
+    ANSWER:
+    <p>
+        Such messages are an indication of numerical trouble, which may happen
+        from time to time especially on LPs with weird numbers. If the problem
+        occurs with the binary, try using another scaler (call soplex without
+        parameters to see how to specify this). If the problem occurs while using
+        the callable library of SoPlex, you can try to add a scaler and a
+        preprocessor yourself (see the SoPlex class) unless you solve the same LP
+        repeatedly with small changes (as in a Branch-and-cut process, for
+        instance). If you send us an LP or MPS file with the offending linear
+        program together with a description of your settings, we may have a
+        closer look at it to see if we can do something about it.
+    </p>
+
+
+    QUESTION:Can SoPlex handle basis files?
+    LABEL:basisfiles
+    ANSWER:
+    <p>
+        Yes, the binary version allows to read and write basis files using the
+        options <code>--readbas=</code> and <code>writebas=</code>, respectively. The library
+        version allows to read or write a basis file from within the code as well.
+        This can be useful for debugging. If you cannot reconstruct an error occurring
+        in the library code with the binary version, try to save a basis and try again.
+        Note that the LP needs to be in MPS format in order to ensure compatability of the
+        basis and the LP (the LP format cannot store ranged rows).
+    </p>
+
+    QUESTION:SoPlex means &quot;Sequential Simplex&quot;. Is there a parallel version
+        available?
+    LABEL:parallelversion
+    ANSWER:
+    <p>
+        No. Some research was done in this direction. You can find most of
+        the results in
+        <a href="http://www.zib.de/PaperWeb/abstracts/TR-96-09">
+        http://www.zib.de/PaperWeb/abstracts/TR-96-09</a> and
+        <a href="http://www.zib.de/PaperWeb/abstracts/SC-95-45">
+        http://www.zib.de/PaperWeb/abstracts/SC-95-45</a>.
+    </p>
+
+    QUESTION:Is there a wrapper class/library to use SoPlex instead of CPLEX ?
+    LABEL:soplexwrapperclass
+    ANSWER:
+    <p>
+        No.
+    </p>
+
+    QUESTION:How can I make LP generation easier?
+    LABEL:lpgeneration
+    ANSWER:
+    <p>
+        You can use <a href="http://zimpl.zib.de/">ZIMPL</a>, for example.
+        It takes a (human readable) file
+        describing the linear program together with a data file as input and
+        generates LPs or MIPs in LP- or MPS-format.
+    </p>
+
+    QUESTION:What kind of preprocessing is done?
+    LABEL:preprocessing
+    ANSWER:
+    <p>
+        In the default setting SoPlex presolves the given LP in order to
+        simplify the problem as far as possible by removing rows,
+        columns, and bounds. Moreover, infeasibility or unboundedness may
+        be detected. The simplification cannot be undone, but given a
+        primal/dual solution for the simplified LP, the simplifier can
+        reconstruct the primal/dual solution and basis of the
+        unsimplified LP.
+    </p>
+    <p>
+        Handled are:
+    </p>
+    <ul>
+        <li> empty rows / columns                                  </li>
+        <li> unconstrained rows                                    </li>
+        <li> row singletons                                        </li>
+        <li> forcing rows                                          </li>
+        <li> zero objective column singletons                      </li>
+        <li> (implied) free column singletons                      </li>
+        <li> doubleton equations combined with a column singleton  </li>
+        <li> (implicitly) fixed columns                            </li>
+        <li> redundant lhs / rhs                                   </li>
+        <li> redundant variable bounds                             </li>
+        <li> variables that are free in one direction              </li>
+        <li> (weakly) dominated columns                            </li>
+        <li> duplicate rows / columns                              </li>
+    </ul>
+
+    <p>
+        The preprocessing can be switched off by using the option  <code>-s0</code>.
+    </p>

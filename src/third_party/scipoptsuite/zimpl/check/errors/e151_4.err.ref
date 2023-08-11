@@ -1,0 +1,4 @@
+*** Error 151: Not a valid read template
+*** File: e151_4.zpl Line 2
+*** set A := { read "dummy.dat" as "<<1n>" };
+***                                        ^^^

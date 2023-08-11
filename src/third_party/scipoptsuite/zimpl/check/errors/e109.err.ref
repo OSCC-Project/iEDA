@@ -1,0 +1,4 @@
+*** Error 109: LHS/RHS contradiction, constraint trivially violated
+*** File: e109.zpl Line 3
+*** subto c1: 5 <= x <= 4;
+***                      ^^^

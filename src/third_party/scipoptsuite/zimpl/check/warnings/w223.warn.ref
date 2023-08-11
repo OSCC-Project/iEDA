@@ -1,0 +1,4 @@
+--- Warning 223: Objective function value overwrites existing one
+*** File: w223.zpl Line 5
+*** maximize value: 2 * x2 - 3 * x1;
+***                                ^^^

@@ -1,0 +1,4 @@
+*** Error 142: Unknown index <"0900"> for symbol "bonus"
+*** File: e142_2.zpl Line 6
+*** subto c1: sum <t,r> in TR : bonus[t] * x[t,r] <= 5;
+***                                    ^^^

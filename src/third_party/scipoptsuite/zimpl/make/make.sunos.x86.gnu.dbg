@@ -1,0 +1,21 @@
+#--- $Id: make.sunos.x86.gnu.dbg,v 1.7 2014/01/12 11:07:04 bzfkocht Exp $
+CPPFLAGS	+=	-DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-O0 -g -fident $(GCCWARN)
+LDFLAGS		=	-lgmp -lm
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+
+ifeq ($(LINK),shared)
+#LIBRARY		=	$(LIBDIR)/lib$(LIBNAME).so
+#LIBLINK		=	$(LIBDIR)/lib$(NAME).$(BASE).so
+CFLAGS		+=	-fPIC
+#AR		=	gcc -shared -o # the trailing space is important
+#ARFLAGS		=       $(LDFLAGS)
+#RANLIB		=	true
+endif
+
+#ifeq ($(LINK),static)
+LDFLAGS		+=	-Bstatic
+#endif

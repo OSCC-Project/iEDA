@@ -1,0 +1,204 @@
+$(BINOBJDIR)/soplexmain.o: src/soplexmain.cpp src/soplex.h src/soplex/spxgithash.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/basevectors.h src/soplex/spxdefines.h src/soplex/rational.h \
+ src/soplex/idlist.h src/soplex/islist.h src/soplex/spxalloc.h \
+ src/soplex/spxout.h src/soplex/exceptions.h src/soplex/vectorbase.h \
+ src/soplex/stablesum.h src/soplex/ssvectorbase.h src/soplex/idxset.h \
+ src/soplex/timer.h src/soplex/svectorbase.h src/soplex/dsvectorbase.h \
+ src/soplex/unitvectorbase.h src/soplex/svsetbase.h \
+ src/soplex/classarray.h src/soplex/dataset.h src/soplex/classset.h src/soplex/dataarray.h \
+ src/soplex/datakey.h src/soplex/spxsolver.h src/soplex/timerfactory.h \
+ src/soplex/notimer.h src/soplex/usertimer.h src/soplex/wallclocktimer.h \
+ src/soplex/spxlp.h src/soplex/spxlpbase.h src/soplex/basevectors.h \
+ src/soplex/spxid.h src/soplex/lprowbase.h src/soplex/lpcolbase.h \
+ src/soplex/lprowsetbase.h src/soplex/lpcolsetbase.h src/soplex/nameset.h \
+ src/soplex/datahashtable.h src/soplex/didxset.h src/soplex/spxfileio.h \
+ src/soplex/gzstream.h src/soplex/spxscaler.h src/soplex/vector.h \
+ src/soplex/svector.h src/soplex/svset.h src/soplex/dsvector.h \
+ src/soplex/dvector.h src/soplex/spxscaler.hpp \
+ src/soplex/spxlpbase_real.hpp src/soplex/spxlpbase_rational.hpp  src/soplex/mpsinput.h \
+ src/soplex/lprowset.h src/soplex/lpcolset.h src/soplex/lprow.h \
+ src/soplex/lpcol.h src/soplex/spxbasis.h src/soplex/ssvector.h \
+ src/soplex/slinsolver.h src/soplex/spxbasis.hpp src/soplex/spxsolver.h \
+ src/soplex/spxdesc.hpp src/soplex/array.h src/soplex/random.h \
+ src/soplex/unitvector.h src/soplex/updatevector.h \
+ src/soplex/updatevector.hpp src/soplex/spxsolver.hpp \
+ src/soplex/spxpricer.h src/soplex/sorter.h src/soplex/spxratiotester.h \
+ src/soplex/spxstarter.h src/soplex/spxstarter.hpp \
+ src/soplex/spxsolve.hpp src/soplex/spxdefaultrt.h \
+ src/soplex/spxdefaultrt.hpp src/soplex/changesoplex.hpp \
+ src/soplex/leave.hpp src/soplex/enter.hpp src/soplex/spxshift.hpp \
+ src/soplex/spxbounds.hpp src/soplex/spxchangebasis.hpp \
+ src/soplex/spxvecs.hpp src/soplex/spxwritestate.hpp \
+ src/soplex/slufactor.h src/soplex/clufactor.h src/soplex/clufactor.hpp \
+ src/soplex/clufactor_rational.hpp src/soplex/slufactor_rational.hpp \
+ src/soplex/cring.h src/soplex/slufactor.hpp src/soplex/spxfileio.hpp \
+ src/soplex/spxquality.hpp src/soplex/slufactor.h \
+ src/soplex/slufactor_rational.h src/soplex/slinsolver_rational.h \
+ src/soplex/clufactor_rational.h src/soplex/spxsimplifier.h \
+ src/soplex/spxmainsm.h src/soplex/spxsimplifier.h \
+ src/soplex/spxmainsm.hpp src/soplex/spxmainsm.h src/soplex/spxscaler.h \
+ src/soplex/spxequilisc.h src/soplex/spxequilisc.hpp \
+ src/soplex/spxequilisc.h src/soplex.h src/soplex/spxleastsqsc.h \
+ src/soplex/spxleastsqsc.hpp src/soplex/spxgeometsc.h \
+ src/soplex/spxgeometsc.hpp src/soplex/spxgeometsc.h \
+ src/soplex/spxstarter.h src/soplex/spxweightst.h \
+ src/soplex/spxweightst.hpp src/soplex/spxweightst.h \
+ src/soplex/spxsumst.h src/soplex/spxvectorst.h \
+ src/soplex/spxvectorst.hpp src/soplex/spxsumst.hpp src/soplex/spxsumst.h \
+ src/soplex/spxvectorst.h src/soplex/spxpricer.h src/soplex/spxautopr.h \
+ src/soplex/spxdevexpr.h src/soplex/spxdevexpr.hpp \
+ src/soplex/spxsteeppr.h src/soplex/spxsteepexpr.h \
+ src/soplex/spxsteeppr.hpp src/soplex/spxautopr.hpp \
+ src/soplex/spxautopr.h src/soplex/spxdantzigpr.h \
+ src/soplex/spxdantzigpr.hpp src/soplex/spxdantzigpr.h \
+ src/soplex/spxparmultpr.h src/soplex/spxparmultpr.hpp \
+ src/soplex/spxparmultpr.h src/soplex/spxdevexpr.h \
+ src/soplex/spxsteeppr.h src/soplex/spxsteepexpr.h \
+ src/soplex/spxhybridpr.h src/soplex/spxhybridpr.hpp \
+ src/soplex/spxhybridpr.h src/soplex/spxratiotester.h \
+ src/soplex/spxdefaultrt.h src/soplex/spxharrisrt.h \
+ src/soplex/spxharrisrt.hpp src/soplex/spxfastrt.h \
+ src/soplex/spxfastrt.hpp src/soplex/spxfastrt.h \
+ src/soplex/spxboundflippingrt.h src/soplex/spxboundflippingrt.hpp \
+ src/soplex/spxboundflippingrt.h src/soplex/solbase.h src/soplex/sol.h \
+ src/soplex/solbase.h src/soplex/spxlpbase.h src/soplex.hpp \
+ src/soplex/solverational.hpp src/soplex/statistics.h \
+ src/soplex/statistics.hpp src/soplex/slufactor_rational.h \
+ src/soplex/ratrecon.h src/soplex/ratrecon.hpp src/soplex/sol.h src/soplex/solvedbds.hpp \
+ src/soplex/testsoplex.hpp src/soplex/solvereal.hpp \
+ src/soplex/validation.h src/soplex/validation.hpp \
+ src/soplex/statistics.h
+$(BINOBJDIR)/example.o: src/example.cpp src/soplex.h src/soplex/spxgithash.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/basevectors.h src/soplex/spxdefines.h src/soplex/rational.h \
+ src/soplex/idlist.h src/soplex/islist.h src/soplex/spxalloc.h \
+ src/soplex/spxout.h src/soplex/exceptions.h src/soplex/vectorbase.h \
+ src/soplex/stablesum.h src/soplex/ssvectorbase.h src/soplex/idxset.h \
+ src/soplex/timer.h src/soplex/svectorbase.h src/soplex/dsvectorbase.h \
+ src/soplex/unitvectorbase.h src/soplex/svsetbase.h \
+ src/soplex/classarray.h src/soplex/dataset.h src/soplex/classset.h src/soplex/dataarray.h \
+ src/soplex/datakey.h src/soplex/spxsolver.h src/soplex/timerfactory.h \
+ src/soplex/notimer.h src/soplex/usertimer.h src/soplex/wallclocktimer.h \
+ src/soplex/spxlp.h src/soplex/spxlpbase.h src/soplex/basevectors.h \
+ src/soplex/spxid.h src/soplex/lprowbase.h src/soplex/lpcolbase.h \
+ src/soplex/lprowsetbase.h src/soplex/lpcolsetbase.h src/soplex/nameset.h \
+ src/soplex/datahashtable.h src/soplex/didxset.h src/soplex/spxfileio.h \
+ src/soplex/gzstream.h src/soplex/spxscaler.h src/soplex/vector.h \
+ src/soplex/svector.h src/soplex/svset.h src/soplex/dsvector.h \
+ src/soplex/dvector.h src/soplex/spxscaler.hpp \
+ src/soplex/spxlpbase_real.hpp src/soplex/spxlpbase_rational.hpp  src/soplex/mpsinput.h \
+ src/soplex/lprowset.h src/soplex/lpcolset.h src/soplex/lprow.h \
+ src/soplex/lpcol.h src/soplex/spxbasis.h src/soplex/ssvector.h \
+ src/soplex/slinsolver.h src/soplex/spxbasis.hpp src/soplex/spxsolver.h \
+ src/soplex/spxdesc.hpp src/soplex/array.h src/soplex/random.h \
+ src/soplex/unitvector.h src/soplex/updatevector.h \
+ src/soplex/updatevector.hpp src/soplex/spxsolver.hpp \
+ src/soplex/spxpricer.h src/soplex/sorter.h src/soplex/spxratiotester.h \
+ src/soplex/spxstarter.h src/soplex/spxstarter.hpp \
+ src/soplex/spxsolve.hpp src/soplex/spxdefaultrt.h \
+ src/soplex/spxdefaultrt.hpp src/soplex/changesoplex.hpp \
+ src/soplex/leave.hpp src/soplex/enter.hpp src/soplex/spxshift.hpp \
+ src/soplex/spxbounds.hpp src/soplex/spxchangebasis.hpp \
+ src/soplex/spxvecs.hpp src/soplex/spxwritestate.hpp \
+ src/soplex/slufactor.h src/soplex/clufactor.h src/soplex/clufactor.hpp \
+ src/soplex/clufactor_rational.hpp src/soplex/slufactor_rational.hpp \
+ src/soplex/cring.h src/soplex/slufactor.hpp src/soplex/spxfileio.hpp \
+ src/soplex/spxquality.hpp src/soplex/slufactor.h \
+ src/soplex/slufactor_rational.h src/soplex/slinsolver_rational.h \
+ src/soplex/clufactor_rational.h src/soplex/spxsimplifier.h \
+ src/soplex/spxmainsm.h src/soplex/spxsimplifier.h src/soplex/spxpapilo.h \
+ src/soplex/spxmainsm.hpp src/soplex/spxmainsm.h src/soplex/spxscaler.h \
+ src/soplex/spxequilisc.h src/soplex/spxequilisc.hpp \
+ src/soplex/spxequilisc.h src/soplex.h src/soplex/spxleastsqsc.h \
+ src/soplex/spxleastsqsc.hpp src/soplex/spxgeometsc.h \
+ src/soplex/spxgeometsc.hpp src/soplex/spxgeometsc.h \
+ src/soplex/spxstarter.h src/soplex/spxweightst.h \
+ src/soplex/spxweightst.hpp src/soplex/spxweightst.h \
+ src/soplex/spxsumst.h src/soplex/spxvectorst.h \
+ src/soplex/spxvectorst.hpp src/soplex/spxsumst.hpp src/soplex/spxsumst.h \
+ src/soplex/spxvectorst.h src/soplex/spxpricer.h src/soplex/spxautopr.h \
+ src/soplex/spxdevexpr.h src/soplex/spxdevexpr.hpp \
+ src/soplex/spxsteeppr.h src/soplex/spxsteepexpr.h \
+ src/soplex/spxsteeppr.hpp src/soplex/spxautopr.hpp \
+ src/soplex/spxautopr.h src/soplex/spxdantzigpr.h \
+ src/soplex/spxdantzigpr.hpp src/soplex/spxdantzigpr.h \
+ src/soplex/spxparmultpr.h src/soplex/spxparmultpr.hpp \
+ src/soplex/spxparmultpr.h src/soplex/spxdevexpr.h \
+ src/soplex/spxsteeppr.h src/soplex/spxsteepexpr.h \
+ src/soplex/spxhybridpr.h src/soplex/spxhybridpr.hpp \
+ src/soplex/spxhybridpr.h src/soplex/spxratiotester.h \
+ src/soplex/spxdefaultrt.h src/soplex/spxharrisrt.h \
+ src/soplex/spxharrisrt.hpp src/soplex/spxfastrt.h \
+ src/soplex/spxfastrt.hpp src/soplex/spxfastrt.h \
+ src/soplex/spxboundflippingrt.h src/soplex/spxboundflippingrt.hpp \
+ src/soplex/spxboundflippingrt.h src/soplex/solbase.h src/soplex/sol.h \
+ src/soplex/solbase.h src/soplex/spxlpbase.h src/soplex.hpp \
+ src/soplex/solverational.hpp src/soplex/statistics.h \
+ src/soplex/statistics.hpp src/soplex/slufactor_rational.h \
+ src/soplex/ratrecon.h src/soplex/ratrecon.hpp src/soplex/sol.h src/soplex/solvedbds.hpp \
+ src/soplex/testsoplex.hpp src/soplex/solvereal.hpp
+$(LIBOBJDIR)/didxset.o: src/soplex/didxset.cpp src/soplex/didxset.h \
+ src/soplex/idxset.h src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/spxalloc.h src/soplex/spxout.h src/soplex/exceptions.h
+$(LIBOBJDIR)/gzstream.o: src/soplex/gzstream.cpp src/soplex/gzstream.h
+$(LIBOBJDIR)/idxset.o: src/soplex/idxset.cpp src/soplex/idxset.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp src/soplex/spxalloc.h \
+ src/soplex/spxout.h src/soplex/exceptions.h
+$(LIBOBJDIR)/mpsinput.o: src/soplex/mpsinput.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/mpsinput.h src/soplex/spxout.h
+$(LIBOBJDIR)/nameset.o: src/soplex/nameset.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/nameset.h src/soplex/dataset.h src/soplex/classset.h \
+ src/soplex/dataarray.h src/soplex/spxalloc.h src/soplex/spxout.h \
+ src/soplex/exceptions.h src/soplex/datakey.h src/soplex/datahashtable.h
+$(LIBOBJDIR)/rational.o: src/soplex/rational.cpp src/soplex/rational.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp src/soplex/idlist.h \
+ src/soplex/islist.h src/soplex/spxalloc.h src/soplex/spxout.h \
+ src/soplex/exceptions.h
+$(LIBOBJDIR)/spxdefines.o: src/soplex/spxdefines.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/spxout.h src/soplex/rational.h \
+ src/soplex/idlist.h src/soplex/islist.h src/soplex/spxalloc.h \
+ src/soplex/exceptions.h
+$(LIBOBJDIR)/spxgithash.o: src/soplex/spxgithash.cpp src/soplex/spxgithash.h \
+ src/soplex/git_hash.cpp
+$(LIBOBJDIR)/spxid.o: src/soplex/spxid.cpp src/soplex/spxid.h src/soplex/datakey.h \
+ src/soplex/exceptions.h
+$(LIBOBJDIR)/spxout.o: src/soplex/spxout.cpp src/soplex/spxout.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/exceptions.h src/soplex/spxalloc.h
+$(LIBOBJDIR)/usertimer.o: src/soplex/usertimer.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/usertimer.h src/soplex/timer.h
+$(LIBOBJDIR)/wallclocktimer.o: src/soplex/wallclocktimer.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/wallclocktimer.h src/soplex/timer.h
+$(LIBOBJSUBDIR)/didxset.o: src/soplex/didxset.cpp src/soplex/didxset.h \
+ src/soplex/idxset.h src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/spxalloc.h src/soplex/spxout.h src/soplex/exceptions.h
+$(LIBOBJSUBDIR)/gzstream.o: src/soplex/gzstream.cpp src/soplex/gzstream.h
+$(LIBOBJSUBDIR)/idxset.o: src/soplex/idxset.cpp src/soplex/idxset.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp src/soplex/spxalloc.h \
+ src/soplex/spxout.h src/soplex/exceptions.h
+$(LIBOBJSUBDIR)/mpsinput.o: src/soplex/mpsinput.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/mpsinput.h src/soplex/spxout.h
+$(LIBOBJSUBDIR)/nameset.o: src/soplex/nameset.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/nameset.h src/soplex/dataset.h src/soplex/classset.h \
+ src/soplex/dataarray.h src/soplex/spxalloc.h src/soplex/spxout.h \
+ src/soplex/exceptions.h src/soplex/datakey.h src/soplex/datahashtable.h
+$(LIBOBJSUBDIR)/rational.o: src/soplex/rational.cpp src/soplex/rational.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp src/soplex/idlist.h \
+ src/soplex/islist.h src/soplex/spxalloc.h src/soplex/spxout.h \
+ src/soplex/exceptions.h
+$(LIBOBJSUBDIR)/spxdefines.o: src/soplex/spxdefines.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/spxout.h src/soplex/rational.h \
+ src/soplex/idlist.h src/soplex/islist.h src/soplex/spxalloc.h \
+ src/soplex/exceptions.h
+$(LIBOBJSUBDIR)/spxgithash.o: src/soplex/spxgithash.cpp src/soplex/spxgithash.h \
+ src/soplex/git_hash.cpp
+$(LIBOBJSUBDIR)/spxid.o: src/soplex/spxid.cpp src/soplex/spxid.h src/soplex/datakey.h \
+ src/soplex/exceptions.h
+$(LIBOBJSUBDIR)/spxout.o: src/soplex/spxout.cpp src/soplex/spxout.h \
+ src/soplex/spxdefines.h src/soplex/spxdefines.hpp \
+ src/soplex/exceptions.h src/soplex/spxalloc.h
+$(LIBOBJSUBDIR)/usertimer.o: src/soplex/usertimer.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/usertimer.h src/soplex/timer.h
+$(LIBOBJSUBDIR)/wallclocktimer.o: src/soplex/wallclocktimer.cpp src/soplex/spxdefines.h \
+ src/soplex/spxdefines.hpp src/soplex/wallclocktimer.h src/soplex/timer.h

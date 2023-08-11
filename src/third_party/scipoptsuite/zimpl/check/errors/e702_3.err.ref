@@ -1,0 +1,4 @@
+*** Error 702: ln(0.000000): Numerical result out of range
+*** File: e702_3.zpl Line 2
+*** param x := ln(1/10^400);
+***                       ^^^

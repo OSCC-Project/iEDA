@@ -1,0 +1,4 @@
+*** Error 128: Index value 1.5 in proj too big or not an integer
+*** File: e128.zpl Line 3
+*** set B := proj(A, <1.5>);
+***                       ^^^

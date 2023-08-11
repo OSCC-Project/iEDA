@@ -1,0 +1,12 @@
+| interface_file | format |
+|----------------+--------|
+| gen/lu1fac.org | f90    |
+| gen/lu6sol.org | f90    |
+| gen/lu8rpc.org | f90    |
+| gen/lu6mul.org | f77    |
+| gen/lu8adc.org | f77    |
+| gen/lu8adr.org | f77    |
+| gen/lu8dlc.org | f77    |
+| gen/lu8dlr.org | f77    |
+| gen/lu8mod.org | f77    |
+| gen/lu8rpr.org | f77    |

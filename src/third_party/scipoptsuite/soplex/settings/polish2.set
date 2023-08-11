@@ -1,0 +1,3 @@
+# mode for solution polishing (0 - off, 1 - max basic slack, 2 - min basic slack)
+# range [0,2], default 0
+int:solution_polishing = 2

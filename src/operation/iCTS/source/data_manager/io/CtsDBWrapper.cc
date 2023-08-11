@@ -280,7 +280,7 @@ IdbInstance* CtsDBWrapper::makeIdbInstance(CtsInstance* inst)
   idb_inst->set_name(inst->get_name());
   auto* master_list = _idb_layout->get_cell_master_list();
   auto* master = master_list->find_cell_master(inst->get_cell_master());
-  LOG_FATAL_IF(master == nullptr) << inst->get_name() << "can't find cell master: " << inst->get_cell_master();
+  LOG_FATAL_IF(master == nullptr) << inst->get_name() << " can't find cell master: " << inst->get_cell_master();
   idb_inst->set_cell_master(master);
   design_list->add_instance(idb_inst);
   return idb_inst;
