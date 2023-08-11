@@ -235,6 +235,13 @@ class StaVertex {
 
   void set_is_foward_find() { _is_foward_find = 1; }
   unsigned is_foward_find() const { return _is_foward_find; }
+
+  void set_is_fwd_reset() { _is_fwd_reset = 1; }
+  unsigned is_fwd_reset() const { return _is_fwd_reset; }
+
+  void set_is_bwd_reset() { _is_bwd_reset = 1; }
+  unsigned is_bwd_reset() const { return _is_bwd_reset; }
+
   void addFanoutEndVertex(StaVertex* fanout_end_vertex) {
     LOG_FATAL_IF(!fanout_end_vertex) << "insert end vertex:nullptr.";
     _fanout_end_vertexes.insert(fanout_end_vertex);
@@ -406,8 +413,8 @@ class StaVertex {
       0;  //!< The vertex forward propagate to find end.
   unsigned _is_backward_find : 1 =
       0;  //!< The vetex backward propagate to find start.
-
-  unsigned _reserverd : 2 = 0;
+  unsigned _is_fwd_reset : 1 = 0;  //!< The vertex is reset by fwd.
+  unsigned _is_bwd_reset : 1 = 0;  //!< The vertex is reset by bwd.
 
   std::vector<StaArc*> _src_arcs;  //!< The timing arc sourced from the vertex.
   std::vector<StaArc*> _snk_arcs;  //!< The timing arc sinked to the vertex.
