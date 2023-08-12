@@ -81,7 +81,7 @@ If you need to modify iEDA through source code construction, please read in sequ
 
 You can also directly  use the latest release docker， then you can skip "1. Source code construction of iEDA".
 
-PS: about how to install Docker，you can refer [Docker install and initilization](https://www.cnblogs.com/harrypotterisdead/p/17223606.html)。
+PS: you can refer [Docker install and initilization](https://www.cnblogs.com/harrypotterisdead/p/17223606.html) to know how to install Docker.
 
 ## 1. Build iEDA from source code
 
