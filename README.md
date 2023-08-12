@@ -196,6 +196,7 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | 用于快速求解混合整数规划 (MIP) 和混合整数非线性规划 (MINLP) .     |
 | parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | 解析.lib文件 .     |
 | parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | 解析netlist文件 .     |
+| parser/spef | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)                                                            | 解析spef文件 .     |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
