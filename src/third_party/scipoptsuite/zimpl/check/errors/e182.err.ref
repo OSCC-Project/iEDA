@@ -1,0 +1,4 @@
+*** Error 182: Empty LHS, in variable vabs
+*** File: e182.zpl Line 4
+*** subto c1: vabs(0*a) <= 2;
+***                   ^^^

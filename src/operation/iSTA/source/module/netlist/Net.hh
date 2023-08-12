@@ -29,7 +29,6 @@
 
 #include "Config.hh"
 #include "DesignObject.hh"
-#include "DisallowCopyAssign.hh"
 #include "Type.hh"
 #include "Vector.hh"
 

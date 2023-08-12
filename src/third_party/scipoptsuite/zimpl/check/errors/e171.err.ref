@@ -1,0 +1,5 @@
+*** Error 171: Wrong number of arguments (2 instead of 1)
+               for call of define "test".
+*** File: e171.zpl Line 3
+*** param x := test(1,2);
+***                    ^^^

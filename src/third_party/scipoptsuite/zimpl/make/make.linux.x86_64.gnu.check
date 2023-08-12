@@ -1,0 +1,36 @@
+#--- $Id: make.linux.x86_64.gnu.dbg,v 1.7 2014/01/12 11:07:04 bzfkocht Exp $
+CC		=	gcc-8 #clang-9
+LINKCC   	=	gcc-8 #clang-9
+CPPFLAGS	+=	-DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-Og -g $(GCCWARN) -std=gnu99 \
+			-fno-omit-frame-pointer \
+			-fstack-check -fstack-protector-strong \
+			-fsanitize=address \
+			-fsanitize=undefined \
+			-fsanitize=shift \
+			-fsanitize=shift-exponent \
+			-fsanitize=shift-base \
+			-fsanitize=integer-divide-by-zero \
+			-fsanitize=unreachable \
+			-fsanitize=vla-bound \
+			-fsanitize=null \
+			-fsanitize=bounds \
+			-fsanitize=alignment \
+			-fsanitize=object-size \
+			-fsanitize=float-cast-overflow \
+			-fsanitize=nonnull-attribute \
+			-fsanitize=returns-nonnull-attribute \
+			-fsanitize=bool \
+			-fsanitize=enum \
+			-fsanitize=signed-integer-overflow \
+			-fsanitize=pointer-overflow \
+			-fsanitize=builtin
+#	-fsanitize=float-divide-by-zero \
+#	-fsanitize=bounds-strict \
+LDFLAGS		=	-lgmp -lm
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+
+

@@ -1,0 +1,3 @@
+CPPFLAGS        +=      -DNDEBUG
+CXXFLAGS        +=      -O3 -g -pg
+LDFLAGS         +=      -pg

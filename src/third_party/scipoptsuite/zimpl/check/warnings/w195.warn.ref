@@ -1,0 +1,4 @@
+--- Warning 195: Genuine empty index as index set
+*** File: w195.zpl Line 2
+*** var x[{}];
+***         ^^^

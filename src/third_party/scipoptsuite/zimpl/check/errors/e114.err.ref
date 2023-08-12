@@ -1,0 +1,4 @@
+*** Error 114: Negative factorial value
+*** File: e114.zpl Line 2
+*** param a := (-3)!;
+***                ^^^

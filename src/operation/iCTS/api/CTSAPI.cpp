@@ -34,6 +34,7 @@
 #include "Node.hh"
 #include "Operator.h"
 #include "Optimizer.h"
+#include "Pin.hh"
 #include "RTAPI.hpp"
 #include "Router.h"
 #include "Synthesis.h"
@@ -144,7 +145,6 @@ void CTSAPI::init(const std::string& config_file)
   }
   _report = new CtsReportTable("iCTS");
   _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
-
   _libs = new CtsLibs();
 
   _synth = new Synthesis();
@@ -160,7 +160,38 @@ void CTSAPI::init(const std::string& config_file)
   }
 #endif
   startDbSta();
+  TimingPropagator::init();
+}
 
+void CTSAPI::testInit(const std::string& config_file)
+{
+  resetAPI();
+  _config = new CtsConfig();
+  JsonParser::getInstance().parse(config_file, _config);
+
+  _design = new CtsDesign();
+  if (dmInst->get_idb_builder()) {
+    _db_wrapper = new CtsDBWrapper(dmInst->get_idb_builder());
+  } else {
+    LOG_FATAL << "idb builder is null";
+  }
+  _report = new CtsReportTable("iCTS");
+  _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
+  _libs = new CtsLibs();
+
+  _synth = new Synthesis();
+  _evaluator = new Evaluator();
+  _balancer = new Balancer();
+  _model_factory = new ModelFactory();
+  _mpl_helper = new MplHelper();
+#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
+  auto external_models = _config->get_external_models();
+  for (auto [net_name, model_path] : external_models) {
+    auto* model = _model_factory->pyLoad(model_path);
+    _libs->insertModel(net_name, model);
+  }
+#endif
+  startDbSta();
   TimingPropagator::init();
 }
 
@@ -432,7 +463,7 @@ void CTSAPI::refresh()
   _timing_engine->updateTiming();
 }
 
-icts::CtsPin* CTSAPI::findDiverPin(icts::CtsNet* net)
+icts::CtsPin* CTSAPI::findDriverPin(icts::CtsNet* net)
 {
   auto* sta_net = findStaNet(net->get_net_name());
   if (sta_net == nullptr) {
@@ -590,9 +621,9 @@ icts::CtsCellLib* CTSAPI::getCellLib(const std::string& cell_master, const std::
   lib->set_slew_coef(_model_factory->cppLinearModel(x_slew, y_slew));
 
 #ifdef PY_MODEL
-  auto* delay_lib_model = _model_factory->pyFit(x_delay, y_delay, icts::FitType::kCATBOOST);
+  auto* delay_lib_model = _model_factory->pyFit(x_delay, y_delay, icts::FitType::kCatBoost);
   lib->set_delay_lib_model(delay_lib_model);
-  auto* slew_lib_model = _model_factory->pyFit(x_slew, y_slew, icts::FitType::kCATBOOST);
+  auto* slew_lib_model = _model_factory->pyFit(x_slew, y_slew, icts::FitType::kCatBoost);
   lib->set_slew_lib_model(slew_lib_model);
 #endif
   _libs->insertLib(cell_master, lib);
@@ -861,6 +892,11 @@ void CTSAPI::placeInstance(icts::CtsInstance* inst)
   _synth->place(inst);
 }
 
+void CTSAPI::cancelPlaceInstance(icts::CtsInstance* inst)
+{
+  _synth->cancelPlace(inst);
+}
+
 idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const std::string& cell_master)
 {
   auto sta_inst = getStaDbAdapter()->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
@@ -911,23 +947,22 @@ int CTSAPI::genId()
   return _design->nextId();
 }
 
-void CTSAPI::genShallowLightTree(const std::vector<Node*>& loads, Node* driver, const std::string& net_name)
+void CTSAPI::genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, const std::string& net_name)
 {
-  std::vector<Node*> nodes{driver};
-  std::ranges::copy(loads, std::back_inserter(nodes));
+  std::vector<Pin*> pins{driver};
+  std::ranges::copy(loads, std::back_inserter(pins));
 
   std::map<int, Node*> id_to_node;
-  std::vector<std::shared_ptr<salt::Pin>> pins;
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
 
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    auto node = nodes[i];
-    auto pin = std::make_shared<salt::Pin>(node->get_location().x(), node->get_location().y(), i, node->get_cap_load());
-    id_to_node[i] = node;
-    pins.push_back(pin);
+  for (size_t i = 0; i < pins.size(); ++i) {
+    auto pin = pins[i];
+    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
+    id_to_node[i] = pin;
+    salt_pins.push_back(salt_pin);
   }
-
   salt::Net net;
-  net.init(0, net_name, pins);
+  net.init(0, net_name, salt_pins);
 
   salt::Tree tree;
   salt::SaltBuilder salt_builder;
@@ -955,6 +990,11 @@ void CTSAPI::genShallowLightTree(const std::vector<Node*>& loads, Node* driver, 
   salt::TreeNode::PreOrder(source, connect_node_func);
 }
 
+Net* CTSAPI::findGocaNet(const std::string& net_name)
+{
+  return _design->findGocaNet(net_name);
+}
+
 // evaluate
 bool CTSAPI::isTop(const std::string& net_name) const
 {
@@ -970,19 +1010,45 @@ void CTSAPI::buildRCTree(const std::vector<icts::EvalNet>& eval_nets)
 
 void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
 {
-  LOG_INFO << "Evaluate: " << eval_net.get_name();
-  resetRCTree(eval_net.get_name());
+  auto net_name = eval_net.get_name();
+  LOG_INFO << "Evaluate: " << net_name;
+  resetRCTree(net_name);
   auto signal_wires = eval_net.get_signal_wires();
   auto* sta_net = findStaNet(eval_net);
-  for (auto& signal_wire : signal_wires) {
-    ista::RctNode* front_node = makeRCTreeNode(eval_net, signal_wire.get_first()._name);
-    ista::RctNode* back_node = makeRCTreeNode(eval_net, signal_wire.get_second()._name);
+  auto layer_id = _config->get_routing_layers().back();
+  auto router_type = _config->get_router_type();
+  auto* net = findGocaNet(net_name);
+  if (router_type == "GOCA" && net) {
+    auto* driver_pin = net->get_driver_pin();
+    driver_pin->preOrder([&](Node* node) {
+      auto* parent = node->get_parent();
+      if (parent == nullptr) {
+        return;
+      }
+      auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
+      auto child_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
+      ista::RctNode* front_node = makeRCTreeNode(eval_net, parent_name);
+      ista::RctNode* back_node = makeRCTreeNode(eval_net, child_name);
+      double len = TimingPropagator::calcLen(parent, node);
+      auto res = getResistance(len, layer_id);
+      auto cap = getCapacitance(len, layer_id);
+      _timing_engine->makeResistor(sta_net, front_node, back_node, res);
+      _timing_engine->incrCap(front_node, cap / 2, true);
+      _timing_engine->incrCap(back_node, cap / 2, true);
+    });
+  } else {
+    for (auto& signal_wire : signal_wires) {
+      auto front_name = signal_wire.get_first()._name;
+      auto back_name = signal_wire.get_second()._name;
+      ista::RctNode* front_node = makeRCTreeNode(eval_net, front_name);
+      ista::RctNode* back_node = makeRCTreeNode(eval_net, back_name);
 
-    auto res = getResistance(signal_wire, _config->get_routing_layers().back());
-    auto cap = getCapacitance(signal_wire, _config->get_routing_layers().back());
-    _timing_engine->makeResistor(sta_net, front_node, back_node, res);
-    _timing_engine->incrCap(front_node, cap / 2, true);
-    _timing_engine->incrCap(back_node, cap / 2, true);
+      auto res = getResistance(signal_wire, layer_id);
+      auto cap = getCapacitance(signal_wire, layer_id);
+      _timing_engine->makeResistor(sta_net, front_node, back_node, res);
+      _timing_engine->incrCap(front_node, cap / 2, true);
+      _timing_engine->incrCap(back_node, cap / 2, true);
+    }
   }
   _timing_engine->updateRCTreeInfo(sta_net);
 }
@@ -1219,7 +1285,7 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   auto* inst = eval_net.get_instance(name);
   if (inst == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
-    if (string_list.size() == 2 && string_list[0] == "steiner") {
+    if (string_list.size() == 2 && (string_list[0] == "steiner" || string_list[0] == "salt")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;

@@ -1,0 +1,4 @@
+*** Error 900: Check failed!
+*** File: e900.zpl Line 2
+*** do check 2 == 3;
+***                ^^^

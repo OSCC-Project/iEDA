@@ -1,0 +1,13 @@
+# SCIP version 3.0.0
+
+# frequency for solving LP at the nodes (-1: never; 0: only root LP)
+# [type: int, range: [-1,2147483647], default: 1]
+lp/solvefreq = -1
+
+# maximal number of restarts (-1: unlimited)
+# [type: int, range: [-1,2147483647], default: -1]
+presolving/maxrestarts = 0
+
+# should pricing be performed heuristically before solving the MIPs to optimality?
+# [type: bool, range: {TRUE,FALSE}, default: FALSE]
+pricing/masterpricer/useheurpricing = TRUE

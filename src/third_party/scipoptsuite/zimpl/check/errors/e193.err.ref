@@ -1,0 +1,5 @@
+*** Error 193: Different dimension tuples in set initialisation
+<1> vs. <1,2>
+*** File: e193.zpl Line 2
+*** set I := { <1,2>, <1>, <2,3> };
+***                              ^^^

@@ -1,0 +1,4 @@
+*** Error 118: Comparison of different types
+*** File: e118_2.zpl Line 2
+*** param a := if 2 >= "a" then 3 else "b" end;
+***                           ^^^

@@ -1,0 +1,5 @@
+*** Error 132: Values in parameter list missing,
+               probably wrong read template
+*** File: e132.zpl Line 3
+*** param p[I] := read "e132.dat" as "<1n>";
+***                                        ^^^

@@ -1,0 +1,4 @@
+*** Error 119: Intersection of sets with different dimension
+*** File: e119_3.zpl Line 2
+*** set A:={1..5} inter {1..2}*{3..4};
+***                                  ^^^

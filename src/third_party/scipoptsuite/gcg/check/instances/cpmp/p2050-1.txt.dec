@@ -1,0 +1,156 @@
+PRESOLVED
+0
+NBLOCKS
+50
+BLOCK 1
+b_capa_;1;
+BLOCK 2
+b_capa_;2;
+BLOCK 3
+b_capa_;3;
+BLOCK 4
+b_capa_;4;
+BLOCK 5
+b_capa_;5;
+BLOCK 6
+b_capa_;6;
+BLOCK 7
+b_capa_;7;
+BLOCK 8
+b_capa_;8;
+BLOCK 9
+b_capa_;9;
+BLOCK 10
+b_capa_;10;
+BLOCK 11
+b_capa_;11;
+BLOCK 12
+b_capa_;12;
+BLOCK 13
+b_capa_;13;
+BLOCK 14
+b_capa_;14;
+BLOCK 15
+b_capa_;15;
+BLOCK 16
+b_capa_;16;
+BLOCK 17
+b_capa_;17;
+BLOCK 18
+b_capa_;18;
+BLOCK 19
+b_capa_;19;
+BLOCK 20
+b_capa_;20;
+BLOCK 21
+b_capa_;21;
+BLOCK 22
+b_capa_;22;
+BLOCK 23
+b_capa_;23;
+BLOCK 24
+b_capa_;24;
+BLOCK 25
+b_capa_;25;
+BLOCK 26
+b_capa_;26;
+BLOCK 27
+b_capa_;27;
+BLOCK 28
+b_capa_;28;
+BLOCK 29
+b_capa_;29;
+BLOCK 30
+b_capa_;30;
+BLOCK 31
+b_capa_;31;
+BLOCK 32
+b_capa_;32;
+BLOCK 33
+b_capa_;33;
+BLOCK 34
+b_capa_;34;
+BLOCK 35
+b_capa_;35;
+BLOCK 36
+b_capa_;36;
+BLOCK 37
+b_capa_;37;
+BLOCK 38
+b_capa_;38;
+BLOCK 39
+b_capa_;39;
+BLOCK 40
+b_capa_;40;
+BLOCK 41
+b_capa_;41;
+BLOCK 42
+b_capa_;42;
+BLOCK 43
+b_capa_;43;
+BLOCK 44
+b_capa_;44;
+BLOCK 45
+b_capa_;45;
+BLOCK 46
+b_capa_;46;
+BLOCK 47
+b_capa_;47;
+BLOCK 48
+b_capa_;48;
+BLOCK 49
+b_capa_;49;
+BLOCK 50
+b_capa_;50;
+MASTERCONSS
+m_alloc_;1;
+m_alloc_;2;
+m_alloc_;3;
+m_alloc_;4;
+m_alloc_;5;
+m_alloc_;6;
+m_alloc_;7;
+m_alloc_;8;
+m_alloc_;9;
+m_alloc_;10;
+m_alloc_;11;
+m_alloc_;12;
+m_alloc_;13;
+m_alloc_;14;
+m_alloc_;15;
+m_alloc_;16;
+m_alloc_;17;
+m_alloc_;18;
+m_alloc_;19;
+m_alloc_;20;
+m_alloc_;21;
+m_alloc_;22;
+m_alloc_;23;
+m_alloc_;24;
+m_alloc_;25;
+m_alloc_;26;
+m_alloc_;27;
+m_alloc_;28;
+m_alloc_;29;
+m_alloc_;30;
+m_alloc_;31;
+m_alloc_;32;
+m_alloc_;33;
+m_alloc_;34;
+m_alloc_;35;
+m_alloc_;36;
+m_alloc_;37;
+m_alloc_;38;
+m_alloc_;39;
+m_alloc_;40;
+m_alloc_;41;
+m_alloc_;42;
+m_alloc_;43;
+m_alloc_;44;
+m_alloc_;45;
+m_alloc_;46;
+m_alloc_;47;
+m_alloc_;48;
+m_alloc_;49;
+m_alloc_;50;
+m_nfac_
