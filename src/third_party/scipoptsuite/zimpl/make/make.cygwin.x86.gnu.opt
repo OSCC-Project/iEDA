@@ -1,0 +1,8 @@
+CPPFLAGS	+=	-DWINDOWS -DNDEBUG -DNO_MSHELL -D__NO_MATH_INLINES -Wno-format-truncation
+CFLAGS		=	-O3 -march=pentiumpro -g $(GCCWARN)
+LDFLAGS		=	-lgmp -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

@@ -1,0 +1,8 @@
+CXX	=	g++
+CPPFLAGS=	-Isrc -DNDEBUG
+CXXFLAGS=	-O3 -mtune=native  \
+		-ffast-math -funroll-loops
+LDFLAGS	=	-lm # -static
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

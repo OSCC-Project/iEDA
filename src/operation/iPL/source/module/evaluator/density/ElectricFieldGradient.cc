@@ -124,7 +124,6 @@ Point<float> ElectricFieldGradient::obtainDensityGradient(Rectangle<int32_t> sha
     gradient_x += grid_grad_x;
     gradient_y += grid_grad_y;
   }
-
   return Point<float>(gradient_x, gradient_y);
 }
 

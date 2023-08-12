@@ -1,0 +1,12 @@
+Notes for UG Release 1.0.0
+
+- generalization of UG, in which all solvers developed so far can be handled by a single unified framework.
+  UG version 1.0 is completely different from the previous versions internally, though its interfaces for branch-and-bound base solvers remain the same as far as possible.
+  The original UG base classes are separated into branch-and-bound related codes and the others, so that non-branch-and-bound solvers can be parallelized naturally.
+  The classes ParaSolver, ParaComm, ParaLoadCoordinator, ParaParamSet are abstracted.
+- Start of doxygen documentation
+- CMake build system for fiberscip and parascip
+- Join ParaSolver Threads of FiberSCIP and terminate cleanly when one thread finds solution.
+- Time Limit Feature Implementation of FiberSCIP
+- Introduction of SelfSplit Ramp-up feature to FiberSCIP and ParaSCIP.
+- Memory usage estimation; The FiberSCIP memory usage estimation feature is implemented by using SCIP functions.  Termination with "memory limit reached" on reaching system memory limit.

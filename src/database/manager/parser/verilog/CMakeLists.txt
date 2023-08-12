@@ -24,11 +24,15 @@ aux_source_directory(./ SRC)
 
 # add_library(verilog-parser ${SRC} ${FLEX_VerilogLex_OUTPUTS} ${BISON_VerilogParser_OUTPUTS})
 
-add_library(verilog-parser ${SRC})
+add_library(verilog-parser ${SRC} 
+${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
+${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
 
 target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES}) 
 
 target_include_directories(verilog-parser 
     PUBLIC
-        ${HOME_OPERATION}/iSTA/include 
+        ${HOME_OPERATION}/iSTA/include  
+        ${HOME_THIRDPARTY}/parser/verilog
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )

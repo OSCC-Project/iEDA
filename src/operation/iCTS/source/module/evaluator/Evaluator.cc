@@ -102,7 +102,7 @@ void Evaluator::evaluate()
 void Evaluator::statistics(const std::string& save_dir) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = save_dir == "" ? config->get_sta_workspace() : save_dir + "/statistics";
+  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir )+ "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
   auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWIRE_LENGTH);
@@ -119,9 +119,18 @@ void Evaluator::statistics(const std::string& save_dir) const
   double hpwl_total_wire_len = 0.0;
   double hpwl_max_net_len = 0.0;
   for (const auto& eval_net : _eval_nets) {
+    auto router_type = config->get_router_type();
+    auto* design = CTSAPIInst.get_design();
     // wire length
-    auto net_len = eval_net.getWireLength();
-    auto hpwl_net_len = eval_net.getHPWL();
+    double net_len = 0.0;
+    auto* net = design->findGocaNet(eval_net.get_name());
+    if (router_type == "GOCA" && net) {
+      auto * driver_pin = net->get_driver_pin();
+      net_len = driver_pin->get_sub_len();
+    } else {
+      net_len = eval_net.getWireLength();
+    }
+    double hpwl_net_len = eval_net.getHPWL();
     auto type = eval_net.netType();
     switch (type) {
       case NetType::kTop:

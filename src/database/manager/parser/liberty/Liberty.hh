@@ -33,15 +33,14 @@
 #include <vector>
 
 #include "Array.hh"
-#include "DisallowCopyAssign.hh"
 #include "HashMap.hh"
 #include "HashSet.hh"
-#include "LibertyExpr.hh"
 #include "Map.hh"
 #include "Vector.hh"
 #include "include/Config.hh"
 #include "include/Type.hh"
 #include "log/Log.hh"
+#include "mLibertyExpr.hh"
 #include "string/Str.hh"
 #include "string/StrMap.hh"
 
@@ -783,7 +782,7 @@ class LibertyArc : public LibertyObject
   void set_timing_sense(const char* timing_sense);
   TimingSense get_timing_sense() { return _timing_sense; }
 
-  void set_timing_type(const std::string& timing_type);
+  void set_timing_type(const char* timing_type);
   TimingType get_timing_type() { return _timing_type; }
   bool isMatchTimingType(TransType trans_type);
 
@@ -842,17 +841,17 @@ class LibertyArc : public LibertyObject
   double getDriveResistance() { return _table_model->driveResistance(); }
 
  private:
-  std::string _src_port;      //!< The liberty timing arc source port, for liberty
-                              //!< file port may be behind the arc, so we use port
-                              //!< name, fix me.
-  std::string _snk_port;      //!< The liberty timing arc sink port.
-  LibertyCell* _owner_cell;   //!< The cell owner the port.
-  TimingSense _timing_sense;  //!< The arc timing sense.
-  TimingType _timing_type;    //!< The arc timing type.
+  std::string _src_port;                           //!< The liberty timing arc source port, for liberty
+                                                   //!< file port may be behind the arc, so we use port
+                                                   //!< name, fix me.
+  std::string _snk_port;                           //!< The liberty timing arc sink port.
+  LibertyCell* _owner_cell;                        //!< The cell owner the port.
+  TimingSense _timing_sense;                       //!< The arc timing sense.
+  TimingType _timing_type = TimingType::kDefault;  //!< The arc timing type.
 
   std::unique_ptr<LibertyTableModel> _table_model;  //!< The arc timing model.
 
-  static const Map<std::string, TimingType> _str_to_type;
+  static Map<std::string, TimingType> _str_to_type;
 
   DISALLOW_COPY_AND_ASSIGN(LibertyArc);
 };
@@ -1355,7 +1354,7 @@ class LibertyLibrary
 
   void addLibertyCell(std::unique_ptr<LibertyCell> lib_cell)
   {
-    _str2cell.insert(lib_cell->get_cell_name(), lib_cell.get());
+    _str2cell[lib_cell->get_cell_name()] = lib_cell.get();
     _cells.emplace_back(std::move(lib_cell));
   }
 
@@ -1370,7 +1369,7 @@ class LibertyLibrary
 
   void addLutTemplate(std::unique_ptr<LibertyLutTableTemplate> lut_template)
   {
-    _str2template.insert(lut_template->get_template_name(), lut_template.get());
+    _str2template[lut_template->get_template_name()] = lut_template.get();
     _lut_templates.emplace_back(std::move(lut_template));
   }
 
@@ -1385,7 +1384,7 @@ class LibertyLibrary
 
   void addLibType(std::unique_ptr<LibertyType> lib_type)
   {
-    _str2type.insert(lib_type->get_type_name(), lib_type.get());
+    _str2type[lib_type->get_type_name()] = lib_type.get();
     _types.emplace_back(std::move(lib_type));
   }
 
@@ -1400,7 +1399,7 @@ class LibertyLibrary
 
   void addWireLoad(std::unique_ptr<LibertyWireLoad> wire_load)
   {
-    _str2wireLoad.insert(wire_load->get_wire_load_name(), wire_load.get());
+    _str2wireLoad[wire_load->get_wire_load_name()] = wire_load.get();
     _wire_loads.emplace_back(std::move(wire_load));
   }
 

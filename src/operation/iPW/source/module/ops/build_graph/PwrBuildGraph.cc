@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -76,6 +76,9 @@ unsigned PwrBuildGraph::annotateInternalPower(PwrInstArc* inst_power_arc,
  * @return unsigned
  */
 unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
+  ieda::Stats stats;
+  LOG_INFO << "build power graph start";
+
   _power_graph.set_sta_graph(sta_graph);
   // build power vertex based on sta vertex.
   StaVertex* sta_vertex;
@@ -159,6 +162,12 @@ unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
       _power_graph.addOutputPortVertex(output_port_vertex);
     }
   }
+
+  LOG_INFO << "build power graph end";
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build power graph memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build power graph time elapsed " << time_delta << "s";
 
   return 1;
 }

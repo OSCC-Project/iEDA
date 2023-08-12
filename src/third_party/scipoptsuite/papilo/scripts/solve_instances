@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ "$#" -ne 3 ]; then
+   echo "Expected three arguments: solver script, instance folder and log file"
+   exit
+fi
+
+if [ ! -e "$1" ]; then
+   echo "Couldn't find solver script $1"
+   exit
+fi
+
+if [ ! -d "$2" ]; then
+   echo "Couldn't find instance folder $2"
+   exit
+fi
+
+solver=$1
+log_file=$3
+for file in $2/*; do
+   source $solver $file $log_file
+   read -rsp $'Press any key or wait 3 seconds to continue...\n' -n 1 -t 3;
+done

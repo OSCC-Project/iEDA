@@ -1,0 +1,4 @@
+*** Error 119: Union of sets with different dimension
+*** File: e119_1.zpl Line 2
+*** set A:={1..5}+{1..2}*{3..4};
+***                            ^^^

@@ -1434,17 +1434,24 @@ double GlobalRouter::getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GR
 {
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Direction> start_direction_set = start_node->get_direction_set();
+    std::set<Direction> direction_set;
+    // 添加start direction
+    std::set<Direction>& start_direction_set = start_node->get_direction_set();
+    direction_set.insert(start_direction_set.begin(), start_direction_set.end());
+    // 添加start到parent的direction
     if (start_node->get_parent_node() != nullptr) {
-      start_direction_set.insert(RTUtil::getDirection(*start_node->get_parent_node(), *start_node));
+      direction_set.insert(RTUtil::getDirection(*start_node->get_parent_node(), *start_node));
     }
-    std::set<Direction> end_direction_set = end_node->get_direction_set();
-    end_direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
+    // 添加end direction
+    std::set<Direction>& end_direction_set = end_node->get_direction_set();
+    direction_set.insert(end_direction_set.begin(), end_direction_set.end());
+    // 添加start到end的direction
+    direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
 
-    if (start_direction_set.size() == 1 && end_direction_set.size() == 1) {
-      if (*start_direction_set.begin() != *end_direction_set.begin()) {
-        corner_cost += gr_model.get_corner_unit();
-      }
+    if (direction_set.size() == 2) {
+      corner_cost += gr_model.get_corner_unit();
+    } else if (direction_set.size() == 2) {
+      LOG_INST.error(Loc::current(), "Direction set is error!");
     }
   }
   return corner_cost;
@@ -1896,6 +1903,26 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   base_region_struct.push(gp_boundary);
   gp_gds.addStruct(base_region_struct);
 
+  // gcell_axis
+  GPStruct gcell_axis_struct("gcell_axis");
+  std::vector<irt_int> gcell_x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
+  std::vector<irt_int> gcell_y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
+  for (irt_int x : gcell_x_list) {
+    GPPath gp_path;
+    gp_path.set_layer_idx(0);
+    gp_path.set_data_type(1);
+    gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
+    gcell_axis_struct.push(gp_path);
+  }
+  for (irt_int y : gcell_y_list) {
+    GPPath gp_path;
+    gp_path.set_layer_idx(0);
+    gp_path.set_data_type(1);
+    gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
+    gcell_axis_struct.push(gp_path);
+  }
+  gp_gds.addStruct(gcell_axis_struct);
+
   // gr_node_map
   GPStruct gr_node_map_struct("gr_node_map");
   for (GridMap<GRNode>& gr_node_map : gr_model.get_layer_node_map()) {
@@ -2222,7 +2249,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
       // bounding_box
       GPBoundary gp_boundary;
       gp_boundary.set_layer_idx(0);
-      gp_boundary.set_data_type(1);
+      gp_boundary.set_data_type(2);
       gp_boundary.set_rect(gr_net.get_bounding_box().get_real_rect());
       net_struct.push(gp_boundary);
     }

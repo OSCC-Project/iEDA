@@ -45,6 +45,14 @@ enum CtsReportType
   kNET_LEVEL = 4,
   kTIMING_NODE_LOG = 5,
   kHCTS_LOG = 6,
+  kLEVEL_LOG = 7,
+  kLEVEL_FANOUT = 8,
+  kLEVEL_NET_LEN = 9,
+  kLEVEL_CAP = 10,
+  kLEVEL_SLEW = 11,
+  kLEVEL_DELAY = 12,
+  kLEVEL_INSERT_DELAY = 13,
+  kLEVEL_SKEW = 14,
 };
 
 class CtsReportTable : public ieda::ReportTable

@@ -3,18 +3,18 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 
-#include "flute/flute.h" // should be included after boost/functional/hash.hpp
-
+#include "flute3/flute.h" // should be included after boost/functional/hash.hpp
+#define MAXD 5000          // max. degree that can be handled
 void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
     // load LUT
     static bool once = false;
     if (!once) {
-        flute::readLUT();
-        once = true;
+      Flute::readLUT();
+      once = true;
     }
 
     // Obtain flute tree
-    flute::Tree fluteTree;
+    Flute::Tree fluteTree;
     fluteTree.branch = nullptr;
     int d = net.pins.size();
     assert(d <= MAXD);
@@ -24,7 +24,7 @@ void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
         y[i] = net.pins[i]->loc.y;
     }
     if (fluteTree.branch) free(fluteTree.branch);  // is it complete for mem leak?
-    fluteTree = flute::flute(d, x, y, ACCURACY);
+    fluteTree = Flute::flute(d, x, y, FLUTE_ACCURACY);
 
     // Build adjacency list
     unordered_map<pair<DTYPE, DTYPE>, shared_ptr<salt::TreeNode>, boost::hash<pair<DTYPE, DTYPE>>> key2node;

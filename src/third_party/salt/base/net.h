@@ -8,7 +8,8 @@
 
 using namespace std;
 
-#define DTYPE int  // same as flute.h, will overwrite it
+// #define DTYPE int  // same as flute.h, will overwrite it
+typedef int DTYPE;
 
 namespace salt {
 

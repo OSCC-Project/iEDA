@@ -1,0 +1,4 @@
+*** Error 401: RHS unequal to 1 can't be converted to QUBO (yet)
+*** File: e401.zpl Line 2
+*** subto c1: x[1] + x[2] + x[3] == 2, qubo;
+***                                        ^^^

@@ -20,54 +20,128 @@
 #include <cfloat>
 #include <cmath>
 #include <fstream>
+#include <regex>
 
 #include "../manager.hpp"
 #include "EvalLog.hpp"
 
 namespace eval {
 
-void CongestionEval::reportCongestion(const std::string& plot_path, const std::string& output_file_name)
+void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
 {
-  LOG_INFO << " ==========================================";
-  LOG_INFO << " Congestion Evaluator is working ... ... ";
-  LOG_INFO << " ==========================================";
-  LOG_INFO << " Evaluating Pin Num for Each Bin ... ... ";
-  mapInst2Bin();
-  evalPinNum();
-  reportPinNum();
-  plotPinNum(plot_path, output_file_name);
-  LOG_INFO << " Evaluating Cell Density for Each Bin ... ... ";
-  evalInstDens();
-  reportInstDens();
-  plotInstDens(plot_path, output_file_name);
-  LOG_INFO << " Evaluating Net Congestion for Each Bin ... ... ";
-  mapNet2Bin();
-  evalNetCong("RUDY");
-  reportNetCong();
-  plotNetCong(plot_path, output_file_name, "RUDY");
-  evalNetCong("RUDYDev");
-  reportNetCong();
-  plotNetCong(plot_path, output_file_name, "RUDYDev");
-  evalNetCong("SteinerRUDY");
-  reportNetCong();
-  plotNetCong(plot_path, output_file_name, "StenierRUDY");
-  evalNetCong("PinRUDY");
-  reportNetCong();
-  plotNetCong(plot_path, output_file_name, "PinRUDY");
-  // evalNetCong("PinSteinerRUDY");
-  // reportNetCong();
-  // plotNetCong(plot_path, output_file_name, "PinSteinerRUDY");
-  // evalNetCong("TrueRUDY");
-  // reportNetCong();
-  // plotNetCong(plot_path, output_file_name, "TrueRUDY");
-  LOG_INFO << " Evaluating Routing Congestion for Each Tile ... ... ";
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbLayers* idb_layers = idb_layout->get_layers();
+  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  int32_t lx = core_bbox->get_low_x();
+  int32_t ly = core_bbox->get_low_y();
+  int32_t width = core_bbox->get_width();
+  int32_t height = core_bbox->get_height();
+
+  _cong_grid->set_lx(lx);
+  _cong_grid->set_ly(ly);
+  _cong_grid->set_bin_cnt_x(bin_cnt_x);
+  _cong_grid->set_bin_cnt_y(bin_cnt_y);
+  _cong_grid->set_bin_size_x(ceil(width / (float) bin_cnt_x));
+  _cong_grid->set_bin_size_y(ceil(height / (float) bin_cnt_y));
+  _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
+  _cong_grid->initBins(idb_layers);
+  _cong_grid->initTracksNum(idb_layers);
 }
 
-/////////////////////////////////
-/////////////////////////////////
-/*----evaluate pin number----*/
-/////////////////////////////////
-/////////////////////////////////
+void CongestionEval::initCongInst()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbDie* idb_die = idb_layout->get_die();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int32_t die_lx = idb_die->get_llx();
+  int32_t die_ly = idb_die->get_lly();
+  int32_t die_ux = idb_die->get_urx();
+  int32_t die_uy = idb_die->get_ury();
+  int32_t core_lx = idb_core->get_low_x();
+  int32_t core_ly = idb_core->get_low_y();
+  int32_t core_ux = idb_core->get_high_x();
+  int32_t core_uy = idb_core->get_high_y();
+
+  for (auto* idb_inst : idb_design->get_instance_list()->get_instance_list()) {
+    CongInst* inst_ptr = new CongInst();
+    inst_ptr->set_name(idb_inst->get_name());
+    auto bbox = idb_inst->get_bounding_box();
+    inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
+
+    auto inst_status = idb_inst->get_status();
+    if (inst_status == IdbPlacementStatus::kNone) {
+      inst_ptr->set_status(INSTANCE_STATUS::kNone);
+    } else if (inst_status == IdbPlacementStatus::kFixed) {
+      inst_ptr->set_status(INSTANCE_STATUS::kFixed);
+    } else if (inst_status == IdbPlacementStatus::kCover) {
+      inst_ptr->set_status(INSTANCE_STATUS::kCover);
+    } else if (inst_status == IdbPlacementStatus::kPlaced) {
+      inst_ptr->set_status(INSTANCE_STATUS::kPlaced);
+    } else if (inst_status == IdbPlacementStatus::kUnplaced) {
+      inst_ptr->set_status(INSTANCE_STATUS::kUnplaced);
+    } else {
+      inst_ptr->set_status(INSTANCE_STATUS::kMax);
+    }
+
+    if (idb_inst->is_flip_flop()) {
+      inst_ptr->set_flip_flop(true);
+      std::cout << "flip flop " << std::endl;
+    }
+
+    if ((bbox->get_low_x() >= die_lx && bbox->get_high_x() <= core_lx) || (bbox->get_low_x() >= core_ux && bbox->get_high_x() <= die_ux)
+        || (bbox->get_low_y() >= die_ly && bbox->get_high_y() <= core_ly)
+        || (bbox->get_low_y() >= core_uy && bbox->get_high_y() <= die_uy)) {
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kOutside);
+    } else {
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kNormal);
+    }
+
+    _cong_inst_list.emplace_back(inst_ptr);
+    _name_to_inst_map.emplace(inst_ptr->get_name(), inst_ptr);
+  }
+}
+
+void CongestionEval::initCongNetList()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
+    std::string net_name = fixSlash(idb_net->get_net_name());
+    CongNet* net_ptr = new CongNet();
+    net_ptr->set_name(net_name);
+
+    auto connect_type = idb_net->get_connect_type();
+    if (connect_type == IdbConnectType::kSignal) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kSignal);
+    } else if (connect_type == IdbConnectType::kClock) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kClock);
+    } else if (connect_type == IdbConnectType::kPower) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kPower);
+    } else if (connect_type == IdbConnectType::kGround) {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kGround);
+    } else {
+      net_ptr->set_connect_type(NET_CONNECT_TYPE::kNone);
+    }
+
+    auto* idb_driving_pin = idb_net->get_driving_pin();
+    if (idb_driving_pin) {
+      CongPin* pin_ptr = wrapCongPin(idb_driving_pin);
+      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
+      net_ptr->add_pin(pin_ptr);
+    }
+    for (auto* idb_load_pin : idb_net->get_load_pins()) {
+      CongPin* pin_ptr = wrapCongPin(idb_load_pin);
+      pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
+      net_ptr->add_pin(pin_ptr);
+    }
+
+    _cong_net_list.emplace_back(net_ptr);
+  }
+}
 
 void CongestionEval::mapInst2Bin()
 {
@@ -96,6 +170,1059 @@ void CongestionEval::mapInst2Bin()
       }
     }
   }
+}
+
+void CongestionEval::mapNetCoord2Grid()
+{
+  for (auto& net : _cong_net_list) {
+    if (net->get_pin_list().size() == 1) {
+      continue;
+    }
+    std::pair<int, int> pair_x = _cong_grid->getMinMaxX(net);
+    std::pair<int, int> pair_y = _cong_grid->getMinMaxY(net);
+    // fix the out of core bug
+    if (pair_x.first < 0) {
+      pair_x.first = 0;
+    }
+    if (pair_y.first < 0) {
+      pair_y.first = 0;
+    }
+    if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
+      pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
+    }
+    if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
+      pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
+    }
+    for (int i = pair_x.first; i <= pair_x.second; i++) {
+      for (int j = pair_y.first; j <= pair_y.second; j++) {
+        CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
+        bin->add_net(net);
+      }
+    }
+  }
+}
+
+void CongestionEval::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    double overlap_area = 0.0;
+    double density = 0.0;
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        if (eval_flip_flop == false) {
+          overlap_area += getOverlapArea(bin, inst);
+        } else if (inst->isFlipFlop()) {
+          overlap_area += getOverlapArea(bin, inst);
+        }
+      }
+    }
+    density = overlap_area / bin->get_area();
+    bin->set_inst_density(density);
+  }
+}
+
+void CongestionEval::evalPinDens(INSTANCE_STATUS inst_status, int level)
+{
+  // Reset pin numbers for all bins
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_pin_num(0);
+  }
+
+  // Calculate pin numbers for each bin
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increPinNum();
+          }
+        }
+      }
+    }
+  }
+  // Update pin numbers for each bin using the pin sum in the square region
+  if (level != 0) {
+    const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    const int height = _cong_grid->get_bin_cnt_y();
+    const int width = _cong_grid->get_bin_cnt_x();
+    std::vector<std::vector<int>> padded_matrix(height + 2, std::vector<int>(width + 2, 0));
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        padded_matrix[i + 1][j + 1] = _cong_grid->get_bin_list()[i * width + j]->get_pin_num();
+      }
+    }
+    std::vector<std::vector<int>> output_matrix(height, std::vector<int>(width, 0));
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        int sum = 0;
+        for (int k = 0; k < 3; k++) {
+          for (int l = 0; l < 3; l++) {
+            sum += padded_matrix[i + k][j + l] * kernel[k][l];
+          }
+        }
+        output_matrix[i][j] = sum;
+      }
+    }
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        _cong_grid->get_bin_list()[i * width + j]->set_pin_num(output_matrix[i][j]);
+      }
+    }
+  }
+}
+
+void CongestionEval::evalNetDens(INSTANCE_STATUS inst_status)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (inst_status == status) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increNetCong(pin->get_two_pin_net_num());
+          }
+        }
+      }
+    }
+  }
+}
+
+void CongestionEval::evalLocalNetDens()
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& net : bin->get_net_list()) {
+      auto net_bbox = net->get_height() * net->get_width();
+      if (getOverlapArea(bin, net) == net_bbox) {
+        bin->increNetCong(1);
+      }
+    }
+  }
+}
+
+void CongestionEval::evalGlobalNetDens()
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& net : bin->get_net_list()) {
+      auto net_bbox = net->get_height() * net->get_width();
+      if (getOverlapArea(bin, net) != net_bbox) {
+        bin->increNetCong(1);
+      }
+    }
+  }
+}
+
+void CongestionEval::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
+{
+  std::ofstream plot(plot_path + output_file_name + ".csv");
+  if (!plot.good()) {
+    std::cerr << "plot bin value:: cannot open " << output_file_name << "for writing" << std::endl;
+    exit(1);
+  }
+  std::stringstream feed;
+  feed.precision(5);
+  int32_t x_cnt = _cong_grid->get_bin_cnt_x();
+  int32_t y_cnt = _cong_grid->get_bin_cnt_y();
+
+  for (int i = 0; i < x_cnt; i++) {
+    if (i == x_cnt - 1) {
+      feed << "col_" << i;
+    } else {
+      feed << "col_" << i << ",";
+    }
+  }
+  feed << std::endl;
+
+  if (cong_type == CONGESTION_TYPE::kInstDens) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double inst_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_inst_density();
+        if (j == x_cnt - 1) {
+          feed << inst_density;
+        } else {
+          feed << inst_density << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  } else if (cong_type == CONGESTION_TYPE::kPinDens) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        int pin_density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_pin_num();
+        if (j == x_cnt - 1) {
+          feed << pin_density;
+        } else {
+          feed << pin_density << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  } else if (cong_type == CONGESTION_TYPE::kNetCong) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double net_cong = _cong_grid->get_bin_list()[i * x_cnt + j]->get_net_cong();
+        if (j == x_cnt - 1) {
+          feed << net_cong;
+        } else {
+          feed << net_cong << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  }
+
+  plot << feed.str();
+  feed.clear();
+  plot.close();
+  LOG_INFO << output_file_name + ".csv"
+           << " has been created in " << plot_path;
+}
+
+int32_t CongestionEval::evalInstNum(INSTANCE_STATUS inst_status)
+{
+  int32_t inst_num = 0;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == inst_status) {
+      ++inst_num;
+    }
+  }
+  return inst_num;
+}
+
+int32_t CongestionEval::evalNetNum(NET_CONNECT_TYPE net_type)
+{
+  int32_t net_num = 0;
+  for (auto& net : _cong_net_list) {
+    if (net_type == net->get_connect_type()) {
+      net_num++;
+    }
+  }
+  return net_num;
+}
+
+int32_t CongestionEval::evalPinTotalNum()
+{
+  int32_t pin_num = 0;
+  for (auto& net : _cong_net_list) {
+    pin_num += net->get_pin_list().size();
+  }
+  return pin_num;
+}
+
+int32_t CongestionEval::evalRoutingLayerNum()
+{
+  return _cong_grid->get_routing_layers_number();
+}
+
+int32_t CongestionEval::evalTrackNum(DIRECTION direction)
+{
+  if (direction == DIRECTION::kH) {
+    return _cong_grid->get_track_num_h();
+  } else if (direction == DIRECTION::kV) {
+    return _cong_grid->get_track_num_v();
+  } else {
+    return _cong_grid->get_track_num_h() + _cong_grid->get_track_num_v();
+  }
+}
+
+std::vector<int64_t> CongestionEval::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbDie* idb_die = idb_layout->get_die();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int32_t die_width = idb_die->get_width();
+  int32_t die_height = idb_die->get_height();
+  int64_t die_area = idb_die->get_area();
+  int32_t core_width = idb_core->get_width();
+  int32_t core_height = idb_core->get_height();
+  int64_t core_area = idb_core->get_area();
+
+  std::vector<int64_t> chip_info_list;
+  chip_info_list.reserve(3);
+  if (chip_region_type == CHIP_REGION_TYPE::kDie) {
+    chip_info_list.emplace_back(die_width);
+    chip_info_list.emplace_back(die_height);
+    chip_info_list.emplace_back(die_area);
+  } else if (chip_region_type == CHIP_REGION_TYPE::kCore) {
+    chip_info_list.emplace_back(core_width);
+    chip_info_list.emplace_back(core_height);
+    chip_info_list.emplace_back(core_area);
+  }
+  return chip_info_list;
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalInstSize(INSTANCE_STATUS inst_status)
+{
+  vector<pair<string, pair<int32_t, int32_t>>> inst_name_to_size_list;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == inst_status) {
+      pair<string, pair<int32_t, int32_t>> name_to_size
+          = std::make_pair(inst->get_name(), std::make_pair(inst->get_width(), inst->get_height()));
+      inst_name_to_size_list.emplace_back(name_to_size);
+    }
+  }
+  return inst_name_to_size_list;
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalNetSize()
+{
+  vector<pair<string, pair<int32_t, int32_t>>> net_name_to_size_list;
+  for (auto& net : _cong_net_list) {
+    pair<string, pair<int32_t, int32_t>> name_to_size
+        = std::make_pair(net->get_name(), std::make_pair(net->get_width(), net->get_height()));
+    net_name_to_size_list.emplace_back(name_to_size);
+  }
+  return net_name_to_size_list;
+}
+
+void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_net_cong(0.0);
+  }
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    int32_t overlap_area = 0;
+    double congestion = 0.0;
+    for (auto& net : bin->get_net_list()) {
+      overlap_area = getOverlapArea(bin, net);
+      if (rudy_type == RUDY_TYPE::kRUDY) {
+        congestion += overlap_area * getRudy(bin, net, direction);
+      } else if (rudy_type == RUDY_TYPE::kPinRUDY) {
+        congestion += overlap_area * getPinRudy(bin, net, direction);
+      } else if (rudy_type == RUDY_TYPE::kLUTRUDY) {
+        int32_t pin_num = net->get_pin_list().size();
+        int64_t net_width = net->get_width();
+        int64_t net_height = net->get_height();
+        int32_t aspect_ratio = 0;
+        if (net_width >= net_height && net_height != 0) {
+          aspect_ratio = std::round(net_width / net_height);
+        } else if (net_width < net_height && net_width != 0) {
+          aspect_ratio = std::round(net_height / net_width);
+        } else {
+          aspect_ratio = 1;
+        }
+        float l_ness = 0.0;
+        if (pin_num <= 3) {
+          l_ness = 1.0;
+        } else if (pin_num <= 15) {
+          std::vector<std::pair<int32_t, int32_t>> point_set;
+          for (int i = 0; i < pin_num; ++i) {
+            const int32_t pin_x = net->get_pin_list()[i]->get_x();
+            const int32_t pin_y = net->get_pin_list()[i]->get_y();
+            point_set.emplace_back(std::make_pair(pin_x, pin_y));
+          }
+          l_ness = calcLness(point_set, net->get_lx(), net->get_ux(), net->get_ly(), net->get_uy());
+        } else {
+          l_ness = 0.5;
+        }
+        congestion += overlap_area * getLUT(pin_num, aspect_ratio, l_ness) * getRudy(bin, net, direction);
+      }
+    }
+    bin->set_net_cong(congestion);
+  }
+}
+
+void CongestionEval::plotTileValue(const string& plot_path, const string& output_file_name)
+{
+  // plot each layer congestion map
+  plotGRCong(plot_path, output_file_name);
+  // plot two congestion map:  TOF/MOF
+  plotOverflow(plot_path, output_file_name);
+}
+
+float CongestionEval::calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax)
+{
+  int64_t bbox = (xmax - xmin) * (ymax - ymin);
+  int64_t R1 = calcLowerLeftRP(point_set, xmin, ymin);
+  int64_t R2 = calcLowerRightRP(point_set, xmax, ymin);
+  int64_t R3 = calcUpperLeftRP(point_set, xmin, ymax);
+  int64_t R4 = calcUpperRightRP(point_set, xmax, ymax);
+  int64_t R = std::max({R1, R2, R3, R4});
+  float l_ness;
+  if (bbox != 0) {
+    l_ness = R / bbox;
+  } else {
+    l_ness = 1.0;
+  }
+  return l_ness;
+}
+
+int64_t CongestionEval::calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin)
+{
+  std::sort(point_set.begin(), point_set.end());  // Sort point_set with x-coordinates in ascending order
+  int64_t R = 0, y0 = point_set[0].second;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    int32_t xi = point_set[i].first;
+    if (point_set[i].second <= y0) {
+      R = std::max(R, (xi - xmin) * (y0 - ymin));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymin)
+{
+  std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
+                                                                                               // descending order
+  int64_t R = 0, y0 = point_set[0].second, xi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    xi = point_set[i].first;
+    if (point_set[i].second <= y0) {
+      R = std::max(R, (xmax - xi) * (y0 - ymin));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymax)
+{
+  std::sort(point_set.begin(), point_set.end(), [](const std::pair<int32_t, int32_t>& a, const std::pair<int32_t, int32_t>& b) {
+    return a.second > b.second;
+  });  // Sort point_set with y-coordinates in descending order
+  int64_t R = 0, x0 = point_set[0].first, yi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    yi = point_set[i].second;
+    if (point_set[i].first <= x0) {
+      R = std::max(R, (ymax - yi) * (x0 - xmin));
+      x0 = point_set[i].first;
+    }
+  }
+  return R;
+}
+
+int64_t CongestionEval::calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymax)
+{
+  std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
+                                                                                               // descending order
+  int64_t R = 0, y0 = point_set[0].second, xi;
+  for (size_t i = 1; i < point_set.size(); i++) {
+    xi = point_set[i].first;
+    if (point_set[i].second >= y0) {
+      R = std::max(R, (ymax - y0) * (xmax - xi));
+      y0 = point_set[i].second;
+    }
+  }
+  return R;
+}
+
+double CongestionEval::getLUT(const int32_t& pin_num, const int32_t& aspect_ratio, const float& l_ness)
+{
+  switch (aspect_ratio) {
+    case 1:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.330;
+          if (l_ness <= 0.50)
+            return 1.115;
+          if (l_ness <= 0.75)
+            return 1.050;
+          if (l_ness <= 1.00)
+            return 1.020;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.330;
+          if (l_ness <= 0.50)
+            return 1.150;
+          if (l_ness <= 0.75)
+            return 1.080;
+          if (l_ness <= 1.00)
+            return 1.040;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.355;
+          if (l_ness <= 0.50)
+            return 1.185;
+          if (l_ness <= 0.75)
+            return 1.110;
+          if (l_ness <= 1.00)
+            return 1.050;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.390;
+          if (l_ness <= 0.50)
+            return 1.220;
+          if (l_ness <= 0.75)
+            return 1.135;
+          if (l_ness <= 1.00)
+            return 1.065;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.415;
+          if (l_ness <= 0.50)
+            return 1.250;
+          if (l_ness <= 0.75)
+            return 1.160;
+          if (l_ness <= 1.00)
+            return 1.080;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.450;
+          if (l_ness <= 0.50)
+            return 1.285;
+          if (l_ness <= 0.75)
+            return 1.185;
+          if (l_ness <= 1.00)
+            return 1.090;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.490;
+          if (l_ness <= 0.50)
+            return 1.325;
+          if (l_ness <= 0.75)
+            return 1.210;
+          if (l_ness <= 1.00)
+            return 1.105;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.515;
+          if (l_ness <= 0.50)
+            return 1.355;
+          if (l_ness <= 0.75)
+            return 1.235;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.555;
+          if (l_ness <= 0.50)
+            return 1.385;
+          if (l_ness <= 0.75)
+            return 1.260;
+          if (l_ness <= 1.00)
+            return 1.135;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.590;
+          if (l_ness <= 0.50)
+            return 1.420;
+          if (l_ness <= 0.75)
+            return 1.280;
+          if (l_ness <= 1.00)
+            return 1.145;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.620;
+          if (l_ness <= 0.50)
+            return 1.450;
+          if (l_ness <= 0.75)
+            return 1.310;
+          if (l_ness <= 1.00)
+            return 1.160;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.660;
+          if (l_ness <= 0.50)
+            return 1.485;
+          if (l_ness <= 0.75)
+            return 1.330;
+          if (l_ness <= 1.00)
+            return 1.175;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.660;
+          if (l_ness <= 0.50)
+            return 1.485;
+          if (l_ness <= 0.75)
+            return 1.330;
+          if (l_ness <= 1.00)
+            return 1.175;
+          break;
+      }
+      break;
+    case 2:
+    case 3:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.240;
+          if (l_ness <= 0.50)
+            return 1.094;
+          if (l_ness <= 0.75)
+            return 1.047;
+          if (l_ness <= 1.00)
+            return 1.023;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.240;
+          if (l_ness <= 0.50)
+            return 1.127;
+          if (l_ness <= 0.75)
+            return 1.070;
+          if (l_ness <= 1.00)
+            return 1.037;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.273;
+          if (l_ness <= 0.50)
+            return 1.155;
+          if (l_ness <= 0.75)
+            return 1.103;
+          if (l_ness <= 1.00)
+            return 1.051;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.306;
+          if (l_ness <= 0.50)
+            return 1.193;
+          if (l_ness <= 0.75)
+            return 1.127;
+          if (l_ness <= 1.00)
+            return 1.065;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.348;
+          if (l_ness <= 0.50)
+            return 1.221;
+          if (l_ness <= 0.75)
+            return 1.150;
+          if (l_ness <= 1.00)
+            return 1.080;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.377;
+          if (l_ness <= 0.50)
+            return 1.259;
+          if (l_ness <= 0.75)
+            return 1.174;
+          if (l_ness <= 1.00)
+            return 1.094;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.409;
+          if (l_ness <= 0.50)
+            return 1.287;
+          if (l_ness <= 0.75)
+            return 1.197;
+          if (l_ness <= 1.00)
+            return 1.103;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.447;
+          if (l_ness <= 0.50)
+            return 1.315;
+          if (l_ness <= 0.75)
+            return 1.221;
+          if (l_ness <= 1.00)
+            return 1.117;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.485;
+          if (l_ness <= 0.50)
+            return 1.344;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.131;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.513;
+          if (l_ness <= 0.50)
+            return 1.377;
+          if (l_ness <= 0.75)
+            return 1.263;
+          if (l_ness <= 1.00)
+            return 1.141;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.546;
+          if (l_ness <= 0.50)
+            return 1.405;
+          if (l_ness <= 0.75)
+            return 1.287;
+          if (l_ness <= 1.00)
+            return 1.150;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.579;
+          if (l_ness <= 0.50)
+            return 1.433;
+          if (l_ness <= 0.75)
+            return 1.306;
+          if (l_ness <= 1.00)
+            return 1.169;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.579;
+          if (l_ness <= 0.50)
+            return 1.433;
+          if (l_ness <= 0.75)
+            return 1.306;
+          if (l_ness <= 1.00)
+            return 1.169;
+          break;
+      }
+      break;
+    case 4:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.064;
+          if (l_ness <= 0.75)
+            return 1.032;
+          if (l_ness <= 1.00)
+            return 1.016;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.084;
+          if (l_ness <= 0.75)
+            return 1.052;
+          if (l_ness <= 1.00)
+            return 1.032;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.172;
+          if (l_ness <= 0.50)
+            return 1.108;
+          if (l_ness <= 0.75)
+            return 1.076;
+          if (l_ness <= 1.00)
+            return 1.044;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.200;
+          if (l_ness <= 0.50)
+            return 1.128;
+          if (l_ness <= 0.75)
+            return 1.092;
+          if (l_ness <= 1.00)
+            return 1.056;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.224;
+          if (l_ness <= 0.50)
+            return 1.156;
+          if (l_ness <= 0.75)
+            return 1.116;
+          if (l_ness <= 1.00)
+            return 1.068;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.252;
+          if (l_ness <= 0.50)
+            return 1.180;
+          if (l_ness <= 0.75)
+            return 1.132;
+          if (l_ness <= 1.00)
+            return 1.076;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.276;
+          if (l_ness <= 0.50)
+            return 1.204;
+          if (l_ness <= 0.75)
+            return 1.152;
+          if (l_ness <= 1.00)
+            return 1.088;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.308;
+          if (l_ness <= 0.50)
+            return 1.228;
+          if (l_ness <= 0.75)
+            return 1.164;
+          if (l_ness <= 1.00)
+            return 1.100;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.332;
+          if (l_ness <= 0.50)
+            return 1.252;
+          if (l_ness <= 0.75)
+            return 1.188;
+          if (l_ness <= 1.00)
+            return 1.108;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.360;
+          if (l_ness <= 0.50)
+            return 1.276;
+          if (l_ness <= 0.75)
+            return 1.208;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.388;
+          if (l_ness <= 0.50)
+            return 1.300;
+          if (l_ness <= 0.75)
+            return 1.220;
+          if (l_ness <= 1.00)
+            return 1.132;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+      }
+      break;
+    default:
+      switch (pin_num) {
+        case 1:
+        case 2:
+        case 3:
+          return 1.00;
+          break;
+        case 4:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.064;
+          if (l_ness <= 0.75)
+            return 1.032;
+          if (l_ness <= 1.00)
+            return 1.016;
+          break;
+        case 5:
+          if (l_ness <= 0.25)
+            return 1.144;
+          if (l_ness <= 0.50)
+            return 1.084;
+          if (l_ness <= 0.75)
+            return 1.052;
+          if (l_ness <= 1.00)
+            return 1.032;
+          break;
+        case 6:
+          if (l_ness <= 0.25)
+            return 1.172;
+          if (l_ness <= 0.50)
+            return 1.108;
+          if (l_ness <= 0.75)
+            return 1.076;
+          if (l_ness <= 1.00)
+            return 1.044;
+          break;
+        case 7:
+          if (l_ness <= 0.25)
+            return 1.200;
+          if (l_ness <= 0.50)
+            return 1.128;
+          if (l_ness <= 0.75)
+            return 1.092;
+          if (l_ness <= 1.00)
+            return 1.056;
+          break;
+        case 8:
+          if (l_ness <= 0.25)
+            return 1.224;
+          if (l_ness <= 0.50)
+            return 1.156;
+          if (l_ness <= 0.75)
+            return 1.116;
+          if (l_ness <= 1.00)
+            return 1.068;
+          break;
+        case 9:
+          if (l_ness <= 0.25)
+            return 1.252;
+          if (l_ness <= 0.50)
+            return 1.180;
+          if (l_ness <= 0.75)
+            return 1.132;
+          if (l_ness <= 1.00)
+            return 1.076;
+          break;
+        case 10:
+          if (l_ness <= 0.25)
+            return 1.276;
+          if (l_ness <= 0.50)
+            return 1.204;
+          if (l_ness <= 0.75)
+            return 1.152;
+          if (l_ness <= 1.00)
+            return 1.088;
+          break;
+        case 11:
+          if (l_ness <= 0.25)
+            return 1.308;
+          if (l_ness <= 0.50)
+            return 1.228;
+          if (l_ness <= 0.75)
+            return 1.164;
+          if (l_ness <= 1.00)
+            return 1.100;
+          break;
+        case 12:
+          if (l_ness <= 0.25)
+            return 1.332;
+          if (l_ness <= 0.50)
+            return 1.252;
+          if (l_ness <= 0.75)
+            return 1.188;
+          if (l_ness <= 1.00)
+            return 1.108;
+          break;
+        case 13:
+          if (l_ness <= 0.25)
+            return 1.360;
+          if (l_ness <= 0.50)
+            return 1.276;
+          if (l_ness <= 0.75)
+            return 1.208;
+          if (l_ness <= 1.00)
+            return 1.120;
+          break;
+        case 14:
+          if (l_ness <= 0.25)
+            return 1.388;
+          if (l_ness <= 0.50)
+            return 1.300;
+          if (l_ness <= 0.75)
+            return 1.220;
+          if (l_ness <= 1.00)
+            return 1.132;
+          break;
+        case 15:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+        default:
+          if (l_ness <= 0.25)
+            return 1.416;
+          if (l_ness <= 0.50)
+            return 1.316;
+          if (l_ness <= 0.75)
+            return 1.240;
+          if (l_ness <= 1.00)
+            return 1.144;
+          break;
+      }
+      break;
+  }
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+void CongestionEval::reportCongestion(const std::string& plot_path, const std::string& output_file_name)
+{
+  LOG_INFO << " ==========================================";
+  LOG_INFO << " Congestion Evaluator is working ... ... ";
+  LOG_INFO << " ==========================================";
+  LOG_INFO << " Evaluating Pin Num for Each Bin ... ... ";
+  mapInst2Bin();
+  evalPinNum();
+  reportPinNum();
+  plotPinNum(plot_path, output_file_name);
+  LOG_INFO << " Evaluating Cell Density for Each Bin ... ... ";
+  evalInstDens();
+  reportInstDens();
+  plotInstDens(plot_path, output_file_name);
+  LOG_INFO << " Evaluating Net Congestion for Each Bin ... ... ";
+  mapNetCoord2Grid();
+  evalNetCong("RUDY");
+  reportNetCong();
+  plotNetCong(plot_path, output_file_name, "RUDY");
+  evalNetCong("RUDYDev");
+  reportNetCong();
+  plotNetCong(plot_path, output_file_name, "RUDYDev");
+  evalNetCong("SteinerRUDY");
+  reportNetCong();
+  plotNetCong(plot_path, output_file_name, "StenierRUDY");
+  evalNetCong("PinRUDY");
+  reportNetCong();
+  plotNetCong(plot_path, output_file_name, "PinRUDY");
+  // evalNetCong("PinSteinerRUDY");
+  // reportNetCong();
+  // plotNetCong(plot_path, output_file_name, "PinSteinerRUDY");
+  // evalNetCong("TrueRUDY");
+  // reportNetCong();
+  // plotNetCong(plot_path, output_file_name, "TrueRUDY");
+  LOG_INFO << " Evaluating Routing Congestion for Each Tile ... ... ";
 }
 
 void CongestionEval::evalPinNum()
@@ -189,12 +1316,6 @@ double CongestionEval::getBinPinDens(const int& index_x, const int& index_y)
   return (double) pin_num / bin->get_area();
 }
 
-/////////////////////////////////
-/////////////////////////////////
-/*----evaluate inst density----*/
-/////////////////////////////////
-/////////////////////////////////
-
 void CongestionEval::evalInstDens()
 {
   for (auto& bin : _cong_grid->get_bin_list()) {
@@ -282,73 +1403,44 @@ double CongestionEval::getBinInstDens(const int& index_x, const int& index_y)
 /////////////////////////////////
 /////////////////////////////////
 
-void CongestionEval::mapNet2Bin()
+std::string CongestionEval::fixSlash(std::string raw_str)
 {
-  for (auto& net : _cong_net_list) {
-    if (net->get_pin_list().size() == 1) {
-      continue;
-    }
-    std::pair<int, int> pair_x = _cong_grid->getMinMaxX(net);
-    std::pair<int, int> pair_y = _cong_grid->getMinMaxY(net);
-    // fix the out of core bug
-    if (pair_x.first < 0) {
-      pair_x.first = 0;
-    }
-    if (pair_y.first < 0) {
-      pair_y.first = 0;
-    }
-    if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
-      pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
-    }
-    if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
-      pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
-    }
-    for (int i = pair_x.first; i <= pair_x.second; i++) {
-      for (int j = pair_y.first; j <= pair_y.second; j++) {
-        CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
-        bin->add_net(net);
-      }
+  std::regex re(R"(\\)");
+  return std::regex_replace(raw_str, re, "");
+}
+
+CongPin* CongestionEval::wrapCongPin(idb::IdbPin* idb_pin)
+{
+  CongPin* pin_ptr = nullptr;
+
+  auto* idb_inst = idb_pin->get_instance();
+  if (!idb_inst) {
+    pin_ptr = new CongPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+    pin_ptr->set_type(PIN_TYPE::kIOPort);
+  } else {
+    std::string pin_name = idb_inst->get_name() + ":" + idb_pin->get_pin_name();
+    pin_ptr = new CongPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+    pin_ptr->set_type(PIN_TYPE::kInstancePort);
+    // set instance
+    auto inst_iter = _name_to_inst_map.find(idb_inst->get_name());
+    if (inst_iter != _name_to_inst_map.end()) {
+      CongInst* inst = (*inst_iter).second;
+      inst->add_pin(pin_ptr);
+    } else {
+      LOG_ERROR << idb_inst->get_name() << "is not found in cong_inst_map";
     }
   }
+
+  pin_ptr->set_x(idb_pin->get_average_coordinate()->get_x());
+  pin_ptr->set_y(idb_pin->get_average_coordinate()->get_y());
+
+  return pin_ptr;
 }
 
 void CongestionEval::evalNetCong(const std::string& rudy_type)
 {
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    bin->reset();
-  }
-
-  std::map<std::string, int64_t> netname_steinerwl_map;
-  std::map<std::string, int64_t> netname_truewl_map;
-  if (rudy_type == "SteinerRUDY" || rudy_type == "PinSteinerRUDY") {
-    auto length_evaluator = Manager::getInst().getWirelengthEval();
-    netname_steinerwl_map = length_evaluator->getName2WLmap("SteinerRUDY");
-  }
-  if (rudy_type == "TrueRUDY") {
-    auto length_evaluator = Manager::getInst().getWirelengthEval();
-    netname_truewl_map = length_evaluator->getName2WLmap("TrueRUDY");
-  }
-  for (auto& bin : _cong_grid->get_bin_list()) {
-    int32_t overlap_area = 0;
-    double congestion = 0.0;
-    for (auto& net : bin->get_net_list()) {
-      overlap_area = getOverlapArea(bin, net);
-      if (rudy_type == "RUDY") {
-        congestion += overlap_area * getRudy(bin, net);
-      } else if (rudy_type == "RUDYDev") {
-        congestion += overlap_area * getRudyDev(bin, net);
-      } else if (rudy_type == "PinRUDY") {
-        congestion += overlap_area * getPinRudy(bin, net);
-      } else if (rudy_type == "PinSteinerRUDY") {
-        congestion += overlap_area * getPinSteinerRudy(bin, net, netname_steinerwl_map);
-      } else if (rudy_type == "SteinerRUDY") {
-        congestion += overlap_area * getSteinerRudy(bin, net, netname_steinerwl_map);
-      } else if (rudy_type == "TrueRUDY") {
-        congestion += overlap_area * getTrueRudy(bin, net, netname_truewl_map);
-      }
-    }
-    bin->set_net_cong(congestion);
-  }
 }
 
 std::vector<float> CongestionEval::getNetCong(const std::string& rudy_type)
@@ -647,6 +1739,7 @@ void CongestionEval::plotGRCongOneLayer(const string& plot_path, const string& o
       for (int j = 0; j < x_cnt; j++) {
         auto tile = _tile_grid->get_tiles()[i * x_cnt + j + layer_index * x_cnt * y_cnt];
         int congestion_overflow = std::max((tile->get_east_use() - tile->get_east_cap()), (tile->get_west_use() - tile->get_west_cap()));
+        congestion_overflow = std::max(0, congestion_overflow);
         if (j == x_cnt - 1) {
           feed << congestion_overflow;
         } else {
@@ -662,6 +1755,7 @@ void CongestionEval::plotGRCongOneLayer(const string& plot_path, const string& o
         auto tile = _tile_grid->get_tiles()[i * x_cnt + j + layer_index * x_cnt * y_cnt];
         int congestion_overflow
             = std::max((tile->get_north_use() - tile->get_north_cap()), (tile->get_south_use() - tile->get_south_cap()));
+        congestion_overflow = std::max(0, congestion_overflow);
         if (j == x_cnt - 1) {
           feed << congestion_overflow;
         } else {
@@ -923,31 +2017,37 @@ int32_t CongestionEval::getOverlapArea(CongBin* bin, CongNet* net)
 }
 
 // this idea is from the paper "Fast and Accurate Routing Demand Estimation for Efficient Routability-driven Placement"
-double CongestionEval::getRudy(CongBin* bin, CongNet* net)
+double CongestionEval::getRudy(CongBin* bin, CongNet* net, DIRECTION direction)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
 
   if (net->get_height() == 0 || net->get_width() == 0) {
     return 1;
   }
 
   if (net->get_height() != 0) {
-    item_1 = bin->get_average_wire_width() / static_cast<double>(net->get_height());
+    horizontal = bin->get_average_wire_width() / static_cast<double>(net->get_height());
+    if (direction == DIRECTION::kH) {
+      return horizontal;
+    }
   }
   if (net->get_width() != 0) {
-    item_2 = bin->get_average_wire_width() / static_cast<double>(net->get_width());
+    vertical = bin->get_average_wire_width() / static_cast<double>(net->get_width());
+    if (direction == DIRECTION::kV) {
+      return vertical;
+    }
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 // this idea is from the paper "Routability-Driven Analytical Placement by Net Overlapping Removal for
 // Large-Scale Mixed-Size Designs"
 double CongestionEval::getRudyDev(CongBin* bin, CongNet* net)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
   int64_t net_height = net->get_height();
   int64_t net_width = net->get_width();
 
@@ -958,23 +2058,23 @@ double CongestionEval::getRudyDev(CongBin* bin, CongNet* net)
   if (net_height != 0) {
     int bin_size_y = _cong_grid->get_bin_size_y();
     int capacity_hor = bin->get_horizontal_capacity();
-    item_1 = bin_size_y / capacity_hor / static_cast<double>(net_height);
+    horizontal = bin_size_y / capacity_hor / static_cast<double>(net_height);
   }
 
   if (net->get_width() != 0) {
     int bin_size_x = _cong_grid->get_bin_size_x();
     int capacity_ver = bin->get_vertical_capacity();
-    item_2 = bin_size_x / capacity_ver / static_cast<double>(net_width);
+    vertical = bin_size_x / capacity_ver / static_cast<double>(net_width);
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 // this idea is from the paper "Global Placement with Deep Learning-Enabled Explicit Routability Optimization"
-double CongestionEval::getPinRudy(CongBin* bin, CongNet* net)
+double CongestionEval::getPinRudy(CongBin* bin, CongNet* net, DIRECTION direction)
 {
-  double item_1 = 0.0;
-  double item_2 = 0.0;
+  double horizontal = 0.0;
+  double vertical = 0.0;
   int64_t net_height = net->get_height();
   int64_t net_width = net->get_width();
 
@@ -983,15 +2083,15 @@ double CongestionEval::getPinRudy(CongBin* bin, CongNet* net)
     auto pin_y = pin->get_y();
     if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
       if (net_height != 0) {
-        item_1 += 1 / static_cast<double>(net_height);
+        horizontal += 1 / static_cast<double>(net_height);
       }
       if (net_width != 0) {
-        item_2 += 1 / static_cast<double>(net_width);
+        vertical += 1 / static_cast<double>(net_width);
       }
     }
   }
 
-  return item_1 + item_2;
+  return horizontal + vertical;
 }
 
 double CongestionEval::getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map)

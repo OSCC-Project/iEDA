@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -92,6 +92,8 @@ class TimingIDBAdapter : public TimingDBAdapter {
                        std::optional<double>& segment_width);
   double getCapacitance(int num_layer, double segment_length,
                         std::optional<double>& segment_width);
+  double getAverageResistance(std::optional<double>& segment_width);
+  double getAverageCapacitance(std::optional<double>& segment_width);
 
   double capToLength(int num_layer, double cap,
                      std::optional<double>& segment_width);
@@ -99,31 +101,31 @@ class TimingIDBAdapter : public TimingDBAdapter {
   PortDir dbToSta(IdbConnectType sig_type, IdbConnectDirection io_type) const;
 
   Instance* dbToSta(IdbInstance* db_inst) {
-    return _db2staInst.hasKey(db_inst) ? _db2staInst[db_inst] : nullptr;
+    return _db2staInst.contains(db_inst) ? _db2staInst[db_inst] : nullptr;
   }
   IdbInstance* staToDb(Instance* inst) {
-    return _sta2dbInst.hasKey(inst) ? _sta2dbInst[inst] : nullptr;
+    return _sta2dbInst.contains(inst) ? _sta2dbInst[inst] : nullptr;
   }
 
   Port* dbToStaPort(IdbPin* db_port) {
-    return _db2staPort.hasKey(db_port) ? _db2staPort[db_port] : nullptr;
+    return _db2staPort.contains(db_port) ? _db2staPort[db_port] : nullptr;
   }
   IdbPin* staToDb(Port* port) {
-    return _sta2dbPort.hasKey(port) ? _sta2dbPort[port] : nullptr;
+    return _sta2dbPort.contains(port) ? _sta2dbPort[port] : nullptr;
   }
 
   Net* dbToSta(IdbNet* db_net) {
-    return _db2staNet.hasKey(db_net) ? _db2staNet[db_net] : nullptr;
+    return _db2staNet.contains(db_net) ? _db2staNet[db_net] : nullptr;
   }
   IdbNet* staToDb(Net* net) {
-    return _sta2dbNet.hasKey(net) ? _sta2dbNet[net] : nullptr;
+    return _sta2dbNet.contains(net) ? _sta2dbNet[net] : nullptr;
   }
 
   Pin* dbToStaPin(IdbPin* db_pin) {
-    return _db2staPin.hasKey(db_pin) ? _db2staPin[db_pin] : nullptr;
+    return _db2staPin.contains(db_pin) ? _db2staPin[db_pin] : nullptr;
   }
   IdbPin* staToDb(Pin* pin) {
-    return _sta2dbPin.hasKey(pin) ? _sta2dbPin[pin] : nullptr;
+    return _sta2dbPin.contains(pin) ? _sta2dbPin[pin] : nullptr;
   }
 
   LibertyCell* dbToSta(IdbCellMaster* master);

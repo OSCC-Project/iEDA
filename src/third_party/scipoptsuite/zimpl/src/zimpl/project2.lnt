@@ -1,0 +1,147 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                           */
+/*   File....: project2.lnt                                                  */
+/*   Name....: PCLint+ Project Settings                                      */
+/*   Author..: Thorsten Koch                                                 */
+/*   Copyright (C) 2001-2022 by Thorsten Koch <koch@zib.de>                  */
+/*                                                                           */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+// TK 29Jan2018
+//
+// Rules for Semantics:
+// const xxx* x  ->  1p == 1
+// xxx* x -> 1p == 1, custodial(1) and/or inout(1)
+// pure if possible
+//
+//-hook(pre_option, -cond('%[option]' == '-sem', -reject)) //# Fix Bug in pclint 1.0
+-DCONSTCOND="lint -e{506}"
+-max_threads=8
+-vt_depth=20
++fsc // strings are const
+-A(C99)
+-width(132,4)
+-"format=%f:%l: %t %n: %m"
+-ffc // Function takes Custody flag -> off
+//-hFb^3
+//
+//-e636 // strong type
+//-e632 // strong type
+-e571 // cast leads to sign extention 
+-e750 // local MACRO not referenced
+//
+-esym(534,close,creat,fclose,fprintf,fputc,fflush,fsync,pclose,gzclose)
+-esym(534,fputs,fscanf,fseek,fwrite,lseek,memcpy,memmove,memset)
+-esym(534,printf,puts,scanf,sprintf,snprintf,sscanf,strcat,strcpy)
+-esym(534,strncat,strncpy,unlink,write,regerror)
+//
+-e592 // Non-literal format specifier used without arguments
+-e749 // local enumeration constant not referenced
+-e758 // Operator followed by operator is confusing
+-e766 // Include of header file not used
+-e788 // enum constant not used within defaulted switch
+-e801 // Use of goto is deprecated
+-e826 // Suspicious pointer-to-pointer conversion 
+-e834 // Operator followed by operator is confusing.  Use parentheses
+//
+-strong(AzJzX,Str,vbool_cmp_operator,vbool_fixed_result)
+-strong(AzJzXl,Tuple,Set,IdxSet)
+-strong(AzJzX,TermElem,ineq_type,Ineq,ListElem,List)
+-strong(AizJzXl,Term,Local)
+-strong(AzJzX,ListData,list_type)
+-strong(AzJzXl,ListElem,List)
+-strong(AzJzX,stmt_type,code_type)
+-strong(AzJzXl,Stmt, Prog)
+-strong(AzJzXl,CodeNode)
+-strong(AzJzX,rpar_type,RParVal)
+-strong(AzJzXl,RDef,RPar,MFP)
+-strong(AzJzXl,Bound)
+-strong(AzJzX,bound_type)
+-strong(AzJzX,heap_type,heapCmp)
+-strong(AzJzXl,Heap,HeapData)
+-strong(AizJzXl,Define)
+-strong(AizJzXl,SetIter,setcheck_type,define_type)
+-strong(AzJzXl,Var,Con)
+-strong(AzJzX,var_type,VarState,var_class,con_type,ConState,LpDirect,lp_type,lp_format,lp_type,lp_direct)
+-strong(AzJzXl,LpsHElem)
+-strong(AzJzX,lps_hash_type)
+-strong(AzJzX,PSResult)
+-strong(AzJzX,set_type,SetEmpty,SetPseudo,SetHead,SetList,SetRange,SetProd,SetMulti)
+-strong(AzJzXl,SetVTab)
+-strong(AzJzX,SetEmptyIter,SetPseudoIter,SetListIter,SetRangeIter,SetProdIter,SetMultiIter)
+-strong(AzJzX,elem_type,Elem,ElemValue,ElemStore)
+-strong(AzJzXl,Elem)
+-strong(AzJzXl,ElemStore)
+-strong(AzJzX,EntryValue,symbol_type)
+-strong(AzJzXl,Symbol,Entry)
+-strong(AzJzXl,Pool)
+-strong(AarzJzXl,PoolElem)
+-strong(AzJzXl,Numb,NumbStore)
+-strong(AzJzXl,StrgFile)
+-strong(AzJzX,file_type)
+-strong(AzJzX,hash_type,SetElemIdx)
+-strong(AzJzXl,Hash,HElem)
+-strong(AacpJX,Inst)
+//-strong(AJXB,LintBool)
+//
+-esym(451,stdarg.h,stdio.h,sys/types.h) // no header guard
+-esym(537,stdarg.h,sys/types.h) // repeated include file
+-esym(534,stkchk_used_x) // ignore return value
+-efile(413 428 438 506 527 537 587 613 661 676 685, src/zimpl/mmlparse2.c)
+-efile(713 717 732 734 744 746 751 774 776 810 825 845, src/zimpl/mmlparse2.c)
+-efile(2401 2650 2666 2704, src/zimpl/mmlparse2.c)
+-emacro(506,yywrap)
+-efile(755, src/zimpl/mmlparse2.h)
+-esym(*, yyptr, yynerrs, yystate, yyerrstatus, yytokentype, yychar, yylen)
+-esym(*, yyresult, yytype_int8, yytype_int16, yytop, yybottom, yyvsp, yyssp, yyvaluep)
+-esym(2701, yylex, yyerror, yydebug,yy_flex_debug)
+-efile(717 835, src/zimpl/mmlscan.l) // in mmlscan.c but filename changed by #line directive
+-efile(429 525 527 534 537 539 574, src/zimpl/mmlscan.c)
+-efile(616 633 676, src/zimpl/mmlscan.c)
+-efile(702 712 714 716 717 725 732 737 744 751 755 765 773 774 775, src/zimpl/mmlscan.c)
+-efile(823 825 835 845 891 893, src/zimpl/mmlscan.c)
+-efile(2597 2603 2650 2662, src/zimpl/mmlscan.c)
+-esym(*, yyleng, yytext, yyset_extra, yyget_extra, flex_int8_t, flex_uint8_t, flex_uint32_t, yy_trans_info, yy_trans_info::yy_verify, yy_trans_info::yy_nxt, yy_init_globals)
+-efile(663, src/zimpl/numbgmp.c)
+-esym(714 759 765, numb_div, numb_intdiv, numb_mod) // symbol not externally used
+-esym(755, ZIMPL_VERSION)
+-esym(755, mem_check_all, mem_hide, mem_maximum, mem_used)
+-esym(755, stchk_display)
+-e769 // global enumeration constant not referenced
+-esym(818, iter_next, iter_reset) // parameter could be pointer to const
+-esym(818, set_empty_get_tuple, set_pseudo_get_tuple) // parameter could be pointer to const
+-efunc(2466,iter_next) // used even marked as unused
+-esym(755,Min,stkchk_display) // global Macro not referenced
+-esym(757,lps_readmps)
+-esym(714 759 765, lps_delcon, lps_delvar, lps_flags, lps_getsos, lps_setbndname, lps_setcontype, lps_setprobname, lps_setrhsname, lps_setrngname, lps_setscale, lps_setvalue, lps_setvartype, lps_vartype) // not referenced, move to module, made static
+-esym(759 765, lps_number, lps_getvar) // move to module, made static
+-esym(714 759 765, code_set_child, code_value_bits, code_value_contype, code_value_size, code_value_varclass)
+-esym(714 759 765, idxset_print)
+-esym(714 759 765, i_bool_false, i_set_pseudo) // ???
+-esym(759 765, list_print)
+-esym(759 765, mio_add_strg_file, mio_gets)
+-esym(768, set_empty::head, set_multi::head, set_prod::head, set_pseudo::head, set_range::head)
+-esym(768, set_empty_iter::dummy)
+-esym(714 759 765, gmp_print_mpq)
+-esym(714 759 765, term_print)
+-esym(714 759 765, zpl_read, zpl_read_with_args)
+-esym(714 759 765, tuple_combine)
+-esym(714 759 765, numb_tostr)
+-esym(714 759 765, symbol_get_dim, symbol_get_numb, symbol_get_set, symbol_get_strg, symbol_get_var, symbol_has_entry, symbol_is_valid)
+-esym(714 759 765, stkchk_display_x, stkchk_maxi, stkchk_start)
+-esym(714 759 765, mono_mul_entry)
+-esym(714 759 765, prog_is_valid)
+-emacro(823, fall_THROUGH)
+
+-sem(__lint_assert, pure)
+-esym(522, __lint_assert)
+//-egrep(453, calls impure function '__assert_fail')
+
+//
+// Things to fix
+-egrep(712, SetIterIdx) // implicit conversion (call) from 'SetIterIdx' (aka 'long long') to 'int'
+-efile(415, src/zimpl/zimpllib.c)
+
+// Bugs in PC-Lint
+-efile(661 2662, src/zimpl/iread.c)
+
+

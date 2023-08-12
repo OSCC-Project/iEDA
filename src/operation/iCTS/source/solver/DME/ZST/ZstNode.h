@@ -41,7 +41,7 @@ class ZstDelayFunc {
         _params(params) {}
 
   bool edge_length(std::pair<Coordinate, Coordinate> &edge_pair) const {
-    return _params.get_delay_model() == DelayModel::kLINEAR
+    return _params.get_delay_model() == DelayModel::kLinear
                ? linear_edge_length(edge_pair)
                : elmore_edge_length(edge_pair);
   }
@@ -56,7 +56,7 @@ class ZstDelayFunc {
 
     double time = std::max(time_a + edge_a, time_b + edge_b);
     double cap = 0;
-    if (_params.get_delay_model() == DelayModel::kELMORE) {
+    if (_params.get_delay_model() == DelayModel::kElmore) {
       auto cap_a = _delay_a._cap;
       auto cap_b = _delay_b._cap;
       auto unit_res = _params.get_unit_res();

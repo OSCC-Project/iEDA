@@ -1,0 +1,3 @@
+--- Warning 165: Comparison of different dimension sets.
+List: |1|{<1>,<2>}
+Multi: |2|{<1,1>,<2,2>}
