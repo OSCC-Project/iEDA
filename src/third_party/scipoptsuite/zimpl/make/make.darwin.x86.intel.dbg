@@ -1,0 +1,12 @@
+#--- $Id: make.darwin.x86.intel.dbg,v 1.3 2014/01/12 11:07:04 bzfkocht Exp $
+CC		=	icc
+LINKCC		=	icc
+CPPFLAGS	+=	-DFREEMEM
+CFLAGS		=	-g -fp-model precise -w2 -Wcheck \
+			-wd111,161,171,279,981,1173,1419,1684,2259
+LDFLAGS         =       -lgmp -lm -Bstatic
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

@@ -1,0 +1,4 @@
+*** Error 197: Empty index set for set
+*** File: e197_3.zpl Line 2
+*** set K[<i> in { 1..2} with i > 3 ] := subsets({1..10}, 2);
+***                                                         ^^^

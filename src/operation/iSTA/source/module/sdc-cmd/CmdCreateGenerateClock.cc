@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -21,7 +21,15 @@
  * @version 0.1
  * @date 2021-09-23
  */
+#include <algorithm>
+#include <variant>
+
 #include "Cmd.hh"
+#include "ScriptEngine.hh"
+#include "include/Type.hh"
+#include "log/Log.hh"
+#include "netlist/DesignObject.hh"
+#include "sdc/SdcCollection.hh"
 
 namespace ista {
 
@@ -252,15 +260,23 @@ unsigned CmdCreateGeneratedClock::exec() {
   set_comment({"-comment"});
 
   // add generate clock to constrain
+  // _the_constrain->addGeneratedClock(_the_generate_clock);
+  // for (auto* iter : _the_generate_clock->get_source_pins()) {
+  //   LOG_INFO << "the generate_clock full pin name: " << iter->getFullName()
+  //            << std::endl;
+  // }
   _the_constrain->addClock(_the_generate_clock);
-
+  // for (auto iter = _the_constrain->get_generated_sdc_clocks().begin();
+  //      iter != _the_constrain->get_generated_sdc_clocks().end(); iter++)
+  //   LOG_INFO << "\nsdc clock name: " << iter->first << std::endl;
   // // print debug
   // [this] {
   //   LOG_INFO << "source   period: " << _source_sdc_clock->get_period();
-  //   LOG_INFO << "generate period: " << _the_generate_clock->get_period();
-  //   auto& source_edges = _source_sdc_clock->get_edges();
-  //   auto& generate_edges = _the_generate_clock->get_edges();
-  //   for (size_t i = 0; i < source_edges.size(); ++i) {
+  //   LOG_INFO << "generate period: " <<
+  //   _the_generate_clock->get_period(); auto& source_edges =
+  //   _source_sdc_clock->get_edges(); auto& generate_edges =
+  //   _the_generate_clock->get_edges(); for (size_t i = 0; i <
+  //   source_edges.size(); ++i) {
   //     LOG_INFO << "source  : " << source_edges[i];
   //   }
   //   for (size_t i = 0; i < generate_edges.size(); ++i) {
@@ -306,12 +322,47 @@ void CmdCreateGeneratedClock::set_generate_clock(
   const char* source_name = _source_sdc_clock->get_clock_name();
   const char* generate_clock_name = source_name;
 
+  Sta* ista = Sta::getOrCreateSta();
+
   if (name_option->is_set_val()) {
     generate_clock_name = name_option->getStringVal();
   }
 
+  TclOption* source_pins_option = getOptionOrArg("-source");
+  const char* generate_source_pins = nullptr;
+
+  std::set<DesignObject*> objs;
+  if (source_pins_option->is_set_val()) {
+    generate_source_pins = source_pins_option->getStringVal();
+
+    if (Str::startWith(generate_source_pins,
+                       TclEncodeResult::get_encode_preamble())) {
+      auto* obj_collection = static_cast<SdcCollection*>(
+          TclEncodeResult::decode(generate_source_pins));
+      auto& obj_list = obj_collection->get_collection_objs();
+      for (auto obj : obj_list) {
+        std::visit(
+            overloaded{
+                [](SdcCommandObj* sdc_obj) {
+                  LOG_FATAL << "should not be sdc obj.";
+                },
+                [&objs](DesignObject* design_obj) { objs.insert(design_obj); },
+            },
+            obj);
+      }
+    } else {
+      Netlist* design_nl = ista->get_netlist();
+      auto pin_ports = design_nl->findObj(generate_source_pins, false, false);
+
+      for (auto* design_obj : pin_ports) {
+        objs.insert(design_obj);
+      }
+    }
+  }
+
   _the_generate_clock = new SdcGenerateCLock(generate_clock_name);
   _the_generate_clock->set_source_name(source_name);
+  _the_generate_clock->set_source_pins(std::move(objs));
 }
 
 // set generate clock period

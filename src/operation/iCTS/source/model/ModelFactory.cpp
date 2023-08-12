@@ -82,13 +82,13 @@ ModelBase* ModelFactory::pyFit(const std::vector<std::vector<double>>& x,
                                const FitType& fit_type) const {
   PyObject* model;
   switch (fit_type) {
-    case FitType::kLINEAR:
+    case FitType::kLinear:
       model = pyLinearModel(x, y);
       break;
-    case FitType::kCATBOOST:
+    case FitType::kCatBoost:
       model = pyCatBoostModel(x, y);
       break;
-    case FitType::kXGBOOST:
+    case FitType::kXgBoost:
       model = pyXGBoostModel(x, y);
       break;
     default:

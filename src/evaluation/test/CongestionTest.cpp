@@ -48,7 +48,7 @@ TEST_F(CongestionTest, sample)
   std::string output_file_name = config->get_cong_config().get_output_filename();
   congestion_evaluator->reportCongestion(plot_path, output_file_name);
 
-  // congestion_evaluator->mapNet2Bin();
+  // congestion_evaluator->mapNetCoord2Grid();
   // congestion_evaluator->evalNetCong(config->get_cong_config().get_eval_type());
   // LOG_INFO << "Bin(0,0): " << congestion_evaluator->getBinNetCong(0, 0);
   // LOG_INFO << "Bin(0,1): " << congestion_evaluator->getBinNetCong(0, 1);

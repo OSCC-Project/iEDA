@@ -1,0 +1,7 @@
+CXX	=	g++
+CPPFLAGS=	-Isrc
+CXXFLAGS=	-O -g $(GCCWARN)
+LDFLAGS	=	-lm
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

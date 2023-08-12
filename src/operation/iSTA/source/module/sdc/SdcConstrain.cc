@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -31,6 +31,7 @@
 #include "SdcTimingDRC.hh"
 #include "SdcTimingDerate.hh"
 #include "log/Log.hh"
+#include "netlist/DesignObject.hh"
 #include "tcl/ScriptEngine.hh"
 
 namespace ista {
@@ -46,8 +47,16 @@ SdcConstrain::~SdcConstrain() = default;
  * @param clock The create_clock information.
  */
 void SdcConstrain::addClock(SdcClock* clock) {
-  _sdc_clocks.insert(clock->get_clock_name(), std::unique_ptr<SdcClock>(clock));
+  _sdc_clocks[clock->get_clock_name()] = std::unique_ptr<SdcClock>(clock);
 }
+
+// void SdcConstrain::addGeneratedClock(SdcGenerateCLock* clock) {
+//   addClock(clock);
+//   std::set<DesignObject*> iter = clock->get_source_pins();
+//   _generated_source_pins.insert(iter.begin(), iter.end());
+//   LOG_INFO << "-------------------current generated source pin num: "
+//            << _generated_source_pins.size() << std::endl;
+// }
 
 /**
  * @brief Find sdc clock.

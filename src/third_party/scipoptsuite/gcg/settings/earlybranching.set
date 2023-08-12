@@ -1,0 +1,13 @@
+# SCIP version 3.0.0
+
+# frequency for solving LP at the nodes (-1: never; 0: only root LP)
+# [type: int, range: [-1,2147483647], default: 1]
+lp/solvefreq = -1
+
+# maximal number of restarts (-1: unlimited)
+# [type: int, range: [-1,2147483647], default: -1]
+presolving/maxrestarts = 0
+
+# should pricing be aborted due to small gap between dual bound and RMP objective?
+# [type: real, range: [0,1], default: 0]
+pricing/masterpricer/abortpricinggap = 0.05

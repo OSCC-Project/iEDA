@@ -1,0 +1,154 @@
+INTRODUCTION
+------------
+ZIMPL is a little language to translate the mathematical model of a
+problem into a linear or (mixed-)integer mathematical program
+expressed in .lp or .mps file format which can be read by a LP or MIP
+solver.
+
+If you use Zimpl for research and publish results, the best way
+to refer to Zimpl is to cite my Ph.d. thesis:
+
+@PHDTHESIS{Koch2004,
+   author      = "Thorsten Koch",
+   title       = "Rapid Mathematical Programming",
+   year        = "2004",
+   school      = "Technische {Universit\"at} Berlin",
+   url         = "http://www.zib.de/Publications/abstracts/ZR-04-58/",
+   note        = "ZIB-Report 04-58",
+}   
+
+
+COMPILING
+---------
+To compile Zimpl you need two additional librarys:
+
+ - GNU Multiple Precision Arithmetic Library 
+   Version 4.2.2 or newer at http://www.swox.com/gmp
+ - zlib Version 1.2.5 or newer at http://www.gzip.org/zlib/
+
+Zimpl has not been tested with older versions of above librarys.
+GMP Version 3.x will not work for sure.
+
+If zlib.h and gmp.h and libgmp.a and libz.a are not at the usual
+places you have to adapt the Makefile, see below.
+
+On a Linux system you might succeed with just saying: make
+
+Otherwise:
+
+  Whatever with GNU C        :  gmake 
+  Linux/x86 with Intel C     :  gmake COMP=intel
+  Tru64 with Compaq C        :  gmake COMP=compaq
+  Solaris with SUN Forte C   :  gmake COMP=sun
+  AIX with VisualAge C       :  gmake COMP=ibm
+  Windows with Cygwin/GCC    :  gmake COMP=gnu
+  HPUX with HP C             :  gmake COMP=hp
+  IRIX with SGI C            :  gmake COMP=sgi
+  
+If your configuration is not in the list or does not work,
+you have to change the Makefile. Go to make/local
+an add a file make.<hostname_of_your_computer>
+There you can set the usual suspects like CC, CFLAGS, LDFLAG,
+and so on. 
+The most likely reason that you can't compile, is that
+gmp.h or zlib.h are not in your include path (-I) or
+that libgmp.a oder libz.a are not in your library path (-L). 
+
+Example:
+
+CPPFLAGS        +=      -I/tmp/gmp/include
+LDFLAGS         +=      -L/tmp/gmp/lib
+
+Have a look at Makefile and make/make.* to
+get an idea. 
+
+On some MAC systems, GMP is installed under /sw/include and /sw/lib.
+If these are not contained in the library and include paths, you have
+to add them explicitly, as shown above.
+
+
+WINDOWS
+-------
+
+You can just the through the source files into Visual Studio 2010.
+Please add the contents of the src/WIN directory to the files to be 
+compiled. Make sure to set the following defines: 
+WIN32 or WIN64 and INLINE=
+
+As for the libraries we recommend to replace gmp by 
+  MPIR - Multiple Precision Integers and Rationals
+         version 2.4.0 or newer from http://mpir.org
+Furthermore, you need 
+  PCRE - Perl Compatible Regular Expressions 
+         version 8.12 or newer from http://www.pcre.org 
+         which should be compiled using the following two
+         defines -DWITH_PCRE -DPCRE_STATIC
+
+
+CHECKING
+--------
+Do a "make check" and look if it works. If not, compile again
+with an added "OPT=dbg" to the gmake invocation. 
+
+If a failure in the 'subto' test is reported, this is to a
+difference in the behaviour of printf() and not a problem.
+
+INSTALLATION
+------------
+Copy bin/zimpl.*.opt to wherever you like.
+
+
+ALL GNULESS
+-----------
+if you don't have gcc and gmake etc. You can try the following.
+Go to src and say "cc -O *.c -o zimpl".  
+
+
+LICENSE
+-------
+ZIMPL is under the GNU Lesser General Public License Version 3. 
+See the file LICENSE for details.
+
+
+LATEST VERSION
+--------------
+Can be found at http://zimpl.zib.de
+
+
+BUGS
+----
+Probably several. If you find one, send a description 
+with runnable example .zpl file to koch@zib.de
+(Better even, send a working fix ;-)
+
+
+REMARK
+------
+If anything is changed in the code I would recommend recompiling
+without NDEBUG and NO_MSHELL defined. This will slow down the code
+considerably but will do a lot of consistency checking.
+In the source code are a lot of comments starting with
+/*lint ... and also a target in the Makefile.
+These are for flexelint (see http://www.gimpel.com) a very good
+version of lint. If you are interested in my settings used for this
+project, send me an email.
+
+
+THANKS 
+------ 
+To Tuomo Takkula, Armin Fuegenschuh, Marc Pfetsch, Daniel Junglas, 
+Joerg Rambau, Tobias Achterberg, Andreas Bley, Sebastian Orlowski, 
+Bejamin Hiller, Ralf Borndoerfer, Martin Assmann, Nicolas Weber, 
+Marc Moerig, Jens Hillmann, Dimitri Sverdlov, Joachim Reichel, 
+Maciej Warszawski and all I forgot for their comments and bug reports.
+
+
+COMPLAINTS
+----------
+>/dev/null
+
+Have fun!
+
+
+
+

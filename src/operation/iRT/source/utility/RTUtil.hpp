@@ -507,10 +507,10 @@ class RTUtil
   {
     irt_int first_x = b.get_first().get_x();
     irt_int second_x = b.get_second().get_x();
-    sortASC(first_x, second_x);
+    swapASC(first_x, second_x);
     irt_int first_y = b.get_first().get_y();
     irt_int second_y = b.get_second().get_y();
-    sortASC(first_y, second_y);
+    swapASC(first_y, second_y);
 
     irt_int x_spacing = std::max(first_x - a.get_rt_x(), a.get_lb_x() - second_x);
     irt_int y_spacing = std::max(first_y - a.get_rt_y(), a.get_lb_y() - second_y);
@@ -529,10 +529,10 @@ class RTUtil
   {
     irt_int first_x = b.get_first().get_x();
     irt_int second_x = b.get_second().get_x();
-    sortASC(first_x, second_x);
+    swapASC(first_x, second_x);
     irt_int first_y = b.get_first().get_y();
     irt_int second_y = b.get_second().get_y();
-    sortASC(first_y, second_y);
+    swapASC(first_y, second_y);
 
     irt_int overlap_lb_x = std::max(first_x, a.get_lb_x());
     irt_int overlap_rt_x = std::min(second_x, a.get_rt_x());
@@ -638,9 +638,9 @@ class RTUtil
     irt_int second_y = segment.get_second().get_y();
     irt_int second_layer_idx = segment.get_second().get_layer_idx();
 
-    sortASC(first_x, second_x);
-    sortASC(first_y, second_y);
-    sortASC(first_layer_idx, second_layer_idx);
+    swapASC(first_x, second_x);
+    swapASC(first_y, second_y);
+    swapASC(first_layer_idx, second_layer_idx);
 
     return (first_x <= coord.get_x() && coord.get_x() <= second_x && first_y <= coord.get_y() && coord.get_y() <= second_y
             && first_layer_idx <= coord.get_layer_idx() && coord.get_layer_idx() <= second_layer_idx);
@@ -1563,8 +1563,8 @@ class RTUtil
     irt_int second_x = second_coord.get_x();
     irt_int second_y = second_coord.get_y();
 
-    sortASC(first_x, second_x);
-    sortASC(first_y, second_y);
+    swapASC(first_x, second_x);
+    swapASC(first_y, second_y);
 
     return PlanarRect(getRealLB(first_x, x_grid_list), getRealLB(first_y, y_grid_list), getRealRT(second_x, x_grid_list),
                       getRealRT(second_y, y_grid_list));
@@ -1755,7 +1755,7 @@ class RTUtil
 
   static std::vector<irt_int> getScaleList(irt_int begin_line, irt_int end_line, ScaleGrid& scale_grid, bool lb_boundary, bool rt_boundary)
   {
-    sortASC(begin_line, end_line);
+    swapASC(begin_line, end_line);
 
     std::vector<irt_int> scale_line_list;
     irt_int scale_start = scale_grid.get_start_line();
@@ -2058,7 +2058,7 @@ class RTUtil
       PlanarCoord& planar_coord = p_segment.get_first().get_planar_coord();
       irt_int first_layer_idx = p_segment.get_first().get_layer_idx();
       irt_int second_layer_idx = p_segment.get_second().get_layer_idx();
-      sortASC(first_layer_idx, second_layer_idx);
+      swapASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
         p_segment_list_temp.emplace_back(LayerCoord(planar_coord, layer_idx), LayerCoord(planar_coord, layer_idx + 1));
       }
@@ -2113,7 +2113,7 @@ class RTUtil
       irt_int y = h_segment.get_first().get_y();
       irt_int layer_idx = h_segment.get_first().get_layer_idx();
 
-      sortASC(first_x, second_x);
+      swapASC(first_x, second_x);
       std::vector<irt_int> x_list;
       for (irt_int x_cut : x_cut_list_map[layer_idx]) {
         if (first_x <= x_cut && x_cut <= second_x) {
@@ -2136,7 +2136,7 @@ class RTUtil
       irt_int x = v_segment.get_first().get_x();
       irt_int layer_idx = v_segment.get_first().get_layer_idx();
 
-      sortASC(first_y, second_y);
+      swapASC(first_y, second_y);
       std::vector<irt_int> y_list;
       for (irt_int y_cut : y_cut_list_map[layer_idx]) {
         if (first_y <= y_cut && y_cut <= second_y) {
@@ -2667,7 +2667,7 @@ class RTUtil
   }
 
   template <typename T, typename Compare>
-  static void sort(T& a, T& b, Compare cmp)
+  static void swapByCMP(T& a, T& b, Compare cmp)
   {
     if (!cmp(a, b)) {
       std::swap(a, b);
@@ -2675,9 +2675,9 @@ class RTUtil
   }
 
   template <typename T>
-  static void sortASC(T& a, T& b)
+  static void swapASC(T& a, T& b)
   {
-    sort(a, b, std::less<T>());
+    swapByCMP(a, b, std::less<T>());
   }
 
   static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
@@ -2752,7 +2752,13 @@ class RTUtil
   }
 
   template <typename T>
-  static void reverse(std::vector<T>& list, irt_int start_idx, irt_int end_idx)
+  static void reverseList(std::vector<T>& list)
+  {
+    reverseList(list, 0, static_cast<irt_int>(list.size()) - 1);
+  }
+
+  template <typename T>
+  static void reverseList(std::vector<T>& list, irt_int start_idx, irt_int end_idx)
   {
     while (start_idx < end_idx) {
       std::swap(list[start_idx], list[end_idx]);

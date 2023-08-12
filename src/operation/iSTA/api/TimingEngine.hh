@@ -152,7 +152,7 @@ class TimingEngine {
   StaVertex *findVertex(const char *pin_name) {
     return _ista->findVertex(pin_name);
   }
-  std::set<std::string> findStartOrEnd(const char *pin_name, bool is_find_end);
+  std::set<std::string> findStartOrEnd(const char *pin_name);
   std::string findClockPinName(const char *inst_name);
 
   void setIdealClockNetworkLatency(const char *clock_name, double latency) {
@@ -207,6 +207,8 @@ class TimingEngine {
   void incrCap(RctNode *node, double cap, bool is_incremental = false);
   void makeResistor(Net *net, RctNode *from_node, RctNode *to_node, double res);
   void updateRCTreeInfo(Net *net);
+  void buildRcTreeAndupdateRcTreeInfo(
+      const char *net_name, std::map<std::string, double> &loadname2wl);
 
   TimingEngine &incrUpdateTiming();
 

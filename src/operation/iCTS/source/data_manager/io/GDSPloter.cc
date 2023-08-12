@@ -44,28 +44,77 @@ void GDSPloter::plotDesign()
   plotter.head();
 
   for (auto& clk_net : clk_nets) {
-    // check prefix whether is "sdram_clk_o"
-    if (clk_net->get_net_name().find("sdram_clk_o") == string::npos) {
-      continue;
-    }
-    for (const auto& wire : clk_net->get_signal_wires()) {
-      auto first = DataTraits<Endpoint>::getPoint(wire.get_first());
-      auto second = DataTraits<Endpoint>::getPoint(wire.get_second());
-      plotter.insertWire(first, second, clk_net->get_driver_inst()->get_level());
+    auto net_name = clk_net->get_net_name();
+    auto* goca_net = design->findGocaNet(net_name);
+    if (goca_net) {
+      auto* driver_pin = goca_net->get_driver_pin();
+      auto* inst = driver_pin->get_inst();
+      auto* cts_inst = inst->get_cts_inst();
+      driver_pin->preOrder([&](Node* cur) {
+        auto* parent = cur->get_parent();
+        if (parent) {
+          plotter.insertWire(cur->get_location(), parent->get_location(), cts_inst->get_level());
+        }
+      });
+    } else {
+      for (const auto& wire : clk_net->get_signal_wires()) {
+        auto first = DataTraits<Endpoint>::getPoint(wire.get_first());
+        auto second = DataTraits<Endpoint>::getPoint(wire.get_second());
+        plotter.insertWire(first, second, clk_net->get_driver_inst()->get_level());
+      }
     }
   }
 
-  auto insts = design->get_insts();
-  for (auto* inst : insts) {
-    plotter.insertInstance(inst);
+  auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
+  auto idb_insts = idb_design->get_instance_list()->get_instance_list();
+  for (auto idb_inst : idb_insts) {
+    auto* inst_box = idb_inst->get_bounding_box();
+    auto lp = inst_box->get_low_point();
+    auto hp = inst_box->get_high_point();
+    auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
+                         Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
+    auto name = idb_inst->get_name();
+    plotter.insertPolygon(rect, name, 1);
+  }
+
+  auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
+  for (auto* blockage : idb_blockages) {
+    auto blockage_rect_list = blockage->get_rect_list();
+    if (blockage_rect_list.empty()) {
+      LOG_WARNING << "rectangles of blockage are empty!";
+      continue;
+    }
+    int i = 0;
+    for (auto* blockage_rect : blockage_rect_list) {
+      auto lp = blockage_rect->get_low_point();
+      auto hp = blockage_rect->get_high_point();
+      auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
+                           Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
+      auto name = blockage->get_instance_name() + std::to_string(i);
+      ++i;
+      plotter.insertPolygon(rect, name, 1);
+    }
   }
 
   auto core = db_wrapper->get_core_bounding_box();
   plotter.insertPolygon(core, "core", 100);
   plotter.strBegin();
   plotter.topBegin();
-  for (auto* inst : insts) {
-    plotter.refInstance(inst);
+  for (auto idb_inst : idb_insts) {
+    auto name = idb_inst->get_name();
+    plotter.refPolygon(name);
+  }
+
+  for (auto* blockage : idb_blockages) {
+    auto blockage_rect_list = blockage->get_rect_list();
+    if (blockage_rect_list.empty()) {
+      LOG_WARNING << "rectangles of blockage are empty!";
+      continue;
+    }
+    for (size_t i = 0; i < blockage_rect_list.size(); ++i) {
+      auto name = blockage->get_instance_name() + std::to_string(i);
+      plotter.refPolygon(name);
+    }
   }
   plotter.refPolygon("core");
   plotter.refPolygon("WIRE");
@@ -86,10 +135,6 @@ void GDSPloter::plotFlyLine()
   plotter.head();
 
   for (auto& clk_net : clk_nets) {
-    // check prefix whether is "clk_hs_peri"
-    if (clk_net->get_net_name().find("sdram_clk_o") == string::npos) {
-      continue;
-    }
     auto driver = clk_net->get_driver_inst();
     for (auto load : clk_net->get_load_insts()) {
       plotter.insertWire(driver->get_location(), load->get_location(), driver->get_level());

@@ -1,0 +1,4 @@
+*** Error 142: Unknown index <6> for symbol "x"
+*** File: e142_1.zpl Line 4
+*** subto c1: x[6] <= 5;
+***              ^^^
