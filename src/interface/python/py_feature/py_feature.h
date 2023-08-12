@@ -14,43 +14,13 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "ScriptEngine.hh"
-#include "py_register_config.h"
-#include "py_register_flow.h"
-#include "py_register_icts.h"
-#include "py_register_idb.h"
-#include "py_register_idrc.h"
-#include "py_register_ifp.h"
-#include "py_register_ino.h"
-#include "py_register_inst.h"
-#include "py_register_ipdn.h"
-#include "py_register_ipl.h"
-// #include "py_register_irt.h"
-#include "py_register_feature.h"
-#include "py_register_ista.h"
-#include "py_register_ito.h"
-#include "py_register_report.h"
-#include "python_module.h"
-namespace python_interface {
+#pragma once
 
-PYBIND11_MODULE(ieda_py, m)
-{
-  register_config(m);
-  register_flow(m);
-  register_icts(m);
-  register_idb(m);
-  register_idb_op(m);
-  register_idrc(m);
-  register_ifp(m);
-  register_ino(m);
-  register_inst(m);
-  register_ipdn(m);
-  register_ipl(m);
-  // register_irt(m);
-  register_ista(m);
-  register_ito(m);
-  register_report(m);
-  register_feature(m);
-}
+#include <string>
+
+namespace python_interface {
+bool feature_layout(const std::string& path);
+bool feature_instances(const std::string& path);
+bool feature_nets(const std::string& path);
 
 }  // namespace python_interface

@@ -14,28 +14,28 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-/**
- * @File Name: tcl_register.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
- *
- */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_flow.h"
+#include "feature_manager.h"
 
-using namespace ieda;
+#include "feature_parser.h"
 
-namespace tcl {
+namespace iplf {
 
-int registerCmdFlow()
+bool FeatureManager::save_layout(std::string path)
 {
-  registerTclCmd(CmdFlowAutoRun, "flow_run");
-  registerTclCmd(CmdFlowExit, "flow_exit");
-  return EXIT_SUCCESS;
+  FeatureParser feature_parser(_idb_layout, _idb_design);
+  feature_parser.buildLayout(path);
 }
 
-}  // namespace tcl
+bool FeatureManager::save_instances(std::string path)
+{
+  FeatureParser feature_parser(_idb_layout, _idb_design);
+  feature_parser.buildInstances(path);
+}
+
+bool FeatureManager::save_nets(std::string path)
+{
+  FeatureParser feature_parser(_idb_layout, _idb_design);
+  feature_parser.buildNets(path);
+}
+
+}  // namespace iplf

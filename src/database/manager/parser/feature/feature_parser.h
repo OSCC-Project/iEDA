@@ -16,26 +16,57 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: tcl_register.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
+ * @project		iEDA
+ * @file		feature_parser.h
+ * @author		Yell
+ * @date		10/08/2023
+ * @version		0.1
+ * @description
+
+
+        feature parser
  *
  */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_flow.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-using namespace ieda;
+#include <iostream>
+#include <string>
+#include <vector>
 
-namespace tcl {
+#include "json.hpp"
+using json = nlohmann::json;
 
-int registerCmdFlow()
+namespace idb {
+
+using std::vector;
+
+class IdbDesign;
+class IdbLayout;
+
+class FeatureParser
 {
-  registerTclCmd(CmdFlowAutoRun, "flow_run");
-  registerTclCmd(CmdFlowExit, "flow_exit");
-  return EXIT_SUCCESS;
-}
+ public:
+  FeatureParser(IdbLayout* layout, IdbDesign* design)
+  {
+    _layout = layout;
+    _design = design;
+  }
+  ~FeatureParser()
+  {
+    _layout = nullptr;
+    _design = nullptr;
+  }
 
-}  // namespace tcl
+  // builder
+  bool buildLayout(std::string json_path);
+  bool buildInstances(std::string json_path);
+  bool buildNets(std::string json_path);
+
+ private:
+  IdbLayout* _layout = nullptr;
+  IdbDesign* _design = nullptr;
+};
+}  // namespace idb

@@ -16,26 +16,65 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: tcl_register.h
+ * @File Name: tcl_flow.h
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
  * @Creat Date : 2022-04-15
  *
  */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_flow.h"
 
-using namespace ieda;
+#include <iostream>
+
+#include "ScriptEngine.hh"
+#include "tcl_definition.h"
+
+using ieda::TclCmd;
+using ieda::TclOption;
+using ieda::TclStringOption;
 
 namespace tcl {
 
-int registerCmdFlow()
+class CmdFeatureGenerateLayout : public TclCmd
 {
-  registerTclCmd(CmdFlowAutoRun, "flow_run");
-  registerTclCmd(CmdFlowExit, "flow_exit");
-  return EXIT_SUCCESS;
-}
+ public:
+  explicit CmdFeatureGenerateLayout(const char* cmd_name);
+  ~CmdFeatureGenerateLayout() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureGenerateInstances : public TclCmd
+{
+ public:
+  explicit CmdFeatureGenerateInstances(const char* cmd_name);
+  ~CmdFeatureGenerateInstances() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureGenerateNets : public TclCmd
+{
+ public:
+  explicit CmdFeatureGenerateNets(const char* cmd_name);
+  ~CmdFeatureGenerateNets() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
 
 }  // namespace tcl
