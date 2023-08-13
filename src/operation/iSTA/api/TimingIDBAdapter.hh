@@ -101,31 +101,31 @@ class TimingIDBAdapter : public TimingDBAdapter {
   PortDir dbToSta(IdbConnectType sig_type, IdbConnectDirection io_type) const;
 
   Instance* dbToSta(IdbInstance* db_inst) {
-    return _db2staInst.hasKey(db_inst) ? _db2staInst[db_inst] : nullptr;
+    return _db2staInst.contains(db_inst) ? _db2staInst[db_inst] : nullptr;
   }
   IdbInstance* staToDb(Instance* inst) {
-    return _sta2dbInst.hasKey(inst) ? _sta2dbInst[inst] : nullptr;
+    return _sta2dbInst.contains(inst) ? _sta2dbInst[inst] : nullptr;
   }
 
   Port* dbToStaPort(IdbPin* db_port) {
-    return _db2staPort.hasKey(db_port) ? _db2staPort[db_port] : nullptr;
+    return _db2staPort.contains(db_port) ? _db2staPort[db_port] : nullptr;
   }
   IdbPin* staToDb(Port* port) {
-    return _sta2dbPort.hasKey(port) ? _sta2dbPort[port] : nullptr;
+    return _sta2dbPort.contains(port) ? _sta2dbPort[port] : nullptr;
   }
 
   Net* dbToSta(IdbNet* db_net) {
-    return _db2staNet.hasKey(db_net) ? _db2staNet[db_net] : nullptr;
+    return _db2staNet.contains(db_net) ? _db2staNet[db_net] : nullptr;
   }
   IdbNet* staToDb(Net* net) {
-    return _sta2dbNet.hasKey(net) ? _sta2dbNet[net] : nullptr;
+    return _sta2dbNet.contains(net) ? _sta2dbNet[net] : nullptr;
   }
 
   Pin* dbToStaPin(IdbPin* db_pin) {
-    return _db2staPin.hasKey(db_pin) ? _db2staPin[db_pin] : nullptr;
+    return _db2staPin.contains(db_pin) ? _db2staPin[db_pin] : nullptr;
   }
   IdbPin* staToDb(Pin* pin) {
-    return _sta2dbPin.hasKey(pin) ? _sta2dbPin[pin] : nullptr;
+    return _sta2dbPin.contains(pin) ? _sta2dbPin[pin] : nullptr;
   }
 
   LibertyCell* dbToSta(IdbCellMaster* master);

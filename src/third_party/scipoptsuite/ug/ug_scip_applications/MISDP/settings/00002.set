@@ -1,0 +1,8 @@
+relaxing/SDP/freq = -1
+lp/solvefreq = 1
+heuristics/sdprand/freq = -1
+lp/cleanuprow = TRUE
+lp/cleanuprowsroot = TRUE
+nodeselection/hybridestim/stdpriority = 50000
+nodeselection/hybridestim/maxplungedepth = -1
+nodeselection/hybridestim/estimweight = 0.1

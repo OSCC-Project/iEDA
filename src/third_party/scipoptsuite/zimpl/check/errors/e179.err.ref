@@ -1,0 +1,4 @@
+*** Error 179: Conditional only possible on bounded constraints
+*** File: e179.zpl Line 5
+*** subto c1: vif a <= 5 then b <= 2 end;
+***                              ^^^

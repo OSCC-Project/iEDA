@@ -1,0 +1,42 @@
+# Quiet = FALSE
+# LogSolvingStatus = TRUE
+
+# ramp-up: 0: normal, 1: racing, 2: racing + merging nodes
+# RampUpPhaseProcess = 0
+RampUpPhaseProcess = 1
+
+# Whether if checkpoint is set or not. [Default value: FALSE (no checkpoint)]
+Checkpoint = TRUE
+
+# Interval time for checkpoint. [Default: 3600.0] [10.0, DBL_MAX]
+CheckpointInterval = 1800
+
+# has to be FALSE for ramp-up = 0
+RacingStatBranching = FALSE
+TransferBranchStats = FALSE
+# NoPreprocessingInLC = TRUE
+# UseRootNodeCuts = TRUE
+
+# local cuts
+# TransferLocalCuts = TRUE
+# TransferLocalCuts = FALSE
+
+NChangeIntoCollectingModeNSolvers = FALSE
+NChangeIntoCollectingMode = 1
+DualBoundGainTest = FALSE
+
+SolverSettingsAtRootNode = "../settings/ug_scip_stp.set"
+SolverSettingsExceptRootNode = "../settings/ug_scip_stp.set"
+
+RacingParamsDirPath = "../settings/"
+NMaxRacingBaseParameters = 31
+
+# Racing ramp-up termination criteria : 0 - stop at the number of nodes left reached, 1 - stop at time limit, 2: - stop at the Solver with the
+#  best dual bound value has a certain number of nodes, 3 - adaptive(node first), 4 - adaptive (time first):  [Default value: 4]
+RacingRampUpTerminationCriteria = 3
+# The number of nodes left in a solver to stop racing : [1, INT_MAX]:  [Default value: 75]
+StopRacingNumberOfNodesLeft = 50
+# The time limit to stop racing. [Default: 720.0] [1.0, DBL_MAX]
+StopRacingTimeLimit = 7200
+
+# SetAllDefaultsAfterRacing = FALSE

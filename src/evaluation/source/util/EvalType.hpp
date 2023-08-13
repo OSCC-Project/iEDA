@@ -43,12 +43,62 @@ enum class PIN_IO_TYPE
   kInputOutput
 };
 
-enum class INSTANCE_TYPE
+enum class INSTANCE_LOC_TYPE
 {
   kNone,
   kNormal,
   kOutside,
   kFakeInstance
+};
+
+enum class INSTANCE_STATUS
+{
+  kNone,
+  kFixed,
+  kCover,
+  kPlaced,
+  kUnplaced,
+  kMax,
+};
+
+enum class CONGESTION_TYPE
+{
+  kNone,
+  kInstDens,
+  kPinDens,
+  kNetCong,
+  kGRCong
+};
+
+enum class CHIP_REGION_TYPE
+{
+  kNone,
+  kDie,
+  kCore
+};
+
+enum class RUDY_TYPE
+{
+  kNone,
+  kRUDY,
+  kPinRUDY,
+  kLUTRUDY
+};
+
+enum class DIRECTION
+{
+  kNone,
+  kH,
+  kV
+};
+
+enum class NET_CONNECT_TYPE
+{
+  kNone,
+  kSignal,
+  kClock,
+  kPower,
+  kGround
 };
 
 }  // namespace eval

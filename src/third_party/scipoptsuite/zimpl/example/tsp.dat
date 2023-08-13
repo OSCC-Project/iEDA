@@ -1,0 +1,11 @@
+# $Id: tsp.dat,v 1.5 2009/09/13 16:15:54 bzfkocht Exp $
+"Sylt"       1 1
+"Flensburg"  3 1
+"Neumünster" 2 2
+"Husum"      1 3
+"Schleswig"  3 3
+"Ausacker"   2 4
+"Rendsburg"  1 4
+"Lübeck"     4 4
+"Westerland" 0 1
+"Segeberg"   2 3

@@ -1,0 +1,9 @@
+CXX	=	purify  -best-effort CC
+CPPFLAGS=	-Isrc 
+CXXFLAGS=	-std=c++11 -g
+LDFLAGS	=	-lm
+RANLIB	=	true
+AR	=	CC
+ARFLAGS	=	$(CPPFLAGS) $(CXXFLAGS) -xar -o
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=

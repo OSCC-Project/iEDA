@@ -1,0 +1,18 @@
+CXX		=	icl -nologo
+LINKCXX		=	icl -nologo
+DCXX		=	icl -nologo
+CXX_o		=	-Fo
+LINKCXX		=	link
+LINKCXX_L	=	-LIBPATH:
+LINKCXX_l	=	lib
+LINKCXX_o	=	-out:
+CXXFLAGS	=	-Od -Zi -EHsc -fp:extended -Qstd=c++11 -D_CRT_SECURE_NO_WARNINGS
+LDFLAGS		=	-debug -subsystem:console -incremental:no -fixed:no
+EXEEXTENSION	=	.exe
+AR		=	lib
+AR_o		=	-OUT:
+ARFLAGS		=	
+RANLIB		=
+LN_s	=	cp -r
+LIBEXT		=	lib
+LINKLIBSUFFIX	=	.lib

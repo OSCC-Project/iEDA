@@ -1,0 +1,9 @@
+CXX	=	CC
+CPPFLAGS=	-Isrc -DWITH_LONG_DOUBLE
+CXXFLAGS=	-std=c++11 -g +w
+LDFLAGS	=	-lm
+RANLIB	=	true
+AR	=	CC
+ARFLAGS	=	$(CPPFLAGS) $(CXXFLAGS) -xar -o
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

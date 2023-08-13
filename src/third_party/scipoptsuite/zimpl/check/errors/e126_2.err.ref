@@ -1,0 +1,4 @@
+*** Error 126: Zero "step" value in range
+*** File: e126_2.zpl Line 2
+*** set A := {1 .. 5 by 0};
+***                      ^^^

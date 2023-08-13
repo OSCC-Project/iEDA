@@ -1,0 +1,8 @@
+CXX	=	cxx
+CPPFLAGS=	-Isrc -DWITH_LONG_DOUBLE
+CXXFLAGS=	-O0 -w0 -std strict_ansi -gall -verbose -check \
+		-msg_disable basclsnondto,boolexprconst # -ieee
+LDFLAGS	=	-lm
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

@@ -47,7 +47,7 @@ SdcConstrain::~SdcConstrain() = default;
  * @param clock The create_clock information.
  */
 void SdcConstrain::addClock(SdcClock* clock) {
-  _sdc_clocks.insert(clock->get_clock_name(), std::unique_ptr<SdcClock>(clock));
+  _sdc_clocks[clock->get_clock_name()] = std::unique_ptr<SdcClock>(clock);
 }
 
 // void SdcConstrain::addGeneratedClock(SdcGenerateCLock* clock) {

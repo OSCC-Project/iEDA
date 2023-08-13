@@ -1,0 +1,4 @@
+*** Error 159: Type error, expected Number got String
+*** File: e159.zpl Line 2
+*** param x := 5 / "hallo";
+***                      ^^^

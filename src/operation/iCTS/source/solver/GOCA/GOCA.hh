@@ -22,69 +22,53 @@
 #include <string>
 #include <vector>
 
-#include "CTSAPI.hpp"
 #include "ClockTopo.h"
-#include "CtsCellLib.h"
-#include "CtsConfig.h"
 #include "CtsInstance.h"
+#include "Inst.hh"
 #include "Node.hh"
-#include "log/Log.hh"
-
 namespace icts {
+struct Assign
+{
+  int max_dist;    // max distance between centorid and inst
+  int max_fanout;  // max fanout of a cluster
+  double max_cap;  // max cap of a cluster
+  double skew_bound;
+  double ratio;  // clustering margin
+};
+/**
+ * @brief Global Optimal Constraint Assignment
+ *
+ */
 class GOCA
 {
  public:
   GOCA() = delete;
-  GOCA(const std::string& net_name, const std::vector<CtsInstance*>& instances) : _net_name(net_name), _instances(instances)
-  {
-    auto* config = CTSAPIInst.get_config();
-    // unit
-    _unit_res = CTSAPIInst.getClockUnitRes() / 1000;
-    _unit_cap = CTSAPIInst.getClockUnitCap();
-    _db_unit = CTSAPIInst.getDbUnit();
-    // constraint
-    _skew_bound = config->get_skew_bound();
-    _max_cap = config->get_max_cap();
-    _max_buf_tran = config->get_max_buf_tran();
-    _max_sink_tran = config->get_max_sink_tran();
-    _max_fanout = config->get_max_fanout();
-    _max_length = config->get_max_length();
-    // lib
-    _delay_libs = CTSAPIInst.getAllBufferLibs();
-  }
+  GOCA(const std::string& net_name, const std::vector<CtsInstance*>& instances) : _net_name(net_name), _instances(instances) {}
 
   ~GOCA() = default;
   // run
   void run();
+  // get
+  std::vector<ClockTopo> get_clk_topos() const { return _clock_topos; }
 
  private:
   // flow
-  void downscale();
-  void globalAssign();
-  void clustering(const std::vector<Node*>& nodes);
-
-  // get
-  std::vector<ClockTopo> get_clk_topos() const { return _clock_topos; }
+  std::vector<Assign> globalAssign();
+  std::vector<Inst*> assignApply(const std::vector<Inst*>& insts, const Assign& assign);
+  std::vector<Inst*> topGuide(const std::vector<Inst*>& insts, const Assign& assign);
+  Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& level_center, const bool& shift = true);
+  Net* saltOpt(const std::vector<Inst*>& insts, const Assign& assign);
+  // interface
+  void genClockTopo();
   // report
-  void reportTiming() const;
+  void writeNetPy(Pin* root, const std::string& save_name = "net") const;
+  void levelReport() const;
   // member
   std::string _net_name;
   std::vector<CtsInstance*> _instances;
   std::vector<ClockTopo> _clock_topos;
-
-  // design info
-  // unit
-  double _unit_res = 0.0;
-  double _unit_cap = 0.0;
-  size_t _db_unit = 0;
-  // constraint
-  double _skew_bound = 0.0;
-  double _max_cap = 0.0;
-  double _max_buf_tran = 0.0;
-  double _max_sink_tran = 0.0;
-  size_t _max_fanout = 0;
-  double _max_length = 0;
-  // lib
-  std::vector<CtsCellLib*> _delay_libs;
+  std::vector<std::vector<Inst*>> _level_insts;
+  std::vector<Net*> _nets;
+  int _level = 1;
 };
 }  // namespace icts

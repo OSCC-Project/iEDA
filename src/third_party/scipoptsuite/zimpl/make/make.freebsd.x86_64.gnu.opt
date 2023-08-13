@@ -1,0 +1,8 @@
+CPPFLAGS	+=	-I/usr/local/include -DNDEBUG -DNO_MSHELL -D__NO_MATH_INLINES -Wno-format-truncation
+CFLAGS		=	-O3
+LDFLAGS		=	-L/usr/local/lib -lgmp -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

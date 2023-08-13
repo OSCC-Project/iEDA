@@ -26,8 +26,8 @@
 #include "CtsNet.h"
 #include "CtsPin.h"
 #include "HCTS.h"
+#include "Net.hh"
 #include "TimingCalculator.h"
-
 namespace icts {
 
 using std::make_pair;
@@ -59,6 +59,7 @@ class CtsDesign
   vector<CtsInstance*>& get_insts() { return _insts; }
 
   vector<CtsNet*>& get_nets() { return _nets; }
+  std::vector<Net*> get_goca_nets() { return _goca_nets; }
   vector<TimingNode*>& get_timing_nodes() { return _inst_timing_nodes; }
 
   void addClockNetName(const string& clock_name, const string& clock_net_name);
@@ -78,6 +79,13 @@ class CtsDesign
     if (_net_map.count(net->get_net_name()) == 0) {
       _nets.push_back(net);
       _net_map.insert(std::make_pair(net->get_net_name(), net));
+    }
+  }
+  void addGocaNet(Net* net)
+  {
+    if (_goca_net_map.count(net->get_name()) == 0) {
+      _goca_nets.push_back(net);
+      _goca_net_map.insert(std::make_pair(net->get_name(), net));
     }
   }
   void addInstance(CtsInstance* inst)
@@ -115,6 +123,7 @@ class CtsDesign
   }
 
   CtsNet* findNet(const string& net_name) const;
+  Net* findGocaNet(const string& net_name) const;
   CtsPin* findPin(const string& pin_full_name) const;
   CtsInstance* findInstance(const string& instance_name) const;
   TimingNode* findTimingNode(const string& node_name) const;
@@ -139,5 +148,9 @@ class CtsDesign
   std::unordered_map<std::string, CtsPin*> _pin_map;
   std::unordered_map<std::string, TimingNode*> _inst_timing_node_map;
   std::unordered_map<std::string, HNode*> _hcts_node_map;
+
+  // goca temp part
+  vector<Net*> _goca_nets;
+  std::unordered_map<std::string, Net*> _goca_net_map;
 };
 }  // namespace icts

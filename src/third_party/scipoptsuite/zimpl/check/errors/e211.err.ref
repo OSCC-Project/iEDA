@@ -1,0 +1,4 @@
+*** Error 211: MIN of set containing non number elements
+*** File: e211.zpl Line 2
+*** param n := min({"a","b"});
+***                         ^^^

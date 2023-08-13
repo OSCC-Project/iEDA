@@ -1,0 +1,4 @@
+*** Error 212: MAX of set containing non number elements
+*** File: e212.zpl Line 2
+*** param n := max({"a","b"});
+***                         ^^^

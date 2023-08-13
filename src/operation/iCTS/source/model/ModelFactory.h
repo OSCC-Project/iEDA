@@ -25,7 +25,7 @@
 #include "python/PyToolBase.h"
 namespace icts {
 
-enum class FitType { kLINEAR, kCATBOOST, kXGBOOST };
+enum class FitType { kLinear, kCatBoost, kXgBoost };
 
 class ModelBase : public PyToolBase {
  public:

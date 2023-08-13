@@ -29,9 +29,9 @@
 #include <set>
 #include <utility>
 
-#include "LibertyExpr.hh"
-#include "LibertyExprParse.hh"
-#include "LibertyParse.hh"
+#include "mLibertyExpr.hh"
+#include "mLibertyExprParse.hh"
+#include "mLibertyParse.hh"
 #include "solver/Interpolation.hh"
 #include "string/StrMap.hh"
 
@@ -372,7 +372,7 @@ std::tuple<double, int> LibetyCurrentData::getSimulationTotalTimeAndNumPoints()
 
   for (auto* table : {_low_low, _low_high, _high_low, _high_high}) {
     auto [total_time, num_point] = table->getSimulationTotalTimeAndNumPoints();
-    total_simulation_times.insert(total_time, num_point);
+    total_simulation_times[total_time] = num_point;
   }
 
   auto it = std::min_element(std::begin(total_simulation_times), std::end(total_simulation_times));
@@ -886,42 +886,42 @@ LibertyLeakagePower& LibertyLeakagePower::operator=(LibertyLeakagePower&& rhs) n
   return *this;
 }
 
-const Map<std::string, LibertyArc::TimingType> LibertyArc::_str_to_type = {{"setup_rising", TimingType::kSetupRising},
-                                                                           {"hold_rising", TimingType::kHoldRising},
-                                                                           {"recovery_rising", TimingType::kRecoveryRising},
-                                                                           {"removal_rising", TimingType::kRemovalRising},
-                                                                           {"rising_edge", TimingType::kRisingEdge},
-                                                                           {"preset", TimingType::kPreset},
-                                                                           {"clear", TimingType::kClear},
-                                                                           {"three_state_enable", TimingType::kThreeStateEnable},
-                                                                           {"three_state_enable_rise", TimingType::kThreeStateEnableRise},
-                                                                           {"three_state_enable_fall", TimingType::kThreeStateEnableFall},
-                                                                           {"three_state_disable", TimingType::kThreeStateDisable},
-                                                                           {"three_state_disable_rise", TimingType::kThreeStateDisableRise},
-                                                                           {"three_state_disable_fall", TimingType::kThreeStateDisableFall},
-                                                                           {"setup_falling", TimingType::kSetupFalling},
-                                                                           {"hold_falling", TimingType::kHoldFalling},
-                                                                           {"recovery_falling", TimingType::kRecoveryFalling},
-                                                                           {"removal_falling", TimingType::kRemovalFalling},
-                                                                           {"falling_edge", TimingType::kFallingEdge},
-                                                                           {"min_pulse_width", TimingType::kMinPulseWidth},
-                                                                           {"combinational", TimingType::kComb},
-                                                                           {"combinational_rise", TimingType::kCombRise},
-                                                                           {"combinational_fall", TimingType::kCombFall},
-                                                                           {"non_seq_setup_rising", TimingType::kNonSeqSetupRising},
-                                                                           {"non_seq_setup_falling", TimingType::kNonSeqSetupFalling},
-                                                                           {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
-                                                                           {"non_seq_hold_rising", TimingType::kNonSeqHoldRising},
-                                                                           {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
-                                                                           {"skew_rising", TimingType::kSkewRising},
-                                                                           {"skew_falling", TimingType::kSkewFalling},
-                                                                           {"minimum_period", TimingType::kMinimunPeriod},
-                                                                           {"max_clock_tree_path", TimingType::kMaxClockTree},
-                                                                           {"min_clock_tree_path", TimingType::kMinClockTree},
-                                                                           {"nochange_high_high", TimingType::kNoChangeHighHigh},
-                                                                           {"nochange_high_low", TimingType::kNoChangeHighLow},
-                                                                           {"nochange_low_high", TimingType::kNoChangeLowHigh},
-                                                                           {"nochange_low_low", TimingType::kNoChangeLowLow}};
+Map<std::string, LibertyArc::TimingType> LibertyArc::_str_to_type = {{"setup_rising", TimingType::kSetupRising},
+                                                                     {"hold_rising", TimingType::kHoldRising},
+                                                                     {"recovery_rising", TimingType::kRecoveryRising},
+                                                                     {"removal_rising", TimingType::kRemovalRising},
+                                                                     {"rising_edge", TimingType::kRisingEdge},
+                                                                     {"preset", TimingType::kPreset},
+                                                                     {"clear", TimingType::kClear},
+                                                                     {"three_state_enable", TimingType::kThreeStateEnable},
+                                                                     {"three_state_enable_rise", TimingType::kThreeStateEnableRise},
+                                                                     {"three_state_enable_fall", TimingType::kThreeStateEnableFall},
+                                                                     {"three_state_disable", TimingType::kThreeStateDisable},
+                                                                     {"three_state_disable_rise", TimingType::kThreeStateDisableRise},
+                                                                     {"three_state_disable_fall", TimingType::kThreeStateDisableFall},
+                                                                     {"setup_falling", TimingType::kSetupFalling},
+                                                                     {"hold_falling", TimingType::kHoldFalling},
+                                                                     {"recovery_falling", TimingType::kRecoveryFalling},
+                                                                     {"removal_falling", TimingType::kRemovalFalling},
+                                                                     {"falling_edge", TimingType::kFallingEdge},
+                                                                     {"min_pulse_width", TimingType::kMinPulseWidth},
+                                                                     {"combinational", TimingType::kComb},
+                                                                     {"combinational_rise", TimingType::kCombRise},
+                                                                     {"combinational_fall", TimingType::kCombFall},
+                                                                     {"non_seq_setup_rising", TimingType::kNonSeqSetupRising},
+                                                                     {"non_seq_setup_falling", TimingType::kNonSeqSetupFalling},
+                                                                     {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
+                                                                     {"non_seq_hold_rising", TimingType::kNonSeqHoldRising},
+                                                                     {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
+                                                                     {"skew_rising", TimingType::kSkewRising},
+                                                                     {"skew_falling", TimingType::kSkewFalling},
+                                                                     {"minimum_period", TimingType::kMinimunPeriod},
+                                                                     {"max_clock_tree_path", TimingType::kMaxClockTree},
+                                                                     {"min_clock_tree_path", TimingType::kMinClockTree},
+                                                                     {"nochange_high_high", TimingType::kNoChangeHighHigh},
+                                                                     {"nochange_high_low", TimingType::kNoChangeHighLow},
+                                                                     {"nochange_low_high", TimingType::kNoChangeLowHigh},
+                                                                     {"nochange_low_low", TimingType::kNoChangeLowLow}};
 
 LibertyArc::LibertyArc() : _owner_cell(nullptr), _timing_sense(TimingSense::kDefault), _timing_type(TimingType::kDefault)
 {
@@ -977,9 +977,12 @@ void LibertyArc::set_timing_sense(const char* timing_sense)
  *
  * @param timing_type
  */
-void LibertyArc::set_timing_type(const std::string& timing_type)
+void LibertyArc::set_timing_type(const char* timing_type)
 {
-  _timing_type = _str_to_type.value(timing_type, TimingType::kDefault);
+  std::string timing_type_str = timing_type;
+  if (_str_to_type.contains(timing_type)) {
+    _timing_type = _str_to_type[timing_type_str];
+  }
 }
 
 /**
@@ -2694,9 +2697,9 @@ unsigned LibertyReader::visitGroup(LibertyStmt* group)
   if (visit_fun_map.contains(group_name)) {
     auto read_func = visit_fun_map[group_name];
     is_ok = read_func(group);
-  } else if (table_names.hasKey(group_name)) {
+  } else if (table_names.contains(group_name)) {
     is_ok = visitTable(group);
-  } else if (power_table_names.hasKey(group_name)) {
+  } else if (power_table_names.contains(group_name)) {
     is_ok = visitPowerTable(group);
   }
 

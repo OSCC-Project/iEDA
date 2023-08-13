@@ -59,6 +59,11 @@ void Synthesis::place(CtsInstance* inst)
   _placer->placeInstance(inst);
 }
 
+void Synthesis::cancelPlace(CtsInstance* inst)
+{
+  _placer->cancelPlaceInstance(inst);
+}
+
 void Synthesis::incrementalInsertInstance(ClockTopo& clk_topo)
 {
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();

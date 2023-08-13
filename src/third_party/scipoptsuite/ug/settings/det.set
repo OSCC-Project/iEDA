@@ -1,0 +1,13 @@
+Deterministic = TRUE          
+EventWeightedDeterministic = TRUE
+NotificationInterval = 200.0 
+StopRacingTimeLimit = 2000.0
+TabularSolvingStatusInterval = 5.0 
+# Quiet = FALSE                
+# LogSolvingStatusFilePath = "./logs/"
+# LogNodesTransferFilePath = "./logs/"
+# SolutionFilePath = "./logs/"
+# CheckpointFilePath = "./logs/"
+# RampUpPhaseProcess = 0
+# RacingStatBranching = FALSE
+# NoPreprocessingInLC = TRUE

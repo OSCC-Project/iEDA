@@ -17,6 +17,7 @@ add_subdirectory(tcl_ito)
 add_subdirectory(tcl_ista)
 add_subdirectory(tcl_report)
 add_subdirectory(tcl_ino)
+add_subdirectory(tcl_feature)
 
 AUX_SOURCE_DIRECTORY(./ SRC)
 
@@ -42,6 +43,7 @@ target_link_libraries(ieda_tcl
         tcl_ista
         tcl_report
         tcl_ino
+        tcl_feature
 )
 
 target_include_directories(ieda_tcl 

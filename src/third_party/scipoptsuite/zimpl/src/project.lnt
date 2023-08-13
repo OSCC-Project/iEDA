@@ -1,0 +1,107 @@
+-passes(3)
++fsc // strings are const
+-ffc // Function takes Custody flag -> off
+-A(C90)
+-hFb^3
+-width(132,4)
+-"format=%f:%l: %t %n: %m"
+//-Ilint
+//-Ilint/posix
+//-I/usr/include
++libh(lint.h)
+-function(exit,_assert)
+-function(exit,__assert)
+-function(exit,__assertfail)
+-function(exit,__assert_fail)
+-function(exit,zimpl_exit)
+-esym(534,close,creat,fclose,fprintf,fputc,fflush,fsync)
+-esym(534,fputs,fscanf,fseek,fwrite,lseek,memcpy,memmove,memset)
+-esym(534,printf,puts,scanf,sprintf,sscanf,strcat,strcpy)
+-esym(534,strncat,strncpy,unlink,write,regerror)
+//
+-e592 // Non-literal format specifier used without arguments
+-e749 // local enumeration constant not referenced
+-e758 // Operator followed by operator is confusing
+-e766 // Include of header file not used
+-e788 // enum constant not used within defaulted switch
+-e801 // Use of goto is deprecated
+-e826 // Suspicious pointer-to-pointer conversion 
+-e834 // Operator followed by operator is confusing.  Use parentheses
+//
+-efile(766,mshell.h)
+-efile(537,stdarg.h,float.h,alloca.h,math.h,stdio.h)
+-esym(666,assert)
+-efile(525,mmlparse.y,mmlparse.c)
+-esym(757,yylen)
+-DYYMAXDEPTH=0
+-esym(526,__builtin_next_arg)
+-esym(628,__builtin_next_arg)
+-esym(718,__builtin_next_arg)
+-esym(746,__builtin_next_arg)
+//-esym(749,list_type::LIST_ERR);
+-esym(773,BEGIN)
+-esym(760,FLEX_DEBUG)
+-esym(765,yy_create_buffer,yy_scan_buffer,yy_scan_string,yy_scan_bytes)
+-esym(765,yy_switch_to_buffer,yyout,yyin,yy_flush_buffer,yyrestart)
+-esym(765,yy_init_buffer,yyleng)
+-esym(768,code)
+//-esym(123,malloc,calloc,realloc,free)
+-strong(AzJzX,Tuple,Set,Str,VBCmpOp,VBFixed)
+-strong(AzJzX,IdxSet,Term,TermElem,IneqType,Ineq,Local,ListElem,List)
+-strong(AzJzX,ListElem,List,ListData,ListType)
+-strong(AzJzX,StmtType,Stmt,Prog,CodeType,CodeNode)
+-strong(AzJzX,RDef,RPar,MFP,RParType,RParVal)
+-strong(AzJzX,Bound,BoundType)
+-strong(AzJzX,Heap,HeapType,HeapData,heapCmp)
+-strong(AzJzX,SetIter,SetCheckType,DefineType,Define)
+-strong(AzJzX,Var,VarType,VarState,VarClass,Con,ConType,ConState,LpDirect,LpType,LpFormat)
+-strong(AzJzX,LpsHElem,LpsHashType)
+-strong(AzJzX,PSResult)
+-strong(AzJzX,SetType,SetVTab,SetEmpty,SetPseudo,SetHead,SetList,SetRange,SetProd,SetMulti)
+-strong(AzJzX,SetEmptyIter,SetPseudoIter,SetListIter,SetRangeIter,SetProdIter,SetMultiIter)
+-strong(AzJzX,ElemType,Elem,ElemValue,ElemStore)
+-strong(AzJzX,Entry,EntryValue,SymbolType,Symbol)
+-strong(AzJzX,Pool,PoolElem)
+-strong(AzJzX,Numb,NumbStore)
+-strong(AzJzX,StrgFile,FileType)
+-strong(AzJzX,HashType,Hash,HElem,SetElemIdx)
+-strong(AzJzX,HeapData,heap_data)
+-strong(AcJX,Inst)
+-strong(AJXbl,Bool)
+-e793 //  ANSI limit of 1024 'macros in module' exceeded
+/* ratlpstore.c */
+-esym(528,hash_statist)
+/* iread.c */
+-esym(771,field) // Symbol 'field' (line 227) conceivably not initialized
+/* gmpmisc.c */
+-esym(754,pool_elem::pad)
+//-e429
+//--- Bison ---
+-esym(424, yyss, yyvs) // klappt nicht
+-esym(613, yyss, yyvs)
+-esym(673, yyss, yyvs) // klappt nicht
+-esym(553,YYENABLE_NLS,YYLTYPE_IS_TRIVIAL)
+-efile(451,lint/posix/stdio.h) // repeated include file
+//--- GMP ---
+-esym(534,__gmpf_out_str,__gmpq_set_str,__gmpq_out_str)
+-esym(849,GMP_RAND_ALG_LC,GMP_RAND_ALG_DEFAULT)
+//--- ratlp
+-esym(757,lps_readmps) // global not referenced
+-efunc(662,code_new_inst)
+-efunc(803,lps_makename)
+//--- set4.h ---
+-esym(768,set_empty::head,set_pseudo::head,set_range::head,set_prod::head,set_multi::head)
+-esym(768,set_empty_iter::dummy)
+//--- elem.c ---
+-esym(522,elem_init)
+//--- code.c --- 
+-esym(534,stkchk_used_x) // ignoring return value
+//--- iread.c ---
+-esym(645,regex) // regex may not have been initialized
+//-------------- NOCH ZU TUN --------------------------------
+-e714 // Symbol not referenced
+-e765 // external could be made static
+-e759 // header declaration for symbol could be moved from header to module
+-e769 // global enumeration constant not referenced
+-e755 // global macro not referenced
+-e413
