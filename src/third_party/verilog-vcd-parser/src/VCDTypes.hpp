@@ -8,8 +8,6 @@
 #include <valarray>
 #include <vector>
 
-#include "include/PwrConfig.hh"
-
 extern "C" {
 #include "zlib.h"
 }
@@ -77,7 +75,7 @@ class VCDBitVector
         = {{0, {LOW_BITS, 0}}, {1, {SECOND_BITS, 2}}, {2, {THIRD_BITS, 4}}, {3, {HIGH_BITS, 6}}};
     auto [mask, shift] = bit_to_mask_shift[compress_inner_pos];
 
-    return (VCDBit) ((the_bits & mask) >> shift);
+    return (VCDBit)((the_bits & mask) >> shift);
   }
 
   void setValue(std::size_t pos, VCDBit bit_value)
