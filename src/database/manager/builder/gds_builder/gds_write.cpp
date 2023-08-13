@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @project		iDB
- * @file		def_write.cpp
+ * @file		gds_write.cpp
  * @author		Yell
  * @date		25/05/2021
  * @version		0.1
