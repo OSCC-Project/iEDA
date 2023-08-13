@@ -2344,43 +2344,64 @@ class RTUtil
     return level_layer_idx_list;
   }
 
-  // 考虑的全部via below层
-  static std::vector<irt_int> getAllViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // // 考虑的全部via below层
+  // static std::vector<irt_int> getAllViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // {
+  //   if (bottom_layer_idx > top_layer_idx) {
+  //     LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+  //   }
+  //   std::vector<irt_int> layer_idx_list;
+  //   if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+  //     layer_idx_list.push_back(curr_layer_idx - 1);
+  //     layer_idx_list.push_back(curr_layer_idx);
+  //   } else if (curr_layer_idx <= bottom_layer_idx) {
+  //     for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+  //       layer_idx_list.push_back(layer_idx);
+  //     }
+  //   } else if (top_layer_idx <= curr_layer_idx) {
+  //     for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+  //       layer_idx_list.push_back(layer_idx);
+  //     }
+  //   }
+  //   std::sort(layer_idx_list.begin(), layer_idx_list.end());
+  //   layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+  //   return layer_idx_list;
+  // }
+
+  // // 考虑的相邻via below层
+  // static std::vector<irt_int> getAdjViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // {
+  //   if (bottom_layer_idx > top_layer_idx) {
+  //     LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+  //   }
+  //   std::vector<irt_int> layer_idx_list;
+  //   layer_idx_list.push_back(std::max(curr_layer_idx - 1, bottom_layer_idx));
+  //   layer_idx_list.push_back(std::min(curr_layer_idx, top_layer_idx - 1));
+
+  //   std::sort(layer_idx_list.begin(), layer_idx_list.end());
+  //   layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+  //   return layer_idx_list;
+  // }
+
+  // 当前层在可布线层内，则只向上打通孔，在最高可布线层，则往下打通孔；当前层布线层外，打通孔到最近的可布线层。
+  static std::vector<irt_int> getReservedViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<irt_int> layer_idx_list;
-    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx <= bottom_layer_idx) {
-      for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
-        layer_idx_list.push_back(layer_idx);
+    std::vector<irt_int> reserved_via_below_layer_idx_list;
+    if (curr_layer_idx <= bottom_layer_idx) {
+      for(int layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
+        reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
+    } else if(bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+      reserved_via_below_layer_idx_list.push_back(curr_layer_idx);
     } else if (top_layer_idx <= curr_layer_idx) {
-      for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
-        layer_idx_list.push_back(layer_idx);
+      for(irt_int layer_idx = std::max(bottom_layer_idx, top_layer_idx - 1); layer_idx < curr_layer_idx; layer_idx++) {
+        reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
     }
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-    return layer_idx_list;
-  }
-
-  // 考虑的相邻via below层
-  static std::vector<irt_int> getAdjViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
-  {
-    if (bottom_layer_idx > top_layer_idx) {
-      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
-    }
-    std::vector<irt_int> layer_idx_list;
-    layer_idx_list.push_back(std::max(curr_layer_idx - 1, bottom_layer_idx));
-    layer_idx_list.push_back(std::min(curr_layer_idx, top_layer_idx - 1));
-
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-    return layer_idx_list;
+    return reserved_via_below_layer_idx_list;
   }
 
   static std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list)
