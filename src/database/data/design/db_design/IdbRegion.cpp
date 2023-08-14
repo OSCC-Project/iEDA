@@ -81,6 +81,15 @@ IdbRegionList::IdbRegionList()
 
 IdbRegionList::~IdbRegionList()
 {
+  for (IdbRegion* region : _region_list) {
+    if (region) {
+      delete region;
+      region = nullptr;
+    }
+  }
+
+  _region_list.clear();
+  std::vector<IdbRegion*>().swap(_region_list);
 }
 
 IdbRegion* IdbRegionList::find_region(string name)

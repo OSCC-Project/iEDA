@@ -65,7 +65,7 @@ class IdbBuilder
   // Read lef & def file
   IdbDefService* buildDef(string file);
   IdbDefService* buildDefGzip(string gzip_file);
-  IdbLefService* buildLef(vector<string>& files);
+  IdbLefService* buildLef(vector<string>& files, bool b_techfile = false);
   IdbDefService* buildVerilog(string file, std::string top_module_name = "asic_top");
 
   IdbDefService* buildDefFloorplan(string file);
@@ -83,8 +83,8 @@ class IdbBuilder
   // Read layout
   void loadLayout(string folder);
 
-  IdbLefService* get_lef_service() { return _lef_service.get(); }
-  IdbDefService* get_def_service() { return _def_service.get(); }
+  IdbLefService* get_lef_service() { return _lef_service; }
+  IdbDefService* get_def_service() { return _def_service; }
   //   IdbDataService* get_data_service() { return _data_service.get(); }
 
   /// operator
@@ -123,8 +123,8 @@ class IdbBuilder
   }
 
  private:
-  std::shared_ptr<IdbDefService> _def_service;
-  std::shared_ptr<IdbLefService> _lef_service;
+  IdbDefService* _def_service = nullptr;
+  IdbLefService* _lef_service = nullptr;
   //   std::shared_ptr<IdbDataService> _data_service;
 };
 

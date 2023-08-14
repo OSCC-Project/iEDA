@@ -77,7 +77,7 @@ class DataManager
   /// iDB init
   bool init(string config_path);
   bool readLef(string config_path);
-  bool readLef(vector<string> lef_paths);
+  bool readLef(vector<string> lef_paths, bool b_techlef = false);
   bool readDef(string path);
   bool readVerilog(string path, string top_module = "");
 
@@ -223,7 +223,7 @@ class DataManager
   /// init
   /// iDB init
   bool initConfig(string config_path);
-  bool initLef(vector<string> lef_paths);
+  bool initLef(vector<string> lef_paths, bool b_techlef = false);
   bool initDef(string def_path);
   bool initVerilog(string verilog_path, string top_module);
 

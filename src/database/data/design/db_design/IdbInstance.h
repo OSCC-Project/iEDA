@@ -224,7 +224,7 @@ class IdbInstanceList
   IdbInstance* add_instance(IdbInstance* instance = nullptr);
   IdbInstance* add_instance(string name);
   bool remove_instance(string name);
-  void reset();
+  void reset(bool delete_memory = true);
 
   // operator
   void init(int32_t size) { _instance_list.reserve(size); }

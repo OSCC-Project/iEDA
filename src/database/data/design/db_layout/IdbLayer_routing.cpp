@@ -223,11 +223,12 @@ IdbLayerRouting::~IdbLayerRouting()
   if (_track_grid_list.size() > 0) {
     for (IdbTrackGrid* track_grid : _track_grid_list) {
       if (track_grid) {
-        delete track_grid;
         track_grid = nullptr;
       }
     }
   }
+  _track_grid_list.clear();
+  std::vector<IdbTrackGrid*>().swap(_track_grid_list);
 
   if (_spacing_list) {
     delete _spacing_list;
