@@ -1,0 +1,119 @@
+CURRENT STATUS OF DEVELOPMENT:
+
+UG framework, ParaSCIP(ug[SCIP,MPI]) and FiberSCIP (ug[SCIP,Pthreads]) are available as a beta version.
+For MIP solving, ParaSCIP and FiberSCIP are well debugged and should be stable. For MINLP solving,
+they are relatively stable, but not as thoroughly debugged. This release version should handle
+branch-and-cut approaches where subproblems are defined by variable bounds and also by constrains
+for ug[SCIP,*](ParaSCIP and FiberSCIP). Therefore, problem classes other than MIP or MINLP can be handled,
+but they have not been tested yet.
+
+INSTALLATION:
+
+This is a very rudimentary description of what's needed to get FiberSCIP and ParaSCIP running.
+
+1. You need SCIP version 3.0.0 or higher and a reasonable compiler suite with
+   libraries installed.
+   Under Ubuntu, you can install these with
+     "sudo apt-get install build-essential libreadline-dev libz-dev"
+   With OpenSuSE 11.4and 12.1 this is
+     "sudo zypper in -t pattern devel_C_C++ && sudo zypper in readline-devel zlib-devel-static"
+   The package names may differ on your linux distribution.
+
+2. If you would like to use ParaSCIP, you have to install an MPI library and have to set up MPI
+   environment.
+
+3. Create a folder lib/ in your ug directory and create a softlink there
+   pointing to your SCIP directory.
+
+4. Compile the UG project, by entering "make [options]" where the options are
+   the same as in SCIP except COMM parameter. You can find SCIP and its documentation on
+   http://scip.zib.de .
+
+   To make FiberSCIP(default):
+      "make [options] [COMM=pth]"
+   To make ParaSCIP:
+      "make [options] COMM=mpi"
+
+5. You can run short testset as follows:
+
+   To test FiberSCIP(default):
+      "make [options] [COMM=pth] test"
+   To test ParaSCIP:
+      "make [options] COMM=mpi test"
+
+USAGE:
+
+Here you'll find the basic instructions how FiberSCIP and ParaSCIP can be used to solve MIPs
+and MINLPs in parallel.
+
+1. How to run FiberSCIP ("fscip" is a binary file name).
+
+    "fscip fscip_param_file problem_file_name [-l <logfile>] [-q] [-sl <settings>] [-s <settings>] [-sr <root_settings>]
+     [-w <prefix_warm>] [-sth <number>] [-fsol <solution_file>] [-isol <initial solution file]"
+       -l <logfile>           : copy SCIP output into log file
+       -q                     : suppress SCIP screen messages
+       -sl <settings>         : load parameter settings (.set) file for LoadCoordinator presolving
+       -sr <root_settings>    : load parameter settings (.set) file for root node subtree solving
+       -s <settings>          : load parameter settings (.set) file for additional node solving
+       -w <prefix_warm>       : warm start file prefix ( prefix_warm_nodes.gz and prefix_warm_solution.txt are read )
+       -sth <number>          : the number of solver threads used
+       -fsol <solution file> : specify output solution file
+       -isol <intial solution file> : specify initial solution file
+
+2. How to run ParaSCIP ("parascip" is a binary file name).
+
+    "mpirun -np #MPI_processes(#solvers + 1) parascip parascip_param_file problem_file_name [-l <logfile>] [-q] [-sl <settings>] [-s <settings>] [-sr <root_settings>]
+     [-w <prefix_warm>] [-sth <number>] [-fsol <solution_file>] [-isol <initial solution file]"
+       -l <logfile>           : copy SCIP output into log file
+       -q                     : suppress SCIP screen messages
+       -sl <settings>         : load parameter settings (.set) file for LoadCoordinator presolving
+       -sr <root_settings>    : load parameter settings (.set) file for root node subtree solving
+       -s <settings>          : load parameter settings (.set) file for additional node solving
+       -w <prefix_warm>       : warm start file prefix ( prefix_warm_nodes.gz and prefix_warm_solution.txt are read )
+       -sth <number>          : the number of solver threads used
+       -fsol <solution file> : specify output solution file
+       -isol <intial solution file> : specify initial solution file
+
+     [NOTE]
+     If the instance you want to solve are not MIP, then you have to ensure that all MPI processes can access
+     the instance data file. All ParaSolver processes accesses the file for the initialization.
+
+ABOUT FiberSCIP and ParaSCIP PARAMETERS
+
+The current default parameter settings are intended for using FiberSCIP on relatively small scale shared memory
+computing environments with one or two hours timelimit. Using the default settings, the computing log is output
+to standard out and solution files are saved to the working directory.  In order to save additional log information
+the user should uncomment the line Quiet=FALSE in settings/default.set, statistical information will be saved to
+log files in the working directory.  Alternatively, the log files can be saved to a user created directory 'logs'
+by uncommenting additional lines in the settings file.
+
+The UG framework specific parameters are mainly for controlling the load balancing and should be set by the user
+in the main settings file.  Independent parameter settings files can be used to specify SCIP parameters to be used
+at three different stages of the solution process (Load Coordinator presolving, root node subtree solving,
+additional node solving).
+The parameters have to be set taking into account:
+- Number of parallel solvers (number of cores) used,
+- Time and memory limitations,
+- The instance to be solved.
+
+While the default parameter settings are appropriate for 2-16 cores, tuning parameter settings for large-scale
+environments is more challenging.  If you would like help tuning ParaSCIP on a large-scale environment to solve
+hard instances, please e-mail shinano@zib.de with a log file from solving your instance for about two hours
+along with information about your platform.
+ParaSCIP has been successfully run on as many as 80,000 cores of the TITAN supercomputer and we are happy to
+recommend parameter settings for other large-scale environments.
+
+KNOWN-BUGS-AND-WORKAROUNDS
+
+When you solve MINLPs, you may meet an abort. Then, please use the patch included in this archive.
+It can be applied doing
+   "patch -p0 < scip.patch"
+from the root directory of ug.
+
+In order to use a time limit, it is best to run FiberSCIP and ParaSCIP under a shell with a hard time limit.
+Due to the limitations in the communication between the processes or threads it is difficult to terminate
+cleanly when a soft time limit is used, possibly causing the process to hang.
+
+LICENSING:
+
+UG, ParaSCIP, FiberSCIP are licensed under the GNU Lesser General Public License; see the file COPYING.

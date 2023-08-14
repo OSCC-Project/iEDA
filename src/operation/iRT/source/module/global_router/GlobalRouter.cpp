@@ -729,7 +729,7 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
     while (!isConnectedAllEnd(gr_model)) {
-      for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kIgnoringOBS}) {
+      for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kIgnoringAccess}) {
         routeByStrategy(gr_model, gr_route_strategy);
       }
       updatePathResult(gr_model);
@@ -1004,7 +1004,7 @@ void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_s
         LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
                       " successfully!");
       }
-    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringAccess) {
       LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
                      " failed!");
     }

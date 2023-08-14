@@ -42,8 +42,8 @@
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
-#include "liberty/LibertyEquivCells.hh"
 #include "netlist/Netlist.hh"
+#include "parser/liberty/mLibertyEquivCells.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogReader.hh"
 

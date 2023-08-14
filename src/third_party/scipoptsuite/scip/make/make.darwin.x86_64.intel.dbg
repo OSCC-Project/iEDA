@@ -1,0 +1,15 @@
+CC		=	icc
+CXX		=	icc -Kc++
+LINKCC		=	icc
+LINKCXX		=	icc -Kc++
+FLAGS		+=	-DSCIP_ROUNDING_FE
+OFLAGS		+=	-O0 -fp-model precise -g -w1 -fp-stack-check -wd279,383,444,810,981
+CFLAGS		+=	-std=c99 -D_XOPEN_SOURCE=600
+ARFLAGS		=	crs
+LDFLAGS		+=	-lirc -lm -lstdc++ -Bstatic
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz
+GMP_FLAGS	=
+GMP_LDFLAGS 	=	-lgmp
+READLINE_FLAGS	=
+READLINE_LDFLAGS=	-lreadline -lncurses

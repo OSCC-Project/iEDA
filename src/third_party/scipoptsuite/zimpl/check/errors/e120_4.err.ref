@@ -1,0 +1,4 @@
+*** Error 120: Symmetric Difference of sets with different types
+*** File: e120_4.zpl Line 2
+*** set A:={1..5} symdiff {"a"};
+***                            ^^^

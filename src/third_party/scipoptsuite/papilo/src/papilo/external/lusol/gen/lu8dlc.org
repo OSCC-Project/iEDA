@@ -1,0 +1,19 @@
+lu8dlc
+| var_name | c_type  | length | comment          |
+|----------+---------+--------+------------------|
+| m        | int64_t | 1      | num rows         |
+| n        | int64_t | 1      | num columns      |
+| jdel     | int64_t | 1      | column to delete |
+| lena     | int64_t | 1      |                  |
+| luparm   | int64_t | 30     |                  |
+| parmlu   | double  | 30     |                  |
+| a        | double  | lena   |                  |
+| indc     | int64_t | lena   |                  |
+| indr     | int64_t | lena   |                  |
+| p        | int64_t | m      |                  |
+| q        | int64_t | n      |                  |
+| lenc     | int64_t | n      |                  |
+| lenr     | int64_t | m      |                  |
+| locc     | int64_t | n      |                  |
+| locr     | int64_t | m      |                  |
+| inform   | int64_t | 1      |                  |

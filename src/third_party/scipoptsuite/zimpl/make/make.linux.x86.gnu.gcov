@@ -1,0 +1,21 @@
+#--- $Id: make.linux.x86.gnu.gcov,v 1.10 2014/01/12 11:07:04 bzfkocht Exp $
+CPPFLAGS	+=	-DCOVERAGE -DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-O0 -m32 -g -fprofile-arcs -ftest-coverage 
+LDFLAGS		=	-lgmp -lm
+
+ifeq ($(LINK),shared)
+#LIBRARY		=	$(LIBDIR)/lib$(LIBNAME).so
+#LIBLINK		=	$(LIBDIR)/lib$(NAME).$(BASE).so
+CFLAGS		+=	-fPIC
+#AR		=	gcc -m32 -shared -o # the trailing space is important
+#ARFLAGS		=       $(LDFLAGS)
+#RANLIB		=	true
+endif
+
+#ifeq ($(LINK),static)
+LDFLAGS		+=	-static
+#endif
+
+ifeq ($(ZLIB),true)
+LDFLAGS         +=      -lz
+endif

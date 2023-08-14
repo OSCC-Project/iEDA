@@ -1,0 +1,51 @@
+Notes for GCG Release 3.0.0
+
+General
+================
+We are proud to release GCG in version 3.0.0. The major version number
+increase from 2.1.4 is justified, as we include major new features. Check
+both the feature list as well as the CHANGELOG for the changes
+
+Features
+================
+
+ * New detection scheme: Instead of calling a set of detectors in a 
+   static fashion, now each detector is allowed to only fix a subest
+   of constraints and variables. In the following these partial 
+   decompositions can refined by other detectors. Detectors may 
+   implement up to three callbacks: propagate, finish, and 
+   postprocess. Constraint- and variable classification yield further
+   problem knowledge resulting in decompositions for large problems
+   for which no structure was known before. Furthermore there are 
+   several new ways of user interaction (e.g., 'explore', 
+   and 'decomposition_toolbox') and visualization.
+
+ * New pricing scheme: The pricing scheme has been restructured. The
+   pricing loop is now managed by a priority queue, which holds
+   so-called "pricing jobs" (i.e., pricing problems that are to be
+   solved with a certain solver, heuristically or exactly).
+   In particular, the new pricing scheme now allows heuristic MIP
+   pricing to be performed in multiple rounds, with increasing limits.
+   The pricing scheme furthermore offers several possibilities to limit
+   the pricing loop: These include a maximum number of columns to be
+   generated, separately for each problem as well as for the overall
+   loop, and a maximum percentage of pricing problems for which
+   improving columns need to be found.
+
+ * Benders' decomposition mode: The available decomposition algorithms has been
+   extended to include Benders' decomposition. The Benders' decomposition mode
+   uses the problem structure found through the detection and forms a master
+   problem with a series of subproblems. The Benders' decomposition framework
+   included in SCIP 6.0.0 is used to manage the subproblem solving and Benders'
+   cut generation.
+   The Benders' decomposition mode is activated by setting "relaxing/gcg/mode"
+   to 1.
+   Detection settings are provided to form different decompositions suitable for
+   Benders' decomposition. These settings are: detect-benders,
+   detect-benders-bin_master and detect-benders-cont_subpr. These settings use a
+   new experimental scoring method that has been added for Benders'
+   decomposition.
+
+ * Other features: We revisited and improved several other parts of the
+   code such as an improved dual variable stabilization, improved
+   initialization, and aggregation of programs with continuous variables.

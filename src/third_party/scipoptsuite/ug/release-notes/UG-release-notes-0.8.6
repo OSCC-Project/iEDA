@@ -1,0 +1,14 @@
+Notes for UG Release 0.8.6
+
+Note that this version is still beta.
+
+Features
+========
+- C++11 threads can be used for communication. 
+- Customized racing ramp-up is supported.
+- For ug[SCIP,*], branching on constraints is supported.
+- For ug[SCIP,*], interfaces for user to initialize subproblems are added.
+- UGS interface is included in UG solver.
+- ug[SCIP-Jack,*] and UG[SCIP-SDP,*] can be used with customized parameter sets in racing.
+- ug[SCIP-Jack, MPI] communicates information about branching decisions to all processes
+  and the underlying graphs are changed accordingly (which expecially improves cutting planes and propagation).

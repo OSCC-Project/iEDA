@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ "$#" -ne 2 ]; then
+   echo "Expected two arguments: instance file and log file"
+   exit
+fi
+
+instance=$1
+base_name=$(basename -- "$instance")
+instance_name="${base_name%.*}"
+reduced_problem="${instance_name}.mps"
+solution_file="${instance_name}.sol"
+archive_file="${instance_name}.postsolve"
+log_file=$2
+
+if [$SCIP_PATH == ""]; then
+   SCIP_PATH="./scip"
+   if [ ! -e "$SCIP_PATH" ]; then
+      echo "Couldn't find scip in current directory"
+      exit
+   fi
+fi
+
+if [$PRESOLVE_PATH == ""]; then
+   PRESOLVE_PATH="./presolve"
+   if [ ! -e "$PRESOLVE_PATH" ]; then
+      echo "Couldn't find presolve in current directory"
+      exit
+   fi
+fi
+
+if [$POSTSOLVE_PATH == ""]; then
+   POSTSOLVE_PATH="./postsolve"
+   if [ ! -e "$POSTSOLVE_PATH" ]; then
+      echo "Couldn't find postsolve in current directory"
+      exit
+   fi
+fi
+
+echo "::::::::::::::::::::::::::::"
+echo "solving instance: $instance_name" |tee /dev/tty >> $log_file
+echo "::::::::::::::::::::::::::::"
+
+$PRESOLVE_PATH $instance $instance_name
+$SCIP_PATH -c "read $reduced_problem" -c "optimize" -c "write solution $solution_file" -c "quit" |tee /dev/tty |grep "Solving Time" |sed 's/Solving Time (sec) : //' >> $log_file
+$POSTSOLVE_PATH $solution_file $archive_file
+echo "done"

@@ -45,6 +45,7 @@
 #include "tcl_register_sta.h"
 #include "tcl_register_to.h"
 #include "tcl_register_no.h"
+#include "tcl_register_feature.h"
 
 using namespace ieda;
 namespace tcl {
@@ -96,6 +97,8 @@ int registerCommands()
 #endif
 
   registerCmdReport();
+
+  registerCmdFeature();
 
   return EXIT_SUCCESS;
 }

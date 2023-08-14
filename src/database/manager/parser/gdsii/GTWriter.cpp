@@ -218,7 +218,7 @@ void GdsiiTextWriter::writeTopStruct()
   GdsStruct* str = _data->get_top_struct();
   write_bgnstr(str);
   write_strname(str);
-  // write_strclass( str); // Unsupported in KLayout and not used in GDSII file
+  // write_strclass( str);
   for (GdsElemBase* e : str->get_element_list()) {
     write_struct_element(e);
   }
@@ -234,7 +234,7 @@ void GdsiiTextWriter::writeStruct()
     // <structure>
     write_bgnstr(str);
     write_strname(str);
-    // write_strclass( str); // Unsupported in KLayout and not used in GDSII file
+    // write_strclass( str);
     for (GdsElemBase* e : str->get_element_list()) {
       write_struct_element(e);
     }
@@ -440,7 +440,6 @@ void GdsiiTextWriter::write_box(GdsBox* e) const
 }
 
 // The document recommends setting attributes from 1 to 127,
-// In practice, KLayout 0.26.2 reads GDS-TXT files smoothly when setting attributes from 0 to 65535.
 // Since the "PROPATTR" is a two-byte signed integer,
 // those property whose PROPATTR < 0 will not be written.
 void GdsiiTextWriter::write_property(GdsElemBase* e) const
@@ -558,8 +557,7 @@ void GdsiiTextWriter::write_plex(const GdsElemBase* e) const
 }
 
 // The document allows setting layer-value in the range of 0 to 255.
-// In practice, KLayout supports layer-value from 0 to 65535.
-// So layer < 0 will be assert. 
+// So layer < 0 will be assert.
 void GdsiiTextWriter::write_layer(GdsLayer layer) const
 {
   assert(layer >= 0);

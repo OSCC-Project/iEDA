@@ -81,17 +81,15 @@ If you need to modify iEDA through source code construction, please read in sequ
 
 You can also directly  use the latest release docker， then you can skip "1. Source code construction of iEDA".
 
-PS: about how to install Docker，you can refer [Docker install and initilization](https://www.cnblogs.com/harrypotterisdead/p/17223606.html)。
+PS: you can refer [Docker install and initilization](https://www.cnblogs.com/harrypotterisdead/p/17223606.html) to know how to install Docker.
 
 ## 1. Build iEDA from source code
 
 We provide two methods for source code construction of iEDA as examples.
 
-
 ### Method 1. Use  the iEDA mirror (Redommended)
 
 Download the latest “iedaopensource/base” mirror from Dockerhub, which includes the latest master branch code and dependencies (build tools and dependency libraries). You can also use the ‘-v’ command to mount your own downloaded iEDA code repository. The build will only use the compile tools and dependency libraries provided by the mirror.
-
 
 The current directory after entering the container is the iEDA master branch code, refering the following commands:
 
@@ -107,7 +105,6 @@ bash build.sh
 We have ubuntu（Ubuntu20.04）and debian（Debian11）mirror tag.
 
 ### Method 2.  Install dependencies and compile
-
 
 installing command on Ubuntu 20.04:
 
@@ -125,7 +122,6 @@ bash build.sh
 ## 2. Design chip by using iEDA
 
 Here, two iEDA operation methods are provided for reference
-
 
 About how to use iEDA, please refer [Tcl command manual][Tcl-menu-xls]  and the tool instruction docs of `readme.md` in `src/operation`.
 
@@ -181,20 +177,26 @@ Please note the using [Coding Style][Code-conduct-md] of iEDA。
 
 In the development of iEDA, some sub-modules from the open-source community are employed. All relevant usage is listed below.
 
-| Sub-module     | Source                                                                                                  | Detail                                                          |
-| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| flute3     | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | Generate rectange steiner tree by flute3.                            |
-| abseil-cpp | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | Use Google's high performance C++ container and algorithm library to improve performance compared to STL. |
-| json       | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++ library, used to parse the program Json configuration file.                             |
-| magic_enum | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | Supports the conversion of enum values and character strings.                                   |
-| libfort    | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | The C/C++ library produces formatted ASCII tables.                          |
-| pegtl      | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | Use PEGTL to parse SPEF files easily.                                    |
-| pybind11   | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | Easy for python to call C++.                                                |
-| VCDParser  | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | Parse power VCD waveform file.                                              |
-| def lef    | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | Parse physical layout and design DEF/LEF files.                                          |
-| ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                    | C++11 template library implementation of multithreaded pool.                                        |
-| fft        | [ fft](https://github.com/progschj/ThreadPool.git)                                                       | Fast Fourier transform library.                                                 |
-| hmetics    | [hmetics](https://github.com/progschj/ThreadPool.git)                                                    | Efficient graph partitioning algorithm.                                                 |
+| Sub-module   | Source                                                                                                   | Detail                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| flute3       | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | Generate rectange steiner tree by flute3.                                                                     |
+| abseil-cpp   | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | Use Google's high performance C++ container and algorithm library to improve performance compared to STL.     |
+| json         | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++ library, used to parse the program Json configuration file.                                          |
+| magic_enum   | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | Supports the conversion of enum values and character strings.                                                 |
+| libfort      | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | The C/C++ library produces formatted ASCII tables.                                                            |
+| pegtl        | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | Use PEGTL to parse SPEF files easily.                                                                         |
+| pybind11     | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | Easy for python to call C++.                                                                                  |
+| VCDParser    | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | Parse power VCD waveform file.                                                                                |
+| def lef      | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | Parse physical layout and design DEF/LEF files.                                                               |
+| ThreadPool   | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11 template library implementation of multithreaded pool.                                                  |
+| fft          | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | Fast Fourier transform library.                                                                               |
+| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | Efficient graph partitioning algorithm.                                                                       |
+| lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | Efficient modeling and optimization in graphs and networks.                                                   |
+| SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | Generating VLSI routing topology, It trades off between path length (shallowness) and wirelength (lightness). |
+| scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | It is used to quickly solve mixed integer programming (MIP) and mixed integer nonlinear programming (MINLP).                                                 |
+| parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            |  parse .lib file .     |
+| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | parse netlist file .     |
+| parser/spef | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)                                                            | parse spef file .     |
 
 We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
 
@@ -204,10 +206,7 @@ We are grateful for the support of the open-source community and encourage other
 
 <!-- links -->
 
-[License-icon]: https://s2.d2scdn.com/static/imgs/favicon.ico
-[License-img]: docs/resources/license-Mulan%20PSL%20v2-blue.svg
 [License-url]: LICENSE
-[README-path]: README-En.md
 [README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
@@ -217,4 +216,3 @@ We are grateful for the support of the open-source community and encourage other
 [ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
-[iFlow-repo-url]: https://gitee.com/oscc-project/iFlow

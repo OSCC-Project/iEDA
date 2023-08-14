@@ -26,7 +26,7 @@ enum class GRRouteStrategy
 {
   kNone = 0,
   kFullyConsider = 1,
-  kIgnoringOBS = 2
+  kIgnoringAccess = 2
 };
 
 struct GetGRRouteStrategyName
@@ -41,7 +41,7 @@ struct GetGRRouteStrategyName
       case GRRouteStrategy::kFullyConsider:
         gr_route_strategy_name = "fully_consider";
         break;
-      case GRRouteStrategy::kIgnoringOBS:
+      case GRRouteStrategy::kIgnoringAccess:
         gr_route_strategy_name = "ignoring_obs";
         break;
       default:

@@ -31,7 +31,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "DisallowCopyAssign.hh"
 #include "Map.hh"
 #include "include/Type.hh"
 

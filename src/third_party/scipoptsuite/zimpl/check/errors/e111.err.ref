@@ -1,0 +1,4 @@
+*** Error 111: Modulo by zero
+*** File: e111.zpl Line 2
+*** param a := 3 mod 0;
+***                   ^^^

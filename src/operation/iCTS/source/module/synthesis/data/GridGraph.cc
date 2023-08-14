@@ -21,10 +21,10 @@
 namespace icts {
 using ieda::Log;
 
-Rectangle GridGraph::findPlacedLocation(Rectangle& start_rect) const {
+Rectangle GridGraph::findPlacedLocation(Rectangle& start_rect) const
+{
   queue<Rectangle> rect_queue;
   set<Rectangle> added_rects;
-
   rect_queue.push(start_rect);
   added_rects.insert(start_rect);
   while (!rect_queue.empty()) {
@@ -47,7 +47,8 @@ Rectangle GridGraph::findPlacedLocation(Rectangle& start_rect) const {
   LOG_FATAL << "can't find the placeable location for rectangle";
 }
 
-bool GridGraph::placeable(const Rectangle& rect) const {
+bool GridGraph::placeable(const Rectangle& rect) const
+{
   if (!withinBoundary(rect)) {
     return false;
   }
@@ -61,8 +62,8 @@ bool GridGraph::placeable(const Rectangle& rect) const {
   return true;
 }
 
-vector<Rectangle> GridGraph::adjacentRectangles(const Rectangle& rect,
-                                                const int& interval) const {
+vector<Rectangle> GridGraph::adjacentRectangles(const Rectangle& rect, const int& interval) const
+{
   vector<Rectangle> rects;
   Rectangle cur_rect;
 
@@ -112,14 +113,16 @@ vector<Rectangle> GridGraph::adjacentRectangles(const Rectangle& rect,
   }
 }
 
-void GridGraph::setBlockage(const Rectangle& rect) {
+void GridGraph::setBlockage(const Rectangle& rect)
+{
   vector<Point> points = getPoints(rect);
   for (auto& point : points) {
     setBlockage(point);
   }
 }
 
-void GridGraph::setBlockage(const Point& point) {
+void GridGraph::setBlockage(const Point& point)
+{
   if (withinBoundary(point)) {
     auto x = point.x();
     auto y = point.y();
@@ -127,23 +130,35 @@ void GridGraph::setBlockage(const Point& point) {
   }
 }
 
-vector<Point> GridGraph::getPoints(const Rectangle& rect) const {
+void GridGraph::resetBlockage(const Rectangle& rect)
+{
+  std::ranges::for_each(getPoints(rect), [&](const Point& point) { resetBlockage(point); });
+}
+
+void GridGraph::resetBlockage(const Point& point)
+{
+  auto x = point.x();
+  auto y = point.y();
+  _grids[y][x] = 0;
+}
+
+vector<Point> GridGraph::getPoints(const Rectangle& rect) const
+{
   vector<Point> points;
 
   auto horizon_interval = rect.get(gtl::HORIZONTAL);
   auto vertical_interval = rect.get(gtl::VERTICAL);
 
-  for (Coordinate y = vertical_interval.low(); y <= vertical_interval.high();
-       ++y) {
-    for (Coordinate x = horizon_interval.low(); x <= horizon_interval.high();
-         ++x) {
+  for (Coordinate y = vertical_interval.low(); y <= vertical_interval.high(); ++y) {
+    for (Coordinate x = horizon_interval.low(); x <= horizon_interval.high(); ++x) {
       points.emplace_back(Point(x, y));
     }
   }
   return points;
 }
 
-Point GridGraph::legalization(const Point& point) const {
+Point GridGraph::legalization(const Point& point) const
+{
   Point legal_loc = point;
   if (!withinBoundary(point)) {
     if (point.x() < 0) {

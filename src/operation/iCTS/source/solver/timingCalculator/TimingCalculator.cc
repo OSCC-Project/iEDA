@@ -484,6 +484,7 @@ void TimingCalculator::mergeNode(TimingNode* k) const
 
 void TimingCalculator::calcMergeRegion(Polygon& merge_region, TimingNode* i, TimingNode* j) const
 {
+  joinSegment(i, j);
   updateDelay(i);
   updateDelay(j);
   auto ep_pair = calcEndpointLoc(i, j, _skew_bound);
@@ -1401,6 +1402,18 @@ std::vector<Point> TimingCalculator::intersectionPointByBg(const Polygon& poly, 
   return points;
 }
 
+Point TimingCalculator::intersectionPointByBg(const Segment& seg_a, const Segment& seg_b) const
+{
+  auto bg_seg_a = pglToBgSegment(seg_a);
+  auto bg_seg_b = pglToBgSegment(seg_b);
+  std::vector<bg_Point> intersection;
+  bg::intersection(bg_seg_a, bg_seg_b, intersection);
+  if (intersection.empty()) {
+    return Point(0, 0);
+  }
+  return Point(intersection.front().x(), intersection.front().y());
+}
+
 Polygon TimingCalculator::intersectionByBg(const Polygon& poly_a, const Polygon& poly_b) const
 {
   auto bg_poly_a = pglToBgPolygon(poly_a);
@@ -1429,18 +1442,6 @@ Polygon TimingCalculator::intersectionByBg(const Polygon& poly, const Segment& s
     is_poly.add_point(Point(point.x(), point.y()));
   }
   return is_poly;
-}
-
-Point TimingCalculator::intersectionPointByBg(const Segment& seg_a, const Segment& seg_b) const
-{
-  auto bg_seg_a = pglToBgSegment(seg_a);
-  auto bg_seg_b = pglToBgSegment(seg_b);
-  std::vector<bg_Point> intersection;
-  bg::intersection(bg_seg_a, bg_seg_b, intersection);
-  if (intersection.empty()) {
-    return Point(0, 0);
-  }
-  return Point(intersection.front().x(), intersection.front().y());
 }
 
 void TimingCalculator::lineJoinSegment(TimingNode* i, TimingNode* j) const

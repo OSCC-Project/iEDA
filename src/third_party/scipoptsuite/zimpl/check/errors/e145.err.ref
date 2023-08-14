@@ -1,0 +1,5 @@
+*** Error 145: Illegal size for subsets 7,
+               should be between 1 and 5
+*** File: e145.zpl Line 2
+*** set S[]:=subsets({1..5}, 7);
+***                           ^^^
