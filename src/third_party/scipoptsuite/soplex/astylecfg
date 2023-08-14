@@ -1,0 +1,39 @@
+## This config file can be used with [astyle](http://astyle.sourceforge.net/) to auto-format the soplex code
+## USAGE: `astyle --options=astylecfg PATH-TO-FILE`
+
+
+# braces style
+--style=allman      # always put braces on new line
+
+# indentation
+--indent=spaces=3   # indentation size
+
+# Set the continuation indent for a line that ends with an opening paren '(' or an assignment '='.
+--indent-continuation=1
+
+# do we want comments on col1 indented? -> yes
+--indent-col1-comments
+
+# empty lines before if/etc.
+--break-blocks
+
+# padding around operators (also pads commas like in scip)
+--pad-oper
+
+# unpad-paren to not pad outside of parens
+ --unpad-paren
+
+# align the star to the type
+--align-pointer=type
+--align-reference=type
+
+# put one-line headed code on new line
+--break-one-line-headers
+
+# convert tabs into spaces -> yes
+--convert-tabs
+
+# break long lines
+--max-code-length=100
+
+ --mode=c

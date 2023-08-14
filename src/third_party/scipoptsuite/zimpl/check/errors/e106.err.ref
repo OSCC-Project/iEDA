@@ -1,0 +1,4 @@
+*** Error 106: Empty LHS, constraint trivially violated
+*** File: e106.zpl Line 2
+*** subto c1: 5 <= 4;
+***                 ^^^

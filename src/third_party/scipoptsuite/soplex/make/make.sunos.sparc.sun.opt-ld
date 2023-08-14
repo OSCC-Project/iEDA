@@ -1,0 +1,10 @@
+CXX	=	CC
+CPPFLAGS=	-Isrc -DNDEBUG  \
+                -DWITH_LONG_DOUBLE
+CXXFLAGS=	-std=c++11 -fast -xprefetch=auto
+LDFLAGS	=	-lm
+RANLIB	=	true
+AR	=	CC
+ARFLAGS	=	$(CXXFLAGS) -xar -o
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

@@ -1,0 +1,4 @@
+*** Error 110: Division by zero
+*** File: e110_2.zpl Line 2
+*** param a := 3 div 0;
+***                   ^^^

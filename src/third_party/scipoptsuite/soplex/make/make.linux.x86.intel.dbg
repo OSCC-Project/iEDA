@@ -1,0 +1,11 @@
+CXX	=	icpc
+LINKCXX	=	icpc
+DCXX	=	icpc
+CPPFLAGS=	-Isrc
+CXXFLAGS=	-O0 -g -ansi -fp_port -fp-stack-check -fp-model extended -w2 \
+		-wd279,383,444,810,981,1572 -std=c++11
+LDFLAGS	=	-lm -lstdc++ -lirc
+ARFLAGS	=	crs
+RANLIB	=	true
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

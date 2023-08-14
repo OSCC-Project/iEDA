@@ -1,0 +1,4 @@
+*** Error 135: Empty index set for parameter
+*** File: e135_2.zpl Line 2
+*** param y[<i> in {1..2} with i > 3] := <1> 6;
+***                                           ^^^

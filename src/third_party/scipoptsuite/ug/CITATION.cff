@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+title: 'UG - Ubiquity Generator Framework'
+message: "If you use UG in your research, please cite it using these metadata."
+type: software
+authors:
+  - given-names: Yuji
+    family-names: Shinano
+    email: shinano@zib.de
+    affiliation: Zuse Institute Berlin
+    orcid: 'https://orcid.org/0000-0002-2902-882X'
+identifiers:
+  - type: doi
+    value: 10.12752/8521
+url: 'https://ug.zib.de'
+abstract: "UG is a generic framework to parallelize branch-and-bound based solvers (e.g., MIP, MINLP, ExactIP) in a distributed or shared memory computing environment. It exploits powerful performance of state-of-the-art base solvers, such as SCIP, CPLEX, etc. without the need for base solver parallelization"
+keywords:
+  - parallelization framework
+  - branch-and-bound parallelization
+  - integer optimization
+version: 1.0.0
+date-released: '2021-12-15'
+

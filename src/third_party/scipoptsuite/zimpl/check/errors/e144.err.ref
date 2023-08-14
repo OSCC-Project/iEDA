@@ -1,0 +1,4 @@
+*** Error 144: Tried to build subsets of empty set
+*** File: e144.zpl Line 2
+*** set S[]:=subsets({}, 2);
+***                       ^^^

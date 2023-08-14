@@ -1,0 +1,4 @@
+*** Error 185: Term in Boolean constraint not bounded
+*** File: e185.zpl Line 4
+*** subto c1: vif(a > 2) then a <= 6 end;
+***                    ^^^

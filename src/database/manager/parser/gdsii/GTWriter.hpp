@@ -29,7 +29,6 @@ namespace idb {
 
 // GDS-TXT writer
 // GDS-TXT is a human-readable version of the GDSII file format.
-// To verify the grammar in the output file, KLayout is recommended.
 class GdsiiTextWriter
 {
  public:

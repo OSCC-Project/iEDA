@@ -1,0 +1,10 @@
+#--- $Id: make.linux.x86_64.eko.opt,v 1.6 2014/01/12 11:07:04 bzfkocht Exp $
+CC		=	pathcc
+CPPFLAGS	+=	-DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-std=c99 -D_POSIX_C_SOURCE=2 -march=auto -m64 -O3 -ipa
+LDFLAGS		=	-lgmp -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!--<link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>-->
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!--BEGIN PROJECT_NAME--><title>$projectname: $title</title><!--END PROJECT_NAME-->
+    <!--BEGIN !PROJECT_NAME--><title>$title</title><!--END !PROJECT_NAME-->
+
+    <!-- search and treeview need jquery to be included first-->
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+
+    <!-- this is old but needed for the sidenav -->
+    <script type="text/javascript" src="$relpath^jquery.js"></script>
+
+    <!-- instead of
+    $treeview
+     -->
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="navtreedata.js"></script>
+    <script type="text/javascript" src="navtree.js"></script>
+
+    $search
+    $mathjax
+    </script><script type="text/javascript" src="../MathJax/MathJax.js"></script>
+    <link href="tabs.css" rel="stylesheet" type="text/css"/>
+    <!--    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+    <link rel="stylesheet" href="bootstrap/fonts/font-awesome.min.css">
+    <link href="bootstrap/css/doxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="bootstrap/css/custom.css" rel="stylesheet" type="text/css"/>
+    <link href="bootstrap/css/custom-gcg.css" rel="stylesheet" type="text/css"/>
+    <link href="bootstrap/css/navsidebar.css" rel="stylesheet" type="text/css"/>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script type="text/javascript" src="dynsections.js"></script>
+  <!--  <script type="text/javascript" src="bootstrap/js/custom.js"></script>-->
+    <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>
+    <script type="text/javascript" src="js/navsidebar.js"></script>
+  </head>
+  <body>
+  <div class="w3-sidebar w3-bar-block w3-card w3-animate-left" style="display:inline-block" id="mySidebar">
+    <div style="background: #fafafa">
+      <button class="w3-button" onclick="mainnav_close()">&times;</button>
+      $searchbox
+    </div>
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <!--<div id="nav-sync" class="sync"></div>-->
+      </div>
+    </div>
+  </div>
+
+<div id="main">
+  <div style="position: fixed !important; z-index:3">
+    <button id="openNav" class="w3-button w3-xlarge" onclick="mainnav_open()">&#9776;</button>
+  </div>
+
+  <SCIPOPTSUITEHEADER/>
+
+  <div class="bs-header" id="content">
+    <div class="container">
+      <a href="https://scipopt.org">
+        <img style="float:right" src="img/newscippy.png" height="130" title="Scippy" alt="Scippy"/>
+      </a>
+      <h1>GCG</h1>
+      <p>Branch-and-Price & Column Generation for Everyone</p>
+    </div>
+  </div>
+    <div class="container bs-docs-container">
+      <div class="row">
+        <div class="col-md-12">
+          <div id="top"><!-- do not remove this div! -->

@@ -1,5 +1,5 @@
 add_subdirectory(data_manager)
-# add_subdirectory(evaluator)
+add_subdirectory(feature_manager)
 add_subdirectory(file_manager)
 add_subdirectory(flow)
 add_subdirectory(report)

@@ -1,0 +1,9 @@
+#--- $Id: make.freebsd.x86.gnu.dbg,v 1.2 2014/01/12 11:07:04 bzfkocht Exp $
+CPPFLAGS	+=	-I/usr/local/include -DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-O0 -g -fident -ftrapv $(GCCWARN)
+LDFLAGS		=	-L/usr/local/lib -lgmp -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

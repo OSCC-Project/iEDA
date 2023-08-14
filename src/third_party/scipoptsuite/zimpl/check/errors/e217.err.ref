@@ -1,0 +1,4 @@
+*** Error 217: Begin value 2.5 is too big or not an integer
+*** File: e217.zpl Line 2
+*** param n := substr("hallo", 2.5,4);
+***                                 ^^^

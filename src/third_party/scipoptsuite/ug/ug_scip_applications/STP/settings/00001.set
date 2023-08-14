@@ -1,0 +1,5 @@
+display/freq = 10000
+limits/nodes = 2100000000
+stp/logfile = "use_probname"
+memory/savefac = 1
+

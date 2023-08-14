@@ -1,0 +1,25 @@
+lu8rpc
+| var_name | c_type  | length | comment               |
+|----------+---------+--------+-----------------------|
+| mode1    | int64_t | 1      | function mode         |
+| mode2    | int64_t | 1      | function mode         |
+| m        | int64_t | 1      | num rows              |
+| n        | int64_t | 1      | num columns           |
+| jrep     | int64_t | 1      | column to be replaced |
+| v        | double  | m      |                       |
+| w        | double  | n      |                       |
+| lena     | int64_t | 1      |                       |
+| luparm   | int64_t | 30     |                       |
+| parmlu   | double  | 30     |                       |
+| a        | double  | lena   |                       |
+| indc     | int64_t | lena   |                       |
+| indr     | int64_t | lena   |                       |
+| p        | int64_t | m      |                       |
+| q        | int64_t | n      |                       |
+| lenc     | int64_t | n      |                       |
+| lenr     | int64_t | m      |                       |
+| locc     | int64_t | n      |                       |
+| locr     | int64_t | m      |                       |
+| inform   | int64_t | 1      |                       |
+| diag     | double  | 1      |                       |
+| vnorm    | double  | 1      |                       |

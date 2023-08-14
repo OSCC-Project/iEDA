@@ -32,7 +32,8 @@
 
 namespace ista {
 
-StaIncremental::StaIncremental() : _fwd_queue(cmp), _bwd_queue(cmp) {}
+StaIncremental::StaIncremental()
+    : _fwd_queue(min_heap_cmp), _bwd_queue(max_heap_cmp) {}
 
 /**
  * @brief propagate the slew from the vertex to its fanout.
@@ -169,11 +170,20 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
 
   LOG_FATAL_IF(!_incr_func) << "incr_func is nullptr";
   if (_is_fwd) {
+    if (the_vertex->is_fwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_slew_prop();
     the_vertex->reset_is_delay_prop();
     the_vertex->reset_is_fwd();
+    the_vertex->set_is_fwd_reset();
 
     _incr_func->insertFwdQueue(the_vertex);
+
+    if (the_vertex->is_end()) {
+      return 1;
+    }
 
     FOREACH_SRC_ARC(the_vertex, src_arc) {
       if (!src_arc->isDelayArc()) {
@@ -187,8 +197,19 @@ unsigned StaResetPropagation::operator()(StaVertex* the_vertex) {
       src_arc->exec(*this);
     }
   } else {
+    if (the_vertex->is_bwd_reset()) {
+      return 1;
+    }
+
     the_vertex->reset_is_bwd();
+    the_vertex->set_is_bwd_reset();
+
     _incr_func->insertBwdQueue(the_vertex);
+
+    if (the_vertex->is_start()) {
+      return 1;
+    }
+
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
       if (!snk_arc->isDelayArc()) {
         continue;
@@ -214,6 +235,7 @@ unsigned StaResetPropagation::operator()(StaArc* the_arc) {
   StaVertex* the_vertex;
   if (_is_fwd) {
     the_vertex = the_arc->get_snk();
+
   } else {
     the_vertex = the_arc->get_src();
   }

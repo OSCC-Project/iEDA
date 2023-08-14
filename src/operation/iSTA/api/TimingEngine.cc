@@ -28,6 +28,7 @@
 #include <optional>
 
 #include "HashSet.hh"
+#include "TimingIDBAdapter.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
@@ -413,6 +414,42 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
 }
 
 /**
+ * @brief build balanced rc tree of the net and update rc tree info.
+ *
+ * @param net_name
+ * @param loadname2wl
+ */
+void TimingEngine::buildRcTreeAndupdateRcTreeInfo(
+    const char* net_name, std::map<std::string, double>& loadname2wl) {
+  auto* ista = _ista;
+  auto* design_netlist = ista->get_netlist();
+  auto* net = design_netlist->findNet(net_name);
+
+  auto* driver = net->getDriver();
+  auto driver_node = makeOrFindRCTreeNode(driver);
+  auto loads = net->getLoads();
+  auto* db_adapter = get_db_adapter();
+  std::optional<double> width = std::nullopt;
+  double unit_res =
+      dynamic_cast<TimingIDBAdapter*>(db_adapter)->getAverageResistance(width);
+  double unit_cap =
+      dynamic_cast<TimingIDBAdapter*>(db_adapter)->getAverageCapacitance(width);
+
+  for (const auto& load : loads) {
+    auto load_node = makeOrFindRCTreeNode(load);
+    std::string load_name = load->get_name();
+    double load_net_wl = loadname2wl[load_name];
+    double cap = unit_cap * load_net_wl;
+    double res = unit_res * load_net_wl;
+    makeResistor(net, driver_node, load_node, res / loads.size());
+    bool is_incremental = true;
+    incrCap(driver_node, cap / (2 * loads.size()), is_incremental);
+    incrCap(load_node, cap / (2 * loads.size()), is_incremental);
+  }
+  updateRCTreeInfo(net);
+}
+
+/**
  * @brief incremental propagation to update timing data.
  *
  * @return TimingEngine&
@@ -792,8 +829,9 @@ void TimingEngine::repowerInstance(const char* instance_name,
 /**
  * @brief move the instance to a new location.
  *
- * @param instance_name
- * @param cell_name
+ * @param instance_name the moved instance name.
+ * @param update_level the propgate end level minus current prop start level.
+ * @param prop_type bwd or fwd or both incr update.
  */
 void TimingEngine::moveInstance(const char* instance_name,
                                 std::optional<unsigned> update_level,
@@ -817,7 +855,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           reset_fwd_prop.set_incr_func(&_incr_func);
           if (update_level) {
             reset_fwd_prop.set_max_min_level((*the_vertex)->get_level() +
-                                             ((*update_level) << 1));
+                                             (*update_level));
           }
           src_vertex->exec(reset_fwd_prop);
         }
@@ -834,7 +872,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           if (update_level &&
               ((*the_vertex)->get_level() > ((*update_level) << 1))) {
             reset_bwd_prop.set_max_min_level((*the_vertex)->get_level() -
-                                             ((*update_level) << 1));
+                                             (*update_level));
           }
           snk_vertex->exec(reset_bwd_prop);
         }

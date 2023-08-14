@@ -1,0 +1,4 @@
+*** Error 219: Length value -1 in substr is negative
+*** File: e219.zpl Line 2
+*** param n := substr("hallo", 2, -1);
+***                                 ^^^

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -27,8 +27,8 @@
 #include <set>
 #include <utility>
 
-#include "DisallowCopyAssign.hh"
 #include "SdcCommand.hh"
+#include "netlist/DesignObject.hh"
 #include "netlist/Netlist.hh"
 
 namespace ista {
@@ -86,13 +86,20 @@ class SdcGenerateCLock : public SdcClock {
   bool isSameSource(const char* name) const {
     return Str::equal(name, _source_name.c_str());
   }
-  void set_source_name(const char* source_name) { 
-    _source_name = source_name;     
-  }
+  void set_source_name(const char* source_name) { _source_name = source_name; }
   const char* get_source_name() const { return _source_name.c_str(); }
+  void set_source_pins(std::set<DesignObject*> source_pins) {
+    _source_pins = std::move(source_pins);
+  }
+  std::set<DesignObject*> get_source_pins() { return _source_pins; }
+
+  void set_divide_by(const char* divide_by) { _divide_by = divide_by; }
+  const char* get_divide_by() const { return _divide_by.c_str(); }
 
  private:
   std::string _source_name;
+  std::set<DesignObject*> _source_pins;
+  std::string _divide_by;
 };
 
 /**

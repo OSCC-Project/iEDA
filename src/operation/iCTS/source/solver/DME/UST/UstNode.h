@@ -83,7 +83,7 @@ class UstDelayFunc {
   ~UstDelayFunc() = default;
 
   UstDelay delay(const point_type& point) const {
-    return _params.get_delay_model() == DelayModel::kLINEAR
+    return _params.get_delay_model() == DelayModel::kLinear
                ? linearDelay(point)
                : elmoreDelay(point);
   }
