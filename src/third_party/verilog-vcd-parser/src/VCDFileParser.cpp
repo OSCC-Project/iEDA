@@ -5,7 +5,7 @@
 
 #include "VCDFileParser.hpp"
 
-#include "power-utility/fs.hh"
+#include "fs.hh"
 
 const char* begin;
 const char* vcd_curr;

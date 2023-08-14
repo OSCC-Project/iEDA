@@ -419,7 +419,7 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
  * @param net_name
  * @param loadname2wl
  */
-void TimingEngine::buildRcTreeAndupdateRcTreeInfo(
+void TimingEngine::buildRcTreeAndUpdateRcTreeInfo(
     const char* net_name, std::map<std::string, double>& loadname2wl) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
