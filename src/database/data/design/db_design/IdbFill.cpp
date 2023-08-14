@@ -43,6 +43,7 @@ IdbFillLayer::IdbFillLayer()
 
 IdbFillLayer::~IdbFillLayer()
 {
+  reset_rect();
 }
 
 IdbRect* IdbFillLayer::get_rect(size_t index)
@@ -70,7 +71,7 @@ void IdbFillLayer::add_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur
 
 void IdbFillLayer::reset_rect()
 {
-  for (auto& rect : _rect_list) {
+  for (auto* rect : _rect_list) {
     if (rect != nullptr) {
       delete rect;
       rect = nullptr;
@@ -78,6 +79,7 @@ void IdbFillLayer::reset_rect()
   }
 
   _rect_list.clear();
+  std::vector<IdbRect*>().swap(_rect_list);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,6 +155,8 @@ IdbFillList::~IdbFillList()
       fill = nullptr;
     }
   }
+  _fill_list.clear();
+  std::vector<IdbFill*>().swap(_fill_list);
 }
 
 // IdbFill* IdbFillList::find_fill_by_layer(string name)

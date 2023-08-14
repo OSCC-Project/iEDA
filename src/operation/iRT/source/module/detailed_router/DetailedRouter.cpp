@@ -1086,12 +1086,10 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
 {
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
-    // zzs
-    // std::vector<DRRouteStrategy> strategy_list
-    //     = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
-    //        DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
-    //        DRRouteStrategy::kIgnoringBlockAndPin};
-    std::vector<DRRouteStrategy> strategy_list = {DRRouteStrategy::kFullyConsider, DRRouteStrategy::kIgnoringBlockAndPin};
+    std::vector<DRRouteStrategy> strategy_list
+        = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
+           DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
+           DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_box, dr_route_strategy);
     }
@@ -1269,37 +1267,36 @@ bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end
   if (pass_checking) {
     pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kBlockAndPin), drc_rect_list);
   }
-  // zzs
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringKnownPanel) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kKnownPanel), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringEnclosure) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kEnclosure), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringOtherBox) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfBox) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(drc_rect_list);
-  // }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringKnownPanel) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kKnownPanel), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringEnclosure) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kEnclosure), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringOtherBox) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfBox) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(drc_rect_list);
+  }
   return pass_checking;
 }
 

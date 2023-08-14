@@ -58,7 +58,7 @@ class IdbVia : public IdbObject
 
   // getter
   const string& get_name() const { return _name; }
-  IdbViaMaster* get_instance() { return _master_instance; }
+  IdbViaMaster* get_instance();
   IdbCoordinate<int32_t>* get_coordinate() { return _coordinate; }
 
   IdbLayerShape get_bottom_layer_shape();
@@ -70,7 +70,14 @@ class IdbVia : public IdbObject
 
   // setter
   void set_name(string name) { _name = name; }
-  void set_instance(IdbViaMaster* instance) { _master_instance = instance; }
+  void set_instance(IdbViaMaster* instance)
+  {
+    if (_master_instance != nullptr) {
+      delete _master_instance;
+      _master_instance = nullptr;
+    }
+    _master_instance = instance;
+  }
   void set_coordinate(IdbCoordinate<int32_t>* point);
   void set_coordinate(int32_t x, int32_t y) { _coordinate->set_xy(x, y); }
   //   bool set_bounding_box();

@@ -115,6 +115,8 @@ bool FeatureParser::buildLayout(std::string json_path)
 
   ieda::closeFileStream(file_stream);
 
+  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
+
   return true;
 }
 
@@ -128,6 +130,7 @@ bool FeatureParser::buildInstances(std::string json_path)
     IdbCellProperty cell_property;
     IdbSiteProperty orient_property;
     IdbInstancePropertyMap instance_property;
+    int index = 0;
     for (auto* instacne : _design->get_instance_list()->get_instance_list()) {
       nlohmann::json json_instance;
       json_instance["name"] = instacne->get_name();
@@ -157,6 +160,14 @@ bool FeatureParser::buildInstances(std::string json_path)
       json_instance["pin"] = array_pins;
 
       array_instance.push_back(json_instance);
+
+      index++;
+      if (index % 1000 == 0) {
+        std::cout << "-" << std::flush;
+        if (index % 100000 == 0 || index == _design->get_instance_list()->get_num()) {
+          std::cout << std::endl;
+        }
+      }
     }
 
     root_json["instances"] = array_instance;
@@ -165,6 +176,8 @@ bool FeatureParser::buildInstances(std::string json_path)
   file_stream << std::setw(4) << root_json;
 
   ieda::closeFileStream(file_stream);
+
+  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
 
   return true;
 }
@@ -178,6 +191,7 @@ bool FeatureParser::buildNets(std::string json_path)
     auto array_net = json::array();
 
     IdbConnectProperty connect_property;
+    int index = 0;
     for (auto* net : _design->get_net_list()->get_net_list()) {
       nlohmann::json json_net;
       json_net["name"] = net->get_net_name();
@@ -209,6 +223,14 @@ bool FeatureParser::buildNets(std::string json_path)
       json_net["pin"] = array_pins;
 
       array_net.push_back(json_net);
+
+      index++;
+      if (index % 1000 == 0) {
+        std::cout << "-" << std::flush;
+        if (index % 100000 == 0 || index == _design->get_instance_list()->get_num()) {
+          std::cout << std::endl;
+        }
+      }
     }
 
     root_json["nets"] = array_net;
@@ -217,6 +239,8 @@ bool FeatureParser::buildNets(std::string json_path)
   file_stream << std::setw(4) << root_json;
 
   ieda::closeFileStream(file_stream);
+
+  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
 
   return true;
 }

@@ -81,7 +81,7 @@ unsigned CmdInitTechLef::exec()
     vector<string> path_list;
     path_list.push_back(path);
     dmInst->get_config().set_tech_lef_path(path);
-    dmInst->readLef(path_list);
+    dmInst->readLef(path_list, true);
     return 1;
   }
 
