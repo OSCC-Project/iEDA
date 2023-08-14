@@ -83,10 +83,10 @@ class TrackAssigner
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
   void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
+  void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool sortByMultiLevel(TATask& task1, TATask& task2);
   SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
-  void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
