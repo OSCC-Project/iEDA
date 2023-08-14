@@ -1991,6 +1991,38 @@ unsigned Sta::updateTiming() {
 }
 
 /**
+ * @brief update the clock timing data for finding the start pins or the end
+ * pins.
+ *
+ * @return unsigned
+ */
+unsigned Sta::updateClockTiming() {
+  LOG_INFO << "update timing start";
+
+  resetSdcConstrain();
+  resetGraphData();
+  resetPathData();
+
+  StaGraph &the_graph = get_graph();
+
+  Vector<std::function<unsigned(StaGraph *)>> funcs = {
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+      StaConstPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+      StaCombLoopCheck(),
+      StaSlewPropagation(),
+      StaDelayPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp)};
+
+  for (auto &func : funcs) {
+    the_graph.exec(func);
+  }
+
+  LOG_INFO << "update timing end";
+  return 1;
+}
+
+/**
  * @brief Find the start/end pins accordingt to the given end/start pin of the
  * timing path.
  *

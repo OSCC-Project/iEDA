@@ -23,19 +23,19 @@ namespace iplf {
 bool FeatureManager::save_layout(std::string path)
 {
   FeatureParser feature_parser(_idb_layout, _idb_design);
-  feature_parser.buildLayout(path);
+  return feature_parser.buildLayout(path);
 }
 
 bool FeatureManager::save_instances(std::string path)
 {
   FeatureParser feature_parser(_idb_layout, _idb_design);
-  feature_parser.buildInstances(path);
+  return feature_parser.buildInstances(path);
 }
 
 bool FeatureManager::save_nets(std::string path)
 {
   FeatureParser feature_parser(_idb_layout, _idb_design);
-  feature_parser.buildNets(path);
+  return feature_parser.buildNets(path);
 }
 
 }  // namespace iplf

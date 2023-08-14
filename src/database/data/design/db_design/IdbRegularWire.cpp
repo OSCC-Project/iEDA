@@ -60,18 +60,17 @@ IdbRegularWireSegment::~IdbRegularWireSegment()
 
 void IdbRegularWireSegment::clear()
 {
-  for (auto& point : _point_list) {
+  for (auto* point : _point_list) {
     if (point != nullptr) {
       delete point;
       point = nullptr;
     }
   }
   _point_list.clear();
-
-  //   vector<IdbCoordinate<int32_t>*>().swap(_point_list);
+  std::vector<IdbCoordinate<int32_t>*>().swap(_point_list);
 
   if (_via_list.size() > 0) {
-    for (auto& via : _via_list) {
+    for (auto* via : _via_list) {
       if (via != nullptr) {
         delete via;
         via = nullptr;
@@ -79,8 +78,9 @@ void IdbRegularWireSegment::clear()
     }
   }
   _via_list.clear();
+  vector<IdbVia*>().swap(_via_list);
 
-  //   vector<IdbVia*>().swap(_via_list);
+  _virtual_points.clear();
 }
 
 // void IdbRegularWireSegment::set_shape_type(string type)
@@ -507,7 +507,7 @@ IdbRegularWire::IdbRegularWire()
 
 IdbRegularWire::~IdbRegularWire()
 {
-  for (auto& segment : _segment_list) {
+  for (auto* segment : _segment_list) {
     if (segment != nullptr) {
       delete segment;
       segment = nullptr;
@@ -515,6 +515,7 @@ IdbRegularWire::~IdbRegularWire()
   }
 
   _segment_list.clear();
+  std::vector<IdbRegularWireSegment*>().swap(_segment_list);
 }
 
 void IdbRegularWire::set_wire_state(string state)
@@ -556,8 +557,7 @@ void IdbRegularWire::clear_segment()
   }
 
   _segment_list.clear();
-
-  //   vector<IdbRegularWireSegment*>().swap(_segment_list);
+  vector<IdbRegularWireSegment*>().swap(_segment_list);
 }
 
 int32_t IdbRegularWire::wireLength()
@@ -583,7 +583,7 @@ IdbRegularWireList::~IdbRegularWireList()
 
 void IdbRegularWireList::clear()
 {
-  for (auto& wire : _wire_list) {
+  for (auto* wire : _wire_list) {
     if (wire != nullptr) {
       wire->clear_segment();
       delete wire;
@@ -592,8 +592,7 @@ void IdbRegularWireList::clear()
   }
 
   _wire_list.clear();
-
-  //   vector<IdbRegularWire*>().swap(_wire_list);
+  vector<IdbRegularWire*>().swap(_wire_list);
 }
 
 // IdbSpecialWire* IdbSpecialWireList::find_wire(string name)

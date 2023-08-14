@@ -71,8 +71,10 @@ IdbTrackGrid::IdbTrackGrid()
 
 IdbTrackGrid::~IdbTrackGrid()
 {
-  delete _track;
-  _track = nullptr;
+  if (_track != nullptr) {
+    delete _track;
+    _track = nullptr;
+  }
 }
 
 void IdbTrackGrid::add_layer_list(IdbLayer* layer)
@@ -85,7 +87,6 @@ void IdbTrackGrid::add_layer_list(IdbLayer* layer)
 IdbTrackGridList::IdbTrackGridList()
 {
   _track_grid_num = 0;
-  _track_grid_list.clear();
 }
 
 IdbTrackGridList::~IdbTrackGridList()
@@ -107,13 +108,14 @@ IdbTrackGrid* IdbTrackGridList::add_track_grid(IdbTrackGrid* track_grid)
 
 void IdbTrackGridList::reset()
 {
-  for (auto& tg : _track_grid_list) {
+  for (auto* tg : _track_grid_list) {
     if (nullptr != tg) {
       delete tg;
       tg = nullptr;
     }
   }
   _track_grid_list.clear();
+  std::vector<IdbTrackGrid*>().swap(_track_grid_list);
 
   _track_grid_num = 0;
 }

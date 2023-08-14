@@ -67,6 +67,7 @@ IdbNet::~IdbNet()
     _instance_pin_list = nullptr;
   }
 
+  _instance_list->reset(false);
   if (_instance_list != nullptr) {
     delete _instance_list;
     _instance_list = nullptr;
