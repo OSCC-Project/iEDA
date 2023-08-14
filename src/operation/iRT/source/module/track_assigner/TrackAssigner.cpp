@@ -887,6 +887,9 @@ void TrackAssigner::assignTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
 void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task)
 {
+  if (ta_task.get_routing_state() == RoutingState::kRouted) {
+    return;
+  }
   initSingleTask(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
     std::vector<TARouteStrategy> strategy_list

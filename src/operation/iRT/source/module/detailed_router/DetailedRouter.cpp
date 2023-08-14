@@ -502,7 +502,8 @@ void DetailedRouter::updateNetEnclosureMap(DRModel& dr_model)
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -1084,6 +1085,9 @@ void DetailedRouter::routeDRBox(DRModel& dr_model, DRBox& dr_box)
 
 void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task)
 {
+  if (dr_task.get_routing_state() == RoutingState::kRouted) {
+    return;
+  }
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     std::vector<DRRouteStrategy> strategy_list
