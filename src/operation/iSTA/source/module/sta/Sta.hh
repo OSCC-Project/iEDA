@@ -448,6 +448,7 @@ class Sta {
   unsigned resetGraphData();
   unsigned resetPathData();
   unsigned updateTiming();
+  unsigned updateClockTiming();
   std::set<std::string> findStartOrEnd(StaVertex* the_vertex, bool is_find_end);
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
                         bool is_derate = true, bool is_clock_cap = false);
