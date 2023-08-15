@@ -254,6 +254,41 @@ unsigned StaClockPropagation::propagateClock(StaVertex* the_vertex,
 }
 
 /**
+ * @brief update the sdc generated clock after the KIdealClockProp.
+ *
+ */
+void StaClockPropagation::updateSdcGeneratedClock() {
+  Sta* ista = getSta();
+  SdcConstrain* _the_constrain = ista->getConstrain();
+  auto the_clocks = _the_constrain->get_sdc_clocks();
+  for (auto& [clock_name, the_clock] : the_clocks) {
+    if (the_clock->isGenerateClock()) {
+      auto source_pins =
+          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_source_pins();
+      int divide_by_value =
+          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_divide_by();
+      LOG_FATAL_IF(source_pins.size() != 1);
+      StaClock* source_clock;
+      for (auto* source_pin : source_pins) {
+        auto the_vertex = ista->findVertex(source_pin);
+        LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
+        auto iter = StaDataBucketIterator(the_vertex->getClockBucket());
+        source_clock =
+            dynamic_cast<StaClockData*>(iter.next().get())->get_prop_clock();
+      }
+
+      the_clock->set_period(source_clock->get_period() * divide_by_value);
+      auto& wave_form = source_clock->get_wave_form();
+      SdcClock::SdcWaveform edges;
+      for (auto& wave_edge : wave_form.get_wave_edges()) {
+        edges.push_back(divide_by_value * wave_edge);
+      }
+      the_clock->set_edges(std::move(edges));
+    }
+  }
+}
+
+/**
  * @brief The functor of propagate clock.
  *
  * @param the_graph
@@ -336,14 +371,9 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
     LOG_INFO << "propagated clock propagation end";
   }
 
-  // SdcConstrain* _the_constrain = ista->getConstrain();
-  // auto _sdc_generated_pin_set = _the_constrain->get_generated_source_pins();
-  // LOG_INFO << "=====generated source clock pin num: "
-  //          << _sdc_generated_pin_set.size() << std::endl;
-  // for (auto* iter : _sdc_generated_pin_set) {
-  //   LOG_INFO << "generated source pin name: " << iter->get_name() << " \n";
-  //   LOG_INFO << "" << ista->findVertex(iter->get_name());
-  // }
+  if (_prop_type == PropType::kGeneratedClockProp) {
+    updateSdcGeneratedClock();
+  }
 
   return is_ok;
 }
