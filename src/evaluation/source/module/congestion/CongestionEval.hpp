@@ -41,7 +41,7 @@ class CongestionEval
     delete _cong_grid;
   }
 
-  void initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y);
+  void initCongGrid(const int bin_cnt_x, const int bin_cnt_y);
   void initCongInst();
   void initCongNetList();
   void mapInst2Bin();

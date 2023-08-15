@@ -27,7 +27,7 @@
 
 namespace eval {
 
-void CongestionEval::initCongGrid(const int& bin_cnt_x, const int& bin_cnt_y)
+void CongestionEval::initCongGrid(const int bin_cnt_x, const int bin_cnt_y)
 {
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();

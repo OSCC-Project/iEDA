@@ -48,7 +48,7 @@ class EvalAPI
   /****************************** Wirelength Eval: END *******************************/
 
   /****************************** Congestion Eval: START ******************************/
-  void initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y);
+  void initCongDataFromIDB(const int bin_cnt_x, const int bin_cnt_y);
   void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
   void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
   void evalNetDens(INSTANCE_STATUS inst_status);

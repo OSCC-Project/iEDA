@@ -94,7 +94,7 @@ void EvalAPI::reportWirelength(const string& plot_path, const string& output_fil
 
 /******************************Congestion Eval: START******************************/
 
-void EvalAPI::initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y)
+void EvalAPI::initCongDataFromIDB(const int bin_cnt_x, const int bin_cnt_y)
 {
   // initialize cong_grid
   _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
