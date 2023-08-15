@@ -282,7 +282,8 @@ void TrackAssigner::updateNetEnclosureMap(TAModel& ta_model)
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getAdjViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -769,7 +770,6 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
     }
     ta_panel.set_curr_iter(iter);
     buildTAPanel(ta_model, ta_panel);
-    sortTAPanel(ta_model, ta_panel);
     resetTAPanel(ta_model, ta_panel);
     assignTAPanel(ta_model, ta_panel);
     processTAPanel(ta_model, ta_panel);
@@ -787,6 +787,53 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
       ta_panel.set_curr_iter(-1);
       break;
     }
+  }
+}
+
+void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
+{
+  if (ta_panel.get_curr_iter() == 1) {
+    sortTAPanel(ta_model, ta_panel);
+  } else {
+    // std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+    // // check drc obj
+    // std::map<irt_int, irt_int> task_idx_to_order_map;
+    // std::map<irt_int, std::vector<irt_int>> net_idx_to_task_idx_map;
+    // for (size_t i = 0; i < ta_task_list.size(); i++) {
+    //   task_idx_to_order_map[ta_task_list[i].get_task_idx()] = i;
+    //   net_idx_to_task_idx_map[ta_task_list[i].get_origin_net_idx()].push_back(i);
+    // }
+    // std::map<irt_int, std::vector<irt_int>> violation_task_idx_map;
+    // for (TATask& ta_task : ta_task_list) {
+    //   for (ViolationInfo& violation_info :
+    //        DC_INST.getViolationInfo(ta_panel.getRegionQuery(TASourceType::kSelfPanel),
+    //                                 DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree()))) {
+    //     std::vector<irt_int> violation_task_idx_list;
+    //     for (auto& [net_idx, shape_list] : violation_info.get_net_shape_map()) {
+    //       for (irt_int task_idx : net_idx_to_task_idx_map[net_idx]) {
+    //         violation_task_idx_list.push_back(task_idx);
+    //       }
+    //     }
+    //     std::sort(violation_task_idx_list.begin(), violation_task_idx_list.end(), [&task_idx_to_order_map](int a, int b){
+    //       return task_idx_to_order_map[a] < task_idx_to_order_map[b];
+    //     });
+    //   }
+    // }
+    // // resort task
+
+    // // ripup task
+    // for (TATask& ta_task : ta_task_list) {
+    //   if (ta_task.get_routing_state() == RoutingState::kRouted) {
+    //     continue;
+    //   }
+    //   // 将env中的布线结果清空
+    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+    //     updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
+    //   }
+    //   // 清空routing_tree
+    //   ta_task.get_routing_tree().clear();
+    //   ta_task.set_routing_state(RoutingState::kUnrouted);
+    // }
   }
 }
 
@@ -841,26 +888,6 @@ SortStatus TrackAssigner::sortByLengthWidthRatioDESC(TATask& task1, TATask& task
     return SortStatus::kEqual;
   } else {
     return SortStatus::kFalse;
-  }
-}
-
-void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
-{
-  if (ta_panel.get_curr_iter() == 1) {
-    return;
-  }
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    std::srand(std::time(NULL));
-    if (rand() % 2) {
-      continue;
-    }
-    // 将env中的布线结果清空
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-      updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
-    }
-    // 清空routing_tree
-    ta_task.get_routing_tree().clear();
-    ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 

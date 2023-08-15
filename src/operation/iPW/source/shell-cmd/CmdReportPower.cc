@@ -68,6 +68,9 @@ unsigned CmdReportPower::exec() {
   {
     ieda::Stats stats;
     LOG_INFO << "power annotate vcd start";
+    // std::pair begin_end = {0, 50000000};
+    // ipower->readVCD("/home/taosimin/T28/vcd/asic_top.vcd", "u0_asic_top",
+    //                 begin_end);
     // annotate toggle sp
     ipower->annotateToggleSP();
 

@@ -605,7 +605,8 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getAdjViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -655,7 +656,7 @@ void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
       PAGCell& pa_gcell = pa_gcell_map[access_point.get_grid_x()][access_point.get_grid_y()];
       irt_int via_num = 0;
       std::vector<irt_int> all_via_below_layer_idx_list
-          = RTUtil::getAdjViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
+          = RTUtil::getReservedViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
       for (std::vector<irt_int> via_below_layer_idx_list :
            RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), all_via_below_layer_idx_list)) {
         for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
@@ -729,7 +730,8 @@ void PinAccessor::updateNetAccessPointMap(PAModel& pa_model)
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (LayerCoord& real_coord : pa_pin.getRealCoordList()) {
         irt_int layer_idx = real_coord.get_layer_idx();
-        for (irt_int via_below_layer_idx : RTUtil::getAdjViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        for (irt_int via_below_layer_idx :
+             RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
           std::vector<Segment<LayerCoord>> segment_list;
           segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                     LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -779,7 +781,8 @@ void PinAccessor::countPAModel(PAModel& pa_model)
 
       std::vector<DRCRect> drc_rect_list;
       for (bool is_routing : {true, false}) {
-        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kAccessPoint), is_routing)) {
+        for (auto& [layer_idx, net_rect_map] :
+             DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kAccessPoint), is_routing)) {
           for (auto& [net_idx, rect_set] : net_rect_map) {
             for (const LayerRect& layer_rect : rect_set) {
               drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);

@@ -71,6 +71,7 @@ IdbLayerCutArraySpacing::IdbLayerCutArraySpacing()
 IdbLayerCutArraySpacing::~IdbLayerCutArraySpacing()
 {
   _array_cut_list.clear();
+  std::vector<IdbArrayCut>().swap(_array_cut_list);
 }
 
 bool IdbLayerCutArraySpacing::set_array_value(int32_t index, int32_t array_cut, int32_t array_spacing)

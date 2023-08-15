@@ -29,5 +29,6 @@ bool initDef(const std::string& def_path);
 bool initVerilog(const std::string& verilog_path);
 bool saveDef(const std::string& def_name);
 bool saveNetList(const std::string& netlist_path, std::set<std::string> exclude_cell_names = {});
+bool saveGDSII(const std::string& gds_name);
 
 }  // namespace python_interface

@@ -177,20 +177,26 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 
 在iEDA的开发过程中，我们采用了来自开源社区的子模块。具体情况如下：
 
-| 子模块     | 来源                                                                                                  | 详细用途                                                          |
-| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| flute3     | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | 借助flute3来产生rectange steiner tree.                            |
-| abseil-cpp | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
-| json       | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++库，用来解析程序Json配置文件.                             |
-| magic_enum | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换.                                   |
-| libfort    | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | C/C++ library 产生格式化的 ASCII tables.                          |
-| pegtl      | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | 使用PEGTL来方便的解析SPEF文件.                                    |
-| pybind11   | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | 方便python调用C++.                                                |
-| VCDParser  | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | 解析功耗VCD波形文件.                                              |
-| def lef    | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
-| ThreadPool | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                    | C++11模板库实现的多线程池.                                        |
-| fft        | [ fft](https://github.com/progschj/ThreadPool.git)                                                       | 快速傅立叶变换库.                                                 |
-| hmetics    | [hmetics](https://github.com/progschj/ThreadPool.git)                                                    | 高效的图划分算法.                                                 |
+| 子模块       | 来源                                                                                                     | 详细用途                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| flute3       | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | 借助flute3来产生rectange steiner tree.                            |
+| abseil-cpp   | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
+| json         | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++库，用来解析程序Json配置文件.                             |
+| magic_enum   | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换.                                   |
+| libfort      | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | C/C++ library 产生格式化的 ASCII tables.                          |
+| pegtl        | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | 使用PEGTL来方便的解析SPEF文件.                                    |
+| pybind11     | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | 方便python调用C++.                                                |
+| VCDParser    | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | 解析功耗VCD波形文件.                                              |
+| def lef      | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
+| ThreadPool   | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11模板库实现的多线程池.                                        |
+| fft          | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | 快速傅立叶变换库.                                                 |
+| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | 高效的图划分算法.
+| lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | 图、网络中的高效建模和优化.                                       |
+| SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | 生成VLSI路由拓扑，在路径长度(浅度)和总线长(亮度)之间进行权衡.     |
+| scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | 用于快速求解混合整数规划 (MIP) 和混合整数非线性规划 (MINLP) .     |
+| parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | 解析.lib文件 .     |
+| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | 解析netlist文件 .     |
+| parser/spef | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)                                                            | 解析spef文件 .     |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 
@@ -200,11 +206,8 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 
 <!-- links -->
 
-[License-icon]: https://s2.d2scdn.com/static/imgs/favicon.ico
-[License-img]: docs/resources/license-Mulan%20PSL%20v2-blue.svg
 [License-url]: LICENSE
 [README-path]: README-En.md
-[README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/
@@ -212,4 +215,3 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 [ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
-[iFlow-repo-url]: https://gitee.com/oscc-project/iFlow

@@ -1,6 +1,6 @@
-#line 2 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 2 "parser/verilog/VerilogLex.cc"
 
-#line 4 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 4 "parser/verilog/VerilogLex.cc"
 
 #define YY_INT_ALIGNED short int
 
@@ -663,8 +663,8 @@ static const flex_int16_t yy_chk[463]
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
-#line 2 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 1 "parser/verilog/VerilogLex.l"
+#line 2 "parser/verilog/VerilogLex.l"
 
 #include "Config.hh"
 #include "log/Log.hh"
@@ -682,10 +682,10 @@ extern ista::VerilogReader* gVerilogReader;
 #define YY_DECL int verilog_lex(VERILOG_STYPE* yylval_param, yyscan_t yyscanner, ista::VerilogReader* verilog_reader)
 #define YYSTYPE VERILOG_STYPE
 
-#line 820 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 820 "parser/verilog/VerilogLex.cc"
 /*  %option debug */
 
-#line 823 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 823 "parser/verilog/VerilogLex.cc"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -954,12 +954,12 @@ YY_DECL
   }
 
   {
-#line 44 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 44 "parser/verilog/VerilogLex.l"
 
-#line 48 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 48 "parser/verilog/VerilogLex.l"
     yylval = yylval_param;
 
-#line 1109 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 1109 "parser/verilog/VerilogLex.cc"
 
     while (/*CONSTCOND*/ 1) /* loops until end-of-file is reached */
     {
@@ -1011,7 +1011,7 @@ YY_DECL
         case 1:
           /* rule 1 can match eol */
           YY_RULE_SETUP
-#line 51 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 51 "parser/verilog/VerilogLex.l"
           { /* Macro definition. */
             verilog_reader->incrLineNo();
           }
@@ -1019,14 +1019,14 @@ YY_DECL
         case 2:
           /* rule 2 can match eol */
           YY_RULE_SETUP
-#line 55 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 55 "parser/verilog/VerilogLex.l"
           { /* Single line comment. */
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 3:
           YY_RULE_SETUP
-#line 59 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 59 "parser/verilog/VerilogLex.l"
           {
             BEGIN COMMENT;
           }
@@ -1034,26 +1034,26 @@ YY_DECL
 
         case 4:
           YY_RULE_SETUP
-#line 61 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 61 "parser/verilog/VerilogLex.l"
 
           YY_BREAK
         case 5:
           /* rule 5 can match eol */
           YY_RULE_SETUP
-#line 63 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 63 "parser/verilog/VerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 6:
           YY_RULE_SETUP
-#line 65 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 65 "parser/verilog/VerilogLex.l"
           {
             BEGIN INITIAL;
           }
           YY_BREAK
         case YY_STATE_EOF(COMMENT):
-#line 67 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 67 "parser/verilog/VerilogLex.l"
         {
           LOG_ERROR << "unterminated comment";
           BEGIN(INITIAL);
@@ -1063,7 +1063,7 @@ YY_DECL
 
         case 7:
           YY_RULE_SETUP
-#line 74 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 74 "parser/verilog/VerilogLex.l"
           {
             BEGIN ATTRIBUTE;
           }
@@ -1071,26 +1071,26 @@ YY_DECL
 
         case 8:
           YY_RULE_SETUP
-#line 76 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 76 "parser/verilog/VerilogLex.l"
 
           YY_BREAK
         case 9:
           /* rule 9 can match eol */
           YY_RULE_SETUP
-#line 78 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 78 "parser/verilog/VerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 10:
           YY_RULE_SETUP
-#line 80 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 80 "parser/verilog/VerilogLex.l"
           {
             BEGIN INITIAL;
           }
           YY_BREAK
         case YY_STATE_EOF(ATTRIBUTE):
-#line 82 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 82 "parser/verilog/VerilogLex.l"
         {
           LOG_ERROR << "unterminated attribute";
           BEGIN(INITIAL);
@@ -1100,7 +1100,7 @@ YY_DECL
 
         case 11:
           YY_RULE_SETUP
-#line 89 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 89 "parser/verilog/VerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1108,7 +1108,7 @@ YY_DECL
           YY_BREAK
         case 12:
           YY_RULE_SETUP
-#line 94 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 94 "parser/verilog/VerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1116,7 +1116,7 @@ YY_DECL
           YY_BREAK
         case 13:
           YY_RULE_SETUP
-#line 99 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 99 "parser/verilog/VerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1124,7 +1124,7 @@ YY_DECL
           YY_BREAK
         case 14:
           YY_RULE_SETUP
-#line 104 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 104 "parser/verilog/VerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1132,7 +1132,7 @@ YY_DECL
           YY_BREAK
         case 15:
           YY_RULE_SETUP
-#line 109 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 109 "parser/verilog/VerilogLex.l"
           {
             yylval->integer = Str::toInt(yytext);
             return INT;
@@ -1140,112 +1140,112 @@ YY_DECL
           YY_BREAK
         case 16:
           YY_RULE_SETUP
-#line 114 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 114 "parser/verilog/VerilogLex.l"
           {
             return ((int) yytext[0]);
           }
           YY_BREAK
         case 17:
           YY_RULE_SETUP
-#line 118 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 118 "parser/verilog/VerilogLex.l"
           {
             return ASSIGN;
           }
           YY_BREAK
         case 18:
           YY_RULE_SETUP
-#line 119 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 119 "parser/verilog/VerilogLex.l"
           {
             return ENDMODULE;
           }
           YY_BREAK
         case 19:
           YY_RULE_SETUP
-#line 120 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 120 "parser/verilog/VerilogLex.l"
           {
             return INOUT;
           }
           YY_BREAK
         case 20:
           YY_RULE_SETUP
-#line 121 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 121 "parser/verilog/VerilogLex.l"
           {
             return INPUT;
           }
           YY_BREAK
         case 21:
           YY_RULE_SETUP
-#line 122 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 122 "parser/verilog/VerilogLex.l"
           {
             return MODULE;
           }
           YY_BREAK
         case 22:
           YY_RULE_SETUP
-#line 123 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 123 "parser/verilog/VerilogLex.l"
           {
             return OUTPUT;
           }
           YY_BREAK
         case 23:
           YY_RULE_SETUP
-#line 124 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 124 "parser/verilog/VerilogLex.l"
           {
             return PARAMETER;
           }
           YY_BREAK
         case 24:
           YY_RULE_SETUP
-#line 125 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 125 "parser/verilog/VerilogLex.l"
           {
             return DEFPARAM;
           }
           YY_BREAK
         case 25:
           YY_RULE_SETUP
-#line 126 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 126 "parser/verilog/VerilogLex.l"
           {
             return REG;
           }
           YY_BREAK
         case 26:
           YY_RULE_SETUP
-#line 127 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 127 "parser/verilog/VerilogLex.l"
           {
             return SUPPLY0;
           }
           YY_BREAK
         case 27:
           YY_RULE_SETUP
-#line 128 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 128 "parser/verilog/VerilogLex.l"
           {
             return SUPPLY1;
           }
           YY_BREAK
         case 28:
           YY_RULE_SETUP
-#line 129 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 129 "parser/verilog/VerilogLex.l"
           {
             return TRI;
           }
           YY_BREAK
         case 29:
           YY_RULE_SETUP
-#line 130 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 130 "parser/verilog/VerilogLex.l"
           {
             return WAND;
           }
           YY_BREAK
         case 30:
           YY_RULE_SETUP
-#line 131 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 131 "parser/verilog/VerilogLex.l"
           {
             return WIRE;
           }
           YY_BREAK
         case 31:
           YY_RULE_SETUP
-#line 132 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 132 "parser/verilog/VerilogLex.l"
           {
             return WOR;
           }
@@ -1253,7 +1253,7 @@ YY_DECL
         case 32:
           /* rule 32 can match eol */
           YY_RULE_SETUP
-#line 134 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 134 "parser/verilog/VerilogLex.l"
           {
             yylval->string = Str::copy(Str::trimmed(yytext));
             return ID;
@@ -1262,20 +1262,20 @@ YY_DECL
         case 33:
           /* rule 33 can match eol */
           YY_RULE_SETUP
-#line 139 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 139 "parser/verilog/VerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 34:
           YY_RULE_SETUP
-#line 141 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 141 "parser/verilog/VerilogLex.l"
           { /* ignore blanks */
           }
           YY_BREAK
         case 35:
           YY_RULE_SETUP
-#line 143 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 143 "parser/verilog/VerilogLex.l"
           {
             verilog_reader->clearRecordStr();
             BEGIN(QSTRING);
@@ -1283,7 +1283,7 @@ YY_DECL
           YY_BREAK
         case 36:
           YY_RULE_SETUP
-#line 148 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 148 "parser/verilog/VerilogLex.l"
           {
             BEGIN(INITIAL);
             yylval->string = Str::copy(verilog_reader->get_record_str());
@@ -1293,7 +1293,7 @@ YY_DECL
         case 37:
           /* rule 37 can match eol */
           YY_RULE_SETUP
-#line 154 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 154 "parser/verilog/VerilogLex.l"
           {
             LOG_ERROR << "unterminated string constant";
             BEGIN(INITIAL);
@@ -1304,7 +1304,7 @@ YY_DECL
         case 38:
           /* rule 38 can match eol */
           YY_RULE_SETUP
-#line 161 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 161 "parser/verilog/VerilogLex.l"
           {
             /* Line continuation. */
             verilog_reader->incrLineNo();
@@ -1312,14 +1312,14 @@ YY_DECL
           YY_BREAK
         case 39:
           YY_RULE_SETUP
-#line 166 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 166 "parser/verilog/VerilogLex.l"
           {
             /* Anything return or double quote */
             verilog_reader->recordStr(yytext);
           }
           YY_BREAK
         case YY_STATE_EOF(QSTRING):
-#line 171 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 171 "parser/verilog/VerilogLex.l"
         {
           LOG_ERROR << "unterminated string constant";
           BEGIN(INITIAL);
@@ -1329,17 +1329,17 @@ YY_DECL
         /* Send out of bound characters to parser. */
         case 40:
           YY_RULE_SETUP
-#line 178 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 178 "parser/verilog/VerilogLex.l"
           {
             return (int) yytext[0];
           }
           YY_BREAK
         case 41:
           YY_RULE_SETUP
-#line 180 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 180 "parser/verilog/VerilogLex.l"
           ECHO;
           YY_BREAK
-#line 1447 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.cc"
+#line 1447 "parser/verilog/VerilogLex.cc"
         case YY_STATE_EOF(INITIAL):
           yyterminate();
 
@@ -2432,7 +2432,7 @@ void yyfree(void* ptr, yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 180 "/home/taosimin/irefactor/src/database/manager/parser/verilog/VerilogLex.l"
+#line 180 "parser/verilog/VerilogLex.l"
 
 namespace ista {
 

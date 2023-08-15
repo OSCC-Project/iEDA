@@ -96,7 +96,7 @@ class GRNode : public LayerCoord
   bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
   {
     bool is_obs = false;
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringOBS) {
+    if (gr_route_strategy == GRRouteStrategy::kIgnoringAccess) {
       return is_obs;
     }
     if (RTUtil::exist(_net_access_map, net_idx)) {

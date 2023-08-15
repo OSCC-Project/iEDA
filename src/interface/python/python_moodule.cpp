@@ -26,10 +26,11 @@
 #include "py_register_ipdn.h"
 #include "py_register_ipl.h"
 // #include "py_register_irt.h"
+#include "py_register_feature.h"
 #include "py_register_ista.h"
 #include "py_register_ito.h"
-#include "python_module.h"
 #include "py_register_report.h"
+#include "python_module.h"
 namespace python_interface {
 
 PYBIND11_MODULE(ieda_py, m)
@@ -49,6 +50,7 @@ PYBIND11_MODULE(ieda_py, m)
   register_ista(m);
   register_ito(m);
   register_report(m);
+  register_feature(m);
 }
 
 }  // namespace python_interface

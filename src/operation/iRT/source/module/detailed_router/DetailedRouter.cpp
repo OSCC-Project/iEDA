@@ -502,7 +502,7 @@ void DetailedRouter::updateNetEnclosureMap(DRModel& dr_model)
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx : RTUtil::getAdjViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+      for (irt_int via_below_layer_idx : RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
@@ -1086,12 +1086,10 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
 {
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
-    // zzs
-    // std::vector<DRRouteStrategy> strategy_list
-    //     = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
-    //        DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
-    //        DRRouteStrategy::kIgnoringBlockAndPin};
-    std::vector<DRRouteStrategy> strategy_list = {DRRouteStrategy::kFullyConsider, DRRouteStrategy::kIgnoringBlockAndPin};
+    std::vector<DRRouteStrategy> strategy_list
+        = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
+           DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
+           DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_box, dr_route_strategy);
     }
@@ -1269,37 +1267,36 @@ bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end
   if (pass_checking) {
     pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kBlockAndPin), drc_rect_list);
   }
-  // zzs
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringKnownPanel) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kKnownPanel), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringEnclosure) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kEnclosure), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringOtherBox) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfBox) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
-  // }
-  // if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
-  //   return pass_checking;
-  // }
-  // if (pass_checking) {
-  //   pass_checking = !DC_INST.hasViolation(drc_rect_list);
-  // }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringKnownPanel) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kKnownPanel), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringEnclosure) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kEnclosure), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringOtherBox) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfBox) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
+  }
+  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
+    return pass_checking;
+  }
+  if (pass_checking) {
+    pass_checking = !DC_INST.hasViolation(drc_rect_list);
+  }
   return pass_checking;
 }
 
