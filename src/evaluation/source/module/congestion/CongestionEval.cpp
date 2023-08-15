@@ -414,11 +414,19 @@ int32_t CongestionEval::evalNetNum(NET_CONNECT_TYPE net_type)
   return net_num;
 }
 
-int32_t CongestionEval::evalPinTotalNum()
+int32_t CongestionEval::evalPinTotalNum(INSTANCE_STATUS inst_status)
 {
   int32_t pin_num = 0;
-  for (auto& net : _cong_net_list) {
-    pin_num += net->get_pin_list().size();
+  if (inst_status == INSTANCE_STATUS::kNone) {
+    for (auto& inst : _cong_inst_list) {
+      pin_num += inst->get_pin_list().size();
+    }
+  } else {
+    for (auto& inst : _cong_inst_list) {
+      if (inst->get_status() == inst_status) {
+        pin_num += inst->get_pin_list().size();
+      }
+    }
   }
   return pin_num;
 }
@@ -543,6 +551,286 @@ void CongestionEval::plotTileValue(const string& plot_path, const string& output
   plotGRCong(plot_path, output_file_name);
   // plot two congestion map:  TOF/MOF
   plotOverflow(plot_path, output_file_name);
+}
+
+float CongestionEval::evalAreaUtils(INSTANCE_STATUS status)
+{
+  float utilization = 0.f;
+  int64_t macro_area = evalArea(INSTANCE_STATUS::kFixed);
+  int64_t core_area = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore)[2];
+  int64_t stdcell_area = evalArea(INSTANCE_STATUS::kPlaced);
+  if (status == INSTANCE_STATUS::kFixed) {
+    utilization = macro_area / (float) core_area;
+  } else if (status == INSTANCE_STATUS::kPlaced) {
+    utilization = stdcell_area / (float) (core_area - macro_area);
+  }
+
+  return utilization;
+}
+
+int64_t CongestionEval::evalArea(INSTANCE_STATUS status)
+{
+  int64_t area = 0;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == status) {
+      area += inst->get_shape().get_area();
+    }
+  }
+  return area;
+}
+
+std::vector<int64_t> CongestionEval::evalMacroPeriBias()
+{
+  std::vector<int64_t> bias_list;
+  auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
+  auto core_width = core_info[0];
+  auto core_height = core_info[1];
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      auto left = inst->get_lx();
+      auto bottom = inst->get_ly();
+      auto right = core_width - left - inst->get_width();
+      auto top = core_height - bottom - inst->get_height();
+      auto min_bias = std::min(std::min(left, bottom), std::min(right, top));
+      min_bias = min_bias * min_bias;
+      bias_list.emplace_back(min_bias);
+    }
+  }
+  return bias_list;
+}
+
+int32_t CongestionEval::evalRmTrackNum()
+{
+  int32_t remain_track_num = 0;
+  for (int i = 0; i < _tile_grid->get_num_routing_layers(); ++i) {
+    remain_track_num += evalRemain(i);
+  }
+  return remain_track_num;
+}
+
+int32_t CongestionEval::evalOfTrackNum()
+{
+  int32_t overflow_track_num = 0;
+  for (int i = 0; i < _tile_grid->get_num_routing_layers(); ++i) {
+    overflow_track_num += evalOverflow(i)[0];
+  }
+  return overflow_track_num;
+}
+
+int32_t CongestionEval::evalRemain(int layer_index)
+{
+  int32_t x_cnt = _tile_grid->get_tile_cnt_x();
+  int32_t y_cnt = _tile_grid->get_tile_cnt_y();
+  int32_t start_index = layer_index * x_cnt * y_cnt;
+  int32_t one_layer_remain = 0;
+
+  if (_tile_grid->get_tiles()[start_index]->is_horizontal()) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        auto tile = _tile_grid->get_tiles()[i * x_cnt + j + start_index];
+        one_layer_remain = std::min((tile->get_east_cap() - tile->get_east_use()), (tile->get_west_cap() - tile->get_west_use()));
+        one_layer_remain = std::max(one_layer_remain, 0);
+      }
+    }
+
+  } else {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        auto tile = _tile_grid->get_tiles()[i * x_cnt + j + start_index];
+        one_layer_remain = std::min((tile->get_north_cap() - tile->get_north_use()), (tile->get_south_cap() - tile->get_south_use()));
+        one_layer_remain = std::max(one_layer_remain, 0);
+      }
+    }
+  }
+
+  return one_layer_remain;
+}
+
+int32_t CongestionEval::evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name)
+{
+  int32_t guidance = 0;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_name() == name) {
+      int32_t g_width = width + inst->get_width();
+      int32_t g_height = height + inst->get_height();
+      int32_t x_dist = std::abs(cx - (inst->get_lx() + inst->get_width() * 0.5)) - g_width;
+      int32_t y_dist = std::abs(cy - (inst->get_ly() + inst->get_height() * 0.5)) - g_height;
+      guidance = std::max(0, x_dist) + std::max(0, y_dist);
+    }
+  }
+  return guidance;
+}
+
+double CongestionEval::evalMacroChannelUtil(float dist_ratio)
+{
+  int64_t channel_area = 0;
+  auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
+  int32_t check_width = core_info[0] * dist_ratio;
+  int32_t check_height = core_info[1] * dist_ratio;
+  int64_t core_area = core_info[2];
+
+  std::vector<CongInst*> macro_list;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      macro_list.emplace_back(inst);
+    }
+  }
+
+  if (macro_list.size() == 0) {
+    return 0.0;
+  } else {
+    for (size_t i = 0; i < macro_list.size(); i++) {
+      for (size_t j = i + 1; j < macro_list.size(); j++) {
+        auto x_dist = std::abs(macro_list[i]->get_lx() - macro_list[j]->get_lx());
+        auto y_dist = std::abs(macro_list[i]->get_ly() - macro_list[j]->get_ly());
+        // 确保在沟道空间内
+        if ((x_dist < check_width) && (y_dist < check_height)) {
+          // 确定模块的位置相对关系
+          if (x_dist < y_dist) {
+            // 模块是上下沟道
+            auto lx = std::max(macro_list[i]->get_lx(), macro_list[j]->get_lx());
+            auto ux = std::min(macro_list[i]->get_ux(), macro_list[j]->get_ux());
+            int64_t height = 0;
+            if (macro_list[i]->get_ly() < macro_list[j]->get_ly()) {
+              // i在下，j在上
+              height = macro_list[j]->get_ly() - macro_list[i]->get_ly() - macro_list[i]->get_height();
+            } else {
+              // i在上，j在下
+              height = macro_list[i]->get_ly() - macro_list[j]->get_ly() - macro_list[j]->get_height();
+            }
+            channel_area += (ux - lx) * height;
+          } else {
+            // 模块是左右沟道
+            auto ly = std::max(macro_list[i]->get_ly(), macro_list[j]->get_ly());
+            auto uy = std::min(macro_list[i]->get_uy(), macro_list[j]->get_uy());
+            int64_t width = 0;
+            if (macro_list[i]->get_lx() < macro_list[j]->get_lx()) {
+              // i在左，j在右
+              width = macro_list[j]->get_lx() - macro_list[i]->get_lx() - macro_list[i]->get_width();
+            } else {
+              // i在右，j在左
+              width = macro_list[i]->get_lx() - macro_list[j]->get_lx() - macro_list[j]->get_width();
+            }
+            channel_area += (uy - ly) * width;
+          }
+        }
+      }
+    }
+  }
+
+  return channel_area / (double) core_area;
+}
+
+double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
+{
+  double pin_ratio = 0.0;
+  int pin_num = 0;
+
+  auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
+  int32_t check_width = core_info[0] * dist_ratio;
+  int32_t check_height = core_info[1] * dist_ratio;
+
+  std::vector<CongInst*> macro_list;
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      macro_list.emplace_back(inst);
+    }
+  }
+
+  if (macro_list.size() == 0) {
+    return 0;
+  } else {
+    for (size_t i = 0; i < macro_list.size(); i++) {
+      for (size_t j = i + 1; j < macro_list.size(); j++) {
+        auto x_dist = std::abs(macro_list[i]->get_lx() - macro_list[j]->get_lx());
+        auto y_dist = std::abs(macro_list[i]->get_ly() - macro_list[j]->get_ly());
+        // 确保在沟道空间内
+        if ((x_dist < check_width) && (y_dist < check_height)) {
+          // 确定模块的位置相对关系
+          if (x_dist < y_dist) {
+            // 模块是上下沟道
+            auto lx = std::max(macro_list[i]->get_lx(), macro_list[j]->get_lx());
+            auto ux = std::min(macro_list[i]->get_ux(), macro_list[j]->get_ux());
+            if (macro_list[i]->get_ly() < macro_list[j]->get_ly()) {
+              // i在下，j在上
+              for (auto& pin : macro_list[i]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[i]->get_uy() * 0.9) {
+                  pin_num++;
+                }
+              }
+              for (auto& pin : macro_list[j]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[j]->get_ly() * 1.1) {
+                  pin_num++;
+                }
+              }
+            } else {
+              // i在上，j在下
+              for (auto& pin : macro_list[j]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[j]->get_uy() * 0.9) {
+                  pin_num++;
+                }
+              }
+              for (auto& pin : macro_list[i]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[i]->get_ly() * 1.1) {
+                  pin_num++;
+                }
+              }
+            }
+
+          } else {
+            // 模块是左右沟道
+            auto ly = std::max(macro_list[i]->get_ly(), macro_list[j]->get_ly());
+            auto uy = std::min(macro_list[i]->get_uy(), macro_list[j]->get_uy());
+            if (macro_list[i]->get_lx() < macro_list[j]->get_lx()) {
+              // i在左，j在右
+              for (auto& pin : macro_list[j]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[j]->get_lx() * 1.1) {
+                  pin_num++;
+                }
+              }
+              for (auto& pin : macro_list[i]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[i]->get_ux() * 0.9) {
+                  pin_num++;
+                }
+              }
+            } else {
+              // i在右，j在左
+              for (auto& pin : macro_list[i]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[i]->get_lx() * 1.1) {
+                  pin_num++;
+                }
+              }
+              for (auto& pin : macro_list[j]->get_pin_list()) {
+                auto pin_x = pin->get_x();
+                auto pin_y = pin->get_y();
+                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[j]->get_ux() * 0.9) {
+                  pin_num++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  pin_ratio = pin_num / (double) evalPinTotalNum();
+
+  return pin_ratio;
 }
 
 float CongestionEval::calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax)
