@@ -1,0 +1,3 @@
+CPPFLAGS        =
+CXXFLAGS        += -O0 -fprofile-arcs -ftest-coverage # -malign-double -ffast-math
+LDFLAGS         += -lgcov -fprofile-arcs

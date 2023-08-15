@@ -1,0 +1,21 @@
+CPPFLAGS	+=	-DNDEBUG -DNO_MSHELL -D__NO_MATH_INLINES -Wno-format-truncation
+CFLAGS		=	-O3
+LDFLAGS		=	-lgmp -lm
+
+ifeq ($(LINK),shared)
+#LIBRARY		=	$(LIBDIR)/lib$(LIBNAME).so
+#LIBLINK		=	$(LIBDIR)/lib$(NAME).$(BASE).so
+CFLAGS		+=	-fPIC
+#AR		=	gcc -shared -o # the trailing space is important
+#ARFLAGS		=       $(LDFLAGS)
+#RANLIB		=	true
+endif
+
+#ifeq ($(LINK),static)
+LDFLAGS		+=	-Bstatic
+#endif
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

@@ -1,0 +1,8 @@
+CXX	=	g++
+CPPFLAGS=	-Isrc -DNDEBUG 
+CXXFLAGS=	-O3  \
+		-ffast-math -funroll-loops #-march=
+LDFLAGS	=	-lm
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

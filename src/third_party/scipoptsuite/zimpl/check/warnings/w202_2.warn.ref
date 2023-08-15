@@ -1,0 +1,4 @@
+--- Warning 202: Indexing over empty set
+*** File: w202_2.zpl Line 3
+*** set X := { <i> in { 1 .. 5 } with i > 10: i };
+***                                         ^^^

@@ -1,0 +1,11 @@
+CXX	=	cxx
+CPPFLAGS=	-Isrc -DNDEBUG
+CXXFLAGS=	-std strict_ansi -distinguish_nested_enums -O2 -arch host -nortti \
+		-ansi_alias -inline speed -assume accuracy_sensitive -ieee -g \
+		-ptr $(OBJDIR)/cxx_repository   
+REPOSIT	=	$(OBJDIR)/cxx_repository/*.o
+#LDFLAGS	=	-non_shared -L/usr/local/lib -lm
+LDFLAGS	=	-non_shared -lm
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

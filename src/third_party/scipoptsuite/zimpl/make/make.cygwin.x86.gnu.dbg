@@ -1,0 +1,9 @@
+#--- $Id: make.cygwin.x86.gnu.dbg,v 1.9 2014/01/12 11:07:04 bzfkocht Exp $
+CPPFLAGS	+=	-DWINDOWS -DFREEMEM -D__NO_MATH_INLINES 
+CFLAGS		=	-O -g $(GCCWARN)
+LDFLAGS		=	-lgmp -lm -static
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

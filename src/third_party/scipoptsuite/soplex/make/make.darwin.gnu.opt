@@ -1,0 +1,2 @@
+CPPFLAGS       +=	-DNDEBUG
+CXXFLAGS       +=      -O3 -ffast-math -mtune=native -fexceptions -funroll-loops -fomit-frame-pointer #-march=

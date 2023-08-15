@@ -1,0 +1,4 @@
+*** Error 127: Illegal value type in tuple: <"a"> only numbers are possible
+*** File: e127.zpl Line 3
+*** set B := proj(A, <"a">);
+***                       ^^^

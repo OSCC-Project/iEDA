@@ -27,7 +27,6 @@
 #include <set>
 #include <utility>
 
-#include "DisallowCopyAssign.hh"
 #include "SdcCommand.hh"
 #include "netlist/DesignObject.hh"
 #include "netlist/Netlist.hh"

@@ -23,10 +23,11 @@
 namespace icts {
 using namespace idb;
 
-class Placer {
+class Placer
+{
  public:
   Placer() { init(); }
-  Placer(const Placer &placer) = default;
+  Placer(const Placer& placer) = default;
   ~Placer() = default;
 
   void init();
@@ -44,20 +45,22 @@ class Placer {
   void set_spacing_y(int spacing_y) { _spacing_y = spacing_y; }
 
   // select a suitable place to buffer
-  void placeInstance(CtsInstance *inst);
+  void placeInstance(CtsInstance* inst);
+  void cancelPlaceInstance(CtsInstance* inst);
 
-  bool isInCore(const Point &location) const;
-  Point legalization(const Point &location) const;
+  bool isInCore(const Point& location) const;
+  Point legalization(const Point& location) const;
 
  private:
   void placeBlockages();
-  Rectangle findPlacedLocation(const Rectangle &rect) const;
-  void setBlockage(const Rectangle &rect);
+  Rectangle findPlacedLocation(const Rectangle& rect) const;
+  void setBlockage(const Rectangle& rect);
+  void resetBlockage(const Rectangle& rect);
 
-  Rectangle coordToGrid(const Rectangle &rect) const;
-  Rectangle gridToCoord(const Rectangle &rect) const;
-  Point coordToGrid(const Point &locaiton) const;
-  Point gridToCoord(const Point &location) const;
+  Rectangle coordToGrid(const Rectangle& rect) const;
+  Rectangle gridToCoord(const Rectangle& rect) const;
+  Point coordToGrid(const Point& locaiton) const;
+  Point gridToCoord(const Point& location) const;
 
  private:
   GridGraph _grid_graph;

@@ -1,0 +1,15 @@
+{
+  global:
+    clu1fac;
+    clu6mul;
+    clu6sol;
+    clu8adc;
+    clu8adr;
+    clu8dlc;
+    clu8dlr;
+    clu8mod;
+    clu8rpc;
+    clu8rpr;
+  local:
+    *;
+};

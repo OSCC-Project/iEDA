@@ -1,0 +1,4 @@
+*** Error 700: log(-1.000000): Numerical argument out of domain
+*** File: e700_2.zpl Line 2
+*** param x := log(-1);
+***                  ^^^

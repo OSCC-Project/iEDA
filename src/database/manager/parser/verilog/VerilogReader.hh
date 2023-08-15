@@ -26,7 +26,6 @@
 #include <cstdlib>
 #include <map>
 
-#include "DisallowCopyAssign.hh"
 #include "Vector.hh"
 #include "include/Config.hh"
 #include "log/Log.hh"

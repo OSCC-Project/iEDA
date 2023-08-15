@@ -1,0 +1,4 @@
+*** Error 133: Unknown symbol "k"
+*** File: e133_7.zpl Line 4
+*** subto c1: forall <i> in I do w[k] <= 1;
+***                                 ^^^

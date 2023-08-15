@@ -1,0 +1,5 @@
+# maximal number of threads to use (0: automatic)  [Integer: [0,2147483647]]
+presolve.threads = 1
+
+# if only one thread (presolve.threads = 1) is used, apply the reductions immediately afterwards
+presolve.apply_results_immediately_if_run_sequentially = 0
