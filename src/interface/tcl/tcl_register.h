@@ -34,18 +34,19 @@
 #include "tcl_register_config.h"
 #include "tcl_register_cts.h"
 #include "tcl_register_drc.h"
+#include "tcl_register_eval.h"
+#include "tcl_register_feature.h"
 #include "tcl_register_flow.h"
 #include "tcl_register_fp.h"
 #include "tcl_register_idb.h"
 #include "tcl_register_inst.h"
 #include "tcl_register_irt.h"
+#include "tcl_register_no.h"
 #include "tcl_register_pdn.h"
 #include "tcl_register_pl.h"
 #include "tcl_register_report.h"
 #include "tcl_register_sta.h"
 #include "tcl_register_to.h"
-#include "tcl_register_no.h"
-#include "tcl_register_feature.h"
 
 using namespace ieda;
 namespace tcl {
@@ -99,6 +100,8 @@ int registerCommands()
   registerCmdReport();
 
   registerCmdFeature();
+
+  registerCmdEval();
 
   return EXIT_SUCCESS;
 }
