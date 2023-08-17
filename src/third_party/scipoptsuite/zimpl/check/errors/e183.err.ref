@@ -1,0 +1,4 @@
+*** Error 183: vabs term not all integer
+*** File: e183.zpl Line 4
+*** subto c1: vabs(a) <= 2;
+***                 ^^^

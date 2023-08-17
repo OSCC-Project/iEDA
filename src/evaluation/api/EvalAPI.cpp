@@ -73,16 +73,16 @@ int64_t EvalAPI::evalDriver2LoadWL(WLNet* wl_net, const string& sink_pin_name)
   return wirelength_eval.evalDriver2LoadWL(wl_net, sink_pin_name);
 }
 
-double EvalAPI::evalEGRWL(){
+double EvalAPI::evalEGRWL()
+{
   // call router to get eGR wirelength info
   irt::RTAPI& rt_api = irt::RTAPI::getInst();
   std::map<std::string, std::any> config_map;
   std::vector<double> wl_via_pair = rt_api.getWireLengthAndViaNum(config_map);
   rt_api.destroyInst();
-  
+
   return wl_via_pair[0];
 }
-
 
 void EvalAPI::reportWirelength(const string& plot_path, const string& output_file_name, const vector<WLNet*>& net_list)
 {
@@ -93,21 +93,144 @@ void EvalAPI::reportWirelength(const string& plot_path, const string& output_fil
 /******************************Wirelength Eval: END******************************/
 
 /******************************Congestion Eval: START******************************/
-void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
+
+void EvalAPI::initCongDataFromIDB(const int bin_cnt_x, const int bin_cnt_y)
 {
-  _congestion_eval_inst = new CongestionEval();
-  _congestion_eval_inst->set_cong_grid(grid);
-  _congestion_eval_inst->set_cong_inst_list(inst_list);
-  _congestion_eval_inst->set_cong_net_list(net_list);
+  // initialize cong_grid
+  _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
+  // transform idb_inst to cong_inst
+  _congestion_eval_inst->initCongInst();
+  // tansform idb_net to cong_net
+  _congestion_eval_inst->initCongNetList();
+  // map cong_inst to each cong_bin
+  _congestion_eval_inst->mapInst2Bin();
+  // map cong_net to each cong_bin
+  _congestion_eval_inst->mapNetCoord2Grid();
 }
 
-void EvalAPI::initCongestionEval()
+void EvalAPI::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop)
 {
-  if (_congestion_eval_inst == nullptr) {
-    _congestion_eval_inst = new CongestionEval();
-  }
+  _congestion_eval_inst->evalInstDens(inst_status, eval_flip_flop);
 }
 
+void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status, int level)
+{
+  _congestion_eval_inst->evalPinDens(inst_status, level);
+}
+
+void EvalAPI::evalNetDens(INSTANCE_STATUS inst_status)
+{
+  _congestion_eval_inst->evalNetDens(inst_status);
+}
+
+void EvalAPI::evalLocalNetDens()
+{
+  _congestion_eval_inst->evalLocalNetDens();
+}
+
+void EvalAPI::evalGlobalNetDens()
+{
+  _congestion_eval_inst->evalGlobalNetDens();
+}
+
+void EvalAPI::plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type)
+{
+  _congestion_eval_inst->plotBinValue(plot_path, output_file_name, cong_type);
+}
+
+int32_t EvalAPI::evalInstNum(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalInstNum(inst_status);
+}
+
+int32_t EvalAPI::evalNetNum(NET_CONNECT_TYPE net_type)
+{
+  return _congestion_eval_inst->evalNetNum(net_type);
+}
+
+int32_t EvalAPI::evalPinNum(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalPinTotalNum(inst_status);
+}
+
+int32_t EvalAPI::evalRoutingLayerNum()
+{
+  return _congestion_eval_inst->evalRoutingLayerNum();
+}
+
+int32_t EvalAPI::evalTrackNum(DIRECTION direction)
+{
+  return _congestion_eval_inst->evalTrackNum(direction);
+}
+
+vector<int64_t> EvalAPI::evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type)
+{
+  return _congestion_eval_inst->evalChipWidthHeightArea(chip_region_type);
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalInstSize(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalInstSize(inst_status);
+}
+
+vector<pair<string, pair<int32_t, int32_t>>> EvalAPI::evalNetSize()
+{
+  return _congestion_eval_inst->evalNetSize();
+}
+
+void EvalAPI::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
+{
+  _congestion_eval_inst->evalNetCong(rudy_type, direction);
+}
+
+void EvalAPI::plotTileValue(const string& plot_path, const string& output_file_name)
+{
+  _congestion_eval_inst->plotTileValue(plot_path, output_file_name);
+}
+
+float EvalAPI::evalAreaUtils(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalAreaUtils(inst_status);
+}
+
+int64_t EvalAPI::evalArea(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalArea(inst_status);
+}
+
+// reference: “RTL-MP: Toward Practical, Human-Quality Chip Planning and Macro Placement”
+vector<int64_t> EvalAPI::evalMacroPeriBias()
+{
+  return _congestion_eval_inst->evalMacroPeriBias();
+}
+
+int32_t EvalAPI::evalRmTrackNum()
+{
+  return _congestion_eval_inst->evalRmTrackNum();
+}
+
+int32_t EvalAPI::evalOfTrackNum()
+{
+  return _congestion_eval_inst->evalOfTrackNum();
+}
+
+int32_t EvalAPI::evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name)
+{
+  return _congestion_eval_inst->evalMacroGuidance(cx, cy, width, height, name);
+}
+
+double EvalAPI::evalMacroChannelUtil(float dist_ratio)
+{
+  return _congestion_eval_inst->evalMacroChannelUtil(dist_ratio);
+}
+
+double EvalAPI::evalMacroChannelPinRatio(float dist_ratio)
+{
+  return _congestion_eval_inst->evalMacroChannelPinRatio(dist_ratio);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()
 {
   _congestion_eval_inst->mapInst2Bin();
@@ -141,7 +264,7 @@ vector<float> EvalAPI::evalInstDens(CongGrid* grid, const vector<CongInst*>& ins
 vector<float> EvalAPI::evalNetCong(const string& rudy_type)
 {
   _congestion_eval_inst->checkRUDYType(rudy_type);
-  _congestion_eval_inst->mapNet2Bin();
+  _congestion_eval_inst->mapNetCoord2Grid();
   return _congestion_eval_inst->getNetCong(rudy_type);
 }
 
@@ -151,8 +274,20 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   return congestion_eval.getNetCong(rudy_type);
+}
+
+// pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong()
+// {
+// }
+
+void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
+{
+  _congestion_eval_inst = new CongestionEval();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->set_cong_net_list(net_list);
 }
 
 vector<float> EvalAPI::evalGRCong()
@@ -222,7 +357,7 @@ void EvalAPI::plotNetCong(const string& plot_path, const string& output_file_nam
   congestion_eval.checkRUDYType(rudy_type);
   congestion_eval.set_cong_grid(grid);
   congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.evalNetCong(rudy_type);
   congestion_eval.plotNetCong(plot_path, output_file_name, rudy_type);
 }
@@ -235,7 +370,7 @@ void EvalAPI::reportCongestion(const string& plot_path, const string& output_fil
   congestion_eval.set_cong_inst_list(inst_list);
   congestion_eval.set_cong_net_list(net_list);
   congestion_eval.mapInst2Bin();
-  congestion_eval.mapNet2Bin();
+  congestion_eval.mapNetCoord2Grid();
   congestion_eval.reportCongestion(plot_path, output_file_name);
 }
 /******************************Congestion Eval: END******************************/

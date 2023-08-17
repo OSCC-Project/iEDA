@@ -24,12 +24,13 @@
 
 namespace python_interface {
 
-bool fpInit(const std::string& die_area, const std::string& core_area, const std::string& core_site, const std::string& io_site)
+bool fpInit(const std::string& die_area, const std::string& core_area, const std::string& core_site, const std::string& io_site,
+            const std::string& corner_site)
 {
   auto die = ieda::Str::splitDouble(die_area.c_str(), " ");
   auto core = ieda::Str::splitDouble(core_area.c_str(), " ");
   fpApiInst->initDie(die[0], die[1], die[2], die[3]);
-  fpApiInst->initCore(core[0], core[1], core[2], core[3], core_site, io_site);
+  fpApiInst->initCore(core[0], core[1], core[2], core[3], core_site, io_site, corner_site);
   return true;
 }
 
@@ -111,6 +112,6 @@ bool fpAddRoutingHalo(const std::string& layer, const std::string& distance, boo
 
 bool fpTapCell(const std::string& tapcell, double distance, const std::string& endcap)
 {
- return fpApiInst->tapCells(distance, tapcell, endcap);
+  return fpApiInst->tapCells(distance, tapcell, endcap);
 }
 }  // namespace python_interface

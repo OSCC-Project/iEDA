@@ -1704,7 +1704,6 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
       writeBackPlacerDB();
       PlacerDBInst.writeBackSourceDataBase();
       eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-      eval_api.initCongestionEval();
       std::vector<float> gr_congestion = eval_api.evalGRCong();
       LOG_INFO << "Routability-driven placement: ACE: " << gr_congestion[0] << " TOF: " << gr_congestion[1] << " MOF: " << gr_congestion[2];
 

@@ -46,13 +46,13 @@ TEST_F(PyTest, PyFitModel)
   std::vector<std::vector<double>> x = {x1, x2};
   std::vector<double> y = {1, 2, 3, 4, 5};
 
-  auto* linear_model = model_factory->pyFit(x, y, icts::FitType::kLINEAR);
+  auto* linear_model = model_factory->pyFit(x, y, icts::FitType::kLinear);
   EXPECT_TRUE(linear_model->predict({1, 1}));
 
-  auto* cat_model = model_factory->pyFit(x, y, icts::FitType::kCATBOOST);
+  auto* cat_model = model_factory->pyFit(x, y, icts::FitType::kCatBoost);
   EXPECT_TRUE(cat_model->predict({1, 1}));
 
-  auto* xgb_model = model_factory->pyFit(x, y, icts::FitType::kXGBOOST);
+  auto* xgb_model = model_factory->pyFit(x, y, icts::FitType::kXgBoost);
   EXPECT_TRUE(xgb_model->predict({1, 1}));
 
   delete model_factory;
@@ -63,7 +63,7 @@ TEST_F(PyTest, PyLoadModel)
   LOG_INFO << "build PyTest for load python model";
   auto* model_factory = new icts::ModelFactory();
 
-  auto* xgb_model = model_factory->pyLoad("./scripts/sky130/result/cts/model/chiplink_rx_clk.joblib.dat");
+  auto* xgb_model = model_factory->pyLoad("./scripts/design/sky130_gcd/result/cts/model/chiplink_rx_clk.joblib.dat");
   EXPECT_TRUE(xgb_model->predict({1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
 
   delete model_factory;

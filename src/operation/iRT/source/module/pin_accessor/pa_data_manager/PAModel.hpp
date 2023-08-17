@@ -32,16 +32,19 @@ class PAModel
   // getter
   GridMap<PAGCell>& get_pa_gcell_map() { return _pa_gcell_map; }
   std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
-  PAModelStat& get_pa_mode_stat() { return _pa_mode_stat; }
+  PAModelStat& get_pa_model_stat() { return _pa_model_stat; }
+  irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_pa_gcell_map(const GridMap<PAGCell>& pa_gcell_map) { _pa_gcell_map = pa_gcell_map; }
   void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-  void set_pa_mode_stat(const PAModelStat& pa_mode_stat) { _pa_mode_stat = pa_mode_stat; }
+  void set_pa_model_stat(const PAModelStat& pa_model_stat) { _pa_model_stat = pa_model_stat; }
+  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
 
  private:
   GridMap<PAGCell> _pa_gcell_map;
   std::vector<PANet> _pa_net_list;
-  PAModelStat _pa_mode_stat;
+  PAModelStat _pa_model_stat;
+  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt

@@ -1,0 +1,7 @@
+display/freq = 10000
+# limits/time = 3600
+limits/nodes = 2100000000
+# limits/memory = 6144
+stp/logfile = "use_probname"
+heuristics/rec/nwaitingsols = 2
+stp/intlogfile = "use_probname" 

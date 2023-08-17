@@ -1,0 +1,72 @@
+
+#-----------------------------------------------------------------------------
+# detect host architecture
+#-----------------------------------------------------------------------------
+include $(PAPILODIR)/make/make.detecthost
+
+#-----------------------------------------------------------------------------
+# get real path to PAPILO
+#-----------------------------------------------------------------------------
+ifeq ($(OSTYPE),mingw)
+SCIPREALPATH	=	$(PAPILODIR)
+else
+SCIPREALPATH	=	$(realpath $(PAPILODIR))
+endif
+
+#-----------------------------------------------------------------------------
+# default settings
+#-----------------------------------------------------------------------------
+
+# check and testing parameters
+TIME     	      =       3600
+NODES           =       2100000000
+MEM             =       6144
+PERMUTE         =       0
+SEEDS           =       0
+GLBSEEDSHIFT    =       0
+STARTPERM       =       0
+DISPFREQ        =       10000
+FEASTOL         =       default
+TEST            =       short
+SETTINGS        =       default
+CONTINUE        =       false
+LOCK            =       false
+DEBUGTOOL       =       none
+CLIENTTMPDIR    =       /tmp
+REOPT           =       false
+PAPILO_OPT_COMMAND      =       presolve
+SETCUTOFF       =       0
+VISUALIZE       =       false
+MAXJOBS         =       1
+EXECUTABLE      =       build/bin/papilo
+BINID           =       $(notdir $(EXECUTABLE))
+OUTPUTDIR       =       results
+CLUSTERNODES    =       all
+SLURMACCOUNT    =       default
+
+# set PAPILO version here for external projects
+# use underscore to make it compatible with def.h
+VERSION	=	1.0.1
+
+## compiling and linking parameters
+#VERBOSE		=	false
+#OPT		=	opt
+#COMP		=	gnu
+LPS		=	none
+#TPI		=	none
+#SYM		=	none
+#PAPILO		=	false
+#STATICLIBEXT	=	a
+#SHAREDLIBEXT	=	so
+#LIBEXT		=	$(STATICLIBEXT)
+#LINKER  	=	C
+#SHARED		=	false
+#NOBLKMEM	=	false
+#NOBUFMEM	=	false
+#NOBLKBUFMEM	=	false
+
+## system parameters
+SHELL		= 	bash
+READ		=	read -e
+LN_s		= 	ln -s
+LN_sf		=	ln -sf

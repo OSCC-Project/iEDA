@@ -24,7 +24,7 @@
 #pragma once
 
 #include "Liberty.hh"
-#include "LibertyEquivCells.hh"
+#include "mLibertyEquivCells.hh"
 
 namespace ista {
 /**

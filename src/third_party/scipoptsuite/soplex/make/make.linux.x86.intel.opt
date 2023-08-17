@@ -1,0 +1,9 @@
+CXX	=	icpc
+LINKCXX	=	icpc
+DCXX	=	icpc
+CPPFLAGS=	-Isrc -DNDEBUG 
+CXXFLAGS=	-O3 -fp-model extended -fp-model fast -w1 -ip -mtune=core2 -std=c++11 #-msse4.1 -fno-rtti
+LDFLAGS	=	-lpthread -lm -lstdc++ -lirc
+ARFLAGS	=	crs
+ZLIB_FLAGS	=
+ZLIB_LDFLAGS 	=	-lz

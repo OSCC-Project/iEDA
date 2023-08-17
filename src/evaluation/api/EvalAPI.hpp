@@ -28,6 +28,7 @@ namespace eval {
 
 #define EvalInst (eval::EvalAPI::getInst())
 
+using std::pair;
 using std::string;
 using std::vector;
 
@@ -47,15 +48,41 @@ class EvalAPI
   /****************************** Wirelength Eval: END *******************************/
 
   /****************************** Congestion Eval: START ******************************/
+  void initCongDataFromIDB(const int bin_cnt_x, const int bin_cnt_y);
+  void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
+  void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
+  void evalNetDens(INSTANCE_STATUS inst_status);
+  void evalLocalNetDens();
+  void evalGlobalNetDens();
+  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
+  int32_t evalInstNum(INSTANCE_STATUS inst_status);
+  int32_t evalNetNum(NET_CONNECT_TYPE net_type);
+  int32_t evalPinNum(INSTANCE_STATUS inst_status = INSTANCE_STATUS::kNone);
+  int32_t evalRoutingLayerNum();
+  int32_t evalTrackNum(DIRECTION direction = DIRECTION::kNone);
+  vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
+  vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+  vector<pair<string, pair<int32_t, int32_t>>> evalNetSize();
+  void evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction = DIRECTION::kNone);
+  vector<float> evalGRCong();
+  void plotTileValue(const string& plot_path, const string& output_file_name);
+  float evalAreaUtils(INSTANCE_STATUS inst_status);
+  int64_t evalArea(INSTANCE_STATUS inst_status);
+  vector<int64_t> evalMacroPeriBias();
+  int32_t evalRmTrackNum();
+  int32_t evalOfTrackNum();
+  int32_t evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name);
+  double evalMacroChannelUtil(float dist_ratio);
+  double evalMacroChannelPinRatio(float dist_ratio);
+
   void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
-  void initCongestionEval();
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();
   vector<float> evalInstDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalNetCong(const string& rudy_type);
   vector<float> evalNetCong(CongGrid* grid, const vector<CongNet*>& net_list, const string& rudy_type);
-  vector<float> evalGRCong();
+  // pair<vector<float>, vector<float>> evalHVNetCong();
   vector<float> getUseCapRatioList();
   vector<int> getTileGridCoordSizeCntXY();
   void plotPinDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list);
@@ -94,14 +121,22 @@ class EvalAPI
   TimingEval* _timing_eval_inst = nullptr;
   CongestionEval* _congestion_eval_inst = nullptr;
 
-  EvalAPI() = default;
+  EvalAPI()
+  {
+    _timing_eval_inst = new TimingEval();
+    _congestion_eval_inst = new CongestionEval();
+  }
   EvalAPI(const EvalAPI& other) = delete;
   EvalAPI(EvalAPI&& other) = delete;
-  ~EvalAPI() = default;
+  ~EvalAPI()
+  {
+    delete _timing_eval_inst;
+    delete _congestion_eval_inst;
+  }
   EvalAPI& operator=(const EvalAPI& other) = delete;
   EvalAPI& operator=(EvalAPI&& other) = delete;
 };
 
 }  // namespace eval
 
-#endif // SRC_EVALUATION_API_EVALAPI_HPP_
+#endif  // SRC_EVALUATION_API_EVALAPI_HPP_

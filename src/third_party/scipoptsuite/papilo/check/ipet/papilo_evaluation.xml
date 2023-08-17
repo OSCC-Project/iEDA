@@ -1,0 +1,93 @@
+<?xml version="1.0" ?>
+<Evaluation comparecolformat="%.3f" index="ProblemName LogFileName" indexsplit="-1">
+	<Column active="True" alternative="-1" name="Presolve_time" origcolname="presolve_time" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+
+	<Column active="True" alternative="-1" name="Presolv rounds" origcolname="presolv_rounds" reduction="meanOrConcat">
+		<Aggregation aggregation="mean" name="mean"/>
+	</Column>
+
+	<Column active="True" alternative="0" name="Fast" origcolname="fast_rounds" reduction="meanOrConcat">
+		<Aggregation aggregation="mean" name="mean"/>
+	</Column>
+	<Column active="True" alternative="0" name="Medium" origcolname="medium_rounds" reduction="meanOrConcat">
+		<Aggregation aggregation="mean" name="mean"/>
+	</Column>
+	<Column active="True" alternative="0" name="Exhaustive" origcolname="exhaustive_rounds" reduction="meanOrConcat">
+		<Aggregation aggregation="mean" name="mean"/>
+	</Column>
+
+
+	<Column active="True" alternative="-1" name="Red rows" origcolname="reduced_rows" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Red columns" origcolname="reduced_columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Red int cols" origcolname="reduced_int_columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Red cont cols" origcolname="reduced_cont_columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Red nonzeros" origcolname="reduced_nonzeros" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+
+
+	<Column active="True" alternative="-1" name="Cols deleted" origcolname="cols_del" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Rows deleted" origcolname="rows_del" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Chg bounds" origcolname="chg_bound" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Chg sides" origcolname="chg_sides" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Chg coeff" origcolname="chg_coeff" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Tsx applied" origcolname="tsx_applied" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Tsx conflicts" origcolname="tsx_conflicts" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+
+	<Column active="True" alternative="-1" name="Rows" origcolname="rows" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Columns" origcolname="columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="int cols" origcolname="int_columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="cont cols" origcolname="cont_columns" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="1.0"/>
+	</Column>
+	<Column active="True" alternative="-1" name="Nonzeros" origcolname="nonzeros" reduction="meanOrConcat">
+		<Aggregation aggregation="shmean" name="shmean" shiftby="10.0"/>
+	</Column>
+
+	<FilterGroup active="True" filtertype="intersection" name="all"/>
+	<FilterGroup name="[0.01,tilim]">
+		<Filter anytestrun="one" expression1="Presolve_time" expression2="0.01" operator="ge"/>
+	</FilterGroup>
+	<FilterGroup name="[0.1,tilim]">
+		<Filter anytestrun="one" expression1="Presolve_time" expression2="0.1" operator="ge"/>
+	</FilterGroup>
+	<FilterGroup name="[1,tilim]">
+		<Filter anytestrun="one" expression1="Presolve_time" expression2="1" operator="ge"/>
+	</FilterGroup>
+	<FilterGroup name="[10,tilim]">
+		<Filter anytestrun="one" expression1="Presolve_time" expression2="10" operator="ge"/>
+	</FilterGroup>
+	<FilterGroup name="[100,tilim]">
+		<Filter anytestrun="one" expression1="Presolve_time" expression2="100" operator="ge"/>
+	</FilterGroup>
+</Evaluation>

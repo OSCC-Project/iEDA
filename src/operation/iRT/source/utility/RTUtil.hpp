@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Boost.hpp"
 #include "Direction.hpp"
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"
@@ -430,7 +429,7 @@ class RTUtil
       double mpy = py - my;
       double mqx = qx - mx;
       double mqy = qy - my;
-      return fabs(double(0.5) * cross(mpx, mpy, mqx, mqy));
+      return fabs(static_cast<double>(0.5) * cross(mpx, mpy, mqx, mqy));
     };
     // 定比分点
     double ck = get_coord_area(ax, ay, bx, by, cx, cy);
@@ -508,10 +507,10 @@ class RTUtil
   {
     irt_int first_x = b.get_first().get_x();
     irt_int second_x = b.get_second().get_x();
-    sortASC(first_x, second_x);
+    swapASC(first_x, second_x);
     irt_int first_y = b.get_first().get_y();
     irt_int second_y = b.get_second().get_y();
-    sortASC(first_y, second_y);
+    swapASC(first_y, second_y);
 
     irt_int x_spacing = std::max(first_x - a.get_rt_x(), a.get_lb_x() - second_x);
     irt_int y_spacing = std::max(first_y - a.get_rt_y(), a.get_lb_y() - second_y);
@@ -530,10 +529,10 @@ class RTUtil
   {
     irt_int first_x = b.get_first().get_x();
     irt_int second_x = b.get_second().get_x();
-    sortASC(first_x, second_x);
+    swapASC(first_x, second_x);
     irt_int first_y = b.get_first().get_y();
     irt_int second_y = b.get_second().get_y();
-    sortASC(first_y, second_y);
+    swapASC(first_y, second_y);
 
     irt_int overlap_lb_x = std::max(first_x, a.get_lb_x());
     irt_int overlap_rt_x = std::min(second_x, a.get_rt_x());
@@ -639,9 +638,9 @@ class RTUtil
     irt_int second_y = segment.get_second().get_y();
     irt_int second_layer_idx = segment.get_second().get_layer_idx();
 
-    sortASC(first_x, second_x);
-    sortASC(first_y, second_y);
-    sortASC(first_layer_idx, second_layer_idx);
+    swapASC(first_x, second_x);
+    swapASC(first_y, second_y);
+    swapASC(first_layer_idx, second_layer_idx);
 
     return (first_x <= coord.get_x() && coord.get_x() <= second_x && first_y <= coord.get_y() && coord.get_y() <= second_y
             && first_layer_idx <= coord.get_layer_idx() && coord.get_layer_idx() <= second_layer_idx);
@@ -1564,8 +1563,8 @@ class RTUtil
     irt_int second_x = second_coord.get_x();
     irt_int second_y = second_coord.get_y();
 
-    sortASC(first_x, second_x);
-    sortASC(first_y, second_y);
+    swapASC(first_x, second_x);
+    swapASC(first_y, second_y);
 
     return PlanarRect(getRealLB(first_x, x_grid_list), getRealLB(first_y, y_grid_list), getRealRT(second_x, x_grid_list),
                       getRealRT(second_y, y_grid_list));
@@ -1756,7 +1755,7 @@ class RTUtil
 
   static std::vector<irt_int> getScaleList(irt_int begin_line, irt_int end_line, ScaleGrid& scale_grid, bool lb_boundary, bool rt_boundary)
   {
-    sortASC(begin_line, end_line);
+    swapASC(begin_line, end_line);
 
     std::vector<irt_int> scale_line_list;
     irt_int scale_start = scale_grid.get_start_line();
@@ -2059,7 +2058,7 @@ class RTUtil
       PlanarCoord& planar_coord = p_segment.get_first().get_planar_coord();
       irt_int first_layer_idx = p_segment.get_first().get_layer_idx();
       irt_int second_layer_idx = p_segment.get_second().get_layer_idx();
-      sortASC(first_layer_idx, second_layer_idx);
+      swapASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
         p_segment_list_temp.emplace_back(LayerCoord(planar_coord, layer_idx), LayerCoord(planar_coord, layer_idx + 1));
       }
@@ -2114,7 +2113,7 @@ class RTUtil
       irt_int y = h_segment.get_first().get_y();
       irt_int layer_idx = h_segment.get_first().get_layer_idx();
 
-      sortASC(first_x, second_x);
+      swapASC(first_x, second_x);
       std::vector<irt_int> x_list;
       for (irt_int x_cut : x_cut_list_map[layer_idx]) {
         if (first_x <= x_cut && x_cut <= second_x) {
@@ -2137,7 +2136,7 @@ class RTUtil
       irt_int x = v_segment.get_first().get_x();
       irt_int layer_idx = v_segment.get_first().get_layer_idx();
 
-      sortASC(first_y, second_y);
+      swapASC(first_y, second_y);
       std::vector<irt_int> y_list;
       for (irt_int y_cut : y_cut_list_map[layer_idx]) {
         if (first_y <= y_cut && y_cut <= second_y) {
@@ -2317,10 +2316,9 @@ class RTUtil
    *     return: [4 3 2 1]
    *             [5 6 7 8]
    */
-  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx,
-                                                                        irt_int top_layer_idx)
+  static std::vector<std::vector<irt_int>> getLevelViaBelowLayerIdxList(irt_int curr_layer_idx,
+                                                                        std::vector<irt_int> via_below_layer_idx_list)
   {
-    std::vector<irt_int> via_below_layer_idx_list = getViaBelowLayerIdxList(curr_layer_idx, bottom_layer_idx, top_layer_idx);
     std::vector<std::vector<irt_int>> level_layer_idx_list;
 
     std::vector<irt_int> down_via_below_layer_idx_list;
@@ -2346,51 +2344,64 @@ class RTUtil
     return level_layer_idx_list;
   }
 
-  // 考虑的全部via below层
-  static std::vector<irt_int> getViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
-  {
-    if (bottom_layer_idx > top_layer_idx) {
-      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
-    }
-    std::vector<irt_int> layer_idx_list;
-    if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
-      layer_idx_list.push_back(curr_layer_idx - 1);
-      layer_idx_list.push_back(curr_layer_idx);
-    } else if (curr_layer_idx <= bottom_layer_idx) {
-      for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
-        layer_idx_list.push_back(layer_idx);
-      }
-    } else if (top_layer_idx <= curr_layer_idx) {
-      for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
-        layer_idx_list.push_back(layer_idx);
-      }
-    }
-    std::sort(layer_idx_list.begin(), layer_idx_list.end());
-    layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
-    return layer_idx_list;
-  }
+  // // 考虑的全部via below层
+  // static std::vector<irt_int> getAllViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // {
+  //   if (bottom_layer_idx > top_layer_idx) {
+  //     LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+  //   }
+  //   std::vector<irt_int> layer_idx_list;
+  //   if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+  //     layer_idx_list.push_back(curr_layer_idx - 1);
+  //     layer_idx_list.push_back(curr_layer_idx);
+  //   } else if (curr_layer_idx <= bottom_layer_idx) {
+  //     for (irt_int layer_idx = curr_layer_idx; layer_idx <= std::min(bottom_layer_idx + 1, top_layer_idx); layer_idx++) {
+  //       layer_idx_list.push_back(layer_idx);
+  //     }
+  //   } else if (top_layer_idx <= curr_layer_idx) {
+  //     for (irt_int layer_idx = std::max(top_layer_idx - 2, bottom_layer_idx); layer_idx <= (curr_layer_idx - 1); layer_idx++) {
+  //       layer_idx_list.push_back(layer_idx);
+  //     }
+  //   }
+  //   std::sort(layer_idx_list.begin(), layer_idx_list.end());
+  //   layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+  //   return layer_idx_list;
+  // }
 
-  // 获得可用的布线层
-  static std::vector<irt_int> getUsageLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // // 考虑的相邻via below层
+  // static std::vector<irt_int> getAdjViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
+  // {
+  //   if (bottom_layer_idx > top_layer_idx) {
+  //     LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+  //   }
+  //   std::vector<irt_int> layer_idx_list;
+  //   layer_idx_list.push_back(std::max(curr_layer_idx - 1, bottom_layer_idx));
+  //   layer_idx_list.push_back(std::min(curr_layer_idx, top_layer_idx - 1));
+
+  //   std::sort(layer_idx_list.begin(), layer_idx_list.end());
+  //   layer_idx_list.erase(std::unique(layer_idx_list.begin(), layer_idx_list.end()), layer_idx_list.end());
+  //   return layer_idx_list;
+  // }
+
+  // 当前层在可布线层内，则只向上打通孔，在最高可布线层，则往下打通孔；当前层布线层外，打通孔到最近的可布线层。
+  static std::vector<irt_int> getReservedViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
       LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
-    std::vector<irt_int> layer_idx_list;
-    if (curr_layer_idx < bottom_layer_idx) {
-      for (irt_int i = curr_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
+    std::vector<irt_int> reserved_via_below_layer_idx_list;
+    if (curr_layer_idx <= bottom_layer_idx) {
+      for(int layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
+        reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
-    } else if (top_layer_idx < curr_layer_idx) {
-      for (irt_int i = bottom_layer_idx; i <= curr_layer_idx; i++) {
-        layer_idx_list.push_back(i);
-      }
-    } else {
-      for (irt_int i = bottom_layer_idx; i <= top_layer_idx; i++) {
-        layer_idx_list.push_back(i);
+    } else if(bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+      reserved_via_below_layer_idx_list.push_back(curr_layer_idx);
+    } else if (top_layer_idx <= curr_layer_idx) {
+      for(irt_int layer_idx = std::max(bottom_layer_idx, top_layer_idx - 1); layer_idx < curr_layer_idx; layer_idx++) {
+        reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
     }
-    return layer_idx_list;
+    return reserved_via_below_layer_idx_list;
   }
 
   static std::vector<ScaleGrid> makeScaleGridList(std::vector<irt_int>& scale_list)
@@ -2653,9 +2664,9 @@ class RTUtil
     if (total_size < 0) {
       LOG_INST.error(Loc::current(), "The total of size < 0!");
     } else if (total_size <= 10) {
-      batch_size = 1;
+      batch_size = 5;
     } else if (total_size < 100000) {
-      batch_size = total_size / 10;
+      batch_size = std::max(5, total_size / 10);
       irt_int factor = static_cast<irt_int>(std::pow(10, getDigitNum(batch_size) - 1));
       batch_size = batch_size / factor * factor;
     }
@@ -2677,7 +2688,7 @@ class RTUtil
   }
 
   template <typename T, typename Compare>
-  static void sort(T& a, T& b, Compare cmp)
+  static void swapByCMP(T& a, T& b, Compare cmp)
   {
     if (!cmp(a, b)) {
       std::swap(a, b);
@@ -2685,9 +2696,9 @@ class RTUtil
   }
 
   template <typename T>
-  static void sortASC(T& a, T& b)
+  static void swapASC(T& a, T& b)
   {
-    sort(a, b, std::less<T>());
+    swapByCMP(a, b, std::less<T>());
   }
 
   static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
@@ -2762,7 +2773,13 @@ class RTUtil
   }
 
   template <typename T>
-  static void reverse(std::vector<T>& list, irt_int start_idx, irt_int end_idx)
+  static void reverseList(std::vector<T>& list)
+  {
+    reverseList(list, 0, static_cast<irt_int>(list.size()) - 1);
+  }
+
+  template <typename T>
+  static void reverseList(std::vector<T>& list, irt_int start_idx, irt_int end_idx)
   {
     while (start_idx < end_idx) {
       std::swap(list[start_idx], list[end_idx]);

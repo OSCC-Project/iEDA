@@ -23,51 +23,93 @@
 #include "CongInst.hpp"
 #include "CongNet.hpp"
 #include "CongTile.hpp"
+#include "idm.h"
 
 namespace eval {
 
 class CongestionEval
 {
  public:
-  CongestionEval() = default;
-  ~CongestionEval() = default;
+  CongestionEval()
+  {
+    _tile_grid = new TileGrid();
+    _cong_grid = new CongGrid();
+  }
+  ~CongestionEval()
+  {
+    delete _tile_grid;
+    delete _cong_grid;
+  }
 
+  void initCongGrid(const int bin_cnt_x, const int bin_cnt_y);
+  void initCongInst();
+  void initCongNetList();
+  void mapInst2Bin();
+  void mapNetCoord2Grid();
+
+  void evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop = false);
+  void evalPinDens(INSTANCE_STATUS inst_status, int level = 0);
+  void evalNetDens(INSTANCE_STATUS inst_status);
+  void evalLocalNetDens();
+  void evalGlobalNetDens();
+
+  void plotBinValue(const string& plot_path, const string& output_file_name, CONGESTION_TYPE cong_type);
+
+  int32_t evalInstNum(INSTANCE_STATUS inst_status);
+  int32_t evalNetNum(NET_CONNECT_TYPE net_type);
+  int32_t evalPinTotalNum(INSTANCE_STATUS inst_status = INSTANCE_STATUS::kNone);
+  int32_t evalRoutingLayerNum();
+  int32_t evalTrackNum(DIRECTION direction);
+  std::vector<int64_t> evalChipWidthHeightArea(CHIP_REGION_TYPE chip_region_type);
+  vector<pair<string, pair<int32_t, int32_t>>> evalInstSize(INSTANCE_STATUS inst_status);
+  vector<pair<string, pair<int32_t, int32_t>>> evalNetSize();
+
+  void evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction = DIRECTION::kNone);
+  void plotTileValue(const string& plot_path, const string& output_file_name);
+
+  float evalAreaUtils(INSTANCE_STATUS inst_status);
+  int64_t evalArea(INSTANCE_STATUS inst_status);
+
+  std::vector<int64_t> evalMacroPeriBias();
+
+  int32_t evalRmTrackNum();
+  int32_t evalOfTrackNum();
+
+  int32_t evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name);
+  double evalMacroChannelUtil(float dist_ratio);
+  double evalMacroChannelPinRatio(float dist_ratio);
+  /////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);
 
-  /*----evaluate pin number----*/
-  void mapInst2Bin();
   void evalPinNum();
   void reportPinNum();
   void plotPinNum(const std::string& plot_path, const std::string& output_file_name);
   int getBinPinNum(const int& index_x, const int& index_y);
   double getBinPinDens(const int& index_x, const int& index_y);
   std::vector<float> evalPinDens();
-  /*----evaluate inst density----*/
   void evalInstDens();
   void reportInstDens();
   void plotInstDens(const std::string& plot_path, const std::string& output_file_name);
   double getBinInstDens(const int& index_x, const int& index_y);
   std::vector<float> getInstDens();
 
-  /*----evaluate net congestion----*/
-  void mapNet2Bin();
   void evalNetCong(const std::string& rudy_type);
   void reportNetCong();
   void plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type);
   double getBinNetCong(const int& index_x, const int& index_y, const std::string& rudy_type);
   std::vector<float> getNetCong(const std::string& rudy_type);
-  /*----evaluate post-route congestion----*/
   // void evalViaDens();
   // void reportViaDens();
   // void plotViaDens(const std::string& plot_path, const std::string& output_file_name);
   // double getBinViaDens(const int& index_x, const int& index_y);
   // std::vector<CongNet>& getPostRouteNetlist();
 
-  /*----evaluate routing congestion----*/
   std::vector<float> evalRouteCong();
   float evalACE(const std::vector<float>& hor_edge_cong_list, const std::vector<float>& ver_edge_cong_list);
   std::vector<int> evalOverflow();                 // <TOF,MOF>
   std::vector<int> evalOverflow(int layer_index);  // <TOF,MOF>
+  int32_t evalRemain(int layer_index);
   std::vector<float> getUseCapRatioList();
   // produce layer_num maps: raw overflow
   void plotGRCong(const std::string& plot_path, const std::string& output_file_name);
@@ -76,7 +118,6 @@ class CongestionEval
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name);
   void plotOverflow(const std::string& plot_path, const std::string& output_file_name, const std::vector<int>& plane_grid, const int& x_cnt,
                     const std::string& type);
-
   void reportCongMap();
 
   /*----Common used----*/
@@ -102,18 +143,27 @@ class CongestionEval
   CongGrid* _cong_grid = nullptr;
   std::vector<CongInst*> _cong_inst_list;
   std::vector<CongNet*> _cong_net_list;
+  std::map<std::string, CongInst*> _name_to_inst_map;
 
   int32_t getOverlapArea(CongBin* bin, CongInst* inst);
   int32_t getOverlapArea(CongBin* bin, CongNet* net);
 
-  double getRudy(CongBin* bin, CongNet* net);
+  double getRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
   double getRudyDev(CongBin* bin, CongNet* net);
-  double getPinRudy(CongBin* bin, CongNet* net);
+  double getPinRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
   double getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
+  float calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax);
+  int64_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin);
+  int64_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymin);
+  int64_t calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymax);
+  int64_t calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymax);
+  double getLUT(const int32_t& pin_num, const int32_t& aspect_ratio, const float& l_ness);
 
   float getUsageCapacityRatio(Tile* tile);
+  CongPin* wrapCongPin(idb::IdbPin* idb_pin);
+  std::string fixSlash(std::string raw_str);
 };
 
 }  // namespace eval

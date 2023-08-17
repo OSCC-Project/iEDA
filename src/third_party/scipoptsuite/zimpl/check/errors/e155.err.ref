@@ -1,0 +1,4 @@
+*** Error 155: Invalid read template, not enough fields
+*** File: e155.zpl Line 2
+*** param x[{1..5}] := read "dummy.dat" as "<> 1n";
+***                                               ^^^

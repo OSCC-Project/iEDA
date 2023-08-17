@@ -1,0 +1,4 @@
+*** Error 133: Unknown symbol "x"
+*** File: e133_6.zpl Line 2
+*** param q := if x < y then 1 else 2 end;
+***               ^^^

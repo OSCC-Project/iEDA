@@ -132,9 +132,9 @@ void DBWrapper::wrapInstances(IdbDesign* idb_design)
 
     // set type
     if (!isCoreOverlap(idb_inst)) {
-      inst_ptr->set_type(INSTANCE_TYPE::kOutside);
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kOutside);
     } else {
-      inst_ptr->set_type(INSTANCE_TYPE::kNormal);
+      inst_ptr->set_loc_type(INSTANCE_LOC_TYPE::kNormal);
     }
 
     ieval_design->add_instance(inst_ptr);
@@ -180,7 +180,7 @@ void DBWrapper::wrapWLNetlists(IdbDesign* idb_design)
       net_ptr->set_type(NET_TYPE::kReset);
     } else {
       net_ptr->set_type(NET_TYPE::kNone);
-    } // fengzhuang
+    }  // fengzhuang
     // set pins.
     auto* idb_driving_pin = idb_net->get_driving_pin();
     if (idb_driving_pin) {

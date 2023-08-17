@@ -1,0 +1,10 @@
+#--- $Id: make.hp-ux.hppa.hp.opt,v 1.8 2014/01/12 11:07:04 bzfkocht Exp $
+CC		=	cc
+CPPFLAGS	+=	-DNDEBUG -DNO_MSHELL -Dinline="" -Dfinite=isfinite
+CFLAGS		=	+O3 +DD64 +W21,486,474 
+LDFLAGS		=	-noshared -lgmp -lm 
+
+ifeq ($(ZLIB),true)
+LDFLAGS		+=	-lz
+endif
+

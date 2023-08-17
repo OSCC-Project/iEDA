@@ -26,46 +26,46 @@ bash build.sh -j 16
 ./bin/iEDA -script scripts/hello.tcl
 ```
 
-拷贝 ./bin/iEDA 到目录 ./scripts/sky130
+拷贝 ./bin/iEDA 到目录 ./scripts/design/sky130_gcd
 
 ```bash
 # 拷贝 iEDA 到sky130 目录 
-cp ./bin/iEDA scripts/sky130/.
+cp ./bin/iEDA scripts/design/sky130_gcd/.
 ```
 
 ### 工艺文件准备
 
 下载SkyWater PDK
-拷贝TechLEF 文件 和 LEF文件到目录 ./scripts/sky130/lef
+拷贝TechLEF 文件 和 LEF文件到目录 ./scripts/foundry/sky130/lef
 
 ```bash
-# 拷贝 TechLEF 文件到目录 ./scripts/sky130/lef
-cp <skywater130pdk_tlef_path>/*.tlef scripts/sky130/lef/.
-# 拷贝 LEF 文件到目录 ./scripts/sky130/lef
-cp <skywater130pdk_lef_path>/*.lef scripts/sky130/lef/.
+# 拷贝 TechLEF 文件到目录 ./scripts/foundry/sky130/lef
+cp <skywater130pdk_tlef_path>/*.tlef scripts/foundry/sky130/lef/.
+# 拷贝 LEF 文件到目录 ./scripts/foundry/sky130/lef
+cp <skywater130pdk_lef_path>/*.lef scripts/foundry/sky130/lef/.
 ```
 
-拷贝Lib文件到 ./scripts/sky130/lib
+拷贝Lib文件到 ./scripts/foundry/sky130/lib
 
 ```bash
-# 拷贝 Lib 文件到目录 ./scripts/sky130/lib
-cp <skywater130pdk_lib_path>/*.lib scripts/sky130/lib/.
+# 拷贝 Lib 文件到目录 ./scripts/foundry/sky130/lib
+cp <skywater130pdk_lib_path>/*.lib scripts/foundry/sky130/lib/.
 ```
 
-拷贝sdc文件到 ./scripts/sky130/sdc
+拷贝sdc文件到 ./scripts/foundry/sky130/sdc
 
 ```bash
-# 拷贝 sdc 文件到目录 ./scripts/sky130/sdc
-cp <skywater130pdk_sdc_path>/*.sdc scripts/sky130/sdc/.
+# 拷贝 sdc 文件到目录 ./scripts/foundry/sky130/sdc
+cp <skywater130pdk_sdc_path>/*.sdc scripts/foundry/sky130/sdc/.
 ```
 
 ### 设计文件准备
 
-拷贝.v Netlist文件到目录 scripts/sky130/result/verilog
+拷贝.v Netlist文件到目录 scripts/design/sky130_gcd/result/verilog
 
 ```bash
-# 拷贝 .v 文件到目录 ./scripts/sky130/result/verilog
-cp <skywater130pdk_verilog_path>/gcd.v scripts/sky130/result/verilog/.
+# 拷贝 .v 文件到目录 ./scripts/design/sky130_gcd/result/verilog
+cp <skywater130pdk_verilog_path>/gcd.v scripts/design/sky130_gcd/result/verilog/.
 ```
 
 ## 工具流程
@@ -76,15 +76,27 @@ cp <skywater130pdk_verilog_path>/gcd.v scripts/sky130/result/verilog/.
 ### 模块划分
 
 ```
-scripts/sky130
-├── iEDA_config   # iEDA parameters configuration files
-├── lef           # lef files
-├── lib           # lib files
-├── result        # iEDA result output files
-├── script        # Tcl script files
-├── sdc           # sdc files
-├── run_iEDA.py   # Python3 script for running all iEDA flow
-└── run_iEDA.sh   # POSIX shell script for running all iEDA flow
+scripts
+├── design                   #iEDA flows for different designs
+│   ├── ispd18               #tbd
+│   └── sky130_gcd           #flow of gcd in sky130
+│       ├── iEDA             
+│       ├── iEDA_config      # iEDA parameters configuration files
+│       ├── README.md
+│       ├── result           # iEDA result output files
+│       ├── run_iEDA_gui.py  # Python3 script for running all iEDA flow with GUI layout
+│       ├── run_iEDA.py      # Python3 script for running all iEDA flow
+│       ├── run_iEDA.sh      # POSIX shell script for running all iEDA flow
+│       └── script           # TCL script files
+├── foundry
+│   ├── README.md
+│   └── sky130               # SkyWater Open Source PDK
+│       ├── lef              # lef files
+│       ├── lib              # lib files
+│       ├── sdc              # sdc files
+│       └── spef             # folder for spef files if needed
+└── hello.tcl                # Test running iEDA
+
 ```
 
 #### script 模块说明
@@ -92,7 +104,7 @@ scripts/sky130
 script目录包含物理后端设计需要的所有流程脚本和结果分析评估脚本，并且按流程、功能划分好模块；流程脚本可支持顶层自动化运行脚本run_iEDA.py的调用，也可以支持独立运行。
 
 ```
-scripts/sky130/script
+scripts/design/sky130_gcd/script
 ├── DB_script                           # Data process flow scripts
 │   ├── db_init_lef.tcl                 # initialize lef
 │   ├── db_init_lib_drv.tcl             # initialize lib only for flow of drv 
@@ -237,7 +249,7 @@ flow_exit
 | 报告类型                   | 路径                 | 说明                                                               |
 | :------------------------- | :------------------- | :----------------------------------------------------------------- |
 | Tech LEF、LEF、DEF数据报告 | ./result/report      | 分析、统计 Design 文件的数据，并对PR过程单元、线网数据进行详细报告 |
-| 线长、拥塞评估报告         | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度等数据                     |
+| 线长、拥塞评估报告         | ./result/report/eval | 分析、统计点工具输出结果的线长、单元密度、布线拥塞等数据                     |
 | DRC报告                    | ./result/report/drc  | 主要检测布线后的DRC违例情况，已支持GUI可视化分析                   |
 
 ##### 基础信息
@@ -523,15 +535,15 @@ Congestion Report
 报告的参数说明如下表所示<br>
 | 参数名                 | 说明 |
 | :--------------------- | :--- |
-| Grid Bin Size          |      |
-| Bin Partition          |      |
-| Total Count            |      |
-| Instance Density Range |      |
-| Bins Count             |      |
-| Percentage             |      |
-| Pin Count Range        |      |
-| Bins Count             |      |
-| Percentage             |      |
+| Grid Bin Size          | 版图(core)区域所划分网格的：长度 * 宽度                       |
+| Bin Partition          | 版图(core)区域所划分网格数：水平数 by 竖直数                  |
+| Total Count            | 版图(core)区域所有网格数                                     |
+| Instance Density Range | 与网格重叠的单元面积总和除以单个网格面积，用于表征较高密度的网格 |
+| Bins Count             | 对应单元密度的网格数                                         |
+| Percentage             | 对应单元密度的网格数与所有网格数的比值                         |
+| Pin Count Range        | 单个网格内的引脚个数，用于表征较高引脚密度的网格                |
+| Bins Count             | 对应引脚密度的网格数                                         |
+| Percentage             | 对应引脚密度的网格数与所有网格数的比值                         |
 
 
 **Wire Length Report**<br>
@@ -674,7 +686,7 @@ DRC - Disconnected Net
 
 #### 物理后端设计全流程运行
 
-运行sky130目录的run_iEDA.py，将自动运行从读取.v Netlist文件到最后生成 .gdsii GDSII文件的全流程，全流程使用默认参数，所有运行结果将保存在scripts/sky130/result目录下，详细的功能描述、参数配置、输入、输出和报告等可查看点工具运行。
+运行sky130目录的run_iEDA.py，将自动运行从读取.v Netlist文件到最后生成 .gdsii GDSII文件的全流程，全流程使用默认参数，所有运行结果将保存在scripts/design/sky130_gcd/result目录下，详细的功能描述、参数配置、输入、输出和报告等可查看点工具运行。
 
 ##### 运行脚本
 
@@ -823,7 +835,7 @@ step 3: 查看GUI
 ./iEDA -script ./script/iPL_script/run_iPL.tcl 
 ```
 **参数配置**<br>
-参考iEDA_config/pl_default_config.json: `./scripts/sky130/iEDA_config/pl_default_config.json`
+参考iEDA_config/pl_default_config.json: `./scripts/design/sky130_gcd/iEDA_config/pl_default_config.json`
 
 | JSON参数                                      | 功能说明                                                                                                                    | 参数范围                     | 默认值        |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------- |
@@ -880,7 +892,7 @@ step 3: 查看GUI
 **评测和报告**<br>
 - ./result/report/pl_db.rpt
 
-iPL工具的中间报告默认存放在目录：`./scripts/sky130/result/pl/`
+iPL工具的中间报告默认存放在目录：`./scripts/design/sky130_gcd/result/pl/`
 
 * report/violation_record.txt ：布局违例的单元
 * report/wirelength_record.txt ：布局的HPWL线长、STWL线长以及长线线长统计
@@ -955,7 +967,7 @@ step 3: 查看GUI
 ```
 **参数配置**<br>
 
-参考"./scripts/sky130/iEDA_config/to_default_config_drv.json"
+参考"./scripts/design/sky130_gcd/iEDA_config/to_default_config_drv.json"
 
 <div><a name="drv_tab"></a>
 
@@ -998,7 +1010,7 @@ step 3: 查看GUI
 ```
 **参数配置**<br>
 
-参考"./scripts/sky130/iEDA_config/to_default_config_hold.json"
+参考"./scripts/design/sky130_gcd/iEDA_config/to_default_config_hold.json"
 
 参数详细信息同[修复DRV违例](#drv_tab)
 
@@ -1156,7 +1168,7 @@ step 3: 拷贝副本为 iEDA_gui
 
 ```bash
 # 拷贝 iEDA 到sky130 目录 
-cp ./bin/iEDA scripts/sky130/iEDA_gui
+cp ./bin/iEDA scripts/design/sky130_gcd/iEDA_gui
 ```
 
 #### 配置设计文件

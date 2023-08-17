@@ -196,7 +196,7 @@ void load(Archive& ar, irt::MTree<T>& mtree, const unsigned int version)
 {
   decltype(mtree.get_root()) tnode = nullptr;
   ar >> tnode;
-  mtree.free();
+  mtree.clear();
   mtree.set_root(tnode);
 }
 

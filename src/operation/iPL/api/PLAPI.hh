@@ -117,7 +117,6 @@ class PLAPI
 
   /*****************************Congestion-driven Placement: START*****************************/
   void runRoutabilityGP();
-  void initCongestionEval();
   std::vector<float> obtainPinDens();
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();

@@ -1,0 +1,4 @@
+*** Error 405: Constraints with coefficients != 1 can't be converted to QUBO
+*** File: e405.zpl Line 2
+*** subto c1: 2 * x[1] + x[2] + x[3] == 1, qubo;
+***                                            ^^^

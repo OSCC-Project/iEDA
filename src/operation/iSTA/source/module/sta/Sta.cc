@@ -44,12 +44,14 @@
 #include "StaDataPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaDump.hh"
+#include "StaFindStartOrEnd.hh"
 #include "StaGraph.hh"
 #include "StaLevelization.hh"
 #include "StaPathData.hh"
 #include "StaReport.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "include/Version.hh"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
@@ -1272,8 +1274,8 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
-
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
@@ -1351,7 +1353,8 @@ unsigned Sta::reportSkew(const char *rpt_file_name,
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
 
   for (auto &report_tbl_skew : report_skew_summary.get_report_path_skews()) {
     std::fprintf(f.get(), "Clock: %s\n", report_tbl_skew->get_tbl_name());
@@ -1388,7 +1391,8 @@ unsigned Sta::reportFromThroughTo(const char *rpt_file_name,
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+               Time::getNowWallTime(), GIT_VERSION);
 
   for (auto &report_tbl_detail : _report_tbl_details) {
     std::fprintf(f.get(), "%s", report_tbl_detail->c_str());
@@ -1984,6 +1988,81 @@ unsigned Sta::updateTiming() {
 
   LOG_INFO << "update timing end";
   return 1;
+}
+
+/**
+ * @brief update the clock timing data for finding the start pins or the end
+ * pins.
+ *
+ * @return unsigned
+ */
+unsigned Sta::updateClockTiming() {
+  LOG_INFO << "update timing start";
+
+  resetSdcConstrain();
+  resetGraphData();
+  resetPathData();
+
+  StaGraph &the_graph = get_graph();
+
+  Vector<std::function<unsigned(StaGraph *)>> funcs = {
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+      StaConstPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+      StaCombLoopCheck(),
+      StaSlewPropagation(),
+      StaDelayPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp)};
+
+  for (auto &func : funcs) {
+    the_graph.exec(func);
+  }
+
+  LOG_INFO << "update timing end";
+  return 1;
+}
+
+/**
+ * @brief Find the start/end pins accordingt to the given end/start pin of the
+ * timing path.
+ *
+ * @param the_vertex
+ * @param is_find_end
+ * @return std::set<std::string>
+ */
+std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
+                                          bool is_find_end) {
+  std::set<std::string> pin_names;
+
+  if (is_find_end) {
+    StaFindEnd find_end;
+    if (the_vertex->is_start() && the_vertex->is_clock()) {
+      the_vertex->exec(find_end);
+    } else {
+      LOG_FATAL << "Not the correct start pin of the timing path";
+    }
+
+    auto &end_vertexes = the_vertex->get_fanout_end_vertexes();
+    for (auto &end_vertex : end_vertexes) {
+      std::string end_pin_name = end_vertex->getName();
+      pin_names.insert(end_pin_name);
+    }
+  } else {
+    StaFindStart find_start;
+    if (the_vertex->is_end()) {
+      the_vertex->exec(find_start);
+    } else {
+      LOG_FATAL << "Not the correct end pin of the timing path";
+    }
+
+    auto &start_vertexes = the_vertex->get_fanin_start_vertexes();
+    for (auto &start_vertex : start_vertexes) {
+      std::string start_pin_name = start_vertex->getName();
+      pin_names.insert(start_pin_name);
+    }
+  }
+
+  return pin_names;
 }
 
 /**

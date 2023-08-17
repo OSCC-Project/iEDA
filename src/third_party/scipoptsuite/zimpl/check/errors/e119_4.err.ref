@@ -1,0 +1,4 @@
+*** Error 119: Symmetric Difference of sets with different dimension
+*** File: e119_4.zpl Line 2
+*** set A:={1..5} symdiff {1..2}*{3..4};
+***                                    ^^^

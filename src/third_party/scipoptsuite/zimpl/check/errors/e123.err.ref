@@ -1,0 +1,4 @@
+*** Error 123: "from" value 1.5 is too big or not an integer
+*** File: e123.zpl Line 2
+*** set A := {1.5 to 5};
+***                   ^^^

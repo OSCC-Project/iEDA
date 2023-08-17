@@ -1,0 +1,4 @@
+*** Error 214: Wrong type of set elements -- wrong read template?
+*** File: e214.zpl Line 2
+*** set A:={read "e214.dat" as "n+"};
+***                                ^^^

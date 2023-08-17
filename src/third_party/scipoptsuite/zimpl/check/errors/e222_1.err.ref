@@ -1,0 +1,4 @@
+*** Error 222: Term inside a then or else constraint not linear
+*** File: e222_1.zpl Line 5
+*** subto c1: vif x == 1 then y * y == 1 end;
+***                                  ^^^

@@ -63,6 +63,7 @@ class DrcAPI
   //////////////////////////
 
   RegionQuery* init();
+  void destroy(RegionQuery* region_query);
   RegionQuery* getLayoutRegion() { return _drc != nullptr ? _drc->get_region_query() : nullptr; }
   bool check(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list);
   void add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect_list);

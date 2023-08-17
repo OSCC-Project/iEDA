@@ -63,6 +63,7 @@ class CongBin
   void add_inst(CongInst* inst) { _inst_list.push_back(inst); }
   void add_net(CongNet* net) { _net_list.push_back(net); }
   void increPinNum() { _pin_num++; }
+  void increNetCong(const double& net_cong) { _net_cong += net_cong; }
   void reset();
 
  private:
@@ -120,6 +121,8 @@ class CongGrid
   int get_bin_size_y() const { return _bin_size_y; }
   int get_routing_layers_number() const { return _routing_layers_number; }
   const std::vector<CongBin*>& get_bin_list() const { return _bin_list; }
+  int get_track_num_h() const { return _track_num_h; }
+  int get_track_num_v() const { return _track_num_v; }
 
   // setter
   void set_lx(const int& lx) { _lx = lx; }
@@ -138,6 +141,7 @@ class CongGrid
 
   void initBins();
   void initBins(idb::IdbLayers* idb_layer);
+  void initTracksNum(idb::IdbLayers* idb_layer);
 
   int getRouteCapacity(const int& bin_size, idb::IdbLayerRouting* idb_layer_routing);
   int getWirePitch(idb::IdbLayerRouting* idb_layer_routing);
@@ -157,6 +161,8 @@ class CongGrid
   int _bin_size_y;
   int _routing_layers_number;
   std::vector<CongBin*> _bin_list;
+  int32_t _track_num_h = 0;
+  int32_t _track_num_v = 0;
 };
 
 }  // namespace eval

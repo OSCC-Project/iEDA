@@ -1,0 +1,29 @@
+# SoPlex version 2.2.0.0
+
+# mode for synchronizing real and rational LP (0 - store only real LP, 1 - auto, 2 - manual)
+# range [-2147483648,2147483647], default 0
+int:syncmode = 1
+
+# mode for reading LP files (0 - floating-point, 1 - rational)
+# range [-2147483648,2147483647], default 0
+int:readmode = 1
+
+# mode for iterative refinement strategy (0 - floating-point solve, 1 - auto, 2 - exact rational solve)
+# range [-2147483648,2147483647], default 1
+int:solvemode = 2
+
+# mode for a posteriori feasibility checks (0 - floating-point check, 1 - auto, 2 - exact rational check)
+# range [-2147483648,2147483647], default 1
+int:checkmode = 2
+
+# primal feasibility tolerance
+# range [0,1], default 1e-06
+real:feastol = 0
+
+# dual feasibility tolerance
+# range [0,1], default 1e-06
+real:opttol = 0
+
+# geometric frequency at which to apply rational reconstruction
+# range [1,1e+100], default 1.2
+real:ratrec_freq = 1.2

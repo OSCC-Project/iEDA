@@ -1,0 +1,4 @@
+*** Error 403: Non linear term can't be converted to QUBO
+*** File: e403.zpl Line 2
+*** subto c1: x[1] * x[2] * x[3] == 1, qubo;
+***                                        ^^^

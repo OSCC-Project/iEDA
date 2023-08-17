@@ -46,6 +46,7 @@ class Synthesis {
   void incrementalInsertNet(ClockTopo &clk_topo);
   void update();
   void place(CtsInstance *inst);
+  void cancelPlace(CtsInstance *inst);
 
  private:
   void printLog();

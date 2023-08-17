@@ -26,29 +26,33 @@ enum class PASourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure
+  kEnclosure,
+  kAccessPoint
 };
 
 struct GetPASourceTypeName
 {
-  std::string operator()(const PASourceType& ta_source_type) const
+  std::string operator()(const PASourceType& pa_source_type) const
   {
-    std::string ta_source_type_name;
-    switch (ta_source_type) {
+    std::string pa_source_type_name;
+    switch (pa_source_type) {
       case PASourceType::kNone:
-        ta_source_type_name = "none";
+        pa_source_type_name = "none";
         break;
       case PASourceType::kBlockAndPin:
-        ta_source_type_name = "block_and_pin";
+        pa_source_type_name = "block_and_pin";
         break;
       case PASourceType::kEnclosure:
-        ta_source_type_name = "enclosure";
+        pa_source_type_name = "enclosure";
+        break;
+      case PASourceType::kAccessPoint:
+        pa_source_type_name = "access_point";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return ta_source_type_name;
+    return pa_source_type_name;
   }
 };
 
