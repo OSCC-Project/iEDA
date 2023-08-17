@@ -21,6 +21,7 @@
 #include "RTU.hpp"
 #include "RTUtil.hpp"
 #include "TARouteStrategy.hpp"
+#include "TASourceType.hpp"
 
 namespace irt {
 
@@ -41,8 +42,13 @@ class TANode : public LayerCoord
 
   // getter
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
+  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_task_map() { return _source_orien_task_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
+  void set_source_orien_task_map(const std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_task_map)
+  {
+    _source_orien_task_map = source_orien_task_map;
+  }
   // function
   TANode* getNeighborNode(Orientation orientation)
   {
@@ -51,6 +57,33 @@ class TANode : public LayerCoord
       neighbor_node = _neighbor_ptr_map[orientation];
     }
     return neighbor_node;
+  }
+  bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
+  {
+    static std::vector<std::pair<TARouteStrategy, TASourceType>> strategy_source_pair_list
+        = {{TARouteStrategy::kIgnoringBlockAndPin, TASourceType::kBlockAndPin},
+           {TARouteStrategy::kIgnoringEnclosure, TASourceType::kEnclosure},
+           {TARouteStrategy::kIgnoringOtherPanel, TASourceType::kOtherPanel},
+           {TARouteStrategy::kIgnoringSelfPanel, TASourceType::kSelfPanel}};
+
+    bool is_obs = false;
+    for (auto [curr_strategy, curr_source] : strategy_source_pair_list) {
+      if (ta_route_strategy == curr_strategy) {
+        return is_obs;
+      }
+      if (!is_obs) {
+        if (RTUtil::exist(_source_orien_task_map, curr_source)) {
+          std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[curr_source];
+          if (RTUtil::exist(orien_task_map, orientation)) {
+            std::set<irt_int>& task_set = orien_task_map[orientation];
+            if (task_set.size() >= 2 || !RTUtil::exist(task_set, task_idx)) {
+              is_obs = true;
+            }
+          }
+        }
+      }
+    }
+    return is_obs;
   }
   double getCost(irt_int task_idx, Orientation orientation) { return 0; }
 #if 1  // astar
@@ -75,6 +108,7 @@ class TANode : public LayerCoord
 
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
+  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_task_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

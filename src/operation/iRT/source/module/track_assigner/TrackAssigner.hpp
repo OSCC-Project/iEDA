@@ -70,19 +70,20 @@ class TrackAssigner
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void outputTADataset(TAModel& ta_model);
-  void buildLayerPanelList(TAModel& ta_model);
-  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void initTANodeMap(TAPanel& ta_panel);
-  void buildNeighborMap(TAPanel& ta_panel);
-  void makeRoutingState(TAPanel& ta_panel);
-  void checkTAPanel(TAPanel& ta_panel);
-  void saveTAPanel(TAPanel& ta_panel);
 #endif
 
 #if 1  // iterative
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
   void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
+  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void initTANodeMap(TAPanel& ta_panel);
+  void buildNeighborMap(TAPanel& ta_panel);
+  void makeRoutingState(TAPanel& ta_panel);
+  void buildSourceOrienTaskMap(TAPanel& ta_panel);
+  void checkTAPanel(TAPanel& ta_panel);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const LayerRect& rect);
+  void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool sortByMultiLevel(TATask& task1, TATask& task2);

@@ -78,19 +78,20 @@ class DetailedRouter
   DRGroup makeDRGroup(DRBox& dr_box, DRPin& dr_pin);
   DRGroup makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
-  void buildDRBoxMap(DRModel& dr_model);
-  void buildDRBox(DRModel& dr_model, DRBox& dr_box);
-  void initLayerNodeMap(DRBox& dr_box);
-  void buildNeighborMap(DRBox& dr_box);
-  void makeRoutingState(DRBox& dr_box);
-  void checkDRBox(DRBox& dr_box);
-  void saveDRBox(DRBox& dr_box);
 #endif
 
 #if 1  // iterative
   void iterative(DRModel& dr_model);
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
+  void buildDRBox(DRModel& dr_model, DRBox& dr_box);
+  void initLayerNodeMap(DRBox& dr_box);
+  void buildNeighborMap(DRBox& dr_box);
+  void makeRoutingState(DRBox& dr_box);
+  void buildSourceOrienTaskMap(DRBox& dr_box);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const LayerRect& rect);
+  void checkDRBox(DRBox& dr_box);
+  void saveDRBox(DRBox& dr_box);
   void resetDRBox(DRModel& dr_model, DRBox& dr_box);
   void sortDRBox(DRModel& dr_model, DRBox& dr_box);
   bool sortByMultiLevel(DRTask& task1, DRTask& task2);

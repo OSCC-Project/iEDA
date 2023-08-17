@@ -148,7 +148,6 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
   updateNetPanelResultMap(dr_model);
   updateNetEnclosureMap(dr_model);
   buildDRTaskList(dr_model);
-  // buildDRBoxMap(dr_model);
 }
 
 void DetailedRouter::buildSchedule(DRModel& dr_model)
@@ -699,24 +698,82 @@ here:
   bounding_box.set_bottom_layer_idx(bottom_layer_idx);
 }
 
-void DetailedRouter::buildDRBoxMap(DRModel& dr_model)
+#endif
+
+#if 1  // iterative
+
+void DetailedRouter::iterative(DRModel& dr_model)
+{
+  irt_int dr_model_max_iter_num = DM_INST.getConfig().dr_model_max_iter_num;
+
+  for (irt_int iter = 1; iter <= dr_model_max_iter_num; iter++) {
+    Monitor iter_monitor;
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", dr_model_max_iter_num, ") ******");
+    dr_model.set_curr_iter(iter);
+    routeDRModel(dr_model);
+    countDRModel(dr_model);
+    reportDRModel(dr_model);
+    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", dr_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
+                  " ******");
+    if (stopDRModel(dr_model)) {
+      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      dr_model.set_curr_iter(-1);
+      break;
+    }
+  }
+}
+
+void DetailedRouter::routeDRModel(DRModel& dr_model)
 {
   Monitor monitor;
-
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
   size_t total_box_num = 0;
   for (std::vector<DRBoxId>& dr_box_id_list : dr_model.get_dr_box_id_comb_list()) {
     Monitor stage_monitor;
 #pragma omp parallel for
     for (DRBoxId& dr_box_id : dr_box_id_list) {
-      DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-      buildDRBox(dr_model, dr_box);
+      iterativeDRBox(dr_model, dr_box_id);
     }
     total_box_num += dr_box_id_list.size();
-    LOG_INST.info(Loc::current(), "Built ", dr_box_id_list.size(), " boxes", stage_monitor.getStatsInfo());
+    LOG_INST.info(Loc::current(), "Routed ", dr_box_id_list.size(), " boxes", stage_monitor.getStatsInfo());
   }
-  LOG_INST.info(Loc::current(), "Built ", total_box_num, " boxes", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes", monitor.getStatsInfo());
+}
+
+void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
+{
+  irt_int dr_box_max_iter_num = DM_INST.getConfig().dr_box_max_iter_num;
+
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+  DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
+  if (dr_box.skipRouting()) {
+    return;
+  }
+  for (irt_int iter = 1; iter <= dr_box_max_iter_num; iter++) {
+    Monitor iter_monitor;
+    if (omp_get_num_threads() == 1) {
+      LOG_INST.info(Loc::current(), "****** Start Box Iteration(", iter, "/", dr_box_max_iter_num, ") ******");
+    }
+    dr_box.set_curr_iter(iter);
+    buildDRBox(dr_model, dr_box);
+    resetDRBox(dr_model, dr_box);
+    routeDRBox(dr_model, dr_box);
+    processDRBox(dr_model, dr_box);
+    countDRBox(dr_model, dr_box);
+    reportDRBox(dr_model, dr_box);
+    freeDRBox(dr_model, dr_box);
+    if (omp_get_num_threads() == 1) {
+      LOG_INST.info(Loc::current(), "****** End Box Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
+                    " ******");
+    }
+    if (stopDRBox(dr_model, dr_box)) {
+      if (omp_get_num_threads() == 1) {
+        LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      }
+      dr_box.set_curr_iter(-1);
+      break;
+    }
+  }
 }
 
 void DetailedRouter::buildDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -724,6 +781,7 @@ void DetailedRouter::buildDRBox(DRModel& dr_model, DRBox& dr_box)
   initLayerNodeMap(dr_box);
   buildNeighborMap(dr_box);
   makeRoutingState(dr_box);
+  buildSourceOrienTaskMap(dr_box);
   checkDRBox(dr_box);
   saveDRBox(dr_box);
 }
@@ -976,6 +1034,44 @@ void DetailedRouter::makeRoutingState(DRBox& dr_box)
   }
 }
 
+void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
+{
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  std::map<irt_int, std::vector<irt_int>> net_task_map;
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
+  }
+  for (DRSourceType dr_source_type :
+       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), true)) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
+        for (const LayerRect& rect : rect_set) {
+          for (auto& [grid_coord, orientation_set] : getGridOrientationMap(dr_box, rect)) {
+            DRNode& dr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
+            std::map<Orientation, std::set<irt_int>>& orien_task_map = dr_node.get_source_orien_task_map()[dr_source_type];
+            for (Orientation orientation : orientation_set) {
+              if (task_idx_list.empty()) {
+                orien_task_map[orientation].insert(-1);
+              } else {
+                orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box, const LayerRect& rect)
+{
+  // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
+  return grid_orientation_map;
+}
+
 void DetailedRouter::checkDRBox(DRBox& dr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -1094,85 +1190,6 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
 
 void DetailedRouter::saveDRBox(DRBox& dr_box)
 {
-}
-
-#endif
-
-#if 1  // iterative
-
-void DetailedRouter::iterative(DRModel& dr_model)
-{
-  irt_int dr_model_max_iter_num = DM_INST.getConfig().dr_model_max_iter_num;
-
-  for (irt_int iter = 1; iter <= dr_model_max_iter_num; iter++) {
-    Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", iter, "/", dr_model_max_iter_num, ") ******");
-    dr_model.set_curr_iter(iter);
-    routeDRModel(dr_model);
-    countDRModel(dr_model);
-    reportDRModel(dr_model);
-    LOG_INST.info(Loc::current(), "****** End Model Iteration(", iter, "/", dr_model_max_iter_num, ")", iter_monitor.getStatsInfo(),
-                  " ******");
-    if (stopDRModel(dr_model)) {
-      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
-      dr_model.set_curr_iter(-1);
-      break;
-    }
-  }
-}
-
-void DetailedRouter::routeDRModel(DRModel& dr_model)
-{
-  Monitor monitor;
-
-  size_t total_box_num = 0;
-  for (std::vector<DRBoxId>& dr_box_id_list : dr_model.get_dr_box_id_comb_list()) {
-    Monitor stage_monitor;
-#pragma omp parallel for
-    for (DRBoxId& dr_box_id : dr_box_id_list) {
-      iterativeDRBox(dr_model, dr_box_id);
-    }
-    total_box_num += dr_box_id_list.size();
-    LOG_INST.info(Loc::current(), "Routed ", dr_box_id_list.size(), " boxes", stage_monitor.getStatsInfo());
-  }
-  LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes", monitor.getStatsInfo());
-}
-
-void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
-{
-  irt_int dr_box_max_iter_num = DM_INST.getConfig().dr_box_max_iter_num;
-
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-  DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-  if (dr_box.skipRouting()) {
-    return;
-  }
-  for (irt_int iter = 1; iter <= dr_box_max_iter_num; iter++) {
-    Monitor iter_monitor;
-    if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** Start Box Iteration(", iter, "/", dr_box_max_iter_num, ") ******");
-    }
-    dr_box.set_curr_iter(iter);
-    buildDRBox(dr_model, dr_box);
-    sortDRBox(dr_model, dr_box);
-    resetDRBox(dr_model, dr_box);
-    routeDRBox(dr_model, dr_box);
-    processDRBox(dr_model, dr_box);
-    countDRBox(dr_model, dr_box);
-    reportDRBox(dr_model, dr_box);
-    freeDRBox(dr_model, dr_box);
-    if (omp_get_num_threads() == 1) {
-      LOG_INST.info(Loc::current(), "****** End Box Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
-                    " ******");
-    }
-    if (stopDRBox(dr_model, dr_box)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
-      }
-      dr_box.set_curr_iter(-1);
-      break;
-    }
-  }
 }
 
 void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -1337,9 +1354,8 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
     std::vector<DRRouteStrategy> strategy_list
-        = {DRRouteStrategy::kFullyConsider,      DRRouteStrategy::kIgnoringSelfTask,  DRRouteStrategy::kIgnoringSelfBox,
-           DRRouteStrategy::kIgnoringOtherBox,   DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel,
-           DRRouteStrategy::kIgnoringBlockAndPin};
+        = {DRRouteStrategy::kFullyConsider,     DRRouteStrategy::kIgnoringSelfBox,    DRRouteStrategy::kIgnoringOtherBox,
+           DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel, DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_box, dr_route_strategy);
     }
@@ -1505,49 +1521,30 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
 
 bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentListByNode(start_node);
-  routing_segment_list.emplace_back(*start_node, *end_node);
+  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
+  if (orientation == Orientation::kNone) {
+    return true;
+  }
+  Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
 
-  std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(dr_box.get_curr_net_idx(), routing_segment_list);
+  DRNode* pre_node = nullptr;
+  DRNode* curr_node = start_node;
 
-  bool pass_checking = true;
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringBlockAndPin) {
-    return pass_checking;
+  while (curr_node != end_node) {
+    pre_node = curr_node;
+    curr_node = pre_node->getNeighborNode(orientation);
+
+    if (curr_node == nullptr) {
+      return false;
+    }
+    if (pre_node->isOBS(dr_box.get_curr_task_idx(), orientation, dr_box.get_dr_route_strategy())) {
+      return false;
+    }
+    if (curr_node->isOBS(dr_box.get_curr_task_idx(), opposite_orientation, dr_box.get_dr_route_strategy())) {
+      return false;
+    }
   }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kBlockAndPin), drc_rect_list);
-  }
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringKnownPanel) {
-    return pass_checking;
-  }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kKnownPanel), drc_rect_list);
-  }
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringEnclosure) {
-    return pass_checking;
-  }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kEnclosure), drc_rect_list);
-  }
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringOtherBox) {
-    return pass_checking;
-  }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kOtherBox), drc_rect_list);
-  }
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfBox) {
-    return pass_checking;
-  }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(dr_box.getRegionQuery(DRSourceType::kSelfBox), drc_rect_list);
-  }
-  if (dr_box.get_dr_route_strategy() == DRRouteStrategy::kIgnoringSelfTask) {
-    return pass_checking;
-  }
-  if (pass_checking) {
-    pass_checking = !DC_INST.hasViolation(drc_rect_list);
-  }
-  return pass_checking;
+  return true;
 }
 
 std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRNode* node)

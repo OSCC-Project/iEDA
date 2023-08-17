@@ -26,7 +26,6 @@ enum class DRRouteStrategy
 {
   kNone,
   kFullyConsider,
-  kIgnoringSelfTask,
   kIgnoringSelfBox,
   kIgnoringOtherBox,
   kIgnoringEnclosure,
@@ -45,9 +44,6 @@ struct GetDRRouteStrategyName
         break;
       case DRRouteStrategy::kFullyConsider:
         dr_route_strategy_name = "fully_consider";
-        break;
-      case DRRouteStrategy::kIgnoringSelfTask:
-        dr_route_strategy_name = "ignoring_self_task";
         break;
       case DRRouteStrategy::kIgnoringSelfBox:
         dr_route_strategy_name = "ignoring_self_box";
