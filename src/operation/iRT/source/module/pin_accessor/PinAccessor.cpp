@@ -241,7 +241,9 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
 {
   initAccessPointList(pa_model, pa_net);
   mergeAccessPointList(pa_net);
-  selectAccessPointList(pa_net);
+  selectAccessPointByType(pa_net);
+  updateAccessGridCoord(pa_net);
+  selectAccessPointByGCell(pa_net);
   eliminateDRCViolation(pa_model, pa_net);
   checkAccessPointList(pa_net);
 }
@@ -451,15 +453,7 @@ void PinAccessor::mergeAccessPointList(PANet& pa_net)
   }
 }
 
-void PinAccessor::selectAccessPointList(PANet& pa_net)
-{
-  selectAccessPointType(pa_net);
-  buildBoundingBox(pa_net);
-  buildAccessPointList(pa_net);
-  selectGCellAccessPoint(pa_net);
-}
-
-void PinAccessor::selectAccessPointType(PANet& pa_net)
+void PinAccessor::selectAccessPointByType(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
@@ -483,7 +477,13 @@ void PinAccessor::selectAccessPointType(PANet& pa_net)
   }
 }
 
-void PinAccessor::buildBoundingBox(PANet& pa_net)
+void PinAccessor::updateAccessGridCoord(PANet& pa_net)
+{
+  updateBoundingBox(pa_net);
+  updateAccessGrid(pa_net);
+}
+
+void PinAccessor::updateBoundingBox(PANet& pa_net)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
@@ -493,12 +493,12 @@ void PinAccessor::buildBoundingBox(PANet& pa_net)
       coord_list.push_back(access_point.get_real_coord());
     }
   }
-  EXTPlanarRect& bounding_box = pa_net.get_bounding_box();
+  BoundingBox& bounding_box = pa_net.get_bounding_box();
   bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
   bounding_box.set_grid_rect(RTUtil::getOpenGridRect(bounding_box.get_real_rect(), gcell_axis));
 }
 
-void PinAccessor::buildAccessPointList(PANet& pa_net)
+void PinAccessor::updateAccessGrid(PANet& pa_net)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   BoundingBox& bounding_box = pa_net.get_bounding_box();
@@ -510,7 +510,7 @@ void PinAccessor::buildAccessPointList(PANet& pa_net)
   }
 }
 
-void PinAccessor::selectGCellAccessPoint(PANet& pa_net)
+void PinAccessor::selectAccessPointByGCell(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
@@ -630,8 +630,10 @@ void PinAccessor::eliminateViaConflict(PAModel& pa_model)
 
 #pragma omp parallel for
   for (size_t i = 0; i < pa_net_list.size(); i++) {
-    selectByViaNumber(pa_net_list[i], pa_model);
-    selectByNetDistance(pa_net_list[i]);
+    PANet& pa_net = pa_net_list[i];
+    selectByViaNumber(pa_net, pa_model);
+    selectByNetDistance(pa_net);
+    checkAccessPointNum(pa_net);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
       LOG_INST.info(Loc::current(), "Eliminate conflict ", (i + 1), " nets", stage_monitor.getStatsInfo());
     }
@@ -692,6 +694,15 @@ void PinAccessor::selectByNetDistance(PANet& pa_net)
   }
 }
 
+void PinAccessor::checkAccessPointNum(PANet& pa_net)
+{
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    if (pa_pin.get_access_point_list().size() != 1) {
+      LOG_INST.warning(Loc::current(), "The number of pin_access_point_list is not 1, which may affect optimization!");
+    }
+  }
+}
+
 void PinAccessor::processPAModel(PAModel& pa_model)
 {
   updateAccessPointList(pa_model);
@@ -702,13 +713,12 @@ void PinAccessor::updateAccessPointList(PAModel& pa_model)
 {
 #pragma omp parallel for
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    buildBoundingBox(pa_net);
-    buildAccessPointList(pa_net);
-    buildDrivingPin(pa_net);
+    updateAccessGridCoord(pa_net);
+    updateDrivingPin(pa_net);
   }
 }
 
-void PinAccessor::buildDrivingPin(PANet& pa_net)
+void PinAccessor::updateDrivingPin(PANet& pa_net)
 {
   PAPin& pa_driving_pin = pa_net.get_pa_driving_pin();
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -947,4 +957,5 @@ void PinAccessor::update(PAModel& pa_model)
 }
 
 #endif
+
 }  // namespace irt

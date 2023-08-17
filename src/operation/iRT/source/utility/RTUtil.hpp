@@ -2401,7 +2401,14 @@ class RTUtil
   //   return layer_idx_list;
   // }
 
-  // 当前层在可布线层内，则只向上打通孔，在最高可布线层，则往下打通孔；当前层布线层外，打通孔到最近的可布线层。
+  /**
+   * curr_layer_idx在可布线层内
+   *    如果不是最高可布线层，向上打孔
+   *    是最高可布线层，向下打孔
+   *
+   * curr_layer_idx在可布线层外
+   *    打孔到最近的可布线层
+   */
   static std::vector<irt_int> getReservedViaBelowLayerIdxList(irt_int curr_layer_idx, irt_int bottom_layer_idx, irt_int top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {

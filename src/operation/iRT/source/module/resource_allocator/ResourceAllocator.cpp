@@ -284,7 +284,7 @@ void ResourceAllocator::buildRelation(RAModel& ra_model)
     if (ra_net.get_net_idx() != ra_net_idx) {
       LOG_INST.error(Loc::current(), "The net_list be reordered!");
     }
-    EXTPlanarRect& bounding_box = ra_net.get_bounding_box();
+    BoundingBox& bounding_box = ra_net.get_bounding_box();
     for (irt_int x = bounding_box.get_grid_lb_x(); x <= bounding_box.get_grid_rt_x(); x++) {
       for (irt_int y = bounding_box.get_grid_lb_y(); y <= bounding_box.get_grid_rt_y(); y++) {
         irt_int ra_gcell_idx = x * die.getYSize() + y;
@@ -632,7 +632,7 @@ void ResourceAllocator::processRAModel(RAModel& ra_model)
   std::vector<double>& result_list = ra_model.get_result_list();
 
   for (RANet& ra_net : ra_net_list) {
-    EXTPlanarRect& bounding_box = ra_net.get_bounding_box();
+    BoundingBox& bounding_box = ra_net.get_bounding_box();
     irt_int grid_lb_x = bounding_box.get_grid_lb_x();
     irt_int grid_lb_y = bounding_box.get_grid_lb_y();
 

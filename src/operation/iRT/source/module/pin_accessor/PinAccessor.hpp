@@ -71,20 +71,21 @@ class PinAccessor
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
-  void selectAccessPointList(PANet& pa_net);
-  void selectAccessPointType(PANet& pa_net);
-  void buildBoundingBox(PANet& pa_net);
-  void buildAccessPointList(PANet& pa_net);
-  void selectGCellAccessPoint(PANet& pa_net);
+  void selectAccessPointByType(PANet& pa_net);
+  void updateAccessGridCoord(PANet& pa_net);
+  void updateBoundingBox(PANet& pa_net);
+  void updateAccessGrid(PANet& pa_net);
+  void selectAccessPointByGCell(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
   void checkAccessPointList(PANet& pa_net);
   void updateNetEnclosureMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);
+  void checkAccessPointNum(PANet& pa_net);
   void processPAModel(PAModel& pa_model);
   void updateAccessPointList(PAModel& pa_model);
-  void buildDrivingPin(PANet& pa_net);
+  void updateDrivingPin(PANet& pa_net);
   void updateNetAccessPointMap(PAModel& pa_model);
   void countPAModel(PAModel& pa_model);
   void reportPAModel(PAModel& pa_model);
