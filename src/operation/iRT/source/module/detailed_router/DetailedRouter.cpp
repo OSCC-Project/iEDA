@@ -1049,6 +1049,12 @@ bool DetailedRouter::sortByMultiLevel(DRTask& task1, DRTask& task2)
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
+  sort_status = sortByClockPriority(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
   sort_status = sortByRoutingVolumeASC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
@@ -1073,6 +1079,21 @@ SortStatus DetailedRouter::sortByDRTaskType(DRTask& task1, DRTask& task2)
   if (task1_dr_task_type == DRTaskType::kPanel && task2_dr_task_type != DRTaskType::kPanel) {
     return SortStatus::kTrue;
   } else if (task1_dr_task_type != DRTaskType::kPanel && task2_dr_task_type == DRTaskType::kPanel) {
+    return SortStatus::kFalse;
+  } else {
+    return SortStatus::kEqual;
+  }
+}
+
+// 时钟线网优先
+SortStatus DetailedRouter::sortByClockPriority(DRTask& task1, DRTask& task2)
+{
+  ConnectType task1_connect_type = task1.get_connect_type();
+  ConnectType task2_connect_type = task2.get_connect_type();
+
+  if (task1_connect_type == ConnectType::kClock && task2_connect_type != ConnectType::kClock) {
+    return SortStatus::kTrue;
+  } else if (task1_connect_type != ConnectType::kClock && task2_connect_type == ConnectType::kClock) {
     return SortStatus::kFalse;
   } else {
     return SortStatus::kEqual;

@@ -86,6 +86,7 @@ class TrackAssigner
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool sortByMultiLevel(TATask& task1, TATask& task2);
+  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
   SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);

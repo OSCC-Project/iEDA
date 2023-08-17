@@ -859,6 +859,12 @@ bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
 {
   SortStatus sort_status = SortStatus::kNone;
 
+  sort_status = sortByClockPriority(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
   sort_status = sortByLengthWidthRatioDESC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
@@ -866,6 +872,21 @@ bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
     return false;
   }
   return false;
+}
+
+// 时钟线网优先
+SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
+{
+  ConnectType task1_connect_type = task1.get_connect_type();
+  ConnectType task2_connect_type = task2.get_connect_type();
+
+  if (task1_connect_type == ConnectType::kClock && task2_connect_type != ConnectType::kClock) {
+    return SortStatus::kTrue;
+  } else if (task1_connect_type != ConnectType::kClock && task2_connect_type == ConnectType::kClock) {
+    return SortStatus::kFalse;
+  } else {
+    return SortStatus::kEqual;
+  }
 }
 
 // 长宽比 降序

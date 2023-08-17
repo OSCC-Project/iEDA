@@ -95,6 +95,7 @@ class DetailedRouter
   void sortDRBox(DRModel& dr_model, DRBox& dr_box);
   bool sortByMultiLevel(DRTask& task1, DRTask& task2);
   SortStatus sortByDRTaskType(DRTask& task1, DRTask& task2);
+  SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
   SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
   void routeDRBox(DRModel& dr_model, DRBox& dr_box);

@@ -609,6 +609,12 @@ bool GlobalRouter::sortByMultiLevel(GRNet& net1, GRNet& net2)
 {
   SortStatus sort_status = SortStatus::kNone;
 
+  sort_status = sortByClockPriority(net1, net2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
   sort_status = sortByRoutingAreaASC(net1, net2);
   if (sort_status == SortStatus::kTrue) {
     return true;
@@ -628,6 +634,21 @@ bool GlobalRouter::sortByMultiLevel(GRNet& net1, GRNet& net2)
     return false;
   }
   return false;
+}
+
+// 时钟线网优先
+SortStatus GlobalRouter::sortByClockPriority(GRNet& net1, GRNet& net2)
+{
+  ConnectType net1_connect_type = net1.get_connect_type();
+  ConnectType net2_connect_type = net2.get_connect_type();
+
+  if (net1_connect_type == ConnectType::kClock && net2_connect_type != ConnectType::kClock) {
+    return SortStatus::kTrue;
+  } else if (net1_connect_type != ConnectType::kClock && net2_connect_type == ConnectType::kClock) {
+    return SortStatus::kFalse;
+  } else {
+    return SortStatus::kEqual;
+  }
 }
 
 // RoutingArea 升序
