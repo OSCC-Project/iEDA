@@ -47,7 +47,7 @@ namespace ipl {
 
 #define PRINT_LONG_NET 0
 #define PRINT_COORDI 0
-#define PLOT_IMAGE 1
+#define PLOT_IMAGE 0
 #define RECORD_ITER_INFO 0
 #define PRINT_DENSITY_MAP 0
 

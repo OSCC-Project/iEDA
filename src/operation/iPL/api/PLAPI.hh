@@ -61,15 +61,17 @@ class PLAPI
 
   void reportPLInfo();
   void reportTopoInfo();
+  void reportWLInfo(std::ofstream& feed);
   void reportSTWLInfo(std::ofstream& feed);
   void reportHPWLInfo(std::ofstream& feed);
   void reportLongNetInfo(std::ofstream& feed);
-  void reportLayoutInfo(std::ofstream& feed);
-  void reportPeakBinDensity(std::ofstream& feed);
-  void reportOverlapInfo(std::ofstream& feed);
+  void reportViolationInfo(std::ofstream& feed);
+  void reportBinDensity(std::ofstream& feed);
+  int32_t reportOverlapInfo(std::ofstream& feed);
   void reportLayoutWhiteInfo();
   void reportTimingInfo(std::ofstream& feed);
   void reportCongestionInfo(std::ofstream& feed);
+  void reportPLBaseInfo(std::ofstream& feed);
 
   bool isSTAStarted();
   bool isPlacerDBStarted();
