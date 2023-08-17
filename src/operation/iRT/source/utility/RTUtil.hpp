@@ -1814,6 +1814,24 @@ class RTUtil
     return scale_list;
   }
 
+  // 查找curr_scale左右邻居，若curr_scale在list中，则返回本身；否则返回左右邻居；
+  static std::pair<irt_int, irt_int> getAdjacentScale(irt_int curr_scale, std::vector<irt_int>& scale_list)
+  {
+    irt_int begin_scale = curr_scale;
+    irt_int end_scale = curr_scale;
+    if (std::find(scale_list.begin(), scale_list.end(), curr_scale) == scale_list.end()) {
+      if (curr_scale < scale_list.front()) {
+        end_scale = scale_list.front();
+      } else if (curr_scale > scale_list.back()) {
+        begin_scale = scale_list.back();
+      } else {
+        auto upper_iter = std::upper_bound(scale_list.begin(), scale_list.end(), curr_scale);
+        begin_scale = *(upper_iter - 1);
+        end_scale = *upper_iter;
+      }
+    }
+    return {begin_scale, end_scale};
+  }
 #endif
 
 #if 1  // irt数据结构工具函数
@@ -2391,13 +2409,13 @@ class RTUtil
     }
     std::vector<irt_int> reserved_via_below_layer_idx_list;
     if (curr_layer_idx <= bottom_layer_idx) {
-      for(int layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
+      for (int layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
         reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
-    } else if(bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
+    } else if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
       reserved_via_below_layer_idx_list.push_back(curr_layer_idx);
     } else if (top_layer_idx <= curr_layer_idx) {
-      for(irt_int layer_idx = std::max(bottom_layer_idx, top_layer_idx - 1); layer_idx < curr_layer_idx; layer_idx++) {
+      for (irt_int layer_idx = std::max(bottom_layer_idx, top_layer_idx - 1); layer_idx < curr_layer_idx; layer_idx++) {
         reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
     }
