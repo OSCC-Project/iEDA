@@ -23,6 +23,7 @@
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
+#include "DRTaskType.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -90,11 +91,12 @@ class DetailedRouter
   void iterative(DRModel& dr_model);
   void routeDRModel(DRModel& dr_model);
   void iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id);
+  void resetDRBox(DRModel& dr_model, DRBox& dr_box);
   void sortDRBox(DRModel& dr_model, DRBox& dr_box);
   bool sortByMultiLevel(DRTask& task1, DRTask& task2);
+  SortStatus sortByDRTaskType(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
   SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
-  void resetDRBox(DRModel& dr_model, DRBox& dr_box);
   void routeDRBox(DRModel& dr_model, DRBox& dr_box);
   void routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task);
   void initSingleTask(DRBox& dr_box, DRTask& dr_task);

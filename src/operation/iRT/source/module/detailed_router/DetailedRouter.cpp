@@ -552,6 +552,12 @@ void DetailedRouter::buildDRTask(DRModel& dr_model, DRNet& dr_net)
 
 std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRModel& dr_model, DRNet& dr_net)
 {
+  /**
+   * 构建
+   * DRTaskType _dr_task_type = DRTaskType::kNone;
+   * std::vector<DRGroup> _dr_group_list;
+   * std::map<LayerCoord, double, CmpLayerCoordByXASC> _coord_cost_map;
+   */
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   MTree<RTNode>& dr_result_tree = dr_net.get_dr_result_tree();
   // dr_ta_list_map
@@ -571,6 +577,25 @@ std::map<TNode<RTNode>*, DRTask> DetailedRouter::makeDRNodeTaskMap(DRModel& dr_m
   }
   // dr_node_task_map
   std::map<TNode<RTNode>*, DRTask> dr_node_task_map;
+  for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
+    DRTaskType dr_task_type = DRTaskType::kBox;
+    // 没有pin
+    if (dr_node_node->value().get_pin_idx_set().empty()) {
+      bool is_single_layer = true;
+      irt_int layer_idx = ta_node_node_list.front()->value().get_first_guide().get_layer_idx();
+      for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
+        if (layer_idx != ta_node_node->value().get_first_guide().get_layer_idx()) {
+          is_single_layer = false;
+          break;
+        }
+      }
+      // 并且是单层
+      if (is_single_layer) {
+        dr_task_type = DRTaskType::kPanel;
+      }
+    }
+    dr_node_task_map[dr_node_node].set_dr_task_type(dr_task_type);
+  }
   for (auto& [dr_node_node, ta_node_node_list] : dr_ta_list_map) {
     PlanarCoord& grid_coord = dr_node_node->value().get_first_guide().get_grid_coord();
     DRBox& dr_box = dr_box_map[grid_coord.get_x()][grid_coord.get_y()];
@@ -868,6 +893,9 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
     if (dr_task.get_origin_net_idx() < 0) {
       LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
     }
+    if (dr_task.get_dr_task_type() == DRTaskType::kNone) {
+      LOG_INST.error(Loc::current(), "The dr_task_type is none!");
+    }
     for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
       if (dr_group.get_coord_direction_map().empty()) {
         LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
@@ -972,6 +1000,27 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
   }
 }
 
+void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
+{
+  if (dr_box.get_curr_iter() == 1) {
+    sortDRBox(dr_model, dr_box);
+  } else {
+    for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+      std::srand(std::time(NULL));
+      if (rand() % 2) {
+        continue;
+      }
+      // 将env中的布线结果清空
+      for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
+        updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kUnknownBox, dr_box.get_dr_box_id(), drc_rect);
+      }
+      // 清空routing_tree
+      dr_task.get_routing_tree().clear();
+      dr_task.set_routing_state(RoutingState::kUnrouted);
+    }
+  }
+}
+
 void DetailedRouter::sortDRBox(DRModel& dr_model, DRBox& dr_box)
 {
   if (dr_box.get_curr_iter() != 1) {
@@ -994,6 +1043,12 @@ bool DetailedRouter::sortByMultiLevel(DRTask& task1, DRTask& task2)
 {
   SortStatus sort_status = SortStatus::kNone;
 
+  sort_status = sortByDRTaskType(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
   sort_status = sortByRoutingVolumeASC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
@@ -1007,6 +1062,21 @@ bool DetailedRouter::sortByMultiLevel(DRTask& task1, DRTask& task2)
     return false;
   }
   return false;
+}
+
+// DRTaskType 先布由panel类型的
+SortStatus DetailedRouter::sortByDRTaskType(DRTask& task1, DRTask& task2)
+{
+  DRTaskType task1_dr_task_type = task1.get_dr_task_type();
+  DRTaskType task2_dr_task_type = task2.get_dr_task_type();
+
+  if (task1_dr_task_type == DRTaskType::kPanel && task2_dr_task_type != DRTaskType::kPanel) {
+    return SortStatus::kTrue;
+  } else if (task1_dr_task_type != DRTaskType::kPanel && task2_dr_task_type == DRTaskType::kPanel) {
+    return SortStatus::kFalse;
+  } else {
+    return SortStatus::kEqual;
+  }
 }
 
 // RoutingArea 升序
@@ -1040,26 +1110,6 @@ SortStatus DetailedRouter::sortByPinNumDESC(DRTask& task1, DRTask& task2)
     return SortStatus::kEqual;
   } else {
     return SortStatus::kFalse;
-  }
-}
-
-void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
-{
-  if (dr_box.get_curr_iter() == 1) {
-    return;
-  }
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    std::srand(std::time(NULL));
-    if (rand() % 2) {
-      continue;
-    }
-    // 将env中的布线结果清空
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-      updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kUnknownBox, dr_box.get_dr_box_id(), drc_rect);
-    }
-    // 清空routing_tree
-    dr_task.get_routing_tree().clear();
-    dr_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
