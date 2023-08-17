@@ -94,7 +94,7 @@ void EvalAPI::reportWirelength(const string& plot_path, const string& output_fil
 
 /******************************Congestion Eval: START******************************/
 
-void EvalAPI::initCongDataFromIDB(const int& bin_cnt_x, const int& bin_cnt_y)
+void EvalAPI::initCongDataFromIDB(const int bin_cnt_x, const int bin_cnt_y)
 {
   // initialize cong_grid
   _congestion_eval_inst->initCongGrid(bin_cnt_x, bin_cnt_y);
@@ -148,9 +148,9 @@ int32_t EvalAPI::evalNetNum(NET_CONNECT_TYPE net_type)
   return _congestion_eval_inst->evalNetNum(net_type);
 }
 
-int32_t EvalAPI::evalPinNum()
+int32_t EvalAPI::evalPinNum(INSTANCE_STATUS inst_status)
 {
-  return _congestion_eval_inst->evalPinTotalNum();
+  return _congestion_eval_inst->evalPinTotalNum(inst_status);
 }
 
 int32_t EvalAPI::evalRoutingLayerNum()
@@ -186,6 +186,47 @@ void EvalAPI::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
 void EvalAPI::plotTileValue(const string& plot_path, const string& output_file_name)
 {
   _congestion_eval_inst->plotTileValue(plot_path, output_file_name);
+}
+
+float EvalAPI::evalAreaUtils(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalAreaUtils(inst_status);
+}
+
+int64_t EvalAPI::evalArea(INSTANCE_STATUS inst_status)
+{
+  return _congestion_eval_inst->evalArea(inst_status);
+}
+
+// reference: “RTL-MP: Toward Practical, Human-Quality Chip Planning and Macro Placement”
+vector<int64_t> EvalAPI::evalMacroPeriBias()
+{
+  return _congestion_eval_inst->evalMacroPeriBias();
+}
+
+int32_t EvalAPI::evalRmTrackNum()
+{
+  return _congestion_eval_inst->evalRmTrackNum();
+}
+
+int32_t EvalAPI::evalOfTrackNum()
+{
+  return _congestion_eval_inst->evalOfTrackNum();
+}
+
+int32_t EvalAPI::evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name)
+{
+  return _congestion_eval_inst->evalMacroGuidance(cx, cy, width, height, name);
+}
+
+double EvalAPI::evalMacroChannelUtil(float dist_ratio)
+{
+  return _congestion_eval_inst->evalMacroChannelUtil(dist_ratio);
+}
+
+double EvalAPI::evalMacroChannelPinRatio(float dist_ratio)
+{
+  return _congestion_eval_inst->evalMacroChannelPinRatio(dist_ratio);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

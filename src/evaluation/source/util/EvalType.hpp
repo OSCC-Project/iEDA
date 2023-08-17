@@ -17,6 +17,10 @@
 #ifndef SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
 #define SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace eval {
 enum class NET_TYPE
 {
@@ -53,11 +57,11 @@ enum class INSTANCE_LOC_TYPE
 
 enum class INSTANCE_STATUS
 {
-  kNone,
-  kFixed,
-  kCover,
-  kPlaced,
-  kUnplaced,
+  kNone = 0,
+  kFixed = 1,
+  kCover = 2,
+  kPlaced = 3,
+  kUnplaced = 4,
   kMax,
 };
 
@@ -99,6 +103,97 @@ enum class NET_CONNECT_TYPE
   kClock,
   kPower,
   kGround
+};
+
+class EvalPropertyMap
+{
+ public:
+  EvalPropertyMap()
+  {
+    _rudy_type_list
+        = {{RUDY_TYPE::kNone, ""}, {RUDY_TYPE::kRUDY, "rudy"}, {RUDY_TYPE::kPinRUDY, "pin_rudy"}, {RUDY_TYPE::kLUTRUDY, "lut_rudy"}};
+
+    _instance_status_list = {{INSTANCE_STATUS::kNone, ""},
+                             {INSTANCE_STATUS::kFixed, "fixed"},
+                             {INSTANCE_STATUS::kCover, "cover"},
+                             {INSTANCE_STATUS::kPlaced, "placed"},
+                             {INSTANCE_STATUS::kUnplaced, "unplaced"}};
+
+    _congestion_type_list = {{CONGESTION_TYPE::kNone, ""},
+                             {CONGESTION_TYPE::kInstDens, "instance_density"},
+                             {CONGESTION_TYPE::kPinDens, "pin_density"},
+                             {CONGESTION_TYPE::kNetCong, "net_congestion"},
+                             {CONGESTION_TYPE::kGRCong, "gr_congestion"}};
+  }
+  ~EvalPropertyMap() = default;
+
+  INSTANCE_STATUS get_instance_status(std::string status_name)
+  {
+    auto result = std::find_if(_instance_status_list.begin(), _instance_status_list.end(),
+                               [status_name](const auto& iter) { return iter.second == status_name; });
+
+    if (result == _instance_status_list.end()) {
+      return INSTANCE_STATUS::kNone;
+    }
+
+    return result->first;
+  }
+  std::string get_instance_status_str(INSTANCE_STATUS status)
+  {
+    auto iter = _instance_status_list.find(status);
+    if (iter == _instance_status_list.end()) {
+      return std::string("");
+    }
+
+    return iter->second;
+  }
+
+  CONGESTION_TYPE get_congestion_type(std::string congestion_type_name)
+  {
+    auto result = std::find_if(_congestion_type_list.begin(), _congestion_type_list.end(),
+                               [congestion_type_name](const auto& iter) { return iter.second == congestion_type_name; });
+
+    if (result == _congestion_type_list.end()) {
+      return CONGESTION_TYPE::kNone;
+    }
+
+    return result->first;
+  }
+  std::string get_congestion_type_str(CONGESTION_TYPE congestion_type)
+  {
+    auto iter = _congestion_type_list.find(congestion_type);
+    if (iter == _congestion_type_list.end()) {
+      return std::string("");
+    }
+
+    return iter->second;
+  }
+
+  RUDY_TYPE get_rudy_type(std::string rudy_type_name)
+  {
+    auto result = std::find_if(_rudy_type_list.begin(), _rudy_type_list.end(),
+                               [rudy_type_name](const auto& iter) { return iter.second == rudy_type_name; });
+
+    if (result == _rudy_type_list.end()) {
+      return RUDY_TYPE::kNone;
+    }
+
+    return result->first;
+  }
+  std::string get_rudy_type_str(RUDY_TYPE rudy_type)
+  {
+    auto iter = _rudy_type_list.find(rudy_type);
+    if (iter == _rudy_type_list.end()) {
+      return std::string("");
+    }
+
+    return iter->second;
+  }
+
+ private:
+  std::map<RUDY_TYPE, std::string> _rudy_type_list;
+  std::map<INSTANCE_STATUS, std::string> _instance_status_list;
+  std::map<CONGESTION_TYPE, std::string> _congestion_type_list;
 };
 
 }  // namespace eval
