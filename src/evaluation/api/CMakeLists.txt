@@ -11,7 +11,7 @@ add_library(eval_api
 )
 
 target_link_libraries(eval_api
-    PRIVATE
+    PUBLIC
         eval_data
         eval_source
         eval_wirelength

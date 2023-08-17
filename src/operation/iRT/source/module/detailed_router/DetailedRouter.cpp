@@ -756,6 +756,7 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
 
 void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 {
+#if 1
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
@@ -792,6 +793,180 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
       }
     }
   }
+#else
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  PlanarCoord& real_lb = dr_box.get_base_region().get_lb();
+  PlanarCoord& real_rt = dr_box.get_base_region().get_rt();
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), box_track_axis.get_x_grid_list());
+  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), box_track_axis.get_y_grid_list());
+
+  std::map<irt_int, std::vector<irt_int>> layer_grid_x_map;
+  std::map<irt_int, std::vector<irt_int>> layer_grid_y_map;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    irt_int layer_idx = routing_layer.get_layer_idx();
+    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+      continue;
+    }
+    std::vector<irt_int> x_scale_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), routing_layer.getXTrackGridList());
+    std::set<irt_int> x_scale_set(x_scale_list.begin(), x_scale_list.end());
+    for (irt_int x = 0; x < static_cast<irt_int>(x_list.size()); x++) {
+      if (!RTUtil::exist(x_scale_set, x_list[x])) {
+        continue;
+      }
+      layer_grid_x_map[layer_idx].push_back(x);
+    }
+    std::vector<irt_int> y_scale_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), routing_layer.getYTrackGridList());
+    std::set<irt_int> y_scale_set(y_scale_list.begin(), y_scale_list.end());
+    for (irt_int y = 0; y < static_cast<irt_int>(y_list.size()); y++) {
+      if (!RTUtil::exist(y_scale_set, y_list[y])) {
+        continue;
+      }
+      layer_grid_y_map[layer_idx].push_back(y);
+    }
+  }
+
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  // 在可布线层，为本层track建立平面连接
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    irt_int layer_idx = routing_layer.get_layer_idx();
+    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+      continue;
+    }
+    GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
+    for (irt_int x : layer_grid_x_map[layer_idx]) {
+      for (irt_int y = 0; y < dr_node_map.get_y_size(); y++) {
+        std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+        if (y != 0) {
+          neighbor_ptr_map[Orientation::kSouth] = &dr_node_map[x][y - 1];
+        }
+        if (y != (dr_node_map.get_y_size() - 1)) {
+          neighbor_ptr_map[Orientation::kNorth] = &dr_node_map[x][y + 1];
+        }
+      }
+    }
+    for (irt_int y : layer_grid_y_map[layer_idx]) {
+      for (irt_int x = 0; x < dr_node_map.get_x_size(); x++) {
+        std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+        if (x != 0) {
+          neighbor_ptr_map[Orientation::kWest] = &dr_node_map[x - 1][y];
+        }
+        if (x != (dr_node_map.get_x_size() - 1)) {
+          neighbor_ptr_map[Orientation::kEast] = &dr_node_map[x + 1][y];
+        }
+      }
+    }
+  }
+  // 在可布线层，为相邻层track的交点建立空间连接
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    irt_int layer_idx = routing_layer.get_layer_idx();
+    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+      continue;
+    }
+    GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
+    if (layer_idx != bottom_routing_layer_idx) {
+      for (irt_int x : layer_grid_x_map[layer_idx]) {
+        for (irt_int y : layer_grid_y_map[layer_idx - 1]) {
+          std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+          neighbor_ptr_map[Orientation::kDown] = &layer_node_map[layer_idx - 1][x][y];
+        }
+      }
+      for (irt_int x : layer_grid_x_map[layer_idx - 1]) {
+        for (irt_int y : layer_grid_y_map[layer_idx]) {
+          std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+          neighbor_ptr_map[Orientation::kDown] = &layer_node_map[layer_idx - 1][x][y];
+        }
+      }
+    }
+    if (layer_idx != top_routing_layer_idx) {
+      for (irt_int x : layer_grid_x_map[layer_idx]) {
+        for (irt_int y : layer_grid_y_map[layer_idx + 1]) {
+          std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+          neighbor_ptr_map[Orientation::kUp] = &layer_node_map[layer_idx + 1][x][y];
+        }
+      }
+      for (irt_int x : layer_grid_x_map[layer_idx + 1]) {
+        for (irt_int y : layer_grid_y_map[layer_idx]) {
+          std::map<Orientation, DRNode*>& neighbor_ptr_map = dr_node_map[x][y].get_neighbor_ptr_map();
+          neighbor_ptr_map[Orientation::kUp] = &layer_node_map[layer_idx + 1][x][y];
+        }
+      }
+    }
+  }
+  // ap点映射到全层，平面上，在可布线层内连接到最近的当前层track上；空间上，贯穿所有层的通孔。
+  std::vector<PlanarCoord> access_grid_coord_list;
+  irt_int x_size = static_cast<irt_int>(x_list.size());
+  irt_int y_size = static_cast<irt_int>(y_list.size());
+  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+    for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
+      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        access_grid_coord_list.push_back(RTUtil::getGridCoord(coord, box_track_axis));
+      }
+    }
+  }
+  for (irt_int x_idx = 0; x_idx < x_size; x_idx++) {
+    if (x_idx == 0 || x_idx == x_size - 1) {
+      for (irt_int y_idx = 0; y_idx < y_size; y_idx++) {
+        access_grid_coord_list.emplace_back(x_idx, y_idx);
+      }
+    } else {
+      access_grid_coord_list.emplace_back(x_idx, 0);
+      access_grid_coord_list.emplace_back(x_idx, y_size - 1);
+    }
+  }
+
+  for (PlanarCoord& access_grid_coord : access_grid_coord_list) {
+    irt_int grid_x = access_grid_coord.get_x();
+    irt_int grid_y = access_grid_coord.get_y();
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      irt_int layer_idx = routing_layer.get_layer_idx();
+      if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+        continue;
+      }
+      GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
+      {
+        std::vector<irt_int>& grid_x_list = layer_grid_x_map[layer_idx];
+        std::pair<irt_int, irt_int> curr_layer_adj_grid_x = RTUtil::getAdjacentScale(grid_x, grid_x_list);
+        irt_int begin_grid_x = curr_layer_adj_grid_x.first;
+        irt_int end_grid_x = curr_layer_adj_grid_x.second;
+        for (irt_int x = begin_grid_x + 1; x <= end_grid_x; x++) {
+          DRNode& west = dr_node_map[x - 1][grid_y];
+          DRNode& east = dr_node_map[x][grid_y];
+          west.get_neighbor_ptr_map()[Orientation::kEast] = &east;
+          east.get_neighbor_ptr_map()[Orientation::kWest] = &west;
+        }
+      }
+      {
+        std::vector<irt_int>& grid_y_list = layer_grid_y_map[layer_idx];
+        std::pair<irt_int, irt_int> curr_layer_adj_grid_y = RTUtil::getAdjacentScale(grid_y, grid_y_list);
+        irt_int begin_grid_y = curr_layer_adj_grid_y.first;
+        irt_int end_grid_y = curr_layer_adj_grid_y.second;
+        for (irt_int y = begin_grid_y + 1; y <= end_grid_y; y++) {
+          DRNode& south = dr_node_map[grid_x][y - 1];
+          DRNode& north = dr_node_map[grid_x][y];
+          south.get_neighbor_ptr_map()[Orientation::kNorth] = &north;
+          north.get_neighbor_ptr_map()[Orientation::kSouth] = &south;
+        }
+      }
+    }
+  }
+
+  for (PlanarCoord& access_grid_coord : access_grid_coord_list) {
+    irt_int grid_x = access_grid_coord.get_x();
+    irt_int grid_y = access_grid_coord.get_y();
+    for (irt_int via_below_layer_idx = routing_layer_list.front().get_layer_idx();
+         via_below_layer_idx < routing_layer_list.back().get_layer_idx(); via_below_layer_idx++) {
+      DRNode& down = layer_node_map[via_below_layer_idx][grid_x][grid_y];
+      DRNode& up = layer_node_map[via_below_layer_idx + 1][grid_x][grid_y];
+      down.get_neighbor_ptr_map()[Orientation::kUp] = &up;
+      up.get_neighbor_ptr_map()[Orientation::kDown] = &down;
+    }
+  }
+#endif
 }
 
 void DetailedRouter::makeRoutingState(DRBox& dr_box)
@@ -2370,6 +2545,11 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
   std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), box_track_axis.get_x_grid_list());
   std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), box_track_axis.get_y_grid_list());
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+#if 1
+    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+    x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), routing_layer.getXTrackGridList());
+    y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), routing_layer.getYTrackGridList());
+#endif
     for (irt_int x : x_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
