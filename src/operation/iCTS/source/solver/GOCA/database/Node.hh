@@ -24,6 +24,7 @@
 #include <string>
 
 #include "CTSAPI.hpp"
+#include "CtsConfig.h"
 #include "CtsInstance.h"
 #include "Enum.hh"
 #include "log/Log.hh"
@@ -51,11 +52,11 @@ class Node
   // get
   const std::string& get_name() const { return _name; }
   const Point& get_location() const { return _location; }
+  const double& get_sub_len() const { return _sub_len; }
+  const double& get_cap_load() const { return _cap_load; }
+  const double& get_slew_in() const { return _slew_in; }
   const double& get_min_delay() const { return _min_delay; }
   const double& get_max_delay() const { return _max_delay; }
-  const double& get_slew_in() const { return _slew_in; }
-  const double& get_cap_load() const { return _cap_load; }
-  const double& get_sub_len() const { return _sub_len; }
   const double& get_required_snake() const { return _required_snake; }
   const NodeType& get_type() const { return _type; }
   Node* get_parent() const { return _parent; }
@@ -64,11 +65,11 @@ class Node
   // set
   void set_name(const std::string& name) { _name = name; }
   void set_location(const Point& location) { _location = location; }
+  void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
+  void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
+  void set_slew_in(const double& slew_in) { _slew_in = slew_in; }
   void set_min_delay(const double& min_delay) { _min_delay = min_delay; }
   void set_max_delay(const double& max_delay) { _max_delay = max_delay; }
-  void set_slew_in(const double& slew_in) { _slew_in = slew_in; }
-  void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
-  void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
   void set_required_snake(const double& required_snake) { _required_snake = required_snake; }
   void set_parent(Node* parent) { _parent = parent; }
   void set_children(const std::vector<Node*>& children) { _children = children; }
@@ -87,15 +88,26 @@ class Node
 
   // traversal
   using NodeFunc = std::function<void(Node*)>;
+  using NodePatternFunc = std::function<void(Node*, const RCPattern&)>;
   void preOrder(NodeFunc func)
   {
     func(this);
     std::ranges::for_each(_children, [&](auto child) { child->preOrder(func); });
   }
+  void preOrder(NodePatternFunc func, const RCPattern& pattern = RCPattern::kSingle)
+  {
+    func(this, pattern);
+    std::ranges::for_each(_children, [&](auto child) { child->preOrder(func, pattern); });
+  }
   void postOrder(NodeFunc func)
   {
     std::ranges::for_each(_children, [&](auto child) { child->postOrder(func); });
     func(this);
+  }
+  void postOrder(NodePatternFunc func, const RCPattern& pattern = RCPattern::kSingle)
+  {
+    std::ranges::for_each(_children, [&](auto child) { child->postOrder(func, pattern); });
+    func(this, pattern);
   }
 
   // for pin node
@@ -110,11 +122,11 @@ class Node
  private:
   std::string _name = "";
   Point _location = Point(-1, -1);
+  double _sub_len = 0;
+  double _cap_load = 0;
+  double _slew_in = 0;
   double _min_delay = 0;
   double _max_delay = 0;
-  double _slew_in = 0;
-  double _cap_load = 0;
-  double _sub_len = 0;
   double _required_snake = 0;
   NodeType _type = NodeType::kSteiner;
   Node* _parent = nullptr;

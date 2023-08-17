@@ -6,8 +6,11 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-add_library(icts_bst ${ICTS_SOLVER}/GOCA/tools/tree_builder/bst/BST.cc
-                     ${ICTS_SOLVER}/GOCA/tools/tree_builder/bst/GeomOperator.cc)
+add_library(
+  icts_bst
+  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/BST.cc
+  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/BoundSkewTree.cc
+  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/GeomOperator.cc)
 
 target_link_libraries(
   icts_bst PUBLIC icts_api icts_goca_database icts_goca_timing_propagator

@@ -22,13 +22,15 @@
 #include "log/Log.hh"
 namespace icts {
 
-JsonParser &JsonParser::getInstance() {
+JsonParser& JsonParser::getInstance()
+{
   static JsonParser parser;
   return parser;
 }
 
-void JsonParser::parse(const string &json_file, CtsConfig *config) const {
-  std::ifstream &ifs = COMUtil::getInputFileStream(json_file);
+void JsonParser::parse(const string& json_file, CtsConfig* config) const
+{
+  std::ifstream& ifs = COMUtil::getInputFileStream(json_file);
   if (!ifs) {
     LOG_FATAL << "no config file: " << json_file;
   } else {
@@ -40,30 +42,36 @@ void JsonParser::parse(const string &json_file, CtsConfig *config) const {
   ifs >> json;
 
   {
-    if (COMUtil::getData(json, {
-                                   "file_path",
-                                   "sta_work_dir",
-                               }) != nullptr) {
-      config->set_sta_workspace(
-          COMUtil::getData(json, {"file_path", "sta_work_dir"}));
+    if (COMUtil::getData(json,
+                         {
+                             "file_path",
+                             "sta_work_dir",
+                         })
+        != nullptr) {
+      config->set_sta_workspace(COMUtil::getData(json, {"file_path", "sta_work_dir"}));
     }
-    if (COMUtil::getData(json, {
-                                   "file_path",
-                                   "output_def_path",
-                               }) != nullptr) {
-      config->set_output_def_path(
-          COMUtil::getData(json, {"file_path", "output_def_path"}));
+    if (COMUtil::getData(json,
+                         {
+                             "file_path",
+                             "output_def_path",
+                         })
+        != nullptr) {
+      config->set_output_def_path(COMUtil::getData(json, {"file_path", "output_def_path"}));
     }
-    if (COMUtil::getData(json, {
-                                   "file_path",
-                                   "log_file",
-                               }) != nullptr) {
+    if (COMUtil::getData(json,
+                         {
+                             "file_path",
+                             "log_file",
+                         })
+        != nullptr) {
       config->set_log_file(COMUtil::getData(json, {"file_path", "log_file"}));
     }
-    if (COMUtil::getData(json, {
-                                   "file_path",
-                                   "gds_file",
-                               }) != nullptr) {
+    if (COMUtil::getData(json,
+                         {
+                             "file_path",
+                             "gds_file",
+                         })
+        != nullptr) {
       config->set_gds_file(COMUtil::getData(json, {"file_path", "gds_file"}));
     }
 
@@ -111,7 +119,10 @@ void JsonParser::parse(const string &json_file, CtsConfig *config) const {
       config->set_buffer_types(COMUtil::getData(json, {"buffer_type"}));
     }
     if (COMUtil::getData(json, {"routing_layer"}) != nullptr) {
-      config->set_routing_layers(COMUtil::getData(json, {"routing_layer"}));
+      std::vector<int> routing_layers = COMUtil::getData(json, {"routing_layer"});
+      config->set_routing_layers(routing_layers);
+      config->set_h_layer(routing_layers.front());
+      config->set_v_layer(routing_layers.back());
     }
     if (COMUtil::getData(json, {"use_netlist"}) != nullptr) {
       config->set_use_netlist(COMUtil::getData(json, {"use_netlist"}));
@@ -119,16 +130,13 @@ void JsonParser::parse(const string &json_file, CtsConfig *config) const {
 
     nlohmann::json json_netlist = COMUtil::getData(json, {"net_list"});
     {
-      auto clock_name_list = COMUtil::getSerializeObjectData(
-          json_netlist, "clock_name", data_type_string);
-      auto net_name_list = COMUtil::getSerializeObjectData(
-          json_netlist, "net_name", data_type_string);
+      auto clock_name_list = COMUtil::getSerializeObjectData(json_netlist, "clock_name", data_type_string);
+      auto net_name_list = COMUtil::getSerializeObjectData(json_netlist, "net_name", data_type_string);
 
       int size = clock_name_list.size();
       std::vector<std::pair<string, string>> clock_net_list;
       for (int i = 0; i < size; ++i) {
-        clock_net_list.push_back(
-            std::make_pair(clock_name_list[i], net_name_list[i]));
+        clock_net_list.push_back(std::make_pair(clock_name_list[i], net_name_list[i]));
       }
 
       config->set_netlist(clock_net_list);
@@ -136,15 +144,12 @@ void JsonParser::parse(const string &json_file, CtsConfig *config) const {
 
     nlohmann::json json_ext_models = COMUtil::getData(json, {"external_model"});
     {
-      auto net_name_list = COMUtil::getSerializeObjectData(
-          json_ext_models, "net_name", data_type_string);
-      auto model_path_list = COMUtil::getSerializeObjectData(
-          json_ext_models, "model_path", data_type_string);
+      auto net_name_list = COMUtil::getSerializeObjectData(json_ext_models, "net_name", data_type_string);
+      auto model_path_list = COMUtil::getSerializeObjectData(json_ext_models, "model_path", data_type_string);
 
       std::vector<std::pair<string, string>> external_models;
       for (size_t i = 0; i < net_name_list.size(); ++i) {
-        external_models.push_back(
-            std::make_pair(net_name_list[i], model_path_list[i]));
+        external_models.push_back(std::make_pair(net_name_list[i], model_path_list[i]));
       }
 
       config->set_external_models(external_models);
