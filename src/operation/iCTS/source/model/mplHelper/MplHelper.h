@@ -38,16 +38,24 @@ class MplHelper : public PyToolBase {
 
   void saveFig(const std::string& file_name) { pySaveFig(_fig, file_name); }
 
-  void plot(const icts::Point& point, const std::string& label = "") {
-    pyPlotPoint(_ax, point, label);
+  template <typename T>
+  void plot(const icts::CtsPoint<T>& point, const std::string& label = "") {
+    auto p = toDouble(point);
+    pyPlotPoint(_ax, p, label);
   }
 
-  void plot(const icts::Segment& segment, const std::string& label = "") {
-    pyPlotSegment(_ax, segment, label);
+  template <typename T>
+  void plot(const icts::CtsSegment<T>& segment, const std::string& label = "")
+  {
+    auto seg = toDouble(segment);
+    pyPlotSegment(_ax, seg, label);
   }
 
-  void plot(const icts::Polygon& polygon, const std::string& label = "") {
-    pyPlotPolygon(_ax, polygon, label);
+  template <typename T>
+  void plot(const icts::CtsPolygon<T>& polygon, const std::string& label = "")
+  {
+    auto poly = toDouble(polygon);
+    pyPlotPolygon(_ax, poly, label);
   }
 
 #endif

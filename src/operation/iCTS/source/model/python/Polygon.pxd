@@ -3,11 +3,11 @@
 from libcpp.vector cimport vector
 
 cdef extern from "pgl.h" namespace "icts":
-    cdef cppclass Point:
-        int x()
-        int y()
-    cdef cppclass Segment:
-        Point low()
-        Point high()
-    cdef cppclass Polygon:
-        vector[Point] get_points()
+    cdef cppclass CtsPoint[double]:
+        double x()
+        double y()
+    cdef cppclass CtsSegment[double]:
+        CtsPoint[double] low()
+        CtsPoint[double] high()
+    cdef cppclass CtsPolygon[double]:
+        vector[CtsPoint[double]] get_points()
