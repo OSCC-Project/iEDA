@@ -114,6 +114,8 @@ class DataManager
   void makePinList(Net& net);
   void checkPinList(Net& net);
   void buildDrivingPin(Net& net);
+  void cutBlockageList();
+  std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> makeGridNetRectMap();
   void updateHelper();
 #endif
 
