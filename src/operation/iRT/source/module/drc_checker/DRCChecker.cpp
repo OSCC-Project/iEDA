@@ -341,7 +341,7 @@ std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_r
 
   std::vector<LayerRect> min_scope_list;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    min_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
+    min_scope_list = RTAPI_INST.getMinScope(ids_rect_list);
   } else {
     min_scope_list = getMinSpacingRect(ids_rect_list);
   }

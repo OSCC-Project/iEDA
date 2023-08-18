@@ -748,7 +748,97 @@ std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> TrackAssigner::
 {
   // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
+
+  ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
+
+  for (LayerRect& min_scope_rect : DC_INST.getMinScope(DRCRect(-1, rect, true))) {
+    for (Segment<LayerCoord>& segment : getSegmentList(ta_panel, min_scope_rect)) {
+      LayerCoord first = segment.get_first();
+      LayerCoord second = segment.get_second();
+      irt_int first_layer_idx = first.get_layer_idx();
+      irt_int second_layer_idx = second.get_layer_idx();
+
+      Orientation orientation = RTUtil::getOrientation(first, second);
+      if (orientation == Orientation::kOblique || std::abs(first_layer_idx - second_layer_idx) > 1) {
+        LOG_INST.error(Loc::current(), "The node segment is illegal!");
+      }
+      for (LayerRect real_rect : getRealRectList({segment})) {
+        if (real_rect.get_layer_idx() != min_scope_rect.get_layer_idx()) {
+          continue;
+        }
+        if (RTUtil::isOpenOverlap(min_scope_rect, real_rect)) {
+          LayerCoord first_grid(RTUtil::getGridCoord(first, panel_track_axis), first_layer_idx);
+          LayerCoord second_grid(RTUtil::getGridCoord(second, panel_track_axis), second_layer_idx);
+          grid_orientation_map[first_grid].insert(orientation);
+          grid_orientation_map[second_grid].insert(RTUtil::getOppositeOrientation(orientation));
+        }
+      }
+    }
+  }
   return grid_orientation_map;
+}
+
+std::vector<Segment<LayerCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect)
+{
+  std::vector<Segment<LayerCoord>> segment_list;
+
+  // 对min_scope_rect使用max(1/2width, 1/2below_enclosure_length)膨胀rect
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  irt_int layer_idx = min_scope_rect.get_layer_idx();
+  irt_int enlarge_size = routing_layer_list[layer_idx].get_min_width() / 2;
+  LayerRect check_rect(RTUtil::getEnlargedRect(min_scope_rect, enlarge_size), layer_idx);
+
+  ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+
+  if (RTUtil::existGrid(check_rect, panel_track_axis)) {
+    PlanarRect grid_rect = RTUtil::getGridRect(check_rect, panel_track_axis);
+    for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
+      for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
+        TANode& node = ta_node_map[grid_x][grid_y];
+        for (auto& [orientation, neigbor_ptr] : node.get_neighbor_ptr_map()) {
+          TANode node_a = node;
+          TANode node_b = *neigbor_ptr;
+          RTUtil::swapByCMP(node_a, node_b, CmpLayerCoordByLayerASC());
+          segment_list.emplace_back(node_a, node_b);
+        }
+      }
+    }
+  }
+  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
+    if (a.get_first() != b.get_first()) {
+      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
+    } else {
+      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
+    }
+  });
+  RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
+    return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
+  });
+  return segment_list;
+}
+
+std::vector<LayerRect> TrackAssigner::getRealRectList(std::vector<Segment<LayerCoord>> segment_list)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<LayerRect> real_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
+
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    if (first_layer_idx == second_layer_idx) {
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+      real_rect_list.emplace_back(wire_rect, first_layer_idx);
+    } else {
+      LOG_INST.error(Loc::current(), "The segment is proximal!");
+    }
+  }
+  return real_rect_list;
 }
 
 void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
