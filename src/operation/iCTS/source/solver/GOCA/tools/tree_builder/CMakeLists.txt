@@ -1,4 +1,4 @@
-add_subdirectory(${ICTS_SOLVER}/GOCA/tools/tree_builder/bst)
+add_subdirectory(${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree)
 
 if(DEBUG_ICTS_GOCA_TREE_BUILDER)
   message(STATUS "CTS: DEBUG_ICTS_GOCA_TREE_BUILDER")
@@ -18,5 +18,5 @@ target_link_libraries(
 target_include_directories(
   icts_goca_tree_builder
   PUBLIC ${ICTS_SOLVER}/GOCA/database
-         ${ICTS_SOLVER}/GOCA/tools/tree_builder/bst
+         ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree
          ${ICTS_SOLVER}/GOCA/tools/timing_propagator)

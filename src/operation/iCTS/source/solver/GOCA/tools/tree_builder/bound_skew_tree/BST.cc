@@ -32,7 +32,7 @@ void BST::run()
   timingInit();
   // preBuffering();
   while (_unmerged_nodes.size() > 1) {
-    auto skew_cost = [&](Node* left, Node* right) { return skewCost(left, right); };
+    auto skew_cost = [&](Node* left, Node* right) { return distanceCost(left, right); };
     auto best_match = getBestMatch(skew_cost);
     auto left = best_match.left;
     auto right = best_match.right;
@@ -158,43 +158,6 @@ void BST::merge(Node* left, Node* right)
   //   return;
   // }
   // normal merge
-  auto mr = calcMergeRegion(left, right);
-  auto loc = Point(-1, -1);
-  if (mr.empty()) {
-    if (left->get_max_delay() > right->get_max_delay()) {
-      loc = left->get_location();
-    } else {
-      loc = right->get_location();
-    }
-  } else {
-    loc = pgl::center(mr);
-  }
-  auto* parent = new Node(loc);
-  TreeBuilder::connect(parent, left);
-  TreeBuilder::connect(parent, right);
-  updateTiming(parent);
-  if (!TimingPropagator::skewFeasible(parent, _skew_bound)) {
-    parent = buffering(parent);  // will fix skew
-    loc = parent->get_location();
-    // mr = Polygon({loc});
-  }
-  _js_map[parent] = Segment(loc, loc);
-  _mr_map[parent] = Polygon({loc});
-  _unmerged_nodes.push_back(parent);
-}
-
-void BST::testMerge(Node* left, Node* right)
-{
-  LOG_FATAL_IF(!TimingPropagator::skewFeasible(left, _skew_bound) || !TimingPropagator::skewFeasible(right, _skew_bound))
-      << "Input node has skew violation";
-  clearNode(left);
-  clearNode(right);
-  joinSegment(left, right);
-  auto left_js = _js_map[left];
-  auto right_js = _js_map[right];
-  _mr_map[left] = Polygon({left_js.low(), left_js.high()});
-  _mr_map[right] = Polygon({right_js.low(), right_js.high()});
-
   auto mr = calcMergeRegion(left, right);
   auto loc = Point(-1, -1);
   if (mr.empty()) {
