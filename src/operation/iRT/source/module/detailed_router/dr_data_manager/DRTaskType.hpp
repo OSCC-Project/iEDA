@@ -22,49 +22,33 @@
 
 namespace irt {
 
-enum class DRRouteStrategy
+enum class DRTaskType
 {
   kNone,
-  kFullyConsider,
-  kIgnoringSelfBox,
-  kIgnoringOtherBox,
-  kIgnoringEnclosure,
-  kIgnoringKnownPanel,
-  kIgnoringBlockAndPin
+  kPanel,
+  kBox
 };
 
-struct GetDRRouteStrategyName
+struct GetDRTaskTypeName
 {
-  std::string operator()(const DRRouteStrategy& dr_route_strategy) const
+  std::string operator()(const DRTaskType& dr_source_type) const
   {
-    std::string dr_route_strategy_name;
-    switch (dr_route_strategy) {
-      case DRRouteStrategy::kNone:
-        dr_route_strategy_name = "none";
+    std::string dr_source_type_name;
+    switch (dr_source_type) {
+      case DRTaskType::kNone:
+        dr_source_type_name = "none";
         break;
-      case DRRouteStrategy::kFullyConsider:
-        dr_route_strategy_name = "fully_consider";
+      case DRTaskType::kPanel:
+        dr_source_type_name = "panel";
         break;
-      case DRRouteStrategy::kIgnoringSelfBox:
-        dr_route_strategy_name = "ignoring_self_box";
-        break;
-      case DRRouteStrategy::kIgnoringOtherBox:
-        dr_route_strategy_name = "ignoring_other_box";
-        break;
-      case DRRouteStrategy::kIgnoringEnclosure:
-        dr_route_strategy_name = "ignoring_enclosure";
-        break;
-      case DRRouteStrategy::kIgnoringKnownPanel:
-        dr_route_strategy_name = "ignoring_known_panel";
-        break;
-      case DRRouteStrategy::kIgnoringBlockAndPin:
-        dr_route_strategy_name = "ignoring_block_and_pin";
+      case DRTaskType::kBox:
+        dr_source_type_name = "box";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return dr_route_strategy_name;
+    return dr_source_type_name;
   }
 };
 

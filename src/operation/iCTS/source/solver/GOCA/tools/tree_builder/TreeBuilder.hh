@@ -55,6 +55,9 @@ class TreeBuilder
   static std::vector<Inst*> dmeTree(const std::string& net_name, const std::vector<Pin*>& loads,
                                     const std::optional<double>& skew_bound = std::nullopt,
                                     const std::optional<Point>& guide_loc = std::nullopt);
+  static std::vector<Inst*> boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
+                                          const std::optional<double>& skew_bound = std::nullopt,
+                                          const std::optional<Point>& guide_loc = std::nullopt);
   static void recoverNet(Net* net);
 
   static void place(Inst* inst);

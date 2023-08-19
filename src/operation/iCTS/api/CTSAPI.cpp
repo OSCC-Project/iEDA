@@ -371,16 +371,42 @@ void CTSAPI::dumpVertexData(const std::vector<std::string>& vertex_names) const
   _timing_engine->get_ista()->dumpVertexData(vertex_names);
 }
 
-double CTSAPI::getClockUnitCap() const
+double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
   std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+  auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  switch (pattern) {
+    case icts::LayerPattern::kH:
+      return getStaDbAdapter()->getCapacitance(_config->get_h_layer(), 1.0, width);
+      break;
+    case icts::LayerPattern::kV:
+      return getStaDbAdapter()->getCapacitance(_config->get_v_layer(), 1.0, width);
+      break;
+    case icts::LayerPattern::kNone:
+      return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+    default:
+      LOG_ERROR << "Unknown layer pattern";
+      break;
+  }
 }
 
-double CTSAPI::getClockUnitRes() const
+double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
   std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
+  auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  switch (pattern) {
+    case icts::LayerPattern::kH:
+      return getStaDbAdapter()->getResistance(_config->get_h_layer(), 1.0, width);
+      break;
+    case icts::LayerPattern::kV:
+      return getStaDbAdapter()->getResistance(_config->get_v_layer(), 1.0, width);
+      break;
+    case icts::LayerPattern::kNone:
+      return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
+    default:
+      LOG_ERROR << "Unknown layer pattern";
+      break;
+  }
 }
 
 double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
@@ -1228,26 +1254,6 @@ void CTSAPI::saveFig(const std::string& file_name)
   _mpl_helper->saveFig(file_name);
 }
 
-void CTSAPI::plot(const icts::Point& point, const std::string& label)
-{
-  _mpl_helper->plot(point, label);
-}
-
-void CTSAPI::plot(const icts::Segment& segment, const std::string& label)
-{
-  _mpl_helper->plot(segment, label);
-}
-
-void CTSAPI::plot(const icts::Polygon& polygon, const std::string& label)
-{
-  _mpl_helper->plot(polygon, label);
-}
-
-void CTSAPI::plot(const icts::CtsPolygon<int64_t>& polygon, const std::string& label)
-{
-  Polygon temp(polygon.get_points());
-  _mpl_helper->plot(temp, label);
-}
 #endif
 
 // function
