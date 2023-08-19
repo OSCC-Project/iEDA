@@ -71,11 +71,13 @@ class Layout
   void set_core_shape(Rectangle<int32_t> rect) { _core_shape = std::move(rect); }
 
   void add_row(Row* row);
+  void add_row_orient(Orient row_orient) { _row_orient_list.push_back(row_orient); }
   void add_cell(Cell* cell);
 
   // function.
   Row* find_row(const std::string& row_name) const;
   Row* find_row(int32_t row_id) const;
+  Orient find_row_orient(int32_t row_index) const;
   Cell* find_cell(const std::string& cell_name) const;
 
  private:
@@ -84,6 +86,7 @@ class Layout
   Rectangle<int32_t> _core_shape;
 
   std::vector<Row*> _row_list;
+  std::vector<Orient> _row_orient_list;
   std::vector<Cell*> _cell_list;
 
   std::map<std::string, Row*> _name_to_row_map;
@@ -130,6 +133,11 @@ inline Row* Layout::find_row(const std::string& row_name) const
 inline Row* Layout::find_row(int32_t row_id) const
 {
   return _row_list[row_id];
+}
+
+inline Orient Layout::find_row_orient(int32_t row_index) const
+{
+  return _row_orient_list[row_index];
 }
 
 inline Cell* Layout::find_cell(const std::string& cell_name) const
