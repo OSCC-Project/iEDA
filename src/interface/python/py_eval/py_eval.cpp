@@ -23,6 +23,24 @@ using namespace eval;
 
 namespace python_interface {
 
+void init_wirelength_eval()
+{
+  EvalAPI& eval_api = EvalAPI::initInst();
+  eval_api.initWLDataFromIDB();
+}
+int64_t eval_total_wirelength(int wirelength_type)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  return eval_api.evalTotalWL(WIRELENGTH_TYPE(wirelength_type));
+}
+
+void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.plotFlowValue(plot_path, file_name, step, value);
+}
+
+
 void init_cong_eval(int bin_cnt_x, int bin_cnt_y)
 {
   std::cout << "bin_cnt_x=" << bin_cnt_x << " bin_cnt_y=" << bin_cnt_y << std::endl;
@@ -33,36 +51,50 @@ void init_cong_eval(int bin_cnt_x, int bin_cnt_y)
 void eval_inst_density(int inst_status, int eval_flip_flop)
 {
   EvalAPI& eval_api = EvalAPI::getInst();
-  eval_api.evalInstDens(INSTANCE_STATUS(inst_status));
+  eval_api.evalInstDens(INSTANCE_STATUS(inst_status), eval_flip_flop);
 }
-// void eval_pin_density(INSTANCE_STATUS inst_status, int level = 0)
+void eval_pin_density(int inst_status, int level)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalPinDens(INSTANCE_STATUS(inst_status), level);
+}
+// void eval_net_density(int inst_status)
 // {
-// }
-// void eval_net_density(INSTANCE_STATUS inst_status)
-// {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   eval_api.evalNetDens(INSTANCE_STATUS(inst_status));
 // }
 // void eval_local_net_density()
 // {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   eval_api.evalLocalNetDens();
 // }
 // void eval_global_net_density()
 // {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   eval_api.evalGlobalNetDens();
 // }
 
-// int32_t eval_inst_num(INSTANCE_STATUS inst_status)
+// int32_t eval_inst_num(int inst_status)
 // {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   return eval_api.evalInstNum(INSTANCE_STATUS(inst_status));
 // }
-// int32_t eval_net_num(NET_CONNECT_TYPE net_type)
+// int32_t eval_net_num(int net_type)
 // {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   return eval_api.evalNetNum(NET_CONNECT_TYPE(net_type));
 // }
-// int32_t eval_pin_num(INSTANCE_STATUS inst_status = INSTANCE_STATUS::kNone)
+// int32_t eval_pin_num(int inst_status)
 // {
+//   EvalAPI& eval_api = EvalAPI::getInst();
+//   return eval_api.evalPinNum(INSTANCE_STATUS(inst_status));
 // }
 // int32_t eval_routing_layer_num()
 // {
 //   EvalAPI& eval_api = EvalAPI::getInst();
 //   return eval_api.evalRoutingLayerNum();
 // }
-// int32_t eval_track_num(DIRECTION direction = DIRECTION::kNone)
+// int32_t eval_track_num(int direction = 0)
 // {
 // }
 // int32_t eval_track_remain_num()
@@ -72,31 +104,35 @@ void eval_inst_density(int inst_status, int eval_flip_flop)
 // {
 // }
 
-// std::vector<int64_t> eval_chip_size(CHIP_REGION_TYPE region_type)
+// std::vector<int64_t> eval_chip_size(int region_type)
 // {
 // }
-// std::vector<std::pair<string, std::pair<int32_t, int32_t>>> eval_inst_size(INSTANCE_STATUS inst_status)
+// std::vector<std::pair<string, std::pair<int32_t, int32_t>>> eval_inst_size(int inst_status)
 // {
 // }
 // std::vector<std::pair<string, std::pair<int32_t, int32_t>>> eval_net_size()
 // {
 // }
 
-// void eval_rudy_cong(RUDY_TYPE rudy_type, DIRECTION direction = DIRECTION::kNone)
-// {
-// }
-// std::vector<float> eval_egr_cong()
-// {
-// }
+void eval_rudy_cong(int rudy_type, int direction)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalNetCong(RUDY_TYPE(rudy_type), DIRECTION(direction));
+}
+std::vector<float> eval_egr_cong()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalGRCong();
+}
 
-// int64_t eval_area(INSTANCE_STATUS inst_status)
+// int64_t eval_area(int inst_status)
 // {
 // }
 // std::vector<int64_t> eval_macro_peri_area()
 // {
 // }
 
-// float eval_area_util(INSTANCE_STATUS inst_status)
+// float eval_area_util(int inst_status)
 // {
 // }
 // double eval_macro_channel_util(float dist_ratio)
@@ -111,7 +147,9 @@ void plot_bin_value(const std::string& plot_path, const std::string& file_name, 
   EvalAPI& eval_api = EvalAPI::getInst();
   eval_api.plotBinValue(plot_path, file_name, CONGESTION_TYPE(value_type));
 }
-// void plot_tile_value(const string& plot_path, const string& file_name)
-// {
-// }
+void plot_tile_value(const string& plot_path, const string& file_name)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.plotTileValue(plot_path, file_name);
+}
 }  // namespace python_interface
