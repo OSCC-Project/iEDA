@@ -157,6 +157,7 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
   updateNetFixedRectMap(ta_model);
   updateNetEnclosureMap(ta_model);
   buildTATaskList(ta_model);
+  buildNetTaskMap(ta_model);
   // outputTADataset(ta_model);
 }
 
@@ -217,18 +218,22 @@ void TrackAssigner::updateNetFixedRectMap(TAModel& ta_model)
   }
 }
 
+/**
+ * 当drc_rect是由于ta_panel布线产生时，ta_source_type必须设置为kUnknownPanel
+ * 当drc_rect是由blockage或pin_shape或其他不由ta_panel布线产生时，ta_source_type可设置为对应值
+ */
 void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id,
                                     DRCRect drc_rect)
 {
+  if (drc_rect.get_is_routing() == false) {
+    return;
+  }
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  if (drc_rect.get_is_routing() == false) {
-    return;
-  }
   irt_int routing_layer_idx = drc_rect.get_layer_rect().get_layer_idx();
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
@@ -488,6 +493,21 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
   return coord_cost_map;
 }
 
+void TrackAssigner::buildNetTaskMap(TAModel& ta_model)
+{
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      if (ta_panel.get_ta_task_list().empty()) {
+        continue;
+      }
+      std::map<irt_int, std::vector<irt_int>>& net_task_map = ta_panel.get_net_task_map();
+      for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+        net_task_map[ta_task.get_origin_net_idx()].push_back(ta_task.get_task_idx());
+      }
+    }
+  }
+}
+
 void TrackAssigner::outputTADataset(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -624,7 +644,7 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
   TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
-  if (ta_panel.skipAssigning()) {
+  if (ta_panel.get_ta_task_list().empty()) {
     return;
   }
   for (irt_int iter = 1; iter <= ta_panel_max_iter_num; iter++) {
@@ -639,6 +659,7 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
     processTAPanel(ta_model, ta_panel);
     countTAPanel(ta_model, ta_panel);
     reportTAPanel(ta_model, ta_panel);
+    // plotTAPanel(ta_panel);
     freeTAPanel(ta_model, ta_panel);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
@@ -714,28 +735,13 @@ void TrackAssigner::makeRoutingState(TAPanel& ta_panel)
 
 void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
 {
-  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-
-  std::map<irt_int, std::vector<irt_int>> net_task_map;
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    net_task_map[ta_task.get_origin_net_idx()].push_back(ta_task.get_task_idx());
-  }
   for (TASourceType ta_source_type :
        {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
-    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), true)) {
-      for (auto& [net_idx, rect_set] : net_rect_map) {
-        std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
-        for (const LayerRect& rect : rect_set) {
-          for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, rect)) {
-            TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
-            std::map<Orientation, std::set<irt_int>>& orien_task_map = ta_node.get_source_orien_task_map()[ta_source_type];
-            for (Orientation orientation : orientation_set) {
-              if (task_idx_list.empty()) {
-                orien_task_map[orientation].insert(-1);
-              } else {
-                orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
-              }
-            }
+    for (bool is_routing : {true, false}) {
+      for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          for (const auto& rect : rect_set) {
+            updateRectToGraph(ta_panel, ChangeType::kAdd, ta_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -743,15 +749,40 @@ void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
   }
 }
 
+/**
+ * 当drc_rect是由于ta_panel布线产生时，ta_source_type必须设置为kSelfPanel
+ * 当drc_rect是由blockage或pin_shape或其他不由ta_panel布线产生时，ta_source_type可设置为对应值
+ */
+void TrackAssigner::updateRectToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect)
+{
+  if (drc_rect.get_is_routing() == false) {
+    return;
+  }
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+
+  std::vector<irt_int>& task_idx_list = ta_panel.get_net_task_map()[drc_rect.get_net_idx()];
+  for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
+    TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
+    std::map<Orientation, std::set<irt_int>>& orien_task_map = ta_node.get_source_orien_task_map()[ta_source_type];
+    for (Orientation orientation : orientation_set) {
+      if (task_idx_list.empty()) {
+        orien_task_map[orientation].insert(-1);
+      } else {
+        orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+      }
+    }
+  }
+}
+
 std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
-                                                                                                      const LayerRect& rect)
+                                                                                                      const DRCRect& drc_rect)
 {
   // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
 
-  for (LayerRect& min_scope_rect : DC_INST.getMinScope(DRCRect(-1, rect, true))) {
+  for (LayerRect& min_scope_rect : DC_INST.getMinScope(drc_rect)) {
     for (Segment<LayerCoord>& segment : getSegmentList(ta_panel, min_scope_rect)) {
       LayerCoord first = segment.get_first();
       LayerCoord second = segment.get_second();
@@ -938,6 +969,10 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     //   // 将env中的布线结果清空
     //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
     //     updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
+    //   }
+    //   // 将graph中的布线结果清空
+    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+    //     updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
     //   }
     //   // 清空routing_tree
     //   ta_task.get_routing_tree().clear();
@@ -1375,6 +1410,10 @@ void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATas
   // 将布线结果添加到env中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
     updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
+  }
+  // 将布线结果添加到graph中
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+    updateRectToGraph(ta_panel, ChangeType::kAdd, TASourceType::kSelfPanel, drc_rect);
   }
   ta_task.set_routing_state(RoutingState::kRouted);
 }
@@ -1990,6 +2029,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
 
   irt_int width = INT_MAX;
@@ -2187,16 +2227,24 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
                                                                               {TASourceType::kOtherPanel, GPGraphType::kOtherPanel},
                                                                               {TASourceType::kSelfPanel, GPGraphType::kSelfPanel}};
   for (auto& [ta_source_type, gp_graph_type] : source_graph_pair_list) {
-    for (auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), true)[ta_panel.get_layer_idx()]) {
-      GPStruct net_rect_struct(RTUtil::getString(GetTASourceTypeName()(ta_source_type), "@", net_idx));
-      for (const LayerRect& rect : rect_set) {
-        GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(gp_graph_type));
-        gp_boundary.set_rect(rect);
-        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(rect.get_layer_idx()));
-        net_rect_struct.push(gp_boundary);
+    for (bool is_routing : {true, false}) {
+      for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          GPStruct net_rect_struct(RTUtil::getString(GetTASourceTypeName()(ta_source_type), "@", net_idx));
+          for (const LayerRect& rect : rect_set) {
+            GPBoundary gp_boundary;
+            gp_boundary.set_data_type(static_cast<irt_int>(gp_graph_type));
+            gp_boundary.set_rect(rect);
+            if (is_routing) {
+              gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+            } else {
+              gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
+            }
+            net_rect_struct.push(gp_boundary);
+          }
+          gp_gds.addStruct(net_rect_struct);
+        }
       }
-      gp_gds.addStruct(net_rect_struct);
     }
   }
 
@@ -2239,12 +2287,33 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
         task_struct.push(gp_boundary);
       } else {
         RTUtil::swapASC(first_layer_idx, second_layer_idx);
-        for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-          gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, half_width));
-          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-          task_struct.push(gp_boundary);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+          LayerRect& above_enclosure = via_master.get_above_enclosure();
+          LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+          GPBoundary above_boundary;
+          above_boundary.set_rect(offset_above_enclosure);
+          above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
+          above_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(above_boundary);
+
+          LayerRect& below_enclosure = via_master.get_below_enclosure();
+          LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+          GPBoundary below_boundary;
+          below_boundary.set_rect(offset_below_enclosure);
+          below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
+          below_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(below_boundary);
+
+          for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+            LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+            GPBoundary cut_boundary;
+            cut_boundary.set_rect(offset_cut_shape);
+            cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
+            cut_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+            task_struct.push(cut_boundary);
+          }
         }
       }
     }

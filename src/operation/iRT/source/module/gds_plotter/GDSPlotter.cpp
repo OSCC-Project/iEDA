@@ -199,6 +199,7 @@ void GDSPlotter::buildLayoutLypFile()
 void GDSPlotter::buildGraphLypFile()
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
 
   std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
@@ -212,6 +213,9 @@ void GDSPlotter::buildGraphLypFile()
       {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
       {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
       {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
+  std::map<GPGraphType, bool> cut_data_type_visible_map = {
+      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true},
+      {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
@@ -232,6 +236,13 @@ void GDSPlotter::buildGraphLypFile()
         lyp_layer_list.emplace_back(color, pattern, visible,
                                     RTUtil::getString(routing_layer_name, "_", GetGPGraphTypeName()(routing_data_type)), gds_layer_idx,
                                     static_cast<irt_int>(routing_data_type));
+      }
+    } else if (RTUtil::exist(_gds_cut_layer_map, gds_layer_idx)) {
+      // cut
+      std::string cut_layer_name = cut_layer_list[_gds_cut_layer_map[gds_layer_idx]].get_layer_name();
+      for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
+        lyp_layer_list.emplace_back(color, pattern, visible, RTUtil::getString(cut_layer_name, "_", GetGPGraphTypeName()(cut_data_type)),
+                                    gds_layer_idx, static_cast<irt_int>(cut_data_type));
       }
     }
   }
@@ -383,6 +394,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
   GPStruct guide_list_struct(RTUtil::getString("guide_list@", net_struct.get_alias_name()));
   GPStruct routing_segment_list_struct(RTUtil::getString("routing_segment_list@", net_struct.get_alias_name()));
@@ -435,11 +447,32 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       } else {
         RTUtil::swapASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-          GPBoundary via_boundary;
-          via_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, routing_layer_list[layer_idx].get_min_width() / 2));
-          via_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
-          via_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kCut));
-          routing_segment_list_struct.push(via_boundary);
+          ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+          LayerRect& above_enclosure = via_master.get_above_enclosure();
+          LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+          GPBoundary above_boundary;
+          above_boundary.set_rect(offset_above_enclosure);
+          above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
+          above_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
+          routing_segment_list_struct.push(above_boundary);
+
+          LayerRect& below_enclosure = via_master.get_below_enclosure();
+          LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+          GPBoundary below_boundary;
+          below_boundary.set_rect(offset_below_enclosure);
+          below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
+          below_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
+          routing_segment_list_struct.push(below_boundary);
+
+          for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+            LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+            GPBoundary cut_boundary;
+            cut_boundary.set_rect(offset_cut_shape);
+            cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
+            cut_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kCut));
+            routing_segment_list_struct.push(cut_boundary);
+          }
         }
       }
     }

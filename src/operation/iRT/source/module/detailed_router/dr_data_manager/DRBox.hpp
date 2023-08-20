@@ -40,6 +40,7 @@ class DRBox : public SpaceRegion
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::map<DRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
+  std::map<irt_int, std::vector<irt_int>>& get_net_task_map() { return _net_task_map; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   DRBoxStat& get_dr_box_stat() { return _dr_box_stat; }
   irt_int get_curr_iter() { return _curr_iter; }
@@ -51,6 +52,7 @@ class DRBox : public SpaceRegion
     _source_region_query_map = source_region_query_map;
   }
   void set_dr_task_list(const std::vector<DRTask>& dr_task_list) { _dr_task_list = dr_task_list; }
+  void set_net_task_map(const std::map<irt_int, std::vector<irt_int>>& net_task_map) { _net_task_map = net_task_map; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
@@ -66,7 +68,6 @@ class DRBox : public SpaceRegion
     }
     return region_query;
   }
-  bool skipRouting() { return _dr_task_list.empty(); }
 #if 1  // astar
   // config
   double get_wire_unit() const { return _wire_unit; }
@@ -123,6 +124,7 @@ class DRBox : public SpaceRegion
   ScaleAxis _box_track_axis;
   std::map<DRSourceType, RegionQuery*> _source_region_query_map;
   std::vector<DRTask> _dr_task_list;
+  std::map<irt_int, std::vector<irt_int>> _net_task_map;
   std::vector<GridMap<DRNode>> _layer_node_map;
   DRBoxStat _dr_box_stat;
   irt_int _curr_iter = -1;
