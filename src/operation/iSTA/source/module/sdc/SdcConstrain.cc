@@ -212,8 +212,10 @@ std::vector<std::string> GetClockName(const char* clock_str, Netlist* design_nl,
           },
           object);
 
-      clock_name = dynamic_cast<SdcClock*>(sdc_clock)->get_clock_name();
-      clock_names.emplace_back(std::move(clock_name));
+      if (sdc_clock) {
+        clock_name = dynamic_cast<SdcClock*>(sdc_clock)->get_clock_name();
+        clock_names.emplace_back(std::move(clock_name));
+      }
     }
 
   } else {
