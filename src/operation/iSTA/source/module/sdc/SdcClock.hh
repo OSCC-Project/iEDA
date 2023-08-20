@@ -93,13 +93,13 @@ class SdcGenerateCLock : public SdcClock {
   }
   std::set<DesignObject*> get_source_pins() { return _source_pins; }
 
-  void set_divide_by(const char* divide_by) { _divide_by = divide_by; }
-  const char* get_divide_by() const { return _divide_by.c_str(); }
+  void set_divide_by(int divide_by) { _divide_by = divide_by; }
+  int get_divide_by() const { return _divide_by; }
 
  private:
   std::string _source_name;
   std::set<DesignObject*> _source_pins;
-  std::string _divide_by;
+  int _divide_by;
 };
 
 /**

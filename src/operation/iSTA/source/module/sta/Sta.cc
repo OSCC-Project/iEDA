@@ -1974,6 +1974,8 @@ unsigned Sta::updateTiming() {
       StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
       StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
       StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostkNormalClockProp),
+      StaClockPropagation(StaClockPropagation::PropType::kGeneratedClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
       StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
       StaDataPropagation(StaDataPropagation::PropType::kFwdProp),

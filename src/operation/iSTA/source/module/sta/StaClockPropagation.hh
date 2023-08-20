@@ -35,8 +35,8 @@ class StaClockPropagation : public StaFunc {
  public:
   enum class PropType {
     kIdealClockProp,
-    kGeneratedClockProp,
-    kNormalClockProp
+    kNormalClockProp,
+    kGeneratedClockProp
   };
 
   explicit StaClockPropagation(PropType prop_type) : _prop_type(prop_type) {}
