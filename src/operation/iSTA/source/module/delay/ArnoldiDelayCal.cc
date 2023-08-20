@@ -252,6 +252,7 @@ void ArnoldiNet::constructResistanceAndCapMatrix(AnalysisMode analysis_mode,
 
   // reduce when node num beyond reduce node num.
   if (node_num > use_reduce_node_num) {
+    // not use reduce now.
     // set_is_reduce(true);
   }
 
@@ -443,6 +444,19 @@ std::vector<VectorXd> ArnoldiNet::solveRCEquation(
   };
 
   auto currents = get_current(start_time, end_time, num_sim_point);
+
+  // for debug
+  if (0) {
+    DVERBOSE_VLOG(1) << "conductances\n" << _conductances_matrix;
+    DVERBOSE_VLOG(1) << "cap_matrix\n" << _cap_matrix;
+    DVERBOSE_VLOG(1) << "input_vec\n" << _input_vec;
+
+    DVERBOSE_VLOG(1) << "currents\n";
+    for (double current_mA : currents) {
+      DVERBOSE_VLOG(1) << " " << current_mA;
+    }
+  }
+
   VectorXd V_i(diag.diagonalSize());
   V_i.setZero();
 

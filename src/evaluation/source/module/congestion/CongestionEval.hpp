@@ -90,13 +90,11 @@ class CongestionEval
   std::vector<float> evalPinDens();
   void evalInstDens();
   void reportInstDens();
-  void plotInstDens(const std::string& plot_path, const std::string& output_file_name);
   double getBinInstDens(const int& index_x, const int& index_y);
   std::vector<float> getInstDens();
 
   void evalNetCong(const std::string& rudy_type);
   void reportNetCong();
-  void plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type);
   double getBinNetCong(const int& index_x, const int& index_y, const std::string& rudy_type);
   std::vector<float> getNetCong(const std::string& rudy_type);
   // void evalViaDens();

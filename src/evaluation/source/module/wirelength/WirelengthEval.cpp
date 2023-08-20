@@ -17,6 +17,7 @@
 #include "WirelengthEval.hpp"
 
 #include <fstream>
+#include <regex>
 #include <set>
 
 #include "EvalLog.hpp"
@@ -29,6 +30,113 @@ WirelengthEval::WirelengthEval()
 {
   Flute::readLUT();
   LOG_INFO << "FLUTE initialized";
+}
+
+void WirelengthEval::initWLNetList()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
+    std::string net_name = fixSlash(idb_net->get_net_name());
+    WLNet* net_ptr = new WLNet();
+    net_ptr->set_name(net_name);
+
+    auto connect_type = idb_net->get_connect_type();
+    if (connect_type == IdbConnectType::kSignal) {
+      net_ptr->set_type(NET_TYPE::kSignal);
+    } else if (connect_type == IdbConnectType::kClock) {
+      net_ptr->set_type(NET_TYPE::kClock);
+    } else if (connect_type == IdbConnectType::kReset) {
+      net_ptr->set_type(NET_TYPE::kReset);
+    } else {
+      net_ptr->set_type(NET_TYPE::kNone);
+    }
+
+    auto* idb_driving_pin = idb_net->get_driving_pin();
+    if (idb_driving_pin) {
+      WLPin* pin_ptr = wrapWLPin(idb_driving_pin);
+      net_ptr->add_pin(pin_ptr);
+      net_ptr->set_driver_pin(pin_ptr);
+    }
+    for (auto* idb_load_pin : idb_net->get_load_pins()) {
+      WLPin* pin_ptr = wrapWLPin(idb_load_pin);
+      net_ptr->add_pin(pin_ptr);
+      net_ptr->add_sink_pin(pin_ptr);
+    }
+    net_ptr->set_real_wirelength(idb_net->wireLength());
+
+    _net_list.emplace_back(net_ptr);
+  }
+}
+
+WLPin* WirelengthEval::wrapWLPin(IdbPin* idb_pin)
+{
+  auto* idb_inst = idb_pin->get_instance();
+  WLPin* pin_ptr = nullptr;
+
+  if (!idb_inst) {
+    pin_ptr = new WLPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+    pin_ptr->set_type(PIN_TYPE::kIOPort);
+  } else {
+    std::string pin_name = idb_inst->get_name() + ":" + idb_pin->get_pin_name();
+    pin_ptr = new WLPin();
+    pin_ptr->set_name(idb_pin->get_pin_name());
+    pin_ptr->set_type(PIN_TYPE::kInstancePort);
+  }
+
+  LOG_ERROR_IF(!pin_ptr) << "Fail on creating ieval PIN!";
+
+  // set pin io type.
+  auto pin_direction = idb_pin->get_term()->get_direction();
+  if (pin_direction == IdbConnectDirection::kInput) {
+    pin_ptr->set_io_type(PIN_IO_TYPE::kInput);
+  } else if (pin_direction == IdbConnectDirection::kOutput) {
+    pin_ptr->set_io_type(PIN_IO_TYPE::kOutput);
+  } else if (pin_direction == IdbConnectDirection::kInOut) {
+    pin_ptr->set_io_type(PIN_IO_TYPE::kInputOutput);
+  } else {
+    pin_ptr->set_io_type(PIN_IO_TYPE::kNone);
+  }
+
+  // set pin center coordinate.
+  pin_ptr->set_x(idb_pin->get_average_coordinate()->get_x());
+  pin_ptr->set_y(idb_pin->get_average_coordinate()->get_y());
+
+  return pin_ptr;
+}
+
+std::string WirelengthEval::fixSlash(std::string raw_str)
+{
+  std::regex re(R"(\\)");
+  return std::regex_replace(raw_str, re, "");
+}
+
+int64_t WirelengthEval::evalTotalWL(const std::string& wl_type)
+{
+  int64_t total_wl = 0;
+  WLFactory wirelength_factory;
+  WL* p_wirelength = wirelength_factory.createWL(wl_type);
+  if (p_wirelength != NULL) {
+    total_wl = p_wirelength->getTotalWL(_net_list);
+    delete p_wirelength;
+    p_wirelength = NULL;
+  }
+  return total_wl;
+}
+
+int64_t WirelengthEval::evalTotalWL(WIRELENGTH_TYPE wl_type)
+{
+  int64_t total_wl = 0;
+  WLFactory wirelength_factory;
+  WL* p_wirelength = wirelength_factory.createWL(wl_type);
+  if (p_wirelength != NULL) {
+    total_wl = p_wirelength->getTotalWL(_net_list);
+    delete p_wirelength;
+    p_wirelength = NULL;
+  }
+  return total_wl;
 }
 
 void WirelengthEval::reportWirelength(const std::string& plot_path, const std::string& output_file_name)
@@ -131,25 +239,12 @@ void WirelengthEval::checkWLType(const std::string& wl_type)
   if (it == wl_type_set.end()) {
     LOG_ERROR << wl_type << " is not be supported in our evaluator";
     LOG_ERROR << "Only the following types are supported: kWLM, kHPWL, kHTree, kVTree, kClique, kStar, kB2B, kFlute, kPlaneRoute, "
-                "kSpaceRoute, kDR";
+                 "kSpaceRoute, kDR";
     LOG_ERROR << "EXIT";
     exit(1);
   } else {
     LOG_INFO << wl_type << " is selected in Wirelength Evaluator";
   }
-}
-
-int64_t WirelengthEval::evalTotalWL(const std::string& wl_type)
-{
-  int64_t total_wl = 0;
-  WLFactory wirelength_factory;
-  WL* p_wirelength = wirelength_factory.createWL(wl_type);
-  if (p_wirelength != NULL) {
-    total_wl = p_wirelength->getTotalWL(_net_list);
-    delete p_wirelength;
-    p_wirelength = NULL;
-  }
-  return total_wl;
 }
 
 int64_t WirelengthEval::evalOneNetWL(const std::string& net_name, const std::string& wl_type)

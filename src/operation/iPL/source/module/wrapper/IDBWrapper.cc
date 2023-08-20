@@ -249,6 +249,8 @@ void IDBWrapper::wrapRows(IdbLayout* idb_layout)
 
   IdbRows* idb_rows = idb_layout->get_rows();
   int32_t row_id = 0;
+
+  Row* ipl_origin_row = nullptr;
   for (auto* idb_row : idb_rows->get_row_list()) {
     Row* ipl_row = new Row(idb_row->get_name());
     ipl_row->set_row_id(row_id++);
@@ -286,6 +288,21 @@ void IDBWrapper::wrapRows(IdbLayout* idb_layout)
     ipl_row->set_site(site_ptr);
     ipl_row->set_site_num(idb_row->get_site_count());
     ipl_layout->add_row(ipl_row);
+
+    if (ipl_origin_row == nullptr || ipl_row->get_coordi().get_y() < ipl_origin_row->get_coordi().get_y()) {
+      ipl_origin_row = ipl_row;
+    }
+  }
+
+  Orient even_orient = ipl_origin_row->get_orient();
+  Orient odd_orient = (even_orient == Orient::kN_R0) ? Orient::kFS_MX : Orient::kN_R0;
+  int32_t row_cnt_y = ipl_layout->get_core_height() / ipl_layout->get_row_height();
+  for (int32_t i = 0; i < row_cnt_y; i++) {
+    if (i % 2 == 0) {
+      ipl_layout->add_row_orient(even_orient);
+    } else {
+      ipl_layout->add_row_orient(odd_orient);
+    }
   }
 }
 

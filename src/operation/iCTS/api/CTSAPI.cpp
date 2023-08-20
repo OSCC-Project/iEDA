@@ -1254,26 +1254,6 @@ void CTSAPI::saveFig(const std::string& file_name)
   _mpl_helper->saveFig(file_name);
 }
 
-void CTSAPI::plot(const icts::Point& point, const std::string& label)
-{
-  _mpl_helper->plot(point, label);
-}
-
-void CTSAPI::plot(const icts::Segment& segment, const std::string& label)
-{
-  _mpl_helper->plot(segment, label);
-}
-
-void CTSAPI::plot(const icts::Polygon& polygon, const std::string& label)
-{
-  _mpl_helper->plot(polygon, label);
-}
-
-void CTSAPI::plot(const icts::CtsPolygon<int64_t>& polygon, const std::string& label)
-{
-  Polygon temp(polygon.get_points());
-  _mpl_helper->plot(temp, label);
-}
 #endif
 
 // function

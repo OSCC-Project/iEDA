@@ -97,13 +97,6 @@ class BoundSkewTree
 
   double _skew_bound = 0;
 
-  constexpr static size_t kLeft = 0;
-  constexpr static size_t kRight = 1;
-  constexpr static size_t kMax = 0;
-  constexpr static size_t kMin = 1;
-  constexpr static LayerPattern kH = LayerPattern::kH;
-  constexpr static LayerPattern kV = LayerPattern::kV;
-
   const int _db_unit = Timing::getDbUnit();
   const double _unit_h_cap = Timing::getUnitCap(kH);
   const double _unit_h_res = Timing::getUnitRes(kH);

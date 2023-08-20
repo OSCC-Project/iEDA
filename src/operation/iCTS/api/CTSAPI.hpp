@@ -179,10 +179,23 @@ class CTSAPI
 
   icts::ModelBase* fitPyModel(const std::vector<std::vector<double>>& X, const std::vector<double>& y, const icts::FitType& fit_type);
   void saveFig(const std::string& file_name);
-  void plot(const icts::Point& point, const std::string& label);
-  void plot(const icts::Segment& segment, const std::string& label);
-  void plot(const icts::Polygon& polygon, const std::string& label);
-  void plot(const icts::CtsPolygon<int64_t>& polygon, const std::string& label);
+
+  template <typename T>
+  void plot(const icts::CtsPoint<T>& point, const std::string& label)
+  {
+    _mpl_helper->plot(point, label);
+  }
+  template <typename T>
+  void plot(const icts::CtsSegment<T>& segment, const std::string& label)
+  {
+    _mpl_helper->plot(segment, label);
+  }
+  template <typename T>
+  void plot(const icts::CtsPolygon<T>& polygon, const std::string& label)
+  {
+    _mpl_helper->plot(polygon, label);
+  }
+
 #endif
  private:
   static CTSAPI* _cts_api_instance;

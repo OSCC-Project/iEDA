@@ -83,6 +83,8 @@ class TrackAssigner
   void buildSourceOrienTaskMap(TAPanel& ta_panel);
   void checkTAPanel(TAPanel& ta_panel);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const LayerRect& rect);
+  std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);

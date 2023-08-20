@@ -350,7 +350,7 @@ class TimingPropagator
   }
   /**
    * @brief calculate manhattan wire length between p1 and p2
-   *       if T is integer,  l = D(n1,n2) / db_unit, for design core/die coodinate
+   *       if T is integer,  l = D(n1,n2) / db_unit, for design core/die coordinate
    *       if T is float,    l = D(n1,n2)          , for absolute coordinate
    *
    * @tparam T

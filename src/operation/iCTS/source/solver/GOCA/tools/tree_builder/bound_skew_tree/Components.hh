@@ -22,21 +22,51 @@
 
 #include "GeomOperator.hh"
 #include "TimingPropagator.hh"
+#include "log/Log.hh"
 #include "pgl.h"
 namespace icts {
 namespace bst {
-
+/**
+ * @brief Tool namespace
+ *
+ */
 using Timing = TimingPropagator;
 using Geom = GeomOperator;
+/**
+ * @brief type alias
+ *
+ */
 using Pt = CtsPoint<double>;
 using JoinSegment = std::vector<Pt>;
 using Pts = std::vector<Pt>;
 using Region = std::vector<Pt>;
-
 template <typename T>
 using Side = std::array<T, 2>;
+/**
+ * @brief Global constant
+ *
+ */
+constexpr static size_t kLeft = 0;
+constexpr static size_t kRight = 1;
+constexpr static size_t kMax = 0;
+constexpr static size_t kMin = 1;
+constexpr static size_t kX = 0;
+constexpr static size_t kY = 1;
+constexpr static LayerPattern kH = LayerPattern::kH;
+constexpr static LayerPattern kV = LayerPattern::kV;
+constexpr static double kEpsilon = 1e-6;
 
+/**
+ * @brief Global function
+ *
+ */
 #define FOR_EACH_SIDE(side) for (size_t side = 0; side < 2; ++side)
+
+template <typename T>
+constexpr static bool Equal(T a, T b, T epsilon = T(kEpsilon))
+{
+  return std::abs(a - b) < epsilon;
+}
 
 class BstNode
 {
@@ -160,6 +190,102 @@ class Interval
  private:
   T _low = 1;
   T _high = 0;
+};
+
+template <Numeric T>
+class Trr
+{
+ public:
+  Trr() = default;
+  Trr(const T& x_low, const T& x_high, const T& y_low, const T& y_high) : _x_low(x_low), _x_high(x_high), _y_low(y_low), _y_high(y_high) {}
+  Trr(const CtsPoint<T>& point, const T& radius) { makeDiamond(point, radius); }
+
+  void init()
+  {
+    _x_low = _y_low = 1;
+    _x_high = _y_high = 0;
+  }
+  const bool& is_empty() const
+  {
+    auto x_interval = Interval<T>(_x_low, _x_high);
+    auto y_interval = Interval<T>(_y_low, _y_high);
+    return x_interval.is_empty() || y_interval.is_empty();
+  }
+  // for check slope
+  void makeDiamond(const CtsPoint<T>& point, const T& radius)
+  {
+    auto val = point.x() - point.y();
+    _x_low = val - radius;
+    _x_high = val + radius;
+    val = point.x() + point.y();
+    _y_low = val - radius;
+    _y_high = val + radius;
+  }
+  void enclose(const Trr<T>& other)
+  {
+    if (is_empty()) {
+      _x_low = other._x_low;
+      _x_high = other._x_high;
+      _y_low = other._y_low;
+      _y_high = other._y_high;
+    } else {
+      _x_low = std::min(_x_low, other._x_low);
+      _x_high = std::max(_x_high, other._x_high);
+      _y_low = std::min(_y_low, other._y_low);
+      _y_high = std::max(_y_high, other._y_high);
+    }
+  }
+
+  const T& width(const size_t& side) const
+  {
+    if (side == 0) {
+      return _x_high - _x_low;
+    } else {
+      return _y_high - _y_low;
+    }
+  }
+
+  const T& diameter() const { return std::max(width(0), width(1)); }
+
+  Trr intersect(const Trr& trr1, const Trr& trr2)
+  {
+    auto x_low = std::max(trr1._x_low, trr2._x_low);
+    auto x_high = std::min(trr1._x_high, trr2._x_high);
+    auto y_low = std::max(trr1._y_low, trr2._y_low);
+    auto y_high = std::min(trr1._y_high, trr2._y_high);
+    auto trr = Trr(x_low, x_high, y_low, y_high);
+    trr.check();
+    return trr;
+  }
+
+ private:
+  void check()
+  {
+    correction();
+    LOG_FATAL_IF(is_empty()) << "TRR is empty, which x_low: " << _x_low << ", x_high: " << _x_high << ", y_low: " << _y_low
+                             << ", y_high: " << _y_high;
+  }
+
+  void correction()
+  {
+    if constexpr (IntAble<T>) {
+      return;
+    }
+    auto temp_low = _x_low;
+    auto temp_high = _x_high;
+    if (Equal(temp_low, temp_high)) {
+      _x_low = _x_high = (temp_low + temp_high) / 2;
+    }
+    temp_low = _y_low;
+    temp_high = _y_high;
+    if (Equal(temp_low, temp_high)) {
+      _y_low = _y_high = (temp_low + temp_high) / 2;
+    }
+  }
+  T _x_low = 1;
+  T _x_high = 0;
+  T _y_low = 1;
+  T _y_high = 0;
 };
 }  // namespace bst
 }  // namespace icts

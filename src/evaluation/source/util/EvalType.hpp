@@ -17,6 +17,7 @@
 #ifndef SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
 #define SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALTYPE_HPP_
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
@@ -24,35 +25,44 @@
 namespace eval {
 enum class NET_TYPE
 {
-  kNone,
-  kSignal,
-  kClock,
-  kReset,
-  kFakeNet
+  kNone = 0,
+  kSignal = 1,
+  kClock = 2,
+  kReset = 3,
+  kFakeNet = 4
+};
+
+enum class WIRELENGTH_TYPE
+{
+  kNone = 0,
+  kHPWL = 1,
+  kFLUTE = 2,
+  kB2B = 3,
+  kEGR = 4
 };
 
 enum class PIN_TYPE
 {
-  kNone,
-  kInstancePort,
-  kIOPort,
-  kFakePin
+  kNone = 0,
+  kInstancePort = 1,
+  kIOPort = 2,
+  kFakePin = 3
 };
 
 enum class PIN_IO_TYPE
 {
-  kNone,
-  kInput,
-  kOutput,
-  kInputOutput
+  kNone = 0,
+  kInput = 1,
+  kOutput = 2,
+  kInputOutput = 3
 };
 
 enum class INSTANCE_LOC_TYPE
 {
-  kNone,
-  kNormal,
-  kOutside,
-  kFakeInstance
+  kNone = 0,
+  kNormal = 1,
+  kOutside = 2,
+  kFakeInstance = 3
 };
 
 enum class INSTANCE_STATUS
@@ -62,47 +72,47 @@ enum class INSTANCE_STATUS
   kCover = 2,
   kPlaced = 3,
   kUnplaced = 4,
-  kMax,
+  kMax
 };
 
 enum class CONGESTION_TYPE
 {
-  kNone,
-  kInstDens,
-  kPinDens,
-  kNetCong,
-  kGRCong
+  kNone = 0,
+  kInstDens = 1,
+  kPinDens = 2,
+  kNetCong = 3,
+  kGRCong = 4
 };
 
 enum class CHIP_REGION_TYPE
 {
-  kNone,
-  kDie,
-  kCore
+  kNone = 0,
+  kDie = 1,
+  kCore = 2
 };
 
 enum class RUDY_TYPE
 {
-  kNone,
-  kRUDY,
-  kPinRUDY,
-  kLUTRUDY
+  kNone = 0,
+  kRUDY = 1,
+  kPinRUDY = 2,
+  kLUTRUDY = 3
 };
 
 enum class DIRECTION
 {
-  kNone,
-  kH,
-  kV
+  kNone = 0,
+  kH = 1,
+  kV = 2
 };
 
 enum class NET_CONNECT_TYPE
 {
-  kNone,
-  kSignal,
-  kClock,
-  kPower,
-  kGround
+  kNone = 0,
+  kSignal = 1,
+  kClock = 2,
+  kPower = 3,
+  kGround = 4
 };
 
 class EvalPropertyMap

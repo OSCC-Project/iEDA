@@ -1069,7 +1069,113 @@ std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter:
 {
   // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
+
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+
+  for (LayerRect& min_scope_rect : DC_INST.getMinScope(DRCRect(-1, rect, true))) {
+    for (Segment<LayerCoord>& segment : getSegmentList(dr_box, min_scope_rect)) {
+      LayerCoord first = segment.get_first();
+      LayerCoord second = segment.get_second();
+      irt_int first_layer_idx = first.get_layer_idx();
+      irt_int second_layer_idx = second.get_layer_idx();
+
+      Orientation orientation = RTUtil::getOrientation(first, second);
+      if (orientation == Orientation::kOblique || std::abs(first_layer_idx - second_layer_idx) > 1) {
+        LOG_INST.error(Loc::current(), "The node segment is illegal!");
+      }
+      for (LayerRect real_rect : getRealRectList({segment})) {
+        if (real_rect.get_layer_idx() != min_scope_rect.get_layer_idx()) {
+          continue;
+        }
+        if (RTUtil::isOpenOverlap(min_scope_rect, real_rect)) {
+          LayerCoord first_grid(RTUtil::getGridCoord(first, box_track_axis), first_layer_idx);
+          LayerCoord second_grid(RTUtil::getGridCoord(second, box_track_axis), second_layer_idx);
+          grid_orientation_map[first_grid].insert(orientation);
+          grid_orientation_map[second_grid].insert(RTUtil::getOppositeOrientation(orientation));
+        }
+      }
+    }
+  }
   return grid_orientation_map;
+}
+
+std::vector<Segment<LayerCoord>> DetailedRouter::getSegmentList(DRBox& dr_box, LayerRect min_scope_rect)
+{
+  std::vector<Segment<LayerCoord>> segment_list;
+
+  // 对min_scope_rect使用max(1/2width, 1/2below_enclosure_length)膨胀rect
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  irt_int layer_idx = min_scope_rect.get_layer_idx();
+  irt_int enlarge_size = routing_layer_list[layer_idx].get_min_width() / 2;
+  if (!layer_via_master_list[layer_idx].empty()) {
+    enlarge_size = std::max(enlarge_size, layer_via_master_list[layer_idx].front().get_below_enclosure().getLength() / 2);
+  }
+  LayerRect check_rect(RTUtil::getEnlargedRect(min_scope_rect, enlarge_size), layer_idx);
+
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  if (RTUtil::existGrid(check_rect, box_track_axis)) {
+    PlanarRect grid_rect = RTUtil::getGridRect(check_rect, box_track_axis);
+    for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
+      for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
+        DRNode& node = layer_node_map[layer_idx][grid_x][grid_y];
+        for (auto& [orientation, neigbor_ptr] : node.get_neighbor_ptr_map()) {
+          DRNode node_a = node;
+          DRNode node_b = *neigbor_ptr;
+          RTUtil::swapByCMP(node_a, node_b, CmpLayerCoordByLayerASC());
+          segment_list.emplace_back(node_a, node_b);
+        }
+      }
+    }
+  }
+  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
+    if (a.get_first() != b.get_first()) {
+      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
+    } else {
+      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
+    }
+  });
+  RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
+    return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
+  });
+  return segment_list;
+}
+
+std::vector<LayerRect> DetailedRouter::getRealRectList(std::vector<Segment<LayerCoord>> segment_list)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<LayerRect> real_rect_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    LayerCoord& first_coord = segment.get_first();
+    LayerCoord& second_coord = segment.get_second();
+
+    irt_int first_layer_idx = first_coord.get_layer_idx();
+    irt_int second_layer_idx = second_coord.get_layer_idx();
+    if (first_layer_idx != second_layer_idx) {
+      RTUtil::swapASC(first_layer_idx, second_layer_idx);
+      for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+        ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+        LayerRect& above_enclosure = via_master.get_above_enclosure();
+        PlanarRect offset_above_enclosure = RTUtil::getOffsetRect(above_enclosure, first_coord);
+        real_rect_list.emplace_back(offset_above_enclosure, above_enclosure.get_layer_idx());
+
+        LayerRect& below_enclosure = via_master.get_below_enclosure();
+        PlanarRect offset_below_enclosure = RTUtil::getOffsetRect(below_enclosure, first_coord);
+        real_rect_list.emplace_back(offset_below_enclosure, below_enclosure.get_layer_idx());
+      }
+    } else {
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      PlanarRect wire_rect = RTUtil::getEnlargedRect(first_coord, second_coord, half_width);
+      real_rect_list.emplace_back(wire_rect, first_layer_idx);
+    }
+  }
+  return real_rect_list;
 }
 
 void DetailedRouter::checkDRBox(DRBox& dr_box)

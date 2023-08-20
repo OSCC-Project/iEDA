@@ -90,6 +90,8 @@ class DetailedRouter
   void makeRoutingState(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const LayerRect& rect);
+  std::vector<Segment<LayerCoord>> getSegmentList(DRBox& dr_box, LayerRect min_scope_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
   void saveDRBox(DRBox& dr_box);
   void resetDRBox(DRModel& dr_model, DRBox& dr_box);
