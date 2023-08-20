@@ -783,7 +783,7 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
     processDRBox(dr_model, dr_box);
     countDRBox(dr_model, dr_box);
     reportDRBox(dr_model, dr_box);
-    plotDRBox(dr_box);
+    // plotDRBox(dr_box);
     freeDRBox(dr_model, dr_box);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Box Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
