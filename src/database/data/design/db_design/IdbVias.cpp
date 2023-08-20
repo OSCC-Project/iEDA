@@ -66,6 +66,14 @@ void IdbVia::clear()
   }
 }
 
+IdbViaMaster* IdbVia::get_instance()
+{
+  if (_master_instance == nullptr) {
+    _master_instance = new IdbViaMaster();
+  }
+  return _master_instance;
+}
+
 IdbVia* IdbVia::clone()
 {
   IdbVia* via_new = new IdbVia();

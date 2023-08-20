@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
+#include "DRCChecker.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
@@ -654,6 +655,7 @@ void DataManager::buildDatabase()
   buildLayerViaMasterList();
   buildBlockageList();
   buildNetList();
+  cutBlockageList();
   updateHelper();
 }
 
@@ -1272,6 +1274,94 @@ void DataManager::buildDrivingPin(Net& net)
     return;
   }
   LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
+}
+
+/**
+ * 主要针对io_cell的pin_shape被blockage覆盖的问题
+ */
+void DataManager::cutBlockageList()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+
+  std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_rect_enlarge_net_rect_map;
+  for (auto& [grid_coord, net_rect_map] : makeGridNetRectMap()) {
+    RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
+    for (LayerRect& blockage_rect : net_rect_map[-1]) {
+      std::vector<PlanarRect>& enlarge_net_rect_list = blockage_rect_enlarge_net_rect_map[blockage_rect];
+      for (auto& [net_idx, net_rect_list] : net_rect_map) {
+        if (net_idx == -1) {
+          continue;
+        }
+        for (LayerRect& net_rect : net_rect_list) {
+          if (RTUtil::isInside(blockage_rect, net_rect)) {
+            irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
+            enlarge_net_rect_list.push_back(RTUtil::getEnlargedRect(net_rect, enlarged_size));
+          }
+        }
+      }
+    }
+  }
+  routing_blockage_list.clear();
+  for (auto& [blockage_rect, enlarge_net_rect_list] : blockage_rect_enlarge_net_rect_map) {
+    if (enlarge_net_rect_list.empty()) {
+      Blockage routing_blockage;
+      routing_blockage.set_real_rect(blockage_rect);
+      routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+      routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+      routing_blockage_list.push_back(routing_blockage);
+    } else {
+      std::vector<PlanarRect> cutting_rect_list = RTUtil::getCuttingRectList(blockage_rect, enlarge_net_rect_list);
+      for (PlanarRect& cutting_rect : cutting_rect_list) {
+        Blockage routing_blockage;
+        routing_blockage.set_real_rect(cutting_rect);
+        routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+        routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+        routing_blockage_list.push_back(routing_blockage);
+      }
+    }
+  }
+}
+
+std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> DataManager::makeGridNetRectMap()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  EXTPlanarRect& die = _database.get_die();
+  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+  std::vector<Net>& net_list = _database.get_net_list();
+
+  std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> grid_net_rect_map;
+
+  for (Blockage& routing_blockage : routing_blockage_list) {
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(-1, blockage_real_rect, true))) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          grid_net_rect_map[LayerCoord(x, y, routing_blockage.get_layer_idx())][-1].push_back(blockage_real_rect);
+        }
+      }
+    }
+  }
+  for (Net& net : net_list) {
+    for (Pin& pin : net.get_pin_list()) {
+      for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(net.get_net_idx(), shape_real_rect, true))) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              grid_net_rect_map[LayerCoord(x, y, routing_shape.get_layer_idx())][net.get_net_idx()].push_back(shape_real_rect);
+            }
+          }
+        }
+      }
+    }
+  }
+  return grid_net_rect_map;
 }
 
 void DataManager::updateHelper()

@@ -19,6 +19,7 @@
 
 #include "WLFactory.hpp"
 #include "WLNet.hpp"
+#include "idm.h"
 
 namespace eval {
 
@@ -28,10 +29,13 @@ class WirelengthEval
   WirelengthEval();
   ~WirelengthEval() = default;
 
+  void initWLNetList();
+  int64_t evalTotalWL(WIRELENGTH_TYPE wl_type);
+  int64_t evalTotalWL(const std::string& wl_type);
+
   void reportWirelength(const std::string& plot_path, const std::string& input_def_name);
   void checkWLType(const std::string& wl_type);
 
-  int64_t evalTotalWL(const std::string& wl_type);
   int64_t evalOneNetWL(const std::string& net_name, const std::string& wl_type);
   int64_t evalOneNetWL(const std::string& wl_type, WLNet* wl_net);
   int64_t evalDriver2LoadWL(const std::string& net_name, const std::string& sink_pin_name);
@@ -54,6 +58,9 @@ class WirelengthEval
  private:
   std::vector<WLNet*> _net_list;
   std::map<std::string, WLNet*> _name2net_map;
+
+  std::string fixSlash(std::string raw_str);
+  WLPin* wrapWLPin(idb::IdbPin* idb_pin);
 };
 }  // namespace eval
 

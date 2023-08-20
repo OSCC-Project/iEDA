@@ -41,7 +41,7 @@ void GOCA::run()
     auto* inst = new Inst(instance);
     auto* load_pin = inst->get_load_pin();
     // update load pin cap
-    TimingPropagator::updateCapLoad(load_pin);
+    TimingPropagator::updateCapLoad<Node>(load_pin);
     insts.push_back(inst);
   });
   _level_insts.push_back(insts);
@@ -54,7 +54,7 @@ void GOCA::run()
     std::ranges::for_each(insts, [](Inst* inst) {
       auto* load_pin = inst->get_load_pin();
       // update load pin cap
-      TimingPropagator::updateCapLoad(load_pin);
+      TimingPropagator::updateCapLoad<Node>(load_pin);
     });
     ++_level;
   }
@@ -166,7 +166,7 @@ std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign&
     auto center = BalanceClustering::calcBoundCentroid(sorted_insts);
 
     auto center_dist = TimingPropagator::calcDist(loc, center);
-    auto shift_dist = std::min(static_cast<int64_t>(max_dist / 2), center_dist);
+    auto shift_dist = std::min(max_dist / 2, center_dist);
     auto new_loc = (center - loc) * (1.0 * shift_dist / center_dist) + loc;
     auto net_name = CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId());
     auto* buffer = TreeBuilder::genBufInst(net_name, new_loc);
@@ -193,11 +193,11 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
   auto center = BalanceClustering::calcBoundCentroid(insts);
   auto guide_loc = center;
   // center shift
-  auto net_dist = BalanceClustering::estimateNetLength(insts, 1.0 * max_dist / TimingPropagator::getDbUnit(), max_fanout)
-                  * TimingPropagator::getDbUnit();
+  int net_dist = BalanceClustering::estimateNetLength(insts, 1.0 * max_dist / TimingPropagator::getDbUnit(), max_fanout)
+                 * TimingPropagator::getDbUnit();
   if (shift && net_dist <= max_dist) {
     auto center_dist = TimingPropagator::calcDist(center, level_center);
-    auto shift_dist = std::min(static_cast<int64_t>(max_dist - net_dist), center_dist);
+    auto shift_dist = std::min(max_dist - net_dist, center_dist);
     guide_loc = center_dist > 0 ? (level_center - center) * (1.0 * shift_dist / center_dist) + center : center;
   }
   auto net_name = CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId());

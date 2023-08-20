@@ -26,6 +26,7 @@
 #include "module/evaluator/wirelength/SteinerWirelength.hh"
 #include "module/logger/Log.hh"
 #include "report/ReportTable.hh"
+#include "time/Time.hh"
 #include "usage/usage.hh"
 
 namespace ipl {
@@ -33,73 +34,40 @@ namespace ipl {
 void PLAPI::reportPLInfo()
 {
   LOG_INFO << "-----------------Start iPL Report Generation-----------------";
+
   ieda::Stats report_status;
 
   std::string output_dir = "./result/pl/report/";
 
-  // report violation info
-  std::string violation_file = "violation_record.txt";
-  std::ofstream violation_stream;
-  violation_stream.open(output_dir + violation_file);
-  if (!violation_stream.good()) {
-    LOG_WARNING << "Cannot open file for violation info !";
+  std::string summary_file = "summary_report.txt";
+  std::ofstream summary_stream;
+  summary_stream.open(output_dir + summary_file);
+  if (!summary_stream.good()) {
+    LOG_WARNING << "Cannot open file for summary report !";
   }
-  reportLayoutInfo(violation_stream);
-  violation_stream.close();
-  LOG_INFO << "Violation Info Write to "
-           << "'" << (output_dir + violation_file) << "'";
+  summary_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
+
+  // report base info
+  reportPLBaseInfo(summary_stream);
+
+  // report violation info
+  reportViolationInfo(summary_stream);
 
   // report wirelength info
-  std::string wirelength_file = "wirelength_record.txt";
-  std::ofstream wirelength_stream;
-  wirelength_stream.open(output_dir + wirelength_file);
-  if (!wirelength_stream.good()) {
-    LOG_WARNING << "Cannot open file for wirelength info !";
-  }
-  reportHPWLInfo(wirelength_stream);
-  reportSTWLInfo(wirelength_stream);
-  reportLongNetInfo(wirelength_stream);
-  wirelength_stream.close();
-  LOG_INFO << "Wirelength Info Write to "
-           << "'" << (output_dir + wirelength_file) << "'";
+  reportWLInfo(summary_stream);
 
   // report density info
-  std::string density_file = "density_record.txt";
-  std::ofstream density_stream;
-  density_stream.open(output_dir + density_file);
-  if (!density_stream.good()) {
-    LOG_WARNING << "Cannot open file for density info !";
-  }
-  reportPeakBinDensity(density_stream);
-  density_stream.close();
-  LOG_INFO << "Density Info Write to "
-           << "'" << (output_dir + density_file) << "'";
+  reportBinDensity(summary_stream);
 
   // report timing info
   if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
-    std::string timing_file = "timing_record.txt";
-    std::ofstream timing_stream;
-    timing_stream.open(output_dir + timing_file);
-    if (!timing_stream.good()) {
-      LOG_WARNING << "Cannot open file for timing info !";
-    }
-    reportTimingInfo(timing_stream);
-    timing_stream.close();
-    LOG_INFO << "Timing Info Write to "
-             << "'" << (output_dir + timing_file) << "'";
+    reportTimingInfo(summary_stream);
   }
 
   // report congestion
-  std::string congestion_file = "congestion_record.txt";
-  std::ofstream congestion_stream;
-  congestion_stream.open(output_dir + congestion_file);
-  if (!congestion_stream.good()) {
-    LOG_WARNING << "Cannot open file for congestion info !";
-  }
-  reportCongestionInfo(congestion_stream);
-  congestion_stream.close();
-  LOG_INFO << "Congestion Info Write to "
-           << "'" << output_dir << "'";
+  reportCongestionInfo(summary_stream);
+
+  summary_stream.close();
 
   double time_delta = report_status.elapsedRunTime();
 
@@ -107,53 +75,93 @@ void PLAPI::reportPLInfo()
   LOG_INFO << "-----------------Finish Report Generation-----------------";
 }
 
-void PLAPI::reportLayoutInfo(std::ofstream& feed)
+void PLAPI::reportViolationInfo(std::ofstream& feed)
 {
-  LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
+  std::string output_dir = "./result/pl/report/";
+  std::string violation_detail_file = "violation_detail_report.txt";
+  std::ofstream violation_detail_stream;
+  violation_detail_stream.open(output_dir + violation_detail_file);
+  if (!violation_detail_stream.good()) {
+    LOG_WARNING << "Cannot open file for violation detail report !";
+  }
+  violation_detail_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
 
+  auto report_tbl = std::make_unique<ieda::ReportTable>("table");
+  (*report_tbl) << TABLE_HEAD;
+  (*report_tbl)[0][0] = "Violation Info";
+  (*report_tbl)[0][1] = "Value";
+
+  // violation info
+  int32_t core_violated_cnt = 0;
+  int32_t rowsite_violated_cnt = 0;
+  int32_t power_violated_cnt = 0;
+  int32_t overlap_violated_cnt = 0;
+
+  LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
   LOG_INFO << "Detect Core outside Instances...";
   std::vector<Instance*> illegal_outside_inst_list = checker->obtainIllegalInstInsideCore();
   if (static_cast<int32_t>(illegal_outside_inst_list.size()) != 0) {
-    LOG_ERROR << "Illegal Outside Instances Count : " << illegal_outside_inst_list.size();
-    feed << "Illegal Outside Instances Count : " << illegal_outside_inst_list.size() << std::endl;
+    core_violated_cnt = static_cast<int32_t>(illegal_outside_inst_list.size());
+    LOG_ERROR << "Illegal Outside Instances Count : " << core_violated_cnt;
+    violation_detail_stream << "Illegal Outside Instances Count : " << illegal_outside_inst_list.size() << std::endl;
     for (auto inst : illegal_outside_inst_list) {
-      feed << "Illegal Location Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x() << ","
-           << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << "," << inst->get_shape().get_ur_y() << std::endl;
+      violation_detail_stream << "Illegal Location Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x() << ","
+                              << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << "," << inst->get_shape().get_ur_y()
+                              << std::endl;
     }
-    feed << std::endl;
+    violation_detail_stream << std::endl;
   }
 
   LOG_INFO << "Detect Instances' Alignment...";
   std::vector<Instance*> illegal_loc_inst_list = checker->obtainIllegalInstAlignRowSite();
   if (static_cast<int32_t>(illegal_loc_inst_list.size()) != 0) {
-    LOG_ERROR << "Illegal Alignment Instances Count : " << illegal_loc_inst_list.size();
-    feed << "Illegal Alignment Instances Count : " << illegal_loc_inst_list.size() << std::endl;
+    rowsite_violated_cnt = static_cast<int32_t>(illegal_loc_inst_list.size());
+    LOG_ERROR << "Illegal Alignment Instances Count : " << rowsite_violated_cnt;
+    violation_detail_stream << "Illegal Alignment Instances Count : " << illegal_loc_inst_list.size() << std::endl;
     for (auto inst : illegal_loc_inst_list) {
-      feed << "Illegal Location Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x() << ","
-           << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << "," << inst->get_shape().get_ur_y() << std::endl;
+      violation_detail_stream << "Illegal Location Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x() << ","
+                              << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << "," << inst->get_shape().get_ur_y()
+                              << std::endl;
     }
-    feed << std::endl;
+    violation_detail_stream << std::endl;
   }
 
   LOG_INFO << "Detect Power Alignment...";
   std::vector<Instance*> illegal_power_inst_list = checker->obtainIllegalInstAlignPower();
   if (static_cast<int32_t>(illegal_power_inst_list.size()) != 0) {
-    LOG_ERROR << "Illegal Power Orient Instances Count : " << illegal_power_inst_list.size();
-    feed << "Illegal Power Orient Instances Count : " << illegal_power_inst_list.size() << std::endl;
+    power_violated_cnt = static_cast<int32_t>(illegal_power_inst_list.size());
+    LOG_ERROR << "Illegal Power Orient Instances Count : " << power_violated_cnt;
+    violation_detail_stream << "Illegal Power Orient Instances Count : " << illegal_power_inst_list.size() << std::endl;
     for (auto inst : illegal_power_inst_list) {
-      feed << "Illegal Power Orient Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x() << ","
-           << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << "," << inst->get_shape().get_ur_y() << std::endl;
+      violation_detail_stream << "Illegal Power Orient Instance " << inst->get_name() << " Location : " << inst->get_shape().get_ll_x()
+                              << "," << inst->get_shape().get_ll_y() << " " << inst->get_shape().get_ur_x() << ","
+                              << inst->get_shape().get_ur_y() << std::endl;
     }
-    feed << std::endl;
+    violation_detail_stream << std::endl;
   }
 
   LOG_INFO << "Detect Overlap Between Instances...";
   if (!checker->isNoOverlapAmongInsts()) {
-    reportOverlapInfo(feed);
+    overlap_violated_cnt = reportOverlapInfo(violation_detail_stream);
     LOG_ERROR << "Overlap Exist";
   }
 
   delete checker;
+
+  (*report_tbl)[1][0] = "Core Range Violated Count";
+  (*report_tbl)[1][1] = std::to_string(core_violated_cnt);
+  (*report_tbl)[2][0] = "Row/Site Alignment Violated Count";
+  (*report_tbl)[2][1] = std::to_string(rowsite_violated_cnt);
+  (*report_tbl)[3][0] = "Power Alignment Violated Count";
+  (*report_tbl)[3][1] = std::to_string(power_violated_cnt);
+  (*report_tbl)[4][0] = "Overlap Violated Count";
+  (*report_tbl)[4][1] = std::to_string(overlap_violated_cnt);
+  (*report_tbl) << TABLE_ENDLINE;
+  feed << (*report_tbl).to_string() << std::endl;
+
+  violation_detail_stream.close();
+  LOG_INFO << "Detail Violations Info Writed to "
+           << "'" << output_dir << "'";
 }
 
 void PLAPI::reportLayoutWhiteInfo()
@@ -187,8 +195,13 @@ void PLAPI::reportLayoutWhiteInfo()
   delete checker;
 }
 
-void PLAPI::reportPeakBinDensity(std::ofstream& feed)
+void PLAPI::reportBinDensity(std::ofstream& feed)
 {
+  auto report_tbl = std::make_unique<ieda::ReportTable>("table");
+  (*report_tbl) << TABLE_HEAD;
+  (*report_tbl)[0][0] = "Bin Density Info";
+  (*report_tbl)[0][1] = "Value";
+
   auto core_shape = PlacerDBInst.get_layout()->get_core_shape();
   int32_t bin_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
   int32_t bin_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
@@ -215,8 +228,12 @@ void PLAPI::reportPeakBinDensity(std::ofstream& feed)
   }
 
   Density density_eval(&grid_manager);
-  feed << "Peak BinDensity: " << density_eval.obtainPeakBinDensity() << std::endl;
-  feed << std::endl;
+  float peak_density = density_eval.obtainPeakBinDensity();
+
+  (*report_tbl)[1][0] = "Peak BinDensity";
+  (*report_tbl)[1][1] = std::to_string(peak_density);
+  (*report_tbl) << TABLE_ENDLINE;
+  feed << (*report_tbl).to_string() << std::endl;
 }
 
 // NOLINTNEXTLINE
@@ -659,6 +676,68 @@ void PLAPI::savePinListInfoForDebug(std::string path)
   file_stream.close();
 }
 
+void PLAPI::reportWLInfo(std::ofstream& feed)
+{
+  std::string output_dir = "./result/pl/report/";
+  std::string wl_detail_file = "wl_detail_report.txt";
+  std::ofstream wl_detail_stream;
+  wl_detail_stream.open(output_dir + wl_detail_file);
+  if (!wl_detail_stream.good()) {
+    LOG_WARNING << "Cannot open file for wl detail report !";
+  }
+  wl_detail_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
+
+  auto report_tbl = std::make_unique<ieda::ReportTable>("table");
+  (*report_tbl) << TABLE_HEAD;
+  (*report_tbl)[0][0] = "Wirelength Info";
+  (*report_tbl)[0][1] = "Value";
+
+  // wl info
+  int64_t total_hpwl = 0;
+  int64_t max_hpwl = 0;
+  int64_t total_stwl = 0;
+  int64_t max_stwl = 0;
+  int32_t constraint_hpwl = PlacerDBInst.get_placer_config()->get_buffer_config().get_max_wirelength_constraint();
+  int32_t long_net_cnt = 0;
+
+  auto* topo_manager = PlacerDBInst.get_topo_manager();
+  HPWirelength hpwl_eval(topo_manager);
+  SteinerWirelength stwl_eval(topo_manager);
+  stwl_eval.updateAllNetWorkPointPair();
+
+  for (auto* network : topo_manager->get_network_list()) {
+    int64_t hpwl = hpwl_eval.obtainNetWirelength(network->get_network_id());
+    int64_t stwl = stwl_eval.obtainNetWirelength(network->get_network_id());
+
+    hpwl > max_hpwl ? max_hpwl = hpwl : max_hpwl;
+    stwl > max_stwl ? max_stwl = stwl : max_stwl;
+    total_hpwl += hpwl;
+    total_stwl += stwl;
+
+    if (hpwl > constraint_hpwl) {
+      long_net_cnt++;
+    }
+  }
+
+  (*report_tbl)[1][0] = "Total HPWL";
+  (*report_tbl)[1][1] = std::to_string(total_hpwl);
+  (*report_tbl)[2][0] = "Max HPWL";
+  (*report_tbl)[2][1] = std::to_string(max_hpwl);
+  (*report_tbl)[3][0] = "Total STWL";
+  (*report_tbl)[3][1] = std::to_string(total_stwl);
+  (*report_tbl)[4][0] = "Max STWL";
+  (*report_tbl)[4][1] = std::to_string(max_stwl);
+  (*report_tbl)[5][0] = ("LongNet HPWL (Exceed " + std::to_string(constraint_hpwl)) + ") Count";
+  (*report_tbl)[5][1] = std::to_string(long_net_cnt);
+  (*report_tbl) << TABLE_ENDLINE;
+  feed << (*report_tbl).to_string() << std::endl;
+
+  reportLongNetInfo(wl_detail_stream);
+  wl_detail_stream.close();
+  LOG_INFO << "Detail Long Net Wirelength Info Writed to "
+           << "'" << output_dir << "'";
+}
+
 void PLAPI::reportSTWLInfo(std::ofstream& feed)
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
@@ -741,7 +820,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void PLAPI::reportOverlapInfo(std::ofstream& feed)
+int32_t PLAPI::reportOverlapInfo(std::ofstream& feed)
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -773,6 +852,8 @@ void PLAPI::reportOverlapInfo(std::ofstream& feed)
   }
 
   delete checker;
+
+  return static_cast<int32_t>(clique_list.size());
 }
 
 void PLAPI::reportTimingInfo(std::ofstream& feed)
@@ -781,13 +862,25 @@ void PLAPI::reportTimingInfo(std::ofstream& feed)
     iPLAPIInst.initTimingEval();
     iPLAPIInst.updateTiming();
 
+    auto report_tbl = std::make_unique<ieda::ReportTable>("table");
+    (*report_tbl) << TABLE_HEAD;
+    (*report_tbl)[0][0] = "Clock Timing Info";
+    (*report_tbl)[0][1] = "Early WNS";
+    (*report_tbl)[0][2] = "Early TNS";
+    (*report_tbl)[0][3] = "Late WNS";
+    (*report_tbl)[0][4] = "Late TNS";
+    (*report_tbl) << TABLE_ENDLINE;
+
     for (std::string clock_name : iPLAPIInst.obtainClockNameList()) {
-      double wns = iPLAPIInst.obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMax);
-      double tns = iPLAPIInst.obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMax);
-      feed << "Clock : " << clock_name << " WNS : " << wns << ";"
-           << " TNS : " << tns << std::endl;
+      double early_wns = iPLAPIInst.obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMin);
+      double early_tns = iPLAPIInst.obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMin);
+      double late_wns = iPLAPIInst.obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+      double late_tns = iPLAPIInst.obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+      (*report_tbl) << clock_name << std::to_string(early_wns) << std::to_string(early_tns) << std::to_string(late_wns)
+                    << std::to_string(late_tns) << TABLE_ENDLINE;
     }
-    feed << std::endl;
+    (*report_tbl) << TABLE_ENDLINE;
+    feed << (*report_tbl).to_string() << std::endl;
 
     iPLAPIInst.destroyTimingEval();
   }
@@ -815,6 +908,96 @@ void PLAPI::reportCongestionInfo(std::ofstream& feed)
   // iPLAPIInst.plotCongMap(plot_path, output_file_name);
 
   iPLAPIInst.destroyCongEval();
+}
+
+void PLAPI::reportPLBaseInfo(std::ofstream& feed)
+{
+  auto* pl_layout = PlacerDBInst.get_layout();
+  auto* pl_design = PlacerDBInst.get_design();
+
+  auto report_tbl = std::make_unique<ieda::ReportTable>("table");
+  (*report_tbl) << TABLE_HEAD;
+  (*report_tbl)[0][0] = "Base Info";
+  (*report_tbl)[0][1] = "Value";
+  (*report_tbl)[1][0] = "Design";
+  (*report_tbl)[1][1] = pl_design->get_design_name();
+  (*report_tbl)[2][0] = "Utilization";
+  (*report_tbl)[2][1] = std::to_string(PlacerDBInst.obtainUtilization());
+
+  // core site info
+  int64_t row_num = pl_layout->get_core_shape().get_height() / pl_layout->get_row_height();
+  int64_t site_num = pl_layout->get_core_shape().get_width() / pl_layout->get_site_width();
+  (*report_tbl)[3][0] = "Site Num";
+  (*report_tbl)[3][1] = std::to_string(row_num) + " * " + std::to_string(site_num);
+
+  // instance info
+  int32_t instance_cnt = 0;
+  int32_t macro_cnt = 0;
+  int32_t stdcell_cnt = 0;
+  int32_t flipflop_cnt = 0;
+  int32_t clock_buf_cnt = 0;
+  int32_t logic_cnt = 0;
+  for (auto* inst : pl_design->get_instance_list()) {
+    instance_cnt++;
+    Cell* cell_master = inst->get_cell_master();
+    if (cell_master) {
+      if (cell_master->isMacro()) {
+        macro_cnt++;
+      } else {
+        stdcell_cnt++;
+        if (cell_master->isFlipflop()) {
+          flipflop_cnt++;
+        } else if (cell_master->isClockBuffer()) {
+          clock_buf_cnt++;
+        } else {
+          logic_cnt++;
+        }
+      }
+    }
+  }
+  (*report_tbl)[4][0] = "Instances Count";
+  (*report_tbl)[4][1] = std::to_string(instance_cnt);
+  (*report_tbl)[5][0] = "- Macro Count";
+  (*report_tbl)[5][1] = std::to_string(macro_cnt);
+  (*report_tbl)[6][0] = "- StdCell Count";
+  (*report_tbl)[6][1] = std::to_string(stdcell_cnt);
+  (*report_tbl)[7][0] = "-- FlipFlop Count";
+  (*report_tbl)[7][1] = std::to_string(flipflop_cnt);
+  (*report_tbl)[8][0] = "-- Clock Buffer Count";
+  (*report_tbl)[8][1] = std::to_string(clock_buf_cnt);
+  (*report_tbl)[9][0] = "-- Normal Logic Count";
+  (*report_tbl)[9][1] = std::to_string(logic_cnt);
+
+  // net info
+  int32_t net_cnt = 0;
+  int32_t signal_cnt = 0;
+  int32_t clock_cnt = 0;
+  int32_t reset_cnt = 0;
+  int32_t other_cnt = 0;
+  for (auto* net : pl_design->get_net_list()) {
+    net_cnt++;
+    if (net->isClockNet()) {
+      clock_cnt++;
+    } else if (net->isSignalNet()) {
+      signal_cnt++;
+    } else if (net->isResetNet()) {
+      reset_cnt++;
+    } else {
+      other_cnt++;
+    }
+  }
+  (*report_tbl)[10][0] = "Nets Count";
+  (*report_tbl)[10][1] = std::to_string(net_cnt);
+  (*report_tbl)[11][0] = "- Signal Net Count";
+  (*report_tbl)[11][1] = std::to_string(signal_cnt);
+  (*report_tbl)[12][0] = "- Clock Net Count";
+  (*report_tbl)[12][1] = std::to_string(clock_cnt);
+  (*report_tbl)[13][0] = "- Reset Net Count";
+  (*report_tbl)[13][1] = std::to_string(reset_cnt);
+  (*report_tbl)[14][0] = "- Other Net Count";
+  (*report_tbl)[14][1] = std::to_string(other_cnt);
+  (*report_tbl) << TABLE_ENDLINE;
+  feed << (*report_tbl).to_string() << std::endl;
 }
 
 }  // namespace ipl

@@ -28,7 +28,7 @@ bool initIdb(const std::string& config_path)
 bool initTechLef(const std::string& techlef_path)
 {
   dmInst->get_config().set_tech_lef_path(techlef_path);
-  return dmInst->readLef(vector<string>{techlef_path});
+  return dmInst->readLef(vector<string>{techlef_path}, true);
 }
 
 bool initLef(const std::vector<std::string>& lef_paths)

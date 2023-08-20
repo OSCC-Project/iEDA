@@ -28,6 +28,10 @@
 namespace icts {
 double TimingPropagator::_unit_cap = 0;
 double TimingPropagator::_unit_res = 0;
+double TimingPropagator::_unit_h_cap = 0;
+double TimingPropagator::_unit_h_res = 0;
+double TimingPropagator::_unit_v_cap = 0;
+double TimingPropagator::_unit_v_res = 0;
 double TimingPropagator::_skew_bound = 0;
 int TimingPropagator::_db_unit = 0;
 double TimingPropagator::_max_buf_tran = 0;
@@ -48,6 +52,10 @@ void TimingPropagator::init()
   // set RC, db unit and liberty info from api
   _unit_cap = CTSAPIInst.getClockUnitCap();
   _unit_res = CTSAPIInst.getClockUnitRes() / 1000;
+  _unit_h_cap = CTSAPIInst.getClockUnitCap(LayerPattern::kH);
+  _unit_h_res = CTSAPIInst.getClockUnitRes(LayerPattern::kH) / 1000;
+  _unit_v_cap = CTSAPIInst.getClockUnitCap(LayerPattern::kV);
+  _unit_v_res = CTSAPIInst.getClockUnitRes(LayerPattern::kV) / 1000;
   _db_unit = CTSAPIInst.getDbUnit();
   _delay_libs = CTSAPIInst.getAllBufferLibs();
   // set algorithm parameters from config
@@ -99,19 +107,34 @@ void TimingPropagator::updateLoads(Net* net)
   });
   net->set_load_pins(loads);
 }
+void TimingPropagator::updatePinCap(Pin* pin)
+{
+  double cap_load = 0;
+  if (pin->isSinkPin()) {
+    auto* inst = pin->get_inst();
+    auto* cts_inst = inst->get_cts_inst();
+    cap_load = CTSAPIInst.getSinkCap(cts_inst);
+  }
+  if (pin->isBufferPin()) {
+    auto cell_name = pin->getCellMaster();
+    auto* lib = CTSAPIInst.getCellLib(cell_name);
+    cap_load = lib->get_init_cap();
+  }
+  pin->set_cap_load(cap_load);
+}
 /**
  * @brief update all timing information
  *       propagate net_len, cap, slew, cell_delay, wire_delay
  *
  * @param net
  */
-void TimingPropagator::update(Net* net)
+void TimingPropagator::update(Net* net, const RCPattern& pattern)
 {
   netLenPropagate(net);
-  capPropagate(net);
-  slewPropagate(net);
+  capPropagate(net, pattern);
+  slewPropagate(net, pattern);
   cellDelayPropagate(net);
-  wireDelayPropagate(net);
+  wireDelayPropagate(net, pattern);
 }
 /**
  * @brief propagate net's wirelength by post order
@@ -121,27 +144,45 @@ void TimingPropagator::update(Net* net)
 void TimingPropagator::netLenPropagate(Net* net)
 {
   auto* driver_pin = net->get_driver_pin();
-  driver_pin->postOrder(updateNetLen);
+  driver_pin->postOrder(updateNetLen<Node>);
 }
 /**
  * @brief propagate cap by post order, and update load pin's cap
  *
  * @param net
  */
-void TimingPropagator::capPropagate(Net* net)
+void TimingPropagator::capPropagate(Net* net, const RCPattern& pattern)
 {
   auto* driver_pin = net->get_driver_pin();
-  driver_pin->postOrder(updateCapLoad);
+  std::ranges::for_each(net->get_load_pins(), [](Pin* pin) {
+    double cap_load = 0;
+    if (pin->isSinkPin()) {
+      auto* inst = pin->get_inst();
+      auto* cts_inst = inst->get_cts_inst();
+      cap_load = CTSAPIInst.getSinkCap(cts_inst);
+    }
+    if (pin->isBufferPin()) {
+      auto cell_name = pin->getCellMaster();
+      auto* lib = CTSAPIInst.getCellLib(cell_name);
+      cap_load = lib->get_init_cap();
+    }
+    pin->set_cap_load(cap_load);
+  });
+  driver_pin->postOrder(updateCapLoad<Node>, pattern);
 }
 /**
  * @brief propagate slew by pre order
  *
  * @param net
  */
-void TimingPropagator::slewPropagate(Net* net)
+void TimingPropagator::slewPropagate(Net* net, const RCPattern& pattern)
 {
   auto* driver_pin = net->get_driver_pin();
-  driver_pin->preOrder(updateSlewIn);
+  auto cell_name = driver_pin->getCellMaster();
+  auto* lib = CTSAPIInst.getCellLib(cell_name);
+  auto slew_out = lib->calcSlew(driver_pin->get_cap_load());
+  driver_pin->set_slew_in(slew_out);
+  driver_pin->preOrder(updateSlewIn<Node>, pattern);
 }
 /**
  * @brief propagate cell delay
@@ -160,10 +201,10 @@ void TimingPropagator::cellDelayPropagate(Net* net)
  *
  * @param net
  */
-void TimingPropagator::wireDelayPropagate(Net* net)
+void TimingPropagator::wireDelayPropagate(Net* net, const RCPattern& pattern)
 {
   auto* driver_pin = net->get_driver_pin();
-  driver_pin->postOrder(updateWireDelay);
+  driver_pin->postOrder(updateWireDelay<Node>, pattern);
 }
 /**
  * @brief update insertion delay
@@ -188,201 +229,6 @@ void TimingPropagator::updateCellDelay(Inst* inst)
   auto max_delay = driver_pin->get_max_delay();
   load_pin->set_min_delay(insert_delay + min_delay);
   load_pin->set_max_delay(insert_delay + max_delay);
-}
-/**
- * @brief update net's wirelength
- *
- * @param node
- */
-void TimingPropagator::updateNetLen(Node* node)
-{
-  auto net_len = calcNetLen(node);
-  node->set_sub_len(net_len);
-}
-/**
- * @brief update pin's cap load and cap out
- *
- * @param node
- */
-void TimingPropagator::updateCapLoad(Node* node)
-{
-  auto cap_load = calcCapLoad(node);
-  node->set_cap_load(cap_load);
-}
-/**
- * @brief update slew, for slew constraint and insertion delay calculation
- *       driver pin: slew_out = a * [cap_load] + b, the function is from liberty fitting
- *       load pin or steiner node: slew_out = [slew_in]
- *                                 slew_in = sqrt([parent's slew_out]^2 + [slew_wire]^2)
- *
- * @param node
- */
-void TimingPropagator::updateSlewIn(Node* node)
-{
-  auto calc_slew_in = [&node](Node* child) {
-    auto slew_ideal = calcIdealSlew(node, child);
-    double slew_in = 0;
-    if (node->isBufferPin() && node->isDriver()) {
-      auto cell_name = node->getCellMaster();
-      auto* lib = CTSAPIInst.getCellLib(cell_name);
-      auto slew_out = lib->calcSlew(node->get_cap_load());
-      slew_in = std::sqrt(std::pow(slew_out, 2) + std::pow(slew_ideal, 2));
-    } else {
-      slew_in = std::sqrt(std::pow(node->get_slew_in(), 2) + std::pow(slew_ideal, 2));
-    }
-    child->set_slew_in(slew_in);
-  };
-  std::ranges::for_each(node->get_children(), calc_slew_in);
-}
-/**
- * @brief update wire delay between node and its child
- *       wire delay: elmore model delay
- *
- * @param node
- */
-void TimingPropagator::updateWireDelay(Node* node)
-{
-  if (node->get_children().empty()) {
-    return;
-  }
-  double min_delay = std::numeric_limits<double>::max();
-  double max_delay = std::numeric_limits<double>::min();
-  auto calc_delay = [&min_delay, &max_delay, &node](Node* child) {
-    auto delay = calcElmoreDelay(node, child);
-    min_delay = std::min(min_delay, delay + child->get_min_delay());
-    max_delay = std::max(max_delay, delay + child->get_max_delay());
-  };
-  std::ranges::for_each(node->get_children(), calc_delay);
-  if (node->isPin()) {
-    auto* pin = dynamic_cast<Pin*>(node);
-    if (pin->isLoad()) {
-      min_delay = std::min(min_delay, pin->get_min_delay());
-      max_delay = std::max(max_delay, pin->get_max_delay());
-    }
-  }
-  node->set_min_delay(min_delay);
-  node->set_max_delay(max_delay);
-}
-/**
- * @brief calculate downstream wirelength
- *
- * @param node
- * @return double
- */
-double TimingPropagator::calcNetLen(Node* node)
-{
-  double net_len = 0;
-  auto accumulate_net_len = [&net_len, &node](Node* child) { net_len += calcLen(node, child) + child->get_sub_len(); };
-  std::ranges::for_each(node->get_children(), accumulate_net_len);
-  return net_len;
-}
-/**
- * @brief calculate capacitance
- *
- * @param node
- * @return double
- */
-double TimingPropagator::calcCapLoad(Node* node)
-{
-  double cap_load = 0;
-  if (node->isSinkPin() && node->isLoad()) {
-    auto* pin = dynamic_cast<Pin*>(node);
-    auto* inst = pin->get_inst();
-    auto* cts_inst = inst->get_cts_inst();
-    cap_load = CTSAPIInst.getSinkCap(cts_inst);
-  }
-  if (node->isBufferPin() && node->isLoad()) {
-    auto cell_name = node->getCellMaster();
-    auto* lib = CTSAPIInst.getCellLib(cell_name);
-    cap_load = lib->get_init_cap();
-  }
-  auto accumulate_cap = [&cap_load, &node](Node* child) { cap_load += _unit_cap * calcLen(node, child) + child->get_cap_load(); };
-  std::ranges::for_each(node->get_children(), accumulate_cap);
-  return cap_load;
-}
-/**
- * @brief calculate ideal slew (wire slew)
- *       ideal_slew = log(9) * elmore_delay
- *
- * @param node
- * @param child
- * @return double
- */
-double TimingPropagator::calcIdealSlew(Node* node, Node* child)
-{
-  return std::log(9) * calcElmoreDelay(node, child);
-}
-/**
- * @brief calculate elmore delay
- *       elmore_delay = r * l * (c * l / 2 + c_t)
- *
- * @param parent
- * @param child
- * @return double
- */
-double TimingPropagator::calcElmoreDelay(Node* parent, Node* child)
-{
-  auto len = calcLen(parent, child);
-  auto delay = _unit_res * len * (_unit_cap * len / 2 + child->get_cap_load());
-  return delay;
-}
-/**
- * @brief calculate wirelength between parent and child (consider snake)
- *
- * @param parent
- * @param child
- * @return double
- */
-double TimingPropagator::calcLen(Node* parent, Node* child)
-{
-  auto parent_loc = parent->get_location();
-  auto child_loc = child->get_location();
-  auto len = calcLen(parent_loc, child_loc);
-  if (child->get_parent() == parent) {
-    len += child->get_required_snake();
-  }
-  return len;
-}
-/**
- * @brief calculate manhattan dist between parent and child (consider snake)
- *
- * @param parent
- * @param child
- * @return int64_t
- */
-int64_t TimingPropagator::calcDist(Node* parent, Node* child)
-{
-  auto parent_loc = parent->get_location();
-  auto child_loc = child->get_location();
-  auto dist = calcDist(parent_loc, child_loc);
-  if (child->get_parent() == parent) {
-    dist += child->get_required_snake() + static_cast<int64_t>(child->get_required_snake() * _db_unit);
-  }
-  return dist;
-}
-/**
- * @brief calculate manhattan wire length between p1 and p2
- *       l = D(n1,n2) / db_unit
- *
- * @param p1
- * @param p2
- * @return double
- */
-double TimingPropagator::calcLen(const Point& p1, const Point& p2)
-{
-  return 1.0 * calcDist(p1, p2) / _db_unit;
-}
-/**
- * @brief calculate manhattan dist between p1 and p2
- *       D(n1,n2) = |x1 - x2| + |y1 - y2|
- *
- * @param p1
- * @param p2
- * @return int64_t
- */
-int64_t TimingPropagator::calcDist(const Point& p1, const Point& p2)
-{
-  return std::abs(p1.x() - p2.x()) + std::abs(p1.y() - p2.y());
 }
 /**
  * @brief calculate skew
@@ -420,8 +266,7 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
   LOG_FATAL_IF(!pin->isLoad()) << "The pin: " << pin->get_name() << " is not load pin";
   auto* inst = pin->get_inst();
   if (inst->isSink()) {
-    pin->set_min_delay(0);
-    pin->set_max_delay(0);
+    return;
   } else {
     auto* driver_pin = inst->get_driver_pin();
     double insert_delay = 0;
@@ -444,5 +289,84 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
     pin->set_max_delay(driver_pin->get_max_delay() + insert_delay);
   }
 }
-
+/**
+ * @brief calculate elmore delay for LayerPattern::kSingle
+ *       elmore_delay = r * l * (c * l / 2 + c_t)
+ *
+ * @param cap
+ * @param len
+ * @return double
+ */
+double TimingPropagator::calcElmoreDelay(const double& cap, const double& len)
+{
+  return _unit_res * len * (_unit_cap * len / 2 + cap);
+}
+/**
+ * @brief calculate elmore delay for LayerPattern::kHV or LayerPattern::kVH
+ *       elmore_delay_hv = r_h * x * (c_h * x / 2 + c_t) + r_v * y * (c_v * y / 2 + c_t + c_h * x)
+ *       elmore_delay_vh = r_v * y * (c_v * y / 2 + c_t) + r_h * x * (c_h * x / 2 + c_t + c_v * y)
+ *
+ * @param cap
+ * @param x
+ * @param y
+ * @return double
+ */
+double TimingPropagator::calcElmoreDelay(const double& cap, const double& x, const double& y, const RCPattern& pattern)
+{
+  double delay = 0;
+  switch (pattern) {
+    case RCPattern::kSingle:
+      delay = calcElmoreDelay(cap, x + y);
+      break;
+    case RCPattern::kHV:
+      delay = _unit_h_res * x * (_unit_h_cap * x / 2 + cap) + _unit_v_res * y * (_unit_v_cap * y / 2 + cap + _unit_h_cap * x);
+      break;
+    case RCPattern::kVH:
+      delay = _unit_v_res * y * (_unit_v_cap * y / 2 + cap) + _unit_h_res * x * (_unit_h_cap * x / 2 + cap + _unit_v_cap * y);
+      break;
+    default:
+      break;
+  }
+  return delay;
+}
+/**
+ * @brief get unit cap by pattern
+ *
+ * @param pattern
+ * @return double
+ */
+double TimingPropagator::getUnitCap(const LayerPattern& pattern)
+{
+  switch (pattern) {
+    case LayerPattern::kH:
+      return _unit_h_cap;
+      break;
+    case LayerPattern::kV:
+      return _unit_v_cap;
+      break;
+    default:
+      return _unit_cap;
+      break;
+  }
+}
+/**
+ * @brief get unit res by pattern
+ *
+ * @param pattern
+ * @return double
+ */
+double TimingPropagator::getUnitRes(const LayerPattern& pattern)
+{
+  switch (pattern) {
+    case LayerPattern::kH:
+      return _unit_h_res;
+      break;
+    case LayerPattern::kV:
+      return _unit_v_res;
+      break;
+    default:
+      return _unit_res;
+      break;
+  }
+}
 }  // namespace icts

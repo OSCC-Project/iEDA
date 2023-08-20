@@ -61,6 +61,8 @@ IdbBlockage::~IdbBlockage()
       rect = nullptr;
     }
   }
+  _rect_list.clear();
+  std::vector<IdbRect*>().swap(_rect_list);
 }
 
 IdbRect* IdbBlockage::get_rect(size_t index)

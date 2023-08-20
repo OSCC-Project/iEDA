@@ -338,15 +338,21 @@ class IdbSpecialNetEdgeSegmenArray
     }
 
     for (IdbSpecialNetEdgeSegment* vdd_segment : _vdd_list) {
-      delete vdd_segment;
-      vdd_segment = nullptr;
+      if (vdd_segment != nullptr) {
+        delete vdd_segment;
+        vdd_segment = nullptr;
+      }
     }
+    _vdd_list.clear();
     vector<IdbSpecialNetEdgeSegment*>().swap(_vdd_list);
 
     for (IdbSpecialNetEdgeSegment* vss_segment : _vss_list) {
-      delete vss_segment;
-      vss_segment = nullptr;
+      if (vss_segment != nullptr) {
+        delete vss_segment;
+        vss_segment = nullptr;
+      }
     }
+    _vss_list.clear();
     vector<IdbSpecialNetEdgeSegment*>().swap(_vss_list);
   }
 

@@ -24,7 +24,8 @@
 #include "CtsConfig.h"
 #include "Node.hh"
 #include "TimingPropagator.hh"
-#include "bst/BST.hh"
+#include "bound_skew_tree/BST.hh"
+#include "bound_skew_tree/BoundSkewTree.hh"
 namespace icts {
 
 /**
@@ -261,6 +262,26 @@ std::vector<Inst*> TreeBuilder::dmeTree(const std::string& net_name, const std::
                                         const std::optional<double>& skew_bound, const std::optional<Point>& guide_loc)
 {
   auto solver = BST(net_name, loads, skew_bound);
+  if (guide_loc.has_value()) {
+    solver.set_root_guide(*guide_loc);
+  }
+  solver.run();
+  return solver.getInsertBufs();
+}
+/**
+ * @brief bound skew tree
+ * 
+ * @param net_name 
+ * @param loads 
+ * @param skew_bound 
+ * @param guide_loc 
+ * @return std::vector<Inst*> 
+ */
+std::vector<Inst*> TreeBuilder::boundSkewTree(
+    const std::string& net_name, const std::vector<Pin*>& loads,
+    const std::optional<double>& skew_bound,
+    const std::optional<Point>& guide_loc) {
+  auto solver = bst::BoundSkewTree(net_name, loads, skew_bound);
   if (guide_loc.has_value()) {
     solver.set_root_guide(*guide_loc);
   }

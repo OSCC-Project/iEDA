@@ -74,6 +74,7 @@ class GlobalRouter
   void iterative(GRModel& gr_model);
   void sortGRModel(GRModel& gr_model);
   bool sortByMultiLevel(GRNet& net1, GRNet& net2);
+  SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
   SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
   SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
   SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);

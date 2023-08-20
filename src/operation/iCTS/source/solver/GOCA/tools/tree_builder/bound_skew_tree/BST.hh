@@ -35,14 +35,6 @@ struct MergeMatch
   double merge_cost;
 };
 
-class BstNode
-{
- public:
- private:
-  Node* _node = nullptr;
-  Segment _js;
-  Polygon _mr;
-};
 /**
  * @brief bound skew tree
  *
@@ -84,8 +76,6 @@ class BST
   void updateTiming(Node* node) const;
 
   void merge(Node* left, Node* right);
-
-  void testMerge(Node* left, Node* right);
 
   void fuse(Node* left, Node* right);
 
