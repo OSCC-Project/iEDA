@@ -25,8 +25,8 @@
 #include "StaClockPropagation.hh"
 
 #include "Sta.hh"
-#include "StaArc.hh"
 #include "StaApplySdc.hh"
+#include "StaArc.hh"
 #include "log/Log.hh"
 
 namespace ista {
@@ -263,7 +263,10 @@ void StaClockPropagation::updateSdcGeneratedClock() {
   SdcConstrain* _the_constrain = ista->getConstrain();
   auto& the_clocks = _the_constrain->get_sdc_clocks();
   for (auto& [clock_name, the_clock] : the_clocks) {
-    if (the_clock->isGenerateClock()&&(dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_source_pins().size()!=0)) {
+    if (the_clock->isGenerateClock() &&
+        (dynamic_cast<SdcGenerateCLock*>(the_clock.get())
+             ->get_source_pins()
+             .size() != 0)) {
       auto source_pins =
           dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_source_pins();
       int divide_by_value =
@@ -296,7 +299,7 @@ void StaClockPropagation::updateSdcGeneratedClock() {
 unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
   if (_prop_type == PropType::kIdealClockProp) {
     LOG_INFO << "ideal clock propagation start";
-  } else if (_prop_type == PropType::kNormalClockProp){
+  } else if (_prop_type == PropType::kNormalClockProp) {
     LOG_INFO << "propagated(kNormal) clock propagation start";
   } else {
     LOG_INFO << "propagated(kGenerated) clock propagation start";
@@ -326,12 +329,15 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
   unsigned is_ok = 1;
 
   for (auto& clock : clocks) {
-    if (((_prop_type == PropType::kIdealClockProp) && clock->isIdealClockNetwork()) || 
-        ((_prop_type == PropType::kNormalClockProp) && !clock->isIdealClockNetwork())||
-        ((_prop_type == PropType::kGeneratedClockProp) && !clock->isIdealClockNetwork())) {
-    
-      if((_prop_type == PropType::kGeneratedClockProp) && !clock.get()->get_is_generated_clock_prop()){
-          continue;
+    if (((_prop_type == PropType::kIdealClockProp) &&
+         clock->isIdealClockNetwork()) ||
+        ((_prop_type == PropType::kNormalClockProp) &&
+         !clock->isIdealClockNetwork()) ||
+        ((_prop_type == PropType::kGeneratedClockProp) &&
+         !clock->isIdealClockNetwork())) {
+      if ((_prop_type == PropType::kGeneratedClockProp) &&
+          clock.get()->get_is_generated_clock_prop()) {
+        continue;
       }
 
       set_propagate_clock(clock.get());
@@ -376,12 +382,11 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
 
   if (_prop_type == PropType::kIdealClockProp) {
     LOG_INFO << "ideal clock propagation end";
-  } else if (_prop_type == PropType::kNormalClockProp){
+  } else if (_prop_type == PropType::kNormalClockProp) {
     LOG_INFO << "propagated(kNormal) clock propagation end";
   } else {
     LOG_INFO << "propagated(kGenerated) clock propagation end";
   }
-
 
   return is_ok;
 }
