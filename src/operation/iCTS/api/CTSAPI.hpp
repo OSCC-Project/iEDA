@@ -55,7 +55,6 @@ class CTSAPI
   // flow API
   void resetAPI();
   void init(const std::string& config_file);
-  void testInit(const std::string& config_file);
   void readData();
   void routing();
   void synthesis();
@@ -178,24 +177,7 @@ class CTSAPI
 #endif
 
   icts::ModelBase* fitPyModel(const std::vector<std::vector<double>>& X, const std::vector<double>& y, const icts::FitType& fit_type);
-  void saveFig(const std::string& file_name);
-
-  template <typename T>
-  void plot(const icts::CtsPoint<T>& point, const std::string& label)
-  {
-    _mpl_helper->plot(point, label);
-  }
-  template <typename T>
-  void plot(const icts::CtsSegment<T>& segment, const std::string& label)
-  {
-    _mpl_helper->plot(segment, label);
-  }
-  template <typename T>
-  void plot(const icts::CtsPolygon<T>& polygon, const std::string& label)
-  {
-    _mpl_helper->plot(polygon, label);
-  }
-
+  
 #endif
  private:
   static CTSAPI* _cts_api_instance;
@@ -235,7 +217,6 @@ class CTSAPI
   icts::Evaluator* _evaluator = nullptr;
   icts::Balancer* _balancer = nullptr;
   icts::ModelFactory* _model_factory = nullptr;
-  icts::MplHelper* _mpl_helper = nullptr;
   ista::TimingEngine* _timing_engine = nullptr;
 };
 
