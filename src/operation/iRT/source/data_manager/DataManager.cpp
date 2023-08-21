@@ -1285,43 +1285,49 @@ void DataManager::cutBlockageList()
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
 
-  std::map<LayerRect, std::vector<PlanarRect>, CmpLayerRectByXASC> blockage_rect_enlarge_net_rect_map;
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Start cutting ", routing_blockage_list.size(), " blockages...");
+
+  std::vector<LayerRect> blockage_rect_list;
   for (auto& [grid_coord, net_rect_map] : makeGridNetRectMap()) {
     RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
     for (LayerRect& blockage_rect : net_rect_map[-1]) {
-      std::vector<PlanarRect>& enlarge_net_rect_list = blockage_rect_enlarge_net_rect_map[blockage_rect];
+      std::vector<PlanarRect> enlarge_net_rect_list;
       for (auto& [net_idx, net_rect_list] : net_rect_map) {
         if (net_idx == -1) {
           continue;
         }
         for (LayerRect& net_rect : net_rect_list) {
+          if (blockage_rect.get_layer_idx() != net_rect.get_layer_idx()) {
+            continue;
+          }
           if (RTUtil::isInside(blockage_rect, net_rect)) {
             irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
             enlarge_net_rect_list.push_back(RTUtil::getEnlargedRect(net_rect, enlarged_size));
           }
         }
       }
-    }
-  }
-  routing_blockage_list.clear();
-  for (auto& [blockage_rect, enlarge_net_rect_list] : blockage_rect_enlarge_net_rect_map) {
-    if (enlarge_net_rect_list.empty()) {
-      Blockage routing_blockage;
-      routing_blockage.set_real_rect(blockage_rect);
-      routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-      routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
-      routing_blockage_list.push_back(routing_blockage);
-    } else {
-      std::vector<PlanarRect> cutting_rect_list = RTUtil::getCuttingRectList(blockage_rect, enlarge_net_rect_list);
-      for (PlanarRect& cutting_rect : cutting_rect_list) {
-        Blockage routing_blockage;
-        routing_blockage.set_real_rect(cutting_rect);
-        routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-        routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
-        routing_blockage_list.push_back(routing_blockage);
+      if (enlarge_net_rect_list.empty()) {
+        blockage_rect_list.push_back(blockage_rect);
+      } else {
+        for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, enlarge_net_rect_list)) {
+          blockage_rect_list.push_back(LayerRect(cutting_rect, blockage_rect.get_layer_idx()));
+        }
       }
     }
   }
+  std::sort(blockage_rect_list.begin(), blockage_rect_list.end(), CmpLayerRectByXASC());
+  blockage_rect_list.erase(std::unique(blockage_rect_list.begin(), blockage_rect_list.end()), blockage_rect_list.end());
+
+  routing_blockage_list.clear();
+  for (LayerRect blockage_rect : blockage_rect_list) {
+    Blockage routing_blockage;
+    routing_blockage.set_real_rect(blockage_rect.get_rect());
+    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+    routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+    routing_blockage_list.push_back(routing_blockage);
+  }
+  LOG_INST.info(Loc::current(), "End cutting ", routing_blockage_list.size(), " blockages", monitor.getStatsInfo());
 }
 
 std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> DataManager::makeGridNetRectMap()
@@ -1354,7 +1360,10 @@ std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByX
           PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
           for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
             for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              grid_net_rect_map[LayerCoord(x, y, routing_shape.get_layer_idx())][net.get_net_idx()].push_back(shape_real_rect);
+              LayerCoord grid_coord(x, y, routing_shape.get_layer_idx());
+              if (RTUtil::exist(grid_net_rect_map, grid_coord)) {
+                grid_net_rect_map[grid_coord][net.get_net_idx()].push_back(shape_real_rect);
+              }
             }
           }
         }

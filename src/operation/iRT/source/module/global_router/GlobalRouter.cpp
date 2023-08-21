@@ -136,6 +136,7 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
 {
   buildNeighborMap(gr_model);
   updateNetFixedRectMap(gr_model);
+  updateNetEnclosureMap(gr_model);
   updateWholeDemand(gr_model);
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
@@ -208,14 +209,14 @@ void GlobalRouter::updateNetFixedRectMap(GRModel& gr_model)
 
 void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect)
 {
+  if (drc_rect.get_is_routing() == false) {
+    return;
+  }
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  if (drc_rect.get_is_routing() == false) {
-    return;
-  }
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -223,6 +224,33 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, 
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         GRNode& gr_node = layer_node_map[drc_rect.get_layer_rect().get_layer_idx()][x][y];
         DC_INST.addEnvRectList(gr_node.getRegionQuery(gr_source_type), drc_rect);
+      }
+    }
+  }
+}
+
+void GlobalRouter::updateNetEnclosureMap(GRModel& gr_model)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
+    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+      for (LayerCoord& real_coord : gr_pin.getRealCoordList()) {
+        real_coord_set.insert(real_coord);
+      }
+    }
+    for (const LayerCoord& real_coord : real_coord_set) {
+      irt_int layer_idx = real_coord.get_layer_idx();
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        std::vector<Segment<LayerCoord>> segment_list;
+        segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
+                                  LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
+        for (DRCRect& drc_rect : DC_INST.getDRCRectList(gr_net.get_net_idx(), segment_list)) {
+          addRectToEnv(gr_model, GRSourceType::kEnclosure, drc_rect);
+        }
       }
     }
   }
@@ -321,28 +349,35 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
 
         std::vector<PlanarRect> wire_list = getWireList(gr_node, routing_layer);
         if (!wire_list.empty()) {
-          irt_int whole_wire_demand = wire_list.front().getArea() / routing_layer.get_min_width();
-          if (whole_wire_demand != gr_node.get_whole_wire_demand()) {
-            LOG_INST.error(Loc::current(), "The real whole_wire_demand and node whole_wire_demand are not equal!");
+          irt_int real_whole_wire_demand = wire_list.front().getArea() / routing_layer.get_min_width();
+          irt_int gcell_whole_wire_demand = 0;
+          if (routing_layer.isPreferH()) {
+            gcell_whole_wire_demand = gr_node.get_base_region().getXSpan();
+          } else {
+            gcell_whole_wire_demand = gr_node.get_base_region().getYSpan();
+          }
+          if (real_whole_wire_demand != gcell_whole_wire_demand) {
+            LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
           }
         }
-        for (const auto& [net_idx, rect_set] :
-             DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(GRSourceType::kBlockAndPin), true)[layer_idx]) {
-          for (const LayerRect& rect : rect_set) {
-            for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
-              std::vector<PlanarRect> new_wire_list;
-              for (PlanarRect& wire : wire_list) {
-                if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
-                  // 要切
-                  std::vector<PlanarRect> split_rect_list
-                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
-                  new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
-                } else {
-                  // 不切
-                  new_wire_list.push_back(wire);
+        for (GRSourceType gr_source_type : {GRSourceType::kBlockAndPin, GRSourceType::kEnclosure}) {
+          for (const auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(gr_source_type), true)[layer_idx]) {
+            for (const LayerRect& rect : rect_set) {
+              for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
+                std::vector<PlanarRect> new_wire_list;
+                for (PlanarRect& wire : wire_list) {
+                  if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
+                    // 要切
+                    std::vector<PlanarRect> split_rect_list
+                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                    new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
+                  } else {
+                    // 不切
+                    new_wire_list.push_back(wire);
+                  }
                 }
+                wire_list = new_wire_list;
               }
-              wire_list = new_wire_list;
             }
           }
         }

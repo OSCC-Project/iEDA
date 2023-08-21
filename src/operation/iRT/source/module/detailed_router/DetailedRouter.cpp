@@ -148,6 +148,7 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
   updateNetPanelResultMap(dr_model);
   updateNetEnclosureMap(dr_model);
   buildDRTaskList(dr_model);
+  buildNetTaskMap(dr_model);
 }
 
 void DetailedRouter::buildSchedule(DRModel& dr_model)
@@ -244,6 +245,10 @@ void DetailedRouter::updateNetFixedRectMap(DRModel& dr_model)
   }
 }
 
+/**
+ * 当drc_rect是由于dr_box布线产生时，dr_source_type必须设置为kUnknownBox
+ * 当drc_rect是由blockage或pin_shape或其他不由dr_box布线产生时，dr_source_type可设置为对应值
+ */
 void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id,
                                      DRCRect drc_rect)
 {
@@ -698,6 +703,23 @@ here:
   bounding_box.set_bottom_layer_idx(bottom_layer_idx);
 }
 
+void DetailedRouter::buildNetTaskMap(DRModel& dr_model)
+{
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+  for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < dr_box_map.get_y_size(); y++) {
+      DRBox& dr_box = dr_box_map[x][y];
+      if (dr_box.get_dr_task_list().empty()) {
+        continue;
+      }
+      std::map<irt_int, std::vector<irt_int>>& net_task_map = dr_box.get_net_task_map();
+      for (DRTask& dr_task : dr_box.get_dr_task_list()) {
+        net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
+      }
+    }
+  }
+}
+
 #endif
 
 #if 1  // iterative
@@ -746,7 +768,7 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-  if (dr_box.skipRouting()) {
+  if (dr_box.get_dr_task_list().empty()) {
     return;
   }
   for (irt_int iter = 1; iter <= dr_box_max_iter_num; iter++) {
@@ -761,6 +783,7 @@ void DetailedRouter::iterativeDRBox(DRModel& dr_model, DRBoxId& dr_box_id)
     processDRBox(dr_model, dr_box);
     countDRBox(dr_model, dr_box);
     reportDRBox(dr_model, dr_box);
+    // plotDRBox(dr_box);
     freeDRBox(dr_model, dr_box);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Box Iteration(", iter, "/", dr_box_max_iter_num, ")", iter_monitor.getStatsInfo(),
@@ -1036,28 +1059,13 @@ void DetailedRouter::makeRoutingState(DRBox& dr_box)
 
 void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
 {
-  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-
-  std::map<irt_int, std::vector<irt_int>> net_task_map;
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    net_task_map[dr_task.get_origin_net_idx()].push_back(dr_task.get_task_idx());
-  }
   for (DRSourceType dr_source_type :
        {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
-    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), true)) {
-      for (auto& [net_idx, rect_set] : net_rect_map) {
-        std::vector<irt_int>& task_idx_list = net_task_map[net_idx];
-        for (const LayerRect& rect : rect_set) {
-          for (auto& [grid_coord, orientation_set] : getGridOrientationMap(dr_box, rect)) {
-            DRNode& dr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
-            std::map<Orientation, std::set<irt_int>>& orien_task_map = dr_node.get_source_orien_task_map()[dr_source_type];
-            for (Orientation orientation : orientation_set) {
-              if (task_idx_list.empty()) {
-                orien_task_map[orientation].insert(-1);
-              } else {
-                orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
-              }
-            }
+    for (bool is_routing : {true, false}) {
+      for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          for (const LayerRect& rect : rect_set) {
+            updateRectToGraph(dr_box, ChangeType::kAdd, dr_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -1065,14 +1073,37 @@ void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
   }
 }
 
-std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box, const LayerRect& rect)
+/**
+ * 当drc_rect是由于dr_box布线产生时，dr_source_type必须设置为kSelfBox
+ * 当drc_rect是由blockage或pin_shape或其他不由dr_box布线产生时，dr_source_type可设置为对应值
+ */
+void DetailedRouter::updateRectToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
+{
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  std::vector<irt_int>& task_idx_list = dr_box.get_net_task_map()[drc_rect.get_net_idx()];
+  for (auto& [grid_coord, orientation_set] : getGridOrientationMap(dr_box, drc_rect)) {
+    DRNode& dr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
+    std::map<Orientation, std::set<irt_int>>& orien_task_map = dr_node.get_source_orien_task_map()[dr_source_type];
+    for (Orientation orientation : orientation_set) {
+      if (task_idx_list.empty()) {
+        orien_task_map[orientation].insert(-1);
+      } else {
+        orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
+      }
+    }
+  }
+}
+
+std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box,
+                                                                                                       const DRCRect& drc_rect)
 {
   // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
 
-  for (LayerRect& min_scope_rect : DC_INST.getMinScope(DRCRect(-1, rect, true))) {
+  for (LayerRect& min_scope_rect : DC_INST.getMinScope(drc_rect)) {
     for (Segment<LayerCoord>& segment : getSegmentList(dr_box, min_scope_rect)) {
       LayerCoord first = segment.get_first();
       LayerCoord second = segment.get_second();
@@ -1311,6 +1342,10 @@ void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
       // 将env中的布线结果清空
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
         updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kUnknownBox, dr_box.get_dr_box_id(), drc_rect);
+      }
+      // 将graph中的布线结果清空
+      for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
+        updateRectToGraph(dr_box, ChangeType::kDel, DRSourceType::kSelfBox, drc_rect);
       }
       // 清空routing_tree
       dr_task.get_routing_tree().clear();
@@ -1779,6 +1814,10 @@ void DetailedRouter::updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& 
   // 将布线结果添加到env中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
     updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kUnknownBox, dr_box.get_dr_box_id(), drc_rect);
+  }
+  // 将布线结果添加到graph中
+  for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
+    updateRectToGraph(dr_box, ChangeType::kAdd, DRSourceType::kSelfBox, drc_rect);
   }
   dr_task.set_routing_state(RoutingState::kRouted);
 }
@@ -2466,6 +2505,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
   irt_int width = INT_MAX;
@@ -2677,17 +2717,23 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
                                                                               {DRSourceType::kOtherBox, GPGraphType::kOtherBox},
                                                                               {DRSourceType::kSelfBox, GPGraphType::kSelfBox}};
   for (auto& [dr_source_type, gp_graph_type] : source_graph_pair_list) {
-    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), true)) {
-      for (auto& [net_idx, rect_set] : net_rect_map) {
-        GPStruct net_rect_struct(RTUtil::getString(GetDRSourceTypeName()(dr_source_type), "@", net_idx));
-        for (const LayerRect& rect : rect_set) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(gp_graph_type));
-          gp_boundary.set_rect(rect);
-          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(rect.get_layer_idx()));
-          net_rect_struct.push(gp_boundary);
+    for (bool is_routing : {true, false}) {
+      for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          GPStruct net_rect_struct(RTUtil::getString(GetDRSourceTypeName()(dr_source_type), "@", net_idx));
+          for (const LayerRect& rect : rect_set) {
+            GPBoundary gp_boundary;
+            gp_boundary.set_data_type(static_cast<irt_int>(gp_graph_type));
+            gp_boundary.set_rect(rect);
+            if (is_routing) {
+              gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+            } else {
+              gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
+            }
+            net_rect_struct.push(gp_boundary);
+          }
+          gp_gds.addStruct(net_rect_struct);
         }
-        gp_gds.addStruct(net_rect_struct);
       }
     }
   }
@@ -2730,12 +2776,33 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
         task_struct.push(gp_boundary);
       } else {
         RTUtil::swapASC(first_layer_idx, second_layer_idx);
-        for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-          gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, half_width));
-          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-          task_struct.push(gp_boundary);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+          LayerRect& above_enclosure = via_master.get_above_enclosure();
+          LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+          GPBoundary above_boundary;
+          above_boundary.set_rect(offset_above_enclosure);
+          above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
+          above_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(above_boundary);
+
+          LayerRect& below_enclosure = via_master.get_below_enclosure();
+          LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+          GPBoundary below_boundary;
+          below_boundary.set_rect(offset_below_enclosure);
+          below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
+          below_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(below_boundary);
+
+          for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+            LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+            GPBoundary cut_boundary;
+            cut_boundary.set_rect(offset_cut_shape);
+            cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
+            cut_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+            task_struct.push(cut_boundary);
+          }
         }
       }
     }

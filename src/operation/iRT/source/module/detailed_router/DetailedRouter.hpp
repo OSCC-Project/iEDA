@@ -78,6 +78,7 @@ class DetailedRouter
   DRGroup makeDRGroup(DRBox& dr_box, DRPin& dr_pin);
   DRGroup makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
+  void buildNetTaskMap(DRModel& dr_model);
 #endif
 
 #if 1  // iterative
@@ -89,7 +90,8 @@ class DetailedRouter
   void buildNeighborMap(DRBox& dr_box);
   void makeRoutingState(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const LayerRect& rect);
+  void updateRectToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::vector<Segment<LayerCoord>> getSegmentList(DRBox& dr_box, LayerRect min_scope_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
