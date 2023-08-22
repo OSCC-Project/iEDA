@@ -1,6 +1,6 @@
-#line 2 "parser/verilog/VerilogLex.cc"
+#line 2 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
 
-#line 4 "parser/verilog/VerilogLex.cc"
+#line 4 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
 
 #define YY_INT_ALIGNED short int
 
@@ -564,7 +564,7 @@ struct yy_trans_info
   flex_int32_t yy_nxt;
 };
 static const flex_int16_t yy_accept[155] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  42, 40, 34, 33, 34, 35, 40, 16, 16, 16, 40, 15, 32, 40, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  42, 40, 34, 33, 34, 35, 16, 40, 16, 16, 40, 15, 32, 40, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
     34, 40, 4,  5,  4,  4,  8,  9,  8,  8,  39, 37, 41, 36, 39, 33, 0,  0,  0,  0,  7,  0,  15, 3,  0,  15, 0,  32, 0,  0,  32, 32, 32, 32,
     32, 32, 32, 32, 32, 32, 32, 32, 32, 0,  0,  0,  1,  0,  5,  6,  9,  10, 39, 37, 38, 0,  11, 13, 14, 12, 0,  2,  0,  32, 0,  32, 32,
 
@@ -573,28 +573,28 @@ static const flex_int16_t yy_accept[155] = {
 
 static const YY_CHAR yy_ec[256] = {
     0,  1,  1,  1,  1,  1,  1,  1,  1,  2,  3,  1,  1,  4,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, 1,  1,  1,  1,  1,  2,  1,
-    5,  1,  6,  1,  1,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 18, 18, 18, 18, 18, 19, 19, 20, 21, 1, 22, 1,  1,  1,  23, 24, 23,
-    25, 23, 23, 26, 27, 26, 26, 26, 26, 26, 26, 28, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 29, 30, 31, 1, 32, 33, 34, 24, 23, 35,
+    5,  6,  7,  1,  1,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 19, 19, 19, 19, 19, 20, 20, 21, 22, 1, 23, 1,  1,  1,  24, 25, 24,
+    26, 24, 24, 27, 28, 27, 27, 27, 27, 27, 27, 29, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 30, 31, 32, 1, 33, 34, 35, 25, 24, 36,
 
-    36, 37, 38, 27, 39, 26, 26, 40, 41, 42, 43, 44, 26, 45, 46, 47, 48, 26, 49, 50, 51, 50, 52, 53, 54, 1,  1, 1,  1,  1,  1,  1,  1,  1,
+    37, 38, 39, 28, 40, 27, 27, 41, 42, 43, 44, 45, 27, 46, 47, 48, 49, 27, 50, 51, 52, 51, 53, 54, 55, 1,  1, 1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, 1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, 1,  1,  1,  1,  1,
 
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, 1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1};
 
-static const YY_CHAR yy_meta[55] = {0, 1, 2, 3, 3, 4, 5, 1, 1, 1, 1, 1, 1, 1, 5, 1, 6, 6, 6, 6, 1, 1, 1, 7, 7, 7, 8, 8,
-                                    8, 1, 9, 1, 7, 1, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 1, 1, 1};
+static const YY_CHAR yy_meta[56] = {0, 1, 2, 3, 3, 4, 1, 5, 1, 1, 1, 1, 1, 1, 1, 5, 1, 6, 6, 6, 6, 1, 1, 1, 7, 7, 7, 8,
+                                    8, 8, 1, 9, 1, 7, 1, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 1, 1, 1};
 
 static const flex_int16_t yy_base[167]
-    = {0,   0,   53,  53,  55,  57,  65,  67,  73,  407, 408, 408, 408, 403, 408, 55,  395, 408, 77,  77,  92,  390, 0,   59,  52,  60,
-       71,  48,  67,  86,  87,  90,  92,  93,  110, 113, 408, 408, 400, 387, 408, 408, 398, 385, 0,   408, 390, 408, 115, 408, 109, 112,
-       0,   117, 408, 123, 138, 408, 118, 145, 162, 354, 337, 169, 100, 128, 125, 139, 154, 160, 161, 162, 170, 50,  171, 172, 173, 186,
-       187, 189, 408, 192, 408, 408, 408, 408, 0,   408, 408, 346, 188, 192, 0,   205, 194, 408, 198, 334, 0,   300, 189,
+    = {0,   0,   54,  54,  56,  58,  60,  69,  72,  408, 409, 409, 409, 404, 409, 409, 53,  395, 75,  69,  88,  390, 0,   51,  53,  69,
+       71,  55,  76,  87,  72,  86,  95,  89,  109, 112, 409, 409, 401, 387, 409, 409, 393, 385, 0,   409, 367, 409, 114, 409, 109, 119,
+       0,   113, 409, 119, 148, 409, 116, 153, 170, 354, 320, 147, 138, 119, 139, 147, 143, 154, 113, 159, 161, 165, 167, 162, 168, 182,
+       190, 192, 409, 196, 409, 409, 409, 409, 0,   409, 409, 347, 194, 200, 0,   204, 221, 409, 225, 301, 0,   300, 186,
 
-       185, 198, 201, 202, 211, 212, 213, 299, 216, 298, 217, 218, 297, 296, 231, 226, 227, 222, 228, 229, 230, 231, 232, 234, 295, 294,
-       293, 239, 237, 243, 292, 287, 244, 248, 249, 252, 286, 253, 254, 283, 280, 257, 272, 255, 258, 263, 279, 278, 277, 269, 270, 276,
-       126, 408, 315, 324, 333, 338, 346, 355, 364, 368, 375, 378, 383, 391};
+       189, 98,  182, 192, 194, 215, 200, 299, 217, 298, 221, 224, 297, 296, 244, 225, 223, 198, 229, 234, 235, 236, 237, 239, 295, 294,
+       293, 238, 241, 248, 292, 291, 251, 244, 252, 250, 285, 255, 254, 283, 281, 253, 256, 257, 263, 260, 280, 279, 278, 268, 271, 276,
+       108, 409, 317, 326, 335, 340, 348, 357, 366, 370, 377, 380, 385, 393};
 
 static const flex_int16_t yy_def[167]
     = {0,   154, 1,   155, 155, 156, 156, 157, 157, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 158, 159, 158, 158, 158,
@@ -606,55 +606,55 @@ static const flex_int16_t yy_def[167]
        154, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158, 158,
        158, 0,   154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154};
 
-static const flex_int16_t yy_nxt[463]
-    = {0,   10,  11,  12,  13,  14,  10,  15,  16,  17,  17,  18,  17,  18,  17,  19,  20,  20,  20,  20,  17,  17,  17,  21,  21,  21,
-       21,  21,  21,  17,  22,  17,  21,  10,  23,  24,  25,  21,  21,  26,  21,  27,  21,  28,  29,  30,  31,  32,  21,  33,  21,  21,
-       17,  17,  17,  34,  37,  38,  37,  38,  41,  42,  62,  39,  62,  39,  62,  43,  41,  42,  45,  46,  47,  62,  62,  43,  45,  46,
-       47,  50,  51,  62,  52,  53,  55,  62,  35,  57,  65,  110, 51,  68,  58,  56,  56,  56,  56,  48,  53,  55,  62,
+static const flex_int16_t yy_nxt[465]
+    = {0,   10,  11,  12,  13,  14,  15,  10,  16,  17,  15,  15,  18,  15,  18,  15,  19,  20,  20,  20,  20,  15,  15,  15,  21,  21,
+       21,  21,  21,  21,  15,  22,  15,  21,  10,  23,  24,  25,  21,  21,  26,  21,  27,  21,  28,  29,  30,  31,  32,  21,  33,  21,
+       21,  15,  15,  15,  34,  37,  38,  37,  38,  41,  42,  41,  42,  39,  62,  39,  62,  43,  62,  43,  45,  46,  47,  45,  46,  47,
+       50,  51,  57,  52,  53,  55,  62,  58,  62,  62,  35,  51,  65,  62,  56,  56,  56,  56,  55,  53,  64,  68,  48,
 
-       62,  66,  48,  62,  64,  62,  62,  59,  59,  59,  59,  77,  67,  62,  69,  80,  81,  88,  89,  70,  95,  96,  71,  60,  90,  90,
-       74,  91,  91,  91,  91,  75,  93,  93,  93,  76,  73,  72,  62,  62,  90,  62,  78,  91,  55,  100, 50,  51,  93,  52,  53,  55,
-       62,  59,  59,  59,  59,  51,  90,  102, 59,  59,  59,  59,  101, 53,  93,  62,  55,  60,  99,  99,  99,  62,  62,  62,  60,  60,
-       60,  60,  60,  103, 104, 62,  62,  62,  62,  77,  105, 80,  81,  80,  81,  60,  80,  81,  95,  96,  62,  108,
+       62,  62,  48,  62,  59,  59,  59,  59,  71,  62,  77,  66,  62,  67,  80,  81,  88,  89,  95,  96,  60,  70,  62,  74,  69,  90,
+       90,  62,  75,  93,  93,  93,  76,  62,  72,  91,  91,  91,  91,  118, 73,  90,  78,  50,  51,  93,  52,  53,  99,  99,  99,  91,
+       62,  62,  51,  55,  101, 62,  107, 90,  55,  62,  53,  93,  59,  59,  59,  59,  62,  59,  59,  59,  59,  62,  102, 62,  62,  55,
+       105, 62,  60,  62,  62,  77,  100, 60,  60,  60,  60,  60,  103, 104, 80,  81,  80,  81,  62,  108, 80,  81,
 
-       95,  96,  62,  90,  90,  107, 106, 91,  91,  91,  91,  62,  111, 109, 62,  62,  112, 113, 78,  90,  93,  93,  93,  91,  62,  62,
-       62,  116, 117, 62,  62,  62,  127, 127, 127, 62,  93,  90,  118, 62,  62,  62,  62,  62,  62,  62,  123, 62,  119, 120, 62,  125,
-       62,  126, 93,  122, 62,  62,  121, 124, 129, 62,  62,  128, 130, 62,  62,  62,  62,  133, 62,  62,  135, 136, 131, 132, 62,  139,
-       134, 140, 137, 138, 62,  62,  142, 62,  144, 147, 148, 62,  62,  62,  62,  62,  141, 149, 62,  150, 151, 62,
+       62,  106, 60,  62,  110, 109, 62,  112, 62,  111, 90,  90,  62,  113, 62,  78,  91,  91,  91,  91,  93,  93,  93,  95,  96,  116,
+       90,  95,  96,  62,  119, 62,  91,  117, 123, 62,  93,  62,  62,  62,  120, 130, 121, 62,  90,  127, 127, 127, 62,  62,  62,  62,
+       62,  62,  93,  62,  125, 129, 62,  122, 126, 124, 62,  128, 62,  62,  62,  62,  62,  62,  62,  62,  147, 148, 62,  133, 131, 62,
+       135, 136, 137, 132, 62,  139, 134, 62,  138, 140, 142, 144, 62,  141, 62,  62,  62,  62,  151, 62,  149, 62,
 
-       62,  145, 143, 146, 152, 62,  62,  62,  62,  62,  62,  62,  62,  62,  153, 36,  36,  36,  36,  36,  36,  36,  36,  36,  40,  40,
-       40,  40,  40,  40,  40,  40,  40,  44,  44,  44,  44,  44,  44,  44,  44,  44,  61,  61,  61,  61,  63,  62,  88,  63,  63,  63,
-       63,  63,  63,  79,  79,  79,  79,  79,  79,  79,  79,  79,  86,  86,  98,  62,  86,  86,  86,  86,  86,  92,  92,  94,  94,  94,
-       94,  94,  94,  94,  94,  94,  97,  97,  97,  114, 114, 114, 114, 115, 87,  85,  115, 115, 115, 115, 115, 115,
+       146, 143, 145, 150, 152, 62,  62,  62,  62,  62,  62,  62,  62,  62,  62,  62,  153, 36,  36,  36,  36,  36,  36,  36,  36,  36,
+       40,  40,  40,  40,  40,  40,  40,  40,  40,  44,  44,  44,  44,  44,  44,  44,  44,  44,  61,  61,  61,  61,  63,  88,  98,  63,
+       63,  63,  63,  63,  63,  79,  79,  79,  79,  79,  79,  79,  79,  79,  86,  86,  62,  87,  86,  86,  86,  86,  86,  92,  92,  94,
+       94,  94,  94,  94,  94,  94,  94,  94,  97,  97,  97,  114, 114, 114, 114, 115, 85,  84,  115, 115, 115, 115,
 
-       84,  83,  82,  62,  54,  49,  154, 9,   154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
+       115, 115, 83,  82,  62,  54,  49,  154, 9,   154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
        154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
-       154, 154, 154, 154, 154, 154, 154, 154, 154, 154};
+       154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154};
 
-static const flex_int16_t yy_chk[463]
+static const flex_int16_t yy_chk[465]
     = {0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
        1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-       1,   1,   1,   2,   3,   3,   4,   4,   5,   5,   27,  3,   73,  4,   24,  5,   6,   6,   7,   7,   7,   23,  25,  6,   8,   8,
-       8,   15,  15,  28,  15,  15,  18,  26,  2,   19,  24,  73,  15,  27,  19,  18,  18,  18,  18,  7,   15,  20,  29,
+       1,   1,   1,   1,   2,   3,   3,   4,   4,   5,   5,   6,   6,   3,   23,  4,   24,  5,   27,  6,   7,   7,   7,   8,   8,   8,
+       16,  16,  19,  16,  16,  18,  25,  19,  26,  30,  2,   16,  24,  28,  18,  18,  18,  18,  20,  16,  23,  27,  7,
 
-       30,  25,  8,   31,  23,  32,  33,  20,  20,  20,  20,  34,  26,  64,  28,  35,  35,  48,  48,  29,  58,  58,  30,  20,  50,  50,
-       33,  51,  51,  51,  51,  33,  53,  53,  53,  33,  32,  31,  66,  153, 50,  65,  34,  51,  56,  64,  55,  55,  53,  55,  55,  59,
-       67,  56,  56,  56,  56,  55,  50,  66,  59,  59,  59,  59,  65,  55,  53,  68,  60,  56,  63,  63,  63,  69,  70,  71,  59,  60,
-       60,  60,  60,  67,  67,  72,  74,  75,  76,  77,  68,  78,  78,  79,  79,  60,  81,  81,  94,  94,  101, 71,
+       31,  29,  8,   33,  20,  20,  20,  20,  30,  32,  34,  25,  102, 26,  35,  35,  48,  48,  58,  58,  20,  29,  153, 33,  28,  50,
+       50,  70,  33,  53,  53,  53,  33,  65,  31,  51,  51,  51,  51,  102, 32,  50,  34,  55,  55,  53,  55,  55,  63,  63,  63,  51,
+       64,  66,  55,  56,  65,  68,  70,  50,  59,  67,  55,  53,  56,  56,  56,  56,  69,  59,  59,  59,  59,  71,  66,  72,  75,  60,
+       68,  73,  56,  74,  76,  77,  64,  59,  60,  60,  60,  60,  67,  67,  78,  78,  79,  79,  103, 71,  81,  81,
 
-       96,  96,  100, 90,  90,  70,  69,  91,  91,  91,  91,  102, 74,  72,  103, 104, 75,  76,  77,  90,  93,  93,  93,  91,  105, 106,
-       107, 100, 101, 109, 111, 112, 115, 115, 115, 118, 93,  90,  102, 116, 117, 119, 120, 121, 122, 123, 107, 124, 103, 104, 129, 111,
-       128, 112, 93,  106, 130, 133, 105, 109, 117, 134, 135, 116, 118, 136, 138, 139, 144, 121, 142, 145, 123, 124, 119, 120, 146, 130,
-       122, 133, 128, 129, 150, 151, 135, 143, 138, 143, 143, 152, 149, 148, 147, 141, 134, 144, 140, 145, 146, 137,
+       100, 69,  60,  101, 73,  72,  104, 75,  105, 74,  90,  90,  118, 76,  107, 77,  91,  91,  91,  91,  93,  93,  93,  94,  94,  100,
+       90,  96,  96,  106, 103, 109, 91,  101, 107, 111, 93,  117, 112, 116, 104, 118, 105, 119, 90,  115, 115, 115, 120, 121, 122, 123,
+       128, 124, 93,  129, 111, 117, 134, 106, 112, 109, 130, 116, 136, 133, 135, 142, 139, 138, 143, 144, 143, 143, 146, 121, 119, 145,
+       123, 124, 128, 120, 150, 130, 122, 151, 129, 133, 135, 138, 152, 134, 149, 148, 147, 141, 146, 140, 144, 137,
 
-       132, 139, 136, 142, 150, 131, 127, 126, 125, 114, 113, 110, 108, 99,  151, 155, 155, 155, 155, 155, 155, 155, 155, 155, 156, 156,
-       156, 156, 156, 156, 156, 156, 156, 157, 157, 157, 157, 157, 157, 157, 157, 157, 158, 158, 158, 158, 159, 97,  89,  159, 159, 159,
-       159, 159, 159, 160, 160, 160, 160, 160, 160, 160, 160, 160, 161, 161, 62,  61,  161, 161, 161, 161, 161, 162, 162, 163, 163, 163,
-       163, 163, 163, 163, 163, 163, 164, 164, 164, 165, 165, 165, 165, 166, 46,  43,  166, 166, 166, 166, 166, 166,
+       142, 136, 139, 145, 150, 132, 131, 127, 126, 125, 114, 113, 110, 108, 99,  97,  151, 155, 155, 155, 155, 155, 155, 155, 155, 155,
+       156, 156, 156, 156, 156, 156, 156, 156, 156, 157, 157, 157, 157, 157, 157, 157, 157, 157, 158, 158, 158, 158, 159, 89,  62,  159,
+       159, 159, 159, 159, 159, 160, 160, 160, 160, 160, 160, 160, 160, 160, 161, 161, 61,  46,  161, 161, 161, 161, 161, 162, 162, 163,
+       163, 163, 163, 163, 163, 163, 163, 163, 164, 164, 164, 165, 165, 165, 165, 166, 43,  42,  166, 166, 166, 166,
 
-       42,  39,  38,  21,  16,  13,  9,   154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
+       166, 166, 39,  38,  21,  17,  13,  9,   154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
        154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154,
-       154, 154, 154, 154, 154, 154, 154, 154, 154, 154};
+       154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154, 154};
 
 /* The intent behind this definition is that it'll catch
  * any uses of REJECT which flex missed.
@@ -663,8 +663,23 @@ static const flex_int16_t yy_chk[463]
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "parser/verilog/VerilogLex.l"
-#line 2 "parser/verilog/VerilogLex.l"
+#line 1 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
+#line 2 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
+// OpenSTA, Static Timing Analyzer
+// Copyright (c) 2021, Parallax Software, Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Config.hh"
 #include "log/Log.hh"
@@ -682,10 +697,10 @@ extern ista::VerilogReader* gVerilogReader;
 #define YY_DECL int verilog_lex(VERILOG_STYPE* yylval_param, yyscan_t yyscanner, ista::VerilogReader* verilog_reader)
 #define YYSTYPE VERILOG_STYPE
 
-#line 820 "parser/verilog/VerilogLex.cc"
+#line 833 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
 /*  %option debug */
 
-#line 823 "parser/verilog/VerilogLex.cc"
+#line 836 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -954,12 +969,12 @@ YY_DECL
   }
 
   {
-#line 44 "parser/verilog/VerilogLex.l"
+#line 57 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
 
-#line 48 "parser/verilog/VerilogLex.l"
+#line 61 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
     yylval = yylval_param;
 
-#line 1109 "parser/verilog/VerilogLex.cc"
+#line 1122 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
 
     while (/*CONSTCOND*/ 1) /* loops until end-of-file is reached */
     {
@@ -1011,7 +1026,7 @@ YY_DECL
         case 1:
           /* rule 1 can match eol */
           YY_RULE_SETUP
-#line 51 "parser/verilog/VerilogLex.l"
+#line 64 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           { /* Macro definition. */
             verilog_reader->incrLineNo();
           }
@@ -1019,14 +1034,14 @@ YY_DECL
         case 2:
           /* rule 2 can match eol */
           YY_RULE_SETUP
-#line 55 "parser/verilog/VerilogLex.l"
+#line 68 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           { /* Single line comment. */
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 3:
           YY_RULE_SETUP
-#line 59 "parser/verilog/VerilogLex.l"
+#line 72 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             BEGIN COMMENT;
           }
@@ -1034,26 +1049,26 @@ YY_DECL
 
         case 4:
           YY_RULE_SETUP
-#line 61 "parser/verilog/VerilogLex.l"
+#line 74 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
 
           YY_BREAK
         case 5:
           /* rule 5 can match eol */
           YY_RULE_SETUP
-#line 63 "parser/verilog/VerilogLex.l"
+#line 76 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 6:
           YY_RULE_SETUP
-#line 65 "parser/verilog/VerilogLex.l"
+#line 78 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             BEGIN INITIAL;
           }
           YY_BREAK
         case YY_STATE_EOF(COMMENT):
-#line 67 "parser/verilog/VerilogLex.l"
+#line 80 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
         {
           LOG_ERROR << "unterminated comment";
           BEGIN(INITIAL);
@@ -1063,7 +1078,7 @@ YY_DECL
 
         case 7:
           YY_RULE_SETUP
-#line 74 "parser/verilog/VerilogLex.l"
+#line 87 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             BEGIN ATTRIBUTE;
           }
@@ -1071,26 +1086,26 @@ YY_DECL
 
         case 8:
           YY_RULE_SETUP
-#line 76 "parser/verilog/VerilogLex.l"
+#line 89 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
 
           YY_BREAK
         case 9:
           /* rule 9 can match eol */
           YY_RULE_SETUP
-#line 78 "parser/verilog/VerilogLex.l"
+#line 91 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 10:
           YY_RULE_SETUP
-#line 80 "parser/verilog/VerilogLex.l"
+#line 93 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             BEGIN INITIAL;
           }
           YY_BREAK
         case YY_STATE_EOF(ATTRIBUTE):
-#line 82 "parser/verilog/VerilogLex.l"
+#line 95 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
         {
           LOG_ERROR << "unterminated attribute";
           BEGIN(INITIAL);
@@ -1100,7 +1115,7 @@ YY_DECL
 
         case 11:
           YY_RULE_SETUP
-#line 89 "parser/verilog/VerilogLex.l"
+#line 102 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1108,7 +1123,7 @@ YY_DECL
           YY_BREAK
         case 12:
           YY_RULE_SETUP
-#line 94 "parser/verilog/VerilogLex.l"
+#line 107 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1116,7 +1131,7 @@ YY_DECL
           YY_BREAK
         case 13:
           YY_RULE_SETUP
-#line 99 "parser/verilog/VerilogLex.l"
+#line 112 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1124,7 +1139,7 @@ YY_DECL
           YY_BREAK
         case 14:
           YY_RULE_SETUP
-#line 104 "parser/verilog/VerilogLex.l"
+#line 117 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->constant = Str::copy(yytext);
             return CONSTANT;
@@ -1132,7 +1147,7 @@ YY_DECL
           YY_BREAK
         case 15:
           YY_RULE_SETUP
-#line 109 "parser/verilog/VerilogLex.l"
+#line 122 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->integer = Str::toInt(yytext);
             return INT;
@@ -1140,112 +1155,112 @@ YY_DECL
           YY_BREAK
         case 16:
           YY_RULE_SETUP
-#line 114 "parser/verilog/VerilogLex.l"
+#line 127 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return ((int) yytext[0]);
           }
           YY_BREAK
         case 17:
           YY_RULE_SETUP
-#line 118 "parser/verilog/VerilogLex.l"
+#line 131 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return ASSIGN;
           }
           YY_BREAK
         case 18:
           YY_RULE_SETUP
-#line 119 "parser/verilog/VerilogLex.l"
+#line 132 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return ENDMODULE;
           }
           YY_BREAK
         case 19:
           YY_RULE_SETUP
-#line 120 "parser/verilog/VerilogLex.l"
+#line 133 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return INOUT;
           }
           YY_BREAK
         case 20:
           YY_RULE_SETUP
-#line 121 "parser/verilog/VerilogLex.l"
+#line 134 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return INPUT;
           }
           YY_BREAK
         case 21:
           YY_RULE_SETUP
-#line 122 "parser/verilog/VerilogLex.l"
+#line 135 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return MODULE;
           }
           YY_BREAK
         case 22:
           YY_RULE_SETUP
-#line 123 "parser/verilog/VerilogLex.l"
+#line 136 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return OUTPUT;
           }
           YY_BREAK
         case 23:
           YY_RULE_SETUP
-#line 124 "parser/verilog/VerilogLex.l"
+#line 137 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return PARAMETER;
           }
           YY_BREAK
         case 24:
           YY_RULE_SETUP
-#line 125 "parser/verilog/VerilogLex.l"
+#line 138 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return DEFPARAM;
           }
           YY_BREAK
         case 25:
           YY_RULE_SETUP
-#line 126 "parser/verilog/VerilogLex.l"
+#line 139 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return REG;
           }
           YY_BREAK
         case 26:
           YY_RULE_SETUP
-#line 127 "parser/verilog/VerilogLex.l"
+#line 140 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return SUPPLY0;
           }
           YY_BREAK
         case 27:
           YY_RULE_SETUP
-#line 128 "parser/verilog/VerilogLex.l"
+#line 141 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return SUPPLY1;
           }
           YY_BREAK
         case 28:
           YY_RULE_SETUP
-#line 129 "parser/verilog/VerilogLex.l"
+#line 142 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return TRI;
           }
           YY_BREAK
         case 29:
           YY_RULE_SETUP
-#line 130 "parser/verilog/VerilogLex.l"
+#line 143 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return WAND;
           }
           YY_BREAK
         case 30:
           YY_RULE_SETUP
-#line 131 "parser/verilog/VerilogLex.l"
+#line 144 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return WIRE;
           }
           YY_BREAK
         case 31:
           YY_RULE_SETUP
-#line 132 "parser/verilog/VerilogLex.l"
+#line 145 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return WOR;
           }
@@ -1253,7 +1268,7 @@ YY_DECL
         case 32:
           /* rule 32 can match eol */
           YY_RULE_SETUP
-#line 134 "parser/verilog/VerilogLex.l"
+#line 147 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             yylval->string = Str::copy(Str::trimmed(yytext));
             return ID;
@@ -1262,20 +1277,20 @@ YY_DECL
         case 33:
           /* rule 33 can match eol */
           YY_RULE_SETUP
-#line 139 "parser/verilog/VerilogLex.l"
+#line 152 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             verilog_reader->incrLineNo();
           }
           YY_BREAK
         case 34:
           YY_RULE_SETUP
-#line 141 "parser/verilog/VerilogLex.l"
+#line 154 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           { /* ignore blanks */
           }
           YY_BREAK
         case 35:
           YY_RULE_SETUP
-#line 143 "parser/verilog/VerilogLex.l"
+#line 156 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             verilog_reader->clearRecordStr();
             BEGIN(QSTRING);
@@ -1283,7 +1298,7 @@ YY_DECL
           YY_BREAK
         case 36:
           YY_RULE_SETUP
-#line 148 "parser/verilog/VerilogLex.l"
+#line 161 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             BEGIN(INITIAL);
             yylval->string = Str::copy(verilog_reader->get_record_str());
@@ -1293,7 +1308,7 @@ YY_DECL
         case 37:
           /* rule 37 can match eol */
           YY_RULE_SETUP
-#line 154 "parser/verilog/VerilogLex.l"
+#line 167 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             LOG_ERROR << "unterminated string constant";
             BEGIN(INITIAL);
@@ -1304,7 +1319,7 @@ YY_DECL
         case 38:
           /* rule 38 can match eol */
           YY_RULE_SETUP
-#line 161 "parser/verilog/VerilogLex.l"
+#line 174 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             /* Line continuation. */
             verilog_reader->incrLineNo();
@@ -1312,14 +1327,14 @@ YY_DECL
           YY_BREAK
         case 39:
           YY_RULE_SETUP
-#line 166 "parser/verilog/VerilogLex.l"
+#line 179 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             /* Anything return or double quote */
             verilog_reader->recordStr(yytext);
           }
           YY_BREAK
         case YY_STATE_EOF(QSTRING):
-#line 171 "parser/verilog/VerilogLex.l"
+#line 184 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
         {
           LOG_ERROR << "unterminated string constant";
           BEGIN(INITIAL);
@@ -1329,17 +1344,17 @@ YY_DECL
         /* Send out of bound characters to parser. */
         case 40:
           YY_RULE_SETUP
-#line 178 "parser/verilog/VerilogLex.l"
+#line 191 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           {
             return (int) yytext[0];
           }
           YY_BREAK
         case 41:
           YY_RULE_SETUP
-#line 180 "parser/verilog/VerilogLex.l"
+#line 193 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
           ECHO;
           YY_BREAK
-#line 1447 "parser/verilog/VerilogLex.cc"
+#line 1460 "/iEDA/src/third_party/parser/verilog/mVerilogLex.cc"
         case YY_STATE_EOF(INITIAL):
           yyterminate();
 
@@ -2432,7 +2447,7 @@ void yyfree(void* ptr, yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 180 "parser/verilog/VerilogLex.l"
+#line 193 "/iEDA/src/third_party/parser/verilog/mVerilogLex.l"
 
 namespace ista {
 
