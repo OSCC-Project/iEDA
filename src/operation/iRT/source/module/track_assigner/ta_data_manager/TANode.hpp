@@ -98,13 +98,13 @@ class TANode : public LayerCoord
       if (add_cost) {
         switch (ta_source_type) {
           case TASourceType::kEnclosure:
-            cost += 20;
+            cost += 4;
             break;
           case TASourceType::kOtherPanel:
-            cost += 10;
+            cost += 2;
             break;
           case TASourceType::kSelfPanel:
-            cost += 5;
+            cost += 1;
             break;
           default:
             break;
