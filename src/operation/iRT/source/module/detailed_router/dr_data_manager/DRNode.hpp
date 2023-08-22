@@ -60,33 +60,63 @@ class DRNode : public LayerCoord
   }
   bool isOBS(irt_int task_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
   {
-    static std::vector<std::pair<DRRouteStrategy, DRSourceType>> strategy_source_pair_list
-        = {{DRRouteStrategy::kIgnoringBlockAndPin, DRSourceType::kBlockAndPin},
-           {DRRouteStrategy::kIgnoringKnownPanel, DRSourceType::kKnownPanel},
-           {DRRouteStrategy::kIgnoringEnclosure, DRSourceType::kEnclosure},
-           {DRRouteStrategy::kIgnoringOtherBox, DRSourceType::kOtherBox},
-           {DRRouteStrategy::kIgnoringSelfBox, DRSourceType::kSelfBox}};
-
     bool is_obs = false;
-    for (auto& [curr_strategy, curr_source] : strategy_source_pair_list) {
-      if (dr_route_strategy == curr_strategy) {
-        return is_obs;
-      }
-      if (!is_obs) {
-        if (RTUtil::exist(_source_orien_task_map, curr_source)) {
-          std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[curr_source];
-          if (RTUtil::exist(orien_task_map, orientation)) {
-            std::set<irt_int>& task_set = orien_task_map[orientation];
-            if (task_set.size() >= 2 || !RTUtil::exist(task_set, task_idx)) {
-              is_obs = true;
-            }
+    if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockAndPin) {
+      return is_obs;
+    }
+    if (!is_obs) {
+      if (RTUtil::exist(_source_orien_task_map, DRSourceType::kBlockAndPin)) {
+        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[DRSourceType::kBlockAndPin];
+        if (RTUtil::exist(orien_task_map, orientation)) {
+          std::set<irt_int>& task_set = orien_task_map[orientation];
+          if (task_set.size() >= 2) {
+            is_obs = true;
+          } else {
+            is_obs = RTUtil::exist(task_set, task_idx) ? false : true;
           }
         }
       }
     }
     return is_obs;
   }
-  double getCost(irt_int task_idx, Orientation orientation) { return 0; }
+  double getCost(irt_int task_idx, Orientation orientation)
+  {
+    double cost = 0;
+    for (DRSourceType ta_source_type :
+         {DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+      bool add_cost = false;
+      if (RTUtil::exist(_source_orien_task_map, ta_source_type)) {
+        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[ta_source_type];
+        if (RTUtil::exist(orien_task_map, orientation)) {
+          std::set<irt_int>& task_set = orien_task_map[orientation];
+          if (task_set.size() >= 2) {
+            add_cost = true;
+          } else {
+            add_cost = RTUtil::exist(task_set, task_idx) ? false : true;
+          }
+        }
+      }
+      if (add_cost) {
+        switch (ta_source_type) {
+          case DRSourceType::kKnownPanel:
+            cost += 8;
+            break;
+          case DRSourceType::kEnclosure:
+            cost += 4;
+            break;
+          case DRSourceType::kOtherBox:
+            cost += 2;
+            break;
+          case DRSourceType::kSelfBox:
+            cost += 1;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    return cost;
+  }
 #if 1  // astar
   // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }

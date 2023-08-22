@@ -24,9 +24,11 @@ namespace irt {
 
 enum class GRRouteStrategy
 {
-  kNone = 0,
-  kFullyConsider = 1,
-  kIgnoringAccess = 2
+  kNone,
+  kFullyConsider,
+  kIgnoringGCellResource,
+  kIgnoringGCellAccess,
+  kIgnoringNetAccess
 };
 
 struct GetGRRouteStrategyName
@@ -41,8 +43,14 @@ struct GetGRRouteStrategyName
       case GRRouteStrategy::kFullyConsider:
         gr_route_strategy_name = "fully_consider";
         break;
-      case GRRouteStrategy::kIgnoringAccess:
-        gr_route_strategy_name = "ignoring_obs";
+      case GRRouteStrategy::kIgnoringGCellResource:
+        gr_route_strategy_name = "ignoring_net_resource";
+        break;
+      case GRRouteStrategy::kIgnoringGCellAccess:
+        gr_route_strategy_name = "ignoring_net_access";
+        break;
+      case GRRouteStrategy::kIgnoringNetAccess:
+        gr_route_strategy_name = "ignoring_net_access";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

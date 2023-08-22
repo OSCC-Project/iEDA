@@ -785,7 +785,8 @@ void GlobalRouter::routeGRNet(GRModel& gr_model, GRNet& gr_net)
   for (GRTask& gr_task : gr_model.get_gr_task_list()) {
     initSingleTask(gr_model, gr_task);
     while (!isConnectedAllEnd(gr_model)) {
-      for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kIgnoringAccess}) {
+      for (GRRouteStrategy gr_route_strategy : {GRRouteStrategy::kFullyConsider, GRRouteStrategy::kIgnoringGCellResource,
+                                                GRRouteStrategy::kIgnoringGCellAccess, GRRouteStrategy::kIgnoringNetAccess}) {
         routeByStrategy(gr_model, gr_route_strategy);
       }
       updatePathResult(gr_model);
@@ -1060,7 +1061,7 @@ void GlobalRouter::routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_s
         LOG_INST.info(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
                       " successfully!");
       }
-    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringAccess) {
+    } else if (gr_route_strategy == GRRouteStrategy::kIgnoringNetAccess) {
       LOG_INST.error(Loc::current(), "The net ", gr_model.get_curr_net_idx(), " reroute by ", GetGRRouteStrategyName()(gr_route_strategy),
                      " failed!");
     }
@@ -1444,7 +1445,7 @@ double GlobalRouter::getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* 
 
 double GlobalRouter::getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation)
 {
-#if 1
+#if 0
   double node_cost = 0;
 
   double env_cost = curr_node->getCost(gr_model.get_curr_net_idx(), orientation);
@@ -1452,20 +1453,20 @@ double GlobalRouter::getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientati
 
   return node_cost;
 #else
-  const PlanarRect& curr_bounding_box = gr_model.get_curr_bounding_box();
-  const GridMap<double>& curr_cost_map = gr_model.get_curr_cost_map();
-
-  irt_int local_x = curr_node->get_x() - curr_bounding_box.get_lb_x();
-  irt_int local_y = curr_node->get_y() - curr_bounding_box.get_lb_y();
-  double net_cost = (curr_cost_map.isInside(local_x, local_y) ? curr_cost_map[local_x][local_y] : 1);
-
   double env_cost = curr_node->getCost(gr_model.get_curr_net_idx(), orientation);
 
-  double env_weight = 1;
-  double net_weight = 1;
-  double joint_cost = ((env_weight * env_cost + net_weight * net_cost)
-                       * RTUtil::sigmoid((env_weight * env_cost + net_weight * net_cost), (env_weight + net_weight)));
-  return joint_cost;
+  double net_cost = 0;
+  {
+    const PlanarRect& curr_bounding_box = gr_model.get_curr_bounding_box();
+    const GridMap<double>& curr_cost_map = gr_model.get_curr_cost_map();
+
+    irt_int local_x = curr_node->get_x() - curr_bounding_box.get_lb_x();
+    irt_int local_y = curr_node->get_y() - curr_bounding_box.get_lb_y();
+    net_cost = (curr_cost_map.isInside(local_x, local_y) ? curr_cost_map[local_x][local_y] : 1);
+  }
+
+  double node_cost = env_cost + net_cost;
+  return node_cost;
 #endif
 }
 

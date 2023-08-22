@@ -60,32 +60,59 @@ class TANode : public LayerCoord
   }
   bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
   {
-    static std::vector<std::pair<TARouteStrategy, TASourceType>> strategy_source_pair_list
-        = {{TARouteStrategy::kIgnoringBlockAndPin, TASourceType::kBlockAndPin},
-           {TARouteStrategy::kIgnoringEnclosure, TASourceType::kEnclosure},
-           {TARouteStrategy::kIgnoringOtherPanel, TASourceType::kOtherPanel},
-           {TARouteStrategy::kIgnoringSelfPanel, TASourceType::kSelfPanel}};
-
     bool is_obs = false;
-    for (auto [curr_strategy, curr_source] : strategy_source_pair_list) {
-      if (ta_route_strategy == curr_strategy) {
-        return is_obs;
-      }
-      if (!is_obs) {
-        if (RTUtil::exist(_source_orien_task_map, curr_source)) {
-          std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[curr_source];
-          if (RTUtil::exist(orien_task_map, orientation)) {
-            std::set<irt_int>& task_set = orien_task_map[orientation];
-            if (task_set.size() >= 2 || !RTUtil::exist(task_set, task_idx)) {
-              is_obs = true;
-            }
+    if (ta_route_strategy == TARouteStrategy::kIgnoringBlockAndPin) {
+      return is_obs;
+    }
+    if (!is_obs) {
+      if (RTUtil::exist(_source_orien_task_map, TASourceType::kBlockAndPin)) {
+        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[TASourceType::kBlockAndPin];
+        if (RTUtil::exist(orien_task_map, orientation)) {
+          std::set<irt_int>& task_set = orien_task_map[orientation];
+          if (task_set.size() >= 2) {
+            is_obs = true;
+          } else {
+            is_obs = RTUtil::exist(task_set, task_idx) ? false : true;
           }
         }
       }
     }
     return is_obs;
   }
-  double getCost(irt_int task_idx, Orientation orientation) { return 0; }
+  double getCost(irt_int task_idx, Orientation orientation)
+  {
+    double cost = 0;
+    for (TASourceType ta_source_type : {TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+      bool add_cost = false;
+      if (RTUtil::exist(_source_orien_task_map, ta_source_type)) {
+        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[ta_source_type];
+        if (RTUtil::exist(orien_task_map, orientation)) {
+          std::set<irt_int>& task_set = orien_task_map[orientation];
+          if (task_set.size() >= 2) {
+            add_cost = true;
+          } else {
+            add_cost = RTUtil::exist(task_set, task_idx) ? false : true;
+          }
+        }
+      }
+      if (add_cost) {
+        switch (ta_source_type) {
+          case TASourceType::kEnclosure:
+            cost += 4;
+            break;
+          case TASourceType::kOtherPanel:
+            cost += 2;
+            break;
+          case TASourceType::kSelfPanel:
+            cost += 1;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    return cost;
+  }
 #if 1  // astar
   // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }
