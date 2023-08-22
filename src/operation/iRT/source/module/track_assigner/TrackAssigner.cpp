@@ -1042,7 +1042,7 @@ bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByPreferLengthASC(task1, task2);
+  sort_status = sortByPreferLengthDESC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1066,8 +1066,8 @@ SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
   }
 }
 
-// ta的宽都一样，prefer方向长度 升序 越短的越先布
-SortStatus TrackAssigner::sortByPreferLengthASC(TATask& task1, TATask& task2)
+// ta的宽都一样，prefer方向长度 降序 越长的越先布
+SortStatus TrackAssigner::sortByPreferLengthDESC(TATask& task1, TATask& task2)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -1086,7 +1086,7 @@ SortStatus TrackAssigner::sortByPreferLengthASC(TATask& task1, TATask& task2)
     task1_prefer_length = task1.get_bounding_box().getYSpan();
     task2_prefer_length = task2.get_bounding_box().getYSpan();
   }
-  if (task1_prefer_length < task2_prefer_length) {
+  if (task1_prefer_length > task2_prefer_length) {
     return SortStatus::kTrue;
   } else if (task1_prefer_length == task2_prefer_length) {
     return SortStatus::kEqual;
