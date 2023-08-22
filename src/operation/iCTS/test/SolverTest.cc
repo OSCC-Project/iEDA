@@ -26,6 +26,8 @@
 #include "bound_skew_tree/BoundSkewTree.hh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
+// debug
+#include "model/mplHelper/MplHelper.h"
 
 using ieda::Log;
 
@@ -152,6 +154,11 @@ void saltTest()
   LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
   LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
   LOG_INFO << "max delay: " << driver_pin->get_max_delay() - driver_buf->get_insert_delay();
+}
+
+void tempTest(){
+  
+  
 }
 
 TEST_F(SolverTest, Compare)

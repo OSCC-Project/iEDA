@@ -127,7 +127,6 @@ void CTSAPI::resetAPI()
   _evaluator = nullptr;
   _balancer = nullptr;
   _model_factory = nullptr;
-  _mpl_helper = nullptr;
   _timing_engine = nullptr;
 }
 
@@ -151,39 +150,6 @@ void CTSAPI::init(const std::string& config_file)
   _evaluator = new Evaluator();
   _balancer = new Balancer();
   _model_factory = new ModelFactory();
-  _mpl_helper = new MplHelper();
-#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  auto external_models = _config->get_external_models();
-  for (auto [net_name, model_path] : external_models) {
-    auto* model = _model_factory->pyLoad(model_path);
-    _libs->insertModel(net_name, model);
-  }
-#endif
-  startDbSta();
-  TimingPropagator::init();
-}
-
-void CTSAPI::testInit(const std::string& config_file)
-{
-  resetAPI();
-  _config = new CtsConfig();
-  JsonParser::getInstance().parse(config_file, _config);
-
-  _design = new CtsDesign();
-  if (dmInst->get_idb_builder()) {
-    _db_wrapper = new CtsDBWrapper(dmInst->get_idb_builder());
-  } else {
-    LOG_FATAL << "idb builder is null";
-  }
-  _report = new CtsReportTable("iCTS");
-  _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
-  _libs = new CtsLibs();
-
-  _synth = new Synthesis();
-  _evaluator = new Evaluator();
-  _balancer = new Balancer();
-  _model_factory = new ModelFactory();
-  _mpl_helper = new MplHelper();
 #if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
   auto external_models = _config->get_external_models();
   for (auto [net_name, model_path] : external_models) {
@@ -1247,11 +1213,6 @@ icts::ModelBase* CTSAPI::findExternalModel(const std::string& net_name)
 icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, const std::vector<double>& y, const icts::FitType& fit_type)
 {
   return _model_factory->pyFit(x, y, fit_type);
-}
-
-void CTSAPI::saveFig(const std::string& file_name)
-{
-  _mpl_helper->saveFig(file_name);
 }
 
 #endif
