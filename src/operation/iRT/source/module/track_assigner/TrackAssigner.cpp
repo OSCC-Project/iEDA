@@ -935,49 +935,82 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   if (ta_panel.get_curr_iter() == 1) {
     sortTAPanel(ta_model, ta_panel);
   } else {
-    // std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
-    // // check drc obj
-    // std::map<irt_int, irt_int> task_idx_to_order_map;
-    // std::map<irt_int, std::vector<irt_int>> net_idx_to_task_idx_map;
-    // for (size_t i = 0; i < ta_task_list.size(); i++) {
-    //   task_idx_to_order_map[ta_task_list[i].get_task_idx()] = i;
-    //   net_idx_to_task_idx_map[ta_task_list[i].get_origin_net_idx()].push_back(i);
-    // }
-    // std::map<irt_int, std::vector<irt_int>> violation_task_idx_map;
-    // for (TATask& ta_task : ta_task_list) {
-    //   for (ViolationInfo& violation_info :
-    //        DC_INST.getViolationInfo(ta_panel.getRegionQuery(TASourceType::kSelfPanel),
-    //                                 DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree()))) {
-    //     std::vector<irt_int> violation_task_idx_list;
-    //     for (auto& [net_idx, shape_list] : violation_info.get_net_shape_map()) {
-    //       for (irt_int task_idx : net_idx_to_task_idx_map[net_idx]) {
-    //         violation_task_idx_list.push_back(task_idx);
-    //       }
-    //     }
-    //     std::sort(violation_task_idx_list.begin(), violation_task_idx_list.end(), [&task_idx_to_order_map](int a, int b){
-    //       return task_idx_to_order_map[a] < task_idx_to_order_map[b];
-    //     });
-    //   }
-    // }
-    // // resort task
+    std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+    // check violation task
+    std::map<irt_int, irt_int> net_idx_to_task_idx_map;
+    for (size_t i = 0; i < ta_task_list.size(); i++) {
+      net_idx_to_task_idx_map[ta_task_list[i].get_origin_net_idx()] = i;
+    }
+    std::set<std::pair<irt_int, irt_int>> violation_task_idx_pair_set;
+    for (TATask& ta_task : ta_task_list) {
+      for (ViolationInfo& violation_info :
+           DC_INST.getViolationInfo(ta_panel.getRegionQuery(TASourceType::kSelfPanel),
+                                    DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree()))) {
+        std::map<irt_int, std::vector<LayerRect>>& violation_net_map = violation_info.get_net_shape_map();
+        if (violation_net_map.size() != 2) {
+          LOG_INST.error(Loc::current(), "Number of violated nets is exceed 2!");
+        }
+        irt_int net_idx1 = violation_net_map.begin()->first;
+        irt_int net_idx2 = violation_net_map.rbegin()->first;
+        if (!RTUtil::exist(net_idx_to_task_idx_map, net_idx1) || !RTUtil::exist(net_idx_to_task_idx_map, net_idx2)) {
+          continue;
+        }
+        irt_int aggressor_task_idx = net_idx_to_task_idx_map[net_idx1];
+        irt_int victim_task_idx = net_idx_to_task_idx_map[net_idx2];
+        RTUtil::swapASC(aggressor_task_idx, victim_task_idx);
+        violation_task_idx_pair_set.insert(std::make_pair(aggressor_task_idx, victim_task_idx));
+      }
+    }
+    // resort task list
+    std::set<irt_int> origin_task_idx_set;
+    for (auto [aggressor_task_idx, victim_task_idx] : violation_task_idx_pair_set) {
+      origin_task_idx_set.insert(aggressor_task_idx);
+      origin_task_idx_set.insert(victim_task_idx);
+    }
+    std::vector<irt_int> origin_task_idx_list;
+    origin_task_idx_list.assign(origin_task_idx_set.begin(), origin_task_idx_set.end());
 
-    // // ripup task
-    // for (TATask& ta_task : ta_task_list) {
-    //   if (ta_task.get_routing_state() == RoutingState::kRouted) {
-    //     continue;
-    //   }
-    //   // 将env中的布线结果清空
-    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    //     updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
-    //   }
-    //   // 将graph中的布线结果清空
-    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    //     updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
-    //   }
-    //   // 清空routing_tree
-    //   ta_task.get_routing_tree().clear();
-    //   ta_task.set_routing_state(RoutingState::kUnrouted);
-    // }
+    std::vector<irt_int> ripup_task_idx_list;
+    for (auto [aggressor_task_idx, victim_task_idx] : violation_task_idx_pair_set) {
+      auto victim_iter = std::find(ripup_task_idx_list.begin(), ripup_task_idx_list.end(), victim_task_idx);
+      if (victim_iter == ripup_task_idx_list.end()) {
+        ripup_task_idx_list.push_back(victim_task_idx);
+      }
+      auto aggress_iter = std::find(ripup_task_idx_list.begin(), ripup_task_idx_list.end(), aggressor_task_idx);
+      if (aggress_iter != ripup_task_idx_list.end()) {
+        ripup_task_idx_list.erase(aggress_iter);
+      }
+      ripup_task_idx_list.push_back(aggressor_task_idx);
+    }
+    if (origin_task_idx_list.size() != ripup_task_idx_list.size()) {
+      LOG_INST.error(Loc::current(), "The number of ripup tasks is different with number of violated tasks!");
+    }
+
+    std::vector<TATask> new_ta_task_list = ta_task_list;
+    for (size_t i = 0; i < ripup_task_idx_list.size(); i++) {
+      new_ta_task_list[origin_task_idx_list[i]] = ta_task_list[ripup_task_idx_list[i]];
+      new_ta_task_list[origin_task_idx_list[i]].set_routing_state(RoutingState::kUnrouted);
+    }
+
+    ta_task_list = new_ta_task_list;
+
+    // ripup task
+    for (TATask& ta_task : ta_task_list) {
+      if (ta_task.get_routing_state() == RoutingState::kRouted) {
+        continue;
+      }
+      // 将env中的布线结果清空
+      for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+        updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
+      }
+      // 将graph中的布线结果清空
+      for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+        updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
+      }
+      // 清空routing_tree
+      ta_task.get_routing_tree().clear();
+      ta_task.set_routing_state(RoutingState::kUnrouted);
+    }
   }
 }
 

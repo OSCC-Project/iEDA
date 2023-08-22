@@ -377,7 +377,7 @@ std::vector<ViolationInfo> DRCChecker::getViolationInfo(RegionQuery* region_quer
 {
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingByOther(region_query, drc_rect_list, violation_info_list);
-  checkMinSpacingBySelf(drc_rect_list, violation_info_list);
+  // checkMinSpacingBySelf(drc_rect_list, violation_info_list);
   // checkMinArea();
   return violation_info_list;
 }
