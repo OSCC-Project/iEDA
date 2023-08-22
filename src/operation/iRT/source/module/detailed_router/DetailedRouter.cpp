@@ -1893,12 +1893,15 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  double node_cost = 0;
-  node_cost += curr_node->getCost(dr_box.get_curr_task_idx(), orientation);
+  double env_cost = curr_node->getCost(dr_box.get_curr_task_idx(), orientation);
+
+  double task_cost = 0;
   LayerCoord node_coord = *curr_node;
   if (RTUtil::exist(dr_box.get_curr_coord_cost_map(), node_coord)) {
-    node_cost += dr_box.get_curr_coord_cost_map().at(node_coord);
+    task_cost += dr_box.get_curr_coord_cost_map().at(node_coord);
   }
+
+  double node_cost = env_cost + task_cost;
   return node_cost;
 }
 

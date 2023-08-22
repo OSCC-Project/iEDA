@@ -999,13 +999,13 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
 {
   SortStatus sort_status = SortStatus::kNone;
 
-  sort_status = sortByWidthASC(via_master1, via_master2);
+  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
+  sort_status = sortByWidthASC(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1026,29 +1026,6 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
   return false;
 }
 
-// 宽度升序
-SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
 // 层方向优先
 SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
 {
@@ -1065,6 +1042,29 @@ SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, Via
     if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
       return SortStatus::kTrue;
     } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 宽度升序
+SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
       return SortStatus::kFalse;
     } else {
       return SortStatus::kEqual;
