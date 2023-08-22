@@ -153,6 +153,7 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::buildTAModel(TAModel& ta_model)
 {
   buildSchedule(ta_model);
+  shrinkPanelRegion(ta_model);
   buildPanelTrackAxis(ta_model);
   updateNetFixedRectMap(ta_model);
   updateNetEnclosureMap(ta_model);
@@ -178,6 +179,40 @@ void TrackAssigner::buildSchedule(TAModel& ta_model)
     }
   }
   ta_model.set_ta_panel_id_comb_list(ta_panel_id_comb_list);
+}
+
+void TrackAssigner::shrinkPanelRegion(TAModel& ta_model)
+{
+  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
+
+  std::map<TAPanelId, std::vector<PlanarRect>, CmpTAPanelId> ta_panel_routing_region_map;
+  for (TANet& ta_net : ta_model.get_ta_net_list()) {
+    for (Segment<TNode<RTNode>*>& segment : RTUtil::getSegListByTree(ta_net.get_ta_result_tree())) {
+      TNode<RTNode>* ta_node_node = segment.get_first();
+      if (ta_node_node->value().isDRNode()) {
+        ta_node_node = segment.get_second();
+      }
+      Guide& first_guide = ta_node_node->value().get_first_guide();
+      Guide& second_guide = ta_node_node->value().get_second_guide();
+      PlanarCoord& first_grid_coord = first_guide.get_grid_coord();
+      PlanarCoord& second_grid_coord = second_guide.get_grid_coord();
+      irt_int ta_layer_idx = first_guide.get_layer_idx();
+
+      TAPanelId ta_panel_id;
+      if (RTUtil::isHorizontal(first_grid_coord, second_grid_coord)) {
+        ta_panel_id.set_panel_idx(first_grid_coord.get_y());
+      } else {
+        ta_panel_id.set_panel_idx(first_grid_coord.get_x());
+      }
+      ta_panel_id.set_layer_idx(ta_layer_idx);
+
+      ta_panel_routing_region_map[ta_panel_id].push_back(RTUtil::getBoundingBox({first_guide.get_rect(), second_guide.get_rect()}));
+    }
+  }
+  for (auto& [ta_panel_id, routing_region_list] : ta_panel_routing_region_map) {
+    TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
+    ta_panel.set_rect(RTUtil::getBoundingBox(routing_region_list));
+  }
 }
 
 void TrackAssigner::buildPanelTrackAxis(TAModel& ta_model)

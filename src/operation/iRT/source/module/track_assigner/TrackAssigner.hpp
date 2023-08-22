@@ -58,6 +58,7 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
+  void shrinkPanelRegion(TAModel& ta_model);
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
