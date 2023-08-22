@@ -70,6 +70,8 @@ class PinAccessor
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
+  void mergeLegalRectList(std::vector<LayerRect>& legal_rect_list);
+  std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointByType(PANet& pa_net);
   void updateAccessGridCoord(PANet& pa_net);

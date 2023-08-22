@@ -330,32 +330,44 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
   for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
     layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
   }
+
   std::vector<LayerRect> legal_rect_list;
   for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
-    std::vector<PlanarRect> planar_legal_rect_list;
-    std::vector<PlanarRect> up_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx, pin_shpae_list);
-    planar_legal_rect_list.insert(planar_legal_rect_list.end(), up_via_legal_rect_list.begin(), up_via_legal_rect_list.end());
-    std::vector<PlanarRect> down_via_legal_rect_list = getViaLegalRectList(pa_model, pa_net_idx, layer_idx - 1, pin_shpae_list);
-    planar_legal_rect_list.insert(planar_legal_rect_list.end(), down_via_legal_rect_list.begin(), down_via_legal_rect_list.end());
-
-    for (Direction direction : {Direction::kHorizontal, Direction::kVertical}) {
-      for (PlanarRect legal_rect : RTUtil::getMergeRectList(planar_legal_rect_list, direction)) {
-        legal_rect_list.emplace_back(legal_rect, layer_idx);
+    for (irt_int via_below_layer_idx : {layer_idx, layer_idx - 1}) {
+      for (PlanarRect via_legal_rect : getViaLegalRectList(pa_model, pa_net_idx, via_below_layer_idx, pin_shpae_list)) {
+        legal_rect_list.emplace_back(via_legal_rect, layer_idx);
       }
     }
   }
-  if (legal_rect_list.empty()) {
-    LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " has no legal pin shape!");
-    for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-      legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+  if (!legal_rect_list.empty()) {
+    mergeLegalRectList(legal_rect_list);
+    return legal_rect_list;
+  }
+  for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
+    for (PlanarRect wire_legal_rect : getWireLegalRectList(pa_model, pa_net_idx, pin_shpae_list)) {
+      legal_rect_list.emplace_back(wire_legal_rect, layer_idx);
     }
   }
+  if (!legal_rect_list.empty()) {
+    mergeLegalRectList(legal_rect_list);
+    return legal_rect_list;
+  }
+  LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " use all pin shapes as a legal area!");
+  for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+    legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+  }
+  mergeLegalRectList(legal_rect_list);
   return legal_rect_list;
 }
 
 std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                                          std::vector<EXTLayerRect>& pin_shape_list)
 {
+  for (EXTLayerRect& pin_shape : pin_shape_list) {
+    if (pin_shape_list.front().get_layer_idx() != pin_shape.get_layer_idx()) {
+      LOG_INST.error(Loc::current(), "The pin_shape_list is not on the same layer!");
+    }
+  }
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -367,8 +379,8 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
   }
   ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
 
-  // pin_shape 往里缩小的的形状
-  std::vector<PlanarRect> reduced_rect_list;
+  // pin_shape 通过enclosure往里缩小的的形状
+  std::vector<PlanarRect> enclosure_reduced_list;
   {
     irt_int half_x_span = -1;
     irt_int half_y_span = -1;
@@ -379,22 +391,19 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       half_x_span = via_master.get_below_enclosure().getXSpan() / 2;
       half_y_span = via_master.get_below_enclosure().getYSpan() / 2;
     }
-    // 当前层缩小后的结果
     for (EXTLayerRect& pin_shape : pin_shape_list) {
-      if (!RTUtil::hasReducedRect(pin_shape.get_real_rect(), half_x_span, half_y_span, half_x_span, half_y_span)) {
-        continue;
-      }
-      PlanarRect reduced_rect = RTUtil::getReducedRect(pin_shape.get_real_rect(), half_x_span, half_y_span, half_x_span, half_y_span);
-      reduced_rect_list.push_back(reduced_rect);
+      enclosure_reduced_list.push_back(pin_shape.get_real_rect());
     }
+    // 当前层缩小后的结果
+    enclosure_reduced_list = RTUtil::getReducedRect(enclosure_reduced_list, half_x_span, half_y_span, half_x_span, half_y_span);
   }
   // pin_shape 原始的形状
-  std::vector<PlanarRect> origin_rect_list;
+  std::vector<PlanarRect> origin_pin_shape_list;
   for (EXTLayerRect& pin_shape : pin_shape_list) {
-    origin_rect_list.push_back(pin_shape.get_real_rect());
+    origin_pin_shape_list.push_back(pin_shape.get_real_rect());
   }
   // pin_shape 由于blockage要被剪裁的形状
-  std::vector<PlanarRect> cutting_rect_list;
+  std::vector<PlanarRect> blockage_cutting_list;
   for (LayerRect enclosure : {via_master.get_above_enclosure(), via_master.get_below_enclosure()}) {
     irt_int half_x_span = enclosure.getXSpan() / 2;
     irt_int half_y_span = enclosure.getYSpan() / 2;
@@ -414,7 +423,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
                 if (!RTUtil::isOpenOverlap(pin_shape.get_real_rect(), enlarged_rect)) {
                   continue;
                 }
-                cutting_rect_list.push_back(enlarged_rect);
+                blockage_cutting_list.push_back(enlarged_rect);
               }
             }
           }
@@ -422,12 +431,89 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
       }
     }
   }
-  std::vector<PlanarRect> via_legal_rect_list = RTUtil::getCuttingRectList(origin_rect_list, cutting_rect_list);
-  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getOverlap(via_legal_rect_list, reduced_rect_list);
+  std::vector<PlanarRect> via_legal_rect_list = RTUtil::getCuttingRectList(origin_pin_shape_list, blockage_cutting_list);
+  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getOverlap(via_legal_rect_list, enclosure_reduced_list);
   if (!reduced_legal_rect_list.empty()) {
     via_legal_rect_list = reduced_legal_rect_list;
   }
   return via_legal_rect_list;
+}
+
+void PinAccessor::mergeLegalRectList(std::vector<LayerRect>& legal_rect_list)
+{
+  std::map<irt_int, std::vector<PlanarRect>> layer_rect_map;
+  for (LayerRect& legal_rect : legal_rect_list) {
+    layer_rect_map[legal_rect.get_layer_idx()].push_back(legal_rect.get_rect());
+  }
+  legal_rect_list.clear();
+  for (Direction direction : {Direction::kHorizontal, Direction::kVertical}) {
+    for (auto& [layer_idx, planar_rect_list] : layer_rect_map) {
+      for (PlanarRect merge_rect : RTUtil::getMergeRectList(planar_rect_list, direction)) {
+        legal_rect_list.emplace_back(merge_rect, layer_idx);
+      }
+    }
+  }
+}
+
+std::vector<PlanarRect> PinAccessor::getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list)
+{
+  for (EXTLayerRect& pin_shape : pin_shape_list) {
+    if (pin_shape_list.front().get_layer_idx() != pin_shape.get_layer_idx()) {
+      LOG_INST.error(Loc::current(), "The pin_shape_list is not on the same layer!");
+    }
+  }
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+
+  irt_int pin_shape_layer_idx = pin_shape_list.front().get_layer_idx();
+  irt_int half_width = routing_layer_list[pin_shape_layer_idx].get_min_width();
+
+  // pin_shape 通过wire往里缩小的的形状
+  std::vector<PlanarRect> wire_reduced_list;
+  {
+    for (EXTLayerRect& pin_shape : pin_shape_list) {
+      wire_reduced_list.push_back(pin_shape.get_real_rect());
+    }
+    // 当前层缩小后的结果
+    wire_reduced_list = RTUtil::getReducedRect(wire_reduced_list, half_width);
+  }
+  // pin_shape 原始的形状
+  std::vector<PlanarRect> origin_pin_shape_list;
+  for (EXTLayerRect& pin_shape : pin_shape_list) {
+    origin_pin_shape_list.push_back(pin_shape.get_real_rect());
+  }
+  // pin_shape 由于blockage要被剪裁的形状
+  std::vector<PlanarRect> blockage_cutting_list;
+
+  for (EXTLayerRect& pin_shape : pin_shape_list) {
+    for (irt_int x = pin_shape.get_grid_lb_x(); x <= pin_shape.get_grid_rt_x(); x++) {
+      for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
+        PAGCell& pa_gcell = pa_gcell_map[x][y];
+        for (const auto& [curr_net_idx, rect_list] :
+             DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kBlockAndPin), true)[pin_shape_layer_idx]) {
+          if (pa_net_idx == curr_net_idx) {
+            continue;
+          }
+          for (const LayerRect& rect : rect_list) {
+            for (LayerRect& min_scope_blockage : DC_INST.getMinScope(DRCRect(curr_net_idx, rect, true))) {
+              PlanarRect enlarged_rect = RTUtil::getEnlargedRect(min_scope_blockage, half_width);
+              if (!RTUtil::isOpenOverlap(pin_shape.get_real_rect(), enlarged_rect)) {
+                continue;
+              }
+              blockage_cutting_list.push_back(enlarged_rect);
+            }
+          }
+        }
+      }
+    }
+  }
+  std::vector<PlanarRect> wire_legal_rect_list = RTUtil::getCuttingRectList(origin_pin_shape_list, blockage_cutting_list);
+  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getOverlap(wire_legal_rect_list, wire_reduced_list);
+  if (!reduced_legal_rect_list.empty()) {
+    wire_legal_rect_list = reduced_legal_rect_list;
+  }
+  return wire_legal_rect_list;
 }
 
 void PinAccessor::mergeAccessPointList(PANet& pa_net)

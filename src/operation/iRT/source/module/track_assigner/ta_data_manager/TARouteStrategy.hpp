@@ -26,9 +26,6 @@ enum class TARouteStrategy
 {
   kNone,
   kFullyConsider,
-  kIgnoringSelfPanel,
-  kIgnoringOtherPanel,
-  kIgnoringEnclosure,
   kIgnoringBlockAndPin
 };
 
@@ -43,15 +40,6 @@ struct GetTARouteStrategyName
         break;
       case TARouteStrategy::kFullyConsider:
         ta_route_strategy_name = "fully_consider";
-        break;
-      case TARouteStrategy::kIgnoringSelfPanel:
-        ta_route_strategy_name = "ignoring_self_panel";
-        break;
-      case TARouteStrategy::kIgnoringOtherPanel:
-        ta_route_strategy_name = "ignoring_other_panel";
-        break;
-      case TARouteStrategy::kIgnoringEnclosure:
-        ta_route_strategy_name = "ignoring_enclosure";
         break;
       case TARouteStrategy::kIgnoringBlockAndPin:
         ta_route_strategy_name = "ignoring_block_and_pin";

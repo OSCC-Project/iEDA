@@ -999,13 +999,13 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
 {
   SortStatus sort_status = SortStatus::kNone;
 
-  sort_status = sortByWidthASC(via_master1, via_master2);
+  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
+  sort_status = sortByWidthASC(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1026,29 +1026,6 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
   return false;
 }
 
-// 宽度升序
-SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
 // 层方向优先
 SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
 {
@@ -1065,6 +1042,29 @@ SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, Via
     if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
       return SortStatus::kTrue;
     } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 宽度升序
+SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
       return SortStatus::kFalse;
     } else {
       return SortStatus::kEqual;
@@ -1149,11 +1149,29 @@ void DataManager::makeBlockageList()
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
+  std::set<LayerRect, CmpLayerRectByXASC> routing_blockage_rect_set;
   for (Blockage& routing_blockage : routing_blockage_list) {
-    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+    routing_blockage_rect_set.insert(LayerRect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx()));
   }
+  routing_blockage_list.clear();
+  for (const LayerRect& routing_blockage_rect : routing_blockage_rect_set) {
+    Blockage routing_blockage;
+    routing_blockage.set_real_rect(routing_blockage_rect);
+    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+    routing_blockage.set_layer_idx(routing_blockage_rect.get_layer_idx());
+    routing_blockage_list.push_back(routing_blockage);
+  }
+  std::set<LayerRect, CmpLayerRectByXASC> cut_blockage_rect_set;
   for (Blockage& cut_blockage : cut_blockage_list) {
+    cut_blockage_rect_set.insert(LayerRect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx()));
+  }
+  cut_blockage_list.clear();
+  for (const LayerRect& cut_blockage_rect : cut_blockage_rect_set) {
+    Blockage cut_blockage;
+    cut_blockage.set_real_rect(cut_blockage_rect);
     cut_blockage.set_grid_rect(RTUtil::getClosedGridRect(cut_blockage.get_real_rect(), gcell_axis));
+    cut_blockage.set_layer_idx(cut_blockage_rect.get_layer_idx());
+    cut_blockage_list.push_back(cut_blockage);
   }
 }
 
@@ -1288,11 +1306,11 @@ void DataManager::cutBlockageList()
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Start cutting ", routing_blockage_list.size(), " blockages...");
 
-  std::vector<LayerRect> blockage_rect_list;
+  std::map<LayerRect, std::set<LayerRect, CmpLayerRectByXASC>, CmpLayerRectByXASC> blockage_rect_enlarge_net_rect_map;
   for (auto& [grid_coord, net_rect_map] : makeGridNetRectMap()) {
     RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
     for (LayerRect& blockage_rect : net_rect_map[-1]) {
-      std::vector<PlanarRect> enlarge_net_rect_list;
+      std::set<LayerRect, CmpLayerRectByXASC>& enlarge_net_rect_set = blockage_rect_enlarge_net_rect_map[blockage_rect];
       for (auto& [net_idx, net_rect_list] : net_rect_map) {
         if (net_idx == -1) {
           continue;
@@ -1303,29 +1321,42 @@ void DataManager::cutBlockageList()
           }
           if (RTUtil::isInside(blockage_rect, net_rect)) {
             irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
-            enlarge_net_rect_list.push_back(RTUtil::getEnlargedRect(net_rect, enlarged_size));
+            PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_rect, enlarged_size);
+            enlarge_net_rect_set.insert(LayerRect(enlarged_rect, net_rect.get_layer_idx()));
           }
-        }
-      }
-      if (enlarge_net_rect_list.empty()) {
-        blockage_rect_list.push_back(blockage_rect);
-      } else {
-        for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, enlarge_net_rect_list)) {
-          blockage_rect_list.push_back(LayerRect(cutting_rect, blockage_rect.get_layer_idx()));
         }
       }
     }
   }
-  std::sort(blockage_rect_list.begin(), blockage_rect_list.end(), CmpLayerRectByXASC());
-  blockage_rect_list.erase(std::unique(blockage_rect_list.begin(), blockage_rect_list.end()), blockage_rect_list.end());
-
+  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
+    for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
+      if (blockage_rect.get_layer_idx() != enlarge_net_rect.get_layer_idx()) {
+        LOG_INST.info(Loc::current(), "The blockage_rect layer_idx is not equal enlarge_net_rect layer_idx!");
+      }
+    }
+  }
   routing_blockage_list.clear();
-  for (LayerRect blockage_rect : blockage_rect_list) {
-    Blockage routing_blockage;
-    routing_blockage.set_real_rect(blockage_rect.get_rect());
-    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-    routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
-    routing_blockage_list.push_back(routing_blockage);
+  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
+    if (enlarge_net_rect_set.empty()) {
+      Blockage routing_blockage;
+      routing_blockage.set_real_rect(blockage_rect);
+      routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+      routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+      routing_blockage_list.push_back(routing_blockage);
+    } else {
+      std::vector<PlanarRect> planar_enlarge_net_rect_list;
+      planar_enlarge_net_rect_list.reserve(enlarge_net_rect_set.size());
+      for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
+        planar_enlarge_net_rect_list.push_back(enlarge_net_rect.get_rect());
+      }
+      for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, planar_enlarge_net_rect_list)) {
+        Blockage routing_blockage;
+        routing_blockage.set_real_rect(cutting_rect);
+        routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+        routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+        routing_blockage_list.push_back(routing_blockage);
+      }
+    }
   }
   LOG_INST.info(Loc::current(), "End cutting ", routing_blockage_list.size(), " blockages", monitor.getStatsInfo());
 }

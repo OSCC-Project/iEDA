@@ -1494,9 +1494,7 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
   }
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
-    std::vector<DRRouteStrategy> strategy_list
-        = {DRRouteStrategy::kFullyConsider,     DRRouteStrategy::kIgnoringSelfBox,    DRRouteStrategy::kIgnoringOtherBox,
-           DRRouteStrategy::kIgnoringEnclosure, DRRouteStrategy::kIgnoringKnownPanel, DRRouteStrategy::kIgnoringBlockAndPin};
+    std::vector<DRRouteStrategy> strategy_list = {DRRouteStrategy::kFullyConsider, DRRouteStrategy::kIgnoringBlockAndPin};
     for (DRRouteStrategy dr_route_strategy : strategy_list) {
       routeByStrategy(dr_box, dr_route_strategy);
     }
@@ -1893,12 +1891,15 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  double node_cost = 0;
-  node_cost += curr_node->getCost(dr_box.get_curr_task_idx(), orientation);
+  double env_cost = curr_node->getCost(dr_box.get_curr_task_idx(), orientation);
+
+  double task_cost = 0;
   LayerCoord node_coord = *curr_node;
   if (RTUtil::exist(dr_box.get_curr_coord_cost_map(), node_coord)) {
-    node_cost += dr_box.get_curr_coord_cost_map().at(node_coord);
+    task_cost += dr_box.get_curr_coord_cost_map().at(node_coord);
   }
+
+  double node_cost = env_cost + task_cost;
   return node_cost;
 }
 

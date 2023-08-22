@@ -1042,7 +1042,7 @@ bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByLengthWidthRatioDESC(task1, task2);
+  sort_status = sortByPreferLengthASC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1066,23 +1066,29 @@ SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
   }
 }
 
-// 长宽比 降序
-SortStatus TrackAssigner::sortByLengthWidthRatioDESC(TATask& task1, TATask& task2)
+// ta的宽都一样，prefer方向长度 升序 越短的越先布
+SortStatus TrackAssigner::sortByPreferLengthASC(TATask& task1, TATask& task2)
 {
-  PlanarRect& task1_bounding_box = task1.get_bounding_box();
-  PlanarRect& task2_bounding_box = task2.get_bounding_box();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  double task1_length_width_ratio = task1_bounding_box.getXSpan() / 1.0 / task1_bounding_box.getYSpan();
-  if (task1_length_width_ratio < 1) {
-    task1_length_width_ratio = 1 / task1_length_width_ratio;
+  irt_int task1_layer_idx = task1.get_origin_node()->value().get_first_guide().get_layer_idx();
+  irt_int task2_layer_idx = task2.get_origin_node()->value().get_first_guide().get_layer_idx();
+  if (task1_layer_idx != task2_layer_idx) {
+    LOG_INST.error(Loc::current(), "The task1_layer_idx != task2_layer_idx!");
   }
-  double task2_length_width_ratio = task2_bounding_box.getXSpan() / 1.0 / task2_bounding_box.getYSpan();
-  if (task2_length_width_ratio < 1) {
-    task2_length_width_ratio = 1 / task2_length_width_ratio;
+
+  irt_int task1_prefer_length = 0;
+  irt_int task2_prefer_length = 0;
+  if (routing_layer_list[task1_layer_idx].isPreferH()) {
+    task1_prefer_length = task1.get_bounding_box().getXSpan();
+    task2_prefer_length = task2.get_bounding_box().getXSpan();
+  } else {
+    task1_prefer_length = task1.get_bounding_box().getYSpan();
+    task2_prefer_length = task2.get_bounding_box().getYSpan();
   }
-  if (task1_length_width_ratio > task2_length_width_ratio) {
+  if (task1_prefer_length < task2_prefer_length) {
     return SortStatus::kTrue;
-  } else if (task1_length_width_ratio == task2_length_width_ratio) {
+  } else if (task1_prefer_length == task2_prefer_length) {
     return SortStatus::kEqual;
   } else {
     return SortStatus::kFalse;
@@ -1116,9 +1122,7 @@ void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta
   }
   initSingleTask(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
-    std::vector<TARouteStrategy> strategy_list
-        = {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringSelfPanel, TARouteStrategy::kIgnoringOtherPanel,
-           TARouteStrategy::kIgnoringEnclosure, TARouteStrategy::kIgnoringBlockAndPin};
+    std::vector<TARouteStrategy> strategy_list = {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringBlockAndPin};
     for (TARouteStrategy ta_route_strategy : strategy_list) {
       routeByStrategy(ta_panel, ta_route_strategy);
     }
@@ -1522,12 +1526,15 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  double node_cost = 0;
-  node_cost += curr_node->getCost(ta_panel.get_curr_task_idx(), orientation);
+  double env_cost = curr_node->getCost(ta_panel.get_curr_task_idx(), orientation);
+
+  double task_cost = 0;
   LayerCoord node_coord = *curr_node;
   if (RTUtil::exist(ta_panel.get_curr_coord_cost_map(), node_coord)) {
-    node_cost += ta_panel.get_curr_coord_cost_map().at(node_coord);
+    task_cost += ta_panel.get_curr_coord_cost_map().at(node_coord);
   }
+
+  double node_cost = env_cost + task_cost;
   return node_cost;
 }
 
