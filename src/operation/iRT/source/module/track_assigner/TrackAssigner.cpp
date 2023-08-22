@@ -795,16 +795,11 @@ void TrackAssigner::updateRectToGraph(TAPanel& ta_panel, ChangeType change_type,
   }
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
-  std::vector<irt_int>& task_idx_list = ta_panel.get_net_task_map()[drc_rect.get_net_idx()];
   for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
     TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
-    std::map<Orientation, std::set<irt_int>>& orien_task_map = ta_node.get_source_orien_task_map()[ta_source_type];
+    std::map<Orientation, std::set<irt_int>>& orien_net_map = ta_node.get_source_orien_net_map()[ta_source_type];
     for (Orientation orientation : orientation_set) {
-      if (task_idx_list.empty()) {
-        orien_task_map[orientation].insert(-1);
-      } else {
-        orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
-      }
+      orien_net_map[orientation].insert(drc_rect.get_net_idx());
     }
   }
 }
@@ -1346,10 +1341,10 @@ bool TrackAssigner::passChecking(TAPanel& ta_panel, TANode* start_node, TANode* 
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(ta_panel.get_curr_task_idx(), orientation, ta_panel.get_ta_route_strategy())) {
+    if (pre_node->isOBS(ta_panel.get_curr_net_idx(), orientation, ta_panel.get_ta_route_strategy())) {
       return false;
     }
-    if (curr_node->isOBS(ta_panel.get_curr_task_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
+    if (curr_node->isOBS(ta_panel.get_curr_net_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
       return false;
     }
   }
@@ -1561,7 +1556,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  double env_cost = curr_node->getCost(ta_panel.get_curr_task_idx(), orientation);
+  double env_cost = curr_node->getCost(ta_panel.get_curr_net_idx(), orientation);
 
   double task_cost = 0;
   LayerCoord node_coord = *curr_node;
