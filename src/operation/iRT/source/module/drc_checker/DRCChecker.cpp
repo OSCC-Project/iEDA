@@ -915,14 +915,16 @@ void DRCChecker::checkMinSpacingBySelf(std::map<irt_int, std::vector<RQShape>>& 
             continue;
           }
 
-          irt_int max_spacing = std::max(net_shape1.get_min_spacing(), net_shape2.get_min_spacing());
           PlanarRect check_rect1 = RTUtil::convertToPlanarRect(net_shape1.get_shape());
           PlanarRect check_rect2 = RTUtil::convertToPlanarRect(net_shape2.get_shape());
-          PlanarRect spacing_rect = RTUtil::getEnlargedRect(check_rect1, max_spacing);
-          if (!RTUtil::isOverlap(spacing_rect, check_rect2)) {
-            LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
-          }
-          LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), layer_idx);
+
+          std::vector<irt_int> x_list = {check_rect1.get_lb_x(), check_rect1.get_rt_x(), check_rect2.get_lb_x(), check_rect2.get_rt_x()};
+          std::vector<irt_int> y_list = {check_rect1.get_lb_y(), check_rect1.get_rt_y(), check_rect2.get_lb_y(), check_rect2.get_rt_y()};
+
+          std::sort(x_list.begin(), x_list.end());
+          std::sort(y_list.begin(), y_list.end());
+
+          LayerRect violation_region(x_list[1], y_list[1], x_list[2], y_list[2], layer_idx);
 
           std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
           violation_net_shape_map[net_id].emplace_back(LayerRect(check_rect1, layer_idx));
