@@ -58,6 +58,7 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
+  void shrinkPanelRegion(TAModel& ta_model);
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
@@ -90,7 +91,7 @@ class TrackAssigner
   void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  bool sortByMultiLevel(TATask& task1, TATask& task2);
+  bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
   SortStatus sortByClockPriority(TATask& task1, TATask& task2);
   SortStatus sortByPreferLengthDESC(TATask& task1, TATask& task2);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);

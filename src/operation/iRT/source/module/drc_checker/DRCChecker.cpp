@@ -855,7 +855,7 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       }
       LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), drc_shape.get_routing_layer_idx());
 
-      std::map<irt_int, std::vector<irt::LayerRect>> violation_net_shape_map;
+      std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
       violation_net_shape_map[drc_shape.get_net_id()].push_back(check_rect1);
       violation_net_shape_map[overlap_shape->get_net_id()].push_back(check_rect2);
 

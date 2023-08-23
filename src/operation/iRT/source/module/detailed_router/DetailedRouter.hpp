@@ -98,7 +98,7 @@ class DetailedRouter
   void saveDRBox(DRBox& dr_box);
   void resetDRBox(DRModel& dr_model, DRBox& dr_box);
   void sortDRBox(DRModel& dr_model, DRBox& dr_box);
-  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
+  bool sortByMultiLevel(DRBox& dr_box, irt_int task_idx1, irt_int task_idx2);
   SortStatus sortByDRTaskType(DRTask& task1, DRTask& task2);
   SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);

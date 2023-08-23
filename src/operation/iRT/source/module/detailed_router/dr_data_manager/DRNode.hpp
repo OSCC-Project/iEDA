@@ -42,12 +42,12 @@ class DRNode : public LayerCoord
   ~DRNode() = default;
   // getter
   std::map<Orientation, DRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_task_map() { return _source_orien_task_map; }
+  std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_net_map() { return _source_orien_net_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, DRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_orien_task_map(const std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_task_map)
+  void set_source_orien_net_map(const std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_net_map)
   {
-    _source_orien_task_map = source_orien_task_map;
+    _source_orien_net_map = source_orien_net_map;
   }
   // function
   DRNode* getNeighborNode(Orientation orientation)
@@ -58,41 +58,41 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
+  bool isOBS(irt_int net_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
   {
     bool is_obs = false;
     if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockAndPin) {
       return is_obs;
     }
     if (!is_obs) {
-      if (RTUtil::exist(_source_orien_task_map, DRSourceType::kBlockAndPin)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[DRSourceType::kBlockAndPin];
-        if (RTUtil::exist(orien_task_map, orientation)) {
-          std::set<irt_int>& task_set = orien_task_map[orientation];
-          if (task_set.size() >= 2) {
+      if (RTUtil::exist(_source_orien_net_map, DRSourceType::kBlockAndPin)) {
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[DRSourceType::kBlockAndPin];
+        if (RTUtil::exist(orien_net_map, orientation)) {
+          std::set<irt_int>& net_set = orien_net_map[orientation];
+          if (net_set.size() >= 2) {
             is_obs = true;
           } else {
-            is_obs = RTUtil::exist(task_set, task_idx) ? false : true;
+            is_obs = RTUtil::exist(net_set, net_idx) ? false : true;
           }
         }
       }
     }
     return is_obs;
   }
-  double getCost(irt_int task_idx, Orientation orientation)
+  double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
     for (DRSourceType ta_source_type :
          {DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
       bool add_cost = false;
-      if (RTUtil::exist(_source_orien_task_map, ta_source_type)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[ta_source_type];
-        if (RTUtil::exist(orien_task_map, orientation)) {
-          std::set<irt_int>& task_set = orien_task_map[orientation];
-          if (task_set.size() >= 2) {
+      if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
+        if (RTUtil::exist(orien_net_map, orientation)) {
+          std::set<irt_int>& net_set = orien_net_map[orientation];
+          if (net_set.size() >= 2) {
             add_cost = true;
           } else {
-            add_cost = RTUtil::exist(task_set, task_idx) ? false : true;
+            add_cost = RTUtil::exist(net_set, net_idx) ? false : true;
           }
         }
       }
@@ -139,7 +139,7 @@ class DRNode : public LayerCoord
 
  private:
   std::map<Orientation, DRNode*> _neighbor_ptr_map;
-  std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_task_map;
+  std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_net_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;
