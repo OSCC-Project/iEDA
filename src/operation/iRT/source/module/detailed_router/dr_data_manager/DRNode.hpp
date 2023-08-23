@@ -43,11 +43,16 @@ class DRNode : public LayerCoord
   // getter
   std::map<Orientation, DRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_net_map() { return _source_orien_net_map; }
+  std::map<Orientation, double>& get_orien_history_cost_map() { return _orien_history_cost_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, DRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_source_orien_net_map(const std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_net_map)
   {
     _source_orien_net_map = source_orien_net_map;
+  }
+  void set_orien_history_cost_map(const std::map<Orientation, double>& orien_history_cost_map)
+  {
+    _orien_history_cost_map = orien_history_cost_map;
   }
   // function
   DRNode* getNeighborNode(Orientation orientation)
@@ -140,6 +145,7 @@ class DRNode : public LayerCoord
  private:
   std::map<Orientation, DRNode*> _neighbor_ptr_map;
   std::map<DRSourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_net_map;
+  std::map<Orientation, double> _orien_history_cost_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;
