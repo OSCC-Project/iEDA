@@ -66,7 +66,7 @@ class DRNode : public LayerCoord
     }
     if (!is_obs) {
       if (RTUtil::exist(_source_orien_net_map, DRSourceType::kBlockAndPin)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[DRSourceType::kBlockAndPin];
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[DRSourceType::kBlockAndPin];
         if (RTUtil::exist(orien_net_map, orientation)) {
           std::set<irt_int>& net_set = orien_net_map[orientation];
           if (net_set.size() >= 2) {
@@ -86,7 +86,7 @@ class DRNode : public LayerCoord
          {DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
       bool add_cost = false;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
         if (RTUtil::exist(orien_net_map, orientation)) {
           std::set<irt_int>& net_set = orien_net_map[orientation];
           if (net_set.size() >= 2) {

@@ -917,8 +917,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
     }
     gr_model.get_gr_task_list().push_back(gr_task);
   } else {
-    std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_coord_list);
-
+    // pin的GRGroup
     std::map<PlanarCoord, std::vector<GRGroup>, CmpPlanarCoordByXASC> key_planar_group_map;
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       GRGroup gr_group;
@@ -928,6 +927,8 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       key_planar_group_map[gr_pin.getGridCoordList().front().get_planar_coord()].push_back(gr_group);
     }
 
+    // steiner point的GRGroup
+    std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_coord_list);
     std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> add_planar_layer_map;
     for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
       if (!RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
@@ -947,7 +948,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
         }
       }
     }
-    // 补充垂直线段
+    // 补充steiner point的垂直线段
     for (auto& [add_planar_coord, layer_coord_set] : add_planar_layer_map) {
       LayerCoord first_coord = *layer_coord_set.begin();
       LayerCoord second_coord = *layer_coord_set.rbegin();
@@ -1853,7 +1854,7 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
 
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<int>(table.size()));
+    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
   for (std::vector<std::string>& table : table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {

@@ -66,7 +66,7 @@ class TANode : public LayerCoord
     }
     if (!is_obs) {
       if (RTUtil::exist(_source_orien_net_map, TASourceType::kBlockAndPin)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[TASourceType::kBlockAndPin];
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[TASourceType::kBlockAndPin];
         if (RTUtil::exist(orien_net_map, orientation)) {
           std::set<irt_int>& net_set = orien_net_map[orientation];
           if (net_set.size() >= 2) {
@@ -85,7 +85,7 @@ class TANode : public LayerCoord
     for (TASourceType ta_source_type : {TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
       bool add_cost = false;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
-        std::map<irt::Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
         if (RTUtil::exist(orien_net_map, orientation)) {
           std::set<irt_int>& net_set = orien_net_map[orientation];
           if (net_set.size() >= 2) {

@@ -990,7 +990,7 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
 
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<int>(table.size()));
+    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
   for (std::vector<std::string>& table : table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {
