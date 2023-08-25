@@ -65,7 +65,7 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
 🎉 **最新消息:**
 
-关注我们5月9日在南京 ISEDA-2023, Session 2 的报告 [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library][ISEDA-2023-iEDA-url] \[[paper][iEDA-paper], [slides][iEDA-slides]\]，和 Panel 6 的讨论 [Open-source EDA and Standards][ISEDA-2023-panel6-url]
+关注我们8月24日在北京 RISC-V 中国峰会 2023 上举办的 [开源EDA论坛（OSEDA 论坛）](https://mp.weixin.qq.com/s/8fo8--bphJcRd1JnuRF0Rg)，和 [开源芯片技术生态论坛](https://mp.weixin.qq.com/s/oJyQ6yYoYUzn_OMC7O8Ilw)
 
 ---
 
@@ -79,7 +79,7 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
 若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读。
 
-您也可以直接使用最新的 release docker 镜像，即可跳过 "*1. 源码构建 iEDA*"。
+您也可以直接使用最新的 [iEDA docker 镜像](https://hub.docker.com/r/iedaopensource/base)，即可跳过 "*1. 源码构建 iEDA*"。
 
 PS: 关于如何安装 Docker，可参考[Docker安装及初始化](https://www.cnblogs.com/harrypotterisdead/p/17223606.html)。
 
@@ -121,33 +121,7 @@ bash build.sh
 
 ## 2. 使用 iEDA 完成芯片设计
 
-这里提供两种 iEDA 的运行方法作为参考。
-
-关于 iEDA 的使用，参考 [Tcl 命令手册][Tcl-menu-xls] 和 `src/operation` 下各工具的说明文档readme。
-
-### 方法1 release 或者 demo 镜像运行（推荐）
-
-若需要使用自定义的工艺和设计，可将相关的文件挂载到容器中运行。关于目录结构和相关配置文件，可参考 `scripts/sky130` 中的示例。
-
-```
-docker run -it -v ${工艺和设计目录}:${容器内目录} --rm iedaopensource/release:latest
-```
-
-### 方法2 自行创建文件运行
-
-参考 `scripts/sky130` 中的文件目录格式，添加 iEDA 可执行文件路径到系统$PATH变量，运行 `sh run_iEDA.sh`，在 `result` 文件夹中查看运行结果。
-
-```
-iEDA/scripts/sky130
-├── iEDA_config   # iEDA parameters configuration files
-├── lef           # lef files
-├── lib           # lib files
-├── result        # iEDA result output files
-├── script        # Tcl script files
-├── sdc           # sdc files
-├── run_iEDA.py   # Python3 script for running iEDA
-└── run_iEDA.sh   # POSIX shell script for running iEDA
-```
+详细内容请移步至 [iEDA 用户手册](docs/user_guide/iEDA_user_guide.md)
 
 <!-- # 未来路线图
 
