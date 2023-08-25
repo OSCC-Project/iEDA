@@ -16,41 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRCChecker.hpp"
-#include "RegionQuery.hpp"
-#include "SpaceRegion.hpp"
-#include "VRGCellId.hpp"
-#include "VRSourceType.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
-class VRGCell : public SpaceRegion
+class PatchNode : public LayerRect
+
 {
  public:
-  VRGCell() = default;
-  ~VRGCell() = default;
+  PatchNode() = default;
+  PatchNode(const PatchNode& other) : LayerRect(other) { _net_idx = other._net_idx; }
+  ~PatchNode() = default;
   // getter
-  VRGCellId& get_vr_gcell_id() { return _vr_gcell_id; }
-  std::map<VRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  irt_int get_net_idx() const { return _net_idx; }
+
   // setter
-  void set_vr_gcell_id(const VRGCellId& vr_gcell_id) { _vr_gcell_id = vr_gcell_id; }
-  void set_source_region_query_map(const std::map<VRSourceType, RegionQuery*>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
-  }
+  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
+
   // function
-  RegionQuery* getRegionQuery(VRSourceType vr_source_type)
-  {
-    RegionQuery*& region_query = _source_region_query_map[vr_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
 
  private:
-  VRGCellId _vr_gcell_id;
-  std::map<VRSourceType, RegionQuery*> _source_region_query_map;
+  irt_int _net_idx = -1;
 };
 
 }  // namespace irt

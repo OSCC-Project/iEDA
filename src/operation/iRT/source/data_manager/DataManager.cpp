@@ -1682,6 +1682,8 @@ void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::I
       convertToIDBWire(idb_layer_list, phy_node.getNode<WireNode>(), idb_segment);
     } else if (phy_node.isType<ViaNode>()) {
       convertToIDBVia(lef_via_list, def_via_list, phy_node.getNode<ViaNode>(), idb_segment);
+    } else if (phy_node.isType<PatchNode>()) {
+      // to do
     } else {
       LOG_INST.error(Loc::current(), "The phy node is incorrect type!");
     }
