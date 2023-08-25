@@ -14,6 +14,14 @@
 
 iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
+---
+
+🎉 **最新消息:**
+
+关注我们8月24日在北京 RISC-V 中国峰会 2023 上举办的 [开源EDA论坛（OSEDA 论坛）](https://mp.weixin.qq.com/s/8fo8--bphJcRd1JnuRF0Rg)，和8月25日的 [开源芯片技术生态论坛](https://mp.weixin.qq.com/s/oJyQ6yYoYUzn_OMC7O8Ilw)
+
+---
+
 ## 关于iEDA
 
 - **About “i”in iEDA**
@@ -60,14 +68,6 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 <div align="center">
  <img src= "docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
 </div>
-
----
-
-🎉 **最新消息:**
-
-关注我们8月24日在北京 RISC-V 中国峰会 2023 上举办的 [开源EDA论坛（OSEDA 论坛）](https://mp.weixin.qq.com/s/8fo8--bphJcRd1JnuRF0Rg)，和 [开源芯片技术生态论坛](https://mp.weixin.qq.com/s/oJyQ6yYoYUzn_OMC7O8Ilw)
-
----
 
 ## 论文和报告
 
