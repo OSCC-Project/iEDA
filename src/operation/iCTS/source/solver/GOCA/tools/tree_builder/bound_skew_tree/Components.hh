@@ -20,7 +20,6 @@
  */
 #pragma once
 
-#include "GeomOperator.hh"
 #include "TimingPropagator.hh"
 #include "log/Log.hh"
 #include "pgl.h"
@@ -31,29 +30,21 @@ namespace bst {
  *
  */
 using Timing = TimingPropagator;
-using Geom = GeomOperator;
-/**
- * @brief type alias
- *
- */
-using Pt = CtsPoint<double>;
-using JoinSegment = std::vector<Pt>;
-using Pts = std::vector<Pt>;
-using Region = std::vector<Pt>;
-template <typename T>
-using Side = std::array<T, 2>;
+
 /**
  * @brief Global constant
  *
  */
+constexpr static size_t kHead = 0;
+constexpr static size_t kTail = 1;
 constexpr static size_t kLeft = 0;
 constexpr static size_t kRight = 1;
 constexpr static size_t kMax = 0;
 constexpr static size_t kMin = 1;
 constexpr static size_t kX = 0;
 constexpr static size_t kY = 1;
-constexpr static LayerPattern kH = LayerPattern::kH;
-constexpr static LayerPattern kV = LayerPattern::kV;
+constexpr static size_t kH = 0;
+constexpr static size_t kV = 1;
 constexpr static double kEpsilon = 1e-6;
 
 /**
@@ -62,61 +53,120 @@ constexpr static double kEpsilon = 1e-6;
  */
 #define FOR_EACH_SIDE(side) for (size_t side = 0; side < 2; ++side)
 
-template <typename T>
-constexpr static bool Equal(T a, T b, T epsilon = T(kEpsilon))
+template <Numeric T1, Numeric T2>
+constexpr static bool Equal(const T1& a, const T2& b, const double& epsilon = kEpsilon)
 {
   return std::abs(a - b) < epsilon;
 }
 
-class BstNode
+class Pt
 {
  public:
-  BstNode() = default;
-  BstNode(Node* node)
-      : _name(node->get_name()),
-        _sub_len(node->get_sub_len()),
-        _slew_in(node->get_slew_in()),
-        _cap_load(node->get_cap_load()),
-        _min_delay(node->get_min_delay()),
-        _max_delay(node->get_max_delay())
+  Pt() = default;
+  Pt(const double& t_x, const double& t_y, const double& t_max, const double& t_min, const double& t_cap)
+      : x(t_x), y(t_y), max(t_max), min(t_min), cap(t_cap)
+  {
+  }
+  Pt(const double& t_x, const double& t_y) : x(t_x), y(t_y), max(0), min(0), cap(0) {}
+
+  double x = 0;
+  double y = 0;
+  double max = 0;
+  double min = 0;
+  double cap = 0;
+};
+
+/**
+ * @brief type alias
+ *
+ */
+using JoinSegment = std::vector<Pt>;
+using Pts = std::vector<Pt>;
+using Region = std::vector<Pt>;
+using Line = std::array<Pt, 2>;
+using PtPair = std::array<Pt, 2>;
+template <typename T>
+using Side = std::array<T, 2>;
+
+class Area
+{
+ public:
+  Area() = default;
+  Area(Node* node) : _name(node->get_name())
   {
     auto loc = node->get_location();
-    auto x = loc.x();
-    auto y = loc.y();
-    _location = Pt(1.0 * x / Timing::getDbUnit(), 1.0 * y / Timing::getDbUnit());
-    _mr.push_back(_location);
+    auto x = 1.0 * loc.x() / Timing::getDbUnit();
+    auto y = 1.0 * loc.y() / Timing::getDbUnit();
+    auto pt = Pt(x, y, node->get_max_delay(), node->get_min_delay(), node->get_cap_load());
+    _sub_len = 1.0 * node->get_sub_len() / Timing::getDbUnit();
+    _mr.push_back(pt);
+    _convex_hull.push_back(pt);
+  }
+
+  Area(const std::string& name, const double& x, const double& y, const double& cap_load) : _name(name)
+  {
+    auto pt = Pt(x, y, 0, 0, cap_load);
+    _mr.push_back(pt);
+    _convex_hull.push_back(pt);
   }
   // get
   const std::string& get_name() const { return _name; }
-  const Pt& get_location() const { return _location; }
-  const double& get_sub_len() const { return _sub_len; }
   const double& get_cap_load() const { return _cap_load; }
-  const double& get_slew_in() const { return _slew_in; }
-  const double& get_min_delay() const { return _min_delay; }
-  const double& get_max_delay() const { return _max_delay; }
-  const double& get_edge_len() const { return _edge_len; }
+  const double& get_sub_len() const { return _sub_len; }
+  const double& get_edge_len(const size_t& side) const { return _edge_len[side]; }
+  const double& get_radius() const { return _radius; }
 
+  Line get_line(const size_t& side) const { return _lines[side]; }
+  Side<Line> get_lines() const { return _lines; }
   JoinSegment get_js(const size_t& side) const { return _sub_js[side]; }
   Region get_mr() const { return _mr; }
+  std::vector<Line> getMrLines() const
+  {
+    if (_mr.size() == 2) {
+      return {{_mr[0], _mr[1]}};
+    }
+    std::vector<Line> lines;
+    for (size_t i = 0; i < _mr.size(); ++i) {
+      auto j = (i + 1) % _mr.size();
+      lines.push_back({_mr[i], _mr[j]});
+    }
+    return lines;
+  }
 
-  BstNode* get_parent() const { return _parent; }
-  std::vector<BstNode*> get_children() const { return {_left, _right}; }
+  Region get_convex_hull() const { return _convex_hull; }
+  std::vector<Line> getConvexHullLines() const
+  {
+    if (_convex_hull.size() == 2) {
+      return {{_convex_hull[0], _convex_hull[1]}};
+    }
+    std::vector<Line> lines;
+    for (size_t i = 0; i < _convex_hull.size(); ++i) {
+      auto j = (i + 1) % _convex_hull.size();
+      lines.push_back({_convex_hull[i], _convex_hull[j]});
+    }
+    return lines;
+  }
+
+  Area* get_parent() const { return _parent; }
+  Area* get_left() const { return _left; }
+  Area* get_right() const { return _right; }
 
   // set
   void set_name(const std::string& name) { _name = name; }
-  void set_location(const Point& location) { _location = location; }
-  void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
   void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
-  void set_slew_in(const double& slew_in) { _slew_in = slew_in; }
-  void set_min_delay(const double& min_delay) { _min_delay = min_delay; }
-  void set_max_delay(const double& max_delay) { _max_delay = max_delay; }
-  void set_edge_len(const double& edge_len) { _edge_len = edge_len; }
+  void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
+  void set_edge_len(const size_t& side, const double& edge_len) { _edge_len[side] = edge_len; }
+  void set_radius(const double& radius) { _radius = radius; }
 
+  void set_line(const size_t& side, const Line& line) { _lines[side] = line; }
   void set_js(const size_t& side, const JoinSegment& js) { _sub_js[side] = js; }
-  void set_js(const Side<JoinSegment>& sub_js) { _sub_js = sub_js; }
+  void set_sub_js(const Side<JoinSegment>& sub_js) { _sub_js = sub_js; }
+  void set_mr(const Region& mr) { _mr = mr; }
 
-  void set_parent(BstNode* parent) { _parent = parent; }
-  void set_children(BstNode* left, BstNode* right)
+  void set_parent(Area* parent) { _parent = parent; }
+  void set_left(Area* left) { _left = left; }
+  void set_right(Area* right) { _right = right; }
+  void set_children(Area* left, Area* right)
   {
     _left = left;
     _right = right;
@@ -124,47 +174,46 @@ class BstNode
 
   // add
   void add_mr_point(const Pt& point) { _mr.push_back(point); }
+  void add_convex_hull_point(const Pt& point) { _convex_hull.push_back(point); }
 
  private:
   std::string _name;
-  Pt _location;
-  double _sub_len = 0;
-  double _slew_in = 0;
   double _cap_load = 0;
-  double _min_delay = 0;
-  double _max_delay = 0;
-  double _edge_len = 0;
+  double _sub_len = 0;
+  Side<double> _edge_len = {0, 0};
+  double _radius = 0;
 
-  BstNode* _parent;
-  BstNode* _left;
-  BstNode* _right;
+  Area* _parent;
+  Area* _left;
+  Area* _right;
+  Side<Line> _lines;
   Side<JoinSegment> _sub_js;
   Region _mr;
+  Region _convex_hull;
 };
 
 struct Match
 {
-  BstNode* left;
-  BstNode* right;
+  Area* left;
+  Area* right;
   double merge_cost;
 };
 
-template <Numeric T>
 class Interval
 {
  public:
   Interval() = default;
-  Interval(const T& val) : _low(val), _high(val) {}
-  Interval(const T& low, const T& high) : _low(low), _high(high) {}
+  Interval(const double& val) : _low(val), _high(val) {}
+  Interval(const double& low, const double& high) : _low(low), _high(high) {}
   Interval(const Interval& other) : _low(other._low), _high(other._high) {}
 
-  const T& low() const { return _low; }
-  const T& high() const { return _high; }
+  const double& low() const { return _low; }
+  const double& high() const { return _high; }
 
-  const bool& is_empty() const { return _low > _high; }
-  const bool& is_point() const { return _low == _high; }
+  bool is_empty() const { return _low > _high; }
+  bool is_point() const { return _low == _high; }
 
-  void enclose(const T& val)
+  void enclose(const double& val)
   {
     if (is_empty()) {
       _low = val;
@@ -174,7 +223,7 @@ class Interval
       _high = std::max(_high, val);
     }
   }
-  void enclose(const Interval<T>& other)
+  void enclose(const Interval& other)
   {
     if (!other.is_empty()) {
       enclose(other.low());
@@ -182,46 +231,56 @@ class Interval
     }
   }
 
-  const bool& isEnclosed(const T& val) const { return _low <= val && val <= _high; }
-  const bool& isEnclosed(const Interval<T>& other) const { return _low <= other.low() && other.high() <= _high; }
+  bool isEnclosed(const double& val) const { return _low <= val && val <= _high; }
+  bool isEnclosed(const Interval& other) const { return _low <= other.low() && other.high() <= _high; }
 
-  const T& width() const { return is_empty() ? 0 : _high - _low; }
+  double width() const { return is_empty() ? 0 : _high - _low; }
 
  private:
-  T _low = 1;
-  T _high = 0;
+  double _low = 1;
+  double _high = 0;
 };
 
-template <Numeric T>
 class Trr
 {
  public:
   Trr() = default;
-  Trr(const T& x_low, const T& x_high, const T& y_low, const T& y_high) : _x_low(x_low), _x_high(x_high), _y_low(y_low), _y_high(y_high) {}
-  Trr(const CtsPoint<T>& point, const T& radius) { makeDiamond(point, radius); }
+  Trr(const double& x_low, const double& x_high, const double& y_low, const double& y_high)
+      : _x_low(x_low), _x_high(x_high), _y_low(y_low), _y_high(y_high)
+  {
+  }
+  Trr(const Pt& point, const double& radius) { makeDiamond(point, radius); }
 
   void init()
   {
     _x_low = _y_low = 1;
     _x_high = _y_high = 0;
   }
-  const bool& is_empty() const
+  const double& x_low() const { return _x_low; }
+  const double& x_high() const { return _x_high; }
+  const double& y_low() const { return _y_low; }
+  const double& y_high() const { return _y_high; }
+  void x_low(const double& val) { _x_low = val; }
+  void x_high(const double& val) { _x_high = val; }
+  void y_low(const double& val) { _y_low = val; }
+  void y_high(const double& val) { _y_high = val; }
+
+  bool is_empty() const
   {
-    auto x_interval = Interval<T>(_x_low, _x_high);
-    auto y_interval = Interval<T>(_y_low, _y_high);
+    auto x_interval = Interval(_x_low, _x_high);
+    auto y_interval = Interval(_y_low, _y_high);
     return x_interval.is_empty() || y_interval.is_empty();
   }
-  // for check slope
-  void makeDiamond(const CtsPoint<T>& point, const T& radius)
+  void makeDiamond(const Pt& point, const double& radius)
   {
-    auto val = point.x() - point.y();
+    auto val = point.x - point.y;
     _x_low = val - radius;
     _x_high = val + radius;
-    val = point.x() + point.y();
+    val = point.x + point.y;
     _y_low = val - radius;
     _y_high = val + radius;
   }
-  void enclose(const Trr<T>& other)
+  void enclose(const Trr& other)
   {
     if (is_empty()) {
       _x_low = other._x_low;
@@ -236,7 +295,7 @@ class Trr
     }
   }
 
-  const T& width(const size_t& side) const
+  double width(const size_t& side) const
   {
     if (side == 0) {
       return _x_high - _x_low;
@@ -245,7 +304,7 @@ class Trr
     }
   }
 
-  const T& diameter() const { return std::max(width(0), width(1)); }
+  double diameter() const { return std::max(width(0), width(1)); }
 
   Trr intersect(const Trr& trr1, const Trr& trr2)
   {
@@ -268,9 +327,6 @@ class Trr
 
   void correction()
   {
-    if constexpr (IntAble<T>) {
-      return;
-    }
     auto temp_low = _x_low;
     auto temp_high = _x_high;
     if (Equal(temp_low, temp_high)) {
@@ -282,10 +338,10 @@ class Trr
       _y_low = _y_high = (temp_low + temp_high) / 2;
     }
   }
-  T _x_low = 1;
-  T _x_high = 0;
-  T _y_low = 1;
-  T _y_high = 0;
+  double _x_low = 1;
+  double _x_high = 0;
+  double _y_low = 1;
+  double _y_high = 0;
 };
 }  // namespace bst
 }  // namespace icts

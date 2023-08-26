@@ -8,8 +8,9 @@ endif()
 
 add_library(
   icts_bst
-  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/BST.cc
   ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/BoundSkewTree.cc
+  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/GeomCalc.cc
+  ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/BST.cc
   ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree/GeomOperator.cc)
 
 target_link_libraries(

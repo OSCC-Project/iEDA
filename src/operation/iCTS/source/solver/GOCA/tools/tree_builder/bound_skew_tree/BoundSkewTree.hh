@@ -24,12 +24,18 @@
 #include <vector>
 
 #include "Components.hh"
+#include "GeomCalc.hh"
 #include "Inst.hh"
 #include "Net.hh"
 #include "Pin.hh"
 
 namespace icts {
 namespace bst {
+/**
+ * @brief Tool namespace
+ *
+ */
+using Geom = GeomCalc;
 /**
  * @brief bound skew tree
  *
@@ -45,7 +51,7 @@ class BoundSkewTree
       LOG_FATAL_IF(!pin->isLoad()) << "pin " << pin->get_name() << " is not load pin";
       Timing::initLoadPinDelay(pin);
       Timing::updatePinCap(pin);
-      auto* node = new BstNode(pin);
+      auto* node = new Area(pin);
       _unmerged_nodes.push_back(node);
       _node_map.insert({pin->get_name(), pin});
     });
@@ -60,29 +66,50 @@ class BoundSkewTree
   {
     auto x = root_guide.x();
     auto y = root_guide.y();
-    _root_guide = Pt(1.0 * x / Timing::getDbUnit(), 1.0 * y / Timing::getDbUnit());
+    _root_guide = Pt(1.0 * x / Timing::getDbUnit(), 1.0 * y / Timing::getDbUnit(), 0, 0, 0);
   }
+
+  void set_pattern(const RCPattern& pattern) { _pattern = pattern; }
 
  private:
   /**
    * @brief match
    *
    */
-  using CostFunc = std::function<double(BstNode*, BstNode*)>;
-
+  using CostFunc = std::function<double(Area*, Area*)>;
   Match getBestMatch(CostFunc cost_func) const;
-
-  double skewCost(BstNode* left, BstNode* right);
-
-  double distanceCost(BstNode* left, BstNode* right) const;
+  double skewCost(Area* left, Area* right);
+  double distanceCost(Area* left, Area* right) const;
 
   /**
    * @brief flow require
    *
    */
-  void joinSegment(BstNode* parent, BstNode* left, BstNode* right);
-  void merge(BstNode* parent, BstNode* left, BstNode* right);
-
+  void merge(Area* parent, Area* left, Area* right);
+  void constructMr(Area* parent, Area* left, Area* right);
+  void jsProcess(Area* cur);
+  void initSide();
+  void updateJS(Area* cur, Line& left, Line& right, PtPair closest);
+  double calcJrArea(const Line& l1, const Line& l2);
+  void calcJS(Area* cur, Line& left, Line& right);
+  void calcJS(Area* cur, Area* left, Area* right);
+  void calcJsDelay(Area* cur, Area* left, Area* right);
+  void calcBsLocated(Area* cur, Pt& pt, Line& line);
+  void calcPtDelays(Area* cur, Pt& pt, Line& line);
+  void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line);
+  double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV);
+  double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV);
+  Line getJrLine(const size_t& side);
+  Line getJsLine(const size_t& side);
+  Line getJsLine(const size_t& side, const Side<Pts>& join_segment);
+  void setJrLine(const size_t& side, const Line& line);
+  void setJsLine(const size_t& side, const Line& line);
+  double ptSkew(const Pt& pt);
+  void checkPtDelay(Pt& pt);
+  void checkJsMs();
+  void checkUpdateJs(const Area* cur, Line& left, Line& right);
+  void printPoint(const Pt& pt);
+  void printArea(const Area* area);
   /**
    * @brief data
    *
@@ -91,20 +118,23 @@ class BoundSkewTree
 
   std::vector<Inst*> _insert_bufs;
   std::set<Net*> _nets;
-  std::vector<BstNode*> _unmerged_nodes;
+  std::vector<Area*> _unmerged_nodes;
   std::map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;
 
   double _skew_bound = 0;
+  RCPattern _pattern = RCPattern::kHV;
 
   const int _db_unit = Timing::getDbUnit();
-  const double _unit_h_cap = Timing::getUnitCap(kH);
-  const double _unit_h_res = Timing::getUnitRes(kH);
-  const double _unit_v_cap = Timing::getUnitCap(kV);
-  const double _unit_v_res = Timing::getUnitRes(kV);
+  const double _unit_h_cap = Timing::getUnitCap(LayerPattern::kH);
+  const double _unit_h_res = Timing::getUnitRes(LayerPattern::kH);
+  const double _unit_v_cap = Timing::getUnitCap(LayerPattern::kV);
+  const double _unit_v_res = Timing::getUnitRes(LayerPattern::kV);
+  const Side<double> _K = {0.5 * _unit_h_res * _unit_h_cap, 0.5 * _unit_v_res* _unit_v_cap};
 
   Side<Pts> _join_region;
   Side<Pts> _join_segment;
+  Side<Trr> _ms;
   Side<Pts> _bal_points;  // balance points which skew equal to 0
   Side<Pt> _join_corner;
   Side<Pts> _fms_points;  // feasible merging section
