@@ -117,6 +117,26 @@ void GeomCalc::calcCoord(Pt& p, const Line& l, const double& shift)
   p.y = (l[kHead].y * d1 + l[kTail].y * d0) / (d0 + d1);
 }
 
+void GeomCalc::calcRelativeCoord(Pt& p, const RelativeType& type, const double& shift)
+{
+  switch (type) {
+    case RelativeType::kLeft:
+      p.x += shift;
+      break;
+    case RelativeType::kRight:
+      p.x -= shift;
+      break;
+    case RelativeType::kTop:
+      p.y -= shift;
+      break;
+    case RelativeType::kBottom:
+      p.y += shift;
+      break;
+    default:
+      break;
+  }
+}
+
 LineType GeomCalc::lineType(const Line& l)
 {
   return lineType(l[kHead], l[kTail]);
@@ -204,6 +224,35 @@ IntersectType GeomCalc::lineIntersect(Pt& p, Line& l1, Line& l2)
     return IntersectType::kCrossing;
   }
   return IntersectType::kNone;
+}
+
+RelativeType GeomCalc::lineRelative(const Line& l1, const Line& l2, const size_t& ref)
+{
+  // return the position of one line relative to ref line
+  auto line_type = lineType(l1);
+  auto t_line_type = lineType(l2);
+  LOG_FATAL_IF(line_type != t_line_type) << "line type is not same";
+  if (line_type == LineType::kVertical || line_type == LineType::kTilt) {
+    auto max_x1 = std::max(l1[kHead].x, l1[kTail].x);
+    auto max_x2 = std::max(l2[kHead].x, l2[kTail].x);
+    if ((max_x1 <= max_x2 && ref == kLeft) || (max_x1 >= max_x2 && ref == kRight)) {
+      return RelativeType::kLeft;
+    } else {
+      return RelativeType::kRight;
+    }
+  } else if (line_type == LineType::kHorizontal || line_type == LineType::kFlat) {
+    auto max_y1 = std::max(l1[kHead].y, l1[kTail].y);
+    auto max_y2 = std::max(l2[kHead].y, l2[kTail].y);
+    if ((max_y1 <= max_y2 && ref == kLeft) || (max_y1 >= max_y2 && ref == kRight)) {
+      return RelativeType::kBottom;
+    } else {
+      return RelativeType::kTop;
+    }
+  } else if (line_type == LineType::kManhattan) {
+    return RelativeType::kManhattanParallel;
+  } else {
+    LOG_FATAL << "line type error" << std::endl;
+  }
 }
 
 double GeomCalc::lineDist(Line& l1, Line& l2, PtPair& closest)
@@ -399,6 +448,36 @@ void GeomCalc::buildTrr(Trr& ms, const double& r, Trr& build_trr)
   build_trr.x_high(ms.x_high() + r);
   build_trr.y_low(ms.y_low() - r);
   build_trr.y_high(ms.y_high() + r);
+}
+
+void GeomCalc::sortPts(Pts& pts)
+{
+  if (pts.empty()) {
+    return;
+  }
+  // sort by dist to first point
+  std::ranges::for_each(pts, [&pts](Pt& p) { p.val = distance(p, pts.front()); });
+  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+}
+
+void GeomCalc::uniqueSortPts(std::vector<Pt>& pts)
+{
+  sortPts(pts);
+  pts.erase(std::unique(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return Equal(p1.x, p2.x) && Equal(p1.y, p2.y); }),
+            pts.end());
+}
+
+std::vector<Line> GeomCalc::getLines(const std::vector<Pt>& pts)
+{
+  if (pts.size() == 2) {
+      return {{pts.front(), pts.back()}};
+    }
+    std::vector<Line> lines;
+    for (size_t i = 0; i < pts.size(); ++i) {
+      auto j = (i + 1) % pts.size();
+      lines.push_back({pts[i], pts[j]});
+    }
+    return lines;
 }
 
 void GeomCalc::lineToMs(Trr& ms, const Line& l)

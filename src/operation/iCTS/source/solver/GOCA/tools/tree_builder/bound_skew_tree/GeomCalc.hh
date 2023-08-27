@@ -42,6 +42,15 @@ enum class IntersectType
   kSame,      // two line are same
 };
 
+enum class RelativeType
+{
+  kLeft,
+  kRight,
+  kTop,
+  kBottom,
+  kManhattanParallel,
+};
+
 class GeomCalc
 {
  public:
@@ -59,12 +68,16 @@ class GeomCalc
   static double ptToLineDist(Pt& p, const Line& l, Pt& intersect);
 
   static void calcCoord(Pt& p, const Line& l, const double& shift);
+
+  static void calcRelativeCoord(Pt&p, const RelativeType& type, const double& shift);
   // line
   static LineType lineType(const Line& l);
 
   static LineType lineType(const Pt& p1, const Pt& p2);
 
   static IntersectType lineIntersect(Pt& p, Line& l1, Line& l2);
+
+  static RelativeType lineRelative(const Line& l1, const Line& l2, const size_t& ref);
 
   static double lineDist(Line& l1, Line& l2, PtPair& closest);
 
@@ -85,6 +98,11 @@ class GeomCalc
   static void coreMidPoint(Trr& ms, Pt& mid);
   static bool isContain(const Trr& small, const Trr& large);
   static void buildTrr(Trr& ms, const double& r, Trr& build_trr);
+  // Pts
+  static void sortPts(Pts& pts);
+  // Region
+  static void uniqueSortPts(std::vector<Pt>&pts);
+  static std::vector<Line> getLines(const std::vector<Pt>& pts);
   /* Convert */
   static void lineToMs(Trr& ms, const Line& l);
   static void lineToMs(Trr& ms, const Pt& p1, const Pt& p2);

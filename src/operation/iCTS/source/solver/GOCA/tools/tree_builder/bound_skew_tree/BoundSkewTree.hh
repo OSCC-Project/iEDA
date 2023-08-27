@@ -90,12 +90,31 @@ class BoundSkewTree
   void jsProcess(Area* cur);
   void initSide();
   void updateJS(Area* cur, Line& left, Line& right, PtPair closest);
+
+  void calcJr(Area* parent, Area* left, Area* right);
+  LineType calcAreaLineType(Area* cur);
+  void calcJrEndpoints(Area* cur);
+  void calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* right);
+  void addJsPts(Area* parent, Area* left, Area* right);
+
+  void calcJrCorner(Area* cur);
+  void calcBalancePt(Area* cur);
+  void calcFmsPt(Area* parent, Area* left, Area* right);
+
+  bool existFmsOnJr();
+  void constructFeasibleMr(Area* parent, Area* left, Area* right);
+  void constructInfeasibleMr(Area* parent, Area* left, Area* right);
+  void constructTrrMr(Area* cur);
+  void calcConvexHull(Area* cur);
+  void checkMr(Area* cur);
+
   double calcJrArea(const Line& l1, const Line& l2);
   void calcJS(Area* cur, Line& left, Line& right);
-  void calcJS(Area* cur, Area* left, Area* right);
-  void calcJsDelay(Area* cur, Area* left, Area* right);
+  void calcJS(Area* parent, Area* left, Area* right);
+  void calcJsDelay(Area* left, Area* right);
   void calcBsLocated(Area* cur, Pt& pt, Line& line);
   void calcPtDelays(Area* cur, Pt& pt, Line& line);
+  void updatePtDelaysBySide(Area* cur, const size_t& side, Pt& pt);
   void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line);
   double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV);
   double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV);

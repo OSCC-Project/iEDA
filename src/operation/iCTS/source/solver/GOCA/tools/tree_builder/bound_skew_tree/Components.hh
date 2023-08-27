@@ -63,17 +63,17 @@ class Pt
 {
  public:
   Pt() = default;
-  Pt(const double& t_x, const double& t_y, const double& t_max, const double& t_min, const double& t_cap)
-      : x(t_x), y(t_y), max(t_max), min(t_min), cap(t_cap)
+  Pt(const double& t_x, const double& t_y, const double& t_max, const double& t_min, const double& t_val)
+      : x(t_x), y(t_y), max(t_max), min(t_min), val(t_val)
   {
   }
-  Pt(const double& t_x, const double& t_y) : x(t_x), y(t_y), max(0), min(0), cap(0) {}
+  Pt(const double& t_x, const double& t_y) : x(t_x), y(t_y), max(0), min(0), val(0) {}
 
   double x = 0;
   double y = 0;
   double max = 0;
   double min = 0;
-  double cap = 0;
+  double val = 0;
 };
 
 /**
@@ -123,7 +123,7 @@ class Area
   std::vector<Line> getMrLines() const
   {
     if (_mr.size() == 2) {
-      return {{_mr[0], _mr[1]}};
+      return {{_mr.front(), _mr.back()}};
     }
     std::vector<Line> lines;
     for (size_t i = 0; i < _mr.size(); ++i) {
