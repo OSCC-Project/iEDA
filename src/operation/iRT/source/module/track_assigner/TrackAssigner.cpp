@@ -491,6 +491,9 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
                                                                                std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                                std::vector<LayerCoord>& pin_coord_list)
 {
+  double ta_pin_distance_unit = DM_INST.getConfig().ta_pin_distance_unit;
+  double ta_group_distance_unit = DM_INST.getConfig().ta_group_distance_unit;
+
   std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_distance_map;
   if (!pin_coord_list.empty()) {
     for (LayerCoord& coord : ta_group_map[ta_node_node].get_coord_list()) {
@@ -516,14 +519,15 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
   }
   std::sort(coord_distance_pair_list.begin(), coord_distance_pair_list.end(),
             [](std::pair<LayerCoord, double>& a, std::pair<LayerCoord, double>& b) { return a.second < b.second; });
-  // cost_unit
-  double cost_unit = 1;
-  if (pin_coord_list.empty()) {
-    cost_unit = 0.5;
+  double distance_unit;
+  if (!pin_coord_list.empty()) {
+    distance_unit = ta_pin_distance_unit;
+  } else {
+    distance_unit = ta_group_distance_unit;
   }
   std::map<LayerCoord, double, CmpLayerCoordByXASC> coord_cost_map;
   for (size_t i = 0; i < coord_distance_pair_list.size(); i++) {
-    coord_cost_map[coord_distance_pair_list[i].first] = (i * cost_unit);
+    coord_cost_map[coord_distance_pair_list[i].first] = (i * distance_unit);
   }
   return coord_cost_map;
 }
@@ -1052,6 +1056,9 @@ void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType chang
   if (drc_rect.get_is_routing() == false) {
     return;
   }
+
+  double ta_history_cost_unit = DM_INST.getConfig().ta_history_cost_unit;
+
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
   for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
@@ -1062,9 +1069,9 @@ void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType chang
         orien_history_cost_map[orientation] = 0;
       }
       if (change_type == ChangeType::kAdd) {
-        orien_history_cost_map[orientation] += 10;
+        orien_history_cost_map[orientation] += ta_history_cost_unit;
       } else if (change_type == ChangeType::kDel) {
-        orien_history_cost_map[orientation] -= 10;
+        orien_history_cost_map[orientation] -= ta_history_cost_unit;
       }
     }
   }
@@ -1211,10 +1218,7 @@ void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta
   }
   initSingleTask(ta_panel, ta_task);
   while (!isConnectedAllEnd(ta_panel)) {
-    std::vector<TARouteStrategy> strategy_list = {TARouteStrategy::kFullyConsider, TARouteStrategy::kIgnoringBlockAndPin};
-    for (TARouteStrategy ta_route_strategy : strategy_list) {
-      routeByStrategy(ta_panel, ta_route_strategy);
-    }
+    routeSinglePath(ta_panel);
     updatePathResult(ta_panel);
     updateDirectionSet(ta_panel);
     resetStartAndEnd(ta_panel);
@@ -1231,10 +1235,6 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
   std::vector<std::vector<TANode*>>& start_node_list_list = ta_panel.get_start_node_list_list();
   std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
 
-  // config
-  ta_panel.set_wire_unit(1);
-  ta_panel.set_corner_unit(1);
-  ta_panel.set_via_unit(1);
   // single task
   ta_panel.set_ta_task_ref(&ta_task);
   ta_panel.set_routing_region(ta_panel.get_curr_bounding_box());
@@ -1279,27 +1279,6 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
 bool TrackAssigner::isConnectedAllEnd(TAPanel& ta_panel)
 {
   return ta_panel.get_end_node_list_list().empty();
-}
-
-void TrackAssigner::routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy)
-{
-  if (ta_route_strategy == TARouteStrategy::kFullyConsider) {
-    routeSinglePath(ta_panel);
-  } else if (isRoutingFailed(ta_panel)) {
-    resetSinglePath(ta_panel);
-    ta_panel.set_ta_route_strategy(ta_route_strategy);
-    routeSinglePath(ta_panel);
-    ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
-    if (!isRoutingFailed(ta_panel)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ",
-                      GetTARouteStrategyName()(ta_route_strategy), " successfully!");
-      }
-    } else if (ta_route_strategy == TARouteStrategy::kIgnoringBlockAndPin) {
-      LOG_INST.error(Loc::current(), "The task ", ta_panel.get_curr_task_idx(), " reroute by ", GetTARouteStrategyName()(ta_route_strategy),
-                     " failed!");
-    }
-  }
 }
 
 void TrackAssigner::routeSinglePath(TAPanel& ta_panel)
@@ -1366,9 +1345,6 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node->isClose()) {
       continue;
     }
-    if (!passChecking(ta_panel, path_head_node, neighbor_node)) {
-      continue;
-    }
     double know_cost = getKnowCost(ta_panel, path_head_node, neighbor_node);
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
@@ -1380,34 +1356,6 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
       pushToOpenList(ta_panel, neighbor_node);
     }
   }
-}
-
-bool TrackAssigner::passChecking(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
-  if (orientation == Orientation::kNone) {
-    return true;
-  }
-  Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
-
-  TANode* pre_node = nullptr;
-  TANode* curr_node = start_node;
-
-  while (curr_node != end_node) {
-    pre_node = curr_node;
-    curr_node = pre_node->getNeighborNode(orientation);
-
-    if (curr_node == nullptr) {
-      return false;
-    }
-    if (pre_node->isOBS(ta_panel.get_curr_net_idx(), orientation, ta_panel.get_ta_route_strategy())) {
-      return false;
-    }
-    if (curr_node->isOBS(ta_panel.get_curr_net_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
-      return false;
-    }
-  }
-  return true;
 }
 
 std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentListByNode(TANode* node)
@@ -1448,8 +1396,6 @@ bool TrackAssigner::isRoutingFailed(TAPanel& ta_panel)
 
 void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
 {
-  ta_panel.set_ta_route_strategy(TARouteStrategy::kNone);
-
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
   ta_panel.set_open_queue(empty_queue);
 
@@ -1609,7 +1555,6 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   cost += getNodeCost(ta_panel, end_node, RTUtil::getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(ta_panel, start_node, end_node);
   cost += getKnowCornerCost(ta_panel, start_node, end_node);
-  cost += getKnowViaCost(ta_panel, start_node, end_node);
   return cost;
 }
 
@@ -1630,22 +1575,27 @@ double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientat
 double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double ta_prefer_wire_unit = DM_INST.getConfig().ta_prefer_wire_unit;
+  double ta_nonprefer_wire_unit = DM_INST.getConfig().ta_nonprefer_wire_unit;
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_direction() != RTUtil::getDirection(*start_node, *end_node)) {
-      wire_cost *= 2;
+    if (routing_layer.get_direction() == RTUtil::getDirection(*start_node, *end_node)) {
+      wire_cost *= ta_prefer_wire_unit;
+    } else {
+      wire_cost *= ta_nonprefer_wire_unit;
     }
   }
-  wire_cost *= ta_panel.get_wire_unit();
   return wire_cost;
 }
 
 double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
+  double ta_corner_unit = DM_INST.getConfig().ta_corner_unit;
+
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     std::set<Direction> direction_set;
@@ -1663,17 +1613,12 @@ double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, T
     direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
 
     if (direction_set.size() == 2) {
-      corner_cost += ta_panel.get_corner_unit();
+      corner_cost += ta_corner_unit;
     } else if (direction_set.size() == 2) {
       LOG_INST.error(Loc::current(), "Direction set is error!");
     }
   }
   return corner_cost;
-}
-
-double TrackAssigner::getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 // calculate estimate cost
@@ -1699,32 +1644,30 @@ double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TAN
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
-  estimate_cost += getEstimateViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
 }
 
 double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
+  double ta_prefer_wire_unit = DM_INST.getConfig().ta_prefer_wire_unit;
+
   double wire_cost = 0;
   wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= ta_panel.get_wire_unit();
+  wire_cost *= ta_prefer_wire_unit;
   return wire_cost;
 }
 
 double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
+  double ta_corner_unit = DM_INST.getConfig().ta_corner_unit;
+
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     if (RTUtil::isOblique(*start_node, *end_node)) {
-      corner_cost += ta_panel.get_corner_unit();
+      corner_cost += ta_corner_unit;
     }
   }
   return corner_cost;
-}
-
-double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  return ta_panel.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
 }
 
 void TrackAssigner::processTAPanel(TAModel& ta_model, TAPanel& ta_panel)

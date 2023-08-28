@@ -103,12 +103,10 @@ class TrackAssigner
   void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
-  void routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void routeSinglePath(TAPanel& ta_panel);
   void initPathHead(TAPanel& ta_panel);
   bool searchEnded(TAPanel& ta_panel);
   void expandSearching(TAPanel& ta_panel);
-  bool passChecking(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
@@ -124,12 +122,10 @@ class TrackAssigner
   double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
   double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void processTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void buildRoutingResult(TATask& ta_task);
   void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);

@@ -74,13 +74,6 @@ class DRBox : public SpaceRegion
     return region_query;
   }
 #if 1  // astar
-  // config
-  double get_wire_unit() const { return _wire_unit; }
-  double get_corner_unit() const { return _corner_unit; }
-  double get_via_unit() const { return _via_unit; }
-  void set_wire_unit(const double wire_unit) { _wire_unit = wire_unit; }
-  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
-  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single task
   const irt_int get_curr_net_idx() const { return _dr_task_ref->get_origin_net_idx(); }
   const irt_int get_curr_task_idx() const { return _dr_task_ref->get_task_idx(); }
@@ -109,12 +102,10 @@ class DRBox : public SpaceRegion
     _routing_segment_list = routing_segment_list;
   }
   // single path
-  DRRouteStrategy& get_dr_route_strategy() { return _dr_route_strategy; }
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
-  void set_dr_route_strategy(const DRRouteStrategy& dr_route_strategy) { _dr_route_strategy = dr_route_strategy; }
   void set_open_queue(const std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
   {
@@ -138,10 +129,6 @@ class DRBox : public SpaceRegion
   DRBoxStat _dr_box_stat;
   irt_int _curr_iter = -1;
 #if 1  // astar
-  // config
-  double _wire_unit = 1;
-  double _corner_unit = 1;
-  double _via_unit = 1;
   // single task
   DRTask* _dr_task_ref = nullptr;
   SpaceRegion _routing_region;
@@ -151,7 +138,6 @@ class DRBox : public SpaceRegion
   std::vector<DRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  DRRouteStrategy _dr_route_strategy = DRRouteStrategy::kNone;
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;

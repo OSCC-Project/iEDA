@@ -1505,10 +1505,7 @@ void DetailedRouter::routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_ta
   }
   initSingleTask(dr_box, dr_task);
   while (!isConnectedAllEnd(dr_box)) {
-    std::vector<DRRouteStrategy> strategy_list = {DRRouteStrategy::kFullyConsider, DRRouteStrategy::kIgnoringBlockAndPin};
-    for (DRRouteStrategy dr_route_strategy : strategy_list) {
-      routeByStrategy(dr_box, dr_route_strategy);
-    }
+    routeSinglePath(dr_box);
     updatePathResult(dr_box);
     updateDirectionSet(dr_box);
     resetStartAndEnd(dr_box);
@@ -1523,10 +1520,6 @@ void DetailedRouter::initSingleTask(DRBox& dr_box, DRTask& dr_task)
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
-  // config
-  dr_box.set_wire_unit(1);
-  dr_box.set_corner_unit(1);
-  dr_box.set_via_unit(1);
   // single task
   dr_box.set_dr_task_ref(&dr_task);
   dr_box.set_routing_region(dr_box.get_curr_bounding_box());
@@ -1562,27 +1555,6 @@ void DetailedRouter::initSingleTask(DRBox& dr_box, DRTask& dr_task)
 bool DetailedRouter::isConnectedAllEnd(DRBox& dr_box)
 {
   return dr_box.get_end_node_list_list().empty();
-}
-
-void DetailedRouter::routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy)
-{
-  if (dr_route_strategy == DRRouteStrategy::kFullyConsider) {
-    routeSinglePath(dr_box);
-  } else if (isRoutingFailed(dr_box)) {
-    resetSinglePath(dr_box);
-    dr_box.set_dr_route_strategy(dr_route_strategy);
-    routeSinglePath(dr_box);
-    dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
-    if (!isRoutingFailed(dr_box)) {
-      if (omp_get_num_threads() == 1) {
-        LOG_INST.info(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ", GetDRRouteStrategyName()(dr_route_strategy),
-                      " successfully!");
-      }
-    } else if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockAndPin) {
-      LOG_INST.error(Loc::current(), "The task ", dr_box.get_curr_task_idx(), " reroute by ", GetDRRouteStrategyName()(dr_route_strategy),
-                     " failed!");
-    }
-  }
 }
 
 void DetailedRouter::routeSinglePath(DRBox& dr_box)
@@ -1653,9 +1625,6 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
     if (neighbor_node->isClose()) {
       continue;
     }
-    if (!passChecking(dr_box, path_head_node, neighbor_node)) {
-      continue;
-    }
     double know_cost = getKnowCost(dr_box, path_head_node, neighbor_node);
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
@@ -1667,34 +1636,6 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
       pushToOpenList(dr_box, neighbor_node);
     }
   }
-}
-
-bool DetailedRouter::passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  Orientation orientation = RTUtil::getOrientation(*start_node, *end_node);
-  if (orientation == Orientation::kNone) {
-    return true;
-  }
-  Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
-
-  DRNode* pre_node = nullptr;
-  DRNode* curr_node = start_node;
-
-  while (curr_node != end_node) {
-    pre_node = curr_node;
-    curr_node = pre_node->getNeighborNode(orientation);
-
-    if (curr_node == nullptr) {
-      return false;
-    }
-    if (pre_node->isOBS(dr_box.get_curr_net_idx(), orientation, dr_box.get_dr_route_strategy())) {
-      return false;
-    }
-    if (curr_node->isOBS(dr_box.get_curr_net_idx(), opposite_orientation, dr_box.get_dr_route_strategy())) {
-      return false;
-    }
-  }
-  return true;
 }
 
 std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRNode* node)
@@ -1735,8 +1676,6 @@ bool DetailedRouter::isRoutingFailed(DRBox& dr_box)
 
 void DetailedRouter::resetSinglePath(DRBox& dr_box)
 {
-  dr_box.set_dr_route_strategy(DRRouteStrategy::kNone);
-
   std::priority_queue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
   dr_box.set_open_queue(empty_queue);
 
@@ -1917,22 +1856,27 @@ double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation
 double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double dr_prefer_wire_unit = DM_INST.getConfig().dr_prefer_wire_unit;
+  double dr_nonprefer_wire_unit = DM_INST.getConfig().dr_nonprefer_wire_unit;
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_direction() != RTUtil::getDirection(*start_node, *end_node)) {
-      wire_cost *= 2;
+    if (routing_layer.get_direction() == RTUtil::getDirection(*start_node, *end_node)) {
+      wire_cost *= dr_prefer_wire_unit;
+    } else {
+      wire_cost *= dr_nonprefer_wire_unit;
     }
   }
-  wire_cost *= dr_box.get_wire_unit();
   return wire_cost;
 }
 
 double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
+  double dr_corner_unit = DM_INST.getConfig().dr_corner_unit;
+
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     std::set<Direction> direction_set;
@@ -1950,7 +1894,7 @@ double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNo
     direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
 
     if (direction_set.size() == 2) {
-      corner_cost += dr_box.get_corner_unit();
+      corner_cost += dr_corner_unit;
     } else if (direction_set.size() == 2) {
       LOG_INST.error(Loc::current(), "Direction set is error!");
     }
@@ -1960,7 +1904,10 @@ double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNo
 
 double DetailedRouter::getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  return dr_box.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
+  double dr_via_unit = DM_INST.getConfig().dr_via_unit;
+
+  double via_cost = (dr_via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
+  return via_cost;
 }
 
 // calculate estimate cost
@@ -1992,18 +1939,22 @@ double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode
 
 double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
+  double dr_prefer_wire_unit = DM_INST.getConfig().dr_prefer_wire_unit;
+
   double wire_cost = 0;
   wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= dr_box.get_wire_unit();
+  wire_cost *= dr_prefer_wire_unit;
   return wire_cost;
 }
 
 double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
+  double dr_corner_unit = DM_INST.getConfig().dr_corner_unit;
+
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     if (RTUtil::isOblique(*start_node, *end_node)) {
-      corner_cost += dr_box.get_corner_unit();
+      corner_cost += dr_corner_unit;
     }
   }
   return corner_cost;
@@ -2011,7 +1962,10 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
 
 double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  return dr_box.get_via_unit() * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx());
+  double dr_via_unit = DM_INST.getConfig().dr_via_unit;
+
+  double via_cost = (dr_via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
+  return via_cost;
 }
 
 void DetailedRouter::processDRBox(DRModel& dr_model, DRBox& dr_box)

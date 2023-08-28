@@ -84,6 +84,14 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ta_model_max_iter_num", ValueType::kInt));
   // irt_int ta_panel_max_iter_num;         // optional
   _config_list.push_back(std::make_pair("-ta_panel_max_iter_num", ValueType::kInt));
+  // double dr_prefer_wire_unit;            // optional
+  _config_list.push_back(std::make_pair("-dr_prefer_wire_unit", ValueType::kDouble));
+  // double dr_nonprefer_wire_unit;         // optional
+  _config_list.push_back(std::make_pair("-dr_nonprefer_wire_unit", ValueType::kDouble));
+  // double dr_via_unit;                    // optional
+  _config_list.push_back(std::make_pair("-dr_via_unit", ValueType::kDouble));
+  // double dr_corner_unit;                 // optional
+  _config_list.push_back(std::make_pair("-dr_corner_unit", ValueType::kDouble));
   // double dr_block_and_pin_unit;          // optional
   _config_list.push_back(std::make_pair("-dr_block_and_pin_unit", ValueType::kDouble));
   // double dr_known_panel_unit;            // optional

@@ -107,12 +107,10 @@ class DetailedRouter
   void routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task);
   void initSingleTask(DRBox& dr_box, DRTask& dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
-  void routeByStrategy(DRBox& dr_box, DRRouteStrategy dr_route_strategy);
   void routeSinglePath(DRBox& dr_box);
   void initPathHead(DRBox& dr_box);
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
-  bool passChecking(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);

@@ -58,6 +58,10 @@ class Config
   double ta_history_cost_unit;           // optional
   irt_int ta_model_max_iter_num;         // optional
   irt_int ta_panel_max_iter_num;         // optional
+  double dr_prefer_wire_unit;            // optional
+  double dr_nonprefer_wire_unit;         // optional
+  double dr_via_unit;                    // optional
+  double dr_corner_unit;                 // optional
   double dr_block_and_pin_unit;          // optional
   double dr_known_panel_unit;            // optional
   double dr_reserved_via_unit;           // optional

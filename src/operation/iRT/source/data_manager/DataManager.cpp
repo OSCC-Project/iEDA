@@ -132,6 +132,10 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "ta_history_cost_unit", 2);
   _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
   _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 1);
+  _config.dr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "dr_prefer_wire_unit", 1);
+  _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "dr_nonprefer_wire_unit", 2);
+  _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "dr_via_unit", 1);
+  _config.dr_corner_unit = RTUtil::getConfigValue<double>(config_map, "dr_corner_unit", 1);
   _config.dr_block_and_pin_unit = RTUtil::getConfigValue<double>(config_map, "dr_block_and_pin_unit", 128);
   _config.dr_known_panel_unit = RTUtil::getConfigValue<double>(config_map, "dr_known_panel_unit", 64);
   _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "dr_reserved_via_unit", 32);
@@ -1507,6 +1511,14 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_model_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_panel_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_panel_max_iter_num);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_prefer_wire_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_prefer_wire_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_nonprefer_wire_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_nonprefer_wire_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_via_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_via_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_corner_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_corner_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_block_and_pin_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_block_and_pin_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_known_panel_unit");

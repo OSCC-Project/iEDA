@@ -36,6 +36,10 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -ta_history_cost_unit 2 \
         -ta_model_max_iter_num 1 \
         -ta_panel_max_iter_num 1 \
+        -dr_prefer_wire_unit 1 \
+        -dr_nonprefer_wire_unit 2 \
+        -dr_via_unit 1 \
+        -dr_corner_unit 1 \
         -dr_block_and_pin_unit 128 \
         -dr_known_panel_unit 64 \
         -dr_reserved_via_unit 32 \
