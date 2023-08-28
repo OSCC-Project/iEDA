@@ -43,11 +43,16 @@ class TANode : public LayerCoord
   // getter
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_net_map() { return _source_orien_net_map; }
+  std::map<Orientation, double>& get_orien_history_cost_map() { return _orien_history_cost_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_source_orien_net_map(const std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_net_map)
   {
     _source_orien_net_map = source_orien_net_map;
+  }
+  void set_orien_history_cost_map(const std::map<Orientation, double>& orien_history_cost_map)
+  {
+    _orien_history_cost_map = orien_history_cost_map;
   }
   // function
   TANode* getNeighborNode(Orientation orientation)
@@ -82,7 +87,7 @@ class TANode : public LayerCoord
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
-    for (TASourceType ta_source_type : {TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+    for (TASourceType ta_source_type : {TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
       bool add_cost = false;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
@@ -97,7 +102,7 @@ class TANode : public LayerCoord
       }
       if (add_cost) {
         switch (ta_source_type) {
-          case TASourceType::kEnclosure:
+          case TASourceType::kReservedVia:
             cost += 4;
             break;
           case TASourceType::kOtherPanel:
@@ -110,6 +115,9 @@ class TANode : public LayerCoord
             break;
         }
       }
+    }
+    if (RTUtil::exist(_orien_history_cost_map, orientation)) {
+      cost += _orien_history_cost_map[orientation];
     }
     return cost;
   }
@@ -136,6 +144,7 @@ class TANode : public LayerCoord
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
   std::map<TASourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_net_map;
+  std::map<Orientation, double> _orien_history_cost_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

@@ -19,6 +19,7 @@
 #include "DRCChecker.hpp"
 #include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
+#include "VRGCellId.hpp"
 #include "VRSourceType.hpp"
 
 namespace irt {
@@ -29,8 +30,10 @@ class VRGCell : public SpaceRegion
   VRGCell() = default;
   ~VRGCell() = default;
   // getter
+  VRGCellId& get_vr_gcell_id() { return _vr_gcell_id; }
   std::map<VRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
+  void set_vr_gcell_id(const VRGCellId& vr_gcell_id) { _vr_gcell_id = vr_gcell_id; }
   void set_source_region_query_map(const std::map<VRSourceType, RegionQuery*>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
@@ -46,6 +49,7 @@ class VRGCell : public SpaceRegion
   }
 
  private:
+  VRGCellId _vr_gcell_id;
   std::map<VRSourceType, RegionQuery*> _source_region_query_map;
 };
 

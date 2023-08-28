@@ -156,7 +156,7 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
   shrinkPanelRegion(ta_model);
   buildPanelTrackAxis(ta_model);
   updateNetFixedRectMap(ta_model);
-  updateNetEnclosureMap(ta_model);
+  updateNetReservedViaMap(ta_model);
   buildTATaskList(ta_model);
   buildNetTaskMap(ta_model);
   // outputTADataset(ta_model);
@@ -307,7 +307,7 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
   }
 }
 
-void TrackAssigner::updateNetEnclosureMap(TAModel& ta_model)
+void TrackAssigner::updateNetReservedViaMap(TAModel& ta_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -327,7 +327,7 @@ void TrackAssigner::updateNetEnclosureMap(TAModel& ta_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_net.get_net_idx(), segment_list)) {
-          updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kEnclosure, TAPanelId(), drc_rect);
+          updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kReservedVia, TAPanelId(), drc_rect);
         }
       }
     }
@@ -603,7 +603,7 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       // soft_shape_list
       RTUtil::pushStream(ta_dataset, "soft_shape_list", "\n");
       for (const auto& [net_idx, rect_set] :
-           DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kEnclosure), true)[ta_panel_id.get_layer_idx()]) {
+           DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kReservedVia), true)[ta_panel_id.get_layer_idx()]) {
         for (const LayerRect& rect : rect_set) {
           RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
                              "\n");
@@ -771,7 +771,7 @@ void TrackAssigner::makeRoutingState(TAPanel& ta_panel)
 void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
 {
   for (TASourceType ta_source_type :
-       {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+       {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -1778,7 +1778,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = ta_panel_stat.get_source_drc_violation_map();
   for (TASourceType ta_source_type :
-       {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+       {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
     for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(region_query, drc_rect_list)) {
       source_drc_violation_map[ta_source_type][drc] = violation_info_list;
@@ -2338,7 +2338,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
   // source_region_query_map
   std::vector<std::pair<TASourceType, GPGraphType>> source_graph_pair_list = {{TASourceType::kBlockAndPin, GPGraphType::kBlockAndPin},
-                                                                              {TASourceType::kEnclosure, GPGraphType::kEnclosure},
+                                                                              {TASourceType::kReservedVia, GPGraphType::kReservedVia},
                                                                               {TASourceType::kOtherPanel, GPGraphType::kOtherPanel},
                                                                               {TASourceType::kSelfPanel, GPGraphType::kSelfPanel}};
   for (auto& [ta_source_type, gp_graph_type] : source_graph_pair_list) {

@@ -26,7 +26,7 @@ enum class GRSourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure
+  kReservedVia
 };
 
 struct GetGRSourceTypeName
@@ -41,8 +41,8 @@ struct GetGRSourceTypeName
       case GRSourceType::kBlockAndPin:
         gr_source_type_name = "block_and_pin";
         break;
-      case GRSourceType::kEnclosure:
-        gr_source_type_name = "enclosure";
+      case GRSourceType::kReservedVia:
+        gr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

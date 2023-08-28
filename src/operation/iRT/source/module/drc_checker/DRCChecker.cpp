@@ -147,6 +147,9 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, PHYNode& phy_no
       LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, via_node), via_master.get_cut_layer_idx());
       drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
     }
+  } else if (phy_node.isType<PatchNode>()) {
+    PatchNode& patch_node = phy_node.getNode<PatchNode>();
+    drc_rect_list.emplace_back(net_idx, patch_node, true);
   }
   return drc_rect_list;
 }

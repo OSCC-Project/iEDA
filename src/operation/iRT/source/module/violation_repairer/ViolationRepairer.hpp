@@ -66,13 +66,18 @@ class ViolationRepairer
   TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
-  void updateVRGCellMap(VRModel& vr_model, VRNet& vr_net);
+  void updateNetResultMap(VRModel& vr_model, VRNet& vr_net);
   void checkVRModel(VRModel& vr_model);
 #endif
 
 #if 1  // iterative
   void iterative(VRModel& vr_model);
   void repairVRModel(VRModel& vr_model);
+  void repairAntenna(VRModel& vr_model);
+  void repairMinStep(VRModel& vr_model);
+  void repairMinArea(VRModel& vr_model);
+  void repairMinArea(VRModel& vr_model, VRNet& vr_net);
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
   void countVRModel(VRModel& vr_model);
   void reportVRModel(VRModel& vr_model);
   bool stopVRModel(VRModel& vr_model);
