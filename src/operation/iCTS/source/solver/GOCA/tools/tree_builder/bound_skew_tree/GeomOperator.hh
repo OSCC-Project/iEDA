@@ -76,7 +76,5 @@ class GeomOperator
     }
     return false;
   }
-
-  
 };
 }  // namespace icts
