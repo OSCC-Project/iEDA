@@ -71,7 +71,7 @@ class DetailedRouter
   std::vector<TNode<RTNode>*> getDecomposedNodeList(TNode<RTNode>* ta_node_node);
   void shrinkTAResults(DRModel& dr_model, DRNet& dr_net);
   void updateNetPanelResultMap(DRModel& dr_model);
-  void updateNetEnclosureMap(DRModel& dr_model);
+  void updateNetReservedViaMap(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRModel& dr_model, DRNet& dr_net);

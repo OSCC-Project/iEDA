@@ -62,7 +62,7 @@ class TrackAssigner
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
-  void updateNetEnclosureMap(TAModel& ta_model);
+  void updateNetReservedViaMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net);

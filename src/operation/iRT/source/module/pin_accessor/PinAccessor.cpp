@@ -212,7 +212,7 @@ void PinAccessor::iterative(PAModel& pa_model)
 void PinAccessor::accessPAModel(PAModel& pa_model)
 {
   accessPANetList(pa_model);
-  updateNetEnclosureMap(pa_model);
+  updateNetReservedViaMap(pa_model);
   eliminateViaConflict(pa_model);
 }
 
@@ -705,7 +705,7 @@ void PinAccessor::checkAccessPointList(PANet& pa_net)
   }
 }
 
-void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
+void PinAccessor::updateNetReservedViaMap(PAModel& pa_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -725,7 +725,7 @@ void PinAccessor::updateNetEnclosureMap(PAModel& pa_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
-          addRectToEnv(pa_model, PASourceType::kEnclosure, drc_rect);
+          addRectToEnv(pa_model, PASourceType::kReservedVia, drc_rect);
         }
       }
     }
@@ -777,7 +777,7 @@ void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
           segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                     LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
           std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
-          if (!hasViolation(pa_model, PASourceType::kEnclosure, drc_rect_list)) {
+          if (!hasViolation(pa_model, PASourceType::kReservedVia, drc_rect_list)) {
             via_num++;
           } else {
             break;

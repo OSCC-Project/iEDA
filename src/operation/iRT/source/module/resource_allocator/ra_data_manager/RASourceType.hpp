@@ -26,7 +26,7 @@ enum class RASourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure
+  kReservedVia
 };
 
 struct GetRASourceTypeName
@@ -41,8 +41,8 @@ struct GetRASourceTypeName
       case RASourceType::kBlockAndPin:
         gr_source_type_name = "block_and_pin";
         break;
-      case RASourceType::kEnclosure:
-        gr_source_type_name = "enclosure";
+      case RASourceType::kReservedVia:
+        gr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

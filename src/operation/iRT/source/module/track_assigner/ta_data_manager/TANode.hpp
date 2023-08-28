@@ -87,7 +87,7 @@ class TANode : public LayerCoord
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
-    for (TASourceType ta_source_type : {TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+    for (TASourceType ta_source_type : {TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
       bool add_cost = false;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
@@ -102,7 +102,7 @@ class TANode : public LayerCoord
       }
       if (add_cost) {
         switch (ta_source_type) {
-          case TASourceType::kEnclosure:
+          case TASourceType::kReservedVia:
             cost += 4;
             break;
           case TASourceType::kOtherPanel:

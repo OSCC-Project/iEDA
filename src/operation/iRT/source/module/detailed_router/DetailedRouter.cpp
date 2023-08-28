@@ -146,7 +146,7 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
   updateNetFixedRectMap(dr_model);
   decomposeLengthyTANode(dr_model);
   updateNetPanelResultMap(dr_model);
-  updateNetEnclosureMap(dr_model);
+  updateNetReservedViaMap(dr_model);
   buildDRTaskList(dr_model);
   buildNetTaskMap(dr_model);
 }
@@ -492,7 +492,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::updateNetEnclosureMap(DRModel& dr_model)
+void DetailedRouter::updateNetReservedViaMap(DRModel& dr_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -512,7 +512,7 @@ void DetailedRouter::updateNetEnclosureMap(DRModel& dr_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
-          updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kEnclosure, DRBoxId(), drc_rect);
+          updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kReservedVia, DRBoxId(), drc_rect);
         }
       }
     }
@@ -1060,7 +1060,7 @@ void DetailedRouter::makeRoutingState(DRBox& dr_box)
 void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
 {
   for (DRSourceType dr_source_type :
-       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -2078,15 +2078,15 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
 
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
   for (DRSourceType dr_source_type :
-       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     RegionQuery* region_query = dr_box.getRegionQuery(dr_source_type);
     for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
       source_drc_number_map[dr_source_type][drc] += number;
     }
   }
 
-  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kEnclosure)) {
-  //   if (source_drc_number_map[DRSourceType::kEnclosure]["RT Spacing"] > 0) {
+  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kReservedVia)) {
+  //   if (source_drc_number_map[DRSourceType::kReservedVia]["RT Spacing"] > 0) {
   //     plotDRBox(dr_box);
   //     int a = 0;
   //   }
@@ -2721,7 +2721,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
   // source_region_query_map
   std::vector<std::pair<DRSourceType, GPGraphType>> source_graph_pair_list = {{DRSourceType::kBlockAndPin, GPGraphType::kBlockAndPin},
                                                                               {DRSourceType::kKnownPanel, GPGraphType::kKnownPanel},
-                                                                              {DRSourceType::kEnclosure, GPGraphType::kEnclosure},
+                                                                              {DRSourceType::kReservedVia, GPGraphType::kReservedVia},
                                                                               {DRSourceType::kOtherBox, GPGraphType::kOtherBox},
                                                                               {DRSourceType::kSelfBox, GPGraphType::kSelfBox}};
   for (auto& [dr_source_type, gp_graph_type] : source_graph_pair_list) {

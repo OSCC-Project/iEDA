@@ -88,7 +88,7 @@ class DRNode : public LayerCoord
   {
     double cost = 0;
     for (DRSourceType ta_source_type :
-         {DRSourceType::kKnownPanel, DRSourceType::kEnclosure, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+         {DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
       bool add_cost = false;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
@@ -106,7 +106,7 @@ class DRNode : public LayerCoord
           case DRSourceType::kKnownPanel:
             cost += 8;
             break;
-          case DRSourceType::kEnclosure:
+          case DRSourceType::kReservedVia:
             cost += 4;
             break;
           case DRSourceType::kOtherBox:

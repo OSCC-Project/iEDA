@@ -60,7 +60,7 @@ class GlobalRouter
   void buildNeighborMap(GRModel& gr_model);
   void updateNetFixedRectMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
-  void updateNetEnclosureMap(GRModel& gr_model);
+  void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeSupply(GRModel& gr_model);

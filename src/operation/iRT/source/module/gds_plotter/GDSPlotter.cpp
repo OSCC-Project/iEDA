@@ -212,10 +212,10 @@ void GDSPlotter::buildGraphLypFile()
   std::map<GPGraphType, bool> routing_data_type_visible_map = {
       {GPGraphType::kNone, false},       {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
       {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
-      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
+      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
       {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
   std::map<GPGraphType, bool> cut_data_type_visible_map = {
-      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true},
+      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true},
       {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
