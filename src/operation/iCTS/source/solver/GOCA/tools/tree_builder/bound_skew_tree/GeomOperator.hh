@@ -52,5 +52,29 @@ class GeomOperator
 
   static bool isPoint(const Polygon& poly);
   static bool isSegment(const Polygon& poly);
+
+  template <typename T>
+  static bool isParallel(const CtsSegment<T>& seg_a, const CtsSegment<T>& seg_b)
+  {
+    return isParallel(seg_a.low(), seg_a.high(), seg_b.low(), seg_b.high());
+  }
+
+  template <typename T>
+  static bool isParallel(const CtsPoint<T>& p1, const CtsPoint<T>& p2, const CtsPoint<T>& p3, const CtsPoint<T>& p4)
+  {
+    if (p1 == p2 || p3 == p4) {
+      return false;
+    }
+    auto dx_a = p2.x() - p1.x();
+    auto dy_a = p2.y() - p1.y();
+    auto dx_b = p4.x() - p3.x();
+    auto dy_b = p4.y() - p3.y();
+    if (dx_a == 0 && dx_b == 0) {
+      return true;
+    } else if (dx_a != 0 && dx_b != 0 && dy_a / dx_a == dy_b / dx_b) {
+      return true;
+    }
+    return false;
+  }
 };
 }  // namespace icts

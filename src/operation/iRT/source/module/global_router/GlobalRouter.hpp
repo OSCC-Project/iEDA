@@ -60,6 +60,7 @@ class GlobalRouter
   void buildNeighborMap(GRModel& gr_model);
   void updateNetFixedRectMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
+  void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeSupply(GRModel& gr_model);
@@ -74,6 +75,7 @@ class GlobalRouter
   void iterative(GRModel& gr_model);
   void sortGRModel(GRModel& gr_model);
   bool sortByMultiLevel(GRNet& net1, GRNet& net2);
+  SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
   SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
   SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
   SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);

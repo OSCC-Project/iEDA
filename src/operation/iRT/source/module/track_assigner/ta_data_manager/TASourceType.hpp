@@ -26,7 +26,7 @@ enum class TASourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure,
+  kReservedVia,
   kUnknownPanel,
   kOtherPanel,
   kSelfPanel
@@ -44,8 +44,8 @@ struct GetTASourceTypeName
       case TASourceType::kBlockAndPin:
         ta_source_type_name = "block_and_pin";
         break;
-      case TASourceType::kEnclosure:
-        ta_source_type_name = "enclosure";
+      case TASourceType::kReservedVia:
+        ta_source_type_name = "reserved_via";
         break;
       case TASourceType::kUnknownPanel:
         ta_source_type_name = "unknown_panel";

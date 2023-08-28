@@ -35,6 +35,33 @@ typedef CtsRectangle<int> Rectangle;
 typedef CtsPolygon<int> Polygon;
 typedef CtsPolygonSet<int> PolygonSet;
 
+template <typename T>
+CtsPoint<double> toDouble(const CtsPoint<T>& point)
+{
+  return CtsPoint<double>(point.x(), point.y());
+}
+
+template <typename T>
+CtsSegment<double> toDouble(const CtsSegment<T>& segment)
+{
+  return CtsSegment<double>(toDouble(segment.low()), toDouble(segment.high()));
+}
+
+template <typename T>
+CtsRectangle<double> toDouble(const CtsRectangle<T>& rectangle)
+{
+  return CtsRectangle<double>(toDouble(rectangle.low()), toDouble(rectangle.high()));
+}
+
+template <typename T>
+CtsPolygon<double> toDouble(const CtsPolygon<T>& polygon)
+{
+  CtsPolygon<double> double_polygon;
+  for (const auto& point : polygon.points()) {
+    double_polygon.add_point(toDouble(point));
+  }
+  return double_polygon;
+}
 }  // namespace icts
 
 #include "Operator.h"

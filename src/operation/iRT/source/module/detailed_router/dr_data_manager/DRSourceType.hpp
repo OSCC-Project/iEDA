@@ -27,7 +27,7 @@ enum class DRSourceType
   kNone,
   kBlockAndPin,
   kKnownPanel,
-  kEnclosure,
+  kReservedVia,
   kUnknownBox,
   kOtherBox,
   kSelfBox
@@ -48,8 +48,8 @@ struct GetDRSourceTypeName
       case DRSourceType::kKnownPanel:
         dr_source_type_name = "known_panel";
         break;
-      case DRSourceType::kEnclosure:
-        dr_source_type_name = "enclosure";
+      case DRSourceType::kReservedVia:
+        dr_source_type_name = "reserved_via";
         break;
       case DRSourceType::kUnknownBox:
         dr_source_type_name = "unknown_box";

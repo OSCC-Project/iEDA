@@ -83,6 +83,9 @@ using ieda::Stats;
 int main(int argc, char** argv) {
   Log::init(argv);
 
+  // for debug
+  // Log::setVerboseLogLevel("Arnoldi*", 1);
+
   // for (int i = 0; i < argc; ++i) {
   //   std::cout << "argv[" << i << "] = " << argv[i] << std::endl;
   // }

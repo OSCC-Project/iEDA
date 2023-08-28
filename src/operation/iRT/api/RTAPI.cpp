@@ -75,8 +75,8 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   // clang-format on
   LOG_INST.printLogFilePath();
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
   DRCChecker::initInst();
+  DM_INST.input(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
 }
 
@@ -170,8 +170,8 @@ Stage RTAPI::convertToStage(Tool tool)
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DRCChecker::destroyInst();
   DM_INST.output(dmInst->get_idb_builder());
+  DRCChecker::destroyInst();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off

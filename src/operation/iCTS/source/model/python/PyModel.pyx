@@ -53,13 +53,13 @@ cdef public void pySaveFig(fig, const string & filename):
     plt.legend()
     fig.savefig(filename, dpi=300)
 
-cdef public void pyPlotPoint(ax, const Point & p, const string & name):
+cdef public void pyPlotPoint(ax, const CtsPoint[double] & p, const string & name):
     if name != "":
         ax.plot(p.x(), p.y(), 'o', label=name.decode('UTF-8'))
     else:
         ax.plot(p.x(), p.y(), 'o')
 
-cdef public void pyPlotSegment(ax, const Segment & segment, const string & name):
+cdef public void pyPlotSegment(ax, const CtsSegment[double] & segment, const string & name):
     low = segment.low()
     high = segment.high()
     if name != "":
@@ -67,7 +67,7 @@ cdef public void pyPlotSegment(ax, const Segment & segment, const string & name)
     else:
         ax.plot([low.x(), high.x()], [low.y(), high.y()], 'o-')
 
-cdef public void pyPlotPolygon(ax, const Polygon & polygon, const string & name):
+cdef public void pyPlotPolygon(ax, const CtsPolygon[double] & polygon, const string & name):
     points = polygon.get_points()
     x = []
     y = []
@@ -78,3 +78,18 @@ cdef public void pyPlotPolygon(ax, const Polygon & polygon, const string & name)
         ax.plot(x, y, 'o-', label=name.decode('UTF-8'))
     else:
         ax.plot(x, y, 'o-')
+
+cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
+    if x.size() != y.size():
+        raise ValueError("x and y must have same size")
+    size = x.size()
+    if size == 0:
+        raise ValueError("x and y must have at least one element")
+    
+    label = name.decode('UTF-8') if name != "" else None
+    if size == 1:
+        ax.plot(x[0], y[0], 'o', label=label)
+    elif size == 2:
+        ax.plot([x[0], x[1]], [y[0], y[1]], 'o-', label=label)
+    else:
+        ax.plot(x, y, 'o-', label=label)

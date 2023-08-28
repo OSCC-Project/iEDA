@@ -1,6 +1,6 @@
 add_library(ipl-api
     ${iPL_API}/PLAPI.cc
-    ${iPL_API}/report/Report.cc
+    ${iPL_API}/report/PLReport.cc
 )
 
 target_link_libraries(ipl-api

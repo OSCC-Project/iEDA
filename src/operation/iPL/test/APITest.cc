@@ -38,7 +38,7 @@ class APITestInterface : public testing::Test
   void SetUp()
   {
     // Read Def, Lef
-    std::string idb_json_file = "<local_path>/db_default_config.json";
+    std::string idb_json_file = "/home/chenshijian/result/ysyx3/0730/db_default_config.json";
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}
@@ -46,7 +46,7 @@ class APITestInterface : public testing::Test
 
 TEST_F(APITestInterface, run_flow)
 {
-  std::string pl_json_file = "<local_path>/pl_default_config.json";
+  std::string pl_json_file = "/home/chenshijian/result/ispd2019/iPL/pl_default_config.json";
   auto* idb_builder = dmInst->get_idb_builder();
 
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
@@ -54,7 +54,7 @@ TEST_F(APITestInterface, run_flow)
 
   iPLAPIInst.destoryInst();
 
-  idb_builder->saveDef("<local_path>/iPL_result.def");
+  idb_builder->saveDef("/home/chenshijian/result/ysyx3/0730/iPL_result.def");
 }
 
 TEST_F(APITestInterface, run_gp)
@@ -112,7 +112,7 @@ TEST_F(APITestInterface, run_buffer)
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
   iPLAPIInst.runBufferInsertion();
   // iPLAPIInst.runLG();
-  // iPLAPIInst.reportLayoutInfo();
+  // iPLAPIInst.reportViolationInfo();
   iPLAPIInst.reportPLInfo();
   iPLAPIInst.writeBackSourceDataBase();
   iPLAPIInst.destoryInst();

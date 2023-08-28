@@ -22,6 +22,7 @@
 
 #include "CongestionEval.hpp"
 #include "TimingEval.hpp"
+#include "WirelengthEval.hpp"
 #include "ids.hpp"
 
 namespace eval {
@@ -40,6 +41,11 @@ class EvalAPI
   static void destroyInst();
 
   /****************************** Wirelength Eval: START ******************************/
+  void initWLDataFromIDB();
+  int64_t evalTotalWL(WIRELENGTH_TYPE wl_type);
+  void plotFlowValue(const string& plot_path, const string& output_file_name, const string& step, const string& value);
+
+  int64_t evalTotalWL(const string& wl_type);
   int64_t evalTotalWL(const string& wl_type, const vector<WLNet*>& net_list);
   int64_t evalOneNetWL(const string& wl_type, WLNet* wl_net);
   int64_t evalDriver2LoadWL(WLNet* wl_net, const string& sink_pin_name);
@@ -75,7 +81,6 @@ class EvalAPI
   double evalMacroChannelUtil(float dist_ratio);
   double evalMacroChannelPinRatio(float dist_ratio);
 
-  void initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list);
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();
@@ -85,10 +90,6 @@ class EvalAPI
   // pair<vector<float>, vector<float>> evalHVNetCong();
   vector<float> getUseCapRatioList();
   vector<int> getTileGridCoordSizeCntXY();
-  void plotPinDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list);
-  void plotInstDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list);
-  void plotNetCong(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongNet*>& net_list,
-                   const string& rudy_type);
   void plotGRCong(const string& plot_path, const string& output_file_name);
   void plotOverflow(const string& plot_path, const string& output_file_name);
   void reportCongestion(const string& plot_path, const string& output_file_name, const vector<CongNet*>& net_list, CongGrid* grid,
@@ -112,17 +113,15 @@ class EvalAPI
   void destroyTimingEval();
   /****************************** Timing Eval: END *******************************/
 
-  /****************************** GDS Wrapper: START ******************************/
-  vector<GDSNet*>& wrapGDSNetlist(const string& eval_json);
-  /****************************** GDS Wrapper: END ********************************/
-
  private:
   static EvalAPI* _eval_api_inst;
+  WirelengthEval* _wirelength_eval_inst = nullptr;
   TimingEval* _timing_eval_inst = nullptr;
   CongestionEval* _congestion_eval_inst = nullptr;
 
   EvalAPI()
   {
+    _wirelength_eval_inst = new WirelengthEval();
     _timing_eval_inst = new TimingEval();
     _congestion_eval_inst = new CongestionEval();
   }
@@ -130,6 +129,7 @@ class EvalAPI
   EvalAPI(EvalAPI&& other) = delete;
   ~EvalAPI()
   {
+    delete _wirelength_eval_inst;
     delete _timing_eval_inst;
     delete _congestion_eval_inst;
   }

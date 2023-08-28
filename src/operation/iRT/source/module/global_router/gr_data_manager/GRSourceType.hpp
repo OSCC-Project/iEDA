@@ -25,7 +25,8 @@ namespace irt {
 enum class GRSourceType
 {
   kNone,
-  kBlockAndPin
+  kBlockAndPin,
+  kReservedVia
 };
 
 struct GetGRSourceTypeName
@@ -39,6 +40,9 @@ struct GetGRSourceTypeName
         break;
       case GRSourceType::kBlockAndPin:
         gr_source_type_name = "block_and_pin";
+        break;
+      case GRSourceType::kReservedVia:
+        gr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

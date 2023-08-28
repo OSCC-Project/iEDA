@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
+#include "DRCChecker.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
@@ -654,6 +655,7 @@ void DataManager::buildDatabase()
   buildLayerViaMasterList();
   buildBlockageList();
   buildNetList();
+  cutBlockageList();
   updateHelper();
 }
 
@@ -997,13 +999,13 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
 {
   SortStatus sort_status = SortStatus::kNone;
 
-  sort_status = sortByWidthASC(via_master1, via_master2);
+  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
+  sort_status = sortByWidthASC(via_master1, via_master2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1024,29 +1026,6 @@ bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master
   return false;
 }
 
-// 宽度升序
-SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
 // 层方向优先
 SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
 {
@@ -1063,6 +1042,29 @@ SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, Via
     if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
       return SortStatus::kTrue;
     } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
+      return SortStatus::kFalse;
+    } else {
+      return SortStatus::kEqual;
+    }
+  }
+}
+
+// 宽度升序
+SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
+{
+  LayerRect& via_master1_above = via_master1.get_above_enclosure();
+  LayerRect& via_master1_below = via_master1.get_below_enclosure();
+  LayerRect& via_master2_above = via_master2.get_above_enclosure();
+  LayerRect& via_master2_below = via_master2.get_below_enclosure();
+
+  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
+    return SortStatus::kTrue;
+  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
+    return SortStatus::kFalse;
+  } else {
+    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
+      return SortStatus::kTrue;
+    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
       return SortStatus::kFalse;
     } else {
       return SortStatus::kEqual;
@@ -1147,11 +1149,29 @@ void DataManager::makeBlockageList()
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
+  std::set<LayerRect, CmpLayerRectByXASC> routing_blockage_rect_set;
   for (Blockage& routing_blockage : routing_blockage_list) {
-    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+    routing_blockage_rect_set.insert(LayerRect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx()));
   }
+  routing_blockage_list.clear();
+  for (const LayerRect& routing_blockage_rect : routing_blockage_rect_set) {
+    Blockage routing_blockage;
+    routing_blockage.set_real_rect(routing_blockage_rect);
+    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+    routing_blockage.set_layer_idx(routing_blockage_rect.get_layer_idx());
+    routing_blockage_list.push_back(routing_blockage);
+  }
+  std::set<LayerRect, CmpLayerRectByXASC> cut_blockage_rect_set;
   for (Blockage& cut_blockage : cut_blockage_list) {
+    cut_blockage_rect_set.insert(LayerRect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx()));
+  }
+  cut_blockage_list.clear();
+  for (const LayerRect& cut_blockage_rect : cut_blockage_rect_set) {
+    Blockage cut_blockage;
+    cut_blockage.set_real_rect(cut_blockage_rect);
     cut_blockage.set_grid_rect(RTUtil::getClosedGridRect(cut_blockage.get_real_rect(), gcell_axis));
+    cut_blockage.set_layer_idx(cut_blockage_rect.get_layer_idx());
+    cut_blockage_list.push_back(cut_blockage);
   }
 }
 
@@ -1272,6 +1292,116 @@ void DataManager::buildDrivingPin(Net& net)
     return;
   }
   LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
+}
+
+/**
+ * 主要针对io_cell的pin_shape被blockage覆盖的问题
+ */
+void DataManager::cutBlockageList()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Start cutting ", routing_blockage_list.size(), " blockages...");
+
+  std::map<LayerRect, std::set<LayerRect, CmpLayerRectByXASC>, CmpLayerRectByXASC> blockage_rect_enlarge_net_rect_map;
+  for (auto& [grid_coord, net_rect_map] : makeGridNetRectMap()) {
+    RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
+    for (LayerRect& blockage_rect : net_rect_map[-1]) {
+      std::set<LayerRect, CmpLayerRectByXASC>& enlarge_net_rect_set = blockage_rect_enlarge_net_rect_map[blockage_rect];
+      for (auto& [net_idx, net_rect_list] : net_rect_map) {
+        if (net_idx == -1) {
+          continue;
+        }
+        for (LayerRect& net_rect : net_rect_list) {
+          if (blockage_rect.get_layer_idx() != net_rect.get_layer_idx()) {
+            continue;
+          }
+          if (RTUtil::isInside(blockage_rect, net_rect)) {
+            irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
+            PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_rect, enlarged_size);
+            enlarge_net_rect_set.insert(LayerRect(enlarged_rect, net_rect.get_layer_idx()));
+          }
+        }
+      }
+    }
+  }
+  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
+    for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
+      if (blockage_rect.get_layer_idx() != enlarge_net_rect.get_layer_idx()) {
+        LOG_INST.info(Loc::current(), "The blockage_rect layer_idx is not equal enlarge_net_rect layer_idx!");
+      }
+    }
+  }
+  routing_blockage_list.clear();
+  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
+    if (enlarge_net_rect_set.empty()) {
+      Blockage routing_blockage;
+      routing_blockage.set_real_rect(blockage_rect);
+      routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+      routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+      routing_blockage_list.push_back(routing_blockage);
+    } else {
+      std::vector<PlanarRect> planar_enlarge_net_rect_list;
+      planar_enlarge_net_rect_list.reserve(enlarge_net_rect_set.size());
+      for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
+        planar_enlarge_net_rect_list.push_back(enlarge_net_rect.get_rect());
+      }
+      for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, planar_enlarge_net_rect_list)) {
+        Blockage routing_blockage;
+        routing_blockage.set_real_rect(cutting_rect);
+        routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
+        routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
+        routing_blockage_list.push_back(routing_blockage);
+      }
+    }
+  }
+  LOG_INST.info(Loc::current(), "End cutting ", routing_blockage_list.size(), " blockages", monitor.getStatsInfo());
+}
+
+std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> DataManager::makeGridNetRectMap()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  EXTPlanarRect& die = _database.get_die();
+  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+  std::vector<Net>& net_list = _database.get_net_list();
+
+  std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> grid_net_rect_map;
+
+  for (Blockage& routing_blockage : routing_blockage_list) {
+    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(-1, blockage_real_rect, true))) {
+      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          grid_net_rect_map[LayerCoord(x, y, routing_blockage.get_layer_idx())][-1].push_back(blockage_real_rect);
+        }
+      }
+    }
+  }
+  for (Net& net : net_list) {
+    for (Pin& pin : net.get_pin_list()) {
+      for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(net.get_net_idx(), shape_real_rect, true))) {
+          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+              LayerCoord grid_coord(x, y, routing_shape.get_layer_idx());
+              if (RTUtil::exist(grid_net_rect_map, grid_coord)) {
+                grid_net_rect_map[grid_coord][net.get_net_idx()].push_back(shape_real_rect);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return grid_net_rect_map;
 }
 
 void DataManager::updateHelper()
@@ -1552,6 +1682,8 @@ void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::I
       convertToIDBWire(idb_layer_list, phy_node.getNode<WireNode>(), idb_segment);
     } else if (phy_node.isType<ViaNode>()) {
       convertToIDBVia(lef_via_list, def_via_list, phy_node.getNode<ViaNode>(), idb_segment);
+    } else if (phy_node.isType<PatchNode>()) {
+      // to do
     } else {
       LOG_INST.error(Loc::current(), "The phy node is incorrect type!");
     }

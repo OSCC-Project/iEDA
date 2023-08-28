@@ -147,6 +147,9 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, PHYNode& phy_no
       LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, via_node), via_master.get_cut_layer_idx());
       drc_rect_list.emplace_back(net_idx, offset_cut_shape, false);
     }
+  } else if (phy_node.isType<PatchNode>()) {
+    PatchNode& patch_node = phy_node.getNode<PatchNode>();
+    drc_rect_list.emplace_back(net_idx, patch_node, true);
   }
   return drc_rect_list;
 }
@@ -341,7 +344,7 @@ std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_r
 
   std::vector<LayerRect> min_scope_list;
   if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    min_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
+    min_scope_list = RTAPI_INST.getMinScope(ids_rect_list);
   } else {
     min_scope_list = getMinSpacingRect(ids_rect_list);
   }
@@ -377,7 +380,7 @@ std::vector<ViolationInfo> DRCChecker::getViolationInfo(RegionQuery* region_quer
 {
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingByOther(region_query, drc_rect_list, violation_info_list);
-  checkMinSpacingBySelf(drc_rect_list, violation_info_list);
+  // checkMinSpacingBySelf(drc_rect_list, violation_info_list);
   // checkMinArea();
   return violation_info_list;
 }
@@ -855,7 +858,7 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       }
       LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), drc_shape.get_routing_layer_idx());
 
-      std::map<irt_int, std::vector<irt::LayerRect>> violation_net_shape_map;
+      std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
       violation_net_shape_map[drc_shape.get_net_id()].push_back(check_rect1);
       violation_net_shape_map[overlap_shape->get_net_id()].push_back(check_rect2);
 

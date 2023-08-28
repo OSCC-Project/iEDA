@@ -238,6 +238,35 @@ std::set<std::string> TimingEngine::findStartOrEnd(const char* pin_name) {
 }
 
 /**
+ * @brief obtain the start2end pairs of the all timing path.
+ *
+ * @return std::map<std::string, std::string>
+ */
+std::map<std::string, std::string> TimingEngine::getStartEndPairs() {
+  StaGraph* the_graph = &(_ista->get_graph());
+  std::map<std::string, std::string> start2end;
+  StaVertex* vertex;
+  FOREACH_END_VERTEX(the_graph, vertex) {
+    std::string end_pin_name = vertex->getName();
+    auto& start_vertexes = vertex->get_fanin_start_vertexes();
+    for (auto& start_vertex : start_vertexes) {
+      std::string start_pin_name = start_vertex->getName();
+      start2end[start_pin_name] = end_pin_name;
+    }
+  }
+  FOREACH_START_VERTEX(the_graph, vertex) {
+    std::string start_pin_name = vertex->getName();
+    auto& end_vertexes = vertex->get_fanout_end_vertexes();
+    for (auto& end_vertex : end_vertexes) {
+      std::string end_pin_name = end_vertex->getName();
+      start2end[start_pin_name] = end_pin_name;
+    }
+  }
+
+  return start2end;
+}
+
+/**
  * @brief find the clock pin name according to the instance name.
  *
  * @param inst_name

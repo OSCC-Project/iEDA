@@ -14,6 +14,7 @@ add_library(eval_wirelength
 target_link_libraries(eval_wirelength
     PUBLIC
         eval_data
+        eval_wrapper
 )
 
 target_include_directories(eval_wirelength

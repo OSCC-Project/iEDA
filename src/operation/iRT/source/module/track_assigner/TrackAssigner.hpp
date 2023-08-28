@@ -58,10 +58,11 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
   void buildSchedule(TAModel& ta_model);
+  void shrinkPanelRegion(TAModel& ta_model);
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateNetFixedRectMap(TAModel& ta_model);
   void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
-  void updateNetEnclosureMap(TAModel& ta_model);
+  void updateNetReservedViaMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net);
@@ -69,24 +70,30 @@ class TrackAssigner
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
+  void buildNetTaskMap(TAModel& ta_model);
   void outputTADataset(TAModel& ta_model);
-  void buildLayerPanelList(TAModel& ta_model);
-  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void initTANodeMap(TAPanel& ta_panel);
-  void buildNeighborMap(TAPanel& ta_panel);
-  void makeRoutingState(TAPanel& ta_panel);
-  void checkTAPanel(TAPanel& ta_panel);
-  void saveTAPanel(TAPanel& ta_panel);
 #endif
 
 #if 1  // iterative
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
   void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
+  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void initTANodeMap(TAPanel& ta_panel);
+  void buildNeighborMap(TAPanel& ta_panel);
+  void makeRoutingState(TAPanel& ta_panel);
+  void buildSourceOrienTaskMap(TAPanel& ta_panel);
+  void updateRectToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCRect& drc_rect);
+  std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
+  void checkTAPanel(TAPanel& ta_panel);
+  void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  bool sortByMultiLevel(TATask& task1, TATask& task2);
-  SortStatus sortByLengthWidthRatioDESC(TATask& task1, TATask& task2);
+  bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
+  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
+  SortStatus sortByPreferLengthDESC(TATask& task1, TATask& task2);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);

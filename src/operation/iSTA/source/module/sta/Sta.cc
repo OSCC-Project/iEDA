@@ -330,7 +330,7 @@ VerilogModule *Sta::findModule(const char *module_name) {
  *
  */
 void Sta::linkDesign(const char *top_cell_name) {
-  LOG_INFO << "link design start";
+  LOG_INFO << "link design " << top_cell_name << " start";
 
   _verilog_reader.flattenModule(top_cell_name);
   auto &verilog_modules = _verilog_reader.get_verilog_modules();
@@ -623,7 +623,7 @@ void Sta::linkDesign(const char *top_cell_name) {
     }
   }
 
-  LOG_INFO << "link design end";
+  LOG_INFO << "link design " << top_cell_name << " end";
 }
 
 /**
@@ -1974,6 +1974,8 @@ unsigned Sta::updateTiming() {
       StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
       StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
       StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostkNormalClockProp),
+      StaClockPropagation(StaClockPropagation::PropType::kGeneratedClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
       StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
       StaDataPropagation(StaDataPropagation::PropType::kFwdProp),

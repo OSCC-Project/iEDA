@@ -1485,31 +1485,23 @@ void CongestionEval::reportCongestion(const std::string& plot_path, const std::s
   mapInst2Bin();
   evalPinNum();
   reportPinNum();
-  plotPinNum(plot_path, output_file_name);
   LOG_INFO << " Evaluating Cell Density for Each Bin ... ... ";
   evalInstDens();
   reportInstDens();
-  plotInstDens(plot_path, output_file_name);
   LOG_INFO << " Evaluating Net Congestion for Each Bin ... ... ";
   mapNetCoord2Grid();
   evalNetCong("RUDY");
   reportNetCong();
-  plotNetCong(plot_path, output_file_name, "RUDY");
   evalNetCong("RUDYDev");
   reportNetCong();
-  plotNetCong(plot_path, output_file_name, "RUDYDev");
   evalNetCong("SteinerRUDY");
   reportNetCong();
-  plotNetCong(plot_path, output_file_name, "StenierRUDY");
   evalNetCong("PinRUDY");
   reportNetCong();
-  plotNetCong(plot_path, output_file_name, "PinRUDY");
   // evalNetCong("PinSteinerRUDY");
   // reportNetCong();
-  // plotNetCong(plot_path, output_file_name, "PinSteinerRUDY");
   // evalNetCong("TrueRUDY");
   // reportNetCong();
-  // plotNetCong(plot_path, output_file_name, "TrueRUDY");
   LOG_INFO << " Evaluating Routing Congestion for Each Tile ... ... ";
 }
 
@@ -1531,6 +1523,7 @@ void CongestionEval::evalPinNum()
   }
 }
 
+// reporter api
 std::vector<float> CongestionEval::evalPinDens()
 {
   evalPinNum();
@@ -1641,43 +1634,6 @@ void CongestionEval::reportInstDens()
   }
 }
 
-void CongestionEval::plotInstDens(const std::string& plot_path, const std::string& output_file_name)
-{
-  std::ofstream plot(plot_path + output_file_name + "_" + "InstDens" + ".csv");
-  if (!plot.good()) {
-    std::cerr << "plot inst density:: cannot open " << output_file_name << "for writing" << std::endl;
-    exit(1);
-  }
-  std::stringstream feed;
-  feed.precision(5);
-  int y_cnt = _cong_grid->get_bin_cnt_y();
-  int x_cnt = _cong_grid->get_bin_cnt_x();
-  for (int i = 0; i < x_cnt; i++) {
-    if (i == x_cnt - 1) {
-      feed << "clo_" << i;
-    } else {
-      feed << "col_" << i << ",";
-    }
-  }
-  feed << std::endl;
-  for (int i = y_cnt - 1; i >= 0; i--) {
-    for (int j = 0; j < x_cnt; j++) {
-      float density = _cong_grid->get_bin_list()[i * x_cnt + j]->get_inst_density();
-      if (j == x_cnt - 1) {
-        feed << density;
-      } else {
-        feed << density << ",";
-      }
-    }
-    feed << std::endl;
-  }
-  plot << feed.str();
-  feed.clear();
-  plot.close();
-  LOG_INFO << output_file_name + "_" + "InstDens" + ".csv"
-           << " has been created in " << plot_path;
-}
-
 double CongestionEval::getBinInstDens(const int& index_x, const int& index_y)
 {
   int index = index_x + index_y * _cong_grid->get_bin_cnt_x();
@@ -1750,43 +1706,6 @@ void CongestionEval::reportNetCong()
     LOG_INFO << "  Bin: (" << bin->get_lx() << "," << bin->get_ly() << "),(" << bin->get_ux() << "," << bin->get_uy()
              << "), net_cong: " << bin->get_net_cong();
   }
-}
-
-void CongestionEval::plotNetCong(const std::string& plot_path, const std::string& output_file_name, const std::string& type)
-{
-  std::ofstream plot(plot_path + output_file_name + "_" + type + ".csv");
-  if (!plot.good()) {
-    std::cerr << "plot NetCong:: cannot open " << output_file_name << "for writing" << std::endl;
-    exit(1);
-  }
-  std::stringstream feed;
-  feed.precision(5);
-  int y_cnt = _cong_grid->get_bin_cnt_y();
-  int x_cnt = _cong_grid->get_bin_cnt_x();
-  for (int i = 0; i < x_cnt; i++) {
-    if (i == x_cnt - 1) {
-      feed << "clo_" << i;
-    } else {
-      feed << "col_" << i << ",";
-    }
-  }
-  feed << std::endl;
-  for (int i = y_cnt - 1; i >= 0; i--) {
-    for (int j = 0; j < x_cnt; j++) {
-      float net_cong = _cong_grid->get_bin_list()[i * x_cnt + j]->get_net_cong();
-      if (j == x_cnt - 1) {
-        feed << net_cong;
-      } else {
-        feed << net_cong << ",";
-      }
-    }
-    feed << std::endl;
-  }
-  plot << feed.str();
-  feed.clear();
-  plot.close();
-  LOG_INFO << output_file_name + "_" + type + ".csv"
-           << " has been created in " << plot_path;
 }
 
 double CongestionEval::getBinNetCong(const int& index_x, const int& index_y, const std::string& rudy_type)

@@ -18,6 +18,9 @@
 #include "EvalAPI.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include "RTAPI.hpp"
 #include "idm.h"
@@ -52,6 +55,50 @@ void EvalAPI::destroyInst()
 EvalAPI* EvalAPI::_eval_api_inst = nullptr;
 
 /******************************Wirelength Eval: START******************************/
+void EvalAPI::initWLDataFromIDB()
+{
+  _wirelength_eval_inst->initWLNetList();
+}
+
+int64_t EvalAPI::evalTotalWL(const string& wl_type)
+{
+  return _wirelength_eval_inst->evalTotalWL(wl_type);
+}
+
+int64_t EvalAPI::evalTotalWL(WIRELENGTH_TYPE wl_type)
+{
+  if (wl_type == WIRELENGTH_TYPE::kEGR) {
+    return evalEGRWL();
+  }
+  return _wirelength_eval_inst->evalTotalWL(wl_type);
+}
+
+void EvalAPI::plotFlowValue(const string& plot_path, const string& output_file_name, const string& step, const string& value)
+{
+  string csv_file_path = plot_path + "/" + output_file_name + ".csv";
+
+  bool is_file_exists = std::ifstream(csv_file_path).good();
+  if (!is_file_exists) {
+    std::ofstream csv_file(csv_file_path);
+    if (csv_file.is_open()) {
+        csv_file << "Step,Value\n";
+        csv_file.close();
+    } else {
+        std::cout << "Unable to open csv file: " << csv_file_path << std::endl;
+        return;
+    }
+  }
+
+  std::ofstream csv_file(csv_file_path, std::ofstream::app);
+  if (csv_file.is_open()) {
+    csv_file << step << "," << value << "\n";
+    csv_file.close();
+  } else {
+    std::cout << "Unable to open csv file: " << csv_file_path << std::endl;
+  }
+}
+
+
 int64_t EvalAPI::evalTotalWL(const string& wl_type, const vector<WLNet*>& net_list)
 {
   WirelengthEval wirelength_eval;
@@ -282,14 +329,6 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
 // {
 // }
 
-void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
-{
-  _congestion_eval_inst = new CongestionEval();
-  _congestion_eval_inst->set_cong_grid(grid);
-  _congestion_eval_inst->set_cong_inst_list(inst_list);
-  _congestion_eval_inst->set_cong_net_list(net_list);
-}
-
 vector<float> EvalAPI::evalGRCong()
 {
   // call router to get tilegrid info
@@ -328,38 +367,6 @@ void EvalAPI::plotGRCong(const string& plot_path, const string& output_file_name
 void EvalAPI::plotOverflow(const string& plot_path, const string& output_file_name)
 {
   _congestion_eval_inst->plotOverflow(plot_path, output_file_name);
-}
-
-void EvalAPI::plotPinDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  congestion_eval.evalPinNum();
-  congestion_eval.plotPinNum(plot_path, output_file_name);
-}
-
-void EvalAPI::plotInstDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  congestion_eval.evalInstDens();
-  congestion_eval.plotInstDens(plot_path, output_file_name);
-}
-
-void EvalAPI::plotNetCong(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongNet*>& net_list,
-                          const string& rudy_type)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.checkRUDYType(rudy_type);
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNetCoord2Grid();
-  congestion_eval.evalNetCong(rudy_type);
-  congestion_eval.plotNetCong(plot_path, output_file_name, rudy_type);
 }
 
 void EvalAPI::reportCongestion(const string& plot_path, const string& output_file_name, const vector<CongNet*>& net_list, CongGrid* grid,
@@ -449,17 +456,4 @@ void EvalAPI::destroyTimingEval()
   _timing_eval_inst = nullptr;
 }
 /****************************** Timing Eval: END *******************************/
-
-/****************************** GDS Wrapper: START ******************************/
-vector<GDSNet*>& EvalAPI::wrapGDSNetlist(const string& eval_json)
-{
-  Config* config = Config::getOrCreateConfig(eval_json);
-  Manager::initInst(config);
-  auto gds_wrapper = Manager::getInst().getGDSWrapper();
-  auto& gds_net_list = gds_wrapper->get_net_list();
-  Manager::destroyInst();
-  return gds_net_list;
-}
-/****************************** GDS Wrapper: END ********************************/
-
 }  // namespace eval

@@ -25,7 +25,8 @@ namespace irt {
 enum class RASourceType
 {
   kNone,
-  kBlockAndPin
+  kBlockAndPin,
+  kReservedVia
 };
 
 struct GetRASourceTypeName
@@ -39,6 +40,9 @@ struct GetRASourceTypeName
         break;
       case RASourceType::kBlockAndPin:
         gr_source_type_name = "block_and_pin";
+        break;
+      case RASourceType::kReservedVia:
+        gr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

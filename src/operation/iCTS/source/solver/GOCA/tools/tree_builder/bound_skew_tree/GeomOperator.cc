@@ -234,4 +234,5 @@ bool GeomOperator::isSegment(const Polygon& poly)
   return unique_points.size() == 2;
 }
 
+
 }  // namespace icts

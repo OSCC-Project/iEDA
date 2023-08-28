@@ -32,7 +32,7 @@ class CongAPITest : public testing::Test
 {
   void SetUp()
   {  // Read Def, Lef
-    std::string idb_json_file = "/home/yhqiu/iEDA/bin/db_ispd19.json";
+    std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_ispd19.json";
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}
@@ -44,7 +44,17 @@ TEST_F(CongAPITest, sample)
   int32_t bin_cnt_x = 256;
   int32_t bin_cnt_y = 256;
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
-  std::string plot_path = "/home/yhqiu/iEDA/bin/csv/";
+  std::string plot_path = "/DREAMPlace/iEDA/bin/csv/";
+
+  eval_api.initWLDataFromIDB();
+  std::string step1 = "fp";
+  std::string step2 = "pl";
+
+  auto value1 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kHPWL);
+  auto value2 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kB2B);
+  eval_api.plotFlowValue(plot_path, "wirelength", step1, std::to_string(value1));
+  eval_api.plotFlowValue(plot_path, "wirelength", step2, std::to_string(value2));
+
 
   // auto inst_status = INSTANCE_STATUS::kFixed;
   // eval_api.evalInstDens(inst_status);
@@ -97,26 +107,26 @@ TEST_F(CongAPITest, sample)
   //   LOG_INFO << "net name is " << net_info.first << " ; width is " << net_info.second.first << " ; height is " << net_info.second.second;
   // }
 
-  LOG_INFO << "standard cell number is " << eval_api.evalInstNum(INSTANCE_STATUS::kPlaced);
-  LOG_INFO << "total pin number is " << eval_api.evalPinNum();
-  LOG_INFO << "macro pin number is " << eval_api.evalPinNum(INSTANCE_STATUS::kFixed);
-  LOG_INFO << "stdcell pin number is " << eval_api.evalPinNum(INSTANCE_STATUS::kPlaced);
+  // LOG_INFO << "standard cell number is " << eval_api.evalInstNum(INSTANCE_STATUS::kPlaced);
+  // LOG_INFO << "total pin number is " << eval_api.evalPinNum();
+  // LOG_INFO << "macro pin number is " << eval_api.evalPinNum(INSTANCE_STATUS::kFixed);
+  // LOG_INFO << "stdcell pin number is " << eval_api.evalPinNum(INSTANCE_STATUS::kPlaced);
 
-  LOG_INFO << "logical net number is " << eval_api.evalNetNum(NET_CONNECT_TYPE::kSignal);
-  LOG_INFO << "power net number is " << eval_api.evalNetNum(NET_CONNECT_TYPE::kPower);
-  LOG_INFO << "track Horizontal number is " << eval_api.evalTrackNum(DIRECTION::kH);
-  LOG_INFO << "track Vertical number is " << eval_api.evalTrackNum(DIRECTION::kV);
-  LOG_INFO << "track Total number is " << eval_api.evalTrackNum();
+  // LOG_INFO << "logical net number is " << eval_api.evalNetNum(NET_CONNECT_TYPE::kSignal);
+  // LOG_INFO << "power net number is " << eval_api.evalNetNum(NET_CONNECT_TYPE::kPower);
+  // LOG_INFO << "track Horizontal number is " << eval_api.evalTrackNum(DIRECTION::kH);
+  // LOG_INFO << "track Vertical number is " << eval_api.evalTrackNum(DIRECTION::kV);
+  // LOG_INFO << "track Total number is " << eval_api.evalTrackNum();
 
-  LOG_INFO << "total macro area is " << eval_api.evalArea(INSTANCE_STATUS::kFixed);
-  LOG_INFO << "total stdcell area is " << eval_api.evalArea(INSTANCE_STATUS::kPlaced);
-  LOG_INFO << "macro area utilization is " << eval_api.evalAreaUtils(INSTANCE_STATUS::kFixed);
-  LOG_INFO << "stdcell area utilization is " << eval_api.evalAreaUtils(INSTANCE_STATUS::kPlaced);
+  // LOG_INFO << "total macro area is " << eval_api.evalArea(INSTANCE_STATUS::kFixed);
+  // LOG_INFO << "total stdcell area is " << eval_api.evalArea(INSTANCE_STATUS::kPlaced);
+  // LOG_INFO << "macro area utilization is " << eval_api.evalAreaUtils(INSTANCE_STATUS::kFixed);
+  // LOG_INFO << "stdcell area utilization is " << eval_api.evalAreaUtils(INSTANCE_STATUS::kPlaced);
 
-  auto result = eval_api.evalMacroPeriBias();
-  for (auto& bias : result) {
-    LOG_INFO << "macro peri bias is : " << bias;
-  }
+  // auto result = eval_api.evalMacroPeriBias();
+  // for (auto& bias : result) {
+  //   LOG_INFO << "macro peri bias is : " << bias;
+  // }
 
   // auto congestion_metrics = eval_api.evalGRCong();
   // LOG_INFO << "ACE is  " << congestion_metrics[0] << " TOF is " << congestion_metrics[1] << " MOF is " << congestion_metrics[2];

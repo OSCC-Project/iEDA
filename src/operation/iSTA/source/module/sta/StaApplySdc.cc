@@ -85,6 +85,48 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
 }
 
 /**
+ * @brief Setup the generated clocks to sta graph. 
+ *
+ * @param sdc_clocks
+ * @return unsigned success return 1, or return 0.
+ */
+unsigned StaApplySdc::setupGeneratedClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
+                                  StaGraph* the_graph) {
+  Sta* ista = getSta();
+  for (auto& [clock_name, sdc_clock] : sdc_clocks) {
+    std::unique_ptr<StaClock> sta_clock =
+        std::make_unique<StaClock>(clock_name, StaClock::ClockType::kIdeal,
+                                   NS_TO_PS(sdc_clock->get_period()));
+
+  // if the generated clock setup sta clocks, the exec generated clock prop.
+  sta_clock->set_is_generated_clock_prop();
+
+    auto design_objs = sdc_clock->get_objs();
+    for (auto* design_obj : design_objs) {
+      auto the_vertex = the_graph->findVertex(design_obj);
+      LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
+      (*the_vertex)->set_is_sdc_clock_pin();
+      sta_clock->addVertex(*the_vertex);
+    }
+    StaWaveForm wave_form;
+    auto& edges = sdc_clock->get_edges();
+    for (auto edge : edges) {
+      wave_form.addWaveEdge(NS_TO_PS(edge));
+    }
+
+    sta_clock->set_wave_form(std::move(wave_form));
+
+    if (sdc_clock->isPropagatedClock()) {
+      sta_clock->setPropagateClock();
+    }
+
+    ista->addClock(std::move(sta_clock));
+  }
+
+  return 1;
+}
+
+/**
  * @brief Apply set_input_transtion to the graph.
  *
  * @param io_constraint
@@ -653,6 +695,16 @@ unsigned StaApplySdc::operator()(StaGraph* the_graph) {
     is_ok &= setupIOConstrain(the_io_constrain, the_graph);
     is_ok &= setupOcvDerate(the_ocv_derate, the_graph);
 
+  } else if (_prop_type == PropType::kApplySdcPostkNormalClockProp) {
+    StrMap<std::unique_ptr<SdcClock>> the_generated_clocks;
+    auto& the_clocks = the_constrain->get_sdc_clocks();
+    for (auto it = the_clocks.begin(); it != the_clocks.end(); it++) {
+      if (it->second->isGenerateClock()&&
+          (dynamic_cast<SdcGenerateCLock*>(it->second.get())->get_source_pins().size()!=0)) {
+        the_generated_clocks.insert(std::move(*it));
+      }
+    }
+    is_ok = setupGeneratedClocks(the_generated_clocks, the_graph);
   } else if (_prop_type == PropType::kApplySdcPostClockProp) {
     auto& the_sdc_exceptions = the_constrain->get_sdc_exceptions();
     is_ok = setupException(the_sdc_exceptions, the_graph);
