@@ -16,39 +16,44 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-enum class RASourceType
+class VRGCellId
 {
-  kNone,
-  kBlockAndPin,
-  kReservedVia
+ public:
+  VRGCellId() = default;
+  VRGCellId(const irt_int x, const irt_int y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~VRGCellId() = default;
+  bool operator==(const VRGCellId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const VRGCellId& other) { return !((*this) == other); }
+  // getter
+  irt_int get_x() const { return _x; }
+  irt_int get_y() const { return _y; }
+  // setter
+  void set_x(const irt_int x) { _x = x; }
+  void set_y(const irt_int y) { _y = y; }
+  // function
+
+ private:
+  irt_int _x = -1;
+  irt_int _y = -1;
 };
 
-struct GetRASourceTypeName
+struct CmpVRGCellId
 {
-  std::string operator()(const RASourceType& gr_source_type) const
+  bool operator()(const VRGCellId& a, const VRGCellId& b) const
   {
-    std::string gr_source_type_name;
-    switch (gr_source_type) {
-      case RASourceType::kNone:
-        gr_source_type_name = "none";
-        break;
-      case RASourceType::kBlockAndPin:
-        gr_source_type_name = "block_and_pin";
-        break;
-      case RASourceType::kReservedVia:
-        gr_source_type_name = "reserved_via";
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
-        break;
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
     }
-    return gr_source_type_name;
   }
 };
 

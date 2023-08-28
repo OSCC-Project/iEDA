@@ -30,7 +30,10 @@ class TAPanelStat
   double get_total_wire_length() { return _total_wire_length; }
   double get_total_prefer_wire_length() { return _total_prefer_wire_length; }
   double get_total_nonprefer_wire_length() { return _total_nonprefer_wire_length; }
-  std::map<TASourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& get_source_drc_violation_map()
+  {
+    return _source_drc_violation_map;
+  }
   std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
   std::map<std::string, irt_int>& get_source_number_map() { return _source_number_map; }
   irt_int get_total_drc_number() { return _total_drc_number; }
@@ -48,7 +51,7 @@ class TAPanelStat
   double _total_wire_length = 0;
   double _total_prefer_wire_length = 0;
   double _total_nonprefer_wire_length = 0;
-  std::map<TASourceType, std::map<std::string, irt_int>> _source_drc_number_map;
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>> _source_drc_violation_map;
   std::map<std::string, irt_int> _drc_number_map;
   std::map<std::string, irt_int> _source_number_map;
   irt_int _total_drc_number = 0;

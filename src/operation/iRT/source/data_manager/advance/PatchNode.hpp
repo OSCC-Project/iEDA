@@ -16,40 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
-enum class RASourceType
-{
-  kNone,
-  kBlockAndPin,
-  kReservedVia
-};
+class PatchNode : public LayerRect
 
-struct GetRASourceTypeName
 {
-  std::string operator()(const RASourceType& gr_source_type) const
-  {
-    std::string gr_source_type_name;
-    switch (gr_source_type) {
-      case RASourceType::kNone:
-        gr_source_type_name = "none";
-        break;
-      case RASourceType::kBlockAndPin:
-        gr_source_type_name = "block_and_pin";
-        break;
-      case RASourceType::kReservedVia:
-        gr_source_type_name = "reserved_via";
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return gr_source_type_name;
-  }
+ public:
+  PatchNode() = default;
+  PatchNode(const PatchNode& other) : LayerRect(other) { _net_idx = other._net_idx; }
+  ~PatchNode() = default;
+  // getter
+  irt_int get_net_idx() const { return _net_idx; }
+
+  // setter
+  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
+
+  // function
+
+ private:
+  irt_int _net_idx = -1;
 };
 
 }  // namespace irt

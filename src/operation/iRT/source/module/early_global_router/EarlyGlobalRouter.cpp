@@ -614,40 +614,40 @@ std::vector<Segment<LayerCoord>> EarlyGlobalRouter::routeInPattern(std::pair<Lay
 {
   double best_path_cost = DBL_MAX;
   std::vector<Segment<LayerCoord>> best_routing_segment_list = {};
-  std::vector<std::vector<Segment<LayerCoord>>> routing_segment_comb_list;
-  routeByStraight(routing_segment_comb_list, coord_pair);
-  routeByLPattern(routing_segment_comb_list, coord_pair);
-  bool pass = updateBestSegmentList(routing_segment_comb_list, best_routing_segment_list, best_path_cost);
+  std::vector<std::vector<Segment<LayerCoord>>> routing_segment_list_list;
+  routeByStraight(routing_segment_list_list, coord_pair);
+  routeByLPattern(routing_segment_list_list, coord_pair);
+  bool pass = updateBestSegmentList(routing_segment_list_list, best_routing_segment_list, best_path_cost);
 
   if (!pass) {
-    routing_segment_comb_list.clear();
-    routeByZPattern(routing_segment_comb_list, coord_pair);
-    routeByInner3BendsPattern(routing_segment_comb_list, coord_pair);
-    pass = updateBestSegmentList(routing_segment_comb_list, best_routing_segment_list, best_path_cost);
+    routing_segment_list_list.clear();
+    routeByZPattern(routing_segment_list_list, coord_pair);
+    routeByInner3BendsPattern(routing_segment_list_list, coord_pair);
+    pass = updateBestSegmentList(routing_segment_list_list, best_routing_segment_list, best_path_cost);
   }
   if (!pass) {
-    routing_segment_comb_list.clear();
-    routeByUPattern(routing_segment_comb_list, coord_pair);
-    routeByOuter3BendsPattern(routing_segment_comb_list, coord_pair);
-    pass = updateBestSegmentList(routing_segment_comb_list, best_routing_segment_list, best_path_cost);
+    routing_segment_list_list.clear();
+    routeByUPattern(routing_segment_list_list, coord_pair);
+    routeByOuter3BendsPattern(routing_segment_list_list, coord_pair);
+    pass = updateBestSegmentList(routing_segment_list_list, best_routing_segment_list, best_path_cost);
   }
   return best_routing_segment_list;
 }
 
-bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                               std::vector<Segment<LayerCoord>>& best_routing_segment_list, double& best_path_cost)
 {
   irt_int bottom_routing_layer_idx = _egr_data_manager.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = _egr_data_manager.getConfig().top_routing_layer_idx;
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
 
-  irt_int comb_size = static_cast<irt_int>(routing_segment_comb_list.size());
+  irt_int comb_size = static_cast<irt_int>(routing_segment_list_list.size());
   std::vector<irt_int> pass_list(comb_size, 1);
   std::vector<double> cost_list(comb_size, 0);
   std::vector<double> avg_cost_list(comb_size, 0);
 #pragma omp parallel for schedule(static)
-  for (size_t i = 0; i < routing_segment_comb_list.size(); ++i) {
-    std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_comb_list[i];
+  for (size_t i = 0; i < routing_segment_list_list.size(); ++i) {
+    std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_list_list[i];
     double& path_cost = cost_list[i];
     irt_int& pass = pass_list[i];
     for (size_t j = 0; j < routing_segment_list.size(); ++j) {
@@ -709,7 +709,7 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
   irt_int best_path_idx = -1;
   for (irt_int i = 0; i < comb_size; i++) {
     if (pass_list[i] == 1) {
-      best_routing_segment_list = routing_segment_comb_list[i];
+      best_routing_segment_list = routing_segment_list_list[i];
       return true;
     }
     if (cost_list[i] < min_path_cost) {
@@ -718,13 +718,13 @@ bool EarlyGlobalRouter::updateBestSegmentList(std::vector<std::vector<Segment<La
     }
   }
   if (min_path_cost < best_path_cost) {
-    best_routing_segment_list = routing_segment_comb_list[best_path_idx];
+    best_routing_segment_list = routing_segment_list_list[best_path_idx];
     best_path_cost = min_path_cost;
   }
   return false;
 }
 
-void EarlyGlobalRouter::routeByStraight(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByStraight(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                         std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   LayerCoord start_coord = coord_pair.first;
@@ -733,7 +733,7 @@ void EarlyGlobalRouter::routeByStraight(std::vector<std::vector<Segment<LayerCoo
     return;
   }
   if (RTUtil::isProximal(start_coord, end_coord)) {
-    routing_segment_comb_list.push_back({Segment<LayerCoord>(start_coord, end_coord)});
+    routing_segment_list_list.push_back({Segment<LayerCoord>(start_coord, end_coord)});
     return;
   }
   EGRDatabase& database = _egr_data_manager.getDatabase();
@@ -746,13 +746,13 @@ void EarlyGlobalRouter::routeByStraight(std::vector<std::vector<Segment<LayerCoo
   for (irt_int candidate_layer_idx : candidate_layer_idx_list) {
     LayerCoord inflection_coord1(start_coord.get_planar_coord(), candidate_layer_idx);
     LayerCoord inflection_coord2(end_coord.get_planar_coord(), candidate_layer_idx);
-    routing_segment_comb_list.push_back({Segment<LayerCoord>(start_coord, inflection_coord1),
+    routing_segment_list_list.push_back({Segment<LayerCoord>(start_coord, inflection_coord1),
                                          Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                                          Segment<LayerCoord>(inflection_coord2, end_coord)});
   }
 }
 
-void EarlyGlobalRouter::routeByLPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByLPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                         std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   LayerCoord start_coord = coord_pair.first;
@@ -768,7 +768,7 @@ void EarlyGlobalRouter::routeByLPattern(std::vector<std::vector<Segment<LayerCoo
       LayerCoord inflection_coord2(start_coord.get_x(), end_coord.get_y(), v_layer_idx);
       LayerCoord inflection_coord3(start_coord.get_x(), end_coord.get_y(), h_layer_idx);
       LayerCoord inflection_coord4(end_coord.get_planar_coord(), h_layer_idx);
-      routing_segment_comb_list.push_back(
+      routing_segment_list_list.push_back(
           {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
            Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
            Segment<LayerCoord>(inflection_coord4, end_coord)});
@@ -781,7 +781,7 @@ void EarlyGlobalRouter::routeByLPattern(std::vector<std::vector<Segment<LayerCoo
       LayerCoord inflection_coord2(end_coord.get_x(), start_coord.get_y(), h_layer_idx);
       LayerCoord inflection_coord3(end_coord.get_x(), start_coord.get_y(), v_layer_idx);
       LayerCoord inflection_coord4(end_coord.get_planar_coord(), v_layer_idx);
-      routing_segment_comb_list.push_back(
+      routing_segment_list_list.push_back(
           {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
            Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
            Segment<LayerCoord>(inflection_coord4, end_coord)});
@@ -789,7 +789,7 @@ void EarlyGlobalRouter::routeByLPattern(std::vector<std::vector<Segment<LayerCoo
   }
 }
 
-void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                         std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
@@ -842,7 +842,7 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
         LayerCoord inflection_coord4(inflection_x, end_coord.get_y(), v_layer_idx);
         LayerCoord inflection_coord5(inflection_x, end_coord.get_y(), h_layer_idx);
         LayerCoord inflection_coord6(end_coord.get_planar_coord(), h_layer_idx);
-        routing_segment_comb_list.push_back(
+        routing_segment_list_list.push_back(
             {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
              Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
              Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -860,7 +860,7 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
         LayerCoord inflection_coord4(end_coord.get_x(), inflection_y, h_layer_idx);
         LayerCoord inflection_coord5(end_coord.get_x(), inflection_y, v_layer_idx);
         LayerCoord inflection_coord6(end_coord.get_planar_coord(), v_layer_idx);
-        routing_segment_comb_list.push_back(
+        routing_segment_list_list.push_back(
             {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
              Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
              Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -870,7 +870,7 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
   }
 }
 
-void EarlyGlobalRouter::routeByZPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByZPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                         std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   EGRDatabase& database = _egr_data_manager.getDatabase();
@@ -894,7 +894,7 @@ void EarlyGlobalRouter::routeByZPattern(std::vector<std::vector<Segment<LayerCoo
         LayerCoord inflection_coord4(x_mid_index_list[i], end_coord.get_y(), v_layer_idx);
         LayerCoord inflection_coord5(x_mid_index_list[i], end_coord.get_y(), h_layer_idx);
         LayerCoord inflection_coord6(end_coord.get_planar_coord(), h_layer_idx);
-        routing_segment_comb_list.push_back(
+        routing_segment_list_list.push_back(
             {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
              Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
              Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -911,7 +911,7 @@ void EarlyGlobalRouter::routeByZPattern(std::vector<std::vector<Segment<LayerCoo
         LayerCoord inflection_coord4(end_coord.get_x(), y_mid_index_list[i], h_layer_idx);
         LayerCoord inflection_coord5(end_coord.get_x(), y_mid_index_list[i], v_layer_idx);
         LayerCoord inflection_coord6(end_coord.get_planar_coord(), v_layer_idx);
-        routing_segment_comb_list.push_back(
+        routing_segment_list_list.push_back(
             {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
              Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
              Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -932,7 +932,7 @@ std::vector<irt_int> EarlyGlobalRouter::getMidIndexList(irt_int start_idx, irt_i
   return index_list;
 }
 
-void EarlyGlobalRouter::routeByInner3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByInner3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                                   std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   LayerCoord start_coord = coord_pair.first;
@@ -960,7 +960,7 @@ void EarlyGlobalRouter::routeByInner3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(end_coord.get_x(), y_mid_index_list[j], h_layer_idx);
           LayerCoord inflection_coord7(end_coord.get_x(), y_mid_index_list[j], v_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), v_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -983,7 +983,7 @@ void EarlyGlobalRouter::routeByInner3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(x_mid_index_list[i], end_coord.get_y(), v_layer_idx);
           LayerCoord inflection_coord7(x_mid_index_list[i], end_coord.get_y(), h_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), h_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -995,7 +995,7 @@ void EarlyGlobalRouter::routeByInner3BendsPattern(std::vector<std::vector<Segmen
   }
 }
 
-void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_comb_list,
+void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                                   std::pair<LayerCoord, LayerCoord>& coord_pair)
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
@@ -1009,7 +1009,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
   LayerCoord end_coord = coord_pair.second;
 
   if (RTUtil::isProximal(start_coord, end_coord)) {
-    routing_segment_comb_list.push_back({Segment<LayerCoord>(start_coord, end_coord)});
+    routing_segment_list_list.push_back({Segment<LayerCoord>(start_coord, end_coord)});
     return;
   }
   if (start_coord.get_x() > end_coord.get_x()) {
@@ -1034,7 +1034,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(end_coord.get_x(), inflection_y, h_layer_idx);
           LayerCoord inflection_coord7(end_coord.get_x(), inflection_y, v_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), v_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -1059,7 +1059,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(inflection_x, end_coord.get_y(), v_layer_idx);
           LayerCoord inflection_coord7(inflection_x, end_coord.get_y(), h_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), h_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -1087,7 +1087,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(end_coord.get_x(), inflection_y, h_layer_idx);
           LayerCoord inflection_coord7(end_coord.get_x(), inflection_y, v_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), v_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),
@@ -1112,7 +1112,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
           LayerCoord inflection_coord6(inflection_x, end_coord.get_y(), v_layer_idx);
           LayerCoord inflection_coord7(inflection_x, end_coord.get_y(), h_layer_idx);
           LayerCoord inflection_coord8(end_coord.get_planar_coord(), h_layer_idx);
-          routing_segment_comb_list.push_back(
+          routing_segment_list_list.push_back(
               {Segment<LayerCoord>(start_coord, inflection_coord1), Segment<LayerCoord>(inflection_coord1, inflection_coord2),
                Segment<LayerCoord>(inflection_coord2, inflection_coord3), Segment<LayerCoord>(inflection_coord3, inflection_coord4),
                Segment<LayerCoord>(inflection_coord4, inflection_coord5), Segment<LayerCoord>(inflection_coord5, inflection_coord6),

@@ -1682,6 +1682,8 @@ void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::I
       convertToIDBWire(idb_layer_list, phy_node.getNode<WireNode>(), idb_segment);
     } else if (phy_node.isType<ViaNode>()) {
       convertToIDBVia(lef_via_list, def_via_list, phy_node.getNode<ViaNode>(), idb_segment);
+    } else if (phy_node.isType<PatchNode>()) {
+      convertToIDBPatch(idb_layer_list, phy_node.getNode<PatchNode>(), idb_segment);
     } else {
       LOG_INST.error(Loc::current(), "The phy node is incorrect type!");
     }
@@ -1731,10 +1733,26 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   }
   idb_segment->set_layer(idb_layer_top);
   idb_segment->set_is_via(true);
-
   idb_segment->add_point(via_node.get_x(), via_node.get_y());
   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
   idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
+}
+
+void DataManager::convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::string layer_name = routing_layer_list[patch_node.get_layer_idx()].get_layer_name();
+  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
+  if (idb_layer == nullptr) {
+    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+  }
+  idb_segment->set_layer(idb_layer);
+  idb_segment->set_is_rect(true);
+  PlanarCoord base_coord(patch_node.get_lb_x(), patch_node.get_lb_y());
+  idb_segment->add_point(base_coord.get_x(), base_coord.get_y());
+  idb_segment->set_delta_rect(patch_node.get_lb_x() - base_coord.get_x(), patch_node.get_lb_y() - base_coord.get_y(),
+                              patch_node.get_rt_x() - base_coord.get_x(), patch_node.get_rt_y() - base_coord.get_y());
 }
 
 #endif

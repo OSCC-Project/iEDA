@@ -24,6 +24,7 @@
 #include "TreeBuilder.hh"
 #include "bound_skew_tree/BST.hh"
 #include "bound_skew_tree/BoundSkewTree.hh"
+#include "bound_skew_tree/GeomCalc.hh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
 // debug
@@ -156,15 +157,36 @@ void saltTest()
   LOG_INFO << "max delay: " << driver_pin->get_max_delay() - driver_buf->get_insert_delay();
 }
 
-void tempTest(){
-  
-  
+void tempTest()
+{
+  using icts::MplHelper;
+  using icts::bst::GeomCalc;
+  using icts::bst::Pt;
+  using icts::bst::Trr;
+ 
+  auto p1 = Pt(1.0, 2.0);
+  auto p2 = Pt(4.0, 5.0);
+  auto p3 = Pt(3.0, 3.0);
+  auto p4 = Pt(7.0, 7.0);
+
+  auto mpl = MplHelper();
+  mpl.plot({p1,p2}, "seg1");
+  mpl.plot({p3, p4}, "seg2");
+  mpl.saveFig("temp_test.png");
+
+  Trr ms1;
+  Trr ms2;
+  GeomCalc::lineToMs(ms1, p1, p2);
+  GeomCalc::lineToMs(ms2, p3, p4);
+  // auto dist = GeomCalc::msDistance(&ms1, &ms2);
+  // LOG_INFO << "Dist: " << dist;
 }
 
 TEST_F(SolverTest, Compare)
 {
-  dmInst->init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json");
-  CTSAPIInst.init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  tempTest();
+  // dmInst->init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json");
+  // CTSAPIInst.init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
   // bstTest();
   // saltTest();
 }

@@ -262,7 +262,8 @@ enum class NodeType : int
   monostate = 0,
   PinNode,
   WireNode,
-  ViaNode
+  ViaNode,
+  PatchNode
 };
 static NodeType PHYNodeType(irt::PHYNode& node)
 {
@@ -277,6 +278,9 @@ static NodeType PHYNodeType(irt::PHYNode& node)
   }
   if (node.isType<irt::ViaNode>()) {
     return NodeType::ViaNode;
+  }
+  if (node.isType<irt::PatchNode>()) {
+    return NodeType::PatchNode;
   }
   assert(false);
   return NodeType::monostate;
@@ -301,6 +305,10 @@ void serialize(Archive& ar, irt::PHYNode& node, const unsigned int version)
     }
     case NodeType::ViaNode: {
       ar& node.getNode<irt::ViaNode>();
+      break;
+    }
+    case NodeType::PatchNode: {
+      ar& node.getNode<irt::PatchNode>();
       break;
     }
   }
@@ -350,6 +358,17 @@ void serialize(Archive& ar, irt::ViaNode& node, const unsigned int version)
     node.get_via_master_idx().set_via_idx(via_idx);
   }
 }
+
+template <typename Archive>
+void serialize(Archive& ar, irt::PatchNode& node, const unsigned int version)
+{
+  int net_idx = node.get_net_idx();
+  iplf::Archive(ar, net_idx, boost::serialization::base_object<irt::LayerRect>(node));
+  if constexpr (Archive::is_loading::value) {
+    node.set_net_idx(net_idx);
+  }
+}
+
 template <typename Archive>
 void save(Archive& ar, const std::vector<irt::Net>& net_list, const unsigned int version)
 {

@@ -153,9 +153,10 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::buildTAModel(TAModel& ta_model)
 {
   buildSchedule(ta_model);
+  shrinkPanelRegion(ta_model);
   buildPanelTrackAxis(ta_model);
   updateNetFixedRectMap(ta_model);
-  updateNetEnclosureMap(ta_model);
+  updateNetReservedViaMap(ta_model);
   buildTATaskList(ta_model);
   buildNetTaskMap(ta_model);
   // outputTADataset(ta_model);
@@ -167,17 +168,51 @@ void TrackAssigner::buildSchedule(TAModel& ta_model)
 
   irt_int range = 2;
 
-  std::vector<std::vector<TAPanelId>> ta_panel_id_comb_list;
+  std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_panel_list.size()); layer_idx++) {
     for (irt_int start_i = 0; start_i < range; start_i++) {
       std::vector<TAPanelId> ta_panel_id_list;
       for (irt_int i = start_i; i < static_cast<irt_int>(layer_panel_list[layer_idx].size()); i += range) {
         ta_panel_id_list.emplace_back(layer_idx, i);
       }
-      ta_panel_id_comb_list.push_back(ta_panel_id_list);
+      ta_panel_id_list_list.push_back(ta_panel_id_list);
     }
   }
-  ta_model.set_ta_panel_id_comb_list(ta_panel_id_comb_list);
+  ta_model.set_ta_panel_id_list_list(ta_panel_id_list_list);
+}
+
+void TrackAssigner::shrinkPanelRegion(TAModel& ta_model)
+{
+  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
+
+  std::map<TAPanelId, std::vector<PlanarRect>, CmpTAPanelId> ta_panel_routing_region_map;
+  for (TANet& ta_net : ta_model.get_ta_net_list()) {
+    for (Segment<TNode<RTNode>*>& segment : RTUtil::getSegListByTree(ta_net.get_ta_result_tree())) {
+      TNode<RTNode>* ta_node_node = segment.get_first();
+      if (ta_node_node->value().isDRNode()) {
+        ta_node_node = segment.get_second();
+      }
+      Guide& first_guide = ta_node_node->value().get_first_guide();
+      Guide& second_guide = ta_node_node->value().get_second_guide();
+      PlanarCoord& first_grid_coord = first_guide.get_grid_coord();
+      PlanarCoord& second_grid_coord = second_guide.get_grid_coord();
+      irt_int ta_layer_idx = first_guide.get_layer_idx();
+
+      TAPanelId ta_panel_id;
+      if (RTUtil::isHorizontal(first_grid_coord, second_grid_coord)) {
+        ta_panel_id.set_panel_idx(first_grid_coord.get_y());
+      } else {
+        ta_panel_id.set_panel_idx(first_grid_coord.get_x());
+      }
+      ta_panel_id.set_layer_idx(ta_layer_idx);
+
+      ta_panel_routing_region_map[ta_panel_id].push_back(RTUtil::getBoundingBox({first_guide.get_rect(), second_guide.get_rect()}));
+    }
+  }
+  for (auto& [ta_panel_id, routing_region_list] : ta_panel_routing_region_map) {
+    TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
+    ta_panel.set_rect(RTUtil::getBoundingBox(routing_region_list));
+  }
 }
 
 void TrackAssigner::buildPanelTrackAxis(TAModel& ta_model)
@@ -272,7 +307,7 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
   }
 }
 
-void TrackAssigner::updateNetEnclosureMap(TAModel& ta_model)
+void TrackAssigner::updateNetReservedViaMap(TAModel& ta_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -292,7 +327,7 @@ void TrackAssigner::updateNetEnclosureMap(TAModel& ta_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_net.get_net_idx(), segment_list)) {
-          updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kEnclosure, TAPanelId(), drc_rect);
+          updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kReservedVia, TAPanelId(), drc_rect);
         }
       }
     }
@@ -568,7 +603,7 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       // soft_shape_list
       RTUtil::pushStream(ta_dataset, "soft_shape_list", "\n");
       for (const auto& [net_idx, rect_set] :
-           DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kEnclosure), true)[ta_panel_id.get_layer_idx()]) {
+           DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kReservedVia), true)[ta_panel_id.get_layer_idx()]) {
         for (const LayerRect& rect : rect_set) {
           RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
                              "\n");
@@ -626,7 +661,7 @@ void TrackAssigner::assignTAModel(TAModel& ta_model)
   Monitor monitor;
 
   size_t total_panel_num = 0;
-  for (std::vector<TAPanelId>& ta_panel_id_list : ta_model.get_ta_panel_id_comb_list()) {
+  for (std::vector<TAPanelId>& ta_panel_id_list : ta_model.get_ta_panel_id_list_list()) {
     Monitor stage_monitor;
 #pragma omp parallel for
     for (TAPanelId& ta_panel_id : ta_panel_id_list) {
@@ -736,12 +771,12 @@ void TrackAssigner::makeRoutingState(TAPanel& ta_panel)
 void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
 {
   for (TASourceType ta_source_type :
-       {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+       {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
           for (const auto& rect : rect_set) {
-            updateRectToGraph(ta_panel, ChangeType::kAdd, ta_source_type, DRCRect(net_idx, rect, is_routing));
+            updateRectCostToGraph(ta_panel, ChangeType::kAdd, ta_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -753,23 +788,18 @@ void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
  * 当drc_rect是由于ta_panel布线产生时，ta_source_type必须设置为kSelfPanel
  * 当drc_rect是由blockage或pin_shape或其他不由ta_panel布线产生时，ta_source_type可设置为对应值
  */
-void TrackAssigner::updateRectToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect)
+void TrackAssigner::updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect)
 {
   if (drc_rect.get_is_routing() == false) {
     return;
   }
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
-  std::vector<irt_int>& task_idx_list = ta_panel.get_net_task_map()[drc_rect.get_net_idx()];
   for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
     TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
-    std::map<Orientation, std::set<irt_int>>& orien_task_map = ta_node.get_source_orien_task_map()[ta_source_type];
+    std::map<Orientation, std::set<irt_int>>& orien_net_map = ta_node.get_source_orien_net_map()[ta_source_type];
     for (Orientation orientation : orientation_set) {
-      if (task_idx_list.empty()) {
-        orien_task_map[orientation].insert(-1);
-      } else {
-        orien_task_map[orientation].insert(task_idx_list.begin(), task_idx_list.end());
-      }
+      orien_net_map[orientation].insert(drc_rect.get_net_idx());
     }
   }
 }
@@ -935,49 +965,118 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   if (ta_panel.get_curr_iter() == 1) {
     sortTAPanel(ta_model, ta_panel);
   } else {
-    // std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
-    // // check drc obj
-    // std::map<irt_int, irt_int> task_idx_to_order_map;
-    // std::map<irt_int, std::vector<irt_int>> net_idx_to_task_idx_map;
-    // for (size_t i = 0; i < ta_task_list.size(); i++) {
-    //   task_idx_to_order_map[ta_task_list[i].get_task_idx()] = i;
-    //   net_idx_to_task_idx_map[ta_task_list[i].get_origin_net_idx()].push_back(i);
-    // }
-    // std::map<irt_int, std::vector<irt_int>> violation_task_idx_map;
-    // for (TATask& ta_task : ta_task_list) {
-    //   for (ViolationInfo& violation_info :
-    //        DC_INST.getViolationInfo(ta_panel.getRegionQuery(TASourceType::kSelfPanel),
-    //                                 DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree()))) {
-    //     std::vector<irt_int> violation_task_idx_list;
-    //     for (auto& [net_idx, shape_list] : violation_info.get_net_shape_map()) {
-    //       for (irt_int task_idx : net_idx_to_task_idx_map[net_idx]) {
-    //         violation_task_idx_list.push_back(task_idx);
-    //       }
-    //     }
-    //     std::sort(violation_task_idx_list.begin(), violation_task_idx_list.end(), [&task_idx_to_order_map](int a, int b){
-    //       return task_idx_to_order_map[a] < task_idx_to_order_map[b];
-    //     });
-    //   }
-    // }
-    // // resort task
+    resortTAPanel(ta_panel);
+    addHistoryCost(ta_panel);
+    ripupTAPanel(ta_model, ta_panel);
+  }
+}
 
-    // // ripup task
-    // for (TATask& ta_task : ta_task_list) {
-    //   if (ta_task.get_routing_state() == RoutingState::kRouted) {
-    //     continue;
-    //   }
-    //   // 将env中的布线结果清空
-    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    //     updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
-    //   }
-    //   // 将graph中的布线结果清空
-    //   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    //     updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
-    //   }
-    //   // 清空routing_tree
-    //   ta_task.get_routing_tree().clear();
-    //   ta_task.set_routing_state(RoutingState::kUnrouted);
-    // }
+void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
+{
+  std::vector<irt_int>& task_order_list = ta_panel.get_task_order_list_list().back();
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+
+  // resort task list
+  std::map<irt_int, irt_int> task_order_map;
+  for (size_t i = 0; i < task_order_list.size(); i++) {
+    task_order_map[task_order_list[i]] = i;
+  }
+
+  std::vector<irt_int> ripup_task_list;
+  for (std::vector<irt_int> violation_task_comb : getViolationTaskCombList(ta_panel)) {
+    std::sort(violation_task_comb.begin(), violation_task_comb.end(),
+              [&task_order_map](irt_int a, irt_int b) { return task_order_map[a] > task_order_map[b]; });
+    for (irt_int violation_task : violation_task_comb) {
+      if (std::find(ripup_task_list.begin(), ripup_task_list.end(), violation_task) == ripup_task_list.end()) {
+        ripup_task_list.push_back(violation_task);
+      }
+    }
+  }
+
+  std::vector<irt_int> ripup_task_origin_idx_list;
+  for (irt_int ripup_task : ripup_task_list) {
+    ripup_task_origin_idx_list.push_back(task_order_map[ripup_task]);
+  }
+  std::sort(ripup_task_origin_idx_list.begin(), ripup_task_origin_idx_list.end());
+
+  std::vector<irt_int> ripup_task_order_list = task_order_list;
+  for (size_t i = 0; i < ripup_task_list.size(); i++) {
+    ta_task_list[ripup_task_list[i]].set_routing_state(RoutingState::kUnrouted);
+    ripup_task_order_list[ripup_task_origin_idx_list[i]] = ripup_task_list[i];
+  }
+
+  ta_panel.get_task_order_list_list().push_back(ripup_task_order_list);
+}
+
+std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPanel& ta_panel)
+{
+  std::map<irt_int, std::vector<irt_int>>& net_task_map = ta_panel.get_net_task_map();
+
+  std::vector<std::vector<irt_int>> violation_task_comb_list;
+  for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
+    for (auto& [drc, violation_info_list] : drc_violation_map) {
+      for (ViolationInfo& violation_info : violation_info_list) {
+        for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+          if (!RTUtil::exist(net_task_map, net_idx)) {
+            continue;
+          }
+          violation_task_comb_list.push_back(net_task_map[net_idx]);
+        }
+      }
+    }
+  }
+  return violation_task_comb_list;
+}
+
+void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
+{
+  for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
+    for (auto& [drc, violation_info_list] : drc_violation_map) {
+      for (ViolationInfo& violation_info : violation_info_list) {
+        for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+          for (LayerRect& rect : rect_list) {
+            updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, rect, violation_info.get_is_routing()));
+          }
+        }
+      }
+    }
+  }
+}
+
+void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect)
+{
+  if (drc_rect.get_is_routing() == false) {
+    return;
+  }
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+
+  for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
+    TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
+    std::map<Orientation, double>& orien_history_cost_map = ta_node.get_orien_history_cost_map();
+    for (Orientation orientation : orientation_set) {
+      orien_history_cost_map[orientation] += 10;
+    }
+  }
+}
+
+void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
+{
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  for (TATask& ta_task : ta_task_list) {
+    if (ta_task.get_routing_state() == RoutingState::kRouted) {
+      continue;
+    }
+    // 将env中的布线结果清空
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+      updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
+    }
+    // 将graph中的布线结果清空
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+      updateRectCostToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
+    }
+    // 清空routing_tree
+    ta_task.get_routing_tree().clear();
+    ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
@@ -991,16 +1090,24 @@ void TrackAssigner::sortTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     LOG_INST.info(Loc::current(), "Sorting all tasks beginning...");
   }
 
-  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
-  std::sort(ta_task_list.begin(), ta_task_list.end(), [&](TATask& task1, TATask& task2) { return sortByMultiLevel(task1, task2); });
+  std::vector<irt_int> task_order_list;
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    task_order_list.push_back(ta_task.get_task_idx());
+  }
+  std::sort(task_order_list.begin(), task_order_list.end(),
+            [&](irt_int task_idx1, irt_int task_idx2) { return sortByMultiLevel(ta_panel, task_idx1, task_idx2); });
+  ta_panel.get_task_order_list_list().push_back(task_order_list);
 
   if (omp_get_num_threads() == 1) {
     LOG_INST.info(Loc::current(), "Sorting all tasks completed!", monitor.getStatsInfo());
   }
 }
 
-bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
+bool TrackAssigner::sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2)
 {
+  TATask& task1 = ta_panel.get_ta_task_list()[task_idx1];
+  TATask& task2 = ta_panel.get_ta_task_list()[task_idx2];
+
   SortStatus sort_status = SortStatus::kNone;
 
   sort_status = sortByClockPriority(task1, task2);
@@ -1009,7 +1116,7 @@ bool TrackAssigner::sortByMultiLevel(TATask& task1, TATask& task2)
   } else if (sort_status == SortStatus::kFalse) {
     return false;
   }
-  sort_status = sortByPreferLengthASC(task1, task2);
+  sort_status = sortByPreferLengthDESC(task1, task2);
   if (sort_status == SortStatus::kTrue) {
     return true;
   } else if (sort_status == SortStatus::kFalse) {
@@ -1033,8 +1140,8 @@ SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
   }
 }
 
-// ta的宽都一样，prefer方向长度 升序 越短的越先布
-SortStatus TrackAssigner::sortByPreferLengthASC(TATask& task1, TATask& task2)
+// ta的宽都一样，prefer方向长度 降序 越长的越先布
+SortStatus TrackAssigner::sortByPreferLengthDESC(TATask& task1, TATask& task2)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -1053,7 +1160,7 @@ SortStatus TrackAssigner::sortByPreferLengthASC(TATask& task1, TATask& task2)
     task1_prefer_length = task1.get_bounding_box().getYSpan();
     task2_prefer_length = task2.get_bounding_box().getYSpan();
   }
-  if (task1_prefer_length < task2_prefer_length) {
+  if (task1_prefer_length > task2_prefer_length) {
     return SortStatus::kTrue;
   } else if (task1_prefer_length == task2_prefer_length) {
     return SortStatus::kEqual;
@@ -1067,12 +1174,16 @@ void TrackAssigner::assignTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   Monitor monitor;
 
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  if (ta_panel.get_task_order_list_list().empty()) {
+    LOG_INST.error(Loc::current(), "The task_order_list_list is empty!");
+  }
+  std::vector<irt_int>& task_order_list = ta_panel.get_task_order_list_list().back();
 
   irt_int batch_size = RTUtil::getBatchSize(ta_task_list.size());
 
   Monitor stage_monitor;
-  for (size_t i = 0; i < ta_task_list.size(); i++) {
-    routeTATask(ta_model, ta_panel, ta_task_list[i]);
+  for (size_t i = 0; i < task_order_list.size(); i++) {
+    routeTATask(ta_model, ta_panel, ta_task_list[task_order_list[i]]);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
       LOG_INST.info(Loc::current(), "Assigned ", (i + 1), " tasks", stage_monitor.getStatsInfo());
     }
@@ -1106,8 +1217,8 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
 {
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
-  std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
+  std::vector<std::vector<TANode*>>& start_node_list_list = ta_panel.get_start_node_list_list();
+  std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
 
   // config
   ta_panel.set_wire_unit(1);
@@ -1117,7 +1228,7 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
   ta_panel.set_ta_task_ref(&ta_task);
   ta_panel.set_routing_region(ta_panel.get_curr_bounding_box());
   {
-    std::vector<std::vector<TANode*>> node_comb_list;
+    std::vector<std::vector<TANode*>> node_list_list;
     std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
     for (TAGroup& ta_group : ta_group_list) {
       std::vector<TANode*> node_comb;
@@ -1128,21 +1239,21 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
         PlanarCoord grid_coord = RTUtil::getGridCoord(coord, panel_track_axis);
         node_comb.push_back(&ta_node_map[grid_coord.get_x()][grid_coord.get_y()]);
       }
-      node_comb_list.push_back(node_comb);
+      node_list_list.push_back(node_comb);
     }
-    for (size_t i = 0; i < node_comb_list.size(); i++) {
+    for (size_t i = 0; i < node_list_list.size(); i++) {
       if (i == 0) {
-        start_node_comb_list.push_back(node_comb_list[i]);
+        start_node_list_list.push_back(node_list_list[i]);
       } else {
-        end_node_comb_list.push_back(node_comb_list[i]);
+        end_node_list_list.push_back(node_list_list[i]);
       }
     }
   }
   {
     std::set<Orientation>& routing_offset_set = ta_panel.get_routing_offset_set();
-    for (std::vector<TANode*>& start_node_comb : start_node_comb_list) {
+    for (std::vector<TANode*>& start_node_comb : start_node_list_list) {
       for (TANode* start_node : start_node_comb) {
-        for (std::vector<TANode*>& end_node_comb : end_node_comb_list) {
+        for (std::vector<TANode*>& end_node_comb : end_node_list_list) {
           for (TANode* end_node : end_node_comb) {
             std::vector<Orientation> orientation_list = RTUtil::getOrientationList(*start_node, *end_node);
             routing_offset_set.insert(orientation_list.begin(), orientation_list.end());
@@ -1156,7 +1267,7 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
 
 bool TrackAssigner::isConnectedAllEnd(TAPanel& ta_panel)
 {
-  return ta_panel.get_end_node_comb_list().empty();
+  return ta_panel.get_end_node_list_list().empty();
 }
 
 void TrackAssigner::routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy)
@@ -1191,10 +1302,10 @@ void TrackAssigner::routeSinglePath(TAPanel& ta_panel)
 
 void TrackAssigner::initPathHead(TAPanel& ta_panel)
 {
-  std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
+  std::vector<std::vector<TANode*>>& start_node_list_list = ta_panel.get_start_node_list_list();
   std::vector<TANode*>& path_node_list = ta_panel.get_path_node_list();
 
-  for (std::vector<TANode*>& start_node_comb : start_node_comb_list) {
+  for (std::vector<TANode*>& start_node_comb : start_node_list_list) {
     for (TANode* start_node : start_node_comb) {
       start_node->set_estimated_cost(getEstimateCostToEnd(ta_panel, start_node));
       pushToOpenList(ta_panel, start_node);
@@ -1209,15 +1320,15 @@ void TrackAssigner::initPathHead(TAPanel& ta_panel)
 
 bool TrackAssigner::searchEnded(TAPanel& ta_panel)
 {
-  std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
+  std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
   TANode* path_head_node = ta_panel.get_path_head_node();
 
   if (path_head_node == nullptr) {
     ta_panel.set_end_node_comb_idx(-1);
     return true;
   }
-  for (size_t i = 0; i < end_node_comb_list.size(); i++) {
-    for (TANode* end_node : end_node_comb_list[i]) {
+  for (size_t i = 0; i < end_node_list_list.size(); i++) {
+    for (TANode* end_node : end_node_list_list[i]) {
       if (path_head_node == end_node) {
         ta_panel.set_end_node_comb_idx(static_cast<irt_int>(i));
         return true;
@@ -1278,10 +1389,10 @@ bool TrackAssigner::passChecking(TAPanel& ta_panel, TANode* start_node, TANode* 
     if (curr_node == nullptr) {
       return false;
     }
-    if (pre_node->isOBS(ta_panel.get_curr_task_idx(), orientation, ta_panel.get_ta_route_strategy())) {
+    if (pre_node->isOBS(ta_panel.get_curr_net_idx(), orientation, ta_panel.get_ta_route_strategy())) {
       return false;
     }
-    if (curr_node->isOBS(ta_panel.get_curr_task_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
+    if (curr_node->isOBS(ta_panel.get_curr_net_idx(), opposite_orientation, ta_panel.get_ta_route_strategy())) {
       return false;
     }
   }
@@ -1367,14 +1478,14 @@ void TrackAssigner::updateDirectionSet(TAPanel& ta_panel)
 
 void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 {
-  std::vector<std::vector<TANode*>>& start_node_comb_list = ta_panel.get_start_node_comb_list();
-  std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
+  std::vector<std::vector<TANode*>>& start_node_list_list = ta_panel.get_start_node_list_list();
+  std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
   std::vector<TANode*>& path_node_list = ta_panel.get_path_node_list();
   TANode* path_head_node = ta_panel.get_path_head_node();
   irt_int end_node_comb_idx = ta_panel.get_end_node_comb_idx();
 
-  end_node_comb_list[end_node_comb_idx].clear();
-  end_node_comb_list[end_node_comb_idx].push_back(path_head_node);
+  end_node_list_list[end_node_comb_idx].clear();
+  end_node_list_list[end_node_comb_idx].push_back(path_head_node);
 
   TANode* path_node = path_head_node->get_parent_node();
   if (path_node == nullptr) {
@@ -1387,14 +1498,14 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
       path_node = path_node->get_parent_node();
     }
   }
-  if (start_node_comb_list.size() == 1) {
-    // 初始化时，要把start_node_comb_list的pin只留一个ap点
-    // 后续只要将end_node_comb_list的pin保留一个ap点
-    start_node_comb_list.front().clear();
-    start_node_comb_list.front().push_back(path_node);
+  if (start_node_list_list.size() == 1) {
+    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 后续只要将end_node_list_list的pin保留一个ap点
+    start_node_list_list.front().clear();
+    start_node_list_list.front().push_back(path_node);
   }
-  start_node_comb_list.push_back(end_node_comb_list[end_node_comb_idx]);
-  end_node_comb_list.erase(end_node_comb_list.begin() + end_node_comb_idx);
+  start_node_list_list.push_back(end_node_list_list[end_node_comb_idx]);
+  end_node_list_list.erase(end_node_list_list.begin() + end_node_comb_idx);
 }
 
 void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task)
@@ -1417,7 +1528,7 @@ void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATas
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    updateRectToGraph(ta_panel, ChangeType::kAdd, TASourceType::kSelfPanel, drc_rect);
+    updateRectCostToGraph(ta_panel, ChangeType::kAdd, TASourceType::kSelfPanel, drc_rect);
   }
   ta_task.set_routing_state(RoutingState::kRouted);
 }
@@ -1425,8 +1536,8 @@ void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATas
 void TrackAssigner::resetSingleTask(TAPanel& ta_panel)
 {
   ta_panel.set_ta_task_ref(nullptr);
-  ta_panel.get_start_node_comb_list().clear();
-  ta_panel.get_end_node_comb_list().clear();
+  ta_panel.get_start_node_list_list().clear();
+  ta_panel.get_end_node_list_list().clear();
   ta_panel.get_routing_offset_set().clear();
   ta_panel.get_path_node_list().clear();
 
@@ -1493,7 +1604,7 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  double env_cost = curr_node->getCost(ta_panel.get_curr_task_idx(), orientation);
+  double env_cost = curr_node->getCost(ta_panel.get_curr_net_idx(), orientation);
 
   double task_cost = 0;
   LayerCoord node_coord = *curr_node;
@@ -1558,10 +1669,10 @@ double TrackAssigner::getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANo
 
 double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 {
-  std::vector<std::vector<TANode*>>& end_node_comb_list = ta_panel.get_end_node_comb_list();
+  std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
 
   double estimate_cost = DBL_MAX;
-  for (std::vector<TANode*>& end_node_comb : end_node_comb_list) {
+  for (std::vector<TANode*>& end_node_comb : end_node_list_list) {
     for (TANode* end_node : end_node_comb) {
       if (end_node->isClose()) {
         continue;
@@ -1666,41 +1777,35 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     drc_rect_list.insert(drc_rect_list.end(), task_drc_rect_list.begin(), task_drc_rect_list.end());
   }
 
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_panel_stat.get_source_drc_violation_map();
   for (TASourceType ta_source_type :
-       {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+       {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
-    for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
-      source_drc_number_map[ta_source_type][drc] += number;
+    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(region_query, drc_rect_list)) {
+      source_drc_violation_map[ta_source_type][drc] = violation_info_list;
     }
   }
 
-  // if (RTUtil::exist(source_drc_number_map, TASourceType::kSelfPanel)) {
-  //   if (source_drc_number_map[TASourceType::kSelfPanel]["RT Spacing"] > 0) {
-  //     plotTAPanel(ta_panel);
-  //     int a = 0;
-  //   }
-  // }
-
   std::map<std::string, irt_int>& rule_number_map = ta_panel_stat.get_drc_number_map();
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      rule_number_map[drc] += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      rule_number_map[drc] += violation_list.size();
     }
   }
   std::map<std::string, irt_int>& source_number_map = ta_panel_stat.get_source_number_map();
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_number += violation_list.size();
     }
     source_number_map[GetTASourceTypeName()(ta_source_type)] = total_number;
   }
 
   irt_int total_drc_number = 0;
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_drc_number += violation_list.size();
     }
   }
   ta_panel_stat.set_total_drc_number(total_drc_number);
@@ -1719,7 +1824,8 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   double total_wire_length = ta_panel_stat.get_total_wire_length();
   double total_prefer_wire_length = ta_panel_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = ta_panel_stat.get_total_nonprefer_wire_length();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_panel_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_panel_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_panel_stat.get_source_number_map();
   irt_int total_drc_number = ta_panel_stat.get_total_drc_number();
@@ -1772,11 +1878,11 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     drc_table[0][column] = source_name;
   }
   // element
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int column = item_column_map[GetTASourceTypeName()(ta_source_type)];
     for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_number_map[ta_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_number_map[ta_source_type][drc_rule]);
+      if (RTUtil::exist(source_drc_violation_map[ta_source_type], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[ta_source_type][drc_rule].size());
       } else {
         drc_table[row][column] = "0";
       }
@@ -1802,7 +1908,7 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<int>(table.size()));
+    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
   for (std::vector<std::string>& table : table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {
@@ -1840,7 +1946,8 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
   std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_model_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_model_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_model_stat.get_source_number_map();
 
@@ -1855,22 +1962,24 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : ta_panel_list) {
       TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
-      for (auto& [ta_source_type, drc_number_map] : ta_panel_stat.get_source_drc_number_map()) {
-        for (auto& [drc, number] : drc_number_map) {
-          source_drc_number_map[ta_source_type][drc] += number;
+      for (auto& [ta_source_type, drc_violation_map] : ta_panel_stat.get_source_drc_violation_map()) {
+        for (auto& [drc, violation_list] : drc_violation_map) {
+          for (ViolationInfo& violation : violation_list) {
+            source_drc_violation_map[ta_source_type][drc].push_back(violation);
+          }
         }
       }
     }
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      rule_number_map[drc] += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      rule_number_map[drc] += violation_list.size();
     }
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_number += violation_list.size();
     }
     source_number_map[GetTASourceTypeName()(ta_source_type)] = total_number;
   }
@@ -1888,9 +1997,9 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
     total_nonprefer_wire_length += nonprefer_wire_length;
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_drc_number += violation_list.size();
     }
   }
   ta_model_stat.set_total_wire_length(total_wire_length);
@@ -1909,7 +2018,8 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
   std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_model_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_model_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_model_stat.get_source_number_map();
   double total_wire_length = ta_model_stat.get_total_wire_length();
@@ -1961,11 +2071,11 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
     drc_table[0][column] = source_name;
   }
   // element
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int column = item_column_map[GetTASourceTypeName()(ta_source_type)];
     for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_number_map[ta_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_number_map[ta_source_type][drc_rule]);
+      if (RTUtil::exist(source_drc_violation_map[ta_source_type], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[ta_source_type][drc_rule].size());
       } else {
         drc_table[row][column] = "0";
       }
@@ -1991,7 +2101,7 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
   table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<int>(table.size()));
+    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
   for (std::vector<std::string>& table : table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {
@@ -2230,7 +2340,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
   // source_region_query_map
   std::vector<std::pair<TASourceType, GPGraphType>> source_graph_pair_list = {{TASourceType::kBlockAndPin, GPGraphType::kBlockAndPin},
-                                                                              {TASourceType::kEnclosure, GPGraphType::kEnclosure},
+                                                                              {TASourceType::kReservedVia, GPGraphType::kReservedVia},
                                                                               {TASourceType::kOtherPanel, GPGraphType::kOtherPanel},
                                                                               {TASourceType::kSelfPanel, GPGraphType::kSelfPanel}};
   for (auto& [ta_source_type, gp_graph_type] : source_graph_pair_list) {

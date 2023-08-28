@@ -71,7 +71,7 @@ class DetailedRouter
   std::vector<TNode<RTNode>*> getDecomposedNodeList(TNode<RTNode>* ta_node_node);
   void shrinkTAResults(DRModel& dr_model, DRNet& dr_net);
   void updateNetPanelResultMap(DRModel& dr_model);
-  void updateNetEnclosureMap(DRModel& dr_model);
+  void updateNetReservedViaMap(DRModel& dr_model);
   void buildDRTaskList(DRModel& dr_model);
   void buildDRTask(DRModel& dr_model, DRNet& dr_net);
   std::map<TNode<RTNode>*, DRTask> makeDRNodeTaskMap(DRModel& dr_model, DRNet& dr_net);
@@ -90,7 +90,7 @@ class DetailedRouter
   void buildNeighborMap(DRBox& dr_box);
   void makeRoutingState(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
-  void updateRectToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
+  void updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::vector<Segment<LayerCoord>> getSegmentList(DRBox& dr_box, LayerRect min_scope_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
@@ -98,7 +98,7 @@ class DetailedRouter
   void saveDRBox(DRBox& dr_box);
   void resetDRBox(DRModel& dr_model, DRBox& dr_box);
   void sortDRBox(DRModel& dr_model, DRBox& dr_box);
-  bool sortByMultiLevel(DRTask& task1, DRTask& task2);
+  bool sortByMultiLevel(DRBox& dr_box, irt_int task_idx1, irt_int task_idx2);
   SortStatus sortByDRTaskType(DRTask& task1, DRTask& task2);
   SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);

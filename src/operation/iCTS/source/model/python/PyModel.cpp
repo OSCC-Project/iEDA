@@ -1081,6 +1081,16 @@ static const char *__pyx_f[] = {
 #define __Pyx_CLEAR(r)    do { PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);} while(0)
 #define __Pyx_XCLEAR(r)   do { if((r) != NULL) {PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);}} while(0)
 
+/* PyObjectGetAttrStr.proto */
+#if CYTHON_USE_TYPE_SLOTS
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name);
+#else
+#define __Pyx_PyObject_GetAttrStr(o,n) PyObject_GetAttr(o,n)
+#endif
+
+/* GetBuiltinName.proto */
+static PyObject *__Pyx_GetBuiltinName(PyObject *name);
+
 /* RaiseArgTupleInvalid.proto */
 static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
     Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
@@ -1092,16 +1102,6 @@ static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_n
 static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
     PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
     const char* function_name);
-
-/* PyObjectGetAttrStr.proto */
-#if CYTHON_USE_TYPE_SLOTS
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name);
-#else
-#define __Pyx_PyObject_GetAttrStr(o,n) PyObject_GetAttr(o,n)
-#endif
-
-/* GetBuiltinName.proto */
-static PyObject *__Pyx_GetBuiltinName(PyObject *name);
 
 /* PyDictVersioning.proto */
 #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_TYPE_SLOTS
@@ -1315,6 +1315,9 @@ static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
 #define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
 #endif
 
+/* RaiseException.proto */
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+
 /* ListCompAppend.proto */
 #if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
 static CYTHON_INLINE int __Pyx_ListComp_Append(PyObject* list, PyObject* x) {
@@ -1420,6 +1423,7 @@ __PYX_EXTERN_C void pySaveFig(PyObject *, std::string const &); /*proto*/
 __PYX_EXTERN_C void pyPlotPoint(PyObject *, icts::CtsPoint<double>  const &, std::string const &); /*proto*/
 __PYX_EXTERN_C void pyPlotSegment(PyObject *, icts::CtsSegment<double>  const &, std::string const &); /*proto*/
 __PYX_EXTERN_C void pyPlotPolygon(PyObject *, icts::CtsPolygon<double>  const &, std::string const &); /*proto*/
+__PYX_EXTERN_C void pyPlot(PyObject *, std::vector<double>  const , std::vector<double>  const , std::string const &); /*proto*/
 static std::vector<double>  __pyx_convert_vector_from_py_double(PyObject *); /*proto*/
 static std::vector<std::vector<double> >  __pyx_convert_vector_from_py_std_3a__3a_vector_3c_double_3e___(PyObject *); /*proto*/
 static PyObject *__pyx_convert_vector_to_py_double(const std::vector<double>  &); /*proto*/
@@ -1434,10 +1438,11 @@ extern int __pyx_module_is_main_PyModel;
 int __pyx_module_is_main_PyModel = 0;
 
 /* Implementation of 'PyModel' */
+static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_range;
 static const char __pyx_k_T[] = "T";
 static const char __pyx_k_o[] = "o";
-static const char __pyx_k__3[] = "*";
+static const char __pyx_k__5[] = "*";
 static const char __pyx_k_np[] = "np";
 static const char __pyx_k_dpi[] = "dpi";
 static const char __pyx_k_fit[] = "fit";
@@ -1468,6 +1473,7 @@ static const char __pyx_k_verbose[] = "verbose";
 static const char __pyx_k_xgboost[] = "xgboost";
 static const char __pyx_k_catboost[] = "catboost";
 static const char __pyx_k_subplots[] = "subplots";
+static const char __pyx_k_ValueError[] = "ValueError";
 static const char __pyx_k_PyModel_pyx[] = "PyModel.pyx";
 static const char __pyx_k_XGBRegressor[] = "XGBRegressor";
 static const char __pyx_k_dataTansform[] = "dataTansform";
@@ -1476,14 +1482,17 @@ static const char __pyx_k_CatBoostRegressor[] = "CatBoostRegressor";
 static const char __pyx_k_matplotlib_pyplot[] = "matplotlib.pyplot";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_sklearn_linear_model[] = "sklearn.linear_model";
+static const char __pyx_k_x_and_y_must_have_same_size[] = "x and y must have same size";
+static const char __pyx_k_x_and_y_must_have_at_least_one_e[] = "x and y must have at least one element";
 static PyObject *__pyx_n_s_Booster;
 static PyObject *__pyx_n_s_CatBoostRegressor;
 static PyObject *__pyx_n_s_LinearRegression;
 static PyObject *__pyx_n_s_PyModel;
 static PyObject *__pyx_kp_s_PyModel_pyx;
 static PyObject *__pyx_n_s_T;
+static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_XGBRegressor;
-static PyObject *__pyx_n_s__3;
+static PyObject *__pyx_n_s__5;
 static PyObject *__pyx_n_s_array;
 static PyObject *__pyx_n_s_catboost;
 static PyObject *__pyx_n_s_cline_in_traceback;
@@ -1516,6 +1525,8 @@ static PyObject *__pyx_n_s_sklearn_linear_model;
 static PyObject *__pyx_n_s_subplots;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_verbose;
+static PyObject *__pyx_kp_s_x_and_y_must_have_at_least_one_e;
+static PyObject *__pyx_kp_s_x_and_y_must_have_same_size;
 static PyObject *__pyx_n_s_xgboost;
 static PyObject *__pyx_pf_7PyModel_dataTansform(CYTHON_UNUSED PyObject *__pyx_self, std::vector<std::vector<double> >  __pyx_v_cpp_X, std::vector<double>  __pyx_v_cpp_y); /* proto */
 static PyObject *__pyx_int_1;
@@ -1523,8 +1534,10 @@ static PyObject *__pyx_int_300;
 static PyObject *__pyx_int_neg_1;
 static PyObject *__pyx_tuple_;
 static PyObject *__pyx_tuple__2;
+static PyObject *__pyx_tuple__3;
 static PyObject *__pyx_tuple__4;
-static PyObject *__pyx_codeobj__5;
+static PyObject *__pyx_tuple__6;
+static PyObject *__pyx_codeobj__7;
 /* Late includes */
 
 /* "PyModel.pyx":13
@@ -3595,6 +3608,8 @@ void pyPlotPolygon(PyObject *__pyx_v_ax, icts::CtsPolygon<double>  const &__pyx_
  *         ax.plot(x, y, 'o-', label=name.decode('UTF-8'))
  *     else:
  *         ax.plot(x, y, 'o-')             # <<<<<<<<<<<<<<
+ * 
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
  */
   /*else*/ {
     __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_ax, __pyx_n_s_plot); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 80, __pyx_L1_error)
@@ -3670,6 +3685,295 @@ void pyPlotPolygon(PyObject *__pyx_v_ax, icts::CtsPolygon<double>  const &__pyx_
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_x);
   __Pyx_XDECREF(__pyx_v_y);
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "PyModel.pyx":82
+ *         ax.plot(x, y, 'o-')
+ * 
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):             # <<<<<<<<<<<<<<
+ *     if x.size() != y.size():
+ *         raise ValueError("x and y must have same size")
+ */
+
+void pyPlot(PyObject *__pyx_v_ax, std::vector<double>  const __pyx_v_x, std::vector<double>  const __pyx_v_y, std::string const &__pyx_v_name) {
+  std::vector<double> ::size_type __pyx_v_size;
+  PyObject *__pyx_v_label = NULL;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("pyPlot", 0);
+
+  /* "PyModel.pyx":83
+ * 
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
+ *     if x.size() != y.size():             # <<<<<<<<<<<<<<
+ *         raise ValueError("x and y must have same size")
+ *     size = x.size()
+ */
+  __pyx_t_1 = ((__pyx_v_x.size() != __pyx_v_y.size()) != 0);
+  if (unlikely(__pyx_t_1)) {
+
+    /* "PyModel.pyx":84
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
+ *     if x.size() != y.size():
+ *         raise ValueError("x and y must have same size")             # <<<<<<<<<<<<<<
+ *     size = x.size()
+ *     if size == 0:
+ */
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 84, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __PYX_ERR(0, 84, __pyx_L1_error)
+
+    /* "PyModel.pyx":83
+ * 
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
+ *     if x.size() != y.size():             # <<<<<<<<<<<<<<
+ *         raise ValueError("x and y must have same size")
+ *     size = x.size()
+ */
+  }
+
+  /* "PyModel.pyx":85
+ *     if x.size() != y.size():
+ *         raise ValueError("x and y must have same size")
+ *     size = x.size()             # <<<<<<<<<<<<<<
+ *     if size == 0:
+ *         raise ValueError("x and y must have at least one element")
+ */
+  __pyx_v_size = __pyx_v_x.size();
+
+  /* "PyModel.pyx":86
+ *         raise ValueError("x and y must have same size")
+ *     size = x.size()
+ *     if size == 0:             # <<<<<<<<<<<<<<
+ *         raise ValueError("x and y must have at least one element")
+ * 
+ */
+  __pyx_t_1 = ((__pyx_v_size == 0) != 0);
+  if (unlikely(__pyx_t_1)) {
+
+    /* "PyModel.pyx":87
+ *     size = x.size()
+ *     if size == 0:
+ *         raise ValueError("x and y must have at least one element")             # <<<<<<<<<<<<<<
+ * 
+ *     label = name.decode('UTF-8') if name != "" else None
+ */
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 87, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __PYX_ERR(0, 87, __pyx_L1_error)
+
+    /* "PyModel.pyx":86
+ *         raise ValueError("x and y must have same size")
+ *     size = x.size()
+ *     if size == 0:             # <<<<<<<<<<<<<<
+ *         raise ValueError("x and y must have at least one element")
+ * 
+ */
+  }
+
+  /* "PyModel.pyx":89
+ *         raise ValueError("x and y must have at least one element")
+ * 
+ *     label = name.decode('UTF-8') if name != "" else None             # <<<<<<<<<<<<<<
+ *     if size == 1:
+ *         ax.plot(x[0], y[0], 'o', label=label)
+ */
+  if (((__pyx_v_name != ((char const *)"")) != 0)) {
+    __pyx_t_3 = __Pyx_decode_cpp_string(__pyx_v_name, 0, PY_SSIZE_T_MAX, NULL, NULL, PyUnicode_DecodeUTF8); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_2 = __pyx_t_3;
+    __pyx_t_3 = 0;
+  } else {
+    __Pyx_INCREF(Py_None);
+    __pyx_t_2 = Py_None;
+  }
+  __pyx_v_label = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "PyModel.pyx":90
+ * 
+ *     label = name.decode('UTF-8') if name != "" else None
+ *     if size == 1:             # <<<<<<<<<<<<<<
+ *         ax.plot(x[0], y[0], 'o', label=label)
+ *     elif size == 2:
+ */
+  switch (__pyx_v_size) {
+    case 1:
+
+    /* "PyModel.pyx":91
+ *     label = name.decode('UTF-8') if name != "" else None
+ *     if size == 1:
+ *         ax.plot(x[0], y[0], 'o', label=label)             # <<<<<<<<<<<<<<
+ *     elif size == 2:
+ *         ax.plot([x[0], x[1]], [y[0], y[1]], 'o-', label=label)
+ */
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_ax, __pyx_n_s_plot); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_3 = PyFloat_FromDouble((__pyx_v_x[0])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_4 = PyFloat_FromDouble((__pyx_v_y[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_3);
+    __Pyx_GIVEREF(__pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_4);
+    __Pyx_INCREF(__pyx_n_s_o);
+    __Pyx_GIVEREF(__pyx_n_s_o);
+    PyTuple_SET_ITEM(__pyx_t_5, 2, __pyx_n_s_o);
+    __pyx_t_3 = 0;
+    __pyx_t_4 = 0;
+    __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_label, __pyx_v_label) < 0) __PYX_ERR(0, 91, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+    /* "PyModel.pyx":90
+ * 
+ *     label = name.decode('UTF-8') if name != "" else None
+ *     if size == 1:             # <<<<<<<<<<<<<<
+ *         ax.plot(x[0], y[0], 'o', label=label)
+ *     elif size == 2:
+ */
+    break;
+    case 2:
+
+    /* "PyModel.pyx":93
+ *         ax.plot(x[0], y[0], 'o', label=label)
+ *     elif size == 2:
+ *         ax.plot([x[0], x[1]], [y[0], y[1]], 'o-', label=label)             # <<<<<<<<<<<<<<
+ *     else:
+ *         ax.plot(x, y, 'o-', label=label)
+ */
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_ax, __pyx_n_s_plot); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_4 = PyFloat_FromDouble((__pyx_v_x[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = PyFloat_FromDouble((__pyx_v_x[1])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_2 = PyList_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_GIVEREF(__pyx_t_4);
+    PyList_SET_ITEM(__pyx_t_2, 0, __pyx_t_4);
+    __Pyx_GIVEREF(__pyx_t_5);
+    PyList_SET_ITEM(__pyx_t_2, 1, __pyx_t_5);
+    __pyx_t_4 = 0;
+    __pyx_t_5 = 0;
+    __pyx_t_5 = PyFloat_FromDouble((__pyx_v_y[0])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_4 = PyFloat_FromDouble((__pyx_v_y[1])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_6 = PyList_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_GIVEREF(__pyx_t_5);
+    PyList_SET_ITEM(__pyx_t_6, 0, __pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_4);
+    PyList_SET_ITEM(__pyx_t_6, 1, __pyx_t_4);
+    __pyx_t_5 = 0;
+    __pyx_t_4 = 0;
+    __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_GIVEREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2);
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_6);
+    __Pyx_INCREF(__pyx_kp_s_o_2);
+    __Pyx_GIVEREF(__pyx_kp_s_o_2);
+    PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_kp_s_o_2);
+    __pyx_t_2 = 0;
+    __pyx_t_6 = 0;
+    __pyx_t_6 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_label, __pyx_v_label) < 0) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, __pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "PyModel.pyx":92
+ *     if size == 1:
+ *         ax.plot(x[0], y[0], 'o', label=label)
+ *     elif size == 2:             # <<<<<<<<<<<<<<
+ *         ax.plot([x[0], x[1]], [y[0], y[1]], 'o-', label=label)
+ *     else:
+ */
+    break;
+    default:
+
+    /* "PyModel.pyx":95
+ *         ax.plot([x[0], x[1]], [y[0], y[1]], 'o-', label=label)
+ *     else:
+ *         ax.plot(x, y, 'o-', label=label)             # <<<<<<<<<<<<<<
+ */
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_ax, __pyx_n_s_plot); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_6 = __pyx_convert_vector_to_py_double(__pyx_v_x); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __pyx_t_4 = __pyx_convert_vector_to_py_double(__pyx_v_y); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_3 = PyTuple_New(3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_6);
+    __Pyx_GIVEREF(__pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_4);
+    __Pyx_INCREF(__pyx_kp_s_o_2);
+    __Pyx_GIVEREF(__pyx_kp_s_o_2);
+    PyTuple_SET_ITEM(__pyx_t_3, 2, __pyx_kp_s_o_2);
+    __pyx_t_6 = 0;
+    __pyx_t_4 = 0;
+    __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_label, __pyx_v_label) < 0) __PYX_ERR(0, 95, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    break;
+  }
+
+  /* "PyModel.pyx":82
+ *         ax.plot(x, y, 'o-')
+ * 
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):             # <<<<<<<<<<<<<<
+ *     if x.size() != y.size():
+ *         raise ValueError("x and y must have same size")
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_WriteUnraisable("PyModel.pyPlot", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_label);
   __Pyx_RefNannyFinishContext();
 }
 
@@ -4332,8 +4636,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_PyModel, __pyx_k_PyModel, sizeof(__pyx_k_PyModel), 0, 0, 1, 1},
   {&__pyx_kp_s_PyModel_pyx, __pyx_k_PyModel_pyx, sizeof(__pyx_k_PyModel_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_T, __pyx_k_T, sizeof(__pyx_k_T), 0, 0, 1, 1},
+  {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_XGBRegressor, __pyx_k_XGBRegressor, sizeof(__pyx_k_XGBRegressor), 0, 0, 1, 1},
-  {&__pyx_n_s__3, __pyx_k__3, sizeof(__pyx_k__3), 0, 0, 1, 1},
+  {&__pyx_n_s__5, __pyx_k__5, sizeof(__pyx_k__5), 0, 0, 1, 1},
   {&__pyx_n_s_array, __pyx_k_array, sizeof(__pyx_k_array), 0, 0, 1, 1},
   {&__pyx_n_s_catboost, __pyx_k_catboost, sizeof(__pyx_k_catboost), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
@@ -4366,10 +4671,13 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_subplots, __pyx_k_subplots, sizeof(__pyx_k_subplots), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_verbose, __pyx_k_verbose, sizeof(__pyx_k_verbose), 0, 0, 1, 1},
+  {&__pyx_kp_s_x_and_y_must_have_at_least_one_e, __pyx_k_x_and_y_must_have_at_least_one_e, sizeof(__pyx_k_x_and_y_must_have_at_least_one_e), 0, 0, 1, 0},
+  {&__pyx_kp_s_x_and_y_must_have_same_size, __pyx_k_x_and_y_must_have_same_size, sizeof(__pyx_k_x_and_y_must_have_same_size), 0, 0, 1, 0},
   {&__pyx_n_s_xgboost, __pyx_k_xgboost, sizeof(__pyx_k_xgboost), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 84, __pyx_L1_error)
   __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(1, 61, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -4402,6 +4710,28 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
+  /* "PyModel.pyx":84
+ * cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
+ *     if x.size() != y.size():
+ *         raise ValueError("x and y must have same size")             # <<<<<<<<<<<<<<
+ *     size = x.size()
+ *     if size == 0:
+ */
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_x_and_y_must_have_same_size); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 84, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
+
+  /* "PyModel.pyx":87
+ *     size = x.size()
+ *     if size == 0:
+ *         raise ValueError("x and y must have at least one element")             # <<<<<<<<<<<<<<
+ * 
+ *     label = name.decode('UTF-8') if name != "" else None
+ */
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_x_and_y_must_have_at_least_one_e); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 87, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
+
   /* "PyModel.pyx":13
  * 
  * # data transform
@@ -4409,10 +4739,10 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *     p_X = np.array([cpp_X]).T.reshape(-1, cpp_X.size())
  *     p_y = np.array([cpp_y]).reshape(-1, 1)
  */
-  __pyx_tuple__4 = PyTuple_Pack(4, __pyx_n_s_cpp_X, __pyx_n_s_cpp_y, __pyx_n_s_p_X, __pyx_n_s_p_y); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 13, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__4);
-  __Pyx_GIVEREF(__pyx_tuple__4);
-  __pyx_codeobj__5 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__4, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PyModel_pyx, __pyx_n_s_dataTansform, 13, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__5)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_cpp_X, __pyx_n_s_cpp_y, __pyx_n_s_p_X, __pyx_n_s_p_y); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__6);
+  __Pyx_GIVEREF(__pyx_tuple__6);
+  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PyModel_pyx, __pyx_n_s_dataTansform, 13, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 13, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4785,9 +5115,9 @@ if (!__Pyx_RefNanny) {
  */
   __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_INCREF(__pyx_n_s__3);
-  __Pyx_GIVEREF(__pyx_n_s__3);
-  PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s__3);
+  __Pyx_INCREF(__pyx_n_s__5);
+  __Pyx_GIVEREF(__pyx_n_s__5);
+  PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s__5);
   __pyx_t_1 = __Pyx_Import(__pyx_n_s_matplotlib_pyplot, __pyx_t_2, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -4878,6 +5208,34 @@ end:
     return (__Pyx_RefNannyAPIStruct *)r;
 }
 #endif
+
+/* PyObjectGetAttrStr */
+#if CYTHON_USE_TYPE_SLOTS
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name) {
+    PyTypeObject* tp = Py_TYPE(obj);
+    if (likely(tp->tp_getattro))
+        return tp->tp_getattro(obj, attr_name);
+#if PY_MAJOR_VERSION < 3
+    if (likely(tp->tp_getattr))
+        return tp->tp_getattr(obj, PyString_AS_STRING(attr_name));
+#endif
+    return PyObject_GetAttr(obj, attr_name);
+}
+#endif
+
+/* GetBuiltinName */
+static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
+    PyObject* result = __Pyx_PyObject_GetAttrStr(__pyx_b, name);
+    if (unlikely(!result)) {
+        PyErr_Format(PyExc_NameError,
+#if PY_MAJOR_VERSION >= 3
+            "name '%U' is not defined", name);
+#else
+            "name '%.200s' is not defined", PyString_AS_STRING(name));
+#endif
+    }
+    return result;
+}
 
 /* RaiseArgTupleInvalid */
 static void __Pyx_RaiseArgtupleInvalid(
@@ -5019,34 +5377,6 @@ invalid_keyword:
     #endif
 bad:
     return -1;
-}
-
-/* PyObjectGetAttrStr */
-#if CYTHON_USE_TYPE_SLOTS
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name) {
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_getattro))
-        return tp->tp_getattro(obj, attr_name);
-#if PY_MAJOR_VERSION < 3
-    if (likely(tp->tp_getattr))
-        return tp->tp_getattr(obj, PyString_AS_STRING(attr_name));
-#endif
-    return PyObject_GetAttr(obj, attr_name);
-}
-#endif
-
-/* GetBuiltinName */
-static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
-    PyObject* result = __Pyx_PyObject_GetAttrStr(__pyx_b, name);
-    if (unlikely(!result)) {
-        PyErr_Format(PyExc_NameError,
-#if PY_MAJOR_VERSION >= 3
-            "name '%U' is not defined", name);
-#else
-            "name '%.200s' is not defined", PyString_AS_STRING(name));
-#endif
-    }
-    return result;
 }
 
 /* PyDictVersioning */
@@ -5531,6 +5861,165 @@ static void __Pyx_WriteUnraisable(const char *name, CYTHON_UNUSED int clineno,
         PyGILState_Release(state);
 #endif
 }
+
+/* RaiseException */
+#if PY_MAJOR_VERSION < 3
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
+                        CYTHON_UNUSED PyObject *cause) {
+    __Pyx_PyThreadState_declare
+    Py_XINCREF(type);
+    if (!value || value == Py_None)
+        value = NULL;
+    else
+        Py_INCREF(value);
+    if (!tb || tb == Py_None)
+        tb = NULL;
+    else {
+        Py_INCREF(tb);
+        if (!PyTraceBack_Check(tb)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: arg 3 must be a traceback or None");
+            goto raise_error;
+        }
+    }
+    if (PyType_Check(type)) {
+#if CYTHON_COMPILING_IN_PYPY
+        if (!value) {
+            Py_INCREF(Py_None);
+            value = Py_None;
+        }
+#endif
+        PyErr_NormalizeException(&type, &value, &tb);
+    } else {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto raise_error;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(type);
+        Py_INCREF(type);
+        if (!PyType_IsSubtype((PyTypeObject *)type, (PyTypeObject *)PyExc_BaseException)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: exception class must be a subclass of BaseException");
+            goto raise_error;
+        }
+    }
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrRestore(type, value, tb);
+    return;
+raise_error:
+    Py_XDECREF(value);
+    Py_XDECREF(type);
+    Py_XDECREF(tb);
+    return;
+}
+#else
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
+    PyObject* owned_instance = NULL;
+    if (tb == Py_None) {
+        tb = 0;
+    } else if (tb && !PyTraceBack_Check(tb)) {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: arg 3 must be a traceback or None");
+        goto bad;
+    }
+    if (value == Py_None)
+        value = 0;
+    if (PyExceptionInstance_Check(type)) {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto bad;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(value);
+    } else if (PyExceptionClass_Check(type)) {
+        PyObject *instance_class = NULL;
+        if (value && PyExceptionInstance_Check(value)) {
+            instance_class = (PyObject*) Py_TYPE(value);
+            if (instance_class != type) {
+                int is_subclass = PyObject_IsSubclass(instance_class, type);
+                if (!is_subclass) {
+                    instance_class = NULL;
+                } else if (unlikely(is_subclass == -1)) {
+                    goto bad;
+                } else {
+                    type = instance_class;
+                }
+            }
+        }
+        if (!instance_class) {
+            PyObject *args;
+            if (!value)
+                args = PyTuple_New(0);
+            else if (PyTuple_Check(value)) {
+                Py_INCREF(value);
+                args = value;
+            } else
+                args = PyTuple_Pack(1, value);
+            if (!args)
+                goto bad;
+            owned_instance = PyObject_Call(type, args, NULL);
+            Py_DECREF(args);
+            if (!owned_instance)
+                goto bad;
+            value = owned_instance;
+            if (!PyExceptionInstance_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                             "calling %R should have returned an instance of "
+                             "BaseException, not %R",
+                             type, Py_TYPE(value));
+                goto bad;
+            }
+        }
+    } else {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: exception class must be a subclass of BaseException");
+        goto bad;
+    }
+    if (cause) {
+        PyObject *fixed_cause;
+        if (cause == Py_None) {
+            fixed_cause = NULL;
+        } else if (PyExceptionClass_Check(cause)) {
+            fixed_cause = PyObject_CallObject(cause, NULL);
+            if (fixed_cause == NULL)
+                goto bad;
+        } else if (PyExceptionInstance_Check(cause)) {
+            fixed_cause = cause;
+            Py_INCREF(fixed_cause);
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "exception causes must derive from "
+                            "BaseException");
+            goto bad;
+        }
+        PyException_SetCause(value, fixed_cause);
+    }
+    PyErr_SetObject(type, value);
+    if (tb) {
+#if CYTHON_COMPILING_IN_PYPY
+        PyObject *tmp_type, *tmp_value, *tmp_tb;
+        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
+        Py_INCREF(tb);
+        PyErr_Restore(tmp_type, tmp_value, tb);
+        Py_XDECREF(tmp_tb);
+#else
+        PyThreadState *tstate = __Pyx_PyThreadState_Current;
+        PyObject* tmp_tb = tstate->curexc_traceback;
+        if (tb != tmp_tb) {
+            Py_INCREF(tb);
+            tstate->curexc_traceback = tb;
+            Py_XDECREF(tmp_tb);
+        }
+#endif
+    }
+bad:
+    Py_XDECREF(owned_instance);
+    return;
+}
+#endif
 
 /* Import */
 static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
