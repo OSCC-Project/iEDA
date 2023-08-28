@@ -1240,8 +1240,8 @@ class LibertyWireLoad : public LibertyObject
 /**
  * @brief The liberty lut table template class，such as:
  *  lu_table_template(delay_template_5x5) {
- *  variable_1 : total_output_net_capacitance;
- *  variable_2 : input_net_transition;
+ *  variable_1 : input_net_transition;
+ *  variable_2 : total_output_net_capacitance;
  *  index_1 ("1000.0, 1001.0, 1002.0, 1003.0, 1004.0");
  *  index_2 ("1000.0, 1001.0, 1002.0, 1003.0, 1004.0");
  *}
