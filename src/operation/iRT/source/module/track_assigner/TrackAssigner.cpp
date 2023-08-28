@@ -965,82 +965,116 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   if (ta_panel.get_curr_iter() == 1) {
     sortTAPanel(ta_model, ta_panel);
   } else {
-    std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
-    // check violation task
-    std::map<irt_int, irt_int> net_idx_to_task_idx_map;
-    for (size_t i = 0; i < ta_task_list.size(); i++) {
-      net_idx_to_task_idx_map[ta_task_list[i].get_origin_net_idx()] = i;
+    resortTAPanel(ta_panel);
+    addHistoryCost(ta_panel);
+    ripupTAPanel(ta_model, ta_panel);
+  }
+}
+
+void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
+{
+  std::vector<irt_int>& task_order_list = ta_panel.get_task_order_list_list().back();
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+
+  // resort task list
+  std::map<irt_int, irt_int> task_order_map;
+  for (size_t i = 0; i < task_order_list.size(); i++) {
+    task_order_map[task_order_list[i]] = i;
+  }
+
+  std::vector<irt_int> ripup_task_list;
+  for (std::vector<irt_int> violation_task_comb : getViolationTaskCombList(ta_panel)) {
+    std::sort(violation_task_comb.begin(), violation_task_comb.end(),
+              [&task_order_map](irt_int a, irt_int b) { return task_order_map[a] > task_order_map[b]; });
+    for (irt_int violation_task : violation_task_comb) {
+      if (std::find(ripup_task_list.begin(), ripup_task_list.end(), violation_task) == ripup_task_list.end()) {
+        ripup_task_list.push_back(violation_task);
+      }
     }
-    std::set<std::pair<irt_int, irt_int>> violation_task_idx_pair_set;
-    for (TATask& ta_task : ta_task_list) {
-      for (ViolationInfo& violation_info :
-           DC_INST.getViolationInfo(ta_panel.getRegionQuery(TASourceType::kSelfPanel),
-                                    DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree()))) {
-        std::map<irt_int, std::vector<LayerRect>>& violation_net_map = violation_info.get_net_shape_map();
-        if (violation_net_map.size() != 2) {
-          LOG_INST.error(Loc::current(), "Number of violated nets is exceed 2!");
+  }
+
+  std::vector<irt_int> ripup_task_origin_idx_list;
+  for (irt_int ripup_task : ripup_task_list) {
+    ripup_task_origin_idx_list.push_back(task_order_map[ripup_task]);
+  }
+  std::sort(ripup_task_origin_idx_list.begin(), ripup_task_origin_idx_list.end());
+
+  std::vector<irt_int> ripup_task_order_list = task_order_list;
+  for (size_t i = 0; i < ripup_task_list.size(); i++) {
+    ta_task_list[ripup_task_list[i]].set_routing_state(RoutingState::kUnrouted);
+    ripup_task_order_list[ripup_task_origin_idx_list[i]] = ripup_task_list[i];
+  }
+
+  ta_panel.get_task_order_list_list().push_back(ripup_task_order_list);
+}
+
+std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPanel& ta_panel)
+{
+  std::vector<std::vector<irt_int>> violation_task_comb_list;
+
+  std::map<irt_int, std::vector<irt_int>>& net_task_map = ta_panel.get_net_task_map();
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+
+  std::vector<ViolationInfo> total_violation_info_list;
+  for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
+    for (auto& [drc, violation_info_list] : drc_violation_map) {
+      total_violation_info_list.insert(total_violation_info_list.end(), violation_info_list.begin(), violation_info_list.end());
+    }
+  }
+
+  for (ViolationInfo& violation_info : total_violation_info_list) {
+    std::vector<std::vector<irt_int>> task_comb_list;
+    for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+      if (RTUtil::exist(net_task_map, net_idx)) {
+        task_comb_list.push_back(net_task_map[net_idx]);
+      }
+    }
+
+    std::vector<irt_int> total_violation_task_list;
+    for (std::vector<irt_int> task_list : task_comb_list) {
+      std::vector<irt_int> violation_task_list;
+      for (irt_int task_idx : task_list) {
+        std::vector<Segment<LayerCoord>> routing_segment_list;
+        for (Segment<TNode<LayerCoord>*>& coord_segment :
+             RTUtil::getSegListByTree(ta_task_list[task_idx].get_origin_node()->value().get_routing_tree())) {
+          routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
         }
-        irt_int net_idx1 = violation_net_map.begin()->first;
-        irt_int net_idx2 = violation_net_map.rbegin()->first;
-        if (!RTUtil::exist(net_idx_to_task_idx_map, net_idx1) || !RTUtil::exist(net_idx_to_task_idx_map, net_idx2)) {
-          continue;
+        for (LayerRect real_rect : getRealRectList(routing_segment_list)) {
+          if (RTUtil::isClosedOverlap(real_rect, violation_info.get_violation_region())) {
+            violation_task_list.push_back(task_idx);
+            break;
+          }
         }
-        irt_int aggressor_task_idx = net_idx_to_task_idx_map[net_idx1];
-        irt_int victim_task_idx = net_idx_to_task_idx_map[net_idx2];
-        RTUtil::swapASC(aggressor_task_idx, victim_task_idx);
-        violation_task_idx_pair_set.insert(std::make_pair(aggressor_task_idx, victim_task_idx));
       }
+      total_violation_task_list.insert(total_violation_task_list.end(), violation_task_list.begin(), violation_task_list.end());
     }
-    // resort task list
-    std::set<irt_int> origin_task_idx_set;
-    for (auto [aggressor_task_idx, victim_task_idx] : violation_task_idx_pair_set) {
-      origin_task_idx_set.insert(aggressor_task_idx);
-      origin_task_idx_set.insert(victim_task_idx);
-    }
-    std::vector<irt_int> origin_task_idx_list;
-    origin_task_idx_list.assign(origin_task_idx_set.begin(), origin_task_idx_set.end());
+    violation_task_comb_list.push_back(total_violation_task_list);
+  }
+  return violation_task_comb_list;
+}
 
-    std::vector<irt_int> ripup_task_idx_list;
-    for (auto [aggressor_task_idx, victim_task_idx] : violation_task_idx_pair_set) {
-      auto victim_iter = std::find(ripup_task_idx_list.begin(), ripup_task_idx_list.end(), victim_task_idx);
-      if (victim_iter == ripup_task_idx_list.end()) {
-        ripup_task_idx_list.push_back(victim_task_idx);
-      }
-      auto aggress_iter = std::find(ripup_task_idx_list.begin(), ripup_task_idx_list.end(), aggressor_task_idx);
-      if (aggress_iter != ripup_task_idx_list.end()) {
-        ripup_task_idx_list.erase(aggress_iter);
-      }
-      ripup_task_idx_list.push_back(aggressor_task_idx);
-    }
-    if (origin_task_idx_list.size() != ripup_task_idx_list.size()) {
-      LOG_INST.error(Loc::current(), "The number of ripup tasks is different with number of violated tasks!");
-    }
+void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
+{
+}
 
-    std::vector<TATask> new_ta_task_list = ta_task_list;
-    for (size_t i = 0; i < ripup_task_idx_list.size(); i++) {
-      new_ta_task_list[origin_task_idx_list[i]] = ta_task_list[ripup_task_idx_list[i]];
-      new_ta_task_list[origin_task_idx_list[i]].set_routing_state(RoutingState::kUnrouted);
+void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
+{
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  for (TATask& ta_task : ta_task_list) {
+    if (ta_task.get_routing_state() == RoutingState::kRouted) {
+      continue;
     }
-
-    ta_task_list = new_ta_task_list;
-
-    // ripup task
-    for (TATask& ta_task : ta_task_list) {
-      if (ta_task.get_routing_state() == RoutingState::kRouted) {
-        continue;
-      }
-      // 将env中的布线结果清空
-      for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-        updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
-      }
-      // 将graph中的布线结果清空
-      for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-        updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
-      }
-      // 清空routing_tree
-      ta_task.get_routing_tree().clear();
-      ta_task.set_routing_state(RoutingState::kUnrouted);
+    // 将env中的布线结果清空
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+      updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kUnknownPanel, ta_panel.get_ta_panel_id(), drc_rect);
     }
+    // 将graph中的布线结果清空
+    for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
+      updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
+    }
+    // 清空routing_tree
+    ta_task.get_routing_tree().clear();
+    ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
@@ -1741,41 +1775,35 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     drc_rect_list.insert(drc_rect_list.end(), task_drc_rect_list.begin(), task_drc_rect_list.end());
   }
 
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_panel_stat.get_source_drc_violation_map();
   for (TASourceType ta_source_type :
        {TASourceType::kBlockAndPin, TASourceType::kEnclosure, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
     RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
-    for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
-      source_drc_number_map[ta_source_type][drc] += number;
+    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(region_query, drc_rect_list)) {
+      source_drc_violation_map[ta_source_type][drc] = violation_info_list;
     }
   }
 
-  // if (RTUtil::exist(source_drc_number_map, TASourceType::kSelfPanel)) {
-  //   if (source_drc_number_map[TASourceType::kSelfPanel]["RT Spacing"] > 0) {
-  //     plotTAPanel(ta_panel);
-  //     int a = 0;
-  //   }
-  // }
-
   std::map<std::string, irt_int>& rule_number_map = ta_panel_stat.get_drc_number_map();
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      rule_number_map[drc] += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      rule_number_map[drc] += violation_list.size();
     }
   }
   std::map<std::string, irt_int>& source_number_map = ta_panel_stat.get_source_number_map();
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_number += violation_list.size();
     }
     source_number_map[GetTASourceTypeName()(ta_source_type)] = total_number;
   }
 
   irt_int total_drc_number = 0;
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_drc_number += violation_list.size();
     }
   }
   ta_panel_stat.set_total_drc_number(total_drc_number);
@@ -1794,7 +1822,8 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   double total_wire_length = ta_panel_stat.get_total_wire_length();
   double total_prefer_wire_length = ta_panel_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = ta_panel_stat.get_total_nonprefer_wire_length();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_panel_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_panel_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_panel_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_panel_stat.get_source_number_map();
   irt_int total_drc_number = ta_panel_stat.get_total_drc_number();
@@ -1847,11 +1876,11 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     drc_table[0][column] = source_name;
   }
   // element
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int column = item_column_map[GetTASourceTypeName()(ta_source_type)];
     for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_number_map[ta_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_number_map[ta_source_type][drc_rule]);
+      if (RTUtil::exist(source_drc_violation_map[ta_source_type], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[ta_source_type][drc_rule].size());
       } else {
         drc_table[row][column] = "0";
       }
@@ -1915,7 +1944,8 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
   std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_model_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_model_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_model_stat.get_source_number_map();
 
@@ -1930,22 +1960,24 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
     for (TAPanel& ta_panel : ta_panel_list) {
       TAPanelStat& ta_panel_stat = ta_panel.get_ta_panel_stat();
-      for (auto& [ta_source_type, drc_number_map] : ta_panel_stat.get_source_drc_number_map()) {
-        for (auto& [drc, number] : drc_number_map) {
-          source_drc_number_map[ta_source_type][drc] += number;
+      for (auto& [ta_source_type, drc_violation_map] : ta_panel_stat.get_source_drc_violation_map()) {
+        for (auto& [drc, violation_list] : drc_violation_map) {
+          for (ViolationInfo& violation : violation_list) {
+            source_drc_violation_map[ta_source_type][drc].push_back(violation);
+          }
         }
       }
     }
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      rule_number_map[drc] += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      rule_number_map[drc] += violation_list.size();
     }
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_number += violation_list.size();
     }
     source_number_map[GetTASourceTypeName()(ta_source_type)] = total_number;
   }
@@ -1963,9 +1995,9 @@ void TrackAssigner::countTAModel(TAModel& ta_model)
   for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
     total_nonprefer_wire_length += nonprefer_wire_length;
   }
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_drc_number += violation_list.size();
     }
   }
   ta_model_stat.set_total_wire_length(total_wire_length);
@@ -1984,7 +2016,8 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
   std::map<irt_int, double>& routing_wire_length_map = ta_model_stat.get_routing_wire_length_map();
   std::map<irt_int, double>& routing_prefer_wire_length_map = ta_model_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = ta_model_stat.get_routing_nonprefer_wire_length_map();
-  std::map<TASourceType, std::map<std::string, irt_int>>& source_drc_number_map = ta_model_stat.get_source_drc_number_map();
+  std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = ta_model_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = ta_model_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = ta_model_stat.get_source_number_map();
   double total_wire_length = ta_model_stat.get_total_wire_length();
@@ -2036,11 +2069,11 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
     drc_table[0][column] = source_name;
   }
   // element
-  for (auto& [ta_source_type, drc_number_map] : source_drc_number_map) {
+  for (auto& [ta_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int column = item_column_map[GetTASourceTypeName()(ta_source_type)];
     for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_number_map[ta_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_number_map[ta_source_type][drc_rule]);
+      if (RTUtil::exist(source_drc_violation_map[ta_source_type], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[ta_source_type][drc_rule].size());
       } else {
         drc_table[row][column] = "0";
       }

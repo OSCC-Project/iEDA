@@ -90,6 +90,10 @@ class TrackAssigner
   void checkTAPanel(TAPanel& ta_panel);
   void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void resortTAPanel(TAPanel& ta_panel);
+  std::vector<std::vector<irt_int>> getViolationTaskCombList(TAPanel& ta_panel);
+  void addHistoryCost(TAPanel& ta_panel);
+  void ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
   SortStatus sortByClockPriority(TATask& task1, TATask& task2);
