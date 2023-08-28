@@ -1038,14 +1038,15 @@ std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPane
 
 void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
     for (auto& [drc, violation_info_list] : drc_violation_map) {
       for (ViolationInfo& violation_info : violation_info_list) {
-        for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-          for (LayerRect& rect : rect_list) {
-            updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, rect, violation_info.get_is_routing()));
-          }
-        }
+        LayerRect& violation_region = violation_info.get_violation_region();
+        irt_int layer_idx = violation_region.get_layer_idx();
+        irt_int enlarge_size = routing_layer_list[layer_idx].getPreferTrackGrid().get_step_length();
+        LayerRect enlarge_real_rect(RTUtil::getEnlargedRect(violation_region, enlarge_size), layer_idx);
+        updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, enlarge_real_rect, violation_info.get_is_routing()));
       }
     }
   }
