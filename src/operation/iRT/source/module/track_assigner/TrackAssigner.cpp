@@ -799,7 +799,11 @@ void TrackAssigner::updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_t
     TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
     std::map<Orientation, std::set<irt_int>>& orien_net_map = ta_node.get_source_orien_net_map()[ta_source_type];
     for (Orientation orientation : orientation_set) {
-      orien_net_map[orientation].insert(drc_rect.get_net_idx());
+      if (change_type == ChangeType::kAdd) {
+        orien_net_map[orientation].insert(drc_rect.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        orien_net_map[orientation].erase(drc_rect.get_net_idx());
+      }
     }
   }
 }
@@ -1054,7 +1058,14 @@ void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType chang
     TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
     std::map<Orientation, double>& orien_history_cost_map = ta_node.get_orien_history_cost_map();
     for (Orientation orientation : orientation_set) {
-      orien_history_cost_map[orientation] += 10;
+      if (!RTUtil::exist(orien_history_cost_map, orientation)) {
+        orien_history_cost_map[orientation] = 0;
+      }
+      if (change_type == ChangeType::kAdd) {
+        orien_history_cost_map[orientation] += 10;
+      } else if (change_type == ChangeType::kDel) {
+        orien_history_cost_map[orientation] -= 10;
+      }
     }
   }
 }

@@ -1059,8 +1059,8 @@ void DetailedRouter::makeRoutingState(DRBox& dr_box)
 
 void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
 {
-  for (DRSourceType dr_source_type :
-       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+  for (DRSourceType dr_source_type : {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia,
+                                      DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -1085,7 +1085,11 @@ void DetailedRouter::updateRectCostToGraph(DRBox& dr_box, ChangeType change_type
     DRNode& dr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
     std::map<Orientation, std::set<irt_int>>& orien_net_map = dr_node.get_source_orien_net_map()[dr_source_type];
     for (Orientation orientation : orientation_set) {
-      orien_net_map[orientation].insert(drc_rect.get_net_idx());
+      if (change_type == ChangeType::kAdd) {
+        orien_net_map[orientation].insert(drc_rect.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        orien_net_map[orientation].erase(drc_rect.get_net_idx());
+      }
     }
   }
 }
@@ -2077,8 +2081,8 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   }
 
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
-  for (DRSourceType dr_source_type :
-       {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+  for (DRSourceType dr_source_type : {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia,
+                                      DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
     RegionQuery* region_query = dr_box.getRegionQuery(dr_source_type);
     for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
       source_drc_number_map[dr_source_type][drc] += number;
