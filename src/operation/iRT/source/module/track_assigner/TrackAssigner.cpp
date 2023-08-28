@@ -1010,51 +1010,37 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
 
 std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPanel& ta_panel)
 {
-  std::vector<std::vector<irt_int>> violation_task_comb_list;
-
   std::map<irt_int, std::vector<irt_int>>& net_task_map = ta_panel.get_net_task_map();
-  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
 
-  std::vector<ViolationInfo> total_violation_info_list;
+  std::vector<std::vector<irt_int>> violation_task_comb_list;
   for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
     for (auto& [drc, violation_info_list] : drc_violation_map) {
-      total_violation_info_list.insert(total_violation_info_list.end(), violation_info_list.begin(), violation_info_list.end());
-    }
-  }
-
-  for (ViolationInfo& violation_info : total_violation_info_list) {
-    std::vector<std::vector<irt_int>> task_comb_list;
-    for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-      if (RTUtil::exist(net_task_map, net_idx)) {
-        task_comb_list.push_back(net_task_map[net_idx]);
-      }
-    }
-
-    std::vector<irt_int> total_violation_task_list;
-    for (std::vector<irt_int> task_list : task_comb_list) {
-      std::vector<irt_int> violation_task_list;
-      for (irt_int task_idx : task_list) {
-        std::vector<Segment<LayerCoord>> routing_segment_list;
-        for (Segment<TNode<LayerCoord>*>& coord_segment :
-             RTUtil::getSegListByTree(ta_task_list[task_idx].get_origin_node()->value().get_routing_tree())) {
-          routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-        }
-        for (LayerRect real_rect : getRealRectList(routing_segment_list)) {
-          if (RTUtil::isClosedOverlap(real_rect, violation_info.get_violation_region())) {
-            violation_task_list.push_back(task_idx);
-            break;
+      for (ViolationInfo& violation_info : violation_info_list) {
+        for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+          if (!RTUtil::exist(net_task_map, net_idx)) {
+            continue;
           }
+          violation_task_comb_list.push_back(net_task_map[net_idx]);
         }
       }
-      total_violation_task_list.insert(total_violation_task_list.end(), violation_task_list.begin(), violation_task_list.end());
     }
-    violation_task_comb_list.push_back(total_violation_task_list);
   }
   return violation_task_comb_list;
 }
 
 void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
 {
+  for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
+    for (auto& [drc, violation_info_list] : drc_violation_map) {
+      for (ViolationInfo& violation_info : violation_info_list) {
+        for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+          for (LayerRect& rect : rect_list) {
+            updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, rect, violation_info.get_is_routing()));
+          }
+        }
+      }
+    }
+  }
 }
 
 void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect)

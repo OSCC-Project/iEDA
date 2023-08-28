@@ -940,8 +940,8 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
 void DRCChecker::uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list)
 {
   std::sort(violation_info_list.begin(), violation_info_list.end(), [](ViolationInfo& a, ViolationInfo& b) {
-    if (a.isRouting() != b.isRouting()) {
-      return a.isRouting();
+    if (a.get_is_routing() != b.get_is_routing()) {
+      return a.get_is_routing();
     } else if (a.get_rule_name() != b.get_rule_name()) {
       return a.get_rule_name().size() < b.get_rule_name().size();
     } else if (a.get_violation_region() != b.get_violation_region()) {
@@ -975,7 +975,7 @@ void DRCChecker::uniqueViolationInfoList(std::vector<ViolationInfo>& violation_i
     for (auto& [net_idx, rect_list] : b.get_net_shape_map()) {
       b_net_set.insert(net_idx);
     }
-    return a_net_set == b_net_set && a.isRouting() == b.isRouting() && a.get_rule_name() == b.get_rule_name()
+    return a_net_set == b_net_set && a.get_is_routing() == b.get_is_routing() && a.get_rule_name() == b.get_rule_name()
            && RTUtil::isClosedOverlap(a.get_violation_region(), b.get_violation_region());
   });
 }
