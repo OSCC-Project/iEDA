@@ -730,6 +730,11 @@ void Sta::initSdcCmd() {
   LOG_FATAL_IF(!cmd_set_input_transition);
   TclCmds::addTclCmd(std::move(cmd_set_input_transition));
 
+  auto cmd_set_driving_cell =
+      std::make_unique<CmdSetDrivingCell>("set_driving_cell");
+  LOG_FATAL_IF(!cmd_set_driving_cell);
+  TclCmds::addTclCmd(std::move(cmd_set_driving_cell));
+
   auto cmd_set_load = std::make_unique<CmdSetLoad>("set_load");
   LOG_FATAL_IF(!cmd_set_load);
   TclCmds::addTclCmd(std::move(cmd_set_load));
