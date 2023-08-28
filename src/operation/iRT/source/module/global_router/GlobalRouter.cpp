@@ -335,6 +335,7 @@ void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
 void GlobalRouter::updateNodeSupply(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double supply_utilization_rate = DM_INST.getConfig().supply_utilization_rate;
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   // track supply
@@ -392,6 +393,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
           }
           resource_supply += supply;
         }
+        access_supply *= supply_utilization_rate;
         std::map<Orientation, irt_int>& orien_access_supply_map = gr_node.get_orien_access_supply_map();
         if (routing_layer_list[layer_idx].isPreferH()) {
           orien_access_supply_map.insert({Orientation::kEast, access_supply});
@@ -400,6 +402,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
           orien_access_supply_map.insert({Orientation::kNorth, access_supply});
           orien_access_supply_map.insert({Orientation::kSouth, access_supply});
         }
+        resource_supply *= supply_utilization_rate;
         gr_node.set_resource_supply(resource_supply);
       }
     }
@@ -582,20 +585,30 @@ void GlobalRouter::iterative(GRModel& gr_model)
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Iteration(", iter, "/", gr_max_iter_num, ") ******");
     gr_model.set_curr_iter(iter);
-    sortGRModel(gr_model);
     resetGRModel(gr_model);
     routeGRModel(gr_model);
     processGRModel(gr_model);
     countGRModel(gr_model);
     reportGRModel(gr_model);
     // plotGRModel(gr_model);
-    // outputCongestionMap(gr_model);
+    outputCongestionMap(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopGRModel(gr_model)) {
       LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
       gr_model.set_curr_iter(-1);
       break;
     }
+  }
+}
+
+void GlobalRouter::resetGRModel(GRModel& gr_model)
+{
+  if (gr_model.get_curr_iter() == 1) {
+    sortGRModel(gr_model);
+  } else {
+    // resortTAPanel(gr_model);
+    // addHistoryCost(gr_model);
+    // ripupTAPanel(gr_model);
   }
 }
 
@@ -709,24 +722,6 @@ SortStatus GlobalRouter::sortByPinNumDESC(GRNet& net1, GRNet& net2)
     return SortStatus::kEqual;
   } else {
     return SortStatus::kFalse;
-  }
-}
-
-void GlobalRouter::resetGRModel(GRModel& gr_model)
-{
-  if (gr_model.get_curr_iter() == 1) {
-    return;
-  }
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    std::srand(std::time(NULL));
-    if (rand() % 2) {
-      continue;
-    }
-    // 将env中的布线结果清空
-    updateDemand(gr_model, gr_net, ChangeType::kDel);
-    // 清空routing_tree
-    gr_net.get_routing_tree().clear();
-    gr_net.set_routing_state(RoutingState::kUnrouted);
   }
 }
 

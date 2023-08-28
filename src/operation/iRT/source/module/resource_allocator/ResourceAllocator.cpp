@@ -231,6 +231,7 @@ void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double supply_utilization_rate = DM_INST.getConfig().supply_utilization_rate;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -282,6 +283,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
         resource_supply += supply;
       }
     }
+    resource_supply *= supply_utilization_rate;
     ra_gcell.set_resource_supply(resource_supply);
   }
 }

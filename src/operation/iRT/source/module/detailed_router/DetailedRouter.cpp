@@ -176,6 +176,8 @@ void DetailedRouter::buildSchedule(DRModel& dr_model)
 void DetailedRouter::buildBoxTrackAxis(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::map<PlanarCoord, std::vector<PlanarCoord>, CmpPlanarCoordByXASC> grid_ap_coord_map;
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
@@ -193,6 +195,9 @@ void DetailedRouter::buildBoxTrackAxis(DRModel& dr_model)
       std::vector<irt_int> x_scale_list;
       std::vector<irt_int> y_scale_list;
       for (RoutingLayer& routing_layer : routing_layer_list) {
+        if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
+          continue;
+        }
         std::vector<irt_int> x_list
             = RTUtil::getClosedScaleList(box_region.get_lb_x(), box_region.get_rt_x(), routing_layer.getXTrackGridList());
         x_scale_list.insert(x_scale_list.end(), x_list.begin(), x_list.end());

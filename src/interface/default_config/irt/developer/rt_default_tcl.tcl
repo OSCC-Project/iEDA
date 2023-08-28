@@ -13,6 +13,7 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -top_routing_layer "" \
         -enable_output_gds_files 0 \
         -enable_idrc_interfaces 0 \
+        -supply_utilization_rate 1 \
         -pa_max_iter_num 1 \
         -ra_initial_penalty 100 \
         -ra_penalty_drop_rate 0.8 \
