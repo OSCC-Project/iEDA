@@ -1065,7 +1065,7 @@ void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
           for (const LayerRect& rect : rect_set) {
-            updateRectToGraph(dr_box, ChangeType::kAdd, dr_source_type, DRCRect(net_idx, rect, is_routing));
+            updateRectCostToGraph(dr_box, ChangeType::kAdd, dr_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -1077,7 +1077,7 @@ void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
  * 当drc_rect是由于dr_box布线产生时，dr_source_type必须设置为kSelfBox
  * 当drc_rect是由blockage或pin_shape或其他不由dr_box布线产生时，dr_source_type可设置为对应值
  */
-void DetailedRouter::updateRectToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
+void DetailedRouter::updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
 {
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
@@ -1340,7 +1340,7 @@ void DetailedRouter::resetDRBox(DRModel& dr_model, DRBox& dr_box)
       }
       // 将graph中的布线结果清空
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-        updateRectToGraph(dr_box, ChangeType::kDel, DRSourceType::kSelfBox, drc_rect);
+        updateRectCostToGraph(dr_box, ChangeType::kDel, DRSourceType::kSelfBox, drc_rect);
       }
       // 清空routing_tree
       dr_task.get_routing_tree().clear();
@@ -1822,7 +1822,7 @@ void DetailedRouter::updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& 
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-    updateRectToGraph(dr_box, ChangeType::kAdd, DRSourceType::kSelfBox, drc_rect);
+    updateRectCostToGraph(dr_box, ChangeType::kAdd, DRSourceType::kSelfBox, drc_rect);
   }
   dr_task.set_routing_state(RoutingState::kRouted);
 }

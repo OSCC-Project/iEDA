@@ -776,7 +776,7 @@ void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
           for (const auto& rect : rect_set) {
-            updateRectToGraph(ta_panel, ChangeType::kAdd, ta_source_type, DRCRect(net_idx, rect, is_routing));
+            updateRectCostToGraph(ta_panel, ChangeType::kAdd, ta_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -788,7 +788,7 @@ void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
  * 当drc_rect是由于ta_panel布线产生时，ta_source_type必须设置为kSelfPanel
  * 当drc_rect是由blockage或pin_shape或其他不由ta_panel布线产生时，ta_source_type可设置为对应值
  */
-void TrackAssigner::updateRectToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect)
+void TrackAssigner::updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect)
 {
   if (drc_rect.get_is_routing() == false) {
     return;
@@ -1057,6 +1057,22 @@ void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
 {
 }
 
+void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect)
+{
+  if (drc_rect.get_is_routing() == false) {
+    return;
+  }
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+
+  for (auto& [grid_coord, orientation_set] : getGridOrientationMap(ta_panel, drc_rect)) {
+    TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
+    std::map<Orientation, double>& orien_history_cost_map = ta_node.get_orien_history_cost_map();
+    for (Orientation orientation : orientation_set) {
+      orien_history_cost_map[orientation] += 10;
+    }
+  }
+}
+
 void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
@@ -1070,7 +1086,7 @@ void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     }
     // 将graph中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-      updateRectToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
+      updateRectCostToGraph(ta_panel, ChangeType::kDel, TASourceType::kSelfPanel, drc_rect);
     }
     // 清空routing_tree
     ta_task.get_routing_tree().clear();
@@ -1526,7 +1542,7 @@ void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATas
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    updateRectToGraph(ta_panel, ChangeType::kAdd, TASourceType::kSelfPanel, drc_rect);
+    updateRectCostToGraph(ta_panel, ChangeType::kAdd, TASourceType::kSelfPanel, drc_rect);
   }
   ta_task.set_routing_state(RoutingState::kRouted);
 }
