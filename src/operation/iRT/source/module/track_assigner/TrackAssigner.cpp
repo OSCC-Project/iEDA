@@ -381,12 +381,18 @@ void TrackAssigner::buildTATask(TAModel& ta_model, TANet& ta_net)
       }
     }
     ta_task.set_bounding_box(RTUtil::getBoundingBox(coord_list));
+    ta_task.set_routing_state(RoutingState::kUnrouted);
     ta_task_list.push_back(ta_task);
   }
 }
 
 std::map<TNode<RTNode>*, TATask> TrackAssigner::makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net)
 {
+  /**
+   * 构建
+   *   std::vector<TAGroup> _ta_group_list;
+   *   std::map<LayerCoord, double, CmpLayerCoordByXASC> _coord_cost_map;
+   */
   // dr_ta_list_map
   std::map<TNode<RTNode>*, std::vector<TNode<RTNode>*>> dr_ta_list_map;
   for (Segment<TNode<RTNode>*>& segment : RTUtil::getSegListByTree(ta_net.get_ta_result_tree())) {
@@ -718,7 +724,6 @@ void TrackAssigner::buildTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   initTANodeMap(ta_panel);
   buildNeighborMap(ta_panel);
-  makeRoutingState(ta_panel);
   buildSourceOrienTaskMap(ta_panel);
   checkTAPanel(ta_panel);
   saveTAPanel(ta_panel);
@@ -762,13 +767,6 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
         neighbor_ptr_map[Orientation::kNorth] = &ta_node_map[x][y + 1];
       }
     }
-  }
-}
-
-void TrackAssigner::makeRoutingState(TAPanel& ta_panel)
-{
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
@@ -958,9 +956,6 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
                        ") is outside the panel!");
       }
     }
-    if (ta_task.get_routing_state() != RoutingState::kUnrouted) {
-      LOG_INST.error(Loc::current(), "The routing_state is error!");
-    }
   }
 }
 
@@ -981,39 +976,116 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
 void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
 {
-  std::vector<irt_int>& task_order_list = ta_panel.get_task_order_list_list().back();
+#if 1
+  std::vector<std::vector<irt_int>>& task_order_list_list = ta_panel.get_task_order_list_list();
+  std::vector<irt_int>& last_task_order_list = task_order_list_list.back();
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
 
-  // resort task list
+  // 确定拆线重布任务并换序
   std::map<irt_int, irt_int> task_order_map;
-  for (size_t i = 0; i < task_order_list.size(); i++) {
-    task_order_map[task_order_list[i]] = i;
+  for (size_t i = 0; i < last_task_order_list.size(); i++) {
+    task_order_map[last_task_order_list[i]] = i;
   }
 
   std::vector<irt_int> ripup_task_list;
+  std::set<irt_int> ripup_task_set;
   for (std::vector<irt_int> violation_task_comb : getViolationTaskCombList(ta_panel)) {
     std::sort(violation_task_comb.begin(), violation_task_comb.end(),
               [&task_order_map](irt_int a, irt_int b) { return task_order_map[a] > task_order_map[b]; });
     for (irt_int violation_task : violation_task_comb) {
-      if (std::find(ripup_task_list.begin(), ripup_task_list.end(), violation_task) == ripup_task_list.end()) {
+      if (!RTUtil::exist(ripup_task_set, violation_task)) {
         ripup_task_list.push_back(violation_task);
+        ripup_task_set.insert(violation_task);
       }
     }
   }
-
-  std::vector<irt_int> ripup_task_origin_idx_list;
-  for (irt_int ripup_task : ripup_task_list) {
-    ripup_task_origin_idx_list.push_back(task_order_map[ripup_task]);
+  // 更新拆线重布任务的布线状态
+  for (irt_int task : ripup_task_list) {
+    ta_task_list[task].set_routing_state(RoutingState::kUnrouted);
   }
-  std::sort(ripup_task_origin_idx_list.begin(), ripup_task_origin_idx_list.end());
+  // 生成新的布线顺序
+  std::vector<irt_int> new_task_order_list;
+  for (irt_int task : last_task_order_list) {
+    if (!RTUtil::exist(ripup_task_set, task)) {
+      new_task_order_list.push_back(task);
+    }
+  }
+  new_task_order_list.insert(new_task_order_list.end(), ripup_task_list.begin(), ripup_task_list.end());
 
-  std::vector<irt_int> ripup_task_order_list = task_order_list;
-  for (size_t i = 0; i < ripup_task_list.size(); i++) {
-    ta_task_list[ripup_task_list[i]].set_routing_state(RoutingState::kUnrouted);
-    ripup_task_order_list[ripup_task_origin_idx_list[i]] = ripup_task_list[i];
+  task_order_list_list.push_back(new_task_order_list);
+#else
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<irt_int>>& task_order_list_list = ta_panel.get_task_order_list_list();
+  std::vector<irt_int>& last_task_order_list = task_order_list_list.back();
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+
+  std::map<irt_int, irt_int> task_order_map;
+  for (size_t i = 0; i < last_task_order_list.size(); i++) {
+    task_order_map[last_task_order_list[i]] = i;
   }
 
-  ta_panel.get_task_order_list_list().push_back(ripup_task_order_list);
+  irt_int pitch = routing_layer_list[ta_panel.get_layer_idx()].getPreferTrackGrid().get_step_length();
+  irt_int max_iter_num = DM_INST.getConfig().ta_panel_max_iter_num;
+  irt_int iter_num = 0;
+
+  std::vector<irt_int> ripup_task_list;
+  std::vector<irt_int> new_task_order_list;
+  while (iter_num <= max_iter_num && ripup_task_list.size() != ta_task_list.size()) {
+    // 扩大拆线重布任务规模
+    std::vector<std::vector<irt_int>> violation_task_list_list;
+    for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
+      for (auto& [drc, violation_info_list] : drc_violation_map) {
+        for (ViolationInfo& violation_info : violation_info_list) {
+          plotTAPanel(ta_panel);
+          LayerRect& violation_region = violation_info.get_violation_region();
+          PlanarRect enlarge_rect = RTUtil::getEnlargedRect(violation_region, pitch * (iter_num++));
+          std::vector<irt_int> violation_task_list;
+          for (TATask& ta_task : ta_task_list) {
+            if (RTUtil::isOpenOverlap(enlarge_rect, ta_task.get_bounding_box())) {
+              violation_task_list.push_back(ta_task.get_task_idx());
+            }
+          }
+          violation_task_list_list.push_back(violation_task_list);
+        }
+      }
+    }
+    // 确定拆线重布任务
+    ripup_task_list.clear();
+    std::set<irt_int> ripup_task_set;
+    for (std::vector<irt_int>& violation_task_list : violation_task_list_list) {
+      std::sort(violation_task_list.begin(), violation_task_list.end(),
+                [&task_order_map](irt_int a, irt_int b) { return task_order_map[a] > task_order_map[b]; });
+      for (irt_int violation_task : violation_task_list) {
+        if (!RTUtil::exist(ripup_task_set, violation_task)) {
+          ripup_task_list.push_back(violation_task);
+          ripup_task_set.insert(violation_task);
+        }
+      }
+    }
+    // 生成新的布线顺序
+    new_task_order_list.clear();
+    for (irt_int task : last_task_order_list) {
+      if (!RTUtil::exist(ripup_task_set, task)) {
+        new_task_order_list.push_back(task);
+      }
+    }
+    new_task_order_list.insert(new_task_order_list.end(), ripup_task_list.begin(), ripup_task_list.end());
+    // check new_task_order_list
+    std::set<irt_int> new_task_order_set(new_task_order_list.begin(), new_task_order_list.end());
+    if (new_task_order_set.size() != last_task_order_list.size()) {
+      LOG_INST.error(Loc::current(), "The size of new task order is error!");
+    }
+    // 是否为新的布线顺序
+    if (std::find(task_order_list_list.begin(), task_order_list_list.end(), new_task_order_list) == task_order_list_list.end()) {
+      break;
+    }
+  }
+
+  for (irt_int task : ripup_task_list) {
+    ta_task_list[task].set_routing_state(RoutingState::kUnrouted);
+  }
+  task_order_list_list.push_back(new_task_order_list);
+#endif
 }
 
 std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPanel& ta_panel)

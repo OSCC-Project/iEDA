@@ -88,7 +88,6 @@ class DetailedRouter
   void buildDRBox(DRModel& dr_model, DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
-  void makeRoutingState(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
   void updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
