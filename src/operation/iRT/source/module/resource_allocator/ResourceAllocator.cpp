@@ -102,6 +102,7 @@ RANet ResourceAllocator::convertToRANet(Net& net)
   RANet ra_net;
   ra_net.set_origin_net(&net);
   ra_net.set_net_idx(net.get_net_idx());
+  ra_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     ra_net.get_ra_pin_list().push_back(RAPin(pin));
   }

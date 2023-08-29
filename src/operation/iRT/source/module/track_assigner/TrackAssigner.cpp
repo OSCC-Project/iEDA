@@ -143,6 +143,7 @@ TANet TrackAssigner::convertToTANet(Net& net)
   TANet ta_net;
   ta_net.set_origin_net(&net);
   ta_net.set_net_idx(net.get_net_idx());
+  ta_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     ta_net.get_ta_pin_list().push_back(TAPin(pin));
   }
@@ -374,13 +375,10 @@ void TrackAssigner::buildTATask(TAModel& ta_model, TANet& ta_net)
     ta_task.set_origin_net_idx(ta_net.get_net_idx());
     ta_task.set_origin_node(ta_node_node);
     ta_task.set_task_idx(static_cast<irt_int>(ta_task_list.size()));
-    std::vector<PlanarCoord> coord_list;
-    for (TAGroup& ta_group : ta_task.get_ta_group_list()) {
-      for (LayerCoord& coord : ta_group.get_coord_list()) {
-        coord_list.push_back(coord);
-      }
-    }
-    ta_task.set_bounding_box(RTUtil::getBoundingBox(coord_list));
+    ta_task.set_connect_type(ta_net.get_connect_type());
+    buildBoundingBox(ta_task);
+    ta_task.set_routing_state(RoutingState::kUnrouted);
+
     ta_task_list.push_back(ta_task);
   }
 }
@@ -530,6 +528,17 @@ std::map<LayerCoord, double, CmpLayerCoordByXASC> TrackAssigner::makeTACostMap(T
     coord_cost_map[coord_distance_pair_list[i].first] = (i * distance_unit);
   }
   return coord_cost_map;
+}
+
+void TrackAssigner::buildBoundingBox(TATask& ta_task)
+{
+  std::vector<PlanarCoord> coord_list;
+  for (TAGroup& ta_group : ta_task.get_ta_group_list()) {
+    for (LayerCoord& coord : ta_group.get_coord_list()) {
+      coord_list.push_back(coord);
+    }
+  }
+  ta_task.set_bounding_box(RTUtil::getBoundingBox(coord_list));
 }
 
 void TrackAssigner::buildNetTaskMap(TAModel& ta_model)

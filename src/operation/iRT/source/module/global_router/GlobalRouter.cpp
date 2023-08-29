@@ -604,11 +604,63 @@ void GlobalRouter::iterative(GRModel& gr_model)
 void GlobalRouter::resetGRModel(GRModel& gr_model)
 {
   if (gr_model.get_curr_iter() == 1) {
-    sortGRModel(gr_model);
+    // sortGRModel(gr_model);
   } else {
-    // resortTAPanel(gr_model);
-    // addHistoryCost(gr_model);
-    // ripupTAPanel(gr_model);
+    std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+    double gr_resource_history_cost_unit = DM_INST.getConfig().gr_resource_history_cost_unit;
+    double gr_access_history_cost_unit = DM_INST.getConfig().gr_access_history_cost_unit;
+
+    std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+    std::set<irt_int> violation_net_set;
+
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      GridMap<GRNode>& node_map = layer_node_map[routing_layer.get_layer_idx()];
+      for (irt_int grid_x = 0; grid_x < node_map.get_x_size(); grid_x++) {
+        for (irt_int grid_y = 0; grid_y < node_map.get_y_size(); grid_y++) {
+          GRNode& gr_node = node_map[grid_x][grid_y];
+          std::set<irt_int>& contribution_net_set = gr_node.get_contribution_net_set();
+          double resource_history_cost = gr_node.get_resource_history_cost();
+          std::map<Orientation, double>& orien_access_history_cost_map = gr_node.get_orien_access_history_cost_map();
+
+          double resource_overflow = gr_node.calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
+          if (resource_overflow > 1) {
+            gr_node.set_resource_history_cost(resource_history_cost + gr_resource_history_cost_unit);
+            violation_net_set.insert(contribution_net_set.begin(), contribution_net_set.end());
+          }
+
+          if (routing_layer.isPreferH()) {
+            for (Orientation orientation : {Orientation::kEast, Orientation::kWest}) {
+              double access_overflow = gr_node.calcCost(gr_node.get_orien_access_demand_map()[orientation],
+                                                        gr_node.get_orien_access_supply_map()[orientation]);
+              if (access_overflow > 1) {
+                orien_access_history_cost_map[orientation] += gr_access_history_cost_unit;
+                violation_net_set.insert(contribution_net_set.begin(), contribution_net_set.end());
+              }
+            }
+          } else {
+            for (Orientation orientation : {Orientation::kSouth, Orientation::kNorth}) {
+              double access_overflow = gr_node.calcCost(gr_node.get_orien_access_demand_map()[orientation],
+                                                        gr_node.get_orien_access_supply_map()[orientation]);
+              if (access_overflow > 1) {
+                orien_access_history_cost_map[orientation] += gr_access_history_cost_unit;
+                violation_net_set.insert(contribution_net_set.begin(), contribution_net_set.end());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    std::vector<GRNet>& gr_net_list = gr_model.get_gr_net_list();
+    for (irt_int net_idx : violation_net_set) {
+      GRNet& gr_net = gr_net_list[net_idx];
+      // 将env中的布线结果清空
+      updateDemand(gr_model, gr_net_list[net_idx], ChangeType::kDel);
+      // 清空routing_tree
+      gr_net.get_routing_tree().clear();
+      gr_net.set_routing_state(RoutingState::kUnrouted);
+    }
   }
 }
 
@@ -855,20 +907,103 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
   gr_model.get_gr_task_list().clear();
   gr_model.get_node_segment_list().clear();
 
-#if 1
-  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  if (gr_model.get_curr_iter() == 1) {
+    irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+    irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
-  std::vector<PlanarCoord> planar_coord_list;
-  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      planar_coord_list.push_back(coord.get_planar_coord());
+    std::vector<PlanarCoord> planar_coord_list;
+    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+      for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+        planar_coord_list.push_back(coord.get_planar_coord());
+      }
     }
-  }
-  std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
-  planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
+    std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
+    planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
 
-  if (planar_coord_list.size() == 1) {
+    if (planar_coord_list.size() == 1) {
+      GRTask gr_task;
+      for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+        GRGroup gr_group;
+        for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
+        }
+        gr_task.get_gr_group_list().push_back(gr_group);
+      }
+      gr_model.get_gr_task_list().push_back(gr_task);
+    } else {
+      // pin的GRGroup
+      std::map<PlanarCoord, std::vector<GRGroup>, CmpPlanarCoordByXASC> key_planar_group_map;
+      for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+        GRGroup gr_group;
+        for (LayerCoord& coord : gr_pin.getGridCoordList()) {
+          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
+        }
+        key_planar_group_map[gr_pin.getGridCoordList().front().get_planar_coord()].push_back(gr_group);
+      }
+
+      // steiner point的GRGroup
+      std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_coord_list);
+      std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> add_planar_layer_map;
+      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
+        if (!RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
+          for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+            if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+              continue;
+            }
+            add_planar_layer_map[planar_topo.get_first()].insert(LayerCoord(planar_topo.get_first(), layer_idx));
+          }
+        }
+        if (!RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
+          for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
+            if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+              continue;
+            }
+            add_planar_layer_map[planar_topo.get_second()].insert(LayerCoord(planar_topo.get_second(), layer_idx));
+          }
+        }
+      }
+      // 补充steiner point的垂直线段
+      for (auto& [add_planar_coord, layer_coord_set] : add_planar_layer_map) {
+        LayerCoord first_coord = *layer_coord_set.begin();
+        LayerCoord second_coord = *layer_coord_set.rbegin();
+        if (first_coord == second_coord) {
+          continue;
+        }
+        GRNode* first_node = &layer_node_map[first_coord.get_layer_idx()][first_coord.get_x()][first_coord.get_y()];
+        GRNode* second_node = &layer_node_map[second_coord.get_layer_idx()][second_coord.get_x()][second_coord.get_y()];
+        gr_model.get_node_segment_list().emplace_back(first_node, second_node);
+      }
+      // 生成task
+      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
+        GRTask gr_task;
+
+        if (RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
+          for (GRGroup& gr_group : key_planar_group_map[planar_topo.get_first()]) {
+            gr_task.get_gr_group_list().push_back(gr_group);
+          }
+        } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_first())) {
+          GRGroup gr_group;
+          for (LayerCoord coord : add_planar_layer_map[planar_topo.get_first()]) {
+            gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
+          }
+          gr_task.get_gr_group_list().push_back(gr_group);
+        }
+
+        if (RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
+          for (GRGroup& gr_group : key_planar_group_map[planar_topo.get_second()]) {
+            gr_task.get_gr_group_list().push_back(gr_group);
+          }
+        } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_second())) {
+          GRGroup gr_group;
+          for (LayerCoord coord : add_planar_layer_map[planar_topo.get_second()]) {
+            gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
+          }
+          gr_task.get_gr_group_list().push_back(gr_group);
+        }
+        gr_model.get_gr_task_list().push_back(gr_task);
+      }
+    }
+  } else {
     GRTask gr_task;
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       GRGroup gr_group;
@@ -878,91 +1013,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       gr_task.get_gr_group_list().push_back(gr_group);
     }
     gr_model.get_gr_task_list().push_back(gr_task);
-  } else {
-    // pin的GRGroup
-    std::map<PlanarCoord, std::vector<GRGroup>, CmpPlanarCoordByXASC> key_planar_group_map;
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      GRGroup gr_group;
-      for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-        gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-      }
-      key_planar_group_map[gr_pin.getGridCoordList().front().get_planar_coord()].push_back(gr_group);
-    }
-
-    // steiner point的GRGroup
-    std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoListByFlute(planar_coord_list);
-    std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> add_planar_layer_map;
-    for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
-      if (!RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
-        for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-          if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-            continue;
-          }
-          add_planar_layer_map[planar_topo.get_first()].insert(LayerCoord(planar_topo.get_first(), layer_idx));
-        }
-      }
-      if (!RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
-        for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-          if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-            continue;
-          }
-          add_planar_layer_map[planar_topo.get_second()].insert(LayerCoord(planar_topo.get_second(), layer_idx));
-        }
-      }
-    }
-    // 补充steiner point的垂直线段
-    for (auto& [add_planar_coord, layer_coord_set] : add_planar_layer_map) {
-      LayerCoord first_coord = *layer_coord_set.begin();
-      LayerCoord second_coord = *layer_coord_set.rbegin();
-      if (first_coord == second_coord) {
-        continue;
-      }
-      GRNode* first_node = &layer_node_map[first_coord.get_layer_idx()][first_coord.get_x()][first_coord.get_y()];
-      GRNode* second_node = &layer_node_map[second_coord.get_layer_idx()][second_coord.get_x()][second_coord.get_y()];
-      gr_model.get_node_segment_list().emplace_back(first_node, second_node);
-    }
-    // 生成task
-    for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
-      GRTask gr_task;
-
-      if (RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
-        for (GRGroup& gr_group : key_planar_group_map[planar_topo.get_first()]) {
-          gr_task.get_gr_group_list().push_back(gr_group);
-        }
-      } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_first())) {
-        GRGroup gr_group;
-        for (LayerCoord coord : add_planar_layer_map[planar_topo.get_first()]) {
-          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-        }
-        gr_task.get_gr_group_list().push_back(gr_group);
-      }
-
-      if (RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
-        for (GRGroup& gr_group : key_planar_group_map[planar_topo.get_second()]) {
-          gr_task.get_gr_group_list().push_back(gr_group);
-        }
-      } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_second())) {
-        GRGroup gr_group;
-        for (LayerCoord coord : add_planar_layer_map[planar_topo.get_second()]) {
-          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-        }
-        gr_task.get_gr_group_list().push_back(gr_group);
-      }
-      gr_model.get_gr_task_list().push_back(gr_task);
-    }
   }
-
-#else
-  GRTask gr_task;
-  for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    GRGroup gr_group;
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-    }
-    gr_task.get_gr_group_list().push_back(gr_group);
-  }
-  gr_model.get_gr_task_list().push_back(gr_task);
-#endif
 }
 
 std::vector<Segment<PlanarCoord>> GlobalRouter::getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list)
