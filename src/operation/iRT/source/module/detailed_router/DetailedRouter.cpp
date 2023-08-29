@@ -811,7 +811,6 @@ void DetailedRouter::buildDRBox(DRModel& dr_model, DRBox& dr_box)
 {
   initLayerNodeMap(dr_box);
   buildNeighborMap(dr_box);
-  makeRoutingState(dr_box);
   buildSourceOrienTaskMap(dr_box);
   checkDRBox(dr_box);
   saveDRBox(dr_box);
@@ -1056,13 +1055,6 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
     }
   }
 #endif
-}
-
-void DetailedRouter::makeRoutingState(DRBox& dr_box)
-{
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    dr_task.set_routing_state(RoutingState::kUnrouted);
-  }
 }
 
 void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)

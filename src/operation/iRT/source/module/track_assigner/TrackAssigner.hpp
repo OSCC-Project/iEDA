@@ -82,7 +82,6 @@ class TrackAssigner
   void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
-  void makeRoutingState(TAPanel& ta_panel);
   void buildSourceOrienTaskMap(TAPanel& ta_panel);
   void updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCRect& drc_rect);
