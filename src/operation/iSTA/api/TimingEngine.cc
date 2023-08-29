@@ -898,8 +898,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           StaResetPropagation reset_bwd_prop;
           reset_bwd_prop.set_is_bwd();
           reset_bwd_prop.set_incr_func(&_incr_func);
-          if (update_level &&
-              ((*the_vertex)->get_level() > ((*update_level) << 1))) {
+          if (update_level && ((*the_vertex)->get_level() > (*update_level))) {
             reset_bwd_prop.set_max_min_level((*the_vertex)->get_level() -
                                              (*update_level));
           }
