@@ -98,10 +98,10 @@ unsigned CmdSetDrivingCell::exec() {
   double transition_value_fall = cell_arc->getSlew(
       TransType::kFall, input_transition_fall_option->getDoubleVal(), 0);
   auto* set_input_transiton_rise =
-      new SdcSetInputTransition(get_cmd_name(), transition_value_rise);
+      new SdcSetInputTransition("set_input_transition", transition_value_rise);
   set_input_transiton_rise->set_fall(false);
   auto* set_input_transiton_fall =
-      new SdcSetInputTransition(get_cmd_name(), transition_value_fall);
+      new SdcSetInputTransition("set_input_transition", transition_value_fall);
   set_input_transiton_fall->set_rise(false);
 
   auto* max_option = getOptionOrArg("-max");
