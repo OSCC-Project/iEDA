@@ -20,7 +20,6 @@
 #include "Orientation.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
-#include "TARouteStrategy.hpp"
 #include "TASourceType.hpp"
 
 namespace irt {
@@ -42,12 +41,17 @@ class TANode : public LayerCoord
 
   // getter
   std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_task_map() { return _source_orien_task_map; }
+  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_net_map() { return _source_orien_net_map; }
+  std::map<Orientation, double>& get_orien_history_cost_map() { return _orien_history_cost_map; }
   // setter
   void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_orien_task_map(const std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_task_map)
+  void set_source_orien_net_map(const std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_net_map)
   {
-    _source_orien_task_map = source_orien_task_map;
+    _source_orien_net_map = source_orien_net_map;
+  }
+  void set_orien_history_cost_map(const std::map<Orientation, double>& orien_history_cost_map)
+  {
+    _orien_history_cost_map = orien_history_cost_map;
   }
   // function
   TANode* getNeighborNode(Orientation orientation)
@@ -58,34 +62,50 @@ class TANode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int task_idx, Orientation orientation, TARouteStrategy ta_route_strategy)
+  double getCost(irt_int net_idx, Orientation orientation)
   {
-    static std::vector<std::pair<TARouteStrategy, TASourceType>> strategy_source_pair_list
-        = {{TARouteStrategy::kIgnoringBlockAndPin, TASourceType::kBlockAndPin},
-           {TARouteStrategy::kIgnoringEnclosure, TASourceType::kEnclosure},
-           {TARouteStrategy::kIgnoringOtherPanel, TASourceType::kOtherPanel},
-           {TARouteStrategy::kIgnoringSelfPanel, TASourceType::kSelfPanel}};
+    double ta_block_and_pin_unit = DM_INST.getConfig().ta_block_and_pin_unit;
+    double ta_reserved_via_unit = DM_INST.getConfig().ta_reserved_via_unit;
+    double ta_other_panel_unit = DM_INST.getConfig().ta_other_panel_unit;
+    double ta_self_panel_unit = DM_INST.getConfig().ta_self_panel_unit;
 
-    bool is_obs = false;
-    for (auto [curr_strategy, curr_source] : strategy_source_pair_list) {
-      if (ta_route_strategy == curr_strategy) {
-        return is_obs;
-      }
-      if (!is_obs) {
-        if (RTUtil::exist(_source_orien_task_map, curr_source)) {
-          std::map<irt::Orientation, std::set<irt_int>>& orien_task_map = _source_orien_task_map[curr_source];
-          if (RTUtil::exist(orien_task_map, orientation)) {
-            std::set<irt_int>& task_set = orien_task_map[orientation];
-            if (task_set.size() >= 2 || !RTUtil::exist(task_set, task_idx)) {
-              is_obs = true;
-            }
+    double cost = 0;
+    for (TASourceType ta_source_type :
+         {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+      irt_int violation_net_num = 0;
+      if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
+        if (RTUtil::exist(orien_net_map, orientation)) {
+          std::set<irt_int>& net_set = orien_net_map[orientation];
+          if (net_set.size() >= 2) {
+            violation_net_num = static_cast<irt_int>(net_set.size());
+          } else {
+            violation_net_num = RTUtil::exist(net_set, net_idx) ? 0 : 1;
           }
         }
       }
+      switch (ta_source_type) {
+        case TASourceType::kBlockAndPin:
+          cost += (ta_block_and_pin_unit * violation_net_num);
+          break;
+        case TASourceType::kReservedVia:
+          cost += (ta_reserved_via_unit * violation_net_num);
+          break;
+        case TASourceType::kOtherPanel:
+          cost += (ta_other_panel_unit * violation_net_num);
+          break;
+        case TASourceType::kSelfPanel:
+          cost += (ta_self_panel_unit * violation_net_num);
+          break;
+        default:
+          break;
+      }
     }
-    return is_obs;
+    if (RTUtil::exist(_orien_history_cost_map, orientation)) {
+      cost += _orien_history_cost_map[orientation];
+    }
+    return cost;
   }
-  double getCost(irt_int task_idx, Orientation orientation) { return 0; }
 #if 1  // astar
   // single task
   std::set<Direction>& get_direction_set() { return _direction_set; }
@@ -108,7 +128,8 @@ class TANode : public LayerCoord
 
  private:
   std::map<Orientation, TANode*> _neighbor_ptr_map;
-  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_task_map;
+  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_net_map;
+  std::map<Orientation, double> _orien_history_cost_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

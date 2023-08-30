@@ -31,7 +31,7 @@ enum class GPGraphType
   kTrackAxis,
   kPath,
   kBlockAndPin,
-  kEnclosure,
+  kReservedVia,
   kOtherPanel,
   kSelfPanel,
   kKnownPanel,
@@ -72,8 +72,8 @@ struct GetGPGraphTypeName
       case GPGraphType::kBlockAndPin:
         data_type_name = "block_pin";
         break;
-      case GPGraphType::kEnclosure:
-        data_type_name = "enclosure";
+      case GPGraphType::kReservedVia:
+        data_type_name = "reserved_via";
         break;
       case GPGraphType::kOtherPanel:
         data_type_name = "other_panel";

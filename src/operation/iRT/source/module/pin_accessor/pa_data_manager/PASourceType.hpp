@@ -26,7 +26,7 @@ enum class PASourceType
 {
   kNone,
   kBlockAndPin,
-  kEnclosure,
+  kReservedVia,
   kAccessPoint
 };
 
@@ -42,8 +42,8 @@ struct GetPASourceTypeName
       case PASourceType::kBlockAndPin:
         pa_source_type_name = "block_and_pin";
         break;
-      case PASourceType::kEnclosure:
-        pa_source_type_name = "enclosure";
+      case PASourceType::kReservedVia:
+        pa_source_type_name = "reserved_via";
         break;
       case PASourceType::kAccessPoint:
         pa_source_type_name = "access_point";

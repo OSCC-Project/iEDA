@@ -16,40 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
-enum class GRRouteStrategy
-{
-  kNone = 0,
-  kFullyConsider = 1,
-  kIgnoringAccess = 2
-};
+class PatchNode : public LayerRect
 
-struct GetGRRouteStrategyName
 {
-  std::string operator()(const GRRouteStrategy& gr_route_strategy) const
-  {
-    std::string gr_route_strategy_name;
-    switch (gr_route_strategy) {
-      case GRRouteStrategy::kNone:
-        gr_route_strategy_name = "none";
-        break;
-      case GRRouteStrategy::kFullyConsider:
-        gr_route_strategy_name = "fully_consider";
-        break;
-      case GRRouteStrategy::kIgnoringAccess:
-        gr_route_strategy_name = "ignoring_obs";
-        break;
-      default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return gr_route_strategy_name;
-  }
+ public:
+  PatchNode() = default;
+  PatchNode(const PatchNode& other) : LayerRect(other) { _net_idx = other._net_idx; }
+  ~PatchNode() = default;
+  // getter
+  irt_int get_net_idx() const { return _net_idx; }
+
+  // setter
+  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
+
+  // function
+
+ private:
+  irt_int _net_idx = -1;
 };
 
 }  // namespace irt

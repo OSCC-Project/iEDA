@@ -70,6 +70,8 @@ class PinAccessor
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
+  void mergeLegalRectList(std::vector<LayerRect>& legal_rect_list);
+  std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointByType(PANet& pa_net);
   void updateAccessGridCoord(PANet& pa_net);
@@ -77,8 +79,9 @@ class PinAccessor
   void updateAccessGrid(PANet& pa_net);
   void selectAccessPointByGCell(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
+  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
   void checkAccessPointList(PANet& pa_net);
-  void updateNetEnclosureMap(PAModel& pa_model);
+  void updateNetReservedViaMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);

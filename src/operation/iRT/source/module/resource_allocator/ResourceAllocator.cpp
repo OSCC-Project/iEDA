@@ -102,6 +102,7 @@ RANet ResourceAllocator::convertToRANet(Net& net)
   RANet ra_net;
   ra_net.set_origin_net(&net);
   ra_net.set_net_idx(net.get_net_idx());
+  ra_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     ra_net.get_ra_pin_list().push_back(RAPin(pin));
   }
@@ -201,7 +202,7 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
   }
 }
 
-void ResourceAllocator::updateNetEnclosureMap(RAModel& ra_model)
+void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -221,7 +222,7 @@ void ResourceAllocator::updateNetEnclosureMap(RAModel& ra_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(ra_net.get_net_idx(), segment_list)) {
-          addRectToEnv(ra_model, RASourceType::kEnclosure, drc_rect);
+          addRectToEnv(ra_model, RASourceType::kReservedVia, drc_rect);
         }
       }
     }
@@ -231,6 +232,7 @@ void ResourceAllocator::updateNetEnclosureMap(RAModel& ra_model)
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double supply_utilization_rate = DM_INST.getConfig().supply_utilization_rate;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -252,7 +254,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kBlockAndPin, RASourceType::kEnclosure}) {
+      for (RASourceType ra_source_type : {RASourceType::kBlockAndPin, RASourceType::kReservedVia}) {
         for (const auto& [net_idx, rect_set] :
              DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {
@@ -282,6 +284,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
         resource_supply += supply;
       }
     }
+    resource_supply *= supply_utilization_rate;
     ra_gcell.set_resource_supply(resource_supply);
   }
 }
@@ -839,7 +842,7 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
   table_list.push_back(RTUtil::splitString(global_cost_table.to_string(), '\n'));
   int max_size = INT_MIN;
   for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<int>(table.size()));
+    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
   for (std::vector<std::string>& table : table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {

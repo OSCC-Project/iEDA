@@ -154,11 +154,12 @@ void GDSPlotter::buildLayoutLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPLayoutType, bool> routing_data_type_visible_map
-      = {{GPLayoutType::kText, false},  {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
-         {GPLayoutType::kGuide, false}, {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
-         {GPLayoutType::kWire, true},   {GPLayoutType::kEnclosure, true},    {GPLayoutType::kBlockage, true}};
+      = {{GPLayoutType::kText, false},   {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
+         {GPLayoutType::kGuide, false},  {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
+         {GPLayoutType::kWire, true},    {GPLayoutType::kEnclosure, true},    {GPLayoutType::kPatch, true},
+         {GPLayoutType::kBlockage, true}};
   std::map<GPLayoutType, bool> cut_data_type_visible_map
-      = {{GPLayoutType::kText, false}, {GPLayoutType::kCut, true}, {GPLayoutType::kBlockage, true}};
+      = {{GPLayoutType::kText, false}, {GPLayoutType::kCut, true}, {GPLayoutType::kPatch, true}, {GPLayoutType::kBlockage, true}};
 
   // 0为die 最后一个为gcell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
@@ -211,10 +212,10 @@ void GDSPlotter::buildGraphLypFile()
   std::map<GPGraphType, bool> routing_data_type_visible_map = {
       {GPGraphType::kNone, false},       {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
       {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
-      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
+      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
       {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
   std::map<GPGraphType, bool> cut_data_type_visible_map = {
-      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kEnclosure, true}, {GPGraphType::kOtherPanel, true},
+      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true},
       {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
@@ -489,6 +490,7 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
 
   GPStruct wire_list_struct(RTUtil::getString("wire_list@", net_struct.get_alias_name()));
   GPStruct via_list_struct(RTUtil::getString("via_list@", net_struct.get_alias_name()));
+  GPStruct patch_list_struct(RTUtil::getString("patch_list@", net_struct.get_alias_name()));
 
   for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(node_tree)) {
     PHYNode& phy_node = phy_node_node->value();
@@ -530,6 +532,15 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
         cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node));
         via_list_struct.push(cut_boundary);
       }
+    } else if (phy_node.isType<PatchNode>()) {
+      PatchNode& patch_node = phy_node.getNode<PatchNode>();
+
+      GPBoundary patch_boundary;
+      patch_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(patch_node.get_layer_idx()));
+      patch_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPatch));
+      patch_boundary.set_rect(patch_node);
+      patch_list_struct.push(patch_boundary);
+
     } else if (phy_node.isType<PinNode>()) {
       continue;
     } else {
@@ -538,8 +549,10 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
   }
   net_struct.push(wire_list_struct.get_name());
   net_struct.push(via_list_struct.get_name());
+  net_struct.push(patch_list_struct.get_name());
   gp_gds.addStruct(wire_list_struct);
   gp_gds.addStruct(via_list_struct);
+  gp_gds.addStruct(patch_list_struct);
 }
 
 void GDSPlotter::addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list)
