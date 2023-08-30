@@ -22,8 +22,8 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -gr_prefer_wire_unit 1 \
         -gr_via_unit 1 \
         -gr_corner_unit 1 \
-        -gr_access_history_cost_unit 1 \
-        -gr_resource_history_cost_unit 1 \
+        -gr_history_access_cost_unit 1 \
+        -gr_history_resource_cost_unit 1 \
         -gr_max_iter_num 1 \
         -ta_prefer_wire_unit 1 \
         -ta_nonprefer_wire_unit 2 \

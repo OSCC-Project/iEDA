@@ -118,8 +118,8 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
   _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
   _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_access_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_access_history_cost_unit", 1);
-  _config.gr_resource_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_resource_history_cost_unit", 1);
+  _config.gr_history_access_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_access_cost_unit", 1);
+  _config.gr_history_resource_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_resource_cost_unit", 1);
   _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
   _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
   _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
@@ -1484,10 +1484,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_access_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_access_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_resource_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_resource_history_cost_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_access_cost_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_access_cost_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_resource_cost_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_resource_cost_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_prefer_wire_unit");

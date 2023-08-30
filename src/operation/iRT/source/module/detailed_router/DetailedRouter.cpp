@@ -1097,7 +1097,7 @@ void DetailedRouter::updateRectCostToGraph(DRBox& dr_box, ChangeType change_type
 std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box,
                                                                                                        const DRCRect& drc_rect)
 {
-  // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
+  // !传入的rect是原始形状
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();

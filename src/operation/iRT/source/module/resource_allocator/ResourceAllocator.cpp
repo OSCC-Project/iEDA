@@ -397,7 +397,7 @@ void ResourceAllocator::writePYScript()
   RTUtil::pushStream(python_file, "", "\n");
   RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
   RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data,cmap='Greens')", "\n");
+  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data, vmin=0, vmax=1.1, cmap='hot_r')", "\n");
   RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
   RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
   RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");

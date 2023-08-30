@@ -72,13 +72,16 @@ class GlobalRouter
 
 #if 1  // iterative
   void iterative(GRModel& gr_model);
+  void resetGRModel(GRModel& gr_model);
   void sortGRModel(GRModel& gr_model);
-  bool sortByMultiLevel(GRNet& net1, GRNet& net2);
+  bool sortByMultiLevel(GRModel& gr_model, irt_int net_idx1, irt_int net_idx2);
   SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
   SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
   SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
   SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);
-  void resetGRModel(GRModel& gr_model);
+  void resortGRModel(GRModel& gr_model);
+  void addHistoryCost(GRModel& gr_model);
+  void ripupGRModel(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void outputGRDataset(GRModel& gr_model, GRNet& gr_net);

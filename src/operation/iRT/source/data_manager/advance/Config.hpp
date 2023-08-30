@@ -44,8 +44,8 @@ class Config
   double gr_prefer_wire_unit;            // optional
   double gr_via_unit;                    // optional
   double gr_corner_unit;                 // optional
-  double gr_access_history_cost_unit;    // optional
-  double gr_resource_history_cost_unit;  // optional
+  double gr_history_access_cost_unit;    // optional
+  double gr_history_resource_cost_unit;  // optional
   irt_int gr_max_iter_num;               // optional
   double ta_prefer_wire_unit;            // optional
   double ta_nonprefer_wire_unit;         // optional

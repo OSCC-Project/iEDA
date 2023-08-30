@@ -56,10 +56,10 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-gr_via_unit", ValueType::kDouble));
   // double gr_corner_unit;                 // optional
   _config_list.push_back(std::make_pair("-gr_corner_unit", ValueType::kDouble));
-  // double gr_access_history_cost_unit;    // optional
-  _config_list.push_back(std::make_pair("-gr_access_history_cost_unit", ValueType::kDouble));
-  // double gr_resource_history_cost_unit;  // optional
-  _config_list.push_back(std::make_pair("-gr_resource_history_cost_unit", ValueType::kDouble));
+  // double gr_history_access_cost_unit;    // optional
+  _config_list.push_back(std::make_pair("-gr_history_access_cost_unit", ValueType::kDouble));
+  // double gr_history_resource_cost_unit;  // optional
+  _config_list.push_back(std::make_pair("-gr_history_resource_cost_unit", ValueType::kDouble));
   // irt_int gr_max_iter_num;               // optional
   _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
   // double ta_prefer_wire_unit;            // optional

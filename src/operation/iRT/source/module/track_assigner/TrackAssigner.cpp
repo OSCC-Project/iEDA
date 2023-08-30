@@ -820,7 +820,7 @@ void TrackAssigner::updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_t
 std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> TrackAssigner::getGridOrientationMap(TAPanel& ta_panel,
                                                                                                       const DRCRect& drc_rect)
 {
-  // 传入的rect是原始形状，以前函数传入的是已经min_scope过的
+  // !传入的rect是原始形状
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
