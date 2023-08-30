@@ -81,9 +81,8 @@ void Power::destroyPower() {
  */
 unsigned Power::buildGraph() {
   // TODO build graph use power graph in Power class.
-  PwrBuildGraph build_graph;
+  PwrBuildGraph build_graph(_power_graph);
   build_graph(_power_graph.get_sta_graph());
-  _power_graph = std::move(build_graph.takePowerGraph());
   _power_graph.set_pwr_seq_graph(&_power_seq_graph);
   return 1;
 }

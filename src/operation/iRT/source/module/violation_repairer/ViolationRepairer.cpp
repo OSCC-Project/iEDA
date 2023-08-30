@@ -114,6 +114,7 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
   VRNet vr_net;
   vr_net.set_origin_net(&net);
   vr_net.set_net_idx(net.get_net_idx());
+  vr_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     vr_net.get_vr_pin_list().push_back(VRPin(pin));
   }

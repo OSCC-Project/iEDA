@@ -790,7 +790,7 @@ double StaVertex::getLoad(AnalysisMode analysis_mode, TransType trans_type) {
 }
 
 /**
- * @brief get net load not include pin cap.
+ * @brief get net load include pin cap.
  *
  * @return double
  */
@@ -801,8 +801,8 @@ double StaVertex::getNetLoad() {
   if (rc_net) {
     double load_include_pin_cap =
         rc_net->load(AnalysisMode::kMax, TransType::kRise);
-    double pin_cap = the_net->getLoad(AnalysisMode::kMax, TransType::kRise);
-    return (load_include_pin_cap - pin_cap);
+
+    return load_include_pin_cap;
   }
 
   return 0.0;

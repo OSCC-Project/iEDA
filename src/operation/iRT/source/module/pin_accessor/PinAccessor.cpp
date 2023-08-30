@@ -120,7 +120,7 @@ PANet PinAccessor::convertToPANet(Net& net)
   PANet pa_net;
   pa_net.set_origin_net(&net);
   pa_net.set_net_idx(net.get_net_idx());
-  pa_net.set_net_name(net.get_net_name());
+  pa_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     pa_net.get_pa_pin_list().push_back(PAPin(pin));
   }

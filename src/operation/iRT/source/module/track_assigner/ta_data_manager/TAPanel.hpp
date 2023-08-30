@@ -74,13 +74,6 @@ class TAPanel : public LayerRect
     return region_query;
   }
 #if 1  // astar
-  // config
-  double get_wire_unit() const { return _wire_unit; }
-  double get_corner_unit() const { return _corner_unit; }
-  double get_via_unit() const { return _via_unit; }
-  void set_wire_unit(const double wire_unit) { _wire_unit = wire_unit; }
-  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
-  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single task
   const irt_int get_curr_net_idx() const { return _ta_task_ref->get_origin_net_idx(); }
   const irt_int get_curr_task_idx() const { return _ta_task_ref->get_task_idx(); }
@@ -111,12 +104,10 @@ class TAPanel : public LayerRect
     _routing_segment_list = routing_segment_list;
   }
   // single path
-  TARouteStrategy& get_ta_route_strategy() { return _ta_route_strategy; }
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   TANode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
-  void set_ta_route_strategy(const TARouteStrategy& ta_route_strategy) { _ta_route_strategy = ta_route_strategy; }
   void set_open_queue(const std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<TANode*>& single_path_visited_node_list)
   {
@@ -140,10 +131,6 @@ class TAPanel : public LayerRect
   TAPanelStat _ta_panel_stat;
   irt_int _curr_iter = -1;
 #if 1  // astar
-  // config
-  double _wire_unit = 1;
-  double _corner_unit = 1;
-  double _via_unit = 1;
   // single task
   TATask* _ta_task_ref = nullptr;
   PlanarRect _routing_region;
@@ -154,7 +141,6 @@ class TAPanel : public LayerRect
   std::vector<TANode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  TARouteStrategy _ta_route_strategy = TARouteStrategy::kNone;
   std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
   std::vector<TANode*> _single_path_visited_node_list;
   TANode* _path_head_node = nullptr;
