@@ -59,9 +59,9 @@ class DRCChecker
   std::vector<LayerRect> getMinScope(const DRCRect& drc_rect);
   void plotRegionQuery(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
 #if 1  // violation info
-  std::vector<ViolationInfo> getViolationInfo(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  std::vector<ViolationInfo> getViolationInfo(RegionQuery* region_query);
-  std::vector<ViolationInfo> getViolationInfo(const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery* region_query);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(const std::vector<DRCRect>& drc_rect_list);
 #endif
 
  private:
@@ -92,6 +92,7 @@ class DRCChecker
 #if 1  // violation info
   void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
                               std::vector<ViolationInfo>& violation_info_list);
+  void uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingBySelf(RegionQuery* region_query, std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingBySelf(const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingBySelf(std::map<irt_int, std::vector<RQShape>>& net_shape_map, std::vector<ViolationInfo>& violation_info_list);

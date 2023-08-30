@@ -17,7 +17,6 @@
 #pragma once
 
 #include "DRCChecker.hpp"
-#include "GRRouteStrategy.hpp"
 #include "GRSourceType.hpp"
 #include "LayerCoord.hpp"
 #include "RegionQuery.hpp"
@@ -49,7 +48,6 @@ class GRNode : public LayerCoord
   std::map<Orientation, irt_int>& get_orien_access_demand_map() { return _orien_access_demand_map; }
   irt_int get_resource_supply() const { return _resource_supply; }
   irt_int get_resource_demand() const { return _resource_demand; }
-  std::map<irt_int, std::set<Orientation>>& get_net_access_map() { return _net_access_map; }
   std::map<Orientation, double>& get_orien_access_history_cost_map() { return _orien_access_history_cost_map; }
   double get_resource_history_cost() const { return _resource_history_cost; }
   std::set<irt_int>& get_contribution_net_set() { return _contribution_net_set; }
@@ -76,7 +74,6 @@ class GRNode : public LayerCoord
   }
   void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_resource_demand(const irt_int resource_demand) { _resource_demand = resource_demand; }
-  void set_net_access_map(const std::map<irt_int, std::set<Orientation>>& net_access_map) { _net_access_map = net_access_map; }
   void set_orien_access_history_cost_map(const std::map<Orientation, double>& orien_access_history_cost_map)
   {
     _orien_access_history_cost_map = orien_access_history_cost_map;
@@ -100,59 +97,9 @@ class GRNode : public LayerCoord
     }
     return region_query;
   }
-  bool isOBS(irt_int net_idx, Orientation orientation, GRRouteStrategy gr_route_strategy)
-  {
-    bool is_obs = false;
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringNetAccess) {
-      return is_obs;
-    }
-    if (RTUtil::exist(_net_access_map, net_idx)) {
-      // net在node中有引导，但是方向不对，视为障碍
-      is_obs = RTUtil::exist(_net_access_map[net_idx], orientation) ? false : true;
-    }
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringGCellAccess) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-        irt_int access_supply = 0;
-        irt_int access_demand = 0;
-        if (RTUtil::exist(_orien_access_supply_map, orientation)) {
-          access_supply = _orien_access_supply_map[orientation];
-        }
-        if (RTUtil::exist(_orien_access_demand_map, orientation)) {
-          access_demand = _orien_access_demand_map[orientation];
-        }
-        is_obs = (1 + access_demand > access_supply);
-      }
-    }
-    if (gr_route_strategy == GRRouteStrategy::kIgnoringGCellResource) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-        // 需要区分是整根线还是线网内demand
-        irt_int wire_demand = _whole_wire_demand;
-        if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
-          if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], orientation)) {
-            wire_demand = _net_orien_wire_demand_map[net_idx][orientation];
-          }
-        }
-        is_obs = (wire_demand + _resource_demand > _resource_supply);
-      } else {
-        // 对于up和down来说 只有via_demand
-        is_obs = (_whole_via_demand + _resource_demand > _resource_supply);
-      }
-    }
-    return is_obs;
-  }
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
-    if (RTUtil::exist(_net_access_map, net_idx)) {
-      // net在node中有引导，但是方向不对，视为障碍
-      cost += RTUtil::exist(_net_access_map[net_idx], orientation) ? 0 : 1;
-    }
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
       // 对于平面来说 需要先判断方向
       irt_int access_supply = 0;
@@ -294,12 +241,6 @@ class GRNode : public LayerCoord
    */
   irt_int _resource_supply = 0;
   irt_int _resource_demand = 0;
-  /**
-   * gcell 路线引导
-   *  当对应net出现在引导中时，必须按照引导的方向布线，否则视为障碍
-   *  当对应net不在引导中时，视为普通线网布线
-   */
-  std::map<irt_int, std::set<Orientation>> _net_access_map;
   /**
    * gcell 历史代价
    */

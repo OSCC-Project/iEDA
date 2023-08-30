@@ -130,6 +130,7 @@ class DataManager
   void convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net);
   void convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
   void convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
+  void convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment);
 #endif
 
 #if 1  // save & load

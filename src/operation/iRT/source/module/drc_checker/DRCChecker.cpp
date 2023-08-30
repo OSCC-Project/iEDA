@@ -376,25 +376,85 @@ void DRCChecker::plotRegionQuery(RegionQuery* region_query, const std::vector<DR
 
 #if 1  // violation info
 
-std::vector<ViolationInfo> DRCChecker::getViolationInfo(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery* region_query,
+                                                                               const std::vector<DRCRect>& drc_rect_list)
 {
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map["Cut EOL Spacing"];
+  drc_violation_map["Cut Spacing"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Cut Enclosure"];
+  drc_violation_map["Metal EOL Spacing"];
+  drc_violation_map["Metal Short"];
+  drc_violation_map["Metal Parallel Run Length Spacing"];
+  drc_violation_map["Metal Notch Spacing"];
+  drc_violation_map["MinStep"];
+  drc_violation_map["Minimal Area"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Metal Corner Fill Spacing"];
+  drc_violation_map["Minimal Hole Area"];
+
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingByOther(region_query, drc_rect_list, violation_info_list);
   // checkMinSpacingBySelf(drc_rect_list, violation_info_list);
   // checkMinArea();
-  return violation_info_list;
+  uniqueViolationInfoList(violation_info_list);
+  for (ViolationInfo& violation_info : violation_info_list) {
+    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+  }
+  return drc_violation_map;
 }
-std::vector<ViolationInfo> DRCChecker::getViolationInfo(RegionQuery* region_query)
+
+std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery* region_query)
 {
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map["Cut EOL Spacing"];
+  drc_violation_map["Cut Spacing"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Cut Enclosure"];
+  drc_violation_map["Metal EOL Spacing"];
+  drc_violation_map["Metal Short"];
+  drc_violation_map["Metal Parallel Run Length Spacing"];
+  drc_violation_map["Metal Notch Spacing"];
+  drc_violation_map["MinStep"];
+  drc_violation_map["Minimal Area"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Metal Corner Fill Spacing"];
+  drc_violation_map["Minimal Hole Area"];
+
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingBySelf(region_query, violation_info_list);
-  return violation_info_list;
+
+  for (ViolationInfo& violation_info : violation_info_list) {
+    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+  }
+  return drc_violation_map;
 }
-std::vector<ViolationInfo> DRCChecker::getViolationInfo(const std::vector<DRCRect>& drc_rect_list)
+
+std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(const std::vector<DRCRect>& drc_rect_list)
 {
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map["Cut EOL Spacing"];
+  drc_violation_map["Cut Spacing"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Cut Enclosure"];
+  drc_violation_map["Metal EOL Spacing"];
+  drc_violation_map["Metal Short"];
+  drc_violation_map["Metal Parallel Run Length Spacing"];
+  drc_violation_map["Metal Notch Spacing"];
+  drc_violation_map["MinStep"];
+  drc_violation_map["Minimal Area"];
+  drc_violation_map["Cut Diff Layer Spacing"];
+  drc_violation_map["Metal Corner Fill Spacing"];
+  drc_violation_map["Minimal Hole Area"];
+
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingBySelf(drc_rect_list, violation_info_list);
-  return violation_info_list;
+
+  for (ViolationInfo& violation_info : violation_info_list) {
+    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+  }
+  return drc_violation_map;
 }
 
 #endif
@@ -826,15 +886,16 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
 {
   for (const DRCRect& drc_rect : drc_rect_list) {
     RQShape drc_shape = convertToRQShape(drc_rect);
+    irt_int layer_idx = drc_shape.get_routing_layer_idx();
     // 查询重叠
     std::vector<std::pair<BoostBox, RQShape*>> result_list;
     if (drc_shape.get_is_routing()) {
       auto& routing_region_map = region_query->get_routing_region_map();
-      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[drc_shape.get_routing_layer_idx()];
+      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     } else {
       auto& cut_region_map = region_query->get_cut_region_map();
-      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[drc_shape.get_routing_layer_idx()];
+      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     }
 
@@ -856,11 +917,15 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       if (!RTUtil::isOverlap(spacing_rect, check_rect2)) {
         LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
-      LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), drc_shape.get_routing_layer_idx());
+
+      LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), layer_idx);
+      if (RTUtil::isOverlap(check_rect1, check_rect2)) {
+        violation_region.set_rect(RTUtil::getOverlap(check_rect1, check_rect2));
+      }
 
       std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
-      violation_net_shape_map[drc_shape.get_net_id()].push_back(check_rect1);
-      violation_net_shape_map[overlap_shape->get_net_id()].push_back(check_rect2);
+      violation_net_shape_map[drc_shape.get_net_id()].emplace_back(check_rect1, layer_idx);
+      violation_net_shape_map[overlap_shape->get_net_id()].emplace_back(check_rect2, layer_idx);
 
       ViolationInfo violation;
       violation.set_is_routing(drc_rect.get_is_routing());
@@ -870,6 +935,49 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       violation_info_list.push_back(violation);
     }
   }
+}
+
+void DRCChecker::uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list)
+{
+  std::sort(violation_info_list.begin(), violation_info_list.end(), [](ViolationInfo& a, ViolationInfo& b) {
+    if (a.get_is_routing() != b.get_is_routing()) {
+      return a.get_is_routing();
+    } else if (a.get_rule_name() != b.get_rule_name()) {
+      return a.get_rule_name().size() < b.get_rule_name().size();
+    } else if (a.get_violation_region() != b.get_violation_region()) {
+      LayerRect& a_region = a.get_violation_region();
+      LayerRect& b_region = b.get_violation_region();
+      if (a_region.get_layer_idx() != b_region.get_layer_idx()) {
+        return a_region.get_layer_idx() < b_region.get_layer_idx();
+      } else if (a_region.get_lb() != b_region.get_lb()) {
+        return CmpPlanarCoordByXASC()(a_region.get_lb(), b_region.get_lb());
+      } else {
+        return CmpPlanarCoordByXASC()(a_region.get_rt(), b_region.get_rt());
+      }
+    } else {
+      std::set<irt_int> a_net_set;
+      for (auto& [net_idx, rect_list] : a.get_net_shape_map()) {
+        a_net_set.insert(net_idx);
+      }
+      std::set<irt_int> b_net_set;
+      for (auto& [net_idx, rect_list] : b.get_net_shape_map()) {
+        b_net_set.insert(net_idx);
+      }
+      return a_net_set < b_net_set;
+    }
+  });
+  RTUtil::merge(violation_info_list, [](ViolationInfo& a, ViolationInfo& b) {
+    std::set<irt_int> a_net_set;
+    for (auto& [net_idx, rect_list] : a.get_net_shape_map()) {
+      a_net_set.insert(net_idx);
+    }
+    std::set<irt_int> b_net_set;
+    for (auto& [net_idx, rect_list] : b.get_net_shape_map()) {
+      b_net_set.insert(net_idx);
+    }
+    return a_net_set == b_net_set && a.get_is_routing() == b.get_is_routing() && a.get_rule_name() == b.get_rule_name()
+           && RTUtil::isClosedOverlap(a.get_violation_region(), b.get_violation_region());
+  });
 }
 
 void DRCChecker::checkMinSpacingBySelf(RegionQuery* region_query, std::vector<ViolationInfo>& violation_info_list)
@@ -918,14 +1026,16 @@ void DRCChecker::checkMinSpacingBySelf(std::map<irt_int, std::vector<RQShape>>& 
             continue;
           }
 
-          irt_int max_spacing = std::max(net_shape1.get_min_spacing(), net_shape2.get_min_spacing());
           PlanarRect check_rect1 = RTUtil::convertToPlanarRect(net_shape1.get_shape());
           PlanarRect check_rect2 = RTUtil::convertToPlanarRect(net_shape2.get_shape());
-          PlanarRect spacing_rect = RTUtil::getEnlargedRect(check_rect1, max_spacing);
-          if (!RTUtil::isOverlap(spacing_rect, check_rect2)) {
-            LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
-          }
-          LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), layer_idx);
+
+          std::vector<irt_int> x_list = {check_rect1.get_lb_x(), check_rect1.get_rt_x(), check_rect2.get_lb_x(), check_rect2.get_rt_x()};
+          std::vector<irt_int> y_list = {check_rect1.get_lb_y(), check_rect1.get_rt_y(), check_rect2.get_lb_y(), check_rect2.get_rt_y()};
+
+          std::sort(x_list.begin(), x_list.end());
+          std::sort(y_list.begin(), y_list.end());
+
+          LayerRect violation_region(x_list[1], y_list[1], x_list[2], y_list[2], layer_idx);
 
           std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
           violation_net_shape_map[net_id].emplace_back(LayerRect(check_rect1, layer_idx));

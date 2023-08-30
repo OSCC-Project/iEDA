@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRRouteStrategy.hpp"
 #include "DRSourceType.hpp"
 #include "Direction.hpp"
 #include "LayerCoord.hpp"
@@ -63,62 +62,51 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  bool isOBS(irt_int net_idx, Orientation orientation, DRRouteStrategy dr_route_strategy)
-  {
-    bool is_obs = false;
-    if (dr_route_strategy == DRRouteStrategy::kIgnoringBlockAndPin) {
-      return is_obs;
-    }
-    if (!is_obs) {
-      if (RTUtil::exist(_source_orien_net_map, DRSourceType::kBlockAndPin)) {
-        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[DRSourceType::kBlockAndPin];
-        if (RTUtil::exist(orien_net_map, orientation)) {
-          std::set<irt_int>& net_set = orien_net_map[orientation];
-          if (net_set.size() >= 2) {
-            is_obs = true;
-          } else {
-            is_obs = RTUtil::exist(net_set, net_idx) ? false : true;
-          }
-        }
-      }
-    }
-    return is_obs;
-  }
   double getCost(irt_int net_idx, Orientation orientation)
   {
+    double dr_block_and_pin_unit = DM_INST.getConfig().dr_block_and_pin_unit;
+    double dr_known_panel_unit = DM_INST.getConfig().dr_known_panel_unit;
+    double dr_reserved_via_unit = DM_INST.getConfig().dr_reserved_via_unit;
+    double dr_other_box_unit = DM_INST.getConfig().dr_other_box_unit;
+    double dr_self_box_unit = DM_INST.getConfig().dr_self_box_unit;
+
     double cost = 0;
-    for (DRSourceType ta_source_type :
-         {DRSourceType::kKnownPanel, DRSourceType::kReservedVia, DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
-      bool add_cost = false;
-      if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
-        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
+    for (DRSourceType dr_source_type : {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia,
+                                        DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+      irt_int violation_net_num = 0;
+      if (RTUtil::exist(_source_orien_net_map, dr_source_type)) {
+        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[dr_source_type];
         if (RTUtil::exist(orien_net_map, orientation)) {
           std::set<irt_int>& net_set = orien_net_map[orientation];
           if (net_set.size() >= 2) {
-            add_cost = true;
+            violation_net_num = static_cast<irt_int>(net_set.size());
           } else {
-            add_cost = RTUtil::exist(net_set, net_idx) ? false : true;
+            violation_net_num = RTUtil::exist(net_set, net_idx) ? 0 : 1;
           }
         }
       }
-      if (add_cost) {
-        switch (ta_source_type) {
-          case DRSourceType::kKnownPanel:
-            cost += 8;
-            break;
-          case DRSourceType::kReservedVia:
-            cost += 4;
-            break;
-          case DRSourceType::kOtherBox:
-            cost += 2;
-            break;
-          case DRSourceType::kSelfBox:
-            cost += 1;
-            break;
-          default:
-            break;
-        }
+      switch (dr_source_type) {
+        case DRSourceType::kBlockAndPin:
+          cost += (dr_block_and_pin_unit * violation_net_num);
+          break;
+        case DRSourceType::kKnownPanel:
+          cost += (dr_known_panel_unit * violation_net_num);
+          break;
+        case DRSourceType::kReservedVia:
+          cost += (dr_reserved_via_unit * violation_net_num);
+          break;
+        case DRSourceType::kOtherBox:
+          cost += (dr_other_box_unit * violation_net_num);
+          break;
+        case DRSourceType::kSelfBox:
+          cost += (dr_self_box_unit * violation_net_num);
+          break;
+        default:
+          break;
       }
+    }
+    if (RTUtil::exist(_orien_history_cost_map, orientation)) {
+      cost += _orien_history_cost_map[orientation];
     }
     return cost;
   }

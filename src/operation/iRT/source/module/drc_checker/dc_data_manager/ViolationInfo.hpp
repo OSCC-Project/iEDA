@@ -28,6 +28,7 @@ class ViolationInfo
   ViolationInfo() = default;
   ~ViolationInfo() = default;
   // getter
+  bool get_is_routing() { return _is_routing; }
   std::string get_rule_name() { return _rule_name; }
   LayerRect& get_violation_region() { return _violation_region; }
   std::map<irt_int, std::vector<LayerRect>>& get_net_shape_map() { return _net_shape_map; }
@@ -37,7 +38,6 @@ class ViolationInfo
   void set_violation_region(const LayerRect& violation_region) { _violation_region = violation_region; }
   void set_net_shape_map(const std::map<irt_int, std::vector<LayerRect>>& net_shape_map) { _net_shape_map = net_shape_map; }
   // function
-  bool isRouting() { return _is_routing; }
 
  private:
   bool _is_routing = true;

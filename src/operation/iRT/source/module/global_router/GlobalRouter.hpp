@@ -65,7 +65,6 @@ class GlobalRouter
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeSupply(GRModel& gr_model);
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
-  void buildAccessMap(GRModel& gr_model);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();
@@ -87,12 +86,10 @@ class GlobalRouter
   std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
   void initSingleTask(GRModel& gr_model, GRTask& gr_task);
   bool isConnectedAllEnd(GRModel& gr_model);
-  void routeByStrategy(GRModel& gr_model, GRRouteStrategy gr_route_strategy);
   void routeSinglePath(GRModel& gr_model);
   void initPathHead(GRModel& gr_model);
   bool searchEnded(GRModel& gr_model);
   void expandSearching(GRModel& gr_model);
-  bool passChecking(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   void resetPathHead(GRModel& gr_model);
   bool isRoutingFailed(GRModel& gr_model);
   void resetSinglePath(GRModel& gr_model);

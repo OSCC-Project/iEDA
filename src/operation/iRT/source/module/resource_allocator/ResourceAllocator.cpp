@@ -102,6 +102,7 @@ RANet ResourceAllocator::convertToRANet(Net& net)
   RANet ra_net;
   ra_net.set_origin_net(&net);
   ra_net.set_net_idx(net.get_net_idx());
+  ra_net.set_connect_type(net.get_connect_type());
   for (Pin& pin : net.get_pin_list()) {
     ra_net.get_ra_pin_list().push_back(RAPin(pin));
   }
@@ -231,6 +232,7 @@ void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  double supply_utilization_rate = DM_INST.getConfig().supply_utilization_rate;
 
   std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
 // track supply
@@ -282,6 +284,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
         resource_supply += supply;
       }
     }
+    resource_supply *= supply_utilization_rate;
     ra_gcell.set_resource_supply(resource_supply);
   }
 }
