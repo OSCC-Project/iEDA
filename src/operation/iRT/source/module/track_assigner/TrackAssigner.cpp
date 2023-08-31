@@ -779,8 +779,7 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
 
 void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
 {
-  for (TASourceType ta_source_type :
-       {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+  for (TASourceType ta_source_type : {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -981,6 +980,95 @@ void TrackAssigner::resetTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   }
 }
 
+void TrackAssigner::sortTAPanel(TAModel& ta_model, TAPanel& ta_panel)
+{
+  if (ta_panel.get_curr_iter() != 1) {
+    return;
+  }
+  Monitor monitor;
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.info(Loc::current(), "Sorting all tasks beginning...");
+  }
+
+  std::vector<irt_int> task_order_list;
+  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+    task_order_list.push_back(ta_task.get_task_idx());
+  }
+  std::sort(task_order_list.begin(), task_order_list.end(),
+            [&](irt_int task_idx1, irt_int task_idx2) { return sortByMultiLevel(ta_panel, task_idx1, task_idx2); });
+  ta_panel.get_task_order_list_list().push_back(task_order_list);
+
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.info(Loc::current(), "Sorting all tasks completed!", monitor.getStatsInfo());
+  }
+}
+
+bool TrackAssigner::sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2)
+{
+  TATask& task1 = ta_panel.get_ta_task_list()[task_idx1];
+  TATask& task2 = ta_panel.get_ta_task_list()[task_idx2];
+
+  SortStatus sort_status = SortStatus::kNone;
+
+  sort_status = sortByClockPriority(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  sort_status = sortByPreferLengthDESC(task1, task2);
+  if (sort_status == SortStatus::kTrue) {
+    return true;
+  } else if (sort_status == SortStatus::kFalse) {
+    return false;
+  }
+  return false;
+}
+
+// 时钟线网优先
+SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
+{
+  ConnectType task1_connect_type = task1.get_connect_type();
+  ConnectType task2_connect_type = task2.get_connect_type();
+
+  if (task1_connect_type == ConnectType::kClock && task2_connect_type != ConnectType::kClock) {
+    return SortStatus::kTrue;
+  } else if (task1_connect_type != ConnectType::kClock && task2_connect_type == ConnectType::kClock) {
+    return SortStatus::kFalse;
+  } else {
+    return SortStatus::kEqual;
+  }
+}
+
+// ta的宽都一样，prefer方向长度 降序 越长的越先布
+SortStatus TrackAssigner::sortByPreferLengthDESC(TATask& task1, TATask& task2)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  irt_int task1_layer_idx = task1.get_origin_node()->value().get_first_guide().get_layer_idx();
+  irt_int task2_layer_idx = task2.get_origin_node()->value().get_first_guide().get_layer_idx();
+  if (task1_layer_idx != task2_layer_idx) {
+    LOG_INST.error(Loc::current(), "The task1_layer_idx != task2_layer_idx!");
+  }
+
+  irt_int task1_prefer_length = 0;
+  irt_int task2_prefer_length = 0;
+  if (routing_layer_list[task1_layer_idx].isPreferH()) {
+    task1_prefer_length = task1.get_bounding_box().getXSpan();
+    task2_prefer_length = task2.get_bounding_box().getXSpan();
+  } else {
+    task1_prefer_length = task1.get_bounding_box().getYSpan();
+    task2_prefer_length = task2.get_bounding_box().getYSpan();
+  }
+  if (task1_prefer_length > task2_prefer_length) {
+    return SortStatus::kTrue;
+  } else if (task1_prefer_length == task2_prefer_length) {
+    return SortStatus::kEqual;
+  } else {
+    return SortStatus::kFalse;
+  }
+}
+
 void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
 {
 #if 1
@@ -1175,95 +1263,6 @@ void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     // 清空routing_tree
     ta_task.get_routing_tree().clear();
     ta_task.set_routing_state(RoutingState::kUnrouted);
-  }
-}
-
-void TrackAssigner::sortTAPanel(TAModel& ta_model, TAPanel& ta_panel)
-{
-  if (ta_panel.get_curr_iter() != 1) {
-    return;
-  }
-  Monitor monitor;
-  if (omp_get_num_threads() == 1) {
-    LOG_INST.info(Loc::current(), "Sorting all tasks beginning...");
-  }
-
-  std::vector<irt_int> task_order_list;
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    task_order_list.push_back(ta_task.get_task_idx());
-  }
-  std::sort(task_order_list.begin(), task_order_list.end(),
-            [&](irt_int task_idx1, irt_int task_idx2) { return sortByMultiLevel(ta_panel, task_idx1, task_idx2); });
-  ta_panel.get_task_order_list_list().push_back(task_order_list);
-
-  if (omp_get_num_threads() == 1) {
-    LOG_INST.info(Loc::current(), "Sorting all tasks completed!", monitor.getStatsInfo());
-  }
-}
-
-bool TrackAssigner::sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2)
-{
-  TATask& task1 = ta_panel.get_ta_task_list()[task_idx1];
-  TATask& task2 = ta_panel.get_ta_task_list()[task_idx2];
-
-  SortStatus sort_status = SortStatus::kNone;
-
-  sort_status = sortByClockPriority(task1, task2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByPreferLengthDESC(task1, task2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  return false;
-}
-
-// 时钟线网优先
-SortStatus TrackAssigner::sortByClockPriority(TATask& task1, TATask& task2)
-{
-  ConnectType task1_connect_type = task1.get_connect_type();
-  ConnectType task2_connect_type = task2.get_connect_type();
-
-  if (task1_connect_type == ConnectType::kClock && task2_connect_type != ConnectType::kClock) {
-    return SortStatus::kTrue;
-  } else if (task1_connect_type != ConnectType::kClock && task2_connect_type == ConnectType::kClock) {
-    return SortStatus::kFalse;
-  } else {
-    return SortStatus::kEqual;
-  }
-}
-
-// ta的宽都一样，prefer方向长度 降序 越长的越先布
-SortStatus TrackAssigner::sortByPreferLengthDESC(TATask& task1, TATask& task2)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  irt_int task1_layer_idx = task1.get_origin_node()->value().get_first_guide().get_layer_idx();
-  irt_int task2_layer_idx = task2.get_origin_node()->value().get_first_guide().get_layer_idx();
-  if (task1_layer_idx != task2_layer_idx) {
-    LOG_INST.error(Loc::current(), "The task1_layer_idx != task2_layer_idx!");
-  }
-
-  irt_int task1_prefer_length = 0;
-  irt_int task2_prefer_length = 0;
-  if (routing_layer_list[task1_layer_idx].isPreferH()) {
-    task1_prefer_length = task1.get_bounding_box().getXSpan();
-    task2_prefer_length = task2.get_bounding_box().getXSpan();
-  } else {
-    task1_prefer_length = task1.get_bounding_box().getYSpan();
-    task2_prefer_length = task2.get_bounding_box().getYSpan();
-  }
-  if (task1_prefer_length > task2_prefer_length) {
-    return SortStatus::kTrue;
-  } else if (task1_prefer_length == task2_prefer_length) {
-    return SortStatus::kEqual;
-  } else {
-    return SortStatus::kFalse;
   }
 }
 
