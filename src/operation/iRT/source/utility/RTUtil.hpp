@@ -2958,7 +2958,7 @@ class RTUtil
 #if 1  // report数据结构
 
   template <typename T>
-  static GridMap<double> getRangeNumRatioMap(std::vector<T> value_list)
+  static GridMap<double> getRangeRatioMap(std::vector<T> value_list)
   {
     GridMap<double> value_map;
     std::map<T, irt_int> range_num_map = getRangeNumMap(value_list);
@@ -2977,6 +2977,73 @@ class RTUtil
       value_map[1][idx] = right;
       value_map[2][idx] = num;
       value_map[3][idx] = ratio * 100;
+      ++idx;
+    }
+    return value_map;
+  }
+
+  template <typename T>
+  static GridMap<std::string> getRangeRatioMap(std::vector<T> value_list, std::vector<T> scale_list)
+  {
+    // 数据按区间分类
+    T range = getScaleRange(value_list);
+
+    T max_value = INT32_MIN;
+    T min_value = INT32_MAX;
+    for (T& value : value_list) {
+      max_value = std::max(max_value, value);
+      min_value = std::min(min_value, value);
+    }
+
+    std::vector<T> total_scale_list(scale_list.begin(), scale_list.end());
+    for (T scale = min_value; scale <= max_value; scale += range) {
+      total_scale_list.push_back(scale);
+    }
+    total_scale_list.push_back(max_value);
+    std::sort(total_scale_list.begin(), total_scale_list.end());
+    total_scale_list.erase(std::unique(total_scale_list.begin(), total_scale_list.end()), total_scale_list.end());
+
+    std::vector<std::pair<T, T>> scale_range_list;
+    for (size_t i = 1; i < total_scale_list.size(); i++) {
+      scale_range_list.emplace_back(total_scale_list[i - 1], total_scale_list[i]);
+    }
+
+    std::map<std::pair<T, T>, irt_int> range_num_map;
+    for (T& value : value_list) {
+      for (size_t i = 0; i < scale_range_list.size(); i++) {
+        T left = scale_range_list[i].first;
+        T right = scale_range_list[i].second;
+        if (left <= value && value < right) {
+          range_num_map[scale_range_list[i]] += 1;
+          break;
+        }
+        if (i + 1 == scale_range_list.size() && equalDoubleByError(value, right, DBL_ERROR)) {
+          range_num_map[scale_range_list[i]] += 1;
+          break;
+        }
+      }
+    }
+
+    // 生成字符串信息
+    GridMap<std::string> value_map;
+    value_map.init(2, static_cast<irt_int>(range_num_map.size()));
+
+    irt_int idx = 0;
+    for (auto& [range, num] : range_num_map) {
+      double ratio_value = num / 1.0 / static_cast<T>(value_list.size());
+      double ratio = retainPlaces(ratio_value, 3);
+
+      std::string range_str = getString("[", range.first, ",", range.second);
+      if (idx == static_cast<irt_int>(range_num_map.size()) - 1) {
+        range_str += "]";
+      } else {
+        range_str += ")";
+      }
+
+      std::string ratio_str = RTUtil::getString(num, "(", ratio * 100, "%)");
+
+      value_map[0][idx] = range_str;
+      value_map[1][idx] = ratio_str;
       ++idx;
     }
     return value_map;
