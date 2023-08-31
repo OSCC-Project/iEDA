@@ -699,20 +699,19 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
   if (ta_panel.get_ta_task_list().empty()) {
     return;
   }
+  buildTAPanel(ta_model, ta_panel);
   for (irt_int iter = 1; iter <= ta_panel_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_panel_max_iter_num, ") ******");
     }
     ta_panel.set_curr_iter(iter);
-    buildTAPanel(ta_model, ta_panel);
     resetTAPanel(ta_model, ta_panel);
     assignTAPanel(ta_model, ta_panel);
     processTAPanel(ta_model, ta_panel);
     countTAPanel(ta_model, ta_panel);
     reportTAPanel(ta_model, ta_panel);
     // plotTAPanel(ta_panel);
-    freeTAPanel(ta_model, ta_panel);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
@@ -725,6 +724,7 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
       break;
     }
   }
+  freeTAPanel(ta_model, ta_panel);
 }
 
 void TrackAssigner::buildTAPanel(TAModel& ta_model, TAPanel& ta_panel)
