@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -23,6 +23,9 @@
  */
 
 #pragma once
+
+#include <fstream>
+#include <iostream>
 
 #include "core/PwrAnalysisData.hh"
 #include "core/PwrFunc.hh"
@@ -39,9 +42,10 @@ class PwrCalcSwitchPower : public PwrFunc {
   unsigned operator()(PwrGraph* the_graph) override;
   auto& takeSwitchPowers() { return _switch_powers; }
 
- private:
+  void printSwitchPower(std::ostream& out, PwrGraph* the_graph);
 
- void addSwitchPower(std::unique_ptr<PwrSwitchData> power_data) {
+ private:
+  void addSwitchPower(std::unique_ptr<PwrSwitchData> power_data) {
     _switch_powers.emplace_back(std::move(power_data));
   }
 

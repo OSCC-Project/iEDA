@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -36,16 +36,18 @@ using ieda::Stats;
  * @return unsigned
  */
 unsigned PwrPropagateClock::operator()(PwrVertex* the_vertex) {
+  VERBOSE_LOG(1) << "propagate clock vertex: " << the_vertex->getName();
+
+  // CP pin is register, not set clock network.
+  the_vertex->set_is_clock_network();
+  auto* propagated_clock = get_propagated_sta_clock();
   // set power data.
-  the_vertex->addData(c_default_clock_toggle, c_default_clock_sp,
-                      PwrDataSource::kClockPropagation);
+  the_vertex->addData(c_default_clock_toggle / propagated_clock->getPeriodNs(),
+                      c_default_clock_sp, PwrDataSource::kClockPropagation);
 
   if (the_vertex->get_sta_vertex()->is_clock()) {
     return 1;
   }
-
-  // CP pin is register, not set clock network.
-  the_vertex->set_is_clock_network();
 
   FOREACH_SRC_PWR_ARC(the_vertex, the_arc) {
     auto* the_snk_vertex = the_arc->get_snk();
@@ -67,6 +69,7 @@ unsigned PwrPropagateClock::operator()(PwrGraph* the_graph) {
   set_the_pwr_graph(the_graph);
 
   for (auto* sta_clock : the_graph->get_sta_clocks()) {
+    set_propagated_sta_clock(sta_clock);
     auto& clock_vertexes = sta_clock->get_clock_vertexes();
     for (auto* clock_vertex : clock_vertexes) {
       auto* pwr_clock_vertex = the_graph->staToPwrVertex(clock_vertex);

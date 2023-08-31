@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -51,14 +51,18 @@ bool PwrSeqVertexComp::operator()(const PwrSeqVertex* const& lhs,
  */
 std::optional<double> PwrVertex::getDriveVoltage() {
   auto* design_obj = _sta_vertex->get_design_obj();
-  if (design_obj->isPin()) {
-    auto* liberty_port = dynamic_cast<Pin*>(design_obj)->get_cell_port();
-    auto* the_library = liberty_port->get_ower_cell()->get_owner_lib();
-    double nominal_voltage = the_library->get_nom_voltage();
-    return nominal_voltage;
+  if (design_obj->isPort()) {
+    // for port.
+    auto* the_net = design_obj->get_net();
+    auto the_loads = the_net->getLoads();
+    auto* one_load = the_loads.front();
+    design_obj = one_load;
   }
 
-  return std::nullopt;
+  auto* liberty_port = dynamic_cast<Pin*>(design_obj)->get_cell_port();
+  auto* the_library = liberty_port->get_ower_cell()->get_owner_lib();
+  double nominal_voltage = the_library->get_nom_voltage();
+  return nominal_voltage;
 }
 
 /**
@@ -91,8 +95,9 @@ std::optional<PwrSeqVertex*> PwrVertex::getFanoutMinSeqLevel() {
  */
 std::set<StaClock*> PwrVertex::getOwnClockDomain() {
   auto* the_sta_vertex = get_sta_vertex();
+  bool is_data_path = !is_clock_network();
   auto own_clock_domain_set = the_sta_vertex->getPropagatedClock(
-      AnalysisMode::kMaxMin, TransType::kRiseFall, true);
+      AnalysisMode::kMaxMin, TransType::kRiseFall, is_data_path);
   return own_clock_domain_set;
 }
 
@@ -131,7 +136,9 @@ void PwrVertex::addData(PwrToggleData* toggle_data,
                         std::optional<PwrClock*> the_fastest_clock) {
   if (toggle_data) {
     // Set clock domain only for propagation data.
-    if (toggle_data->get_data_source() == PwrDataSource::kDataPropagation) {
+    auto data_source = toggle_data->get_data_source();
+    if ((data_source == PwrDataSource::kDataPropagation) ||
+        (data_source == PwrDataSource::kClockPropagation)) {
       auto clock_domain = getOwnFastestClockDomain();
       if (clock_domain) {
         toggle_data->set_clock_domain(*clock_domain);

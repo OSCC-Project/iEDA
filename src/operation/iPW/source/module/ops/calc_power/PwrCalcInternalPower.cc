@@ -185,8 +185,10 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
     auto* sta_arc =
         the_output_sta_vertex->getSrcArc(src_input_sta_vertex).front();
 
-    auto query_power = [sta_arc, convert_load_to_lib_unit](
-                           LibertyPowerArc* power_arc, TransType trans_type) {
+    auto query_power =
+        [sta_arc, convert_load_to_lib_unit](
+            LibertyPowerArc* power_arc,
+            TransType trans_type) -> std::tuple<double, double, double> {
       auto* internal_power_info = power_arc->get_internal_power_info().get();
       double input_slew_ns = sta_arc->get_src()->getSlewNs(
           AnalysisMode::kMax,
@@ -202,15 +204,17 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
           power_arc->get_owner_cell()->convertTablePowerToMw(
               internal_power_value);
 
-      return internal_power_value_mw;
+      return {internal_power_value_mw, input_slew_ns, output_load};
     };
 
     auto* power_arc_set =
         dynamic_cast<PwrInstArc*>(snk_arc)->get_power_arc_set();
     LibertyPowerArc* power_arc;
     FOREACH_POWER_LIB_ARC(power_arc_set, power_arc) {
-      double rise_power_mw = query_power(power_arc, TransType::kRise);
-      double fall_power_mw = query_power(power_arc, TransType::kFall);
+      auto [rise_power_mw, rise_input_slew_ns, rise_output_load] =
+          query_power(power_arc, TransType::kRise);
+      auto [fall_power_mw, fall_input_slew_ns, fall_output_load] =
+          query_power(power_arc, TransType::kFall);
       // the internal power of this power arc.
       double table_average_power_mw =
           CalcAveragePower(rise_power_mw, fall_power_mw);
@@ -232,6 +236,24 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
         pin_internal_power += sp_value * the_arc_power;
       } else {
         pin_internal_power += the_arc_power;
+      }
+
+      // for debug
+      if (0) {
+        std::ofstream out_debug("internal_out.txt");
+        out_debug << "inst: " << inst->get_name();
+        out_debug << "\nrise power :" << rise_power_mw;
+        out_debug << "\nrise input slew :" << rise_input_slew_ns;
+        out_debug << "\nrise output load :" << rise_output_load;
+
+        out_debug << "\nfall power :" << fall_power_mw;
+        out_debug << "\nfall input slew :" << fall_input_slew_ns;
+        out_debug << "\nfall output load :" << fall_output_load;
+
+        out_debug << "\nouput pin :" << output_pin->getFullName();
+        out_debug << "\ntoggle :" << output_toggle;
+
+        out_debug.close();
       }
     }
   }
@@ -469,6 +491,24 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
 }
 
 /**
+ * @brief print internal power sorted by worst.
+ *
+ * @param out
+ * @param the_graph
+ */
+void PwrCalcInternalPower::printInternalPower(std::ostream& out,
+                                              PwrGraph* the_graph) {
+  for (auto& internal_power : _internal_powers) {
+    auto* design_obj = internal_power->get_design_obj();
+    auto* design_inst = dynamic_cast<Instance*>(design_obj);
+
+    out << design_inst->get_name() << " : "
+        << internal_power->get_internal_power() << " mW"
+        << "\n";
+  }
+}
+
+/**
  * @brief Calc internal power.
  *
  * @param the_graph
@@ -504,6 +544,14 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
                    << "  internal power: " << inst_internal_power << "mW";
     _internal_power_result += inst_internal_power;
   }
+
+// debug internal power
+#if 0
+  std::ofstream out("internal.txt");
+  printInternalPower(out, the_graph);
+  out.close();
+#endif
+
   LOG_INFO << "calc internal power result " << _internal_power_result << "mW";
 
   LOG_INFO << "calc internal power end";
