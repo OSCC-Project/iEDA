@@ -100,7 +100,7 @@ class TrackAssigner
   void updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect);
   void ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
+  void assignTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
   void routeSinglePath(TAPanel& ta_panel);
@@ -130,8 +130,8 @@ class TrackAssigner
   void buildRoutingResult(TATask& ta_task);
   void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void reportTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool stopTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
   void reportTAModel(TAModel& ta_model);
   bool stopTAModel(TAModel& ta_model);

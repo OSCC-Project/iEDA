@@ -1264,7 +1264,6 @@ void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     }
     // 清空routing_tree
     ta_task.get_routing_tree().clear();
-    ta_task.set_routing_state(RoutingState::kUnrouted);
   }
 }
 
@@ -1282,7 +1281,7 @@ void TrackAssigner::assignTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 
   Monitor stage_monitor;
   for (size_t i = 0; i < task_order_list.size(); i++) {
-    routeTATask(ta_model, ta_panel, ta_task_list[task_order_list[i]]);
+    assignTATask(ta_model, ta_panel, ta_task_list[task_order_list[i]]);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
       LOG_INST.info(Loc::current(), "Assigned ", (i + 1), " tasks", stage_monitor.getStatsInfo());
     }
@@ -1292,7 +1291,7 @@ void TrackAssigner::assignTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   }
 }
 
-void TrackAssigner::routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task)
+void TrackAssigner::assignTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task)
 {
   if (ta_task.get_routing_state() == RoutingState::kRouted) {
     return;
@@ -1963,15 +1962,15 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   }
 }
 
+bool TrackAssigner::stopTAPanel(TAModel& ta_model, TAPanel& ta_panel)
+{
+  return (ta_panel.get_ta_panel_stat().get_total_drc_number() == 0);
+}
+
 void TrackAssigner::freeTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   ta_node_map.free();
-}
-
-bool TrackAssigner::stopTAPanel(TAModel& ta_model, TAPanel& ta_panel)
-{
-  return (ta_panel.get_ta_panel_stat().get_total_drc_number() == 0);
 }
 
 void TrackAssigner::countTAModel(TAModel& ta_model)

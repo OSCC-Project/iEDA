@@ -79,6 +79,7 @@ class DetailedRouter
   DRGroup makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node);
   void buildBoundingBox(DRBox& dr_box, DRTask& dr_task);
   void buildNetTaskMap(DRModel& dr_model);
+  void outputTADataset(DRModel& dr_model);
 #endif
 
 #if 1  // iterative
@@ -102,6 +103,11 @@ class DetailedRouter
   SortStatus sortByClockPriority(DRTask& task1, DRTask& task2);
   SortStatus sortByRoutingVolumeASC(DRTask& task1, DRTask& task2);
   SortStatus sortByPinNumDESC(DRTask& task1, DRTask& task2);
+  void resortDRBox(DRBox& dr_box);
+  std::vector<std::vector<irt_int>> getViolationTaskCombList(DRBox& dr_box);
+  void addHistoryCost(DRBox& dr_box);
+  void updateHistoryCostToGraph(DRBox& dr_box, ChangeType change_type, DRCRect drc_rect);
+  void ripupDRBox(DRModel& dr_model, DRBox& dr_box);
   void routeDRBox(DRModel& dr_model, DRBox& dr_box);
   void routeDRTask(DRModel& dr_model, DRBox& dr_box, DRTask& dr_task);
   void initSingleTask(DRBox& dr_box, DRTask& dr_task);
@@ -135,8 +141,8 @@ class DetailedRouter
   void buildRoutingResult(DRTask& dr_task);
   void countDRBox(DRModel& dr_model, DRBox& dr_box);
   void reportDRBox(DRModel& dr_model, DRBox& dr_box);
-  void freeDRBox(DRModel& dr_model, DRBox& dr_box);
   bool stopDRBox(DRModel& dr_model, DRBox& dr_box);
+  void freeDRBox(DRModel& dr_model, DRBox& dr_box);
   void countDRModel(DRModel& dr_model);
   void reportDRModel(DRModel& dr_model);
   bool stopDRModel(DRModel& dr_model);
