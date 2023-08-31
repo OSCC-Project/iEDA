@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "Logger.hpp"
+const std::string khmetis_binary_path = HMETIS_BINARY;
 
 namespace imp {
 vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, const vector<size_t>& eptr, const vector<size_t>& eind,
@@ -26,10 +27,10 @@ vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, 
   for (size_t i = 0; i < num_hedges; i++) {
     if (!hewgt.empty())
       hgraph_file << hewgt[i] << " ";
-    for (size_t j = eptr[i]; j < eptr[i + 1] - 1; j++) {
+    for (size_t j = eptr[i]; j < eptr[i + 1]; j++) {
       hgraph_file << eind[j] + 1 << " ";
     }
-    hgraph_file << eind[eptr[i + 1] - 1] + 1 << std::endl;
+    hgraph_file << std::endl;
   }
   for (int64_t var : vwgt) {
     hgraph_file << var << std::endl;
@@ -56,6 +57,11 @@ vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, 
     parts[i] = part_id;
   }
   result_file.close();
+#ifdef NDEBUG
+  std::system(rm hgraph_file_name);
+  std::system(rm solution_file);
+#endif
+
   return parts;
 }
 }  // namespace imp

@@ -19,7 +19,7 @@ class MacroPlacer
 
   void runMP();
 
-  NetList pl_to_netlist();
+  NetList plToNetlist();
 
   void setDataManager(DataManager* dm);
   void setDataManager(const std::string& idb_json);

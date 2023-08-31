@@ -14,6 +14,8 @@
 #include <functional>
 #include <iostream>
 #include <random>
+
+#include "Logger.hpp"
 namespace imp {
 struct SAOption
 {
@@ -47,30 +49,32 @@ class SimulateAnneal
   ~SimulateAnneal() = delete;
 };
 template <typename T>
-bool SASolve(T& solution, std::function<double(const T&)> evaluate, std::function<bool(const T&)> action, int max_iters, int num_actions,
+bool SASolve(T& solution, std::function<double(const T&)>& evaluate, std::function<void(T&)>& action, int max_iters, int num_actions,
              double cool_rate, double temperature)
 {
   double curr_cost = evaluate(solution);
+  double last_cost = 0.;
   double temp_cost{0.}, delta_cost{0.}, random{0.};
   std::random_device r;
   std::default_random_engine e1(r());
   std::uniform_real_distribution<double> real_rand(0., 1.);
   // fast sa
   T solution_t = solution;
-  for (int iter = 0; iter < max_iters; ++iter) {
+  for (int iter = 0; iter < max_iters && temperature >= 0.1; ++iter) {
+    last_cost = curr_cost;
     for (int times = 0; times < num_actions; ++times) {
-      if (action(solution_t)) {
-        temp_cost = evaluate(solution_t);
-        delta_cost = temp_cost - curr_cost;
-        random = real_rand(e1);
-        if (delta_cost < 0 || exp(-delta_cost / temperature) > random) {
-          solution = solution_t;
-          curr_cost = temp_cost;
-        } else {
-          solution_t = solution;
-        }
+      action(solution_t);
+      temp_cost = evaluate(solution_t);
+      delta_cost = temp_cost - curr_cost;
+      random = real_rand(e1);
+      if (delta_cost < 0 || exp(-delta_cost / temperature) > random) {
+        solution = solution_t;
+        curr_cost = temp_cost;
+      } else {
+        solution_t = solution;
       }
     }
+    INFO("iter: ", iter, " temperature: ", temperature, " cost: ", curr_cost, " dis: ", curr_cost - last_cost);
     temperature *= cool_rate;
   }
   return true;

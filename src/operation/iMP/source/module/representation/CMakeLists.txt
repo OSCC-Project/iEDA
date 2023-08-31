@@ -1,0 +1,9 @@
+add_library(imp-representation 
+           ${IMP_REPRESENTATION}/SeqPair.tpp
+           ${IMP_REPRESENTATION}/Evaluator.cc)
+target_link_libraries(imp-representation
+                      PRIVATE
+                      imp-netlist)
+target_include_directories(imp-representation
+                          PUBLIC 
+                           ${IMP_REPRESENTATION})

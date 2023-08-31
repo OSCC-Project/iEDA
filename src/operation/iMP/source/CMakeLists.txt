@@ -18,8 +18,10 @@ target_link_libraries(imp_source
     PRIVATE
         imp-datamanager
         imp-structure
+        imp-representation
         imp-module
         imp-logger
+        imp-solver
         # imp_utility
 )
 

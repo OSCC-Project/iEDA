@@ -13,7 +13,7 @@
 namespace rv = std::views;
 
 namespace imp {
-NetList NetList::make_clusters(const std::vector<size_t>& parts)
+NetList NetList::makeClusters(const std::vector<size_t>& parts)
 {
   assert(parts.size() == _num_vertexs);
 
@@ -57,7 +57,7 @@ NetList NetList::make_clusters(const std::vector<size_t>& parts)
       cluster_dy[i] = _dy[single_cluster[i]];
       if (cluster_type[i] == kTerminal || cluster_type[i] == kFixInst) {
         cluster_lx[i] = _lx[single_cluster[i]];
-        cluster_lx[i] = _ly[single_cluster[i]];
+        cluster_ly[i] = _ly[single_cluster[i]];
       }
     }
   }
@@ -93,7 +93,7 @@ NetList NetList::make_clusters(const std::vector<size_t>& parts)
 
   clusters.set_connectivity(std::move(cluster_net_span), std::move(cluster_pin2vertex), std::move(cluster_pin_x_off),
                             std::move(cluster_pin_y_off));
-  clusters.sort_to_fit();
+  clusters.sortToFit();
 
   return clusters;
 }
@@ -101,17 +101,17 @@ NetList NetList::make_clusters(const std::vector<size_t>& parts)
 void NetList::autoCellsClustering()
 {
   if (!_is_fit)
-    sort_to_fit();
+    sortToFit();
   std::vector<int64_t> temp(_area.begin() + _num_cells, _area.begin() + _num_cells + _num_fixinst);
   std::sort(temp.begin(), temp.end());
-  int64_t desird_area = temp[static_cast<size_t>(temp.size() / 2)];
+  int64_t desird_area = temp.empty() ? _sum_cells_area : temp[static_cast<size_t>(temp.size() / 2)];
   size_t npart = std::max(static_cast<size_t>(_sum_cells_area / desird_area), size_t{4});
-  cell_Clustering(npart);
+  cellClustering(npart);
 }
 
 void NetList::clustering(const std::vector<size_t>& parts)
 {
-  *this = make_clusters(parts);
+  *this = makeClusters(parts);
 }
 
 void NetList::set_region(int64_t lx, int64_t ly, int64_t dx, int64_t dy)
@@ -121,6 +121,7 @@ void NetList::set_region(int64_t lx, int64_t ly, int64_t dx, int64_t dy)
   _region_dx = dx;
   _region_dy = dy;
   _region_aspect_ratio = (double) dy / (double) dx;
+  _utilization = _sum_vertex_area / _region_dx * _region_dy;
 }
 
 void NetList::set_vertex_property(std::vector<VertexType>&& type, std::vector<int64_t>&& lx, std::vector<int64_t>&& ly,
@@ -158,10 +159,13 @@ void NetList::set_vertex_property(std::vector<VertexType>&& type, std::vector<in
       continue;
     else if (i_type == kMacro)
       _sum_macro_area += i_area;
-    else
+    else if (i_type == kFixInst)
       _sum_fix_area += i_area;
   }
   _sum_vertex_area = _sum_cells_area + _sum_cluster_area + _sum_macro_area + _sum_fix_area;
+
+  if (_region_dx != 0 && _region_dy != 0)
+    _utilization = (double) _sum_vertex_area / (double) _region_dx / (double) _region_dy;
 
   if (id_map.empty()) {
     _id_map.resize(_num_vertexs);
@@ -185,7 +189,7 @@ void NetList::set_connectivity(std::vector<size_t>&& net_span, std::vector<size_
   _num_nets = _net_span.size() - 1;
 }
 
-void NetList::sort_to_fit()
+void NetList::sortToFit()
 {
   std::vector<size_t> map(_num_vertexs);
   _num_cells = 0;

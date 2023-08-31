@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 using std::vector;
-const std::string khmetis_binary_path = "../src/third_party/hmetis/hmetis2.0pre1";
 namespace imp {
 
 class Partitionner

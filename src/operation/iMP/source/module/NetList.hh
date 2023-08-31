@@ -66,28 +66,28 @@ class NetList
 
   void set_connectivity(std::vector<size_t>&& net_span, std::vector<size_t>&& pin2vertex, std::vector<int64_t>&& pin_x_off,
                         std::vector<int64_t>&& pin_y_off);
-  void sort_to_fit();
+  void sortToFit();
 
   std::vector<std::string> report();
 
   std::vector<size_t> cellsPartition(size_t npart);
 
-  NetList make_clusters(const std::vector<size_t>& parts);
+  NetList makeClusters(const std::vector<size_t>& parts);
 
   void autoCellsClustering();
 
-  void cell_Clustering(size_t npart) { clustering(cellsPartition(npart)); }
+  void cellClustering(size_t npart) { clustering(cellsPartition(npart)); }
 
   void clustering(const std::vector<size_t>& parts);
 
  private:
   void updateVertexSpan();
 
- private:
-  size_t _num_vertexs;
+ public:
+  size_t _num_vertexs;  // order by _num_moveable(_num_cells, _num_clusters, _num_macros), _numfixinst, _numterm
   size_t _num_nets;
 
-  size_t _num_moveable;
+  size_t _num_moveable;  // _num_cells, _num_clusters, _num_macros
   size_t _num_cells;
   size_t _num_clusters;
   size_t _num_macros;
@@ -111,6 +111,7 @@ class NetList
   std::vector<int64_t> _dx;
   std::vector<int64_t> _dy;
   std::vector<int64_t> _area;
+
   int64_t _sum_vertex_area;
   int64_t _sum_cells_area;
   int64_t _sum_macro_area;

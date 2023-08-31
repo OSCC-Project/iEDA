@@ -2,11 +2,14 @@
 
 #include <unordered_map>
 
+#include "Annealer.hh"
 #include "DataManager.hh"
 #include "Design.hh"
+#include "Layout.hh"
 #include "Logger.hpp"
 #include "NetList.hh"
 #include "SA.hh"
+#include "SeqPair.hh"
 namespace imp {
 
 MacroPlacer::MacroPlacer(DataManager* dm, Option* opt)
@@ -36,17 +39,29 @@ MacroPlacer::~MacroPlacer()
 
 void MacroPlacer::runMP()
 {
-  auto netlist = pl_to_netlist();
-  netlist.autoCellsClustering();
-  for (auto var : netlist.report()) {
+  auto netlist = plToNetlist();
+  netlist.cellClustering(100);
+  for (auto&& var : netlist.report()) {
     INFO(var);
   }
+  auto sp = makeRandomSeqPair(netlist._num_moveable);
+  auto eval = makeSeqPairEvalFn(netlist);
+  std::function<void(SeqPair&)> action = SpAction(netlist._num_moveable);
+
+  SASolve(sp, eval, action, 500, 1.5 * netlist._num_moveable, 0.95, 30000);
+
+  for (size_t i = 0; i < 500; i++) {
+    double cost = eval(sp);
+    if (i % 100 == 0)
+      INFO(cost);
+  }
+  SASolve(sp, eval, action, 500, 1.5 * netlist._num_moveable, 0.99, 5000);
 }
 
-NetList MacroPlacer::pl_to_netlist()
+NetList MacroPlacer::plToNetlist()
 {
-  Design* design = _dm->get_design();
-  const auto& vertexs = design->get_instance_list();
+  auto design = _dm->get_design();
+  auto layout = _dm->get_layout();
   std::vector<int64_t> lx;
   std::vector<int64_t> ly;
   std::vector<int64_t> dx;
@@ -57,8 +72,8 @@ NetList MacroPlacer::pl_to_netlist()
   for (Instance* v : design->get_instance_list()) {
     lx.push_back(v->get_coordi().get_x());
     ly.push_back(v->get_coordi().get_y());
-    dx.push_back(v->get_shape_width());
-    dy.push_back(v->get_shape_height());
+    dx.push_back(static_cast<int64_t>(v->get_shape().get_width()));
+    dy.push_back(static_cast<int64_t>(v->get_shape().get_height()));
     area.push_back(dx.back() * dy.back());
     if (!v->isFixed()) {
       if ((v->get_cell_master()->get_cell_type()) != CELL_TYPE::kMacro)
@@ -99,10 +114,12 @@ NetList MacroPlacer::pl_to_netlist()
   }
 
   NetList netlist;
+  auto core = layout->get_core_shape();
+  netlist.set_region(core.get_ll_x(), core.get_ll_y(), core.get_width(), core.get_height());
   netlist.set_vertex_property(std::move(type), std::move(lx), std::move(ly), std::move(dx), std::move(dy), std::move(area));
 
   netlist.set_connectivity(std::move(net_span), std::move(pin2vertex), std::move(pin_x_off), std::move(pin_y_off));
-  netlist.sort_to_fit();
+  netlist.sortToFit();
 
   for (auto&& i : netlist.report()) {
     INFO(i);
