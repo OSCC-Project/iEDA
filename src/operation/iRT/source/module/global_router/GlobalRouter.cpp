@@ -1741,8 +1741,6 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
   std::vector<double>& access_overflow_list = gr_model_stat.get_access_overflow_list();
   double total_wire_length = gr_model_stat.get_total_wire_length();
   irt_int total_via_number = gr_model_stat.get_total_via_number();
-  double max_resource_overflow = gr_model_stat.get_max_resource_overflow();
-  double max_access_overflow = gr_model_stat.get_max_access_overflow();
 
   // report wire info
   fort::char_table wire_table;
@@ -1769,44 +1767,26 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
   // report resource overflow info
-  GridMap<double> resource_overflow_map = RTUtil::getRangeNumRatioMap(resource_overflow_list);
+  GridMap<std::string> resource_overflow_map = RTUtil::getRangeRatioMap(resource_overflow_list, {1.0});
 
   fort::char_table resource_overflow_table;
   resource_overflow_table.set_border_style(FT_SOLID_STYLE);
   resource_overflow_table << fort::header << "Resource Overflow"
                           << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < resource_overflow_map.get_y_size(); y_idx++) {
-    double left = resource_overflow_map[0][y_idx];
-    double right = resource_overflow_map[1][y_idx];
-    std::string range_str;
-    if (y_idx == resource_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_resource_overflow, "]");
-    } else {
-      range_str = RTUtil::getString("[", left, ",", right, ")");
-    }
-    resource_overflow_table << range_str << RTUtil::getString(resource_overflow_map[2][y_idx], "(", resource_overflow_map[3][y_idx], "%)")
-                            << fort::endr;
+  for (irt_int y = 0; y < resource_overflow_map.get_y_size(); y++) {
+    resource_overflow_table << resource_overflow_map[0][y] << resource_overflow_map[1][y] << fort::endr;
   }
   resource_overflow_table << fort::header << "Total" << resource_overflow_list.size() << fort::endr;
 
   // report access overflow info
-  GridMap<double> access_overflow_map = RTUtil::getRangeNumRatioMap(access_overflow_list);
+  GridMap<std::string> access_overflow_map = RTUtil::getRangeRatioMap(access_overflow_list, {1.0});
 
   fort::char_table access_overflow_table;
   access_overflow_table.set_border_style(FT_SOLID_STYLE);
   access_overflow_table << fort::header << "Access Overflow"
                         << "GCell Number" << fort::endr;
-  for (irt_int y_idx = 0; y_idx < access_overflow_map.get_y_size(); y_idx++) {
-    double left = access_overflow_map[0][y_idx];
-    double right = access_overflow_map[1][y_idx];
-    std::string range_str;
-    if (y_idx == access_overflow_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_access_overflow, "]");
-    } else {
-      range_str = RTUtil::getString("[", left, ",", right, ")");
-    }
-    access_overflow_table << range_str << RTUtil::getString(access_overflow_map[2][y_idx], "(", access_overflow_map[3][y_idx], "%)")
-                          << fort::endr;
+  for (irt_int y = 0; y < access_overflow_map.get_y_size(); y++) {
+    access_overflow_table << access_overflow_map[0][y] << access_overflow_map[1][y] << fort::endr;
   }
   access_overflow_table << fort::header << "Total" << access_overflow_list.size() << fort::endr;
 

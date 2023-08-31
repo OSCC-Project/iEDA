@@ -699,20 +699,19 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
   if (ta_panel.get_ta_task_list().empty()) {
     return;
   }
+  buildTAPanel(ta_model, ta_panel);
   for (irt_int iter = 1; iter <= ta_panel_max_iter_num; iter++) {
     Monitor iter_monitor;
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** Start Panel Iteration(", iter, "/", ta_panel_max_iter_num, ") ******");
     }
     ta_panel.set_curr_iter(iter);
-    buildTAPanel(ta_model, ta_panel);
     resetTAPanel(ta_model, ta_panel);
     assignTAPanel(ta_model, ta_panel);
     processTAPanel(ta_model, ta_panel);
     countTAPanel(ta_model, ta_panel);
     reportTAPanel(ta_model, ta_panel);
     // plotTAPanel(ta_panel);
-    freeTAPanel(ta_model, ta_panel);
     if (omp_get_num_threads() == 1) {
       LOG_INST.info(Loc::current(), "****** End Panel Iteration(", iter, "/", ta_panel_max_iter_num, ")", iter_monitor.getStatsInfo(),
                     " ******");
@@ -725,6 +724,7 @@ void TrackAssigner::iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id)
       break;
     }
   }
+  freeTAPanel(ta_model, ta_panel);
 }
 
 void TrackAssigner::buildTAPanel(TAModel& ta_model, TAPanel& ta_panel)
@@ -986,7 +986,6 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
 #if 1
   std::vector<std::vector<irt_int>>& task_order_list_list = ta_panel.get_task_order_list_list();
   std::vector<irt_int>& last_task_order_list = task_order_list_list.back();
-  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
 
   // 确定拆线重布任务并换序
   std::map<irt_int, irt_int> task_order_map;
@@ -1005,10 +1004,6 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
         ripup_task_set.insert(violation_task);
       }
     }
-  }
-  // 更新拆线重布任务的布线状态
-  for (irt_int task : ripup_task_list) {
-    ta_task_list[task].set_routing_state(RoutingState::kUnrouted);
   }
   // 生成新的布线顺序
   std::vector<irt_int> new_task_order_list;
@@ -1160,6 +1155,13 @@ void TrackAssigner::updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType chang
 void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
 {
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+
+  for (std::vector<irt_int> violation_task_comb : getViolationTaskCombList(ta_panel)) {
+    for (irt_int violation_task : violation_task_comb) {
+      ta_task_list[violation_task].set_routing_state(RoutingState::kUnrouted);
+    }
+  }
+
   for (TATask& ta_task : ta_task_list) {
     if (ta_task.get_routing_state() == RoutingState::kRouted) {
       continue;
