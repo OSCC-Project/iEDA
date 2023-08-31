@@ -85,21 +85,21 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
 }
 
 /**
- * @brief Setup the generated clocks to sta graph. 
+ * @brief Setup the generated clocks to sta graph.
  *
  * @param sdc_clocks
  * @return unsigned success return 1, or return 0.
  */
-unsigned StaApplySdc::setupGeneratedClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
-                                  StaGraph* the_graph) {
+unsigned StaApplySdc::setupGeneratedClocks(
+    StrMap<std::unique_ptr<SdcClock>>& sdc_clocks, StaGraph* the_graph) {
   Sta* ista = getSta();
   for (auto& [clock_name, sdc_clock] : sdc_clocks) {
     std::unique_ptr<StaClock> sta_clock =
         std::make_unique<StaClock>(clock_name, StaClock::ClockType::kIdeal,
                                    NS_TO_PS(sdc_clock->get_period()));
 
-  // if the generated clock setup sta clocks, the exec generated clock prop.
-  sta_clock->set_is_generated_clock_prop();
+    // if the generated clock setup sta clocks, the exec generated clock prop.
+    sta_clock->set_is_generated_clock_prop();
 
     auto design_objs = sdc_clock->get_objs();
     for (auto* design_obj : design_objs) {
@@ -301,6 +301,8 @@ unsigned StaApplySdc::setupIOConstrain(
 
   unsigned is_ok = 1;
   for (auto& io_constraint : sdc_io_constraints) {
+    LOG_FATAL_IF(!dispatch_funs.contains(io_constraint->get_constrain_name()))
+        << io_constraint->get_constrain_name() << " has not process func.";
     is_ok = dispatch_funs[io_constraint->get_constrain_name()](io_constraint,
                                                                the_graph);
     if (!is_ok) {
@@ -699,8 +701,10 @@ unsigned StaApplySdc::operator()(StaGraph* the_graph) {
     StrMap<std::unique_ptr<SdcClock>> the_generated_clocks;
     auto& the_clocks = the_constrain->get_sdc_clocks();
     for (auto it = the_clocks.begin(); it != the_clocks.end(); it++) {
-      if (it->second->isGenerateClock()&&
-          (dynamic_cast<SdcGenerateCLock*>(it->second.get())->get_source_pins().size()!=0)) {
+      if (it->second->isGenerateClock() &&
+          (dynamic_cast<SdcGenerateCLock*>(it->second.get())
+               ->get_source_pins()
+               .size() != 0)) {
         the_generated_clocks.insert(std::move(*it));
       }
     }
