@@ -493,6 +493,8 @@ unsigned Power::reportPower(const char* rpt_file_name,
                summary_leakage_power, summary_leakage_power_percentage.c_str());
 
   std::fprintf(f.get(), "Total Power   ==  %.3e\n", total_power);
+
+  LOG_INFO << "Total Power   ==  " << total_power << " mW";
   return 1;
 };
 

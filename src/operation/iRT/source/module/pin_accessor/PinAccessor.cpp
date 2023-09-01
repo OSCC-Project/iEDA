@@ -141,21 +141,21 @@ void PinAccessor::updateNetFixedRectMap(PAModel& pa_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(pa_model, PASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, false));
+    addRectToEnv(pa_model, PASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, false));
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(pa_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(pa_model, PASourceType::kLayoutShape, DRCRect(pa_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : pa_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(pa_model, PASourceType::kBlockAndPin, DRCRect(pa_net.get_net_idx(), shape_real_rect, false));
+        addRectToEnv(pa_model, PASourceType::kLayoutShape, DRCRect(pa_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
@@ -212,7 +212,7 @@ void PinAccessor::iterative(PAModel& pa_model)
 void PinAccessor::accessPAModel(PAModel& pa_model)
 {
   accessPANetList(pa_model);
-  updateNetReservedViaMap(pa_model);
+  updateNetCandidateViaMap(pa_model);
   eliminateViaConflict(pa_model);
 }
 
@@ -413,7 +413,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
         for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
           PAGCell& pa_gcell = pa_gcell_map[x][y];
           for (const auto& [curr_net_idx, rect_list] :
-               DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kBlockAndPin), true)[enclosure.get_layer_idx()]) {
+               DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kLayoutShape), true)[enclosure.get_layer_idx()]) {
             if (pa_net_idx == curr_net_idx) {
               continue;
             }
@@ -491,7 +491,7 @@ std::vector<PlanarRect> PinAccessor::getWireLegalRectList(PAModel& pa_model, irt
       for (irt_int y = pin_shape.get_grid_lb_y(); y <= pin_shape.get_grid_rt_y(); y++) {
         PAGCell& pa_gcell = pa_gcell_map[x][y];
         for (const auto& [curr_net_idx, rect_list] :
-             DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kBlockAndPin), true)[pin_shape_layer_idx]) {
+             DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kLayoutShape), true)[pin_shape_layer_idx]) {
           if (pa_net_idx == curr_net_idx) {
             continue;
           }
@@ -636,7 +636,7 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
         segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                   LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
         std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
-        if (!hasViolation(pa_model, PASourceType::kBlockAndPin, drc_rect_list)) {
+        if (!hasViolation(pa_model, PASourceType::kLayoutShape, drc_rect_list)) {
           legal_access_point_list.push_back(access_point);
           break;
         }
@@ -705,7 +705,7 @@ void PinAccessor::checkAccessPointList(PANet& pa_net)
   }
 }
 
-void PinAccessor::updateNetReservedViaMap(PAModel& pa_model)
+void PinAccessor::updateNetCandidateViaMap(PAModel& pa_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
@@ -725,7 +725,7 @@ void PinAccessor::updateNetReservedViaMap(PAModel& pa_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
-          addRectToEnv(pa_model, PASourceType::kReservedVia, drc_rect);
+          addRectToEnv(pa_model, PASourceType::kCandidateVia, drc_rect);
         }
       }
     }
@@ -777,7 +777,7 @@ void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
           segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                     LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
           std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
-          if (!hasViolation(pa_model, PASourceType::kReservedVia, drc_rect_list)) {
+          if (!hasViolation(pa_model, PASourceType::kCandidateVia, drc_rect_list)) {
             via_num++;
           } else {
             break;
@@ -857,7 +857,7 @@ void PinAccessor::updateNetAccessPointMap(PAModel& pa_model)
           segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                     LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
           for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
-            addRectToEnv(pa_model, PASourceType::kAccessPoint, drc_rect);
+            addRectToEnv(pa_model, PASourceType::kLayoutShape, drc_rect);
           }
         }
       }
@@ -895,31 +895,31 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   }
 
   std::map<PASourceType, std::map<std::string, irt_int>>& source_drc_number_map = pa_model_stat.get_source_drc_number_map();
-  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
-  for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
-      PAGCell& pa_gcell = pa_gcell_map[x][y];
+  // GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+  // for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
+  //   for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
+  //     PAGCell& pa_gcell = pa_gcell_map[x][y];
 
-      std::vector<DRCRect> drc_rect_list;
-      for (bool is_routing : {true, false}) {
-        for (auto& [layer_idx, net_rect_map] :
-             DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kAccessPoint), is_routing)) {
-          for (auto& [net_idx, rect_set] : net_rect_map) {
-            for (const LayerRect& layer_rect : rect_set) {
-              drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);
-            }
-          }
-        }
-      }
+  //     std::vector<DRCRect> drc_rect_list;
+  //     for (bool is_routing : {true, false}) {
+  //       for (auto& [layer_idx, net_rect_map] :
+  //            DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kAccessPoint), is_routing)) {
+  //         for (auto& [net_idx, rect_set] : net_rect_map) {
+  //           for (const LayerRect& layer_rect : rect_set) {
+  //             drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);
+  //           }
+  //         }
+  //       }
+  //     }
 
-      for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kAccessPoint}) {
-        RegionQuery* region_query = pa_gcell.getRegionQuery(pa_source_type);
-        for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
-          source_drc_number_map[pa_source_type][drc] += number;
-        }
-      }
-    }
-  }
+  //     for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kAccessPoint}) {
+  //       RegionQuery* region_query = pa_gcell.getRegionQuery(pa_source_type);
+  //       for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
+  //         source_drc_number_map[pa_source_type][drc] += number;
+  //       }
+  //     }
+  //   }
+  // }
 
   std::map<std::string, irt_int>& rule_number_map = pa_model_stat.get_drc_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {

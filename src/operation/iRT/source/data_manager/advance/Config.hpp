@@ -44,18 +44,16 @@ class Config
   double gr_prefer_wire_unit;            // optional
   double gr_via_unit;                    // optional
   double gr_corner_unit;                 // optional
-  double gr_access_history_cost_unit;    // optional
-  double gr_resource_history_cost_unit;  // optional
+  double gr_history_access_cost_unit;    // optional
+  double gr_history_resource_cost_unit;  // optional
   irt_int gr_max_iter_num;               // optional
   double ta_prefer_wire_unit;            // optional
   double ta_nonprefer_wire_unit;         // optional
   double ta_corner_unit;                 // optional
   double ta_pin_distance_unit;           // optional
   double ta_group_distance_unit;         // optional
-  double ta_block_and_pin_unit;          // optional
+  double ta_layout_shape_unit;          // optional
   double ta_reserved_via_unit;           // optional
-  double ta_other_panel_unit;            // optional
-  double ta_self_panel_unit;             // optional
   double ta_history_cost_unit;           // optional
   irt_int ta_model_max_iter_num;         // optional
   irt_int ta_panel_max_iter_num;         // optional
@@ -63,11 +61,8 @@ class Config
   double dr_nonprefer_wire_unit;         // optional
   double dr_via_unit;                    // optional
   double dr_corner_unit;                 // optional
-  double dr_block_and_pin_unit;          // optional
-  double dr_known_panel_unit;            // optional
+  double dr_layout_shape_unit;          // optional
   double dr_reserved_via_unit;           // optional
-  double dr_other_box_unit;              // optional
-  double dr_self_box_unit;               // optional
   double dr_history_cost_unit;           // optional
   irt_int dr_model_max_iter_num;         // optional
   irt_int dr_box_max_iter_num;           // optional
