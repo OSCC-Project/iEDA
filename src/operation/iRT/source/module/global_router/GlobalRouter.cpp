@@ -194,13 +194,13 @@ void GlobalRouter::updateNetFixedRectMap(GRModel& gr_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(gr_model, GRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
   }
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(gr_model, GRSourceType::kBlockAndPin, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(gr_model, GRSourceType::kLayoutShape, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -360,7 +360,7 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
           }
         }
-        for (GRSourceType gr_source_type : {GRSourceType::kBlockAndPin, GRSourceType::kReservedVia}) {
+        for (GRSourceType gr_source_type : {GRSourceType::kLayoutShape, GRSourceType::kReservedVia}) {
           for (const auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(gr_source_type), true)[layer_idx]) {
             for (const LayerRect& rect : rect_set) {
               for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
@@ -2245,7 +2245,8 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   gp_gds.addStruct(neighbor_map_struct);
 
   // source_region_query_map
-  std::vector<std::pair<GRSourceType, GPGraphType>> source_graph_pair_list = {{GRSourceType::kBlockAndPin, GPGraphType::kBlockAndPin}};
+  std::vector<std::pair<GRSourceType, GPGraphType>> source_graph_pair_list
+      = {{GRSourceType::kLayoutShape, GPGraphType::kLayoutShape}, {GRSourceType::kReservedVia, GPGraphType::kReservedVia}};
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
     GridMap<GRNode>& node_map = layer_node_map[layer_idx];

@@ -64,9 +64,6 @@ class TAPanel : public LayerRect
   // function
   RegionQuery* getRegionQuery(TASourceType ta_source_type)
   {
-    if (ta_source_type == TASourceType::kUnknownPanel) {
-      LOG_INST.error(Loc::current(), "The ta_source_type is uncategorized!");
-    }
     RegionQuery*& region_query = _source_region_query_map[ta_source_type];
     if (region_query == nullptr) {
       region_query = DC_INST.initRegionQuery();

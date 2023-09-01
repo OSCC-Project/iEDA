@@ -30,10 +30,8 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -ta_corner_unit 1 \
         -ta_pin_distance_unit 1 \
         -ta_group_distance_unit 0.5 \
-        -ta_block_and_pin_unit 128 \
+        -ta_layout_shape_unit 128 \
         -ta_reserved_via_unit 64 \
-        -ta_other_panel_unit 32 \
-        -ta_self_panel_unit 16 \
         -ta_history_cost_unit 2 \
         -ta_model_max_iter_num 1 \
         -ta_panel_max_iter_num 1 \
@@ -41,11 +39,8 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -dr_nonprefer_wire_unit 2 \
         -dr_via_unit 1 \
         -dr_corner_unit 1 \
-        -dr_block_and_pin_unit 128 \
-        -dr_known_panel_unit 64 \
+        -dr_layout_shape_unit 128 \
         -dr_reserved_via_unit 32 \
-        -dr_other_box_unit 16 \
-        -dr_self_box_unit 8 \
         -dr_history_cost_unit 2 \
         -dr_model_max_iter_num 1 \
         -dr_box_max_iter_num 1 \

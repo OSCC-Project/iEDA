@@ -849,20 +849,20 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   gp_gds.addStruct(box_track_axis_struct);
 
   // env shape
-  for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
-    GPStruct net_shape_struct(RTUtil::getString("env shape(net_", net_id, ")"));
-    GPGraphType type = net_id == -1 ? GPGraphType::kBlockAndPin : GPGraphType::kKnownPanel;
-    for (auto& [layer_idx, shape_map] : layer_shape_list) {
-      for (auto& [rect, shape] : shape_map) {
-        GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(type));
-        gp_boundary.set_rect(RTUtil::convertToPlanarRect(shape->get_shape()));
-        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-        net_shape_struct.push(gp_boundary);
-      }
-    }
-    gp_gds.addStruct(net_shape_struct);
-  }
+  // for (auto& [net_id, layer_shape_list] : routing_net_rect_map) {
+  //   GPStruct net_shape_struct(RTUtil::getString("env shape(net_", net_id, ")"));
+  //   GPGraphType type = net_id == -1 ? GPGraphType::kBlockAndPin : GPGraphType::kKnownPanel;
+  //   for (auto& [layer_idx, shape_map] : layer_shape_list) {
+  //     for (auto& [rect, shape] : shape_map) {
+  //       GPBoundary gp_boundary;
+  //       gp_boundary.set_data_type(static_cast<irt_int>(type));
+  //       gp_boundary.set_rect(RTUtil::convertToPlanarRect(shape->get_shape()));
+  //       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+  //       net_shape_struct.push(gp_boundary);
+  //     }
+  //   }
+  //   gp_gds.addStruct(net_shape_struct);
+  // }
 
   // check shape
   GPStruct check_shape_struct(RTUtil::getString("check shape"));

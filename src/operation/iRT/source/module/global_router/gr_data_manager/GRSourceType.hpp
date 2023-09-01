@@ -25,7 +25,7 @@ namespace irt {
 enum class GRSourceType
 {
   kNone,
-  kBlockAndPin,
+  kLayoutShape,
   kReservedVia
 };
 
@@ -38,8 +38,8 @@ struct GetGRSourceTypeName
       case GRSourceType::kNone:
         gr_source_type_name = "none";
         break;
-      case GRSourceType::kBlockAndPin:
-        gr_source_type_name = "block_and_pin";
+      case GRSourceType::kLayoutShape:
+        gr_source_type_name = "layout_shape";
         break;
       case GRSourceType::kReservedVia:
         gr_source_type_name = "reserved_via";

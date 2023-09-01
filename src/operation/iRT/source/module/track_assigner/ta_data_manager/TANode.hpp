@@ -64,14 +64,11 @@ class TANode : public LayerCoord
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
-    double ta_block_and_pin_unit = DM_INST.getConfig().ta_block_and_pin_unit;
+    double ta_layout_shape_unit = DM_INST.getConfig().ta_layout_shape_unit;
     double ta_reserved_via_unit = DM_INST.getConfig().ta_reserved_via_unit;
-    double ta_other_panel_unit = DM_INST.getConfig().ta_other_panel_unit;
-    double ta_self_panel_unit = DM_INST.getConfig().ta_self_panel_unit;
 
     double cost = 0;
-    for (TASourceType ta_source_type :
-         {TASourceType::kBlockAndPin, TASourceType::kReservedVia, TASourceType::kOtherPanel, TASourceType::kSelfPanel}) {
+    for (TASourceType ta_source_type : {TASourceType::kLayoutShape, TASourceType::kReservedVia}) {
       irt_int violation_net_num = 0;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
@@ -85,17 +82,11 @@ class TANode : public LayerCoord
         }
       }
       switch (ta_source_type) {
-        case TASourceType::kBlockAndPin:
-          cost += (ta_block_and_pin_unit * violation_net_num);
+        case TASourceType::kLayoutShape:
+          cost += (ta_layout_shape_unit * violation_net_num);
           break;
         case TASourceType::kReservedVia:
           cost += (ta_reserved_via_unit * violation_net_num);
-          break;
-        case TASourceType::kOtherPanel:
-          cost += (ta_other_panel_unit * violation_net_num);
-          break;
-        case TASourceType::kSelfPanel:
-          cost += (ta_self_panel_unit * violation_net_num);
           break;
         default:
           break;

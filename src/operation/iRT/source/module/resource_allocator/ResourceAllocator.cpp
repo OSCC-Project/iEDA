@@ -168,13 +168,13 @@ void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -254,7 +254,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kBlockAndPin, RASourceType::kReservedVia}) {
+      for (RASourceType ra_source_type : {RASourceType::kLayoutShape, RASourceType::kReservedVia}) {
         for (const auto& [net_idx, rect_set] :
              DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {
