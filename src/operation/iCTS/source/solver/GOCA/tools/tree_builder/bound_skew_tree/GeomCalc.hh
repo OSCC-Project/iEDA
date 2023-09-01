@@ -69,7 +69,9 @@ class GeomCalc
 
   static void calcCoord(Pt& p, const Line& l, const double& shift);
 
-  static void calcRelativeCoord(Pt&p, const RelativeType& type, const double& shift);
+  static void calcRelativeCoord(Pt& p, const RelativeType& type, const double& shift);
+
+  static double crossProduct(const Pt& p1, const Pt& p2, const Pt& p3);
   // line
   static LineType lineType(const Line& l);
 
@@ -97,12 +99,18 @@ class GeomCalc
   static void makeIntersect(Trr& ms1, Trr& ms2, Trr& intersect);
   static void coreMidPoint(Trr& ms, Pt& mid);
   static bool isContain(const Trr& small, const Trr& large);
-  static void buildTrr(Trr& ms, const double& r, Trr& build_trr);
+  static void buildTrr(const Trr& ms, const double& r, Trr& build_trr);
+  static void trrCore(const Trr& trr, Trr& core);
+  static void trrToPt(const Trr& trr, Pt& pt);
+  static void trrToRegion(Trr& trr, Region& region);
+  static bool isSegmentTrr(const Trr& trr);
   // Pts
   static void sortPts(Pts& pts);
+  static void uniquePtsLoc(std::vector<Pt>& pts);
+  static void uniquePtsVal(std::vector<Pt>& pts);
   // Region
-  static void uniqueSortPts(std::vector<Pt>&pts);
   static std::vector<Line> getLines(const std::vector<Pt>& pts);
+  static void convexHull(std::vector<Pt>& pts);
   /* Convert */
   static void lineToMs(Trr& ms, const Line& l);
   static void lineToMs(Trr& ms, const Pt& p1, const Pt& p2);

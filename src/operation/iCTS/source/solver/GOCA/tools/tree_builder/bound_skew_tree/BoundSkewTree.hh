@@ -43,19 +43,8 @@ using Geom = GeomCalc;
 class BoundSkewTree
 {
  public:
-  BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound = std::nullopt)
-      : _net_name(net_name)
-  {
-    _skew_bound = skew_bound.value_or(Timing::getSkewBound());
-    std::ranges::for_each(pins, [&](Pin* pin) {
-      LOG_FATAL_IF(!pin->isLoad()) << "pin " << pin->get_name() << " is not load pin";
-      Timing::initLoadPinDelay(pin);
-      Timing::updatePinCap(pin);
-      auto* node = new Area(pin);
-      _unmerged_nodes.push_back(node);
-      _node_map.insert({pin->get_name(), pin});
-    });
-  }
+  BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound = std::nullopt);
+  BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound = std::nullopt);
   ~BoundSkewTree() = default;
 
   std::vector<Inst*> getInsertBufs() const { return _insert_bufs; }
@@ -85,50 +74,89 @@ class BoundSkewTree
    * @brief flow require
    *
    */
+  // main interface
   void merge(Area* parent, Area* left, Area* right);
-  void constructMr(Area* parent, Area* left, Area* right);
-  void jsProcess(Area* cur);
-  void initSide();
-  void updateJS(Area* cur, Line& left, Line& right, PtPair closest);
 
+  // main flow
+  void calcJS(Area* parent, Area* left, Area* right);
+  void jsProcess(Area* cur);
+  void constructMr(Area* parent, Area* left, Area* right);
+  void embedding(Area* cur);  // TBD
+
+  // Join Segment
+  void initSide();
+  void calcJS(Area* cur, Line& left, Line& right);
+  void calcJsDelay(Area* left, Area* right);
+  void updateJS(Area* cur, Line& left, Line& right, PtPair closest);
+  void addJsPts(Area* parent, Area* left, Area* right);
+  double delayFromJs(const size_t& js_side, const size_t& side, const size_t& idx, const size_t& timing_type,
+                     const Side<double>& delay_from) const;
+  // Join Region
   void calcJr(Area* parent, Area* left, Area* right);
-  LineType calcAreaLineType(Area* cur);
   void calcJrEndpoints(Area* cur);
   void calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* right);
-  void addJsPts(Area* parent, Area* left, Area* right);
+  void addTurnPt(const size_t& side, const size_t& idx, const size_t& timing_type, const Side<double>& delay_from);
+  void addFmsToJr();
 
+  // Join Corner
   void calcJrCorner(Area* cur);
+  bool jrCornerExist(const size_t& end_side) const;
+
+  // Balance Point
   void calcBalancePt(Area* cur);
-  void calcFmsPt(Area* parent, Area* left, Area* right);
+  void calcBalBetweenPts(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt) const;
+  void calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, double& d1, double& d2, Pt& bal_pt) const;
+  void calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt) const;
+  void calcMergeDist(const double& r, const double& c, const double& cap1, const double& delay1, const double& cap2, const double& delay2,
+                     const double& dist, double& d1, double& d2) const;
+  void calcPtCoordOnLine(const Pt& p1, const Pt& p2, const double& d1, const double& d2, Pt& pt) const;
+  double calcXBalPosition(const double& delay1, const double& delay2, const double& cap1, const double& cap2, const double& h,
+                          const double& v, const size_t& bal_ref_side) const;
+  double calcYBalPosition(const double& delay1, const double& delay2, const double& cap1, const double& cap2, const double& h,
+                          const double& v, const size_t& bal_ref_side) const;
 
-  bool existFmsOnJr();
-  void constructFeasibleMr(Area* parent, Area* left, Area* right);
-  void constructInfeasibleMr(Area* parent, Area* left, Area* right);
-  void constructTrrMr(Area* cur);
-  void calcConvexHull(Area* cur);
-  void checkMr(Area* cur);
+  // Feasible Merging Section
+  void calcFmsPt(Area* cur);
+  bool calcFmsOnLine(Area* cur, Pt& pt, const Pt& q, const size_t& end_side);
+  void calcFmsBetweenPts(const Pt& high_skew_pt, const Pt& low_skew_pt, Pt& fms_pt) const;
+  bool existFmsOnJr() const;
 
-  double calcJrArea(const Line& l1, const Line& l2);
-  void calcJS(Area* cur, Line& left, Line& right);
-  void calcJS(Area* parent, Area* left, Area* right);
-  void calcJsDelay(Area* left, Area* right);
-  void calcBsLocated(Area* cur, Pt& pt, Line& line);
-  void calcPtDelays(Area* cur, Pt& pt, Line& line);
-  void updatePtDelaysBySide(Area* cur, const size_t& side, Pt& pt);
-  void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line);
-  double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV);
-  double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV);
-  Line getJrLine(const size_t& side);
-  Line getJsLine(const size_t& side);
-  Line getJsLine(const size_t& side, const Side<Pts>& join_segment);
+  // Merging Region
+  void constructFeasibleMr(Area* parent, Area* left, Area* right) const;
+  void mrBetweenJs(Area* cur, const size_t& end_side) const;
+  void mrOnJs(Area* cur, const size_t& side) const;
+  void fmsOfLineExist(Area* cur, const size_t& side, const size_t& idx) const;
+  double calcSkewSlope(Area* cur) const;
+
+  void constructInfeasibleMr(Area* parent, Area* left, Area* right) const;
+  void calcMinSkewSection(Area* cur) const;
+  void calcDetourEdgeLen(Area* cur) const;
+  void refineMrDelay(Area* cur) const;
+
+  void constructTrrMr(Area* cur) const;
+
+  // basic function
+  LineType calcAreaLineType(Area* cur) const;
+  void calcConvexHull(Area* cur) const;
+  double calcJrArea(const Line& l1, const Line& l2) const;
+
+  void calcBsLocated(Area* cur, Pt& pt, Line& line) const;
+  void calcPtDelays(Area* cur, Pt& pt, Line& line) const;
+  void updatePtDelaysByEndSide(Area* cur, const size_t& end_side, Pt& pt) const;
+  void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line) const;
+  double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
+  double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
+  double ptSkew(const Pt& pt) const;
+  Line getJrLine(const size_t& side) const;
+  Line getJsLine(const size_t& side) const;
+  Line getJsLine(const size_t& side, const Side<Pts>& join_segment) const;
   void setJrLine(const size_t& side, const Line& line);
   void setJsLine(const size_t& side, const Line& line);
-  double ptSkew(const Pt& pt);
-  void checkPtDelay(Pt& pt);
-  void checkJsMs();
-  void checkUpdateJs(const Area* cur, Line& left, Line& right);
-  void printPoint(const Pt& pt);
-  void printArea(const Area* area);
+  void checkPtDelay(Pt& pt) const;
+  void checkJsMs() const;
+  void checkUpdateJs(const Area* cur, Line& left, Line& right) const;
+  void printPoint(const Pt& pt) const;
+  void printArea(const Area* area) const;
   /**
    * @brief data
    *

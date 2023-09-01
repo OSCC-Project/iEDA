@@ -37,6 +37,7 @@ class JsonParser {
  private:
   JsonParser() = default;
   JsonParser(const JsonParser &parser) = delete;
+  std::string resolvePath(const std::string& path) const;
   JsonParser &operator=(const JsonParser &) = default;
 };
 }  // namespace icts
