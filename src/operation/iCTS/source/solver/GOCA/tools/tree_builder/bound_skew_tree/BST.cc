@@ -756,7 +756,7 @@ void BST::skewFix(Node* start)
     size_t opt_step = 0;
     while (!TimingPropagator::skewFeasible(node, _skew_bound)) {
       auto low_skew = calcRequireSkew(node);
-      LOG_FATAL_IF(low_skew < 0) << "illegal skew range while node skew fesible";
+      LOG_FATAL_IF(low_skew < 0) << "illegal skew range which lower skew: " << low_skew << " while node skew fesible";
       min_insert_delay = TimingPropagator::getMinInsertDelay();
       if (low_skew > min_insert_delay) {
         // case 2 try to insert buffer

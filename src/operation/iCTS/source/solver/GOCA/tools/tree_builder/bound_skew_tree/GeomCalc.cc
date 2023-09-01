@@ -137,6 +137,11 @@ void GeomCalc::calcRelativeCoord(Pt& p, const RelativeType& type, const double& 
   }
 }
 
+double GeomCalc::crossProduct(const Pt& p1, const Pt& p2, const Pt& p3)
+{
+  return (p2.x - p1.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p2.y - p1.y);
+};
+
 LineType GeomCalc::lineType(const Line& l)
 {
   return lineType(l[kHead], l[kTail]);
@@ -442,12 +447,72 @@ bool GeomCalc::isContain(const Trr& small, const Trr& huge)
   return false;
 }
 
-void GeomCalc::buildTrr(Trr& ms, const double& r, Trr& build_trr)
+void GeomCalc::buildTrr(const Trr& ms, const double& r, Trr& build_trr)
 {
   build_trr.x_low(ms.x_low() - r);
   build_trr.x_high(ms.x_high() + r);
   build_trr.y_low(ms.y_low() - r);
   build_trr.y_high(ms.y_high() + r);
+}
+
+void GeomCalc::trrCore(const Trr& trr, Trr& core)
+{
+  if (trr.x_high() - trr.x_low() < trr.y_high() - trr.y_low()) {
+    core.y_low(trr.y_low());
+    core.y_high(trr.y_high());
+    auto x = (trr.x_low() + trr.x_high()) / 2;
+    core.x_low(x);
+    core.x_high(x);
+  } else {
+    core.x_low(trr.x_low());
+    core.x_high(trr.x_high());
+    auto y = (trr.y_low() + trr.y_high()) / 2;
+    core.y_low(y);
+    core.y_high(y);
+  }
+}
+
+void GeomCalc::trrToPt(const Trr& trr, Pt& pt)
+{
+  pt.x = (trr.y_low() + trr.x_high()) / 2;
+  pt.y = (trr.y_low() - trr.x_high()) / 2;
+}
+
+void GeomCalc::trrToRegion(Trr& trr, Region& region)
+{
+  auto x = trr.x_high() - trr.x_low();
+  auto y = trr.y_high() - trr.y_low();
+  if (Equal(x, 0) && Equal(y, 0)) {
+    Pt pt;
+    trrToPt(trr, pt);
+    region.push_back(pt);
+    return;
+  } else if (Equal(x, 0) || Equal(y, 0)) {
+    Pt head, tail;
+    msToLine(trr, head, tail);
+    region.push_back(head);
+    region.push_back(tail);
+    return;
+  }
+
+  Trr ms(trr.x_high(), trr.x_high(), trr.y_low(), trr.y_high());
+  Pt head, tail;
+
+  msToLine(ms, head, tail);
+  region.push_back(head);
+  region.push_back(tail);
+
+  ms.x_low(trr.x_low());
+  ms.x_high(trr.x_low());
+
+  msToLine(ms, head, tail);
+  region.push_back(head);
+  region.push_back(tail);
+}
+
+bool GeomCalc::isSegmentTrr(const Trr& trr)
+{
+  return Equal(trr.x_low(), trr.x_high()) || Equal(trr.y_low(), trr.y_high());
 }
 
 void GeomCalc::sortPts(Pts& pts)
@@ -460,24 +525,61 @@ void GeomCalc::sortPts(Pts& pts)
   std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
 }
 
-void GeomCalc::uniqueSortPts(std::vector<Pt>& pts)
+void GeomCalc::uniquePtsLoc(std::vector<Pt>& pts)
 {
-  sortPts(pts);
   pts.erase(std::unique(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return Equal(p1.x, p2.x) && Equal(p1.y, p2.y); }),
             pts.end());
+}
+
+void GeomCalc::uniquePtsVal(std::vector<Pt>& pts)
+{
+  pts.erase(std::unique(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return Equal(p1.val, p2.val); }), pts.end());
 }
 
 std::vector<Line> GeomCalc::getLines(const std::vector<Pt>& pts)
 {
   if (pts.size() == 2) {
-      return {{pts.front(), pts.back()}};
+    return {{pts.front(), pts.back()}};
+  }
+  std::vector<Line> lines;
+  for (size_t i = 0; i < pts.size(); ++i) {
+    auto j = (i + 1) % pts.size();
+    lines.push_back({pts[i], pts[j]});
+  }
+  return lines;
+}
+
+void GeomCalc::convexHull(std::vector<Pt>& pts)
+{
+  // check pts num
+  if (pts.size() < 2) {
+    return;
+  }
+  if (pts.size() == 2) {
+    auto dist = distance(pts.front(), pts.back());
+    if (Equal(dist, 0)) {
+      pts.pop_back();
     }
-    std::vector<Line> lines;
-    for (size_t i = 0; i < pts.size(); ++i) {
-      auto j = (i + 1) % pts.size();
-      lines.push_back({pts[i], pts[j]});
+    return;
+  }
+  // calculate convex hull
+  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.x < p2.x; });
+  std::vector<Pt> hull;
+  hull.push_back(pts.front());
+  hull.push_back(pts[1]);
+  for (size_t i = 2; i < pts.size(); ++i) {
+    while (hull.size() >= 2) {
+      auto j = hull.size() - 1;
+      auto k = hull.size() - 2;
+      auto cross = crossProduct(pts[i], hull[j], hull[k]);
+      if (cross > 0) {
+        break;
+      }
+      hull.pop_back();
     }
-    return lines;
+    hull.push_back(pts[i]);
+  }
+  pts = hull;
 }
 
 void GeomCalc::lineToMs(Trr& ms, const Line& l)

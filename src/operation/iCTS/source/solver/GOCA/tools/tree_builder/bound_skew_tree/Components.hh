@@ -99,6 +99,7 @@ class Area
     auto y = 1.0 * loc.y() / Timing::getDbUnit();
     auto pt = Pt(x, y, node->get_max_delay(), node->get_min_delay(), node->get_cap_load());
     _sub_len = 1.0 * node->get_sub_len() / Timing::getDbUnit();
+    _cap_load = node->get_cap_load();
     _mr.push_back(pt);
     _convex_hull.push_back(pt);
   }
@@ -106,6 +107,7 @@ class Area
   Area(const std::string& name, const double& x, const double& y, const double& cap_load) : _name(name)
   {
     auto pt = Pt(x, y, 0, 0, cap_load);
+    _cap_load = cap_load;
     _mr.push_back(pt);
     _convex_hull.push_back(pt);
   }
@@ -115,10 +117,10 @@ class Area
   const double& get_sub_len() const { return _sub_len; }
   const double& get_edge_len(const size_t& side) const { return _edge_len[side]; }
   const double& get_radius() const { return _radius; }
+  const RCPattern& get_pattern() const { return _pattern; }
 
   Line get_line(const size_t& side) const { return _lines[side]; }
   Side<Line> get_lines() const { return _lines; }
-  JoinSegment get_js(const size_t& side) const { return _sub_js[side]; }
   Region get_mr() const { return _mr; }
   std::vector<Line> getMrLines() const
   {
@@ -157,20 +159,15 @@ class Area
   void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
   void set_edge_len(const size_t& side, const double& edge_len) { _edge_len[side] = edge_len; }
   void set_radius(const double& radius) { _radius = radius; }
+  void set_pattern(const RCPattern& pattern) { _pattern = pattern; }
 
   void set_line(const size_t& side, const Line& line) { _lines[side] = line; }
-  void set_js(const size_t& side, const JoinSegment& js) { _sub_js[side] = js; }
-  void set_sub_js(const Side<JoinSegment>& sub_js) { _sub_js = sub_js; }
   void set_mr(const Region& mr) { _mr = mr; }
+  void set_convex_hull(const Region& convex_hull) { _convex_hull = convex_hull; }
 
   void set_parent(Area* parent) { _parent = parent; }
   void set_left(Area* left) { _left = left; }
   void set_right(Area* right) { _right = right; }
-  void set_children(Area* left, Area* right)
-  {
-    _left = left;
-    _right = right;
-  }
 
   // add
   void add_mr_point(const Pt& point) { _mr.push_back(point); }
@@ -182,12 +179,12 @@ class Area
   double _sub_len = 0;
   Side<double> _edge_len = {0, 0};
   double _radius = 0;
+  RCPattern _pattern = RCPattern::kHV;
 
-  Area* _parent;
-  Area* _left;
-  Area* _right;
+  Area* _parent = nullptr;
+  Area* _left = nullptr;
+  Area* _right = nullptr;
   Side<Line> _lines;
-  Side<JoinSegment> _sub_js;
   Region _mr;
   Region _convex_hull;
 };
