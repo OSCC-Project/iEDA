@@ -1789,21 +1789,10 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   ta_panel_stat.set_total_prefer_wire_length(total_prefer_wire_length);
   ta_panel_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
 
-  std::vector<DRCRect> drc_rect_list;
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
-    std::vector<Segment<LayerCoord>> routing_segment_list;
-    for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(ta_task.get_origin_node()->value().get_routing_tree())) {
-      routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    }
-    std::vector<DRCRect> task_drc_rect_list = DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), routing_segment_list);
-    drc_rect_list.insert(drc_rect_list.end(), task_drc_rect_list.begin(), task_drc_rect_list.end());
-  }
-
   std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = ta_panel_stat.get_source_drc_violation_map();
-  for (TASourceType ta_source_type : {TASourceType::kLayoutShape, TASourceType::kReservedVia}) {
-    RegionQuery* region_query = ta_panel.getRegionQuery(ta_source_type);
-    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(region_query, drc_rect_list)) {
+  for (TASourceType ta_source_type : {TASourceType::kLayoutShape}) {
+    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type))) {
       source_drc_violation_map[ta_source_type][drc] = violation_info_list;
     }
   }

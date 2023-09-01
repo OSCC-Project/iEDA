@@ -380,19 +380,19 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
                                                                                const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map["Cut EOL Spacing"];
-  drc_violation_map["Cut Spacing"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Cut Enclosure"];
-  drc_violation_map["Metal EOL Spacing"];
-  drc_violation_map["Metal Short"];
-  drc_violation_map["Metal Parallel Run Length Spacing"];
-  drc_violation_map["Metal Notch Spacing"];
-  drc_violation_map["MinStep"];
-  drc_violation_map["Minimal Area"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Metal Corner Fill Spacing"];
-  drc_violation_map["Minimal Hole Area"];
+  // drc_violation_map["Cut EOL Spacing"];
+  // drc_violation_map["Cut Spacing"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Cut Enclosure"];
+  // drc_violation_map["Metal EOL Spacing"];
+  // drc_violation_map["Metal Short"];
+  // drc_violation_map["Metal Parallel Run Length Spacing"];
+  // drc_violation_map["Metal Notch Spacing"];
+  // drc_violation_map["MinStep"];
+  // drc_violation_map["Minimal Area"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Metal Corner Fill Spacing"];
+  // drc_violation_map["Minimal Hole Area"];
 
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingByOther(region_query, drc_rect_list, violation_info_list);
@@ -408,19 +408,19 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery* region_query)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map["Cut EOL Spacing"];
-  drc_violation_map["Cut Spacing"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Cut Enclosure"];
-  drc_violation_map["Metal EOL Spacing"];
-  drc_violation_map["Metal Short"];
-  drc_violation_map["Metal Parallel Run Length Spacing"];
-  drc_violation_map["Metal Notch Spacing"];
-  drc_violation_map["MinStep"];
-  drc_violation_map["Minimal Area"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Metal Corner Fill Spacing"];
-  drc_violation_map["Minimal Hole Area"];
+  // drc_violation_map["Cut EOL Spacing"];
+  // drc_violation_map["Cut Spacing"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Cut Enclosure"];
+  // drc_violation_map["Metal EOL Spacing"];
+  // drc_violation_map["Metal Short"];
+  // drc_violation_map["Metal Parallel Run Length Spacing"];
+  // drc_violation_map["Metal Notch Spacing"];
+  // drc_violation_map["MinStep"];
+  // drc_violation_map["Minimal Area"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Metal Corner Fill Spacing"];
+  // drc_violation_map["Minimal Hole Area"];
 
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingBySelf(region_query, violation_info_list);
@@ -434,19 +434,19 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map["Cut EOL Spacing"];
-  drc_violation_map["Cut Spacing"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Cut Enclosure"];
-  drc_violation_map["Metal EOL Spacing"];
-  drc_violation_map["Metal Short"];
-  drc_violation_map["Metal Parallel Run Length Spacing"];
-  drc_violation_map["Metal Notch Spacing"];
-  drc_violation_map["MinStep"];
-  drc_violation_map["Minimal Area"];
-  drc_violation_map["Cut Diff Layer Spacing"];
-  drc_violation_map["Metal Corner Fill Spacing"];
-  drc_violation_map["Minimal Hole Area"];
+  // drc_violation_map["Cut EOL Spacing"];
+  // drc_violation_map["Cut Spacing"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Cut Enclosure"];
+  // drc_violation_map["Metal EOL Spacing"];
+  // drc_violation_map["Metal Short"];
+  // drc_violation_map["Metal Parallel Run Length Spacing"];
+  // drc_violation_map["Metal Notch Spacing"];
+  // drc_violation_map["MinStep"];
+  // drc_violation_map["Minimal Area"];
+  // drc_violation_map["Cut Diff Layer Spacing"];
+  // drc_violation_map["Metal Corner Fill Spacing"];
+  // drc_violation_map["Minimal Hole Area"];
 
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingBySelf(drc_rect_list, violation_info_list);
@@ -592,19 +592,19 @@ void DRCChecker::delEnvRectListByRTDRC(RegionQuery* region_query, const std::vec
 std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int> violation_name_num_map;
-  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("MinStep", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
 
   std::map<irt_int, std::vector<RQShape>> net_shape_list_map;
   for (const DRCRect& drc_rect : drc_rect_list) {
@@ -624,19 +624,19 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_q
 std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_query)
 {
   std::map<std::string, irt_int> violation_name_num_map;
-  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("MinStep", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
 
   auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
 
@@ -658,19 +658,19 @@ std::map<std::string, int> DRCChecker::getViolationByRTDRC(RegionQuery* region_q
 std::map<std::string, int> DRCChecker::getViolationByRTDRC(const std::vector<DRCRect>& drc_shape_list)
 {
   std::map<std::string, irt_int> violation_name_num_map;
-  violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
-  violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Short", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("MinStep", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
-  violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
-  violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Enclosure", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal EOL Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Short", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Parallel Run Length Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Notch Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("MinStep", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Area", 0));
+  // violation_name_num_map.insert(std::make_pair("Cut Diff Layer Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Metal Corner Fill Spacing", 0));
+  // violation_name_num_map.insert(std::make_pair("Minimal Hole Area", 0));
 
   std::map<irt_int, std::vector<RQShape>> net_shape_list_map;
   for (const DRCRect& drc_shape : drc_shape_list) {
@@ -811,7 +811,7 @@ void DRCChecker::plotRegionQueryByRTDRC(RegionQuery* region_query, const std::ve
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::string gp_temp_directory_path = DM_INST.getConfig().gp_temp_directory_path;
 
-  auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
+  // auto& routing_net_rect_map = region_query->get_routing_net_shape_map();
 
   GPGDS gp_gds;
 

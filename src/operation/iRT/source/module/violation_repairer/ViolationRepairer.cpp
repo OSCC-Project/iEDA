@@ -137,21 +137,21 @@ void ViolationRepairer::updateNetFixedRectMap(VRModel& vr_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, false));
+    addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, false));
   }
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
       for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(vr_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : vr_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kBlockAndPin, DRCRect(vr_net.get_net_idx(), shape_real_rect, false));
+        addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
@@ -334,7 +334,7 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 void ViolationRepairer::updateNetResultMap(VRModel& vr_model, VRNet& vr_net)
 {
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-    addRectToEnv(vr_model, VRSourceType::kNetResult, drc_rect);
+    addRectToEnv(vr_model, VRSourceType::kLayoutShape, drc_rect);
   }
 }
 
@@ -497,8 +497,7 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
     }
     for (LayerRect& candidate_patch : candidate_patch_list) {
       DRCRect drc_rect(vr_net.get_net_idx(), candidate_patch, true);
-      if (!hasViolation(vr_model, VRSourceType::kBlockAndPin, {drc_rect})
-          && !hasViolation(vr_model, VRSourceType::kNetResult, {drc_rect})) {
+      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, {drc_rect})) {
         patch_list.push_back(candidate_patch);
         break;
       }
@@ -633,33 +632,11 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
-      std::vector<DRCRect> drc_rect_list;
-      for (bool is_routing : {true, false}) {
-        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(vr_gcell.getRegionQuery(VRSourceType::kNetResult), is_routing)) {
-          for (auto& [net_idx, rect_set] : net_rect_map) {
-            for (const LayerRect& layer_rect : rect_set) {
-              drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);
-            }
-          }
-        }
-      }
-
-      for (VRSourceType vr_source_type : {VRSourceType::kBlockAndPin, VRSourceType::kNetResult}) {
-        RegionQuery* region_query = vr_gcell.getRegionQuery(vr_source_type);
-        for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
+      for (VRSourceType vr_source_type : {VRSourceType::kLayoutShape}) {
+        for (auto& [drc, number] : DC_INST.getViolation(vr_gcell.getRegionQuery(vr_source_type))) {
           source_drc_number_map[vr_source_type][drc] += number;
         }
       }
-    }
-  }
-
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    std::vector<DRCRect> drc_rect_list;
-    for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      drc_rect_list.push_back(drc_rect);
-    }
-    for (auto& [drc, number] : DC_INST.getViolation(drc_rect_list)) {
-      source_drc_number_map[VRSourceType::kNetResult][drc] += number;
     }
   }
 

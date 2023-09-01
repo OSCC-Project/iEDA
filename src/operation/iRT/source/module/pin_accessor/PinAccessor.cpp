@@ -895,31 +895,18 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   }
 
   std::map<PASourceType, std::map<std::string, irt_int>>& source_drc_number_map = pa_model_stat.get_source_drc_number_map();
-  // GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
-  // for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
-  //   for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
-  //     PAGCell& pa_gcell = pa_gcell_map[x][y];
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+  for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
+      PAGCell& pa_gcell = pa_gcell_map[x][y];
 
-  //     std::vector<DRCRect> drc_rect_list;
-  //     for (bool is_routing : {true, false}) {
-  //       for (auto& [layer_idx, net_rect_map] :
-  //            DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kAccessPoint), is_routing)) {
-  //         for (auto& [net_idx, rect_set] : net_rect_map) {
-  //           for (const LayerRect& layer_rect : rect_set) {
-  //             drc_rect_list.emplace_back(net_idx, layer_rect, is_routing);
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     for (PASourceType pa_source_type : {PASourceType::kBlockAndPin, PASourceType::kAccessPoint}) {
-  //       RegionQuery* region_query = pa_gcell.getRegionQuery(pa_source_type);
-  //       for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
-  //         source_drc_number_map[pa_source_type][drc] += number;
-  //       }
-  //     }
-  //   }
-  // }
+      for (PASourceType pa_source_type : {PASourceType::kLayoutShape}) {
+        for (auto& [drc, number] : DC_INST.getViolation(pa_gcell.getRegionQuery(pa_source_type))) {
+          source_drc_number_map[pa_source_type][drc] += number;
+        }
+      }
+    }
+  }
 
   std::map<std::string, irt_int>& rule_number_map = pa_model_stat.get_drc_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {

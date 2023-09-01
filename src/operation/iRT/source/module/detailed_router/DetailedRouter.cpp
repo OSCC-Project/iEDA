@@ -2206,30 +2206,12 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
     }
   }
 
-  std::vector<DRCRect> drc_rect_list;
-  for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    std::vector<Segment<LayerCoord>> routing_segment_list;
-    for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(dr_task.get_origin_node()->value().get_routing_tree())) {
-      routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    }
-    std::vector<DRCRect> task_drc_rect_list = DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), routing_segment_list);
-    drc_rect_list.insert(drc_rect_list.end(), task_drc_rect_list.begin(), task_drc_rect_list.end());
-  }
-
   std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
-  for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape, DRSourceType::kReservedVia}) {
-    RegionQuery* region_query = dr_box.getRegionQuery(dr_source_type);
-    for (auto& [drc, number] : DC_INST.getViolation(region_query, drc_rect_list)) {
+  for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape}) {
+    for (auto& [drc, number] : DC_INST.getViolation(dr_box.getRegionQuery(dr_source_type))) {
       source_drc_number_map[dr_source_type][drc] += number;
     }
   }
-
-  // if (RTUtil::exist(source_drc_number_map, DRSourceType::kReservedVia)) {
-  //   if (source_drc_number_map[DRSourceType::kReservedVia]["RT Spacing"] > 0) {
-  //     plotDRBox(dr_box);
-  //     int a = 0;
-  //   }
-  // }
 
   std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
   for (auto& [source, drc_number_map] : source_drc_number_map) {
