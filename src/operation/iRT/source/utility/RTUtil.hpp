@@ -2214,6 +2214,21 @@ class RTUtil
     return scale_grid_list;
   }
 
+  /**
+   * 计算overflow
+   */
+  static double calcCost(irt_int demand, irt_int supply)
+  {
+    double cost = 0;
+    if (supply != 0) {
+      cost = static_cast<double>(demand) / supply;
+    } else {
+      cost = static_cast<double>(demand);
+    }
+    cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
+    return cost;
+  }
+
 #endif
 
 #if 1  // boost数据结构工具函数

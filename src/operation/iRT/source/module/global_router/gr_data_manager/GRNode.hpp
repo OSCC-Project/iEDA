@@ -110,7 +110,7 @@ class GRNode : public LayerCoord
       if (RTUtil::exist(_orien_access_demand_map, orientation)) {
         access_demand = _orien_access_demand_map[orientation];
       }
-      cost += calcCost(1 + access_demand, access_supply);
+      cost += RTUtil::calcCost(1 + access_demand, access_supply);
       if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
         cost += _history_orien_access_cost_map[orientation];
       }
@@ -123,24 +123,13 @@ class GRNode : public LayerCoord
           wire_demand = _net_orien_wire_demand_map[net_idx][orientation];
         }
       }
-      cost += calcCost(wire_demand + _resource_demand, _resource_supply);
+      cost += RTUtil::calcCost(wire_demand + _resource_demand, _resource_supply);
       cost += _history_resource_cost;
     } else {
       // 对于up和down来说 只有via_demand
-      cost += calcCost(_whole_via_demand + _resource_demand, _resource_supply);
+      cost += RTUtil::calcCost(_whole_via_demand + _resource_demand, _resource_supply);
       cost += _history_resource_cost;
     }
-    return cost;
-  }
-  double calcCost(irt_int demand, irt_int supply)
-  {
-    double cost = 0;
-    if (supply != 0) {
-      cost = static_cast<double>(demand) / supply;
-    } else {
-      cost = static_cast<double>(demand);
-    }
-    cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
     return cost;
   }
   void updateDemand(irt_int net_idx, std::set<Orientation> orien_set, ChangeType change_type)
