@@ -272,11 +272,11 @@ void StaClockPropagation::updateSdcGeneratedClock() {
       int divide_by_value =
           dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_divide_by();
       LOG_FATAL_IF(source_pins.size() != 1);
-      StaClock* source_clock;
+      StaClock* source_clock = nullptr;
       for (auto* source_pin : source_pins) {
         auto the_vertex = ista->findVertex(source_pin);
         LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
-        source_clock = the_vertex->isHavePropClock();
+        source_clock = the_vertex->getPropClock();
       }
 
       the_clock->set_period(source_clock->get_period() * divide_by_value);
