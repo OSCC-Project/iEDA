@@ -457,13 +457,6 @@ ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_rou
   return ids_rect;
 }
 
-// void RTAPI::plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
-// {
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-//     static_cast<RegionQuery*>(region_query)->plotRegionQuery(drc_rect_list);
-//   } else {
-//   }
-// }
 // CTS
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)

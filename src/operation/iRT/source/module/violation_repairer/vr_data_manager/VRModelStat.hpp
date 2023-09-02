@@ -32,7 +32,10 @@ class VRModelStat
   std::map<irt_int, double>& get_routing_nonprefer_wire_length_map() { return _routing_nonprefer_wire_length_map; }
   std::map<irt_int, irt_int>& get_cut_via_number_map() { return _cut_via_number_map; }
   std::vector<double>& get_resource_overflow_list() { return _resource_overflow_list; }
-  std::map<VRSourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
+  std::map<VRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& get_source_drc_violation_map()
+  {
+    return _source_drc_violation_map;
+  }
   std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
   std::map<std::string, irt_int>& get_source_number_map() { return _source_number_map; }
   double get_total_wire_length() { return _total_wire_length; }
@@ -57,7 +60,7 @@ class VRModelStat
   std::map<irt_int, double> _routing_nonprefer_wire_length_map;
   std::map<irt_int, irt_int> _cut_via_number_map;
   std::vector<double> _resource_overflow_list;
-  std::map<VRSourceType, std::map<std::string, irt_int>> _source_drc_number_map;
+  std::map<VRSourceType, std::map<std::string, std::vector<ViolationInfo>>> _source_drc_violation_map;
   std::map<std::string, irt_int> _drc_number_map;
   std::map<std::string, irt_int> _source_number_map;
   double _total_wire_length = 0;
