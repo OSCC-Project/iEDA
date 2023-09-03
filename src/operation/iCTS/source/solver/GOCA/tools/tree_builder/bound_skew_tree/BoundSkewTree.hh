@@ -74,14 +74,16 @@ class BoundSkewTree
    * @brief flow require
    *
    */
+  // main flow
+  void bottomUp();
+  void topDown();
+
   // main interface
   void merge(Area* parent, Area* left, Area* right);
-
-  // main flow
   void calcJS(Area* parent, Area* left, Area* right);
   void jsProcess(Area* cur);
   void constructMr(Area* parent, Area* left, Area* right);
-  void embedding(Area* cur);  // TBD
+  void embedding(Area* cur) const;
 
   // Join Segment
   void initSide();
@@ -135,6 +137,12 @@ class BoundSkewTree
 
   void constructTrrMr(Area* cur) const;
 
+  // Embedding
+  void embedding(Area* parent, Area* child, const size_t& side) const;
+  bool isTrrArea(Area* cur) const;
+  bool isManhattanArea(Area* cur) const;
+  void mrToTrr(const Region& mr, Trr& trr) const;
+
   // basic function
   LineType calcAreaLineType(Area* cur) const;
   void calcConvexHull(Area* cur) const;
@@ -168,6 +176,8 @@ class BoundSkewTree
   std::vector<Area*> _unmerged_nodes;
   std::map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;
+
+  Area* _root = nullptr;
 
   double _skew_bound = 0;
   RCPattern _pattern = RCPattern::kHV;

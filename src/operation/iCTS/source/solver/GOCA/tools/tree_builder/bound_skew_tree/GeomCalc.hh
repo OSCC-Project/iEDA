@@ -61,11 +61,13 @@ class GeomCalc
 
   static double distance(const Pt& p1, const Pt& p2);
 
-  static double ptToLineDistManhattan(Pt& p, const Line& l, Pt& intersect);
+  static double ptToLineDistManhattan(Pt& p, const Line& l, Pt& closest);
 
-  static double ptToLineDistNotManhattan(Pt& p, const Line& l, Pt& intersect);
+  static double ptToLineDistNotManhattan(Pt& p, const Line& l, Pt& closest);
 
-  static double ptToLineDist(Pt& p, const Line& l, Pt& intersect);
+  static double ptToLineDist(Pt& p, const Line& l, Pt& closest);
+
+  static double ptToTrrDist(Pt& p, Trr& ms);
 
   static void calcCoord(Pt& p, const Line& l, const double& shift);
 
@@ -98,7 +100,7 @@ class GeomCalc
   static double msDistance(Trr& ms1, Trr& ms2);
   static void makeIntersect(Trr& ms1, Trr& ms2, Trr& intersect);
   static void coreMidPoint(Trr& ms, Pt& mid);
-  static bool isContain(const Trr& small, const Trr& large);
+  static bool isTrrContain(const Trr& small, const Trr& large);
   static void buildTrr(const Trr& ms, const double& r, Trr& build_trr);
   static void trrCore(const Trr& trr, Trr& core);
   static void trrToPt(const Trr& trr, Pt& pt);
@@ -111,6 +113,9 @@ class GeomCalc
   // Region
   static std::vector<Line> getLines(const std::vector<Pt>& pts);
   static void convexHull(std::vector<Pt>& pts);
+  static Pt centerPt(const std::vector<Pt>& pts);
+  static bool isRegionContain(const Pt& p, const std::vector<Pt>& region);
+  static Pt closestPtOnRegion(const Pt& p, const std::vector<Pt>& region);
   /* Convert */
   static void lineToMs(Trr& ms, const Line& l);
   static void lineToMs(Trr& ms, const Pt& p1, const Pt& p2);

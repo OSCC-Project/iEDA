@@ -34,7 +34,7 @@ double GeomCalc::distance(const Pt& p1, const Pt& p2)
   return std::abs(p1.x - p2.x) + std::abs(p1.y - p2.y);
 }
 
-double GeomCalc::ptToLineDistManhattan(Pt& p, const Line& l, Pt& intersect)
+double GeomCalc::ptToLineDistManhattan(Pt& p, const Line& l, Pt& closest)
 {
   // manhattan arc
   Trr ms_p = Trr(p, 0);
@@ -45,11 +45,11 @@ double GeomCalc::ptToLineDistManhattan(Pt& p, const Line& l, Pt& intersect)
   new_ms_p.makeDiamond(p, dist);
   Trr intersect_ms;
   makeIntersect(new_ms_p, ms_l, intersect_ms);
-  coreMidPoint(intersect_ms, intersect);
+  coreMidPoint(intersect_ms, closest);
   return dist;
 }
 
-double GeomCalc::ptToLineDistNotManhattan(Pt& p, const Line& l, Pt& intersect)
+double GeomCalc::ptToLineDistNotManhattan(Pt& p, const Line& l, Pt& closest)
 {
   std::vector<Pt> candidate;
   if (!Equal(l[kHead].x, l[kTail].x) && (p.x - l[kHead].x) * (p.x - l[kTail].x) <= 0) {
@@ -69,35 +69,54 @@ double GeomCalc::ptToLineDistNotManhattan(Pt& p, const Line& l, Pt& intersect)
     candidate.push_back(l[kTail]);
   }
   double min_dist = std::numeric_limits<double>::max();
-  std::ranges::for_each(candidate, [&p, &min_dist, &intersect](auto& pt) {
+  std::ranges::for_each(candidate, [&p, &min_dist, &closest](auto& pt) {
     auto dist = distance(p, pt);
     if (dist < min_dist) {
       min_dist = dist;
-      intersect = pt;
+      closest = pt;
     }
   });
   return min_dist;
 }
 
-double GeomCalc::ptToLineDist(Pt& p, const Line& l, Pt& intersect)
+double GeomCalc::ptToLineDist(Pt& p, const Line& l, Pt& closest)
 {
   auto min_dist = std::numeric_limits<double>::max();
   auto delta_x = std::abs(l[kHead].x - l[kTail].x);
   auto delta_y = std::abs(l[kHead].y - l[kTail].y);
   if (isSame(l[kHead], l[kTail])) {
-    intersect = l[kHead];
-    min_dist = distance(p, intersect);
+    closest = l[kHead];
+    min_dist = distance(p, closest);
   } else if (onLine(p, l)) {
-    intersect = p;
+    closest = p;
     min_dist = 0;
   } else if (Equal(delta_x, delta_y)) {
     // manhattan arc
-    min_dist = ptToLineDistManhattan(p, l, intersect);
+    min_dist = ptToLineDistManhattan(p, l, closest);
   } else {
     // not manhattan arc
-    min_dist = ptToLineDistNotManhattan(p, l, intersect);
+    min_dist = ptToLineDistNotManhattan(p, l, closest);
   }
-  LOG_FATAL_IF(onLine(intersect, l) == false) << "intersect point is not on line";
+  LOG_FATAL_IF(onLine(closest, l) == false) << "closest point is not on line";
+  return min_dist;
+}
+
+double GeomCalc::ptToTrrDist(Pt& p, Trr& ms)
+{
+  Trr pt_trr(p, 0);
+  if (isTrrContain(pt_trr, ms)) {
+    return 0;
+  }
+  std::vector<Trr> trrs(4, ms);
+  trrs[kLeft + kHead].y_low(ms.y_high());
+  trrs[kLeft + kTail].y_high(ms.y_low());
+  trrs[kRight + kHead].x_low(ms.x_high());
+  trrs[kRight + kTail].x_high(ms.x_low());
+  double min_dist = std::numeric_limits<double>::max();
+  std::ranges::for_each(trrs, [&pt_trr, &min_dist](auto& trr) {
+    auto dist = msDistance(pt_trr, trr);
+    min_dist = std::min(min_dist, dist);
+  });
   return min_dist;
 }
 
@@ -438,7 +457,7 @@ void GeomCalc::coreMidPoint(Trr& ms, Pt& mid)
   mid.y = (y - x) / 2;
 }
 
-bool GeomCalc::isContain(const Trr& small, const Trr& huge)
+bool GeomCalc::isTrrContain(const Trr& small, const Trr& huge)
 {
   if (small.x_high() <= huge.x_high() + kEpsilon && small.x_low() >= huge.x_low() - kEpsilon && small.y_high() <= huge.y_high() + kEpsilon
       && small.y_low() >= huge.y_low() - kEpsilon) {
@@ -580,6 +599,56 @@ void GeomCalc::convexHull(std::vector<Pt>& pts)
     hull.push_back(pts[i]);
   }
   pts = hull;
+}
+
+Pt GeomCalc::centerPt(const std::vector<Pt>& pts)
+{
+  if (pts.empty()) {
+    return {0, 0};
+  }
+  double x = 0, y = 0;
+  std::ranges::for_each(pts, [&x, &y](const Pt& p) {
+    x += p.x;
+    y += p.y;
+  });
+  return {x / pts.size(), y / pts.size()};
+}
+
+bool GeomCalc::isRegionContain(const Pt& p, const std::vector<Pt>& region)
+{
+  auto pt = p;
+  auto count = 0;
+  for (size_t i = 0; i < region.size(); ++i) {
+    auto j = (i + 1) % region.size();
+    if (onLine(pt, {region[i], region[j]})) {
+      return true;
+    }
+    if (region[i].y > pt.y != region[j].y > pt.y) {
+      auto cross = crossProduct(pt, region[i], region[j]);
+      if (cross > 0) {
+        ++count;
+      }
+    }
+  }
+  return count % 2 == 1;
+}
+
+Pt GeomCalc::closestPtOnRegion(const Pt& p, const std::vector<Pt>& region)
+{
+  if (isRegionContain(p, region)) {
+    return p;
+  }
+  auto pt = p;
+  Pt closest;
+  auto min_dist = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < region.size(); ++i) {
+    auto j = (i + 1) % region.size();
+    auto dist = ptToLineDist(pt, {region[i], region[j]}, closest);
+    if (dist < min_dist) {
+      min_dist = dist;
+    }
+  }
+  return closest;
 }
 
 void GeomCalc::lineToMs(Trr& ms, const Line& l)

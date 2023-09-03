@@ -30,6 +30,7 @@ namespace bst {
  */
 BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound)
 {
+  // Not input topology
   _net_name = net_name;
   _skew_bound = skew_bound.value_or(Timing::getSkewBound());
   std::ranges::for_each(pins, [&](Pin* pin) {
@@ -43,9 +44,105 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
 }
 BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound)
 {
+  _net_name = net_name;
+  _skew_bound = skew_bound.value_or(Timing::getSkewBound());
+
+  // Input topology
+  std::unordered_map<Node*, Area*> node_area_map;
+  driver_pin->postOrder([&](Node* node) {
+    if (node->isPin() && node->isLoad()) {
+      auto* pin = dynamic_cast<Pin*>(node);
+      Timing::initLoadPinDelay(pin);
+      Timing::updatePinCap(pin);
+    }
+    auto* area = new Area(node);
+    // random select RCpattern
+    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+    area->set_pattern(pattern);
+    _node_map.insert({node->get_name(), node});
+    if (node->isPin() && node->isDriver()) {
+      _root = area;
+    }
+    auto children = node->get_children();
+    if (children.empty()) {
+      // is load
+      return;
+    }
+    LOG_FATAL_IF(children.size() != 2) << "node " << node->get_name() << " children size is not 2";
+    auto left = children[kLeft];
+    auto right = children[kRight];
+    auto* left_area = node_area_map[left];
+    auto* right_area = node_area_map[right];
+    area->set_left(left_area);
+    area->set_right(right_area);
+    left_area->set_parent(area);
+    right_area->set_parent(area);
+  });
 }
 void BoundSkewTree::run()
 {
+  bottomUp();
+  topDown();
+}
+Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
+{
+  auto min_cost = std::numeric_limits<double>::max();
+  Match best_match;
+  for (size_t i = 0; i < _unmerged_nodes.size(); ++i) {
+    for (size_t j = i + 1; j < _unmerged_nodes.size(); ++j) {
+      auto cost = cost_func(_unmerged_nodes[i], _unmerged_nodes[j]);
+      if (cost < min_cost) {
+        min_cost = cost;
+        best_match = {_unmerged_nodes[i], _unmerged_nodes[j], cost};
+      }
+    }
+  }
+  return best_match;
+}
+double BoundSkewTree::distanceCost(Area* left, Area* right) const
+{
+  auto min_dist = std::numeric_limits<double>::max();
+  auto left_mr = left->get_mr();
+  auto right_mr = right->get_mr();
+  for (auto left_pt : left_mr) {
+    for (auto right_pt : right_mr) {
+      min_dist = std::min(min_dist, Geom::distance(left_pt, right_pt));
+    }
+  }
+  return min_dist;
+}
+void BoundSkewTree::bottomUp()
+{
+  // not input topo
+  while (_unmerged_nodes.size() > 1) {
+    auto cost_func = [&](Area* left, Area* right) { return distanceCost(left, right); };
+    auto best_match = getBestMatch(cost_func);
+    auto* left = best_match.left;
+    auto* right = best_match.right;
+    auto* parent = new Area();
+    // random select RCpattern
+    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+    parent->set_pattern(pattern);
+    merge(parent, left, right);
+    std::remove_if(_unmerged_nodes.begin(), _unmerged_nodes.end(), [&](Area* node) { return node == left || node == right; });
+    _unmerged_nodes.push_back(parent);
+  }
+  _root = _unmerged_nodes.front();
+}
+void BoundSkewTree::topDown()
+{
+  // set root location
+  Pt root_loc;
+  auto mr = _root->get_mr();
+  if (_root_guide.has_value()) {
+    root_loc = Geom::closestPtOnRegion(_root_guide.value(), mr);
+  } else {
+    root_loc = Geom::centerPt(mr);
+  }
+  _root->set_location(root_loc);
+
+  // recursive top down
+  embedding(_root);
 }
 void BoundSkewTree::merge(Area* parent, Area* left, Area* right)
 {
@@ -148,6 +245,31 @@ void BoundSkewTree::constructMr(Area* parent, Area* left, Area* right)
   Geom::uniquePtsLoc(mr);
   parent->set_mr(mr);
   calcConvexHull(parent);
+}
+void BoundSkewTree::embedding(Area* cur) const
+{
+  auto* left = cur->get_left();
+  auto* right = cur->get_right();
+  if (!left || !right) {
+    return;
+  }
+  embedding(cur, left, kLeft);
+  embedding(left);
+
+  embedding(cur, right, kRight);
+  embedding(right);
+  // update timing
+  auto pt = cur->get_location();
+  auto left_pt = left->get_location();
+  auto right_pt = right->get_location();
+  pt.min = std::numeric_limits<double>::max();
+  pt.max = std::numeric_limits<double>::min();
+  auto delay_left = ptDelayIncrease(pt, left_pt, cur->get_cap_load(), cur->get_pattern());
+  auto delay_right = ptDelayIncrease(pt, right_pt, cur->get_cap_load(), cur->get_pattern());
+  pt.min = std::min(left_pt.min + delay_left, right_pt.min + delay_right);
+  pt.max = std::max(left_pt.max + delay_left, right_pt.max + delay_right);
+  LOG_FATAL_IF(ptSkew(pt) > _skew_bound + kEpsilon) << "skew is larger than skew bound";
+  cur->set_location(pt);
 }
 void BoundSkewTree::initSide()
 {
@@ -955,6 +1077,101 @@ void BoundSkewTree::constructTrrMr(Area* cur) const
   });
   cur->set_mr(mr);
 }
+void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) const
+{
+  Pt child_loc;
+  auto parent_loc = parent->get_location();
+  auto mr = child->get_mr();
+  if (mr.size() == 4 && isTrrArea(parent)) {
+    Trr trr;
+    mrToTrr(mr, trr);
+    auto dist = Geom::ptToTrrDist(parent_loc, trr);
+    Trr parent_trr(parent_loc, dist);
+    Trr ms;
+    Geom::makeIntersect(parent_trr, trr, ms);
+    Geom::coreMidPoint(ms, child_loc);
+  } else {
+    auto js_line = parent->get_line(side);
+    auto head = js_line[kHead];
+    auto tail = js_line[kTail];
+    auto x = std::abs(head.x - tail.x);
+    auto y = std::abs(head.y - tail.y);
+    if (Equal(x, 0) && Equal(y, 0)) {
+      // parent loc is same as child loc
+      child_loc = head;
+    } else if (Equal(x, 0)) {
+      // vertical
+      child_loc.x = head.x;
+      child_loc.y = parent_loc.y;
+    } else if (Equal(y, 0)) {
+      // horizontal
+      child_loc.x = parent_loc.x;
+      child_loc.y = head.y;
+    } else {
+      // others
+      Geom::ptToLineDist(parent_loc, js_line, child_loc);
+    }
+    LOG_FATAL_IF(!Geom::onLine(child_loc, js_line)) << "child loc is not on js line";
+  }
+  child->set_location(child_loc);
+  LOG_FATAL_IF(parent->get_edge_len(side) < Geom::distance(parent_loc, child_loc) - kEpsilon) << "edge len is less than distance";
+}
+bool BoundSkewTree::isTrrArea(Area* cur) const
+{
+  if (isManhattanArea(cur)) {
+    return true;
+  }
+  auto mr = cur->get_mr();
+  if (mr.size() != 4) {
+    return false;
+  }
+  int count = 0;
+  for (auto line : cur->getMrLines()) {
+    if (Geom::lineType(line) == LineType::kManhattan) {
+      count++;
+    }
+    auto t_min = std::abs(line[kHead].min - line[kTail].min);
+    auto t_max = std::abs(line[kHead].max - line[kTail].max);
+    if (t_min > kEpsilon || t_max > kEpsilon) {
+      return false;
+    }
+  }
+  return count == 2;
+}
+bool BoundSkewTree::isManhattanArea(Area* cur) const
+{
+  auto mr = cur->get_mr();
+  if (mr.size() == 1) {
+    return true;
+  }
+  if (mr.size() == 2 && Geom::lineType(mr[kHead], mr[kTail]) == LineType::kManhattan) {
+    return true;
+  }
+  return false;
+}
+
+void BoundSkewTree::mrToTrr(const Region& mr, Trr& trr) const
+{
+  if (mr.size() == 1) {
+    trr.makeDiamond(mr.front(), 0);
+    return;
+  }
+  if (mr.size() == 2) {
+    Geom::lineToMs(trr, mr[kHead], mr[kTail]);
+    return;
+  }
+  if (mr.size() == 4) {
+    Trr trr_left;
+    Geom::lineToMs(trr_left, mr[kLeft + kHead], mr[kLeft + kTail]);
+    Trr trr_right;
+    Geom::lineToMs(trr_right, mr[kRight + kHead], mr[kRight + kTail]);
+    trr = trr_left;
+    trr.enclose(trr_right);
+    return;
+  }
+  LOG_FATAL << "mr size is not 1, 2 or 4";
+}
+
 LineType BoundSkewTree::calcAreaLineType(Area* cur) const
 {
   auto line = cur->get_line(kLeft);
@@ -1141,8 +1358,8 @@ void BoundSkewTree::checkJsMs() const
   auto right_js = getJsLine(kRight);
   Geom::lineToMs(left, left_js);
   Geom::lineToMs(right, right_js);
-  LOG_FATAL_IF(!Geom::isContain(left, _ms[kLeft])) << "left js is not contain in left ms";
-  LOG_FATAL_IF(!Geom::isContain(right, _ms[kRight])) << "right js is not contain in right ms";
+  LOG_FATAL_IF(!Geom::isTrrContain(left, _ms[kLeft])) << "left js is not contain in left ms";
+  LOG_FATAL_IF(!Geom::isTrrContain(right, _ms[kRight])) << "right js is not contain in right ms";
 }
 void BoundSkewTree::checkUpdateJs(const Area* cur, Line& left, Line& right) const
 {
