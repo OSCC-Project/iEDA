@@ -102,8 +102,8 @@ Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
 double BoundSkewTree::distanceCost(Area* left, Area* right) const
 {
   auto min_dist = std::numeric_limits<double>::max();
-  auto left_mr = left->get_mr();
-  auto right_mr = right->get_mr();
+  auto left_mr = left->get_convex_hull();
+  auto right_mr = right->get_convex_hull();
   for (auto left_pt : left_mr) {
     for (auto right_pt : right_mr) {
       min_dist = std::min(min_dist, Geom::distance(left_pt, right_pt));
