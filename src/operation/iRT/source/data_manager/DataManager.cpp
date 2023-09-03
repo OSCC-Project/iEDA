@@ -108,7 +108,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
-  _config.enable_idrc_interfaces = RTUtil::getConfigValue<irt_int>(config_map, "-enable_idrc_interfaces", 0);
   _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
   _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
   _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
@@ -1459,8 +1458,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_idrc_interfaces");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_idrc_interfaces);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.supply_utilization_rate);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");

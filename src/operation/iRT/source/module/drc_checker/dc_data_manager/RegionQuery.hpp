@@ -27,7 +27,10 @@ using StaticBox = std::pair<BoostBox, RQShape*>;
 class RegionQuery
 {
  public:
-  RegionQuery() { _idrc_region_query = RTAPI_INST.initRegionQuery(); }
+  RegionQuery()
+  {
+    // _idrc_region_query = RTAPI_INST.initRegionQuery();
+  }
   ~RegionQuery()
   {
     if (_idrc_region_query != nullptr) {

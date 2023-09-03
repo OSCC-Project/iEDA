@@ -34,7 +34,6 @@ class Config
   std::string bottom_routing_layer;      // optional
   std::string top_routing_layer;         // optional
   irt_int enable_output_gds_files;       // optional
-  irt_int enable_idrc_interfaces;        // optional
   double supply_utilization_rate;        // optional
   irt_int pa_max_iter_num;               // optional
   double ra_initial_penalty;             // optional

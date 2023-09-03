@@ -186,18 +186,10 @@ void DRCChecker::updateRectList(RegionQuery& region_query, ChangeType change_typ
 
   if (change_type == ChangeType::kAdd) {
     addNetRectMap(region_query_ref, drc_rect_list);
-    if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-      RTAPI_INST.addEnvRectList(region_query_ref->get_idrc_region_query(), convertToIDSRect(drc_rect_list));
-    } else {
-      addEnvRectListByRTDRC(region_query_ref, drc_rect_list);
-    }
+    addEnvRectListByRTDRC(region_query_ref, drc_rect_list);
   } else if (change_type == ChangeType::kDel) {
     delNetRectMap(region_query_ref, drc_rect_list);
-    if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-      RTAPI_INST.delEnvRectList(region_query_ref->get_idrc_region_query(), convertToIDSRect(drc_rect_list));
-    } else {
-      delEnvRectListByRTDRC(region_query_ref, drc_rect_list);
-    }
+    delEnvRectListByRTDRC(region_query_ref, drc_rect_list);
   }
 }
 
@@ -247,15 +239,7 @@ bool DRCChecker::hasViolation(RegionQuery& region_query, const std::vector<DRCRe
 
 std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
 {
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  std::vector<LayerRect> min_scope_list;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    min_scope_list = RTAPI_INST.getMinScope(ids_rect_list);
-  } else {
-    min_scope_list = getMinSpacingRect(ids_rect_list);
-  }
-  return min_scope_list;
+  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
 }
 
 std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
@@ -270,15 +254,7 @@ std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
 
 std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
 {
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
-
-  std::vector<LayerRect> max_scope_list;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    max_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
-  } else {
-    max_scope_list = getMinSpacingRect(ids_rect_list);
-  }
-  return max_scope_list;
+  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
 }
 
 std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
