@@ -33,7 +33,6 @@ class DRBoxStat
   std::map<irt_int, double>& get_routing_prefer_wire_length_map() { return _routing_prefer_wire_length_map; }
   std::map<irt_int, double>& get_routing_nonprefer_wire_length_map() { return _routing_nonprefer_wire_length_map; }
   std::map<irt_int, irt_int>& get_cut_via_number_map() { return _cut_via_number_map; }
-  std::map<DRSourceType, std::map<std::string, irt_int>>& get_source_drc_number_map() { return _source_drc_number_map; }
   std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& get_source_drc_violation_map()
   {
     return _source_drc_violation_map;
@@ -61,7 +60,6 @@ class DRBoxStat
   std::map<irt_int, double> _routing_prefer_wire_length_map;
   std::map<irt_int, double> _routing_nonprefer_wire_length_map;
   std::map<irt_int, irt_int> _cut_via_number_map;
-  std::map<DRSourceType, std::map<std::string, irt_int>> _source_drc_number_map;
   std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>> _source_drc_violation_map;
   std::map<std::string, irt_int> _drc_number_map;
   std::map<std::string, irt_int> _source_number_map;

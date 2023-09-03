@@ -2206,27 +2206,27 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
     }
   }
 
-  std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
+  std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = dr_box_stat.get_source_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape}) {
-    for (auto& [drc, number] : DC_INST.getViolation(dr_box.getRegionQuery(dr_source_type))) {
-      source_drc_number_map[dr_source_type][drc] += number;
+    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type))) {
+      source_drc_violation_map[dr_source_type][drc] = violation_info_list;
     }
   }
 
   std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      rule_number_map[drc] += number;
+  for (auto& [dr_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      rule_number_map[drc] += violation_list.size();
     }
   }
-
   std::map<std::string, irt_int>& source_number_map = dr_box_stat.get_source_number_map();
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
+  for (auto& [dr_source_type, drc_violation_map] : source_drc_violation_map) {
     irt_int total_number = 0;
-    for (auto& [drc, number] : drc_number_map) {
-      total_number += number;
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_number += violation_list.size();
     }
-    source_number_map[GetDRSourceTypeName()(source)] = total_number;
+    source_number_map[GetDRSourceTypeName()(dr_source_type)] = total_number;
   }
 
   double total_wire_length = 0;
@@ -2246,9 +2246,9 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    for (auto& [drc, number] : drc_number_map) {
-      total_drc_number += number;
+  for (auto& [dr_source_type, drc_violation_map] : source_drc_violation_map) {
+    for (auto& [drc, violation_list] : drc_violation_map) {
+      total_drc_number += violation_list.size();
     }
   }
   dr_box_stat.set_total_wire_length(total_wire_length);
@@ -2273,7 +2273,8 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
   std::map<irt_int, double>& routing_prefer_wire_length_map = dr_box_stat.get_routing_prefer_wire_length_map();
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = dr_box_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& cut_via_number_map = dr_box_stat.get_cut_via_number_map();
-  std::map<DRSourceType, std::map<std::string, irt_int>>& source_drc_number_map = dr_box_stat.get_source_drc_number_map();
+  std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
+      = dr_box_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = dr_box_stat.get_drc_number_map();
   std::map<std::string, irt_int>& source_number_map = dr_box_stat.get_source_number_map();
   double total_wire_length = dr_box_stat.get_total_wire_length();
@@ -2338,11 +2339,11 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
     drc_table[0][column] = source_name;
   }
   // element
-  for (auto& [source, drc_number_map] : source_drc_number_map) {
-    irt_int column = item_column_map[GetDRSourceTypeName()(source)];
+  for (auto& [dr_source_type, drc_violation_map] : source_drc_violation_map) {
+    irt_int column = item_column_map[GetDRSourceTypeName()(dr_source_type)];
     for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_number_map[source], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_number_map[source][drc_rule]);
+      if (RTUtil::exist(source_drc_violation_map[dr_source_type], drc_rule)) {
+        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[dr_source_type][drc_rule].size());
       } else {
         drc_table[row][column] = "0";
       }
@@ -2432,9 +2433,9 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
       for (auto& [cut_layer_idx, via_number] : dr_box_stat.get_cut_via_number_map()) {
         cut_via_number_map[cut_layer_idx] += via_number;
       }
-      for (auto& [source, drc_number_map] : dr_box_stat.get_source_drc_number_map()) {
-        for (auto& [drc, number] : drc_number_map) {
-          source_drc_number_map[source][drc] += number;
+      for (auto& [source, drc_violation_list_map] : dr_box_stat.get_source_drc_violation_map()) {
+        for (auto& [drc, violation_list] : drc_violation_list_map) {
+          source_drc_number_map[source][drc] += violation_list.size();
         }
       }
     }
