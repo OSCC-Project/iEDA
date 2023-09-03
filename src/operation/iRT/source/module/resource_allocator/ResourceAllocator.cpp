@@ -196,7 +196,7 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        DC_INST.addEnvRectList(ra_gcell.getRegionQuery(ra_source_type), drc_rect);
+        DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), ChangeType::kAdd, drc_rect);
       }
     }
   }

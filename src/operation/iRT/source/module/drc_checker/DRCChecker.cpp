@@ -49,6 +49,8 @@ void DRCChecker::destroyInst()
 
 // function
 
+#if 1  // 获得DRCRectList
+
 std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list)
 {
   std::vector<DRCRect> drc_rect_list;
@@ -154,113 +156,62 @@ std::vector<DRCRect> DRCChecker::getDRCRectList(irt_int net_idx, PHYNode& phy_no
   return drc_rect_list;
 }
 
-RegionQuery* DRCChecker::initRegionQuery()
-{
-  RegionQuery* region_query = new RegionQuery();
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    region_query->set_idrc_region_query(RTAPI_INST.initRegionQuery());
-  }
-  return region_query;
-}
+#endif
 
-void DRCChecker::destoryRegionQuery(RegionQuery* region_query)
-{
-  if (region_query != nullptr) {
-    void* idrc_region_query = region_query->get_idrc_region_query();
-    if (idrc_region_query != nullptr) {
-      RTAPI_INST.destroyRegionQuery(idrc_region_query);
-      idrc_region_query = nullptr;
-    }
+#if 1  // 返回RegionQuery中的形状map
 
-    region_query->get_routing_net_rect_map().clear();
-    region_query->get_cut_net_rect_map().clear();
-
-    auto& routing_net_shape_map = region_query->get_routing_net_shape_map();
-    auto& cut_net_shape_map = region_query->get_cut_net_shape_map();
-    for (auto& [net_id, layer_shape_map] : routing_net_shape_map) {
-      for (auto& [layer_idx, shape_map] : layer_shape_map) {
-        for (auto& [rect, shape_ptr] : shape_map) {
-          if (shape_ptr != nullptr) {
-            delete shape_ptr;
-            shape_ptr = nullptr;
-          }
-        }
-      }
-    }
-    for (auto& [net_id, layer_shape_map] : cut_net_shape_map) {
-      for (auto& [layer_idx, shape_map] : layer_shape_map) {
-        for (auto& [rect, shape_ptr] : shape_map) {
-          if (shape_ptr != nullptr) {
-            delete shape_ptr;
-            shape_ptr = nullptr;
-          }
-        }
-      }
-    }
-    routing_net_shape_map.clear();
-    cut_net_shape_map.clear();
-
-    region_query->get_routing_region_map().clear();
-    region_query->get_cut_region_map().clear();
-
-    delete region_query;
-    region_query = nullptr;
-  }
-}
-
-std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getLayerNetRectMap(RegionQuery* region_query,
+std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& DRCChecker::getLayerNetRectMap(RegionQuery& region_query,
                                                                                                               bool is_routing)
 {
   if (is_routing) {
-    return region_query->get_routing_net_rect_map();
+    return region_query.get_routing_net_rect_map();
   } else {
-    return region_query->get_cut_net_rect_map();
+    return region_query.get_cut_net_rect_map();
   }
 }
 
-void DRCChecker::addEnvRectList(RegionQuery* region_query, const DRCRect& drc_rect)
+#endif
+
+#if 1  // 更新RegionQuery的RectList
+
+void DRCChecker::updateRectList(RegionQuery& region_query, ChangeType change_type, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
-  addEnvRectList(region_query, drc_rect_list);
+  updateRectList(region_query, change_type, drc_rect_list);
 }
 
-void DRCChecker::addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+void DRCChecker::updateRectList(RegionQuery& region_query, ChangeType change_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+  RegionQuery* region_query_ref = &region_query;
 
-  addNetRectMap(region_query, drc_rect_list);
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    RTAPI_INST.addEnvRectList(region_query, ids_rect_list);
-  } else {
-    addEnvRectListByRTDRC(region_query, drc_rect_list);
+  if (change_type == ChangeType::kAdd) {
+    addNetRectMap(region_query_ref, drc_rect_list);
+    if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+      RTAPI_INST.addEnvRectList(region_query_ref->get_idrc_region_query(), convertToIDSRect(drc_rect_list));
+    } else {
+      addEnvRectListByRTDRC(region_query_ref, drc_rect_list);
+    }
+  } else if (change_type == ChangeType::kDel) {
+    delNetRectMap(region_query_ref, drc_rect_list);
+    if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+      RTAPI_INST.delEnvRectList(region_query_ref->get_idrc_region_query(), convertToIDSRect(drc_rect_list));
+    } else {
+      delEnvRectListByRTDRC(region_query_ref, drc_rect_list);
+    }
   }
 }
 
-void DRCChecker::delEnvRectList(RegionQuery* region_query, const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  delEnvRectList(region_query, drc_rect_list);
-}
+#endif
 
-void DRCChecker::delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+#if 1  // 检查是否有违例
 
-  delNetRectMap(region_query, drc_rect_list);
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    RTAPI_INST.delEnvRectList(region_query->get_idrc_region_query(), ids_rect_list);
-  } else {
-    delEnvRectListByRTDRC(region_query, drc_rect_list);
-  }
-}
-
-bool DRCChecker::hasViolation(RegionQuery* region_query, const DRCRect& drc_rect)
+bool DRCChecker::hasViolation(RegionQuery& region_query, const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return hasViolation(region_query, drc_rect_list);
 }
 
-bool DRCChecker::hasViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list)
+bool DRCChecker::hasViolation(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list)
 {
   for (auto [drc, violation_list] : getViolationInfo(region_query, drc_rect_list)) {
     if (!violation_list.empty()) {
@@ -270,38 +221,29 @@ bool DRCChecker::hasViolation(RegionQuery* region_query, const std::vector<DRCRe
   return false;
 }
 
-bool DRCChecker::hasViolation(RegionQuery* region_query)
-{
-  for (auto [drc, violation_list] : getViolationInfo(region_query)) {
-    if (!violation_list.empty()) {
-      return true;
-    }
-  }
-  return false;
-}
+// bool DRCChecker::hasViolation(RegionQuery* region_query)
+// {
+//   for (auto [drc, violation_list] : getViolationInfo(region_query)) {
+//     if (!violation_list.empty()) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
-bool DRCChecker::hasViolation(const std::vector<DRCRect>& drc_rect_list)
-{
-  for (auto [drc, violation_list] : getViolationInfo(drc_rect_list)) {
-    if (!violation_list.empty()) {
-      return true;
-    }
-  }
-  return false;
-}
+// bool DRCChecker::hasViolation(const std::vector<DRCRect>& drc_rect_list)
+// {
+//   for (auto [drc, violation_list] : getViolationInfo(drc_rect_list)) {
+//     if (!violation_list.empty()) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
-std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
-{
-  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+#endif
 
-  std::vector<LayerRect> max_scope_list;
-  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
-    max_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
-  } else {
-    max_scope_list = getMinSpacingRect(ids_rect_list);
-  }
-  return max_scope_list;
-}
+#if 1  // 碰撞一定会产生DRC的最小膨胀矩形
 
 std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
 {
@@ -316,40 +258,48 @@ std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_r
   return min_scope_list;
 }
 
-std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  return getMaxScope(drc_rect_list);
-}
-
 std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return getMinScope(drc_rect_list);
 }
 
-#if 1  // violation info
+#endif
 
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery* region_query,
+#if 1  // 碰撞可能会产生DRC的最大膨胀矩形
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+{
+  std::vector<ids::DRCRect> ids_rect_list = convertToIDSRect(drc_rect_list);
+
+  std::vector<LayerRect> max_scope_list;
+  if (DM_INST.getConfig().enable_idrc_interfaces == 1) {
+    max_scope_list = RTAPI_INST.getMaxScope(ids_rect_list);
+  } else {
+    max_scope_list = getMinSpacingRect(ids_rect_list);
+  }
+  return max_scope_list;
+}
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list{drc_rect};
+  return getMaxScope(drc_rect_list);
+}
+
+#endif
+
+#if 1  // 获得违例信息
+
+std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query,
                                                                                const std::vector<DRCRect>& drc_rect_list)
 {
+  RegionQuery* region_query_ref = &region_query;
+
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  // drc_violation_map["Cut EOL Spacing"];
-  // drc_violation_map["Cut Spacing"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Cut Enclosure"];
-  // drc_violation_map["Metal EOL Spacing"];
-  // drc_violation_map["Metal Short"];
-  // drc_violation_map["Metal Parallel Run Length Spacing"];
-  // drc_violation_map["Metal Notch Spacing"];
-  // drc_violation_map["MinStep"];
-  // drc_violation_map["Minimal Area"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Metal Corner Fill Spacing"];
-  // drc_violation_map["Minimal Hole Area"];
 
   std::vector<ViolationInfo> violation_info_list;
-  checkMinSpacingByOther(region_query, drc_rect_list, violation_info_list);
+  checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
   uniqueViolationInfoList(violation_info_list);
   for (ViolationInfo& violation_info : violation_info_list) {
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
@@ -357,28 +307,17 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery* region_query)
+std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query)
 {
+  RegionQuery* region_query_ref = &region_query;
+
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  // drc_violation_map["Cut EOL Spacing"];
-  // drc_violation_map["Cut Spacing"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Cut Enclosure"];
-  // drc_violation_map["Metal EOL Spacing"];
-  // drc_violation_map["Metal Short"];
-  // drc_violation_map["Metal Parallel Run Length Spacing"];
-  // drc_violation_map["Metal Notch Spacing"];
-  // drc_violation_map["MinStep"];
-  // drc_violation_map["Minimal Area"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Metal Corner Fill Spacing"];
-  // drc_violation_map["Minimal Hole Area"];
 
   std::vector<ViolationInfo> violation_info_list;
-  for (auto& [layer_idx, net_rect_list_map] : region_query->get_routing_net_rect_map()) {
+  for (auto& [layer_idx, net_rect_list_map] : region_query.get_routing_net_rect_map()) {
     for (auto& [net_idx, rect_list] : net_rect_list_map) {
       for (const LayerRect& rect : rect_list) {
-        checkMinSpacingByOther(region_query, DRCRect(net_idx, rect, true), violation_info_list);
+        checkMinSpacingByOther(region_query_ref, DRCRect(net_idx, rect, true), violation_info_list);
       }
     }
   }
@@ -389,32 +328,19 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(const std::vector<DRCRect>& drc_rect_list)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  // drc_violation_map["Cut EOL Spacing"];
-  // drc_violation_map["Cut Spacing"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Cut Enclosure"];
-  // drc_violation_map["Metal EOL Spacing"];
-  // drc_violation_map["Metal Short"];
-  // drc_violation_map["Metal Parallel Run Length Spacing"];
-  // drc_violation_map["Metal Notch Spacing"];
-  // drc_violation_map["MinStep"];
-  // drc_violation_map["Minimal Area"];
-  // drc_violation_map["Cut Diff Layer Spacing"];
-  // drc_violation_map["Metal Corner Fill Spacing"];
-  // drc_violation_map["Minimal Hole Area"];
+// std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(const std::vector<DRCRect>& drc_rect_list)
+// {
+//   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
-  std::vector<ViolationInfo> violation_info_list;
-  checkMinSpacingBySelf(drc_rect_list, violation_info_list);
+//   std::vector<ViolationInfo> violation_info_list;
+//   checkMinSpacingBySelf(drc_rect_list, violation_info_list);
 
-  uniqueViolationInfoList(violation_info_list);
-  for (ViolationInfo& violation_info : violation_info_list) {
-    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
-  }
-  return drc_violation_map;
-}
+//   uniqueViolationInfoList(violation_info_list);
+//   for (ViolationInfo& violation_info : violation_info_list) {
+//     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+//   }
+//   return drc_violation_map;
+// }
 
 #endif
 

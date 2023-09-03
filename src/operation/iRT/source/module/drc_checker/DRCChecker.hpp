@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ChangeType.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "RTAPI.hpp"
@@ -33,32 +34,48 @@ class DRCChecker
   static DRCChecker& getInst();
   static void destroyInst();
   // function
+  /**
+   * 获得DRCRectList
+   * 将多种类型的结果转换为DRCRectList
+   */
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, Segment<LayerCoord>& segment);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree);
   std::vector<DRCRect> getDRCRectList(irt_int net_idx, PHYNode& phy_node);
-  RegionQuery* initRegionQuery();
-  void destoryRegionQuery(RegionQuery* region_query);
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getLayerNetRectMap(RegionQuery* region_query,
+  /**
+   * 返回RegionQuery中的形状map
+   */
+  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getLayerNetRectMap(RegionQuery& region_query,
                                                                                                     bool is_routing);
-  void addEnvRectList(RegionQuery* region_query, const DRCRect& env_rect);
-  void addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  void delEnvRectList(RegionQuery* region_query, const DRCRect& env_rect);
-  void delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  bool hasViolation(RegionQuery* region_query, const DRCRect& drc_rect);
-  bool hasViolation(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  bool hasViolation(RegionQuery* region_query);
-  bool hasViolation(const std::vector<DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
+  /**
+   * 更新RegionQuery的DRCRectList
+   */
+  void updateRectList(RegionQuery& region_query, ChangeType change_type, const DRCRect& drc_rect);
+  void updateRectList(RegionQuery& region_query, ChangeType change_type, const std::vector<DRCRect>& drc_rect_list);
+  /**
+   * 检查是否有违例
+   * 暂时不进行线网自检
+   */
+  bool hasViolation(RegionQuery& region_query, const DRCRect& drc_rect);
+  bool hasViolation(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
+  /**
+   * 碰撞一定会产生DRC的最小膨胀矩形
+   * 注意：现在只能扩大spacing的最小范围，其他的由于在布线过程中可能有误差，比如在没连上的线进行eol规则的扩大可能会有问题
+   */
   std::vector<LayerRect> getMinScope(const std::vector<DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const DRCRect& drc_rect);
   std::vector<LayerRect> getMinScope(const DRCRect& drc_rect);
-#if 1  // violation info
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery* region_query);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(const std::vector<DRCRect>& drc_rect_list);
-#endif
+  /**
+   * 碰撞可能会产生DRC的最大膨胀矩形
+   */
+  std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const DRCRect& drc_rect);
+  /**
+   * 获得违例信息
+   * 暂时不进行线网自检
+   */
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
 
  private:
   // self

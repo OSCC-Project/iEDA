@@ -40,7 +40,7 @@ class GRNode : public LayerCoord
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<GRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<GRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orien_wire_demand_map() { return _net_orien_wire_demand_map; }
@@ -54,7 +54,7 @@ class GRNode : public LayerCoord
   // setter
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery*>& source_region_query_map)
+  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
@@ -89,14 +89,7 @@ class GRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  RegionQuery* getRegionQuery(GRSourceType gr_source_type)
-  {
-    RegionQuery*& region_query = _source_region_query_map[gr_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
+  RegionQuery& getRegionQuery(GRSourceType gr_source_type) { return _source_region_query_map[gr_source_type]; }
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
@@ -203,7 +196,7 @@ class GRNode : public LayerCoord
  private:
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<GRSourceType, RegionQuery*> _source_region_query_map;
+  std::map<GRSourceType, RegionQuery> _source_region_query_map;
   /**
    * gcell 布线结果该算多少demand?
    *

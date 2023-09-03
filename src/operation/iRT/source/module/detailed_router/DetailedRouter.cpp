@@ -270,11 +270,7 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         DRBox& curr_box = dr_box_map[x][y];
-        if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(curr_box.getRegionQuery(dr_source_type), drc_rect);
-        } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(curr_box.getRegionQuery(dr_source_type), drc_rect);
-        }
+        DC_INST.updateRectList(curr_box.getRegionQuery(dr_source_type), change_type, drc_rect);
       }
     }
   }

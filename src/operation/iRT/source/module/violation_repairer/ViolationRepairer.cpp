@@ -171,7 +171,7 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         VRGCell& vr_gcell = vr_gcell_map[x][y];
-        DC_INST.addEnvRectList(vr_gcell.getRegionQuery(vr_source_type), drc_rect);
+        DC_INST.updateRectList(vr_gcell.getRegionQuery(vr_source_type), ChangeType::kAdd, drc_rect);
       }
     }
   }
@@ -707,7 +707,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
       } else if (phy_node.isType<PatchNode>()) {
         PatchNode& patch_node = phy_node.getNode<PatchNode>();
         routing_patch_number_map[patch_node.get_layer_idx()]++;
-      } 
+      }
     }
   }
 

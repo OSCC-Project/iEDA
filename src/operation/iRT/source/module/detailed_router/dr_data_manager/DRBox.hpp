@@ -38,7 +38,7 @@ class DRBox : public SpaceRegion
   // getter
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
-  std::map<DRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<DRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   std::vector<DRTask>& get_dr_task_list() { return _dr_task_list; }
   std::map<irt_int, std::vector<irt_int>>& get_net_task_map() { return _net_task_map; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -48,7 +48,7 @@ class DRBox : public SpaceRegion
   // setter
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
-  void set_source_region_query_map(const std::map<DRSourceType, RegionQuery*>& source_region_query_map)
+  void set_source_region_query_map(const std::map<DRSourceType, RegionQuery>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
@@ -62,14 +62,7 @@ class DRBox : public SpaceRegion
   void set_dr_box_stat(const DRBoxStat& dr_box_stat) { _dr_box_stat = dr_box_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-  RegionQuery* getRegionQuery(DRSourceType dr_source_type)
-  {
-    RegionQuery*& region_query = _source_region_query_map[dr_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
+  RegionQuery& getRegionQuery(DRSourceType dr_source_type) { return _source_region_query_map[dr_source_type]; }
 #if 1  // astar
   // single task
   const irt_int get_curr_net_idx() const { return _dr_task_ref->get_origin_net_idx(); }
@@ -115,7 +108,7 @@ class DRBox : public SpaceRegion
  private:
   DRBoxId _dr_box_id;
   ScaleAxis _box_track_axis;
-  std::map<DRSourceType, RegionQuery*> _source_region_query_map;
+  std::map<DRSourceType, RegionQuery> _source_region_query_map;
   std::vector<DRTask> _dr_task_list;
   std::map<irt_int, std::vector<irt_int>> _net_task_map;
   std::vector<GridMap<DRNode>> _layer_node_map;

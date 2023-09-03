@@ -174,7 +174,7 @@ void PinAccessor::addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, D
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         PAGCell& pa_gcell = pa_gcell_map[x][y];
-        DC_INST.addEnvRectList(pa_gcell.getRegionQuery(pa_source_type), drc_rect);
+        DC_INST.updateRectList(pa_gcell.getRegionQuery(pa_source_type), ChangeType::kAdd, drc_rect);
       }
     }
   }

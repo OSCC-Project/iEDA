@@ -277,20 +277,12 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
     if (routing_layer_list[routing_layer_idx].isPreferH()) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         TAPanel& curr_panel = layer_panel_list[routing_layer_idx][y];
-        if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(curr_panel.getRegionQuery(ta_source_type), drc_rect);
-        } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(curr_panel.getRegionQuery(ta_source_type), drc_rect);
-        }
+        DC_INST.updateRectList(curr_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
       }
     } else {
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         TAPanel& curr_panel = layer_panel_list[routing_layer_idx][x];
-        if (change_type == ChangeType::kAdd) {
-          DC_INST.addEnvRectList(curr_panel.getRegionQuery(ta_source_type), drc_rect);
-        } else if (change_type == ChangeType::kDel) {
-          DC_INST.delEnvRectList(curr_panel.getRegionQuery(ta_source_type), drc_rect);
-        }
+        DC_INST.updateRectList(curr_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
       }
     }
   }
