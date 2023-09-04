@@ -237,30 +237,30 @@ bool DRCChecker::hasViolation(RegionQuery& region_query, const std::vector<DRCRe
 
 #if 1  // 碰撞一定会产生DRC的最小膨胀矩形
 
-std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
-{
-  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
-}
-
 std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return getMinScope(drc_rect_list);
 }
 
-#endif
-
-#if 1  // 碰撞可能会产生DRC的最大膨胀矩形
-
-std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
 {
   return getMinSpacingRect(convertToIDSRect(drc_rect_list));
 }
+
+#endif
+
+#if 1  // 碰撞可能会产生DRC的最大膨胀矩形
 
 std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return getMaxScope(drc_rect_list);
+}
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+{
+  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
 }
 
 #endif
@@ -554,15 +554,13 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
 
       PlanarRect check_rect1 = RTUtil::convertToPlanarRect(drc_shape.get_shape());
       PlanarRect check_rect2 = RTUtil::convertToPlanarRect(overlap_shape->get_shape());
-      PlanarRect spacing_rect = RTUtil::getEnlargedRect(check_rect1, require_spacing);
-      if (!RTUtil::isOverlap(spacing_rect, check_rect2)) {
+      PlanarRect enlarge_rect1 = RTUtil::getEnlargedRect(check_rect1, require_spacing);
+      PlanarRect enlarge_rect2 = RTUtil::getEnlargedRect(check_rect2, require_spacing);
+      if (!RTUtil::isOverlap(enlarge_rect1, check_rect2) && !RTUtil::isOverlap(enlarge_rect2, check_rect1)) {
         LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
 
-      LayerRect violation_region(RTUtil::getOverlap(spacing_rect, check_rect2), layer_idx);
-      if (RTUtil::isOverlap(check_rect1, check_rect2)) {
-        violation_region.set_rect(RTUtil::getOverlap(check_rect1, check_rect2));
-      }
+      LayerRect violation_region(RTUtil::getOverlap(enlarge_rect1, enlarge_rect2), layer_idx);
 
       std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
       violation_net_shape_map[drc_shape.get_net_id()].emplace_back(check_rect1, layer_idx);
