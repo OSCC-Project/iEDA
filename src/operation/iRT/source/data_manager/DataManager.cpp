@@ -701,7 +701,9 @@ irt_int DataManager::getProposedInterval()
 
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    pitch_count_map[routing_layer.getPreferTrackGrid().get_step_length()]++;
+    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
+      pitch_count_map[track_grid.get_step_length()]++;
+    }
   }
   irt_int ref_pitch = -1;
   irt_int max_count = INT32_MIN;
@@ -730,14 +732,21 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   for (RoutingLayer& routing_layer : routing_layer_list) {
     base_layer_idx_set.insert(routing_layer.get_layer_idx());
 
-    ScaleGrid track_grid = (direction == Direction::kVertical ? routing_layer.getXTrackGrid() : routing_layer.getYTrackGrid());
-    irt_int track_scale = track_grid.get_start_line();
-    irt_int step_num = track_grid.get_step_num();
-    while (step_num--) {
-      scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
-      track_scale += track_grid.get_step_length();
-      if (track_scale > end_gcell_scale) {
-        break;
+    std::vector<ScaleGrid> track_grid_list;
+    if (direction == Direction::kVertical) {
+      track_grid_list = routing_layer.getXTrackGridList();
+    } else {
+      track_grid_list = routing_layer.getYTrackGridList();
+    }
+    for (ScaleGrid& track_grid : track_grid_list) {
+      irt_int track_scale = track_grid.get_start_line();
+      irt_int step_num = track_grid.get_step_num();
+      while (step_num--) {
+        if (track_scale > end_gcell_scale) {
+          break;
+        }
+        scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
+        track_scale += track_grid.get_step_length();
       }
     }
   }
@@ -1612,10 +1621,25 @@ void DataManager::printDatabase()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), routing_layer_list.size());
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    LOG_INST.info(
-        Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-        " name:", routing_layer.get_layer_name(), " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-        " direction:", GetDirectionName()(routing_layer.get_direction()), " pitch:", routing_layer.getPreferTrackGrid().get_step_length());
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
+                  " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
+                  " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
+                  " prefer_direction:", GetDirectionName()(routing_layer.get_direction()));
+
+    ScaleAxis& track_axis = routing_layer.get_track_axis();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
+    std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "x_grid_list");
+    for (ScaleGrid& x_grid : x_grid_list) {
+      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(),
+                    " step_length:", x_grid.get_step_length(), " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+    }
+    std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "y_grid_list");
+    for (ScaleGrid& y_grid : y_grid_list) {
+      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(),
+                    " step_length:", y_grid.get_step_length(), " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+    }
   }
   // ********** CutLayer ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();

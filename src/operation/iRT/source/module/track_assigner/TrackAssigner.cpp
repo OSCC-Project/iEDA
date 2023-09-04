@@ -440,7 +440,7 @@ TAGroup TrackAssigner::makeTAGroup(TAModel& ta_model, TNode<RTNode>* dr_node_nod
   if (!pin_coord_list.empty()) {
     routing_region = RTUtil::getBoundingBox(pin_coord_list);
     if (!RTUtil::existGrid(routing_region, panel_track_axis)) {
-      routing_region = RTUtil::getTrackRectByEnlarge(routing_region, panel_track_axis, die.get_real_rect());
+      routing_region = RTUtil::getTrackGridRect(routing_region, panel_track_axis, die.get_real_rect());
     }
     routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
   }
@@ -1094,7 +1094,6 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
     task_order_map[last_task_order_list[i]] = i;
   }
 
-  irt_int pitch = routing_layer_list[ta_panel.get_layer_idx()].getPreferTrackGrid().get_step_length();
   irt_int max_iter_num = DM_INST.getConfig().ta_panel_max_iter_num;
   irt_int iter_num = 0;
 
@@ -1108,7 +1107,8 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
         for (ViolationInfo& violation_info : violation_info_list) {
           plotTAPanel(ta_panel);
           LayerRect& violation_region = violation_info.get_violation_region();
-          PlanarRect enlarge_rect = RTUtil::getEnlargedRect(violation_region, pitch * (iter_num++));
+          ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
+          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, ta_panel);
           std::vector<irt_int> violation_task_list;
           for (TATask& ta_task : ta_task_list) {
             if (RTUtil::isOpenOverlap(enlarge_rect, ta_task.get_bounding_box())) {
@@ -1185,9 +1185,9 @@ void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
     for (auto& [drc, violation_info_list] : drc_violation_map) {
       for (ViolationInfo& violation_info : violation_info_list) {
         LayerRect& violation_region = violation_info.get_violation_region();
-        irt_int layer_idx = violation_region.get_layer_idx();
-        irt_int enlarge_size = routing_layer_list[layer_idx].getPreferTrackGrid().get_step_length();
-        LayerRect enlarge_real_rect(RTUtil::getEnlargedRect(violation_region, enlarge_size), layer_idx);
+        ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
+        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, ta_panel);
+        LayerRect enlarge_real_rect(enlarge_rect, violation_region.get_layer_idx());
         updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, enlarge_real_rect, violation_info.get_is_routing()));
       }
     }

@@ -433,7 +433,9 @@ void EGRDataManager::buildCellSize()
 {
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : _egr_database.get_routing_layer_list()) {
-    pitch_count_map[routing_layer.getPreferTrackGrid().get_step_length()]++;
+    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
+      pitch_count_map[track_grid.get_step_length()]++;
+    }
   }
   irt_int ref_pitch = -1;
   irt_int max_count = INT32_MIN;
@@ -738,8 +740,8 @@ void EGRDataManager::addResourceMapSupply()
     GridMap<EGRNode>& resource_map = layer_resource_map[i];
 
     RoutingLayer& routing_layer = routing_layer_list[i];
-    irt_int track_start_line = routing_layer.getPreferTrackGrid().get_start_line();
-    irt_int track_pitch = routing_layer.getPreferTrackGrid().get_step_length();
+    irt_int track_start_line = routing_layer.getPreferTrackGridList().front().get_start_line();
+    irt_int track_pitch = routing_layer.getPreferTrackGridList().front().get_step_length();
 
     for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
       for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {

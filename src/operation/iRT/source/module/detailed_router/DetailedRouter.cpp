@@ -1499,7 +1499,6 @@ void DetailedRouter::resortDRBox(DRBox& dr_box)
     task_order_map[last_task_order_list[i]] = i;
   }
 
-  irt_int pitch = routing_layer_list[dr_box.get_layer_idx()].getPreferTrackGrid().get_step_length();
   irt_int max_iter_num = DM_INST.getConfig().dr_box_max_iter_num;
   irt_int iter_num = 0;
 
@@ -1513,10 +1512,11 @@ void DetailedRouter::resortDRBox(DRBox& dr_box)
         for (ViolationInfo& violation_info : violation_info_list) {
           plotDRBox(dr_box);
           LayerRect& violation_region = violation_info.get_violation_region();
-          PlanarRect enlarge_rect = RTUtil::getEnlargedRect(violation_region, pitch * (iter_num++));
+          ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
+          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, dr_box.get_base_region());
           std::vector<irt_int> violation_task_list;
           for (DRTask& dr_task : dr_task_list) {
-            if (RTUtil::isOpenOverlap(enlarge_rect, dr_task.get_bounding_box())) {
+            if (RTUtil::isOpenOverlap(enlarge_rect, dr_task.get_bounding_box().get_base_region())) {
               violation_task_list.push_back(dr_task.get_task_idx());
             }
           }
@@ -1590,9 +1590,9 @@ void DetailedRouter::addHistoryCost(DRBox& dr_box)
     for (auto& [drc, violation_info_list] : drc_violation_map) {
       for (ViolationInfo& violation_info : violation_info_list) {
         LayerRect& violation_region = violation_info.get_violation_region();
-        irt_int layer_idx = violation_region.get_layer_idx();
-        irt_int enlarge_size = routing_layer_list[layer_idx].getPreferTrackGrid().get_step_length();
-        LayerRect enlarge_real_rect(RTUtil::getEnlargedRect(violation_region, enlarge_size), layer_idx);
+        ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
+        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, dr_box.get_base_region());
+        LayerRect enlarge_real_rect(enlarge_rect, violation_region.get_layer_idx());
         updateHistoryCostToGraph(dr_box, ChangeType::kAdd, DRCRect(-1, enlarge_real_rect, violation_info.get_is_routing()));
       }
     }

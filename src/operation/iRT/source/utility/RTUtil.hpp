@@ -1439,8 +1439,11 @@ class RTUtil
     return scale_list;
   }
 
-  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
-  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  /**
+   * 若rect包含trackgrid则不处理
+   * 否则将其扩大到周围最近的track上
+   */
+  static PlanarRect getTrackGridRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
     if (!isOpenOverlap(rect, border)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
@@ -1483,6 +1486,11 @@ class RTUtil
     }
     return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
   }
+
+  /**
+   * 将矩形扩大到周围最近的track上
+   */
+  static PlanarRect getNearestTrackRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border) {}
 
   // 计算刻度，包含边界
   static std::vector<irt_int> getClosedScaleList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
