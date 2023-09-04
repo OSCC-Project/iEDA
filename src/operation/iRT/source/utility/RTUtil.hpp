@@ -3016,6 +3016,7 @@ class RTUtil
     }
     total_scale_list.push_back(max_value);
     std::sort(total_scale_list.begin(), total_scale_list.end());
+    merge(total_scale_list, [](T a, T b) { return equalDoubleByError(a, b, DBL_ERROR); });
     total_scale_list.erase(std::unique(total_scale_list.begin(), total_scale_list.end()), total_scale_list.end());
 
     std::vector<std::pair<T, T>> scale_range_list;
