@@ -237,31 +237,33 @@ bool DRCChecker::hasViolation(RegionQuery& region_query, const std::vector<DRCRe
 
 #if 1  // 碰撞一定会产生DRC的最小膨胀矩形
 
-std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
-{
-  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
-}
-
 std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return getMinScope(drc_rect_list);
 }
 
-#endif
-
-#if 1  // 碰撞可能会产生DRC的最大膨胀矩形
-
-std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+std::vector<LayerRect> DRCChecker::getMinScope(const std::vector<DRCRect>& drc_rect_list)
 {
   return getMinSpacingRect(convertToIDSRect(drc_rect_list));
 }
+
+
+#endif
+
+#if 1  // 碰撞可能会产生DRC的最大膨胀矩形
 
 std::vector<LayerRect> DRCChecker::getMaxScope(const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list{drc_rect};
   return getMaxScope(drc_rect_list);
 }
+
+std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_rect_list)
+{
+  return getMinSpacingRect(convertToIDSRect(drc_rect_list));
+}
+
 
 #endif
 

@@ -63,17 +63,18 @@ class DRCChecker
    * 碰撞一定会产生DRC的最小膨胀矩形
    * 注意：现在只能扩大spacing的最小范围，其他的由于在布线过程中可能有误差，比如在没连上的线进行eol规则的扩大可能会有问题
    */
-  std::vector<LayerRect> getMinScope(const std::vector<DRCRect>& drc_rect_list);
   std::vector<LayerRect> getMinScope(const DRCRect& drc_rect);
+  std::vector<LayerRect> getMinScope(const std::vector<DRCRect>& drc_rect_list);
   /**
    * 碰撞可能会产生DRC的最大膨胀矩形
    */
-  std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
   std::vector<LayerRect> getMaxScope(const DRCRect& drc_rect);
+  std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
   /**
    * 获得违例信息
    * 暂时不进行线网自检
    */
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const DRCRect& drc_rect);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
 
