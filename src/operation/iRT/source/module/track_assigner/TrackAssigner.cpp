@@ -1084,7 +1084,6 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
 
   task_order_list_list.push_back(new_task_order_list);
 #else
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<irt_int>>& task_order_list_list = ta_panel.get_task_order_list_list();
   std::vector<irt_int>& last_task_order_list = task_order_list_list.back();
   std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
@@ -1107,8 +1106,7 @@ void TrackAssigner::resortTAPanel(TAPanel& ta_panel)
         for (ViolationInfo& violation_info : violation_info_list) {
           plotTAPanel(ta_panel);
           LayerRect& violation_region = violation_info.get_violation_region();
-          ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
-          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, ta_panel);
+          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, ta_panel.get_panel_track_axis(), ta_panel);
           std::vector<irt_int> violation_task_list;
           for (TATask& ta_task : ta_task_list) {
             if (RTUtil::isOpenOverlap(enlarge_rect, ta_task.get_bounding_box())) {
@@ -1180,13 +1178,11 @@ std::vector<std::vector<irt_int>> TrackAssigner::getViolationTaskCombList(TAPane
 
 void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   for (auto& [source, drc_violation_map] : ta_panel.get_ta_panel_stat().get_source_drc_violation_map()) {
     for (auto& [drc, violation_info_list] : drc_violation_map) {
       for (ViolationInfo& violation_info : violation_info_list) {
         LayerRect& violation_region = violation_info.get_violation_region();
-        ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
-        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, ta_panel);
+        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, ta_panel.get_panel_track_axis(), ta_panel);
         LayerRect enlarge_real_rect(enlarge_rect, violation_region.get_layer_idx());
         updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCRect(-1, enlarge_real_rect, violation_info.get_is_routing()));
       }

@@ -1489,7 +1489,6 @@ void DetailedRouter::resortDRBox(DRBox& dr_box)
 
   task_order_list_list.push_back(new_task_order_list);
 #else
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<irt_int>>& task_order_list_list = dr_box.get_task_order_list_list();
   std::vector<irt_int>& last_task_order_list = task_order_list_list.back();
   std::vector<DRTask>& dr_task_list = dr_box.get_dr_task_list();
@@ -1512,8 +1511,7 @@ void DetailedRouter::resortDRBox(DRBox& dr_box)
         for (ViolationInfo& violation_info : violation_info_list) {
           plotDRBox(dr_box);
           LayerRect& violation_region = violation_info.get_violation_region();
-          ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
-          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, dr_box.get_base_region());
+          PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, dr_box.get_box_track_axis(), dr_box.get_base_region());
           std::vector<irt_int> violation_task_list;
           for (DRTask& dr_task : dr_task_list) {
             if (RTUtil::isOpenOverlap(enlarge_rect, dr_task.get_bounding_box().get_base_region())) {
@@ -1585,13 +1583,11 @@ std::vector<std::vector<irt_int>> DetailedRouter::getViolationTaskCombList(DRBox
 
 void DetailedRouter::addHistoryCost(DRBox& dr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   for (auto& [source, drc_violation_map] : dr_box.get_dr_box_stat().get_source_drc_violation_map()) {
     for (auto& [drc, violation_info_list] : drc_violation_map) {
       for (ViolationInfo& violation_info : violation_info_list) {
         LayerRect& violation_region = violation_info.get_violation_region();
-        ScaleAxis& track_axis = routing_layer_list[violation_region.get_layer_idx()].get_track_axis();
-        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, track_axis, dr_box.get_base_region());
+        PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, dr_box.get_box_track_axis(), dr_box.get_base_region());
         LayerRect enlarge_real_rect(enlarge_rect, violation_region.get_layer_idx());
         updateHistoryCostToGraph(dr_box, ChangeType::kAdd, DRCRect(-1, enlarge_real_rect, violation_info.get_is_routing()));
       }
