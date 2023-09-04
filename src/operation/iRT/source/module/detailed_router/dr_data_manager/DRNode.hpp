@@ -68,7 +68,7 @@ class DRNode : public LayerCoord
     double dr_reserved_via_unit = DM_INST.getConfig().dr_reserved_via_unit;
 
     double cost = 0;
-    for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape,  DRSourceType::kReservedVia}) {
+    for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape, DRSourceType::kReservedVia}) {
       irt_int violation_net_num = 0;
       if (RTUtil::exist(_source_orien_net_map, dr_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[dr_source_type];
