@@ -106,9 +106,9 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
         PinAccessor::destroyInst();
         break;
       case Stage::kResourceAllocator:
-        ResourceAllocator::initInst();
-        RA_INST.allocate(net_list);
-        ResourceAllocator::destroyInst();
+        // ResourceAllocator::initInst();
+        // RA_INST.allocate(net_list);
+        // ResourceAllocator::destroyInst();
         break;
       case Stage::kGlobalRouter:
         GlobalRouter::initInst();
