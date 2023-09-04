@@ -117,19 +117,19 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
   _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
   _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_history_access_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_access_cost_unit", 1);
-  _config.gr_history_resource_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_resource_cost_unit", 1);
-  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
+  _config.gr_history_access_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_access_cost_unit", 20);
+  _config.gr_history_resource_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_resource_cost_unit", 20);
+  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 5);
   _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
   _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
   _config.ta_corner_unit = RTUtil::getConfigValue<double>(config_map, "-ta_corner_unit", 1);
   _config.ta_pin_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_pin_distance_unit", 1);
   _config.ta_group_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_group_distance_unit", 0.5);
   _config.ta_layout_shape_unit = RTUtil::getConfigValue<double>(config_map, "-ta_layout_shape_unit", 128);
-  _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 64);
+  _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 32);
   _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-ta_history_cost_unit", 2);
   _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
-  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 1);
+  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 5);
   _config.dr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_prefer_wire_unit", 1);
   _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_nonprefer_wire_unit", 2);
   _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_via_unit", 1);
@@ -138,7 +138,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_reserved_via_unit", 32);
   _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 2);
   _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
-  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 1);
+  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 5);
   _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
   /////////////////////////////////////////////
 }
