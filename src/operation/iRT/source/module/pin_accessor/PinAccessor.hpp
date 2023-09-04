@@ -81,7 +81,7 @@ class PinAccessor
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
   bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
   void checkAccessPointList(PANet& pa_net);
-  void updateNetReservedViaMap(PAModel& pa_model);
+  void updateNetCandidateViaMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);

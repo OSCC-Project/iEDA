@@ -163,14 +163,14 @@ void tempTest()
   using icts::bst::GeomCalc;
   using icts::bst::Pt;
   using icts::bst::Trr;
- 
+
   auto p1 = Pt(1.0, 2.0);
   auto p2 = Pt(4.0, 5.0);
   auto p3 = Pt(3.0, 3.0);
   auto p4 = Pt(7.0, 7.0);
 
   auto mpl = MplHelper();
-  mpl.plot({p1,p2}, "seg1");
+  mpl.plot({p1, p2}, "seg1");
   mpl.plot({p3, p4}, "seg2");
   mpl.saveFig("temp_test.png");
 
@@ -189,6 +189,18 @@ TEST_F(SolverTest, Compare)
   // CTSAPIInst.init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
   // bstTest();
   // saltTest();
+}
+
+TEST_F(SolverTest, GeomTest)
+{
+  using icts::bst::GeomCalc;
+  using icts::bst::Pt;
+  std::vector<Pt> poly = {Pt(0, 0), Pt(0, 0.5), Pt(0, 1), Pt(1, 1), Pt(1, 0)};
+  GeomCalc::convexHull(poly);
+  for (auto& pt : poly) {
+    LOG_INFO << "[" << pt.x << ", " << pt.y << "]  ";
+  }
+  EXPECT_EQ(poly.size(), 4);
 }
 
 }  // namespace

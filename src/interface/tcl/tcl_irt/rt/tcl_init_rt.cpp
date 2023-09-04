@@ -36,8 +36,6 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
   // irt_int enable_output_gds_files;       // optional
   _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
-  // irt_int enable_idrc_interfaces;        // optional
-  _config_list.push_back(std::make_pair("-enable_idrc_interfaces", ValueType::kInt));
   // double supply_utilization_rate;        // optional
   _config_list.push_back(std::make_pair("-supply_utilization_rate", ValueType::kDouble));
   // irt_int pa_max_iter_num;               // optional
@@ -56,10 +54,10 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-gr_via_unit", ValueType::kDouble));
   // double gr_corner_unit;                 // optional
   _config_list.push_back(std::make_pair("-gr_corner_unit", ValueType::kDouble));
-  // double gr_access_history_cost_unit;    // optional
-  _config_list.push_back(std::make_pair("-gr_access_history_cost_unit", ValueType::kDouble));
-  // double gr_resource_history_cost_unit;  // optional
-  _config_list.push_back(std::make_pair("-gr_resource_history_cost_unit", ValueType::kDouble));
+  // double gr_history_access_cost_unit;    // optional
+  _config_list.push_back(std::make_pair("-gr_history_access_cost_unit", ValueType::kDouble));
+  // double gr_history_resource_cost_unit;  // optional
+  _config_list.push_back(std::make_pair("-gr_history_resource_cost_unit", ValueType::kDouble));
   // irt_int gr_max_iter_num;               // optional
   _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
   // double ta_prefer_wire_unit;            // optional
@@ -72,14 +70,10 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ta_pin_distance_unit", ValueType::kDouble));
   // double ta_group_distance_unit;         // optional
   _config_list.push_back(std::make_pair("-ta_group_distance_unit", ValueType::kDouble));
-  // double ta_block_and_pin_unit;          // optional
-  _config_list.push_back(std::make_pair("-ta_block_and_pin_unit", ValueType::kDouble));
+  // double ta_layout_shape_unit;          // optional
+  _config_list.push_back(std::make_pair("-ta_layout_shape_unit", ValueType::kDouble));
   // double ta_reserved_via_unit;           // optional
   _config_list.push_back(std::make_pair("-ta_reserved_via_unit", ValueType::kDouble));
-  // double ta_other_panel_unit;            // optional
-  _config_list.push_back(std::make_pair("-ta_other_panel_unit", ValueType::kDouble));
-  // double ta_self_panel_unit;             // optional
-  _config_list.push_back(std::make_pair("-ta_self_panel_unit", ValueType::kDouble));
   // double ta_history_cost_unit;           // optional
   _config_list.push_back(std::make_pair("-ta_history_cost_unit", ValueType::kDouble));
   // irt_int ta_model_max_iter_num;         // optional
@@ -94,16 +88,10 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-dr_via_unit", ValueType::kDouble));
   // double dr_corner_unit;                 // optional
   _config_list.push_back(std::make_pair("-dr_corner_unit", ValueType::kDouble));
-  // double dr_block_and_pin_unit;          // optional
-  _config_list.push_back(std::make_pair("-dr_block_and_pin_unit", ValueType::kDouble));
-  // double dr_known_panel_unit;            // optional
-  _config_list.push_back(std::make_pair("-dr_known_panel_unit", ValueType::kDouble));
+  // double dr_layout_shape_unit;          // optional
+  _config_list.push_back(std::make_pair("-dr_layout_shape_unit", ValueType::kDouble));
   // double dr_reserved_via_unit;           // optional
   _config_list.push_back(std::make_pair("-dr_reserved_via_unit", ValueType::kDouble));
-  // double dr_other_box_unit;              // optional
-  _config_list.push_back(std::make_pair("-dr_other_box_unit", ValueType::kDouble));
-  // double dr_self_box_unit;               // optional
-  _config_list.push_back(std::make_pair("-dr_self_box_unit", ValueType::kDouble));
   // double dr_history_cost_unit;           // optional
   _config_list.push_back(std::make_pair("-dr_history_cost_unit", ValueType::kDouble));
   // irt_int dr_model_max_iter_num;         // optional

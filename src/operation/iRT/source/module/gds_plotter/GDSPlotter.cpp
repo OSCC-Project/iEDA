@@ -209,14 +209,12 @@ void GDSPlotter::buildGraphLypFile()
                                          "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
-  std::map<GPGraphType, bool> routing_data_type_visible_map = {
-      {GPGraphType::kNone, false},       {GPGraphType::kOpen, false},     {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
-      {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},       {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
-      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true}, {GPGraphType::kSelfPanel, true},
-      {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
-  std::map<GPGraphType, bool> cut_data_type_visible_map = {
-      {GPGraphType::kPath, true},      {GPGraphType::kBlockAndPin, true}, {GPGraphType::kReservedVia, true}, {GPGraphType::kOtherPanel, true},
-      {GPGraphType::kSelfPanel, true}, {GPGraphType::kKnownPanel, true},  {GPGraphType::kOtherBox, true},  {GPGraphType::kSelfBox, true}};
+  std::map<GPGraphType, bool> routing_data_type_visible_map
+      = {{GPGraphType::kNone, false},       {GPGraphType::kOpen, false},      {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
+         {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},        {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
+         {GPGraphType::kLayoutShape, true}, {GPGraphType::kReservedVia, true}};
+  std::map<GPGraphType, bool> cut_data_type_visible_map
+      = {{GPGraphType::kPath, true}, {GPGraphType::kLayoutShape, true}, {GPGraphType::kReservedVia, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());

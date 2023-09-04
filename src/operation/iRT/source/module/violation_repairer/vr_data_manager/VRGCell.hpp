@@ -31,26 +31,19 @@ class VRGCell : public SpaceRegion
   ~VRGCell() = default;
   // getter
   VRGCellId& get_vr_gcell_id() { return _vr_gcell_id; }
-  std::map<VRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<VRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<irt_int, irt_int>& get_layer_resource_supply_map() { return _layer_resource_supply_map; }
+  std::map<irt_int, irt_int>& get_layer_resource_demand_map() { return _layer_resource_demand_map; }
   // setter
   void set_vr_gcell_id(const VRGCellId& vr_gcell_id) { _vr_gcell_id = vr_gcell_id; }
-  void set_source_region_query_map(const std::map<VRSourceType, RegionQuery*>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
-  }
   // function
-  RegionQuery* getRegionQuery(VRSourceType vr_source_type)
-  {
-    RegionQuery*& region_query = _source_region_query_map[vr_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
+  RegionQuery& getRegionQuery(VRSourceType vr_source_type) { return _source_region_query_map[vr_source_type]; }
 
  private:
   VRGCellId _vr_gcell_id;
-  std::map<VRSourceType, RegionQuery*> _source_region_query_map;
+  std::map<VRSourceType, RegionQuery> _source_region_query_map;
+  std::map<irt_int, irt_int> _layer_resource_supply_map;
+  std::map<irt_int, irt_int> _layer_resource_demand_map;
 };
 
 }  // namespace irt
