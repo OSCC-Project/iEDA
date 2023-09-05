@@ -45,11 +45,23 @@ void GOCA::run()
     insts.push_back(inst);
   });
   _level_insts.push_back(insts);
-
+  LOG_INFO << "insts num: " << insts.size();
   // clustering
+  const int max_num = 30000;
   while (insts.size() > 1) {
     auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
-    insts = assignApply(insts, assign);
+    if (insts.size() > max_num) {
+      LOG_INFO << "insts divide into " << std::ceil(insts.size() / max_num) << " clusters";
+      auto clusters = BalanceClustering::kMeans(insts, std::ceil(insts.size() / max_num), 0, 10, 5);
+      insts.clear();
+      std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
+        auto assign_insts = assignApply(cluster, assign);
+        insts.insert(insts.end(), assign_insts.begin(), assign_insts.end());
+      });
+    } else {
+      insts = assignApply(insts, assign);
+    }
+
     _level_insts.push_back(insts);
     std::ranges::for_each(insts, [](Inst* inst) {
       auto* load_pin = inst->get_load_pin();

@@ -25,11 +25,8 @@ namespace irt {
 enum class TASourceType
 {
   kNone,
-  kBlockAndPin,
-  kReservedVia,
-  kUnknownPanel,
-  kOtherPanel,
-  kSelfPanel
+  kLayoutShape,
+  kReservedVia
 };
 
 struct GetTASourceTypeName
@@ -41,20 +38,11 @@ struct GetTASourceTypeName
       case TASourceType::kNone:
         ta_source_type_name = "none";
         break;
-      case TASourceType::kBlockAndPin:
-        ta_source_type_name = "block_and_pin";
+      case TASourceType::kLayoutShape:
+        ta_source_type_name = "layout_shape";
         break;
       case TASourceType::kReservedVia:
         ta_source_type_name = "reserved_via";
-        break;
-      case TASourceType::kUnknownPanel:
-        ta_source_type_name = "unknown_panel";
-        break;
-      case TASourceType::kOtherPanel:
-        ta_source_type_name = "other_panel";
-        break;
-      case TASourceType::kSelfPanel:
-        ta_source_type_name = "self_panel";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

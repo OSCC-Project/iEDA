@@ -32,11 +32,27 @@ class GRModel
   // getter
   std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<GRNet>& get_gr_net_list() { return _gr_net_list; }
+  std::vector<std::vector<irt_int>>& get_net_order_list_list() { return _net_order_list_list; }
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_visited_grid_access_orien_map()
+  {
+    return _visited_grid_access_orien_map;
+  }
+  std::set<LayerCoord, CmpLayerCoordByXASC>& get_visited_grid_resource_set() { return _visited_grid_resource_set; }
   GRModelStat& get_gr_model_stat() { return _gr_model_stat; }
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_gr_net_list(const std::vector<GRNet>& gr_net_list) { _gr_net_list = gr_net_list; }
+  void set_net_order_list_list(const std::vector<std::vector<irt_int>>& net_order_list_list) { _net_order_list_list = net_order_list_list; }
+  void set_visited_grid_access_orien_map(
+      const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& visited_grid_access_orien_map)
+  {
+    _visited_grid_access_orien_map = visited_grid_access_orien_map;
+  }
+  void set_visited_grid_resource_set(const std::set<LayerCoord, CmpLayerCoordByXASC>& visited_grid_resource_set)
+  {
+    _visited_grid_resource_set = visited_grid_resource_set;
+  }
   void set_gr_model_stat(const GRModelStat& gr_model_stat) { _gr_model_stat = gr_model_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
 #if 1  // astar
@@ -72,6 +88,16 @@ class GRModel
  private:
   std::vector<GridMap<GRNode>> _layer_node_map;
   std::vector<GRNet> _gr_net_list;
+  /**
+   * _net_order_list_list.back()作为即将要跑的序
+   */
+  std::vector<std::vector<irt_int>> _net_order_list_list;
+  /**
+   * _visited_grid_access_orien_map 访问过的grid的access方向
+   * _visited_grid_resource_set 访问过的grid的resource方向
+   */
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _visited_grid_access_orien_map;
+  std::set<LayerCoord, CmpLayerCoordByXASC> _visited_grid_resource_set;
   GRModelStat _gr_model_stat;
   irt_int _curr_iter = -1;
 #if 1  // astar

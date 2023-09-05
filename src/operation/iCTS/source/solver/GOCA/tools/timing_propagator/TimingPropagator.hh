@@ -115,6 +115,26 @@ concept DelayAble = CapAble<T> && requires(T node, const double& delay) {
   } -> std::same_as<void>;
 };
 
+template <typename T>
+concept SnakeAble = requires(T node, const double& required_snake) {
+  {
+    node.get_required_snake()
+  } -> std::convertible_to<double>;
+  {
+    node.set_required_snake(required_snake)
+  } -> std::same_as<void>;
+};
+
+template <typename T>
+concept LoadPinAble = requires(T node) {
+  {
+    node.isPin()
+  } -> std::same_as<bool>;
+  {
+    node.isLoad()
+  } -> std::same_as<bool>;
+};
+
 /**
  * @brief Timing propagator
  *       Propagate timing information from root to leaf
@@ -231,9 +251,12 @@ class TimingPropagator
     };
     std::ranges::for_each(node->get_children(), calc_delay);
 
-    min_delay = std::min(min_delay, node->get_min_delay());
-    max_delay = std::max(max_delay, node->get_max_delay());
-
+    if constexpr (LoadPinAble<T>) {
+      if (node->isLoad()) {
+        min_delay = std::min(min_delay, node->get_min_delay());
+        max_delay = std::max(max_delay, node->get_max_delay());
+      }
+    }
     node->set_min_delay(min_delay);
     node->set_max_delay(max_delay);
   }
@@ -248,7 +271,12 @@ class TimingPropagator
   static double calcNetLen(T* node)
   {
     double net_len = 0;
-    auto accumulate_net_len = [&net_len, &node](T* child) { net_len += calcLen(node, child) + child->get_sub_len(); };
+    auto accumulate_net_len = [&net_len, &node](T* child) {
+      net_len += calcLen(node, child) + child->get_sub_len();
+      if constexpr (SnakeAble<T>) {
+        net_len += child->get_required_snake();
+      }
+    };
     std::ranges::for_each(node->get_children(), accumulate_net_len);
     return net_len;
   }
@@ -269,11 +297,17 @@ class TimingPropagator
         // normal rc pattern
         case RCPattern::kSingle:
           cap_load += _unit_cap * calcLen(node, child, LayerPattern::kNone) + child->get_cap_load();
+          if constexpr (SnakeAble<T>) {
+            cap_load += _unit_h_cap * child->get_required_snake();
+          }
           break;
         // HV or VH pattern
         default:
           cap_load += _unit_h_cap * calcLen(node, child, LayerPattern::kH) + _unit_v_cap * calcLen(node, child, LayerPattern::kV)
                       + child->get_cap_load();
+          if constexpr (SnakeAble<T>) {
+            cap_load += _unit_h_cap * child->get_required_snake();
+          }
           break;
       }
     };
@@ -314,6 +348,9 @@ class TimingPropagator
       case RCPattern::kSingle: {
         auto len = calcLen(parent, child);
         delay = calcElmoreDelay(cap_load, len);
+        if constexpr (SnakeAble<T>) {
+          delay += calcElmoreDelay(cap_load + _unit_cap * len, child->get_required_snake());
+        }
         break;
       }
       // HV or VH pattern
@@ -321,6 +358,9 @@ class TimingPropagator
         auto x = calcLen(parent, child, LayerPattern::kH);
         auto y = calcLen(parent, child, LayerPattern::kV);
         delay = calcElmoreDelay(cap_load, x, y, pattern);
+        if constexpr (SnakeAble<T>) {
+          delay += calcElmoreDelay(cap_load + _unit_h_cap * x + _unit_v_cap * y, child->get_required_snake(), 0, pattern);
+        }
         break;
       }
     }

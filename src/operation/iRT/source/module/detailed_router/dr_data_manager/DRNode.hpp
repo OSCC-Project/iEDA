@@ -64,15 +64,11 @@ class DRNode : public LayerCoord
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
-    double dr_block_and_pin_unit = DM_INST.getConfig().dr_block_and_pin_unit;
-    double dr_known_panel_unit = DM_INST.getConfig().dr_known_panel_unit;
+    double dr_layout_shape_unit = DM_INST.getConfig().dr_layout_shape_unit;
     double dr_reserved_via_unit = DM_INST.getConfig().dr_reserved_via_unit;
-    double dr_other_box_unit = DM_INST.getConfig().dr_other_box_unit;
-    double dr_self_box_unit = DM_INST.getConfig().dr_self_box_unit;
 
     double cost = 0;
-    for (DRSourceType dr_source_type : {DRSourceType::kBlockAndPin, DRSourceType::kKnownPanel, DRSourceType::kReservedVia,
-                                        DRSourceType::kOtherBox, DRSourceType::kSelfBox}) {
+    for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape, DRSourceType::kReservedVia}) {
       irt_int violation_net_num = 0;
       if (RTUtil::exist(_source_orien_net_map, dr_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[dr_source_type];
@@ -86,20 +82,11 @@ class DRNode : public LayerCoord
         }
       }
       switch (dr_source_type) {
-        case DRSourceType::kBlockAndPin:
-          cost += (dr_block_and_pin_unit * violation_net_num);
-          break;
-        case DRSourceType::kKnownPanel:
-          cost += (dr_known_panel_unit * violation_net_num);
+        case DRSourceType::kLayoutShape:
+          cost += (dr_layout_shape_unit * violation_net_num);
           break;
         case DRSourceType::kReservedVia:
           cost += (dr_reserved_via_unit * violation_net_num);
-          break;
-        case DRSourceType::kOtherBox:
-          cost += (dr_other_box_unit * violation_net_num);
-          break;
-        case DRSourceType::kSelfBox:
-          cost += (dr_self_box_unit * violation_net_num);
           break;
         default:
           break;

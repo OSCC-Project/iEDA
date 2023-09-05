@@ -25,7 +25,7 @@ namespace irt {
 enum class RASourceType
 {
   kNone,
-  kBlockAndPin,
+  kLayoutShape,
   kReservedVia
 };
 
@@ -38,8 +38,8 @@ struct GetRASourceTypeName
       case RASourceType::kNone:
         gr_source_type_name = "none";
         break;
-      case RASourceType::kBlockAndPin:
-        gr_source_type_name = "block_and_pin";
+      case RASourceType::kLayoutShape:
+        gr_source_type_name = "layout_shape";
         break;
       case RASourceType::kReservedVia:
         gr_source_type_name = "reserved_via";

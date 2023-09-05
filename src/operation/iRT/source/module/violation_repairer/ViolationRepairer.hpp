@@ -57,6 +57,8 @@ class ViolationRepairer
   void buildVRModel(VRModel& vr_model);
   void updateNetFixedRectMap(VRModel& vr_model);
   void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
+  void calcVRGCellSupply(VRModel& vr_model);
+  std::vector<PlanarRect> getWireList(VRGCell& vr_gcell, RoutingLayer& routing_layer);
   void updateVRResultTree(VRModel& vr_model);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);
@@ -66,7 +68,6 @@ class ViolationRepairer
   TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
-  void updateNetResultMap(VRModel& vr_model, VRNet& vr_net);
   void checkVRModel(VRModel& vr_model);
 #endif
 
@@ -78,6 +79,9 @@ class ViolationRepairer
   void repairMinArea(VRModel& vr_model);
   void repairMinArea(VRModel& vr_model, VRNet& vr_net);
   bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  void processVRModel(VRModel& vr_model);
+  void updateNetResultMap(VRModel& vr_model);
+  void calcVRGCellDemand(VRModel& vr_model);
   void countVRModel(VRModel& vr_model);
   void reportVRModel(VRModel& vr_model);
   bool stopVRModel(VRModel& vr_model);

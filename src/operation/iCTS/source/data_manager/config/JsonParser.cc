@@ -48,7 +48,8 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
                              "sta_work_dir",
                          })
         != nullptr) {
-      config->set_sta_workspace(COMUtil::getData(json, {"file_path", "sta_work_dir"}));
+      auto path = resolvePath(COMUtil::getData(json, {"file_path", "sta_work_dir"}));
+      config->set_sta_workspace(path);
     }
     if (COMUtil::getData(json,
                          {
@@ -56,7 +57,8 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
                              "output_def_path",
                          })
         != nullptr) {
-      config->set_output_def_path(COMUtil::getData(json, {"file_path", "output_def_path"}));
+      auto path = resolvePath(COMUtil::getData(json, {"file_path", "output_def_path"}));
+      config->set_output_def_path(path);
     }
     if (COMUtil::getData(json,
                          {
@@ -64,7 +66,8 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
                              "log_file",
                          })
         != nullptr) {
-      config->set_log_file(COMUtil::getData(json, {"file_path", "log_file"}));
+      auto path = resolvePath(COMUtil::getData(json, {"file_path", "log_file"}));
+      config->set_log_file(path);
     }
     if (COMUtil::getData(json,
                          {
@@ -72,7 +75,8 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
                              "gds_file",
                          })
         != nullptr) {
-      config->set_gds_file(COMUtil::getData(json, {"file_path", "gds_file"}));
+      auto path = resolvePath(COMUtil::getData(json, {"file_path", "gds_file"}));
+      config->set_gds_file(path);
     }
 
     if (COMUtil::getData(json, {"router_type"}) != nullptr) {
@@ -149,7 +153,8 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
 
       std::vector<std::pair<string, string>> external_models;
       for (size_t i = 0; i < net_name_list.size(); ++i) {
-        external_models.push_back(std::make_pair(net_name_list[i], model_path_list[i]));
+        auto model_path = resolvePath(model_path_list[i]);
+        external_models.push_back(std::make_pair(net_name_list[i], model_path));
       }
 
       config->set_external_models(external_models);
@@ -157,6 +162,28 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
   }
 
   ifs.close();
+}
+
+std::string JsonParser::resolvePath(const std::string& path) const
+{
+  std::string resolved_path = path;
+  size_t start_pos = resolved_path.find('$');
+  while (start_pos != std::string::npos) {
+    size_t end_pos = resolved_path.find('/', start_pos);
+    if (end_pos == std::string::npos) {
+      end_pos = resolved_path.length();
+    }
+
+    std::string var = resolved_path.substr(start_pos + 1, end_pos - start_pos - 1);
+    const char* env_val = std::getenv(var.c_str());
+    if (env_val != nullptr) {
+      resolved_path.replace(start_pos, end_pos - start_pos, env_val);
+    }
+
+    start_pos = resolved_path.find('$', start_pos + 1);
+  }
+
+  return resolved_path;
 }
 
 }  // namespace icts

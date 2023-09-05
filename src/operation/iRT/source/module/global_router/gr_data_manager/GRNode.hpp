@@ -40,7 +40,7 @@ class GRNode : public LayerCoord
   // getter
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<GRSourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<GRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orien_wire_demand_map() { return _net_orien_wire_demand_map; }
@@ -48,13 +48,13 @@ class GRNode : public LayerCoord
   std::map<Orientation, irt_int>& get_orien_access_demand_map() { return _orien_access_demand_map; }
   irt_int get_resource_supply() const { return _resource_supply; }
   irt_int get_resource_demand() const { return _resource_demand; }
-  std::map<Orientation, double>& get_orien_access_history_cost_map() { return _orien_access_history_cost_map; }
-  double get_resource_history_cost() const { return _resource_history_cost; }
-  std::set<irt_int>& get_contribution_net_set() { return _contribution_net_set; }
+  std::map<Orientation, double>& get_history_orien_access_cost_map() { return _history_orien_access_cost_map; }
+  double get_history_resource_cost() const { return _history_resource_cost; }
+  std::set<irt_int>& get_passed_net_set() { return _passed_net_set; }
   // setter
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery*>& source_region_query_map)
+  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
@@ -74,12 +74,12 @@ class GRNode : public LayerCoord
   }
   void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_resource_demand(const irt_int resource_demand) { _resource_demand = resource_demand; }
-  void set_orien_access_history_cost_map(const std::map<Orientation, double>& orien_access_history_cost_map)
+  void set_history_orien_access_cost_map(const std::map<Orientation, double>& history_orien_access_cost_map)
   {
-    _orien_access_history_cost_map = orien_access_history_cost_map;
+    _history_orien_access_cost_map = history_orien_access_cost_map;
   }
-  void set_resource_history_cost(const double resource_history_cost) { _resource_history_cost = resource_history_cost; }
-  void set_contribution_net_set(const std::set<irt_int>& contribution_net_set) { _contribution_net_set = contribution_net_set; }
+  void set_history_resource_cost(const double history_resource_cost) { _history_resource_cost = history_resource_cost; }
+  void set_passed_net_set(const std::set<irt_int>& passed_net_set) { _passed_net_set = passed_net_set; }
   // function
   GRNode* getNeighborNode(Orientation orientation)
   {
@@ -89,14 +89,7 @@ class GRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  RegionQuery* getRegionQuery(GRSourceType gr_source_type)
-  {
-    RegionQuery*& region_query = _source_region_query_map[gr_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
+  RegionQuery& getRegionQuery(GRSourceType gr_source_type) { return _source_region_query_map[gr_source_type]; }
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
@@ -110,9 +103,9 @@ class GRNode : public LayerCoord
       if (RTUtil::exist(_orien_access_demand_map, orientation)) {
         access_demand = _orien_access_demand_map[orientation];
       }
-      cost += calcCost(1 + access_demand, access_supply);
-      if (RTUtil::exist(_orien_access_history_cost_map, orientation)) {
-        cost += _orien_access_history_cost_map[orientation];
+      cost += RTUtil::calcCost(1 + access_demand, access_supply);
+      if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
+        cost += _history_orien_access_cost_map[orientation];
       }
     }
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
@@ -123,24 +116,13 @@ class GRNode : public LayerCoord
           wire_demand = _net_orien_wire_demand_map[net_idx][orientation];
         }
       }
-      cost += calcCost(wire_demand + _resource_demand, _resource_supply);
-      cost += _resource_history_cost;
+      cost += RTUtil::calcCost(wire_demand + _resource_demand, _resource_supply);
+      cost += _history_resource_cost;
     } else {
       // 对于up和down来说 只有via_demand
-      cost += calcCost(_whole_via_demand + _resource_demand, _resource_supply);
-      cost += _resource_history_cost;
+      cost += RTUtil::calcCost(_whole_via_demand + _resource_demand, _resource_supply);
+      cost += _history_resource_cost;
     }
-    return cost;
-  }
-  double calcCost(irt_int demand, irt_int supply)
-  {
-    double cost = 0;
-    if (supply != 0) {
-      cost = static_cast<double>(demand) / supply;
-    } else {
-      cost = static_cast<double>(demand);
-    }
-    cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
     return cost;
   }
   void updateDemand(irt_int net_idx, std::set<Orientation> orien_set, ChangeType change_type)
@@ -186,9 +168,9 @@ class GRNode : public LayerCoord
       }
     }
     if (change_type == ChangeType::kAdd) {
-      _contribution_net_set.insert(net_idx);
+      _passed_net_set.insert(net_idx);
     } else if (change_type == ChangeType::kDel) {
-      _contribution_net_set.erase(net_idx);
+      _passed_net_set.erase(net_idx);
     }
   }
 #if 1  // astar
@@ -214,7 +196,7 @@ class GRNode : public LayerCoord
  private:
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<GRSourceType, RegionQuery*> _source_region_query_map;
+  std::map<GRSourceType, RegionQuery> _source_region_query_map;
   /**
    * gcell 布线结果该算多少demand?
    *
@@ -244,12 +226,12 @@ class GRNode : public LayerCoord
   /**
    * gcell 历史代价
    */
-  std::map<Orientation, double> _orien_access_history_cost_map;
-  double _resource_history_cost = 0.0;
+  std::map<Orientation, double> _history_orien_access_cost_map;
+  double _history_resource_cost = 0.0;
   /**
    * gcell 从此node经过的线网
    */
-  std::set<irt_int> _contribution_net_set;
+  std::set<irt_int> _passed_net_set;
 #if 1  // astar
   // single net
   std::set<Direction> _direction_set;
