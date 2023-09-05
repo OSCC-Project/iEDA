@@ -42,9 +42,6 @@
 #include "ops/propagate_toggle_sp/PwrPropagateToggleSP.hh"
 #include "ops/read_vcd/VCDParserWrapper.hh"
 
-// #include "pybind11/pybind11.h"
-// namespace py = pybind11;
-
 namespace ipower {
 
 Power* Power::_power = nullptr;
@@ -620,8 +617,3 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
 }
 
 }  // namespace ipower
-
-// PYBIND11_MODULE(power, m) {
-//   py::class_<ipower::Power>(m, "Power")
-//       .def("build_graph", &ipower::Power::buildGraph);
-// }

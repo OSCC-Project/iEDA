@@ -9,9 +9,12 @@
  *
  */
 
+#include "PythonPower.hh"
 #include "api/Power.hh"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
+#include "sta/Sta.hh"
+#include "tcl/ScriptEngine.hh"
+
+namespace ipower {
 
 unsigned report_power() {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
@@ -34,6 +37,4 @@ unsigned report_power() {
   return 1;
 }
 
-PYBIND11_MODULE(report_power_cpp, m) {
-  m.def("report_power_cpp", &report_power);
-}
+}  // namespace ipower
