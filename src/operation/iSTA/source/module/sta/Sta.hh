@@ -404,6 +404,7 @@ class Sta {
   }
   void resetReportTbl() {
     _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
+    _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
     _report_tbl_details.clear();
   }
 
