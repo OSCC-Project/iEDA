@@ -47,11 +47,10 @@ add_subdirectory(source/module/ops/plot_power)
 add_subdirectory(source/shell-cmd)
 add_subdirectory(test)
 
-pybind11_add_module(read_vcd_cpp source/python-api/PythonReadVcd.cc)
-target_link_libraries(read_vcd_cpp PRIVATE vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core)
-
-pybind11_add_module(report_power_cpp source/python-api/PythonReportPower.cc)
-target_link_libraries(report_power_cpp PRIVATE vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power)
+pybind11_add_module(ipower_cpp MODULE source/python-api/PythonReportPower.cc source/python-api/PythonReadVcd.cc)
+target_link_libraries(ipower_cpp PRIVATE vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power)
+set_target_properties(ipower_cpp PROPERTIES 
+  LIBRARY_OUTPUT_DIRECTORY /home/shaozheqing/iEDA/src/operation/iPW/test)
 
 add_executable(iPower main.cc)
 target_link_libraries(iPower vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
