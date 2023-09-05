@@ -1439,47 +1439,74 @@ class RTUtil
     return scale_list;
   }
 
-  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
-  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  /**
+   * 若rect包含trackgrid则不处理
+   * 否则将其扩大到周围最近的track上
+   */
+  static PlanarRect getTrackGridRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  {
+    if (existGrid(getOverlap(rect, border), track_axis)) {
+      return rect;
+    }
+    return getNearestTrackRect(rect, track_axis, border);
+  }
+
+  /**
+   * 将矩形扩大到周围最近的track上
+   */
+  static PlanarRect getNearestTrackRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
     if (!isOpenOverlap(rect, border)) {
       LOG_INST.error(Loc::current(), "The rect is out of border!");
     }
-    irt_int real_lb_x = rect.get_lb_x();
-    irt_int real_rt_x = rect.get_rt_x();
-    irt_int real_lb_y = rect.get_lb_y();
-    irt_int real_rt_y = rect.get_rt_y();
-    if (getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_grid_list()).empty()) {
-      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      scale_list.push_back(border.get_lb_x());
-      scale_list.push_back(border.get_rt_x());
-      std::sort(scale_list.begin(), scale_list.end());
-      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+    PlanarRect legal_region = getOverlap(rect, border);
+    irt_int real_lb_x = legal_region.get_lb_x();
+    irt_int real_rt_x = legal_region.get_rt_x();
+    irt_int real_lb_y = legal_region.get_lb_y();
+    irt_int real_rt_y = legal_region.get_rt_y();
+    {
+      std::vector<irt_int> x_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
+      x_scale_list.push_back(border.get_lb_x());
+      x_scale_list.push_back(border.get_rt_x());
+      std::sort(x_scale_list.begin(), x_scale_list.end());
+      x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
 
-      for (size_t i = 0; i < scale_list.size(); i++) {
-        if (scale_list[i] < real_lb_x) {
-          continue;
+      int index = 0;
+      for (; index < static_cast<irt_int>(x_scale_list.size()); index++) {
+        if (x_scale_list[index] > real_lb_x) {
+          break;
         }
-        real_lb_x = scale_list[i - 1];
-        real_rt_x = scale_list[i];
-        break;
       }
+      real_lb_x = index > 0 ? x_scale_list[index - 1] : real_lb_x;
+
+      for (; index < static_cast<irt_int>(x_scale_list.size()); index++) {
+        if (x_scale_list[index] > real_rt_x) {
+          break;
+        }
+      }
+      real_rt_x = x_scale_list[index];
     }
-    if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
-      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      scale_list.push_back(border.get_lb_y());
-      scale_list.push_back(border.get_rt_y());
-      std::sort(scale_list.begin(), scale_list.end());
-      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+    {
+      std::vector<irt_int> y_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
+      y_scale_list.push_back(border.get_lb_y());
+      y_scale_list.push_back(border.get_rt_y());
+      std::sort(y_scale_list.begin(), y_scale_list.end());
+      y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
 
-      for (size_t i = 0; i < scale_list.size(); i++) {
-        if (scale_list[i] < real_lb_y) {
-          continue;
+      int index = 0;
+      for (; index < static_cast<irt_int>(y_scale_list.size()); index++) {
+        if (y_scale_list[index] > real_lb_y) {
+          break;
         }
-        real_lb_y = scale_list[i - 1];
-        real_rt_y = scale_list[i];
-        break;
       }
+      real_lb_y = index > 0 ? y_scale_list[index - 1] : real_lb_y;
+
+      for (; index < static_cast<irt_int>(y_scale_list.size()); index++) {
+        if (y_scale_list[index] > real_rt_y) {
+          break;
+        }
+      }
+      real_rt_y = y_scale_list[index];
     }
     return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
   }
@@ -3016,6 +3043,7 @@ class RTUtil
     }
     total_scale_list.push_back(max_value);
     std::sort(total_scale_list.begin(), total_scale_list.end());
+    merge(total_scale_list, [](T a, T b) { return equalDoubleByError(a, b, DBL_ERROR); });
     total_scale_list.erase(std::unique(total_scale_list.begin(), total_scale_list.end()), total_scale_list.end());
 
     std::vector<std::pair<T, T>> scale_range_list;
