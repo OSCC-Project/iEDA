@@ -155,6 +155,14 @@ class DetailedRouter
 #if 1  // plot dr_box
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx = -1);
 #endif
+
+#if 1  // vaild drc
+  bool hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
+                                                                          const std::vector<DRCRect>& drc_rect_list);
+  bool hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type);
+  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type);
+#endif
 };
 
 }  // namespace irt

@@ -498,6 +498,10 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
  */
 void PwrCalcInternalPower::printInternalPower(std::ostream& out,
                                               PwrGraph* the_graph) {
+  std::ranges::sort(_internal_powers, [](auto& left, auto& right) {
+    return left->get_internal_power() > right->get_internal_power();
+  });
+
   for (auto& internal_power : _internal_powers) {
     auto* design_obj = internal_power->get_design_obj();
     auto* design_inst = dynamic_cast<Instance*>(design_obj);
