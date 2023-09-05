@@ -195,46 +195,6 @@ void DRCChecker::updateRectList(RegionQuery& region_query, ChangeType change_typ
 
 #endif
 
-#if 1  // 检查是否有违例
-
-bool DRCChecker::hasViolation(RegionQuery& region_query, const DRCRect& drc_rect)
-{
-  std::vector<DRCRect> drc_rect_list{drc_rect};
-  return hasViolation(region_query, drc_rect_list);
-}
-
-bool DRCChecker::hasViolation(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list)
-{
-  for (auto [drc, violation_list] : getViolationInfo(region_query, drc_rect_list)) {
-    if (!violation_list.empty()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// bool DRCChecker::hasViolation(RegionQuery* region_query)
-// {
-//   for (auto [drc, violation_list] : getViolationInfo(region_query)) {
-//     if (!violation_list.empty()) {
-//       return true;
-//     }
-//   }
-//   return false;
-// }
-
-// bool DRCChecker::hasViolation(const std::vector<DRCRect>& drc_rect_list)
-// {
-//   for (auto [drc, violation_list] : getViolationInfo(drc_rect_list)) {
-//     if (!violation_list.empty()) {
-//       return true;
-//     }
-//   }
-//   return false;
-// }
-
-#endif
-
 #if 1  // 碰撞一定会产生DRC的最小膨胀矩形
 
 std::vector<LayerRect> DRCChecker::getMinScope(const DRCRect& drc_rect)

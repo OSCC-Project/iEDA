@@ -499,6 +499,61 @@ unsigned Power::reportPower(const char* rpt_file_name,
 };
 
 /**
+ * @brief run report ipower
+ *
+ * @return unsigned
+ */
+unsigned Power::runCompleteFlow(std::string output_path) {
+  {
+    ieda::Stats stats;
+    LOG_INFO << "build graph and seq graph start";
+    // build power graph
+    buildGraph();
+
+    // build seq graph
+    buildSeqGraph();
+
+    LOG_INFO << "build graph and seq graph end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "build graph and seq graph memory usage " << memory_delta
+             << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "build graph and seq graph time elapsed " << time_delta << "s";
+  }
+
+  {
+    ieda::Stats stats;
+    LOG_INFO << "power annotate vcd start";
+    // std::pair begin_end = {0, 50000000};
+    // readVCD("/home/taosimin/T28/vcd/asic_top.vcd", "u0_asic_top",
+    //                 begin_end);
+    // annotate toggle sp
+    annotateToggleSP();
+
+    LOG_INFO << "power vcd annotate end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power vcd annotate memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
+  }
+
+  {
+    // report power.
+    ieda::Stats stats;
+    LOG_INFO << "power report start";
+
+    reportPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
+
+    LOG_INFO << "power report end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power report memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power report time elapsed " << time_delta << "s";
+  }
+  return 1;
+}
+
+/**
  * @brief get the instance owned group.
  *
  * @param inst

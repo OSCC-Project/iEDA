@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCChecker.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -97,6 +98,14 @@ class PinAccessor
 
 #if 1  // update
   void update(PAModel& pa_model);
+#endif
+
+#if 1  // vaild drc
+  bool hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                          const std::vector<DRCRect>& drc_rect_list);
+  bool hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type);
+  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type);
 #endif
 };
 

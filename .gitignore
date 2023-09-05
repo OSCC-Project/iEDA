@@ -20,3 +20,5 @@ catboost_info
 *.def
 *.log
 *.pwr
+
+rpt*/

@@ -18,7 +18,6 @@
 
 #include <sstream>
 
-#include "DRCChecker.hpp"
 #include "GDSPlotter.hpp"
 #include "GPGDS.hpp"
 #include "PAModel.hpp"
@@ -668,9 +667,9 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, c
     }
   }
   bool has_violation = false;
-  for (const auto& [pa_gcell_id, gcell_rect_list] : gcell_rect_map) {
+  for (const auto& [pa_gcell_id, drc_rect_list] : gcell_rect_map) {
     PAGCell& pa_gcell = pa_gcell_map[pa_gcell_id.get_x()][pa_gcell_id.get_y()];
-    if (DC_INST.hasViolation(pa_gcell.getRegionQuery(pa_source_type), gcell_rect_list)) {
+    if (hasVaildViolation(pa_gcell, pa_source_type, drc_rect_list)) {
       has_violation = true;
       break;
     }
@@ -902,7 +901,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
       for (PASourceType pa_source_type : {PASourceType::kLayoutShape}) {
-        for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type))) {
+        for (auto& [drc, violation_info_list] : getVaildViolationInfo(pa_gcell, pa_source_type)) {
           std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[pa_source_type][drc];
           total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
         }
@@ -1115,6 +1114,65 @@ void PinAccessor::update(PAModel& pa_model)
 
     pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
   }
+}
+
+#endif
+
+#if 1  // vaild drc
+
+bool PinAccessor::hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
+{
+  return !(getVaildViolationInfo(pa_gcell, pa_source_type, drc_rect_list).empty());
+}
+
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                                     const std::vector<DRCRect>& drc_rect_list)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+
+  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list)) {
+    bool is_vaild = false;
+    for (ViolationInfo& violation_info : violation_list) {
+      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+        if (net_idx != -1) {
+          is_vaild = true;
+          goto here;
+        }
+      }
+    }
+  here:
+    if (is_vaild) {
+      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    }
+  }
+  return drc_violation_map;
+}
+
+bool PinAccessor::hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type)
+{
+  return !(getVaildViolationInfo(pa_gcell, pa_source_type).empty());
+}
+
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+
+  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type))) {
+    bool is_vaild = false;
+    for (ViolationInfo& violation_info : violation_list) {
+      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+        if (net_idx != -1) {
+          is_vaild = true;
+          goto here;
+        }
+      }
+    }
+  here:
+    if (is_vaild) {
+      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    }
+  }
+  return drc_violation_map;
 }
 
 #endif
