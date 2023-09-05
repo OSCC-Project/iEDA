@@ -54,12 +54,6 @@ class DRCChecker
   void updateRectList(RegionQuery& region_query, ChangeType change_type, const DRCRect& drc_rect);
   void updateRectList(RegionQuery& region_query, ChangeType change_type, const std::vector<DRCRect>& drc_rect_list);
   /**
-   * 检查是否有违例
-   * 暂时不进行线网自检
-   */
-  bool hasViolation(RegionQuery& region_query, const DRCRect& drc_rect);
-  bool hasViolation(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
-  /**
    * 碰撞一定会产生DRC的最小膨胀矩形
    * 注意：现在只能扩大spacing的最小范围，其他的由于在布线过程中可能有误差，比如在没连上的线进行eol规则的扩大可能会有问题
    */

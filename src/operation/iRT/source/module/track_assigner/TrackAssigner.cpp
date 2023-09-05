@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #include "TrackAssigner.hpp"
 
-#include "DRCChecker.hpp"
 #include "GDSPlotter.hpp"
 #include "LayerCoord.hpp"
 #include "TAPanel.hpp"
@@ -1780,7 +1779,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = ta_panel_stat.get_source_drc_violation_map();
   for (TASourceType ta_source_type : {TASourceType::kLayoutShape}) {
-    for (auto& [drc, violation_info_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type))) {
+    for (auto& [drc, violation_info_list] : getVaildViolationInfo(ta_panel, ta_source_type)) {
       source_drc_violation_map[ta_source_type][drc] = violation_info_list;
     }
   }
@@ -2435,6 +2434,65 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
   std::string gds_file_path = RTUtil::getString(ta_temp_directory_path, "ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_",
                                                 ta_panel.get_ta_panel_id().get_panel_idx(), ".gds");
   GP_INST.plot(gp_gds, gds_file_path, false, false);
+}
+
+#endif
+
+#if 1  // vaild drc
+
+bool TrackAssigner::hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list)
+{
+  return !(getVaildViolationInfo(ta_panel, ta_source_type, drc_rect_list).empty());
+}
+
+std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+                                                                                       const std::vector<DRCRect>& drc_rect_list)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+
+  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list)) {
+    bool is_vaild = false;
+    for (ViolationInfo& violation_info : violation_list) {
+      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+        if (RTUtil::exist(ta_panel.get_net_task_map(), net_idx)) {
+          is_vaild = true;
+          goto here;
+        }
+      }
+    }
+  here:
+    if (is_vaild) {
+      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    }
+  }
+  return drc_violation_map;
+}
+
+bool TrackAssigner::hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type)
+{
+  return !(getVaildViolationInfo(ta_panel, ta_source_type).empty());
+}
+
+std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+
+  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type))) {
+    bool is_vaild = false;
+    for (ViolationInfo& violation_info : violation_list) {
+      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+        if (RTUtil::exist(ta_panel.get_net_task_map(), net_idx)) {
+          is_vaild = true;
+          goto here;
+        }
+      }
+    }
+  here:
+    if (is_vaild) {
+      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    }
+  }
+  return drc_violation_map;
 }
 
 #endif
