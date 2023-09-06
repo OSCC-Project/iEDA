@@ -76,7 +76,8 @@ Sta::Sta()
     : _num_threads(32),
       _constrains(nullptr),
       _analysis_mode(AnalysisMode::kMaxMin),
-      _graph(&_netlist) {
+      _graph(&_netlist),
+      _clock_groups(sta_clock_cmp) {
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }
@@ -1772,7 +1773,7 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
  * @return the violated StaSeqPathDatas.
  */
 std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
                                         AnalysisMode mode) {
   // auto cmp = [](StaSeqPathData *left, StaSeqPathData *right) -> bool {
@@ -1782,8 +1783,8 @@ Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
   // };
 
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
-      seq_data_queue(cmp);
+                      decltype(seq_data_cmp)>
+      seq_data_queue(seq_data_cmp);
 
   for (const auto &[clk, seq_path_group] : _clock_groups) {
     StaPathEnd *path_end;
@@ -2180,7 +2181,6 @@ void Sta::dumpVertexData(std::vector<std::string> vertex_names) {
 /**
  * @brief dump netlist data in json and txt format.
  *
- * @param vertex_names
  */
 void Sta::dumpNetlistData() {
   const char *design_work_space = get_design_work_space();

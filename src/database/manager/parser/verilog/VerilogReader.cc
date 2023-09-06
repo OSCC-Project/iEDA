@@ -352,7 +352,7 @@ std::unique_ptr<VerilogNetExpr> VerilogInst::getPortConnectNet(VerilogModule* pa
           if (port_id->isBusIndexID()) {
             int index = dynamic_cast<VerilogIndexID*>(port_id)->get_index();
             auto* index_port_connect = get_concat_connect_net(port_concat_connect_net, index);
-            LOG_FATAL_IF(!index_port_connect->isIDExpr()) << "should be id expr.";
+            LOG_FATAL_IF(!index_port_connect->isIDExpr() && !index_port_connect->isConstant()) << "should be id expr.";
             port_connect_net = std::unique_ptr<VerilogNetExpr>(index_port_connect);
           } else if (port_id->isBusSliceID()) {
             int from = dynamic_cast<VerilogSliceID*>(port_id)->get_range_from();
