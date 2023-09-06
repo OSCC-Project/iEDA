@@ -1155,13 +1155,10 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getSegmentList(DRBox& dr_box, L
       }
     }
   }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
-    if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
-    } else {
-      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
-    }
-  });
+  for (Segment<LayerCoord>& segment : segment_list) {
+    SortSegmentInnerXASC()(segment);
+  }
+  std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
   RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
@@ -1314,6 +1311,23 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
     }
     if (dr_task.get_routing_state() != RoutingState::kUnrouted) {
       LOG_INST.error(Loc::current(), "The routing_state is error!");
+    }
+  }
+  for (auto [net_idx, task_idx_list] : dr_box.get_net_task_map()) {
+    std::vector<std::set<LayerCoord, CmpLayerCoordByLayerASC>> dr_coord_set_list;
+    for (irt_int task_idx : task_idx_list) {
+      std::set<LayerCoord, CmpLayerCoordByLayerASC> group_coord_set;
+      for (DRGroup& dr_group : dr_task_list[task_idx].get_dr_group_list()) {
+        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          group_coord_set.insert(coord);
+        }
+      }
+      for (auto& dr_coord_set : dr_coord_set_list) {
+        if (group_coord_set == dr_coord_set) {
+          LOG_INST.error(Loc::current(), "There is same task in net!");
+        }
+      }
+      dr_coord_set_list.push_back(group_coord_set);
     }
   }
 }

@@ -858,13 +858,10 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel
       }
     }
   }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
-    if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
-    } else {
-      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
-    }
-  });
+  for (Segment<LayerCoord>& segment : segment_list) {
+    SortSegmentInnerXASC()(segment);
+  }
+  std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
   RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
@@ -922,7 +919,8 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
       }
     }
   }
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  for (TATask& ta_task : ta_task_list) {
     std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
     if (ta_group_list.size() != 2) {
       LOG_INST.error(Loc::current(), "The ta_group_list size is wrong!");
@@ -940,6 +938,22 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
         LOG_INST.error(Loc::current(), "The coord(", coord.get_x(), ",", coord.get_y(), ",", coord.get_layer_idx(),
                        ") is outside the panel!");
       }
+    }
+  }
+  for (auto [net_idx, task_idx_list] : ta_panel.get_net_task_map()) {
+    std::vector<std::set<LayerCoord, CmpLayerCoordByLayerASC>> ta_coord_set_list;
+    for (irt_int task_idx : task_idx_list) {
+      std::set<LayerCoord, CmpLayerCoordByLayerASC> group_coord_set;
+      for (TAGroup& ta_group : ta_task_list[task_idx].get_ta_group_list()) {
+        std::vector<LayerCoord>& coord_list = ta_group.get_coord_list();
+        group_coord_set.insert(coord_list.begin(), coord_list.end());
+      }
+      for (auto& ta_coord_set : ta_coord_set_list) {
+        if (group_coord_set == ta_coord_set) {
+          LOG_INST.error(Loc::current(), "There is same task in net!");
+        }
+      }
+      ta_coord_set_list.push_back(group_coord_set);
     }
   }
 }
