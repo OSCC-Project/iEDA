@@ -10,5 +10,3 @@ aux_source_directory(./ SRC)
 add_library(app ${SRC})
 
 target_link_libraries(app core vcd_wrapper build_graph propagate_toggle_sp levelize dump calc_power plot_power)
-
-# pybind11_add_module(power ${SRC})

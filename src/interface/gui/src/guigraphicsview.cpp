@@ -228,4 +228,5 @@ bool GuiGraphicsView::captureDesign(std::string path) {
 
   QPixmap img = grab();
   img.save(QString::fromStdString(path));
+  return true;
 }

@@ -45,13 +45,8 @@ add_subdirectory(source/module/ops/propagate_toggle_sp)
 add_subdirectory(source/module/ops/read_vcd)
 add_subdirectory(source/module/ops/plot_power)
 add_subdirectory(source/shell-cmd)
+add_subdirectory(source/python-api)
 add_subdirectory(test)
-
-pybind11_add_module(read_vcd_cpp source/python-api/PythonReadVcd.cc)
-target_link_libraries(read_vcd_cpp PRIVATE vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core)
-
-pybind11_add_module(report_power_cpp source/python-api/PythonReportPower.cc)
-target_link_libraries(report_power_cpp PRIVATE vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power)
 
 add_executable(iPower main.cc)
 target_link_libraries(iPower vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
