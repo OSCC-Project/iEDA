@@ -328,7 +328,7 @@ class TimingEngine {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
+                      decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(const char *pin1_name,
                                      const char *pin2_name, AnalysisMode mode);
   std::optional<double> getWorstSlackBetweenTwoSinks(
