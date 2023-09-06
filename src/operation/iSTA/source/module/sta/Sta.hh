@@ -455,6 +455,7 @@ class Sta {
                         bool is_derate = true, bool is_clock_cap = false);
 
   void dumpVertexData(std::vector<std::string> vertex_names);
+  void dumpNetlistData();
   void buildClockTrees();
   void buildNextPin(
       StaClockTree* clock_tree, StaClockTreeNode* parent_node,
