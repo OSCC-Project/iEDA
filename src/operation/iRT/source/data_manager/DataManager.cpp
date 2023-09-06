@@ -107,6 +107,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
+  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 0);
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
   _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
   _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
@@ -117,8 +118,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
   _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
   _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_history_access_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_access_cost_unit", 20);
-  _config.gr_history_resource_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_resource_cost_unit", 20);
+  _config.gr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_cost_unit", 20);
   _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 5);
   _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
   _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
@@ -698,6 +698,7 @@ void DataManager::makeGCellAxis()
 irt_int DataManager::getProposedInterval()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  irt_int gcell_pitch_size = _config.gcell_pitch_size;
 
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
@@ -716,7 +717,7 @@ irt_int DataManager::getProposedInterval()
   if (ref_pitch == -1) {
     LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
   }
-  return (15 * ref_pitch);
+  return (gcell_pitch_size * ref_pitch);
 }
 
 std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval)
@@ -1465,6 +1466,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_pitch_size");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gcell_pitch_size);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
@@ -1485,10 +1488,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_access_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_access_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_resource_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_resource_cost_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_cost_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_cost_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_prefer_wire_unit");

@@ -744,8 +744,7 @@ void GlobalRouter::resortGRModel(GRModel& gr_model)
 void GlobalRouter::addHistoryCost(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  double gr_history_access_cost_unit = DM_INST.getConfig().gr_history_access_cost_unit;
-  double gr_history_resource_cost_unit = DM_INST.getConfig().gr_history_resource_cost_unit;
+  double gr_history_cost_unit = DM_INST.getConfig().gr_history_cost_unit;
 
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
@@ -753,12 +752,12 @@ void GlobalRouter::addHistoryCost(GRModel& gr_model)
   for (auto& [grid_coord, orientation_set] : gr_model.get_visited_grid_access_orien_map()) {
     GRNode& gr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
     for (const Orientation& orientation : orientation_set) {
-      gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_access_cost_unit;
+      gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_cost_unit;
     }
   }
   for (auto& grid_coord : gr_model.get_visited_grid_resource_set()) {
     GRNode& gr_node = layer_node_map[grid_coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
-    gr_node.set_history_resource_cost(gr_node.get_history_resource_cost() + gr_history_resource_cost_unit);
+    gr_node.set_history_resource_cost(gr_node.get_history_resource_cost() + gr_history_cost_unit);
   }
   // 添加新的history cost
   for (GridMap<GRNode>& node_map : layer_node_map) {
@@ -772,7 +771,7 @@ void GlobalRouter::addHistoryCost(GRModel& gr_model)
           for (Orientation orientation : {Orientation::kEast, Orientation::kWest}) {
             double access_overflow = RTUtil::calcCost(orien_access_demand_map[orientation], orien_access_supply_map[orientation]);
             if (access_overflow > 1) {
-              gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_access_cost_unit;
+              gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_cost_unit;
               gr_model.get_visited_grid_access_orien_map()[gr_node].insert(orientation);
             }
           }
@@ -780,14 +779,14 @@ void GlobalRouter::addHistoryCost(GRModel& gr_model)
           for (Orientation orientation : {Orientation::kSouth, Orientation::kNorth}) {
             double access_overflow = RTUtil::calcCost(orien_access_demand_map[orientation], orien_access_supply_map[orientation]);
             if (access_overflow > 1) {
-              gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_access_cost_unit;
+              gr_node.get_history_orien_access_cost_map()[orientation] += gr_history_cost_unit;
               gr_model.get_visited_grid_access_orien_map()[gr_node].insert(orientation);
             }
           }
         }
         double resource_overflow = RTUtil::calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
         if (resource_overflow > 1) {
-          gr_node.set_history_resource_cost(gr_node.get_history_resource_cost() + gr_history_resource_cost_unit);
+          gr_node.set_history_resource_cost(gr_node.get_history_resource_cost() + gr_history_cost_unit);
           gr_model.get_visited_grid_resource_set().insert(gr_node);
         }
       }
