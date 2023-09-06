@@ -146,12 +146,12 @@ class TrackAssigner
   void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 
-#if 1  // vaild drc
-  bool hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+#if 1  // valid drc
+  bool hasValidViolation(TAPanel& ta_panel, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
                                                                           const std::vector<DRCRect>& drc_rect_list);
-  bool hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type);
-  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type);
+  bool hasValidViolation(TAPanel& ta_panel, TASourceType ta_source_type);
+  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type);
 #endif
 };
 

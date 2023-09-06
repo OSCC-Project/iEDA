@@ -65,6 +65,7 @@ class GlobalRouter
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeSupply(GRModel& gr_model);
   std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
+  void addExtraNodeSupply(GRModel& gr_model);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();

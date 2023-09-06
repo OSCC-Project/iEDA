@@ -2201,7 +2201,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = dr_box_stat.get_source_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape}) {
-    for (auto& [drc, violation_info_list] : getVaildViolationInfo(dr_box, dr_source_type)) {
+    for (auto& [drc, violation_info_list] : getValidViolationInfo(dr_box, dr_source_type)) {
       source_drc_violation_map[dr_source_type][drc] = violation_info_list;
     }
   }
@@ -2934,57 +2934,57 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
 #endif
 
-#if 1  // vaild drc
+#if 1  // valid drc
 
-bool DetailedRouter::hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool DetailedRouter::hasValidViolation(DRBox& dr_box, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  return !(getVaildViolationInfo(dr_box, dr_source_type, drc_rect_list).empty());
+  return !(getValidViolationInfo(dr_box, dr_source_type, drc_rect_list).empty());
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
+std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getValidViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
                                                                                         const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
   for (auto& [drc, violation_list] : DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list)) {
-    bool is_vaild = false;
+    bool is_valid = false;
     for (ViolationInfo& violation_info : violation_list) {
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
         if (RTUtil::exist(dr_box.get_net_task_map(), net_idx)) {
-          is_vaild = true;
+          is_valid = true;
           goto here;
         }
       }
     }
   here:
-    if (is_vaild) {
+    if (is_valid) {
       drc_violation_map.insert(std::make_pair(drc, violation_list));
     }
   }
   return drc_violation_map;
 }
 
-bool DetailedRouter::hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type)
+bool DetailedRouter::hasValidViolation(DRBox& dr_box, DRSourceType dr_source_type)
 {
-  return !(getVaildViolationInfo(dr_box, dr_source_type).empty());
+  return !(getValidViolationInfo(dr_box, dr_source_type).empty());
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type)
+std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getValidViolationInfo(DRBox& dr_box, DRSourceType dr_source_type)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
   for (auto& [drc, violation_list] : DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type))) {
-    bool is_vaild = false;
+    bool is_valid = false;
     for (ViolationInfo& violation_info : violation_list) {
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
         if (RTUtil::exist(dr_box.get_net_task_map(), net_idx)) {
-          is_vaild = true;
+          is_valid = true;
           goto here;
         }
       }
     }
   here:
-    if (is_vaild) {
+    if (is_valid) {
       drc_violation_map.insert(std::make_pair(drc, violation_list));
     }
   }

@@ -613,7 +613,7 @@ bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_t
   bool has_violation = false;
   for (const auto& [vr_gcell_id, drc_rect_list] : gcell_rect_map) {
     VRGCell& vr_gcell = vr_gcell_map[vr_gcell_id.get_x()][vr_gcell_id.get_y()];
-    if (hasVaildViolation(vr_gcell, vr_source_type, drc_rect_list)) {
+    if (hasValidViolation(vr_gcell, vr_source_type, drc_rect_list)) {
       has_violation = true;
       break;
     }
@@ -740,7 +740,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
       for (VRSourceType vr_source_type : {VRSourceType::kLayoutShape}) {
-        for (auto& [drc, violation_info_list] : getVaildViolationInfo(vr_gcell, vr_source_type)) {
+        for (auto& [drc, violation_info_list] : getValidViolationInfo(vr_gcell, vr_source_type)) {
           std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[vr_source_type][drc];
           total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
         }
@@ -964,57 +964,57 @@ void ViolationRepairer::update(VRModel& vr_model)
 
 #endif
 
-#if 1  // vaild drc
+#if 1  // valid drc
 
-bool ViolationRepairer::hasVaildViolation(VRGCell& vr_gcell, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool ViolationRepairer::hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  return !(getVaildViolationInfo(vr_gcell, vr_source_type, drc_rect_list).empty());
+  return !(getValidViolationInfo(vr_gcell, vr_source_type, drc_rect_list).empty());
 }
 
-std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getVaildViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
                                                                                            const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
   for (auto& [drc, violation_list] : DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type), drc_rect_list)) {
-    bool is_vaild = false;
+    bool is_valid = false;
     for (ViolationInfo& violation_info : violation_list) {
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
         if (net_idx != -1) {
-          is_vaild = true;
+          is_valid = true;
           goto here;
         }
       }
     }
   here:
-    if (is_vaild) {
+    if (is_valid) {
       drc_violation_map.insert(std::make_pair(drc, violation_list));
     }
   }
   return drc_violation_map;
 }
 
-bool ViolationRepairer::hasVaildViolation(VRGCell& vr_gcell, VRSourceType vr_source_type)
+bool ViolationRepairer::hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type)
 {
-  return !(getVaildViolationInfo(vr_gcell, vr_source_type).empty());
+  return !(getValidViolationInfo(vr_gcell, vr_source_type).empty());
 }
 
-std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getVaildViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type)
+std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
   for (auto& [drc, violation_list] : DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type))) {
-    bool is_vaild = false;
+    bool is_valid = false;
     for (ViolationInfo& violation_info : violation_list) {
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
         if (net_idx != -1) {
-          is_vaild = true;
+          is_valid = true;
           goto here;
         }
       }
     }
   here:
-    if (is_vaild) {
+    if (is_valid) {
       drc_violation_map.insert(std::make_pair(drc, violation_list));
     }
   }

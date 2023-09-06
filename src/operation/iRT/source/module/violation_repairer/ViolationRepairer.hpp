@@ -92,12 +92,12 @@ class ViolationRepairer
   void update(VRModel& vr_model);
 #endif
 
-#if 1  // vaild drc
-  bool hasVaildViolation(VRGCell& vr_gcell, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+#if 1  // valid drc
+  bool hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
                                                                           const std::vector<DRCRect>& drc_rect_list);
-  bool hasVaildViolation(VRGCell& vr_gcell, VRSourceType vr_source_type);
-  std::map<std::string, std::vector<ViolationInfo>> getVaildViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type);
+  bool hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type);
+  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type);
 #endif
 };
 

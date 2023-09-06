@@ -140,6 +140,7 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
   updateWholeDemand(gr_model);
   updateNetDemandMap(gr_model);
   updateNodeSupply(gr_model);
+  addExtraNodeSupply(gr_model);
   makeRoutingState(gr_model);
 }
 
@@ -430,6 +431,10 @@ std::vector<PlanarRect> GlobalRouter::getWireList(GRNode& gr_node, RoutingLayer&
     }
   }
   return wire_list;
+}
+
+void GlobalRouter::addExtraNodeSupply(GRModel& gr_model)
+{
 }
 
 void GlobalRouter::makeRoutingState(GRModel& gr_model)
