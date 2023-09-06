@@ -107,7 +107,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 0);
+  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 15);
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
   _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
   _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
