@@ -79,7 +79,6 @@ class ViolationRepairer
   void repairMinStep(VRModel& vr_model);
   void repairMinArea(VRModel& vr_model);
   void repairMinArea(VRModel& vr_model, VRNet& vr_net);
-  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
   void processVRModel(VRModel& vr_model);
   void updateNetResultMap(VRModel& vr_model);
   void calcVRGCellDemand(VRModel& vr_model);
@@ -93,11 +92,11 @@ class ViolationRepairer
 #endif
 
 #if 1  // valid drc
-  bool hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
-                                                                          const std::vector<DRCRect>& drc_rect_list);
-  bool hasValidViolation(VRGCell& vr_gcell, VRSourceType vr_source_type);
-  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type);
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type);
+  void removeInvalidViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

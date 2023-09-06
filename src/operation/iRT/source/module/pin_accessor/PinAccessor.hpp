@@ -101,9 +101,9 @@ class PinAccessor
 
 #if 1  // valid drc
   bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
-                                                                          const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getValidViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type);
   void removeInvalidViolationInfo(PAGCell& pa_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };

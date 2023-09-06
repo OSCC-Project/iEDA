@@ -18,6 +18,7 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
+#include "DRCChecker.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"

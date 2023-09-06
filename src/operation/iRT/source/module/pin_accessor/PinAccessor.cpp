@@ -871,7 +871,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
       for (PASourceType pa_source_type : {PASourceType::kLayoutShape}) {
-        for (auto& [drc, violation_info_list] : getValidViolationInfo(pa_gcell, pa_source_type)) {
+        for (auto& [drc, violation_info_list] : getViolationInfo(pa_gcell, pa_source_type)) {
           std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[pa_source_type][drc];
           total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
         }
@@ -1112,7 +1112,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, c
   bool has_violation = false;
   for (const auto& [pa_gcell_id, drc_rect_list] : gcell_rect_map) {
     PAGCell& pa_gcell = pa_gcell_map[pa_gcell_id.get_x()][pa_gcell_id.get_y()];
-    if (getValidViolationInfo(pa_gcell, pa_source_type, drc_rect_list).size() > 0) {
+    if (getViolationInfo(pa_gcell, pa_source_type, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -1120,8 +1120,8 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, c
   return has_violation;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getValidViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
-                                                                                     const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                                const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list);
@@ -1129,7 +1129,7 @@ std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getValidViolation
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getValidViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type)
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type));
