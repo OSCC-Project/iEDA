@@ -84,6 +84,15 @@ IdbVia* IdbVia::clone()
   return via_new;
 }
 
+void IdbVia::set_instance(IdbViaMaster* instance)
+{
+  if (_master_instance != nullptr) {
+    delete _master_instance;
+    _master_instance = nullptr;
+  }
+  _master_instance = instance;
+}
+
 void IdbVia::set_coordinate(IdbCoordinate<int32_t>* point)
 {
   _coordinate->set_xy(point->get_x(), point->get_y());
@@ -610,46 +619,46 @@ string IdbVias::transInt8ToHex(uint8_t value)
   return transIntToHexBy4Bits(high_bits) + transIntToHexBy4Bits(low_bits);
 }
 
-IdbVia* IdbVias::createViaDefault(string via_name, IdbLayerCut* layer_cut)
-{
-  IdbViaRuleGenerate* via_rule = layer_cut->get_via_rule();
-  if (via_rule == nullptr)
-    return nullptr;
+// IdbVia* IdbVias::createViaDefault(string via_name, IdbLayerCut* layer_cut)
+// {
+//   IdbViaRuleGenerate* via_rule = layer_cut->get_via_rule();
+//   if (via_rule == nullptr)
+//     return nullptr;
 
-  int width = 0;
-  int height = 0;
+//   int width = 0;
+//   int height = 0;
 
-  if (layer_cut->get_name() == "VIA12") {
-    width = 820;
-    height = 240;
-  } else if (layer_cut->get_name() == "VIA23") {
-    width = 820;
-    height = 240;
-  } else if (layer_cut->get_name() == "VIA34") {
-    width = 820;
-    height = 240;
-  } else if (layer_cut->get_name() == "VIA45") {
-    width = 820;
-    height = 1640;
-  } else if (layer_cut->get_name() == "VIA56") {
-    width = 1640;
-    height = 1640;
-  } else if (layer_cut->get_name() == "VIA67") {
-    width = 1640;
-    height = 4100;
-  } else if (layer_cut->get_name() == "VIA78") {
-    width = 16400;
-    height = 4100;
-  } else if (layer_cut->get_name() == "PA") {
-    width = 16400;
-    height = 20000;
-  } else {
-  }
+//   if (layer_cut->get_name() == "VIA12") {
+//     width = 820;
+//     height = 240;
+//   } else if (layer_cut->get_name() == "VIA23") {
+//     width = 820;
+//     height = 240;
+//   } else if (layer_cut->get_name() == "VIA34") {
+//     width = 820;
+//     height = 240;
+//   } else if (layer_cut->get_name() == "VIA45") {
+//     width = 820;
+//     height = 1640;
+//   } else if (layer_cut->get_name() == "VIA56") {
+//     width = 1640;
+//     height = 1640;
+//   } else if (layer_cut->get_name() == "VIA67") {
+//     width = 1640;
+//     height = 4100;
+//   } else if (layer_cut->get_name() == "VIA78") {
+//     width = 16400;
+//     height = 4100;
+//   } else if (layer_cut->get_name() == "PA") {
+//     width = 16400;
+//     height = 20000;
+//   } else {
+//   }
 
-  //   std::pair<int32_t, int32_t> row_col_pair = calculateRowsCols(layer_cut, width, height);
+//   //   std::pair<int32_t, int32_t> row_col_pair = calculateRowsCols(layer_cut, width, height);
 
-  return createVia(via_name, layer_cut, width, height);
-}
+//   return createVia(via_name, layer_cut, width, height);
+// }
 
 std::pair<int32_t, int32_t> IdbVias::calculateRowsCols(IdbLayerCut* layer_cut, int32_t width, int32_t height)
 {

@@ -9,10 +9,11 @@
  *
  */
 
+#include "PythonPower.hh"
 #include "api/Power.hh"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
+#include "sta/Sta.hh"
 
+namespace ipower {
 bool read_vcd(std::string vcd_file, std::string top_instance_name) {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
@@ -20,7 +21,4 @@ bool read_vcd(std::string vcd_file, std::string top_instance_name) {
   return ipower->readVCD(vcd_file, top_instance_name);
 }
 
-PYBIND11_MODULE(read_vcd_cpp, m) {
-  m.def("read_vcd_cpp", &read_vcd, pybind11::arg("file_name"),
-        pybind11::arg("top_name"));
-}
+}  // namespace ipower

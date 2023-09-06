@@ -52,6 +52,7 @@
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "include/Version.hh"
+#include "json/json.hpp"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
@@ -75,7 +76,8 @@ Sta::Sta()
     : _num_threads(32),
       _constrains(nullptr),
       _analysis_mode(AnalysisMode::kMaxMin),
-      _graph(&_netlist) {
+      _graph(&_netlist),
+      _clock_groups(sta_clock_cmp) {
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }
@@ -1771,7 +1773,7 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
  * @return the violated StaSeqPathDatas.
  */
 std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
                                         AnalysisMode mode) {
   // auto cmp = [](StaSeqPathData *left, StaSeqPathData *right) -> bool {
@@ -1781,8 +1783,8 @@ Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
   // };
 
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
-      seq_data_queue(cmp);
+                      decltype(seq_data_cmp)>
+      seq_data_queue(seq_data_cmp);
 
   for (const auto &[clk, seq_path_group] : _clock_groups) {
     StaPathEnd *path_end;
@@ -2174,6 +2176,112 @@ void Sta::dumpVertexData(std::vector<std::string> vertex_names) {
     dump_data.printText(file_name);
     ++index;
   }
+}
+
+/**
+ * @brief dump netlist data in json and txt format.
+ *
+ */
+void Sta::dumpNetlistData() {
+  const char *design_work_space = get_design_work_space();
+
+  Sta *ista = Sta::getOrCreateSta();
+  auto &the_graph = ista->get_graph();
+  Netlist *the_netlist = ista->get_netlist();
+  Net *the_net;
+
+  nlohmann::json net_info_json = nlohmann::json::array();
+  std::set<std::string> cell_types;
+
+  FOREACH_NET(the_netlist, the_net) {
+    // initialize the json container
+    nlohmann::json net_info_obj = nlohmann::json::object();
+    nlohmann::json net_load_list = nlohmann::json::array();
+
+    auto net_name = the_net->get_name();
+
+    // driver info
+    auto *driver_pin = the_net->getDriver();
+    auto *driver_cell_type = "";
+    if (driver_pin->isPort()) {
+      driver_cell_type = "[port]";
+    } else {
+      driver_cell_type =
+          driver_pin->get_own_instance()->get_inst_cell()->get_cell_name();
+      cell_types.emplace(driver_cell_type);
+    }
+
+    auto driver_cell_level = (*the_graph.findVertex(driver_pin))->get_level();
+    auto driver_cell_fanout = the_net->getLoads().size();
+
+    // write net_name and driver info to json container
+    net_info_obj["net_name"] = net_name;
+    net_info_obj["driver_cell_fanout"] = driver_cell_fanout;
+    net_info_obj["driver_cell_type"] = driver_cell_type;
+    net_info_obj["driver_cell_level"] = driver_cell_level;
+
+    // load info
+    std::vector<DesignObject *> load_pins = the_net->getLoads();
+    auto index = 1;
+    for (auto *load_pin : load_pins) {
+      // initialize the load_info json container
+      nlohmann::json net_load_info = nlohmann::json::object();
+
+      auto load_vertex = the_graph.findVertex(load_pin);
+      LOG_FATAL_IF(!load_vertex);
+
+      const char *load_cell_type = "";
+      if (load_pin->isPort()) {
+        load_cell_type = "[port]";
+      } else {
+        load_cell_type =
+            load_pin->get_own_instance()->get_inst_cell()->get_cell_name();
+        cell_types.emplace(load_cell_type);
+      }
+
+      // write the load info to container with index
+      net_load_info["index"] = index++;
+      net_load_info["load_cell_type"] = load_cell_type;
+
+      // insert the net load/cell info the the net load list before next dealing
+      // next load
+      net_load_list.emplace_back(net_load_info);
+    }
+
+    // write load info to json container
+    net_info_obj["net_load_list"] = net_load_list;
+
+    // write the json container to net_info_json before looping next net
+    net_info_json.emplace_back(net_info_obj);
+  }
+
+  // export to json file before exiting
+  std::ofstream outputJson(std::string(design_work_space) +
+                           std::string("/net_list_info.json"));
+
+  if (!outputJson.is_open()) {
+    std::cerr << "Error: Failed to open file for writing." << std::endl;
+  }
+
+  outputJson << std::setw(4) << net_info_json << std::endl;
+  LOG_INFO << "net_list_info.json written to "
+           << std::string(design_work_space) +
+                  std::string("/net_list_info.json")
+           << std::endl;
+  outputJson.close();
+
+  std::ofstream outputTxt(std::string(design_work_space) +
+                          std::string("/cell_types.txt"));
+  if (!outputTxt.is_open()) {
+    std::cerr << "Error: Failed to open file for writing." << std::endl;
+  }
+
+  std::copy(cell_types.begin(), cell_types.end(),
+            std::ostream_iterator<std::string>(outputTxt, "\n"));
+  LOG_INFO << "cell_types.txt written to "
+           << std::string(design_work_space) + std::string("/cell_types.txt")
+           << std::endl;
+  outputJson.close();
 }
 
 /**

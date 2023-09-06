@@ -70,17 +70,9 @@ class IdbVia : public IdbObject
 
   // setter
   void set_name(string name) { _name = name; }
-  void set_instance(IdbViaMaster* instance)
-  {
-    if (_master_instance != nullptr) {
-      delete _master_instance;
-      _master_instance = nullptr;
-    }
-    _master_instance = instance;
-  }
+  void set_instance(IdbViaMaster* instance);
   void set_coordinate(IdbCoordinate<int32_t>* point);
   void set_coordinate(int32_t x, int32_t y) { _coordinate->set_xy(x, y); }
-  //   bool set_bounding_box();
 
   // operator
   IdbVia* clone();
@@ -118,7 +110,7 @@ class IdbVias
 
   // operator
   IdbVia* createVia(string via_name, IdbLayerCut* layer_cut, int32_t width_design = 0, int32_t height_design = 0);
-  IdbVia* createViaDefault(string via_name, IdbLayerCut* layer_cut);
+  //   IdbVia* createViaDefault(string via_name, IdbLayerCut* layer_cut);
   std::pair<int32_t, int32_t> calculateRowsCols(IdbLayerCut* layer_cut, int32_t width = 0, int32_t height = 0);
   string createViaPatternString(int row_num, int col_num, IdbLayerCutArraySpacing* _array_spacing);
   string constructRowPattern(int col_num, int array_cut_num);
