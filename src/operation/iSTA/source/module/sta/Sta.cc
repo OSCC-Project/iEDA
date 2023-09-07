@@ -2208,8 +2208,8 @@ void Sta::dumpNetlistData() {
     } else {
       driver_cell_type =
           driver_pin->get_own_instance()->get_inst_cell()->get_cell_name();
-      cell_types.emplace(driver_cell_type);
     }
+    cell_types.emplace(driver_cell_type);
 
     auto driver_cell_level = (*the_graph.findVertex(driver_pin))->get_level();
     auto driver_cell_fanout = the_net->getLoads().size();
@@ -2236,8 +2236,8 @@ void Sta::dumpNetlistData() {
       } else {
         load_cell_type =
             load_pin->get_own_instance()->get_inst_cell()->get_cell_name();
-        cell_types.emplace(load_cell_type);
       }
+      cell_types.emplace(load_cell_type);
 
       // write the load info to container with index
       net_load_info["index"] = index++;
