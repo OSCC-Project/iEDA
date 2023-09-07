@@ -248,8 +248,9 @@ void TrackAssigner::updateNetFixedRectMap(TAModel& ta_model)
 }
 
 /**
- * 当drc_rect是由于ta_panel布线产生时，ta_source_type必须设置为kUnknownPanel
- * 当drc_rect是由blockage或pin_shape或其他不由ta_panel布线产生时，ta_source_type可设置为对应值
+ * ta_panel_id是产生drc_rect的panel
+ * 若添加的panel与ta_panel_id一致，则按照原drc_rect
+ * 若添加的panel与ta_panel_id不一致(panel_a产生的往panel_b添加)，则将drc_rect的net_idx设置为-1
  */
 void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id,
                                     DRCRect drc_rect)
@@ -269,13 +270,19 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     if (routing_layer_list[routing_layer_idx].isPreferH()) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        TAPanel& curr_panel = layer_panel_list[routing_layer_idx][y];
-        DC_INST.updateRectList(curr_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
+        TAPanel& target_panel = layer_panel_list[routing_layer_idx][y];
+        if (target_panel.get_ta_panel_id() != ta_panel_id) {
+          drc_rect.set_net_idx(-1);
+        }
+        DC_INST.updateRectList(target_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
       }
     } else {
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        TAPanel& curr_panel = layer_panel_list[routing_layer_idx][x];
-        DC_INST.updateRectList(curr_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
+        TAPanel& target_panel = layer_panel_list[routing_layer_idx][x];
+        if (target_panel.get_ta_panel_id() != ta_panel_id) {
+          drc_rect.set_net_idx(-1);
+        }
+        DC_INST.updateRectList(target_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
       }
     }
   }
