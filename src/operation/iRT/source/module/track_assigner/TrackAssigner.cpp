@@ -95,12 +95,10 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           TAPanel ta_panel;
           ta_panel.set_rect(PlanarRect(die.get_real_lb_x(), line, die.get_real_rt_x(), line + gcell_grid.get_step_length()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
-
           TAPanelId ta_panel_id;
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -110,12 +108,10 @@ TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
           TAPanel ta_panel;
           ta_panel.set_rect(PlanarRect(line, die.get_real_lb_y(), line + gcell_grid.get_step_length(), die.get_real_rt_y()));
           ta_panel.set_layer_idx(routing_layer.get_layer_idx());
-
           TAPanelId ta_panel_id;
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -197,7 +193,6 @@ void TrackAssigner::shrinkPanelRegion(TAModel& ta_model)
       PlanarCoord& first_grid_coord = first_guide.get_grid_coord();
       PlanarCoord& second_grid_coord = second_guide.get_grid_coord();
       irt_int ta_layer_idx = first_guide.get_layer_idx();
-
       TAPanelId ta_panel_id;
       if (RTUtil::isHorizontal(first_grid_coord, second_grid_coord)) {
         ta_panel_id.set_panel_idx(first_grid_coord.get_y());
@@ -205,7 +200,6 @@ void TrackAssigner::shrinkPanelRegion(TAModel& ta_model)
         ta_panel_id.set_panel_idx(first_grid_coord.get_x());
       }
       ta_panel_id.set_layer_idx(ta_layer_idx);
-
       ta_panel_routing_region_map[ta_panel_id].push_back(RTUtil::getBoundingBox({first_guide.get_rect(), second_guide.get_rect()}));
     }
   }
@@ -269,7 +263,7 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
 
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  irt_int routing_layer_idx = drc_rect.get_layer_rect().get_layer_idx();
+  irt_int routing_layer_idx = drc_rect.get_layer_idx();
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
@@ -858,13 +852,10 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel
       }
     }
   }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
-    if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
-    } else {
-      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
-    }
-  });
+  for (Segment<LayerCoord>& segment : segment_list) {
+    SortSegmentInnerXASC()(segment);
+  }
+  std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
   RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
@@ -922,7 +913,8 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
       }
     }
   }
-  for (TATask& ta_task : ta_panel.get_ta_task_list()) {
+  std::vector<TATask>& ta_task_list = ta_panel.get_ta_task_list();
+  for (TATask& ta_task : ta_task_list) {
     std::vector<TAGroup>& ta_group_list = ta_task.get_ta_group_list();
     if (ta_group_list.size() != 2) {
       LOG_INST.error(Loc::current(), "The ta_group_list size is wrong!");
@@ -940,6 +932,22 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
         LOG_INST.error(Loc::current(), "The coord(", coord.get_x(), ",", coord.get_y(), ",", coord.get_layer_idx(),
                        ") is outside the panel!");
       }
+    }
+  }
+  for (auto [net_idx, task_idx_list] : ta_panel.get_net_task_map()) {
+    std::vector<std::set<LayerCoord, CmpLayerCoordByLayerASC>> ta_coord_set_list;
+    for (irt_int task_idx : task_idx_list) {
+      std::set<LayerCoord, CmpLayerCoordByLayerASC> group_coord_set;
+      for (TAGroup& ta_group : ta_task_list[task_idx].get_ta_group_list()) {
+        std::vector<LayerCoord>& coord_list = ta_group.get_coord_list();
+        group_coord_set.insert(coord_list.begin(), coord_list.end());
+      }
+      for (auto& ta_coord_set : ta_coord_set_list) {
+        if (group_coord_set == ta_coord_set) {
+          LOG_INST.error(Loc::current(), "There is same task in net!");
+        }
+      }
+      ta_coord_set_list.push_back(group_coord_set);
     }
   }
 }
@@ -1779,7 +1787,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   std::map<TASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = ta_panel_stat.get_source_drc_violation_map();
   for (TASourceType ta_source_type : {TASourceType::kLayoutShape}) {
-    for (auto& [drc, violation_info_list] : getVaildViolationInfo(ta_panel, ta_source_type)) {
+    for (auto& [drc, violation_info_list] : getViolationInfo(ta_panel, ta_source_type)) {
       source_drc_violation_map[ta_source_type][drc] = violation_info_list;
     }
   }
@@ -2438,61 +2446,83 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
 #endif
 
-#if 1  // vaild drc
+#if 1  // valid drc
 
-bool TrackAssigner::hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  return !(getVaildViolationInfo(ta_panel, ta_source_type, drc_rect_list).empty());
-}
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
-                                                                                       const std::vector<DRCRect>& drc_rect_list)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list)) {
-    bool is_vaild = false;
-    for (ViolationInfo& violation_info : violation_list) {
-      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (RTUtil::exist(ta_panel.get_net_task_map(), net_idx)) {
-          is_vaild = true;
-          goto here;
+  std::map<TAPanelId, std::vector<DRCRect>, CmpTAPanelId> panel_rect_map;
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    irt_int routing_layer_idx = drc_rect.get_layer_idx();
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
+      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      if (routing_layer_list[routing_layer_idx].isPreferH()) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          panel_rect_map[TAPanelId(routing_layer_idx, y)].push_back(drc_rect);
+        }
+      } else {
+        for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+          panel_rect_map[TAPanelId(routing_layer_idx, x)].push_back(drc_rect);
         }
       }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+  }
+  bool has_violation = false;
+  for (const auto& [ta_panel_id, drc_rect_list] : panel_rect_map) {
+    TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
+    if (getViolationInfo(ta_panel, ta_source_type, drc_rect_list).size() > 0) {
+      has_violation = true;
+      break;
     }
   }
-  return drc_violation_map;
+  return has_violation;
 }
 
-bool TrackAssigner::hasVaildViolation(TAPanel& ta_panel, TASourceType ta_source_type)
-{
-  return !(getVaildViolationInfo(ta_panel, ta_source_type).empty());
-}
-
-std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getVaildViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type)
+std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+                                                                                  const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list);
+  removeInvalidViolationInfo(ta_panel, drc_violation_map);
+  return drc_violation_map;
+}
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type))) {
-    bool is_vaild = false;
+std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type));
+  removeInvalidViolationInfo(ta_panel, drc_violation_map);
+  return drc_violation_map;
+}
+
+void TrackAssigner::removeInvalidViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+{
+  for (auto& [drc, violation_list] : drc_violation_map) {
+    std::vector<ViolationInfo> valid_violation_list;
     for (ViolationInfo& violation_info : violation_list) {
+      bool is_valid = false;
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (RTUtil::exist(ta_panel.get_net_task_map(), net_idx)) {
-          is_vaild = true;
-          goto here;
+        if (net_idx != -1) {
+          is_valid = true;
+          break;
         }
       }
+      if (is_valid) {
+        valid_violation_list.push_back(violation_info);
+      }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    if (valid_violation_list.empty()) {
+      drc_violation_map.erase(drc);
+    } else {
+      drc_violation_map[drc] = violation_list;
     }
   }
-  return drc_violation_map;
 }
 
 #endif

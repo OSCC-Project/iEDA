@@ -769,6 +769,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
       continue;
     }
     if (base_layer_idx_set != curr_layer_idx_set) {
+      // 若没有包含全层track就继续
       continue;
     }
     curr_layer_idx_set.clear();

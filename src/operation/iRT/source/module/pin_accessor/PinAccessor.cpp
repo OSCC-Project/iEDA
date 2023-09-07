@@ -647,36 +647,6 @@ void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
   }
 }
 
-bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
-
-  std::map<PAGCellId, std::vector<DRCRect>, CmpPAGCellId> gcell_rect_map;
-  for (const DRCRect& drc_rect : drc_rect_list) {
-    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
-      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          gcell_rect_map[PAGCellId(x, y)].push_back(drc_rect);
-        }
-      }
-    }
-  }
-  bool has_violation = false;
-  for (const auto& [pa_gcell_id, drc_rect_list] : gcell_rect_map) {
-    PAGCell& pa_gcell = pa_gcell_map[pa_gcell_id.get_x()][pa_gcell_id.get_y()];
-    if (hasVaildViolation(pa_gcell, pa_source_type, drc_rect_list)) {
-      has_violation = true;
-      break;
-    }
-  }
-  return has_violation;
-}
-
 void PinAccessor::checkAccessPointList(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -901,7 +871,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
       for (PASourceType pa_source_type : {PASourceType::kLayoutShape}) {
-        for (auto& [drc, violation_info_list] : getVaildViolationInfo(pa_gcell, pa_source_type)) {
+        for (auto& [drc, violation_info_list] : getViolationInfo(pa_gcell, pa_source_type)) {
           std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[pa_source_type][drc];
           total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
         }
@@ -1118,61 +1088,77 @@ void PinAccessor::update(PAModel& pa_model)
 
 #endif
 
-#if 1  // vaild drc
+#if 1  // valid drc
 
-bool PinAccessor::hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  return !(getVaildViolationInfo(pa_gcell, pa_source_type, drc_rect_list).empty());
-}
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
-std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
-                                                                                     const std::vector<DRCRect>& drc_rect_list)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list)) {
-    bool is_vaild = false;
-    for (ViolationInfo& violation_info : violation_list) {
-      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (net_idx != -1) {
-          is_vaild = true;
-          goto here;
+  std::map<PAGCellId, std::vector<DRCRect>, CmpPAGCellId> gcell_rect_map;
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
+      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          gcell_rect_map[PAGCellId(x, y)].push_back(drc_rect);
         }
       }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+  }
+  bool has_violation = false;
+  for (const auto& [pa_gcell_id, drc_rect_list] : gcell_rect_map) {
+    PAGCell& pa_gcell = pa_gcell_map[pa_gcell_id.get_x()][pa_gcell_id.get_y()];
+    if (getViolationInfo(pa_gcell, pa_source_type, drc_rect_list).size() > 0) {
+      has_violation = true;
+      break;
     }
   }
-  return drc_violation_map;
+  return has_violation;
 }
 
-bool PinAccessor::hasVaildViolation(PAGCell& pa_gcell, PASourceType pa_source_type)
-{
-  return !(getVaildViolationInfo(pa_gcell, pa_source_type).empty());
-}
-
-std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getVaildViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type)
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                                const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list);
+  removeInvalidViolationInfo(pa_gcell, drc_violation_map);
+  return drc_violation_map;
+}
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type))) {
-    bool is_vaild = false;
+std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type));
+  removeInvalidViolationInfo(pa_gcell, drc_violation_map);
+  return drc_violation_map;
+}
+
+void PinAccessor::removeInvalidViolationInfo(PAGCell& pa_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+{
+  for (auto& [drc, violation_list] : drc_violation_map) {
+    std::vector<ViolationInfo> valid_violation_list;
     for (ViolationInfo& violation_info : violation_list) {
+      bool is_valid = false;
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
         if (net_idx != -1) {
-          is_vaild = true;
-          goto here;
+          is_valid = true;
+          break;
         }
       }
+      if (is_valid) {
+        valid_violation_list.push_back(violation_info);
+      }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    if (valid_violation_list.empty()) {
+      drc_violation_map.erase(drc);
+    } else {
+      drc_violation_map[drc] = violation_list;
     }
   }
-  return drc_violation_map;
 }
 
 #endif
