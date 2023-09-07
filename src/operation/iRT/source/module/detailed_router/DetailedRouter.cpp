@@ -252,8 +252,9 @@ void DetailedRouter::updateNetFixedRectMap(DRModel& dr_model)
 }
 
 /**
- * 当drc_rect是由于dr_box布线产生时，dr_source_type必须设置为kUnknownBox
- * 当drc_rect是由blockage或pin_shape或其他不由dr_box布线产生时，dr_source_type可设置为对应值
+ * dr_box_id是产生drc_rect的box
+ * 若添加的box与dr_box_id一致，则按照原drc_rect
+ * 若添加的box与dr_box_id不一致(box_a产生的往box_b添加)，则将drc_rect的net_idx设置为-1
  */
 void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id,
                                      DRCRect drc_rect)
@@ -268,8 +269,11 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        DRBox& curr_box = dr_box_map[x][y];
-        DC_INST.updateRectList(curr_box.getRegionQuery(dr_source_type), change_type, drc_rect);
+        DRBox& target_box = dr_box_map[x][y];
+        if (target_box.get_dr_box_id() != dr_box_id) {
+          drc_rect.set_net_idx(-1);
+        }
+        DC_INST.updateRectList(target_box.getRegionQuery(dr_source_type), change_type, drc_rect);
       }
     }
   }
