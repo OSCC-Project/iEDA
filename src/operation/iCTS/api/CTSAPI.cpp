@@ -22,23 +22,22 @@
 #include <ranges>
 #include <unordered_map>
 
-#include "Balancer.h"
-#include "CtsCellLib.h"
+// #include "Balancer.h"
+#include "CtsCellLib.hh"
 #include "CtsConfig.h"
 #include "CtsDBWrapper.h"
-#include "CtsDesign.h"
+#include "CtsDesign.hh"
 #include "CtsReport.h"
 #include "Evaluator.h"
 #include "GDSPloter.h"
 #include "JsonParser.h"
 #include "Node.hh"
 #include "Operator.h"
-#include "Optimizer.h"
+// #include "Optimizer.h"
 #include "Pin.hh"
 #include "RTAPI.hpp"
 #include "Router.h"
-#include "Synthesis.h"
-#include "TimingCalculator.h"
+// #include "Synthesis.h"
 #include "TimingPropagator.hh"
 #include "ToApi.hpp"
 #include "api/TimingEngine.hh"
@@ -79,7 +78,7 @@ void CTSAPI::runCTS()
   ieda::Stats stats;
   readData();
   routing();
-  synthesis();
+  // synthesis();
   evaluate();
   // balance();
   // optimize();
@@ -123,9 +122,9 @@ void CTSAPI::resetAPI()
   _report = nullptr;
   _log_ofs = nullptr;
   _libs = nullptr;
-  _synth = nullptr;
+  // _synth = nullptr;
   _evaluator = nullptr;
-  _balancer = nullptr;
+  // _balancer = nullptr;
   _model_factory = nullptr;
   _timing_engine = nullptr;
 }
@@ -146,9 +145,9 @@ void CTSAPI::init(const std::string& config_file)
   _log_ofs = new std::ofstream(_config->get_log_file(), std::ios::out | std::ios::trunc);
   _libs = new CtsLibs();
 
-  _synth = new Synthesis();
+  // _synth = new Synthesis();
   _evaluator = new Evaluator();
-  _balancer = new Balancer();
+  // _balancer = new Balancer();
   _model_factory = new ModelFactory();
 #if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
   auto external_models = _config->get_external_models();
@@ -186,16 +185,16 @@ void CTSAPI::routing()
   LOG_INFO << "Routing elapsed time " << stats.elapsedRunTime() << "s";
 }
 
-void CTSAPI::synthesis()
-{
-  ieda::Stats stats;
-  _synth->init();
-  _synth->insertCtsNetlist();
-  _synth->update();
+// void CTSAPI::synthesis()
+// {
+//   ieda::Stats stats;
+//   _synth->init();
+//   _synth->insertCtsNetlist();
+//   _synth->update();
 
-  LOG_INFO << "Synthesis memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Synthesis elapsed time " << stats.elapsedRunTime() << "s";
-}
+//   LOG_INFO << "Synthesis memory usage " << stats.memoryDelta() << "MB";
+//   LOG_INFO << "Synthesis elapsed time " << stats.elapsedRunTime() << "s";
+// }
 
 void CTSAPI::evaluate()
 {
@@ -212,123 +211,41 @@ void CTSAPI::evaluate()
   LOG_INFO << "Evaluate elapsed time " << stats.elapsedRunTime() << "s";
 }
 
-void CTSAPI::balance()
-{
-  auto* config = CTSAPIInst.get_config();
-  auto router_type = config->get_router_type();
-  // if (router_type != "SlewAware" || router_type != "HCTS") {
-  //   // TBD
-  //   LOG_INFO << "Balance is only supported for SlewAware and HCTS";
-  //   return;
-  // }
-  if (router_type != "SlewAware") {
-    // TBD
-    LOG_INFO << "Balance is only supported for SlewAware";
-    return;
-  }
-  ieda::Stats stats;
-  _balancer->init();
-  _balancer->balance();
-  _synth->incrementalInsertCtsNetlist();
-  _synth->update();
-  _evaluator->init();
-  _evaluator->evaluate();
-  LOG_INFO << "Balance memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Balance elapsed time " << stats.elapsedRunTime() << "s";
-}
+// void CTSAPI::balance()
+// {
+//   auto* config = CTSAPIInst.get_config();
+//   auto router_type = config->get_router_type();
+//   // if (router_type != "SlewAware") {
+//   //   // TBD
+//   //   LOG_INFO << "Balance is only supported for SlewAware";
+//   //   return;
+//   // }
+//   if (router_type != "SlewAware") {
+//     // TBD
+//     LOG_INFO << "Balance is only supported for SlewAware";
+//     return;
+//   }
+//   ieda::Stats stats;
+//   _balancer->init();
+//   _balancer->balance();
+//   _synth->incrementalInsertCtsNetlist();
+//   _synth->update();
+//   _evaluator->init();
+//   _evaluator->evaluate();
+//   LOG_INFO << "Balance memory usage " << stats.memoryDelta() << "MB";
+//   LOG_INFO << "Balance elapsed time " << stats.elapsedRunTime() << "s";
+// }
 
 void CTSAPI::optimize()
 {
-  ieda::Stats stats;
-  Optimizer optimizer;
-  auto clk_nets = _design->get_nets();
-  ToApiInst.initCTSDesignViolation(dmInst->get_idb_builder(), _timing_engine);
-  optimizer.optimize(clk_nets.begin(), clk_nets.end());
-  optimizer.update();
-  LOG_INFO << "Optimizer memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Optimizer elapsed time " << stats.elapsedRunTime() << "s";
-}
-
-void CTSAPI::getClockNets(std::map<std::string, std::vector<icts::CtsSignalWire>>& net_topo_map) const
-{
-  for (auto* net : _design->get_nets()) {
-    std::string net_name = _db_wrapper->ctsToIdb(net)->get_net_name();
-    if (net_topo_map.count(net_name) != 0) {
-      continue;
-    }
-    if (net->get_pins().size() == 2) {
-      std::vector<icts::Endpoint> endpoints;
-      for (auto* inst : net->get_instances()) {
-        auto pin = inst->get_pin_list().front();
-        auto end_point = icts::Endpoint(pin->get_full_name(), inst->get_location());
-        endpoints.emplace_back(end_point);
-      }
-      std::vector<icts::CtsSignalWire> signal_wires;
-      if (icts::DataTraits<icts::Endpoint>::getX(endpoints[0]) == icts::DataTraits<icts::Endpoint>::getX(endpoints[1])
-          || icts::DataTraits<icts::Endpoint>::getY(endpoints[0]) == icts::DataTraits<icts::Endpoint>::getY(endpoints[1])) {
-        signal_wires.emplace_back(icts::CtsSignalWire{endpoints[0], endpoints[1]});
-      } else {
-        auto trunk_point
-            = icts::CtsPoint(icts::DataTraits<icts::Endpoint>::getX(endpoints[0]), icts::DataTraits<icts::Endpoint>::getY(endpoints[1]));
-        auto end_trunk = icts::Endpoint("trunk", trunk_point);
-        signal_wires.emplace_back(icts::CtsSignalWire{endpoints[0], end_trunk});
-        signal_wires.emplace_back(icts::CtsSignalWire{end_trunk, endpoints[1]});
-      }
-      net_topo_map.insert(std::make_pair(net_name, signal_wires));
-      continue;
-    }
-    std::unordered_map<std::string, icts::CtsPin*> name_to_pin;
-    for (auto* inst : net->get_instances()) {
-      icts::CtsPin* pin = nullptr;
-      if (inst == net->get_driver_inst()) {
-        pin = inst->get_out_pin();
-      } else {
-        pin = inst->get_load_pin();
-      }
-      LOG_FATAL_IF(pin == nullptr) << pin->get_full_name() << " is nullptr";
-
-      if (name_to_pin.count(inst->get_name()) == 0) {
-        name_to_pin.insert(std::make_pair(inst->get_name(), pin));
-      }
-    }
-
-    auto signal_wires = net->get_signal_wires();
-    for (auto& signal_wire : signal_wires) {
-      auto epl = signal_wire.get_first();
-      auto epr = signal_wire.get_second();
-
-      if (name_to_pin.count(epl._name) != 0) {
-        epl = icts::Endpoint(name_to_pin[epl._name]->get_full_name(), epl._point);
-        signal_wire.set_first(epl);
-      }
-      if (name_to_pin.count(epr._name) != 0) {
-        epr = icts::Endpoint(name_to_pin[epr._name]->get_full_name(), epr._point);
-        signal_wire.set_second(epr);
-      }
-    }
-
-    net_topo_map.insert(std::make_pair(net_name, signal_wires));
-  }
-}
-// Timing
-void CTSAPI::addTimingNode(TimingNode* node)
-{
-  _design->addTimingNode(node);
-}
-
-TimingNode* CTSAPI::findTimingNode(const std::string& name)
-{
-  return _design->findTimingNode(name);
-}
-
-void CTSAPI::addHCtsNode(HNode* node)
-{
-  _design->addHCtsNode(node);
-}
-
-HNode* CTSAPI::findHCtsNode(const std::string& name)
-{
-  return _design->findHCtsNode(name);
+  // ieda::Stats stats;
+  // Optimizer optimizer;
+  // auto clk_nets = _design->get_nets();
+  // ToApiInst.initCTSDesignViolation(dmInst->get_idb_builder(), _timing_engine);
+  // optimizer.optimize(clk_nets.begin(), clk_nets.end());
+  // optimizer.update();
+  // LOG_INFO << "Optimizer memory usage " << stats.memoryDelta() << "MB";
+  // LOG_INFO << "Optimizer elapsed time " << stats.elapsedRunTime() << "s";
 }
 
 // iSTA
@@ -354,6 +271,7 @@ double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pa
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
+  return 0.0;
 }
 
 double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pattern) const
@@ -373,6 +291,7 @@ double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pa
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
+  return 0.0;
 }
 
 double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
@@ -685,185 +604,185 @@ std::vector<double> CTSAPI::solvePolynomialRealRoots(const std::vector<double>& 
 }
 
 // iRT
-void CTSAPI::iRTinit()
-{
-  std::map<std::string, std::any> config_map;
-  RTAPI_INST.initRT(config_map);
-}
+// void CTSAPI::iRTinit()
+// {
+//   std::map<std::string, std::any> config_map;
+//   RTAPI_INST.initRT(config_map);
+// }
 
-void CTSAPI::routingWire(icts::CtsNet* net)
-{
-  // HARD CODE
-  auto layer_1 = "M" + std::to_string(_config->get_routing_layers().front());
-  auto layer_2 = "M" + std::to_string(_config->get_routing_layers().back());
-  struct NondeTree
-  {
-    icts::CtsInstance* inst;
-    icts::Point point;
-    NondeTree* parent;
-    std::vector<NondeTree*> children;
-  };
-  std::map<std::string, NondeTree*> wire_node_map;
-  auto signal_wires = net->get_signal_wires();
-  for (auto signal_wire : signal_wires) {
-    auto first = signal_wire.get_first();
-    auto second = signal_wire.get_second();
-    auto first_name = DataTraits<Endpoint>::getId(first);
-    auto second_name = DataTraits<Endpoint>::getId(second);
-    auto first_inst = net->findInstance(first_name);
-    auto second_inst = net->findInstance(second_name);
-    auto* first_node = wire_node_map.find(first_name) != wire_node_map.end() ? wire_node_map[first_name] : nullptr;
-    auto* second_node = wire_node_map.find(second_name) != wire_node_map.end() ? wire_node_map[second_name] : nullptr;
-    if (first_node == nullptr) {
-      first_node = new NondeTree();
-      first_node->inst = first_inst;
-      if (first_inst) {
-        auto driver_pin = net->get_driver_pin();
-        first_node->point = _db_wrapper->getPinLoc(driver_pin);
-      } else {
-        first_node->point = DataTraits<Endpoint>::getPoint(first);
-      }
-      wire_node_map[first_name] = first_node;
-    }
-    if (second_node == nullptr) {
-      second_node = new NondeTree();
-      second_node->inst = second_inst;
-      if (second_inst) {
-        auto* inst = net->findInstance(second_name);
-        auto* load_pin = inst->get_load_pin();
-        second_node->point = _db_wrapper->getPinLoc(load_pin);
-      } else {
-        second_node->point = DataTraits<Endpoint>::getPoint(second);
-      }
-      wire_node_map[second_name] = second_node;
-    }
-    if (pgl::rectilinear(first_node->point, second_node->point)) {
-      first_node->children.emplace_back(second_node);
-      second_node->parent = first_node;
-    } else {
-      auto trunk_node = new NondeTree();
-      trunk_node->inst = nullptr;
-      trunk_node->point = icts::Point(first_node->point.x(), second_node->point.y());
-      first_node->children.emplace_back(trunk_node);
-      trunk_node->parent = first_node;
-      trunk_node->children.emplace_back(second_node);
-      second_node->parent = trunk_node;
-    }
-  }
-  auto* root = net->get_driver_inst();
-  auto wire_tree_root = wire_node_map[root->get_name()];
-  std::vector<ids::Segment> segs;
-  std::queue<NondeTree*> wire_tree_queue;
-  wire_tree_queue.push(wire_tree_root);
-  while (!wire_tree_queue.empty()) {
-    auto* node = wire_tree_queue.front();
-    wire_tree_queue.pop();
-    if (node->inst) {
-      auto driver_pin = net->get_driver_pin();
-      auto inst_layer = _db_wrapper->getPinLayer(driver_pin);
-      ids::Segment via{node->point.x(), node->point.y(), inst_layer, node->point.x(), node->point.y(), layer_2};
-      segs.emplace_back(via);
-    }
-    for (auto* child : node->children) {
-      auto clock_layer = node->point.x() == child->point.x() ? layer_2 : layer_1;
-      ids::Segment seg{node->point.x(), node->point.y(), clock_layer, child->point.x(), child->point.y(), clock_layer};
-      segs.emplace_back(seg);
-      if (child->inst) {
-        auto load_pin = child->inst->get_load_pin();
-        auto inst_layer = _db_wrapper->getPinLayer(load_pin);
-        ids::Segment via{child->point.x(), child->point.y(), clock_layer, child->point.x(), child->point.y(), inst_layer};
-        segs.emplace_back(via);
-      }
-      wire_tree_queue.push(child);
-    }
-    if (node->parent) {
-      auto father_wire = icts::Segment(node->point, node->parent->point);
-      bool need_via = false;
-      for (auto* child : node->parent->children) {
-        auto seg = icts::Segment(node->point, child->point);
-        if ((pgl::vertical(seg) && pgl::horizontal(father_wire)) || (pgl::horizontal(seg) && pgl::vertical(father_wire))) {
-          need_via = true;
-          break;
-        }
-      }
-      if (need_via) {
-        ids::Segment via{node->point.x(), node->point.y(), layer_1, node->point.x(), node->point.y(), layer_2};
-        segs.emplace_back(via);
-      }
-    }
-  }
-  auto* idb_net = _db_wrapper->ctsToIdb(net);
-  auto ph_nodes = RTAPI_INST.getPHYNodeList(segs);
-  auto* idb_layer_list = dmInst->get_idb_builder()->get_def_service()->get_layout()->get_layers();
-  auto* lef_via_list = dmInst->get_idb_builder()->get_lef_service()->get_layout()->get_via_list();
-  idb_net->clear_wire_list();
-  auto* idb_wire_list = idb_net->get_wire_list();
-  auto* idb_wire = idb_wire_list->add_wire();
-  idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
-  bool print_new = false;
-  for (auto node : ph_nodes) {
-    auto* idb_segment = idb_wire->add_segment();
-    if (node.type == ids::PHYNodeType::kWire) {
-      auto wire = node.wire;
-      auto* idb_layer = idb_layer_list->find_layer(wire.layer_name);
-      idb_segment->set_layer(idb_layer);
-      idb_segment->add_point(wire.first_x, wire.first_y);
-      idb_segment->add_point(wire.second_x, wire.second_y);
-    } else if (node.type == ids::PHYNodeType::kVia) {
-      auto via = node.via;
-      auto* idb_via = lef_via_list->find_via(via.via_name);
-      auto* idb_layer_top = idb_via->get_instance()->get_top_layer_shape()->get_layer();
-      idb_segment->set_layer(idb_layer_top);
-      idb_segment->set_is_via(true);
-      idb_segment->add_point(via.x, via.y);
-      auto* idb_via_new = idb_segment->copy_via(idb_via);
-      idb_via_new->set_coordinate(via.x, via.y);
-    } else {
-      LOG_FATAL << "Unlegal PHY node type";
-    }
-    if (print_new == false) {
-      idb_segment->set_layer_as_new();
-      print_new = true;
-    }
-  }
-}
+// void CTSAPI::routingWire(icts::CtsNet* net)
+// {
+//   // HARD CODE
+//   auto layer_1 = "M" + std::to_string(_config->get_routing_layers().front());
+//   auto layer_2 = "M" + std::to_string(_config->get_routing_layers().back());
+//   struct NondeTree
+//   {
+//     icts::CtsInstance* inst;
+//     icts::Point point;
+//     NondeTree* parent;
+//     std::vector<NondeTree*> children;
+//   };
+//   std::map<std::string, NondeTree*> wire_node_map;
+//   auto signal_wires = net->get_signal_wires();
+//   for (auto signal_wire : signal_wires) {
+//     auto first = signal_wire.get_first();
+//     auto second = signal_wire.get_second();
+//     auto first_name = DataTraits<Endpoint>::getId(first);
+//     auto second_name = DataTraits<Endpoint>::getId(second);
+//     auto first_inst = net->findInstance(first_name);
+//     auto second_inst = net->findInstance(second_name);
+//     auto* first_node = wire_node_map.find(first_name) != wire_node_map.end() ? wire_node_map[first_name] : nullptr;
+//     auto* second_node = wire_node_map.find(second_name) != wire_node_map.end() ? wire_node_map[second_name] : nullptr;
+//     if (first_node == nullptr) {
+//       first_node = new NondeTree();
+//       first_node->inst = first_inst;
+//       if (first_inst) {
+//         auto driver_pin = net->get_driver_pin();
+//         first_node->point = _db_wrapper->getPinLoc(driver_pin);
+//       } else {
+//         first_node->point = DataTraits<Endpoint>::getPoint(first);
+//       }
+//       wire_node_map[first_name] = first_node;
+//     }
+//     if (second_node == nullptr) {
+//       second_node = new NondeTree();
+//       second_node->inst = second_inst;
+//       if (second_inst) {
+//         auto* inst = net->findInstance(second_name);
+//         auto* load_pin = inst->get_load_pin();
+//         second_node->point = _db_wrapper->getPinLoc(load_pin);
+//       } else {
+//         second_node->point = DataTraits<Endpoint>::getPoint(second);
+//       }
+//       wire_node_map[second_name] = second_node;
+//     }
+//     if (pgl::rectilinear(first_node->point, second_node->point)) {
+//       first_node->children.emplace_back(second_node);
+//       second_node->parent = first_node;
+//     } else {
+//       auto trunk_node = new NondeTree();
+//       trunk_node->inst = nullptr;
+//       trunk_node->point = icts::Point(first_node->point.x(), second_node->point.y());
+//       first_node->children.emplace_back(trunk_node);
+//       trunk_node->parent = first_node;
+//       trunk_node->children.emplace_back(second_node);
+//       second_node->parent = trunk_node;
+//     }
+//   }
+//   auto* root = net->get_driver_inst();
+//   auto wire_tree_root = wire_node_map[root->get_name()];
+//   std::vector<ids::Segment> segs;
+//   std::queue<NondeTree*> wire_tree_queue;
+//   wire_tree_queue.push(wire_tree_root);
+//   while (!wire_tree_queue.empty()) {
+//     auto* node = wire_tree_queue.front();
+//     wire_tree_queue.pop();
+//     if (node->inst) {
+//       auto driver_pin = net->get_driver_pin();
+//       auto inst_layer = _db_wrapper->getPinLayer(driver_pin);
+//       ids::Segment via{node->point.x(), node->point.y(), inst_layer, node->point.x(), node->point.y(), layer_2};
+//       segs.emplace_back(via);
+//     }
+//     for (auto* child : node->children) {
+//       auto clock_layer = node->point.x() == child->point.x() ? layer_2 : layer_1;
+//       ids::Segment seg{node->point.x(), node->point.y(), clock_layer, child->point.x(), child->point.y(), clock_layer};
+//       segs.emplace_back(seg);
+//       if (child->inst) {
+//         auto load_pin = child->inst->get_load_pin();
+//         auto inst_layer = _db_wrapper->getPinLayer(load_pin);
+//         ids::Segment via{child->point.x(), child->point.y(), clock_layer, child->point.x(), child->point.y(), inst_layer};
+//         segs.emplace_back(via);
+//       }
+//       wire_tree_queue.push(child);
+//     }
+//     if (node->parent) {
+//       auto father_wire = icts::Segment(node->point, node->parent->point);
+//       bool need_via = false;
+//       for (auto* child : node->parent->children) {
+//         auto seg = icts::Segment(node->point, child->point);
+//         if ((pgl::vertical(seg) && pgl::horizontal(father_wire)) || (pgl::horizontal(seg) && pgl::vertical(father_wire))) {
+//           need_via = true;
+//           break;
+//         }
+//       }
+//       if (need_via) {
+//         ids::Segment via{node->point.x(), node->point.y(), layer_1, node->point.x(), node->point.y(), layer_2};
+//         segs.emplace_back(via);
+//       }
+//     }
+//   }
+//   auto* idb_net = _db_wrapper->ctsToIdb(net);
+//   auto ph_nodes = RTAPI_INST.getPHYNodeList(segs);
+//   auto* idb_layer_list = dmInst->get_idb_builder()->get_def_service()->get_layout()->get_layers();
+//   auto* lef_via_list = dmInst->get_idb_builder()->get_lef_service()->get_layout()->get_via_list();
+//   idb_net->clear_wire_list();
+//   auto* idb_wire_list = idb_net->get_wire_list();
+//   auto* idb_wire = idb_wire_list->add_wire();
+//   idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+//   bool print_new = false;
+//   for (auto node : ph_nodes) {
+//     auto* idb_segment = idb_wire->add_segment();
+//     if (node.type == ids::PHYNodeType::kWire) {
+//       auto wire = node.wire;
+//       auto* idb_layer = idb_layer_list->find_layer(wire.layer_name);
+//       idb_segment->set_layer(idb_layer);
+//       idb_segment->add_point(wire.first_x, wire.first_y);
+//       idb_segment->add_point(wire.second_x, wire.second_y);
+//     } else if (node.type == ids::PHYNodeType::kVia) {
+//       auto via = node.via;
+//       auto* idb_via = lef_via_list->find_via(via.via_name);
+//       auto* idb_layer_top = idb_via->get_instance()->get_top_layer_shape()->get_layer();
+//       idb_segment->set_layer(idb_layer_top);
+//       idb_segment->set_is_via(true);
+//       idb_segment->add_point(via.x, via.y);
+//       auto* idb_via_new = idb_segment->copy_via(idb_via);
+//       idb_via_new->set_coordinate(via.x, via.y);
+//     } else {
+//       LOG_FATAL << "Unlegal PHY node type";
+//     }
+//     if (print_new == false) {
+//       idb_segment->set_layer_as_new();
+//       print_new = true;
+//     }
+//   }
+// }
 
-void CTSAPI::iRTdestroy()
-{
-  RTAPI_INST.destroyRT();
-}
+// void CTSAPI::iRTdestroy()
+// {
+//   RTAPI_INST.destroyRT();
+// }
 
-// iTO
-std::vector<idb::IdbNet*> CTSAPI::fix(const icts::OptiNet& opti_net)
-{
-  ito::Tree* topo = ToApiInst.get_tree(static_cast<int>(opti_net.get_signal_wires().size() + 1));
+// // iTO
+// std::vector<idb::IdbNet*> CTSAPI::fix(const icts::OptiNet& opti_net)
+// {
+//   ito::Tree* topo = ToApiInst.get_tree(static_cast<int>(opti_net.get_signal_wires().size() + 1));
 
-  makeTopo(topo, opti_net);
-  auto* idb_net = _db_wrapper->ctsToIdb(opti_net.get_clk_net());
-  return ToApiInst.optimizeCTSDesignViolation(idb_net, topo);
-}
+//   makeTopo(topo, opti_net);
+//   auto* idb_net = _db_wrapper->ctsToIdb(opti_net.get_clk_net());
+//   return ToApiInst.optimizeCTSDesignViolation(idb_net, topo);
+// }
 
-void CTSAPI::makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const
-{
-  auto signal_wires = opti_net.get_signal_wires();
-  for (const auto& signal_wire : signal_wires) {
-    auto first_id = opti_net.getId(signal_wire.get_first()._name);
-    auto second_id = opti_net.getId(signal_wire.get_second()._name);
-    auto p1 = signal_wire.get_first()._point;
-    auto p2 = signal_wire.get_second()._point;
-    ToApiInst.addTopoEdge(topo, first_id, second_id, p1.x(), p1.y(), p2.x(), p2.y());
-  }
+// void CTSAPI::makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const
+// {
+//   auto signal_wires = opti_net.get_signal_wires();
+//   for (const auto& signal_wire : signal_wires) {
+//     auto first_id = opti_net.getId(signal_wire.get_first()._name);
+//     auto second_id = opti_net.getId(signal_wire.get_second()._name);
+//     auto p1 = signal_wire.get_first()._point;
+//     auto p2 = signal_wire.get_second()._point;
+//     ToApiInst.addTopoEdge(topo, first_id, second_id, p1.x(), p1.y(), p2.x(), p2.y());
+//   }
 
-  auto load_insts = opti_net.get_loads();
-  for (auto* load_inst : load_insts) {
-    auto* sta_pin = findStaPin(load_inst->get_load_pin());
-    ToApiInst.topoIdToDesignObject(topo, opti_net.getId(load_inst->get_name()), sta_pin);
-  }
-  auto* driver_inst = opti_net.get_driver();
-  auto driver_id = opti_net.getId(driver_inst->get_name());
-  ToApiInst.topoIdToDesignObject(topo, driver_id, findStaPin(driver_inst->get_out_pin()));
-  ToApiInst.topoSetDriverId(topo, driver_id);
-}
+//   auto load_insts = opti_net.get_loads();
+//   for (auto* load_inst : load_insts) {
+//     auto* sta_pin = findStaPin(load_inst->get_load_pin());
+//     ToApiInst.topoIdToDesignObject(topo, opti_net.getId(load_inst->get_name()), sta_pin);
+//   }
+//   auto* driver_inst = opti_net.get_driver();
+//   auto driver_id = opti_net.getId(driver_inst->get_name());
+//   ToApiInst.topoIdToDesignObject(topo, driver_id, findStaPin(driver_inst->get_out_pin()));
+//   ToApiInst.topoSetDriverId(topo, driver_id);
+// }
 
 // synthesis
 int32_t CTSAPI::getDbUnit() const
@@ -879,15 +798,15 @@ bool CTSAPI::isInDie(const icts::Point& point) const
   return die.is_in(point);
 }
 
-void CTSAPI::placeInstance(icts::CtsInstance* inst)
-{
-  _synth->place(inst);
-}
+// void CTSAPI::placeInstance(icts::CtsInstance* inst)
+// {
+//   _synth->place(inst);
+// }
 
-void CTSAPI::cancelPlaceInstance(icts::CtsInstance* inst)
-{
-  _synth->cancelPlace(inst);
-}
+// void CTSAPI::cancelPlaceInstance(icts::CtsInstance* inst)
+// {
+//   _synth->cancelPlace(inst);
+// }
 
 idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const std::string& cell_master)
 {
@@ -982,11 +901,6 @@ void CTSAPI::genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, co
   salt::TreeNode::PreOrder(source, connect_node_func);
 }
 
-Net* CTSAPI::findGocaNet(const std::string& net_name)
-{
-  return _design->findGocaNet(net_name);
-}
-
 // evaluate
 bool CTSAPI::isTop(const std::string& net_name) const
 {
@@ -1009,39 +923,20 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
   auto* sta_net = findStaNet(eval_net);
   auto layer_id = _config->get_routing_layers().back();
   auto router_type = _config->get_router_type();
-  auto* net = findGocaNet(net_name);
-  if (router_type == "GOCA" && net) {
-    auto* driver_pin = net->get_driver_pin();
-    driver_pin->preOrder([&](Node* node) {
-      auto* parent = node->get_parent();
-      if (parent == nullptr) {
-        return;
-      }
-      auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
-      auto child_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
-      ista::RctNode* front_node = makeRCTreeNode(eval_net, parent_name);
-      ista::RctNode* back_node = makeRCTreeNode(eval_net, child_name);
-      double len = TimingPropagator::calcLen(parent, node);
-      auto res = getResistance(len, layer_id);
-      auto cap = getCapacitance(len, layer_id);
-      _timing_engine->makeResistor(sta_net, front_node, back_node, res);
-      _timing_engine->incrCap(front_node, cap / 2, true);
-      _timing_engine->incrCap(back_node, cap / 2, true);
-    });
-  } else {
-    for (auto& signal_wire : signal_wires) {
-      auto front_name = signal_wire.get_first()._name;
-      auto back_name = signal_wire.get_second()._name;
-      ista::RctNode* front_node = makeRCTreeNode(eval_net, front_name);
-      ista::RctNode* back_node = makeRCTreeNode(eval_net, back_name);
 
-      auto res = getResistance(signal_wire, layer_id);
-      auto cap = getCapacitance(signal_wire, layer_id);
-      _timing_engine->makeResistor(sta_net, front_node, back_node, res);
-      _timing_engine->incrCap(front_node, cap / 2, true);
-      _timing_engine->incrCap(back_node, cap / 2, true);
-    }
+  for (auto& signal_wire : signal_wires) {
+    auto front_name = signal_wire.get_first().name;
+    auto back_name = signal_wire.get_second().name;
+    ista::RctNode* front_node = makeRCTreeNode(eval_net, front_name);
+    ista::RctNode* back_node = makeRCTreeNode(eval_net, back_name);
+
+    auto res = getResistance(signal_wire, layer_id);
+    auto cap = getCapacitance(signal_wire, layer_id);
+    _timing_engine->makeResistor(sta_net, front_node, back_node, res);
+    _timing_engine->incrCap(front_node, cap / 2, true);
+    _timing_engine->incrCap(back_node, cap / 2, true);
   }
+
   _timing_engine->updateRCTreeInfo(sta_net);
 }
 
@@ -1049,95 +944,6 @@ void CTSAPI::resetRCTree(const std::string& net_name)
 {
   auto* sta_net = findStaNet(net_name);
   _timing_engine->resetRcTree(sta_net);
-}
-
-// useful skew
-void CTSAPI::buildLogicRCTree(const std::vector<icts::EvalNet>& eval_nets)
-{
-  for (auto& eval_net : eval_nets) {
-    buildLogicRCTree(eval_net);
-  }
-}
-
-void CTSAPI::buildLogicRCTree(const icts::EvalNet& eval_net)
-{
-  if (eval_net.get_pins().size() < 2) {
-    return;
-  }
-  LOG_INFO << "Evaluate: " << eval_net.get_name();
-  auto* sta_net = findStaNet(eval_net);
-  auto* internal_node = _timing_engine->makeOrFindRCTreeNode(sta_net, 1);
-  auto center_point = eval_net.getCenterPoint();
-  for (auto* pin : eval_net.get_pins()) {
-    auto* inst_node = makeLogicRCTreeNode(pin);
-    auto wire_length = static_cast<double>(pgl::manhattan_distance(center_point, pin->get_instance()->get_location()) / getDbUnit());
-    auto res = getResistance(wire_length, 1);
-    auto cap = getCapacitance(wire_length, 1);
-    _timing_engine->makeResistor(sta_net, internal_node, inst_node, res);
-    _timing_engine->incrCap(internal_node, cap / 2, true);
-    _timing_engine->incrCap(inst_node, cap / 2, true);
-  }
-  _timing_engine->updateRCTreeInfo(sta_net);
-}
-
-SkewConstraintsMap CTSAPI::skewConstraints() const
-{
-  SkewConstraintsMap skew_constraints;
-  _timing_engine->updateTiming();
-  auto constraints_min_map = _timing_engine->getWorstSlackBetweenTwoSinks(ista::AnalysisMode::kMin);
-  auto constraints_max_map = _timing_engine->getWorstSlackBetweenTwoSinks(ista::AnalysisMode::kMax);
-  auto min_max_c = -1 * std::numeric_limits<double>::max();
-  auto max_min_c = std::numeric_limits<double>::max();
-  for (auto min_constraint : constraints_min_map) {
-    auto key = min_constraint.first;
-    if (constraints_max_map.contains(key)) {
-      auto name_1 = CTSAPIInst.splitString(key.first->getName(), ':')[0];
-      auto name_2 = CTSAPIInst.splitString(key.second->getName(), ':')[0];
-      auto min_slack = -1 * min_constraint.second;
-      auto max_slack = constraints_max_map[key];
-      skew_constraints[pair<std::string, std::string>(name_1, name_2)] = pair<double, double>(min_slack, max_slack);
-      auto cst_msg
-          = "Skew constraint: [" + name_1 + ", " + name_2 + "], min: " + std::to_string(min_slack) + ", max: " + std::to_string(max_slack);
-      LOG_FATAL_IF(max_slack < min_slack) << "Max slack is smaller than min slack.";
-      if (min_max_c < min_slack) {
-        min_max_c = min_slack;
-      }
-      if (max_min_c > max_slack) {
-        max_min_c = max_slack;
-      }
-    }
-  }
-  LOG_INFO << "Min constraint upper bound: " << min_max_c;
-  LOG_INFO << "Min constraint lower bound: " << max_min_c;
-  return skew_constraints;
-}
-
-SkewConstraintsMap CTSAPI::fixSkewConstraints() const
-{
-  SkewConstraintsMap skew_constraints;
-  LOG_INFO << "Begin to fix skew constraints.";
-  _timing_engine->updateTiming();
-  auto constraints_min_map = _timing_engine->getWorstSlackBetweenTwoSinks(ista::AnalysisMode::kMin);
-  auto constraints_max_map = _timing_engine->getWorstSlackBetweenTwoSinks(ista::AnalysisMode::kMax);
-  for (auto min_constraint : constraints_min_map) {
-    auto key = min_constraint.first;
-    if (constraints_max_map.contains(key)) {
-      auto name_1 = CTSAPIInst.splitString(key.first->getName(), ':')[0];
-      auto name_2 = CTSAPIInst.splitString(key.second->getName(), ':')[0];
-      auto min_slack = -1 * min_constraint.second;
-      auto max_slack = constraints_max_map[key];
-      min_slack = -5 * _config->get_skew_bound() <= min_slack && min_slack <= -1 * _config->get_skew_bound()
-                      ? min_slack
-                      : -1 * _config->get_skew_bound();
-      max_slack
-          = 5 * _config->get_skew_bound() >= max_slack && max_slack >= _config->get_skew_bound() ? max_slack : _config->get_skew_bound();
-      skew_constraints[pair<std::string, std::string>(name_1, name_2)] = pair<double, double>(min_slack, max_slack);
-      auto cst_msg
-          = "Skew constraint: [" + name_1 + ", " + name_2 + "], min: " + std::to_string(min_slack) + ", max: " + std::to_string(max_slack);
-      LOG_FATAL_IF(max_slack < min_slack) << "Max slack is smaller than min slack.";
-    }
-  }
-  return skew_constraints;
 }
 
 // log

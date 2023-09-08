@@ -57,19 +57,13 @@ class CTSAPI
   void init(const std::string& config_file);
   void readData();
   void routing();
-  void synthesis();
+  // void synthesis();
   void evaluate();
-  void balance();
+  // void balance();
   void optimize();
-  void getClockNets(std::map<std::string, std::vector<CtsSignalWire>>& net_topo_map) const;
   icts::CtsConfig* get_config() { return _config; }
   icts::CtsDesign* get_design() { return _design; }
   icts::CtsDBWrapper* get_db_wrapper() { return _db_wrapper; }
-  // Timing
-  void addTimingNode(TimingNode* node);
-  TimingNode* findTimingNode(const std::string& name);
-  void addHCtsNode(HNode* node);
-  HNode* findHCtsNode(const std::string& name);
 
   // iSTA
   void dumpVertexData(const std::vector<std::string>& vertex_names) const;
@@ -103,13 +97,13 @@ class CTSAPI
   std::vector<double> solvePolynomialRealRoots(const std::vector<double>& coeffs);
 
   // iRT
-  void iRTinit();
-  void routingWire(icts::CtsNet* net);
-  void iRTdestroy();
+  // void iRTinit();
+  // void routingWire(icts::CtsNet* net);
+  // void iRTdestroy();
 
-  // iTO
-  std::vector<idb::IdbNet*> fix(const icts::OptiNet& opti_net);
-  void makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const;
+  // // iTO
+  // std::vector<idb::IdbNet*> fix(const icts::OptiNet& opti_net);
+  // void makeTopo(ito::Tree* topo, const icts::OptiNet& opti_net) const;
 
   // synthesis
   int32_t getDbUnit() const;
@@ -125,19 +119,12 @@ class CTSAPI
   void resetId();
   int genId();
   void genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, const std::string& net_name = "salt");
-  Net* findGocaNet(const std::string& net_name);
 
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);
   void buildRCTree(const icts::EvalNet& eval_net);
   void resetRCTree(const std::string& net_name);
-
-  // useful skew
-  void buildLogicRCTree(const std::vector<icts::EvalNet>& eval_nets);
-  void buildLogicRCTree(const icts::EvalNet& eval_net);
-  SkewConstraintsMap skewConstraints() const;
-  SkewConstraintsMap fixSkewConstraints() const;
 
   // log
   void checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix = ".rpt") const;
@@ -177,7 +164,7 @@ class CTSAPI
 #endif
 
   icts::ModelBase* fitPyModel(const std::vector<std::vector<double>>& X, const std::vector<double>& y, const icts::FitType& fit_type);
-  
+
 #endif
  private:
   static CTSAPI* _cts_api_instance;
@@ -213,9 +200,9 @@ class CTSAPI
   icts::CtsReportTable* _report = nullptr;
   std::ofstream* _log_ofs = nullptr;
   icts::CtsLibs* _libs = nullptr;
-  icts::Synthesis* _synth = nullptr;
+  // icts::Synthesis* _synth = nullptr;
   icts::Evaluator* _evaluator = nullptr;
-  icts::Balancer* _balancer = nullptr;
+  // icts::Balancer* _balancer = nullptr;
   icts::ModelFactory* _model_factory = nullptr;
   ista::TimingEngine* _timing_engine = nullptr;
 };

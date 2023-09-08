@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "CtsConfig.h"
-#include "CtsDesign.h"
+#include "CtsDesign.hh"
 #include "EvalNet.h"
 #include "GDSPloter.h"
 

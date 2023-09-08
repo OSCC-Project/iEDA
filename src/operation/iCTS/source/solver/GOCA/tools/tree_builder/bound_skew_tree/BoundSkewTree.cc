@@ -32,6 +32,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
 {
   // Not input topology
   _net_name = net_name;
+  _load_pins = pins;
   _skew_bound = skew_bound.value_or(Timing::getSkewBound());
   std::ranges::for_each(pins, [&](Pin* pin) {
     LOG_FATAL_IF(!pin->isLoad()) << "pin " << pin->get_name() << " is not load pin";
@@ -65,7 +66,8 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
     }
     auto children = node->get_children();
     if (children.empty()) {
-      // is load
+      auto* pin = dynamic_cast<Pin*>(node);
+      _load_pins.push_back(pin);
       return;
     }
     LOG_FATAL_IF(children.size() != 2) << "node " << node->get_name() << " children size is not 2";
@@ -83,6 +85,50 @@ void BoundSkewTree::run()
 {
   bottomUp();
   topDown();
+}
+void BoundSkewTree::convert()
+{
+  std::stack<Area*> stack;
+  stack.push(_root);
+  // pre-order build Node, leaf node will in _node_map
+  while (!stack.empty()) {
+    auto* cur = stack.top();
+    stack.pop();
+    auto pt = cur->get_location();
+    auto loc = Point(pt.x * _db_unit, pt.y * _db_unit);
+    auto* parent = cur->get_parent();
+    if (parent == nullptr) {
+      // is root, make buffer
+      auto* buf = TreeBuilder::genBufInst(_net_name, loc);
+      cur->set_name(buf->get_name());
+      _node_map.insert({buf->get_name(), buf->get_driver_pin()});
+      _root_buf = buf;
+    } else if (cur->get_left() == nullptr && cur->get_right() == nullptr) {
+      // is load pin, find from _node_map
+      auto* node = _node_map[cur->get_name()];
+      LOG_FATAL_IF(node == nullptr) << "node " << cur->get_name() << " is not in _node_map";
+      auto* parent_node = _node_map[parent->get_name()];
+      LOG_FATAL_IF(parent_node == nullptr) << "node " << parent->get_name() << " is not in _node_map";
+      parent_node->add_child(node);
+      node->set_parent(parent_node);
+    } else {
+      // is steiner node
+      auto* node = new Node(cur->get_name(), loc);
+      auto* parent_node = _node_map[parent->get_name()];
+      LOG_FATAL_IF(parent_node == nullptr) << "node " << parent->get_name() << " is not in _node_map";
+      parent_node->add_child(node);
+      node->set_parent(parent_node);
+      _node_map.insert({node->get_name(), node});
+    }
+
+    if (cur->get_right()) {
+      stack.push(cur->get_right());
+    }
+    if (cur->get_left()) {
+      stack.push(cur->get_left());
+    }
+  }
+  _net = Timing::genNet(_net_name, _root_buf->get_driver_pin(), _load_pins);
 }
 Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
 {
@@ -111,6 +157,7 @@ double BoundSkewTree::distanceCost(Area* left, Area* right) const
   }
   return min_dist;
 }
+
 void BoundSkewTree::bottomUp()
 {
   // not input topo
@@ -124,7 +171,10 @@ void BoundSkewTree::bottomUp()
     auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
     parent->set_pattern(pattern);
     merge(parent, left, right);
-    std::remove_if(_unmerged_nodes.begin(), _unmerged_nodes.end(), [&](Area* node) { return node == left || node == right; });
+    // erase left and right
+    _unmerged_nodes.erase(
+        std::remove_if(_unmerged_nodes.begin(), _unmerged_nodes.end(), [&](Area* node) { return node == left || node == right; }),
+        _unmerged_nodes.end());
     _unmerged_nodes.push_back(parent);
   }
   _root = _unmerged_nodes.front();
@@ -133,7 +183,7 @@ void BoundSkewTree::topDown()
 {
   // set root location
   Pt root_loc;
-  auto mr = _root->get_mr();
+  auto mr = _root->get_convex_hull();
   if (_root_guide.has_value()) {
     root_loc = Geom::closestPtOnRegion(_root_guide.value(), mr);
   } else {
@@ -151,6 +201,8 @@ void BoundSkewTree::merge(Area* parent, Area* left, Area* right)
   left->set_parent(parent);
   right->set_parent(parent);
   calcJS(parent, left, right);
+  parent->set_edge_len(kLeft, -1);
+  parent->set_edge_len(kRight, -1);
   auto dist = parent->get_radius();
   jsProcess(parent);
   auto left_line = parent->get_line(kLeft);
@@ -169,23 +221,17 @@ void BoundSkewTree::merge(Area* parent, Area* left, Area* right)
   parent->set_line(kRight, right_line);
 
   parent->set_radius(dist);
-  switch (parent->get_pattern()) {
-    case RCPattern::kHV:
-      parent->set_cap_load(left->get_cap_load() + right->get_cap_load()
-                           + (parent->get_edge_len(kLeft) + parent->get_edge_len(kRight)) * _unit_h_cap);
-      break;
-    case RCPattern::kVH:
-      parent->set_cap_load(left->get_cap_load() + right->get_cap_load()
-                           + (parent->get_edge_len(kLeft) + parent->get_edge_len(kRight)) * _unit_v_cap);
-      break;
-    default:
-      LOG_FATAL << "unknown pattern";
-      break;
+  if (parent->get_edge_len(kLeft) + parent->get_edge_len(kRight) < 0) {
+    parent->set_cap_load(left->get_cap_load() + right->get_cap_load() + parent->get_radius() * _unit_h_cap);
+  } else {
+    parent->set_cap_load(left->get_cap_load() + right->get_cap_load()
+                         + (parent->get_edge_len(kLeft) + parent->get_edge_len(kRight)) * _unit_h_cap);
   }
 }
 void BoundSkewTree::calcJS(Area* parent, Area* left, Area* right)
 {
   initSide();
+  parent->set_radius(std::numeric_limits<double>::max());
   auto left_lines = left->getConvexHullLines();
   auto right_lines = right->getConvexHullLines();
   std::ranges::for_each(left_lines, [&](Line& left_line) {
@@ -241,7 +287,6 @@ void BoundSkewTree::constructMr(Area* parent, Area* left, Area* right)
     constructTrrMr(parent);
   }
   auto mr = parent->get_mr();
-  Geom::sortPts(mr);
   Geom::uniquePtsLoc(mr);
   parent->set_mr(mr);
   calcConvexHull(parent);
@@ -288,6 +333,7 @@ void BoundSkewTree::calcJS(Area* cur, Line& left, Line& right)
   auto left_ms_bak = _ms[kLeft];
   auto right_ms_bak = _ms[kRight];
   if (Equal(line_dist, cur->get_radius())) {
+    cur->set_radius(line_dist);
     updateJS(cur, left, right, closest);
     auto origin_area = calcJrArea(left_js_bak, right_js_bak);
     auto new_area = calcJrArea(getJsLine(kLeft), getJsLine(kRight));
@@ -373,13 +419,13 @@ void BoundSkewTree::updateJS(Area* cur, Line& left, Line& right, PtPair closest)
       Geom::calcCoord(_join_segment[kRight][kTail], right, max_x);
     }
   } else {
-    LOG_WARNING << "unknow case";
+    // single point case
   }
   if (Geom::lineType(getJsLine(kLeft)) == LineType::kManhattan && left_type != LineType::kManhattan) {
     _ms[kLeft].makeDiamond(closest[kLeft], 0);
     _ms[kRight].makeDiamond(closest[kRight], 0);
   }
-  checkUpdateJs(cur, left, right);
+  // checkUpdateJs(cur, left, right);
 }
 
 void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
@@ -395,14 +441,14 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
         _join_segment[side].push_back(pt);
       }
     }
-    Geom::sortPts(_join_segment[side]);
+    Geom::sortPtsByFront(_join_segment[side]);
   }
   // add points on other side
   FOR_EACH_SIDE(side)
   {
     auto other_side = side == kLeft ? kRight : kLeft;
     auto other_mr = other_side == kLeft ? left->get_mr() : right->get_mr();
-    auto relative_type = Geom::lineRelative(getJsLine(side), getJsLine(other_side), other_side);
+    auto relative_type = Geom::lineRelative(getJsLine(kLeft), getJsLine(kRight), other_side);
     for (auto pt : other_mr) {
       Geom::calcRelativeCoord(pt, relative_type, parent->get_radius());
       for (auto it = _join_segment[side].begin(); it != _join_segment[side].end() - 1; ++it) {
@@ -486,7 +532,7 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
         addTurnPt(side, i, kMax, delay_from);
       }
     }
-    Geom::sortPts(_join_region[side]);
+    Geom::sortPtsByFront(_join_region[side]);
     // remove redundant turn points which have same slope
     for (size_t i = 0; i < _join_region[side].size() - 1; ++i) {
       auto pt1 = _join_region[side][i];
@@ -553,9 +599,9 @@ void BoundSkewTree::addFmsToJr()
 {
   FOR_EACH_SIDE(side)
   {
-    for (auto it = _join_region[side].begin(); it != _join_region[side].end() - 1;) {
-      auto pt_cur = *it;
-      auto pt_next = *(it + 1);
+    for (size_t i = 0; i < _join_region[side].size() - 1; ++i) {
+      auto pt_cur = _join_region[side][i];
+      auto pt_next = _join_region[side][i + 1];
       auto delta_cur = ptSkew(pt_cur) - _skew_bound;
       auto delta_next = ptSkew(pt_next) - _skew_bound;
       if (delta_cur * delta_next < 0 && !Equal(delta_cur, 0) && !Equal(delta_next, 0)) {
@@ -565,7 +611,7 @@ void BoundSkewTree::addFmsToJr()
         Pt turn_pt{(pt_cur.x * ref_dist + pt_next.x * turn_dist) / dist, (pt_cur.y * ref_dist + pt_next.y * turn_dist) / dist};
         Line line = {pt_cur, pt_next};
         calcPtDelays(nullptr, turn_pt, line);
-        _join_region[side].insert(it + 1, turn_pt);
+        _join_region[side].insert(_join_region[side].begin() + i + 1, turn_pt);
       }
     }
   }
@@ -608,25 +654,27 @@ bool BoundSkewTree::jrCornerExist(const size_t& end_side) const
 }
 void BoundSkewTree::calcBalancePt(Area* cur)
 {
-  if (!Equal(cur->get_radius(), 0)) {
-    FOR_EACH_SIDE(end_side)
+  if (Equal(cur->get_radius(), 0)) {
+    return;
+  }
+  FOR_EACH_SIDE(end_side)
+  {
+    _bal_points[end_side].clear();
+    auto left_line = cur->get_line(kLeft);
+    auto right_line = cur->get_line(kRight);
+    auto left_pt = left_line[end_side];
+    auto right_pt = right_line[end_side];
+    left_pt.val = cur->get_left()->get_cap_load();
+    right_pt.val = cur->get_right()->get_cap_load();
+    auto bal_ref_side = (left_pt.x - right_pt.x) * (left_pt.y - right_pt.y) < 0 ? 1 - end_side : end_side;
+    FOR_EACH_SIDE(timing_type)
     {
-      auto left_line = cur->get_line(kLeft);
-      auto right_line = cur->get_line(kRight);
-      auto left_pt = left_line[end_side];
-      auto right_pt = right_line[end_side];
-      left_pt.val = cur->get_left()->get_cap_load();
-      right_pt.val = cur->get_right()->get_cap_load();
-      auto bal_ref_side = (left_pt.x - right_pt.x) * (left_pt.y - right_pt.y) < 0 ? 1 - end_side : end_side;
-      FOR_EACH_SIDE(timing_type)
-      {
-        double dist_to_left = 0, dist_to_right = 0;
-        Pt bal_pt;
-        calcBalBetweenPts(left_pt, right_pt, timing_type, bal_ref_side, dist_to_left, dist_to_right, bal_pt);
-        if (!Equal(dist_to_left, 0) && !Equal(dist_to_right, 0)) {
-          updatePtDelaysByEndSide(cur, end_side, bal_pt);
-          _bal_points[end_side].push_back(bal_pt);
-        }
+      double dist_to_left = 0, dist_to_right = 0;
+      Pt bal_pt;
+      calcBalBetweenPts(left_pt, right_pt, timing_type, bal_ref_side, dist_to_left, dist_to_right, bal_pt);
+      if (!Equal(dist_to_left, 0) && !Equal(dist_to_right, 0)) {
+        updatePtDelaysByEndSide(cur, end_side, bal_pt);
+        _bal_points[end_side].push_back(bal_pt);
       }
     }
   }
@@ -800,6 +848,7 @@ void BoundSkewTree::calcFmsPt(Area* cur)
 {
   FOR_EACH_SIDE(end_side)
   {
+    _fms_points[end_side].clear();
     Side<Pt> candidate;
     if (end_side == kHead) {
       candidate[kLeft] = _join_region[kLeft].front();
@@ -898,7 +947,7 @@ void BoundSkewTree::constructFeasibleMr(Area* parent, Area* left, Area* right) c
   if (calcAreaLineType(parent) == LineType::kManhattan) {
     // parallel manhattan arc
     mrBetweenJs(parent, kHead);
-    if (parent->get_mr().empty()) {
+    if (!parent->get_mr().empty() && !jRisLine()) {
       mrBetweenJs(parent, kTail);
     }
   } else {
@@ -910,6 +959,21 @@ void BoundSkewTree::constructFeasibleMr(Area* parent, Area* left, Area* right) c
       mrOnJs(parent, kRight);
     }
   }
+}
+bool BoundSkewTree::jRisLine() const
+{
+  auto left_head = _join_segment[kLeft][kHead];
+  auto left_tail = _join_segment[kLeft][kTail];
+  auto right_head = _join_segment[kRight][kHead];
+  auto right_tail = _join_segment[kRight][kTail];
+  auto min_x = std::min({left_head.x, left_tail.x, right_head.x, right_tail.x});
+  auto min_y = std::min({left_head.y, left_tail.y, right_head.y, right_tail.y});
+  auto max_x = std::max({left_head.x, left_tail.x, right_head.x, right_tail.x});
+  auto max_y = std::max({left_head.y, left_tail.y, right_head.y, right_tail.y});
+  if (Equal(min_x, max_x) || Equal(min_y, max_y)) {
+    return true;
+  }
+  return false;
 }
 void BoundSkewTree::mrBetweenJs(Area* cur, const size_t& end_side) const
 {
@@ -927,6 +991,7 @@ void BoundSkewTree::mrBetweenJs(Area* cur, const size_t& end_side) const
   Pt ref_js_pt = end_side == kHead ? left_line[end_side] : right_line[end_side];
   std::ranges::for_each(mr_pts, [&](Pt& pt) { pt.val = Geom::distance(pt, ref_js_pt); });
   Geom::uniquePtsVal(mr_pts);
+  Geom::sortPtsByVal(mr_pts);
   std::ranges::for_each(mr_pts, [&cur](const Pt& p) { cur->add_mr_point(p); });
 }
 void BoundSkewTree::mrOnJs(Area* cur, const size_t& side) const
@@ -1094,6 +1159,9 @@ void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) con
     auto js_line = parent->get_line(side);
     auto head = js_line[kHead];
     auto tail = js_line[kTail];
+    Line temp;
+    calcBsLocated(child, head, temp);
+    calcBsLocated(child, tail, temp);
     auto x = std::abs(head.x - tail.x);
     auto y = std::abs(head.y - tail.y);
     if (Equal(x, 0) && Equal(y, 0)) {
@@ -1114,7 +1182,9 @@ void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) con
     LOG_FATAL_IF(!Geom::onLine(child_loc, js_line)) << "child loc is not on js line";
   }
   child->set_location(child_loc);
-  LOG_FATAL_IF(parent->get_edge_len(side) < Geom::distance(parent_loc, child_loc) - kEpsilon) << "edge len is less than distance";
+  if (parent->get_edge_len(side) >= 0) {
+    LOG_FATAL_IF(parent->get_edge_len(side) < Geom::distance(parent_loc, child_loc) - kEpsilon) << "edge len is less than distance";
+  }
 }
 bool BoundSkewTree::isTrrArea(Area* cur) const
 {

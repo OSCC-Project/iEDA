@@ -107,7 +107,8 @@ class GeomCalc
   static void trrToRegion(Trr& trr, Region& region);
   static bool isSegmentTrr(const Trr& trr);
   // Pts
-  static void sortPts(Pts& pts);
+  static void sortPtsByFront(Pts& pts);
+  static void sortPtsByVal(Pts& pts);
   static void uniquePtsLoc(std::vector<Pt>& pts);
   static void uniquePtsVal(std::vector<Pt>& pts);
   // Region

@@ -595,12 +595,8 @@ void BalanceClustering::latencyOpt(const std::vector<Inst*> cluster, const doubl
     auto* load_pin = inst->get_load_pin();
     auto* net = driver_pin->get_net();
     auto feasible_cell = TreeBuilder::feasibleCell(inst, skew_bound);
-    auto origin_location = inst->get_location();
     for (auto cell : feasible_cell) {
-      TreeBuilder::cancelPlace(inst);
-      inst->set_location(origin_location);
       inst->set_cell_master(cell);
-      TreeBuilder::place(inst);
       TimingPropagator::update(net);
       TimingPropagator::initLoadPinDelay(load_pin, true);
       auto max_delay = load_pin->get_max_delay();
@@ -628,7 +624,7 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
   // set cell master
   buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   // location legitimization
-  TreeBuilder::place(buffer);
+  TreeBuilder::localPlace(buffer, cluster_load_pins);
   auto* driver_pin = buffer->get_driver_pin();
   if (cluster_load_pins.size() == 1) {
     auto load_pin = cluster_load_pins.front();
@@ -640,7 +636,6 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
   TimingPropagator::update(net);
   auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
 
-  TreeBuilder::cancelPlace(buffer);
   TreeBuilder::recoverNet(net);
 
   return skew;

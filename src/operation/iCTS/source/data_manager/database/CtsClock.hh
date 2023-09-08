@@ -15,11 +15,33 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <utility>
+
+#include <string>
+#include <vector>
+
+#include "CtsNet.hh"
 
 namespace icts {
 
-typedef double Skew;
-typedef std::pair<Skew, Skew> SkewRange;
+class CtsClock
+{
+ public:
+  CtsClock() = default;
+  CtsClock(const std::string& clock_name) : _clock_name(clock_name) {}
+  CtsClock(const CtsClock&) = default;
+  ~CtsClock() = default;
 
+  // getter
+  std::string get_clock_name() const { return _clock_name; }
+  std::vector<CtsNet*>& get_clock_nets() { return _clock_nets; }
+
+  // setter
+  void set_clock_name(const std::string& clock_name) { _clock_name = clock_name; }
+
+  void addClockNet(CtsNet* net) { _clock_nets.push_back(net); }
+
+ private:
+  std::string _clock_name;
+  std::vector<CtsNet*> _clock_nets;
+};
 }  // namespace icts

@@ -35,8 +35,6 @@ class Optimizer {
   void update();
 
  private:
-  void reroute(IdbNetIterator begin, IdbNetIterator end);
-  std::vector<CtsSignalWire> reroute(IdbNet *idb_net);
 
   CtsInstance *get_cts_inst(IdbInstance *idb_inst) const;
   IdbNet *get_idb_net(const OptiNet &opti_net) const;

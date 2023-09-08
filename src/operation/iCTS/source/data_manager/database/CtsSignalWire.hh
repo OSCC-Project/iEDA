@@ -17,31 +17,40 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-#include "CtsNet.h"
+#include "pgl.h"
 
 namespace icts {
-using std::vector;
 
-class CtsClock {
+struct Endpoint
+{
  public:
-  CtsClock() = default;
-  CtsClock(const string &clock_name) : _clock_name(clock_name) {}
-  CtsClock(const CtsClock &) = default;
-  ~CtsClock() = default;
+  std::string name;
+  Point point;
+};
 
-  // getter
-  string get_clock_name() const { return _clock_name; }
-  vector<CtsNet *> &get_clock_nets() { return _clock_nets; }
+class CtsSignalWire
+{
+ public:
+  CtsSignalWire() = default;
+  CtsSignalWire(const Endpoint& first, const Endpoint& second)
+  {
+    _wire.first = first;
+    _wire.second = second;
+  }
+  CtsSignalWire(const CtsSignalWire&) = default;
+  ~CtsSignalWire() = default;
 
-  // setter
-  void set_clock_name(const string &clock_name) { _clock_name = clock_name; }
+  Endpoint get_first() const { return _wire.first; }
+  Endpoint get_second() const { return _wire.second; }
 
-  void addClockNet(CtsNet *net) { _clock_nets.push_back(net); }
+  void set_first(const Endpoint& end_point) { _wire.first = end_point; }
+  void set_second(const Endpoint& end_point) { _wire.second = end_point; }
+
+  int getWireLength() const { return static_cast<int>(gtl::manhattan_distance(_wire.first.point, _wire.second.point)); }
 
  private:
-  string _clock_name;
-  vector<CtsNet *> _clock_nets;
+  std::pair<Endpoint, Endpoint> _wire;
 };
+
 }  // namespace icts

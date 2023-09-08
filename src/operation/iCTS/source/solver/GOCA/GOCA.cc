@@ -25,7 +25,7 @@
 #include <ranges>
 
 #include "BalanceClustering.hh"
-#include "CtsDesign.h"
+#include "CtsDesign.hh"
 #include "CtsReport.h"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
@@ -37,9 +37,12 @@ void GOCA::run()
   auto assigns = globalAssign();
   // convert to inst
   std::vector<Inst*> insts;
-  std::ranges::for_each(_instances, [&](CtsInstance* instance) {
-    auto* inst = new Inst(instance);
+  std::ranges::for_each(_pins, [&](CtsPin* pin) {
+    auto* cts_inst = pin->get_instance();
+    auto type = cts_inst->get_type() == CtsInstanceType::kSink ? InstType::kSink : InstType::kBuffer;
+    auto* inst = new Inst(cts_inst, type);
     auto* load_pin = inst->get_load_pin();
+    load_pin->set_name(pin->get_full_name());
     // update load pin cap
     TimingPropagator::updateCapLoad<Node>(load_pin);
     insts.push_back(inst);
@@ -47,7 +50,7 @@ void GOCA::run()
   _level_insts.push_back(insts);
   LOG_INFO << "insts num: " << insts.size();
   // clustering
-  const int max_num = 30000;
+  const int max_num = 8000;
   while (insts.size() > 1) {
     auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
     if (insts.size() > max_num) {
@@ -71,20 +74,56 @@ void GOCA::run()
     ++_level;
   }
   auto* root = insts.front();
-  auto origin_loc = root->get_location();
   auto* driver_pin = root->get_driver_pin();
   auto* net = driver_pin->get_net();
   auto feasible_cell = TreeBuilder::feasibleCell(root, TimingPropagator::getSkewBound());
-  TreeBuilder::cancelPlace(root);
-  root->set_location(origin_loc);
   root->set_cell_master(feasible_cell.back());
-  TreeBuilder::place(root);
   TimingPropagator::update(net);
   TimingPropagator::initLoadPinDelay(root->get_load_pin());
   // generate clock topo
-  genClockTopo();
+  genClockNets();
   // report
   levelReport();
+}
+void GOCA::simpleRun()
+{
+  auto assigns = globalAssign();
+  // convert to inst
+  std::vector<Inst*> insts;
+  std::map<CtsInstance*, std::string> cell_map;
+  std::ranges::for_each(_pins, [&](CtsPin* pin) {
+    auto* cts_inst = pin->get_instance();
+    auto* inst = new Inst(cts_inst, InstType::kBuffer);
+    auto* load_pin = inst->get_load_pin();
+    load_pin->set_name(pin->get_full_name());
+    cell_map.insert({cts_inst, cts_inst->get_cell_master()});
+    inst->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+    insts.push_back(inst);
+  });
+  _level_insts.push_back(insts);
+  LOG_INFO << "simple run, which insts num: " << insts.size();
+  // clustering
+  ++_level;
+  while (insts.size() > 1) {
+    auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
+    insts = assignApply(insts, assign);
+    _level_insts.push_back(insts);
+    ++_level;
+  }
+  auto* root = insts.front();
+  auto* driver_pin = root->get_driver_pin();
+  auto* net = driver_pin->get_net();
+  auto feasible_cell = TreeBuilder::feasibleCell(root, TimingPropagator::getSkewBound());
+  root->set_cell_master(feasible_cell.back());
+  TimingPropagator::update(net);
+  TimingPropagator::initLoadPinDelay(root->get_load_pin());
+  std::ranges::for_each(_pins, [&](CtsPin* pin) {
+    auto* cts_inst = pin->get_instance();
+    auto cell_master = cell_map[cts_inst];
+    cts_inst->set_cell_master(cell_master);
+  });
+  // generate clock topo
+  genClockNets();
 }
 std::vector<Assign> GOCA::globalAssign()
 {
@@ -99,13 +138,13 @@ std::vector<Assign> GOCA::globalAssign()
   // level 2 test
   global_assigns.push_back({max_net_dist * 6 / 8, max_fanout * 4 / 4, max_cap * 0.8, skew_bound * 0.6, 0.9});
   // level 3 test
-  global_assigns.push_back({max_net_dist * 7 / 8, max_fanout * 3 / 4, max_cap * 0.7, skew_bound * 0.8, 0.9});
+  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout * 3 / 4, max_cap * 0.7, skew_bound * 0.8, 0.9});
   // level 4 test
   global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
   // level 5 test
   global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
   // level 6 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1.0, 0.8});
+  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
   // global_assigns.push_back({max_net_dist, max_fanout, max_cap, skew_bound * 1.0, 0.8});
   return global_assigns;
 }
@@ -126,7 +165,7 @@ std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assi
     BalanceClustering::latencyOpt(insts, skew_bound, 0.7);
   }
 
-  auto clusters = BalanceClustering::iterClustering(target_insts, max_fanout, 100, 5, cluster_ratio);
+  auto clusters = BalanceClustering::iterClustering(target_insts, max_fanout, 5, 5, cluster_ratio);
   // auto enhanced_clusters = clusters;
   auto enhanced_clusters = BalanceClustering::slackClustering(clusters, max_net_len, max_fanout);
 
@@ -183,7 +222,6 @@ std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign&
     auto net_name = CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId());
     auto* buffer = TreeBuilder::genBufInst(net_name, new_loc);
     buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-    TreeBuilder::place(buffer);
     auto* load_pin = min_delay_inst->get_load_pin();
     auto* driver_pin = buffer->get_driver_pin();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
@@ -222,7 +260,7 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
   // set min size cell master
   buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   // location legitimization
-  TreeBuilder::place(buffer);
+  TreeBuilder::localPlace(buffer, cluster_load_pins);
   auto* driver_pin = buffer->get_driver_pin();
   if (cluster_load_pins.size() == 1) {
     auto* load_pin = cluster_load_pins.front();
@@ -245,7 +283,6 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
     }
   }
   // remove salt
-  TreeBuilder::cancelPlace(buffer);
   TreeBuilder::recoverNet(net);
 
   // skew violation, try to opt salt
@@ -312,7 +349,7 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
       auto* buffer = TreeBuilder::genBufInst(net_name, loc);
       auto* driver_pin = buffer->get_driver_pin();
       buffer->set_cell_master(cell_master);
-      TreeBuilder::place(buffer);
+      TreeBuilder::localPlace(buffer, cluster_load_pins);
       TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
       auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
       TimingPropagator::update(net);
@@ -320,7 +357,6 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
         auto skew = TimingPropagator::calcSkew(driver_pin);
         feasible_assign.push_back({buffer->get_location(), i, skew});
       }
-      TreeBuilder::cancelPlace(buffer);
       TreeBuilder::recoverNet(net);
     }
   });
@@ -341,24 +377,32 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
   auto* driver_pin = buffer->get_driver_pin();
   auto cell_master = lib_list[best_assign.cell_id]->get_cell_master();
   buffer->set_cell_master(cell_master);
-  TreeBuilder::place(buffer);
+  TreeBuilder::localPlace(buffer, cluster_load_pins);
   TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
   auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
   return net;
 }
-void GOCA::genClockTopo()
+void GOCA::genClockNets()
 {
   std::ranges::for_each(_nets, [&](Net* net) {
-    auto* design = CTSAPIInst.get_design();
-    design->addGocaNet(net);
     auto* driver_pin = net->get_driver_pin();
     auto* driver_inst = driver_pin->get_inst();
-    ClockTopo topo(net->get_name());
-    topo.add_driver(driver_inst->get_cts_inst());
+    auto* cts_driver = driver_inst->get_cts_inst();
+    auto* cts_net = new CtsNet(net->get_name());
+    cts_net->addPin(cts_driver->get_out_pin());
     std::ranges::for_each(net->get_load_pins(), [&](Pin* load_pin) {
       auto* load_inst = load_pin->get_inst();
-      topo.add_load(load_inst->get_cts_inst());
+      auto* cts_load = load_inst->get_cts_inst();
+      bool found = false;
+      for (auto* pin : cts_load->get_pin_list()) {
+        if (pin->get_full_name() == load_pin->get_name()) {
+          cts_net->addPin(pin);
+          found = true;
+          break;
+        }
+      }
+      LOG_FATAL_IF(!found) << "can't find load pin in net: " << net->get_name();
     });
     driver_pin->preOrder([&](Node* node) {
       auto* parent = node->get_parent();
@@ -386,20 +430,20 @@ void GOCA::genClockTopo()
             = {parent_name, "steiner_" + std::to_string(CTSAPIInst.genId()), "steiner_" + std::to_string(CTSAPIInst.genId()), current_name};
         std::vector<Point> point_vec = {parent_loc, snake_p1, snake_p2, current_loc};
         for (size_t i = 0; i < name_vec.size() - 1; ++i) {
-          topo.add_signal_wire(CtsSignalWire(Endpoint(name_vec[i], point_vec[i]), Endpoint(name_vec[i + 1], point_vec[i + 1])));
+          cts_net->addSignalWire(CtsSignalWire(Endpoint{name_vec[i], point_vec[i]}, Endpoint{name_vec[i + 1], point_vec[i + 1]}));
         }
       } else {
         if (pgl::rectilinear(parent_loc, current_loc)) {
-          topo.add_signal_wire(CtsSignalWire(Endpoint(parent_name, parent_loc), Endpoint(current_name, current_loc)));
+          cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{current_name, current_loc}));
         } else {
           auto trunk_loc = Point(parent_loc.x(), current_loc.y());
           auto trunk_name = "steiner_" + std::to_string(CTSAPIInst.genId());
-          topo.add_signal_wire(CtsSignalWire(Endpoint(parent_name, parent_loc), Endpoint(trunk_name, trunk_loc)));
-          topo.add_signal_wire(CtsSignalWire(Endpoint(trunk_name, trunk_loc), Endpoint(current_name, current_loc)));
+          cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{trunk_name, trunk_loc}));
+          cts_net->addSignalWire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{current_name, current_loc}));
         }
       }
     });
-    _clock_topos.push_back(topo);
+    _clock_nets.push_back(cts_net);
   });
 }
 void GOCA::writeNetPy(Pin* root, const std::string& save_name) const
