@@ -446,15 +446,25 @@ std::vector<VectorXd> ArnoldiNet::solveRCEquation(
   auto currents = get_current(start_time, end_time, num_sim_point);
 
   // for debug
-  if (0) {
-    DVERBOSE_VLOG(1) << "conductances\n" << _conductances_matrix;
-    DVERBOSE_VLOG(1) << "cap_matrix\n" << _cap_matrix;
-    DVERBOSE_VLOG(1) << "input_vec\n" << _input_vec;
+  if (0 && Str::equal(_net->get_name(), "clk_core_1936")) {
+    // DVERBOSE_VLOG(1) << "conductances\n" << _conductances_matrix;
+    // DVERBOSE_VLOG(1) << "cap_matrix\n" << _cap_matrix;
+    // DVERBOSE_VLOG(1) << "input_vec\n" << _input_vec;
 
-    DVERBOSE_VLOG(1) << "currents\n";
+    // DVERBOSE_VLOG(1) << "currents\n";
+    // for (double current_mA : currents) {
+    //   DVERBOSE_VLOG(1) << " " << current_mA;
+    // }
+
+    std::ofstream file("matrix.txt");
+    file << "conductances\n" << _conductances_matrix << "\n";
+    file << "cap_matrix\n" << _cap_matrix << "\n";
+    file << "input_vec\n" << _input_vec << "\n";
+    file << "currents\n";
     for (double current_mA : currents) {
-      DVERBOSE_VLOG(1) << " " << current_mA;
+      file << " " << current_mA / 1000.0;
     }
+    file.close();
   }
 
   VectorXd V_i(diag.diagonalSize());
