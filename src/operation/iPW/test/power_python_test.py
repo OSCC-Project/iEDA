@@ -1,18 +1,13 @@
-
 import ipower_cpp
 
-import ieda_py
+work_dir = "/home/taosimin/iEDA/src/operation/iPW/source/data/example1"
 
-ieda_py.set_design_workspace(
-    "/home/shaozheqing/iEDA/src/operation/iPW/source/data/example1/rpt")
-ieda_py.read_netlist(
-    "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/example1.v")
-ieda_py.read_liberty(
-    "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/example1_slow.lib")
-ieda_py.link_design("top")
-ieda_py.read_sdc(
-    "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/example1.sdc")
-ieda_py.read_spef(
-    "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/example1.spef")
+ipower_cpp.set_design_workspace(work_dir + "/rpt")
+ipower_cpp.read_netlist(work_dir + "/aes_cipher_top.v")
+ipower_cpp.read_liberty(work_dir + "/sky130_fd_sc_hd__tt_025C_1v80.lib")
+ipower_cpp.link_design("aes_cipher_top")
+ipower_cpp.read_sdc(work_dir + "/aes_cipher_top.sdc")
+ipower_cpp.read_spef(work_dir + "/aes_cipher_top.spef")
+ipower_cpp.report_timing()
 
-ipower_cpp.report_power_cpp()
+ipower_cpp.report_power()

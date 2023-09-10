@@ -15,33 +15,27 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file CmdReportPower.cc
- * @author shaozheqing (707005020@qq.com)
- * @brief cmd to report power.
+ * @file PythonSta.cc
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief The implemention of python interface.
  * @version 0.1
- * @date 2023-05-04
+ * @date 2023-09-10
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
+#include "PythonSta.hh"
 
-#include "PowerShellCmd.hh"
-#include "sta/Sta.hh"
+namespace ista {
 
-namespace ipower {
-
-CmdReportPower::CmdReportPower(const char* cmd_name) : TclCmd(cmd_name) {}
-
-unsigned CmdReportPower::check() { return 1; }
-
-unsigned CmdReportPower::exec() {
-  if (!check()) {
-    return 0;
-  }
-
-  Sta* ista = Sta::getOrCreateSta();
-  Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
-
-  ipower->runCompleteFlow();
-
-  return 1;
+PYBIND11_MODULE(ista_cpp, m) {
+  m.def("set_design_workspace", set_design_workspace, ("design_workspace"));
+  m.def("read_netlist", read_netlist, ("file_name"));
+  m.def("read_liberty", read_liberty, ("file_name"));
+  m.def("link_design", link_design, ("cell_name"));
+  m.def("read_spef", read_spef, ("file_name"));
+  m.def("read_sdc", read_sdc, py::arg("file_name"));
+  m.def("report_timing", report_timing);
 }
 
-}  // namespace ipower
+}  // namespace ista

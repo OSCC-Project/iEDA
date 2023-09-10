@@ -31,9 +31,37 @@
 #include "pybind11/stl.h"
 namespace py = pybind11;
 
+#include "api/Power.hh"
+#include "sta/Sta.hh"
+
 namespace ipower {
 
-bool read_vcd(std::string vcd_file, std::string top_instance_name);
-unsigned report_power();
+/**
+ * @brief interface for python of read vcd.
+ *
+ * @param vcd_file
+ * @param top_instance_name
+ * @return true
+ * @return false
+ */
+bool read_vcd(std::string vcd_file, std::string top_instance_name) {
+  ista::Sta* ista = ista::Sta::getOrCreateSta();
+  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
+
+  return ipower->readVCD(vcd_file, top_instance_name);
+}
+
+/**
+ * @brief interface for python of report power.
+ *
+ * @return unsigned
+ */
+unsigned report_power() {
+  ista::Sta* ista = ista::Sta::getOrCreateSta();
+  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
+
+  ipower->runCompleteFlow();
+  return 1;
+}
 
 }  // namespace ipower

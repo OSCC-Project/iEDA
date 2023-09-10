@@ -500,9 +500,22 @@ unsigned Power::reportPower(const char* rpt_file_name,
  *
  * @return unsigned
  */
-unsigned Power::runCompleteFlow(std::string output_path) {
+unsigned Power::runCompleteFlow() {
+  Sta* ista = Sta::getOrCreateSta();
+  Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
+
   {
     ieda::Stats stats;
+
+    // set fastest clock for default toggle
+    auto* fastest_clock = ista->getFastestClock();
+    ipower::PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
+                                       fastest_clock->getPeriodNs());
+    // get sta clocks
+    auto clocks = ista->getClocks();
+
+    ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
+
     LOG_INFO << "build graph and seq graph start";
     // build power graph
     buildGraph();
@@ -534,11 +547,16 @@ unsigned Power::runCompleteFlow(std::string output_path) {
     LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
   }
 
+  // update power.
+  ipower->updatePower();
+
   {
     // report power.
     ieda::Stats stats;
     LOG_INFO << "power report start";
 
+    std::string output_path = ista->get_design_work_space();
+    output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
     reportPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
 
     LOG_INFO << "power report end";

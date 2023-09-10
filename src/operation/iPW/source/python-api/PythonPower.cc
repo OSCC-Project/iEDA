@@ -26,55 +26,22 @@
  */
 #include "PythonPower.hh"
 
-#include "api/Power.hh"
-#include "sta/Sta.hh"
+#include "python-api/PythonSta.hh"
+
+using namespace ista;
 
 namespace ipower {
 
-/**
- * @brief interface for python of read vcd.
- *
- * @param vcd_file
- * @param top_instance_name
- * @return true
- * @return false
- */
-bool read_vcd(std::string vcd_file, std::string top_instance_name) {
-  ista::Sta* ista = ista::Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  return ipower->readVCD(vcd_file, top_instance_name);
-}
-
-/**
- * @brief interface for python of report power.
- *
- * @return unsigned
- */
-unsigned report_power() {
-  ista::Sta* ista = ista::Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  // set fastest clock for default toggle
-  auto* fastest_clock = ista->getFastestClock();
-  ipower::PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
-                                     fastest_clock->getPeriodNs());
-  // get sta clocks
-  auto clocks = ista->getClocks();
-
-  std::string output_path = ista->get_design_work_space();
-  output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
-
-  ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
-
-  ipower->runCompleteFlow(output_path);
-
-  return 1;
-}
-
 PYBIND11_MODULE(ipower_cpp, m) {
-  m.def("read_vcd_cpp", &read_vcd, py::arg("file_name"), py::arg("top_name"));
+  m.def("set_design_workspace", set_design_workspace, ("design_workspace"));
+  m.def("read_netlist", read_netlist, ("file_name"));
+  m.def("read_liberty", read_liberty, ("file_name"));
+  m.def("link_design", link_design, ("cell_name"));
+  m.def("read_spef", read_spef, ("file_name"));
+  m.def("read_sdc", read_sdc, py::arg("file_name"));
+  m.def("report_timing", report_timing);
 
-  m.def("report_power_cpp", &report_power);
+  m.def("read_vcd", &read_vcd, py::arg("file_name"), py::arg("top_name"));
+  m.def("report_power", &report_power);
 }
 }  // namespace ipower
