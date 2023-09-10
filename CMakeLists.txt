@@ -59,6 +59,7 @@ endif()
 include(cmake/setting.cmake)
 include(cmake/third_party.cmake)
 include(cmake/operation/ista.cmake)
+include(cmake/operation/ipw.cmake)
 
 if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)

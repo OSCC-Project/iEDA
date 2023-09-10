@@ -1,7 +1,7 @@
 # add_subdirectory(${HOME_THIRDPARTY}/pybind11 binary_dir)
 
 
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY /home/huangzengrong/oscc/ai-eda/ai_infra/tools/iEDA/lib)
+#SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY /home/huangzengrong/oscc/ai-eda/ai_infra/tools/iEDA/lib)
 # DEFINE PYTHON MODULE & CMAKE TARGET
 pybind11_add_module(ieda_py)
 
@@ -17,6 +17,7 @@ add_subdirectory(py_ipdn)
 add_subdirectory(py_ipl)
 # add_subdirectory(py_irt)
 add_subdirectory(py_ista)
+add_subdirectory(py_ipw)
 add_subdirectory(py_ito)
 add_subdirectory(py_report)
 add_subdirectory(py_feature)
@@ -42,6 +43,7 @@ target_link_libraries(ieda_py
         py_ipl
         # py_irt
         py_ista
+        py_ipw
         py_ito
         py_report
         py_feature
