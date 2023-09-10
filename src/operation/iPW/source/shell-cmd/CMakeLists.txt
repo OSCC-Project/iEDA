@@ -6,7 +6,7 @@ SET (CMAKE_CXX_STANDARD 20)
 AUX_SOURCE_DIRECTORY(./ SRC)
 ADD_LIBRARY(pwr-cmd ${SRC})
 
-target_link_libraries(pwr-cmd tcl app usage)
+target_link_libraries(pwr-cmd tcl power usage)
 
 target_include_directories(pwr-cmd
     PUBLIC
