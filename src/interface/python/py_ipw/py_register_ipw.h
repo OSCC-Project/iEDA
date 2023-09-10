@@ -25,8 +25,8 @@ namespace python_interface {
 
 void register_ipw(py::module& m)
 {
-  m.def("read_vcd_cpp", &read_vcd, py::arg("file_name"), py::arg("top_name"));
-  m.def("report_power_cpp", &report_power);
+  m.def("read_vcd_cpp", &readVcd, py::arg("file_name"), py::arg("top_name"));
+  m.def("report_power_cpp", &reportPower);
 }
 
 }
