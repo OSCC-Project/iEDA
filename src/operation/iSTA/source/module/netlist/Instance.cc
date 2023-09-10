@@ -39,7 +39,8 @@ Instance::Instance(Instance&& other)
       _inst_cell(other._inst_cell),
       _pins(std::move(other._pins)),
       _str2pin(std::move(other._str2pin)),
-      _pin_buses(std::move(other._pin_buses)) {
+      _pin_buses(std::move(other._pin_buses)),
+      _coordinate(std::move(other._coordinate)) {
   for (auto& pin : _pins) {
     pin->set_own_instance(this);
   }
@@ -55,6 +56,7 @@ Instance& Instance::operator=(Instance&& rhs) {
       pin->set_own_instance(this);
     }
     _str2pin = std::move(rhs._str2pin);
+    _coordinate = std::move(rhs._coordinate);
   }
 
   return *this;

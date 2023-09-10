@@ -468,6 +468,10 @@ class Sta {
       std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
   void buildClockTrees();
 
+  std::optional<double> getInstSlack(AnalysisMode analysis_mode,
+                                     Instance* the_inst);
+  std::map<Instance::Coordinate, double> displayTimingMap(AnalysisMode analysis_mode);
+
  private:
   Sta();
   ~Sta();

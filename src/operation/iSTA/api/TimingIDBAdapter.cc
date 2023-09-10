@@ -706,6 +706,13 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
+  double width = _idb_design->get_layout()->get_die()->get_width() /
+                 static_cast<double>(dbu);
+  double height = _idb_design->get_layout()->get_die()->get_height() /
+                  static_cast<double>(dbu);
+  design_netlist.set_core_size(width, height);
+
+  LOG_INFO << "core area width " << width << " height " << height;
 
   auto build_insts = [this, &design_netlist, dbu]() {
     // build insts

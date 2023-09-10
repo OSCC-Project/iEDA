@@ -2405,4 +2405,61 @@ void Sta::buildClockTrees() {
   }
 }
 
+/**
+ * @brief get the instance worst slack.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
+                                        Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slack = the_vertex->getWorstSlackNs(analysis_mode);
+    if (the_worst_pin_slack) {
+      if (!the_worst_inst_slack ||
+          (*the_worst_inst_slack > *the_worst_pin_slack)) {
+        the_worst_inst_slack = *the_worst_pin_slack;
+      }
+    }
+  }
+
+  // LOG_FATAL_IF(the_worst_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_worst_inst_slack;
+  return the_worst_inst_slack;
+}
+
+/**
+ * @brief display timing map of inst worst slack.
+ *
+ * @param analysis_mode
+ * @return auto
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_slack;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    if (the_inst_worst_slack) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_slack[*inst_coordinate] = *the_inst_worst_slack;
+    }
+  }
+
+  return loc_to_inst_slack;
+}
+
 }  // namespace ista

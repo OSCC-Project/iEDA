@@ -144,4 +144,35 @@ bool report_timing() {
   return true;
 }
 
+/**
+ * @brief Get the core size object.
+ *
+ * @return std::pair<int, int>
+ */
+std::pair<int, int> get_core_size() {
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto core_size = ista->get_netlist()->get_core_size();
+  if (core_size) {
+    return {(int)(core_size->_width), (int)(core_size->_height)};
+  }
+
+  return {0.0, 0.0};
+}
+
+/**
+ * @brief get the inst slack of timing map.
+ *
+ * @param analysis_mode
+ * @return std::map<std::pair<double, double>, double>
+ */
+std::map<std::pair<double, double>, double> display_timing_map(
+    const std::string& analysis_mode) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  if (analysis_mode == "max") {
+    return ista->displayTimingMap(AnalysisMode::kMax);
+  }
+
+  return ista->displayTimingMap(AnalysisMode::kMin);
+}
+
 }  // namespace ista

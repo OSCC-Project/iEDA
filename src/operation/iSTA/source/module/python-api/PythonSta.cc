@@ -37,6 +37,9 @@ PYBIND11_MODULE(ista_cpp, m) {
   m.def("read_spef", read_spef, ("file_name"));
   m.def("read_sdc", read_sdc, py::arg("file_name"));
   m.def("report_timing", report_timing);
+
+  m.def("get_core_size", get_core_size);
+  m.def("display_timing_map", display_timing_map);
 }
 
 }  // namespace ista
