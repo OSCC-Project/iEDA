@@ -1,8 +1,8 @@
 if(NOT BUILD_STATIC_LIB)
 
-SET(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Debug")
 
-AUX_SOURCE_DIRECTORY(./ SRC)
+aux_source_directory(./ SRC)
 
 pybind11_add_module(ista_cpp MODULE ${SRC})
 target_link_libraries(ista_cpp PRIVATE sta ista-engine)
