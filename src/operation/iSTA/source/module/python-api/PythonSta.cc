@@ -30,6 +30,7 @@ namespace ista {
 
 PYBIND11_MODULE(ista_cpp, m) {
   m.def("set_design_workspace", set_design_workspace, ("design_workspace"));
+  m.def("read_lef_def", read_lef_def, ("lef_files"), ("def_file"));
   m.def("read_netlist", read_netlist, ("file_name"));
   m.def("read_liberty", read_liberty, ("file_name"));
   m.def("link_design", link_design, ("cell_name"));
