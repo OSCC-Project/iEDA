@@ -19,7 +19,7 @@
 #include <string>
 
 namespace python_interface {
-bool read_vcd(std::string vcd_file, std::string top_instance_name);
-unsigned report_power();
+bool readVcd(std::string vcd_file, std::string top_instance_name);
+unsigned reportPower();
 
 }  // namespace python_interface

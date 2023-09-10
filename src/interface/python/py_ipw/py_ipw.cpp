@@ -20,7 +20,7 @@
 #include "sta/Sta.hh"
 
 namespace python_interface {
-bool read_vcd(std::string vcd_file, std::string top_instance_name)
+bool readVcd(std::string vcd_file, std::string top_instance_name)
 {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
@@ -28,23 +28,12 @@ bool read_vcd(std::string vcd_file, std::string top_instance_name)
   return ipower->readVCD(vcd_file, top_instance_name);
 }
 
-unsigned report_power()
+unsigned reportPower()
 {
-  ista::Sta* ista = ista::Sta::getOrCreateSta();
+  Sta* ista = Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
-  // set fastest clock for default toggle
-  auto* fastest_clock = ista->getFastestClock();
-  ipower::PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(), fastest_clock->getPeriodNs());
-  // get sta clocks
-  auto clocks = ista->getClocks();
-
-  std::string output_path = ista->get_design_work_space();
-  output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
-
-  ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
-
-  ipower->runCompleteFlow(output_path);
+  ipower->runCompleteFlow();
 
   return 1;
 }
