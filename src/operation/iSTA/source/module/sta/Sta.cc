@@ -2285,43 +2285,6 @@ void Sta::dumpNetlistData() {
 }
 
 /**
- * @brief Build clock tree for GUI.
- *
- */
-void Sta::buildClockTrees() {
-  for (auto &clock : _clocks) {
-    // get_clock_vertexs: usually return one.
-    auto &vertexes = clock->get_clock_vertexes();
-
-    for (auto *vertex : vertexes) {
-      // for each vertex, make one root_node/clock_tree.
-      std::string pin_name = vertex->getName();
-      std::string cell_type = vertex->getOwnCellOrPortName();
-      std::string inst_name = vertex->getOwnInstanceOrPortName();
-      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
-      auto *clock_tree = new StaClockTree(clock.get(), root_node);
-      addClockTree(clock_tree);
-
-      StaData *clock_data;
-      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-      FOREACH_CLOCK_DATA(vertex, clock_data) {
-        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
-            clock_tree->get_clock()) {
-          continue;
-        }
-
-        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
-          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-          next_vertex_to_datas[next_fwd_vertex].emplace_back(
-              next_fwd_clock_data);
-        }
-      }
-      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
-    }
-  }
-}
-
-/**
  * @brief Build the next pin in clock tree.
  *
  */
@@ -2402,6 +2365,43 @@ void Sta::buildNextPin(
     }
 
     buildNextPin(clock_tree, child_node, fwd_vertex, next_vertex_to_datas);
+  }
+}
+
+/**
+ * @brief Build clock tree for GUI.
+ *
+ */
+void Sta::buildClockTrees() {
+  for (auto &clock : _clocks) {
+    // get_clock_vertexs: usually return one.
+    auto &vertexes = clock->get_clock_vertexes();
+
+    for (auto *vertex : vertexes) {
+      // for each vertex, make one root_node/clock_tree.
+      std::string pin_name = vertex->getName();
+      std::string cell_type = vertex->getOwnCellOrPortName();
+      std::string inst_name = vertex->getOwnInstanceOrPortName();
+      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
+      auto *clock_tree = new StaClockTree(clock.get(), root_node);
+      addClockTree(clock_tree);
+
+      StaData *clock_data;
+      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
+      FOREACH_CLOCK_DATA(vertex, clock_data) {
+        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
+            clock_tree->get_clock()) {
+          continue;
+        }
+
+        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
+          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
+          next_vertex_to_datas[next_fwd_vertex].emplace_back(
+              next_fwd_clock_data);
+        }
+      }
+      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
+    }
   }
 }
 

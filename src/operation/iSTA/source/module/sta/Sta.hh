@@ -462,11 +462,11 @@ class Sta {
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
-  void buildClockTrees();
   void buildNextPin(
       StaClockTree* clock_tree, StaClockTreeNode* parent_node,
       StaVertex* parent_vertex,
       std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+  void buildClockTrees();
 
  private:
   Sta();
