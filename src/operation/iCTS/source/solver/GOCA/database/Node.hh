@@ -25,7 +25,7 @@
 
 #include "CTSAPI.hpp"
 #include "CtsConfig.h"
-#include "CtsInstance.h"
+#include "CtsInstance.hh"
 #include "Enum.hh"
 #include "log/Log.hh"
 namespace icts {

@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "CtsDesign.h"
+#include "CtsDesign.hh"
 
 namespace icts {
 CtsDesign::~CtsDesign()
@@ -30,17 +30,17 @@ CtsDesign::~CtsDesign()
   }
 }
 
-void CtsDesign::addClockNetName(const string& clock_name, const string& net_name)
+void CtsDesign::addClockNetName(const std::string& clock_name, const std::string& net_name)
 {
   for (auto& clock_net_name : _clock_net_names) {
     if (clock_net_name.first == clock_name && clock_net_name.second == net_name) {
       return;
     }
   }
-  _clock_net_names.push_back(make_pair(clock_name, net_name));
+  _clock_net_names.push_back(std::make_pair(clock_name, net_name));
 }
 
-void CtsDesign::addClockNet(const string& clock_name, CtsNet* net)
+void CtsDesign::addClockNet(const std::string& clock_name, CtsNet* net)
 {
   bool found = false;
   for (auto* clock : _clocks) {
@@ -57,7 +57,7 @@ void CtsDesign::addClockNet(const string& clock_name, CtsNet* net)
   }
 }
 
-CtsNet* CtsDesign::findNet(const string& net_name) const
+CtsNet* CtsDesign::findNet(const std::string& net_name) const
 {
   for (auto* net : _nets) {
     if (net_name == net->get_net_name()) {
@@ -67,41 +67,17 @@ CtsNet* CtsDesign::findNet(const string& net_name) const
   return nullptr;
 }
 
-Net* CtsDesign::findGocaNet(const string& net_name) const
-{
-  if (_goca_net_map.count(net_name)) {
-    return _goca_net_map.at(net_name);
-  }
-  return nullptr;
-}
-
-CtsPin* CtsDesign::CtsDesign::findPin(const string& pin_full_name) const
+CtsPin* CtsDesign::CtsDesign::findPin(const std::string& pin_full_name) const
 {
   if (_pin_map.count(pin_full_name)) {
     return _pin_map.at(pin_full_name);
   }
   return nullptr;
 }
-CtsInstance* CtsDesign::findInstance(const string& instance_name) const
+CtsInstance* CtsDesign::findInstance(const std::string& instance_name) const
 {
   if (_inst_map.count(instance_name)) {
     return _inst_map.at(instance_name);
-  }
-  return nullptr;
-}
-
-TimingNode* CtsDesign::findTimingNode(const string& node_name) const
-{
-  if (_inst_timing_node_map.count(node_name)) {
-    return _inst_timing_node_map.at(node_name);
-  }
-  return nullptr;
-}
-
-HNode* CtsDesign::findHCtsNode(const string& node_name) const
-{
-  if (_hcts_node_map.count(node_name)) {
-    return _hcts_node_map.at(node_name);
   }
   return nullptr;
 }

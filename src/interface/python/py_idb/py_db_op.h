@@ -31,11 +31,13 @@ bool setNet(const std::string& net_name, const std::string& type)
 bool removeExceptPgNet()
 {
   dmInst->removeBlockageExceptPGNet();
+  return true;
 }
 
 bool clearBlockage(const std::string& type)
 {
   dmInst->clearBlockage(type);
+  return true;
 }
 
 bool idbGet(const std::string& inst_name, const std::string& net_name, const std::string& file_name)
@@ -74,11 +76,11 @@ bool idbCreateInstance(const std::string& inst_name, const std::string& cell_mas
   return inst;
 }
 
-bool idbCreateNet(const std::string& net_name, const std::string& conn_type){
+bool idbCreateNet(const std::string& net_name, const std::string& conn_type)
+{
   IdbConnectType type = IdbEnum::GetInstance()->get_connect_property()->get_type(conn_type);
   IdbNet* net = dmInst->createNet(net_name, type);
   return net;
 }
-
 
 }  // namespace python_interface

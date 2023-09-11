@@ -91,7 +91,11 @@ using Side = std::array<T, 2>;
 class Area
 {
  public:
-  Area() = default;
+  Area()
+  {
+    _id = CTSAPIInst.genId();
+    _name = CTSAPIInst.toString("steiner_", _id);
+  };
   Area(Node* node) : _name(node->get_name())
   {
     auto loc = node->get_location();
@@ -102,6 +106,7 @@ class Area
     _cap_load = node->get_cap_load();
     _mr.push_back(_location);
     _convex_hull.push_back(_location);
+    _id = CTSAPIInst.genId();
   }
 
   Area(const std::string& name, const double& x, const double& y, const double& cap_load) : _name(name)
@@ -110,6 +115,7 @@ class Area
     _cap_load = cap_load;
     _mr.push_back(_location);
     _convex_hull.push_back(_location);
+    _id = CTSAPIInst.genId();
   }
   // get
   const std::string& get_name() const { return _name; }
@@ -146,7 +152,8 @@ class Area
     }
     return lines;
   }
-
+  //  debug
+  const int& get_id() const { return _id; }
   // set
   void set_name(const std::string& name) { _name = name; }
   void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
@@ -182,6 +189,7 @@ class Area
   Side<Line> _lines;
   Region _mr;
   Region _convex_hull;
+  int _id = 0;
 };
 
 struct Match

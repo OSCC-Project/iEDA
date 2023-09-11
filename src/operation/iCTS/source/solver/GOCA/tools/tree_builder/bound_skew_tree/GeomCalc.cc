@@ -288,13 +288,13 @@ double GeomCalc::lineDist(Line& l1, Line& l2, PtPair& closest)
   pt[kRight] = l2;
   size_t n1 = 2;
   size_t n2 = 2;
-  if (isSame(l1[kHead], l2[kHead])) {
+  if (isSame(l1[kHead], l1[kTail])) {
     n1 = 1;
   }
-  if (isSame(l2[kHead], l1[kTail])) {
+  if (isSame(l2[kHead], l2[kTail])) {
     n2 = 1;
   }
-  if (n1 == 1 && n2 == 1) {
+  if (n1 == 2 && n2 == 2) {
     if (lineIntersect(intersect, l1, l2) != IntersectType::kNone) {
       closest[kLeft] = closest[kRight] = intersect;
       return 0;
@@ -534,13 +534,18 @@ bool GeomCalc::isSegmentTrr(const Trr& trr)
   return Equal(trr.x_low(), trr.x_high()) || Equal(trr.y_low(), trr.y_high());
 }
 
-void GeomCalc::sortPts(Pts& pts)
+void GeomCalc::sortPtsByFront(Pts& pts)
+{
+  // sort by dist to first point
+  std::ranges::for_each(pts, [&pts](Pt& p) { p.val = distance(p, pts.front()); });
+  sortPtsByVal(pts);
+}
+
+void GeomCalc::sortPtsByVal(Pts& pts)
 {
   if (pts.empty()) {
     return;
   }
-  // sort by dist to first point
-  std::ranges::for_each(pts, [&pts](Pt& p) { p.val = distance(p, pts.front()); });
   std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
 }
 

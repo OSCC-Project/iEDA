@@ -82,7 +82,7 @@ class Power {
   unsigned updatePower();
   unsigned reportPower(const char* rpt_file_name,
                        PwrAnalysisMode pwr_analysis_mode);
-  unsigned runCompleteFlow(std::string output_path);
+  unsigned runCompleteFlow();
 
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }

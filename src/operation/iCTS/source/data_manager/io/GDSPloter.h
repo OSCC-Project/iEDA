@@ -22,7 +22,7 @@
 
 #include "CtsConfig.h"
 #include "CtsDBWrapper.h"
-#include "CtsInstance.h"
+#include "CtsInstance.hh"
 #include "pgl.h"
 
 namespace icts {

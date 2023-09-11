@@ -49,4 +49,4 @@ add_subdirectory(source/python-api)
 add_subdirectory(test)
 
 add_executable(iPower main.cc)
-target_link_libraries(iPower vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
+target_link_libraries(iPower vcd_wrapper log power verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)

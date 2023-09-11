@@ -2285,43 +2285,6 @@ void Sta::dumpNetlistData() {
 }
 
 /**
- * @brief Build clock tree for GUI.
- *
- */
-void Sta::buildClockTrees() {
-  for (auto &clock : _clocks) {
-    // get_clock_vertexs: usually return one.
-    auto &vertexes = clock->get_clock_vertexes();
-
-    for (auto *vertex : vertexes) {
-      // for each vertex, make one root_node/clock_tree.
-      std::string pin_name = vertex->getName();
-      std::string cell_type = vertex->getOwnCellOrPortName();
-      std::string inst_name = vertex->getOwnInstanceOrPortName();
-      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
-      auto *clock_tree = new StaClockTree(clock.get(), root_node);
-      addClockTree(clock_tree);
-
-      StaData *clock_data;
-      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-      FOREACH_CLOCK_DATA(vertex, clock_data) {
-        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
-            clock_tree->get_clock()) {
-          continue;
-        }
-
-        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
-          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-          next_vertex_to_datas[next_fwd_vertex].emplace_back(
-              next_fwd_clock_data);
-        }
-      }
-      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
-    }
-  }
-}
-
-/**
  * @brief Build the next pin in clock tree.
  *
  */
@@ -2403,6 +2366,100 @@ void Sta::buildNextPin(
 
     buildNextPin(clock_tree, child_node, fwd_vertex, next_vertex_to_datas);
   }
+}
+
+/**
+ * @brief Build clock tree for GUI.
+ *
+ */
+void Sta::buildClockTrees() {
+  for (auto &clock : _clocks) {
+    // get_clock_vertexs: usually return one.
+    auto &vertexes = clock->get_clock_vertexes();
+
+    for (auto *vertex : vertexes) {
+      // for each vertex, make one root_node/clock_tree.
+      std::string pin_name = vertex->getName();
+      std::string cell_type = vertex->getOwnCellOrPortName();
+      std::string inst_name = vertex->getOwnInstanceOrPortName();
+      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
+      auto *clock_tree = new StaClockTree(clock.get(), root_node);
+      addClockTree(clock_tree);
+
+      StaData *clock_data;
+      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
+      FOREACH_CLOCK_DATA(vertex, clock_data) {
+        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
+            clock_tree->get_clock()) {
+          continue;
+        }
+
+        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
+          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
+          next_vertex_to_datas[next_fwd_vertex].emplace_back(
+              next_fwd_clock_data);
+        }
+      }
+      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
+    }
+  }
+}
+
+/**
+ * @brief get the instance worst slack.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
+                                        Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slack = the_vertex->getWorstSlackNs(analysis_mode);
+    if (the_worst_pin_slack) {
+      if (!the_worst_inst_slack ||
+          (*the_worst_inst_slack > *the_worst_pin_slack)) {
+        the_worst_inst_slack = *the_worst_pin_slack;
+      }
+    }
+  }
+
+  // LOG_FATAL_IF(the_worst_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_worst_inst_slack;
+  return the_worst_inst_slack;
+}
+
+/**
+ * @brief display timing map of inst worst slack.
+ *
+ * @param analysis_mode
+ * @return auto
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_slack;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    if (the_inst_worst_slack) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_slack[*inst_coordinate] = *the_inst_worst_slack;
+    }
+  }
+
+  return loc_to_inst_slack;
 }
 
 }  // namespace ista

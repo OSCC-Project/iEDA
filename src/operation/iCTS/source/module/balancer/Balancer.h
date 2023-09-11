@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "ClockTopo.h"
-#include "CtsNet.h"
+#include "CtsNet.hh"
 #include "TimingCalculator.h"
 
 namespace icts {

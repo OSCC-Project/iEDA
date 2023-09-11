@@ -101,7 +101,6 @@ void Synthesis::incrementalInsertNet(ClockTopo& clk_topo)
     // link net to cts (idbtocts)
     net = db_wrapper->idbToCts(idb_new_net);  // include out pin connection with net
   } else {
-    net = driver->get_out_pin()->get_net();
     idb_new_net = db_wrapper->ctsToIdb(net);
     for (auto* load_pin : net->get_load_pins()) {
       auto idb_pin = db_wrapper->ctsToIdb(load_pin);
@@ -141,7 +140,7 @@ void Synthesis::incrementalInsertNet(ClockTopo& clk_topo)
 
 #ifdef USE_ROUTING
 
-  CTSAPIInst.routingWire(net);
+  // CTSAPIInst.routingWire(net);
 
 #endif
   // DLOG_INFO << "Net " << net->get_net_name() << " has been inserted";
@@ -187,13 +186,13 @@ void Synthesis::insertNet(ClockTopo& clk_topo)
   CtsNet* net = design->findNet(clk_topo.get_name());
   // get or create clock net.
   auto* driver = clk_topo.get_driver();
+  auto* out_pin = driver->get_out_pin();
   if (net == nullptr) {
     net = new CtsNet(clk_topo.get_name());
     db_wrapper->makeIdbNet(net);
     // connect driver to origin net
-    db_wrapper->idbConnect(driver, driver->get_out_pin(), net);
+    db_wrapper->idbConnect(driver, out_pin, net);
   } else {
-    net = driver->get_out_pin()->get_net();
     for (auto* load_pin : net->get_load_pins()) {
       db_wrapper->idbDisconnect(load_pin);
     }
@@ -223,7 +222,7 @@ void Synthesis::insertNet(ClockTopo& clk_topo)
 
 #ifdef USE_ROUTING
 
-  CTSAPIInst.routingWire(net);
+  // CTSAPIInst.routingWire(net);
 
 #endif
   // DLOG_INFO << "Net " << net->get_net_name() << " has been inserted";
@@ -236,13 +235,13 @@ void Synthesis::insertCtsNetlist()
     insertInstance(clk_topo);
   }
 #ifdef USE_ROUTING
-  CTSAPIInst.iRTinit();
+  // CTSAPIInst.iRTinit();
 #endif
   for (auto& clk_topo : clk_topos) {
     insertNet(clk_topo);
   }
 #ifdef USE_ROUTING
-  CTSAPIInst.iRTdestroy();
+  // CTSAPIInst.iRTdestroy();
 #endif
   CTSAPIInst.convertDBToTimingEngine();
 }
@@ -255,13 +254,13 @@ void Synthesis::incrementalInsertCtsNetlist()
     incrementalInsertInstance(clk_topo);
   }
 #ifdef USE_ROUTING
-  CTSAPIInst.iRTinit();
+  // CTSAPIInst.iRTinit();
 #endif
   for (auto& clk_topo : clk_topos) {
     incrementalInsertNet(clk_topo);
   }
 #ifdef USE_ROUTING
-  CTSAPIInst.iRTdestroy();
+  // CTSAPIInst.iRTdestroy();
 #endif
 }
 
