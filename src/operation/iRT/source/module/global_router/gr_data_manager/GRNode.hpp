@@ -17,6 +17,7 @@
 #pragma once
 
 #include "DRCChecker.hpp"
+#include "GRNodeId.hpp"
 #include "GRSourceType.hpp"
 #include "LayerCoord.hpp"
 #include "RegionQuery.hpp"
@@ -38,6 +39,7 @@ class GRNode : public LayerCoord
   GRNode() = default;
   ~GRNode() = default;
   // getter
+  GRNodeId& get_gr_node_id() { return _gr_node_id; }
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<GRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
@@ -52,6 +54,7 @@ class GRNode : public LayerCoord
   double get_history_resource_cost() const { return _history_resource_cost; }
   std::set<irt_int>& get_passed_net_set() { return _passed_net_set; }
   // setter
+  void set_gr_node_id(const GRNodeId& gr_node_id) { _gr_node_id = gr_node_id; }
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   void set_source_region_query_map(const std::map<GRSourceType, RegionQuery>& source_region_query_map)
@@ -103,7 +106,10 @@ class GRNode : public LayerCoord
       if (RTUtil::exist(_orien_access_demand_map, orientation)) {
         access_demand = _orien_access_demand_map[orientation];
       }
-      cost += RTUtil::calcCost(1 + access_demand, access_supply);
+      // 放大，统一access和wire的cost
+      irt_int converted_supply = access_supply * _whole_wire_demand;
+      irt_int converted_demand = (1 + access_demand) * _whole_wire_demand;
+      cost += RTUtil::calcCost(converted_demand, converted_supply);
       if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
         cost += _history_orien_access_cost_map[orientation];
       }
@@ -194,6 +200,7 @@ class GRNode : public LayerCoord
 #endif
 
  private:
+  GRNodeId _gr_node_id;
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
   std::map<GRSourceType, RegionQuery> _source_region_query_map;

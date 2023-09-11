@@ -358,6 +358,18 @@ class StaVertex {
       return std::nullopt;
     }
   }
+  std::optional<double> getWorstSlackNs(AnalysisMode analysis_mode) {
+    auto rise_slack = getSlackNs(analysis_mode, TransType::kRise);
+    if (rise_slack) {
+      auto fall_slack = getSlackNs(analysis_mode, TransType::kFall);
+      if (rise_slack && fall_slack) {
+        return (*rise_slack < *fall_slack) ? rise_slack : fall_slack;
+      }
+    }
+
+    return std::nullopt;
+  }
+
   int getSlew(AnalysisMode analysis_mode, TransType trans_type);
   double getSlewNs(AnalysisMode analysis_mode, TransType trans_type) {
     int slew = getSlew(analysis_mode, trans_type);

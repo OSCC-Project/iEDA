@@ -105,7 +105,6 @@ DRModel DetailedRouter::initDRModel(std::vector<Net>& net_list)
       dr_box.set_base_region(RTUtil::getRealRect(PlanarCoord(x, y), gcell_axis));
       dr_box.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       dr_box.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
-
       DRBoxId dr_box_id;
       dr_box_id.set_x(x);
       dr_box_id.set_y(y);
@@ -1155,13 +1154,10 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getSegmentList(DRBox& dr_box, L
       }
     }
   }
-  std::sort(segment_list.begin(), segment_list.end(), [](Segment<LayerCoord>& a, Segment<LayerCoord>& b) {
-    if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
-    } else {
-      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
-    }
-  });
+  for (Segment<LayerCoord>& segment : segment_list) {
+    SortSegmentInnerXASC()(segment);
+  }
+  std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
   RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
     return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
   });
@@ -1314,6 +1310,23 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
     }
     if (dr_task.get_routing_state() != RoutingState::kUnrouted) {
       LOG_INST.error(Loc::current(), "The routing_state is error!");
+    }
+  }
+  for (auto [net_idx, task_idx_list] : dr_box.get_net_task_map()) {
+    std::vector<std::set<LayerCoord, CmpLayerCoordByLayerASC>> dr_coord_set_list;
+    for (irt_int task_idx : task_idx_list) {
+      std::set<LayerCoord, CmpLayerCoordByLayerASC> group_coord_set;
+      for (DRGroup& dr_group : dr_task_list[task_idx].get_dr_group_list()) {
+        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          group_coord_set.insert(coord);
+        }
+      }
+      for (auto& dr_coord_set : dr_coord_set_list) {
+        if (group_coord_set == dr_coord_set) {
+          LOG_INST.error(Loc::current(), "There is same task in net!");
+        }
+      }
+      dr_coord_set_list.push_back(group_coord_set);
     }
   }
 }
@@ -2201,7 +2214,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   std::map<DRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = dr_box_stat.get_source_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape}) {
-    for (auto& [drc, violation_info_list] : getVaildViolationInfo(dr_box, dr_source_type)) {
+    for (auto& [drc, violation_info_list] : getViolationInfo(dr_box, dr_source_type)) {
       source_drc_violation_map[dr_source_type][drc] = violation_info_list;
     }
   }
@@ -2934,61 +2947,77 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
 #endif
 
-#if 1  // vaild drc
+#if 1  // valid drc
 
-bool DetailedRouter::hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
-  return !(getVaildViolationInfo(dr_box, dr_source_type, drc_rect_list).empty());
-}
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
 
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
-                                                                                        const std::vector<DRCRect>& drc_rect_list)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list)) {
-    bool is_vaild = false;
-    for (ViolationInfo& violation_info : violation_list) {
-      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (RTUtil::exist(dr_box.get_net_task_map(), net_idx)) {
-          is_vaild = true;
-          goto here;
+  std::map<DRBoxId, std::vector<DRCRect>, CmpDRBoxId> box_rect_map;
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
+      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          box_rect_map[DRBoxId(x, y)].push_back(drc_rect);
         }
       }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+  }
+  bool has_violation = false;
+  for (const auto& [dr_box_id, drc_rect_list] : box_rect_map) {
+    DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
+    if (getViolationInfo(dr_box, dr_source_type, drc_rect_list).size() > 0) {
+      has_violation = true;
+      break;
     }
   }
-  return drc_violation_map;
+  return has_violation;
 }
 
-bool DetailedRouter::hasVaildViolation(DRBox& dr_box, DRSourceType dr_source_type)
-{
-  return !(getVaildViolationInfo(dr_box, dr_source_type).empty());
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getVaildViolationInfo(DRBox& dr_box, DRSourceType dr_source_type)
+std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
+                                                                                   const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list);
+  removeInvalidViolationInfo(dr_box, drc_violation_map);
+  return drc_violation_map;
+}
 
-  for (auto& [drc, violation_list] : DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type))) {
-    bool is_vaild = false;
+std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type));
+  removeInvalidViolationInfo(dr_box, drc_violation_map);
+  return drc_violation_map;
+}
+
+void DetailedRouter::removeInvalidViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+{
+  for (auto& [drc, violation_list] : drc_violation_map) {
+    std::vector<ViolationInfo> valid_violation_list;
     for (ViolationInfo& violation_info : violation_list) {
+      bool is_valid = false;
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (RTUtil::exist(dr_box.get_net_task_map(), net_idx)) {
-          is_vaild = true;
-          goto here;
+        if (net_idx != -1) {
+          is_valid = true;
+          break;
         }
       }
+      if (is_valid) {
+        valid_violation_list.push_back(violation_info);
+      }
     }
-  here:
-    if (is_vaild) {
-      drc_violation_map.insert(std::make_pair(drc, violation_list));
+    if (valid_violation_list.empty()) {
+      drc_violation_map.erase(drc);
+    } else {
+      drc_violation_map[drc] = violation_list;
     }
   }
-  return drc_violation_map;
 }
 
 #endif

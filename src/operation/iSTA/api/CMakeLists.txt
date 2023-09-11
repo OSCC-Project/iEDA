@@ -1,12 +1,12 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
+set (CMAKE_CXX_STANDARD 20)
 
-SET (CMAKE_CXX_STANDARD 20)
+set(CMAKE_BUILD_TYPE "Release")
 
-AUX_SOURCE_DIRECTORY(./ SRC)
+aux_source_directory(./ SRC)
+add_library(ista-engine ${SRC})
 
-ADD_LIBRARY(ista-engine ${SRC})
-
-TARGET_LINK_LIBRARIES(ista-engine sta str sdc sdc-cmd tcl idb def_service lef_service log absl::flat_hash_map) 
+target_link_libraries(ista-engine sta str sdc sdc-cmd tcl idb def_service lef_service log absl::flat_hash_map) 
 
 target_include_directories(ista-engine 
     PUBLIC 

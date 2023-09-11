@@ -45,23 +45,11 @@ void GDSPloter::plotDesign()
 
   for (auto& clk_net : clk_nets) {
     auto net_name = clk_net->get_net_name();
-    auto* goca_net = design->findGocaNet(net_name);
-    if (goca_net) {
-      auto* driver_pin = goca_net->get_driver_pin();
-      auto* inst = driver_pin->get_inst();
-      auto* cts_inst = inst->get_cts_inst();
-      driver_pin->preOrder([&](Node* cur) {
-        auto* parent = cur->get_parent();
-        if (parent) {
-          plotter.insertWire(cur->get_location(), parent->get_location(), cts_inst->get_level());
-        }
-      });
-    } else {
-      for (const auto& wire : clk_net->get_signal_wires()) {
-        auto first = DataTraits<Endpoint>::getPoint(wire.get_first());
-        auto second = DataTraits<Endpoint>::getPoint(wire.get_second());
-        plotter.insertWire(first, second, clk_net->get_driver_inst()->get_level());
-      }
+
+    for (const auto& wire : clk_net->get_signal_wires()) {
+      auto first = wire.get_first().point;
+      auto second = wire.get_second().point;
+      plotter.insertWire(first, second, clk_net->get_driver_inst()->get_level());
     }
   }
 

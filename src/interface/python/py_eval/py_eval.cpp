@@ -40,7 +40,6 @@ void plot_flow_value(const std::string& plot_path, const std::string& file_name,
   eval_api.plotFlowValue(plot_path, file_name, step, value);
 }
 
-
 void init_cong_eval(int bin_cnt_x, int bin_cnt_y)
 {
   std::cout << "bin_cnt_x=" << bin_cnt_x << " bin_cnt_y=" << bin_cnt_y << std::endl;
@@ -122,7 +121,7 @@ void eval_rudy_cong(int rudy_type, int direction)
 std::vector<float> eval_egr_cong()
 {
   EvalAPI& eval_api = EvalAPI::getInst();
-  eval_api.evalGRCong();
+  return eval_api.evalGRCong();
 }
 
 // int64_t eval_area(int inst_status)

@@ -492,7 +492,13 @@ TimingEngine& TimingEngine::incrUpdateTiming() {
 
   the_graph.exec([](StaGraph* the_graph) -> unsigned {
     StaAnalyze analyze_path;
-    return analyze_path(the_graph);
+    unsigned is_ok = analyze_path(the_graph);
+
+    StaApplySdc apply_sdc_post_analyze(
+        StaApplySdc::PropType::kApplySdcPostProp);
+    is_ok &= apply_sdc_post_analyze(the_graph);
+
+    return is_ok;
   });
 
   _incr_func.applyBwdQueue();
@@ -1226,7 +1232,7 @@ StaClock* TimingEngine::getPropClock(const char* pin_name, AnalysisMode mode,
  * decltype(cmp)>
  */
 std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 TimingEngine::getViolatedSeqPathsBetweenTwoSinks(const char* pin1_name,
                                                  const char* pin2_name,
                                                  AnalysisMode mode) {

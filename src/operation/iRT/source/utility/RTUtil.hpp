@@ -1953,6 +1953,19 @@ class RTUtil
     }
     v_segment_list = v_segment_list_temp;
 
+    auto mergeSegmentList = [](std::vector<Segment<LayerCoord>>& segment_list) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        SortSegmentInnerXASC()(segment);
+      }
+      std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
+      RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
+        return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
+      });
+    };
+    mergeSegmentList(h_segment_list);
+    mergeSegmentList(v_segment_list);
+    mergeSegmentList(p_segment_list);
+
     segment_list.clear();
     segment_list.insert(segment_list.end(), h_segment_list.begin(), h_segment_list.end());
     segment_list.insert(segment_list.end(), v_segment_list.begin(), v_segment_list.end());

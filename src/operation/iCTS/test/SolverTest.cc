@@ -66,25 +66,23 @@ void boundSkewTreeTest()
   }
   std::vector<Pin*> pins;
   std::ranges::for_each(load_bufs, [&pins](Inst* buf) { pins.emplace_back(buf->get_load_pin()); });
-  auto guide_loc = Point(122000, 196000);
-  auto roots = TreeBuilder::boundSkewTree("BoundSkewTree", pins, 0.08, guide_loc);
-  if (roots.size() == 1) {
-    auto root = roots.front();
-    auto* driver_pin = root->get_driver_pin();
-    auto* net = driver_pin->get_net();
-    std::ranges::for_each(pins, [](Pin* pin) {
-      pin->set_max_delay(0);
-      pin->set_min_delay(0);
-    });
-    TimingPropagator::netLenPropagate(net);
-    TimingPropagator::capPropagate(net);
-    TimingPropagator::wireDelayPropagate(net);
-    TreeBuilder::writePy(driver_pin, "BoundSkewTree");
-    LOG_INFO << "BoundSkewTree";
-    LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
-    LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
-    LOG_INFO << "max delay: " << driver_pin->get_max_delay();
-  }
+  auto guide_loc = Point(99000, 154000);
+  auto* root = TreeBuilder::boundSkewTree("BoundSkewTree", pins, 0.08, guide_loc);
+
+  auto* driver_pin = root->get_driver_pin();
+  auto* net = driver_pin->get_net();
+  std::ranges::for_each(pins, [](Pin* pin) {
+    pin->set_max_delay(0);
+    pin->set_min_delay(0);
+  });
+  TimingPropagator::netLenPropagate(net);
+  TimingPropagator::capPropagate(net);
+  TimingPropagator::wireDelayPropagate(net);
+  TreeBuilder::writePy(driver_pin, "BoundSkewTree");
+  LOG_INFO << "BoundSkewTree";
+  LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max delay: " << driver_pin->get_max_delay();
 }
 
 void bstTest()
@@ -103,7 +101,7 @@ void bstTest()
   }
   std::vector<Pin*> pins;
   std::ranges::for_each(load_bufs, [&pins](Inst* buf) { pins.emplace_back(buf->get_load_pin()); });
-  auto guide_loc = Point(122000, 196000);
+  auto guide_loc = Point(99000, 154000);
   auto roots = TreeBuilder::dmeTree("bst", pins, 0.08, guide_loc);
   if (roots.size() == 1) {
     auto root = roots.front();
@@ -140,7 +138,7 @@ void saltTest()
   }
   std::vector<Pin*> pins;
   std::ranges::for_each(load_bufs, [&pins](Inst* buf) { pins.emplace_back(buf->get_load_pin()); });
-  auto driver_buf = TreeBuilder::genBufInst("root", Point(106960, 132400));
+  auto driver_buf = TreeBuilder::genBufInst("root", Point(99000, 154000));
   driver_buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* driver_pin = driver_buf->get_driver_pin();
 
@@ -157,38 +155,13 @@ void saltTest()
   LOG_INFO << "max delay: " << driver_pin->get_max_delay() - driver_buf->get_insert_delay();
 }
 
-void tempTest()
-{
-  using icts::MplHelper;
-  using icts::bst::GeomCalc;
-  using icts::bst::Pt;
-  using icts::bst::Trr;
-
-  auto p1 = Pt(1.0, 2.0);
-  auto p2 = Pt(4.0, 5.0);
-  auto p3 = Pt(3.0, 3.0);
-  auto p4 = Pt(7.0, 7.0);
-
-  auto mpl = MplHelper();
-  mpl.plot({p1, p2}, "seg1");
-  mpl.plot({p3, p4}, "seg2");
-  mpl.saveFig("temp_test.png");
-
-  Trr ms1;
-  Trr ms2;
-  GeomCalc::lineToMs(ms1, p1, p2);
-  GeomCalc::lineToMs(ms2, p3, p4);
-  // auto dist = GeomCalc::msDistance(&ms1, &ms2);
-  // LOG_INFO << "Dist: " << dist;
-}
-
 TEST_F(SolverTest, Compare)
 {
-  tempTest();
-  // dmInst->init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json");
-  // CTSAPIInst.init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
-  // bstTest();
-  // saltTest();
+  dmInst->init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json");
+  CTSAPIInst.init("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  bstTest();
+  boundSkewTreeTest();
+  saltTest();
 }
 
 TEST_F(SolverTest, GeomTest)
@@ -197,9 +170,6 @@ TEST_F(SolverTest, GeomTest)
   using icts::bst::Pt;
   std::vector<Pt> poly = {Pt(0, 0), Pt(0, 0.5), Pt(0, 1), Pt(1, 1), Pt(1, 0)};
   GeomCalc::convexHull(poly);
-  for (auto& pt : poly) {
-    LOG_INFO << "[" << pt.x << ", " << pt.y << "]  ";
-  }
   EXPECT_EQ(poly.size(), 4);
 }
 

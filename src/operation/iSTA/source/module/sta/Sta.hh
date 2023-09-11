@@ -54,11 +54,17 @@ class SdcConstrain;
 constexpr int g_global_derate_num = 8;
 
 // minHeap of the StaSeqPathData.
-const std::function<bool(StaSeqPathData*, StaSeqPathData*)> cmp =
+const std::function<bool(StaSeqPathData*, StaSeqPathData*)> seq_data_cmp =
     [](StaSeqPathData* left, StaSeqPathData* right) -> bool {
   unsigned left_slack = left->getSlack();
   unsigned right_slack = right->getSlack();
   return left_slack > right_slack;
+};
+
+// clock cmp for staclock.
+const std::function<unsigned(StaClock*, StaClock*)> sta_clock_cmp =
+    [](StaClock* left, StaClock* right) -> unsigned {
+  return Str::caseCmp(left->get_clock_name(), right->get_clock_name());
 };
 
 /**
@@ -433,7 +439,7 @@ class Sta {
   StaSeqPathData* getWorstSeqData(AnalysisMode mode, TransType trans_type);
 
   std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
-                      decltype(cmp)>
+                      decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(StaVertex* vertex1, StaVertex* vertex2,
                                      AnalysisMode mode);
   std::optional<double> getWorstSlackBetweenTwoSinks(StaVertex* vertex1,
@@ -455,11 +461,16 @@ class Sta {
                         bool is_derate = true, bool is_clock_cap = false);
 
   void dumpVertexData(std::vector<std::string> vertex_names);
-  void buildClockTrees();
+  void dumpNetlistData();
   void buildNextPin(
       StaClockTree* clock_tree, StaClockTreeNode* parent_node,
       StaVertex* parent_vertex,
       std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+  void buildClockTrees();
+
+  std::optional<double> getInstSlack(AnalysisMode analysis_mode,
+                                     Instance* the_inst);
+  std::map<Instance::Coordinate, double> displayTimingMap(AnalysisMode analysis_mode);
 
  private:
   Sta();
@@ -504,7 +515,7 @@ class Sta {
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.
   Multimap<StaVertex*, SdcSetIODelay*>
       _io_delays;  //!< The port vertex io delay constrain.
-  std::map<StaClock*, std::unique_ptr<StaSeqPathGroup>>
+  std::map<StaClock*, std::unique_ptr<StaSeqPathGroup>, decltype(sta_clock_cmp)>
       _clock_groups;  //!< The clock path groups.
 
   std::unique_ptr<StaClockGatePathGroup>

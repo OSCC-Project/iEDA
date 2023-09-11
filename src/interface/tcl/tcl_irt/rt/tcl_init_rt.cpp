@@ -34,6 +34,8 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-bottom_routing_layer", ValueType::kString));
   // std::string top_routing_layer;         // optional
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
+  // irt_int gcell_pitch_size;              // optional
+  _config_list.push_back(std::make_pair("-gcell_pitch_size", ValueType::kInt));
   // irt_int enable_output_gds_files;       // optional
   _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
   // double supply_utilization_rate;        // optional
@@ -54,10 +56,8 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-gr_via_unit", ValueType::kDouble));
   // double gr_corner_unit;                 // optional
   _config_list.push_back(std::make_pair("-gr_corner_unit", ValueType::kDouble));
-  // double gr_history_access_cost_unit;    // optional
-  _config_list.push_back(std::make_pair("-gr_history_access_cost_unit", ValueType::kDouble));
-  // double gr_history_resource_cost_unit;  // optional
-  _config_list.push_back(std::make_pair("-gr_history_resource_cost_unit", ValueType::kDouble));
+  // double gr_history_cost_unit;           // optional
+  _config_list.push_back(std::make_pair("-gr_history_cost_unit", ValueType::kDouble));
   // irt_int gr_max_iter_num;               // optional
   _config_list.push_back(std::make_pair("-gr_max_iter_num", ValueType::kInt));
   // double ta_prefer_wire_unit;            // optional
@@ -70,7 +70,7 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-ta_pin_distance_unit", ValueType::kDouble));
   // double ta_group_distance_unit;         // optional
   _config_list.push_back(std::make_pair("-ta_group_distance_unit", ValueType::kDouble));
-  // double ta_layout_shape_unit;          // optional
+  // double ta_layout_shape_unit;           // optional
   _config_list.push_back(std::make_pair("-ta_layout_shape_unit", ValueType::kDouble));
   // double ta_reserved_via_unit;           // optional
   _config_list.push_back(std::make_pair("-ta_reserved_via_unit", ValueType::kDouble));
@@ -88,7 +88,7 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-dr_via_unit", ValueType::kDouble));
   // double dr_corner_unit;                 // optional
   _config_list.push_back(std::make_pair("-dr_corner_unit", ValueType::kDouble));
-  // double dr_layout_shape_unit;          // optional
+  // double dr_layout_shape_unit;           // optional
   _config_list.push_back(std::make_pair("-dr_layout_shape_unit", ValueType::kDouble));
   // double dr_reserved_via_unit;           // optional
   _config_list.push_back(std::make_pair("-dr_reserved_via_unit", ValueType::kDouble));
