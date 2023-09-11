@@ -27,8 +27,46 @@ using StaticBox = std::pair<BoostBox, RQShape*>;
 class RegionQuery
 {
  public:
-  RegionQuery() = default;
-  ~RegionQuery() = default;
+  RegionQuery()
+  {
+    // _idrc_region_query = RTAPI_INST.initRegionQuery();
+  }
+  ~RegionQuery()
+  {
+    if (_idrc_region_query != nullptr) {
+      RTAPI_INST.destroyRegionQuery(_idrc_region_query);
+      _idrc_region_query = nullptr;
+    }
+
+    _routing_net_rect_map.clear();
+    _cut_net_rect_map.clear();
+
+    for (auto& [net_id, layer_shape_map] : _routing_net_shape_map) {
+      for (auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          if (shape_ptr != nullptr) {
+            delete shape_ptr;
+            shape_ptr = nullptr;
+          }
+        }
+      }
+    }
+    for (auto& [net_id, layer_shape_map] : _cut_net_shape_map) {
+      for (auto& [layer_idx, shape_map] : layer_shape_map) {
+        for (auto& [rect, shape_ptr] : shape_map) {
+          if (shape_ptr != nullptr) {
+            delete shape_ptr;
+            shape_ptr = nullptr;
+          }
+        }
+      }
+    }
+    _routing_net_shape_map.clear();
+    _cut_net_shape_map.clear();
+
+    _routing_region_map.clear();
+    _cut_region_map.clear();
+  }
   // getter
   void* get_idrc_region_query() { return _idrc_region_query; }
   std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_routing_net_rect_map()

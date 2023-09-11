@@ -25,12 +25,8 @@ namespace irt {
 enum class DRSourceType
 {
   kNone,
-  kBlockAndPin,
-  kKnownPanel,
-  kEnclosure,
-  kUnknownBox,
-  kOtherBox,
-  kSelfBox
+  kLayoutShape,
+  kReservedVia
 };
 
 struct GetDRSourceTypeName
@@ -42,23 +38,11 @@ struct GetDRSourceTypeName
       case DRSourceType::kNone:
         dr_source_type_name = "none";
         break;
-      case DRSourceType::kBlockAndPin:
-        dr_source_type_name = "block_and_pin";
+      case DRSourceType::kLayoutShape:
+        dr_source_type_name = "layout_shape";
         break;
-      case DRSourceType::kKnownPanel:
-        dr_source_type_name = "known_panel";
-        break;
-      case DRSourceType::kEnclosure:
-        dr_source_type_name = "enclosure";
-        break;
-      case DRSourceType::kUnknownBox:
-        dr_source_type_name = "unknown_box";
-        break;
-      case DRSourceType::kOtherBox:
-        dr_source_type_name = "other_box";
-        break;
-      case DRSourceType::kSelfBox:
-        dr_source_type_name = "self_box";
+      case DRSourceType::kReservedVia:
+        dr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

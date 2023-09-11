@@ -444,7 +444,6 @@ Node* BST::buffering(Node* node)
   buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* driver_pin = buffer->get_driver_pin();
 
-  TreeBuilder::place(buffer);
   auto* net = TimingPropagator::genNet(net_name, driver_pin);
   TimingPropagator::update(net);
   // skew violation by buffer resize
@@ -586,7 +585,6 @@ void BST::insertBuffer(Node* parent, Node* child)
   auto net_name = CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId());
   auto* buffer = TreeBuilder::genBufInst(net_name, loc);
   buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  TreeBuilder::place(buffer);
   auto* driver_pin = buffer->get_driver_pin();
   auto* load_pin = buffer->get_load_pin();
   // get origin net, and add load_pin to net; update origin net after insert buffer
@@ -710,6 +708,7 @@ void BST::skewFix(Node* start)
   LOG_FATAL_IF(TimingPropagator::skewFeasible(start, _skew_bound)) << "not need to fix skew";
 
   auto children = start->get_children();
+  std::ranges::for_each(children, [&](Node* child) { child->set_required_snake(0); });
   if (children.size() == 1) {
     skewFix(children[0]);
     updateTiming(start);
@@ -734,9 +733,7 @@ void BST::skewFix(Node* start)
 
         auto* pin = dynamic_cast<Pin*>(start);
         auto* buffer = pin->get_inst();
-        TreeBuilder::cancelPlace(buffer);
         buffer->set_location(new_loc);
-        TreeBuilder::place(buffer);
         if (TimingPropagator::skewFeasible(start, _skew_bound)) {
           can_fix = true;
         } else {
@@ -756,7 +753,7 @@ void BST::skewFix(Node* start)
     size_t opt_step = 0;
     while (!TimingPropagator::skewFeasible(node, _skew_bound)) {
       auto low_skew = calcRequireSkew(node);
-      LOG_FATAL_IF(low_skew < 0) << "illegal skew range while node skew fesible";
+      LOG_FATAL_IF(low_skew < 0) << "illegal skew range which lower skew: " << low_skew << " while node skew fesible";
       min_insert_delay = TimingPropagator::getMinInsertDelay();
       if (low_skew > min_insert_delay) {
         // case 2 try to insert buffer

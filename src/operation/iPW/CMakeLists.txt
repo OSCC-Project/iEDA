@@ -31,6 +31,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW)
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source)
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module)
 
+include_directories(${HOME_THIRDPARTY}/pybind11)
+
 add_subdirectory(api)
 add_subdirectory(source/module/core)
 add_subdirectory(source/module/ops/annotate_toggle_sp)
@@ -43,8 +45,8 @@ add_subdirectory(source/module/ops/propagate_toggle_sp)
 add_subdirectory(source/module/ops/read_vcd)
 add_subdirectory(source/module/ops/plot_power)
 add_subdirectory(source/shell-cmd)
+add_subdirectory(source/python-api)
 add_subdirectory(test)
 
 add_executable(iPower main.cc)
-
-target_link_libraries(iPower vcd_wrapper log app verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
+target_link_libraries(iPower vcd_wrapper log power verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)

@@ -74,6 +74,7 @@ void yyerror(yyscan_t scanner,ista::VerilogReader *verilog_reader, const char *s
 %type <obj> inst_named_pin net_named net_expr_concat
 %type <obj> port_list port_refs inst_ordered_pins
 %type <obj> inst_named_pins net_exprs inst_pins
+%type <obj> module_parameter module_parameters
 
 %start file
 
@@ -116,6 +117,10 @@ module:
     }
 |   module_begin ID '(' port_dcls ')' ';' stmts ENDMODULE
     { LOG_FATAL << "module 3"; }
+
+|   module_begin ID '#' '(' module_parameters ')' '(' port_dcls ')' ';' stmts ENDMODULE
+    {   
+     }
     ;
 
 port_list:
@@ -180,8 +185,10 @@ port_dcl:
     port_dcl_type { $<integer>$ = verilog_reader->get_line_no(); } dcl_arg
     { $$ = nullptr; }
 |   port_dcl_type { $<integer>$ = verilog_reader->get_line_no(); }
-    '[' INT ':' INT ']' dcl_arg
+    '[' parameter_expr ':' parameter_expr ']' dcl_arg
     { $$ = nullptr; }
+
+
     ;
 
 port_dcl_type:
@@ -246,6 +253,18 @@ parameter:
     { $$ = nullptr; }
     ;
 
+module_parameters:
+    module_parameter
+|   module_parameters ',' module_parameter
+;
+
+module_parameter:
+    PARAMETER parameter_dcl 
+    { $$ = nullptr; }
+|   PARAMETER '[' INT ':' INT ']' parameter_dcl 
+    { $$ = nullptr; }
+    ;
+
 parameter_dcls:
     parameter_dcl
     { $$ = nullptr; }
@@ -278,18 +297,21 @@ parameter_expr:
       $$ = 0;
     }
 |   INT
+    {   }
 |   '-' parameter_expr %prec NEG
     { $$ = - $2; }
 |   parameter_expr '+' parameter_expr
-    { $$ = $1 + $3; }
+    {  }
 |   parameter_expr '-' parameter_expr
-    { $$ = $1 - $3; }
+    {  }
 |   parameter_expr '*' parameter_expr
-    { $$ = $1 * $3; }
+    {  }
 |   parameter_expr '/' parameter_expr
-    { $$ = $1 / $3; }
+    {  }
 |   '(' parameter_expr ')'
     { $$ = $2; }
+|  '.' parameter_expr '('parameter_expr ')'
+    {}
     ;
 
 defparam:
@@ -423,9 +445,11 @@ parameter_values:
 
 parameter_exprs:
     parameter_expr
+    { }
 |   '{' parameter_exprs '}'
     { $$ = $2; }
 |   parameter_exprs ',' parameter_expr
+    {}
     ;
 
 inst_pins:

@@ -24,8 +24,8 @@
 #include "ClockTopo.h"
 #include "CtsConfig.h"
 #include "CtsDBWrapper.h"
-#include "CtsDesign.h"
-#include "CtsInstance.h"
+#include "CtsDesign.hh"
+#include "CtsInstance.hh"
 #include "Placer.h"
 
 namespace icts {

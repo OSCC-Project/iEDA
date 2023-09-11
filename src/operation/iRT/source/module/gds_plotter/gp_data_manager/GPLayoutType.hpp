@@ -22,17 +22,18 @@ namespace irt {
 
 enum class GPLayoutType
 {
-  kNone = 0,
-  kText = 1,
-  kPinShape = 2,
-  kAccessPoint = 3,
-  kGuide = 4,
-  kPreferTrack = 5,
-  kNonpreferTrack = 6,
-  kWire = 7,
-  kEnclosure = 8,
-  kCut = 9,
-  kBlockage = 10
+  kNone,
+  kText,
+  kPinShape,
+  kAccessPoint,
+  kGuide,
+  kPreferTrack,
+  kNonpreferTrack,
+  kWire,
+  kEnclosure,
+  kCut,
+  kPatch,
+  kBlockage
 };
 
 struct GetGPLayoutTypeName
@@ -70,6 +71,9 @@ struct GetGPLayoutTypeName
         break;
       case GPLayoutType::kCut:
         data_type_name = "cut";
+        break;
+      case GPLayoutType::kPatch:
+        data_type_name = "patch";
         break;
       case GPLayoutType::kBlockage:
         data_type_name = "blockage";

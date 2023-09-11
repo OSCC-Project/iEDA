@@ -153,6 +153,7 @@ class TimingEngine {
     return _ista->findVertex(pin_name);
   }
   std::set<std::string> findStartOrEnd(const char *pin_name);
+  std::map<std::string, std::string> getStartEndPairs();
   std::string findClockPinName(const char *inst_name);
 
   void setIdealClockNetworkLatency(const char *clock_name, double latency) {
@@ -327,7 +328,7 @@ class TimingEngine {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
+                      decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(const char *pin1_name,
                                      const char *pin2_name, AnalysisMode mode);
   std::optional<double> getWorstSlackBetweenTwoSinks(

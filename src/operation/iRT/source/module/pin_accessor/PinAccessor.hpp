@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCChecker.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -70,6 +71,8 @@ class PinAccessor
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
+  void mergeLegalRectList(std::vector<LayerRect>& legal_rect_list);
+  std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointByType(PANet& pa_net);
   void updateAccessGridCoord(PANet& pa_net);
@@ -78,7 +81,7 @@ class PinAccessor
   void selectAccessPointByGCell(PANet& pa_net);
   void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
   void checkAccessPointList(PANet& pa_net);
-  void updateNetEnclosureMap(PAModel& pa_model);
+  void updateNetCandidateViaMap(PAModel& pa_model);
   void eliminateViaConflict(PAModel& pa_model);
   void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
   void selectByNetDistance(PANet& pa_net);
@@ -94,6 +97,14 @@ class PinAccessor
 
 #if 1  // update
   void update(PAModel& pa_model);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type);
+  void removeInvalidViolationInfo(PAGCell& pa_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

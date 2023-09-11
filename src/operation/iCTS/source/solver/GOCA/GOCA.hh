@@ -22,8 +22,9 @@
 #include <string>
 #include <vector>
 
-#include "ClockTopo.h"
-#include "CtsInstance.h"
+#include "CtsInstance.hh"
+#include "CtsNet.hh"
+#include "CtsPin.hh"
 #include "Inst.hh"
 #include "Node.hh"
 namespace icts {
@@ -43,31 +44,39 @@ class GOCA
 {
  public:
   GOCA() = delete;
-  GOCA(const std::string& net_name, const std::vector<CtsInstance*>& instances) : _net_name(net_name), _instances(instances) {}
+  GOCA(const std::string& net_name, CtsPin* cts_driver, const std::vector<CtsPin*>& cts_pins)
+      : _net_name(net_name), _cts_driver(cts_driver), _cts_pins(cts_pins)
+  {
+  }
 
   ~GOCA() = default;
   // run
   void run();
   // get
-  std::vector<ClockTopo> get_clk_topos() const { return _clock_topos; }
+  std::vector<Net*> get_solver_nets() const { return _nets; }
 
  private:
   // flow
+  void init();
+  void resolveSinks();
+  void breakLongWire();
   std::vector<Assign> globalAssign();
   std::vector<Inst*> assignApply(const std::vector<Inst*>& insts, const Assign& assign);
   std::vector<Inst*> topGuide(const std::vector<Inst*>& insts, const Assign& assign);
   Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& level_center, const bool& shift = true);
   Net* saltOpt(const std::vector<Inst*>& insts, const Assign& assign);
-  // interface
-  void genClockTopo();
+
   // report
   void writeNetPy(Pin* root, const std::string& save_name = "net") const;
   void levelReport() const;
   // member
   std::string _net_name;
-  std::vector<CtsInstance*> _instances;
-  std::vector<ClockTopo> _clock_topos;
+  CtsPin* _cts_driver;
+  std::vector<CtsPin*> _cts_pins;
   std::vector<std::vector<Inst*>> _level_insts;
+  std::vector<Pin*> _sink_pins;
+  std::vector<Pin*> _top_pins;
+  Pin* _driver = nullptr;
   std::vector<Net*> _nets;
   int _level = 1;
 };

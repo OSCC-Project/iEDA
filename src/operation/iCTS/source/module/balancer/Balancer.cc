@@ -147,10 +147,10 @@ double Balancer::calcDumpCapOut(CtsNet* clock_net) const
   for (auto* load_pin : clock_net->get_load_pins()) {
     auto* load_inst = load_pin->get_instance();
     if (load_inst->get_type() != CtsInstanceType::kSink) {
-      auto length
-          = 1.0 * pgl::manhattan_distance(driver_pin->get_instance()->get_location(), load_pin->get_instance()->get_location()) / db_unit;
-      auto pin_name = load_pin->is_io() ? load_pin->get_pin_name() : load_pin->get_full_name();
-      cap_out += length * unit_cap + CTSAPIInst.getCapOut(pin_name);
+      // auto length
+      //     = 1.0 * pgl::manhattan_distance(driver_pin->get_instance()->get_location(), load_pin->get_instance()->get_location()) / db_unit;
+      // auto pin_name = load_pin->is_io() ? load_pin->get_pin_name() : load_pin->get_full_name();
+      // cap_out += length * unit_cap + CTSAPIInst.getCapOut(pin_name);
     }
   }
   return cap_out;

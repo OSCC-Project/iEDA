@@ -39,7 +39,6 @@ void Inst::init(Node* driver_node)
 
     _driver_pin->set_type(NodeType::kBufferPin);
     _driver_pin->set_inst(this);
-    _driver_pin->set_name(_name + "_driver");
     _driver_pin->set_pin_type(PinType::kDriver);
   } else if (isBuffer()) {
     _driver_pin = new Pin(this, _location, _name + "_driver", PinType::kDriver);
@@ -49,7 +48,6 @@ void Inst::init(Node* driver_node)
 
 void Inst::release()
 {
-  _cts_inst = nullptr;
   if (_driver_pin) {
     delete _driver_pin;
     _driver_pin = nullptr;

@@ -50,10 +50,6 @@ class RoutingLayer
 
   // function
   bool isPreferH() const { return _direction == Direction::kHorizontal; }
-  ScaleGrid& getXTrackGrid() { return _track_axis.get_x_grid_list().front(); }
-  ScaleGrid& getYTrackGrid() { return _track_axis.get_y_grid_list().front(); }
-  ScaleGrid& getPreferTrackGrid() { return isPreferH() ? getYTrackGrid() : getXTrackGrid(); }
-  ScaleGrid& getNonpreferTrackGrid() { return isPreferH() ? getXTrackGrid() : getYTrackGrid(); }
   std::vector<ScaleGrid>& getXTrackGridList() { return _track_axis.get_x_grid_list(); }
   std::vector<ScaleGrid>& getYTrackGridList() { return _track_axis.get_y_grid_list(); }
   std::vector<ScaleGrid>& getPreferTrackGridList() { return isPreferH() ? getYTrackGridList() : getXTrackGridList(); }

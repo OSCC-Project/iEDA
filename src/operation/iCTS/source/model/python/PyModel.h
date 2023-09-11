@@ -46,6 +46,7 @@ __PYX_EXTERN_C void pySaveFig(PyObject *, std::string const &);
 __PYX_EXTERN_C void pyPlotPoint(PyObject *, icts::CtsPoint<double>  const &, std::string const &);
 __PYX_EXTERN_C void pyPlotSegment(PyObject *, icts::CtsSegment<double>  const &, std::string const &);
 __PYX_EXTERN_C void pyPlotPolygon(PyObject *, icts::CtsPolygon<double>  const &, std::string const &);
+__PYX_EXTERN_C void pyPlot(PyObject *, std::vector<double>  const , std::vector<double>  const , std::string const &);
 
 #endif /* !__PYX_HAVE_API__PyModel */
 

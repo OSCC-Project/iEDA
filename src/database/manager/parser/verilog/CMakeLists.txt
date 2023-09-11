@@ -15,8 +15,8 @@ find_package(ZLIB REQUIRED)
 # find_package(BISON)
 
 # Verilog scan/parse. 
-# flex_target(VerilogLex ${CMAKE_CURRENT_SOURCE_DIR}/VerilogLex.l ${CMAKE_CURRENT_SOURCE_DIR}/VerilogLex.cc)
-# bison_target(VerilogParser ${CMAKE_CURRENT_SOURCE_DIR}/VerilogParse.y ${CMAKE_CURRENT_SOURCE_DIR}/VerilogParse.cc 
+# flex_target(VerilogLex ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.l ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
+# bison_target(VerilogParser ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.y ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
 # COMPILE_FLAGS "-v -t")
 # add_flex_bison_dependency(VerilogLex VerilogParser)
 

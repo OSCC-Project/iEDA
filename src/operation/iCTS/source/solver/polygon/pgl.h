@@ -44,7 +44,7 @@ CtsPoint<double> toDouble(const CtsPoint<T>& point)
 template <typename T>
 CtsSegment<double> toDouble(const CtsSegment<T>& segment)
 {
-  return CtsSegment<double>(toDouble(segment.source()), toDouble(segment.target()));
+  return CtsSegment<double>(toDouble(segment.low()), toDouble(segment.high()));
 }
 
 template <typename T>
