@@ -329,6 +329,9 @@ void CtsDBWrapper::linkInstanceCood(CtsInstance* inst, IdbInstance* idb_inst)
   //                    << inst->get_location().y() << ")";
   // IdbOrient row_orient = row->get_site()->get_orient();
   // idb_inst->set_orient(row_orient);
+  auto* rows = _idb_layout->get_rows();
+  auto orient = rows->get_row_list().front()->get_site()->get_orient();
+  idb_inst->set_orient(orient);
 
   for (auto& idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
     CtsPin* pin = idbToCts(idb_pin);
