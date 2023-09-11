@@ -297,7 +297,12 @@ double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pa
 double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
 {
   auto* load_pin = sink->get_load_pin();
-  return _timing_engine->reportInstPinCapacitance(load_pin->get_full_name().c_str());
+  return getSinkCap(load_pin->get_full_name());
+}
+
+double CTSAPI::getSinkCap(const std::string& load_pin_full_name) const
+{
+  return _timing_engine->reportInstPinCapacitance(load_pin_full_name.c_str());
 }
 
 bool CTSAPI::isFlipFlop(const std::string& inst_name) const
@@ -919,23 +924,29 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
   auto net_name = eval_net.get_name();
   LOG_INFO << "Evaluate: " << net_name;
   resetRCTree(net_name);
-  auto signal_wires = eval_net.get_signal_wires();
   auto* sta_net = findStaNet(eval_net);
   auto layer_id = _config->get_routing_layers().back();
-  auto router_type = _config->get_router_type();
-
-  for (auto& signal_wire : signal_wires) {
-    auto front_name = signal_wire.get_first().name;
-    auto back_name = signal_wire.get_second().name;
-    ista::RctNode* front_node = makeRCTreeNode(eval_net, front_name);
-    ista::RctNode* back_node = makeRCTreeNode(eval_net, back_name);
-
-    auto res = getResistance(signal_wire, layer_id);
-    auto cap = getCapacitance(signal_wire, layer_id);
+  auto* solver_net = _design->findSolverNet(net_name);
+  if (!solver_net) {
+    LOG_WARNING << "Can't find solver net: " << net_name;
+  }
+  auto* driver_pin = solver_net->get_driver_pin();
+  driver_pin->preOrder([&](Node* node) {
+    auto* parent = node->get_parent();
+    if (parent == nullptr) {
+      return;
+    }
+    auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
+    auto child_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
+    ista::RctNode* front_node = makeRCTreeNode(eval_net, parent_name);
+    ista::RctNode* back_node = makeRCTreeNode(eval_net, child_name);
+    double len = TimingPropagator::calcLen(parent, node);
+    auto res = getResistance(len, layer_id);
+    auto cap = getCapacitance(len, layer_id);
     _timing_engine->makeResistor(sta_net, front_node, back_node, res);
     _timing_engine->incrCap(front_node, cap / 2, true);
     _timing_engine->incrCap(back_node, cap / 2, true);
-  }
+  });
 
   _timing_engine->updateRCTreeInfo(sta_net);
 }

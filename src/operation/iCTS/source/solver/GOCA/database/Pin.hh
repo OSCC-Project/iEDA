@@ -40,7 +40,7 @@ class Pin : public Node
     _net = nullptr;
   }
   // get
-  virtual std::string getCellMaster() const override;
+  virtual std::string get_cell_master() const override;
   const PinType& get_pin_type() const { return _pin_type; }
   Inst* get_inst() const { return _inst; }
   Net* get_net() const { return _net; }

@@ -20,6 +20,7 @@
 
 #include "CTSAPI.hpp"
 #include "CtsReport.h"
+#include "Net.hh"
 #include "log/Log.hh"
 namespace icts {
 
@@ -50,6 +51,9 @@ void Evaluator::transferData()
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   for (auto* clk_net : clk_nets) {
+    if (clk_net->get_driver_pin()->is_io()) {
+      continue;
+    }
     _eval_nets.emplace_back(EvalNet(clk_net));
   }
 }
@@ -121,10 +125,15 @@ void Evaluator::statistics(const std::string& save_dir) const
   double hpwl_total_wire_len = 0.0;
   double hpwl_max_net_len = 0.0;
   for (const auto& eval_net : _eval_nets) {
-    auto router_type = config->get_router_type();
+    auto* design = CTSAPIInst.get_design();
     // wire length
-    double net_len = 0.0;
-    net_len = eval_net.getWireLength();
+    auto* net = design->findSolverNet(eval_net.get_name());
+    if (!net) {
+      continue;
+    }
+    auto* driver_pin = net->get_driver_pin();
+    double net_len = driver_pin->get_sub_len();
+
     double hpwl_net_len = eval_net.getHPWL();
     auto type = eval_net.netType();
     switch (type) {

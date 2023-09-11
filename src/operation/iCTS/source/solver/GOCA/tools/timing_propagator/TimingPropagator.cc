@@ -111,12 +111,10 @@ void TimingPropagator::updatePinCap(Pin* pin)
 {
   double cap_load = 0;
   if (pin->isSinkPin()) {
-    auto* inst = pin->get_inst();
-    auto* cts_inst = inst->get_cts_inst();
-    cap_load = CTSAPIInst.getSinkCap(cts_inst);
+    cap_load = CTSAPIInst.getSinkCap(pin->get_name());
   }
   if (pin->isBufferPin()) {
-    auto cell_name = pin->getCellMaster();
+    auto cell_name = pin->get_cell_master();
     auto* lib = CTSAPIInst.getCellLib(cell_name);
     cap_load = lib->get_init_cap();
   }
@@ -128,16 +126,16 @@ void TimingPropagator::updatePinCap(Pin* pin)
  *
  * @param net
  */
-void TimingPropagator::update(Net* net, const RCPattern& pattern)
+void TimingPropagator::update(Net* net)
 {
   if (net == nullptr) {
     return;
   }
   netLenPropagate(net);
-  capPropagate(net, pattern);
-  slewPropagate(net, pattern);
+  capPropagate(net);
+  slewPropagate(net);
   cellDelayPropagate(net);
-  wireDelayPropagate(net, pattern);
+  wireDelayPropagate(net);
 }
 /**
  * @brief propagate net's wirelength by post order
@@ -154,38 +152,42 @@ void TimingPropagator::netLenPropagate(Net* net)
  *
  * @param net
  */
-void TimingPropagator::capPropagate(Net* net, const RCPattern& pattern)
+void TimingPropagator::capPropagate(Net* net)
 {
   auto* driver_pin = net->get_driver_pin();
   std::ranges::for_each(net->get_load_pins(), [](Pin* pin) {
     double cap_load = 0;
     if (pin->isSinkPin()) {
-      auto* inst = pin->get_inst();
-      auto* cts_inst = inst->get_cts_inst();
-      cap_load = CTSAPIInst.getSinkCap(cts_inst);
+      cap_load = CTSAPIInst.getSinkCap(pin->get_name());
     }
     if (pin->isBufferPin()) {
-      auto cell_name = pin->getCellMaster();
+      auto cell_name = pin->get_cell_master();
+      if (cell_name.empty()) {
+        return;
+      }
       auto* lib = CTSAPIInst.getCellLib(cell_name);
       cap_load = lib->get_init_cap();
     }
     pin->set_cap_load(cap_load);
   });
-  driver_pin->postOrder(updateCapLoad<Node>, pattern);
+  driver_pin->postOrder(updateCapLoad<Node>);
 }
 /**
  * @brief propagate slew by pre order
  *
  * @param net
  */
-void TimingPropagator::slewPropagate(Net* net, const RCPattern& pattern)
+void TimingPropagator::slewPropagate(Net* net)
 {
   auto* driver_pin = net->get_driver_pin();
-  auto cell_name = driver_pin->getCellMaster();
+  auto cell_name = driver_pin->get_cell_master();
+  if (cell_name.empty()) {
+    return;
+  }
   auto* lib = CTSAPIInst.getCellLib(cell_name);
   auto slew_out = lib->calcSlew(driver_pin->get_cap_load());
   driver_pin->set_slew_in(slew_out);
-  driver_pin->preOrder(updateSlewIn<Node>, pattern);
+  driver_pin->preOrder(updateSlewIn<Node>);
 }
 /**
  * @brief propagate cell delay
@@ -204,10 +206,10 @@ void TimingPropagator::cellDelayPropagate(Net* net)
  *
  * @param net
  */
-void TimingPropagator::wireDelayPropagate(Net* net, const RCPattern& pattern)
+void TimingPropagator::wireDelayPropagate(Net* net)
 {
   auto* driver_pin = net->get_driver_pin();
-  driver_pin->postOrder(updateWireDelay<Node>, pattern);
+  driver_pin->postOrder(updateWireDelay<Node>);
 }
 /**
  * @brief update insertion delay
@@ -228,6 +230,9 @@ void TimingPropagator::updateCellDelay(Inst* inst)
   auto slew_in = load_pin->get_slew_in();
   auto cap_load = driver_pin->get_cap_load();
   auto cell_name = inst->get_cell_master();
+  if (cell_name.empty()) {
+    return;
+  }
   auto* lib = CTSAPIInst.getCellLib(cell_name);
   auto insert_delay = lib->calcDelay(slew_in, cap_load);
   inst->set_insert_delay(insert_delay);
@@ -277,7 +282,7 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
     auto* driver_pin = inst->get_driver_pin();
     double insert_delay = 0;
     if (by_cell) {
-      auto cell_name = pin->getCellMaster();
+      auto cell_name = pin->get_cell_master();
       for (auto* lib : _delay_libs) {
         if (lib->get_cell_master() == cell_name) {
           auto cap_coef = lib->get_delay_coef().back();
