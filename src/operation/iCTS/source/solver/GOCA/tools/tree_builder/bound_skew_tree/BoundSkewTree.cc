@@ -39,6 +39,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
     Timing::initLoadPinDelay(pin);
     Timing::updatePinCap(pin);
     auto* node = new Area(pin);
+    node->set_pattern(pin->get_pattern());
     _unmerged_nodes.push_back(node);
     _node_map.insert({pin->get_name(), pin});
   });
@@ -57,9 +58,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
       Timing::updatePinCap(pin);
     }
     auto* area = new Area(node);
-    // random select RCpattern
-    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
-    area->set_pattern(pattern);
+    area->set_pattern(node->get_pattern());
     _node_map.insert({node->get_name(), node});
     if (node->isPin() && node->isDriver()) {
       _root = area;

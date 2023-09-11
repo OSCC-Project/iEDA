@@ -82,4 +82,12 @@ CtsInstance* CtsDesign::findInstance(const std::string& instance_name) const
   return nullptr;
 }
 
+Net* CtsDesign::findSolverNet(const std::string& net_name) const
+{
+  if (_solver_map.count(net_name)) {
+    return _solver_map.at(net_name);
+  }
+  return nullptr;
+}
+
 }  // namespace icts

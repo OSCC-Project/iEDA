@@ -628,7 +628,7 @@ bool GeomCalc::isRegionContain(const Pt& p, const std::vector<Pt>& region)
     if (onLine(pt, {region[i], region[j]})) {
       return true;
     }
-    if (region[i].y > pt.y != region[j].y > pt.y) {
+    if ((region[i].y > pt.y) != (region[j].y > pt.y)) {
       auto cross = crossProduct(pt, region[i], region[j]);
       if (cross > 0) {
         ++count;

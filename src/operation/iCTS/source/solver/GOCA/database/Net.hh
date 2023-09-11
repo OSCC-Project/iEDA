@@ -41,6 +41,13 @@ class Net
   };
   // get
   const std::string& get_name() const { return _name; }
+  std::vector<Pin*> get_pins() const
+  {
+    std::vector<Pin*> pins;
+    pins.push_back(_driver_pin);
+    pins.insert(pins.end(), _load_pins.begin(), _load_pins.end());
+    return pins;
+  }
   Pin* get_driver_pin() const { return _driver_pin; }
   std::vector<Pin*> get_load_pins() const { return _load_pins; }
 

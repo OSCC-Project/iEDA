@@ -24,7 +24,6 @@
 
 #include "CTSAPI.hpp"
 #include "CtsConfig.h"
-#include "CtsDBWrapper.h"
 #include "LocalLegalization.hh"
 #include "Node.hh"
 #include "TimingPropagator.hh"
@@ -62,10 +61,7 @@ std::vector<Inst*> TreeBuilder::getSubInsts(Inst* inst)
 Inst* TreeBuilder::genBufInst(const std::string& prefix, const Point& location)
 {
   auto buf_name = prefix + "_buf";
-  auto cts_buf_inst = new CtsInstance(buf_name, TimingPropagator::getMinSizeLib()->get_cell_master(), CtsInstanceType::kBuffer, location);
-  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  db_wrapper->linkIdb(cts_buf_inst);
-  auto buf_inst = new Inst(cts_buf_inst, InstType::kBuffer);
+  auto buf_inst = new Inst(buf_name, location, InstType::kBuffer);
   return buf_inst;
 }
 /**
@@ -78,11 +74,7 @@ Inst* TreeBuilder::genBufInst(const std::string& prefix, const Point& location)
 Inst* TreeBuilder::toBufInst(const std::string& prefix, Node* driver_node)
 {
   auto buf_name = prefix + "_buf";
-  auto cts_buf_inst = new CtsInstance(buf_name, TimingPropagator::getMinSizeLib()->get_cell_master(), CtsInstanceType::kBuffer,
-                                      driver_node->get_location());
-  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  db_wrapper->linkIdb(cts_buf_inst);
-  auto buf_inst = new Inst(cts_buf_inst, driver_node);
+  auto buf_inst = new Inst(buf_name, driver_node->get_location(), driver_node);
   return buf_inst;
 }
 /**
@@ -314,7 +306,9 @@ void TreeBuilder::recoverNet(Net* net)
     pin->set_parent(nullptr);
     pin->set_children({});
     pin->set_slew_in(0);
+    pin->set_cap_load(0);
     pin->set_net(nullptr);
+    TimingPropagator::updatePinCap(pin);
     TimingPropagator::initLoadPinDelay(pin);
   });
   // release buffer and its pins
