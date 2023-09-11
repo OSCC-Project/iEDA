@@ -97,6 +97,8 @@ class EvalAPI
   /****************************** Congestion Eval: END *******************************/
 
   /****************************** Timing Eval: START ******************************/
+  void initTimingDataFromIDB();
+
   void initTimingEval(idb::IdbBuilder* idb_builder, const char* sta_workspace_path, vector<const char*> lib_file_path_list,
                       const char* sdc_file_path);
   void initTimingEval(int32_t unit);

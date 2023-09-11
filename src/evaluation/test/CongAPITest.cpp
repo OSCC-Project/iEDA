@@ -41,19 +41,31 @@ class CongAPITest : public testing::Test
 TEST_F(CongAPITest, sample)
 {
   EvalAPI& eval_api = EvalAPI::initInst();
+
   int32_t bin_cnt_x = 256;
   int32_t bin_cnt_y = 256;
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+
+  eval_api.evalInstDens(INSTANCE_STATUS::kPlaced);
   std::string plot_path = "/DREAMPlace/iEDA/bin/csv/";
+  eval_api.plotBinValue(plot_path, "stdcell_density", CONGESTION_TYPE::kInstDens);
 
-  eval_api.initWLDataFromIDB();
-  std::string step1 = "fp";
-  std::string step2 = "pl";
+  std::string py_command = "python plot.py";
+  int result = std::system(py_command.c_str());
+  if (result == 0) {
+    std::cout << "success" << std::endl;
+  } else {
+    std::cout << "failed" << std::endl;
+  }
 
-  auto value1 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kHPWL);
-  auto value2 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kB2B);
-  eval_api.plotFlowValue(plot_path, "wirelength", step1, std::to_string(value1));
-  eval_api.plotFlowValue(plot_path, "wirelength", step2, std::to_string(value2));
+  // eval_api.initWLDataFromIDB();
+  // std::string step1 = "fp";
+  // std::string step2 = "pl";
+
+  // auto value1 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kHPWL);
+  // auto value2 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kB2B);
+  // eval_api.plotFlowValue(plot_path, "wirelength", step1, std::to_string(value1));
+  // eval_api.plotFlowValue(plot_path, "wirelength", step2, std::to_string(value2));
 
 
   // auto inst_status = INSTANCE_STATUS::kFixed;
@@ -64,9 +76,6 @@ TEST_F(CongAPITest, sample)
   // eval_api.evalNetDens(inst_status);
   // eval_api.plotBinValue(plot_path, "macro_net_density", CONGESTION_TYPE::kNetCong);
 
-  // inst_status = INSTANCE_STATUS::kPlaced;
-  // eval_api.evalInstDens(inst_status);
-  // eval_api.plotBinValue(plot_path, "stdcell_density", CONGESTION_TYPE::kInstDens);
   // // eval_api.evalInstDens(inst_status, true);
   // // eval_api.plotBinValue(plot_path, "flipflop_density", CONGESTION_TYPE::kInstDens);
   // eval_api.evalPinDens(inst_status);
@@ -137,13 +146,7 @@ TEST_F(CongAPITest, sample)
   // LOG_INFO << "macro channel utilization is " << eval_api.evalMacroChannelUtil(0.3);
   // LOG_INFO << "macro channel pin ratio is " << eval_api.evalMacroChannelPinRatio(0.3);
 
-  // std::string py_command = "python plot.py";
-  // int result = std::system(py_command.c_str());
-  // if (result == 0) {
-  //   std::cout << "success" << std::endl;
-  // } else {
-  //   std::cout << "failed" << std::endl;
-  // }
+
   EvalAPI::destroyInst();
 }
 

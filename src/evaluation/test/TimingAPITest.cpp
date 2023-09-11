@@ -14,41 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#ifndef SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALUTIL_HPP_
-#define SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALUTIL_HPP_
+#include <cstdlib>
+#include <iostream>
+#include <string>
 
-#include <map>
-#include <set>
+#include "Config.hpp"
+#include "EvalAPI.hpp"
+#include "EvalLog.hpp"
+#include "gtest/gtest.h"
+#include "idm.h"
+#include "manager.hpp"
+#include "usage/usage.hh"
 
 namespace eval {
 
-class EvalUtil
+class TimingAPITest : public testing::Test
 {
- public:
-  template <typename Key, typename Compare = std::less<Key>>
-  static bool exist(const std::set<Key, Compare>& set, const Key& key)
-  {
-    return (set.find(key) != set.end());
+  void SetUp()
+  {  // Read Def, Lef
+    std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_default_config_t28.json";
+    dmInst->init(idb_json_file);
   }
-
-  template <typename Key, typename Value, typename Compare = std::less<Key>>
-  static bool exist(const std::map<Key, Value, Compare>& map, const Key& key)
-  {
-    return (map.find(key) != map.end());
-  }
+  void TearDown() final {}
 };
 
-struct PointCMP
+TEST_F(TimingAPITest, sample)
 {
-  bool operator()(const Point<int32_t>& lhs, const Point<int32_t>& rhs) const
-  {
-    if (lhs.get_x() == rhs.get_x()) {
-      return lhs.get_y() < rhs.get_y();
-    }
+  EvalAPI& eval_api = EvalAPI::initInst();
 
-    return lhs.get_x() < rhs.get_x();
-  }
-};
+  eval_api.initTimingDataFromIDB();
+
+  EvalAPI::destroyInst();
+}
+
 }  // namespace eval
-
-#endif  // SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALUTIL_HPP_

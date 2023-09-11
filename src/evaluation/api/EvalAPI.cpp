@@ -383,6 +383,12 @@ void EvalAPI::reportCongestion(const string& plot_path, const string& output_fil
 /******************************Congestion Eval: END******************************/
 
 /****************************** Timing Eval: START ******************************/
+void EvalAPI::initTimingDataFromIDB()
+{
+  _timing_eval_inst->initTimingDataFromIDB();
+}
+
+
 void EvalAPI::initTimingEval(idb::IdbBuilder* idb_builder, const char* sta_workspace_path, vector<const char*> lib_file_path_list,
                              const char* sdc_file_path)
 {

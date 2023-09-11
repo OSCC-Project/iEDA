@@ -29,7 +29,7 @@ namespace eval {
 WirelengthEval::WirelengthEval()
 {
   Flute::readLUT();
-  LOG_INFO << "FLUTE initialized";
+  LOG_INFO << "FLUTE initialized in Wirelength Eval";
 }
 
 void WirelengthEval::initWLNetList()
