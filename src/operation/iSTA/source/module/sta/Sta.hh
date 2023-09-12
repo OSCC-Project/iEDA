@@ -470,7 +470,13 @@ class Sta {
 
   std::optional<double> getInstSlack(AnalysisMode analysis_mode,
                                      Instance* the_inst);
-  std::map<Instance::Coordinate, double> displayTimingMap(AnalysisMode analysis_mode);
+  std::optional<double> getInstTransition(AnalysisMode analysis_mode,
+                                     Instance* the_inst);
+
+  std::map<Instance::Coordinate, double> displayTimingMap(
+      AnalysisMode analysis_mode);
+  std::map<Instance::Coordinate, double> displayTransitionMap(
+      AnalysisMode analysis_mode);
 
  private:
   Sta();

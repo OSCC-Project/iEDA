@@ -411,7 +411,7 @@ unsigned Power::reportPower(const char* rpt_file_name,
       {PwrGroupData::PwrGroupType::kIOPad, "io_pad"},
       {PwrGroupData::PwrGroupType::kMemory, "memory"},
       {PwrGroupData::PwrGroupType::kBlackBox, "black_box"},
-      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_net_work"},
+      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_network"},
       {PwrGroupData::PwrGroupType::kRegister, "register"},
       {PwrGroupData::PwrGroupType::kComb, "combinational"},
       {PwrGroupData::PwrGroupType::kSeq, "sequential"}};

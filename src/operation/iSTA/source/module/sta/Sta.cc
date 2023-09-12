@@ -960,11 +960,11 @@ std::optional<double> Sta::getVertexSlewSlack(StaVertex *the_vertex,
                                               TransType trans_type) {
   std::optional<double> slack;
 
-  double slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto slew = the_vertex->getSlewNs(mode, trans_type);
   auto limit = getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
-    slack = *limit - slew;
+  if (limit && slew) {
+    slack = *limit - *slew;
   }
 
   return slack;
@@ -2437,6 +2437,41 @@ std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get the instance worst transition.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTransition(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slew;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slew = the_vertex->getWorstSlewNs(analysis_mode);
+    if (the_worst_pin_slew) {
+      if (!the_worst_inst_slew) {
+        the_worst_inst_slew = *the_worst_pin_slew;
+      } else {
+        if ((analysis_mode == AnalysisMode::kMax) &&
+            (*the_worst_inst_slew < *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        } else if ((analysis_mode == AnalysisMode::kMin) &&
+                   (*the_worst_inst_slew > *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        }
+      }
+    }
+  }
+
+  return the_worst_inst_slew;
+}
+
+/**
  * @brief display timing map of inst worst slack.
  *
  * @param analysis_mode
@@ -2460,6 +2495,32 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   }
 
   return loc_to_inst_slack;
+}
+
+/**
+ * @brief get the inst transition map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_transition;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_transition = getInstTransition(analysis_mode, the_inst);
+    if (the_inst_worst_transition) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_transition[*inst_coordinate] = *the_inst_worst_transition;
+    }
+  }
+
+  return loc_to_inst_transition;
 }
 
 }  // namespace ista

@@ -165,11 +165,10 @@ unsigned StaDumpYaml::operator()(StaArc* the_arc) {
 
   arc_node["src"] = arc->get_src()->getName();
   arc_node["snk"] = arc->get_snk()->getName();
-  arc_node["arc_type"] = arc->isDelayArc()
-                             ? (arc->isInstArc() ? "cell Delay" : "net Delay")
-                         : arc->isSetupArc() ? "Setup"
-                         : arc->isHoldArc()  ? "Hold"
-                                             : "Other";
+  arc_node["arc_type"] =
+      arc->isDelayArc()
+          ? (arc->isInstArc() ? "cell Delay" : "net Delay")
+          : arc->isSetupArc() ? "Setup" : arc->isHoldArc() ? "Hold" : "Other";
 
   YAML::Node delay_node;
   arc_node["arc_delay_data"] = delay_node;
@@ -246,8 +245,8 @@ unsigned StaDumpDelayYaml::operator()(StaVertex* the_vertex) {
   vertex_node["Point"] = the_vertex->getNameWithCellName();
   auto vertex_load = the_vertex->getLoad(analysis_mode, trans_type);
   vertex_node["Capacitance"] = vertex_load;
-  auto vertex_slew = FS_TO_NS(the_vertex->getSlew(analysis_mode, trans_type));
-  vertex_node["slew"] = vertex_slew;
+  auto vertex_slew = the_vertex->getSlewNs(analysis_mode, trans_type);
+  vertex_node["slew"] = vertex_slew ? *vertex_slew : 0.0;
   vertex_node["trans_type"] =
       (trans_type == TransType::kRise) ? "rise" : "fall";
 
