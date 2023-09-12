@@ -38,7 +38,7 @@ class TAPanel : public LayerRect
   // getter
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
   ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
-  std::map<TASourceType, RegionQuery*>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<TASourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
   std::map<irt_int, std::vector<irt_int>>& get_net_task_map() { return _net_task_map; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
@@ -48,7 +48,7 @@ class TAPanel : public LayerRect
   // setter
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
   void set_panel_track_axis(const ScaleAxis& panel_track_axis) { _panel_track_axis = panel_track_axis; }
-  void set_source_region_query_map(const std::map<TASourceType, RegionQuery*>& source_region_query_map)
+  void set_source_region_query_map(const std::map<TASourceType, RegionQuery>& source_region_query_map)
   {
     _source_region_query_map = source_region_query_map;
   }
@@ -62,17 +62,7 @@ class TAPanel : public LayerRect
   void set_ta_panel_stat(const TAPanelStat& ta_panel_stat) { _ta_panel_stat = ta_panel_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   // function
-  RegionQuery* getRegionQuery(TASourceType ta_source_type)
-  {
-    if (ta_source_type == TASourceType::kUnknownPanel) {
-      LOG_INST.error(Loc::current(), "The ta_source_type is uncategorized!");
-    }
-    RegionQuery*& region_query = _source_region_query_map[ta_source_type];
-    if (region_query == nullptr) {
-      region_query = DC_INST.initRegionQuery();
-    }
-    return region_query;
-  }
+  RegionQuery& getRegionQuery(TASourceType ta_source_type) { return _source_region_query_map[ta_source_type]; }
 #if 1  // astar
   // single task
   const irt_int get_curr_net_idx() const { return _ta_task_ref->get_origin_net_idx(); }
@@ -120,7 +110,7 @@ class TAPanel : public LayerRect
  private:
   TAPanelId _ta_panel_id;
   ScaleAxis _panel_track_axis;
-  std::map<TASourceType, RegionQuery*> _source_region_query_map;
+  std::map<TASourceType, RegionQuery> _source_region_query_map;
   std::vector<TATask> _ta_task_list;
   std::map<irt_int, std::vector<irt_int>> _net_task_map;
   GridMap<TANode> _ta_node_map;

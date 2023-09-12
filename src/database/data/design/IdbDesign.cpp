@@ -105,14 +105,14 @@ IdbDesign::~IdbDesign()
   }
 }
 
-void IdbDesign::createDefaultVias(IdbLayers* layers)
-{
-  for (IdbLayer* layer : layers->get_cut_layers()) {
-    IdbLayerCut* cut_layer = dynamic_cast<IdbLayerCut*>(layer);
-    string via_name = cut_layer->get_name() + "_Generate";
-    _via_list->createViaDefault(via_name, cut_layer);
-  }
-}
+// void IdbDesign::createDefaultVias(IdbLayers* layers)
+// {
+//   for (IdbLayer* layer : layers->get_cut_layers()) {
+//     IdbLayerCut* cut_layer = dynamic_cast<IdbLayerCut*>(layer);
+//     string via_name = cut_layer->get_name() + "_Generate";
+//     _via_list->createViaDefault(via_name, cut_layer);
+//   }
+// }
 
 bool IdbDesign::connectIOPinToPowerStripe(vector<IdbCoordinate<int32_t>*>& point_list, IdbLayer* layer)
 {

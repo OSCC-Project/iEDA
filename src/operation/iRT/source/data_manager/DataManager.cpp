@@ -107,8 +107,8 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
+  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 15);
   _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
-  _config.enable_idrc_interfaces = RTUtil::getConfigValue<irt_int>(config_map, "-enable_idrc_interfaces", 0);
   _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
   _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
   _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
@@ -118,33 +118,27 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
   _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
   _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_access_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_access_history_cost_unit", 1);
-  _config.gr_resource_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_resource_history_cost_unit", 1);
-  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
+  _config.gr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_cost_unit", 20);
+  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 5);
   _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
   _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
   _config.ta_corner_unit = RTUtil::getConfigValue<double>(config_map, "-ta_corner_unit", 1);
   _config.ta_pin_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_pin_distance_unit", 1);
   _config.ta_group_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_group_distance_unit", 0.5);
-  _config.ta_block_and_pin_unit = RTUtil::getConfigValue<double>(config_map, "-ta_block_and_pin_unit", 128);
-  _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 64);
-  _config.ta_other_panel_unit = RTUtil::getConfigValue<double>(config_map, "-ta_other_panel_unit", 32);
-  _config.ta_self_panel_unit = RTUtil::getConfigValue<double>(config_map, "-ta_self_panel_unit", 16);
+  _config.ta_layout_shape_unit = RTUtil::getConfigValue<double>(config_map, "-ta_layout_shape_unit", 128);
+  _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 32);
   _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-ta_history_cost_unit", 2);
   _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
-  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 1);
+  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 5);
   _config.dr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_prefer_wire_unit", 1);
   _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_nonprefer_wire_unit", 2);
   _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_via_unit", 1);
   _config.dr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-dr_corner_unit", 1);
-  _config.dr_block_and_pin_unit = RTUtil::getConfigValue<double>(config_map, "-dr_block_and_pin_unit", 128);
-  _config.dr_known_panel_unit = RTUtil::getConfigValue<double>(config_map, "-dr_known_panel_unit", 64);
+  _config.dr_layout_shape_unit = RTUtil::getConfigValue<double>(config_map, "-dr_layout_shape_unit", 128);
   _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_reserved_via_unit", 32);
-  _config.dr_other_box_unit = RTUtil::getConfigValue<double>(config_map, "-dr_other_box_unit", 16);
-  _config.dr_self_box_unit = RTUtil::getConfigValue<double>(config_map, "-dr_self_box_unit", 8);
   _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 2);
   _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
-  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 1);
+  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 5);
   _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
   /////////////////////////////////////////////
 }
@@ -704,10 +698,13 @@ void DataManager::makeGCellAxis()
 irt_int DataManager::getProposedInterval()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  irt_int gcell_pitch_size = _config.gcell_pitch_size;
 
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    pitch_count_map[routing_layer.getPreferTrackGrid().get_step_length()]++;
+    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
+      pitch_count_map[track_grid.get_step_length()]++;
+    }
   }
   irt_int ref_pitch = -1;
   irt_int max_count = INT32_MIN;
@@ -720,7 +717,7 @@ irt_int DataManager::getProposedInterval()
   if (ref_pitch == -1) {
     LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
   }
-  return (15 * ref_pitch);
+  return (gcell_pitch_size * ref_pitch);
 }
 
 std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval)
@@ -736,14 +733,21 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   for (RoutingLayer& routing_layer : routing_layer_list) {
     base_layer_idx_set.insert(routing_layer.get_layer_idx());
 
-    ScaleGrid track_grid = (direction == Direction::kVertical ? routing_layer.getXTrackGrid() : routing_layer.getYTrackGrid());
-    irt_int track_scale = track_grid.get_start_line();
-    irt_int step_num = track_grid.get_step_num();
-    while (step_num--) {
-      scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
-      track_scale += track_grid.get_step_length();
-      if (track_scale > end_gcell_scale) {
-        break;
+    std::vector<ScaleGrid> track_grid_list;
+    if (direction == Direction::kVertical) {
+      track_grid_list = routing_layer.getXTrackGridList();
+    } else {
+      track_grid_list = routing_layer.getYTrackGridList();
+    }
+    for (ScaleGrid& track_grid : track_grid_list) {
+      irt_int track_scale = track_grid.get_start_line();
+      irt_int step_num = track_grid.get_step_num();
+      while (step_num--) {
+        if (track_scale > end_gcell_scale) {
+          break;
+        }
+        scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
+        track_scale += track_grid.get_step_length();
       }
     }
   }
@@ -765,6 +769,7 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
       continue;
     }
     if (base_layer_idx_set != curr_layer_idx_set) {
+      // 若没有包含全层track就继续
       continue;
     }
     curr_layer_idx_set.clear();
@@ -1462,10 +1467,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_pitch_size");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gcell_pitch_size);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_idrc_interfaces");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_idrc_interfaces);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.supply_utilization_rate);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");
@@ -1484,10 +1489,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_access_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_access_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_resource_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_resource_history_cost_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_cost_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_cost_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_prefer_wire_unit");
@@ -1500,14 +1503,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_pin_distance_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_group_distance_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_group_distance_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_block_and_pin_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_block_and_pin_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_layout_shape_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_layout_shape_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_reserved_via_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_reserved_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_other_panel_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_other_panel_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_self_panel_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_self_panel_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_history_cost_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_history_cost_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_model_max_iter_num");
@@ -1522,16 +1521,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_block_and_pin_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_block_and_pin_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_known_panel_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_known_panel_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_layout_shape_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_layout_shape_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_reserved_via_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_reserved_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_other_box_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_other_box_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_self_box_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_self_box_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_history_cost_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_history_cost_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_model_max_iter_num");
@@ -1630,10 +1623,25 @@ void DataManager::printDatabase()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), routing_layer_list.size());
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    LOG_INST.info(
-        Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-        " name:", routing_layer.get_layer_name(), " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-        " direction:", GetDirectionName()(routing_layer.get_direction()), " pitch:", routing_layer.getPreferTrackGrid().get_step_length());
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
+                  " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
+                  " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
+                  " prefer_direction:", GetDirectionName()(routing_layer.get_direction()));
+
+    ScaleAxis& track_axis = routing_layer.get_track_axis();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
+    std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "x_grid_list");
+    for (ScaleGrid& x_grid : x_grid_list) {
+      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(),
+                    " step_length:", x_grid.get_step_length(), " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+    }
+    std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "y_grid_list");
+    for (ScaleGrid& y_grid : y_grid_list) {
+      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(),
+                    " step_length:", y_grid.get_step_length(), " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+    }
   }
   // ********** CutLayer ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();

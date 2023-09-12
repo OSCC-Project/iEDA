@@ -116,8 +116,16 @@ class CtsPoint
   bool operator>=(const CtsPoint& that) const { return !(*this < that); }
   CtsPoint operator-(const CtsPoint& that) const { return CtsPoint(this->x() - that.x(), this->y() - that.y()); }
   CtsPoint operator+(const CtsPoint& that) const { return CtsPoint(this->x() + that.x(), this->y() + that.y()); }
-  CtsPoint operator/(const double& i) const { return CtsPoint(static_cast<T>(this->x() / i), static_cast<T>(this->y() / i)); }
-  CtsPoint operator*(const double& i) const { return CtsPoint(static_cast<T>(this->x() * i), static_cast<T>(this->y() * i)); }
+  template <typename TimeType>
+  CtsPoint operator/(const TimeType& i) const
+  {
+    return CtsPoint(static_cast<coord_t>(this->x() / i), static_cast<T>(this->y() / i));
+  }
+  template <typename TimeType>
+  CtsPoint operator*(const TimeType& i) const
+  {
+    return CtsPoint(static_cast<coord_t>(this->x() * i), static_cast<T>(this->y() * i));
+  }
 
  private:
   coord_t _coords[2];
@@ -129,10 +137,5 @@ static inline std::ostream& operator<<(std::ostream& os, const CtsPoint<T>& poin
   os << point.x() << " : " << point.y();
   return os;
 }
-
-// template <typename P>
-// inline P operator-(const P &lhs, const P &rhs) {
-//     return P(lhs.x() - rhs.x(), lhs.y() - rhs.y());
-// }
 
 }  // namespace icts

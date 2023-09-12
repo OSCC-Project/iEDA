@@ -22,6 +22,7 @@
  * @date 2021-10-12
  */
 #include "ShellCmd.hh"
+#include "json/json.hpp"
 #include "sta/Sta.hh"
 
 namespace ista {
@@ -72,7 +73,7 @@ unsigned CmdReportTiming::exec() {
   ista->updateTiming();
   ista->reportTiming(std::move(new_exclude_cell_names), is_derate,
                      is_clock_cap);
-
+  // ista->dumpNetlistData();
   return 1;
 }
 

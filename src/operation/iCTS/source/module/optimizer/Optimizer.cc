@@ -17,7 +17,7 @@
 #include "Optimizer.h"
 
 #include "CTSAPI.hpp"
-#include "CtsSignalWire.h"
+#include "CtsSignalWire.hh"
 #include "Topology.h"
 
 namespace icts {

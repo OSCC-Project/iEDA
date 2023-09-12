@@ -21,8 +21,8 @@
 
 #include "CTSAPI.hpp"
 #include "CtsConfig.h"
-#include "CtsInstance.h"
-#include "CtsNet.h"
+#include "CtsInstance.hh"
+#include "CtsNet.hh"
 #include "log/Log.hh"
 
 namespace icts {
@@ -108,8 +108,8 @@ class EvalNet
   {
     int l_x = std::numeric_limits<int>::max();
     int l_y = std::numeric_limits<int>::max();
-    int r_x = 0;
-    int r_y = 0;
+    int r_x = std::numeric_limits<int>::min();
+    int r_y = std::numeric_limits<int>::min();
     for (auto* inst : _net->get_instances()) {
       auto loc = inst->get_location();
       l_x = std::min(l_x, loc.x());
