@@ -281,7 +281,7 @@ void CmdCreateGeneratedClock::set_source_sdc_clock(
     _source_sdc_clock = _the_constrain->findClock(clock_name.c_str());
     LOG_ERROR_IF(!_source_sdc_clock)
         << "source clock " << clock_name << " not found";
-  }else{
+  } else {
     _source_sdc_clock = nullptr;
   }
 }
@@ -301,7 +301,7 @@ void CmdCreateGeneratedClock::set_master_clock(
 void CmdCreateGeneratedClock::set_generate_clock(
     std::vector<const char*> options) {
   TclOption* name_option = getOptionOrArg("-name");
-  
+
   const char* generate_clock_name;
 
   LOG_FATAL_IF(!name_option->is_set_val());
@@ -347,9 +347,9 @@ void CmdCreateGeneratedClock::set_generate_clock(
       }
     }
     _the_generate_clock->set_source_pins(std::move(objs));
-  }else{
+  } else {
     const char* source_name = _source_sdc_clock->get_clock_name();
-      _the_generate_clock->set_source_name(source_name);
+    _the_generate_clock->set_source_name(source_name);
   }
 }
 
@@ -464,9 +464,10 @@ void CmdCreateGeneratedClock::set_source_objects(
                      [](SdcCommandObj* sdc_obj) {
                        LOG_FATAL << "not support sdc obj.";
                      },
-                     [&pins](DesignObject* design_obj) {
-                       DLOG_INFO << "create generate clock for pin/port: "
-                                 << design_obj->get_name();
+                     [&pins, this](DesignObject* design_obj) {
+                       DLOG_INFO << "create generate clock "
+                                 << _the_generate_clock->get_clock_name()
+                                 << " for pin/port: " << design_obj->get_name();
                        pins.insert(design_obj);
                      },
                  },

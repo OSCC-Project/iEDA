@@ -417,9 +417,6 @@ class Sta {
   auto& get_report_tbl_TNS() { return _report_tbl_TNS; }
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
-  void addClockTree(StaClockTree* clock_tree) {
-    _clock_trees.emplace_back(clock_tree);
-  }
 
   StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
@@ -462,16 +459,13 @@ class Sta {
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
-  void buildNextPin(
-      StaClockTree* clock_tree, StaClockTreeNode* parent_node,
-      StaVertex* parent_vertex,
-      std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+
   void buildClockTrees();
 
   std::optional<double> getInstSlack(AnalysisMode analysis_mode,
                                      Instance* the_inst);
   std::optional<double> getInstTransition(AnalysisMode analysis_mode,
-                                     Instance* the_inst);
+                                          Instance* the_inst);
 
   std::map<Instance::Coordinate, double> displayTimingMap(
       AnalysisMode analysis_mode);
