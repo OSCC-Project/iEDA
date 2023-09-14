@@ -15,32 +15,42 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file PythonSta.cc
+ * @file StaBuildClockTree.hh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The implemention of python interface.
+ * @brief build clock tree for GUI and debug clock tree.
  * @version 0.1
- * @date 2023-09-10
+ * @date 2023-09-13
  *
  * @copyright Copyright (c) 2023
  *
  */
-#include "PythonSta.hh"
+#pragma once
+
+#include "StaClockTree.hh"
+#include "StaFunc.hh"
 
 namespace ista {
 
-PYBIND11_MODULE(ista_cpp, m) {
-  m.def("set_design_workspace", set_design_workspace, ("design_workspace"));
-  m.def("read_lef_def", read_lef_def, ("lef_files"), ("def_file"));
-  m.def("read_netlist", read_netlist, ("file_name"));
-  m.def("read_liberty", read_liberty, ("file_name"));
-  m.def("link_design", link_design, ("cell_name"));
-  m.def("read_spef", read_spef, ("file_name"));
-  m.def("read_sdc", read_sdc, py::arg("file_name"));
-  m.def("report_timing", report_timing);
+/**
+ * @brief function for build clock tree.
+ *
+ */
+class StaBuildClockTree : public StaFunc {
+ public:
+  unsigned operator()(StaClock* the_clock) override;
+  auto& takeClockTrees() { return _clock_trees; }
 
-  m.def("get_core_size", get_core_size);
-  m.def("display_timing_map", display_timing_map);
-  m.def("display_slew_map", display_slew_map);
-}
+ private:
+  void buildNextPin(
+      StaClockTree* clock_tree, StaClockTreeNode* parent_node,
+      StaVertex* parent_vertex,
+      std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+
+  void addClockTree(StaClockTree* clock_tree) {
+    _clock_trees.emplace_back(clock_tree);
+  }
+
+  std::vector<std::unique_ptr<StaClockTree>> _clock_trees;
+};
 
 }  // namespace ista

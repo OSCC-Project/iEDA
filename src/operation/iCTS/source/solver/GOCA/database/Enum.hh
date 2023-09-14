@@ -25,6 +25,7 @@ enum class NodeType
 {
   kSinkPin,
   kBufferPin,
+  kNoneLibPin,
   kSteiner,
 };
 enum class PinType
@@ -36,5 +37,6 @@ enum class InstType
 {
   kBuffer,
   kSink,
+  kNoneLib,
 };
 }  // namespace icts

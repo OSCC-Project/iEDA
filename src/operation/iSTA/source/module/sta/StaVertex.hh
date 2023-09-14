@@ -370,11 +370,32 @@ class StaVertex {
     return std::nullopt;
   }
 
-  int getSlew(AnalysisMode analysis_mode, TransType trans_type);
-  double getSlewNs(AnalysisMode analysis_mode, TransType trans_type) {
-    int slew = getSlew(analysis_mode, trans_type);
-    return FS_TO_NS(slew);
+  std::optional<int> getSlew(AnalysisMode analysis_mode, TransType trans_type);
+  std::optional<double> getSlewNs(AnalysisMode analysis_mode,
+                                  TransType trans_type) {
+    auto slew = getSlew(analysis_mode, trans_type);
+    if (slew) {
+      return FS_TO_NS(*slew);
+    } else {
+      return std::nullopt;
+    }
   }
+  std::optional<double> getWorstSlewNs(AnalysisMode analysis_mode) {
+    auto rise_slew = getSlewNs(analysis_mode, TransType::kRise);
+    if (rise_slew) {
+      auto fall_slew = getSlewNs(analysis_mode, TransType::kFall);
+      if (rise_slew && fall_slew) {
+        if (analysis_mode == AnalysisMode::kMax) {
+          return (*rise_slew > *fall_slew) ? rise_slew : fall_slew;
+        } else {
+          return (*rise_slew < *fall_slew) ? rise_slew : fall_slew;
+        }
+      }
+    }
+
+    return std::nullopt;
+  }
+
   double getLoad(AnalysisMode analysis_mode, TransType trans_type);
   double getNetLoad();
   double getResistance(AnalysisMode analysis_mode, TransType trans_type);

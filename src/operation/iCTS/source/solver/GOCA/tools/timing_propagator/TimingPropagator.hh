@@ -152,12 +152,12 @@ class TimingPropagator
   static Net* genNet(const std::string& net_name, Pin* driver_pin, const std::vector<Pin*>& load_pins = {});
   static void updateLoads(Net* net);
   static void updatePinCap(Pin* pin);
-  static void update(Net* net, const RCPattern& pattern = RCPattern::kSingle);
+  static void update(Net* net);
   static void netLenPropagate(Net* net);
-  static void capPropagate(Net* net, const RCPattern& pattern = RCPattern::kSingle);
-  static void slewPropagate(Net* net, const RCPattern& pattern = RCPattern::kSingle);
+  static void capPropagate(Net* net);
+  static void slewPropagate(Net* net);
   static void cellDelayPropagate(Net* net);
-  static void wireDelayPropagate(Net* net, const RCPattern& pattern = RCPattern::kSingle);
+  static void wireDelayPropagate(Net* net);
   // inst based
   static void updateCellDelay(Inst* inst);
   static double calcSkew(Node* node);
@@ -205,7 +205,7 @@ class TimingPropagator
   template <CapAble T>
   static void updateCapLoad(T* node, const RCPattern& pattern = RCPattern::kSingle)
   {
-    auto cap_load = calcCapLoad(node);
+    auto cap_load = calcCapLoad(node, pattern);
     node->set_cap_load(cap_load);
   }
   /**

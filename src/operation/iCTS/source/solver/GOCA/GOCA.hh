@@ -44,32 +44,39 @@ class GOCA
 {
  public:
   GOCA() = delete;
-  GOCA(const std::string& net_name, const std::vector<CtsPin*>& pins) : _net_name(net_name), _pins(pins) {}
+  GOCA(const std::string& net_name, CtsPin* cts_driver, const std::vector<CtsPin*>& cts_pins)
+      : _net_name(net_name), _cts_driver(cts_driver), _cts_pins(cts_pins)
+  {
+  }
 
   ~GOCA() = default;
   // run
   void run();
-  void simpleRun();
   // get
-  std::vector<CtsNet*> get_clk_nets() const { return _clock_nets; }
+  std::vector<Net*> get_solver_nets() const { return _nets; }
 
  private:
   // flow
+  void init();
+  void resolveSinks();
+  void breakLongWire();
   std::vector<Assign> globalAssign();
   std::vector<Inst*> assignApply(const std::vector<Inst*>& insts, const Assign& assign);
   std::vector<Inst*> topGuide(const std::vector<Inst*>& insts, const Assign& assign);
   Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& level_center, const bool& shift = true);
   Net* saltOpt(const std::vector<Inst*>& insts, const Assign& assign);
-  // interface
-  void genClockNets();
+
   // report
   void writeNetPy(Pin* root, const std::string& save_name = "net") const;
   void levelReport() const;
   // member
   std::string _net_name;
-  std::vector<CtsPin*> _pins;
-  std::vector<CtsNet*> _clock_nets;
+  CtsPin* _cts_driver;
+  std::vector<CtsPin*> _cts_pins;
   std::vector<std::vector<Inst*>> _level_insts;
+  std::vector<Pin*> _sink_pins;
+  std::vector<Pin*> _top_pins;
+  Pin* _driver = nullptr;
   std::vector<Net*> _nets;
   int _level = 1;
 };

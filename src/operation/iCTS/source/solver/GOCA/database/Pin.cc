@@ -26,11 +26,13 @@ void Pin::init()
 {
   if (_inst->isSink()) {
     set_type(NodeType::kSinkPin);
-  } else {
+  } else if (_inst->isBuffer()) {
     set_type(NodeType::kBufferPin);
+  } else {
+    set_type(NodeType::kNoneLibPin);
   }
 }
-std::string Pin::getCellMaster() const
+std::string Pin::get_cell_master() const
 {
   return _inst->get_cell_master();
 }

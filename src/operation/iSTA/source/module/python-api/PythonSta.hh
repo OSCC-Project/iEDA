@@ -175,4 +175,20 @@ std::map<std::pair<double, double>, double> display_timing_map(
   return ista->displayTimingMap(AnalysisMode::kMin);
 }
 
+/**
+ * @brief dispaly the inst slew of map.
+ *
+ * @param analysis_mode
+ * @return std::map<std::pair<double, double>, double>
+ */
+std::map<std::pair<double, double>, double> display_slew_map(
+    const std::string& analysis_mode) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  if (analysis_mode == "max") {
+    return ista->displayTransitionMap(AnalysisMode::kMax);
+  }
+
+  return ista->displayTransitionMap(AnalysisMode::kMin);
+}
+
 }  // namespace ista
