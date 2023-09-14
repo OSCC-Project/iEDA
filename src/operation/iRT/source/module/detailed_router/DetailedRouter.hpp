@@ -141,6 +141,7 @@ class DetailedRouter
   void buildRoutingResult(DRTask& dr_task);
   void countDRBox(DRModel& dr_model, DRBox& dr_box);
   void reportDRBox(DRModel& dr_model, DRBox& dr_box);
+  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopDRBox(DRModel& dr_model, DRBox& dr_box);
   void freeDRBox(DRModel& dr_model, DRBox& dr_box);
   void countDRModel(DRModel& dr_model);

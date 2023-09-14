@@ -2294,7 +2294,6 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
 
   // report wire info
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
   wire_table << fort::header << "Routing Layer"
              << "Prefer Wire Length"
              << "Nonprefer Wire Length"
@@ -2308,7 +2307,6 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
 
   // via table
   fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_ROUND_STYLE);
   via_table << fort::header << "Cut Layer"
             << "Via number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
@@ -2335,7 +2333,6 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
 
   // build table
   fort::char_table drc_table;
-  drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
   drc_table[0][0] = "DRC\\Source";
   // first row item
@@ -2373,25 +2370,31 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
+  printTableList({wire_table, via_table, drc_table});
+}
+
+void DetailedRouter::printTableList(const std::vector<fort::char_table>& table_list)
+{
+  std::vector<std::vector<std::string>> print_table_list;
+  for (const fort::char_table& table : table_list) {
+    print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+  }
+
   int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
+  for (std::vector<std::string>& table : print_table_list) {
     max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
-  for (std::vector<std::string>& table : table_list) {
+  for (std::vector<std::string>& table : print_table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {
       std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
+      table_str.append(table.front().length(), ' ');
       table.push_back(table_str);
     }
   }
 
   for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
+    for (std::vector<std::string>& table : print_table_list) {
       table_str += table[i];
       table_str += " ";
     }
@@ -2514,7 +2517,6 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
   // wire table
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
              << "Prefer Wire Length"
              << "Nonprefer Wire Length"
@@ -2528,7 +2530,6 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
   // via table
   fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_ROUND_STYLE);
   via_table << fort::header << "Cut Layer"
             << "Via number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
@@ -2555,7 +2556,6 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
 
   // build table
   fort::char_table drc_table;
-  drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
   drc_table[0][0] = "DRC\\Source";
   // first row item
@@ -2593,30 +2593,7 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
-  }
-  for (std::vector<std::string>& table : table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
-      table.push_back(table_str);
-    }
-  }
-
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
+  printTableList({wire_table, via_table, drc_table});
 }
 
 bool DetailedRouter::stopDRModel(DRModel& dr_model)
