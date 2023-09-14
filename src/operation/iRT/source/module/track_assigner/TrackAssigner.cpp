@@ -1653,7 +1653,7 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
     wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_direction() == RTUtil::getDirection(*start_node, *end_node)) {
+    if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
       wire_cost *= ta_prefer_wire_unit;
     } else {
       wire_cost *= ta_nonprefer_wire_unit;
@@ -1779,7 +1779,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
         LOG_INST.error(Loc::current(), "The layer of ta segment is different!");
       }
       irt_int distance = RTUtil::getManhattanDistance(first, second) / 1.0 / micron_dbu;
-      if (RTUtil::getDirection(first, second) == routing_layer_list[ta_panel.get_layer_idx()].get_direction()) {
+      if (RTUtil::getDirection(first, second) == routing_layer_list[ta_panel.get_layer_idx()].get_prefer_direction()) {
         total_prefer_wire_length += distance;
       } else {
         total_nonprefer_wire_length += distance;
@@ -2454,6 +2454,12 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 #endif
 
 #if 1  // valid drc
+
+bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(ta_model, ta_source_type, drc_rect_list);
+}
 
 bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list)
 {

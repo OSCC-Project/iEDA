@@ -644,7 +644,7 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, TNode<RTNode>* ta_node_node)
   for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(ta_node.get_routing_tree())) {
     Direction direction = RTUtil::getDirection(routing_segment.get_first()->value(), routing_segment.get_second()->value());
     if (direction == Direction::kProximal) {
-      direction = routing_layer_list[ta_layer_idx].get_direction();
+      direction = routing_layer_list[ta_layer_idx].get_prefer_direction();
     }
     Segment<PlanarCoord> cutting_segment(routing_segment.get_first()->value(), routing_segment.get_second()->value());
     if (!RTUtil::isOverlap(dr_base_region, cutting_segment)) {
@@ -2055,7 +2055,7 @@ double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode
     wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_direction() == RTUtil::getDirection(*start_node, *end_node)) {
+    if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
       wire_cost *= dr_prefer_wire_unit;
     } else {
       wire_cost *= dr_nonprefer_wire_unit;
@@ -2200,7 +2200,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
       irt_int second_layer_idx = second.get_layer_idx();
       if (first_layer_idx == second_layer_idx) {
         double wire_length = RTUtil::getManhattanDistance(first, second) / 1.0 / micron_dbu;
-        if (RTUtil::getDirection(first, second) == routing_layer_list[first_layer_idx].get_direction()) {
+        if (RTUtil::getDirection(first, second) == routing_layer_list[first_layer_idx].get_prefer_direction()) {
           routing_prefer_wire_length_map[first_layer_idx] += wire_length;
         } else {
           routing_nonprefer_wire_length_map[first_layer_idx] += wire_length;
@@ -2952,6 +2952,12 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 #endif
 
 #if 1  // valid drc
+
+bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(dr_model, dr_source_type, drc_rect_list);
+}
 
 bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {

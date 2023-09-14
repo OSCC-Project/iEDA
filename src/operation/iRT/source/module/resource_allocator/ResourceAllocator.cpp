@@ -264,7 +264,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
                 if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
                   // 要切
                   std::vector<PlanarRect> split_rect_list
-                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
                   new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
                 } else {
                   // 不切

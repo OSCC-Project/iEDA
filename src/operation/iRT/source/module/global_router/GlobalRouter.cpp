@@ -142,9 +142,10 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
   updateNetFixedRectMap(gr_model);
   updateNetReservedViaMap(gr_model);
   updateWholeDemand(gr_model);
-  updateNetDemandMap(gr_model);
+  updateNetWireDemandMap(gr_model);
+  updateNetViaDemandMap(gr_model);
+  updateNetAccessDemandMap(gr_model);
   updateNodeSupply(gr_model);
-  addExtraNodeSupply(gr_model);
   makeRoutingState(gr_model);
 }
 
@@ -289,7 +290,7 @@ void GlobalRouter::updateWholeDemand(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
+void GlobalRouter::updateNetWireDemandMap(GRModel& gr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -326,8 +327,8 @@ void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
           irt_int min_south_demand = INT_MAX;
           irt_int min_north_demand = INT_MAX;
           for (PlanarCoord& pin_coord : pin_coord_list) {
-            min_south_demand = std::min(min_south_demand, std::abs(pin_coord.get_x() - base_region.get_lb_x()));
-            min_north_demand = std::min(min_north_demand, std::abs(pin_coord.get_x() - base_region.get_rt_x()));
+            min_south_demand = std::min(min_south_demand, std::abs(pin_coord.get_y() - base_region.get_lb_y()));
+            min_north_demand = std::min(min_north_demand, std::abs(pin_coord.get_y() - base_region.get_rt_y()));
           }
           net_orien_wire_demand_map[gr_net.get_net_idx()][Orientation::kSouth] = min_south_demand;
           net_orien_wire_demand_map[gr_net.get_net_idx()][Orientation::kNorth] = min_north_demand;
@@ -335,6 +336,140 @@ void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
       }
     }
   }
+}
+
+void GlobalRouter::updateNetViaDemandMap(GRModel& gr_model)
+{
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  std::map<GRNodeId, std::set<irt_int>, CmpGRNodeId> node_net_map;
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+      for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
+        GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
+        node_net_map[gr_node_id].insert(gr_net.get_net_idx());
+      }
+    }
+  }
+  for (auto& [gr_node_id, net_idx_set] : node_net_map) {
+    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
+    std::map<irt_int, irt_int>& net_via_demand_map = gr_node.get_net_via_demand_map();
+    for (irt_int net_idx : net_idx_set) {
+      // 由于pin_shape阻塞，打GR的通孔不算消耗
+      net_via_demand_map[net_idx] = 0;
+    }
+  }
+}
+
+void GlobalRouter::updateNetAccessDemandMap(GRModel& gr_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  std::map<GRNodeId, std::map<irt_int, std::vector<LayerCoord>>, CmpGRNodeId> node_net_coord_map;
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+      for (AccessPoint& access_point : gr_pin.get_access_point_list()) {
+        LayerCoord grid_coord = access_point.getGridLayerCoord();
+        GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
+        node_net_coord_map[gr_node_id][gr_net.get_net_idx()].push_back(access_point.getRealLayerCoord());
+      }
+    }
+  }
+  for (auto& [gr_node_id, net_coord_map] : node_net_coord_map) {
+    RoutingLayer& routing_layer = routing_layer_list[gr_node_id.get_layer_idx()];
+    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
+    std::map<irt_int, std::map<Orientation, irt_int>>& net_orien_wire_demand_map = gr_node.get_net_orien_wire_demand_map();
+    std::map<irt_int, std::map<Orientation, irt_int>>& net_orien_access_demand_map = gr_node.get_net_orien_access_demand_map();
+    /**
+     * total_wire_demand_by_access
+     * net_orien_reset_wire_demand_map
+     *
+     * 对于不算消耗的access方向，如果这些access的总和大于当前supply，则把supply置0
+     * 并将这层所有access对应的net_demand_map置零
+     */
+    double total_wire_demand_by_access = 0;
+    std::map<irt_int, std::set<Orientation>> net_reset_orien_map;
+    for (auto& [net_id, coord_list] : net_coord_map) {
+      std::map<Orientation, std::vector<LayerRect>> access_wire_map;
+      for (LayerCoord& real_coord : coord_list) {
+        for (Orientation& orientation : routing_layer.getPreferOrientationList()) {
+          access_wire_map[orientation].push_back(getOrientationWireList(gr_node, real_coord, orientation));
+        }
+      }
+      for (auto& [orientation, wire_list] : access_wire_map) {
+        bool is_access = false;
+        for (LayerRect& wire : wire_list) {
+          if (!hasViolation(gr_model, GRSourceType::kLayoutShape, DRCRect(net_id, wire, true))) {
+            is_access = true;
+            break;
+          }
+        }
+        if (is_access) {
+          // 由于pin_shape阻塞，access不算消耗
+          net_orien_access_demand_map[net_id][orientation] = 0;
+          total_wire_demand_by_access += net_orien_wire_demand_map[net_id][orientation];
+          net_reset_orien_map[net_id].insert(orientation);
+        }
+      }
+    }
+    if (total_wire_demand_by_access >= gr_node.get_resource_supply()) {
+      gr_node.set_resource_supply(0);
+      for (auto& [net_idx, reset_orien_set] : net_reset_orien_map) {
+        for (const Orientation& reset_orien : reset_orien_set) {
+          net_orien_wire_demand_map[net_idx][reset_orien] = 0;
+        }
+      }
+    }
+  }
+}
+
+LayerRect GlobalRouter::getOrientationWireList(GRNode& gr_node, LayerCoord& real_coord, Orientation orientation)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  RoutingLayer& routing_layer = routing_layer_list[real_coord.get_layer_idx()];
+  irt_int half_width = routing_layer.get_min_width() / 2;
+
+  if (routing_layer.isPreferH()) {
+    if (orientation != Orientation::kEast && orientation != Orientation::kWest) {
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+    }
+  } else {
+    if (orientation != Orientation::kSouth && orientation != Orientation::kNorth) {
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+    }
+  }
+
+  irt_int real_lb_x = gr_node.get_base_region().get_lb_x();
+  irt_int real_lb_y = gr_node.get_base_region().get_lb_y();
+  irt_int real_rt_x = gr_node.get_base_region().get_rt_x();
+  irt_int real_rt_y = gr_node.get_base_region().get_rt_y();
+
+  irt_int coord_x = real_coord.get_x();
+  irt_int coord_y = real_coord.get_y();
+
+  LayerRect orien_wire;
+  switch (orientation) {
+    case Orientation::kEast:
+      orien_wire.set_rect(coord_x - half_width, coord_y - half_width, real_rt_x, coord_y + half_width);
+      break;
+    case Orientation::kWest:
+      orien_wire.set_rect(real_lb_x, coord_y - half_width, coord_x + half_width, coord_y + half_width);
+      break;
+    case Orientation::kSouth:
+      orien_wire.set_rect(coord_x - half_width, real_lb_y, coord_x + half_width, coord_y + half_width);
+      break;
+    case Orientation::kNorth:
+      orien_wire.set_rect(coord_x - half_width, coord_y - half_width, coord_x + half_width, real_rt_y);
+      break;
+    default:
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+      break;
+  }
+  orien_wire.set_layer_idx(real_coord.get_layer_idx());
+  return orien_wire;
 }
 
 void GlobalRouter::updateNodeSupply(GRModel& gr_model)
@@ -352,7 +487,8 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
       for (irt_int y = 0; y < node_map.get_y_size(); y++) {
         GRNode& gr_node = node_map[x][y];
 
-        std::vector<PlanarRect> wire_list = getWireList(gr_node, routing_layer);
+        std::vector<PlanarRect> wire_list = getCrossingWireList(gr_node);
+        // check
         if (!wire_list.empty()) {
           irt_int real_whole_wire_demand = wire_list.front().getArea() / routing_layer.get_min_width();
           irt_int gcell_whole_wire_demand = 0;
@@ -368,18 +504,21 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
         for (GRSourceType gr_source_type : {GRSourceType::kLayoutShape, GRSourceType::kReservedVia}) {
           for (const auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(gr_source_type), true)[layer_idx]) {
             for (const LayerRect& rect : rect_set) {
-              std::vector<PlanarRect> new_wire_list;
-              for (PlanarRect& wire : wire_list) {
-                if (RTUtil::isOpenOverlap(rect, wire)) {
-                  // 要切
-                  std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(wire, rect, routing_layer.get_direction());
-                  new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
-                } else {
-                  // 不切
-                  new_wire_list.push_back(wire);
+              for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
+                std::vector<PlanarRect> new_wire_list;
+                for (PlanarRect& wire : wire_list) {
+                  if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
+                    // 要切
+                    std::vector<PlanarRect> split_rect_list
+                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
+                    new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
+                  } else {
+                    // 不切
+                    new_wire_list.push_back(wire);
+                  }
                 }
+                wire_list = new_wire_list;
               }
-              wire_list = new_wire_list;
             }
           }
         }
@@ -411,8 +550,12 @@ void GlobalRouter::updateNodeSupply(GRModel& gr_model)
   }
 }
 
-std::vector<PlanarRect> GlobalRouter::getWireList(GRNode& gr_node, RoutingLayer& routing_layer)
+std::vector<PlanarRect> GlobalRouter::getCrossingWireList(GRNode& gr_node)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  RoutingLayer& routing_layer = routing_layer_list[gr_node.get_layer_idx()];
+
   irt_int real_lb_x = gr_node.get_base_region().get_lb_x();
   irt_int real_lb_y = gr_node.get_base_region().get_lb_y();
   irt_int real_rt_x = gr_node.get_base_region().get_rt_x();
@@ -432,26 +575,6 @@ std::vector<PlanarRect> GlobalRouter::getWireList(GRNode& gr_node, RoutingLayer&
     }
   }
   return wire_list;
-}
-
-void GlobalRouter::addExtraNodeSupply(GRModel& gr_model)
-{
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  std::map<GRNodeId, std::set<irt_int>, CmpGRNodeId> node_net_map;
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-        GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
-        node_net_map[gr_node_id].insert(gr_net.get_net_idx());
-      }
-    }
-  }
-  for (auto& [gr_node_id, net_idx_set] : node_net_map) {
-    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
-    irt_int extra_node_supply = net_idx_set.size() * gr_node.get_whole_via_demand();
-    gr_node.set_resource_supply(gr_node.get_resource_supply() + extra_node_supply);
-  }
 }
 
 void GlobalRouter::makeRoutingState(GRModel& gr_model)
@@ -612,8 +735,8 @@ void GlobalRouter::iterative(GRModel& gr_model)
     processGRModel(gr_model);
     countGRModel(gr_model);
     reportGRModel(gr_model);
-    // plotGRModel(gr_model);
-    // outputCongestionMap(gr_model);
+    plotGRModel(gr_model);
+    outputCongestionMap(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopGRModel(gr_model)) {
       LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
@@ -1792,6 +1915,9 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
           }
         }
         double resource_overflow = RTUtil::calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
+        if (resource_overflow > 1) {
+          LOG_INST.warning(Loc::current(), "resource_overflow: ", grid_x, "  ", grid_y, " ", gr_node.get_layer_idx());
+        }
         resource_overflow_list.push_back(resource_overflow);
       }
     }
@@ -2096,6 +2222,66 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         }
 
         y -= y_reduced_span;
+        GPText gp_text_net_via_demand_map;
+        gp_text_net_via_demand_map.set_coord(real_rect.get_lb_x(), y);
+        gp_text_net_via_demand_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_net_via_demand_map.set_message("net_via_demand_map: ");
+        gp_text_net_via_demand_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_net_via_demand_map.set_presentation(GPTextPresentation::kLeftMiddle);
+        gr_node_map_struct.push(gp_text_net_via_demand_map);
+
+        if (!gr_node.get_net_via_demand_map().empty()) {
+          y -= y_reduced_span;
+          GPText gp_text_net_via_demand_map_info;
+          gp_text_net_via_demand_map_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_net_via_demand_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string net_via_demand_map_message = "--";
+          for (auto& [net_idx, via_demand] : gr_node.get_net_via_demand_map()) {
+            net_via_demand_map_message += RTUtil::getString("(", net_idx, ")(", via_demand, ")");
+          }
+          gp_text_net_via_demand_map_info.set_message(net_via_demand_map_message);
+          gp_text_net_via_demand_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_net_via_demand_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          gr_node_map_struct.push(gp_text_net_via_demand_map_info);
+        }
+
+        y -= y_reduced_span;
+        GPText gp_text_whole_access_demand;
+        gp_text_whole_access_demand.set_coord(real_rect.get_lb_x(), y);
+        gp_text_whole_access_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_whole_access_demand.set_message(RTUtil::getString("whole_access_demand: ", gr_node.get_whole_access_demand()));
+        gp_text_whole_access_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_whole_access_demand.set_presentation(GPTextPresentation::kLeftMiddle);
+        gr_node_map_struct.push(gp_text_whole_access_demand);
+
+        y -= y_reduced_span;
+        GPText gp_text_net_orien_access_demand_map;
+        gp_text_net_orien_access_demand_map.set_coord(real_rect.get_lb_x(), y);
+        gp_text_net_orien_access_demand_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_net_orien_access_demand_map.set_message("net_orien_access_demand_map: ");
+        gp_text_net_orien_access_demand_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+        gp_text_net_orien_access_demand_map.set_presentation(GPTextPresentation::kLeftMiddle);
+        gr_node_map_struct.push(gp_text_net_orien_access_demand_map);
+
+        if (!gr_node.get_net_orien_access_demand_map().empty()) {
+          y -= y_reduced_span;
+          GPText gp_text_net_orien_access_demand_map_info;
+          gp_text_net_orien_access_demand_map_info.set_coord(real_rect.get_lb_x(), y);
+          gp_text_net_orien_access_demand_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          std::string net_orien_access_demand_map_message = "--";
+          for (auto& [net_idx, orien_wire_demand_map] : gr_node.get_net_orien_access_demand_map()) {
+            net_orien_access_demand_map_message += RTUtil::getString("(", net_idx, ")");
+            for (auto& [orientation, wire_demand] : orien_wire_demand_map) {
+              net_orien_access_demand_map_message += RTUtil::getString("(", GetOrientationName()(orientation), ":", wire_demand, ")");
+            }
+          }
+          gp_text_net_orien_access_demand_map_info.set_message(net_orien_access_demand_map_message);
+          gp_text_net_orien_access_demand_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
+          gp_text_net_orien_access_demand_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          gr_node_map_struct.push(gp_text_net_orien_access_demand_map_info);
+        }
+
+        y -= y_reduced_span;
         GPText gp_text_orien_access_supply_map;
         gp_text_orien_access_supply_map.set_coord(real_rect.get_lb_x(), y);
         gp_text_orien_access_supply_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
@@ -2342,6 +2528,87 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     gp_gds.addStruct(net_struct);
   }
   GP_INST.plot(gp_gds, gr_temp_directory_path + "gr_model.gds", false, false);
+}
+
+#endif
+
+#if 1  // valid drc
+
+bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(gr_model, gr_source_type, drc_rect_list);
+}
+
+bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCRect>& drc_rect_list)
+{
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  std::map<GRNodeId, std::vector<DRCRect>, CmpGRNodeId> node_rect_map;
+  for (const DRCRect& drc_rect : drc_rect_list) {
+    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
+      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+          node_rect_map[GRNodeId(x, y, drc_rect.get_layer_idx())].push_back(drc_rect);
+        }
+      }
+    }
+  }
+  bool has_violation = false;
+  for (const auto& [gr_node_id, drc_rect_list] : node_rect_map) {
+    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
+    if (getViolationInfo(gr_node, gr_source_type, drc_rect_list).size() > 0) {
+      has_violation = true;
+      break;
+    }
+  }
+  return has_violation;
+}
+
+std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+                                                                                 const std::vector<DRCRect>& drc_rect_list)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), drc_rect_list);
+  removeInvalidViolationInfo(gr_node, drc_violation_map);
+  return drc_violation_map;
+}
+
+std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type)
+{
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type));
+  removeInvalidViolationInfo(gr_node, drc_violation_map);
+  return drc_violation_map;
+}
+
+void GlobalRouter::removeInvalidViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+{
+  for (auto& [drc, violation_list] : drc_violation_map) {
+    std::vector<ViolationInfo> valid_violation_list;
+    for (ViolationInfo& violation_info : violation_list) {
+      bool is_valid = false;
+      for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
+        if (net_idx != -1) {
+          is_valid = true;
+          break;
+        }
+      }
+      if (is_valid) {
+        valid_violation_list.push_back(violation_info);
+      }
+    }
+    if (valid_violation_list.empty()) {
+      drc_violation_map.erase(drc);
+    } else {
+      drc_violation_map[drc] = violation_list;
+    }
+  }
 }
 
 #endif

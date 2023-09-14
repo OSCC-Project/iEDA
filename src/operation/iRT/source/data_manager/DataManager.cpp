@@ -183,7 +183,7 @@ void DataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
       routing_layer.set_layer_name(idb_routing_layer->get_name());
       routing_layer.set_min_width(idb_routing_layer->get_min_width());
       routing_layer.set_min_area(idb_routing_layer->get_area());
-      routing_layer.set_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
+      routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       wrapSpacingTable(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
@@ -919,8 +919,8 @@ void DataManager::checkLayerList()
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
-    if (routing_layer.get_direction() == Direction::kNone) {
-      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' direction is none!");
+    if (routing_layer.get_prefer_direction() == Direction::kNone) {
+      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
     }
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
       if (x_track_grid.get_start_line() < die.get_real_lb_x() || die.get_real_rt_x() < x_track_grid.get_end_line()) {
@@ -1010,11 +1010,11 @@ void DataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_direction();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_direction();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
     std::sort(via_master_list.begin(), via_master_list.end(),
@@ -1061,8 +1061,8 @@ SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, Via
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
-  Direction above_layer_direction = routing_layer_list[via_master1.get_above_enclosure().get_layer_idx()].get_direction();
-  Direction below_layer_direction = routing_layer_list[via_master1.get_below_enclosure().get_layer_idx()].get_direction();
+  Direction above_layer_direction = routing_layer_list[via_master1.get_above_enclosure().get_layer_idx()].get_prefer_direction();
+  Direction below_layer_direction = routing_layer_list[via_master1.get_below_enclosure().get_layer_idx()].get_prefer_direction();
 
   if (via_master1.get_above_direction() == above_layer_direction && via_master2.get_above_direction() != above_layer_direction) {
     return SortStatus::kTrue;
@@ -1626,7 +1626,7 @@ void DataManager::printDatabase()
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
                   " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
                   " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-                  " prefer_direction:", GetDirectionName()(routing_layer.get_direction()));
+                  " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
