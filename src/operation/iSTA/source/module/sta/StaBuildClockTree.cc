@@ -88,13 +88,13 @@ void StaBuildClockTree::buildNextPin(
     if (!child_node) {
       is_new = true;
       child_node = new StaClockTreeNode(child_cell_type, child_inst_name);
+      clock_tree->addChildNode(child_node);
     }
 
     if (parent_node != child_node) {
       auto *child_arc = new StaClockTreeArc(parent_node, child_node);
       child_arc->set_net_arrive_time(mode_trans_AT);
       child_node->addFaninArc(child_arc);
-      clock_tree->addChildNode(child_node);
       clock_tree->addChildArc(child_arc);
     } else {
       parent_node->addInstArrvieTime(std::move(mode_trans_AT));
