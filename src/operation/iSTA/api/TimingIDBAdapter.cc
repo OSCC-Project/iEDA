@@ -705,8 +705,16 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   }
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
+  int dbu = _idb_design->get_units()->get_micron_dbu();
+  double width = _idb_design->get_layout()->get_die()->get_width() /
+                 static_cast<double>(dbu);
+  double height = _idb_design->get_layout()->get_die()->get_height() /
+                  static_cast<double>(dbu);
+  design_netlist.set_core_size(width, height);
 
-  auto build_insts = [this, &design_netlist]() {
+  LOG_INFO << "core area width " << width << " height " << height;
+
+  auto build_insts = [this, &design_netlist, dbu]() {
     // build insts
     auto db_inst_list = _idb_design->get_instance_list()->get_instance_list();
     for (auto* db_inst : db_inst_list) {
@@ -724,6 +732,11 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
       }
 
       Instance sta_inst(inst_name.c_str(), inst_cell);
+
+      double x = db_inst->get_coordinate()->get_x() / static_cast<double>(dbu);
+      double y = db_inst->get_coordinate()->get_y() / static_cast<double>(dbu);
+
+      sta_inst.set_coordinate(x, y);
 
       // build inst pin
       auto db_inst_pin_list = db_inst->get_pin_list()->get_pin_list();

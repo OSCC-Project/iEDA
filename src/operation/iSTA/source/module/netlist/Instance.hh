@@ -53,6 +53,8 @@ class Instance : public DesignObject {
   friend PinIterator;
   friend PinBusIterator;
 
+  using Coordinate = std::pair<double, double>;
+
   unsigned isInstance() override { return 1; }
 
   Pin* addPin(const char* name, LibertyPort* cell_port);
@@ -77,11 +79,16 @@ class Instance : public DesignObject {
     return nullptr;
   }
 
+  void set_coordinate(double x, double y) { _coordinate = {x, y}; }
+  auto get_coordinate() { return _coordinate; }
+
  private:
   LibertyCell* _inst_cell;
   Vector<std::unique_ptr<Pin>> _pins;
   StrMap<Pin*> _str2pin;
   Vector<std::unique_ptr<PinBus>> _pin_buses;
+
+  std::optional<Coordinate> _coordinate;
   DISALLOW_COPY_AND_ASSIGN(Instance);
 };
 

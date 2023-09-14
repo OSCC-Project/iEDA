@@ -130,6 +130,9 @@ void TimingPropagator::updatePinCap(Pin* pin)
  */
 void TimingPropagator::update(Net* net, const RCPattern& pattern)
 {
+  if (net == nullptr) {
+    return;
+  }
   netLenPropagate(net);
   capPropagate(net, pattern);
   slewPropagate(net, pattern);
@@ -218,6 +221,9 @@ void TimingPropagator::updateCellDelay(Inst* inst)
     return;
   }
   auto* driver_pin = inst->get_driver_pin();
+  if (!driver_pin) {
+    return;
+  }
   auto* load_pin = inst->get_load_pin();
   auto slew_in = load_pin->get_slew_in();
   auto cap_load = driver_pin->get_cap_load();

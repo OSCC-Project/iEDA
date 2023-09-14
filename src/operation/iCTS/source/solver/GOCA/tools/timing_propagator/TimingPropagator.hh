@@ -21,7 +21,7 @@
 #pragma once
 #include <concepts>
 
-#include "CtsCellLib.h"
+#include "CtsCellLib.hh"
 #include "CtsConfig.h"
 #include "Inst.hh"
 #include "Net.hh"
@@ -400,12 +400,12 @@ class TimingPropagator
    * @return auto
    */
   template <IntAble T>
-  static auto calcLen(const CtsPoint<T>& p1, const CtsPoint<T>& p2, const LayerPattern& pattern)
+  static auto calcLen(const CtsPoint<T>& p1, const CtsPoint<T>& p2, const LayerPattern& pattern = LayerPattern::kNone)
   {
     return 1.0 * calcDist(p1, p2, pattern) / _db_unit;
   }
   template <FloatAble T>
-  static auto calcLen(const CtsPoint<T>& p1, const CtsPoint<T>& p2, const LayerPattern& pattern)
+  static auto calcLen(const CtsPoint<T>& p1, const CtsPoint<T>& p2, const LayerPattern& pattern = LayerPattern::kNone)
   {
     return 1.0 * calcDist(p1, p2, pattern);
   }

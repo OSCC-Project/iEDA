@@ -73,7 +73,7 @@ unsigned CmdReportTiming::exec() {
   ista->updateTiming();
   ista->reportTiming(std::move(new_exclude_cell_names), is_derate,
                      is_clock_cap);
-  ista->dumpNetlistData();
+  // ista->dumpNetlistData();
   return 1;
 }
 

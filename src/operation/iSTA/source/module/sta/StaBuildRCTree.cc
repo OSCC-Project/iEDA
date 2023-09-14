@@ -68,8 +68,6 @@ std::unique_ptr<RcNet> StaBuildRCTree::createRcNet(Net* net) {
 unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   LOG_INFO << "build rc tree start";
 
-  Netlist* design_nl = the_graph->get_nl();
-
   LOG_INFO << "read spef " << _spef_file_name << " start";
   spef::Spef parser;
   if (!parser.read(_spef_file_name)) {
@@ -93,6 +91,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   unsigned is_ok = 1;
 
   // build rc net
+  Netlist* design_nl = the_graph->get_nl();
   Net* net;
   FOREACH_NET(design_nl, net) {
     auto rc_net = createRcNet(net);
@@ -103,12 +102,20 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   // rc net update timing information.
   auto& spef_nets = parser.getNets();
+  std::atomic<unsigned> max_node = 0;
+  std::string net_name;
 
-#if 0
+#if 1
   {
     ThreadPool pool(num_threads);
 
     for (const auto& spef_net : spef_nets) {
+      // record max node net name.
+      if (spef_net.caps.size() > max_node) {
+        max_node = spef_net.caps.size();
+        net_name = spef_net.name;
+      }
+
       // enqueue and store future
       pool.enqueue(
           [design_nl, this](const auto& spef_net) {
@@ -127,6 +134,11 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   }
 #else
   for (auto& spef_net : spef_nets) {
+    if (spef_net.caps.size() > max_node) {
+      max_node = spef_net.caps.size();
+      net_name = spef_net.name;
+    }
+
     std::string spef_name = spef_net.name;
     auto* design_net = design_nl->findNet(spef_name.c_str());
     if (design_net) {
@@ -140,6 +152,8 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   }
 
 #endif
+
+  LOG_INFO << "net name " << net_name << " max node " << max_node;
 
   // ProfilerStop();
 
@@ -183,10 +197,11 @@ void StaBuildRCTree::printYaml(const spef::Net& spef_net) {
         (spef_connection.type == spef::ConnectionType::INTERNAL) ? "I" : "P";
     one_node["node_name"] = spef_connection.name;
     one_node["direction"] =
-        (spef_connection.direction == spef::ConnectionDirection::OUTPUT) ? "O"
-        : (spef_connection.direction == spef::ConnectionDirection::INPUT)
-            ? "I"
-            : "IO";
+        (spef_connection.direction == spef::ConnectionDirection::OUTPUT)
+            ? "O"
+            : (spef_connection.direction == spef::ConnectionDirection::INPUT)
+                  ? "I"
+                  : "IO";
     one_node["coordinate_x"] = spef_connection.coordinate.has_value()
                                    ? spef_connection.coordinate.value().first
                                    : 0;

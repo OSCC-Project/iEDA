@@ -47,9 +47,11 @@ class BoundSkewTree
   BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound = std::nullopt);
   ~BoundSkewTree() = default;
 
-  std::vector<Inst*> getInsertBufs() const { return _insert_bufs; }
+  Inst* get_root_buf() const { return _root_buf; }
 
   void run();
+  // wrapper interface if not input topology
+  void convert();
 
   void set_root_guide(const Point& root_guide)
   {
@@ -125,6 +127,7 @@ class BoundSkewTree
 
   // Merging Region
   void constructFeasibleMr(Area* parent, Area* left, Area* right) const;
+  bool jRisLine() const;
   void mrBetweenJs(Area* cur, const size_t& end_side) const;
   void mrOnJs(Area* cur, const size_t& side) const;
   void fmsOfLineExist(Area* cur, const size_t& side, const size_t& idx) const;
@@ -171,10 +174,11 @@ class BoundSkewTree
    */
   std::string _net_name = "";
 
-  std::vector<Inst*> _insert_bufs;
-  std::set<Net*> _nets;
+  Inst* _root_buf = nullptr;
+  std::vector<Pin*> _load_pins;
+  Net* _net = nullptr;
   std::vector<Area*> _unmerged_nodes;
-  std::map<std::string, Node*> _node_map;
+  std::unordered_map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;
 
   Area* _root = nullptr;

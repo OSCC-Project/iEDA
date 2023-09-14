@@ -462,11 +462,15 @@ class Sta {
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
-  void buildClockTrees();
   void buildNextPin(
       StaClockTree* clock_tree, StaClockTreeNode* parent_node,
       StaVertex* parent_vertex,
       std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+  void buildClockTrees();
+
+  std::optional<double> getInstSlack(AnalysisMode analysis_mode,
+                                     Instance* the_inst);
+  std::map<Instance::Coordinate, double> displayTimingMap(AnalysisMode analysis_mode);
 
  private:
   Sta();

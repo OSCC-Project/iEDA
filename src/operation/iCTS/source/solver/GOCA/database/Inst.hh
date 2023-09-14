@@ -25,7 +25,7 @@ class Pin;
 #include <string>
 
 #include "CTSAPI.hpp"
-#include "CtsInstance.h"
+#include "CtsInstance.hh"
 #include "Enum.hh"
 #include "Pin.hh"
 namespace icts {

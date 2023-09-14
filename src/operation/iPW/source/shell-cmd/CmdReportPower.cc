@@ -39,19 +39,7 @@ unsigned CmdReportPower::exec() {
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
-  // set fastest clock for default toggle
-  auto* fastest_clock = ista->getFastestClock();
-  PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
-                             fastest_clock->getPeriodNs());
-  // get sta clocks
-  auto clocks = ista->getClocks();
-
-  std::string output_path = ista->get_design_work_space();
-  output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
-
-  ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
-
-  ipower->runCompleteFlow(output_path);
+  ipower->runCompleteFlow();
 
   return 1;
 }

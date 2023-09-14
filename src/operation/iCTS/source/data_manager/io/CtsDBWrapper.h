@@ -23,10 +23,10 @@
 #include <utility>
 
 #include "CtsConfig.h"
-#include "CtsDesign.h"
-#include "CtsInstance.h"
-#include "CtsNet.h"
-#include "CtsPin.h"
+#include "CtsDesign.hh"
+#include "CtsInstance.hh"
+#include "CtsNet.hh"
+#include "CtsPin.hh"
 #include "IdbDesign.h"
 #include "IdbEnum.h"
 #include "IdbGeometry.h"
@@ -63,7 +63,6 @@ class CtsDBWrapper
   int get_row_num() const;
   int get_site_num() const;
   vector<Rectangle> get_blockages();
-  vector<CtsNet*> get_logic_nets();
 
   Point getPinLoc(CtsPin* pin);
 
@@ -79,6 +78,10 @@ class CtsDBWrapper
 
   // read data from idb
   void read();
+
+  // interface to synthesis
+  void linkIdb(CtsInstance* inst);
+  void updateCell(CtsInstance* inst);
 
   // the operator of idb
   IdbInstance* makeIdbInstance(CtsInstance* inst);
@@ -102,7 +105,6 @@ class CtsDBWrapper
   CtsInstance* idbToCts(IdbInstance* idb_inst, CtsInstanceType inst_type);
   CtsPin* idbToCts(IdbPin* idb_pin);
   CtsNet* idbToCts(IdbNet* idb_net);
-  CtsNet* idbToCts(IdbNet* idb_net, LogicNetTag tag);
   Rectangle idbToCts(IdbRect& rect) const;
   Point idbToCts(IdbCoordinate<int32_t>& coord) const;
 

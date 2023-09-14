@@ -23,10 +23,9 @@
 #include <utility>
 #include <vector>
 
-#include "BinaryTree.h"
 #include "CTSAPI.hpp"
 #include "CtsConfig.h"
-#include "CtsInstance.h"
+#include "CtsInstance.hh"
 #include "report/ReportTable.hh"
 
 namespace icts {
@@ -44,15 +43,14 @@ enum CtsReportType
   kLIB_CELL_DIST = 3,
   kNET_LEVEL = 4,
   kTIMING_NODE_LOG = 5,
-  kHCTS_LOG = 6,
-  kLEVEL_LOG = 7,
-  kLEVEL_FANOUT = 8,
-  kLEVEL_NET_LEN = 9,
-  kLEVEL_CAP = 10,
-  kLEVEL_SLEW = 11,
-  kLEVEL_DELAY = 12,
-  kLEVEL_INSERT_DELAY = 13,
-  kLEVEL_SKEW = 14,
+  kLEVEL_LOG = 6,
+  kLEVEL_FANOUT = 7,
+  kLEVEL_NET_LEN = 8,
+  kLEVEL_CAP = 9,
+  kLEVEL_SLEW = 10,
+  kLEVEL_DELAY = 11,
+  kLEVEL_INSERT_DELAY = 12,
+  kLEVEL_SKEW = 13,
 };
 
 class CtsReportTable : public ieda::ReportTable

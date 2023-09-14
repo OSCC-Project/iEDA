@@ -18,9 +18,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "CtsInstance.h"
-#include "CtsNet.h"
-#include "CtsSignalWire.h"
+#include "CtsInstance.hh"
+#include "CtsNet.hh"
+#include "CtsSignalWire.hh"
 
 namespace icts {
 
