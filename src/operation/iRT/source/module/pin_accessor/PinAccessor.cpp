@@ -212,7 +212,7 @@ void PinAccessor::accessPAModel(PAModel& pa_model)
 {
   accessPANetList(pa_model);
   updateNetCandidateViaMap(pa_model);
-  eliminateViaConflict(pa_model);
+  selectPANetList(pa_model);
 }
 
 void PinAccessor::accessPANetList(PAModel& pa_model)
@@ -243,7 +243,9 @@ void PinAccessor::accessPANet(PAModel& pa_model, PANet& pa_net)
   selectAccessPointByType(pa_net);
   updateAccessGridCoord(pa_net);
   selectAccessPointByGCell(pa_net);
-  eliminateDRCViolation(pa_model, pa_net);
+  updateViaAccessByDRC(pa_model, pa_net);
+  updateWireAccessByDRC(pa_model, pa_net);
+  eliminateInvalidPoint(pa_net);
   checkAccessPointList(pa_net);
 }
 
@@ -325,6 +327,9 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
 
 std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin)
 {
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
   std::map<irt_int, std::vector<EXTLayerRect>> layer_pin_shape_list;
   for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
     layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
@@ -332,7 +337,8 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
 
   std::vector<LayerRect> legal_rect_list;
   for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
-    for (irt_int via_below_layer_idx : {layer_idx, layer_idx - 1}) {
+    for (irt_int via_below_layer_idx :
+         RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
       for (PlanarRect via_legal_rect : getViaLegalRectList(pa_model, pa_net_idx, via_below_layer_idx, pin_shpae_list)) {
         legal_rect_list.emplace_back(via_legal_rect, layer_idx);
       }
@@ -618,30 +624,151 @@ void PinAccessor::selectAccessPointByGCell(PANet& pa_net)
   }
 }
 
-void PinAccessor::eliminateDRCViolation(PAModel& pa_model, PANet& pa_net)
+void PinAccessor::updateViaAccessByDRC(PAModel& pa_model, PANet& pa_net)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    std::vector<AccessPoint> legal_access_point_list;
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      irt_int access_point_layer_idx = access_point.get_layer_idx();
-      for (irt_int via_below_layer_idx : {access_point_layer_idx - 1, access_point_layer_idx}) {
-        if (routing_layer_list.back().get_layer_idx() <= via_below_layer_idx
-            || via_below_layer_idx < routing_layer_list.front().get_layer_idx()) {
-          continue;
-        }
+      irt_int access_layer_idx = access_point.get_layer_idx();
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(access_layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
         segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                   LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
         std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
         if (!hasViolation(pa_model, PASourceType::kLayoutShape, drc_rect_list)) {
-          legal_access_point_list.push_back(access_point);
-          break;
+          if (access_layer_idx == via_below_layer_idx) {
+            access_point.get_access_orien_set().insert(Orientation::kUp);
+          } else if (access_layer_idx == (via_below_layer_idx + 1)) {
+            access_point.get_access_orien_set().insert(Orientation::kDown);
+          }
         }
       }
     }
-    if (!legal_access_point_list.empty()) {
+  }
+}
+
+void PinAccessor::updateWireAccessByDRC(PAModel& pa_model, PANet& pa_net)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
+
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      LayerCoord grid_coord = access_point.getGridLayerCoord();
+      LayerCoord real_coord = access_point.getRealLayerCoord();
+      RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
+      PAGCell& pa_gcell = pa_gcell_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (Orientation& orientation : routing_layer.getPreferOrientationList()) {
+        LayerRect wire = getOrientationWireList(pa_gcell, real_coord, orientation);
+        if (!hasViolation(pa_model, PASourceType::kLayoutShape, DRCRect(pa_net.get_net_idx(), wire, true))) {
+          access_point.get_access_orien_set().insert(orientation);
+        }
+      }
+    }
+  }
+}
+
+LayerRect PinAccessor::getOrientationWireList(PAGCell& pa_gcell, LayerCoord& real_coord, Orientation orientation)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  RoutingLayer& routing_layer = routing_layer_list[real_coord.get_layer_idx()];
+  irt_int half_width = routing_layer.get_min_width() / 2;
+
+  if (routing_layer.isPreferH()) {
+    if (orientation != Orientation::kEast && orientation != Orientation::kWest) {
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+    }
+  } else {
+    if (orientation != Orientation::kSouth && orientation != Orientation::kNorth) {
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+    }
+  }
+
+  PlanarRect& base_region = pa_gcell.get_base_region();
+  irt_int gcell_lb_x = base_region.get_lb_x();
+  irt_int gcell_lb_y = base_region.get_lb_y();
+  irt_int gcell_rt_x = base_region.get_rt_x();
+  irt_int gcell_rt_y = base_region.get_rt_y();
+  irt_int min_x_span = base_region.getXSpan() / 4;
+  irt_int min_y_span = base_region.getYSpan() / 4;
+
+  Segment<PlanarCoord> routing_segment;
+  routing_segment.set_first(real_coord);
+
+  irt_int x;
+  irt_int y;
+  switch (orientation) {
+    case Orientation::kEast:
+      if ((gcell_rt_x - real_coord.get_x()) < min_x_span) {
+        x = real_coord.get_x() + min_x_span;
+      } else {
+        x = gcell_rt_x;
+      }
+      routing_segment.set_second(PlanarCoord(x, real_coord.get_y()));
+      break;
+    case Orientation::kWest:
+      if ((real_coord.get_x() - gcell_lb_x) < min_x_span) {
+        x = real_coord.get_x() - min_x_span;
+      } else {
+        x = gcell_lb_x;
+      }
+      routing_segment.set_second(PlanarCoord(x, real_coord.get_y()));
+      break;
+    case Orientation::kNorth:
+      if ((gcell_rt_y - real_coord.get_y()) < min_y_span) {
+        y = real_coord.get_y() + min_y_span;
+      } else {
+        y = gcell_rt_y;
+      }
+      routing_segment.set_second(PlanarCoord(real_coord.get_x(), y));
+      break;
+    case Orientation::kSouth:
+      if ((real_coord.get_y() - gcell_lb_y) < min_y_span) {
+        y = real_coord.get_y() - min_y_span;
+      } else {
+        y = gcell_lb_y;
+      }
+      routing_segment.set_second(PlanarCoord(real_coord.get_x(), y));
+      break;
+    default:
+      LOG_INST.error(Loc::current(), "The orientation is error!");
+      break;
+  }
+  LayerRect orien_wire;
+  orien_wire.set_rect(RTUtil::getEnlargedRect(routing_segment, half_width));
+  orien_wire.set_layer_idx(real_coord.get_layer_idx());
+  return orien_wire;
+}
+
+void PinAccessor::eliminateInvalidPoint(PANet& pa_net)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::vector<AccessPoint> legal_access_point_list;
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      if (!access_point.get_access_orien_set().empty()) {
+        legal_access_point_list.push_back(access_point);
+      }
+    }
+    if (legal_access_point_list.empty()) {
+      LOG_INST.warning(Loc::current(), "The legal_access_point_list is empty!");
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        if (access_point.get_layer_idx() <= bottom_routing_layer_idx) {
+          access_point.get_access_orien_set().insert(Orientation::kUp);
+        } else if (top_routing_layer_idx <= access_point.get_layer_idx()) {
+          access_point.get_access_orien_set().insert(Orientation::kDown);
+        } else {
+          access_point.get_access_orien_set().insert(Orientation::kUp);
+        }
+      }
+    } else {
       pa_pin.set_access_point_list(legal_access_point_list);
     }
   }
@@ -680,28 +807,27 @@ void PinAccessor::updateNetCandidateViaMap(PAModel& pa_model)
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (LayerCoord& real_coord : pa_pin.getRealCoordList()) {
-        real_coord_set.insert(real_coord);
-      }
-    }
-    for (const LayerCoord& real_coord : real_coord_set) {
-      irt_int layer_idx = real_coord.get_layer_idx();
-      for (irt_int via_below_layer_idx :
-           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
-        std::vector<Segment<LayerCoord>> segment_list;
-        segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
-                                  LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
-        for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
-          addRectToEnv(pa_model, PASourceType::kCandidateVia, drc_rect);
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        std::set<Orientation>& access_orien_set = access_point.get_access_orien_set();
+        if (!RTUtil::exist(access_orien_set, Orientation::kUp) && !RTUtil::exist(access_orien_set, Orientation::kDown)) {
+          continue;
+        }
+        for (irt_int via_below_layer_idx :
+             RTUtil::getReservedViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
+          std::vector<Segment<LayerCoord>> segment_list;
+          segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
+                                    LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
+          for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
+            addRectToEnv(pa_model, PASourceType::kCandidateVia, drc_rect);
+          }
         }
       }
     }
   }
 }
 
-void PinAccessor::eliminateViaConflict(PAModel& pa_model)
+void PinAccessor::selectPANetList(PAModel& pa_model)
 {
   Monitor monitor;
 
@@ -714,7 +840,8 @@ void PinAccessor::eliminateViaConflict(PAModel& pa_model)
 #pragma omp parallel for
   for (size_t i = 0; i < pa_net_list.size(); i++) {
     PANet& pa_net = pa_net_list[i];
-    selectByViaNumber(pa_net, pa_model);
+    selectByViaConflict(pa_net, pa_model);
+    selectByAccessOrienSet(pa_net);
     selectByNetDistance(pa_net);
     checkAccessPointNum(pa_net);
     if (omp_get_num_threads() == 1 && (i + 1) % batch_size == 0) {
@@ -726,36 +853,73 @@ void PinAccessor::eliminateViaConflict(PAModel& pa_model)
   }
 }
 
-void PinAccessor::selectByViaNumber(PANet& pa_net, PAModel& pa_model)
+void PinAccessor::selectByViaConflict(PANet& pa_net, PAModel& pa_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
-    // via_num_access_point_map
+    std::vector<AccessPoint> wire_access_point_list;
     std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> via_num_access_point_map;
     for (AccessPoint& access_point : pin_access_point_list) {
+      irt_int access_layer_idx = access_point.get_layer_idx();
+      std::set<Orientation>& access_orien_set = access_point.get_access_orien_set();
+      if (!RTUtil::exist(access_orien_set, Orientation::kUp) && !RTUtil::exist(access_orien_set, Orientation::kDown)) {
+        wire_access_point_list.push_back(access_point);
+        continue;
+      }
       irt_int via_num = 0;
-      std::vector<irt_int> all_via_below_layer_idx_list
-          = RTUtil::getReservedViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
-      for (std::vector<irt_int> via_below_layer_idx_list :
-           RTUtil::getLevelViaBelowLayerIdxList(access_point.get_layer_idx(), all_via_below_layer_idx_list)) {
-        for (irt_int via_below_layer_idx : via_below_layer_idx_list) {
-          std::vector<Segment<LayerCoord>> segment_list;
-          segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
-                                    LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
-          std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
-          if (!hasViolation(pa_model, PASourceType::kCandidateVia, drc_rect_list)) {
-            via_num++;
-          } else {
-            break;
-          }
+      for (irt_int via_below_layer_idx :
+           RTUtil::getReservedViaBelowLayerIdxList(access_layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+        std::vector<Segment<LayerCoord>> segment_list;
+        segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
+                                  LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
+        std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
+        if (!hasViolation(pa_model, PASourceType::kCandidateVia, drc_rect_list)) {
+          via_num++;
+        } else {
+          break;
         }
       }
       via_num_access_point_map[via_num].push_back(access_point);
     }
-    pin_access_point_list = via_num_access_point_map.begin()->second;
+    pin_access_point_list.clear();
+    for (AccessPoint& access_point : wire_access_point_list) {
+      pin_access_point_list.push_back(access_point);
+    }
+    for (AccessPoint& access_point : via_num_access_point_map.begin()->second) {
+      pin_access_point_list.push_back(access_point);
+    }
+  }
+}
+
+/**
+ * 在最低布线层及以下 最高布线层及以上 必须有通孔
+ *
+ */
+void PinAccessor::selectByAccessOrienSet(PANet& pa_net)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+    std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> access_num_point_map;
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      std::set<Orientation>& access_orien_set = access_point.get_access_orien_set();
+      if (access_point.get_layer_idx() <= bottom_routing_layer_idx) {
+        if (!RTUtil::exist(access_orien_set, Orientation::kUp)) {
+          continue;
+        }
+      }
+      if (top_routing_layer_idx <= access_point.get_layer_idx()) {
+        if (!RTUtil::exist(access_orien_set, Orientation::kDown)) {
+          continue;
+        }
+      }
+      access_num_point_map[access_orien_set.size()].push_back(access_point);
+    }
+    pa_pin.set_access_point_list(access_num_point_map.begin()->second);
   }
 }
 
@@ -766,8 +930,8 @@ void PinAccessor::selectByNetDistance(PANet& pa_net)
     std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
     std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      LayerCoord real_coord(access_point.get_real_coord(), access_point.get_layer_idx());
-      distance_access_point_map[RTUtil::getManhattanDistance(balance_coord, real_coord)].push_back(access_point);
+      irt_int distance = RTUtil::getManhattanDistance(balance_coord, access_point.getRealLayerCoord());
+      distance_access_point_map[distance].push_back(access_point);
     }
     pin_access_point_list.clear();
     pin_access_point_list.push_back(distance_access_point_map.begin()->second.front());
@@ -818,13 +982,12 @@ void PinAccessor::updateNetAccessPointMap(PAModel& pa_model)
 
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (LayerCoord& real_coord : pa_pin.getRealCoordList()) {
-        irt_int layer_idx = real_coord.get_layer_idx();
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         for (irt_int via_below_layer_idx :
-             RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
+             RTUtil::getReservedViaBelowLayerIdxList(access_point.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx)) {
           std::vector<Segment<LayerCoord>> segment_list;
-          segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
-                                    LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
+          segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
+                                    LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
           for (DRCRect& drc_rect : DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list)) {
             addRectToEnv(pa_model, PASourceType::kLayoutShape, drc_rect);
           }
@@ -1089,6 +1252,12 @@ void PinAccessor::update(PAModel& pa_model)
 #endif
 
 #if 1  // valid drc
+
+bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(pa_model, pa_source_type, drc_rect_list);
+}
 
 bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
