@@ -3106,6 +3106,81 @@ class RTUtil
   }
 
   template <typename T>
+  static std::map<irt_int, std::map<std::pair<T, T>, irt_int>> getLayerRangeNumMap(std::map<irt_int, std::vector<T>> layer_value_map,
+                                                                                   std::vector<T> scale_list)
+  {
+    std::map<irt_int, std::map<std::pair<T, T>, irt_int>> layer_range_num_map;
+
+    // 计算数据区间间距
+    std::vector<T> total_value_list;
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      total_value_list.insert(total_value_list.end(), value_list.begin(), value_list.end());
+    }
+    if (total_value_list.empty()) {
+      return layer_range_num_map;
+    }
+
+    T range = getScaleRange(total_value_list);
+
+    // 生成数据区间
+    T min_value = INT32_MAX;
+    T max_value = INT32_MIN;
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      for (T value : value_list) {
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+    }
+    if (!scale_list.empty()) {
+      std::sort(scale_list.begin(), scale_list.end());
+      min_value = std::max(min_value, scale_list.front());
+      max_value = std::max(max_value, scale_list.back());
+    }
+
+    std::vector<T> total_scale_list(scale_list.begin(), scale_list.end());
+    for (T scale = min_value; equalDoubleByError(scale, max_value, 0.001) || scale < max_value; scale += range) {
+      total_scale_list.push_back(scale);
+    }
+    std::sort(total_scale_list.begin(), total_scale_list.end());
+    merge(total_scale_list, [](T a, T b) { return equalDoubleByError(a, b, 0.001); });
+
+    // 生成区间
+    std::vector<std::pair<T, T>> scale_range_list;
+    if (total_scale_list.size() == 1) {  // 当锚点只有一个且所有元素都比锚点小时，生成锚点闭区间
+      scale_range_list.emplace_back(total_scale_list.front(), total_scale_list.front());
+    } else if (total_scale_list.size() > 1) {
+      for (size_t i = 1; i < total_scale_list.size(); i++) {
+        scale_range_list.emplace_back(total_scale_list[i - 1], total_scale_list[i]);
+      }
+    }
+    // 生成各个区间的数据
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      std::map<std::pair<T, T>, irt_int>& range_num_map = layer_range_num_map[layer_idx];
+      for (auto& scale_range : scale_range_list) {
+        range_num_map[scale_range] = 0;
+      }
+    }
+
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      for (T& value : value_list) {
+        for (size_t i = 0; i < scale_range_list.size(); i++) {
+          T left = scale_range_list[i].first;
+          T right = scale_range_list[i].second;
+          if (left <= value && value < right) {
+            ++layer_range_num_map[layer_idx][scale_range_list[i]];
+            break;
+          }
+          if (i + 1 == scale_range_list.size() && equalDoubleByError(value, right, 0.001)) {
+            ++layer_range_num_map[layer_idx][scale_range_list[i]];
+            break;
+          }
+        }
+      }
+    }
+    return layer_range_num_map;
+  }
+
+  template <typename T>
   static std::map<T, irt_int> getRangeNumMap(std::vector<T> value_list)
   {
     std::map<T, irt_int> scale_num_map;
@@ -3171,6 +3246,6 @@ class RTUtil
   }
 
 #endif
-};
+};  // namespace irt
 
 }  // namespace irt
