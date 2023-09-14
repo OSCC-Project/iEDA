@@ -84,6 +84,9 @@ class ViolationRepairer
   void calcVRGCellDemand(VRModel& vr_model);
   void countVRModel(VRModel& vr_model);
   void reportVRModel(VRModel& vr_model);
+  fort::char_table buildOverflowTable(std::map<irt_int, std::map<std::pair<double, double>, irt_int>>& layer_range_number_map,
+                                      irt_int total_overflow_number);
+  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopVRModel(VRModel& vr_model);
 #endif
 

@@ -82,6 +82,7 @@ class ResourceAllocator
   void normalizeCostMap(GridMap<double>& cost_map, double lower_cost);
   void countRAModel(RAModel& ra_model);
   void reportRAModel(RAModel& ra_model);
+  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopOuterRAModel(RAModel& ra_model);
 #endif
 

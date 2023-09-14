@@ -678,7 +678,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     }
   }
 
-  std::vector<double>& resource_overflow_list = vr_model_stat.get_resource_overflow_list();
+  std::map<irt_int, std::vector<double>>& layer_resource_overflow_map = vr_model_stat.get_layer_resource_overflow_map();
 
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
   for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
@@ -697,7 +697,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         if (RTUtil::exist(layer_resource_demand_map, layer_idx)) {
           demand = layer_resource_demand_map[layer_idx];
         }
-        resource_overflow_list.push_back(RTUtil::calcCost(demand, supply));
+        layer_resource_overflow_map[layer_idx].push_back(RTUtil::calcCost(demand, supply));
       }
     }
   }
@@ -737,6 +737,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   double total_nonprefer_wire_length = 0;
   irt_int total_patch_number = 0;
   irt_int total_via_number = 0;
+  irt_int total_overflow_number = 0;
   irt_int total_drc_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
@@ -753,6 +754,9 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
+  for (auto& [layer_idx, resource_overflow_list] : layer_resource_overflow_map) {
+    total_overflow_number += resource_overflow_list.size();
+  }
   for (auto& [vr_source_type, drc_violation_map] : source_drc_violation_map) {
     for (auto& [drc, violation_list] : drc_violation_map) {
       total_drc_number += violation_list.size();
@@ -763,6 +767,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
   vr_model_stat.set_total_patch_number(total_patch_number);
   vr_model_stat.set_total_via_number(total_via_number);
+  vr_model_stat.set_total_overflow_number(total_overflow_number);
   vr_model_stat.set_total_drc_number(total_drc_number);
 
   vr_model.set_vr_model_stat(vr_model_stat);
@@ -780,7 +785,7 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& routing_patch_number_map = vr_model_stat.get_routing_patch_number_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
-  std::vector<double>& resource_overflow_list = vr_model_stat.get_resource_overflow_list();
+  std::map<irt_int, std::vector<double>>& layer_resource_overflow_map = vr_model_stat.get_layer_resource_overflow_map();
   std::map<VRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
       = vr_model_stat.get_source_drc_violation_map();
   std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
@@ -790,11 +795,11 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   double total_nonprefer_wire_length = vr_model_stat.get_total_nonprefer_wire_length();
   irt_int total_patch_number = vr_model_stat.get_total_patch_number();
   irt_int total_via_number = vr_model_stat.get_total_via_number();
+  irt_int total_overflow_number = vr_model_stat.get_total_overflow_number();
   irt_int total_drc_number = vr_model_stat.get_total_drc_number();
 
   // wire table
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
              << "Prefer Wire Length"
              << "Nonprefer Wire Length"
@@ -810,7 +815,6 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
              << total_patch_number << fort::endr;
   // via table
   fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_ROUND_STYLE);
   via_table << fort::header << "Cut Layer"
             << "Via Number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
@@ -819,18 +823,24 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
               << RTUtil::getString(cut_via_number, "(", RTUtil::getPercentage(cut_via_number, total_via_number), "%)") << fort::endr;
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
+  // patch table
+  fort::char_table patch_table;
+  patch_table << fort::header << "Routing Layer"
+              << "Patch Number" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double layer_idx = routing_layer.get_layer_idx();
+    irt_int patch_number = routing_patch_number_map[layer_idx];
+    patch_table << routing_layer.get_layer_name()
+                << RTUtil::getString(patch_number, "(", RTUtil::getPercentage(patch_number, total_patch_number), "%)") << fort::endr;
+  }
+  patch_table << fort::header << "Total" << total_patch_number << fort::endr;
+
+  printTableList({wire_table, via_table, patch_table});
 
   // report resource overflow info
-  GridMap<std::string> resource_overflow_map = RTUtil::getRangeRatioMap(resource_overflow_list, {1.0});
-
-  fort::char_table resource_overflow_table;
-  resource_overflow_table.set_border_style(FT_SOLID_STYLE);
-  resource_overflow_table << fort::header << "Resource Overflow"
-                          << "GCell Number" << fort::endr;
-  for (irt_int y = 0; y < resource_overflow_map.get_y_size(); y++) {
-    resource_overflow_table << resource_overflow_map[0][y] << resource_overflow_map[1][y] << fort::endr;
-  }
-  resource_overflow_table << fort::header << "Total" << resource_overflow_list.size() << fort::endr;
+  auto layer_resource_range_number_map = RTUtil::getLayerRangeNumMap(layer_resource_overflow_map, {1.0});
+  fort::char_table resource_overflow_table = buildOverflowTable(layer_resource_range_number_map, total_overflow_number);
+  resource_overflow_table[0][0] = "Layer\\Resource Overflow";
 
   // init item column/row map
   irt_int row = 0;
@@ -849,7 +859,6 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
   // build table
   fort::char_table drc_table;
-  drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
   drc_table << fort::header;
   drc_table[0][0] = "DRC\\Source";
   // first row item
@@ -887,26 +896,120 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
 
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(resource_overflow_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
+  printTableList({resource_overflow_table, drc_table});
+}
+
+fort::char_table ViolationRepairer::buildOverflowTable(
+    std::map<irt_int, std::map<std::pair<double, double>, irt_int>>& layer_range_number_map, irt_int total_overflow_number)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  // init resource overflow table item column/row map
+  irt_int report_number = 0;
+  std::map<irt_int, irt_int> resource_layer_number_map;
+  std::map<std::pair<double, double>, irt_int> resource_range_number_map;
+  for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
+    irt_int layer_total_number = 0;
+    for (auto& [range, number] : range_number_map) {
+      layer_total_number += number;
+    }
+    report_number += layer_total_number;
+    resource_layer_number_map[layer_idx] = layer_total_number;
+  }
+  for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
+    for (auto& [range, number] : range_number_map) {
+      resource_range_number_map[range] += number;
+    }
+  }
+
+  std::map<std::pair<double, double>, std::string> range_str_map;
+  for (auto& [range, number] : resource_range_number_map) {
+    range_str_map[range] = RTUtil::getString("(", range.first, ",", range.second, ")");
+  }
+
+  irt_int row = 0;
+  std::map<std::string, irt_int> item_row_map;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    item_row_map[routing_layer.get_layer_name()] = ++row;
+  }
+  item_row_map["Total"] = ++row;
+
+  irt_int column = 0;
+  std::map<std::string, irt_int> item_column_map;
+  for (auto& [range, number] : resource_range_number_map) {
+    item_column_map[range_str_map[range]] = ++column;
+  }
+  item_column_map["Total"] = ++column;
+
+  // report resource overflow info
+  fort::char_table resource_overflow_table;
+  resource_overflow_table << fort::header << "Layer\\Overflow" << fort::endr;
+  for (auto& [range, number] : resource_range_number_map) {
+    resource_overflow_table << range_str_map[range];
+  }
+  resource_overflow_table << fort::endr;
+
+  // first row item
+  for (auto& [layer_name, row] : item_row_map) {
+    resource_overflow_table[row][0] = layer_name;
+  }
+  // first column item
+  for (auto& [range_str, column] : item_column_map) {
+    resource_overflow_table[0][column] = range_str;
+  }
+  // element
+  for (auto& [layer, range_number_map] : layer_range_number_map) {
+    irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
+    for (auto& [range, number] : range_number_map) {
+      irt_int column = item_column_map[range_str_map[range]];
+      resource_overflow_table[row][column] = RTUtil::getString(number, "(", RTUtil::getPercentage(number, total_overflow_number), "%)");
+    }
+  }
+  // last row
+  for (auto& [resource_range, total_number] : resource_range_number_map) {
+    irt_int row = item_row_map["Total"];
+    irt_int column = item_column_map[range_str_map[resource_range]];
+    resource_overflow_table[row][column]
+        = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
+  }
+  resource_overflow_table << fort::header;
+
+  // last column
+  for (auto& [layer, total_number] : resource_layer_number_map) {
+    irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
+    irt_int column = item_column_map["Total"];
+    resource_overflow_table[row][column]
+        = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
+  }
+
+  resource_overflow_table[item_row_map["Total"]][item_column_map["Total"]]
+      = RTUtil::getString(report_number, "(", RTUtil::getPercentage(report_number, total_overflow_number), "%)");
+
+  return resource_overflow_table;
+}
+
+void ViolationRepairer::printTableList(const std::vector<fort::char_table>& table_list)
+{
+  std::vector<std::vector<std::string>> print_table_list;
+  for (const fort::char_table& table : table_list) {
+    print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+  }
+
   int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
+  for (std::vector<std::string>& table : print_table_list) {
     max_size = std::max(max_size, static_cast<irt_int>(table.size()));
   }
-  for (std::vector<std::string>& table : table_list) {
+  for (std::vector<std::string>& table : print_table_list) {
     for (irt_int i = table.size(); i < max_size; i++) {
       std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
+      table_str.append(table.front().length(), ' ');
       table.push_back(table_str);
     }
   }
 
   for (irt_int i = 0; i < max_size; i++) {
     std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
+    for (std::vector<std::string>& table : print_table_list) {
       table_str += table[i];
       table_str += " ";
     }
