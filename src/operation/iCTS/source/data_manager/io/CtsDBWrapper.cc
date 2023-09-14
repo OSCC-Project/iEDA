@@ -68,6 +68,22 @@ void CtsDBWrapper::read()
     /// from config
     idb_net->set_connect_type(IdbConnectType::kClock);
   }
+  // check mux
+  std::ranges::for_each(design->get_insts(), [](CtsInstance* inst) {
+    if (inst->isSink()) {
+      return;
+    }
+    auto pins = inst->get_pin_list();
+    int load_num = 0;
+    std::ranges::for_each(pins, [&load_num](CtsPin* pin) {
+      if (pin->get_pin_type() == CtsPinType::kIn) {
+        ++load_num;
+      }
+    });
+    if (load_num > 1) {
+      inst->set_type(CtsInstanceType::kMux);
+    }
+  });
 }
 
 void CtsDBWrapper::linkIdb(CtsInstance* inst)
@@ -313,6 +329,9 @@ void CtsDBWrapper::linkInstanceCood(CtsInstance* inst, IdbInstance* idb_inst)
   //                    << inst->get_location().y() << ")";
   // IdbOrient row_orient = row->get_site()->get_orient();
   // idb_inst->set_orient(row_orient);
+  auto* rows = _idb_layout->get_rows();
+  auto orient = rows->get_row_list().front()->get_site()->get_orient();
+  idb_inst->set_orient(orient);
 
   for (auto& idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
     CtsPin* pin = idbToCts(idb_pin);
@@ -332,8 +351,9 @@ bool CtsDBWrapper::ctsConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
   pin->set_net(net);
   return true;
 }
-bool CtsDBWrapper::idbConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
+bool CtsDBWrapper::idbConnect(CtsPin* pin, CtsNet* net)
 {
+  auto* inst = pin->get_instance();
   ctsConnect(inst, pin, net);
   if (inst->is_virtual()) {
     return true;
@@ -359,6 +379,9 @@ bool CtsDBWrapper::idbConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
 bool CtsDBWrapper::ctsDisconnect(CtsPin* pin)
 {
   CtsNet* net = pin->get_net();
+  if (!net) {
+    return true;
+  }
   net->removePin(pin);
   pin->set_net(nullptr);
   return true;
@@ -374,6 +397,9 @@ bool CtsDBWrapper::idbDisconnect(CtsPin* pin)
     return false;
   }
   auto* idb_net = idb_pin->get_net();
+  if (!idb_net) {
+    return true;
+  }
   idb_net->remove_pin(idb_pin);
   return true;
 }

@@ -700,9 +700,10 @@ std::optional<int64_t> StaVertex::getSlack(AnalysisMode analysis_mode,
  *
  * @param analysis_mode
  * @param trans_type
- * @return int
+ * @return std::optional<int>
  */
-int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
+std::optional<int> StaVertex::getSlew(AnalysisMode analysis_mode,
+                                      TransType trans_type) {
   StaData* data;
   FOREACH_SLEW_DATA(this, data) {
     if (data->get_delay_type() == analysis_mode &&
@@ -712,7 +713,7 @@ int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
     }
   }
 
-  return 0;
+  return std::nullopt;
 }
 
 /**

@@ -34,17 +34,14 @@ class Inst
 {
  public:
   // basic
-  Inst(CtsInstance* cts_inst, const InstType& type = InstType::kSink) : _cts_inst(cts_inst), _type(type)
+  Inst(const std::string& name, const Point& location, const InstType& type = InstType::kSink)
+      : _name(name), _location(location), _type(type)
   {
-    _name = _cts_inst->get_name();
-    _location = _cts_inst->get_location();
     init();
   }
   // node to buffer
-  Inst(CtsInstance* cts_inst, Node* driver_node) : _cts_inst(cts_inst)
+  Inst(const std::string& name, const Point& location, Node* driver_node) : _name(name), _location(location)
   {
-    _name = _cts_inst->get_name();
-    _location = _cts_inst->get_location();
     _type = InstType::kBuffer;
     init(driver_node);
   }
@@ -52,7 +49,6 @@ class Inst
   // get
   const std::string& get_name() const { return _name; }
   const Point& get_location() const { return _location; }
-  CtsInstance* get_cts_inst() const { return _cts_inst; }
   const InstType& get_type() const { return _type; }
   const std::string& get_cell_master() const { return _cell_master; }
   const double& get_insert_delay() const { return _insert_delay; }
@@ -67,15 +63,9 @@ class Inst
   {
     _location = location;
     updatePinLocation(location);
-    _cts_inst->set_location(location);
   }
-  void set_cts_inst(CtsInstance* cts_inst) { _cts_inst = cts_inst; }
   void set_type(const InstType& type) { _type = type; }
-  void set_cell_master(const std::string& cell_master)
-  {
-    _cell_master = cell_master;
-    _cts_inst->set_cell_master(cell_master);
-  }
+  void set_cell_master(const std::string& cell_master) { _cell_master = cell_master; }
   void set_insert_delay(const double& insert_delay) { _insert_delay = insert_delay; }
   void set_driver_pin(Pin* driver_pin) { _driver_pin = driver_pin; }
   void set_load_pin(Pin* load_pin) { _load_pin = load_pin; }
@@ -83,6 +73,7 @@ class Inst
   // bool
   bool isSink() const { return _type == InstType::kSink; }
   bool isBuffer() const { return _type == InstType::kBuffer; }
+  bool isNoneLib() const { return _type == InstType::kNoneLib; }
 
  private:
   void init(Node* driver_node = nullptr);
@@ -90,9 +81,8 @@ class Inst
   void updatePinLocation(const Point& location);
   std::string _name = "";
   Point _location = Point(-1, -1);
-  CtsInstance* _cts_inst = nullptr;
-  InstType _type = InstType::kSink;
   std::string _cell_master = "";
+  InstType _type = InstType::kSink;
   double _insert_delay = 0;
   Pin* _driver_pin = nullptr;
   Pin* _load_pin = nullptr;

@@ -70,6 +70,7 @@ class CTSAPI
   double getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pattern = std::nullopt) const;
   double getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pattern = std::nullopt) const;
   double getSinkCap(icts::CtsInstance* sink) const;
+  double getSinkCap(const std::string& load_pin_full_name) const;
   bool isFlipFlop(const std::string& inst_name) const;
   bool isClockNet(const std::string& net_name) const;
   void startDbSta();

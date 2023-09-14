@@ -23,11 +23,13 @@
 namespace icts {
 void Router::init()
 {
-  CTSAPIInst.saveToLog("\n\nRouter Log");
+  CTSAPIInst.saveToLog("\n\n##Router Log##");
   auto* design = CTSAPIInst.get_design();
   // report unit res & cap
-  CTSAPIInst.saveToLog("\nRouter unit res: ", CTSAPIInst.getClockUnitRes());
-  CTSAPIInst.saveToLog("Router unit cap: ", CTSAPIInst.getClockUnitCap());
+  CTSAPIInst.saveToLog("\nRouter unit res (H): ", CTSAPIInst.getClockUnitRes(LayerPattern::kH));
+  CTSAPIInst.saveToLog("Router unit cap (H): ", CTSAPIInst.getClockUnitCap(LayerPattern::kH));
+  CTSAPIInst.saveToLog("Router unit res (V): ", CTSAPIInst.getClockUnitRes(LayerPattern::kV));
+  CTSAPIInst.saveToLog("Router unit cap (V): ", CTSAPIInst.getClockUnitCap(LayerPattern::kV));
   printLog();
   auto& clocks = design->get_clocks();
   for (auto& clock : clocks) {
@@ -44,68 +46,36 @@ void Router::init()
     }
   }
 }
-void Router::update()
-{
-  auto* design = CTSAPIInst.get_design();
-  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  for (auto& net : design->get_nets()) {
-    // debug
-    if (net->get_net_name() == "sys_clk_25m_buf") {
-      int a = 1;
-    }
-    for (auto* load_pin : net->get_load_pins()) {
-      auto* load_inst = load_pin->get_instance();
-      if (load_pin->get_net() != nullptr) {
-        if (load_pin->get_net() != net) {
-          db_wrapper->idbDisconnect(load_pin);
-        } else {
-          continue;
-        }
-      }
-      db_wrapper->idbConnect(load_inst, load_pin, net);
-    }
-  }
-  for (auto& net : _insert_nets) {
-    auto* driver_inst = net->get_driver_inst();
-    db_wrapper->updateCell(driver_inst);
-    db_wrapper->makeIdbNet(net);
-    for (auto* load_pin : net->get_load_pins()) {
-      auto* load_inst = load_pin->get_instance();
-      if (load_pin->get_net() != nullptr) {
-        if (load_pin->get_net() != net) {
-          db_wrapper->idbDisconnect(load_pin);
-        } else {
-          continue;
-        }
-      }
-      db_wrapper->idbConnect(load_inst, load_pin, net);
-    }
-    std::ranges::for_each(driver_inst->get_pin_list(), [&design](CtsPin* pin) { design->addPin(pin); });
-    design->addInstance(driver_inst);
-    design->addNet(net);
-  }
-  CTSAPIInst.convertDBToTimingEngine();
-}
-
 void Router::build()
 {
   for (auto* clock : _clocks) {
     auto* design = CTSAPIInst.get_design();
     auto& clock_nets = clock->get_clock_nets();
+    CTSAPIInst.saveToLog("\n\n");
     for (auto* clk_net : clock_nets) {
+      CTSAPIInst.saveToLog("clock net: ", clk_net->get_net_name());
+      LOG_INFO << "clock net: " << clk_net->get_net_name();
       design->resetId();
-      // debug
-      if (clk_net->get_net_name() == "sys_clk_25m_buf") {
-        int a = 0;
-      }
-      if (!routeAble(clk_net)) {
-        continue;
-      }
+      auto sink_pins = getSinkPins(clk_net);
+      auto buf_pins = getBufferPins(clk_net);
+      CTSAPIInst.saveToLog("sink pins: ", sink_pins.size());
+      LOG_INFO << "sink pins: " << sink_pins.size();
+      CTSAPIInst.saveToLog("buf pins: ", buf_pins.size());
+      LOG_INFO << "buf pins: " << buf_pins.size();
       gocaRouting(clk_net);
       clk_net->setClockRouted();
-      breakLongWire(clk_net);
     }
   }
+}
+void Router::update()
+{
+  // update to cts design, idb and sta
+  std::ranges::for_each(_solver_set.get_nets(), [&](Net* net) {
+    std::ranges::for_each(net->get_pins(), [&](Pin* pin) { synthesisPin(pin); });
+    synthesisNet(net);
+  });
+  LOG_INFO << "Convert data to timing engine...";
+  CTSAPIInst.convertDBToTimingEngine();
 }
 
 void Router::printLog()
@@ -123,27 +93,23 @@ void Router::printLog()
 
 void Router::gocaRouting(CtsNet* clk_net)
 {
-  auto pins = getSinkPins(clk_net);
-  if (pins.size() <= 1) {
+  auto pins = clk_net->get_load_pins();
+  if (pins.empty()) {
+    LOG_WARNING << "Net: " << clk_net->get_net_name() << " is empty!";
     return;
   }
   auto net_name = clk_net->get_net_name();
   // total topology
-  auto goca = GOCA(net_name, pins);
+  auto goca = GOCA(net_name, clk_net->get_driver_pin(), pins);
   goca.run();
-  auto clk_nets = goca.get_clk_nets();
-  for (auto& net : clk_nets) {
-    _insert_nets.emplace_back(net);
-  }
+  auto clk_nets = goca.get_solver_nets();
   if (clk_nets.empty()) {
     return;
   }
-  auto* root_net = clk_nets.back();
-  auto* root_driver = root_net->get_driver_pin();
-  auto* root_inst = root_driver->get_instance();
-  auto* load_pin = root_inst->get_load_pin();
-  removeSinkPin(clk_net);
-  clk_net->addPin(load_pin);
+  std::ranges::for_each(clk_nets, [&](Net* net) {
+    _solver_set.add_net(net);
+    std::ranges::for_each(net->get_pins(), [&](Pin* pin) { _solver_set.add_pin(pin); });
+  });
 }
 
 std::vector<CtsPin*> Router::getSinkPins(CtsNet* clk_net)
@@ -172,109 +138,95 @@ std::vector<CtsPin*> Router::getBufferPins(CtsNet* clk_net)
   return pins;
 }
 
-void Router::removeSinkPin(CtsNet* clk_net)
+void Router::synthesisPin(Pin* pin)
 {
-  auto* driver_pin = clk_net->get_driver_pin();
-  auto pins = getBufferPins(clk_net);
-  clk_net->clear();
-  for (auto* pin : pins) {
-    clk_net->addPin(pin);
+  auto* design = CTSAPIInst.get_design();
+  if (design->findPin(pin->get_name()) != nullptr) {
+    return;
   }
-  clk_net->addPin(driver_pin);
+
+  // It's a new insert buffer pin
+  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
+  auto buf = pin->get_inst();
+  auto* cts_buf = new CtsInstance(buf->get_name(), buf->get_cell_master(), CtsInstanceType::kBuffer, buf->get_location());
+  db_wrapper->linkIdb(cts_buf);
+
+  // update driver pin name
+  auto* driver_pin = buf->get_driver_pin();
+  auto* cts_driver_pin = cts_buf->get_out_pin();
+  driver_pin->set_name(cts_driver_pin->get_full_name());
+  // update load pin name
+  auto* load_pin = buf->get_load_pin();
+  auto* cts_load_pin = cts_buf->get_in_pin();
+  load_pin->set_name(cts_load_pin->get_full_name());
+
+  design->addInstance(cts_buf);
+  design->addPin(cts_driver_pin);
+  design->addPin(cts_load_pin);
 }
 
-void Router::breakLongWire(CtsNet* clk_net)
+void Router::synthesisNet(Net* net)
 {
-  std::string net_name = clk_net->get_net_name();
-  auto* driver_inst = clk_net->get_driver_inst();
-  auto load_pins = clk_net->get_load_pins();
-  CtsInstance* root_buf = nullptr;
-  if (load_pins.size() > 1) {
-    // total topology
-    auto goca = GOCA(net_name + "_rebuild", load_pins);
-    goca.simpleRun();
-    auto clk_nets = goca.get_clk_nets();
-    for (auto& net : clk_nets) {
-      _insert_nets.emplace_back(net);
-    }
-    root_buf = clk_nets.back()->get_driver_inst();
-  } else {
-    root_buf = load_pins.front()->get_instance();
+  auto* design = CTSAPIInst.get_design();
+  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
+  auto* cts_net = design->findNet(net->get_name());
+  if (!cts_net) {
+    cts_net = new CtsNet(net->get_name());
+    db_wrapper->makeIdbNet(cts_net);
+    design->addNet(cts_net);
   }
-  auto parent_loc = driver_inst->get_location();
-  auto child_loc = root_buf->get_location();
-  auto length = TimingPropagator::calcLen(parent_loc, child_loc);
-  int required_buf_num = std::ceil(length / TimingPropagator::getMaxLength());
-  if (required_buf_num > 1) {
-    auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-    auto cur_loc = child_loc;
-    auto delta_loc = (parent_loc - child_loc) / (required_buf_num + 1);
-    auto* cur_load = root_buf;
-    while (required_buf_num--) {
-      cur_loc += delta_loc;
-      auto sub_net_name = CTSAPIInst.toString(net_name, "_break_", required_buf_num);
-      auto* cur_net = new CtsNet(sub_net_name);
-      auto* buf
-          = new CtsInstance(sub_net_name + "_buf", TimingPropagator::getMinSizeLib()->get_cell_master(), CtsInstanceType::kBuffer, cur_loc);
-      db_wrapper->linkIdb(buf);
-      cur_net->addPin(buf->get_out_pin());
-      cur_net->addPin(cur_load->get_in_pin());
-      int steiner_id = 0;
-      if (pgl::rectilinear(cur_loc, cur_load->get_location())) {
-        cur_net->addSignalWire(CtsSignalWire(Endpoint{buf->get_name(), cur_loc}, Endpoint{cur_load->get_name(), cur_load->get_location()}));
+  // It's a new insert buffer net
+  std::ranges::for_each(net->get_pins(), [&](Pin* pin) {
+    auto* cts_pin = design->findPin(pin->get_name());
+    LOG_FATAL_IF(!cts_pin) << "Can't found pin in net: " << net->get_name();
+    if (cts_pin->is_io()) {
+      return;
+    }
+    db_wrapper->idbDisconnect(cts_pin);
+    db_wrapper->idbConnect(cts_pin, cts_net);
+  });
+  // synthesis wire
+  auto* driver_pin = net->get_driver_pin();
+  driver_pin->preOrder([&](Node* node) {
+    auto* parent = node->get_parent();
+    if (parent == nullptr) {
+      return;
+    }
+    auto current_loc = node->get_location();
+    auto parent_loc = parent->get_location();
+    auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
+    auto current_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
+    auto require_nake = node->get_required_snake();
+    if (require_nake > 0) {
+      auto require_snake = std::ceil(require_nake * TimingPropagator::getDbUnit());
+      auto delta_x = std::abs(current_loc.x() - parent_loc.x());
+      auto trunk_x = (parent_loc.x() + current_loc.x() + delta_x + require_snake) / 2;
+      auto snake_p1 = Point(trunk_x, parent_loc.y());
+      auto snake_p2 = Point(trunk_x, current_loc.y());
+      if (!(CTSAPIInst.isInDie(snake_p1) && CTSAPIInst.isInDie(snake_p2))) {
+        // is not in die
+        trunk_x = (parent_loc.x() + current_loc.x() - delta_x - require_snake) / 2;
+        snake_p1 = Point(trunk_x, parent_loc.y());
+        snake_p2 = Point(trunk_x, current_loc.y());
+      }
+      std::vector<std::string> name_vec
+          = {parent_name, "steiner_" + std::to_string(CTSAPIInst.genId()), "steiner_" + std::to_string(CTSAPIInst.genId()), current_name};
+      std::vector<Point> point_vec = {parent_loc, snake_p1, snake_p2, current_loc};
+      for (size_t i = 0; i < name_vec.size() - 1; ++i) {
+        cts_net->addSignalWire(CtsSignalWire(Endpoint{name_vec[i], point_vec[i]}, Endpoint{name_vec[i + 1], point_vec[i + 1]}));
+      }
+    } else {
+      if (pgl::rectilinear(parent_loc, current_loc)) {
+        cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{current_name, current_loc}));
       } else {
-        auto trunk_loc = Point(cur_loc.x(), cur_load->get_location().y());
-        auto trunk_name = "steiner_" + std::to_string(steiner_id++);
-        cur_net->addSignalWire(CtsSignalWire(Endpoint{buf->get_name(), cur_loc}, Endpoint{trunk_name, trunk_loc}));
-        cur_net->addSignalWire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{cur_load->get_name(), cur_load->get_location()}));
-      }
-      _insert_nets.emplace_back(cur_net);
-      cur_load = buf;
-    }
-    root_buf = cur_load;
-  }
-  for (auto pin : load_pins) {
-    clk_net->removePin(pin);
-  }
-  clk_net->addPin(root_buf->get_load_pin());
-  int steiner_id = 0;
-  if (pgl::rectilinear(parent_loc, child_loc)) {
-    clk_net->addSignalWire(CtsSignalWire(Endpoint{driver_inst->get_name(), parent_loc}, Endpoint{root_buf->get_name(), child_loc}));
-  } else {
-    auto trunk_loc = Point(parent_loc.x(), child_loc.y());
-    auto trunk_name = "steiner_" + std::to_string(steiner_id++);
-    clk_net->addSignalWire(CtsSignalWire(Endpoint{driver_inst->get_name(), parent_loc}, Endpoint{trunk_name, trunk_loc}));
-    clk_net->addSignalWire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{root_buf->get_name(), child_loc}));
-  }
-}
-
-bool Router::routeAble(CtsNet* clk_net)
-{
-  auto sink_pins = getSinkPins(clk_net);
-  if (sink_pins.size() <= 1) {
-    auto* driver = clk_net->get_driver_inst();
-    // ignore multiple load pin instance
-    if (driver->isMux()) {
-      return false;
-    }
-    // ignore mux clk
-    if (driver->isSink()) {
-      return false;
-    }
-    // ignore io net
-    auto pins = clk_net->get_pins();
-    bool is_io = false;
-    for (auto pin : pins) {
-      if (pin->is_io()) {
-        is_io = true;
-        break;
+        auto trunk_loc = Point(parent_loc.x(), current_loc.y());
+        auto trunk_name = "steiner_" + std::to_string(CTSAPIInst.genId());
+        cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{trunk_name, trunk_loc}));
+        cts_net->addSignalWire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{current_name, current_loc}));
       }
     }
-    if (is_io) {
-      return false;
-    }
-  }
-  return true;
+  });
+  design->addSolverNet(net);
 }
 
 }  // namespace icts

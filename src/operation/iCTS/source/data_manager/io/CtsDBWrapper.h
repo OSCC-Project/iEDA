@@ -86,7 +86,7 @@ class CtsDBWrapper
   // the operator of idb
   IdbInstance* makeIdbInstance(CtsInstance* inst);
   IdbNet* makeIdbNet(CtsNet* net);
-  bool idbConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net);
+  bool idbConnect(CtsPin* pin, CtsNet* net);
   bool idbDisconnect(CtsPin* pin);
   void linkInstanceCood(CtsInstance* inst, IdbInstance* idb_inst);
   bool ctsConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net);

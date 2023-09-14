@@ -61,7 +61,7 @@ class Node
   const NodeType& get_type() const { return _type; }
   Node* get_parent() const { return _parent; }
   const std::vector<Node*>& get_children() const { return _children; }
-
+  const RCPattern& get_pattern() const { return _pattern; }
   // set
   void set_name(const std::string& name) { _name = name; }
   void set_location(const Point& location) { _location = location; }
@@ -73,7 +73,7 @@ class Node
   void set_required_snake(const double& required_snake) { _required_snake = required_snake; }
   void set_parent(Node* parent) { _parent = parent; }
   void set_children(const std::vector<Node*>& children) { _children = children; }
-
+  void set_pattern(const RCPattern& pattern) { _pattern = pattern; }
   // add
   void add_child(Node* child) { _children.push_back(child); }
 
@@ -94,24 +94,24 @@ class Node
     func(this);
     std::ranges::for_each(_children, [&](auto child) { child->preOrder(func); });
   }
-  void preOrder(NodePatternFunc func, const RCPattern& pattern = RCPattern::kSingle)
+  void preOrder(NodePatternFunc func)
   {
-    func(this, pattern);
-    std::ranges::for_each(_children, [&](auto child) { child->preOrder(func, pattern); });
+    func(this, _pattern);
+    std::ranges::for_each(_children, [&](auto child) { child->preOrder(func); });
   }
   void postOrder(NodeFunc func)
   {
     std::ranges::for_each(_children, [&](auto child) { child->postOrder(func); });
     func(this);
   }
-  void postOrder(NodePatternFunc func, const RCPattern& pattern = RCPattern::kSingle)
+  void postOrder(NodePatternFunc func)
   {
-    std::ranges::for_each(_children, [&](auto child) { child->postOrder(func, pattern); });
-    func(this, pattern);
+    std::ranges::for_each(_children, [&](auto child) { child->postOrder(func); });
+    func(this, _pattern);
   }
 
   // for pin node
-  virtual std::string getCellMaster() const { return ""; }
+  virtual std::string get_cell_master() const { LOG_FATAL << "Node type have not cell master"; }
 
   virtual bool isDriver() const { return false; }
   virtual bool isLoad() const { return false; }
@@ -131,5 +131,6 @@ class Node
   NodeType _type = NodeType::kSteiner;
   Node* _parent = nullptr;
   std::vector<Node*> _children;
+  RCPattern _pattern = RCPattern::kSingle;
 };
 }  // namespace icts
