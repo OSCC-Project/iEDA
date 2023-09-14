@@ -34,6 +34,7 @@
 
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
+#include "StaBuildClockTree.hh"
 #include "StaBuildGraph.hh"
 #include "StaBuildPropTag.hh"
 #include "StaBuildRCTree.hh"
@@ -960,11 +961,11 @@ std::optional<double> Sta::getVertexSlewSlack(StaVertex *the_vertex,
                                               TransType trans_type) {
   std::optional<double> slack;
 
-  double slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto slew = the_vertex->getSlewNs(mode, trans_type);
   auto limit = getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
-    slack = *limit - slew;
+  if (limit && slew) {
+    slack = *limit - *slew;
   }
 
   return slack;
@@ -2285,124 +2286,16 @@ void Sta::dumpNetlistData() {
 }
 
 /**
- * @brief Build the next pin in clock tree.
- *
- */
-void Sta::buildNextPin(
-    StaClockTree *clock_tree, StaClockTreeNode *parent_node,
-    StaVertex *parent_vertex,
-    std::map<StaVertex *, std::vector<StaData *>> &vertex_to_datas) {
-  for (auto &[fwd_vertex, fwd_datas] : vertex_to_datas) {
-    std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-
-    double max_rise_AT = 0;
-    double max_fall_AT = 0;
-    double min_rise_AT = 0;
-    double min_fall_AT = 0;
-    for (auto *fwd_clock_data : fwd_datas) {
-      if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-          (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        max_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_rise_AT = FS_TO_NS(max_rise_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kFall)) {
-        max_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_fall_AT = FS_TO_NS(max_fall_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMin) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        min_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_rise_AT = FS_TO_NS(min_rise_AT);
-      } else {
-        min_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_fall_AT = FS_TO_NS(min_fall_AT);
-      }
-
-      for (auto *next_fwd_clock_data : fwd_clock_data->get_fwd_set()) {
-        auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-        next_vertex_to_datas[next_fwd_vertex].emplace_back(next_fwd_clock_data);
-      }
-    }
-
-    std::string from_name = parent_vertex->getName();
-    std::string to_name = fwd_vertex->getName();
-    ModeTransAT mode_trans_AT(from_name.c_str(), to_name.c_str(), max_rise_AT,
-                              max_fall_AT, min_rise_AT, min_fall_AT);
-
-    std::string parent_cell_type = parent_node->get_cell_type();
-    // build clock node, annotate delay
-    std::string child_cell_type = fwd_vertex->getOwnCellOrPortName();
-    std::string child_inst_name = fwd_vertex->getOwnInstanceOrPortName();
-
-    std::string parent_inst_name = parent_vertex->getOwnInstanceOrPortName();
-    StaClockTreeNode *child_node =
-        clock_tree->findNode(child_inst_name.c_str());
-    bool is_new = false;
-    if (!child_node) {
-      is_new = true;
-      child_node = new StaClockTreeNode(child_cell_type, child_inst_name);
-    }
-
-    if (parent_node != child_node) {
-      auto *child_arc = new StaClockTreeArc(parent_node, child_node);
-      child_arc->set_net_arrive_time(mode_trans_AT);
-      child_node->addFaninArc(child_arc);
-      clock_tree->addChildNode(child_node);
-      clock_tree->addChildArc(child_arc);
-    } else {
-      parent_node->addInstArrvieTime(std::move(mode_trans_AT));
-    }
-
-    if ((parent_node != child_node) && (is_new == false)) {
-      return;
-    }
-
-    if (fwd_vertex->is_clock()) {
-      return;
-    }
-
-    buildNextPin(clock_tree, child_node, fwd_vertex, next_vertex_to_datas);
-  }
-}
-
-/**
  * @brief Build clock tree for GUI.
  *
  */
 void Sta::buildClockTrees() {
+  StaBuildClockTree build_clock_tree;
   for (auto &clock : _clocks) {
-    // get_clock_vertexs: usually return one.
-    auto &vertexes = clock->get_clock_vertexes();
-
-    for (auto *vertex : vertexes) {
-      // for each vertex, make one root_node/clock_tree.
-      std::string pin_name = vertex->getName();
-      std::string cell_type = vertex->getOwnCellOrPortName();
-      std::string inst_name = vertex->getOwnInstanceOrPortName();
-      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
-      auto *clock_tree = new StaClockTree(clock.get(), root_node);
-      addClockTree(clock_tree);
-
-      StaData *clock_data;
-      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-      FOREACH_CLOCK_DATA(vertex, clock_data) {
-        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
-            clock_tree->get_clock()) {
-          continue;
-        }
-
-        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
-          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-          next_vertex_to_datas[next_fwd_vertex].emplace_back(
-              next_fwd_clock_data);
-        }
-      }
-      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
-    }
+    build_clock_tree(clock.get());
   }
+
+  _clock_trees = std::move(build_clock_tree.takeClockTrees());
 }
 
 /**
@@ -2437,6 +2330,41 @@ std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get the instance worst transition.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTransition(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slew;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slew = the_vertex->getWorstSlewNs(analysis_mode);
+    if (the_worst_pin_slew) {
+      if (!the_worst_inst_slew) {
+        the_worst_inst_slew = *the_worst_pin_slew;
+      } else {
+        if ((analysis_mode == AnalysisMode::kMax) &&
+            (*the_worst_inst_slew < *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        } else if ((analysis_mode == AnalysisMode::kMin) &&
+                   (*the_worst_inst_slew > *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        }
+      }
+    }
+  }
+
+  return the_worst_inst_slew;
+}
+
+/**
  * @brief display timing map of inst worst slack.
  *
  * @param analysis_mode
@@ -2460,6 +2388,32 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   }
 
   return loc_to_inst_slack;
+}
+
+/**
+ * @brief get the inst transition map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_transition;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_transition = getInstTransition(analysis_mode, the_inst);
+    if (the_inst_worst_transition) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_transition[*inst_coordinate] = *the_inst_worst_transition;
+    }
+  }
+
+  return loc_to_inst_transition;
 }
 
 }  // namespace ista
