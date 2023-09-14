@@ -56,7 +56,7 @@ inline std::vector<LayerCoord> Pin::getGridCoordList()
 {
   std::vector<LayerCoord> grid_coord_list;
   for (AccessPoint& access_point : _access_point_list) {
-    grid_coord_list.emplace_back(access_point.get_grid_coord(), access_point.get_layer_idx());
+    grid_coord_list.push_back(access_point.getGridLayerCoord());
   }
   RTUtil::merge(grid_coord_list, [](LayerCoord& sentry, LayerCoord& soldier) { return sentry == soldier; });
   return grid_coord_list;
@@ -66,7 +66,7 @@ inline std::vector<LayerCoord> Pin::getRealCoordList()
 {
   std::vector<LayerCoord> real_coord_list;
   for (AccessPoint& access_point : _access_point_list) {
-    real_coord_list.emplace_back(access_point.get_real_coord(), access_point.get_layer_idx());
+    real_coord_list.push_back(access_point.getRealLayerCoord());
   }
   RTUtil::merge(real_coord_list, [](LayerCoord& sentry, LayerCoord& soldier) { return sentry == soldier; });
   return real_coord_list;

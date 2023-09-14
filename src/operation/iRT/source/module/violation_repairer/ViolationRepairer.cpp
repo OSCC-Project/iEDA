@@ -211,7 +211,7 @@ void ViolationRepairer::calcVRGCellSupply(VRModel& vr_model)
                   if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
                     // 要切
                     std::vector<PlanarRect> split_rect_list
-                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
                     new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
                   } else {
                     // 不切
@@ -571,8 +571,7 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
       candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
     }
     for (LayerRect& candidate_patch : candidate_patch_list) {
-      DRCRect drc_rect(vr_net.get_net_idx(), candidate_patch, true);
-      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, {drc_rect})) {
+      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), candidate_patch, true))) {
         patch_list.push_back(candidate_patch);
         break;
       }
@@ -663,7 +662,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         WireNode& wire_node = phy_node.getNode<WireNode>();
         irt_int layer_idx = wire_node.get_layer_idx();
         double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
-        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
+        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_prefer_direction()) {
           routing_prefer_wire_length_map[layer_idx] += wire_length;
         } else {
           routing_nonprefer_wire_length_map[layer_idx] += wire_length;
@@ -935,6 +934,12 @@ void ViolationRepairer::update(VRModel& vr_model)
 #endif
 
 #if 1  // valid drc
+
+bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(vr_model, vr_source_type, drc_rect_list);
+}
 
 bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
