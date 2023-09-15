@@ -33,6 +33,7 @@ namespace tcl {
 int registerCmdContest()
 {
   registerTclCmd(CmdRunContest, "run_contest");
+  registerTclCmd(CmdRunContestEvaluation, "run_contest_evaluation");
 
   return EXIT_SUCCESS;
 }

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: contest_flow.h
+ * @File Name: contest_evaluation.h
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
@@ -28,25 +28,19 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <string>
 
-#include "contest_dm.h"
-
 namespace ieda_contest {
+class ContestDataManager;
 
-class ContestFlow
+class ContestEvaluation
 {
  public:
-  ContestFlow() = default;
-  ~ContestFlow();
+  ContestEvaluation(ContestDataManager* data_manager);
+  ~ContestEvaluation() = default;
 
-  virtual bool run_flow(std::string guide_input, std::string guide_output);
-  bool run_evaluation(std::string guide_file, std::string report_file);
+  bool doEvaluation(std::string report_file) { return true; }
 
  private:
   ContestDataManager* _data_manager = nullptr;
-
-  virtual bool init(std::string guide_input, std::string guide_output = "");
-  virtual void process();
-  virtual bool save();
 };
 
 }  // namespace ieda_contest

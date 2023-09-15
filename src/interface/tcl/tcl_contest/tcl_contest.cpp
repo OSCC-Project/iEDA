@@ -54,4 +54,49 @@ unsigned CmdRunContest::exec()
 
   return 1;
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CmdRunContestEvaluation::CmdRunContestEvaluation(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* guide = new TclStringOption("-guide", 1, nullptr);
+  auto* report = new TclStringOption("-report", 1, nullptr);
+  addOption(guide);
+  addOption(report);
+}
+
+unsigned CmdRunContestEvaluation::check()
+{
+  TclOption* guide = getOptionOrArg("-guide");
+  TclOption* report = getOptionOrArg("-report");
+  LOG_FATAL_IF(!guide);
+  LOG_FATAL_IF(!report);
+  return 1;
+}
+
+unsigned CmdRunContestEvaluation::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  std::string guide_str = "";
+
+  TclOption* option_guide = getOptionOrArg("-guide");
+  if (option_guide != nullptr) {
+    guide_str = option_guide->getStringVal();
+  }
+
+  std::string report_str = "";
+  TclOption* option_report = getOptionOrArg("-report");
+  if (option_report != nullptr) {
+    report_str = option_report->getStringVal();
+  }
+
+  ieda_contest::ContestFlow contest_flow;
+  contest_flow.run_evaluation(guide_str, report_str);
+
+  return 1;
+}
+
 }  // namespace tcl

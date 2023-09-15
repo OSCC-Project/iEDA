@@ -2,7 +2,7 @@ add_library(contest_flow
     contest_flow.cpp
 )
 
-target_link_libraries(contest_flow contest_dm contest_process)
+target_link_libraries(contest_flow contest_dm contest_process contest_evaluation)
 
 target_include_directories(contest_flow 
     PUBLIC 
