@@ -48,6 +48,10 @@
 #include "tcl_register_sta.h"
 #include "tcl_register_to.h"
 
+#ifdef CONTEST
+#include "tcl_register_contest.h"
+#endif
+
 using namespace ieda;
 namespace tcl {
 
@@ -102,6 +106,10 @@ int registerCommands()
   registerCmdFeature();
 
   registerCmdEval();
+
+#ifdef CONTEST
+  registerCmdContest();
+#endif
 
   return EXIT_SUCCESS;
 }
