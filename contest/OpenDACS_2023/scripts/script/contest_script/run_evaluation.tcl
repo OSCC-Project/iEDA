@@ -1,12 +1,12 @@
 #===========================================================
-##   init flow config
+##   init flow config from sky130 gcd scripts
 #===========================================================
-flow_init -config ./iEDA_config/flow_config.json
+flow_init -config ./../../../scripts/design/sky130_gcd/iEDA_config/flow_config.json
 
 #===========================================================
-##   read db config
+##   read db config from sky130 gcd scripts
 #===========================================================
-db_init -config ./iEDA_config/db_default_config.json
+db_init -config ./../../../scripts/design/sky130_gcd/iEDA_config/db_default_config.json
 
 #===========================================================
 ##   reset data path
@@ -34,9 +34,9 @@ source ./script/DB_script/db_init_lef.tcl
 def_init -path ./result/output/output.def
 
 #===========================================================
-##   run STA
+##   run evaluation
 #===========================================================
-run_sta -output ./result/cts/sta/
+run_contest_evaluation -guide ./result/output/output.guide -report ./result/report/evaluation.rpt
 
 #===========================================================
 ##   Exit 

@@ -38,8 +38,8 @@ class GuideParser
   GuideParser() = default;
   ~GuideParser() = default;
 
-  bool parse(std::string& guide_file, std::vector<ContestGuideNet>& guide_nets);
-  bool save(std::string& guide_file, std::vector<ContestGuideNet>& guide_nets);
+  bool parse(std::string guide_file, std::vector<ContestGuideNet>& guide_nets);
+  bool save(std::string guide_file, std::vector<ContestGuideNet>& guide_nets);
 
  private:
 };

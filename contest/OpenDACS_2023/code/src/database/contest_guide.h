@@ -38,13 +38,13 @@ class ContestGuide
   int get_lb_y() const { return _lb_y; }
   int get_rt_x() const { return _rt_x; }
   int get_rt_y() const { return _rt_y; }
-  std::string& get_layer_name() { return _layer_name; }
+  std::string get_layer_name() { return _layer_name; }
   // setter
   void set_lb_x(const int lb_x) { _lb_x = lb_x; }
   void set_lb_y(const int lb_y) { _lb_y = lb_y; }
   void set_rt_x(const int rt_x) { _rt_x = rt_x; }
   void set_rt_y(const int rt_y) { _rt_y = rt_y; }
-  void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
+  void set_layer_name(const std::string layer_name) { _layer_name = layer_name; }
 
  private:
   int _lb_x;
@@ -60,10 +60,10 @@ class ContestGuideNet
   ContestGuideNet() = default;
   ~ContestGuideNet() = default;
   // getter
-  std::string& get_net_name() { return _net_name; }
+  std::string get_net_name() { return _net_name; }
   std::vector<ContestGuide>& get_guide_list() { return _guide_list; }
   // setter
-  void set_net_name(const std::string& net_name) { _net_name = net_name; }
+  void set_net_name(const std::string net_name) { _net_name = net_name; }
   void set_guide_list(const std::vector<ContestGuide>& guide_list) { _guide_list = guide_list; }
   // function
 

@@ -49,4 +49,18 @@ class CmdRunContest : public TclCmd
   // private data
 };
 
+class CmdRunContestEvaluation : public TclCmd
+{
+ public:
+  explicit CmdRunContestEvaluation(const char* cmd_name);
+  ~CmdRunContestEvaluation() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

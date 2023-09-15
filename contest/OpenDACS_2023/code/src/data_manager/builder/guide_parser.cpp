@@ -38,7 +38,7 @@
 
 namespace ieda_contest {
 
-bool GuideParser::parse(std::string& guide_file, std::vector<ContestGuideNet>& guide_nets)
+bool GuideParser::parse(std::string guide_file, std::vector<ContestGuideNet>& guide_nets)
 {
   guide_nets.clear();
   std::vector<ContestGuideNet>().swap(guide_nets);
@@ -93,7 +93,7 @@ bool GuideParser::parse(std::string& guide_file, std::vector<ContestGuideNet>& g
   return true;
 }
 
-bool GuideParser::save(std::string& guide_file, std::vector<ContestGuideNet>& guide_nets)
+bool GuideParser::save(std::string guide_file, std::vector<ContestGuideNet>& guide_nets)
 {
   std::ofstream* guide_file_stream = getOutputFileStream(guide_file);
   if (guide_file_stream == nullptr) {

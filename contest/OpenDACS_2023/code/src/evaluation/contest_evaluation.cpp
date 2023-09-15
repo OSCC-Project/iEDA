@@ -14,39 +14,27 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 /**
- * @File Name: contest_flow.h
+ * @File Name: contest_evaluation.cpp
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
  * @Creat Date : 2023-09-15
  *
  */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <string>
+#include "contest_evaluation.h"
 
 #include "contest_dm.h"
 
 namespace ieda_contest {
 
-class ContestFlow
+ContestEvaluation::ContestEvaluation(ContestDataManager* data_manager)
 {
- public:
-  ContestFlow() = default;
-  ~ContestFlow();
-
-  virtual bool run_flow(std::string guide_input, std::string guide_output);
-  bool run_evaluation(std::string guide_file, std::string report_file);
-
- private:
-  ContestDataManager* _data_manager = nullptr;
-
-  virtual bool init(std::string guide_input, std::string guide_output = "");
-  virtual void process();
-  virtual bool save();
-};
+  _data_manager = data_manager;
+}
 
 }  // namespace ieda_contest
