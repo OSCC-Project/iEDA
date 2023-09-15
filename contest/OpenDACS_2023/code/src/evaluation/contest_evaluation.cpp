@@ -28,6 +28,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "contest_evaluation.h"
 
+#include <iostream>
+
 #include "contest_dm.h"
 
 namespace ieda_contest {
@@ -35,6 +37,56 @@ namespace ieda_contest {
 ContestEvaluation::ContestEvaluation(ContestDataManager* data_manager)
 {
   _data_manager = data_manager;
+}
+
+bool ContestEvaluation::doEvaluation(std::string report_file)
+{
+  // overlap检查
+  if (!overlapCheckPassed()) {
+    std::cout << "Overlap check failed!" << std::endl;
+    return false;
+  }
+
+  // 连通性检查
+  if (!connectivityCheckPassed()) {
+    std::cout << "Connectivity check failed!" << std::endl;
+    return false;
+  }
+
+  // overflow检查
+  if (!overflowCheckPassed()) {
+    std::cout << "Overflow check failed!" << std::endl;
+    return false;
+  }
+
+  double score = 0;
+  // 计算时序分数
+  score += calcTimingScore();
+  std::cout << "##############################" << std::endl;
+  std::cout << "Final score: " << score << std::endl;
+  std::cout << "##############################" << std::endl;
+
+  return true;
+}
+
+bool ContestEvaluation::overlapCheckPassed()
+{
+  return true;
+}
+
+bool ContestEvaluation::connectivityCheckPassed()
+{
+  return true;
+}
+
+bool ContestEvaluation::overflowCheckPassed()
+{
+  return true;
+}
+
+double ContestEvaluation::calcTimingScore()
+{
+  return 101;
 }
 
 }  // namespace ieda_contest
