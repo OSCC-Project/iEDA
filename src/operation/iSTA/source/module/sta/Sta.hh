@@ -64,7 +64,7 @@ const std::function<bool(StaSeqPathData*, StaSeqPathData*)> seq_data_cmp =
 // clock cmp for staclock.
 const std::function<unsigned(StaClock*, StaClock*)> sta_clock_cmp =
     [](StaClock* left, StaClock* right) -> unsigned {
-  return Str::caseCmp(left->get_clock_name(), right->get_clock_name());
+  return Str::caseCmp(left->get_clock_name(), right->get_clock_name()) < 0;
 };
 
 /**
