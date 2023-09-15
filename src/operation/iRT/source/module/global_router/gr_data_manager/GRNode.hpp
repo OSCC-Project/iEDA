@@ -148,23 +148,42 @@ class GRNode : public LayerCoord
   }
   void updateDemand(irt_int net_idx, std::set<Orientation> orien_set, ChangeType change_type)
   {
-    irt_int update_num = (change_type == ChangeType::kAdd ? 1 : -1);
-    if (RTUtil::exist(orien_set, Orientation::kEast) || RTUtil::exist(orien_set, Orientation::kWest)
-        || RTUtil::exist(orien_set, Orientation::kSouth) || RTUtil::exist(orien_set, Orientation::kNorth)) {
-      orien_set.erase(Orientation::kUp);
-      orien_set.erase(Orientation::kDown);
-      if (orien_set.size() > 2) {
-        LOG_INST.error(Loc::current(), "The size of orien_set > 2!");
+    std::set<Orientation> access_orien_set;
+    std::set<Orientation> wire_orien_set;
+    std::set<Orientation> via_orien_set;
+    for (const Orientation& orien : orien_set) {
+      if (orien == Orientation::kEast || orien == Orientation::kWest || orien == Orientation::kSouth || orien == Orientation::kNorth) {
+        access_orien_set.insert(orien);
+        wire_orien_set.insert(orien);
+      } else if (orien == Orientation::kUp || orien == Orientation::kDown) {
+        via_orien_set.insert(orien);
       }
+    }
+    irt_int update_num = (change_type == ChangeType::kAdd ? 1 : -1);
+    if (!access_orien_set.empty()) {
+      /**
+       * 加access_demand
+       */
+      for (Orientation access_orien : access_orien_set) {
+        irt_int net_access_demand = _whole_access_demand;
+        if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
+          if (RTUtil::exist(_net_orien_access_demand_map[net_idx], access_orien)) {
+            net_access_demand = _net_orien_access_demand_map[net_idx][access_orien];
+          }
+        }
+        _orien_access_demand_map[access_orien] += (update_num * net_access_demand);
+      }
+    }
+    if (!wire_orien_set.empty()) {
       /**
        * 加wire_demand
        */
       bool has_net_wire_demand = false;
       irt_int net_wire_demand = 0;
       if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
-        for (Orientation orientation : orien_set) {
-          if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], orientation)) {
-            net_wire_demand += _net_orien_wire_demand_map[net_idx][orientation];
+        for (Orientation wire_orien : wire_orien_set) {
+          if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], wire_orien)) {
+            net_wire_demand += _net_orien_wire_demand_map[net_idx][wire_orien];
             has_net_wire_demand = true;
           }
         }
@@ -173,19 +192,11 @@ class GRNode : public LayerCoord
         net_wire_demand = _whole_wire_demand;
       }
       _resource_demand += (update_num * net_wire_demand);
+    }
+    if (!via_orien_set.empty()) {
       /**
-       * 加access_demand
+       * 加via_demand
        */
-      for (Orientation orientation : orien_set) {
-        irt_int net_access_demand = _whole_access_demand;
-        if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
-          if (RTUtil::exist(_net_orien_access_demand_map[net_idx], orientation)) {
-            net_access_demand = _net_orien_access_demand_map[net_idx][orientation];
-          }
-        }
-        _orien_access_demand_map[orientation] += (update_num * net_access_demand);
-      }
-    } else if (RTUtil::exist(orien_set, Orientation::kUp) || RTUtil::exist(orien_set, Orientation::kDown)) {
       irt_int net_via_demand = _whole_via_demand;
       if (RTUtil::exist(_net_via_demand_map, net_idx)) {
         net_via_demand = _net_via_demand_map[net_idx];
