@@ -52,7 +52,7 @@ set(IRT_TEST ${HOME_IRT}/test)
 add_subdirectory(${IRT_API})
 add_subdirectory(${IRT_EXTERNAL_LIBS})
 add_subdirectory(${IRT_SOURCE})
-# add_subdirectory(${IRT_TEST})
+add_subdirectory(${IRT_TEST})
 
 ########################################################
 
