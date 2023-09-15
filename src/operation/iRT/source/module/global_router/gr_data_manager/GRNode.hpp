@@ -102,7 +102,7 @@ class GRNode : public LayerCoord
   {
     double cost = 0;
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      // 需要区分是整access还是线网内access
+      // 区分默认还是线网自定义
       irt_int net_access_demand = _whole_access_demand;
       if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
         if (RTUtil::exist(_net_orien_access_demand_map[net_idx], orientation)) {
@@ -118,16 +118,16 @@ class GRNode : public LayerCoord
         node_access_supply = _orien_access_supply_map[orientation];
       }
       // 放大，统一access和wire的cost
-      irt_int converted_demand = (net_access_demand + node_access_demand) * _whole_wire_demand;
-      irt_int converted_supply = node_access_supply * _whole_wire_demand;
+      irt_int converted_demand = (net_access_demand + node_access_demand) * (_whole_wire_demand / 2);
+      irt_int converted_supply = node_access_supply * (_whole_wire_demand / 2);
       cost += RTUtil::calcCost(converted_demand, converted_supply);
       if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
         cost += _history_orien_access_cost_map[orientation];
       }
     }
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      // 需要区分是整根wire还是线网内wire
-      irt_int net_wire_demand = _whole_wire_demand;
+      // 区分默认还是线网自定义
+      irt_int net_wire_demand = (_whole_wire_demand / 2);
       if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
         if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], orientation)) {
           net_wire_demand = _net_orien_wire_demand_map[net_idx][orientation];
@@ -136,7 +136,7 @@ class GRNode : public LayerCoord
       cost += RTUtil::calcCost(net_wire_demand + _resource_demand, _resource_supply);
       cost += _history_resource_cost;
     } else {
-      // 需要区分是整根via还是线网内via
+      // 区分默认还是线网自定义
       irt_int net_via_demand = _whole_via_demand;
       if (RTUtil::exist(_net_via_demand_map, net_idx)) {
         net_via_demand = _net_via_demand_map[net_idx];
@@ -178,20 +178,15 @@ class GRNode : public LayerCoord
       /**
        * 加wire_demand
        */
-      bool has_net_wire_demand = false;
-      irt_int net_wire_demand = 0;
-      if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
-        for (Orientation wire_orien : wire_orien_set) {
+      for (Orientation wire_orien : wire_orien_set) {
+        irt_int net_wire_demand = (_whole_wire_demand / 2);
+        if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
           if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], wire_orien)) {
-            net_wire_demand += _net_orien_wire_demand_map[net_idx][wire_orien];
-            has_net_wire_demand = true;
+            net_wire_demand = _net_orien_wire_demand_map[net_idx][wire_orien];
           }
         }
+        _resource_demand += (update_num * net_wire_demand);
       }
-      if (!has_net_wire_demand) {
-        net_wire_demand = _whole_wire_demand;
-      }
-      _resource_demand += (update_num * net_wire_demand);
     }
     if (!via_orien_set.empty()) {
       /**
@@ -237,12 +232,18 @@ class GRNode : public LayerCoord
   /**
    * gcell 布线结果该算多少demand?
    *
-   * _whole_wire_demand 一个完整的贯穿gcell的wire，中间布线结果用这个，包括T字或十字
-   * _whole_via_demand  一个完整的gr_via所需要的资源(以当前层最小面积做为参考)，不是真via
-   * _net_orien_wire_demand_map net在此gcell内使用的wire资源，减少直接使用whole_wire_demand的浪费
-   * _net_via_demand_map net在此gcell内使用的via资源，减少直接使用whole_via_demand的浪费
-   * _whole_access_demand 进入gcell所需的access，默认为1
-   * _net_orien_access_demand_map net在此gcell内使用access资源
+   * wire消耗(单个方向)
+   *  默认：(_whole_wire_demand/2)
+   *  线网方向自定义：(_net_orien_wire_demand_map)
+   *
+   * via消耗(无方向差别)
+   *  默认：(_whole_via_demand)
+   *  线网方向自定义：(_net_via_demand_map)
+   *
+   * access消耗(单个方向)
+   *  默认：(_whole_access_demand)
+   *  线网方向自定义：(_net_orien_access_demand_map)
+   *
    */
   irt_int _whole_wire_demand = 0;
   irt_int _whole_via_demand = 0;
