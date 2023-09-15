@@ -127,6 +127,9 @@ class GlobalRouter
   void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
   void countGRModel(GRModel& gr_model);
   void reportGRModel(GRModel& gr_model);
+  fort::char_table buildOverflowTable(std::map<irt_int, std::map<std::pair<double, double>, irt_int>>& layer_range_number_map,
+                                      irt_int total_overflow_number);
+  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopGRModel(GRModel& gr_model);
 #endif
 
