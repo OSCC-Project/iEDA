@@ -15,18 +15,21 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file CmdDefToVerilog.cc
+ * @file CmdVerilogToDef.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The implemention of def to verilog command.
+ * @brief The implemention of verilog to def command.
  * @version 0.1
- * @date 2023-06-12
+ * @date 2023-09-16
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
 #include "ShellCmd.hh"
 #include "builder.h"
 
 namespace ista {
 
-CmdDefToVerilog::CmdDefToVerilog(const char* cmd_name) : TclCmd(cmd_name) {
+CmdVerilogToDef::CmdVerilogToDef(const char* cmd_name) : TclCmd(cmd_name) {
   auto* def_option = new TclStringOption("-def", 0, nullptr);
   addOption(def_option);
 
@@ -35,11 +38,14 @@ CmdDefToVerilog::CmdDefToVerilog(const char* cmd_name) : TclCmd(cmd_name) {
 
   auto* verilog_option = new TclStringOption("-verilog", 0, nullptr);
   addOption(verilog_option);
+
+  auto* top_option = new TclStringOption("-top", 0, nullptr);
+  addOption(top_option);
 }
 
-unsigned CmdDefToVerilog::check() { return 1; }
+unsigned CmdVerilogToDef::check() { return 1; }
 
-unsigned CmdDefToVerilog::exec() {
+unsigned CmdVerilogToDef::exec() {
   if (!check()) {
     return 0;
   }
@@ -51,15 +57,18 @@ unsigned CmdDefToVerilog::exec() {
 
   db_builder->buildLef(lef_files);
 
-  TclOption* def_option = getOptionOrArg("-def");
-  auto* def_file = def_option->getStringVal();
-  db_builder->buildDef(def_file);
-
   TclOption* verilog_option = getOptionOrArg("-verilog");
   auto* verilog_file = verilog_option->getStringVal();
 
+  TclOption* top_option = getOptionOrArg("-top");
+  auto* top = top_option->getStringVal();
+
   std::set<std::string> exclude_cell_names;
-  db_builder->saveVerilog(verilog_file, exclude_cell_names);
+  db_builder->buildVerilog(verilog_file, top);
+
+  TclOption* def_option = getOptionOrArg("-def");
+  auto* def_file = def_option->getStringVal();
+  db_builder->saveDef(def_file);
 
   return 1;
 }
