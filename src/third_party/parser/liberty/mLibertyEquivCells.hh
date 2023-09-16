@@ -14,14 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/**
- * @file LibertyEquivCells.hh
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief Find the function equivalently cells.
- * @version 0.1
- * @date 2021-09-24
- */
-
 #pragma once
 
 #include <unordered_map>
