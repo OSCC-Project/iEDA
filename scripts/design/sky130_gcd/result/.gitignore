@@ -20,3 +20,4 @@
 *.dat
 pl/log
 *.py
+*.csv

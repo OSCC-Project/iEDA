@@ -21,6 +21,11 @@ project(iEDA)
 # option setting
 option(BUILD_PR_FLOW "If ON, build PR flow." ON)
 option(BUILD_STATIC_LIB "If ON, build static lib." ON)
+
+if(NOT BUILD_STATIC_LIB)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif()
+
 option(BUILD_PYTHON "If ON, build python interface." OFF)
 if(BUILD_PYTHON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -39,6 +44,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_BUILD_TYPE "Debug")
+#set(BUILD_SHARED_LIBS ON)
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
@@ -53,9 +59,16 @@ endif()
 include(cmake/setting.cmake)
 include(cmake/third_party.cmake)
 include(cmake/operation/ista.cmake)
+include(cmake/operation/ipw.cmake)
 
 if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
+endif()
+
+option(CONTEST "If ON, run contest porject." OFF)
+if(CONTEST)
+    add_definitions(-DCONTEST)
+    add_subdirectory(contest)
 endif()
 
 add_subdirectory(src/third_party)

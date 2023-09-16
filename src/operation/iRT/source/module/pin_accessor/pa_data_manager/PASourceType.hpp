@@ -25,9 +25,8 @@ namespace irt {
 enum class PASourceType
 {
   kNone,
-  kBlockAndPin,
-  kEnclosure,
-  kAccessPoint
+  kLayoutShape,
+  kCandidateVia
 };
 
 struct GetPASourceTypeName
@@ -39,14 +38,11 @@ struct GetPASourceTypeName
       case PASourceType::kNone:
         pa_source_type_name = "none";
         break;
-      case PASourceType::kBlockAndPin:
-        pa_source_type_name = "block_and_pin";
+      case PASourceType::kLayoutShape:
+        pa_source_type_name = "layout_shape";
         break;
-      case PASourceType::kEnclosure:
-        pa_source_type_name = "enclosure";
-        break;
-      case PASourceType::kAccessPoint:
-        pa_source_type_name = "access_point";
+      case PASourceType::kCandidateVia:
+        pa_source_type_name = "candidate_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

@@ -25,7 +25,7 @@
  */
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
-#include "flow.h"
+#include "tcl_flow.h"
 
 using namespace ieda;
 

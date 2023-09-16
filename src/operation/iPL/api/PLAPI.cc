@@ -330,6 +330,7 @@ bool PLAPI::runLG()
 {
   AbacusLegalizerInst.initAbacusLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   bool flag = AbacusLegalizerInst.runLegalize();
+  LOG_ERROR_IF(!flag) << "Legalization is not completed!";
   return flag;
 }
 

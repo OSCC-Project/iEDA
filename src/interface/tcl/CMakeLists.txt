@@ -17,6 +17,12 @@ add_subdirectory(tcl_ito)
 add_subdirectory(tcl_ista)
 add_subdirectory(tcl_report)
 add_subdirectory(tcl_ino)
+add_subdirectory(tcl_feature)
+add_subdirectory(tcl_eval)
+
+if(CONTEST)
+add_subdirectory(tcl_contest)
+endif()
 
 AUX_SOURCE_DIRECTORY(./ SRC)
 
@@ -42,6 +48,8 @@ target_link_libraries(ieda_tcl
         tcl_ista
         tcl_report
         tcl_ino
+        tcl_feature
+        tcl_eval
 )
 
 target_include_directories(ieda_tcl 
@@ -62,6 +70,15 @@ if(BUILD_GUI)
   target_include_directories(ieda_tcl 
     PUBLIC 
     ${HOME_INTERFACE}/tcl/tcl_gui
+  )
+endif()
+
+if(CONTEST)
+  target_link_libraries(ieda_tcl PUBLIC tcl_contest)
+
+  target_include_directories(ieda_tcl 
+    PUBLIC 
+    ${HOME_INTERFACE}/tcl/tcl_contest
   )
 endif()
 

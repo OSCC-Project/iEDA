@@ -83,20 +83,6 @@ void EvalAPI::reportWirelength(const string& plot_path, const string& output_fil
 /******************************Wirelength Eval: END******************************/
 
 /******************************Congestion Eval: START******************************/
-void EvalAPI::initCongestionEval(CongGrid* grid, const vector<CongInst*>& inst_list, const vector<CongNet*>& net_list)
-{
-  _congestion_eval_inst = new CongestionEval();
-  _congestion_eval_inst->set_cong_grid(grid);
-  _congestion_eval_inst->set_cong_inst_list(inst_list);
-  _congestion_eval_inst->set_cong_net_list(net_list);
-}
-
-void EvalAPI::initCongestionEval()
-{
-  if (_congestion_eval_inst == nullptr) {
-    _congestion_eval_inst = new CongestionEval();
-  }
-}
 
 vector<float> EvalAPI::evalPinDens()
 {
@@ -181,38 +167,6 @@ void EvalAPI::plotGRCong(const string& plot_path, const string& output_file_name
 void EvalAPI::plotOverflow(const string& plot_path, const string& output_file_name)
 {
   _congestion_eval_inst->plotOverflow(plot_path, output_file_name);
-}
-
-void EvalAPI::plotPinDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  congestion_eval.evalPinNum();
-  congestion_eval.plotPinNum(plot_path, output_file_name);
-}
-
-void EvalAPI::plotInstDens(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongInst*>& inst_list)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  congestion_eval.evalInstDens();
-  congestion_eval.plotInstDens(plot_path, output_file_name);
-}
-
-void EvalAPI::plotNetCong(const string& plot_path, const string& output_file_name, CongGrid* grid, const vector<CongNet*>& net_list,
-                          const string& rudy_type)
-{
-  CongestionEval congestion_eval;
-  congestion_eval.checkRUDYType(rudy_type);
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_net_list(net_list);
-  congestion_eval.mapNetCoord2Grid();
-  congestion_eval.evalNetCong(rudy_type);
-  congestion_eval.plotNetCong(plot_path, output_file_name, rudy_type);
 }
 
 void EvalAPI::reportCongestion(const string& plot_path, const string& output_file_name, const vector<CongNet*>& net_list, CongGrid* grid,

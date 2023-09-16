@@ -64,6 +64,7 @@ IdbSpecialNet::~IdbSpecialNet()
     _instance_pin_list = nullptr;
   }
 
+  _instance_list->reset(false);
   if (_instance_list) {
     delete _instance_list;
     _instance_list = nullptr;
@@ -73,6 +74,9 @@ IdbSpecialNet::~IdbSpecialNet()
     delete _wire_list;
     _wire_list = nullptr;
   }
+
+  _pin_string_list.clear();
+  std::vector<std::string>().swap(_pin_string_list);
 }
 
 void IdbSpecialNet::set_connect_type(string type)
@@ -129,7 +133,7 @@ IdbSpecialNetList::IdbSpecialNetList()
 
 IdbSpecialNetList::~IdbSpecialNetList()
 {
-  for (auto& net : _net_list) {
+  for (auto* net : _net_list) {
     if (nullptr != net) {
       delete net;
       net = nullptr;
@@ -137,7 +141,18 @@ IdbSpecialNetList::~IdbSpecialNetList()
   }
 
   _net_list.clear();
+  std::vector<IdbSpecialNet*>().swap(_net_list);
   _num = 0;
+
+  for (auto* edge : _edge_segment_list) {
+    if (nullptr != edge) {
+      delete edge;
+      edge = nullptr;
+    }
+  }
+
+  _edge_segment_list.clear();
+  std::vector<IdbSpecialNetEdgeSegmenArray*>().swap(_edge_segment_list);
 }
 
 /// init all edge list for each layer

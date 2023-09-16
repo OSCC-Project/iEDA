@@ -23,6 +23,27 @@ using std::string;
 using std::vector;
 
 namespace icts {
+/**
+ * @brief RC Pattern definition
+ *
+ */
+enum class RCPattern
+{
+  kSingle,  // single layer
+  kHV,      // first horizontal then vertical
+  kVH,      // first vertical then horizontal
+};
+/**
+ * @brief Layer Pattern definition
+ *
+ */
+enum class LayerPattern
+{
+  kH,  // horizontal
+  kV,  // vertical
+  kNone,
+};
+
 class CtsConfig
 {
  public:
@@ -46,6 +67,8 @@ class CtsConfig
   const string& get_output_def_path() const { return _output_def_path; }
   const string& get_log_file() const { return _log_file; }
   vector<string> get_buffer_types() const { return _buffer_types; }
+  const int& get_h_layer() const { return _h_layer; }
+  const int& get_v_layer() const { return _v_layer; }
   vector<int> get_routing_layers() const { return _routing_layers; }
   const string& get_gds_file() const { return _gds_file; }
   const string& get_use_netlist_string() const { return _gds_file; }
@@ -69,6 +92,8 @@ class CtsConfig
   void set_output_def_path(const string& output_def_path) { _output_def_path = output_def_path; }
   void set_log_file(const string& file) { _log_file = file; }
   void set_buffer_types(const vector<string>& types) { _buffer_types = types; }
+  void set_h_layer(const int& h_layer) { _h_layer = h_layer; }
+  void set_v_layer(const int& v_layer) { _v_layer = v_layer; }
   void set_routing_layers(const vector<int>& routing_layers) { _routing_layers = routing_layers; }
   void set_gds_file(const string& file) { _gds_file = file; }
   void set_use_netlist(const string& use_netlist) { _use_netlist = use_netlist; }
@@ -88,6 +113,8 @@ class CtsConfig
   int _scale_size = 50;
   string _cluster_type = "kmeans";
   int _cluster_size = 32;
+  int _h_layer = 1;
+  int _v_layer = 1;
   // file
   string _sta_workspace = "./result/cts";
   string _output_def_path = "./result/cts";

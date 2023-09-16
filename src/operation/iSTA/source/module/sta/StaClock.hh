@@ -88,6 +88,13 @@ class StaClock {
   int getRisingEdge() { return _wave_form.getRisingEdge(); }
   int getFallingEdge() { return _wave_form.getFallingEdge(); }
 
+  void set_is_need_update_period_waveform(bool is_true) {
+    _is_need_update_period_waveform = is_true;
+  }
+  bool isNeedUpdatePeriodWaveform() const {
+    return _is_need_update_period_waveform;
+  }
+
   [[nodiscard]] int get_period() const { return _period; }
   double getPeriodNs() const { return PS_TO_NS(_period); }
 
@@ -115,6 +122,8 @@ class StaClock {
   int _period;  // unit is ps.
   StaWaveForm _wave_form;
 
+  bool _is_need_update_period_waveform =
+      false;  //!< The flag of the time to clock prop.
   DISALLOW_COPY_AND_ASSIGN(StaClock);
 };
 

@@ -1,7 +1,7 @@
 # add_subdirectory(${HOME_THIRDPARTY}/pybind11 binary_dir)
 
 
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/design/sky130_gcd)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 # DEFINE PYTHON MODULE & CMAKE TARGET
 pybind11_add_module(ieda_py)
 
@@ -17,8 +17,11 @@ add_subdirectory(py_ipdn)
 add_subdirectory(py_ipl)
 # add_subdirectory(py_irt)
 add_subdirectory(py_ista)
+add_subdirectory(py_ipw)
 add_subdirectory(py_ito)
 add_subdirectory(py_report)
+add_subdirectory(py_feature)
+add_subdirectory(py_eval)
 # ADD SOURCE FILES 
 #file(GLOB_RECURSE PYTHON_INTERFACE_SRC CONFIGURE_DEPENDS ./*.cpp ./*.cc)
 file(GLOB PYTHON_INTERFACE_SRC CONFIGURE_DEPENDS *.cpp .h)
@@ -40,8 +43,11 @@ target_link_libraries(ieda_py
         py_ipl
         # py_irt
         py_ista
+        py_ipw
         py_ito
         py_report
+        py_feature
+        py_eval
 )
 
 

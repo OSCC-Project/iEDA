@@ -88,18 +88,27 @@ class SdcGenerateCLock : public SdcClock {
   }
   void set_source_name(const char* source_name) { _source_name = source_name; }
   const char* get_source_name() const { return _source_name.c_str(); }
+
+  void set_is_need_update_source_clock() {
+    _is_need_update_source_clock = true;
+  }
+  bool isNeedUpdateSourceClock() { return _is_need_update_source_clock; }
+
   void set_source_pins(std::set<DesignObject*> source_pins) {
     _source_pins = std::move(source_pins);
   }
   std::set<DesignObject*> get_source_pins() { return _source_pins; }
 
-  void set_divide_by(const char* divide_by) { _divide_by = divide_by; }
-  const char* get_divide_by() const { return _divide_by.c_str(); }
+  void set_divide_by(int divide_by) { _divide_by = divide_by; }
+  int get_divide_by() const { return _divide_by; }
 
  private:
   std::string _source_name;
+
+  // need update source clock later after clock propagation.
+  bool _is_need_update_source_clock = false;
   std::set<DesignObject*> _source_pins;
-  std::string _divide_by;
+  int _divide_by;
 };
 
 /**

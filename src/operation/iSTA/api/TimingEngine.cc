@@ -238,6 +238,35 @@ std::set<std::string> TimingEngine::findStartOrEnd(const char* pin_name) {
 }
 
 /**
+ * @brief obtain the start2end pairs of the all timing path.
+ *
+ * @return std::map<std::string, std::string>
+ */
+std::map<std::string, std::string> TimingEngine::getStartEndPairs() {
+  StaGraph* the_graph = &(_ista->get_graph());
+  std::map<std::string, std::string> start2end;
+  StaVertex* vertex;
+  FOREACH_END_VERTEX(the_graph, vertex) {
+    std::string end_pin_name = vertex->getName();
+    auto& start_vertexes = vertex->get_fanin_start_vertexes();
+    for (auto& start_vertex : start_vertexes) {
+      std::string start_pin_name = start_vertex->getName();
+      start2end[start_pin_name] = end_pin_name;
+    }
+  }
+  FOREACH_START_VERTEX(the_graph, vertex) {
+    std::string start_pin_name = vertex->getName();
+    auto& end_vertexes = vertex->get_fanout_end_vertexes();
+    for (auto& end_vertex : end_vertexes) {
+      std::string end_pin_name = end_vertex->getName();
+      start2end[start_pin_name] = end_pin_name;
+    }
+  }
+
+  return start2end;
+}
+
+/**
  * @brief find the clock pin name according to the instance name.
  *
  * @param inst_name
@@ -419,7 +448,7 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
  * @param net_name
  * @param loadname2wl
  */
-void TimingEngine::buildRcTreeAndupdateRcTreeInfo(
+void TimingEngine::buildRcTreeAndUpdateRcTreeInfo(
     const char* net_name, std::map<std::string, double>& loadname2wl) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
@@ -463,7 +492,13 @@ TimingEngine& TimingEngine::incrUpdateTiming() {
 
   the_graph.exec([](StaGraph* the_graph) -> unsigned {
     StaAnalyze analyze_path;
-    return analyze_path(the_graph);
+    unsigned is_ok = analyze_path(the_graph);
+
+    StaApplySdc apply_sdc_post_analyze(
+        StaApplySdc::PropType::kApplySdcPostProp);
+    is_ok &= apply_sdc_post_analyze(the_graph);
+
+    return is_ok;
   });
 
   _incr_func.applyBwdQueue();
@@ -869,8 +904,7 @@ void TimingEngine::moveInstance(const char* instance_name,
           StaResetPropagation reset_bwd_prop;
           reset_bwd_prop.set_is_bwd();
           reset_bwd_prop.set_incr_func(&_incr_func);
-          if (update_level &&
-              ((*the_vertex)->get_level() > ((*update_level) << 1))) {
+          if (update_level && ((*the_vertex)->get_level() > (*update_level))) {
             reset_bwd_prop.set_max_min_level((*the_vertex)->get_level() -
                                              (*update_level));
           }
@@ -1050,8 +1084,8 @@ double TimingEngine::reportSlew(const char* pin_name, AnalysisMode mode,
   auto the_vertex = the_graph.findVertex(pin);
   LOG_FATAL_IF(!the_vertex);
 
-  int64_t slew = (*the_vertex)->getSlew(mode, trans_type);
-  return FS_TO_NS(slew);
+  auto slew = (*the_vertex)->getSlewNs(mode, trans_type);
+  return slew ? *slew : 0.0;
 }
 
 /**
@@ -1198,7 +1232,7 @@ StaClock* TimingEngine::getPropClock(const char* pin_name, AnalysisMode mode,
  * decltype(cmp)>
  */
 std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 TimingEngine::getViolatedSeqPathsBetweenTwoSinks(const char* pin1_name,
                                                  const char* pin2_name,
                                                  AnalysisMode mode) {
@@ -1722,10 +1756,11 @@ void TimingEngine::checkSlew(const char* pin_name, AnalysisMode mode,
     return;
   }
 
-  slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto vertex_slew = the_vertex->getSlewNs(mode, trans_type);
+  slew = vertex_slew ? *vertex_slew : 0.0;
   limit = _ista->getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
+  if (limit && vertex_slew) {
     slack = *limit - slew;
   }
 }

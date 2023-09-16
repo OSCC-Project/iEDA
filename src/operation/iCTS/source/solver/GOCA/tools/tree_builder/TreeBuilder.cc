@@ -20,11 +20,15 @@
  */
 #include "TreeBuilder.hh"
 
+#include <unordered_set>
+
 #include "CTSAPI.hpp"
 #include "CtsConfig.h"
+#include "LocalLegalization.hh"
 #include "Node.hh"
 #include "TimingPropagator.hh"
-#include "bst/BST.hh"
+#include "bound_skew_tree/BST.hh"
+#include "bound_skew_tree/BoundSkewTree.hh"
 namespace icts {
 
 /**
@@ -57,8 +61,7 @@ std::vector<Inst*> TreeBuilder::getSubInsts(Inst* inst)
 Inst* TreeBuilder::genBufInst(const std::string& prefix, const Point& location)
 {
   auto buf_name = prefix + "_buf";
-  auto cts_buf_inst = new CtsInstance(buf_name, "", CtsInstanceType::kBuffer, location);
-  auto buf_inst = new Inst(cts_buf_inst, InstType::kBuffer);
+  auto buf_inst = new Inst(buf_name, location, InstType::kBuffer);
   return buf_inst;
 }
 /**
@@ -71,8 +74,7 @@ Inst* TreeBuilder::genBufInst(const std::string& prefix, const Point& location)
 Inst* TreeBuilder::toBufInst(const std::string& prefix, Node* driver_node)
 {
   auto buf_name = prefix + "_buf";
-  auto cts_buf_inst = new CtsInstance(buf_name, "", CtsInstanceType::kBuffer, driver_node->get_location());
-  auto buf_inst = new Inst(cts_buf_inst, driver_node);
+  auto buf_inst = new Inst(buf_name, driver_node->get_location(), driver_node);
   return buf_inst;
 }
 /**
@@ -182,26 +184,20 @@ std::vector<std::string> TreeBuilder::feasibleCell(Inst* inst, const double& ske
 {
   LOG_FATAL_IF(!inst->isBuffer()) << inst->get_name() << " is not buffer";
   auto origin_cell = inst->get_cell_master();
-  auto origin_location = inst->get_location();
   auto libs = TimingPropagator::getDelayLibs();
 
   auto* driver_pin = inst->get_driver_pin();
   auto* net = driver_pin->get_net();
   std::vector<std::string> feasible_cells;
-  TreeBuilder::cancelPlace(inst);
   std::ranges::for_each(libs, [&](CtsCellLib* lib) {
     auto cell = lib->get_cell_master();
     inst->set_cell_master(cell);
-    TreeBuilder::place(inst);
     TimingPropagator::update(net);
     if (TimingPropagator::skewFeasible(driver_pin, skew_bound)) {
       feasible_cells.push_back(cell);
     }
-    TreeBuilder::cancelPlace(inst);
-    inst->set_location(origin_location);
   });
   inst->set_cell_master(origin_cell);
-  TreeBuilder::place(inst);
   TimingPropagator::update(net);
   return feasible_cells;
 }
@@ -268,6 +264,26 @@ std::vector<Inst*> TreeBuilder::dmeTree(const std::string& net_name, const std::
   return solver.getInsertBufs();
 }
 /**
+ * @brief bound skew tree
+ *
+ * @param net_name
+ * @param loads
+ * @param skew_bound
+ * @param guide_loc
+ * @return Inst*
+ */
+Inst* TreeBuilder::boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                                 const std::optional<Point>& guide_loc)
+{
+  auto solver = bst::BoundSkewTree(net_name, loads, skew_bound);
+  if (guide_loc.has_value()) {
+    solver.set_root_guide(*guide_loc);
+  }
+  solver.run();
+  solver.convert();
+  return solver.get_root_buf();
+}
+/**
  * @brief recover net
  *       remove root node
  *       save the leaf node and disconnect the leaf node
@@ -290,7 +306,9 @@ void TreeBuilder::recoverNet(Net* net)
     pin->set_parent(nullptr);
     pin->set_children({});
     pin->set_slew_in(0);
+    pin->set_cap_load(0);
     pin->set_net(nullptr);
+    TimingPropagator::updatePinCap(pin);
     TimingPropagator::initLoadPinDelay(pin);
   });
   // release buffer and its pins
@@ -300,27 +318,14 @@ void TreeBuilder::recoverNet(Net* net)
   std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
 }
 /**
- * @brief place the inst
+ * @brief local place, if location is repeated, then move the inst to the feasible location
  *
  * @param inst
+ * @param load_pins
  */
-void TreeBuilder::place(Inst* inst)
+void TreeBuilder::localPlace(Inst* inst, const std::vector<Pin*>& load_pins)
 {
-  // location legitimization
-  auto* cts_inst = inst->get_cts_inst();
-  cts_inst->set_location(inst->get_location());
-  CTSAPIInst.placeInstance(cts_inst);
-  inst->set_location(cts_inst->get_location());
-}
-/**
- * @brief cancel the place of inst
- *
- * @param inst
- */
-void TreeBuilder::cancelPlace(Inst* inst)
-{
-  auto* cts_inst = inst->get_cts_inst();
-  CTSAPIInst.cancelPlaceInstance(cts_inst);
+  LocalLegalization(inst, load_pins);
 }
 /**
  * @brief print tree to graphviz

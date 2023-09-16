@@ -355,19 +355,17 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
           own_vertex->getLoad(path_delay_data->get_delay_type(), trans_type);
       auto vertex_resistance = own_vertex->getResistance(
           path_delay_data->get_delay_type(), trans_type);
-      auto vertex_slew = FS_TO_NS(
-          own_vertex->getSlew(path_delay_data->get_delay_type(), trans_type));
+      auto vertex_slew =
+          own_vertex->getSlewNs(path_delay_data->get_delay_type(), trans_type);
 
       float vertex_derate =
           path_delay_data->get_derate() ? *(path_delay_data->get_derate()) : 1;
-      unsigned is_input = own_vertex->get_design_obj()->isInput();
-      vertex_derate = is_input ? 1.0 : vertex_derate;
       if (is_derate) {
         (*report_tbl) << own_vertex->getNameWithCellName() << TABLE_SKIP
                       << fix_point_str(vertex_load)
                       << fix_point_str(vertex_resistance)
-                      << fix_point_str(vertex_slew) << TABLE_SKIP
-                      << fix_point_str(vertex_derate)
+                      << fix_point_str(vertex_slew ? *vertex_slew : 0.0)
+                      << TABLE_SKIP << fix_point_str(vertex_derate)
                       << fix_point_str(incr_time)
                       << std::string(fix_point_str(arrive_time +
                                                    clock_path_arrive_time)) +
@@ -378,8 +376,8 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
         (*report_tbl) << own_vertex->getNameWithCellName() << TABLE_SKIP
                       << fix_point_str(vertex_load)
                       << fix_point_str(vertex_resistance)
-                      << fix_point_str(vertex_slew) << TABLE_SKIP
-                      << fix_point_str(incr_time)
+                      << fix_point_str(vertex_slew ? *vertex_slew : 0.0)
+                      << TABLE_SKIP << fix_point_str(incr_time)
                       << std::string(fix_point_str(arrive_time +
                                                    clock_path_arrive_time)) +
                              trans_type_str
@@ -846,25 +844,23 @@ unsigned StaReportTrans::operator()(Sta* ista) {
     limit_str += "/";
     limit_str += str_or_na(fall_limit, false);
 
-    double rise_slew =
-        FS_TO_NS(the_vertex->getSlew(_analysis_mode, TransType::kRise));
-    double fall_slew =
-        FS_TO_NS(the_vertex->getSlew(_analysis_mode, TransType::kFall));
+    auto rise_slew = the_vertex->getSlewNs(_analysis_mode, TransType::kRise);
+    auto fall_slew = the_vertex->getSlewNs(_analysis_mode, TransType::kFall);
 
     std::string slew_str;
-    slew_str += Str::printf("%.3fr", rise_slew);
+    slew_str += Str::printf("%.3fr", *rise_slew);
     slew_str += "/";
-    slew_str += Str::printf("%.3ff", fall_slew);
+    slew_str += Str::printf("%.3ff", *fall_slew);
 
     std::optional<double> rise_slack;
     std::optional<double> fall_slack;
 
-    if (rise_limit) {
-      rise_slack = *rise_limit - rise_slew;
+    if (rise_limit && rise_slew) {
+      rise_slack = *rise_limit - *rise_slew;
     }
 
-    if (rise_limit) {
-      fall_slack = *fall_limit - fall_slew;
+    if (fall_limit && fall_slew) {
+      fall_slack = *fall_limit - *fall_slew;
     }
 
     std::string slack_str;
@@ -1494,13 +1490,14 @@ unsigned StaReportSkewDetail::operator()(StaSeqPathData* seq_path_data) {
           own_vertex->getLoad(path_delay_data->get_delay_type(), trans_type);
       auto vertex_resistance = own_vertex->getResistance(
           path_delay_data->get_delay_type(), trans_type);
-      auto vertex_slew = FS_TO_NS(
-          own_vertex->getSlew(path_delay_data->get_delay_type(), trans_type));
+      auto vertex_slew =
+          own_vertex->getSlewNs(path_delay_data->get_delay_type(), trans_type);
 
       (*report_tbl) << own_vertex->getNameWithCellName() << TABLE_SKIP
                     << fix_point_str(vertex_load)
                     << fix_point_str(vertex_resistance)
-                    << fix_point_str(vertex_slew) << fix_point_str(incr_time)
+                    << fix_point_str(vertex_slew ? *vertex_slew : 0.0)
+                    << fix_point_str(incr_time)
                     << Str::printf("%.3f%s",
                                    arrive_time + clock_path_arrive_time,
                                    trans_type_str)

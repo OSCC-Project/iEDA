@@ -55,6 +55,13 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
                                   StaGraph* the_graph) {
   Sta* ista = getSta();
   for (auto& [clock_name, sdc_clock] : sdc_clocks) {
+    if (_prop_type == PropType::kApplySdcPostNormalClockProp) {
+      if (!sdc_clock->isGenerateClock() ||
+          !dynamic_cast<SdcGenerateCLock*>(sdc_clock.get())
+               ->isNeedUpdateSourceClock()) {
+        continue;
+      }
+    }
     std::unique_ptr<StaClock> sta_clock =
         std::make_unique<StaClock>(clock_name, StaClock::ClockType::kIdeal,
                                    NS_TO_PS(sdc_clock->get_period()));
@@ -76,6 +83,14 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
 
     if (sdc_clock->isPropagatedClock()) {
       sta_clock->setPropagateClock();
+    }
+
+    if (_prop_type == PropType::kApplySdcPreProp) {
+      if (sdc_clock->isGenerateClock() &&
+          dynamic_cast<SdcGenerateCLock*>(sdc_clock.get())
+              ->isNeedUpdateSourceClock()) {
+        sta_clock->set_is_need_update_period_waveform(true);
+      }
     }
 
     ista->addClock(std::move(sta_clock));
@@ -259,6 +274,8 @@ unsigned StaApplySdc::setupIOConstrain(
 
   unsigned is_ok = 1;
   for (auto& io_constraint : sdc_io_constraints) {
+    LOG_FATAL_IF(!dispatch_funs.contains(io_constraint->get_constrain_name()))
+        << io_constraint->get_constrain_name() << " has not process func.";
     is_ok = dispatch_funs[io_constraint->get_constrain_name()](io_constraint,
                                                                the_graph);
     if (!is_ok) {
@@ -653,6 +670,9 @@ unsigned StaApplySdc::operator()(StaGraph* the_graph) {
     is_ok &= setupIOConstrain(the_io_constrain, the_graph);
     is_ok &= setupOcvDerate(the_ocv_derate, the_graph);
 
+  } else if (_prop_type == PropType::kApplySdcPostNormalClockProp) {
+    auto& the_clocks = the_constrain->get_sdc_clocks();
+    is_ok = setupClocks(the_clocks, the_graph);
   } else if (_prop_type == PropType::kApplySdcPostClockProp) {
     auto& the_sdc_exceptions = the_constrain->get_sdc_exceptions();
     is_ok = setupException(the_sdc_exceptions, the_graph);

@@ -32,21 +32,30 @@ class GRModel
   // getter
   std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<GRNet>& get_gr_net_list() { return _gr_net_list; }
+  std::vector<std::vector<irt_int>>& get_net_order_list_list() { return _net_order_list_list; }
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_visited_grid_access_orien_map()
+  {
+    return _visited_grid_access_orien_map;
+  }
+  std::set<LayerCoord, CmpLayerCoordByXASC>& get_visited_grid_resource_set() { return _visited_grid_resource_set; }
   GRModelStat& get_gr_model_stat() { return _gr_model_stat; }
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_gr_net_list(const std::vector<GRNet>& gr_net_list) { _gr_net_list = gr_net_list; }
+  void set_net_order_list_list(const std::vector<std::vector<irt_int>>& net_order_list_list) { _net_order_list_list = net_order_list_list; }
+  void set_visited_grid_access_orien_map(
+      const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& visited_grid_access_orien_map)
+  {
+    _visited_grid_access_orien_map = visited_grid_access_orien_map;
+  }
+  void set_visited_grid_resource_set(const std::set<LayerCoord, CmpLayerCoordByXASC>& visited_grid_resource_set)
+  {
+    _visited_grid_resource_set = visited_grid_resource_set;
+  }
   void set_gr_model_stat(const GRModelStat& gr_model_stat) { _gr_model_stat = gr_model_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
 #if 1  // astar
-  // config
-  double get_wire_unit() const { return _wire_unit; }
-  double get_corner_unit() const { return _corner_unit; }
-  double get_via_unit() const { return _via_unit; }
-  void set_wire_unit(const double wire_unit) { _wire_unit = wire_unit; }
-  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
-  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   // single net
   const irt_int get_curr_net_idx() const { return _gr_net_ref->get_net_idx(); }
   const PlanarRect& get_curr_bounding_box() const { return _gr_net_ref->get_bounding_box().get_grid_rect(); }
@@ -66,12 +75,10 @@ class GRModel
   void set_end_group_list(const std::vector<GRGroup>& end_group_list) { _end_group_list = end_group_list; }
   void set_path_group(const GRGroup& path_group) { _path_group = path_group; }
   // single path
-  GRRouteStrategy& get_gr_route_strategy() { return _gr_route_strategy; }
   std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<GRNode*>& get_visited_node_list() { return _visited_node_list; }
   GRNode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_group_idx() const { return _end_group_idx; }
-  void set_gr_route_strategy(const GRRouteStrategy& gr_route_strategy) { _gr_route_strategy = gr_route_strategy; }
   void set_open_queue(const std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_visited_node_list(const std::vector<GRNode*>& visited_node_list) { _visited_node_list = visited_node_list; }
   void set_path_head_node(GRNode* path_head_node) { _path_head_node = path_head_node; }
@@ -81,13 +88,19 @@ class GRModel
  private:
   std::vector<GridMap<GRNode>> _layer_node_map;
   std::vector<GRNet> _gr_net_list;
+  /**
+   * _net_order_list_list.back()作为即将要跑的序
+   */
+  std::vector<std::vector<irt_int>> _net_order_list_list;
+  /**
+   * _visited_grid_access_orien_map 访问过的grid的access方向
+   * _visited_grid_resource_set 访问过的grid的resource方向
+   */
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _visited_grid_access_orien_map;
+  std::set<LayerCoord, CmpLayerCoordByXASC> _visited_grid_resource_set;
   GRModelStat _gr_model_stat;
   irt_int _curr_iter = -1;
 #if 1  // astar
-  // config
-  double _wire_unit = 1;
-  double _corner_unit = 1;
-  double _via_unit = 1;
   // single net
   GRNet* _gr_net_ref = nullptr;
   PlanarRect _routing_region;
@@ -98,7 +111,6 @@ class GRModel
   std::vector<GRGroup> _end_group_list;
   GRGroup _path_group;
   // single path
-  GRRouteStrategy _gr_route_strategy = GRRouteStrategy::kNone;
   std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost> _open_queue;
   std::vector<GRNode*> _visited_node_list;
   GRNode* _path_head_node = nullptr;

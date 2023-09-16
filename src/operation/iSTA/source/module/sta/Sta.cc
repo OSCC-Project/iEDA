@@ -34,6 +34,7 @@
 
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
+#include "StaBuildClockTree.hh"
 #include "StaBuildGraph.hh"
 #include "StaBuildPropTag.hh"
 #include "StaBuildRCTree.hh"
@@ -52,6 +53,7 @@
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "include/Version.hh"
+#include "json/json.hpp"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
@@ -75,7 +77,8 @@ Sta::Sta()
     : _num_threads(32),
       _constrains(nullptr),
       _analysis_mode(AnalysisMode::kMaxMin),
-      _graph(&_netlist) {
+      _graph(&_netlist),
+      _clock_groups(sta_clock_cmp) {
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }
@@ -330,7 +333,7 @@ VerilogModule *Sta::findModule(const char *module_name) {
  *
  */
 void Sta::linkDesign(const char *top_cell_name) {
-  LOG_INFO << "link design start";
+  LOG_INFO << "link design " << top_cell_name << " start";
 
   _verilog_reader.flattenModule(top_cell_name);
   auto &verilog_modules = _verilog_reader.get_verilog_modules();
@@ -623,7 +626,7 @@ void Sta::linkDesign(const char *top_cell_name) {
     }
   }
 
-  LOG_INFO << "link design end";
+  LOG_INFO << "link design " << top_cell_name << " end";
 }
 
 /**
@@ -729,6 +732,11 @@ void Sta::initSdcCmd() {
       std::make_unique<CmdSetInputTransition>("set_input_transition");
   LOG_FATAL_IF(!cmd_set_input_transition);
   TclCmds::addTclCmd(std::move(cmd_set_input_transition));
+
+  auto cmd_set_driving_cell =
+      std::make_unique<CmdSetDrivingCell>("set_driving_cell");
+  LOG_FATAL_IF(!cmd_set_driving_cell);
+  TclCmds::addTclCmd(std::move(cmd_set_driving_cell));
 
   auto cmd_set_load = std::make_unique<CmdSetLoad>("set_load");
   LOG_FATAL_IF(!cmd_set_load);
@@ -953,11 +961,11 @@ std::optional<double> Sta::getVertexSlewSlack(StaVertex *the_vertex,
                                               TransType trans_type) {
   std::optional<double> slack;
 
-  double slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto slew = the_vertex->getSlewNs(mode, trans_type);
   auto limit = getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
-    slack = *limit - slew;
+  if (limit && slew) {
+    slack = *limit - *slew;
   }
 
   return slack;
@@ -1766,7 +1774,7 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
  * @return the violated StaSeqPathDatas.
  */
 std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
                                         AnalysisMode mode) {
   // auto cmp = [](StaSeqPathData *left, StaSeqPathData *right) -> bool {
@@ -1776,8 +1784,8 @@ Sta::getViolatedSeqPathsBetweenTwoSinks(StaVertex *vertex1, StaVertex *vertex2,
   // };
 
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
-      seq_data_queue(cmp);
+                      decltype(seq_data_cmp)>
+      seq_data_queue(seq_data_cmp);
 
   for (const auto &[clk, seq_path_group] : _clock_groups) {
     StaPathEnd *path_end;
@@ -1974,6 +1982,9 @@ unsigned Sta::updateTiming() {
       StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
       StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
       StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+      StaClockPropagation(
+          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
       StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
       StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
@@ -1981,6 +1992,38 @@ unsigned Sta::updateTiming() {
       StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
       StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
       StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
+
+  for (auto &func : funcs) {
+    the_graph.exec(func);
+  }
+
+  LOG_INFO << "update timing end";
+  return 1;
+}
+
+/**
+ * @brief update the clock timing data for finding the start pins or the end
+ * pins.
+ *
+ * @return unsigned
+ */
+unsigned Sta::updateClockTiming() {
+  LOG_INFO << "update timing start";
+
+  resetSdcConstrain();
+  resetGraphData();
+  resetPathData();
+
+  StaGraph &the_graph = get_graph();
+
+  Vector<std::function<unsigned(StaGraph *)>> funcs = {
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+      StaConstPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+      StaCombLoopCheck(),
+      StaSlewPropagation(),
+      StaDelayPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp)};
 
   for (auto &func : funcs) {
     the_graph.exec(func);
@@ -2138,124 +2181,240 @@ void Sta::dumpVertexData(std::vector<std::string> vertex_names) {
 }
 
 /**
+ * @brief dump netlist data in json and txt format.
+ *
+ */
+void Sta::dumpNetlistData() {
+  const char *design_work_space = get_design_work_space();
+
+  Sta *ista = Sta::getOrCreateSta();
+  auto &the_graph = ista->get_graph();
+  Netlist *the_netlist = ista->get_netlist();
+  Net *the_net;
+
+  nlohmann::json net_info_json = nlohmann::json::array();
+  std::set<std::string> cell_types;
+
+  FOREACH_NET(the_netlist, the_net) {
+    // initialize the json container
+    nlohmann::json net_info_obj = nlohmann::json::object();
+    nlohmann::json net_load_list = nlohmann::json::array();
+
+    auto net_name = the_net->get_name();
+
+    // driver info
+    auto *driver_pin = the_net->getDriver();
+    auto *driver_cell_type = "";
+    if (driver_pin->isPort()) {
+      driver_cell_type = "[port]";
+    } else {
+      driver_cell_type =
+          driver_pin->get_own_instance()->get_inst_cell()->get_cell_name();
+    }
+    cell_types.emplace(driver_cell_type);
+
+    auto driver_cell_level = (*the_graph.findVertex(driver_pin))->get_level();
+    auto driver_cell_fanout = the_net->getLoads().size();
+
+    // write net_name and driver info to json container
+    net_info_obj["net_name"] = net_name;
+    net_info_obj["driver_cell_fanout"] = driver_cell_fanout;
+    net_info_obj["driver_cell_type"] = driver_cell_type;
+    net_info_obj["driver_cell_level"] = driver_cell_level;
+
+    // load info
+    std::vector<DesignObject *> load_pins = the_net->getLoads();
+    auto index = 1;
+    for (auto *load_pin : load_pins) {
+      // initialize the load_info json container
+      nlohmann::json net_load_info = nlohmann::json::object();
+
+      auto load_vertex = the_graph.findVertex(load_pin);
+      LOG_FATAL_IF(!load_vertex);
+
+      const char *load_cell_type = "";
+      if (load_pin->isPort()) {
+        load_cell_type = "[port]";
+      } else {
+        load_cell_type =
+            load_pin->get_own_instance()->get_inst_cell()->get_cell_name();
+      }
+      cell_types.emplace(load_cell_type);
+
+      // write the load info to container with index
+      net_load_info["index"] = index++;
+      net_load_info["load_cell_type"] = load_cell_type;
+
+      // insert the net load/cell info the the net load list before next dealing
+      // next load
+      net_load_list.emplace_back(net_load_info);
+    }
+
+    // write load info to json container
+    net_info_obj["net_load_list"] = net_load_list;
+
+    // write the json container to net_info_json before looping next net
+    net_info_json.emplace_back(net_info_obj);
+  }
+
+  // export to json file before exiting
+  std::ofstream outputJson(std::string(design_work_space) +
+                           std::string("/net_list_info.json"));
+
+  if (!outputJson.is_open()) {
+    std::cerr << "Error: Failed to open file for writing." << std::endl;
+  }
+
+  outputJson << std::setw(4) << net_info_json << std::endl;
+  LOG_INFO << "net_list_info.json written to "
+           << std::string(design_work_space) +
+                  std::string("/net_list_info.json")
+           << std::endl;
+  outputJson.close();
+
+  std::ofstream outputTxt(std::string(design_work_space) +
+                          std::string("/cell_types.txt"));
+  if (!outputTxt.is_open()) {
+    std::cerr << "Error: Failed to open file for writing." << std::endl;
+  }
+
+  std::copy(cell_types.begin(), cell_types.end(),
+            std::ostream_iterator<std::string>(outputTxt, "\n"));
+  LOG_INFO << "cell_types.txt written to "
+           << std::string(design_work_space) + std::string("/cell_types.txt")
+           << std::endl;
+  outputJson.close();
+}
+
+/**
  * @brief Build clock tree for GUI.
  *
  */
 void Sta::buildClockTrees() {
+  StaBuildClockTree build_clock_tree;
   for (auto &clock : _clocks) {
-    // get_clock_vertexs: usually return one.
-    auto &vertexes = clock->get_clock_vertexes();
-
-    for (auto *vertex : vertexes) {
-      // for each vertex, make one root_node/clock_tree.
-      std::string pin_name = vertex->getName();
-      std::string cell_type = vertex->getOwnCellOrPortName();
-      std::string inst_name = vertex->getOwnInstanceOrPortName();
-      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
-      auto *clock_tree = new StaClockTree(clock.get(), root_node);
-      addClockTree(clock_tree);
-
-      StaData *clock_data;
-      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-      FOREACH_CLOCK_DATA(vertex, clock_data) {
-        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
-            clock_tree->get_clock()) {
-          continue;
-        }
-
-        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
-          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-          next_vertex_to_datas[next_fwd_vertex].emplace_back(
-              next_fwd_clock_data);
-        }
-      }
-      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
-    }
+    build_clock_tree(clock.get());
   }
+
+  _clock_trees = std::move(build_clock_tree.takeClockTrees());
 }
 
 /**
- * @brief Build the next pin in clock tree.
+ * @brief get the instance worst slack.
  *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
  */
-void Sta::buildNextPin(
-    StaClockTree *clock_tree, StaClockTreeNode *parent_node,
-    StaVertex *parent_vertex,
-    std::map<StaVertex *, std::vector<StaData *>> &vertex_to_datas) {
-  for (auto &[fwd_vertex, fwd_datas] : vertex_to_datas) {
-    std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-
-    double max_rise_AT = 0;
-    double max_fall_AT = 0;
-    double min_rise_AT = 0;
-    double min_fall_AT = 0;
-    for (auto *fwd_clock_data : fwd_datas) {
-      if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-          (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        max_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_rise_AT = FS_TO_NS(max_rise_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kFall)) {
-        max_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_fall_AT = FS_TO_NS(max_fall_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMin) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        min_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_rise_AT = FS_TO_NS(min_rise_AT);
-      } else {
-        min_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_fall_AT = FS_TO_NS(min_fall_AT);
-      }
-
-      for (auto *next_fwd_clock_data : fwd_clock_data->get_fwd_set()) {
-        auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-        next_vertex_to_datas[next_fwd_vertex].emplace_back(next_fwd_clock_data);
+std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
+                                        Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slack = the_vertex->getWorstSlackNs(analysis_mode);
+    if (the_worst_pin_slack) {
+      if (!the_worst_inst_slack ||
+          (*the_worst_inst_slack > *the_worst_pin_slack)) {
+        the_worst_inst_slack = *the_worst_pin_slack;
       }
     }
-
-    std::string from_name = parent_vertex->getName();
-    std::string to_name = fwd_vertex->getName();
-    ModeTransAT mode_trans_AT(from_name.c_str(), to_name.c_str(), max_rise_AT,
-                              max_fall_AT, min_rise_AT, min_fall_AT);
-
-    std::string parent_cell_type = parent_node->get_cell_type();
-    // build clock node, annotate delay
-    std::string child_cell_type = fwd_vertex->getOwnCellOrPortName();
-    std::string child_inst_name = fwd_vertex->getOwnInstanceOrPortName();
-
-    std::string parent_inst_name = parent_vertex->getOwnInstanceOrPortName();
-    StaClockTreeNode *child_node =
-        clock_tree->findNode(child_inst_name.c_str());
-    bool is_new = false;
-    if (!child_node) {
-      is_new = true;
-      child_node = new StaClockTreeNode(child_cell_type, child_inst_name);
-    }
-
-    if (parent_node != child_node) {
-      auto *child_arc = new StaClockTreeArc(parent_node, child_node);
-      child_arc->set_net_arrive_time(mode_trans_AT);
-      child_node->addFaninArc(child_arc);
-      clock_tree->addChildNode(child_node);
-      clock_tree->addChildArc(child_arc);
-    } else {
-      parent_node->addInstArrvieTime(std::move(mode_trans_AT));
-    }
-
-    if ((parent_node != child_node) && (is_new == false)) {
-      return;
-    }
-
-    if (fwd_vertex->is_clock()) {
-      return;
-    }
-
-    buildNextPin(clock_tree, child_node, fwd_vertex, next_vertex_to_datas);
   }
+
+  // LOG_FATAL_IF(the_worst_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_worst_inst_slack;
+  return the_worst_inst_slack;
+}
+
+/**
+ * @brief get the instance worst transition.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTransition(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slew;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slew = the_vertex->getWorstSlewNs(analysis_mode);
+    if (the_worst_pin_slew) {
+      if (!the_worst_inst_slew) {
+        the_worst_inst_slew = *the_worst_pin_slew;
+      } else {
+        if ((analysis_mode == AnalysisMode::kMax) &&
+            (*the_worst_inst_slew < *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        } else if ((analysis_mode == AnalysisMode::kMin) &&
+                   (*the_worst_inst_slew > *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        }
+      }
+    }
+  }
+
+  return the_worst_inst_slew;
+}
+
+/**
+ * @brief display timing map of inst worst slack.
+ *
+ * @param analysis_mode
+ * @return auto
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_slack;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    if (the_inst_worst_slack) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_slack[*inst_coordinate] = *the_inst_worst_slack;
+    }
+  }
+
+  return loc_to_inst_slack;
+}
+
+/**
+ * @brief get the inst transition map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_transition;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_transition = getInstTransition(analysis_mode, the_inst);
+    if (the_inst_worst_transition) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_transition[*inst_coordinate] = *the_inst_worst_transition;
+    }
+  }
+
+  return loc_to_inst_transition;
 }
 
 }  // namespace ista

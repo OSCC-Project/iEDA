@@ -614,13 +614,14 @@ IdbPin* IdbPins::add_pin_list(string pin_name)
 
 void IdbPins::reset()
 {
-  for (auto& pin : _pin_list) {
+  for (auto* pin : _pin_list) {
     if (pin != nullptr) {
       delete pin;
       pin = nullptr;
     }
   }
   _pin_list.clear();
+  std::vector<IdbPin*>().swap(_pin_list);
 }
 
 void IdbPins::remove_pin(IdbPin* pin_remove)

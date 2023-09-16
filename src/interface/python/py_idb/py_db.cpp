@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "py_db.h"
+
 #include <idm.h>
 
 namespace python_interface {
@@ -27,7 +28,7 @@ bool initIdb(const std::string& config_path)
 bool initTechLef(const std::string& techlef_path)
 {
   dmInst->get_config().set_tech_lef_path(techlef_path);
-  return dmInst->readLef(vector<string>{techlef_path});
+  return dmInst->readLef(vector<string>{techlef_path}, true);
 }
 
 bool initLef(const std::vector<std::string>& lef_paths)
@@ -57,6 +58,11 @@ bool saveNetList(const std::string& netlist_path, std::set<std::string> exclude_
 {
   dmInst->saveVerilog(netlist_path, std::move(exclude_cell_names));
   return true;
+}
+
+bool saveGDSII(const std::string& gds_name)
+{
+  return dmInst->saveGDSII(gds_name);
 }
 
 }  // namespace python_interface

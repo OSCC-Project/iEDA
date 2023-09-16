@@ -700,9 +700,10 @@ std::optional<int64_t> StaVertex::getSlack(AnalysisMode analysis_mode,
  *
  * @param analysis_mode
  * @param trans_type
- * @return int
+ * @return std::optional<int>
  */
-int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
+std::optional<int> StaVertex::getSlew(AnalysisMode analysis_mode,
+                                      TransType trans_type) {
   StaData* data;
   FOREACH_SLEW_DATA(this, data) {
     if (data->get_delay_type() == analysis_mode &&
@@ -712,7 +713,7 @@ int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
     }
   }
 
-  return 0;
+  return std::nullopt;
 }
 
 /**
@@ -790,7 +791,7 @@ double StaVertex::getLoad(AnalysisMode analysis_mode, TransType trans_type) {
 }
 
 /**
- * @brief get net load not include pin cap.
+ * @brief get net load include pin cap.
  *
  * @return double
  */
@@ -801,8 +802,8 @@ double StaVertex::getNetLoad() {
   if (rc_net) {
     double load_include_pin_cap =
         rc_net->load(AnalysisMode::kMax, TransType::kRise);
-    double pin_cap = the_net->getLoad(AnalysisMode::kMax, TransType::kRise);
-    return (load_include_pin_cap - pin_cap);
+
+    return load_include_pin_cap;
   }
 
   return 0.0;

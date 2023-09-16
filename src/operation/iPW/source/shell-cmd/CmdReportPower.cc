@@ -39,65 +39,7 @@ unsigned CmdReportPower::exec() {
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
-  // set fastest clock for default toggle
-  auto* fastest_clock = ista->getFastestClock();
-  PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
-                             fastest_clock->getPeriodNs());
-  // get sta clocks
-  auto clocks = ista->getClocks();
-
-  ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
-
-  {
-    ieda::Stats stats;
-    LOG_INFO << "build graph and seq graph start";
-    // build power graph
-    ipower->buildGraph();
-
-    // build seq graph
-    ipower->buildSeqGraph();
-
-    LOG_INFO << "build graph and seq graph end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "build graph and seq graph memory usage " << memory_delta
-             << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "build graph and seq graph time elapsed " << time_delta << "s";
-  }
-
-  {
-    ieda::Stats stats;
-    LOG_INFO << "power annotate vcd start";
-    // annotate toggle sp
-    ipower->annotateToggleSP();
-
-    LOG_INFO << "power vcd annotate end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "power vcd annotate memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
-  }
-
-  // update power.
-  ipower->updatePower();
-
-  {
-    // report power.
-    ieda::Stats stats;
-    LOG_INFO << "power report start";
-
-    // TODO add arg
-    std::string output_path = ista->get_design_work_space();
-    output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
-
-    ipower->reportPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
-
-    LOG_INFO << "power report end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "power report memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "power report time elapsed " << time_delta << "s";
-  }
+  ipower->runCompleteFlow();
 
   return 1;
 }

@@ -19,6 +19,6 @@ target_link_libraries(
   PRIVATE
   vcd_wrapper
   log
-  app
+  power
   verilog-vcd-parser utility usage ista-engine core calc_power plot_power
 )

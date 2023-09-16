@@ -75,8 +75,8 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   // clang-format on
   LOG_INST.printLogFilePath();
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
   DRCChecker::initInst();
+  DM_INST.input(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
 }
 
@@ -106,9 +106,9 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
         PinAccessor::destroyInst();
         break;
       case Stage::kResourceAllocator:
-        ResourceAllocator::initInst();
-        RA_INST.allocate(net_list);
-        ResourceAllocator::destroyInst();
+        // ResourceAllocator::initInst();
+        // RA_INST.allocate(net_list);
+        // ResourceAllocator::destroyInst();
         break;
       case Stage::kGlobalRouter:
         GlobalRouter::initInst();
@@ -170,8 +170,8 @@ Stage RTAPI::convertToStage(Tool tool)
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DRCChecker::destroyInst();
   DM_INST.output(dmInst->get_idb_builder());
+  DRCChecker::destroyInst();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -457,13 +457,6 @@ ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_rou
   return ids_rect;
 }
 
-// void RTAPI::plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
-// {
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-//     static_cast<RegionQuery*>(region_query)->plotRegionQuery(drc_rect_list);
-//   } else {
-//   }
-// }
 // CTS
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)

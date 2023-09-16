@@ -25,7 +25,9 @@
 #include "StaClockPropagation.hh"
 
 #include "Sta.hh"
+#include "StaApplySdc.hh"
 #include "StaArc.hh"
+#include "StaBuildClockTree.hh"
 #include "log/Log.hh"
 
 namespace ista {
@@ -254,6 +256,43 @@ unsigned StaClockPropagation::propagateClock(StaVertex* the_vertex,
 }
 
 /**
+ * @brief update the sdc generated clock after the KIdealClockProp.
+ *
+ */
+void StaClockPropagation::updateSdcGeneratedClock() {
+  Sta* ista = getSta();
+  SdcConstrain* _the_constrain = ista->getConstrain();
+  auto& the_clocks = _the_constrain->get_sdc_clocks();
+  for (auto& [clock_name, the_clock] : the_clocks) {
+    if (the_clock->isGenerateClock() &&
+        (dynamic_cast<SdcGenerateCLock*>(the_clock.get())
+             ->isNeedUpdateSourceClock())) {
+      auto source_pins =
+          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_source_pins();
+      int divide_by_value =
+          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_divide_by();
+      LOG_FATAL_IF(source_pins.size() != 1);
+      StaClock* source_clock = nullptr;
+      for (auto* source_pin : source_pins) {
+        auto the_vertex = ista->findVertex(source_pin);
+        LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
+        source_clock = the_vertex->getPropClock();
+        dynamic_cast<SdcGenerateCLock*>(the_clock.get())
+            ->set_source_name(source_clock->get_clock_name());
+      }
+
+      the_clock->set_period(source_clock->get_period() * divide_by_value);
+      auto& wave_form = source_clock->get_wave_form();
+      SdcClock::SdcWaveform edges;
+      for (auto& wave_edge : wave_form.get_wave_edges()) {
+        edges.push_back(divide_by_value * wave_edge);
+      }
+      the_clock->set_edges(std::move(edges));
+    }
+  }
+}
+
+/**
  * @brief The functor of propagate clock.
  *
  * @param the_graph
@@ -262,8 +301,10 @@ unsigned StaClockPropagation::propagateClock(StaVertex* the_vertex,
 unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
   if (_prop_type == PropType::kIdealClockProp) {
     LOG_INFO << "ideal clock propagation start";
+  } else if (_prop_type == PropType::kNormalClockProp) {
+    LOG_INFO << "propagated(kNormal) clock propagation start";
   } else {
-    LOG_INFO << "propagated clock propagation start";
+    LOG_INFO << "propagated(kGenerated) clock propagation start";
   }
 
   Sta* ista = getSta();
@@ -293,7 +334,10 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
     if (((_prop_type == PropType::kIdealClockProp) &&
          clock->isIdealClockNetwork()) ||
         ((_prop_type == PropType::kNormalClockProp) &&
-         !clock->isIdealClockNetwork())) {
+         !clock->isIdealClockNetwork()) ||
+        ((_prop_type == PropType::kUpdateGeneratedClockProp) &&
+         !clock->isIdealClockNetwork() &&
+         clock->isNeedUpdatePeriodWaveform())) {
       set_propagate_clock(clock.get());
       auto& vertexes = clock->get_clock_vertexes();
       for (auto* vertex : vertexes) {
@@ -327,23 +371,37 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
           break;
         }
       }
+
+      // reset propagate type.
+      if (_prop_type == PropType::kUpdateGeneratedClockProp) {
+        clock->set_is_need_update_period_waveform(false);
+      }
     }
+  }
+
+  // for debug
+  // for (auto& clock : clocks) {
+  //   LOG_INFO << "build clock tree : " << clock->get_clock_name();
+  //   StaBuildClockTree build_clock_tree;
+  //   build_clock_tree(clock.get());
+
+  //   auto& clock_trees = build_clock_tree.takeClockTrees();
+  //   std::string path = std::string(clock->get_clock_name()) + "_tree.dot";
+  //   clock_trees.front()->printInstGraphViz(path.c_str());
+  //   clock_trees.clear();
+  // }
+
+  if (_prop_type == PropType::kNormalClockProp) {
+    updateSdcGeneratedClock();
   }
 
   if (_prop_type == PropType::kIdealClockProp) {
     LOG_INFO << "ideal clock propagation end";
+  } else if (_prop_type == PropType::kNormalClockProp) {
+    LOG_INFO << "propagated(kNormal) clock propagation end";
   } else {
-    LOG_INFO << "propagated clock propagation end";
+    LOG_INFO << "propagated(kGenerated) clock propagation end";
   }
-
-  // SdcConstrain* _the_constrain = ista->getConstrain();
-  // auto _sdc_generated_pin_set = _the_constrain->get_generated_source_pins();
-  // LOG_INFO << "=====generated source clock pin num: "
-  //          << _sdc_generated_pin_set.size() << std::endl;
-  // for (auto* iter : _sdc_generated_pin_set) {
-  //   LOG_INFO << "generated source pin name: " << iter->get_name() << " \n";
-  //   LOG_INFO << "" << ista->findVertex(iter->get_name());
-  // }
 
   return is_ok;
 }

@@ -20,7 +20,7 @@
 
 #include "CTSAPI.hpp"
 #include "CtsReport.h"
-#include "SlewAware.h"
+#include "Net.hh"
 #include "log/Log.hh"
 namespace icts {
 
@@ -51,6 +51,9 @@ void Evaluator::transferData()
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   for (auto* clk_net : clk_nets) {
+    if (clk_net->get_driver_pin()->is_io()) {
+      continue;
+    }
     _eval_nets.emplace_back(EvalNet(clk_net));
   }
 }
@@ -69,6 +72,9 @@ void Evaluator::initLevel() const
 
 void Evaluator::recursiveSetLevel(CtsNet* net) const
 {
+  if (net == nullptr) {
+    return;
+  }
   auto* driver = net->get_driver_inst();
   if (driver->get_level() > 0) {
     return;
@@ -102,7 +108,7 @@ void Evaluator::evaluate()
 void Evaluator::statistics(const std::string& save_dir) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir )+ "/statistics";
+  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
   auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWIRE_LENGTH);
@@ -119,17 +125,15 @@ void Evaluator::statistics(const std::string& save_dir) const
   double hpwl_total_wire_len = 0.0;
   double hpwl_max_net_len = 0.0;
   for (const auto& eval_net : _eval_nets) {
-    auto router_type = config->get_router_type();
     auto* design = CTSAPIInst.get_design();
     // wire length
-    double net_len = 0.0;
-    auto* net = design->findGocaNet(eval_net.get_name());
-    if (router_type == "GOCA" && net) {
-      auto * driver_pin = net->get_driver_pin();
-      net_len = driver_pin->get_sub_len();
-    } else {
-      net_len = eval_net.getWireLength();
+    auto* net = design->findSolverNet(eval_net.get_name());
+    if (!net) {
+      continue;
     }
+    auto* driver_pin = net->get_driver_pin();
+    double net_len = driver_pin->get_sub_len();
+
     double hpwl_net_len = eval_net.getHPWL();
     auto type = eval_net.netType();
     switch (type) {
@@ -355,8 +359,8 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
     ploter.insertInstance(inst);
   }
   for (const auto& wire : net->get_signal_wires()) {
-    auto first = DataTraits<Endpoint>::getPoint(wire.get_first());
-    auto second = DataTraits<Endpoint>::getPoint(wire.get_second());
+    auto first = wire.get_first().point;
+    auto second = wire.get_second().point;
     ploter.insertWire(first, second);
   }
   auto core = db_wrapper->get_core_bounding_box();

@@ -42,9 +42,6 @@
 #include "ops/propagate_toggle_sp/PwrPropagateToggleSP.hh"
 #include "ops/read_vcd/VCDParserWrapper.hh"
 
-// #include "pybind11/pybind11.h"
-// namespace py = pybind11;
-
 namespace ipower {
 
 Power* Power::_power = nullptr;
@@ -81,9 +78,8 @@ void Power::destroyPower() {
  */
 unsigned Power::buildGraph() {
   // TODO build graph use power graph in Power class.
-  PwrBuildGraph build_graph;
+  PwrBuildGraph build_graph(_power_graph);
   build_graph(_power_graph.get_sta_graph());
-  _power_graph = std::move(build_graph.takePowerGraph());
   _power_graph.set_pwr_seq_graph(&_power_seq_graph);
   return 1;
 }
@@ -415,7 +411,7 @@ unsigned Power::reportPower(const char* rpt_file_name,
       {PwrGroupData::PwrGroupType::kIOPad, "io_pad"},
       {PwrGroupData::PwrGroupType::kMemory, "memory"},
       {PwrGroupData::PwrGroupType::kBlackBox, "black_box"},
-      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_net_work"},
+      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_network"},
       {PwrGroupData::PwrGroupType::kRegister, "register"},
       {PwrGroupData::PwrGroupType::kComb, "combinational"},
       {PwrGroupData::PwrGroupType::kSeq, "sequential"}};
@@ -494,8 +490,83 @@ unsigned Power::reportPower(const char* rpt_file_name,
                summary_leakage_power, summary_leakage_power_percentage.c_str());
 
   std::fprintf(f.get(), "Total Power   ==  %.3e\n", total_power);
+
+  LOG_INFO << "Total Power   ==  " << total_power << " mW";
   return 1;
 };
+
+/**
+ * @brief run report ipower
+ *
+ * @return unsigned
+ */
+unsigned Power::runCompleteFlow() {
+  Sta* ista = Sta::getOrCreateSta();
+  Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
+
+  {
+    ieda::Stats stats;
+
+    // set fastest clock for default toggle
+    auto* fastest_clock = ista->getFastestClock();
+    ipower::PwrClock pwr_fastest_clock(fastest_clock->get_clock_name(),
+                                       fastest_clock->getPeriodNs());
+    // get sta clocks
+    auto clocks = ista->getClocks();
+
+    ipower->setupClock(std::move(pwr_fastest_clock), std::move(clocks));
+
+    LOG_INFO << "build graph and seq graph start";
+    // build power graph
+    buildGraph();
+
+    // build seq graph
+    buildSeqGraph();
+
+    LOG_INFO << "build graph and seq graph end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "build graph and seq graph memory usage " << memory_delta
+             << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "build graph and seq graph time elapsed " << time_delta << "s";
+  }
+
+  {
+    ieda::Stats stats;
+    LOG_INFO << "power annotate vcd start";
+    // std::pair begin_end = {0, 50000000};
+    // readVCD("/home/taosimin/T28/vcd/asic_top.vcd", "u0_asic_top",
+    //                 begin_end);
+    // annotate toggle sp
+    annotateToggleSP();
+
+    LOG_INFO << "power vcd annotate end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power vcd annotate memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
+  }
+
+  // update power.
+  ipower->updatePower();
+
+  {
+    // report power.
+    ieda::Stats stats;
+    LOG_INFO << "power report start";
+
+    std::string output_path = ista->get_design_work_space();
+    output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
+    reportPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
+
+    LOG_INFO << "power report end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power report memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power report time elapsed " << time_delta << "s";
+  }
+  return 1;
+}
 
 /**
  * @brief get the instance owned group.
@@ -564,8 +635,3 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
 }
 
 }  // namespace ipower
-
-// PYBIND11_MODULE(power, m) {
-//   py::class_<ipower::Power>(m, "Power")
-//       .def("build_graph", &ipower::Power::buildGraph);
-// }

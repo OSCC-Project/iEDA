@@ -30,13 +30,8 @@ enum class GPGraphType
   kKey,
   kTrackAxis,
   kPath,
-  kBlockAndPin,
-  kEnclosure,
-  kOtherPanel,
-  kSelfPanel,
-  kKnownPanel,
-  kOtherBox,
-  kSelfBox
+  kLayoutShape,
+  kReservedVia
 };
 
 struct GetGPGraphTypeName
@@ -69,26 +64,11 @@ struct GetGPGraphTypeName
       case GPGraphType::kPath:
         data_type_name = "path";
         break;
-      case GPGraphType::kBlockAndPin:
-        data_type_name = "block_pin";
+      case GPGraphType::kLayoutShape:
+        data_type_name = "layout_shape";
         break;
-      case GPGraphType::kEnclosure:
-        data_type_name = "enclosure";
-        break;
-      case GPGraphType::kOtherPanel:
-        data_type_name = "other_panel";
-        break;
-      case GPGraphType::kSelfPanel:
-        data_type_name = "self_panel";
-        break;
-      case GPGraphType::kKnownPanel:
-        data_type_name = "known_panel";
-        break;
-      case GPGraphType::kOtherBox:
-        data_type_name = "other_box";
-        break;
-      case GPGraphType::kSelfBox:
-        data_type_name = "self_box";
+      case GPGraphType::kReservedVia:
+        data_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
