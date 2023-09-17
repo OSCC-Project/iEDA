@@ -1806,7 +1806,7 @@ class RTUtil
       LOG_INST.error(Loc::current(), "There are oblique segments in tree!");
     }
     // 检查树是否到达所有的关键坐标
-    if (!passCheckingReachable(coord_tree, key_coord_pin_map)) {
+    if (!passCheckingConnectivity(coord_tree, key_coord_pin_map)) {
       LOG_INST.error(Loc::current(), "The key points unreachable!");
     }
     return coord_tree;
@@ -2097,7 +2097,7 @@ class RTUtil
   }
 
   // 检查树是否到达所有的关键坐标
-  static bool passCheckingReachable(MTree<LayerCoord>& coord_tree,
+  static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree,
                                     std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<irt_int, bool> visited_map;
