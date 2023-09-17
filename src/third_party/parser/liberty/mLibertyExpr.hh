@@ -13,13 +13,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-/**
- * @file LibertyExpr.hh
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief The liberty expression parser and process function.
- * @version 0.1
- * @date 2021-09-19
- */
 
 #pragma once
 

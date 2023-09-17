@@ -172,4 +172,17 @@ class CmdDefToVerilog : public TclCmd {
   unsigned exec();
 };
 
+/**
+ * @brief read verilog file, change to def, finally write def file.
+ *
+ */
+class CmdVerilogToDef : public TclCmd {
+ public:
+  explicit CmdVerilogToDef(const char* cmd_name);
+  ~CmdVerilogToDef() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
 }  // namespace ista
