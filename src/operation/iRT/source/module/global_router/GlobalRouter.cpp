@@ -1993,139 +1993,17 @@ void GlobalRouter::reportGRModel(GRModel& gr_model)
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
 
-  printTableList({wire_table, via_table});
+  RTUtil::printTableList({wire_table, via_table});
 
   auto layer_resource_range_number_map = RTUtil::getLayerRangeNumMap(layer_resource_overflow_map, {1.0});
-  fort::char_table resource_overflow_table = buildOverflowTable(layer_resource_range_number_map, total_resource_overflow_number);
+  fort::char_table resource_overflow_table = RTUtil::buildOverflowTable(routing_layer_list, total_resource_overflow_number, layer_resource_range_number_map);
   resource_overflow_table[0][0] = "Layer\\Resource Overflow";
 
   auto layer_access_range_number_map = RTUtil::getLayerRangeNumMap(layer_access_overflow_map, {1.0});
-  fort::char_table access_overflow_table = buildOverflowTable(layer_access_range_number_map, total_access_overflow_number);
+  fort::char_table access_overflow_table = RTUtil::buildOverflowTable(routing_layer_list, total_access_overflow_number, layer_access_range_number_map);
   access_overflow_table[0][0] = "Layer\\Access Overflow";
 
-  printTableList({resource_overflow_table, access_overflow_table});
-}
-
-fort::char_table GlobalRouter::buildOverflowTable(std::map<irt_int, std::map<std::pair<double, double>, irt_int>>& layer_range_number_map,
-                                                  irt_int total_overflow_number)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  // init resource overflow table item column/row map
-  irt_int report_number = 0;
-  std::map<irt_int, irt_int> resource_layer_number_map;
-  std::map<std::pair<double, double>, irt_int> resource_range_number_map;
-  for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
-    irt_int layer_total_number = 0;
-    for (auto& [range, number] : range_number_map) {
-      layer_total_number += number;
-    }
-    report_number += layer_total_number;
-    resource_layer_number_map[layer_idx] = layer_total_number;
-  }
-  for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
-    for (auto& [range, number] : range_number_map) {
-      resource_range_number_map[range] += number;
-    }
-  }
-
-  std::map<std::pair<double, double>, std::string> range_str_map;
-  for (auto& [range, number] : resource_range_number_map) {
-    if (range.first == range.second) {
-      range_str_map[range] = RTUtil::getString("[", range.first, ",", range.second, "]");
-    } else {
-      range_str_map[range] = RTUtil::getString("(", range.first, ",", range.second, ")");
-    }
-  }
-
-  irt_int row = 0;
-  std::map<std::string, irt_int> item_row_map;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    item_row_map[routing_layer.get_layer_name()] = ++row;
-  }
-  item_row_map["Total"] = ++row;
-
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  for (auto& [range, number] : resource_range_number_map) {
-    item_column_map[range_str_map[range]] = ++column;
-  }
-  item_column_map["Total"] = ++column;
-
-  // report resource overflow info
-  fort::char_table resource_overflow_table;
-  resource_overflow_table << fort::header << "Layer\\Overflow" << fort::endr;
-  for (auto& [range, number] : resource_range_number_map) {
-    resource_overflow_table << range_str_map[range];
-  }
-  resource_overflow_table << fort::endr;
-
-  // first row item
-  for (auto& [layer_name, row] : item_row_map) {
-    resource_overflow_table[row][0] = layer_name;
-  }
-  // first column item
-  for (auto& [range_str, column] : item_column_map) {
-    resource_overflow_table[0][column] = range_str;
-  }
-  // element
-  for (auto& [layer, range_number_map] : layer_range_number_map) {
-    irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
-    for (auto& [range, number] : range_number_map) {
-      irt_int column = item_column_map[range_str_map[range]];
-      resource_overflow_table[row][column] = RTUtil::getString(number, "(", RTUtil::getPercentage(number, total_overflow_number), "%)");
-    }
-  }
-  // last row
-  for (auto& [resource_range, total_number] : resource_range_number_map) {
-    irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[range_str_map[resource_range]];
-    resource_overflow_table[row][column]
-        = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
-  }
-  resource_overflow_table << fort::header;
-
-  // last column
-  for (auto& [layer, total_number] : resource_layer_number_map) {
-    irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
-    irt_int column = item_column_map["Total"];
-    resource_overflow_table[row][column]
-        = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
-  }
-
-  resource_overflow_table[item_row_map["Total"]][item_column_map["Total"]]
-      = RTUtil::getString(report_number, "(", RTUtil::getPercentage(report_number, total_overflow_number), "%)");
-
-  return resource_overflow_table;
-}
-
-void GlobalRouter::printTableList(const std::vector<fort::char_table>& table_list)
-{
-  std::vector<std::vector<std::string>> print_table_list;
-  for (const fort::char_table& table : table_list) {
-    print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
-  }
-
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : print_table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
-  }
-  for (std::vector<std::string>& table : print_table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length(), ' ');
-      table.push_back(table_str);
-    }
-  }
-
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : print_table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
+  RTUtil::printTableList({resource_overflow_table, access_overflow_table});
 }
 
 bool GlobalRouter::stopGRModel(GRModel& gr_model)

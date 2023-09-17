@@ -1026,8 +1026,10 @@ void PinAccessor::countPAModel(PAModel& pa_model)
     }
   }
 
-  std::map<PASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
-      = pa_model_stat.get_source_drc_violation_map();
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_routing_drc_violation_map
+      = pa_model_stat.get_source_routing_drc_violation_map();
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
+      = pa_model_stat.get_source_cut_drc_violation_map();
   GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
   for (irt_int x = 0; x < pa_gcell_map.get_x_size(); x++) {
     for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
@@ -1035,26 +1037,17 @@ void PinAccessor::countPAModel(PAModel& pa_model)
 
       for (PASourceType pa_source_type : {PASourceType::kLayoutShape}) {
         for (auto& [drc, violation_info_list] : getViolationInfo(pa_gcell, pa_source_type)) {
-          std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[pa_source_type][drc];
-          total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
+          for (ViolationInfo& violation_info : violation_info_list) {
+            irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
+            if (violation_info.get_is_routing()) {
+              source_routing_drc_violation_map[pa_source_type][layer_idx][drc].push_back(violation_info);
+            } else {
+              source_cut_drc_violation_map[pa_source_type][layer_idx][drc].push_back(violation_info);
+            }
+          }
         }
       }
     }
-  }
-
-  std::map<std::string, irt_int>& rule_number_map = pa_model_stat.get_drc_number_map();
-  for (auto& [pa_source_type, drc_violation_map] : source_drc_violation_map) {
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      rule_number_map[drc] += violation_list.size();
-    }
-  }
-  std::map<std::string, irt_int>& source_number_map = pa_model_stat.get_source_number_map();
-  for (auto& [pa_source_type, drc_violation_map] : source_drc_violation_map) {
-    irt_int total_number = 0;
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      total_number += violation_list.size();
-    }
-    source_number_map[GetPASourceTypeName()(pa_source_type)] = total_number;
   }
 
   irt_int total_pin_num = 0;
@@ -1070,9 +1063,18 @@ void PinAccessor::countPAModel(PAModel& pa_model)
   for (auto& [routing_layer_idx, access_point_num] : routing_access_point_num_map) {
     total_access_point_num += access_point_num;
   }
-  for (auto& [pa_source_type, drc_violation_map] : source_drc_violation_map) {
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      total_drc_number += violation_list.size();
+  for (auto& [pa_source_type, routing_drc_violation_map] : source_routing_drc_violation_map) {
+    for (auto& [layer_idx, drc_violation_list_map] : routing_drc_violation_map) {
+      for (auto& [drc, violation_list] : drc_violation_list_map) {
+        total_drc_number += violation_list.size();
+      }
+    }
+  }
+  for (auto& [pa_source_type, cut_drc_violation_map] : source_cut_drc_violation_map) {
+    for (auto& [layer_idx, drc_violation_list_map] : cut_drc_violation_map) {
+      for (auto& [drc, violation_list] : drc_violation_list_map) {
+        total_drc_number += violation_list.size();
+      }
     }
   }
   pa_model_stat.set_total_pin_num(total_pin_num);
@@ -1086,6 +1088,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
 void PinAccessor::reportPAModel(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
   PAModelStat& pa_model_stat = pa_model.get_pa_model_stat();
   std::map<AccessPointType, irt_int>& type_pin_num_map = pa_model_stat.get_type_pin_num_map();
@@ -1094,11 +1097,6 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   irt_int total_port_num = pa_model_stat.get_total_port_num();
   std::map<irt_int, irt_int>& routing_access_point_num_map = pa_model_stat.get_routing_access_point_num_map();
   irt_int total_access_point_num = pa_model_stat.get_total_access_point_num();
-  std::map<PASourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
-      = pa_model_stat.get_source_drc_violation_map();
-  std::map<std::string, irt_int>& rule_number_map = pa_model_stat.get_drc_number_map();
-  std::map<std::string, irt_int>& source_number_map = pa_model_stat.get_source_number_map();
-  irt_int total_drc_number = pa_model_stat.get_total_drc_number();
 
   // report pin info
   fort::char_table pin_table;
@@ -1134,89 +1132,21 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   }
   port_table << fort::header << "Total" << total_port_num << total_access_point_num << fort::endr;
 
-  // report drc info
-  irt_int row = 0;
-  std::map<std::string, irt_int> item_row_map;
-  for (auto& [drc_rule, drc_number] : rule_number_map) {
-    item_row_map[drc_rule] = ++row;
-  }
-  item_row_map["Total"] = ++row;
-
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  for (auto& [pa_source_type, drc_number_map] : source_number_map) {
-    item_column_map[pa_source_type] = ++column;
-  }
-  item_column_map["Total"] = ++column;
-
-  // build table
-  fort::char_table drc_table;
-  drc_table << fort::header;
-  drc_table[0][0] = "DRC\\Source";
-  // first row item
-  for (auto& [drc_rule, row] : item_row_map) {
-    drc_table[row][0] = drc_rule;
-  }
-  // first column item
-  drc_table << fort::header;
-  for (auto& [source_name, column] : item_column_map) {
-    drc_table[0][column] = source_name;
-  }
-  // element
-  for (auto& [pa_source_type, drc_violation_map] : source_drc_violation_map) {
-    irt_int column = item_column_map[GetPASourceTypeName()(pa_source_type)];
-    for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_violation_map[pa_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[pa_source_type][drc_rule].size());
-      } else {
-        drc_table[row][column] = "0";
-      }
-    }
-  }
-  // last row
-  for (auto& [pa_source_type, total_number] : source_number_map) {
-    irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[pa_source_type];
-    drc_table[row][column] = RTUtil::getString(total_number);
-  }
-  // last column
-  for (auto& [drc_rule, total_number] : rule_number_map) {
-    irt_int row = item_row_map[drc_rule];
-    irt_int column = item_column_map["Total"];
-    drc_table[row][column] = RTUtil::getString(total_number);
-  }
-  drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
-
   // print
-    printTableList({pin_table, port_table, drc_table});
-}
+  RTUtil::printTableList({pin_table, port_table});
 
-void PinAccessor::printTableList(const std::vector<fort::char_table>& table_list)
-{
-  std::vector<std::vector<std::string>> print_table_list;
-  for (const fort::char_table& table : table_list) {
-    print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+  // build drc table
+  std::map<PASourceType, std::vector<fort::char_table>> source_drc_table_map;
+  for (auto& [source, routing_drc_violation_map] : pa_model_stat.get_source_routing_drc_violation_map()) {
+    source_drc_table_map[source].push_back(
+        RTUtil::buildDRCTable(routing_layer_list, GetPASourceTypeName()(source), routing_drc_violation_map));
   }
-
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : print_table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
+  for (auto& [source, cut_drc_violation_map] : pa_model_stat.get_source_cut_drc_violation_map()) {
+    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetPASourceTypeName()(source), cut_drc_violation_map));
   }
-  for (std::vector<std::string>& table : print_table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length(), ' ');
-      table.push_back(table_str);
-    }
-  }
-
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : print_table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
+  // print
+  for (auto& [source, drc_table_list] : source_drc_table_map) {
+    RTUtil::printTableList(drc_table_list);
   }
 }
 
