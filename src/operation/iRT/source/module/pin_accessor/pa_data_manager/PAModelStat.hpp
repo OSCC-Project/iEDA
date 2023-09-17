@@ -30,12 +30,14 @@ class PAModelStat
   std::map<AccessPointType, irt_int>& get_type_pin_num_map() { return _type_pin_num_map; }
   std::map<irt_int, irt_int>& get_routing_port_num_map() { return _routing_port_num_map; }
   std::map<irt_int, irt_int>& get_routing_access_point_num_map() { return _routing_access_point_num_map; }
-  std::map<PASourceType, std::map<std::string, std::vector<ViolationInfo>>>& get_source_drc_violation_map()
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& get_source_routing_drc_violation_map()
   {
-    return _source_drc_violation_map;
+    return _source_routing_drc_violation_map;
   }
-  std::map<std::string, irt_int>& get_drc_number_map() { return _drc_number_map; }
-  std::map<std::string, irt_int>& get_source_number_map() { return _source_number_map; }
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& get_source_cut_drc_violation_map()
+  {
+    return _source_cut_drc_violation_map;
+  }
   irt_int get_total_pin_num() { return _total_pin_num; }
   irt_int get_total_port_num() { return _total_port_num; }
   irt_int get_total_access_point_num() { return _total_access_point_num; }
@@ -51,9 +53,8 @@ class PAModelStat
   std::map<AccessPointType, irt_int> _type_pin_num_map;
   std::map<irt_int, irt_int> _routing_port_num_map;
   std::map<irt_int, irt_int> _routing_access_point_num_map;
-  std::map<PASourceType, std::map<std::string, std::vector<ViolationInfo>>> _source_drc_violation_map;
-  std::map<std::string, irt_int> _drc_number_map;
-  std::map<std::string, irt_int> _source_number_map;
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>> _source_routing_drc_violation_map;
+  std::map<PASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>> _source_cut_drc_violation_map;
   irt_int _total_pin_num = 0;
   irt_int _total_port_num = 0;
   irt_int _total_access_point_num = 0;
