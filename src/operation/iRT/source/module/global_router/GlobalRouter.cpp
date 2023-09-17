@@ -1918,9 +1918,6 @@ void GlobalRouter::countGRModel(GRModel& gr_model)
           }
         }
         double resource_overflow = RTUtil::calcCost(gr_node.get_resource_demand(), gr_node.get_resource_supply());
-        if (resource_overflow > 1) {
-          LOG_INST.warning(Loc::current(), "resource_overflow: ", grid_x, "  ", grid_y, " ", gr_node.get_layer_idx());
-        }
         resource_overflow_list.push_back(resource_overflow);
       }
     }
