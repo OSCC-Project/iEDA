@@ -96,7 +96,6 @@ class PinAccessor
   void updateNetAccessPointMap(PAModel& pa_model);
   void countPAModel(PAModel& pa_model);
   void reportPAModel(PAModel& pa_model);
-  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopPAModel(PAModel& pa_model);
 #endif
 

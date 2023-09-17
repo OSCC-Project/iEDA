@@ -135,7 +135,6 @@ class TrackAssigner
   void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
   void reportTAModel(TAModel& ta_model);
-  void printTableList(const std::vector<fort::char_table>& table_list);
   bool stopTAModel(TAModel& ta_model);
 #endif
 
