@@ -37,7 +37,11 @@ class ContestEvaluation
   ContestEvaluation(ContestDataManager* data_manager);
   ~ContestEvaluation() = default;
 
-  bool doEvaluation(std::string report_file) { return true; }
+  bool doEvaluation(std::string report_file);
+  bool overlapCheckPassed();
+  bool connectivityCheckPassed();
+  bool overflowCheckPassed();
+  double calcTimingScore();
 
  private:
   ContestDataManager* _data_manager = nullptr;

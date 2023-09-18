@@ -211,7 +211,7 @@ void ViolationRepairer::calcVRGCellSupply(VRModel& vr_model)
                   if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
                     // 要切
                     std::vector<PlanarRect> split_rect_list
-                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                        = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
                     new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
                   } else {
                     // 不切
@@ -571,8 +571,7 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
       candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
     }
     for (LayerRect& candidate_patch : candidate_patch_list) {
-      DRCRect drc_rect(vr_net.get_net_idx(), candidate_patch, true);
-      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, {drc_rect})) {
+      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), candidate_patch, true))) {
         patch_list.push_back(candidate_patch);
         break;
       }
@@ -663,7 +662,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         WireNode& wire_node = phy_node.getNode<WireNode>();
         irt_int layer_idx = wire_node.get_layer_idx();
         double wire_length = RTUtil::getManhattanDistance(wire_node.get_first(), wire_node.get_second()) / 1.0 / micron_dbu;
-        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_direction()) {
+        if (RTUtil::getDirection(wire_node.get_first(), wire_node.get_second()) == routing_layer_list[layer_idx].get_prefer_direction()) {
           routing_prefer_wire_length_map[layer_idx] += wire_length;
         } else {
           routing_nonprefer_wire_length_map[layer_idx] += wire_length;
@@ -679,7 +678,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     }
   }
 
-  std::vector<double>& resource_overflow_list = vr_model_stat.get_resource_overflow_list();
+  std::map<irt_int, std::vector<double>>& layer_resource_overflow_map = vr_model_stat.get_layer_resource_overflow_map();
 
   GridMap<VRGCell>& vr_gcell_map = vr_model.get_vr_gcell_map();
   for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
@@ -698,39 +697,32 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
         if (RTUtil::exist(layer_resource_demand_map, layer_idx)) {
           demand = layer_resource_demand_map[layer_idx];
         }
-        resource_overflow_list.push_back(RTUtil::calcCost(demand, supply));
+        layer_resource_overflow_map[layer_idx].push_back(RTUtil::calcCost(demand, supply));
       }
     }
   }
 
-  std::map<VRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
-      = vr_model_stat.get_source_drc_violation_map();
+  std::map<VRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_routing_drc_violation_map
+      = vr_model_stat.get_source_routing_drc_violation_map();
+  std::map<VRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
+      = vr_model_stat.get_source_cut_drc_violation_map();
   for (irt_int x = 0; x < vr_gcell_map.get_x_size(); x++) {
     for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
       for (VRSourceType vr_source_type : {VRSourceType::kLayoutShape}) {
         for (auto& [drc, violation_info_list] : getViolationInfo(vr_gcell, vr_source_type)) {
-          std::vector<ViolationInfo>& total_violation_list = source_drc_violation_map[vr_source_type][drc];
-          total_violation_list.insert(total_violation_list.end(), violation_info_list.begin(), violation_info_list.end());
+          for (ViolationInfo& violation_info : violation_info_list) {
+            irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
+            if (violation_info.get_is_routing()) {
+              source_routing_drc_violation_map[vr_source_type][layer_idx][drc].push_back(violation_info);
+            } else {
+              source_cut_drc_violation_map[vr_source_type][layer_idx][drc].push_back(violation_info);
+            }
+          }
         }
       }
     }
-  }
-
-  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
-  for (auto& [vr_source_type, drc_violation_map] : source_drc_violation_map) {
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      rule_number_map[drc] += violation_list.size();
-    }
-  }
-  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
-  for (auto& [vr_source_type, drc_violation_map] : source_drc_violation_map) {
-    irt_int total_number = 0;
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      total_number += violation_list.size();
-    }
-    source_number_map[GetVRSourceTypeName()(vr_source_type)] = total_number;
   }
 
   double total_wire_length = 0;
@@ -738,6 +730,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   double total_nonprefer_wire_length = 0;
   irt_int total_patch_number = 0;
   irt_int total_via_number = 0;
+  irt_int total_overflow_number = 0;
   irt_int total_drc_number = 0;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
     total_wire_length += wire_length;
@@ -754,9 +747,21 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
     total_via_number += via_number;
   }
-  for (auto& [vr_source_type, drc_violation_map] : source_drc_violation_map) {
-    for (auto& [drc, violation_list] : drc_violation_map) {
-      total_drc_number += violation_list.size();
+  for (auto& [layer_idx, resource_overflow_list] : layer_resource_overflow_map) {
+    total_overflow_number += resource_overflow_list.size();
+  }
+  for (auto& [vr_source_type, routing_drc_violation_map] : source_routing_drc_violation_map) {
+    for (auto& [layer_idx, drc_violation_list_map] : routing_drc_violation_map) {
+      for (auto& [drc, violation_list] : drc_violation_list_map) {
+        total_drc_number += violation_list.size();
+      }
+    }
+  }
+  for (auto& [vr_source_type, cut_drc_violation_map] : source_cut_drc_violation_map) {
+    for (auto& [layer_idx, drc_violation_list_map] : cut_drc_violation_map) {
+      for (auto& [drc, violation_list] : drc_violation_list_map) {
+        total_drc_number += violation_list.size();
+      }
     }
   }
   vr_model_stat.set_total_wire_length(total_wire_length);
@@ -764,6 +769,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
   vr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
   vr_model_stat.set_total_patch_number(total_patch_number);
   vr_model_stat.set_total_via_number(total_via_number);
+  vr_model_stat.set_total_overflow_number(total_overflow_number);
   vr_model_stat.set_total_drc_number(total_drc_number);
 
   vr_model.set_vr_model_stat(vr_model_stat);
@@ -781,37 +787,28 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   std::map<irt_int, double>& routing_nonprefer_wire_length_map = vr_model_stat.get_routing_nonprefer_wire_length_map();
   std::map<irt_int, irt_int>& routing_patch_number_map = vr_model_stat.get_routing_patch_number_map();
   std::map<irt_int, irt_int>& cut_via_number_map = vr_model_stat.get_cut_via_number_map();
-  std::vector<double>& resource_overflow_list = vr_model_stat.get_resource_overflow_list();
-  std::map<VRSourceType, std::map<std::string, std::vector<ViolationInfo>>>& source_drc_violation_map
-      = vr_model_stat.get_source_drc_violation_map();
-  std::map<std::string, irt_int>& rule_number_map = vr_model_stat.get_drc_number_map();
-  std::map<std::string, irt_int>& source_number_map = vr_model_stat.get_source_number_map();
+  std::map<irt_int, std::vector<double>>& layer_resource_overflow_map = vr_model_stat.get_layer_resource_overflow_map();
   double total_wire_length = vr_model_stat.get_total_wire_length();
   double total_prefer_wire_length = vr_model_stat.get_total_prefer_wire_length();
   double total_nonprefer_wire_length = vr_model_stat.get_total_nonprefer_wire_length();
   irt_int total_patch_number = vr_model_stat.get_total_patch_number();
   irt_int total_via_number = vr_model_stat.get_total_via_number();
-  irt_int total_drc_number = vr_model_stat.get_total_drc_number();
+  irt_int total_overflow_number = vr_model_stat.get_total_overflow_number();
 
   // wire table
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_ROUND_STYLE);
   wire_table << fort::header << "Routing Layer"
              << "Prefer Wire Length"
              << "Nonprefer Wire Length"
-             << "Wire Length / um"
-             << "Patch Number" << fort::endr;
+             << "Wire Length / um" << fort::endr;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     double layer_idx = routing_layer.get_layer_idx();
     wire_table << routing_layer.get_layer_name() << routing_prefer_wire_length_map[layer_idx]
-               << routing_nonprefer_wire_length_map[layer_idx] << routing_wire_length_map[layer_idx] << routing_patch_number_map[layer_idx]
-               << fort::endr;
+               << routing_nonprefer_wire_length_map[layer_idx] << routing_wire_length_map[layer_idx] << fort::endr;
   }
-  wire_table << fort::header << "Total" << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length
-             << total_patch_number << fort::endr;
+  wire_table << fort::header << "Total" << total_prefer_wire_length << total_nonprefer_wire_length << total_wire_length << fort::endr;
   // via table
   fort::char_table via_table;
-  via_table.set_border_style(FT_SOLID_ROUND_STYLE);
   via_table << fort::header << "Cut Layer"
             << "Via Number" << fort::endr;
   for (CutLayer& cut_layer : cut_layer_list) {
@@ -820,98 +817,39 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
               << RTUtil::getString(cut_via_number, "(", RTUtil::getPercentage(cut_via_number, total_via_number), "%)") << fort::endr;
   }
   via_table << fort::header << "Total" << total_via_number << fort::endr;
+  // patch table
+  fort::char_table patch_table;
+  patch_table << fort::header << "Routing Layer"
+              << "Patch Number" << fort::endr;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    double layer_idx = routing_layer.get_layer_idx();
+    irt_int patch_number = routing_patch_number_map[layer_idx];
+    patch_table << routing_layer.get_layer_name()
+                << RTUtil::getString(patch_number, "(", RTUtil::getPercentage(patch_number, total_patch_number), "%)") << fort::endr;
+  }
+  patch_table << fort::header << "Total" << total_patch_number << fort::endr;
+  // print
+  RTUtil::printTableList({wire_table, via_table, patch_table});
 
   // report resource overflow info
-  GridMap<std::string> resource_overflow_map = RTUtil::getRangeRatioMap(resource_overflow_list, {1.0});
-
-  fort::char_table resource_overflow_table;
-  resource_overflow_table.set_border_style(FT_SOLID_STYLE);
-  resource_overflow_table << fort::header << "Resource Overflow"
-                          << "GCell Number" << fort::endr;
-  for (irt_int y = 0; y < resource_overflow_map.get_y_size(); y++) {
-    resource_overflow_table << resource_overflow_map[0][y] << resource_overflow_map[1][y] << fort::endr;
-  }
-  resource_overflow_table << fort::header << "Total" << resource_overflow_list.size() << fort::endr;
-
-  // init item column/row map
-  irt_int row = 0;
-  std::map<std::string, irt_int> item_row_map;
-  for (auto& [drc_rule, drc_number] : rule_number_map) {
-    item_row_map[drc_rule] = ++row;
-  }
-  item_row_map["Total"] = ++row;
-
-  irt_int column = 0;
-  std::map<std::string, irt_int> item_column_map;
-  for (auto& [vr_source_type, drc_number_map] : source_number_map) {
-    item_column_map[vr_source_type] = ++column;
-  }
-  item_column_map["Total"] = ++column;
-
-  // build table
-  fort::char_table drc_table;
-  drc_table.set_border_style(FT_SOLID_ROUND_STYLE);
-  drc_table << fort::header;
-  drc_table[0][0] = "DRC\\Source";
-  // first row item
-  for (auto& [drc_rule, row] : item_row_map) {
-    drc_table[row][0] = drc_rule;
-  }
-  // first column item
-  drc_table << fort::header;
-  for (auto& [source_name, column] : item_column_map) {
-    drc_table[0][column] = source_name;
-  }
-  // element
-  for (auto& [vr_source_type, drc_violation_map] : source_drc_violation_map) {
-    irt_int column = item_column_map[GetVRSourceTypeName()(vr_source_type)];
-    for (auto& [drc_rule, row] : item_row_map) {
-      if (RTUtil::exist(source_drc_violation_map[vr_source_type], drc_rule)) {
-        drc_table[row][column] = RTUtil::getString(source_drc_violation_map[vr_source_type][drc_rule].size());
-      } else {
-        drc_table[row][column] = "0";
-      }
-    }
-  }
-  // last row
-  for (auto& [vr_source_type, total_number] : source_number_map) {
-    irt_int row = item_row_map["Total"];
-    irt_int column = item_column_map[vr_source_type];
-    drc_table[row][column] = RTUtil::getString(total_number);
-  }
-  // last column
-  for (auto& [drc_rule, total_number] : rule_number_map) {
-    irt_int row = item_row_map[drc_rule];
-    irt_int column = item_column_map["Total"];
-    drc_table[row][column] = RTUtil::getString(total_number);
-  }
-  drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_drc_number);
-
+  auto layer_resource_range_number_map = RTUtil::getLayerRangeNumMap(layer_resource_overflow_map, {1.0});
+  fort::char_table resource_overflow_table = RTUtil::buildOverflowTable(routing_layer_list, total_overflow_number, layer_resource_range_number_map);
+  resource_overflow_table[0][0] = "Layer\\Resource Overflow";
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(wire_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(via_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(resource_overflow_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(drc_table.to_string(), '\n'));
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
-  }
-  for (std::vector<std::string>& table : table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
-      table.push_back(table_str);
-    }
-  }
+  RTUtil::printTableList(resource_overflow_table);
 
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
+  // build drc table
+  std::map<VRSourceType, std::vector<fort::char_table>> source_drc_table_map;
+  for (auto& [source, routing_drc_violation_map] : vr_model_stat.get_source_routing_drc_violation_map()) {
+    source_drc_table_map[source].push_back(
+        RTUtil::buildDRCTable(routing_layer_list, GetVRSourceTypeName()(source), routing_drc_violation_map));
+  }
+  for (auto& [source, cut_drc_violation_map] : vr_model_stat.get_source_cut_drc_violation_map()) {
+    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetVRSourceTypeName()(source), cut_drc_violation_map));
+  }
+  // print
+  for (auto& [source, drc_table_list] : source_drc_table_map) {
+    RTUtil::printTableList(drc_table_list);
   }
 }
 
@@ -935,6 +873,12 @@ void ViolationRepairer::update(VRModel& vr_model)
 #endif
 
 #if 1  // valid drc
+
+bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const DRCRect& drc_rect)
+{
+  std::vector<DRCRect> drc_rect_list = {drc_rect};
+  return hasViolation(vr_model, vr_source_type, drc_rect_list);
+}
 
 bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list)
 {
