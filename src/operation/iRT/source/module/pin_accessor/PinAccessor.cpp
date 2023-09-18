@@ -357,7 +357,9 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
     mergeLegalRectList(legal_rect_list);
     return legal_rect_list;
   }
-  LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " use all pin shapes as a legal area!");
+  if (omp_get_num_threads() == 1) {
+    LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " use all pin shapes as a legal area!");
+  }
   for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
     legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
   }
@@ -888,16 +890,14 @@ void PinAccessor::selectByViaConflict(PANet& pa_net, PAModel& pa_model)
     for (AccessPoint& access_point : wire_access_point_list) {
       pin_access_point_list.push_back(access_point);
     }
-    for (AccessPoint& access_point : via_num_access_point_map.begin()->second) {
-      pin_access_point_list.push_back(access_point);
+    if (!via_num_access_point_map.empty()) {
+      for (AccessPoint& access_point : via_num_access_point_map.begin()->second) {
+        pin_access_point_list.push_back(access_point);
+      }
     }
   }
 }
 
-/**
- * 在最低布线层及以下 最高布线层及以上 必须有通孔
- *
- */
 void PinAccessor::selectByAccessOrienSet(PANet& pa_net)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
@@ -907,19 +907,23 @@ void PinAccessor::selectByAccessOrienSet(PANet& pa_net)
     std::map<irt_int, std::vector<AccessPoint>, std::greater<irt_int>> access_num_point_map;
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
       std::set<Orientation>& access_orien_set = access_point.get_access_orien_set();
-      if (access_point.get_layer_idx() <= bottom_routing_layer_idx) {
-        if (!RTUtil::exist(access_orien_set, Orientation::kUp)) {
-          continue;
+      if (access_point.get_layer_idx() < bottom_routing_layer_idx) {
+        for (Orientation orientation :
+             {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth, Orientation::kDown}) {
+          access_orien_set.erase(orientation);
         }
       }
-      if (top_routing_layer_idx <= access_point.get_layer_idx()) {
-        if (!RTUtil::exist(access_orien_set, Orientation::kDown)) {
-          continue;
+      if (top_routing_layer_idx < access_point.get_layer_idx()) {
+        for (Orientation orientation :
+             {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth, Orientation::kUp}) {
+          access_orien_set.erase(orientation);
         }
       }
       access_num_point_map[access_orien_set.size()].push_back(access_point);
     }
-    pa_pin.set_access_point_list(access_num_point_map.begin()->second);
+    if (!access_num_point_map.empty()) {
+      pa_pin.set_access_point_list(access_num_point_map.begin()->second);
+    }
   }
 }
 

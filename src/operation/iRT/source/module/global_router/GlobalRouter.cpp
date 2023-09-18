@@ -735,7 +735,7 @@ void GlobalRouter::iterative(GRModel& gr_model)
     processGRModel(gr_model);
     countGRModel(gr_model);
     reportGRModel(gr_model);
-    plotGRModel(gr_model);
+    // plotGRModel(gr_model);
     outputCongestionMap(gr_model);
     LOG_INST.info(Loc::current(), "****** End Iteration(", iter, "/", gr_max_iter_num, ")", iter_monitor.getStatsInfo(), " ******");
     if (stopGRModel(gr_model)) {
