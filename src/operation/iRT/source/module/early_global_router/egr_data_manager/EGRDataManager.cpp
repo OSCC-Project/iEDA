@@ -98,7 +98,7 @@ void EGRDataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_min_width(idb_routing_layer->get_min_width());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
+      routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
     } else if (idb_layer->is_cut()) {
@@ -551,11 +551,11 @@ void EGRDataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_direction();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_direction();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
 
@@ -567,15 +567,15 @@ void EGRDataManager::makeLayerViaMasterList()
       LayerRect& b_above = b.get_above_enclosure();
       LayerRect& b_below = b.get_below_enclosure();
       // 方向
-      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_direction();
-      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_direction();
+      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_prefer_direction();
+      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_prefer_direction();
       if (a.get_above_direction() == a_above_layer_direction && b.get_above_direction() != b_above_layer_direction) {
         return true;
       } else if (a.get_above_direction() != a_above_layer_direction && b.get_above_direction() == b_above_layer_direction) {
         return false;
       }
-      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_direction();
-      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_direction();
+      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_prefer_direction();
+      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_prefer_direction();
       if (a.get_below_direction() == a_below_layer_direction && b.get_below_direction() != b_below_layer_direction) {
         return true;
       } else if (a.get_below_direction() != a_below_layer_direction && b.get_below_direction() == b_below_layer_direction) {

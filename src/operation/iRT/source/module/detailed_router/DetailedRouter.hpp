@@ -157,6 +157,7 @@ class DetailedRouter
 #endif
 
 #if 1  // valid drc
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const DRCRect& drc_rect);
   bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);

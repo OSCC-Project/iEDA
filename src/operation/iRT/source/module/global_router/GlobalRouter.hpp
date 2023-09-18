@@ -63,10 +63,12 @@ class GlobalRouter
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
   void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
-  void updateNetDemandMap(GRModel& gr_model);
+  void updateNetWireDemandMap(GRModel& gr_model);
+  void updateNetViaDemandMap(GRModel& gr_model);
+  void updateNetAccessDemandMap(GRModel& gr_model);
+  LayerRect getOrientationWireList(GRNode& gr_node, LayerCoord& real_coord, Orientation orientation);
   void updateNodeSupply(GRModel& gr_model);
-  std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
-  void addExtraNodeSupply(GRModel& gr_model);
+  std::vector<PlanarRect> getCrossingWireList(GRNode& gr_node);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();
@@ -135,6 +137,15 @@ class GlobalRouter
 #if 1  // plot gr_model
   void outputCongestionMap(GRModel& gr_model);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx = -1);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const DRCRect& drc_rect);
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type);
+  void removeInvalidViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 
