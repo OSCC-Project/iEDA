@@ -32,6 +32,7 @@
 #include "Segment.hpp"
 #include "ViaMaster.hpp"
 #include "ViaNode.hpp"
+#include "ViolationInfo.hpp"
 #include "json.hpp"
 
 namespace irt {
@@ -1439,49 +1440,76 @@ class RTUtil
     return scale_list;
   }
 
-  // 包含trackgrid点的矩形，不做处理; 不包含trackgrid点的矩形，将其扩展到周围最近的track上
-  static PlanarRect getTrackRectByEnlarge(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  /**
+   * 若rect包含trackgrid则不处理
+   * 否则将其扩大到周围最近的track上
+   */
+  static PlanarRect getTrackGridRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
   {
-    if (!isOpenOverlap(rect, border)) {
-      LOG_INST.error(Loc::current(), "The rect is out of border!");
+    if (existGrid(getOverlap(rect, border), track_axis)) {
+      return rect;
     }
-    irt_int real_lb_x = rect.get_lb_x();
-    irt_int real_rt_x = rect.get_rt_x();
-    irt_int real_lb_y = rect.get_lb_y();
-    irt_int real_rt_y = rect.get_rt_y();
-    if (getClosedScaleList(real_lb_x, real_rt_x, track_axis.get_x_grid_list()).empty()) {
-      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      scale_list.push_back(border.get_lb_x());
-      scale_list.push_back(border.get_rt_x());
-      std::sort(scale_list.begin(), scale_list.end());
-      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
+    return getNearestTrackRect(rect, track_axis, border);
+  }
 
-      for (size_t i = 0; i < scale_list.size(); i++) {
-        if (scale_list[i] < real_lb_x) {
-          continue;
+  /**
+   * 将矩形扩大到周围最近的track上
+   */
+  static PlanarRect getNearestTrackRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  {
+    irt_int lb_x = rect.get_lb_x();
+    irt_int rt_x = rect.get_rt_x();
+    irt_int lb_y = rect.get_lb_y();
+    irt_int rt_y = rect.get_rt_y();
+    {
+      std::vector<irt_int> x_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
+      irt_int x_scale_size = static_cast<irt_int>(x_scale_list.size()) - 1;
+      // 将lb_x扩展到左侧最近的x_track上
+      int x_index = 0;
+      for (; x_index <= x_scale_size; x_index++) {
+        if (x_scale_list[x_index] >= lb_x) {
+          if (x_index > 0) {
+            lb_x = x_scale_list[x_index - 1];
+          }
+          break;
         }
-        real_lb_x = scale_list[i - 1];
-        real_rt_x = scale_list[i];
-        break;
+      }
+      if (x_index > x_scale_size) {
+        lb_x = x_scale_list.back();
+      }
+      // 将rt_x扩展到右侧最近的x_track上
+      for (; x_index <= x_scale_size; x_index++) {
+        if (x_scale_list[x_index] > rt_x) {
+          rt_x = x_scale_list[x_index];
+          break;
+        }
       }
     }
-    if (getClosedScaleList(real_lb_y, real_rt_y, track_axis.get_y_grid_list()).empty()) {
-      std::vector<irt_int> scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      scale_list.push_back(border.get_lb_y());
-      scale_list.push_back(border.get_rt_y());
-      std::sort(scale_list.begin(), scale_list.end());
-      scale_list.erase(std::unique(scale_list.begin(), scale_list.end()), scale_list.end());
-
-      for (size_t i = 0; i < scale_list.size(); i++) {
-        if (scale_list[i] < real_lb_y) {
-          continue;
+    {
+      std::vector<irt_int> y_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
+      irt_int y_scale_size = static_cast<irt_int>(y_scale_list.size()) - 1;
+      // 将lb_y扩展到左侧最近的y_track上
+      int y_index = 0;
+      for (; y_index <= y_scale_size; y_index++) {
+        if (y_scale_list[y_index] >= lb_y) {
+          if (y_index > 0) {
+            lb_y = y_scale_list[y_index - 1];
+          }
+          break;
         }
-        real_lb_y = scale_list[i - 1];
-        real_rt_y = scale_list[i];
-        break;
+      }
+      if (y_index > y_scale_size) {
+        lb_y = y_scale_list.back();
+      }
+      // 将rt_y扩展到右侧最近的y_track上
+      for (; y_index <= y_scale_size; y_index++) {
+        if (y_scale_list[y_index] > rt_y) {
+          rt_y = y_scale_list[y_index];
+          break;
+        }
       }
     }
-    return PlanarRect(real_lb_x, real_lb_y, real_rt_x, real_rt_y);
+    return getOverlap(PlanarRect(lb_x, lb_y, rt_x, rt_y), border);
   }
 
   // 计算刻度，包含边界
@@ -1779,7 +1807,7 @@ class RTUtil
       LOG_INST.error(Loc::current(), "There are oblique segments in tree!");
     }
     // 检查树是否到达所有的关键坐标
-    if (!passCheckingReachable(coord_tree, key_coord_pin_map)) {
+    if (!passCheckingConnectivity(coord_tree, key_coord_pin_map)) {
       LOG_INST.error(Loc::current(), "The key points unreachable!");
     }
     return coord_tree;
@@ -1926,6 +1954,19 @@ class RTUtil
     }
     v_segment_list = v_segment_list_temp;
 
+    auto mergeSegmentList = [](std::vector<Segment<LayerCoord>>& segment_list) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        SortSegmentInnerXASC()(segment);
+      }
+      std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
+      RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
+        return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
+      });
+    };
+    mergeSegmentList(h_segment_list);
+    mergeSegmentList(v_segment_list);
+    mergeSegmentList(p_segment_list);
+
     segment_list.clear();
     segment_list.insert(segment_list.end(), h_segment_list.begin(), h_segment_list.end());
     segment_list.insert(segment_list.end(), v_segment_list.begin(), v_segment_list.end());
@@ -2057,7 +2098,7 @@ class RTUtil
   }
 
   // 检查树是否到达所有的关键坐标
-  static bool passCheckingReachable(MTree<LayerCoord>& coord_tree,
+  static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree,
                                     std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<irt_int, bool> visited_map;
@@ -2212,6 +2253,21 @@ class RTUtil
       return true;
     });
     return scale_grid_list;
+  }
+
+  /**
+   * 计算overflow
+   */
+  static double calcCost(irt_int demand, irt_int supply)
+  {
+    double cost = 0;
+    if (supply != 0) {
+      cost = static_cast<double>(demand) / supply;
+    } else {
+      cost = static_cast<double>(demand);
+    }
+    cost = std::max(static_cast<double>(0), 1 + std::log10(cost));
+    return cost;
   }
 
 #endif
@@ -2958,7 +3014,7 @@ class RTUtil
 #if 1  // report数据结构
 
   template <typename T>
-  static GridMap<double> getRangeNumRatioMap(std::vector<T> value_list)
+  static GridMap<double> getRangeRatioMap(std::vector<T> value_list)
   {
     GridMap<double> value_map;
     std::map<T, irt_int> range_num_map = getRangeNumMap(value_list);
@@ -2980,6 +3036,149 @@ class RTUtil
       ++idx;
     }
     return value_map;
+  }
+
+  template <typename T>
+  static GridMap<std::string> getRangeRatioMap(std::vector<T> value_list, std::vector<T> scale_list)
+  {
+    // 数据按区间分类
+    T range = getScaleRange(value_list);
+
+    T max_value = INT32_MIN;
+    T min_value = INT32_MAX;
+    for (T& value : value_list) {
+      max_value = std::max(max_value, value);
+      min_value = std::min(min_value, value);
+    }
+
+    std::vector<T> total_scale_list(scale_list.begin(), scale_list.end());
+    for (T scale = min_value; scale <= max_value; scale += range) {
+      total_scale_list.push_back(scale);
+    }
+    total_scale_list.push_back(max_value);
+    std::sort(total_scale_list.begin(), total_scale_list.end());
+    merge(total_scale_list, [](T a, T b) { return equalDoubleByError(a, b, DBL_ERROR); });
+    total_scale_list.erase(std::unique(total_scale_list.begin(), total_scale_list.end()), total_scale_list.end());
+
+    std::vector<std::pair<T, T>> scale_range_list;
+    for (size_t i = 1; i < total_scale_list.size(); i++) {
+      scale_range_list.emplace_back(total_scale_list[i - 1], total_scale_list[i]);
+    }
+
+    std::map<std::pair<T, T>, irt_int> range_num_map;
+    for (T& value : value_list) {
+      for (size_t i = 0; i < scale_range_list.size(); i++) {
+        T left = scale_range_list[i].first;
+        T right = scale_range_list[i].second;
+        if (left <= value && value < right) {
+          range_num_map[scale_range_list[i]] += 1;
+          break;
+        }
+        if (i + 1 == scale_range_list.size() && equalDoubleByError(value, right, DBL_ERROR)) {
+          range_num_map[scale_range_list[i]] += 1;
+          break;
+        }
+      }
+    }
+
+    // 生成字符串信息
+    GridMap<std::string> value_map;
+    value_map.init(2, static_cast<irt_int>(range_num_map.size()));
+
+    irt_int idx = 0;
+    for (auto& [range, num] : range_num_map) {
+      double ratio_value = num / 1.0 / static_cast<T>(value_list.size());
+      double ratio = retainPlaces(ratio_value, 3);
+
+      std::string range_str = getString("[", range.first, ",", range.second);
+      if (idx == static_cast<irt_int>(range_num_map.size()) - 1) {
+        range_str += "]";
+      } else {
+        range_str += ")";
+      }
+
+      std::string ratio_str = RTUtil::getString(num, "(", ratio * 100, "%)");
+
+      value_map[0][idx] = range_str;
+      value_map[1][idx] = ratio_str;
+      ++idx;
+    }
+    return value_map;
+  }
+
+  template <typename T>
+  static std::map<irt_int, std::map<std::pair<T, T>, irt_int>> getLayerRangeNumMap(std::map<irt_int, std::vector<T>> layer_value_map,
+                                                                                   std::vector<T> scale_list)
+  {
+    std::map<irt_int, std::map<std::pair<T, T>, irt_int>> layer_range_num_map;
+
+    // 计算数据区间间距
+    std::vector<T> total_value_list;
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      total_value_list.insert(total_value_list.end(), value_list.begin(), value_list.end());
+    }
+    if (total_value_list.empty()) {
+      return layer_range_num_map;
+    }
+
+    T range = getScaleRange(total_value_list);
+
+    // 生成数据区间
+    T min_value = INT32_MAX;
+    T max_value = INT32_MIN;
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      for (T value : value_list) {
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+    }
+    if (!scale_list.empty()) {
+      std::sort(scale_list.begin(), scale_list.end());
+      min_value = std::max(min_value, scale_list.front());
+      max_value = std::max(max_value, scale_list.back());
+    }
+
+    std::vector<T> total_scale_list(scale_list.begin(), scale_list.end());
+    for (T scale = min_value; equalDoubleByError(scale, max_value, 0.001) || scale < max_value; scale += range) {
+      total_scale_list.push_back(scale);
+    }
+    std::sort(total_scale_list.begin(), total_scale_list.end());
+    merge(total_scale_list, [](T a, T b) { return equalDoubleByError(a, b, 0.001); });
+
+    // 生成区间
+    std::vector<std::pair<T, T>> scale_range_list;
+    if (total_scale_list.size() == 1) {  // 当锚点只有一个且所有元素都比锚点小时，生成锚点闭区间
+      scale_range_list.emplace_back(total_scale_list.front(), total_scale_list.front());
+    } else if (total_scale_list.size() > 1) {
+      for (size_t i = 1; i < total_scale_list.size(); i++) {
+        scale_range_list.emplace_back(total_scale_list[i - 1], total_scale_list[i]);
+      }
+    }
+    // 生成各个区间的数据
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      std::map<std::pair<T, T>, irt_int>& range_num_map = layer_range_num_map[layer_idx];
+      for (auto& scale_range : scale_range_list) {
+        range_num_map[scale_range] = 0;
+      }
+    }
+
+    for (auto& [layer_idx, value_list] : layer_value_map) {
+      for (T& value : value_list) {
+        for (size_t i = 0; i < scale_range_list.size(); i++) {
+          T left = scale_range_list[i].first;
+          T right = scale_range_list[i].second;
+          if (left <= value && value < right) {
+            ++layer_range_num_map[layer_idx][scale_range_list[i]];
+            break;
+          }
+          if (i + 1 == scale_range_list.size() && equalDoubleByError(value, right, 0.001)) {
+            ++layer_range_num_map[layer_idx][scale_range_list[i]];
+            break;
+          }
+        }
+      }
+    }
+    return layer_range_num_map;
   }
 
   template <typename T>
@@ -3047,7 +3246,231 @@ class RTUtil
     }
   }
 
+  template <typename T>
+  static fort::char_table buildDRCTable(std::vector<T> layer_list, std::string source,
+                                        std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>& layer_drc_violation_map)
+  {
+    std::map<irt_int, std::string> layer_name_map;
+    for (T& layer : layer_list) {
+      layer_name_map[layer.get_layer_idx()] = layer.get_layer_name();
+    }
+
+    // count total info
+    irt_int total_number = 0;
+    std::map<irt_int, irt_int> layer_total_violation_number_map;
+    for (auto& [layer, name] : layer_name_map) {
+      layer_total_violation_number_map[layer];
+    }
+    for (auto& [layer_idx, drc_violation_map] : layer_drc_violation_map) {
+      irt_int total_violation_number = 0;
+      for (auto& [range, violation_list] : drc_violation_map) {
+        total_violation_number += violation_list.size();
+      }
+      total_number += total_violation_number;
+      layer_total_violation_number_map[layer_idx] = total_violation_number;
+    }
+
+    std::map<std::string, irt_int> drc_total_violation_number_map;
+    for (auto& [layer_idx, drc_violation_map] : layer_drc_violation_map) {
+      for (auto& [drc, violation_list] : drc_violation_map) {
+        drc_total_violation_number_map[drc] += violation_list.size();
+      }
+    }
+
+    // init drc table item column/row map
+    irt_int row = 1;
+    std::map<std::string, irt_int> item_row_map;
+    for (auto& [layer, name] : layer_name_map) {
+      item_row_map[name] = ++row;
+    }
+    item_row_map["Total"] = ++row;
+
+    irt_int column = 0;
+    std::map<std::string, irt_int> item_column_map;
+    for (auto& [drc, violation_number] : drc_total_violation_number_map) {
+      item_column_map[drc] = ++column;
+    }
+    item_column_map["Total"] = ++column;
+
+    // report resource overflow info
+    fort::char_table drc_table;
+
+    drc_table[0][0].set_cell_span(item_column_map.size() + 1);
+    drc_table[0][0].set_cell_text_align(fort::text_align::center);
+    drc_table[0][0] = source;
+    drc_table << fort::header;
+
+    // first column item
+    drc_table[1][0] = "Layer\\DRC";
+    for (auto& [layer_name, row] : item_row_map) {
+      drc_table[row][0] = layer_name;
+    }
+    // second row item
+    for (auto& [drc_str, column] : item_column_map) {
+      drc_table[1][column] = drc_str;
+    }
+    drc_table << fort::header;
+    // element
+    for (auto& [layer, name] : layer_name_map) {
+      for (auto& [drc, violation_number] : drc_total_violation_number_map) {
+        drc_table[item_row_map[name]][item_column_map[drc]] = RTUtil::getString(layer_drc_violation_map[layer][drc].size());
+      }
+    }
+    // last row
+    for (auto& [drc, total_violation_number] : drc_total_violation_number_map) {
+      irt_int row = item_row_map["Total"];
+      irt_int column = item_column_map[drc];
+      drc_table[row][column] = RTUtil::getString(total_violation_number);
+    }
+    drc_table << fort::header;
+
+    // last column
+    for (auto& [layer, total_violation_number] : layer_total_violation_number_map) {
+      irt_int row = item_row_map[layer_name_map[layer]];
+      irt_int column = item_column_map["Total"];
+      drc_table[row][column] = RTUtil::getString(total_violation_number);
+    }
+
+    drc_table[item_row_map["Total"]][item_column_map["Total"]] = RTUtil::getString(total_number);
+
+    return drc_table;
+  }
+
+  template <typename T>
+  static fort::char_table buildOverflowTable(std::vector<T>& routing_layer_list, irt_int total_overflow_number,
+                                             std::map<irt_int, std::map<std::pair<double, double>, irt_int>>& layer_range_number_map)
+  {
+    // init resource overflow table item column/row map
+    irt_int report_number = 0;
+    std::map<irt_int, irt_int> resource_layer_number_map;
+    std::map<std::pair<double, double>, irt_int> resource_range_number_map;
+    for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
+      irt_int layer_total_number = 0;
+      for (auto& [range, number] : range_number_map) {
+        layer_total_number += number;
+      }
+      report_number += layer_total_number;
+      resource_layer_number_map[layer_idx] = layer_total_number;
+    }
+    for (auto& [layer_idx, range_number_map] : layer_range_number_map) {
+      for (auto& [range, number] : range_number_map) {
+        resource_range_number_map[range] += number;
+      }
+    }
+    // 删除元素数量为0的range
+    for (auto iter = resource_range_number_map.begin(); iter != resource_range_number_map.end();) {
+      if (iter->second == 0) {
+        iter = resource_range_number_map.erase(iter);
+      } else {
+        iter++;
+      }
+    }
+
+    std::map<std::pair<double, double>, std::string> range_str_map;
+    for (auto& [range, number] : resource_range_number_map) {
+      if (range.first == range.second) {
+        range_str_map[range] = RTUtil::getString("[", range.first, ",", range.second, "]");
+      } else {
+        range_str_map[range] = RTUtil::getString("(", range.first, ",", range.second, ")");
+      }
+    }
+
+    irt_int row = 0;
+    std::map<std::string, irt_int> item_row_map;
+    for (T& routing_layer : routing_layer_list) {
+      item_row_map[routing_layer.get_layer_name()] = ++row;
+    }
+    item_row_map["Total"] = ++row;
+
+    irt_int column = 0;
+    std::map<std::string, irt_int> item_column_map;
+    for (auto& [range, number] : resource_range_number_map) {
+      item_column_map[range_str_map[range]] = ++column;
+    }
+    item_column_map["Total"] = ++column;
+
+    // report resource overflow info
+    fort::char_table resource_overflow_table;
+    resource_overflow_table << fort::header << "Layer\\Overflow" << fort::endr;
+    for (auto& [range, number] : resource_range_number_map) {
+      resource_overflow_table << range_str_map[range];
+    }
+    resource_overflow_table << fort::endr;
+
+    // first row item
+    for (auto& [layer_name, row] : item_row_map) {
+      resource_overflow_table[row][0] = layer_name;
+    }
+    // first column item
+    for (auto& [range_str, column] : item_column_map) {
+      resource_overflow_table[0][column] = range_str;
+    }
+    // element
+    for (auto& [layer, range_number_map] : layer_range_number_map) {
+      irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
+      for (auto& [range, number] : range_number_map) {
+        irt_int column = item_column_map[range_str_map[range]];
+        resource_overflow_table[row][column] = RTUtil::getString(number, "(", RTUtil::getPercentage(number, total_overflow_number), "%)");
+      }
+    }
+    // last row
+    for (auto& [resource_range, total_number] : resource_range_number_map) {
+      irt_int row = item_row_map["Total"];
+      irt_int column = item_column_map[range_str_map[resource_range]];
+      resource_overflow_table[row][column]
+          = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
+    }
+    resource_overflow_table << fort::header;
+
+    // last column
+    for (auto& [layer, total_number] : resource_layer_number_map) {
+      irt_int row = item_row_map[routing_layer_list[layer].get_layer_name()];
+      irt_int column = item_column_map["Total"];
+      resource_overflow_table[row][column]
+          = RTUtil::getString(total_number, "(", RTUtil::getPercentage(total_number, total_overflow_number), "%)");
+    }
+
+    resource_overflow_table[item_row_map["Total"]][item_column_map["Total"]]
+        = RTUtil::getString(report_number, "(", RTUtil::getPercentage(report_number, total_overflow_number), "%)");
+
+    return resource_overflow_table;
+  }
+
+  static void printTableList(const fort::char_table& table)
+  {
+    std::vector<fort::char_table> table_list = {table};
+    printTableList(table_list);
+  }
+
+  static void printTableList(const std::vector<fort::char_table>& table_list)
+  {
+    std::vector<std::vector<std::string>> print_table_list;
+    for (const fort::char_table& table : table_list) {
+      print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+    }
+
+    int max_size = INT_MIN;
+    for (std::vector<std::string>& table : print_table_list) {
+      max_size = std::max(max_size, static_cast<irt_int>(table.size()));
+    }
+    for (std::vector<std::string>& table : print_table_list) {
+      for (irt_int i = table.size(); i < max_size; i++) {
+        std::string table_str;
+        table_str.append(table.front().length(), ' ');
+        table.push_back(table_str);
+      }
+    }
+
+    for (irt_int i = 0; i < max_size; i++) {
+      std::string table_str;
+      for (std::vector<std::string>& table : print_table_list) {
+        table_str += table[i];
+        table_str += " ";
+      }
+      LOG_INST.info(Loc::current(), table_str);
+    }
+  }
 #endif
-};
+};  // namespace irt
 
 }  // namespace irt

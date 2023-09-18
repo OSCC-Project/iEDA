@@ -82,6 +82,8 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
 
 void RTAPI::runRT(std::vector<Tool> tool_list)
 {
+  Monitor monitor;
+
   std::set<Stage> stage_set;
   for (Tool tool : tool_list) {
     stage_set.insert(convertToStage(tool));
@@ -106,9 +108,9 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
         PinAccessor::destroyInst();
         break;
       case Stage::kResourceAllocator:
-        ResourceAllocator::initInst();
-        RA_INST.allocate(net_list);
-        ResourceAllocator::destroyInst();
+        // ResourceAllocator::initInst();
+        // RA_INST.allocate(net_list);
+        // ResourceAllocator::destroyInst();
         break;
       case Stage::kGlobalRouter:
         GlobalRouter::initInst();
@@ -139,6 +141,8 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     DM_INST.save(stage_list[stage_idx]);
     stage_idx++;
   }
+
+  LOG_INST.info(Loc::current(), "The RT completed!", monitor.getStatsInfo());
 }
 
 Stage RTAPI::convertToStage(Tool tool)
@@ -236,7 +240,7 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
         EGRNode& egr_node = resource_map[x][y];
         eval::Tile* tile = new eval::Tile(x, y, egr_node.get_lb_x(), egr_node.get_lb_y(), egr_node.get_rt_x(), egr_node.get_rt_y(),
                                           static_cast<irt_int>(layer_idx));
-        tile->set_direction(routing_layer_list[layer_idx].get_direction() == Direction::kHorizontal);
+        tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
 
         tile->set_east_cap(static_cast<irt_int>(std::round(egr_node.get_east_supply())));
         tile->set_north_cap(static_cast<irt_int>(std::round(egr_node.get_north_supply())));
@@ -457,13 +461,6 @@ ids::DRCRect RTAPI::convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_rou
   return ids_rect;
 }
 
-// void RTAPI::plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list)
-// {
-//   if (DM_INST.getConfig().enable_idrc_interfaces == 0) {
-//     static_cast<RegionQuery*>(region_query)->plotRegionQuery(drc_rect_list);
-//   } else {
-//   }
-// }
 // CTS
 
 std::vector<ids::PHYNode> RTAPI::getPHYNodeList(std::vector<ids::Segment> segment_list)

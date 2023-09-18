@@ -38,7 +38,7 @@ class StaApplySdc : public StaFunc {
  public:
   enum class PropType {
     kApplySdcPreProp,
-    kApplySdcPostkNormalClockProp,
+    kApplySdcPostNormalClockProp,
     kApplySdcPostClockProp,
     kApplySdcPostProp
   };
@@ -52,8 +52,7 @@ class StaApplySdc : public StaFunc {
   // apply sdc pre-propagation.
   unsigned setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
                        StaGraph* the_graph);
-  unsigned setupGeneratedClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
-                                  StaGraph* the_graph);
+
   unsigned setupInputTransition(
       const std::unique_ptr<SdcIOConstrain>& io_constraint,
       StaGraph* the_graph);

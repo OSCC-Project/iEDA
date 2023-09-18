@@ -75,21 +75,6 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][12] = "Insertion Delay";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kHCTS_LOG:
-      (*report_tbl) << TABLE_HEAD;
-      (*report_tbl)[0][0] = "ID";
-      (*report_tbl)[0][1] = "Name";
-      (*report_tbl)[0][2] = "Net Length";
-      (*report_tbl)[0][3] = "Location";
-      (*report_tbl)[0][4] = "Fanout";
-      (*report_tbl)[0][5] = "Delay";
-      (*report_tbl)[0][6] = "Slew In";
-      (*report_tbl)[0][7] = "Cap Out";
-      (*report_tbl)[0][8] = "Insertion Delay";
-      (*report_tbl)[0][9] = "Sub Total Cap [T]";
-      (*report_tbl)[0][10] = "Level [T]";
-      (*report_tbl) << TABLE_ENDLINE;
-      break;
     case CtsReportType::kLEVEL_LOG:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";

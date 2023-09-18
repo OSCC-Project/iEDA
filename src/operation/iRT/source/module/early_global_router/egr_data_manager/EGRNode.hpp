@@ -94,7 +94,7 @@ inline void EGRNode::addSupply(EGRResourceType resource_type, double supply)
       _track_supply += supply;
       break;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
 }
@@ -121,7 +121,7 @@ inline void EGRNode::addDemand(EGRResourceType resource_type, double demand)
       _track_demand += demand;
       break;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
 }
@@ -152,7 +152,7 @@ inline double EGRNode::getCost(EGRResourceType resource_type)
       supply = _east_supply;
       break;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   if (supply - demand > DBL_ERROR && supply > DBL_ERROR) {
@@ -175,7 +175,7 @@ inline double EGRNode::getRemain(EGRResourceType resource_type)
     case EGRResourceType::kTrack:
       return _track_supply - _track_demand;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   return 0;
@@ -200,7 +200,7 @@ inline double EGRNode::getDemand(EGRResourceType resource_type)
     case EGRResourceType::kTrack:
       return _track_demand;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   return 0;
@@ -220,7 +220,7 @@ inline double EGRNode::getSupply(EGRResourceType resource_type)
     case EGRResourceType::kTrack:
       return _track_supply;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   return 0;
@@ -248,7 +248,7 @@ inline void EGRNode::setDemand(EGRResourceType resource_type, double demand)
       _track_demand = demand;
       break;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   return;
@@ -275,7 +275,7 @@ inline void EGRNode::setSupply(EGRResourceType resource_type, double supply)
       _track_supply = supply;
       break;
     default:
-      LOG_INST.error(Loc::current(), "The resource type is invaild!");
+      LOG_INST.error(Loc::current(), "The resource type is invalid!");
       break;
   }
   return;

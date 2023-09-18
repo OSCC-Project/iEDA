@@ -58,7 +58,15 @@ class LibetyCurrentData;
 class StaData {
  public:
   StaData(AnalysisMode delay_type, TransType trans_type, StaVertex* own_vertex);
-  virtual ~StaData() = default;
+  virtual ~StaData() {
+    for (auto* fwd_data : _fwd_set) {
+      fwd_data->set_bwd(nullptr);
+    }
+
+    if (_bwd) {
+      _bwd->erase_fwd(this);
+    }
+  }
   StaData(const StaData& orig);
   StaData& operator=(const StaData& rhs);
   StaData(StaData&& other) noexcept;

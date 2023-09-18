@@ -18,6 +18,7 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
+#include "DRCChecker.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -62,9 +63,12 @@ class GlobalRouter
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
   void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
-  void updateNetDemandMap(GRModel& gr_model);
+  void updateNetWireDemandMap(GRModel& gr_model);
+  void updateNetViaDemandMap(GRModel& gr_model);
+  void updateNetAccessDemandMap(GRModel& gr_model);
+  LayerRect getOrientationWireList(GRNode& gr_node, LayerCoord& real_coord, Orientation orientation);
   void updateNodeSupply(GRModel& gr_model);
-  std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
+  std::vector<PlanarRect> getCrossingWireList(GRNode& gr_node);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();
@@ -72,13 +76,16 @@ class GlobalRouter
 
 #if 1  // iterative
   void iterative(GRModel& gr_model);
+  void resetGRModel(GRModel& gr_model);
   void sortGRModel(GRModel& gr_model);
-  bool sortByMultiLevel(GRNet& net1, GRNet& net2);
+  bool sortByMultiLevel(GRModel& gr_model, irt_int net_idx1, irt_int net_idx2);
   SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
   SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
   SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
   SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);
-  void resetGRModel(GRModel& gr_model);
+  void resortGRModel(GRModel& gr_model);
+  void addHistoryCost(GRModel& gr_model);
+  void ripupGRModel(GRModel& gr_model);
   void routeGRModel(GRModel& gr_model);
   void routeGRNet(GRModel& gr_model, GRNet& gr_net);
   void outputGRDataset(GRModel& gr_model, GRNet& gr_net);
@@ -130,6 +137,15 @@ class GlobalRouter
 #if 1  // plot gr_model
   void outputCongestionMap(GRModel& gr_model);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx = -1);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const DRCRect& drc_rect);
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type);
+  void removeInvalidViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

@@ -1335,7 +1335,6 @@ void EarlyGlobalRouter::reportCongestion()
     overflow_num_list.push_back(overflow_num);
   }
   fort::char_table table;
-  table.set_border_style(FT_SOLID_STYLE);
   // report header
   char c_buffer[1024] = {0};
   table << fort::header << "layer\\overflow";
@@ -1411,7 +1410,6 @@ void EarlyGlobalRouter::reportWireViaStatistics()
   irt_int& total_via_num = egr_stat.get_total_via_num();
 
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
   // report header
   wire_table << fort::header << "Routing Layer"
              << "Wire Length / um" << fort::endr;
@@ -1427,7 +1425,6 @@ void EarlyGlobalRouter::reportWireViaStatistics()
   }
 
   fort::char_table cut_table;
-  cut_table.set_border_style(FT_SOLID_STYLE);
   // report header
   cut_table << fort::header << "Cut Layer"
             << "Via Number" << fort::endr;

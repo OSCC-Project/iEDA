@@ -88,20 +88,21 @@ unsigned CmdSetDrivingCell::exec() {
   auto* input_transition_rise_option = getOptionOrArg("-input_transition_rise");
   auto* input_transition_fall_option = getOptionOrArg("-input_transition_fall");
   // as the lib cell is buffer, only one cell arc set. if problem, fix me.
-  LibertyArc* cell_arc;
+  LibertyArc* cell_arc = nullptr;
   for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
     cell_arc = cell_arc_set->front();
   }
-  double input_transition_rise = input_transition_rise_option->getDoubleVal();
+
   double transition_value_rise = cell_arc->getSlew(
       TransType::kRise, input_transition_rise_option->getDoubleVal(), 0);
   double transition_value_fall = cell_arc->getSlew(
       TransType::kFall, input_transition_fall_option->getDoubleVal(), 0);
+
   auto* set_input_transiton_rise =
-      new SdcSetInputTransition(get_cmd_name(), transition_value_rise);
+      new SdcSetInputTransition("set_input_transition", transition_value_rise);
   set_input_transiton_rise->set_fall(false);
   auto* set_input_transiton_fall =
-      new SdcSetInputTransition(get_cmd_name(), transition_value_fall);
+      new SdcSetInputTransition("set_input_transition", transition_value_fall);
   set_input_transiton_fall->set_rise(false);
 
   auto* max_option = getOptionOrArg("-max");

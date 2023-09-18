@@ -485,10 +485,6 @@ class VerilogModule : public VerilogStmt
         }
       } else if (stmt->isVerilogDclsStmt()) {
         auto* dcls = dynamic_cast<VerilogDcls*>(stmt.get());
-        // assume dcls stmt should not contain range.
-        if (is_need_range && (dcls->get_dcl_num() > 1)) {
-          return false;
-        }
 
         for (auto& dcl : dcls->get_verilog_dcls()) {
           if (Str::equal(dynamic_cast<VerilogDcl*>(dcl.get())->get_dcl_name(), name)) {

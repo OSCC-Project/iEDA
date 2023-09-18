@@ -68,6 +68,39 @@ void CtsDBWrapper::read()
     /// from config
     idb_net->set_connect_type(IdbConnectType::kClock);
   }
+  // check mux
+  std::ranges::for_each(design->get_insts(), [](CtsInstance* inst) {
+    if (inst->isSink()) {
+      return;
+    }
+    auto pins = inst->get_pin_list();
+    int load_num = 0;
+    std::ranges::for_each(pins, [&load_num](CtsPin* pin) {
+      if (pin->get_pin_type() == CtsPinType::kIn) {
+        ++load_num;
+      }
+    });
+    if (load_num > 1) {
+      inst->set_type(CtsInstanceType::kMux);
+    }
+  });
+}
+
+void CtsDBWrapper::linkIdb(CtsInstance* inst)
+{
+  auto* idb_inst = makeIdbInstance(inst);
+  // link coordinate and synchronize to cts db
+  linkInstanceCood(inst, idb_inst);
+}
+
+void CtsDBWrapper::updateCell(CtsInstance* inst)
+{
+  auto cell = inst->get_cell_master();
+  auto* idb_inst = ctsToIdb(inst);
+  IdbCellMasterList* master_list = _idb_layout->get_cell_master_list();
+  IdbCellMaster* master = master_list->find_cell_master(cell);
+  LOG_FATAL_IF(master == nullptr) << inst->get_name() << " can't find cell master: " << cell;
+  idb_inst->set_cell_master(master);
 }
 
 CtsInstance* CtsDBWrapper::makeInstance(const string& name, const string& cell_name)
@@ -222,24 +255,6 @@ CtsNet* CtsDBWrapper::idbToCts(IdbNet* idb_net)
   }
   return _idb2ctsNet[idb_net];
 }
-CtsNet* CtsDBWrapper::idbToCts(IdbNet* idb_net, LogicNetTag tag)
-{
-  if (_idb2ctsNet.find(idb_net) == _idb2ctsNet.end()) {
-    CtsNet* net = new CtsNet(idb_net->get_net_name());
-
-    for (auto* idb_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      auto* pin = idbToCts(idb_pin);
-      net->addPin(pin);
-
-      auto* idb_inst = idb_pin->get_instance();
-      auto* inst = idbToCts(idb_inst, CtsInstanceType::kLogic);
-      inst->addPin(pin);
-    }
-
-    crossRef(net, idb_net);
-  }
-  return _idb2ctsNet[idb_net];
-}
 
 CtsPinType CtsDBWrapper::idbToCts(IdbConnectType idb_pin_type, IdbConnectDirection idb_pin_direction) const
 {
@@ -305,15 +320,18 @@ void CtsDBWrapper::linkInstanceCood(CtsInstance* inst, IdbInstance* idb_inst)
   idb_inst->set_coodinate(loc.x(), loc.y());
   idb_inst->set_status_placed();
 
-  LOG_FATAL_IF(!withinCore(inst->get_location()))
-      << "Instance " << inst->get_name() << " (" << inst->get_location().x() << ", " << inst->get_location().y() << ")"
-      << " is not within core";
+  // LOG_FATAL_IF(!withinCore(inst->get_location()))
+  //     << "Instance " << inst->get_name() << " (" << inst->get_location().x() << ", " << inst->get_location().y() << ")"
+  //     << " is not within core";
 
-  IdbRow* row = findRow(inst->get_location());
-  LOG_FATAL_IF(!row) << "Cannot find row for instance " << inst->get_name() << " (" << inst->get_location().x() << ", "
-                     << inst->get_location().y() << ")";
-  IdbOrient row_orient = row->get_site()->get_orient();
-  idb_inst->set_orient(row_orient);
+  // IdbRow* row = findRow(inst->get_location());
+  // LOG_FATAL_IF(!row) << "Cannot find row for instance " << inst->get_name() << " (" << inst->get_location().x() << ", "
+  //                    << inst->get_location().y() << ")";
+  // IdbOrient row_orient = row->get_site()->get_orient();
+  // idb_inst->set_orient(row_orient);
+  auto* rows = _idb_layout->get_rows();
+  auto orient = rows->get_row_list().front()->get_site()->get_orient();
+  idb_inst->set_orient(orient);
 
   for (auto& idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
     CtsPin* pin = idbToCts(idb_pin);
@@ -333,8 +351,9 @@ bool CtsDBWrapper::ctsConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
   pin->set_net(net);
   return true;
 }
-bool CtsDBWrapper::idbConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
+bool CtsDBWrapper::idbConnect(CtsPin* pin, CtsNet* net)
 {
+  auto* inst = pin->get_instance();
   ctsConnect(inst, pin, net);
   if (inst->is_virtual()) {
     return true;
@@ -360,6 +379,9 @@ bool CtsDBWrapper::idbConnect(CtsInstance* inst, CtsPin* pin, CtsNet* net)
 bool CtsDBWrapper::ctsDisconnect(CtsPin* pin)
 {
   CtsNet* net = pin->get_net();
+  if (!net) {
+    return true;
+  }
   net->removePin(pin);
   pin->set_net(nullptr);
   return true;
@@ -375,6 +397,9 @@ bool CtsDBWrapper::idbDisconnect(CtsPin* pin)
     return false;
   }
   auto* idb_net = idb_pin->get_net();
+  if (!idb_net) {
+    return true;
+  }
   idb_net->remove_pin(idb_pin);
   return true;
 }
@@ -470,20 +495,6 @@ vector<Rectangle> CtsDBWrapper::get_blockages()
   }
 
   return rects;
-}
-
-vector<CtsNet*> CtsDBWrapper::get_logic_nets()
-{
-  vector<CtsNet*> logic_nets;
-  auto* idb_net_list = _idb_design->get_net_list();
-  for (auto net : idb_net_list->get_net_list()) {
-    if (net->is_signal()) {
-      LogicNetTag tag;
-      auto* cts_net = idbToCts(net, tag);
-      logic_nets.emplace_back(cts_net);
-    }
-  }
-  return logic_nets;
 }
 
 Point CtsDBWrapper::getPinLoc(CtsPin* pin)

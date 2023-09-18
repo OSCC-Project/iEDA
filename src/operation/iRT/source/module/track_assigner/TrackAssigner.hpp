@@ -18,6 +18,7 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
+#include "DRCChecker.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -90,17 +91,17 @@ class TrackAssigner
   void checkTAPanel(TAPanel& ta_panel);
   void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
+  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
+  SortStatus sortByPreferLengthDESC(TATask& task1, TATask& task2);
   void resortTAPanel(TAPanel& ta_panel);
   std::vector<std::vector<irt_int>> getViolationTaskCombList(TAPanel& ta_panel);
   void addHistoryCost(TAPanel& ta_panel);
   void updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect);
   void ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
-  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
-  SortStatus sortByPreferLengthDESC(TATask& task1, TATask& task2);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void routeTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
+  void assignTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
   void routeSinglePath(TAPanel& ta_panel);
@@ -130,8 +131,8 @@ class TrackAssigner
   void buildRoutingResult(TATask& ta_task);
   void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void reportTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   bool stopTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
   void reportTAModel(TAModel& ta_model);
   bool stopTAModel(TAModel& ta_model);
@@ -143,6 +144,15 @@ class TrackAssigner
 
 #if 1  // plot ta_panel
   void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const DRCRect& drc_rect);
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type);
+  void removeInvalidViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

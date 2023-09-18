@@ -492,7 +492,13 @@ TimingEngine& TimingEngine::incrUpdateTiming() {
 
   the_graph.exec([](StaGraph* the_graph) -> unsigned {
     StaAnalyze analyze_path;
-    return analyze_path(the_graph);
+    unsigned is_ok = analyze_path(the_graph);
+
+    StaApplySdc apply_sdc_post_analyze(
+        StaApplySdc::PropType::kApplySdcPostProp);
+    is_ok &= apply_sdc_post_analyze(the_graph);
+
+    return is_ok;
   });
 
   _incr_func.applyBwdQueue();
@@ -1078,8 +1084,8 @@ double TimingEngine::reportSlew(const char* pin_name, AnalysisMode mode,
   auto the_vertex = the_graph.findVertex(pin);
   LOG_FATAL_IF(!the_vertex);
 
-  int64_t slew = (*the_vertex)->getSlew(mode, trans_type);
-  return FS_TO_NS(slew);
+  auto slew = (*the_vertex)->getSlewNs(mode, trans_type);
+  return slew ? *slew : 0.0;
 }
 
 /**
@@ -1226,7 +1232,7 @@ StaClock* TimingEngine::getPropClock(const char* pin_name, AnalysisMode mode,
  * decltype(cmp)>
  */
 std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
-                    decltype(cmp)>
+                    decltype(seq_data_cmp)>
 TimingEngine::getViolatedSeqPathsBetweenTwoSinks(const char* pin1_name,
                                                  const char* pin2_name,
                                                  AnalysisMode mode) {
@@ -1750,10 +1756,11 @@ void TimingEngine::checkSlew(const char* pin_name, AnalysisMode mode,
     return;
   }
 
-  slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto vertex_slew = the_vertex->getSlewNs(mode, trans_type);
+  slew = vertex_slew ? *vertex_slew : 0.0;
   limit = _ista->getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
+  if (limit && vertex_slew) {
     slack = *limit - slew;
   }
 }

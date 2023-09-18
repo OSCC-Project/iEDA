@@ -168,13 +168,13 @@ void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
   }
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
       for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, RASourceType::kBlockAndPin, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
+        addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -196,7 +196,7 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        DC_INST.addEnvRectList(ra_gcell.getRegionQuery(ra_source_type), drc_rect);
+        DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), ChangeType::kAdd, drc_rect);
       }
     }
   }
@@ -254,7 +254,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kBlockAndPin, RASourceType::kReservedVia}) {
+      for (RASourceType ra_source_type : {RASourceType::kLayoutShape, RASourceType::kReservedVia}) {
         for (const auto& [net_idx, rect_set] :
              DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {
@@ -264,7 +264,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
                 if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
                   // 要切
                   std::vector<PlanarRect> split_rect_list
-                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
                   new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
                 } else {
                   // 不切
@@ -397,7 +397,7 @@ void ResourceAllocator::writePYScript()
   RTUtil::pushStream(python_file, "", "\n");
   RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
   RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data,cmap='Greens')", "\n");
+  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data, vmin=0, vmax=1.1, cmap='hot_r')", "\n");
   RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
   RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
   RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");
@@ -811,55 +811,22 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
   RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
 
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-  double max_avg_cost = ra_model_stat.get_max_avg_cost();
 
   fort::char_table avg_cost_table;
-  avg_cost_table.set_border_style(FT_SOLID_STYLE);
   avg_cost_table << fort::header << "Avg Cost"
                  << "Net Number" << fort::endr;
-  GridMap<double> avg_cost_map = RTUtil::getRangeNumRatioMap(avg_cost_list);
-  for (irt_int y_idx = 0; y_idx < avg_cost_map.get_y_size(); y_idx++) {
-    double left = avg_cost_map[0][y_idx];
-    double right = avg_cost_map[1][y_idx];
-    std::string range_str;
-    if (y_idx == avg_cost_map.get_y_size() - 1) {
-      range_str = RTUtil::getString("[", left, ",", max_avg_cost, "]");
-    } else {
-      range_str = RTUtil::getString("[", left, ",", right, ")");
-    }
-    avg_cost_table << range_str << RTUtil::getString(avg_cost_map[2][y_idx], "(", avg_cost_map[3][y_idx], "%)") << fort::endr;
+  GridMap<std::string> avg_cost_map = RTUtil::getRangeRatioMap(avg_cost_list, {1.0});
+  for (irt_int y = 0; y < avg_cost_map.get_y_size(); y++) {
+    avg_cost_table << avg_cost_map[0][y] << avg_cost_map[1][y] << fort::endr;
   }
   avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
 
   fort::char_table global_cost_table;
-  global_cost_table.set_border_style(FT_SOLID_STYLE);
   global_cost_table << fort::header << "Max Global Cost" << fort::endr;
   global_cost_table << ra_model_stat.get_max_global_cost() << fort::endr;
 
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(avg_cost_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(global_cost_table.to_string(), '\n'));
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
-  }
-  for (std::vector<std::string>& table : table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
-      table.push_back(table_str);
-    }
-  }
-
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
+  RTUtil::printTableList({avg_cost_table, global_cost_table});
 }
 
 bool ResourceAllocator::stopOuterRAModel(RAModel& ra_model)
