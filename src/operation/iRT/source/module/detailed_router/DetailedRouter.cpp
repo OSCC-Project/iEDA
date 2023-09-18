@@ -1094,7 +1094,21 @@ void DetailedRouter::updateRectCostToGraph(DRBox& dr_box, ChangeType change_type
 std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getGridOrientationMap(DRBox& dr_box,
                                                                                                        const DRCRect& drc_rect)
 {
-  // !传入的rect是原始形状
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orien_map;
+  if (drc_rect.get_is_routing()) {
+    grid_orien_map = getRoutingGridOrientationMap(dr_box, drc_rect);
+  } else {
+    grid_orien_map = getCutGridOrientationMap(dr_box, drc_rect);
+  }
+  return grid_orien_map;
+}
+
+std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getRoutingGridOrientationMap(DRBox& dr_box,
+                                                                                                              const DRCRect& drc_rect)
+{
+  if (!drc_rect.get_is_routing()) {
+    LOG_INST.error(Loc::current(), "The type of drc rect is cut!");
+  }
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
@@ -1119,6 +1133,40 @@ std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter:
           LayerCoord second_grid(RTUtil::getGridCoord(second, box_track_axis), second_layer_idx);
           grid_orientation_map[first_grid].insert(orientation);
           grid_orientation_map[second_grid].insert(RTUtil::getOppositeOrientation(orientation));
+        }
+      }
+    }
+  }
+  return grid_orientation_map;
+}
+
+std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter::getCutGridOrientationMap(DRBox& dr_box,
+                                                                                                          const DRCRect& drc_rect)
+{
+  // 默认使用单cut的via，因此，cut类型的drc rect就是一个via的cut shape
+  if (drc_rect.get_is_routing()) {
+    LOG_INST.error(Loc::current(), "The type of drc rect is routing!");
+  }
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
+
+  irt_int cut_layer_idx = drc_rect.get_layer_rect().get_layer_idx();
+  std::pair<irt_int, irt_int> adjacent_routing_layer_idx = DM_INST.getHelper().getAdjacentRoutingLayerIdx(cut_layer_idx);
+  irt_int below_routing_layer_idx = adjacent_routing_layer_idx.first;
+  irt_int above_routing_layer_idx = adjacent_routing_layer_idx.second;
+  RTUtil::swapASC(below_routing_layer_idx, above_routing_layer_idx);
+
+  irt_int enlarge_x_size = drc_rect.get_layer_rect().getXSpan() / 2;
+  irt_int enlarge_y_size = drc_rect.get_layer_rect().getYSpan() / 2;
+
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+  for (LayerRect& min_scope_rect : DC_INST.getMinScope(drc_rect)) {
+    PlanarRect check_rect = RTUtil::getEnlargedRect(min_scope_rect, enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
+    if (RTUtil::existGrid(check_rect, box_track_axis)) {
+      PlanarRect grid_rect = RTUtil::getGridRect(check_rect, box_track_axis);
+      for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
+        for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
+          grid_orientation_map[LayerCoord(grid_x, grid_y, below_routing_layer_idx)].insert(Orientation::kUp);
+          grid_orientation_map[LayerCoord(grid_x, grid_y, above_routing_layer_idx)].insert(Orientation::kDown);
         }
       }
     }
