@@ -31,8 +31,4 @@
 
 namespace ieda_contest {
 
-ContestGuide::ContestGuide()
-{
-}
-
 }  // namespace ieda_contest

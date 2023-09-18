@@ -35,17 +35,17 @@ class ContestDB
   ~ContestDB();
 
   /// getter
-  std::vector<ContestGuideNet>& get_guide_nets() { return _guide_nets; }
+  std::vector<ContestNet>& get_net_list() { return _net_list; }
 
   /// setter
   void clear()
   {
-    _guide_nets.clear();
-    std::vector<ContestGuideNet>().swap(_guide_nets);
+    _net_list.clear();
+    std::vector<ContestNet>().swap(_net_list);
   }
 
  private:
-  std::vector<ContestGuideNet> _guide_nets;
+  std::vector<ContestNet> _net_list;
 };
 
 }  // namespace ieda_contest

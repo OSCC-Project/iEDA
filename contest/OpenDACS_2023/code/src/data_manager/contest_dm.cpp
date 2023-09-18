@@ -66,7 +66,7 @@ bool ContestDataManager::buildData()
 
   /// build data from guide file
   GuideParser parser;
-  b_result &= parser.parse(_guide_input, _database->get_guide_nets());
+  b_result &= parser.parse(_guide_input, _database->get_net_list());
 
   return b_result;
 }
@@ -82,7 +82,7 @@ bool ContestDataManager::saveData()
 
   /// save data to guide
   GuideParser parser;
-  b_result &= parser.save(_guide_output, _database->get_guide_nets());
+  b_result &= parser.save(_guide_output, _database->get_net_list());
 
   return b_result;
 }

@@ -38,10 +38,10 @@
 
 namespace ieda_contest {
 
-bool GuideParser::parse(std::string guide_file, std::vector<ContestGuideNet>& guide_nets)
+bool GuideParser::parse(std::string guide_file, std::vector<ContestNet>& net_list)
 {
-  guide_nets.clear();
-  std::vector<ContestGuideNet>().swap(guide_nets);
+  net_list.clear();
+  std::vector<ContestNet>().swap(net_list);
 
   std::ifstream* guide_file_stream = getInputFileStream(guide_file);
   if (guide_file_stream == nullptr) {
@@ -63,10 +63,10 @@ bool GuideParser::parse(std::string guide_file, std::vector<ContestGuideNet>& gu
         if (new_line == ")") {
           is_new_net = true;
 
-          ContestGuideNet net;
+          ContestNet net;
           net.set_net_name(net_name);
           net.set_guide_list(guide_list);
-          guide_nets.push_back(net);
+          net_list.push_back(net);
 
           static int net_num = 0;
           net_num++;
@@ -93,15 +93,15 @@ bool GuideParser::parse(std::string guide_file, std::vector<ContestGuideNet>& gu
   return true;
 }
 
-bool GuideParser::save(std::string guide_file, std::vector<ContestGuideNet>& guide_nets)
+bool GuideParser::save(std::string guide_file, std::vector<ContestNet>& net_list)
 {
   std::ofstream* guide_file_stream = getOutputFileStream(guide_file);
   if (guide_file_stream == nullptr) {
     return false;
   }
 
-  for (size_t i = 0; i < guide_nets.size(); i++) {
-    ContestGuideNet& net = guide_nets[i];
+  for (size_t i = 0; i < net_list.size(); i++) {
+    ContestNet& net = net_list[i];
     (*guide_file_stream) << net.get_net_name() << "\n(\n";
     for (ContestGuide& guide : net.get_guide_list()) {
       (*guide_file_stream) << guide.get_lb_x() << " " << guide.get_lb_y() << " " << guide.get_rt_x() << " " << guide.get_rt_y() << " "
