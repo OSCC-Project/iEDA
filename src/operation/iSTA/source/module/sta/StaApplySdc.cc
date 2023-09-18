@@ -583,34 +583,34 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto* ista = getSta();
 
-  auto apply_clock_latency_to_obj = [ista, the_graph](auto* design_obj,
-                                                      auto uncertainty) {
-    StaVertex* end_vertex;
-    FOREACH_END_VERTEX(the_graph, end_vertex) {
-      if (end_vertex->get_design_obj() == design_obj) {
-        StaData* delay_data;
-        FOREACH_DELAY_DATA(end_vertex, delay_data) {
-          // set uncertainty.
-          auto analysis_mode = delay_data->get_delay_type();
-          auto* seq_data = ista->getSeqData(end_vertex, delay_data);
-          if (analysis_mode == AnalysisMode::kMax) {
-            if (uncertainty->isSetup()) {
-              double uncertainty_value = uncertainty->getUncertaintyValueFs();
-              seq_data->set_uncertainty(uncertainty_value);
-            }
-          } else {
-            if (uncertainty->isHold()) {
-              double uncertainty_value = uncertainty->getUncertaintyValueFs();
-              seq_data->set_uncertainty(uncertainty_value);
-            }
-          }
+  auto apply_clock_uncetainty_to_obj = [ista, the_graph](auto* design_obj,
+                                                         auto uncertainty) {
+    StaVertex* end_vertex = ista->findVertex(design_obj);
+    if (!end_vertex->is_end()) {
+      return;
+    }
+
+    StaData* delay_data;
+    FOREACH_DELAY_DATA(end_vertex, delay_data) {
+      // set uncertainty.
+      auto analysis_mode = delay_data->get_delay_type();
+      auto* seq_data = ista->getSeqData(end_vertex, delay_data);
+      if (analysis_mode == AnalysisMode::kMax) {
+        if (uncertainty->isSetup()) {
+          double uncertainty_value = uncertainty->getUncertaintyValueFs();
+          seq_data->set_uncertainty(uncertainty_value);
         }
-        break;
+      } else {
+        if (uncertainty->isHold()) {
+          double uncertainty_value = uncertainty->getUncertaintyValueFs();
+          seq_data->set_uncertainty(uncertainty_value);
+        }
       }
     }
   };
 
-  auto apply_clock_latency_to_clk = [ista](auto* sdc_clk, auto* uncertainty) {
+  auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
+                                               auto* uncertainty) {
     auto& clk_groups = ista->get_clock_groups();
     for (auto& [clk, clk_group] : clk_groups) {
       if (Str::equal(clk->get_clock_name(),
@@ -632,17 +632,17 @@ unsigned StaApplySdc::processClockUncertainty(
   auto obj2uncertainty = get_uncertainty();
 
   for (auto [obj, uncertainty] : obj2uncertainty) {
-    std::visit(
-        overloaded{
-            [&apply_clock_latency_to_clk, uncertainty](SdcCommandObj* sdc_obj) {
-              apply_clock_latency_to_clk(sdc_obj, uncertainty);
-            },
-            [&apply_clock_latency_to_obj,
-             uncertainty](DesignObject* design_obj) {
-              apply_clock_latency_to_obj(design_obj, uncertainty);
-            },
-        },
-        obj);
+    std::visit(overloaded{
+                   [&apply_clock_uncertainty_to_clk,
+                    uncertainty](SdcCommandObj* sdc_obj) {
+                     apply_clock_uncertainty_to_clk(sdc_obj, uncertainty);
+                   },
+                   [&apply_clock_uncetainty_to_obj,
+                    uncertainty](DesignObject* design_obj) {
+                     apply_clock_uncetainty_to_obj(design_obj, uncertainty);
+                   },
+               },
+               obj);
   }
 
   return is_ok;
