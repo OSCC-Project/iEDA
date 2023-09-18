@@ -403,16 +403,23 @@ RQShape DRCChecker::convertToRQShape(const DRCRect& drc_rect)
 std::vector<LayerRect> DRCChecker::getMinSpacingRect(const std::vector<ids::DRCRect>& drc_rect_list)
 {
   std::map<std::string, irt_int>& routing_layer_name_to_idx_map = DM_INST.getHelper().get_routing_layer_name_to_idx_map();
+  std::map<std::string, irt_int>& cut_layer_name_to_idx_map = DM_INST.getHelper().get_cut_layer_name_to_idx_map();
 
   std::vector<LayerRect> min_scope_list;
   for (const ids::DRCRect& drc_rect : drc_rect_list) {
-    if (!RTUtil::exist(routing_layer_name_to_idx_map, drc_rect.layer_name)) {
-      continue;
-    }
+    std::string layer_name = drc_rect.layer_name;
     PlanarRect rect(drc_rect.lb_x, drc_rect.lb_y, drc_rect.rt_x, drc_rect.rt_y);
-    irt_int layer_idx = DM_INST.getHelper().getRoutingLayerIdxByName(drc_rect.layer_name);
-    RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[layer_idx];
-    min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, routing_layer.getMinSpacing(rect)), layer_idx);
+    if (RTUtil::exist(routing_layer_name_to_idx_map, layer_name)) {
+      irt_int routing_layer_idx = routing_layer_name_to_idx_map[layer_name];
+      RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[routing_layer_idx];
+      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, routing_layer.getMinSpacing(rect)), routing_layer_idx);
+    } else if (RTUtil::exist(cut_layer_name_to_idx_map, layer_name)) {
+      irt_int cut_spacing = 0;  // TODO
+      irt_int cut_layer_idx = cut_layer_name_to_idx_map[layer_name];
+      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, cut_spacing), cut_layer_idx);
+    } else {
+      LOG_INST.error(Loc::current(), "There has no layer name : ", layer_name, " !");
+    }
   }
   return min_scope_list;
 }
