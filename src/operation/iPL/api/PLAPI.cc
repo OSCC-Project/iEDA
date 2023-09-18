@@ -26,13 +26,13 @@
 
 #include <filesystem>
 
-#include "AbacusLegalizer.hh"
 #include "BufferInserter.hh"
 #include "CenterPlace.hh"
 #include "DetailPlacer.hh"
 #include "EvalAPI.hpp"
 #include "IDBWrapper.hh"
 #include "LayoutChecker.hh"
+#include "Legalizer.hh"
 #include "Log.hh"
 #include "MacroPlacer.hh"
 #include "NesterovPlace.hh"
@@ -63,7 +63,7 @@ PLAPI& PLAPI::getInst()
 void PLAPI::destoryInst()
 {
   if (_s_ipl_api_instance->isAbucasLGStarted()) {
-    AbacusLegalizerInst.destoryInst();
+    LegalizerInst.destoryInst();
   }
 
   if (_s_ipl_api_instance->isPlacerDBStarted()) {
@@ -289,8 +289,8 @@ void PLAPI::runFlow()
 
   // // update LG Database
   // LOG_INFO << "Repeated execution of legalization to support subsequent incremental legalization";
-  // AbacusLegalizerInst.updateInstanceList();
-  // AbacusLegalizerInst.runLegalize();
+  // LegalizerInst.updateInstanceList();
+  // LegalizerInst.runLegalize();
   // printHPWLInfo();
   // std::cout << std::endl;
 
@@ -328,8 +328,8 @@ void PLAPI::runGP()
 
 bool PLAPI::runLG()
 {
-  AbacusLegalizerInst.initAbacusLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
-  bool flag = AbacusLegalizerInst.runLegalize();
+  LegalizerInst.initLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+  bool flag = LegalizerInst.runLegalize();
   LOG_ERROR_IF(!flag) << "Legalization is not completed!";
   return flag;
 }
@@ -337,8 +337,8 @@ bool PLAPI::runLG()
 bool PLAPI::runIncrLG()
 {
   PlacerDBInst.updateFromSourceDataBase();
-  AbacusLegalizerInst.updateInstanceList();
-  bool flag = AbacusLegalizerInst.runIncrLegalize();
+  LegalizerInst.updateInstanceList();
+  bool flag = LegalizerInst.runIncrLegalize();
   return flag;
 }
 
@@ -351,8 +351,9 @@ bool PLAPI::runIncrLG(std::vector<std::string> inst_name_list)
     inst_list.push_back(inst);
   }
 
-  AbacusLegalizerInst.updateInstanceList(inst_list);
-  bool flag = AbacusLegalizerInst.runIncrLegalize();
+  LegalizerInst.updateInstanceList(inst_list);
+  bool flag = LegalizerInst.runIncrLegalize();
+
   return flag;
 }
 
@@ -551,7 +552,8 @@ bool PLAPI::isPlacerDBStarted()
 
 bool PLAPI::isAbucasLGStarted()
 {
-  return AbacusLegalizerInst.isInitialized();
+  // return AbacusLegalizerInst.isInitialized();
+  return LegalizerInst.isInitialized();
 }
 
 /*****************************Congestion-driven Placement: START*****************************/
