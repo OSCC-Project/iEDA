@@ -1,0 +1,49 @@
+decimal_digits = _{ ASCII_DIGIT }
+decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
+dec_int = _{ decimal_integer }
+optional_exp = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits? }
+optional_frac = _{ "." ~ decimal_digits? }
+float = _{ dec_int ~ optional_frac ~ optional_exp }
+
+bus_index = _{ "[" ~ decimal_digits+ ~ "]" }
+bus_slice = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
+pin_id = _{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
+bus_id = _{ pin_id ~ (bus_index | bus_slice) }
+bus_bus_id = _{ pin_id ~ bus_index ~ (bus_index | bus_slice)}
+
+lib_id = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
+
+punctuation = _{ ","  | ":" | "=" | "+" | "*" | "&" | "|" | "!"}
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+line_comment = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
+multiline_comment = _{ "/*" ~ (ASCII)* ~ ("*/")}
+
+multiline_string = { "\"" ~ (ASCII)* ~ ("\"")}
+
+semicolon_opt = _{ ";" }
+
+// expr_operator = _{ "+" | "-" | "*" | "/"}
+
+string = { lib_id | multiline_string | pin_id | bus_id | bus_bus_id | punctuation | line_comment | multiline_comment }
+
+attribute_value = { float | string }
+attribute_values = { (attribute_value)+ | attribute_value ~ ("," ~ attribute_value)* }
+
+simple_attribute_value = { attribute_value }
+simple_attribute = { lib_id ~ ":" ~ simple_attribute_value ~ semicolon_opt}
+
+complex_attribute = { lib_id ~ "(" ~ ")" | lib_id ~ "(" ~ attribute_values ~ ")"}
+
+group = { lib_id ~ "(" ~ ")" ~ "{" ~ statements ~ "}" | lib_id ~ "(" ~ attribute_values ~ ")" ~ "{" ~ statements ~ "}"}
+
+statement = { simple_attribute | complex_attribute | group }
+statements = { statement+ }
+
+lib_file = { group }
+
+
+
+
+
+
