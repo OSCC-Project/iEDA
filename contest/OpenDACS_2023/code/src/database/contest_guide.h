@@ -23,6 +23,7 @@
  *
  */
 #pragma once
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,7 +32,7 @@ namespace ieda_contest {
 class ContestGuide
 {
  public:
-  ContestGuide();
+  ContestGuide() = default;
   ~ContestGuide() = default;
   // getter
   int get_lb_x() const { return _lb_x; }
@@ -54,22 +55,114 @@ class ContestGuide
   std::string _layer_name;
 };
 
-class ContestGuideNet
+class ContestCoord
 {
  public:
-  ContestGuideNet() = default;
-  ~ContestGuideNet() = default;
+  ContestCoord() = default;
+  ~ContestCoord() = default;
+  // getter
+  int get_x() const { return _x; }
+  int get_y() const { return _y; }
+  int get_layer_id() const { return _layer_id; }
+  // setter
+  void set_x(const int x) { _x = x; }
+  void set_y(const int y) { _y = y; }
+  void set_layer_id(const int layer_id) { _layer_id = layer_id; }
+
+ private:
+  int _x;
+  int _y;
+  int _layer_id;
+};
+
+struct CmpContestCoord
+{
+  bool operator()(const ContestCoord& a, const ContestCoord& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_layer_id() < b.get_layer_id();
+    }
+  }
+};
+
+class ContestSegment
+{
+ public:
+  ContestSegment() = default;
+  ~ContestSegment() = default;
+  // getter
+  ContestCoord& get_first() { return _first; }
+  ContestCoord& get_second() { return _second; }
+  // setter
+  void set_first(const ContestCoord& first) { _first = first; }
+  void set_second(const ContestCoord& second) { _second = second; }
+
+ private:
+  ContestCoord _first;
+  ContestCoord _second;
+};
+
+class ContestPin
+{
+ public:
+  ContestPin() = default;
+  ~ContestPin() = default;
+  // getter
+  ContestCoord& get_coord() { return _coord; }
+  std::vector<std::string>& get_contained_instance_list() { return _contained_instance_list; }
+  // setter
+  void set_coord(const ContestCoord& coord) { _coord = coord; }
+  void set_contained_instance_list(const std::vector<std::string>& contained_instance_list)
+  {
+    _contained_instance_list = contained_instance_list;
+  }
+
+ private:
+  ContestCoord _coord;
+  std::vector<std::string> _contained_instance_list;
+};
+
+class ContestInstance
+{
+ public:
+  ContestInstance() = default;
+  ~ContestInstance() = default;
+  // getter
+  std::string& get_name() { return _name; }
+  int get_area() const { return _area; }
+  // setter
+  void set_name(const std::string& name) { _name = name; }
+  void set_area(const int area) { _area = area; }
+
+ private:
+  std::string _name;
+  int _area;
+};
+
+class ContestNet
+{
+ public:
+  ContestNet() = default;
+  ~ContestNet() = default;
   // getter
   std::string get_net_name() { return _net_name; }
   std::vector<ContestGuide>& get_guide_list() { return _guide_list; }
+  std::vector<ContestPin>& get_pin_list() { return _pin_list; }
+  std::vector<ContestSegment>& get_routing_segment_list() { return _routing_segment_list; }
   // setter
   void set_net_name(const std::string net_name) { _net_name = net_name; }
   void set_guide_list(const std::vector<ContestGuide>& guide_list) { _guide_list = guide_list; }
+  void set_pin_list(const std::vector<ContestPin>& pin_list) { _pin_list = pin_list; }
+  void set_routing_segment_list(const std::vector<ContestSegment>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // function
 
  private:
   std::string _net_name;
   std::vector<ContestGuide> _guide_list;
+  std::vector<ContestPin> _pin_list;
+  std::vector<ContestSegment> _routing_segment_list;
 };
 
 }  // namespace ieda_contest
