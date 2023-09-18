@@ -14,28 +14,28 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "LGInstance.hh"
+
+#ifndef IPL_LG_METHOD_H
+#define IPL_LG_METHOD_H
+
+#include <vector>
+
+#include "config/LegalizerConfig.hh"
+#include "database/LGDatabase.hh"
 
 namespace ipl {
 
-LGInstance::LGInstance(std::string name)
-    : _index(-1),
-      _name(name),
-      _master(nullptr),
-      _orient(Orient::kNone),
-      _state(LGINSTANCE_STATE::kNone),
-      _belong_region(nullptr),
-      _weight(1.0)
+class LGMethodInterface
 {
-}
+ public:
+  virtual void initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database) = 0;
+  virtual bool isInitialized() = 0;
+  virtual bool runLegalization() = 0;
 
-LGInstance::~LGInstance()
-{
-}
-
-void LGInstance::updateCoordi(int32_t llx, int32_t lly)
-{
-  _shape = Rectangle<int32_t>(llx, lly, llx + _shape.get_width(), lly + _shape.get_height());
-}
+  virtual void specifyTargetInstList(std::vector<LGInstance*>& target_inst_list) = 0;
+  virtual bool runIncrLegalization() = 0;
+};
 
 }  // namespace ipl
+
+#endif

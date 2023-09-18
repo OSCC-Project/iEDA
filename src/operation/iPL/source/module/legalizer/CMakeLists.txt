@@ -1,16 +1,22 @@
+include_directories(${iPL_LG})
+
+set(LG_METHOD ${iPL_LG}/method)
+add_subdirectory(${LG_METHOD})
+
 add_library(ipl-module-legalizer 
     database/LGCell.cc
-    database/LGCluster.cc
     database/LGDatabase.cc
     database/LGInstance.cc
     database/LGLayout.cc
     database/LGRegion.cc
     database/LGRow.cc
     database/LGInterval.cc
-    AbacusLegalizer.cc
+    Legalizer.cc
 )
 
-target_link_libraries(ipl-module-legalizer 
+target_link_libraries(ipl-module-legalizer
+    PUBLIC
+        legalizer_method
     PRIVATE
         ipl-module-logger
         ipl-bridge
