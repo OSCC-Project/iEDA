@@ -811,6 +811,10 @@ void Sta::initSdcCmd() {
       std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
   LOG_FATAL_IF(!set_clock_uncertainty);
   TclCmds::addTclCmd(std::move(set_clock_uncertainty));
+
+  auto set_units = std::make_unique<CmdSetUnits>("set_units");
+  LOG_FATAL_IF(!set_units);
+  TclCmds::addTclCmd(std::move(set_units));
 }
 
 /**
@@ -2417,4 +2421,47 @@ std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
   return loc_to_inst_transition;
 }
 
+// const char *Sta::getUnit(const char *unit_name) {
+//   return _units[unit_name].c_str();
+// }
+
+// void Sta::setUnit(const char *unit_name, char *unit_value) {
+//   _units[unit_name] = std::string(Str::toUpper(unit_value));
+// }
+
+// // 处理没有对应 UnitType 的情况
+// template <typename UnitType>
+// double Sta::convertToStaUnit(const double src_value) {
+//   return -1;
+// }
+
+// template <>
+// double Sta::convertToStaUnit<TimeUnit>(const double src_value) {
+//   auto current_time_unit = getUnit<TimeUnit>();
+//   if ()
+// }
+
+double Sta::convertTimeUnit(const double src_value) {
+  TimeUnit current_time_unit = getTimeUnit();
+  if (current_time_unit == TimeUnit::NS) {
+    return src_value;
+  } else if (current_time_unit == TimeUnit::FS) {
+    return FS_TO_NS(src_value);
+  } else if (current_time_unit == TimeUnit::PS) {
+    return PS_TO_NS(src_value);
+  }
+  return -1;
+}
+
+double Sta::convertCapUnit(const double src_value) {
+  CapUnit current_cap_unit = getCapUnit();
+  if (current_cap_unit == CapUnit::PF) {
+    return src_value;
+  } else if (current_cap_unit == CapUnit::FF) {
+    return FF_TO_PF(src_value);
+  } else if (current_cap_unit == CapUnit::F) {
+    return F_TO_PF(src_value);
+  }
+  return -1;
+}
 }  // namespace ista
