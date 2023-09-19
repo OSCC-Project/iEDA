@@ -22,13 +22,34 @@
  * @Creat Date : 2023-09-15
  *
  */
+#pragma once
+#include <set>
+#include <string>
+#include <vector>
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "contest_coord.h"
 
-#include "contest_guide.h"
 
 namespace ieda_contest {
+
+class ContestPin
+{
+ public:
+  ContestPin() = default;
+  ~ContestPin() = default;
+  // getter
+  ContestCoord& get_coord() { return _coord; }
+  std::vector<std::string>& get_contained_instance_list() { return _contained_instance_list; }
+  // setter
+  void set_coord(const ContestCoord& coord) { _coord = coord; }
+  void set_contained_instance_list(const std::vector<std::string>& contained_instance_list)
+  {
+    _contained_instance_list = contained_instance_list;
+  }
+
+ private:
+  ContestCoord _coord;
+  std::vector<std::string> _contained_instance_list;
+};
 
 }  // namespace ieda_contest
