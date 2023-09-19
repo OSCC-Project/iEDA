@@ -31,6 +31,8 @@ namespace ista {
 
 enum class AnalysisMode : int { kMax = 1, kMin = 2, kMaxMin = 3 };
 enum class TransType : int { kRise = 1, kFall = 2, kRiseFall = 3 };
+enum class TimeUnit { NS = 0, PS = 1, FS = 2 };
+enum class CapUnit { PF = 0, FF = 1, F = 2 };
 
 #define IS_MAX(analysis_mode) (static_cast<int>(analysis_mode) & 0b01)
 #define IS_MIN(analysis_mode) (static_cast<int>(analysis_mode) & 0b10)
@@ -121,4 +123,17 @@ overloaded(Ts...) -> overloaded<Ts...>;
   class_name(const class_name&) = delete;    \
   void operator=(const class_name&) = delete
 
+// handler for ista units, including TimeUnit, CapUnit...
+template <typename UnitType>
+class UnitHandler {
+ public:
+  UnitHandler(UnitType initialUnit) : unit(initialUnit) {}
+
+  UnitType getUnit() const { return unit; }
+
+  void setUnit(UnitType newUnit) { unit = newUnit; }
+
+ private:
+  UnitType unit;
+};
 }  // namespace ista
