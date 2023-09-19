@@ -1443,6 +1443,17 @@ void DataManager::updateHelper()
       via_name_to_idx_map[via_master.get_via_name()] = via_master.get_via_master_idx();
     }
   }
+
+  std::map<irt_int, std::pair<irt_int, irt_int>>& cut_to_adjacent_routing_map = _helper.get_cut_to_adjacent_routing_map();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  for (size_t i = 0; i < layer_via_master_list.size(); i++) {
+    if (layer_via_master_list[i].empty()) {
+      continue;
+    }
+    ViaMaster& via_master = layer_via_master_list[i].front();
+    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].first = via_master.get_below_enclosure().get_layer_idx();
+    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].second = via_master.get_above_enclosure().get_layer_idx();
+  }
 }
 
 #endif
