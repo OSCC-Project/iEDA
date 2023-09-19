@@ -538,6 +538,7 @@ void Legalizer::destoryInst()
 
 Legalizer::~Legalizer()
 {
+  delete _method;
 }
 
 // private
