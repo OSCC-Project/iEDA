@@ -724,6 +724,8 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = _config.bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = _config.top_routing_layer_idx;
 
   irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
   irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
@@ -731,6 +733,9 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   std::set<irt_int> base_layer_idx_set;
   std::map<irt_int, std::set<irt_int>> scale_layer_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
+    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
+      continue;
+    }
     base_layer_idx_set.insert(routing_layer.get_layer_idx());
 
     std::vector<ScaleGrid> track_grid_list;
