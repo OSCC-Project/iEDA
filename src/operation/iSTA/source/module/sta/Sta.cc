@@ -811,6 +811,10 @@ void Sta::initSdcCmd() {
       std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
   LOG_FATAL_IF(!set_clock_uncertainty);
   TclCmds::addTclCmd(std::move(set_clock_uncertainty));
+
+  auto set_units = std::make_unique<CmdSetUnits>("set_units");
+  LOG_FATAL_IF(!set_units);
+  TclCmds::addTclCmd(std::move(set_units));
 }
 
 /**
@@ -2417,4 +2421,27 @@ std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
   return loc_to_inst_transition;
 }
 
+double Sta::convertTimeUnit(const double src_value) {
+  TimeUnit current_time_unit = getTimeUnit();
+  if (current_time_unit == TimeUnit::kNS) {
+    return src_value;
+  } else if (current_time_unit == TimeUnit::kFS) {
+    return FS_TO_NS(src_value);
+  } else if (current_time_unit == TimeUnit::kPS) {
+    return PS_TO_NS(src_value);
+  }
+  return -1;
+}
+
+double Sta::convertCapUnit(const double src_value) {
+  CapacitiveUnit current_cap_unit = getCapUnit();
+  if (current_cap_unit == CapacitiveUnit::kPF) {
+    return src_value;
+  } else if (current_cap_unit == CapacitiveUnit::kFF) {
+    return FF_TO_PF(src_value);
+  } else if (current_cap_unit == CapacitiveUnit::kF) {
+    return F_TO_PF(src_value);
+  }
+  return -1;
+}
 }  // namespace ista

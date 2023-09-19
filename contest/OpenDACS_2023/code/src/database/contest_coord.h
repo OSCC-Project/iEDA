@@ -29,30 +29,44 @@
 
 namespace ieda_contest {
 
-class ContestGuide
+class ContestCoord
 {
  public:
-  ContestGuide() = default;
-  ~ContestGuide() = default;
+  ContestCoord() = default;
+  ContestCoord(int x, int y, int layer_idx = -1)
+  {
+    _x = x;
+    _y = y;
+    _layer_idx = layer_idx;
+  }
+  ~ContestCoord() = default;
+  bool operator==(const ContestCoord& other) const { return (_x == other._x && _y == other._y && _layer_idx == other._layer_idx); }
+  bool operator!=(const ContestCoord& other) const { return !((*this) == other); }
   // getter
-  int get_lb_x() const { return _lb_x; }
-  int get_lb_y() const { return _lb_y; }
-  int get_rt_x() const { return _rt_x; }
-  int get_rt_y() const { return _rt_y; }
-  std::string get_layer_name() { return _layer_name; }
+  int get_x() const { return _x; }
+  int get_y() const { return _y; }
+  int get_layer_idx() const { return _layer_idx; }
   // setter
-  void set_lb_x(const int lb_x) { _lb_x = lb_x; }
-  void set_lb_y(const int lb_y) { _lb_y = lb_y; }
-  void set_rt_x(const int rt_x) { _rt_x = rt_x; }
-  void set_rt_y(const int rt_y) { _rt_y = rt_y; }
-  void set_layer_name(const std::string layer_name) { _layer_name = layer_name; }
+  void set_x(const int x) { _x = x; }
+  void set_y(const int y) { _y = y; }
+  void set_layer_idx(const int layer_idx) { _layer_idx = layer_idx; }
 
  private:
-  int _lb_x;
-  int _lb_y;
-  int _rt_x;
-  int _rt_y;
-  std::string _layer_name;
+  int _x = -1;
+  int _y = -1;
+  int _layer_idx = -1;
+};
+
+struct CmpContestCoord
+{
+  bool operator()(const ContestCoord& a, const ContestCoord& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_layer_idx() < b.get_layer_idx();
+    }
+  }
 };
 
 }  // namespace ieda_contest

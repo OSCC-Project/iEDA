@@ -24,8 +24,11 @@
  */
 #pragma once
 
+#include <map>
 #include <vector>
-#include "contest_guide.h"
+
+#include "contest_instance.h"
+#include "contest_net.h"
 
 namespace ieda_contest {
 class ContestDB
@@ -35,16 +38,33 @@ class ContestDB
   ~ContestDB();
 
   /// getter
+  std::map<std::string, int>& get_layer_name_to_idx_map() { return _layer_name_to_idx_map; }
+  int get_single_gcell_x_span() const { return _single_gcell_x_span; }
+  int get_single_gcell_y_span() const { return _single_gcell_y_span; }
+  int get_single_gcell_area() const { return _single_gcell_area; }
+  std::map<int, int>& get_layer_gcell_supply_map() { return _layer_gcell_supply_map; }
+  std::vector<ContestInstance>& get_instance_list() { return _instance_list; }
   std::vector<ContestNet>& get_net_list() { return _net_list; }
-
   /// setter
+  void set_single_gcell_x_span(const int single_gcell_x_span) { _single_gcell_x_span = single_gcell_x_span; }
+  void set_single_gcell_y_span(const int single_gcell_y_span) { _single_gcell_y_span = single_gcell_y_span; }
+  void set_single_gcell_area(const int single_gcell_area) { _single_gcell_area = single_gcell_area; }
+  // function
   void clear()
   {
+    _instance_list.clear();
+    std::vector<ContestInstance>().swap(_instance_list);
     _net_list.clear();
     std::vector<ContestNet>().swap(_net_list);
   }
 
  private:
+  std::map<std::string, int> _layer_name_to_idx_map;
+  int _single_gcell_x_span = -1;
+  int _single_gcell_y_span = -1;
+  int _single_gcell_area = -1;
+  std::map<int, int> _layer_gcell_supply_map;
+  std::vector<ContestInstance> _instance_list;
   std::vector<ContestNet> _net_list;
 };
 
