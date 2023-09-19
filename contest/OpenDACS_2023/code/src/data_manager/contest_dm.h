@@ -46,6 +46,13 @@ class ContestDataManager
   bool buildData();
   bool saveData();
 
+  // getter
+  std::string get_guide_input() { return _guide_input; }
+  std::string get_guide_output() { return _guide_output; }
+  ContestDB* get_database() { return _database; }
+  idb::IdbLayout* get_idb_layout() { return _idb_layout; }
+  idb::IdbDesign* get_idb_design() { return _idb_design; }
+
  private:
   std::string _guide_input;
   std::string _guide_output;
