@@ -23,6 +23,17 @@ Abacus::Abacus() : _database(nullptr), _config(nullptr), _row_height(-1), _site_
 {
 }
 
+Abacus::~Abacus()
+{
+  for (auto pair : _cluster_map) {
+    delete pair.second;
+  }
+  _cluster_map.clear();
+  _inst_belong_cluster.clear();
+  _interval_cluster_root.clear();
+  _interval_remain_length.clear();
+}
+
 void Abacus::initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database)
 {
   // clean abacus info first.
@@ -68,11 +79,6 @@ bool Abacus::runLegalization()
 
   int32_t inst_id = 0;
   for (auto* inst : movable_inst_list) {
-    // debug
-    if (inst->get_name() == "dpath/a_reg/_090_") {
-      int a = 0;
-    }
-
     int32_t best_row = INT32_MAX;
     int32_t best_cost = INT32_MAX;
     for (int32_t row_idx = 0; row_idx < _database->get_lg_layout()->get_row_num(); row_idx++) {
