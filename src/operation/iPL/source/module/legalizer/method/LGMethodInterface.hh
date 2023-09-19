@@ -28,6 +28,8 @@ namespace ipl {
 class LGMethodInterface
 {
  public:
+  virtual ~LGMethodInterface() {}
+
   virtual void initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database) = 0;
   virtual bool isInitialized() = 0;
   virtual bool runLegalization() = 0;
