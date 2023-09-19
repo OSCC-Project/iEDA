@@ -28,6 +28,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <string>
 
+#include "builder.h"
+#include "contest_coord.h"
+#include "def_service.h"
+#include "lef_service.h"
+
 namespace ieda_contest {
 class ContestDataManager;
 
@@ -38,13 +43,19 @@ class ContestEvaluation
   ~ContestEvaluation() = default;
 
   bool doEvaluation(std::string report_file);
+
+ private:
+  ContestDataManager* _data_manager = nullptr;
+
+  void makeLayerInfo();
+  void makeGCellInfo();
+  void makeInstanceList();
+  ContestCoord getGCellCoord(const ContestCoord& coord);
+  void makeNetList();
   bool overlapCheckPassed();
   bool connectivityCheckPassed();
   bool overflowCheckPassed();
   double calcTimingScore();
-
- private:
-  ContestDataManager* _data_manager = nullptr;
 };
 
 }  // namespace ieda_contest

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -59,8 +59,13 @@ unsigned CmdSetClockLatency::check() { return 1; }
 unsigned CmdSetClockLatency::exec() {
   auto* delay_value = getOptionOrArg("delay");
 
-  SdcSetClockLatency* clock_latency =
-      new SdcSetClockLatency(delay_value->getDoubleVal());
+  Sta* ista = Sta::getOrCreateSta();
+  SdcConstrain* the_constrain = ista->getConstrain();
+
+  Netlist* design_nl = ista->get_netlist();
+
+  SdcSetClockLatency* clock_latency = new SdcSetClockLatency(
+      ista->convertTimeUnit(delay_value->getDoubleVal()));
 
   auto* rise_option = getOptionOrArg("-rise");
   auto* fall_option = getOptionOrArg("-fall");
@@ -91,10 +96,6 @@ unsigned CmdSetClockLatency::exec() {
 
   TclOption* object_list_option = getOptionOrArg("object_list");
 
-  Sta* ista = Sta::getOrCreateSta();
-  SdcConstrain* the_constrain = ista->getConstrain();
-
-  Netlist* design_nl = ista->get_netlist();
   auto pin_ports =
       design_nl->findObj(object_list_option->getStringVal(), false, false);
   std::set<DesignObject*> pins;

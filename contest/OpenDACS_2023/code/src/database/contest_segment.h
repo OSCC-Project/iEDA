@@ -27,32 +27,55 @@
 #include <string>
 #include <vector>
 
+#include "contest_coord.h"
+
 namespace ieda_contest {
 
-class ContestGuide
+class ContestSegment
 {
  public:
-  ContestGuide() = default;
-  ~ContestGuide() = default;
+  ContestSegment() = default;
+  ContestSegment(const ContestCoord& first, const ContestCoord& second)
+  {
+    _first = first;
+    _second = second;
+  }
+  ~ContestSegment() = default;
   // getter
-  int get_lb_x() const { return _lb_x; }
-  int get_lb_y() const { return _lb_y; }
-  int get_rt_x() const { return _rt_x; }
-  int get_rt_y() const { return _rt_y; }
-  std::string get_layer_name() { return _layer_name; }
+  ContestCoord& get_first() { return _first; }
+  ContestCoord& get_second() { return _second; }
   // setter
-  void set_lb_x(const int lb_x) { _lb_x = lb_x; }
-  void set_lb_y(const int lb_y) { _lb_y = lb_y; }
-  void set_rt_x(const int rt_x) { _rt_x = rt_x; }
-  void set_rt_y(const int rt_y) { _rt_y = rt_y; }
-  void set_layer_name(const std::string layer_name) { _layer_name = layer_name; }
+  void set_first(const ContestCoord& first) { _first = first; }
+  void set_second(const ContestCoord& second) { _second = second; }
 
  private:
-  int _lb_x;
-  int _lb_y;
-  int _rt_x;
-  int _rt_y;
-  std::string _layer_name;
+  ContestCoord _first;
+  ContestCoord _second;
+};
+
+struct SortSegmentInner
+{
+  void operator()(ContestSegment& a) const
+  {
+    ContestCoord& first_coord = a.get_first();
+    ContestCoord& second_coord = a.get_second();
+    if (CmpContestCoord()(first_coord, second_coord)) {
+      return;
+    }
+    std::swap(first_coord, second_coord);
+  }
+};
+
+struct CmpSegment
+{
+  bool operator()(ContestSegment& a, ContestSegment& b) const
+  {
+    if (a.get_first() != b.get_first()) {
+      return CmpContestCoord()(a.get_first(), b.get_first());
+    } else {
+      return CmpContestCoord()(a.get_second(), b.get_second());
+    }
+  }
 };
 
 }  // namespace ieda_contest
