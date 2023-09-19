@@ -470,24 +470,9 @@ class Sta {
   void setTimeUnit(TimeUnit new_time_unit) { _time_unit = new_time_unit; };
   double convertTimeUnit(const double src_value);
 
-  CapUnit getCapUnit() const { return _cap_unit; };
-  void setCapUnit(CapUnit new_cap_unit) { _cap_unit = new_cap_unit; };
+  CapacitiveUnit getCapUnit() const { return _cap_unit; };
+  void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
   double convertCapUnit(const double src_value);
-
-  // template <typename UnitType>
-  // std::shared_ptr<UnitHandler<UnitType>> getUnitHandler(){
-  //   return
-  // };
-
-  // template <typename UnitType>
-  // void setUnit(UnitHandler<UnitType>& handler, UnitType newUnit) {
-  //   handler.setUnit(newUnit);
-  // };
-
-  // template <typename UnitType>
-  // UnitType getUnit(const UnitHandler<UnitType>& handler) {
-  //   return hadnler.getUnit();
-  // };
 
   std::optional<double> getInstSlack(AnalysisMode analysis_mode,
                                      Instance* the_inst);
@@ -563,14 +548,8 @@ class Sta {
 
   std::mutex _mt;
 
-  // std::map<const char*, std::string> _units{{"time_unit", "NS"},
-  //                                           {"cap_unit", "PF"}};
-
   TimeUnit _time_unit;
-  CapUnit _cap_unit;
-
-  // std::shared_ptr<UnitHandler<CapUnit>> cap_unit_handler =
-  //     std::make_shared<UnitHandler<CapUnit>>(CapUnit::PF);
+  CapacitiveUnit _cap_unit;
   // Singleton sta.
   static Sta* _sta;
 

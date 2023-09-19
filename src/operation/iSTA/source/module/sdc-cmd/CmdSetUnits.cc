@@ -71,15 +71,17 @@ unsigned CmdSetUnits::exec() {
 
   if (time_unit_option->is_set_val()) {
     std::map<std::string, TimeUnit> timeUnitMap = {
-        {"PS", TimeUnit::PS}, {"FS", TimeUnit::FS}, {"NS", TimeUnit::NS}};
+        {"PS", TimeUnit::kPS}, {"FS", TimeUnit::kFS}, {"NS", TimeUnit::kNS}};
 
     ista->setTimeUnit(
         timeUnitMap[Str::toUpper(time_unit_option->getStringVal())]);
     LOG_INFO << "Already set ista time unit" << std::endl;
   }
   if (cap_unit_option->is_set_val()) {
-    std::map<std::string, CapUnit> capUnitMap = {
-        {"PF", CapUnit::PF}, {"FF", CapUnit::FF}, {"F", CapUnit::F}};
+    std::map<std::string, CapacitiveUnit> capUnitMap = {
+        {"PF", CapacitiveUnit::kPF},
+        {"FF", CapacitiveUnit::kFF},
+        {"F", CapacitiveUnit::kF}};
 
     ista->setCapUnit(capUnitMap[Str::toUpper(cap_unit_option->getStringVal())]);
     LOG_INFO << "Already set ista capacitance unit" << std::endl;
