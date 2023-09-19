@@ -264,7 +264,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
                 if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
                   // 要切
                   std::vector<PlanarRect> split_rect_list
-                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_direction());
+                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
                   new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
                 } else {
                   // 不切
@@ -813,7 +813,6 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
   std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
 
   fort::char_table avg_cost_table;
-  avg_cost_table.set_border_style(FT_SOLID_STYLE);
   avg_cost_table << fort::header << "Avg Cost"
                  << "Net Number" << fort::endr;
   GridMap<std::string> avg_cost_map = RTUtil::getRangeRatioMap(avg_cost_list, {1.0});
@@ -823,34 +822,11 @@ void ResourceAllocator::reportRAModel(RAModel& ra_model)
   avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
 
   fort::char_table global_cost_table;
-  global_cost_table.set_border_style(FT_SOLID_STYLE);
   global_cost_table << fort::header << "Max Global Cost" << fort::endr;
   global_cost_table << ra_model_stat.get_max_global_cost() << fort::endr;
 
   // print
-  std::vector<std::vector<std::string>> table_list;
-  table_list.push_back(RTUtil::splitString(avg_cost_table.to_string(), '\n'));
-  table_list.push_back(RTUtil::splitString(global_cost_table.to_string(), '\n'));
-  int max_size = INT_MIN;
-  for (std::vector<std::string>& table : table_list) {
-    max_size = std::max(max_size, static_cast<irt_int>(table.size()));
-  }
-  for (std::vector<std::string>& table : table_list) {
-    for (irt_int i = table.size(); i < max_size; i++) {
-      std::string table_str;
-      table_str.append(table.front().length() / 3, ' ');
-      table.push_back(table_str);
-    }
-  }
-
-  for (irt_int i = 0; i < max_size; i++) {
-    std::string table_str;
-    for (std::vector<std::string>& table : table_list) {
-      table_str += table[i];
-      table_str += " ";
-    }
-    LOG_INST.info(Loc::current(), table_str);
-  }
+  RTUtil::printTableList({avg_cost_table, global_cost_table});
 }
 
 bool ResourceAllocator::stopOuterRAModel(RAModel& ra_model)

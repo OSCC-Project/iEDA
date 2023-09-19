@@ -45,7 +45,6 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -dr_box_max_iter_num 5 \
         -vr_max_iter_num 1
 
-
 run_rt -flow "pa ra gr ta dr vr"
 
 destroy_rt

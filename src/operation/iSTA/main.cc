@@ -37,6 +37,7 @@
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
+#include "shell-cmd/ShellCmd.hh"
 #include "sta/Sta.hh"
 #include "sta/StaAnalyze.hh"
 #include "sta/StaApplySdc.hh"
@@ -51,18 +52,10 @@
 #include "tcl/UserShell.hh"
 #include "usage/usage.hh"
 
-#define TCL_USERSHELL
-
-#ifdef TCL_USERSHELL
-#include "sdc-cmd/Cmd.hh"
-#include "shell-cmd/ShellCmd.hh"
-#endif
-
 DEFINE_string(confPath, "test.conf", "program configure file.");
 
 using namespace ista;
 
-#ifdef TCL_USERSHELL
 int registerCommands() {
   registerTclCmd(CmdSetDesignWorkSpace, "set_design_workspace");
   registerTclCmd(CmdReadVerilog, "read_netlist");
@@ -73,10 +66,10 @@ int registerCommands() {
   registerTclCmd(CmdReportTiming, "report_timing");
   registerTclCmd(CmdReportConstraint, "report_constraint");
   registerTclCmd(CmdDefToVerilog, "def_to_verilog");
+  registerTclCmd(CmdVerilogToDef, "verilog_to_def");
 
   return EXIT_SUCCESS;
 }
-#endif
 
 using ieda::Stats;
 

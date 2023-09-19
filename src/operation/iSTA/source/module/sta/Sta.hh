@@ -64,7 +64,7 @@ const std::function<bool(StaSeqPathData*, StaSeqPathData*)> seq_data_cmp =
 // clock cmp for staclock.
 const std::function<unsigned(StaClock*, StaClock*)> sta_clock_cmp =
     [](StaClock* left, StaClock* right) -> unsigned {
-  return Str::caseCmp(left->get_clock_name(), right->get_clock_name());
+  return Str::caseCmp(left->get_clock_name(), right->get_clock_name()) < 0;
 };
 
 /**
@@ -417,9 +417,6 @@ class Sta {
   auto& get_report_tbl_TNS() { return _report_tbl_TNS; }
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
-  void addClockTree(StaClockTree* clock_tree) {
-    _clock_trees.emplace_back(clock_tree);
-  }
 
   StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
@@ -462,10 +459,7 @@ class Sta {
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
-  void buildNextPin(
-      StaClockTree* clock_tree, StaClockTreeNode* parent_node,
-      StaVertex* parent_vertex,
-      std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+
   void buildClockTrees();
 
   // const char* getUnit(const char* unit_name);

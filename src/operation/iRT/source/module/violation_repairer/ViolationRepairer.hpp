@@ -92,6 +92,7 @@ class ViolationRepairer
 #endif
 
 #if 1  // valid drc
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const DRCRect& drc_rect);
   bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);

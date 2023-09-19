@@ -19,18 +19,18 @@
  * @Date: 2023-02-03 19:47:46
  * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
  * @LastEditTime: 2023-02-21 11:21:37
- * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGCluster.cc
+ * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/AbacusCluster.cc
  * @Description:
  *
  *
  */
-#include "LGCluster.hh"
+#include "AbacusCluster.hh"
 
 #include "module/logger/Log.hh"
 
 namespace ipl {
 
-LGCluster::LGCluster(std::string name)
+AbacusCluster::AbacusCluster(std::string name)
     : _name(name),
       _belong_segment(nullptr),
       _min_x(INT32_MAX),
@@ -42,24 +42,24 @@ LGCluster::LGCluster(std::string name)
 {
 }
 
-LGCluster::~LGCluster()
+AbacusCluster::~AbacusCluster()
 {
 }
 
-int32_t LGCluster::get_max_x()
+int32_t AbacusCluster::get_max_x()
 {
   int32_t max_x = _min_x + _total_width;
   return max_x;
 }
 
-void LGCluster::clearAbacusInfo()
+void AbacusCluster::clearAbacusInfo()
 {
   _weight_e = 0.0;
   _weight_q = 0.0;
   _total_width = 0;
 }
 
-void LGCluster::insertInstance(LGInstance* inst)
+void AbacusCluster::insertInstance(LGInstance* inst)
 {
   int32_t inst_min_x = inst->get_coordi().get_x();
 
@@ -97,7 +97,7 @@ void LGCluster::insertInstance(LGInstance* inst)
   return;
 }
 
-void LGCluster::appendCluster(LGCluster& cluster)
+void AbacusCluster::appendCluster(AbacusCluster& cluster)
 {
   auto other_inst_list = cluster.get_inst_list();
   _inst_list.insert(_inst_list.end(), other_inst_list.begin(), other_inst_list.end());
@@ -106,7 +106,7 @@ void LGCluster::appendCluster(LGCluster& cluster)
   _total_width += cluster.get_total_width();
 }
 
-void LGCluster::updateAbacusInfo(LGInstance* inst)
+void AbacusCluster::updateAbacusInfo(LGInstance* inst)
 {
   _weight_e += inst->get_weight();
   _weight_q += inst->get_weight() * (inst->get_coordi().get_x() - _total_width);

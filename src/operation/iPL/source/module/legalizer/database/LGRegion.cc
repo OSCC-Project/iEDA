@@ -16,13 +16,14 @@
 // ***************************************************************************************
 #include "LGRegion.hh"
 
-namespace ipl{
+namespace ipl {
 
-LGRegion::LGRegion(std::string name): _name(name), _type(LGREGION_TYPE::kNone){}
+LGRegion::LGRegion(std::string name) : _index(-1), _name(name), _type(LGREGION_TYPE::kNone)
+{
+}
 
 LGRegion::~LGRegion()
 {
-
 }
 
-}
+}  // namespace ipl

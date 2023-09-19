@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -228,7 +228,7 @@ void StaClockTree::getChildNodeCnt(std::vector<StaClockTreeNode*> child_nodes,
  * format.
  *
  */
-void StaClockTree::printInstGraphViz() {
+void StaClockTree::printInstGraphViz(const char* file_path) {
   auto replace_str = [](const std::string& str, const std::string& old_str,
                         const std::string& new_str) {
     std::regex re(old_str);
@@ -238,7 +238,7 @@ void StaClockTree::printInstGraphViz() {
   LOG_INFO << "dump graph dotviz start";
 
   std::ofstream dot_file;
-  dot_file.open("./clocktree_inst.dot");
+  dot_file.open(file_path);
   dot_file << "digraph clocktree {\n";
 
   for (auto& child_arc : _child_arcs) {
