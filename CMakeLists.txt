@@ -65,7 +65,7 @@ if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
 
-option(CONTEST "If ON, run contest porject." OFF)
+option(CONTEST "If ON, run contest porject." ON)
 if(CONTEST)
     add_definitions(-DCONTEST)
     add_subdirectory(contest)

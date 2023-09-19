@@ -30,7 +30,7 @@
 #include <vector>
 
 namespace ieda_contest {
-class ContestGuideNet;
+class ContestNet;
 
 class GuideParser
 {
@@ -38,8 +38,8 @@ class GuideParser
   GuideParser() = default;
   ~GuideParser() = default;
 
-  bool parse(std::string guide_file, std::vector<ContestGuideNet>& guide_nets);
-  bool save(std::string guide_file, std::vector<ContestGuideNet>& guide_nets);
+  bool parse(std::string guide_file, std::vector<ContestNet>& net_list);
+  bool save(std::string guide_file, std::vector<ContestNet>& net_list);
 
  private:
 };
