@@ -1384,7 +1384,7 @@ void DataManager::cutBlockageList()
       for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
         planar_enlarge_net_rect_list.push_back(enlarge_net_rect.get_rect());
       }
-      for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, planar_enlarge_net_rect_list)) {
+      for (PlanarRect& cutting_rect : RTUtil::getOpenCuttingRectListByBoost(blockage_rect, planar_enlarge_net_rect_list)) {
         Blockage routing_blockage;
         routing_blockage.set_real_rect(cutting_rect);
         routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
