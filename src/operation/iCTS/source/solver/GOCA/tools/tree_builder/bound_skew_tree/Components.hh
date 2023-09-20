@@ -69,6 +69,35 @@ class Pt
   }
   Pt(const double& t_x, const double& t_y) : x(t_x), y(t_y), max(0), min(0), val(0) {}
 
+  Pt operator+(const Pt& other) const { return Pt(x + other.x, y + other.y); }
+  Pt operator-(const Pt& other) const { return Pt(x - other.x, y - other.y); }
+  Pt operator*(const double& scale) const { return Pt(x * scale, y * scale); }
+  Pt operator/(const double& scale) const { return Pt(x / scale, y / scale); }
+  Pt operator+=(const Pt& other)
+  {
+    x += other.x;
+    y += other.y;
+    return *this;
+  }
+  Pt operator-=(const Pt& other)
+  {
+    x -= other.x;
+    y -= other.y;
+    return *this;
+  }
+  Pt operator*=(const double& scale)
+  {
+    x *= scale;
+    y *= scale;
+    return *this;
+  }
+  Pt operator/=(const double& scale)
+  {
+    x /= scale;
+    y /= scale;
+    return *this;
+  }
+
   double x = 0;
   double y = 0;
   double max = 0;
@@ -98,6 +127,10 @@ class Area
   };
   Area(Node* node) : _name(node->get_name())
   {
+    _pattern = node->get_pattern();
+    if (_pattern == RCPattern::kSingle) {
+      _pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+    }
     auto loc = node->get_location();
     auto x = 1.0 * loc.x() / Timing::getDbUnit();
     auto y = 1.0 * loc.y() / Timing::getDbUnit();

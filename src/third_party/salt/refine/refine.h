@@ -4,12 +4,13 @@
 
 namespace salt {
 
-class Refine {
-public:
-    static void CancelIntersect(Tree& tree);
-    static void Flip(Tree& tree);
-    static void UShift(Tree& tree);  // should be after Flip to achieve good quality
-    static void Substitute(Tree& tree, double eps, bool useRTree = true);
+class Refine
+{
+ public:
+  static void cancelIntersect(Tree& tree);
+  static void flip(Tree& tree);
+  static void uShift(Tree& tree);  // should be after flip to achieve good quality
+  static void substitute(Tree& tree, double eps, bool useRTree = true);
 };
 
 }  // namespace salt

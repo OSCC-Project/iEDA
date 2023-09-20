@@ -24,6 +24,7 @@
 
 #include "Inst.hh"
 #include "Pin.hh"
+#include "bound_skew_tree/BoundSkewTree.hh"
 namespace icts {
 /**
  * @brief TreeBuilder for GOCA
@@ -51,12 +52,20 @@ class TreeBuilder
   static void connect(Node* parent, Node* child);
   static void disconnect(Node* parent, Node* child);
   static void directConnectTree(Pin* driver, Pin* load);
+  static void fluteTree(Pin* driver, const std::vector<Pin*>& loads);
   static void shallowLightTree(Pin* driver, const std::vector<Pin*>& loads);
+
   static std::vector<Inst*> dmeTree(const std::string& net_name, const std::vector<Pin*>& loads,
                                     const std::optional<double>& skew_bound = std::nullopt,
                                     const std::optional<Point>& guide_loc = std::nullopt);
   static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                             const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt);
+                             const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+                             const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* beatSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
+                            const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+                            const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
+                        const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
   static void recoverNet(Net* net);
 
   static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);

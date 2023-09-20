@@ -107,42 +107,24 @@ double BST::distanceCost(Node* left, Node* right) const
 void BST::updateTiming(Node* node) const
 {
   // update timing
-  std::vector<Inst*> loads;
-  node->preOrder([&](Node* cur) {
-    if (cur->isPin() && cur->isLoad()) {
-      auto* pin = dynamic_cast<Pin*>(cur);
-      auto* inst = pin->get_inst();
-      loads.push_back(inst);
-    }
-  });
-  std::ranges::for_each(loads, [&](Inst* inst) {
-    if (inst->isSink()) {
-      return;
-    }
-    auto* driver_pin = inst->get_driver_pin();
-    auto* net = driver_pin->get_net();
-    if (net) {
-      TimingPropagator::update(net);
-    }
-    auto* load_pin = inst->get_load_pin();
-    if (load_pin->get_slew_in() == 0) {
-      TimingPropagator::initLoadPinDelay(load_pin);
-    } else {
-      TimingPropagator::updateCellDelay(inst);
-    }
-  });
   TimingPropagator::updateNetLen(node);
   TimingPropagator::updateCapLoad(node);
   TimingPropagator::updateWireDelay(node);
-  if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
-    if (node->get_max_delay() - node->get_min_delay() - _skew_bound < 1e-6) {
-      node->set_max_delay(node->get_min_delay() + _skew_bound);
-    }
+  if (node->get_max_delay() - node->get_min_delay() - _skew_bound < TimingPropagator::getEpisilon()) {
+    node->set_min_delay(node->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
   }
 }
 
 void BST::merge(Node* left, Node* right)
 {
+  auto fix_error = [&](Node* node) {
+    if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
+      LOG_ERROR << "exist skew error: " << TimingPropagator::calcSkew(node) - _skew_bound;
+      node->set_min_delay(node->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
+    }
+  };
+  fix_error(left);
+  fix_error(right);
   LOG_FATAL_IF(!TimingPropagator::skewFeasible(left, _skew_bound) || !TimingPropagator::skewFeasible(right, _skew_bound))
       << "Input node has skew violation";
   clearNode(left);
@@ -152,11 +134,6 @@ void BST::merge(Node* left, Node* right)
   auto right_js = _js_map[right];
   _mr_map[left] = Polygon({left_js.low(), left_js.high()});
   _mr_map[right] = Polygon({right_js.low(), right_js.high()});
-  // if (_js_map.at(left) == _js_map.at(right)) {
-  //   // fuse left and right
-  //   fuse(left, right);
-  //   return;
-  // }
   // normal merge
   auto mr = calcMergeRegion(left, right);
   auto loc = Point(-1, -1);
@@ -174,7 +151,7 @@ void BST::merge(Node* left, Node* right)
   TreeBuilder::connect(parent, right);
   updateTiming(parent);
   if (!TimingPropagator::skewFeasible(parent, _skew_bound)) {
-    parent = buffering(parent);  // will fix skew
+    skewFix(parent);  // will fix skew
     loc = parent->get_location();
     // mr = Polygon({loc});
   }
@@ -290,7 +267,7 @@ std::pair<double, double> BST::calcEndpointLoc(Node* left, Node* right) const
   auto ep_l = endPointByZeroSkew(left, right, left_min + _skew_bound, right_max);
   auto ep_r = endPointByZeroSkew(left, right, left_max, right_min + _skew_bound);
   if (ep_l > ep_r) {
-    if (std::fabs(ep_l - ep_r) < 1e-6) {
+    if (std::fabs(ep_l - ep_r) < TimingPropagator::getEpisilon()) {
       ep_r = ep_l;
     }
   }
@@ -368,9 +345,8 @@ void BST::timingInit()
   std::ranges::for_each(_unmerged_nodes, [&](Node* node) {
     LOG_FATAL_IF(!node->isPin()) << "Node: " << node->get_name() << " is not Pin";
     auto* pin = dynamic_cast<Pin*>(node);
-    if (pin->isBufferPin()) {
-      TimingPropagator::initLoadPinDelay(pin);
-    }
+    TimingPropagator::initLoadPinDelay(pin);
+    TimingPropagator::updatePinCap(pin);
     auto loc = node->get_location();
     _js_map[node] = Segment(loc, loc);
     _mr_map[node] = Polygon({loc});
@@ -450,7 +426,7 @@ Node* BST::buffering(Node* node)
   while (!TimingPropagator::skewFeasible(driver_pin, _skew_bound)) {
     skewFix(driver_pin);
     TimingPropagator::updateLoads(net);
-    TimingPropagator::update(net);
+    errorUpdate(net);
   }
   auto* load_pin = buffer->get_load_pin();
   TimingPropagator::initLoadPinDelay(load_pin);
@@ -572,9 +548,13 @@ void BST::wireSnaking(Node* node) const
     LOG_FATAL_IF(!node->isDriver()) << "wire snaking can only be applied to driver pin";
     auto* pin = dynamic_cast<Pin*>(node);
     auto* net = pin->get_net();
-    TimingPropagator::update(net);
+    errorUpdate(net);
   } else {
     updateTiming(node);
+    if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
+      LOG_ERROR << "exist skew error: " << TimingPropagator::calcSkew(node) - _skew_bound;
+      node->set_min_delay(node->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
+    }
   }
 }
 
@@ -714,6 +694,10 @@ void BST::skewFix(Node* start)
     updateTiming(start);
     return;
   }
+  if (start->isPin() && start->isLoad()) {
+    start->set_min_delay(start->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
+    return;
+  }
   auto min_insert_delay = TimingPropagator::getMinInsertDelay();
   size_t resize_limit = TimingPropagator::getDelayLibs().size();
 
@@ -747,6 +731,14 @@ void BST::skewFix(Node* start)
   }
   start->postOrder([&](Node* node) {
     updateTiming(node);
+    if (node != start) {
+      if (node->isPin() && node->isLoad()) {
+        if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
+          LOG_ERROR << "exist skew error: " << TimingPropagator::calcSkew(node) - _skew_bound;
+          node->set_min_delay(node->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
+        }
+      }
+    }
     if (TimingPropagator::skewFeasible(node, _skew_bound)) {
       return;
     }
@@ -758,28 +750,14 @@ void BST::skewFix(Node* start)
       if (low_skew > min_insert_delay) {
         // case 2 try to insert buffer
         auto* min_child = getMinDelayChild(node);
-        // auto* max_child = getMaxDelayChild(node);
-        // auto min_len = TimingPropagator::calcLen(node, min_child);
-        // auto max_len = TimingPropagator::calcLen(node, max_child);
-        // calc range
-        // if (max_len > 0.5 * TimingPropagator::getMaxLength()) {
-        // insertBuffer(node, max_child);
-        // } else {
         insertBuffer(node, min_child);
-        // }
       } else {
-        // case 3 try to wire snaking on pin node
-        wireSnaking(node);
-        if (start->isPin()) {
-          auto* driver_pin = dynamic_cast<Pin*>(start);
-          auto* net = driver_pin->get_net();
-          TimingPropagator::update(net);
-          if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
-            skewFix(node);
-          }
+        if (!TimingPropagator::skewFeasible(node, _skew_bound)) {
+          wireSnaking(node);
+          LOG_FATAL_IF(opt_step > 100) << "optimization step seems too long";
+          ++opt_step;
         }
       }
-      LOG_FATAL_IF(opt_step > 100) << "optimization step seems too long";
       ++opt_step;
     }
   });
@@ -871,6 +849,16 @@ void BST::topdown(Node* root) const
         }
       }
     });
+  }
+}
+
+void BST::errorUpdate(Net* net) const
+{
+  TimingPropagator::update(net);
+  auto* driver_pin = net->get_driver_pin();
+  if (!TimingPropagator::skewFeasible(driver_pin, _skew_bound)) {
+    LOG_ERROR << "exist skew error: " << TimingPropagator::calcSkew(driver_pin) - _skew_bound;
+    driver_pin->set_min_delay(driver_pin->get_max_delay() - _skew_bound + TimingPropagator::getEpisilon());
   }
 }
 
