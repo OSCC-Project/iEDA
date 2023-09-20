@@ -548,8 +548,8 @@ class Sta {
 
   std::mutex _mt;
 
-  TimeUnit _time_unit;
-  CapacitiveUnit _cap_unit;
+  TimeUnit _time_unit = TimeUnit::kNS;
+  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
   // Singleton sta.
   static Sta* _sta;
 
