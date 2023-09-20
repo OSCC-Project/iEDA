@@ -82,12 +82,12 @@ void GOCA::resolveSinks()
   _level_insts.push_back(insts);
   auto assigns = globalAssign();
   // clustering
-  const int max_num = 8000;
+  const int max_num = 15000;
   while (insts.size() > 1) {
     auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
     if (insts.size() > max_num) {
       LOG_INFO << "insts divide into " << std::ceil(insts.size() / max_num) << " clusters";
-      auto clusters = BalanceClustering::kMeans(insts, std::ceil(insts.size() / max_num), 0, 10, 5);
+      auto clusters = BalanceClustering::kMeans(insts, std::ceil(insts.size() / max_num), 0, 100, 5);
       insts.clear();
       std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
         auto assign_insts = assignApply(cluster, assign);
@@ -106,11 +106,6 @@ void GOCA::resolveSinks()
     ++_level;
   }
   auto* root = insts.front();
-  auto* driver_pin = root->get_driver_pin();
-  auto* net = driver_pin->get_net();
-  auto feasible_cell = TreeBuilder::feasibleCell(root, TimingPropagator::getSkewBound());
-  root->set_cell_master(feasible_cell.front());
-  TimingPropagator::update(net);
   TimingPropagator::initLoadPinDelay(root->get_load_pin());
   _top_pins.push_back(root->get_load_pin());
 }
@@ -320,13 +315,13 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
   }
 
   // build DME
-  auto bufs = TreeBuilder::dmeTree(_net_name, cluster_load_pins, skew_bound, guide_loc);
-  std::ranges::for_each(bufs, [&](Inst* inst) {
-    auto* driver_pin = inst->get_driver_pin();
-    auto* dme_net = driver_pin->get_net();
-    _nets.push_back(dme_net);
-  });
-  return bufs.back();
+  buffer = TreeBuilder::boundSkewTree(_net_name, cluster_load_pins, skew_bound, guide_loc);
+
+  driver_pin = buffer->get_driver_pin();
+  auto* bst_net = driver_pin->get_net();
+  _nets.push_back(bst_net);
+
+  return buffer;
 }
 Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
 {

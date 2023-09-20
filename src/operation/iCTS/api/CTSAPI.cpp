@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 // #include "Balancer.h"
+#include "BEAT.hh"
 #include "CtsCellLib.hh"
 #include "CtsConfig.h"
 #include "CtsDBWrapper.h"
@@ -35,11 +36,12 @@
 #include "Operator.h"
 // #include "Optimizer.h"
 #include "Pin.hh"
-#include "RTAPI.hpp"
+// #include "RTAPI.hpp"
 #include "Router.h"
 // #include "Synthesis.h"
 #include "TimingPropagator.hh"
 #include "ToApi.hpp"
+#include "TreeBuilder.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "builder.h"
@@ -48,6 +50,7 @@
 #include "model/ModelFactory.h"
 #include "model/mplHelper/MplHelper.h"
 #include "model/python/PyToolBase.h"
+#include "salt/base/flute.h"
 #include "salt/salt.h"
 #ifdef PY_MODEL
 #include "PyModel.h"
@@ -863,12 +866,55 @@ int CTSAPI::genId()
   return _design->nextId();
 }
 
-void CTSAPI::genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, const std::string& net_name)
+void CTSAPI::genFluteTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads)
 {
-  std::vector<Pin*> pins{driver};
+  std::vector<icts::Pin*> pins{driver};
   std::ranges::copy(loads, std::back_inserter(pins));
 
-  std::map<int, Node*> id_to_node;
+  std::unordered_map<int, Node*> id_to_node;
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+
+  for (size_t i = 0; i < pins.size(); ++i) {
+    auto pin = pins[i];
+    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
+    id_to_node[i] = pin;
+    salt_pins.push_back(salt_pin);
+  }
+  salt::Net net;
+  net.init(0, net_name, salt_pins);
+
+  salt::Tree tree;
+  salt::FluteBuilder flute_builder;
+  flute_builder.Run(net, tree);
+  tree.UpdateId();
+  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
+  auto source = tree.source;
+  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+    if (salt_node->id == source->id) {
+      return;
+    }
+    // steiner point, need to create a new node
+    if (salt_node->id > static_cast<int>(loads.size())) {
+      auto name = toString(net_name, "_", salt_node->id);
+      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
+      id_to_node[salt_node->id] = node;
+    }
+    // connect to parent
+    auto* current_node = id_to_node[salt_node->id];
+    auto parent_id = salt_node->parent->id;
+    auto* parent_node = id_to_node[parent_id];
+    current_node->set_parent(parent_node);
+    parent_node->add_child(current_node);
+  };
+  salt::TreeNode::preOrder(source, connect_node_func);
+}
+
+void CTSAPI::genShallowLightTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads)
+{
+  std::vector<icts::Pin*> pins{driver};
+  std::ranges::copy(loads, std::back_inserter(pins));
+
+  std::unordered_map<int, Node*> id_to_node;
   std::vector<std::shared_ptr<salt::Pin>> salt_pins;
 
   for (size_t i = 0; i < pins.size(); ++i) {
@@ -893,7 +939,7 @@ void CTSAPI::genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, co
     // steiner point, need to create a new node
     if (salt_node->id > static_cast<int>(loads.size())) {
       auto name = toString(net_name, "_", salt_node->id);
-      auto node = new Node(name, Point(salt_node->loc.x, salt_node->loc.y));
+      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
       id_to_node[salt_node->id] = node;
     }
     // connect to parent
@@ -903,7 +949,158 @@ void CTSAPI::genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, co
     current_node->set_parent(parent_node);
     parent_node->add_child(current_node);
   };
-  salt::TreeNode::PreOrder(source, connect_node_func);
+  salt::TreeNode::preOrder(source, connect_node_func);
+}
+
+icts::Inst* CTSAPI::genBeatSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads,
+                                    const std::optional<double>& skew_bound, const std::optional<icts::Point>& guide_loc,
+                                    const TopoType& topo_type)
+{
+  // build BST
+  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
+  auto* driver_pin = buf->get_driver_pin();
+  std::vector<Pin*> pins{driver_pin};
+  std::ranges::copy(loads, std::back_inserter(pins));
+
+  std::unordered_map<int, Node*> id_to_node;
+  std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+  // init
+  for (size_t i = 0; i < pins.size(); ++i) {
+    auto pin = pins[i];
+    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
+    id_to_node[i] = pin;
+    salt_pin_map[pin] = salt_pin;
+    salt_pins.push_back(salt_pin);
+  }
+  salt::Net salt_net;
+  salt_net.init(0, net_name, salt_pins);
+  // convert bound skew tree to salt data structure
+  std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
+  int id = pins.size();
+  driver_pin->preOrder([&](Node* node) {
+    auto loc = salt::Point(node->get_location().x(), node->get_location().y());
+    std::shared_ptr<salt::TreeNode> salt_node;
+    if (node->isPin()) {
+      auto salt_pin = salt_pin_map[dynamic_cast<Pin*>(node)];
+      salt_node = std::make_shared<salt::TreeNode>(loc, salt_pin, salt_pin->id);
+    } else {
+      salt_node = std::make_shared<salt::TreeNode>(loc, nullptr, id++);
+    }
+    salt_node_map[node] = salt_node;
+    if (node->get_parent()) {
+      auto salt_parent = salt_node_map[node->get_parent()];
+      salt_node->parent = salt_parent;
+      salt_parent->children.push_back(salt_node);
+    }
+  });
+  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
+  // BEAT Salt
+  icts::BeatSaltBuilder builder;
+  builder.run(salt_net, bound_skew_tree, 0);
+
+  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
+  icts::TreeBuilder::recoverNet(driver_pin->get_net());
+  auto source = bound_skew_tree.source;
+  buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
+  driver_pin = buf->get_driver_pin();
+  id_to_node[0] = driver_pin;
+  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+    if (salt_node->id == source->id) {
+      return;
+    }
+    // steiner point, need to create a new node
+    if (salt_node->id > static_cast<int>(loads.size())) {
+      auto name = toString(net_name, "_", salt_node->id);
+      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
+      id_to_node[salt_node->id] = node;
+    }
+    // connect to parent
+    auto* current_node = id_to_node[salt_node->id];
+    auto parent_id = salt_node->parent->id;
+    auto* parent_node = id_to_node[parent_id];
+    current_node->set_parent(parent_node);
+    parent_node->add_child(current_node);
+  };
+  salt::TreeNode::preOrder(source, connect_node_func);
+  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
+  icts::TimingPropagator::update(net);
+  return buf;
+}
+
+icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
+{
+  // build BST
+  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc);
+  auto* driver_pin = buf->get_driver_pin();
+  std::vector<Pin*> pins{driver_pin};
+  std::ranges::copy(loads, std::back_inserter(pins));
+
+  std::unordered_map<int, Node*> id_to_node;
+  std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+  // init
+  for (size_t i = 0; i < pins.size(); ++i) {
+    auto pin = pins[i];
+    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
+    id_to_node[i] = pin;
+    salt_pin_map[pin] = salt_pin;
+    salt_pins.push_back(salt_pin);
+  }
+  salt::Net salt_net;
+  salt_net.init(0, net_name, salt_pins);
+  // convert bound skew tree to salt data structure
+  std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
+  int id = pins.size();
+  driver_pin->preOrder([&](Node* node) {
+    auto loc = salt::Point(node->get_location().x(), node->get_location().y());
+    std::shared_ptr<salt::TreeNode> salt_node;
+    if (node->isPin()) {
+      auto salt_pin = salt_pin_map[dynamic_cast<Pin*>(node)];
+      salt_node = std::make_shared<salt::TreeNode>(loc, salt_pin, salt_pin->id);
+    } else {
+      salt_node = std::make_shared<salt::TreeNode>(loc, nullptr, id++);
+    }
+    salt_node_map[node] = salt_node;
+    if (node->get_parent()) {
+      auto salt_parent = salt_node_map[node->get_parent()];
+      salt_node->parent = salt_parent;
+      salt_parent->children.push_back(salt_node);
+    }
+  });
+  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
+  // BEAT Salt
+  icts::BeatBuilder beat_builder;
+  beat_builder.run(salt_net, bound_skew_tree, 0);
+
+  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
+  icts::TreeBuilder::recoverNet(driver_pin->get_net());
+  auto source = bound_skew_tree.source;
+  buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
+  driver_pin = buf->get_driver_pin();
+  id_to_node[0] = driver_pin;
+  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+    if (salt_node->id == source->id) {
+      return;
+    }
+    // steiner point, need to create a new node
+    if (salt_node->id > static_cast<int>(loads.size())) {
+      auto name = toString(net_name, "_", salt_node->id);
+      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
+      id_to_node[salt_node->id] = node;
+    }
+    // connect to parent
+    auto* current_node = id_to_node[salt_node->id];
+    auto parent_id = salt_node->parent->id;
+    auto* parent_node = id_to_node[parent_id];
+    current_node->set_parent(parent_node);
+    parent_node->add_child(current_node);
+  };
+  salt::TreeNode::preOrder(source, connect_node_func);
+  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
+  icts::TimingPropagator::update(net);
+  return buf;
 }
 
 // evaluate
@@ -1069,7 +1266,7 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   auto* inst = eval_net.get_instance(name);
   if (inst == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
-    if (string_list.size() == 2 && (string_list[0] == "steiner" || string_list[0] == "salt")) {
+    if (string_list.size() == 2 && (string_list[0] == "steiner" || string_list[0] == "Salt")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;

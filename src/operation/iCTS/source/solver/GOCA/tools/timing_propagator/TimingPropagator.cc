@@ -115,6 +115,9 @@ void TimingPropagator::updatePinCap(Pin* pin)
   }
   if (pin->isBufferPin()) {
     auto cell_name = pin->get_cell_master();
+    if (cell_name.empty()) {
+      return;
+    }
     auto* lib = CTSAPIInst.getCellLib(cell_name);
     cap_load = lib->get_init_cap();
   }
@@ -154,7 +157,6 @@ void TimingPropagator::netLenPropagate(Net* net)
  */
 void TimingPropagator::capPropagate(Net* net)
 {
-  auto* driver_pin = net->get_driver_pin();
   std::ranges::for_each(net->get_load_pins(), [](Pin* pin) {
     double cap_load = 0;
     if (pin->isSinkPin()) {
@@ -170,6 +172,7 @@ void TimingPropagator::capPropagate(Net* net)
     }
     pin->set_cap_load(cap_load);
   });
+  auto* driver_pin = net->get_driver_pin();
   driver_pin->postOrder(updateCapLoad<Node>);
 }
 /**
@@ -264,7 +267,12 @@ double TimingPropagator::calcSkew(Node* node)
 bool TimingPropagator::skewFeasible(Node* node, const std::optional<double>& skew_bound)
 {
   auto skew = calcSkew(node);
-  return skew <= skew_bound.value_or(_skew_bound) || (skew - skew_bound.value_or(_skew_bound)) < 1e-6;
+  auto delta = skew - skew_bound.value_or(_skew_bound);
+  if (delta > 0 && delta < _epsilon) {
+    node->set_min_delay(node->get_max_delay() - skew_bound.value_or(_skew_bound));
+    return true;
+  }
+  return skew <= skew_bound.value_or(_skew_bound);
 }
 /**
  * @brief init load pin delay (predict cell delay by cell)
@@ -277,12 +285,16 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
   LOG_FATAL_IF(!pin->isLoad()) << "The pin: " << pin->get_name() << " is not load pin";
   auto* inst = pin->get_inst();
   if (inst->isSink()) {
-    return;
+    pin->set_min_delay(0);
+    pin->set_max_delay(0);
   } else {
     auto* driver_pin = inst->get_driver_pin();
     double insert_delay = 0;
     if (by_cell) {
       auto cell_name = pin->get_cell_master();
+      if (cell_name.empty()) {
+        return;
+      }
       for (auto* lib : _delay_libs) {
         if (lib->get_cell_master() == cell_name) {
           auto cap_coef = lib->get_delay_coef().back();

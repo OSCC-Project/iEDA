@@ -182,6 +182,7 @@ class TimingPropagator
   static icts::CtsCellLib* getMinSizeLib() { return _delay_libs.front(); }
   static icts::CtsCellLib* getMaxSizeLib() { return _delay_libs.back(); }
   static std::vector<icts::CtsCellLib*> getDelayLibs() { return _delay_libs; }
+  static double getEpisilon() { return _epsilon; }
   // node based
   /**
    * @brief update net's wirelength
@@ -292,6 +293,11 @@ class TimingPropagator
   static double calcCapLoad(T* node, const RCPattern& pattern = RCPattern::kSingle)
   {
     double cap_load = 0;
+    if constexpr (LoadPinAble<T>) {
+      if (node->isLoad()) {
+        cap_load = node->get_cap_load();
+      }
+    }
     auto accumulate_cap = [&cap_load, &node, &pattern](T* child) {
       switch (pattern) {
         // normal rc pattern
@@ -347,9 +353,10 @@ class TimingPropagator
       // normal rc pattern
       case RCPattern::kSingle: {
         auto len = calcLen(parent, child);
-        delay = calcElmoreDelay(cap_load, len);
         if constexpr (SnakeAble<T>) {
-          delay += calcElmoreDelay(cap_load + _unit_cap * len, child->get_required_snake());
+          delay = calcElmoreDelay(cap_load, len + child->get_required_snake());
+        }else{
+          delay = calcElmoreDelay(cap_load, len);
         }
         break;
       }
@@ -376,7 +383,7 @@ class TimingPropagator
    * @return auto
    */
   template <LocAble T>
-  static auto calcLen(T parent, T child, const LayerPattern& pattern = LayerPattern::kNone)
+  static auto calcLen(T& parent, T& child, const LayerPattern& pattern = LayerPattern::kNone)
   {
     auto parent_loc = parent.get_location();
     auto child_loc = child.get_location();
@@ -419,7 +426,7 @@ class TimingPropagator
    * @return auto
    */
   template <LocAble T>
-  static auto calcDist(T parent, T child, const LayerPattern& pattern = LayerPattern::kNone)
+  static auto calcDist(T& parent, T& child, const LayerPattern& pattern = LayerPattern::kNone)
   {
     auto parent_loc = parent.get_location();
     auto child_loc = child.get_location();
@@ -460,6 +467,7 @@ class TimingPropagator
   }
 
  private:
+  constexpr static double _epsilon = 5e-5;
   static double _unit_cap;  // pf
   static double _unit_res;  // ohm
   static double _unit_h_cap;

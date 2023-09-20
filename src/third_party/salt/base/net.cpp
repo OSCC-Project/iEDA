@@ -39,7 +39,7 @@ bool Net::Read(istream& is) {
     istringstream iss(buf);
     iss >> id >> name >> numPin >> option;
     assert(numPin > 0);
-    withCap = (option == "-cap");
+    with_cap = (option == "-cap");
 
     // pins
     int i;
@@ -48,7 +48,7 @@ bool Net::Read(istream& is) {
     pins.resize(numPin);
     for (auto& pin : pins) {
         is >> i >> x >> y;
-        if (withCap) is >> c;
+        if (with_cap) is >> c;
         pin = make_shared<Pin>(x, y, i, c);
     }
 
@@ -67,7 +67,7 @@ void Net::Read(const string& fileName) {
 string Net::GetHeader() const {
     string header = to_string(id) + " " + name + " " + to_string(pins.size());
     // string header = name + " " + to_string(pins.size());
-    if (withCap) header += " -cap";
+    if (with_cap) header += " -cap";
     return header;
 }
 
@@ -78,7 +78,7 @@ void Net::Write(ostream& os) const {
     // pins
     for (const auto& pin : pins) {
         os << pin->id << " " << pin->loc.x << " " << pin->loc.y;
-        if (withCap) os << " " << pin->cap;
+        if (with_cap) os << " " << pin->cap;
         os << endl;
     }
 }
