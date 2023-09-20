@@ -22,8 +22,8 @@
 
 #include <ranges>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "TreeBuilder.hh"
 namespace icts {
 double TimingPropagator::_unit_cap = 0;

@@ -15,7 +15,7 @@ add_subdirectory(${ICTS_PYTHON})
 add_subdirectory(${ICTS_MPL_HELPER})
 
 set(CMAKE_CXX_STANDARD 17)
-add_library(icts_model ${ICTS_MODEL}/ModelFactory.cpp)
+add_library(icts_model ${ICTS_MODEL}/ModelFactory.cc)
 
 find_package(Eigen3 QUIET REQUIRED)
 message(STATUS "CTS: Eigen3 ${EIGEN3_INCLUDE_DIR}")

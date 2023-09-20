@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include "tcl_cts.h"
 
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 #include "tool_manager.h"
 
 namespace tcl {

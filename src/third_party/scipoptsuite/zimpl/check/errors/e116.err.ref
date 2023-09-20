@@ -1,4 +1,0 @@
-*** Error 116: Illegal value type in min: "a" only numbers are possible
-*** File: e116.zpl Line 2
-*** param a := min(2, 3, "a");
-***                         ^^^
