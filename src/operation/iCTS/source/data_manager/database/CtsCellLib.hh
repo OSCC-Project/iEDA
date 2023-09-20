@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsCellLib.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <algorithm>
@@ -24,7 +28,7 @@
 #include <tuple>
 #include <vector>
 
-#include "ModelFactory.h"
+#include "ModelFactory.hh"
 
 namespace icts {
 

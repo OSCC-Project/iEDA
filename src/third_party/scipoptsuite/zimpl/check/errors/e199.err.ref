@@ -1,4 +1,0 @@
-*** Error 199: Constants are not allowed in SOS declarations
-*** File: e199.zpl Line 4
-*** sos c2: type1 priority 100 : sum <i> in I : i * x[i] + 3;
-***                                                         ^^^

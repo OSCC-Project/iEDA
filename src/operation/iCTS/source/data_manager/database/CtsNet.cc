@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsNet.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #include "CtsNet.hh"
 
 #include "log/Log.hh"
@@ -117,7 +121,7 @@ std::vector<CtsSignalWire>& CtsNet::get_signal_wires()
     for (auto* load_pin : get_load_pins()) {
       auto* load_inst = load_pin->get_instance();
       Endpoint second = {load_inst->get_name(), load_inst->get_location()};
-      addSignalWire(CtsSignalWire(first, second));
+      add_signal_wire(CtsSignalWire(first, second));
     }
   }
   return _signal_wires;

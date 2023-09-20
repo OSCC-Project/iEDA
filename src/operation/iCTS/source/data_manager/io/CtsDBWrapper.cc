@@ -14,9 +14,13 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "CtsDBWrapper.h"
+/**
+ * @file CtsDBWrapper.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "CtsDBWrapper.hh"
 
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 
 namespace icts {
 
@@ -152,6 +156,11 @@ IdbNet* CtsDBWrapper::ctsToIdb(CtsNet* net)
   return idb_net;
 }
 
+IdbCoordinate<int32_t> CtsDBWrapper::ctsToIdb(const Point& loc) const
+{
+  return IdbCoordinate<int32_t>(loc.x(), loc.y());
+}
+
 bool CtsDBWrapper::isValidPin(IdbPin* idb_pin) const
 {
   auto idb_pin_type = idb_pin->get_term()->get_type();
@@ -272,11 +281,6 @@ CtsPinType CtsDBWrapper::idbToCts(IdbConnectType idb_pin_type, IdbConnectDirecti
     pin_type = CtsPinType::kOther;
   }
   return pin_type;
-}
-
-Rectangle CtsDBWrapper::idbToCts(IdbRect& rect) const
-{
-  return Rectangle(rect.get_low_x(), rect.get_low_y(), rect.get_high_x(), rect.get_high_y());
 }
 
 Point CtsDBWrapper::idbToCts(IdbCoordinate<int32_t>& coord) const
@@ -408,7 +412,7 @@ IdbRow* CtsDBWrapper::findRow(const Point& loc) const
 {
   auto* rows = _idb_layout->get_rows();
   for (auto row : rows->get_row_list()) {
-    auto* bounding_box = row->get_bounding_box();
+    auto bounding_box = row->get_bounding_box();
     if (bounding_box->get_low_y() == loc.y()) {
       return row;
     }
@@ -416,27 +420,26 @@ IdbRow* CtsDBWrapper::findRow(const Point& loc) const
   return nullptr;
 }
 
-Rectangle CtsDBWrapper::get_bounding_box(CtsInstance* inst) const
+IdbRect CtsDBWrapper::get_bounding_box(CtsInstance* inst) const
 {
-  string cell_master_name = inst->get_cell_master();
-
   int lx = inst->get_location().x();
   int ly = inst->get_location().y();
 
-  IdbCellMasterList* cell_master_list = _idb_layout->get_cell_master_list();
+  auto cell_master_name = inst->get_cell_master();
+  auto* cell_master_list = _idb_layout->get_cell_master_list();
   auto* cell_master = cell_master_list->find_cell_master(cell_master_name);
 
   if (cell_master != nullptr) {
-    return Rectangle(lx, ly, lx + cell_master->get_width(), ly + cell_master->get_height());
+    return IdbRect(lx, ly, lx + cell_master->get_width(), ly + cell_master->get_height());
   } else {
-    return Rectangle(lx, ly, lx, ly);
+    return IdbRect(lx, ly, lx, ly);
   }
 }
 
-Rectangle CtsDBWrapper::get_core_bounding_box() const
+IdbRect* CtsDBWrapper::get_core_bounding_box() const
 {
-  IdbRect* idb_core_box = _idb_layout->get_core()->get_bounding_box();
-  return idbToCts(*idb_core_box);
+  auto* idb_core_box = _idb_layout->get_core()->get_bounding_box();
+  return idb_core_box;
 }
 
 int CtsDBWrapper::get_site_width() const
@@ -459,8 +462,8 @@ int CtsDBWrapper::get_row_num() const
 {
   // auto &rows = _idb_layout->get_rows()->get_row_list();
   // return rows.size();
-  auto bound = get_core_bounding_box();
-  return (bound.high().y() - bound.low().y()) / get_site_height();
+  auto* bound = get_core_bounding_box();
+  return bound->get_height() / get_site_height();
 }
 
 int CtsDBWrapper::get_site_num() const
@@ -468,33 +471,8 @@ int CtsDBWrapper::get_site_num() const
   // auto& rows = _idb_layout->get_rows()->get_row_list();
   // IdbRow* row = rows.front();
   // return row->get_site_count();
-  auto bound = get_core_bounding_box();
-  return (bound.high().x() - bound.low().x()) / get_site_width();
-}
-
-vector<Rectangle> CtsDBWrapper::get_blockages()
-{
-  vector<Rectangle> rects;
-
-  vector<IdbInstance*>& idb_insts = _idb_design->get_instance_list()->get_instance_list();
-  for (auto idb_inst : idb_insts) {
-    auto* inst_box = idb_inst->get_bounding_box();
-    rects.emplace_back(idbToCts(*inst_box));
-  }
-
-  vector<IdbBlockage*> idb_blockages = _idb_design->get_blockage_list()->get_blockage_list();
-  for (auto* blockage : idb_blockages) {
-    auto blockage_rect_list = blockage->get_rect_list();
-    if (blockage_rect_list.empty()) {
-      LOG_WARNING << "rectangles of blockage are empty!";
-      continue;
-    }
-    for (auto* blockage_rect : blockage_rect_list) {
-      rects.push_back(idbToCts(*blockage_rect));
-    }
-  }
-
-  return rects;
+  auto* bound = get_core_bounding_box();
+  return bound->get_width() / get_site_width();
 }
 
 Point CtsDBWrapper::getPinLoc(CtsPin* pin)
@@ -517,8 +495,8 @@ bool CtsDBWrapper::withinCore(const Point& loc) const
 {
   auto* idb_core = _idb_layout->get_core();
   auto* core_box = idb_core->get_bounding_box();
-  Rectangle rect = idbToCts(*core_box);
-  return gtl::contains(rect, loc);
+  auto pt = ctsToIdb(loc);
+  return core_box->containPoint(pt);
 }
 
 }  // namespace icts

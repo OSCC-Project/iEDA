@@ -14,11 +14,15 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsSignalWire.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <string>
 
-#include "pgl.h"
+#include "CtsPoint.hh"
 
 namespace icts {
 
@@ -46,8 +50,6 @@ class CtsSignalWire
 
   void set_first(const Endpoint& end_point) { _wire.first = end_point; }
   void set_second(const Endpoint& end_point) { _wire.second = end_point; }
-
-  int getWireLength() const { return static_cast<int>(gtl::manhattan_distance(_wire.first.point, _wire.second.point)); }
 
  private:
   std::pair<Endpoint, Endpoint> _wire;

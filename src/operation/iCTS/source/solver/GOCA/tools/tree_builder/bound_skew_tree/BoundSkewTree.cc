@@ -22,8 +22,8 @@
 
 #include <numbers>
 #include <random>
+#include <stack>
 
-#include "GeomOperator.hh"
 #include "TreeBuilder.hh"
 namespace icts {
 namespace bst {

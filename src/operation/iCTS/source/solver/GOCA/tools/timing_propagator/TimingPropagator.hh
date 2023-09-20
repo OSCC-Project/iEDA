@@ -22,7 +22,7 @@
 #include <concepts>
 
 #include "CtsCellLib.hh"
-#include "CtsConfig.h"
+#include "CtsConfig.hh"
 #include "Inst.hh"
 #include "Net.hh"
 #include "Node.hh"

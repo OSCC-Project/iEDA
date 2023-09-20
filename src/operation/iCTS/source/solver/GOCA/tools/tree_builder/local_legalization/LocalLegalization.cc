@@ -21,7 +21,7 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 
-#include "CtsDBWrapper.h"
+#include "CtsDBWrapper.hh"
 namespace icts {
 LocalLegalization::LocalLegalization(Inst* inst, const std::vector<Pin*>& load_pins)
 {

@@ -1,1 +1,0 @@
-GCCWARN += -Wno-cast-align

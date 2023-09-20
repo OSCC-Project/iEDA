@@ -1,4 +1,0 @@
-*** Error 133: Unknown symbol "b"
-*** File: e133_9.zpl Line 2
-*** set I   := {1,b,3};
-***                  ^^^

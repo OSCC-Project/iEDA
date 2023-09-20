@@ -18,7 +18,7 @@
 
 #include <tool_manager.h>
 
-#include <CTSAPI.hpp>
+#include <CTSAPI.hh>
 namespace python_interface {
 bool ctsAutoRun(const std::string& cts_config)
 {

@@ -1,4 +1,0 @@
-*** Error 204: Randomfunction parameter minimum= 5 >= maximum= 3
-*** File: e204.zpl Line 2
-*** param r := random(5,3);
-***                   ^^^

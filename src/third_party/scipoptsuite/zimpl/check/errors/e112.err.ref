@@ -1,4 +1,0 @@
-*** Error 112: Exponent value 2.5 is too big or not an integer
-*** File: e112.zpl Line 2
-*** param a := 3^2.5;
-***                 ^^^
