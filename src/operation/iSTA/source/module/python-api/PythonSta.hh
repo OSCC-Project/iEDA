@@ -75,15 +75,15 @@ bool read_netlist(const std::string& file_name) {
 }
 
 /**
- * @brief load liberty.
+ * @brief load liberty files.
  *
- * @param file_name
+ * @param lib_files
  * @return true
  * @return false
  */
-bool read_liberty(const std::string& file_name) {
+bool read_liberty(std::vector<std::string>& lib_files) {
   auto* ista = ista::Sta::getOrCreateSta();
-  ista->readLiberty(file_name.c_str());
+  ista->readLiberty(lib_files);
   return true;
 }
 
