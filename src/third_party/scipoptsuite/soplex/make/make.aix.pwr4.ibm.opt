@@ -1,8 +1,0 @@
-CXX	=	xlC_r
-CPPFLAGS=	-Isrc -DNDEBUG 
-CXXFLAGS=	-O3 -q32 -qmaxmem=-1 -qarch=auto -qtune=auto -qcache=auto \
-		-qnoeh -qlibansi -qignerrno -qsuppress=1540-1405
-LDFLAGS	=	-lm
-ARFLAGS	=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

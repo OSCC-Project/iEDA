@@ -9,8 +9,8 @@ endif()
 add_library(icts_mpl_helper INTERFACE)
 
 if(PY_MODEL)
-  target_link_libraries(icts_mpl_helper INTERFACE icts_python icts_polygon)
+  target_link_libraries(icts_mpl_helper INTERFACE icts_python)
 
   target_include_directories(
-    icts_mpl_helper INTERFACE ${ICTS_MPL_HELPER} ${ICTS_PYTHON} ${ICTS_POLYGON})
+    icts_mpl_helper INTERFACE ${ICTS_MPL_HELPER} ${ICTS_PYTHON})
 endif()

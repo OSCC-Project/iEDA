@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsPin.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #include "CtsPin.hh"
 
 namespace icts {

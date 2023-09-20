@@ -150,3 +150,7 @@ diff -r ./base/net.h {ORIGIN REPOSITORY}/src/salt/base/net.h
 > 
 >     friend ostream& operator<<(ostream& os, const Net& net) { net.Write(os); return os; }
 ```
+
+### Rename variable
+
+Changing some variable names and function names for the uniform naming convention does not change the code logic

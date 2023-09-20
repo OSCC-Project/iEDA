@@ -22,13 +22,11 @@
 
 #include <unordered_set>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "LocalLegalization.hh"
 #include "Node.hh"
 #include "TimingPropagator.hh"
-#include "bound_skew_tree/BST.hh"
-#include "bound_skew_tree/BoundSkewTree.hh"
 namespace icts {
 
 /**
@@ -235,6 +233,16 @@ void TreeBuilder::directConnectTree(Pin* driver, Pin* load)
   load->set_parent(driver);
 }
 /**
+ * @brief Flute Tree
+ *
+ * @param driver
+ * @param loads
+ */
+void TreeBuilder::fluteTree(Pin* driver, const std::vector<Pin*>& loads)
+{
+  CTSAPIInst.genFluteTree("Flute", driver, loads);
+}
+/**
  * @brief shallow light tree
  *
  * @param loads
@@ -242,26 +250,7 @@ void TreeBuilder::directConnectTree(Pin* driver, Pin* load)
  */
 void TreeBuilder::shallowLightTree(Pin* driver, const std::vector<Pin*>& loads)
 {
-  CTSAPIInst.genShallowLightTree(driver, loads);
-}
-/**
- * @brief DME tree
- *
- * @param net_name
- * @param loads
- * @param skew_bound
- * @param guide_loc
- * @return std::vector<Inst*>
- */
-std::vector<Inst*> TreeBuilder::dmeTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                                        const std::optional<double>& skew_bound, const std::optional<Point>& guide_loc)
-{
-  auto solver = BST(net_name, loads, skew_bound);
-  if (guide_loc.has_value()) {
-    solver.set_root_guide(*guide_loc);
-  }
-  solver.run();
-  return solver.getInsertBufs();
+  CTSAPIInst.genShallowLightTree("Salt", driver, loads);
 }
 /**
  * @brief bound skew tree
@@ -270,18 +259,49 @@ std::vector<Inst*> TreeBuilder::dmeTree(const std::string& net_name, const std::
  * @param loads
  * @param skew_bound
  * @param guide_loc
+ * @param topo_type
  * @return Inst*
  */
 Inst* TreeBuilder::boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
-                                 const std::optional<Point>& guide_loc)
+                                 const std::optional<Point>& guide_loc, const TopoType& topo_type)
 {
-  auto solver = bst::BoundSkewTree(net_name, loads, skew_bound);
+  auto solver = bst::BoundSkewTree(net_name, loads, skew_bound, topo_type);
   if (guide_loc.has_value()) {
     solver.set_root_guide(*guide_loc);
   }
   solver.run();
   solver.convert();
   return solver.get_root_buf();
+}
+/**
+ * @brief BEAT Salt Tree
+ *
+ * @param net_name
+ * @param loads
+ * @param skew_bound
+ * @param guide_loc
+ * @param topo_type
+ * @return Inst*
+ */
+Inst* TreeBuilder::beatSaltTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                                const std::optional<Point>& guide_loc, const TopoType& topo_type)
+{
+  return CTSAPIInst.genBeatSaltTree(net_name, loads, skew_bound, guide_loc, topo_type);
+}
+/**
+ * @brief BEAT Tree
+ *
+ * @param net_name
+ * @param loads
+ * @param skew_bound
+ * @param guide_loc
+ * @param topo_type
+ * @return Inst*
+ */
+Inst* TreeBuilder::beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                            const std::optional<Point>& guide_loc, const TopoType& topo_type)
+{
+  return CTSAPIInst.genBeatTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 /**
  * @brief recover net
@@ -392,8 +412,8 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
     } else {
       out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ",'ob')\n";
     }
-    // out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << node->get_min_delay() << ","
-    //     << node->get_max_delay() << "]')\n";
+    // out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << std::fixed << std::setprecision(4)
+    //     << node->get_cap_load() << "]')\n";
     auto* parent = node->get_parent();
     if (parent) {
       out << "plt.plot([" << parent->get_location().x() << "," << node->get_location().x() << "],"

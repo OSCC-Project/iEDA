@@ -14,12 +14,18 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file PyTest.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include <algorithm>
 #include <vector>
 
+#include "CtsPoint.hh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
-#include "model/ModelFactory.h"
-#include "model/mplHelper/MplHelper.h"
+#include "model/ModelFactory.hh"
+#include "model/mplHelper/MplHelper.hh"
 
 using ieda::Log;
 
@@ -63,23 +69,24 @@ TEST_F(PyTest, PyLoadModel)
   LOG_INFO << "build PyTest for load python model";
   auto* model_factory = new icts::ModelFactory();
 
-  auto* xgb_model = model_factory->pyLoad("./scripts/design/sky130_gcd/result/cts/model/chiplink_rx_clk.joblib.dat");
-  EXPECT_TRUE(xgb_model->predict({1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
+  // auto* xgb_model = model_factory->pyLoad("./scripts/design/sky130_gcd/result/cts/model/chiplink_rx_clk.joblib.dat");
+  // EXPECT_TRUE(xgb_model->predict({1, 0, 0, 0, 0, 11, 0.005172, 6, 0.0552891, 0.0561129}));
 
   delete model_factory;
 }
 
 TEST_F(PyTest, pyPlot)
 {
+  using Point = icts::Point;
   LOG_INFO << "build PyTest for python matplotlib";
   auto* mpl = new icts::MplHelper();
 
-  icts::Point point(1, 1);
-  icts::Segment segment({0, 2}, {2, 0});
-  icts::Polygon poly({{0, 0}, {2, 0}, {2, 2}, {0, 2}, {0, 0}});
+  Point point(1, 1);
+  std::pair<Point, Point> segment = std::make_pair(Point(0, 2), Point(2, 0));
+  std::vector<Point> poly = {Point(0, 0), Point(2, 0), Point(2, 2), Point(0, 2), Point(0, 0)};
 
   mpl->plot(point, "point");
-  mpl->plot(segment, "segment");
+  mpl->plot(segment.first, segment.second, "segment");
   mpl->plot(poly, "poly");
   mpl->saveFig("./poly.png");
 

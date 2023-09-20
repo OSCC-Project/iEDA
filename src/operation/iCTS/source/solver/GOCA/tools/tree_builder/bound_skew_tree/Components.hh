@@ -22,7 +22,6 @@
 
 #include "TimingPropagator.hh"
 #include "log/Log.hh"
-#include "pgl.h"
 namespace icts {
 namespace bst {
 /**
@@ -39,8 +38,8 @@ constexpr static size_t kHead = 0;
 constexpr static size_t kTail = 1;
 constexpr static size_t kLeft = 0;
 constexpr static size_t kRight = 1;
-constexpr static size_t kMax = 0;
-constexpr static size_t kMin = 1;
+constexpr static size_t kMin = 0;
+constexpr static size_t kMax = 1;
 constexpr static size_t kX = 0;
 constexpr static size_t kY = 1;
 constexpr static size_t kH = 0;
@@ -68,6 +67,35 @@ class Pt
   {
   }
   Pt(const double& t_x, const double& t_y) : x(t_x), y(t_y), max(0), min(0), val(0) {}
+
+  Pt operator+(const Pt& other) const { return Pt(x + other.x, y + other.y); }
+  Pt operator-(const Pt& other) const { return Pt(x - other.x, y - other.y); }
+  Pt operator*(const double& scale) const { return Pt(x * scale, y * scale); }
+  Pt operator/(const double& scale) const { return Pt(x / scale, y / scale); }
+  Pt operator+=(const Pt& other)
+  {
+    x += other.x;
+    y += other.y;
+    return *this;
+  }
+  Pt operator-=(const Pt& other)
+  {
+    x -= other.x;
+    y -= other.y;
+    return *this;
+  }
+  Pt operator*=(const double& scale)
+  {
+    x *= scale;
+    y *= scale;
+    return *this;
+  }
+  Pt operator/=(const double& scale)
+  {
+    x /= scale;
+    y /= scale;
+    return *this;
+  }
 
   double x = 0;
   double y = 0;
@@ -98,6 +126,10 @@ class Area
   };
   Area(Node* node) : _name(node->get_name())
   {
+    _pattern = node->get_pattern();
+    if (_pattern == RCPattern::kSingle) {
+      _pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+    }
     auto loc = node->get_location();
     auto x = 1.0 * loc.x() / Timing::getDbUnit();
     auto y = 1.0 * loc.y() / Timing::getDbUnit();
