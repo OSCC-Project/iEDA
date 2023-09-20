@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "BalanceClustering.hh"
 #include "Components.hh"
 #include "GeomCalc.hh"
 #include "Inst.hh"
@@ -30,12 +31,21 @@
 #include "Pin.hh"
 
 namespace icts {
+enum class TopoType
+{
+  kGreedyDist,
+  kGreedyMerge,
+  kBiPartition,
+  kBiCluster,
+  kInputTopo,
+};
 namespace bst {
 /**
  * @brief Tool namespace
  *
  */
 using Geom = GeomCalc;
+using Cluster = BalanceClustering;
 /**
  * @brief bound skew tree
  *
@@ -43,7 +53,8 @@ using Geom = GeomCalc;
 class BoundSkewTree
 {
  public:
-  BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound = std::nullopt);
+  BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound = std::nullopt,
+                const TopoType& topo_type = TopoType::kGreedyDist);
   BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound = std::nullopt);
   ~BoundSkewTree() = default;
 
@@ -69,15 +80,33 @@ class BoundSkewTree
    */
   using CostFunc = std::function<double(Area*, Area*)>;
   Match getBestMatch(CostFunc cost_func) const;
-  double skewCost(Area* left, Area* right);
+  double mergeCost(Area* left, Area* right) const;
   double distanceCost(Area* left, Area* right) const;
-
+  /**
+   * @brief topology
+   *
+   */
+  Area* merge(Area* left, Area* right) const;
+  void areaReset();
+  void ptReset(Area* cur);
+  void biPartition();
+  Area* biPartition(std::vector<Area*>& areas) const;
+  std::pair<std::vector<Area*>, std::vector<Area*>> octagonDivide(std::vector<Area*>& areas) const;
+  std::vector<Pt> calcOctagon(const std::vector<Area*>& areas) const;
+  std::vector<Area*> areaOnOctagonBound(const std::vector<Area*> areas, const std::vector<Pt>& octagon) const;
+  void biCluster();
+  Area* biCluster(const std::vector<Area*>& areas) const;
+  std::vector<std::vector<Area*>> kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
+                                         const size_t& max_iter = 10) const;
   /**
    * @brief flow require
    *
    */
   // main flow
   void bottomUp();
+  void bottomUpAllPairBased();
+  void bottomUpTopoBased();
+  void recursiveBottomUp(Area* cur);
   void topDown();
 
   // main interface
@@ -156,6 +185,7 @@ class BoundSkewTree
   void updatePtDelaysByEndSide(Area* cur, const size_t& end_side, Pt& pt) const;
   void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line) const;
   double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
+  double ptDelayIncrease(Pt& p1, Pt& p2, const double& len, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
   double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
   double ptSkew(const Pt& pt) const;
   Line getJrLine(const size_t& side) const;
@@ -180,6 +210,7 @@ class BoundSkewTree
   std::vector<Area*> _unmerged_nodes;
   std::unordered_map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;
+  TopoType _topo_type = TopoType::kInputTopo;
 
   Area* _root = nullptr;
 

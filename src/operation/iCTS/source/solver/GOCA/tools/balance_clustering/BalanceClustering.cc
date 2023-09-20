@@ -65,7 +65,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
     for (size_t i = 0; i < num_instances; i++) {
       double min_distance = std::numeric_limits<double>::max();
       for (size_t j = 0; j < centers.size(); j++) {
-        double distance = pgl::manhattan_distance(insts[i]->get_location(), centers[j]);
+        double distance = TimingPropagator::calcDist(insts[i]->get_location(), centers[j]);
         min_distance = std::min(min_distance, distance);
       }
       distances[i] = min_distance * min_distance;  // square distance
@@ -85,7 +85,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
       double min_distance = std::numeric_limits<double>::max();
       int min_center_index = -1;
       for (size_t j = 0; j < centers.size(); j++) {
-        double distance = pgl::manhattan_distance(insts[i]->get_location(), centers[j]);
+        double distance = TimingPropagator::calcDist(insts[i]->get_location(), centers[j]);
         if (distance < min_distance) {
           min_distance = distance;
           min_center_index = j;
@@ -160,7 +160,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
   size_t kmeans_num
       = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
   LOG_FATAL_IF(kmeans_num != insts.size()) << "num of insts is not equal to num of clusters";
-  LOG_FATAL_IF(max_fanout * clusters.size() < insts.size()) << "multiply max_fanout by num of clusters is less than num of insts";
+  LOG_WARNING_IF(max_fanout * clusters.size() < insts.size()) << "multiply max_fanout by num of clusters is less than num of insts";
   LOG_INFO << "initial clusters: " << clusters.size();
   if (clusters.size() == 1) {
     return clusters;
@@ -265,7 +265,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
     // // opt min delay cluster
     auto min_delay_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMIN_DELAY, p, q, r);
+        = mipEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMinDelay, p, q, r);
     // check result
     auto new_min_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     auto new_min_delay = estimateNetDelay(new_min_cluster, max_net_length, max_fanout);
@@ -276,7 +276,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
     // opt max delay cluster
     auto max_delay_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMAX_DELAY, p, q, r);
+        = mipEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMaxDelay, p, q, r);
     // check result
     auto new_max_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     auto new_max_delay = estimateNetDelay(new_max_cluster, max_net_length, max_fanout);
@@ -294,7 +294,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
       continue;
     }
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWORST_VIOLATION, p, q, r);
+        = mipEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWorstViolation, p, q, r);
     auto new_worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
     if (!new_worst_cluster.empty()) {
       auto new_skew = estimateSkew(new_worst_cluster);
@@ -539,7 +539,7 @@ std::pair<std::vector<std::vector<Inst*>>, std::vector<std::vector<Inst*>>> Bala
   auto centers = getCentroidBuffers(clusters);
 
   auto convex = centers;
-  pgl::convex_hull(convex);
+  convexHull(convex);
   // Filter all clusters where center is on the convex package
   auto remain_centers = centers;
   auto is_in_convex = [&convex](const Point& center) { return std::find(convex.begin(), convex.end(), center) != convex.end(); };
@@ -548,7 +548,7 @@ std::pair<std::vector<std::vector<Inst*>>, std::vector<std::vector<Inst*>>> Bala
       remain_centers.end());
   auto second_convex = remain_centers;
   if (!second_convex.empty()) {
-    pgl::convex_hull(second_convex);
+    convexHull(second_convex);
   }
   convex.insert(convex.end(), second_convex.begin(), second_convex.end());
 
@@ -773,7 +773,7 @@ double BalanceClustering::calcSAE(const std::vector<std::vector<Inst*>>& cluster
   double sae = 0;
   for (size_t i = 0; i < clusters.size(); ++i) {
     sae += std::accumulate(clusters[i].begin(), clusters[i].end(), 0.0, [&buffers, &i](double total, const Inst* inst) {
-      return total + pgl::manhattan_distance(inst->get_location(), buffers[i]);
+      return total + TimingPropagator::calcDist(inst->get_location(), buffers[i]);
     });
   }
   return sae;
@@ -869,6 +869,54 @@ ViolationScore BalanceClustering::calcScore(const std::vector<Inst*>& cluster, c
   auto cap_vio_score = estimateNetCap(cluster, max_net_length, max_fanout);
   auto net_len_vio_score = estimateNetLength(cluster, max_net_length, max_fanout);
   return ViolationScore{skew_vio_score, cap_vio_score, net_len_vio_score, cluster};
+}
+/**
+ * @brief calculate cross product of three points
+ *
+ * @param p1
+ * @param p2
+ * @param p3
+ * @return double
+ */
+double BalanceClustering::crossProduct(const Point& p1, const Point& p2, const Point& p3)
+{
+  return (p2.x() - p1.x()) * (p3.y() - p1.y()) - (p3.x() - p1.x()) * (p2.y() - p1.y());
+}
+/**
+ * @brief calculate convex hull of points
+ *
+ * @param pts
+ */
+void BalanceClustering::convexHull(std::vector<Point>& pts)
+{
+  // check pts num
+  if (pts.size() < 2) {
+    return;
+  }
+  if (pts.size() == 2) {
+    auto dist = TimingPropagator::calcDist(pts.front(), pts.back());
+    if (dist == 0) {
+      pts.pop_back();
+    }
+    return;
+  }
+  // calculate convex hull by Andrew algorithm
+  std::sort(pts.begin(), pts.end());
+  std::vector<Point> ans(2 * pts.size());
+  size_t k = 0;
+  for (size_t i = 0; i < pts.size(); ++i) {
+    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= 0) {
+      --k;
+    }
+    ans[k++] = pts[i];
+  }
+  for (size_t i = pts.size() - 1, t = k + 1; i > 0; --i) {
+    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= 0) {
+      --k;
+    }
+    ans[k++] = pts[i - 1];
+  }
+  pts = std::vector<Point>(ans.begin(), ans.begin() + k - 1);
 }
 /**
  * @brief judge whether two clusters are the same
