@@ -1,4 +1,0 @@
---- Warning 186: Minimizing over empty set -- zero assumed
-*** File: w186_2.zpl Line 2
-*** param x := min(<i> in {1..2} with i > 3);
-***                                        ^^^

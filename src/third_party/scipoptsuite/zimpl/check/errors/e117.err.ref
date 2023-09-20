@@ -1,4 +1,0 @@
-*** Error 117: Illegal value type in max: "a" only numbers are possible
-*** File: e117.zpl Line 2
-*** param a := max(2, 3, "a");
-***                         ^^^

@@ -1,6 +1,0 @@
---- Warning 213: More than 65536 input fields in line 1 of w213.dat
-*** File: w213.zpl Line 2
-*** set A:={read "w213.dat" as "<n+>"};
-***                                  ^^^
---- Warning 164: Duplicate element 1 for set rejected
---- Warning 164: suppressed 65534 further message(s)

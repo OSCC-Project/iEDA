@@ -1,3 +1,0 @@
-CPPFLAGS	   = $(CPPFLAGS) /Dinline=_inline /DWIN32 /DNDEBUG
-CFLAGS		= $(CFLAGS) /W2 /wd4274 /Ox /nologo
-LDFLAGS     = $(LDFLAGS) /LTCG

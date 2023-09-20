@@ -1,7 +1,0 @@
-CXX	=	insure g++
-CPPFLAGS=	-Isrc 
-CXXFLAGS=	-g -DNDEBUG
-LDFLAGS	=	-lm
-ARFLAGS	=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

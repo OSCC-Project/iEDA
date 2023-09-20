@@ -24,7 +24,7 @@ class Pin;
 }
 #include <string>
 
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 #include "CtsInstance.hh"
 #include "Enum.hh"
 #include "Pin.hh"

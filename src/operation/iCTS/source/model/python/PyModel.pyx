@@ -7,7 +7,6 @@ from libcpp.vector cimport vector
 from libcpp.string cimport string
 import matplotlib.pyplot as plt
 import joblib
-from Polygon cimport *
 
 # data transform
 def dataTansform(const vector[vector[double]] & cpp_X, const vector[double] & cpp_y):
@@ -52,32 +51,6 @@ cdef public pyGenAX():
 cdef public void pySaveFig(fig, const string & filename):
     plt.legend()
     fig.savefig(filename, dpi=300)
-
-cdef public void pyPlotPoint(ax, const CtsPoint[double] & p, const string & name):
-    if name != "":
-        ax.plot(p.x(), p.y(), 'o', label=name.decode('UTF-8'))
-    else:
-        ax.plot(p.x(), p.y(), 'o')
-
-cdef public void pyPlotSegment(ax, const CtsSegment[double] & segment, const string & name):
-    low = segment.low()
-    high = segment.high()
-    if name != "":
-        ax.plot([low.x(), high.x()], [low.y(), high.y()], 'o-', label=name.decode('UTF-8'))
-    else:
-        ax.plot([low.x(), high.x()], [low.y(), high.y()], 'o-')
-
-cdef public void pyPlotPolygon(ax, const CtsPolygon[double] & polygon, const string & name):
-    points = polygon.get_points()
-    x = []
-    y = []
-    for point in points:
-        x.append(point.x())
-        y.append(point.y())
-    if name != "":
-        ax.plot(x, y, 'o-', label=name.decode('UTF-8'))
-    else:
-        ax.plot(x, y, 'o-')
 
 cdef public void pyPlot(ax, const vector[double] x, const vector[double] y, const string & name):
     if x.size() != y.size():

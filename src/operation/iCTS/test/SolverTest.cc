@@ -22,7 +22,7 @@
 
 #include "../../database/interaction/ids.hpp"
 #include "../../platform/data_manager/idm.h"
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 #include "Inst.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
