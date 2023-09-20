@@ -26,7 +26,6 @@
 #include "Inst.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
-#include "bound_skew_tree/BST.hh"
 #include "bound_skew_tree/BoundSkewTree.hh"
 #include "bound_skew_tree/GeomCalc.hh"
 #include "gtest/gtest.h"
@@ -35,7 +34,6 @@
 using ieda::Log;
 
 namespace {
-using icts::BST;
 using icts::Inst;
 using icts::LayerPattern;
 using icts::Net;
@@ -84,29 +82,6 @@ void resetNet(Net* net)
   delete buffer;
   // release steiner node
   std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
-}
-
-void bstTest(const std::vector<Pin*>& load_pins, const Point& guide_loc)
-{
-  auto roots = TreeBuilder::dmeTree("bst", load_pins, 0.08, guide_loc);
-  LOG_FATAL_IF(roots.size() != 1) << "Case not processed yet!";
-  auto root = roots.front();
-  auto* driver_pin = root->get_driver_pin();
-  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
-
-  auto* net = driver_pin->get_net();
-
-  TimingPropagator::update(net);
-  TreeBuilder::writePy(driver_pin, "BST_old");
-  LOG_INFO << std::endl;
-  LOG_INFO << "BST_old";
-  LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
-  LOG_INFO << "cap: " << driver_pin->get_cap_load();
-  LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
-  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
-  LOG_INFO << "max delay: " << driver_pin->get_max_delay();
-  LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc, driver_pin->get_location());
-  resetNet(net);
 }
 
 void boundSkewTreeTest(const std::vector<Pin*>& load_pins, const TopoType& topo_type, const std::string& note,
