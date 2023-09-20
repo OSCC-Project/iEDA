@@ -6,86 +6,92 @@
 
 namespace salt {
 
-void SaltBase::Init(Tree& minTree, shared_ptr<Pin> srcP) {
-    minTree.UpdateId();
-    auto mtNodes = minTree.ObtainNodes();
-    slNodes.resize(mtNodes.size());
-    shortestDists.resize(mtNodes.size());
-    curDists.resize(mtNodes.size());
-    for (auto mtN : mtNodes) {
-        slNodes[mtN->id] = make_shared<TreeNode>(mtN->loc, mtN->pin, mtN->id);
-        shortestDists[mtN->id] = Dist(mtN->loc, srcP->loc);
-        curDists[mtN->id] = numeric_limits<DTYPE>::max();
-    }
-    curDists[srcP->id] = 0;
-    slSrc = slNodes[srcP->id];
+void SaltInterface::Init(Tree& min_tree, shared_ptr<Pin> src_pin)
+{
+  min_tree.UpdateId();
+  auto mt_nodes = min_tree.ObtainNodes();
+  sl_nodes.resize(mt_nodes.size());
+  shortest_dists.resize(mt_nodes.size());
+  cur_dists.resize(mt_nodes.size());
+  for (auto mt_node : mt_nodes) {
+    sl_nodes[mt_node->id] = make_shared<TreeNode>(mt_node->loc, mt_node->pin, mt_node->id);
+    shortest_dists[mt_node->id] = Dist(mt_node->loc, src_pin->loc);
+    cur_dists[mt_node->id] = numeric_limits<DTYPE>::max();
+  }
+  cur_dists[src_pin->id] = 0;
+  sl_src = sl_nodes[src_pin->id];
 }
 
-void SaltBase::Finalize(const Net& net, Tree& tree) {
-    for (auto n : slNodes)
-        if (n->parent) slNodes[n->parent->id]->children.push_back(n);
-    tree.source = slSrc;
-    tree.net = &net;
+void SaltInterface::Finalize(const Net& net, Tree& tree)
+{
+  for (auto n : sl_nodes)
+    if (n->parent)
+      sl_nodes[n->parent->id]->children.push_back(n);
+  tree.source = sl_src;
+  tree.net = &net;
 }
 
-void SaltBuilder::Run(const Net& net, Tree& tree, double eps, int refineLevel) {
-    // SMT
-    Tree smt;
-    FluteBuilder fluteB;
-    fluteB.Run(net, smt);
+void SaltBuilder::Run(const Net& net, Tree& tree, double eps, int refineLevel)
+{
+  // SMT
+  Tree smt;
+  FluteBuilder flute_builder;
+  flute_builder.Run(net, smt);
 
-    // Refine SMT
-    if (refineLevel >= 1) {
-        Refine::Flip(smt);
-        Refine::UShift(smt);
+  // Refine SMT
+  if (refineLevel >= 1) {
+    Refine::flip(smt);
+    Refine::uShift(smt);
+  }
+
+  // Init
+  Init(smt, net.source());
+
+  // DFS
+  DFS(smt.source, sl_src, eps);
+  Finalize(net, tree);
+  tree.RemoveTopoRedundantSteiner();
+
+  // Connect breakpoints to source by RSA
+  salt::RsaBuilder rsa_builder;
+  rsa_builder.ReplaceRootChildren(tree);
+
+  // Refine SALT
+  if (refineLevel >= 1) {
+    Refine::cancelIntersect(tree);
+    Refine::flip(tree);
+    Refine::uShift(tree);
+    if (refineLevel >= 2) {
+      Refine::substitute(tree, eps, refineLevel == 3);
     }
-
-    // Init
-    Init(smt, net.source());
-
-    // DFS
-    DFS(smt.source, slSrc, eps);
-    Finalize(net, tree);
-    tree.RemoveTopoRedundantSteiner();
-
-    // Connect breakpoints to source by RSA
-    salt::RsaBuilder rsaB;
-    rsaB.ReplaceRootChildren(tree);
-
-    // Refine SALT
-    if (refineLevel >= 1) {
-        Refine::CancelIntersect(tree);
-        Refine::Flip(tree);
-        Refine::UShift(tree);
-        if (refineLevel >= 2) {
-            Refine::Substitute(tree, eps, refineLevel == 3);
-        }
-    }
+  }
 }
 
-bool SaltBuilder::Relax(const shared_ptr<TreeNode>& u, const shared_ptr<TreeNode>& v) {
-    DTYPE newDist = curDists[u->id] + Dist(u->loc, v->loc);
-    if (curDists[v->id] > newDist) {
-        curDists[v->id] = newDist;
-        v->parent = u;
-        return true;
-    } else if (curDists[v->id] == newDist && Dist(u->loc, v->loc) < v->WireToParentChecked()) {
-        v->parent = u;
-        return true;
-    } else
-        return false;
+bool SaltBuilder::Relax(const shared_ptr<TreeNode>& u, const shared_ptr<TreeNode>& v)
+{
+  DTYPE new_dist = cur_dists[u->id] + Dist(u->loc, v->loc);
+  if (cur_dists[v->id] > new_dist) {
+    cur_dists[v->id] = new_dist;
+    v->parent = u;
+    return true;
+  } else if (cur_dists[v->id] == new_dist && Dist(u->loc, v->loc) < v->WireToParentChecked()) {
+    v->parent = u;
+    return true;
+  } else
+    return false;
 }
 
-void SaltBuilder::DFS(const shared_ptr<TreeNode>& smtNode, const shared_ptr<TreeNode>& slNode, double eps) {
-    if (smtNode->pin && curDists[slNode->id] > (1 + eps) * shortestDists[slNode->id]) {
-        slNode->parent = slSrc;
-        curDists[slNode->id] = shortestDists[slNode->id];
-    }
-    for (auto c : smtNode->children) {
-        Relax(slNode, slNodes[c->id]);
-        DFS(c, slNodes[c->id], eps);
-        Relax(slNodes[c->id], slNode);
-    }
+void SaltBuilder::DFS(const shared_ptr<TreeNode>& mst_node, const shared_ptr<TreeNode>& sl_node, double eps)
+{
+  if (mst_node->pin && cur_dists[sl_node->id] > (1 + eps) * shortest_dists[sl_node->id]) {
+    sl_node->parent = sl_src;
+    cur_dists[sl_node->id] = shortest_dists[sl_node->id];
+  }
+  for (auto c : mst_node->children) {
+    Relax(sl_node, sl_nodes[c->id]);
+    DFS(c, sl_nodes[c->id], eps);
+    Relax(sl_nodes[c->id], sl_node);
+  }
 }
 
 }  // namespace salt

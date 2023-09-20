@@ -314,24 +314,24 @@ inline double L2Dist(const BoxT<T>& box1, const BoxT<T>& box2) {
 // use BoxT instead of T & BoxT<T> to make it more general
 template <typename BoxT>
 void MergeRects(std::vector<BoxT>& boxes, int mergeDir) {
-    int boundaryDir = 1 - mergeDir;
+    int boundary_dir = 1 - mergeDir;
     std::sort(boxes.begin(), boxes.end(), [&](const BoxT& lhs, const BoxT& rhs) {
-        return lhs[boundaryDir].low < rhs[boundaryDir].low ||
-               (lhs[boundaryDir].low == rhs[boundaryDir].low && lhs[mergeDir].low < rhs[mergeDir].low);
+        return lhs[boundary_dir].low < rhs[boundary_dir].low ||
+               (lhs[boundary_dir].low == rhs[boundary_dir].low && lhs[mergeDir].low < rhs[mergeDir].low);
     });
-    std::vector<BoxT> mergedBoxes;
-    mergedBoxes.push_back(boxes.front());
+    std::vector<BoxT> merged_boxes;
+    merged_boxes.push_back(boxes.front());
     for (int i = 1; i < boxes.size(); ++i) {
-        auto& lastBox = mergedBoxes.back();
-        auto& slicedBox = boxes[i];
-        if (slicedBox[boundaryDir] == lastBox[boundaryDir] &&
-            slicedBox[mergeDir].low <= lastBox[mergeDir].high) {  // aligned and intersected
-            lastBox[mergeDir] = lastBox[mergeDir].UnionWith(slicedBox[mergeDir]);
+        auto& last_box = merged_boxes.back();
+        auto& sliced_box = boxes[i];
+        if (sliced_box[boundary_dir] == last_box[boundary_dir] &&
+            sliced_box[mergeDir].low <= last_box[mergeDir].high) {  // aligned and intersected
+            last_box[mergeDir] = last_box[mergeDir].UnionWith(sliced_box[mergeDir]);
         } else {  // neither misaligned not seperated
-            mergedBoxes.push_back(slicedBox);
+            merged_boxes.push_back(sliced_box);
         }
     }
-    boxes = move(mergedBoxes);
+    boxes = move(merged_boxes);
 }
 
 // Slice polygons along sliceDir
@@ -339,40 +339,40 @@ void MergeRects(std::vector<BoxT>& boxes, int mergeDir) {
 // assume no degenerated case
 template <typename T>
 void SlicePolygons(std::vector<BoxT<T>>& boxes, int sliceDir) {
-    // Line sweep in sweepDir = 1 - sliceDir
-    // Suppose sliceDir = y and sweepDir = x (sweep from left to right)
+    // Line sweep in sweep_dir = 1 - sliceDir
+    // Suppose sliceDir = y and sweep_dir = x (sweep from left to right)
     // Not scalable impl (brute force interval query) but fast for small case
     if (boxes.size() <= 1) return;
 
-    // sort slice lines in sweepDir
-    int sweepDir = 1 - sliceDir;
+    // sort slice lines in sweep_dir
+    int sweep_dir = 1 - sliceDir;
     std::vector<T> locs;
     for (const auto& box : boxes) {
-        locs.push_back(box[sweepDir].low);
-        locs.push_back(box[sweepDir].high);
+        locs.push_back(box[sweep_dir].low);
+        locs.push_back(box[sweep_dir].high);
     }
     std::sort(locs.begin(), locs.end());
     locs.erase(std::unique(locs.begin(), locs.end()), locs.end());
 
     // slice each box
-    std::vector<BoxT<T>> slicedBoxes;
+    std::vector<BoxT<T>> sliced_boxes;
     for (const auto& box : boxes) {
-        BoxT<T> slicedBox = box;
-        auto itLoc = std::lower_bound(locs.begin(), locs.end(), box[sweepDir].low);
-        auto itEnd = std::upper_bound(itLoc, locs.end(), box[sweepDir].high);
-        while ((itLoc + 1) != itEnd) {
-            slicedBox[sweepDir].Set(*itLoc, *(itLoc + 1));
-            slicedBoxes.push_back(slicedBox);
-            ++itLoc;
+        BoxT<T> sliced_box = box;
+        auto it_loc = std::lower_bound(locs.begin(), locs.end(), box[sweep_dir].low);
+        auto it_end = std::upper_bound(it_loc, locs.end(), box[sweep_dir].high);
+        while ((it_loc + 1) != it_end) {
+            sliced_box[sweep_dir].Set(*it_loc, *(it_loc + 1));
+            sliced_boxes.push_back(sliced_box);
+            ++it_loc;
         }
     }
-    boxes = move(slicedBoxes);
+    boxes = move(sliced_boxes);
 
     // merge overlaped boxes along slice dir
     MergeRects(boxes, sliceDir);
 
     // stitch boxes along sweep dir
-    MergeRects(boxes, sweepDir);
+    MergeRects(boxes, sweep_dir);
 }
 
 template <typename T>
