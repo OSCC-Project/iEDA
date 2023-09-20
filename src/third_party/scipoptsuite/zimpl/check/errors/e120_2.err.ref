@@ -1,4 +1,0 @@
-*** Error 120: Minus of sets with different types
-*** File: e120_2.zpl Line 2
-*** set A:={<"a",1,5>,<"b",3,4>}-{<1,"a",3>};
-***                                         ^^^

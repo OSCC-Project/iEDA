@@ -19,12 +19,13 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #pragma once
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <string>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "CtsInstance.hh"
 #include "Enum.hh"
 #include "log/Log.hh"
@@ -68,10 +69,7 @@ class Node
   void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
   void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
   void set_slew_in(const double& slew_in) { _slew_in = slew_in; }
-  void set_min_delay(const double& min_delay)
-  {
-    _min_delay = min_delay;
-  }
+  void set_min_delay(const double& min_delay) { _min_delay = min_delay; }
   void set_max_delay(const double& max_delay) { _max_delay = max_delay; }
   void set_required_snake(const double& required_snake) { _required_snake = required_snake; }
   void set_parent(Node* parent) { _parent = parent; }

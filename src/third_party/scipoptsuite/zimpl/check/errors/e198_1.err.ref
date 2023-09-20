@@ -1,5 +1,0 @@
-*** Error 198: Incompatible index tuple
-<i,"a"> component 2 is not compatible with <1,2>
-*** File: e198_1.zpl Line 3
-*** set B:={<i,"a"> in A};
-***                     ^^^

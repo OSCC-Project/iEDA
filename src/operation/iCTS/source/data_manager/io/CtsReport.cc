@@ -14,7 +14,11 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "CtsReport.h"
+/**
+ * @file CtsReport.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "CtsReport.hh"
 
 namespace icts {
 

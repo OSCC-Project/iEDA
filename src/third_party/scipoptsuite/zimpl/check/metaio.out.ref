@@ -1,3 +1,0 @@
-5
-List: |1|{<"Berlin">,<"Frankfurt">,<"Leipzig">,<"Heidelberg">,<"Karlsruhe">}
-Multi: |2|{<"Berlin","Frankfurt">,<"Berlin","Leipzig">,<"Berlin","Heidelberg">,<"Berlin","Karlsruhe">,<"Frankfurt","Leipzig">,<"Frankfurt","Heidelberg">,<"Frankfurt","Karlsruhe">,<"Heidelberg","Leipzig">,<"Heidelberg","Karlsruhe">,<"Karlsruhe","Leipzig">}

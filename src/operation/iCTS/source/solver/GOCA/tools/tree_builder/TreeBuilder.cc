@@ -22,8 +22,8 @@
 
 #include <unordered_set>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "LocalLegalization.hh"
 #include "Node.hh"
 #include "TimingPropagator.hh"

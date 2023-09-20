@@ -25,13 +25,13 @@
 #include <random>
 #include <ranges>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
+#include "anneal_opt/AnnealOpt.hh"
 #include "log/Log.hh"
 #include "min_cost_flow/MinCostFlow.hh"
-#include "mip/MIP.hh"
 namespace icts {
 /**
  * @brief init clustering
@@ -243,7 +243,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
   return slack_clusters;
 }
 /**
- * @brief clustering enhancement by MIP
+ * @brief clustering enhancement by AnnealOpt
  *
  * @param clusters
  * @param max_fanout
@@ -265,7 +265,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
     // // opt min delay cluster
     auto min_delay_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMinDelay, p, q, r);
+        = annealEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMinDelay, p, q, r);
     // check result
     auto new_min_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     auto new_min_delay = estimateNetDelay(new_min_cluster, max_net_length, max_fanout);
@@ -276,7 +276,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
     // opt max delay cluster
     auto max_delay_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMaxDelay, p, q, r);
+        = annealEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMaxDelay, p, q, r);
     // check result
     auto new_max_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
     auto new_max_delay = estimateNetDelay(new_max_cluster, max_net_length, max_fanout);
@@ -294,7 +294,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
       continue;
     }
     enhanced_clusters
-        = mipEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWorstViolation, p, q, r);
+        = annealEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWorstViolation, p, q, r);
     auto new_worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
     if (!new_worst_cluster.empty()) {
       auto new_skew = estimateSkew(new_worst_cluster);
@@ -312,7 +312,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
   return enhanced_clusters;
 }
 /**
- * @brief MIP enhancement
+ * @brief AnnealOpt enhancement
  *
  * @param enhanced_clusters
  * @param center_cluster
@@ -324,11 +324,11 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
  * @param q
  * @return std::vector<std::vector<Inst*>>
  */
-std::vector<std::vector<Inst*>> BalanceClustering::mipEnhancement(std::vector<std::vector<Inst*>>& enhanced_clusters,
-                                                                  const std::vector<Inst*>& center_cluster, const int& max_fanout,
-                                                                  const double& max_cap, const double& max_net_length,
-                                                                  const EnhanceType& enhance_type, const double& p, const double& q,
-                                                                  const double& r)
+std::vector<std::vector<Inst*>> BalanceClustering::annealEnhancement(std::vector<std::vector<Inst*>>& enhanced_clusters,
+                                                                     const std::vector<Inst*>& center_cluster, const int& max_fanout,
+                                                                     const double& max_cap, const double& max_net_length,
+                                                                     const EnhanceType& enhance_type, const double& p, const double& q,
+                                                                     const double& r)
 {
   // remove center cluster
   enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
@@ -348,11 +348,11 @@ std::vector<std::vector<Inst*>> BalanceClustering::mipEnhancement(std::vector<st
   // enhanced center and neighbors
   auto to_be_enhanced_clusters = neighbors;
   to_be_enhanced_clusters.push_back(center_cluster);
-  // writeClusterPy(to_be_enhanced_clusters, "mip_before");
-  auto mip_solver = MIP(to_be_enhanced_clusters);
+  // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
+  auto anneal_solver = AnnealOpt(to_be_enhanced_clusters);
   size_t net_num = to_be_enhanced_clusters.size();
-  mip_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
-  auto opt_clusters = mip_solver.run();
+  anneal_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
+  auto opt_clusters = anneal_solver.run();
   while (opt_clusters.empty()) {
     std::ranges::copy(neighbors, std::back_inserter(enhanced_clusters));
     neighbors = getMostRecentClusters(enhanced_clusters, center_cluster, 36, 2);
@@ -363,8 +363,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::mipEnhancement(std::vector<st
                             enhanced_clusters.end());
     to_be_enhanced_clusters = neighbors;
     to_be_enhanced_clusters.push_back(center_cluster);
-    // writeClusterPy(to_be_enhanced_clusters, "mip_before");
-    auto temp_solver = MIP(to_be_enhanced_clusters);
+    // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
+    auto temp_solver = AnnealOpt(to_be_enhanced_clusters);
     temp_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
     opt_clusters = temp_solver.run();
     net_num += 1;
@@ -372,7 +372,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::mipEnhancement(std::vector<st
   opt_clusters.erase(
       std::remove_if(opt_clusters.begin(), opt_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
       opt_clusters.end());
-  // writeClusterPy(opt_clusters, "mip_after");
+  // writeClusterPy(opt_clusters, "anneal_after");
   std::ranges::for_each(opt_clusters, [&enhanced_clusters](const std::vector<Inst*>& cluster) { enhanced_clusters.push_back(cluster); });
   return enhanced_clusters;
 }
@@ -702,11 +702,12 @@ double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster, c
  */
 Point BalanceClustering::calcCentroid(const std::vector<Inst*>& cluster)
 {
-  auto centroid = CtsPoint<int64_t>(0, 0);
-  centroid = std::accumulate(cluster.begin(), cluster.end(), centroid,
-                             [](const CtsPoint<int64_t>& a, const Inst* b) { return a + b->get_location(); });
-  centroid /= cluster.size();
-  return centroid;
+  int64_t x = 0;
+  int64_t y = 0;
+  x = std::accumulate(cluster.begin(), cluster.end(), x, [](int64_t total, const Inst* inst) { return total + inst->get_location().x(); });
+  y = std::accumulate(cluster.begin(), cluster.end(), y, [](int64_t total, const Inst* inst) { return total + inst->get_location().y(); });
+
+  return Point(x / cluster.size(), y / cluster.size());
 }
 /**
  * @brief calculate bound centroid of cluster

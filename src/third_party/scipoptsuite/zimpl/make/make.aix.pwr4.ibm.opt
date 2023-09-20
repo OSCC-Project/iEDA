@@ -1,8 +1,0 @@
-#--- $Id: make.aix.pwr4.ibm.opt,v 1.9 2010/06/10 19:42:42 bzfkocht Exp $
-CC		=	xlc
-CPPFLAGS	+=	-DNDEBUG -DNO_MSHELL -Dinline="" \
-			-DLHT_BUCKETS=50000017U -DUSE_FSYNC
-CFLAGS		=	-O3 -q64 -qmaxmem=-1 \
-			-qarch=auto -qtune=auto -qcache=auto \
-			-qsuppress=1506-732
-

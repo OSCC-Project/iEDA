@@ -1,4 +1,0 @@
-*** Error 177: Boolean constraint not all integer
-*** File: e177.zpl Line 5
-*** subto c1: vif a <= 5 then a >= 2 end;
-***                  ^^^

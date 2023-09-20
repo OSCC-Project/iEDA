@@ -1,4 +1,0 @@
-*** Error 105: Duplicate constraint name "c1"
-*** File: e105_2.zpl Line 4
-*** minimize c1: x;
-***               ^^^

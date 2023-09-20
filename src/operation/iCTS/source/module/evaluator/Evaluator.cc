@@ -14,12 +14,16 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "Evaluator.h"
+/**
+ * @file Evaluator.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "Evaluator.hh"
 
 #include <fstream>
 
-#include "CTSAPI.hpp"
-#include "CtsReport.h"
+#include "CTSAPI.hh"
+#include "CtsReport.hh"
 #include "Net.hh"
 #include "log/Log.hh"
 namespace icts {
@@ -255,26 +259,6 @@ void Evaluator::statistics(const std::string& save_dir) const
   std::ofstream net_level_save_file(net_level_save_path);
   net_level_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
   net_level_save_file << net_level_rpt->c_str();
-}
-
-int64_t Evaluator::wireLength() const
-{
-  int64_t total_wire_len = 0.0;
-  for (const auto& eval_net : _eval_nets) {
-    if (!eval_net.is_newly()) {
-      continue;
-    }
-    int64_t net_wire_len = 0;
-    auto signal_wires = eval_net.get_signal_wires();
-    for (auto& signal_wire : signal_wires) {
-      net_wire_len += signal_wire.getWireLength();
-    }
-    total_wire_len += net_wire_len;
-  }
-  LOG_INFO << "Total wire length: " << total_wire_len;
-  CTSAPIInst.saveToLog("Total wire length: ", total_wire_len);
-
-  return total_wire_len;
 }
 
 void Evaluator::plotPath(const string& inst_name, const string& file) const

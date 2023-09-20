@@ -1,4 +1,0 @@
-*** Error 173: Illegal type in element <6> -> "hallo" for symbol
-*** File: e173_3.zpl Line 2
-*** param a[{1..9}] := read "e173.dat" as "n+", <9> "hallo";
-***                                                        ^^^

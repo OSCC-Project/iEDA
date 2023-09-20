@@ -1,8 +1,0 @@
-CXX	=	CC
-CXXFLAGS=	-Isrc -fullwarn -g -LANG:exceptions=off:libc_in_namespace_std=off
-AR	=	CC
-ARFLAGS	=	$(CXXFLAGS) -ar -o
-RANLIB	=	true
-LDFLAGS	=	-lm
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

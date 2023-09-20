@@ -22,7 +22,6 @@
 
 #include "TimingPropagator.hh"
 #include "log/Log.hh"
-#include "pgl.h"
 namespace icts {
 namespace bst {
 /**
