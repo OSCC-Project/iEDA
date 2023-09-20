@@ -1,9 +1,0 @@
-*.rpt
-*.def
-*.v
-*.guide
-
-!input/input.def
-!input/input.v
-!input/input.guide
-
