@@ -27,7 +27,6 @@
 #include "LocalLegalization.hh"
 #include "Node.hh"
 #include "TimingPropagator.hh"
-#include "bound_skew_tree/BST.hh"
 namespace icts {
 
 /**
@@ -252,25 +251,6 @@ void TreeBuilder::fluteTree(Pin* driver, const std::vector<Pin*>& loads)
 void TreeBuilder::shallowLightTree(Pin* driver, const std::vector<Pin*>& loads)
 {
   CTSAPIInst.genShallowLightTree("Salt", driver, loads);
-}
-/**
- * @brief DME tree
- *
- * @param net_name
- * @param loads
- * @param skew_bound
- * @param guide_loc
- * @return std::vector<Inst*>
- */
-std::vector<Inst*> TreeBuilder::dmeTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                                        const std::optional<double>& skew_bound, const std::optional<Point>& guide_loc)
-{
-  auto solver = BST(net_name, loads, skew_bound);
-  if (guide_loc.has_value()) {
-    solver.set_root_guide(*guide_loc);
-  }
-  solver.run();
-  return solver.getInsertBufs();
 }
 /**
  * @brief bound skew tree

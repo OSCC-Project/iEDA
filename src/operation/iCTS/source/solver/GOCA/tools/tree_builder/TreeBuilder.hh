@@ -55,9 +55,6 @@ class TreeBuilder
   static void fluteTree(Pin* driver, const std::vector<Pin*>& loads);
   static void shallowLightTree(Pin* driver, const std::vector<Pin*>& loads);
 
-  static std::vector<Inst*> dmeTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                                    const std::optional<double>& skew_bound = std::nullopt,
-                                    const std::optional<Point>& guide_loc = std::nullopt);
   static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
                              const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
                              const TopoType& topo_type = TopoType::kGreedyDist);
