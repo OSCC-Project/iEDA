@@ -15,9 +15,8 @@ endif()
 
 add_library(icts_mip ${ICTS_SOLVER}/GOCA/tools/balance_clustering/mip/MIP.cc)
 
-target_link_libraries(
-  icts_mip PUBLIC icts_goca_database icts_goca_timing_propagator
-                  ${SCIP_LIBRARIES})
+target_link_libraries(icts_mip PUBLIC icts_goca_database icts_timing_propagator
+                                      ${SCIP_LIBRARIES})
 
 target_include_directories(
   icts_mip

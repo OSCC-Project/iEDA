@@ -109,8 +109,6 @@ class CTSAPI
   // synthesis
   int32_t getDbUnit() const;
   bool isInDie(const icts::Point& point) const;
-  void placeInstance(icts::CtsInstance* inst);
-  void cancelPlaceInstance(icts::CtsInstance* inst);
   idb::IdbInstance* makeIdbInstance(const std::string& inst_name, const std::string& cell_master);
   idb::IdbNet* makeIdbNet(const std::string& net_name);
   void linkIdbNetToSta(idb::IdbNet* idb_net);
@@ -119,8 +117,12 @@ class CTSAPI
   void insertBuffer(const std::string& name);
   void resetId();
   int genId();
-  void genShallowLightTree(Pin* driver, const std::vector<Pin*>& loads, const std::string& net_name = "salt");
-
+  void genFluteTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
+  void genShallowLightTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
+  icts::Inst* genBeatSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+  icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                          const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);

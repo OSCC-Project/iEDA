@@ -14,8 +14,8 @@ void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
     }
 
     // Obtain flute tree
-    Flute::Tree fluteTree;
-    fluteTree.branch = nullptr;
+    Flute::Tree flute_tree;
+    flute_tree.branch = nullptr;
     int d = net.pins.size();
     assert(d <= MAXD);
     int x[MAXD], y[MAXD];
@@ -23,17 +23,17 @@ void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
         x[i] = net.pins[i]->loc.x;
         y[i] = net.pins[i]->loc.y;
     }
-    if (fluteTree.branch) free(fluteTree.branch);  // is it complete for mem leak?
-    fluteTree = Flute::flute(d, x, y, FLUTE_ACCURACY);
+    if (flute_tree.branch) free(flute_tree.branch);  // is it complete for mem leak?
+    flute_tree = Flute::flute(d, x, y, FLUTE_ACCURACY);
 
     // Build adjacency list
     unordered_map<pair<DTYPE, DTYPE>, shared_ptr<salt::TreeNode>, boost::hash<pair<DTYPE, DTYPE>>> key2node;
     for (auto p : net.pins) {
         key2node[{p->loc.x, p->loc.y}] = make_shared<salt::TreeNode>(p);
     }
-    auto& t = fluteTree;
+    auto& t = flute_tree;
 
-    auto FindOrCreate = [&](DTYPE x, DTYPE y) {
+    auto find_or_create = [&](DTYPE x, DTYPE y) {
         auto it = key2node.find({x, y});
         if (it == key2node.end()) {
             shared_ptr<salt::TreeNode> node = make_shared<salt::TreeNode>(x, y);
@@ -47,8 +47,8 @@ void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
         int j = t.branch[i].n;
         if (t.branch[i].x == t.branch[j].x && t.branch[i].y == t.branch[j].y) continue;
         // any more duplicate?
-        shared_ptr<salt::TreeNode> n1 = FindOrCreate(t.branch[i].x, t.branch[i].y);
-        shared_ptr<salt::TreeNode> n2 = FindOrCreate(t.branch[j].x, t.branch[j].y);
+        shared_ptr<salt::TreeNode> n1 = find_or_create(t.branch[i].x, t.branch[i].y);
+        shared_ptr<salt::TreeNode> n2 = find_or_create(t.branch[j].x, t.branch[j].y);
         // printlog(LOG_INFO, "%d - %d\n", n1->pin?n1->pin->id:-1, n2->pin?n2->pin->id:-1);
         n1->children.push_back(n2);
         n2->children.push_back(n1);
@@ -59,5 +59,5 @@ void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
     saltTree.SetParentFromUndirectedAdjList();
     saltTree.net = &net;
 
-    free(fluteTree.branch);
+    free(flute_tree.branch);
 }

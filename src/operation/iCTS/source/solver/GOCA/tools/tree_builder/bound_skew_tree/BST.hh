@@ -131,6 +131,8 @@ class BST
   Net* getNet(Node* node) const;
 
   void topdown(Node* root) const;
+
+  void errorUpdate(Net* net) const;
   /**
    * @brief debug
    *

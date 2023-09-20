@@ -26,9 +26,9 @@
 namespace icts {
 enum class EnhanceType
 {
-  kMIN_DELAY,
-  kMAX_DELAY,
-  kWORST_VIOLATION,
+  kMinDelay,
+  kMaxDelay,
+  kWorstViolation,
 };
 struct ViolationScore
 {
@@ -121,6 +121,10 @@ class BalanceClustering
 
   static ViolationScore calcScore(const std::vector<Inst*>& cluster, const double& max_cap, const double& max_net_length,
                                   const size_t& max_fanout);
+
+  static double crossProduct(const Point& p1, const Point& p2, const Point& p3);
+
+  static void convexHull(std::vector<Point>& pts);
 
   static bool isSame(const std::vector<std::vector<Inst*>>& clusters1, const std::vector<std::vector<Inst*>>& clusters2);
 

@@ -6,21 +6,19 @@
 
 #include "salt/utils/utils.h"
 
-using namespace std;
-
 // #define DTYPE int  // same as flute.h, will overwrite it
 typedef int DTYPE;
 
 namespace salt {
-
+using namespace std;
 using Point = utils::PointT<DTYPE>;
 using Box = utils::BoxT<DTYPE>;
 
 class Pin
 {
  public:
-  int id;  // 0 for source, should be in range [0, pin_num) for a net
   Point loc;
+  int id;  // 0 for source, should be in range [0, pin_num) for a net
   double cap;
 
   Pin(const Point& l, int i = -1, double c = 0.0) : loc(l), id(i), cap(c) {}
@@ -35,7 +33,7 @@ class Net
  public:
   int id;
   string name;
-  bool withCap = false;
+  bool with_cap = false;
 
   vector<shared_ptr<Pin>> pins;  // source is always the first one
 
@@ -44,7 +42,7 @@ class Net
     this->id = id;
     this->name = name;
     this->pins = pins;
-    this->withCap = true;
+    this->with_cap = true;
   }
 
   void RanInit(int i, int numPin, DTYPE width = 100, DTYPE height = 100);  // random initialization

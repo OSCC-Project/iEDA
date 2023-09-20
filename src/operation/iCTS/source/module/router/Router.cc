@@ -69,6 +69,7 @@ void Router::build()
 }
 void Router::update()
 {
+  LOG_INFO << "Synthesis data to cts design...";
   // update to cts design, idb and sta
   std::ranges::for_each(_solver_set.get_nets(), [&](Net* net) {
     std::ranges::for_each(net->get_pins(), [&](Pin* pin) { synthesisPin(pin); });
