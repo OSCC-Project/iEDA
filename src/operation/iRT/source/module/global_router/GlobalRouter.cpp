@@ -139,7 +139,8 @@ GRNet GlobalRouter::convertToGRNet(Net& net)
 void GlobalRouter::buildGRModel(GRModel& gr_model)
 {
   buildNeighborMap(gr_model);
-  updateNetFixedRectMap(gr_model);
+  updateBlockageMap(gr_model);
+  updateNetShapeMap(gr_model);
   updateNetReservedViaMap(gr_model);
   updateWholeDemand(gr_model);
   updateNetViaDemandMap(gr_model);
@@ -194,21 +195,13 @@ void GlobalRouter::buildNeighborMap(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::updateNetFixedRectMap(GRModel& gr_model)
+void GlobalRouter::updateBlockageMap(GRModel& gr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(gr_model, GRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
-  }
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(gr_model, GRSourceType::kLayoutShape, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
-      }
-    }
+    addRectToEnv(gr_model, GRSourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
   }
 }
 
@@ -229,6 +222,18 @@ void GlobalRouter::addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, 
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         GRNode& gr_node = layer_node_map[drc_rect.get_layer_idx()][x][y];
         DC_INST.updateRectList(gr_node.getRegionQuery(gr_source_type), ChangeType::kAdd, drc_rect);
+      }
+    }
+  }
+}
+
+void GlobalRouter::updateNetShapeMap(GRModel& gr_model)
+{
+  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : gr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(gr_model, GRSourceType::kNetShape, DRCRect(gr_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -347,7 +352,8 @@ void GlobalRouter::updateNetAccessDemandMap(GRModel& gr_model)
       for (auto& [orientation, wire_list] : access_wire_map) {
         bool is_access = false;
         for (LayerRect& wire : wire_list) {
-          if (!hasViolation(gr_model, GRSourceType::kLayoutShape, DRCRect(net_id, wire, true))) {
+          if (!hasViolation(gr_model, GRSourceType::kBlockage, DRCRect(net_id, wire, true))
+              && !hasViolation(gr_model, GRSourceType::kNetShape, DRCRect(net_id, wire, true))) {
             is_access = true;
             break;
           }
@@ -437,7 +443,7 @@ void GlobalRouter::updateNodeResourceSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real_cross_wire_demand and gcell_cross_wire_demand are not equal!");
           }
         }
-        for (GRSourceType gr_source_type : {GRSourceType::kLayoutShape}) {
+        for (GRSourceType gr_source_type : {GRSourceType::kBlockage, GRSourceType::kNetShape}) {
           for (const auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(gr_source_type), true)[layer_idx]) {
             for (const LayerRect& rect : rect_set) {
               for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
@@ -529,7 +535,7 @@ void GlobalRouter::updateNodeAccessSupply(GRModel& gr_model)
             LOG_INST.error(Loc::current(), "The real_cross_wire_demand and gcell_cross_wire_demand are not equal!");
           }
         }
-        for (GRSourceType gr_source_type : {GRSourceType::kLayoutShape, GRSourceType::kReservedVia}) {
+        for (GRSourceType gr_source_type : {GRSourceType::kBlockage, GRSourceType::kNetShape, GRSourceType::kReservedVia}) {
           for (const auto& [net_idx, rect_set] : DC_INST.getLayerNetRectMap(gr_node.getRegionQuery(gr_source_type), true)[layer_idx]) {
             for (const LayerRect& rect : rect_set) {
               for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
@@ -2412,8 +2418,9 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   gp_gds.addStruct(neighbor_map_struct);
 
   // source_region_query_map
-  std::vector<std::pair<GRSourceType, GPGraphType>> source_graph_pair_list
-      = {{GRSourceType::kLayoutShape, GPGraphType::kLayoutShape}, {GRSourceType::kReservedVia, GPGraphType::kReservedVia}};
+  std::vector<std::pair<GRSourceType, GPGraphType>> source_graph_pair_list = {{GRSourceType::kBlockage, GPGraphType::kBlockage},
+                                                                              {GRSourceType::kNetShape, GPGraphType::kNetShape},
+                                                                              {GRSourceType::kReservedVia, GPGraphType::kReservedVia}};
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
     GridMap<GRNode>& node_map = layer_node_map[layer_idx];

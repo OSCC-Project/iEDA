@@ -59,8 +59,9 @@ class GlobalRouter
   GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
-  void updateNetFixedRectMap(GRModel& gr_model);
+  void updateBlockageMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(GRModel& gr_model);
   void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetViaDemandMap(GRModel& gr_model);

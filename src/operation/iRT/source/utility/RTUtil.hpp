@@ -113,10 +113,11 @@ class RTUtil
   static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
                                                      Orientation point_orientation = Orientation::kNone)
   {
-    std::vector<Orientation> orientation_list;
-    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
-    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
-    return orientation_list;
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    orientation_set.erase(Orientation::kNone);
+    return std::vector<Orientation>(orientation_set.begin(), orientation_set.end());
   }
 
   // 判断线段方向 从start到end
@@ -2345,7 +2346,7 @@ class RTUtil
   }
 
   static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                        const std::vector<PlanarRect>& rect_list)
+                                                               const std::vector<PlanarRect>& rect_list)
   {
     gtl::polygon_90_set_data<irt_int> master_poly;
     for (const PlanarRect& master : master_list) {
@@ -2447,7 +2448,7 @@ class RTUtil
   }
 
   static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                          const std::vector<PlanarRect>& rect_list)
+                                                                 const std::vector<PlanarRect>& rect_list)
   {
     std::vector<PlanarRect> cutting_rect_list;
     return cutting_rect_list;

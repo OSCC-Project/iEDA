@@ -143,7 +143,8 @@ void DetailedRouter::buildDRModel(DRModel& dr_model)
 {
   buildSchedule(dr_model);
   buildBoxTrackAxis(dr_model);
-  updateNetFixedRectMap(dr_model);
+  updateBlockageMap(dr_model);
+  updateNetShapeMap(dr_model);
   decomposeLengthyTANode(dr_model);
   updateNetPanelResultMap(dr_model);
   updateNetReservedViaMap(dr_model);
@@ -222,32 +223,18 @@ void DetailedRouter::buildBoxTrackAxis(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::updateNetFixedRectMap(DRModel& dr_model)
+void DetailedRouter::updateBlockageMap(DRModel& dr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, DRBoxId(), DRCRect(-1, blockage_real_rect, true));
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRBoxId(), DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, DRBoxId(), DRCRect(-1, blockage_real_rect, false));
-  }
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      for (EXTLayerRect& routing_shape : dr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, DRBoxId(),
-                        DRCRect(dr_net.get_net_idx(), shape_real_rect, true));
-      }
-      for (EXTLayerRect& cut_shape : dr_pin.get_cut_shape_list()) {
-        LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, DRBoxId(),
-                        DRCRect(dr_net.get_net_idx(), shape_real_rect, false));
-      }
-    }
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRBoxId(), DRCRect(-1, blockage_real_rect, false));
   }
 }
 
@@ -274,6 +261,24 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
           drc_rect.set_net_idx(-1);
         }
         DC_INST.updateRectList(target_box.getRegionQuery(dr_source_type), change_type, drc_rect);
+      }
+    }
+  }
+}
+
+void DetailedRouter::updateNetShapeMap(DRModel& dr_model)
+{
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
+      for (EXTLayerRect& routing_shape : dr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(),
+                        DRCRect(dr_net.get_net_idx(), shape_real_rect, true));
+      }
+      for (EXTLayerRect& cut_shape : dr_pin.get_cut_shape_list()) {
+        LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(),
+                        DRCRect(dr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
@@ -486,7 +491,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
         routing_segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
       }
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), routing_segment_list)) {
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, DRBoxId(), drc_rect);
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(), drc_rect);
       }
     }
   }
@@ -1057,7 +1062,7 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 
 void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
 {
-  for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape, DRSourceType::kReservedVia}) {
+  for (DRSourceType dr_source_type : {DRSourceType::kBlockage, DRSourceType::kNetShape, DRSourceType::kReservedVia}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -1715,11 +1720,11 @@ void DetailedRouter::ripupDRBox(DRModel& dr_model, DRBox& dr_box)
     }
     // 将env中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-      updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kLayoutShape, dr_box.get_dr_box_id(), drc_rect);
+      updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kNetShape, dr_box.get_dr_box_id(), drc_rect);
     }
     // 将graph中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-      updateRectCostToGraph(dr_box, ChangeType::kDel, DRSourceType::kLayoutShape, drc_rect);
+      updateRectCostToGraph(dr_box, ChangeType::kDel, DRSourceType::kNetShape, drc_rect);
     }
     // 清空routing_tree
     dr_task.get_routing_tree().clear();
@@ -2013,11 +2018,11 @@ void DetailedRouter::updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& 
   dr_task.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
   // 将布线结果添加到env中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kLayoutShape, dr_box.get_dr_box_id(), drc_rect);
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, dr_box.get_dr_box_id(), drc_rect);
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-    updateRectCostToGraph(dr_box, ChangeType::kAdd, DRSourceType::kLayoutShape, drc_rect);
+    updateRectCostToGraph(dr_box, ChangeType::kAdd, DRSourceType::kNetShape, drc_rect);
   }
   dr_task.set_routing_state(RoutingState::kRouted);
 }
@@ -2280,7 +2285,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
       = dr_box_stat.get_source_routing_drc_violation_map();
   std::map<DRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = dr_box_stat.get_source_cut_drc_violation_map();
-  for (DRSourceType dr_source_type : {DRSourceType::kLayoutShape}) {
+  for (DRSourceType dr_source_type : {DRSourceType::kBlockage, DRSourceType::kNetShape}) {
     for (auto& [drc, violation_info_list] : getViolationInfo(dr_box, dr_source_type)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
@@ -2774,8 +2779,9 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
   gp_gds.addStruct(box_track_axis_struct);
 
   // source_region_query_map
-  std::vector<std::pair<DRSourceType, GPGraphType>> source_graph_pair_list
-      = {{DRSourceType::kLayoutShape, GPGraphType::kLayoutShape}, {DRSourceType::kReservedVia, GPGraphType::kReservedVia}};
+  std::vector<std::pair<DRSourceType, GPGraphType>> source_graph_pair_list = {{DRSourceType::kBlockage, GPGraphType::kBlockage},
+                                                                              {DRSourceType::kNetShape, GPGraphType::kNetShape},
+                                                                              {DRSourceType::kReservedVia, GPGraphType::kReservedVia}};
   for (auto& [dr_source_type, gp_graph_type] : source_graph_pair_list) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
