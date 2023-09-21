@@ -51,7 +51,8 @@ class Config
   double ta_corner_unit;             // optional
   double ta_pin_distance_unit;       // optional
   double ta_group_distance_unit;     // optional
-  double ta_layout_shape_unit;       // optional
+  double ta_blockage_unit;           // optional
+  double ta_net_shape_unit;          // optional
   double ta_reserved_via_unit;       // optional
   double ta_history_cost_unit;       // optional
   irt_int ta_model_max_iter_num;     // optional
@@ -60,7 +61,8 @@ class Config
   double dr_nonprefer_wire_unit;     // optional
   double dr_via_unit;                // optional
   double dr_corner_unit;             // optional
-  double dr_layout_shape_unit;       // optional
+  double dr_blockage_unit;           // optional
+  double dr_net_shape_unit;          // optional
   double dr_reserved_via_unit;       // optional
   double dr_history_cost_unit;       // optional
   irt_int dr_model_max_iter_num;     // optional

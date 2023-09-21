@@ -113,10 +113,11 @@ class RTUtil
   static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
                                                      Orientation point_orientation = Orientation::kNone)
   {
-    std::vector<Orientation> orientation_list;
-    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
-    orientation_list.push_back(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
-    return orientation_list;
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    orientation_set.erase(Orientation::kNone);
+    return std::vector<Orientation>(orientation_set.begin(), orientation_set.end());
   }
 
   // 判断线段方向 从start到end
@@ -624,39 +625,6 @@ class RTUtil
     }
   }
 
-  static std::vector<PlanarRect> getOverlap(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
-  {
-    return getOverlap({master}, rect_list);
-  }
-
-  static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    return getOverlap(master_list, {rect});
-  }
-
-  static std::vector<PlanarRect> getOverlap(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
-  {
-    gtl::polygon_90_set_data<irt_int> master_poly;
-    for (const PlanarRect& master : master_list) {
-      master_poly += convertToGTLRect(master);
-    }
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-
-    master_poly *= rect_poly;
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, master_poly);
-
-    std::vector<PlanarRect> overlap_rect_list;
-    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
-      overlap_rect_list.emplace_back(convertToPlanarRect(overlap_rect));
-    }
-    return overlap_rect_list;
-  }
-
   // 计算rect在master上覆盖的面积占master总面积的比例
   static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
   {
@@ -712,86 +680,6 @@ class RTUtil
       }
     }
     return split_rect_list;
-  }
-
-  /**
-   *  切割矩形，将master矩形用rect进行切割，求差集
-   *       ┌────────────────────────────────────┐
-   *       │ master                             │
-   *       │           ┌─────────────────┐      │
-   *       └───────────┼─────────────────┼──────┘
-   *                   │ rect            │
-   *        cut  │     └─────────────────┘  │cut
-   *             ▼                          ▼
-   *       ┌───────────┐┌────────────────┐┌──────┐
-   *       │           ││       c        ││      │
-   *       │     a     │└────────────────┘│  b   │
-   *       └───────────┘                  └──────┘
-   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
-   */
-  static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> master_list = {master};
-    std::vector<PlanarRect> rect_list = {rect};
-    return getCuttingRectList(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getCuttingRectList(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
-  {
-    std::vector<PlanarRect> master_list = {master};
-    return getCuttingRectList(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getCuttingRectList(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getCuttingRectList(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
-  {
-    gtl::polygon_90_set_data<irt_int> master_poly;
-    for (const PlanarRect& master : master_list) {
-      master_poly += convertToGTLRect(master);
-    }
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-
-    master_poly -= rect_poly;
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, master_poly);
-
-    std::vector<PlanarRect> cutting_rect_list;
-    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
-      cutting_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
-    }
-    return cutting_rect_list;
-  }
-
-  static std::vector<PlanarRect> getMergeRectList(const std::vector<PlanarRect>& rect_list, Direction direction = Direction::kHorizontal)
-  {
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    if (direction == Direction::kHorizontal) {
-      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::HORIZONTAL);
-    } else if (direction == Direction::kVertical) {
-      gtl::get_rectangles(gtl_rect_list, rect_poly, gtl::orientation_2d_enum::VERTICAL);
-    } else {
-      LOG_INST.error(Loc::current(), "The direction is error!");
-    }
-
-    std::vector<PlanarRect> merge_rect_list;
-    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
-      merge_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
-    }
-    return merge_rect_list;
   }
 
   static PlanarRect getEnlargedRect(PlanarCoord center_coord, irt_int enlarge_size)
@@ -888,43 +776,6 @@ class RTUtil
     minusOffset(rect.get_lb(), lb_x_minus_offset, lb_y_minus_offset);
     addOffset(rect.get_rt(), rt_x_add_offset, rt_y_add_offset);
     return rect;
-  }
-
-  static std::vector<PlanarRect> getReducedRect(const PlanarRect& rect, irt_int reduce_size)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getReducedRect(rect_list, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getReducedRect(const PlanarRect& rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
-                                                irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getReducedRect(rect_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset);
-  }
-
-  static std::vector<PlanarRect> getReducedRect(const std::vector<PlanarRect>& rect_list, irt_int reduce_size)
-  {
-    return getReducedRect(rect_list, reduce_size, reduce_size, reduce_size, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getReducedRect(const std::vector<PlanarRect>& rect_list, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
-                                                irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-    rect_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, rect_poly);
-
-    std::vector<PlanarRect> reduced_rect_list;
-    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
-      reduced_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
-    }
-    return reduced_rect_list;
   }
 
   // 偏移矩形
@@ -2099,7 +1950,7 @@ class RTUtil
 
   // 检查树是否到达所有的关键坐标
   static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree,
-                                    std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
+                                       std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<irt_int, bool> visited_map;
     for (auto& [key_coord, pin_idx_list] : key_coord_pin_map) {
@@ -2388,6 +2239,219 @@ class RTUtil
     } else {
       return std::max(std::max(x_spacing, y_spacing), 0);
     }
+  }
+
+  static std::vector<PlanarRect> getOpenOverlapByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    return getOpenOverlapByBoost({master}, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOpenOverlapByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    return getOpenOverlapByBoost(master_list, {rect});
+  }
+
+  static std::vector<PlanarRect> getOpenOverlapByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
+  {
+    gtl::polygon_90_set_data<irt_int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += convertToGTLRect(master);
+    }
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += convertToGTLRect(rect);
+    }
+
+    master_poly *= rect_poly;
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, master_poly);
+
+    std::vector<PlanarRect> overlap_rect_list;
+    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
+      overlap_rect_list.emplace_back(convertToPlanarRect(overlap_rect));
+    }
+    return overlap_rect_list;
+  }
+
+  static std::vector<PlanarRect> getOpenReducedRectByBoost(const PlanarRect& rect, irt_int reduce_size)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getOpenReducedRectByBoost(rect_list, reduce_size);
+  }
+
+  static std::vector<PlanarRect> getOpenReducedRectByBoost(const PlanarRect& rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
+                                                           irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getOpenReducedRectByBoost(rect_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset);
+  }
+
+  static std::vector<PlanarRect> getOpenReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int reduce_size)
+  {
+    return getOpenReducedRectByBoost(rect_list, reduce_size, reduce_size, reduce_size, reduce_size);
+  }
+
+  static std::vector<PlanarRect> getOpenReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int lb_x_add_offset,
+                                                           irt_int lb_y_add_offset, irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
+  {
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += convertToGTLRect(rect);
+    }
+    rect_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, rect_poly);
+
+    std::vector<PlanarRect> reduced_rect_list;
+    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
+      reduced_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
+    }
+    return reduced_rect_list;
+  }
+
+  /**
+   *  切割矩形，将master矩形用rect进行切割，求差集
+   *       ┌────────────────────────────────────┐
+   *       │ master                             │
+   *       │           ┌─────────────────┐      │
+   *       └───────────┼─────────────────┼──────┘
+   *                   │ rect            │
+   *        cut  │     └─────────────────┘  │cut
+   *             ▼                          ▼
+   *       ┌───────────┐┌────────────────┐┌──────┐
+   *       │           ││       c        ││      │
+   *       │     a     │└────────────────┘│  b   │
+   *       └───────────┘                  └──────┘
+   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
+   */
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const PlanarRect& master, const PlanarRect& rect)
+  {
+    std::vector<PlanarRect> master_list = {master};
+    std::vector<PlanarRect> rect_list = {rect};
+    return getOpenCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> master_list = {master};
+    return getOpenCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getOpenCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                               const std::vector<PlanarRect>& rect_list)
+  {
+    gtl::polygon_90_set_data<irt_int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += convertToGTLRect(master);
+    }
+    gtl::polygon_90_set_data<irt_int> rect_poly;
+    for (const PlanarRect& rect : rect_list) {
+      rect_poly += convertToGTLRect(rect);
+    }
+
+    master_poly -= rect_poly;
+
+    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, master_poly);
+
+    std::vector<PlanarRect> cutting_rect_list;
+    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
+      cutting_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
+    }
+    return cutting_rect_list;
+  }
+
+  ////////////////////////////////////////////
+
+  static std::vector<PlanarRect> getClosedOverlapByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    return getClosedOverlapByBoost({master}, rect_list);
+  }
+
+  static std::vector<PlanarRect> getClosedOverlapByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    return getClosedOverlapByBoost(master_list, {rect});
+  }
+
+  static std::vector<PlanarRect> getClosedOverlapByBoost(const std::vector<PlanarRect>& master_list,
+                                                         const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> overlap_rect_list;
+    return overlap_rect_list;
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectByBoost(const PlanarRect& rect, irt_int reduce_size)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getClosedReducedRectByBoost(rect_list, reduce_size);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectByBoost(const PlanarRect& rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
+                                                             irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getClosedReducedRectByBoost(rect_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int reduce_size)
+  {
+    return getClosedReducedRectByBoost(rect_list, reduce_size, reduce_size, reduce_size, reduce_size);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int lb_x_add_offset,
+                                                             irt_int lb_y_add_offset, irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
+  {
+    std::vector<PlanarRect> reduced_rect_list;
+    return reduced_rect_list;
+  }
+
+  /**
+   *  切割矩形，将master矩形用rect进行切割，求差集
+   *       ┌────────────────────────────────────┐
+   *       │ master                             │
+   *       │           ┌─────────────────┐      │
+   *       └───────────┼─────────────────┼──────┘
+   *                   │ rect            │
+   *        cut  │     └─────────────────┘  │cut
+   *             ▼                          ▼
+   *       ┌───────────┐┌────────────────┐┌──────┐
+   *       │           ││       c        ││      │
+   *       │     a     │└────────────────┘│  b   │
+   *       └───────────┘                  └──────┘
+   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
+   */
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const PlanarRect& master, const PlanarRect& rect)
+  {
+    std::vector<PlanarRect> master_list = {master};
+    std::vector<PlanarRect> rect_list = {rect};
+    return getClosedCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> master_list = {master};
+    return getClosedCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
+  {
+    std::vector<PlanarRect> rect_list = {rect};
+    return getClosedCuttingRectListByBoost(master_list, rect_list);
+  }
+
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                                 const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> cutting_rect_list;
+    return cutting_rect_list;
   }
 
 #endif

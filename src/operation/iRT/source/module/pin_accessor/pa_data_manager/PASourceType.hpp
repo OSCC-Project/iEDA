@@ -25,7 +25,8 @@ namespace irt {
 enum class PASourceType
 {
   kNone,
-  kLayoutShape,
+  kBlockage,
+  kNetShape,
   kCandidateVia
 };
 
@@ -38,8 +39,11 @@ struct GetPASourceTypeName
       case PASourceType::kNone:
         pa_source_type_name = "none";
         break;
-      case PASourceType::kLayoutShape:
-        pa_source_type_name = "layout_shape";
+      case PASourceType::kBlockage:
+        pa_source_type_name = "blockage";
+        break;
+      case PASourceType::kNetShape:
+        pa_source_type_name = "net_shape";
         break;
       case PASourceType::kCandidateVia:
         pa_source_type_name = "candidate_via";

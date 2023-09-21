@@ -57,8 +57,9 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
-  void updateNetFixedRectMap(PAModel& pa_model);
+  void updateBlockageMap(PAModel& pa_model);
   void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(PAModel& pa_model);
   void checkPAModel(PAModel& pa_model);
 #endif
 
@@ -71,7 +72,6 @@ class PinAccessor
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
-  void mergeLegalRectList(std::vector<LayerRect>& legal_rect_list);
   std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointByType(PANet& pa_net);

@@ -151,7 +151,8 @@ void TrackAssigner::buildTAModel(TAModel& ta_model)
   buildSchedule(ta_model);
   shrinkPanelRegion(ta_model);
   buildPanelTrackAxis(ta_model);
-  updateNetFixedRectMap(ta_model);
+  updateBlockageMap(ta_model);
+  updateNetShapeMap(ta_model);
   updateNetReservedViaMap(ta_model);
   buildTATaskList(ta_model);
   buildNetTaskMap(ta_model);
@@ -228,22 +229,13 @@ void TrackAssigner::buildPanelTrackAxis(TAModel& ta_model)
   }
 }
 
-void TrackAssigner::updateNetFixedRectMap(TAModel& ta_model)
+void TrackAssigner::updateBlockageMap(TAModel& ta_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kLayoutShape, TAPanelId(), DRCRect(-1, blockage_real_rect, true));
-  }
-  for (TANet& ta_net : ta_model.get_ta_net_list()) {
-    for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      for (const EXTLayerRect& routing_shape : ta_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kLayoutShape, TAPanelId(),
-                        DRCRect(ta_net.get_net_idx(), shape_real_rect, true));
-      }
-    }
+    updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kBlockage, TAPanelId(), DRCRect(-1, blockage_real_rect, true));
   }
 }
 
@@ -283,6 +275,19 @@ void TrackAssigner::updateRectToEnv(TAModel& ta_model, ChangeType change_type, T
           drc_rect.set_net_idx(-1);
         }
         DC_INST.updateRectList(target_panel.getRegionQuery(ta_source_type), change_type, drc_rect);
+      }
+    }
+  }
+}
+
+void TrackAssigner::updateNetShapeMap(TAModel& ta_model)
+{
+  for (TANet& ta_net : ta_model.get_ta_net_list()) {
+    for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
+      for (const EXTLayerRect& routing_shape : ta_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kNetShape, TAPanelId(),
+                        DRCRect(ta_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -608,11 +613,13 @@ void TrackAssigner::outputTADataset(TAModel& ta_model)
       }
       // hard_shape_list
       RTUtil::pushStream(ta_dataset, "hard_shape_list", "\n");
-      for (const auto& [net_idx, rect_set] :
-           DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kLayoutShape), true)[ta_panel_id.get_layer_idx()]) {
-        for (const LayerRect& rect : rect_set) {
-          RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
-                             "\n");
+      for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape}) {
+        for (const auto& [net_idx, rect_set] :
+             DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), true)[ta_panel_id.get_layer_idx()]) {
+          for (const LayerRect& rect : rect_set) {
+            RTUtil::pushStream(ta_dataset, net_idx, " ", rect.get_lb_x(), " ", rect.get_lb_y(), " ", rect.get_rt_x(), " ", rect.get_rt_y(),
+                               "\n");
+          }
         }
       }
       RTUtil::pushStream(ta_dataset, "}", "\n");
@@ -759,7 +766,7 @@ void TrackAssigner::buildNeighborMap(TAPanel& ta_panel)
 
 void TrackAssigner::buildSourceOrienTaskMap(TAPanel& ta_panel)
 {
-  for (TASourceType ta_source_type : {TASourceType::kLayoutShape, TASourceType::kReservedVia}) {
+  for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape, TASourceType::kReservedVia}) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
@@ -1257,11 +1264,11 @@ void TrackAssigner::ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel)
     }
     // 将env中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-      updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kLayoutShape, ta_panel.get_ta_panel_id(), drc_rect);
+      updateRectToEnv(ta_model, ChangeType::kDel, TASourceType::kNetShape, ta_panel.get_ta_panel_id(), drc_rect);
     }
     // 将graph中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-      updateRectCostToGraph(ta_panel, ChangeType::kDel, TASourceType::kLayoutShape, drc_rect);
+      updateRectCostToGraph(ta_panel, ChangeType::kDel, TASourceType::kNetShape, drc_rect);
     }
     // 清空routing_tree
     ta_task.get_routing_tree().clear();
@@ -1342,7 +1349,9 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
     }
   }
   {
-    std::set<Orientation>& routing_offset_set = ta_panel.get_routing_offset_set();
+#if 1
+    // 支持 prefer 和 non-prefer
+    std::set<Orientation> routing_offset_set;
     for (std::vector<TANode*>& start_node_comb : start_node_list_list) {
       for (TANode* start_node : start_node_comb) {
         for (std::vector<TANode*>& end_node_comb : end_node_list_list) {
@@ -1353,7 +1362,23 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
         }
       }
     }
-    routing_offset_set.erase(Orientation::kNone);
+    ta_panel.set_routing_offset_set(routing_offset_set);
+#else
+    // 仅支持 prefer
+    std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+    std::vector<Orientation> prefer_orientation_list = routing_layer_list[ta_panel.get_layer_idx()].getPreferOrientationList();
+    std::vector<Orientation> node_orientation_list
+        = RTUtil::getOrientationList(*start_node_list_list.front().front(), *end_node_list_list.front().front());
+
+    std::sort(prefer_orientation_list.begin(), prefer_orientation_list.end());
+    std::sort(node_orientation_list.begin(), node_orientation_list.end());
+
+    std::set<Orientation> routing_offset_set;
+    std::set_intersection(prefer_orientation_list.begin(), prefer_orientation_list.end(), node_orientation_list.begin(),
+                          node_orientation_list.end(), std::inserter(routing_offset_set, routing_offset_set.end()));
+    ta_panel.set_routing_offset_set(routing_offset_set);
+#endif
   }
 }
 
@@ -1562,11 +1587,11 @@ void TrackAssigner::updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATas
   ta_task.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
   // 将布线结果添加到env中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kLayoutShape, ta_panel.get_ta_panel_id(), drc_rect);
+    updateRectToEnv(ta_model, ChangeType::kAdd, TASourceType::kNetShape, ta_panel.get_ta_panel_id(), drc_rect);
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(ta_task.get_origin_net_idx(), ta_task.get_routing_tree())) {
-    updateRectCostToGraph(ta_panel, ChangeType::kAdd, TASourceType::kLayoutShape, drc_rect);
+    updateRectCostToGraph(ta_panel, ChangeType::kAdd, TASourceType::kNetShape, drc_rect);
   }
   ta_task.set_routing_state(RoutingState::kRouted);
 }
@@ -1806,7 +1831,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
       = ta_panel_stat.get_source_routing_drc_violation_map();
   std::map<TASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = ta_panel_stat.get_source_cut_drc_violation_map();
-  for (TASourceType ta_source_type : {TASourceType::kLayoutShape}) {
+  for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape}) {
     for (auto& [drc, violation_info_list] : getViolationInfo(ta_panel, ta_source_type)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
@@ -2225,8 +2250,9 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
   gp_gds.addStruct(panel_track_axis_struct);
 
   // source_region_query_map
-  std::vector<std::pair<TASourceType, GPGraphType>> source_graph_pair_list
-      = {{TASourceType::kLayoutShape, GPGraphType::kLayoutShape}, {TASourceType::kReservedVia, GPGraphType::kReservedVia}};
+  std::vector<std::pair<TASourceType, GPGraphType>> source_graph_pair_list = {{TASourceType::kBlockage, GPGraphType::kBlockage},
+                                                                              {TASourceType::kNetShape, GPGraphType::kNetShape},
+                                                                              {TASourceType::kReservedVia, GPGraphType::kReservedVia}};
   for (auto& [ta_source_type, gp_graph_type] : source_graph_pair_list) {
     for (bool is_routing : {true, false}) {
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(ta_source_type), is_routing)) {

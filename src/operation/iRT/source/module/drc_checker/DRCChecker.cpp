@@ -469,7 +469,9 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       if (!RTUtil::isOverlap(enlarge_rect1, check_rect2) && !RTUtil::isOverlap(enlarge_rect2, check_rect1)) {
         LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
-
+      if (!RTUtil::isOverlap(enlarge_rect1, enlarge_rect2)) {
+        continue;
+      }
       LayerRect violation_region(RTUtil::getOverlap(enlarge_rect1, enlarge_rect2), layer_idx);
 
       std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
