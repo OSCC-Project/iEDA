@@ -3,7 +3,7 @@ decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
 dec_int = _{ decimal_integer }
 optional_exp = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits? }
 optional_frac = _{ "." ~ decimal_digits? }
-float = _{ dec_int ~ optional_frac ~ optional_exp }
+float = @{ dec_int ~ optional_frac ~ optional_exp }
 
 bus_index = _{ "[" ~ decimal_digits+ ~ "]" }
 bus_slice = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
@@ -40,7 +40,7 @@ group = { lib_id ~ "(" ~ ")" ~ "{" ~ statements ~ "}" | lib_id ~ "(" ~ attribute
 statement = { simple_attribute | complex_attribute | group }
 statements = { statement+ }
 
-lib_file = { group }
+lib_file = _{ SOI ~ group ~ EOI }
 
 
 

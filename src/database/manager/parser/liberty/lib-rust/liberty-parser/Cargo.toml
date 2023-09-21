@@ -2,6 +2,9 @@
 name = "liberty-parser"
 version = "0.1.0"
 edition = "2021"
+exclude = ["build"]
+rust-version = "1.72"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
