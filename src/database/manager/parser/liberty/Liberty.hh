@@ -33,9 +33,9 @@
 #include <vector>
 
 #include "Array.hh"
-#include "HashMap.hh"
-#include "HashSet.hh"
-#include "Map.hh"
+#include "FlatMap.hh"
+#include "FlatSet.hh"
+#include "BTreeMap.hh"
 #include "Vector.hh"
 #include "include/Config.hh"
 #include "include/Type.hh"
@@ -851,7 +851,7 @@ class LibertyArc : public LibertyObject
 
   std::unique_ptr<LibertyTableModel> _table_model;  //!< The arc timing model.
 
-  static Map<std::string, TimingType> _str_to_type;
+  static BTreeMap<std::string, TimingType> _str_to_type;
 
   DISALLOW_COPY_AND_ASSIGN(LibertyArc);
 };

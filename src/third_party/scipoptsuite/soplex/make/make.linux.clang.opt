@@ -1,2 +1,0 @@
-CPPFLAGS	+=	-DNDEBUG
-CXXFLAGS	+=	-O3 -mtune=native -fomit-frame-pointer

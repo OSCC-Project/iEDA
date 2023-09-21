@@ -26,7 +26,7 @@
 
 #include "BalanceClustering.hh"
 #include "CtsDesign.hh"
-#include "CtsReport.h"
+#include "CtsReport.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
 #include "log/Log.hh"

@@ -1,4 +1,0 @@
-*** Error 190: Component number 0.7 is too big or not an integer
-*** File: e190.zpl Line 2
-*** param x := ord({1..5},1,0.7);
-***                            ^^^

@@ -1,5 +1,0 @@
-*** Error 198: Incompatible index tuple
-Tuple <k> component 1 is not compatible with <1>
-*** File: e198_2.zpl Line 3
-*** set C := { <i> in A with <k> in B };
-***                                   ^^^

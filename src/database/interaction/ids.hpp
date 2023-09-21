@@ -44,25 +44,13 @@ class CtsSignalWire;
 class CtsNet;
 class EvalNet;
 class Evaluator;
-class Synthesis;
-class Balancer;
-class OptiNet;
 class Endpoint;
 enum class FitType;
 class ModelBase;
 class ModelFactory;
-class MplHelper;
 template <typename T>
 class CtsPoint;
 using Point = icts::CtsPoint<int>;
-template <typename T>
-class CtsSegment;
-using Segment = icts::CtsSegment<int>;
-template <typename T>
-class CtsPolygon;
-using Polygon = icts::CtsPolygon<int>;
-template <typename T>
-struct DataTraits;
 }  // namespace icts
 
 namespace ista {

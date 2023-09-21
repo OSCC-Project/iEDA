@@ -1,4 +1,0 @@
---- Warning 302: Priority has to be integral for SOS c1_1
-*** File: w302.zpl Line 4
-*** sos c1: type1 priority 1.5 : 3 * x + 2 * y;
-***                                           ^^^

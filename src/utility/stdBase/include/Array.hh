@@ -57,25 +57,7 @@ class Array : public absl::FixedArray<T, N>
   using Base::rbegin;
   using Base::rend;
   using Base::size;
-
-  void swap(Array& arr) { std::swap_ranges(begin(), end(), arr.begin()); }
-
-  reference operator[](size_t i) { return data()[i]; }
-
-  friend bool operator==(const Array& lhs, const Array& rhs) { return absl::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end()); }
-
-  friend bool operator!=(const Array& lhs, const Array& rhs) { return !(lhs == rhs); }
-
-  friend bool operator<(const Array& lhs, const Array& rhs)
-  {
-    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
-  }
-
-  friend bool operator>(const Array& lhs, const Array& rhs) { return rhs < lhs; }
-
-  friend bool operator<=(const Array& lhs, const Array& rhs) { return !(rhs < lhs); }
-
-  friend bool operator>=(const Array& lhs, const Array& rhs) { return !(lhs < rhs); }
+ 
 };
 
 }  // namespace ieda

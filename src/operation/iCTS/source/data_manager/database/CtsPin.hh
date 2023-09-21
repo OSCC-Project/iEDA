@@ -14,15 +14,17 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#ifndef PIN_H
-#define PIN_H
+/**
+ * @file CtsPin.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#pragma once
 
 #include <string>
 
 #include "CtsInstance.hh"
 #include "CtsNet.hh"
 #include "DesignObject.hh"
-#include "pgl.h"
 
 namespace icts {
 
@@ -71,5 +73,3 @@ class CtsPin : public DesignObject
 };
 
 }  // namespace icts
-
-#endif

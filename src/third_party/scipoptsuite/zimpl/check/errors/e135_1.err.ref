@@ -1,4 +1,0 @@
-*** Error 135: Index set for parameter "p" is empty
-*** File: e135_1.zpl Line 3
-*** param p[<i> in I with i > 3] := i;
-***                                  ^^^

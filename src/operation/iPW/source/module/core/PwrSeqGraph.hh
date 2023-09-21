@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -31,8 +31,8 @@
 #include <ranges>
 #include <vector>
 
+#include "BTreeSet.hh"
 #include "PwrVertex.hh"
-#include "Set.hh"
 #include "include/PwrConfig.hh"
 #include "netlist/Instance.hh"
 #include "netlist/Pin.hh"
@@ -57,8 +57,8 @@ struct PwrSeqArcComp {
  */
 class PwrSeqVertex {
  public:
-  PwrSeqVertex(Set<PwrVertex*>&& data_in_vertexes,
-               Set<PwrVertex*>&& data_out_vertexes)
+  PwrSeqVertex(BTreeSet<PwrVertex*>&& data_in_vertexes,
+               BTreeSet<PwrVertex*>&& data_out_vertexes)
       : _seq_in_vertexes(std::move(data_in_vertexes)),
         _seq_out_vertexes(std::move(data_out_vertexes)) {
     _obj_name = get_own_seq_inst()->get_name();
@@ -126,7 +126,7 @@ class PwrSeqVertex {
   auto& get_seq_in_vertexes() { return _seq_in_vertexes; }
   auto& get_seq_out_vertexes() { return _seq_out_vertexes; }
   auto getDataInVertexes() {
-    Set<PwrVertex*> data_in_vertexes;
+    BTreeSet<PwrVertex*> data_in_vertexes;
     for (auto* seq_in_vertex :
          _seq_in_vertexes | std::ranges::views::filter([](auto* seq_in_vertex) {
            return seq_in_vertex->isSeqDataIn();
@@ -165,8 +165,8 @@ class PwrSeqVertex {
 
   std::string_view
       _obj_name;  //!< The seq vertex own instance name or port name.
-  Set<PwrVertex*> _seq_in_vertexes;   //!< The datain vertexes.
-  Set<PwrVertex*> _seq_out_vertexes;  //!< The dataout vertexes.
+  BTreeSet<PwrVertex*> _seq_in_vertexes;   //!< The datain vertexes.
+  BTreeSet<PwrVertex*> _seq_out_vertexes;  //!< The dataout vertexes.
   PwrSeqArcSet _src_arcs;  //!< The sequential arc sourced from the vertex.
   PwrSeqArcSet _snk_arcs;  //!< The sequential arc sinked to the vertex.
   TricolorMark _tricolor_mark =

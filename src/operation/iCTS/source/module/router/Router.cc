@@ -14,10 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "Router.h"
+/**
+ * @file Router.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "Router.hh"
 
-#include "CTSAPI.hpp"
-#include "CtsDBWrapper.h"
+#include "CTSAPI.hh"
+#include "CtsDBWrapper.hh"
 #include "GOCA.hh"
 #include "TimingPropagator.hh"
 namespace icts {
@@ -214,16 +218,16 @@ void Router::synthesisNet(Net* net)
           = {parent_name, "steiner_" + std::to_string(CTSAPIInst.genId()), "steiner_" + std::to_string(CTSAPIInst.genId()), current_name};
       std::vector<Point> point_vec = {parent_loc, snake_p1, snake_p2, current_loc};
       for (size_t i = 0; i < name_vec.size() - 1; ++i) {
-        cts_net->addSignalWire(CtsSignalWire(Endpoint{name_vec[i], point_vec[i]}, Endpoint{name_vec[i + 1], point_vec[i + 1]}));
+        cts_net->add_signal_wire(CtsSignalWire(Endpoint{name_vec[i], point_vec[i]}, Endpoint{name_vec[i + 1], point_vec[i + 1]}));
       }
     } else {
-      if (pgl::rectilinear(parent_loc, current_loc)) {
-        cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{current_name, current_loc}));
+      if (Point::isRectilinear(parent_loc, current_loc)) {
+        cts_net->add_signal_wire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{current_name, current_loc}));
       } else {
         auto trunk_loc = Point(parent_loc.x(), current_loc.y());
         auto trunk_name = "steiner_" + std::to_string(CTSAPIInst.genId());
-        cts_net->addSignalWire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{trunk_name, trunk_loc}));
-        cts_net->addSignalWire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{current_name, current_loc}));
+        cts_net->add_signal_wire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{trunk_name, trunk_loc}));
+        cts_net->add_signal_wire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{current_name, current_loc}));
       }
     }
   });

@@ -1,3 +1,0 @@
-presolve.dualreds = 1
-numerics.feastol = 9.9999999999999995e-05
-presolve.componentsmaxint = -1

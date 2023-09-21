@@ -1,7 +1,0 @@
-CXX	  	=	g++
-CPPFLAGS	=	-Isrc -DNDEBUG  -DWITH_WARNINGS -m32
-CXXFLAGS	=	-g -O3 -mtune=native  -fomit-frame-pointer # -ffloat-store # -malign-double -ffast-math
-LDFLAGS		=	-m32 -lm
-ARFLAGS		=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

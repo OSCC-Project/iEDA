@@ -1,5 +1,5 @@
 add_subdirectory(${ICTS_SOLVER}/GOCA/tools/balance_clustering/min_cost_flow)
-add_subdirectory(${ICTS_SOLVER}/GOCA/tools/balance_clustering/mip)
+add_subdirectory(${ICTS_SOLVER}/GOCA/tools/balance_clustering/anneal_opt)
 
 if(DEBUG_ICTS_BALANCE_CLUSTERING)
   message(STATUS "CTS: DEBUG_ICTS_BALANCE_CLUSTERING")
@@ -18,7 +18,7 @@ target_link_libraries(
          icts_api
          icts_goca_database
          icts_min_cost_flow
-         icts_mip
+         icts_anneal_opt
          icts_timing_propagator
          icts_tree_builder)
 
@@ -26,7 +26,7 @@ target_include_directories(
   icts_balance_clustering
   PUBLIC ${ICTS_SOLVER}/GOCA/database
          ${ICTS_SOLVER}/GOCA/tools/balance_clustering/min_cost_flow
-         ${ICTS_SOLVER}/GOCA/tools/balance_clustering/mip
+         ${ICTS_SOLVER}/GOCA/tools/balance_clustering/simulated_annealing
          ${ICTS_SOLVER}/GOCA/tools/timing_propagator
          ${ICTS_SOLVER}/GOCA/tools/tree_builder
          ${ICTS_DATABASE})

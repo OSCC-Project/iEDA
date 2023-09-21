@@ -6,7 +6,7 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-add_library(icts_api ${ICTS_API}/CTSAPI.cpp)
+add_library(icts_api ${ICTS_API}/CTSAPI.cc)
 
 target_link_libraries(icts_api PRIVATE icts_source icts_api_external_libs usage)
 
