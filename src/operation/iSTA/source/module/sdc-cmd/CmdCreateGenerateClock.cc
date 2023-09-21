@@ -302,7 +302,7 @@ void CmdCreateGeneratedClock::set_generate_clock(
     std::vector<const char*> options) {
   TclOption* name_option = getOptionOrArg("-name");
 
-  const char* generate_clock_name = nullptr;
+  const char* generate_clock_name;
 
   LOG_FATAL_IF(!name_option->is_set_val());
   if (name_option->is_set_val()) {
