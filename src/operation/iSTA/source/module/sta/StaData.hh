@@ -35,7 +35,7 @@
 #include <utility>
 #include <vector>
 
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "Type.hh"
 #include "delay/WaveformInfo.hh"
 #include "log/Log.hh"
@@ -141,7 +141,7 @@ class StaData {
   TransType _trans_type;         //!< The transition type, rise/fall.
   std::optional<float> _derate;  //!< The vertex derate
   StaVertex* _own_vertex;        //!< The vertex which the data belong to.
-  ieda::Set<StaData*>
+  ieda::BTreeSet<StaData*>
       _fwd_set;  //!< The propagation fwd datas, maybe more than once.
   StaData* _bwd = nullptr;  //!< The propagation bwd data, should be one.
   std::mutex _mt;

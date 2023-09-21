@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file HashMap.h
+ * @file FlatMap.h
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief The hash map container for the eda project.
  * @version 0.1
@@ -70,10 +70,10 @@ namespace ieda {
  */
 template <class KEY, class VALUE, class HASH = typename absl::flat_hash_map<KEY, VALUE>::hasher,
           class EQ = typename absl::flat_hash_map<KEY, VALUE>::key_equal>
-class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
+class FlatMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
 {
  public:
-  using Base = typename HashMap::flat_hash_map;
+  using Base = typename FlatMap::flat_hash_map;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using value_type = typename Base::value_type;
@@ -84,7 +84,7 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
   using Base::Base;
 
   /*destrcutor*/
-  ~HashMap() = default;
+  ~FlatMap() = default;
   using Base::operator=;
 
   /*iterator*/
@@ -134,17 +134,17 @@ class HashMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
 /**
  * @brief A hash map of multiple elements with equivalent keys.
  *
- * The HashMultimap is a wrapper of std unordered_multimap.So we can add
+ * The FlatMultimap is a wrapper of std unordered_multimap.So we can add
  * more convenient interface for development.
  *
  * @tparam KEY Type of key objects.
  * @tparam VALUE Type of value objects.
  */
 template <class KEY, class VALUE>
-class HashMultimap : public std::unordered_multimap<KEY, VALUE>
+class FlatMultimap : public std::unordered_multimap<KEY, VALUE>
 {
  public:
-  using Base = typename HashMultimap::unordered_multimap;
+  using Base = typename FlatMultimap::unordered_multimap;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using value_type = typename Base::value_type;
@@ -153,7 +153,7 @@ class HashMultimap : public std::unordered_multimap<KEY, VALUE>
   using Base::Base;
 
   /*destrcutor*/
-  ~HashMultimap() = default;
+  ~FlatMultimap() = default;
   using Base::operator=;
 
   /*iterator*/

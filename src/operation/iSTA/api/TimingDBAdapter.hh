@@ -23,7 +23,7 @@
  * @date 2021-09-04
  */
 #pragma once
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "sta/Sta.hh"
 
 namespace ista {

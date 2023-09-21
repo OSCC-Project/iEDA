@@ -18,14 +18,14 @@
 
 #include <unordered_map>
 
+#include "BTreeMap.hh"
 #include "Liberty.hh"
-#include "Map.hh"
 #include "Vector.hh"
 
 namespace ista {
 
 using LibertyCellSeq = Vector<LibertyCell*>;
-using EquivCellMap = ieda::Map<LibertyCell*, LibertyCellSeq*>;
+using EquivCellMap = ieda::BTreeMap<LibertyCell*, LibertyCellSeq*>;
 using LibertyCellHashMap = std::unordered_map<unsigned, LibertyCellSeq*>;
 
 // Predicate that is true when the ports, functions, sequentials and

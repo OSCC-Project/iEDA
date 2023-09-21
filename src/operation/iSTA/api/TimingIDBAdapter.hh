@@ -197,17 +197,17 @@ class TimingIDBAdapter : public TimingDBAdapter {
   IdbDefService* _idb_def_service = nullptr;
   IdbLefService* _idb_lef_service = nullptr;
 
-  HashMap<IdbInstance*, Instance*> _db2staInst;
-  HashMap<Instance*, IdbInstance*> _sta2dbInst;
+  FlatMap<IdbInstance*, Instance*> _db2staInst;
+  FlatMap<Instance*, IdbInstance*> _sta2dbInst;
 
-  HashMap<IdbPin*, Port*> _db2staPort;  // net: get io pin
-  HashMap<Port*, IdbPin*> _sta2dbPort;
+  FlatMap<IdbPin*, Port*> _db2staPort;  // net: get io pin
+  FlatMap<Port*, IdbPin*> _sta2dbPort;
 
-  HashMap<IdbNet*, Net*> _db2staNet;
-  HashMap<Net*, IdbNet*> _sta2dbNet;
+  FlatMap<IdbNet*, Net*> _db2staNet;
+  FlatMap<Net*, IdbNet*> _sta2dbNet;
 
-  HashMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
-  HashMap<Pin*, IdbPin*> _sta2dbPin;
+  FlatMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
+  FlatMap<Pin*, IdbPin*> _sta2dbPin;
 };
 
 }  // namespace ista
