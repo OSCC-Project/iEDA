@@ -22,31 +22,31 @@
 #include "HashSet.hh"
 #include "gtest/gtest.h"
 
-using ieda::HashMultiset;
-using ieda::HashSet;
+using ieda::FlatMultiset;
+using ieda::FlatSet;
 
 namespace {
 
 TEST(HashSetTest, Ctor) {
-  HashSet<int> hset = {1, 2, 3};
+  FlatSet<int> hset = {1, 2, 3};
 
   EXPECT_TRUE(hset.hasKey(1));
 }
 
 TEST(HashSetTest, Subtract) {
-  HashSet<int> hset1 = {1, 2, 3};
-  HashSet<int> hset2 = {2, 3, 4};
+  FlatSet<int> hset1 = {1, 2, 3};
+  FlatSet<int> hset2 = {2, 3, 4};
 
   hset1.subtract(hset2);
 
-  HashSet<int> hset3 = {1};
+  FlatSet<int> hset3 = {1};
 
-  EXPECT_TRUE(HashSet<int>::equal(&hset1, &hset3));
+  EXPECT_TRUE(FlatSet<int>::equal(&hset1, &hset3));
 }
 
 TEST(HashSetTest, swap) {
-  HashSet<int> hset1 = {1, 2, 3};
-  HashSet<int> hset2 = {2, 3, 4};
+  FlatSet<int> hset1 = {1, 2, 3};
+  FlatSet<int> hset2 = {2, 3, 4};
 
   swap(hset1, hset2);
 
@@ -54,7 +54,7 @@ TEST(HashSetTest, swap) {
 }
 
 TEST(HashSetTest, extract) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
 
   auto print = [](int p) { std::cout << " " << p; };
 
@@ -76,18 +76,18 @@ TEST(HashSetTest, extract) {
   std::for_each(cont.begin(), cont.end(), print);
   std::cout << '\n';
 
-  EXPECT_TRUE(HashSet<int>::equal(&cont, &cont));
+  EXPECT_TRUE(FlatSet<int>::equal(&cont, &cont));
 }
 
 TEST(HashSetTest, equal) {
-  HashSet<int> cont = {1, 2, 3};
-  HashSet<int> cont1 = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont1 = {1, 2, 3};
 
-  EXPECT_TRUE(HashSet<int>::equal(&cont, &cont1));
+  EXPECT_TRUE(FlatSet<int>::equal(&cont, &cont1));
 }
 
 TEST(HashSetTest, operator1) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
   cont << 4;
   for (auto& p : cont) {
     std::cout << p << std::endl;
@@ -95,8 +95,8 @@ TEST(HashSetTest, operator1) {
 }
 
 TEST(HashSetTest, operator2) {
-  HashSet<int> cont = {1, 2, 3};
-  HashSet<int> cont1 = {4, 5, 6};
+  FlatSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont1 = {4, 5, 6};
 
   cont |= cont1;
 
@@ -106,8 +106,8 @@ TEST(HashSetTest, operator2) {
 }
 
 TEST(HashSetTest, operator3) {
-  HashSet<int> cont = {1, 2, 3};
-  HashSet<int> cont1 = {4, 5, 6};
+  FlatSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont1 = {4, 5, 6};
 
   cont |= std::move(cont1);
 
@@ -115,12 +115,12 @@ TEST(HashSetTest, operator3) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4, 5, 6};
+  FlatSet<int> result = {1, 2, 3, 4, 5, 6};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator4) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
 
   cont |= 4;
 
@@ -128,13 +128,13 @@ TEST(HashSetTest, operator4) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4};
+  FlatSet<int> result = {1, 2, 3, 4};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator5) {
-  HashSet<int> cont = {1, 2, 3};
-  HashSet<int> cont1 = {2, 3, 4};
+  FlatSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont1 = {2, 3, 4};
 
   cont &= cont1;
 
@@ -142,12 +142,12 @@ TEST(HashSetTest, operator5) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {2, 3};
+  FlatSet<int> result = {2, 3};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator6) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
 
   cont &= 3;
 
@@ -155,12 +155,12 @@ TEST(HashSetTest, operator6) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {3};
+  FlatSet<int> result = {3};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator7) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
 
   cont += 4;
 
@@ -168,12 +168,12 @@ TEST(HashSetTest, operator7) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4};
+  FlatSet<int> result = {1, 2, 3, 4};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator8) {
-  HashSet<int> cont = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3};
 
   cont += {4};
 
@@ -181,12 +181,12 @@ TEST(HashSetTest, operator8) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4};
+  FlatSet<int> result = {1, 2, 3, 4};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator9) {
-  HashSet<int> cont = {1, 2, 3, 4};
+  FlatSet<int> cont = {1, 2, 3, 4};
 
   cont -= {4};
 
@@ -194,12 +194,12 @@ TEST(HashSetTest, operator9) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3};
+  FlatSet<int> result = {1, 2, 3};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator10) {
-  HashSet<int> cont = {1, 2, 3, 4};
+  FlatSet<int> cont = {1, 2, 3, 4};
 
   cont -= 4;
 
@@ -207,13 +207,13 @@ TEST(HashSetTest, operator10) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3};
+  FlatSet<int> result = {1, 2, 3};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator11) {
-  HashSet<int> cont = {1, 2, 3, 4};
-  HashSet<int> cont1 = {5};
+  FlatSet<int> cont = {1, 2, 3, 4};
+  FlatSet<int> cont1 = {5};
 
   cont = cont | cont1;
 
@@ -221,13 +221,13 @@ TEST(HashSetTest, operator11) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4, 5};
+  FlatSet<int> result = {1, 2, 3, 4, 5};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator12) {
-  HashSet<int> cont = {1, 2, 3, 4};
-  HashSet<int> cont1 = {4};
+  FlatSet<int> cont = {1, 2, 3, 4};
+  FlatSet<int> cont1 = {4};
 
   cont = cont & cont1;
 
@@ -235,13 +235,13 @@ TEST(HashSetTest, operator12) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {4};
+  FlatSet<int> result = {4};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, operator13) {
-  HashSet<int> cont = {1, 2, 3, 4};
-  HashSet<int> cont1 = {5};
+  FlatSet<int> cont = {1, 2, 3, 4};
+  FlatSet<int> cont1 = {5};
 
   cont = cont + cont1;
 
@@ -249,14 +249,14 @@ TEST(HashSetTest, operator13) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4, 5};
+  FlatSet<int> result = {1, 2, 3, 4, 5};
   EXPECT_EQ(cont, result);
   EXPECT_TRUE(cont1.empty());
 }
 
 TEST(HashSetTest, operator14) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {5};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {5};
 
   cont = cont - cont1;
 
@@ -264,69 +264,69 @@ TEST(HashSetTest, operator14) {
     std::cout << p << std::endl;
   }
 
-  HashSet<int> result = {1, 2, 3, 4};
+  FlatSet<int> result = {1, 2, 3, 4};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, haskey) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
   EXPECT_TRUE(cont.hasKey(4));
 }
 
 TEST(HashSetTest, issuhset) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {1, 2, 3};
   EXPECT_TRUE(cont.isSubset(&cont1));
 }
 
 TEST(HashSetTest, insertset) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {1, 2, 3, 6};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {1, 2, 3, 6};
   cont.insertSet(&cont1);
-  HashSet<int> result = {1, 2, 3, 4, 5, 6};
+  FlatSet<int> result = {1, 2, 3, 4, 5, 6};
   EXPECT_EQ(cont, result);
 }
 
 TEST(HashSetTest, intersects) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {1, 2, 3, 6};
-  EXPECT_TRUE(HashSet<int>::intersects(&cont, &cont1));
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {1, 2, 3, 6};
+  EXPECT_TRUE(FlatSet<int>::intersects(&cont, &cont1));
 }
 
 TEST(HashSetTest, nonmember1) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {1, 2, 3};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {1, 2, 3};
 
   EXPECT_FALSE(cont == cont1);
 }
 
 TEST(HashSetTest, nonmember2) {
-  HashSet<int> cont = {1, 2, 3, 4, 5};
-  HashSet<int> cont1 = {1, 2, 3, 6};
+  FlatSet<int> cont = {1, 2, 3, 4, 5};
+  FlatSet<int> cont1 = {1, 2, 3, 6};
 
   EXPECT_TRUE(cont != cont1);
 }
 
 TEST(HashSetTest, nonmember7) {
-  HashSet<int> cont = {1, 2, 3, 5, 7};
-  HashSet<int> cont1 = {1, 2, 3, 5, 6};
+  FlatSet<int> cont = {1, 2, 3, 5, 7};
+  FlatSet<int> cont1 = {1, 2, 3, 5, 6};
 
   swap(cont, cont1);
 
-  HashSet<int> result_cont = {1, 2, 3, 5, 6};
+  FlatSet<int> result_cont = {1, 2, 3, 5, 6};
 
   EXPECT_EQ(cont, result_cont);
 }
 
 TEST(HashMultisetTest, ctor) {
-  HashMultiset<int> hmultiset = {1, 2, 2, 3};
+  FlatMultiset<int> hmultiset = {1, 2, 2, 3};
   for (auto item : hmultiset) {
     std::cout << item << std::endl;
   }
 }
 
 TEST(HashMultisetTest, capacity) {
-  HashMultiset<int> hmultiset;
+  FlatMultiset<int> hmultiset;
 
   EXPECT_TRUE(hmultiset.empty());
 
@@ -334,7 +334,7 @@ TEST(HashMultisetTest, capacity) {
 }
 
 TEST(HashMultisetTest, modifier1) {
-  HashMultiset<std::unique_ptr<int, std::function<void(int*)>>> hmultiset;
+  FlatMultiset<std::unique_ptr<int, std::function<void(int*)>>> hmultiset;
   auto deleter = [](int* p) {
     std::cout << "delete " << *p << std::endl;
     delete p;
@@ -350,8 +350,8 @@ TEST(HashMultisetTest, modifier1) {
 }
 
 TEST(HashMultisetTest, swap) {
-  HashMultiset<int> hmultiset1 = {1, 2, 3};
-  HashMultiset<int> hmultiset2 = {2, 3, 4};
+  FlatMultiset<int> hmultiset1 = {1, 2, 3};
+  FlatMultiset<int> hmultiset2 = {2, 3, 4};
 
   hmultiset1.swap(hmultiset2);
 
@@ -359,12 +359,12 @@ TEST(HashMultisetTest, swap) {
     std::cout << p << std::endl;
   }
 
-  HashMultiset<int> result = {2, 3, 4};
+  FlatMultiset<int> result = {2, 3, 4};
   EXPECT_EQ(hmultiset1, result);
 }
 
 TEST(HashMultisetTest, lookup) {
-  HashMultiset<int> hmultiset1 = {1, 1, 3};
+  FlatMultiset<int> hmultiset1 = {1, 1, 3};
 
   auto range = hmultiset1.equal_range(1);
   for (auto p = range.first; p != range.second; p++) {
@@ -373,26 +373,26 @@ TEST(HashMultisetTest, lookup) {
 }
 
 TEST(HashMultisetTest, nonmember1) {
-  HashMultiset<int> hmultiset1 = {1, 2, 3};
-  HashMultiset<int> hmultiset2 = {2, 3, 4};
+  FlatMultiset<int> hmultiset1 = {1, 2, 3};
+  FlatMultiset<int> hmultiset2 = {2, 3, 4};
 
   EXPECT_FALSE(hmultiset1 == hmultiset2);
 }
 
 TEST(HashMultisetTest, nonmember2) {
-  HashMultiset<int> hmultiset1 = {1, 2, 3};
-  HashMultiset<int> hmultiset2 = {2, 3, 4};
+  FlatMultiset<int> hmultiset1 = {1, 2, 3};
+  FlatMultiset<int> hmultiset2 = {2, 3, 4};
 
   EXPECT_TRUE(hmultiset1 != hmultiset2);
 }
 
 TEST(HashMultisetTest, nonmember7) {
-  HashMultiset<int> hmultiset1 = {1, 2, 3};
-  HashMultiset<int> hmultiset2 = {2, 3, 4};
+  FlatMultiset<int> hmultiset1 = {1, 2, 3};
+  FlatMultiset<int> hmultiset2 = {2, 3, 4};
 
   swap(hmultiset1, hmultiset2);
 
-  HashMultiset<int> result = {2, 3, 4};
+  FlatMultiset<int> result = {2, 3, 4};
 
   EXPECT_EQ(hmultiset1, result);
 }
@@ -427,8 +427,8 @@ struct DewCmp {
 
 struct DewGHash {
   size_t operator()(const Dew& rhs) const {
-    return HashSet<int>::hash()(rhs._a) ^ HashSet<int>::hash()(rhs._b) ^
-           HashSet<int>::hash()(rhs._c);
+    return FlatSet<int>::hash()(rhs._a) ^ FlatSet<int>::hash()(rhs._b) ^
+           FlatSet<int>::hash()(rhs._c);
   }
 };
 
@@ -453,7 +453,7 @@ TEST(HashSetTest, perf1) {
   const int nof_operations = 10;
 
   auto set_insert = [=]() -> int {
-    HashSet<Dew, DewGHash, DewGCmp> set;
+    FlatSet<Dew, DewGHash, DewGCmp> set;
     for (int i = 0; i < nof_operations; ++i)
       for (int j = 0; j < nof_operations; ++j)
         for (int k = 0; k < nof_operations; ++k) set.insert(Dew(i, j, k));
@@ -479,7 +479,7 @@ TEST(HashSetTest, perf1) {
 TEST(HashSetTest, perf2) {
   const int nof_operations = 10;
 
-  HashSet<Dew, DewGHash, DewGCmp> set;
+  FlatSet<Dew, DewGHash, DewGCmp> set;
   for (int i = 0; i < nof_operations; ++i)
     for (int j = 0; j < nof_operations; ++j)
       for (int k = 0; k < nof_operations; ++k) set.insert(Dew(i, j, k));
@@ -513,7 +513,7 @@ TEST(HashSetTest, perf2) {
 TEST(HashSetTest, perf3) {
   const int nof_operations = 10;
 
-  HashSet<Dew, DewGHash, DewGCmp> set;
+  FlatSet<Dew, DewGHash, DewGCmp> set;
   for (int i = 0; i < nof_operations; ++i)
     for (int j = 0; j < nof_operations; ++j)
       for (int k = 0; k < nof_operations; ++k) set.insert(Dew(i, j, k));

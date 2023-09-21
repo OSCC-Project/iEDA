@@ -32,7 +32,7 @@
 #include <string>
 #include <utility>
 
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "StaClock.hh"
 #include "StaClockTree.hh"
 #include "StaGraph.hh"
