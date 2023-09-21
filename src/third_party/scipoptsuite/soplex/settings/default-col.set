@@ -1,3 +1,0 @@
-# type of computational form (0 - auto, 1 - column representation, 2 - row representation)
-# range [0,2], default 0
-int:representation = 1

@@ -1,4 +1,0 @@
---- Warning 205: 5 excess entries for symbol x ignored
-*** File: w205.zpl Line 2
-*** param x[{1..3}] := read "w205.dat" as "n+";
-***                                           ^^^

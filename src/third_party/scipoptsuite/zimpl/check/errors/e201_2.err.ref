@@ -1,4 +1,0 @@
-*** Error 201: Invalid read template, only one field allowed
-*** File: e201_2.zpl Line 2
-*** param p := read "e201.dat" as "" use 1;
-***                                       ^^^

@@ -28,7 +28,7 @@
 #include <memory>
 #include <vector>
 
-#include "Map.hh"
+#include "BTreeMap.hh"
 #include "StaClock.hh"
 
 namespace ista {

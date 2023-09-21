@@ -1,4 +1,0 @@
-*** Error 181: Empty LHS, not allowed in conditional constraint
-*** File: e181.zpl Line 4
-*** subto c1: vif a <= 5 then 0*a <= 2 end;
-***                                ^^^

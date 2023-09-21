@@ -32,7 +32,7 @@
 #include <string>
 #include <utility>
 
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "StaClock.hh"
 #include "StaClockTree.hh"
 #include "StaGraph.hh"
@@ -462,6 +462,18 @@ class Sta {
 
   void buildClockTrees();
 
+  // const char* getUnit(const char* unit_name);
+  // void setUnit(const char* unit_name, char* unit_value);
+  // double convertToStaUnit(const char* src_type, const double src_value);
+
+  TimeUnit getTimeUnit() const { return _time_unit; };
+  void setTimeUnit(TimeUnit new_time_unit) { _time_unit = new_time_unit; };
+  double convertTimeUnit(const double src_value);
+
+  CapacitiveUnit getCapUnit() const { return _cap_unit; };
+  void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
+  double convertCapUnit(const double src_value);
+
   std::optional<double> getInstSlack(AnalysisMode analysis_mode,
                                      Instance* the_inst);
   std::optional<double> getInstTransition(AnalysisMode analysis_mode,
@@ -536,6 +548,8 @@ class Sta {
 
   std::mutex _mt;
 
+  TimeUnit _time_unit = TimeUnit::kNS;
+  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
   // Singleton sta.
   static Sta* _sta;
 

@@ -14,26 +14,26 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file SolverTest.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #include <vector>
 
 #include "../../database/interaction/ids.hpp"
 #include "../../platform/data_manager/idm.h"
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 #include "Inst.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
-#include "bound_skew_tree/BST.hh"
 #include "bound_skew_tree/BoundSkewTree.hh"
 #include "bound_skew_tree/GeomCalc.hh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
-// debug
-#include "model/mplHelper/MplHelper.h"
 
 using ieda::Log;
 
 namespace {
-using icts::BST;
 using icts::Inst;
 using icts::LayerPattern;
 using icts::Net;
@@ -42,6 +42,7 @@ using icts::Pin;
 using icts::Point;
 using icts::RCPattern;
 using icts::TimingPropagator;
+using icts::TopoType;
 using icts::TreeBuilder;
 class SolverTest : public testing::Test
 {
@@ -70,7 +71,10 @@ void resetNet(Net* net)
     pin->set_parent(nullptr);
     pin->set_children({});
     pin->set_slew_in(0);
-    pin->set_cap_load(0);
+    pin->set_min_delay(0);
+    pin->set_max_delay(0);
+    TimingPropagator::updatePinCap(pin);
+    TimingPropagator::initLoadPinDelay(pin);
     pin->set_net(nullptr);
   });
   // release buffer and its pins
@@ -80,58 +84,114 @@ void resetNet(Net* net)
   std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
 }
 
-void bstTest(const std::vector<Pin*>& load_pins, const Point& guide_loc)
+void boundSkewTreeTest(const std::vector<Pin*>& load_pins, const TopoType& topo_type, const std::string& note,
+                       const std::optional<Point>& guide_loc)
 {
-  auto roots = TreeBuilder::dmeTree("bst", load_pins, 0.08, guide_loc);
-  LOG_FATAL_IF(roots.size() != 1) << "Case not processed yet!";
-  auto root = roots.front();
+  auto* root = TreeBuilder::boundSkewTree("BoundSkewTree", load_pins, 0.08, guide_loc, topo_type);
+
   auto* driver_pin = root->get_driver_pin();
+  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
   auto* net = driver_pin->get_net();
 
   TimingPropagator::update(net);
-  TreeBuilder::writePy(driver_pin, "BST_old");
-  LOG_INFO << "BST_old";
+  TreeBuilder::writePy(driver_pin, "BoundSkewTree_" + note);
+  LOG_INFO << std::endl;
+  LOG_INFO << "BoundSkewTree"
+           << "(" << note << ")";
   LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "cap: " << driver_pin->get_cap_load();
   LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
   LOG_INFO << "max delay: " << driver_pin->get_max_delay();
-  LOG_INFO << "max delay(Not Cell): " << driver_pin->get_max_delay() - root->get_insert_delay();
-  LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc, driver_pin->get_location());
+  if (guide_loc.has_value()) {
+    LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc.value(), driver_pin->get_location());
+  }
   resetNet(net);
 }
 
-void boundSkewTreeTest(const std::vector<Pin*>& load_pins, const Point& guide_loc)
+void beatSaltTest(const std::vector<Pin*>& load_pins, const TopoType& topo_type, const std::string& note,
+                  const std::optional<Point>& guide_loc)
 {
-  auto* root = TreeBuilder::boundSkewTree("BoundSkewTree", load_pins, 0.08, guide_loc);
+  auto* buf = TreeBuilder::beatSaltTree("beat_salt", load_pins, 0.08, guide_loc, topo_type);
+  auto* driver_pin = buf->get_driver_pin();
+  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
+  auto* beat_net = driver_pin->get_net();
 
-  auto* driver_pin = root->get_driver_pin();
-  auto* net = driver_pin->get_net();
-
-  TimingPropagator::update(net);
-  TreeBuilder::writePy(driver_pin, "BoundSkewTree");
-  LOG_INFO << "BoundSkewTree";
+  TreeBuilder::writePy(driver_pin, "BEAT_Salt_" + note);
+  LOG_INFO << std::endl;
+  LOG_INFO << "BEAT Salt"
+           << "(" << note << ")";
   LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "cap: " << driver_pin->get_cap_load();
   LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
   LOG_INFO << "max delay: " << driver_pin->get_max_delay();
-  LOG_INFO << "max delay(Not Cell): " << driver_pin->get_max_delay() - root->get_insert_delay();
-  LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc, driver_pin->get_location());
-  resetNet(net);
+  if (guide_loc.has_value()) {
+    LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc.value(), driver_pin->get_location());
+  }
+  resetNet(beat_net);
+}
+
+void beatTest(const std::vector<Pin*>& load_pins, const TopoType& topo_type, const std::string& note, const std::optional<Point>& guide_loc)
+{
+  auto* buf = TreeBuilder::beatTree("beat", load_pins, 0.08, guide_loc, topo_type);
+  auto* driver_pin = buf->get_driver_pin();
+  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
+  auto* beat_net = driver_pin->get_net();
+
+  TreeBuilder::writePy(driver_pin, "BEAT_" + note);
+  LOG_INFO << std::endl;
+  LOG_INFO << "BEAT"
+           << "(" << note << ")";
+  LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "cap: " << driver_pin->get_cap_load();
+  LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
+  LOG_INFO << "max delay: " << driver_pin->get_max_delay();
+  if (guide_loc.has_value()) {
+    LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc.value(), driver_pin->get_location());
+  }
+  resetNet(beat_net);
 }
 
 void saltTest(const std::vector<Pin*>& load_pins, const Point& guide_loc)
 {
   auto root = TreeBuilder::genBufInst("root", guide_loc);
-  root->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* driver_pin = root->get_driver_pin();
   TreeBuilder::shallowLightTree(driver_pin, load_pins);
+  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
   auto* net = TimingPropagator::genNet("salt", driver_pin, load_pins);
-  TimingPropagator::update(net);
 
+  TimingPropagator::update(net);
   TreeBuilder::writePy(driver_pin, "SALT");
+  LOG_INFO << std::endl;
   LOG_INFO << "SALT";
   LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "cap: " << driver_pin->get_cap_load();
   LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
   LOG_INFO << "max delay: " << driver_pin->get_max_delay();
-  LOG_INFO << "max delay(Not Cell): " << driver_pin->get_max_delay() - root->get_insert_delay();
+  LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc, driver_pin->get_location());
+  resetNet(net);
+}
+
+void fluteTest(const std::vector<Pin*>& load_pins, const Point& guide_loc)
+{
+  auto root = TreeBuilder::genBufInst("root", guide_loc);
+  auto* driver_pin = root->get_driver_pin();
+  TreeBuilder::fluteTree(driver_pin, load_pins);
+  driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
+  auto* net = TimingPropagator::genNet("flute", driver_pin, load_pins);
+
+  TimingPropagator::update(net);
+  TreeBuilder::writePy(driver_pin, "FLUTE");
+  LOG_INFO << std::endl;
+  LOG_INFO << "FLUTE";
+  LOG_INFO << "wirelength: " << driver_pin->get_sub_len();
+  LOG_INFO << "cap: " << driver_pin->get_cap_load();
+  LOG_INFO << "skew: " << driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  LOG_INFO << "max wire delay: " << driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay();
+  LOG_INFO << "max delay: " << driver_pin->get_max_delay();
   LOG_INFO << "guide gap: " << TimingPropagator::calcLen(guide_loc, driver_pin->get_location());
   resetNet(net);
 }
@@ -158,16 +218,27 @@ TEST_F(SolverTest, Compare)
     buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
     load_bufs.push_back(buf);
     auto* load_pin = buf->get_load_pin();
-    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+    auto pattern = RCPattern::kHV;
     load_pin->set_pattern(pattern);
+    TimingPropagator::updatePinCap(load_pin);
+    TimingPropagator::initLoadPinDelay(load_pin);
   }
   std::vector<Pin*> load_pins;
   std::transform(load_bufs.begin(), load_bufs.end(), std::back_inserter(load_pins), [](Inst* buf) { return buf->get_load_pin(); });
-  auto guide_loc = Point(99000, 154000);
+  auto guide_loc = Point(94000, 154000);
 
-  bstTest(load_pins, guide_loc);
-  boundSkewTreeTest(load_pins, guide_loc);
+  // bstTest(load_pins, guide_loc);
+  std::map<TopoType, std::string> topo_type_map = {{TopoType::kGreedyDist, "GreedyDist"},
+                                                   {TopoType::kGreedyMerge, "GreedyMerge"},
+                                                   {TopoType::kBiCluster, "BiCluster"},
+                                                   {TopoType::kBiPartition, "BiPartition"}};
+  for (auto [topo_type, note] : topo_type_map) {
+    boundSkewTreeTest(load_pins, topo_type, note, std::nullopt);
+    beatSaltTest(load_pins, topo_type, note, std::nullopt);
+    // beatTest(load_pins, topo_type, note, guide_loc);
+  }
   saltTest(load_pins, guide_loc);
+  fluteTest(load_pins, guide_loc);
 }
 
 TEST_F(SolverTest, GeomTest)

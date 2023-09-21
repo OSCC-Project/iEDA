@@ -1,5 +1,0 @@
-*** Error 174: Numeric field read as "hallo". This is not a number.
-***            File: e174.dat line 1
-*** File: e174_3.zpl Line 2
-*** param p[{1..3}] := read "e174.dat" as "n+" ;
-***                                            ^^^

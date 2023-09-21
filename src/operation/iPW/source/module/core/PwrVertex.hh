@@ -53,7 +53,7 @@ class PwrVertex {
   explicit PwrVertex(StaVertex* sta_vertex) : _sta_vertex(sta_vertex) {}
   ~PwrVertex() = default;
 
-  using PwrSeqVertexSet = Set<PwrSeqVertex*, PwrSeqVertexComp>;
+  using PwrSeqVertexSet = BTreeSet<PwrSeqVertex*, PwrSeqVertexComp>;
 
   auto* get_sta_vertex() { return _sta_vertex; }
 

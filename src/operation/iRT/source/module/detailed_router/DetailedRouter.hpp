@@ -92,6 +92,8 @@ class DetailedRouter
   void buildSourceOrienTaskMap(DRBox& dr_box);
   void updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getRoutingGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getCutGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::vector<Segment<LayerCoord>> getSegmentList(DRBox& dr_box, LayerRect min_scope_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
@@ -157,6 +159,7 @@ class DetailedRouter
 #endif
 
 #if 1  // valid drc
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const DRCRect& drc_rect);
   bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);

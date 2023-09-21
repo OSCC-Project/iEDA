@@ -1,4 +1,0 @@
-*** Error 146: Tried to build powerset of empty set
-*** File: e146.zpl Line 2
-*** set S[]:=powerset({});
-***                     ^^^

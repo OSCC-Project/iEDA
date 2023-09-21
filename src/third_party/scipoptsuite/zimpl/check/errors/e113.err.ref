@@ -1,4 +1,0 @@
-*** Error 113: Factorial value 3.5 is too big or not an integer
-*** File: e113.zpl Line 2
-*** param a := 3.5!;
-***               ^^^

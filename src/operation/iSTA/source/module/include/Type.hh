@@ -83,8 +83,9 @@ using ModeTransPair = std::pair<AnalysisMode, TransType>;
 
 enum class DelayCalcMethod : int { kElmore = 0, kArnoldi = 1 };
 
-enum class CapacitiveUnit { kPF = 0, kFF = 1 };
+enum class CapacitiveUnit { kPF = 0, kFF = 1, kF = 2 };
 enum class ResistanceUnit { kOHM = 0, kkOHM = 1 };
+enum class TimeUnit { kNS = 0, kPS = 1, kFS = 2 };
 
 inline double ConvertCapUnit(CapacitiveUnit src_unit, CapacitiveUnit snk_unit,
                              double cap) {
