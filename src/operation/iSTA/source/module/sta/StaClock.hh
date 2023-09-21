@@ -25,7 +25,7 @@
 
 #include <utility>
 
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "StaVertex.hh"
 #include "Vector.hh"
 
@@ -71,7 +71,7 @@ class StaClock {
   StaClock& operator=(StaClock&& rhs);
 
   void addVertex(StaVertex* the_vertex) { _clock_vertexes.insert(the_vertex); }
-  Set<StaVertex*>& get_clock_vertexes() { return _clock_vertexes; }
+  auto& get_clock_vertexes() { return _clock_vertexes; }
 
   const char* get_clock_name() { return _clock_name; }
 
@@ -113,7 +113,8 @@ class StaClock {
 
  private:
   const char* _clock_name;
-  Set<StaVertex*> _clock_vertexes;  //!< The graph vertex which is clock point.
+  BTreeSet<StaVertex*>
+      _clock_vertexes;  //!< The graph vertex which is clock point.
   ClockType _clock_type;
 
   std::optional<int> _ideal_network_latency;  //!< The clock network latency

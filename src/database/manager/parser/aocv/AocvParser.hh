@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Map.hh"
+#include "BTreeMap.hh"
 #include "include/Type.hh"
 
 namespace ista {

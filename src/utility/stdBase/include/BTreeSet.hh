@@ -15,9 +15,9 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file Map.h
+ * @file Set.h
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The map container for the eda project.
+ * @brief The set container for the eda project.
  * @version 0.1
  * @date 2020-10-09
  */
@@ -25,52 +25,37 @@
 #pragma once
 
 #include <functional>
-#include <list>
 #include <utility>
 
-#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 
 namespace ieda {
 
 /**
- * @brief A map made up of unique key based on tree structure.
+ * @brief A set container made up of unique keys based on tree structure.
  *
- * The map is a wrapper of btree map from google abseil containers.The btree map
+ * The set is a wrapper of btree set from google abseil containers.The btree set
  * contains ordered containers generally adhering to the STL container API
- * contract, but implemented using (generally more efficient) B-trees rather
- * than binary trees(as used in std::map et al). The ordered containers are
- * designed to be more efficient replacements for std::map and std::set in most
- * cases.Specifically, they provide several advantages over the ordered std::
- * containers: 1) Provide lower memory overhead in most cases than their STL
- * equivalents. 2) Are generally more cache friendly(and hence faster) than
- * their STL equivalents. 3) Provide C++11 support for C++17 mechanisms such as
- * try_emplace(). 4) Support heterogeneous lookup.
- *
- * @tparam KEY
- * @tparam VALUE
- * @tparam CMP
+ * contract, but implemented using B-trees rather than binary trees, generally
+ * more efficient.
  */
-template <class KEY, class VALUE, class CMP = std::less<KEY>>
-class Map : public absl::btree_map<KEY, VALUE, CMP>
+template <class KEY, class CMP = std::less<KEY>>
+class BTreeSet : public absl::btree_set<KEY, CMP>
 {
  public:
-  using Base = typename Map::btree_map;
+  using Base = typename BTreeSet::btree_set;
+  using key_type = typename Base::key_type;
+  using size_type = typename Base::value_type;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using reverse_iterator = typename Base::reverse_iterator;
   using const_reverse_iterator = typename Base::const_reverse_iterator;
-  using size_type = typename Base::size_type;
-  using value_type = typename Base::value_type;
 
-  /*constructor and destructor*/
+  /*constructor*/
   using Base::Base;
   /*destrcutor*/
-  ~Map() = default;
+  ~BTreeSet() = default;
   using Base::operator=;
-
-  /*accessor*/
-  using Base::at;
-  using Base::operator[];
 
   /*iterators*/
   using Base::begin;
@@ -87,17 +72,15 @@ class Map : public absl::btree_map<KEY, VALUE, CMP>
   using Base::max_size;
   using Base::size;
 
-  /*modifier*/
+  /*modifiers*/
   using Base::clear;
   using Base::emplace;
   using Base::emplace_hint;
   using Base::erase;
   using Base::extract;
   using Base::insert;
-  using Base::insert_or_assign;
   using Base::merge;
   using Base::swap;
-  using Base::try_emplace;
 
   /*lookup*/
   using Base::contains;
@@ -107,36 +90,37 @@ class Map : public absl::btree_map<KEY, VALUE, CMP>
   using Base::lower_bound;
   using Base::upper_bound;
 
-  /*observers*/
+  /*observer*/
+  using Base::get_allocator;
   using Base::key_comp;
   using Base::value_comp;
 };
 
 /**
- * @brief A ordered map of multiple elements with equivalent keys.
+ * @brief A ordered set of multiple elements with equivalent keys.
  *
- * The Multimap is a wrapper of btree multimap from google abseil containers.
- * The btree map implemented using B-trees is more efficent than binary tree.
+ * The Multiset is a wrapper of btree multiset from google abseil containers.
+ * The btree set implemented using B-trees is more efficent than binary tree.
  */
-template <typename KEY, typename VALUE, typename CMP = std::less<KEY>>
-class Multimap : public absl::btree_multimap<KEY, VALUE, CMP>
+template <class KEY, class CMP = std::less<KEY>>
+class Multiset : public absl::btree_multiset<KEY, CMP>
 {
  public:
-  using Base = typename Multimap::btree_multimap;
+  using Base = typename Multiset::btree_multiset;
+  using key_type = typename Base::key_type;
+  using size_type = typename Base::value_type;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using reverse_iterator = typename Base::reverse_iterator;
   using const_reverse_iterator = typename Base::const_reverse_iterator;
-  using value_type = typename Base::value_type;
 
   /*constructor*/
   using Base::Base;
-  /*destrcutor*/
-  ~Multimap() = default;
-
+  /*destructor*/
+  ~Multiset() = default;
   using Base::operator=;
 
-  /*iterator*/
+  /*iterators*/
   using Base::begin;
   using Base::cbegin;
   using Base::cend;
@@ -173,31 +157,6 @@ class Multimap : public absl::btree_multimap<KEY, VALUE, CMP>
   using Base::get_allocator;
   using Base::key_comp;
   using Base::value_comp;
-
-  /**
-   * @brief Insert the (key, value) to the map container.
-   *
-   * @param key
-   * @param value
-   */
-  void insert(const KEY& key, const VALUE& value) { insert(value_type(key, value)); }
-
-  /**
-   * @brief Get the mapped values equavilent to the key.
-   *
-   * @param key
-   * @return std::list<VALUE>
-   */
-  std::list<VALUE> values(const KEY& key)
-  {
-    auto ret_values = equal_range(key);
-    std::list<VALUE> ret_list;
-    for (auto i = ret_values.first; i != ret_values.second; ++i) {
-      ret_list.push_back(i->second);
-    }
-
-    return ret_list;
-  }
 };
 
 }  // namespace ieda
