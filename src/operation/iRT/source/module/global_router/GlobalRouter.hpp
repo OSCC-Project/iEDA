@@ -63,12 +63,12 @@ class GlobalRouter
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
   void updateNetReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
-  void updateNetWireDemandMap(GRModel& gr_model);
   void updateNetViaDemandMap(GRModel& gr_model);
   void updateNetAccessDemandMap(GRModel& gr_model);
   LayerRect getOrientationWireList(GRNode& gr_node, LayerCoord& real_coord, Orientation orientation);
-  void updateNodeSupply(GRModel& gr_model);
+  void updateNodeResourceSupply(GRModel& gr_model);
   std::vector<PlanarRect> getCrossingWireList(GRNode& gr_node);
+  void updateNodeAccessSupply(GRModel& gr_model);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();
