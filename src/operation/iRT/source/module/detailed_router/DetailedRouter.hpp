@@ -63,8 +63,9 @@ class DetailedRouter
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
   void buildBoxTrackAxis(DRModel& dr_model);
-  void updateNetFixedRectMap(DRModel& dr_model);
+  void updateBlockageMap(DRModel& dr_model);
   void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
+  void updateNetShapeMap(DRModel& dr_model);
   void decomposeLengthyTANode(DRModel& dr_model);
   void decomposeTANode(DRModel& dr_model, DRNet& dr_net);
   std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> getPreTaPostList(DRNet& dr_net);

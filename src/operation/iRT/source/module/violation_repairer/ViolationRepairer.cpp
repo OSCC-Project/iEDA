@@ -124,35 +124,24 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::buildVRModel(VRModel& vr_model)
 {
-  updateNetFixedRectMap(vr_model);
+  updateBlockageMap(vr_model);
+  updateNetShapeMap(vr_model);
   calcVRGCellSupply(vr_model);
   updateVRResultTree(vr_model);
 }
 
-void ViolationRepairer::updateNetFixedRectMap(VRModel& vr_model)
+void ViolationRepairer::updateBlockageMap(VRModel& vr_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = DM_INST.getDatabase().get_cut_blockage_list();
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
+    addRectToEnv(vr_model, VRSourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, false));
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, true));
-      }
-      for (EXTLayerRect& cut_shape : vr_pin.get_cut_shape_list()) {
-        LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        addRectToEnv(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, false));
-      }
-    }
+    addRectToEnv(vr_model, VRSourceType::kBlockage, DRCRect(-1, blockage_real_rect, false));
   }
 }
 
@@ -170,6 +159,22 @@ void ViolationRepairer::addRectToEnv(VRModel& vr_model, VRSourceType vr_source_t
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         VRGCell& vr_gcell = vr_gcell_map[x][y];
         DC_INST.updateRectList(vr_gcell.getRegionQuery(vr_source_type), ChangeType::kAdd, drc_rect);
+      }
+    }
+  }
+}
+
+void ViolationRepairer::updateNetShapeMap(VRModel& vr_model)
+{
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(vr_model, VRSourceType::kNetShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, true));
+      }
+      for (EXTLayerRect& cut_shape : vr_pin.get_cut_shape_list()) {
+        LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
+        addRectToEnv(vr_model, VRSourceType::kNetShape, DRCRect(vr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
@@ -201,7 +206,7 @@ void ViolationRepairer::calcVRGCellSupply(VRModel& vr_model)
             LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
           }
         }
-        for (VRSourceType vr_source_type : {VRSourceType::kLayoutShape}) {
+        for (VRSourceType vr_source_type : {VRSourceType::kBlockage, VRSourceType::kNetShape}) {
           for (const auto& [net_idx, rect_set] :
                DC_INST.getLayerNetRectMap(vr_gcell.getRegionQuery(vr_source_type), true)[routing_layer.get_layer_idx()]) {
             for (const LayerRect& rect : rect_set) {
@@ -571,7 +576,8 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
       candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
     }
     for (LayerRect& candidate_patch : candidate_patch_list) {
-      if (!hasViolation(vr_model, VRSourceType::kLayoutShape, DRCRect(vr_net.get_net_idx(), candidate_patch, true))) {
+      DRCRect drc_rect(vr_net.get_net_idx(), candidate_patch, true);
+      if (!hasViolation(vr_model, VRSourceType::kBlockage, drc_rect) && !hasViolation(vr_model, VRSourceType::kNetShape, drc_rect)) {
         patch_list.push_back(candidate_patch);
         break;
       }
@@ -600,7 +606,7 @@ void ViolationRepairer::updateNetResultMap(VRModel& vr_model)
 {
   for (VRNet& vr_net : vr_model.get_vr_net_list()) {
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      addRectToEnv(vr_model, VRSourceType::kLayoutShape, drc_rect);
+      addRectToEnv(vr_model, VRSourceType::kNetShape, drc_rect);
     }
   }
 }
@@ -710,7 +716,7 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
-      for (VRSourceType vr_source_type : {VRSourceType::kLayoutShape}) {
+      for (VRSourceType vr_source_type : {VRSourceType::kBlockage, VRSourceType::kNetShape}) {
         for (auto& [drc, violation_info_list] : getViolationInfo(vr_gcell, vr_source_type)) {
           for (ViolationInfo& violation_info : violation_info_list) {
             irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
@@ -833,7 +839,8 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
 
   // report resource overflow info
   auto layer_resource_range_number_map = RTUtil::getLayerRangeNumMap(layer_resource_overflow_map, {1.0});
-  fort::char_table resource_overflow_table = RTUtil::buildOverflowTable(routing_layer_list, total_overflow_number, layer_resource_range_number_map);
+  fort::char_table resource_overflow_table
+      = RTUtil::buildOverflowTable(routing_layer_list, total_overflow_number, layer_resource_range_number_map);
   resource_overflow_table[0][0] = "Layer\\Resource Overflow";
   // print
   RTUtil::printTableList(resource_overflow_table);

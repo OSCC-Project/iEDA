@@ -114,7 +114,8 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  updateNetFixedRectMap(ra_model);
+  updateBlockageMap(ra_model);
+  updateNetShapeMap(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -162,21 +163,13 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
+void ResourceAllocator::updateBlockageMap(RAModel& ra_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
-  }
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
-      }
-    }
+    addRectToEnv(ra_model, RASourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
   }
 }
 
@@ -197,6 +190,18 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
         DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), ChangeType::kAdd, drc_rect);
+      }
+    }
+  }
+}
+
+void ResourceAllocator::updateNetShapeMap(RAModel& ra_model)
+{
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
+      for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(ra_model, RASourceType::kNetShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
@@ -254,7 +259,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kLayoutShape, RASourceType::kReservedVia}) {
+      for (RASourceType ra_source_type : {RASourceType::kBlockage, RASourceType::kNetShape, RASourceType::kReservedVia}) {
         for (const auto& [net_idx, rect_set] :
              DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {

@@ -25,7 +25,8 @@ namespace irt {
 enum class VRSourceType
 {
   kNone,
-  kLayoutShape
+  kBlockage,
+  kNetShape
 };
 
 struct GetVRSourceTypeName
@@ -37,8 +38,11 @@ struct GetVRSourceTypeName
       case VRSourceType::kNone:
         vr_source_type_name = "none";
         break;
-      case VRSourceType::kLayoutShape:
-        vr_source_type_name = "layout_shape";
+      case VRSourceType::kBlockage:
+        vr_source_type_name = "blockage";
+        break;
+      case VRSourceType::kNetShape:
+        vr_source_type_name = "net_shape";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
