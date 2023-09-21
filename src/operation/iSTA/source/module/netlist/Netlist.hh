@@ -28,7 +28,7 @@
 #include <vector>
 
 #include "Config.hh"
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "Instance.hh"
 #include "Net.hh"
 #include "Pin.hh"

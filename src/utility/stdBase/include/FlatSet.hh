@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file HashSet.h
+ * @file FlatSet.h
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief The hash set container for the eda project.
  * @version 0.1
@@ -38,10 +38,10 @@ namespace ieda {
  * tables are knowns as "Swiss tables".
  */
 template <class KEY, class HASH = typename absl::flat_hash_set<KEY>::hasher, class EQ = typename absl::flat_hash_set<KEY>::key_equal>
-class HashSet : public absl::flat_hash_set<KEY, HASH, EQ>
+class FlatSet : public absl::flat_hash_set<KEY, HASH, EQ>
 {
  public:
-  using Base = typename HashSet::flat_hash_set;
+  using Base = typename FlatSet::flat_hash_set;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using value_type = typename Base::value_type;
@@ -51,7 +51,7 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ>
   /*constructor*/
   using Base::Base;
   /*destructor*/
-  ~HashSet() = default;
+  ~FlatSet() = default;
   using Base::operator=;
 
   /*iterator*/
@@ -99,22 +99,22 @@ class HashSet : public absl::flat_hash_set<KEY, HASH, EQ>
 /**
  * @brief A hash set of multiple elements with equivalent keys.
  *
- * The HashMultiset is a wrapper of std unordered_multiset.So we can
+ * The FlatMultiset is a wrapper of std unordered_multiset.So we can
  * add more convenient interface for development.
  *
  * @tparam KEY Type of key objects.
  */
 template <typename KEY>
-class HashMultiset : public std::unordered_multiset<KEY>
+class FlatMultiset : public std::unordered_multiset<KEY>
 {
  public:
-  using Base = typename HashMultiset::unordered_multiset;
+  using Base = typename FlatMultiset::unordered_multiset;
 
   /*constructor*/
   using Base::Base;
 
   /*destrcutor*/
-  ~HashMultiset() = default;
+  ~FlatMultiset() = default;
   using Base::operator=;
 
   /*iterator*/

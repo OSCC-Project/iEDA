@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "Map.hh"
-#include "Set.hh"
+#include "BTreeMap.hh"
+#include "BTreeSet.hh"
 
 namespace ieda {
 
@@ -44,7 +44,7 @@ struct StrCmp
  * @tparam VALUE
  */
 template <typename VALUE>
-class StrMap : public Map<const char*, VALUE, StrCmp>
+class StrMap : public BTreeMap<const char*, VALUE, StrCmp>
 {
 };
 
@@ -52,7 +52,7 @@ class StrMap : public Map<const char*, VALUE, StrCmp>
  * @brief The C-style string set.
  *
  */
-class StrSet : public Set<const char*, StrCmp>
+class StrSet : public BTreeSet<const char*, StrCmp>
 {
 };
 
