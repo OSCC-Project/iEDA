@@ -553,7 +553,7 @@ class Sta {
   // Singleton sta.
   static Sta* _sta;
 
-  DISALLOW_COPY_AND_ASSIGN(Sta);
+  FORBIDDEN_COPY(Sta);
 };
 
 }  // namespace ista

@@ -102,7 +102,7 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             auto snk_slew_fs =
                 dynamic_cast<StaSlewData*>(snk_slew_data)->get_slew();
             auto snk_slew = FS_TO_NS(snk_slew_fs);
-            auto delay_ns = lib_arc->getDelayOrConstrainCheck(
+            auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(
                 snk_trans_type, in_slew, snk_slew);
             auto delay = NS_TO_FS(delay_ns);
             construct_delay_data(analysis_mode, snk_trans_type, the_arc, delay);
@@ -131,8 +131,8 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             continue;
           }
 
-          auto delay_ns =
-              lib_arc->getDelayOrConstrainCheck(out_trans_type, in_slew, load);
+          auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(out_trans_type,
+                                                              in_slew, load);
           auto delay = NS_TO_FS(delay_ns);
 
           construct_delay_data(analysis_mode, out_trans_type, the_arc, delay);
@@ -145,8 +145,8 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             if (!lib_arc->isMatchTimingType(out_trans_type1)) {
               continue;
             }
-            auto delay1_ns = lib_arc->getDelayOrConstrainCheck(out_trans_type1,
-                                                               in_slew, load);
+            auto delay1_ns = lib_arc->getDelayOrConstrainCheckNs(
+                out_trans_type1, in_slew, load);
             auto delay1 = NS_TO_FS(delay1_ns);
 
             construct_delay_data(analysis_mode, out_trans_type1, the_arc,

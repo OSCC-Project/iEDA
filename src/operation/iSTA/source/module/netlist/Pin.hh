@@ -88,7 +88,7 @@ class Pin : public DesignObject {
   unsigned _is_GND : 1;  //!< The pin is at a constant logic value 0.
   unsigned _reserverd : 30;
 
-  DISALLOW_COPY_AND_ASSIGN(Pin);
+  FORBIDDEN_COPY(Pin);
 };
 
 /**
@@ -122,7 +122,7 @@ class PinBus : public DesignObject {
 
   std::unique_ptr<Pin*[]> _pins;  //!< The pins.
   unsigned _size;                 //!< The pin bus size.
-  DISALLOW_COPY_AND_ASSIGN(PinBus);
+  FORBIDDEN_COPY(PinBus);
 };
 
 }  // namespace ista

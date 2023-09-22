@@ -80,7 +80,7 @@ CTSViolationFixer *CTSViolationFixer::get_cts_violation_fixer(DbInterface *dbInt
 }
 
 CTSViolationFixer *
-CTSViolationFixer::get_cts_violation_fixer(idb::IdbBuilder    *idb,
+CTSViolationFixer::get_cts_violation_fixer(idb::IdbBuilder *   idb,
                                            ista::TimingEngine *timing) {
   if (_cts_drv_fix == nullptr) {
     LOG_ERROR_IF(!idb) << "[ERROR] Function loss parameter idb::IdbBuilder.";
@@ -111,7 +111,7 @@ CTSViolationFixer::CTSViolationFixer(idb::IdbBuilder *idb, ista::TimingEngine *t
   _db_adapter = _timing_engine->get_db_adapter();
 
   IdbLefService *idb_lef_service = idb->get_lef_service();
-  IdbLayout     *idb_layout = idb_lef_service->get_layout();
+  IdbLayout *    idb_layout = idb_lef_service->get_layout();
   _dbu = idb_layout->get_units()->get_micron_dbu();
   _parasitics_estimator = new EstimateParasitics(_timing_engine, _dbu);
   _placer = new Placer(idb);
@@ -128,7 +128,7 @@ std::vector<IdbNet *> CTSViolationFixer::fixTiming(IdbNet *idb_net, Tree *topo) 
   double max_fanout = kInf;
 
   string net_name = idb_net->get_net_name();
-  Net   *sta_net = _timing_engine->get_netlist()->findNet(net_name.c_str());
+  Net *  sta_net = _timing_engine->get_netlist()->findNet(net_name.c_str());
   auto   drvr = sta_net->getDriver();
 
   // cap violation
@@ -192,7 +192,7 @@ void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net 
                                       float max_cap, float max_fanout, int level,
                                       // Return values.
                                       // Remaining parasiics after repeater insertion.
-                                      int   &wire_length, // dbu
+                                      int &  wire_length, // dbu
                                       float &pin_cap, float &fanout,
                                       DesignObjSeq &load_pins) {
   int          left_branch = tree->left(curr_pt);
@@ -449,7 +449,7 @@ void CTSViolationFixer::insertCLKBuffer(int x, int y, Net *net,
   _insert_instance_index++;
 
   ista::TimingDBAdapter *timing_db_adapter = _timing_engine->get_db_adapter();
-  TimingIDBAdapter      *db_adapter = dynamic_cast<TimingIDBAdapter *>(timing_db_adapter);
+  TimingIDBAdapter *     db_adapter = dynamic_cast<TimingIDBAdapter *>(timing_db_adapter);
 
   Net *in_net, *out_net;
   in_net = net;
@@ -467,7 +467,7 @@ void CTSViolationFixer::insertCLKBuffer(int x, int y, Net *net,
   // Move load pins to out_net.
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin      *pin = dynamic_cast<Pin *>(pin_port);
+      Pin *     pin = dynamic_cast<Pin *>(pin_port);
       Instance *inst = pin->get_own_instance();
       db_adapter->disconnectPin(pin);
       auto debug = db_adapter->connect(inst, pin->get_name(), out_net);
@@ -590,7 +590,7 @@ void CTSViolationFixer::checkFanoutViolation(DesignObject *drvr_pin,
 void CTSViolationFixer::checkCapacitanceViolation(DesignObject *drvr_pin,
                                                   // return values
                                                   double &max_drvr_cap,
-                                                  bool   &repair_cap) {
+                                                  bool &  repair_cap) {
   double                cap1;
   std::optional<double> max_cap1;
   double                cap_slack1;
@@ -611,7 +611,7 @@ void CTSViolationFixer::checkSlewViolation(DesignObject *drvr_pin,
   float slew_slack1 = kInf;
   float max_slew1{0.f};
 
-  Net          *net = drvr_pin->get_net();
+  Net *         net = drvr_pin->get_net();
   DesignObject *pin;
   FOREACH_NET_PIN(net, pin) {
     // Slew slew_tmp;
@@ -739,8 +739,8 @@ void CTSViolationFixer::gateRiseFallDelay(TransType rf, LibertyArc *arc, float l
   float in_slew = _targ_slews[rise_fall];
   Delay gate_delay;
   Slew  drvr_slew;
-  gate_delay = arc->getDelayOrConstrainCheck(rf, in_slew, load_cap);
-  drvr_slew = arc->getSlew(rf, in_slew, load_cap);
+  gate_delay = arc->getDelayOrConstrainCheckNs(rf, in_slew, load_cap);
+  drvr_slew = arc->getSlewNs(rf, in_slew, load_cap);
   delays[rise_fall] = max(delays[rise_fall], gate_delay);
   slews[rise_fall] = max(slews[rise_fall], drvr_slew);
 }
@@ -748,7 +748,7 @@ void CTSViolationFixer::gateRiseFallDelay(TransType rf, LibertyArc *arc, float l
 int CTSViolationFixer::portFanoutLoadNum(LibertyPort *port) {
   auto &fanout_load = port->get_fanout_load();
   if (!fanout_load.has_value()) {
-    LibertyCell    *cell = port->get_ower_cell();
+    LibertyCell *   cell = port->get_ower_cell();
     LibertyLibrary *lib = cell->get_owner_lib();
     fanout_load = lib->get_default_fanout_load();
   }

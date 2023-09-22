@@ -53,7 +53,7 @@ class StaWaveForm {
   Vector<int> _wave_edges;  //!< We assume that the edges compose of rising and
                             //!< falling edge pair.
 
-  DISALLOW_COPY_AND_ASSIGN(StaWaveForm);
+  FORBIDDEN_COPY(StaWaveForm);
 };
 
 /**
@@ -125,7 +125,7 @@ class StaClock {
 
   bool _is_need_update_period_waveform =
       false;  //!< The flag of the time to clock prop.
-  DISALLOW_COPY_AND_ASSIGN(StaClock);
+  FORBIDDEN_COPY(StaClock);
 };
 
 }  // namespace ista

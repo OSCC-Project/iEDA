@@ -68,7 +68,7 @@ void DbInterface::initData() {
 
 void DbInterface::initDbData() {
   IdbLefService *idb_lef_service = _idb->get_lef_service();
-  IdbLayout     *idb_layout = idb_lef_service->get_layout();
+  IdbLayout *    idb_layout = idb_lef_service->get_layout();
 
   IdbCore *idb_core = idb_layout->get_core();
   IdbRect *idb_rect = idb_core->get_bounding_box();
@@ -78,14 +78,14 @@ void DbInterface::initDbData() {
                     idb_rect->get_high_y());
 
   IdbDefService *idb_def_service = _idb->get_def_service();
-  IdbDesign     *idb_design = idb_def_service->get_design();
+  IdbDesign *    idb_design = idb_def_service->get_design();
   _layout = new ito::Layout(idb_design);
   _design_area = DesignCalculator::calculateDesignArea(_layout, _dbu);
 }
 
 void DbInterface::makeEquivCells() {
   vector<LibertyLibrary *> equiv_libs;
-  auto                    &all_libs = _timing_engine->getAllLib();
+  auto &                   all_libs = _timing_engine->getAllLib();
   for (auto &lib : all_libs) {
     for (auto &cell : lib->get_cells()) {
       if (isLinkCell(cell.get())) {
@@ -105,7 +105,7 @@ bool DbInterface::isLinkCell(LibertyCell *cell) {
 
 void DbInterface::findDrvrVertices() {
   Netlist *design_nl = _timing_engine->get_netlist();
-  Net     *net;
+  Net *    net;
   FOREACH_NET(design_nl, net) {
     DesignObject *driver = net->getDriver();
     if (driver) {
@@ -196,8 +196,8 @@ void DbInterface::getGateSlew(LibertyPort *port, TransType trans_type, LibertyAr
   float in_cap = cap_value ? *cap_value : port->get_port_cap();
   float load_cap = in_cap * _tgt_slew_load_cap_factor;
 
-  Slew slew1 = arc->getSlew(trans_type, 0.01, load_cap);
-  Slew slew = arc->getSlew(trans_type, slew1, load_cap);
+  Slew slew1 = arc->getSlewNs(trans_type, 0.01, load_cap);
+  Slew slew = arc->getSlewNs(trans_type, slew1, load_cap);
 
   if (trans_type == TransType::kFall) {
     slews[_fall] += slew;
@@ -340,7 +340,7 @@ float DbInterface::findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType 
 
 Slew DbInterface::gateSlewDiff(TransType in_type, LibertyCell *cell, float load_cap,
                                Slew in_slew, Slew out_slew, LibertyArc *arc) {
-  Slew slew = arc->getSlew(in_type, in_slew, load_cap);
+  Slew slew = arc->getSlewNs(in_type, in_slew, load_cap);
   return slew - out_slew;
 }
 
