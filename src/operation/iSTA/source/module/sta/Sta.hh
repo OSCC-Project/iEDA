@@ -32,7 +32,7 @@
 #include <string>
 #include <utility>
 
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "StaClock.hh"
 #include "StaClockTree.hh"
 #include "StaGraph.hh"
@@ -64,7 +64,7 @@ const std::function<bool(StaSeqPathData*, StaSeqPathData*)> seq_data_cmp =
 // clock cmp for staclock.
 const std::function<unsigned(StaClock*, StaClock*)> sta_clock_cmp =
     [](StaClock* left, StaClock* right) -> unsigned {
-  return Str::caseCmp(left->get_clock_name(), right->get_clock_name());
+  return Str::caseCmp(left->get_clock_name(), right->get_clock_name()) < 0;
 };
 
 /**
@@ -417,9 +417,6 @@ class Sta {
   auto& get_report_tbl_TNS() { return _report_tbl_TNS; }
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
-  void addClockTree(StaClockTree* clock_tree) {
-    _clock_trees.emplace_back(clock_tree);
-  }
 
   StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
@@ -462,15 +459,30 @@ class Sta {
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
-  void buildNextPin(
-      StaClockTree* clock_tree, StaClockTreeNode* parent_node,
-      StaVertex* parent_vertex,
-      std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+
   void buildClockTrees();
+
+  // const char* getUnit(const char* unit_name);
+  // void setUnit(const char* unit_name, char* unit_value);
+  // double convertToStaUnit(const char* src_type, const double src_value);
+
+  TimeUnit getTimeUnit() const { return _time_unit; };
+  void setTimeUnit(TimeUnit new_time_unit) { _time_unit = new_time_unit; };
+  double convertTimeUnit(const double src_value);
+
+  CapacitiveUnit getCapUnit() const { return _cap_unit; };
+  void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
+  double convertCapUnit(const double src_value);
 
   std::optional<double> getInstSlack(AnalysisMode analysis_mode,
                                      Instance* the_inst);
-  std::map<Instance::Coordinate, double> displayTimingMap(AnalysisMode analysis_mode);
+  std::optional<double> getInstTransition(AnalysisMode analysis_mode,
+                                          Instance* the_inst);
+
+  std::map<Instance::Coordinate, double> displayTimingMap(
+      AnalysisMode analysis_mode);
+  std::map<Instance::Coordinate, double> displayTransitionMap(
+      AnalysisMode analysis_mode);
 
  private:
   Sta();
@@ -536,10 +548,12 @@ class Sta {
 
   std::mutex _mt;
 
+  TimeUnit _time_unit = TimeUnit::kNS;
+  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
   // Singleton sta.
   static Sta* _sta;
 
-  DISALLOW_COPY_AND_ASSIGN(Sta);
+  FORBIDDEN_COPY(Sta);
 };
 
 }  // namespace ista

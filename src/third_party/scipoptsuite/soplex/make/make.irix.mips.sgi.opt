@@ -1,9 +1,0 @@
-CXX	=	CC
-CXXFLAGS=	-O3 -mips4 -n32 -DNDEBUG \
-		-LANG:std:ansi-for-init-scope=on:exceptions=off 
-AR	=	CC
-ARFLAGS	=	$(CXXFLAGS) -ar -o
-RANLIB	=	true
-LDFLAGS	=	-lCio -lm
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=

@@ -1,7 +1,0 @@
-CXX	=	g++
-CPPFLAGS=	-Isrc -DNDEBUG  -m32
-CXXFLAGS=	-O3 -march=pentium4  #-ffast-math
-LDFLAGS	=	-m32 -lm # -static
-ARFLAGS	=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

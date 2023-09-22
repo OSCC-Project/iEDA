@@ -367,7 +367,7 @@ class TimingEngine {
   // Singleton timing engine.
   static TimingEngine *_timing_engine;
 
-  DISALLOW_COPY_AND_ASSIGN(TimingEngine);
+  FORBIDDEN_COPY(TimingEngine);
 };
 
 }  // namespace ista

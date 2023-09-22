@@ -57,8 +57,9 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void buildPAModel(PAModel& pa_model);
-  void updateNetFixedRectMap(PAModel& pa_model);
+  void updateBlockageMap(PAModel& pa_model);
   void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(PAModel& pa_model);
   void checkPAModel(PAModel& pa_model);
 #endif
 
@@ -71,7 +72,6 @@ class PinAccessor
   std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
                                               std::vector<EXTLayerRect>& pin_shape_list);
-  void mergeLegalRectList(std::vector<LayerRect>& legal_rect_list);
   std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   void mergeAccessPointList(PANet& pa_net);
   void selectAccessPointByType(PANet& pa_net);
@@ -79,11 +79,15 @@ class PinAccessor
   void updateBoundingBox(PANet& pa_net);
   void updateAccessGrid(PANet& pa_net);
   void selectAccessPointByGCell(PANet& pa_net);
-  void eliminateDRCViolation(PAModel& pa_model, PANet& pa_net);
+  void updateViaAccessByDRC(PAModel& pa_model, PANet& pa_net);
+  void updateWireAccessByDRC(PAModel& pa_model, PANet& pa_net);
+  LayerRect getOrientationWireList(PAGCell& pa_gcell, LayerCoord& real_coord, Orientation orientation);
+  void eliminateInvalidPoint(PANet& pa_net);
   void checkAccessPointList(PANet& pa_net);
   void updateNetCandidateViaMap(PAModel& pa_model);
-  void eliminateViaConflict(PAModel& pa_model);
-  void selectByViaNumber(PANet& pa_net, PAModel& pa_model);
+  void selectPANetList(PAModel& pa_model);
+  void selectByViaConflict(PANet& pa_net, PAModel& pa_model);
+  void selectByAccessOrienSet(PANet& pa_net);
   void selectByNetDistance(PANet& pa_net);
   void checkAccessPointNum(PANet& pa_net);
   void processPAModel(PAModel& pa_model);
@@ -100,6 +104,7 @@ class PinAccessor
 #endif
 
 #if 1  // valid drc
+  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const DRCRect& drc_rect);
   bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);

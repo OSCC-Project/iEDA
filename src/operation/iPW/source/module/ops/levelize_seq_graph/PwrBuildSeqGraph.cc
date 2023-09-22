@@ -127,7 +127,7 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
 unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
   /*Lambda function of find clock to dataout vertexes.*/
   auto find_clk_to_out_vertex = [the_graph](StaVertex* clk_vertex) {
-    Set<PwrVertex*> data_out_pwr_vertexes;
+    BTreeSet<PwrVertex*> data_out_pwr_vertexes;
     auto& clk_src_arcs = clk_vertex->get_src_arcs();
     for (auto* src_arc : clk_src_arcs | std::views::filter([](auto* src_arc) {
                            return src_arc->isDelayArc();
@@ -142,7 +142,7 @@ unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
 
   /*Lamdba function of find clock to datain vertexes.*/
   auto find_clk_to_in_vertex = [the_graph](StaVertex* clk_vertex) {
-    Set<PwrVertex*> data_in_pwr_vertexes;
+    BTreeSet<PwrVertex*> data_in_pwr_vertexes;
     std::vector<StaArc*> check_arcs =
         clk_vertex->getSrcCheckArcs(AnalysisMode::kMax);
     for (auto* check_arc : check_arcs) {

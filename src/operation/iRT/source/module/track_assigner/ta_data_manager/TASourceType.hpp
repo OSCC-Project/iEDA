@@ -25,7 +25,8 @@ namespace irt {
 enum class TASourceType
 {
   kNone,
-  kLayoutShape,
+  kBlockage,
+  kNetShape,
   kReservedVia
 };
 
@@ -38,8 +39,11 @@ struct GetTASourceTypeName
       case TASourceType::kNone:
         ta_source_type_name = "none";
         break;
-      case TASourceType::kLayoutShape:
-        ta_source_type_name = "layout_shape";
+      case TASourceType::kBlockage:
+        ta_source_type_name = "blockage";
+        break;
+      case TASourceType::kNetShape:
+        ta_source_type_name = "net_shape";
         break;
       case TASourceType::kReservedVia:
         ta_source_type_name = "reserved_via";

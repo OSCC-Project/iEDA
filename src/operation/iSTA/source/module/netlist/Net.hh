@@ -117,7 +117,7 @@ class Net : public DesignObject {
       _net_loads{};  //!< store the net loads for quickly calc.
   bool _is_clock_net = false;
 
-  DISALLOW_COPY_AND_ASSIGN(Net);
+  FORBIDDEN_COPY(Net);
 };
 
 /**
@@ -136,7 +136,7 @@ class NetPinIterator {
   Net *_net;
   Vector<DesignObject *>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(NetPinIterator);
+  FORBIDDEN_COPY(NetPinIterator);
 };
 
 /**

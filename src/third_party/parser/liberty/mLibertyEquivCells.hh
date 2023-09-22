@@ -14,26 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/**
- * @file LibertyEquivCells.hh
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief Find the function equivalently cells.
- * @version 0.1
- * @date 2021-09-24
- */
-
 #pragma once
 
 #include <unordered_map>
 
+#include "BTreeMap.hh"
 #include "Liberty.hh"
-#include "Map.hh"
 #include "Vector.hh"
 
 namespace ista {
 
 using LibertyCellSeq = Vector<LibertyCell*>;
-using EquivCellMap = ieda::Map<LibertyCell*, LibertyCellSeq*>;
+using EquivCellMap = ieda::BTreeMap<LibertyCell*, LibertyCellSeq*>;
 using LibertyCellHashMap = std::unordered_map<unsigned, LibertyCellSeq*>;
 
 // Predicate that is true when the ports, functions, sequentials and

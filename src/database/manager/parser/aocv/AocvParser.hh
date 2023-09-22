@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Map.hh"
+#include "BTreeMap.hh"
 #include "include/Type.hh"
 
 namespace ista {
@@ -105,7 +105,7 @@ class AocvObjectSpec
   std::optional<int> _default_table;
   AocvLibrary* _own_aocv;
 
-  DISALLOW_COPY_AND_ASSIGN(AocvObjectSpec);
+  FORBIDDEN_COPY(AocvObjectSpec);
 };
 
 /**
@@ -129,7 +129,7 @@ class AocvObjectSpecSet
  private:
   std::vector<std::unique_ptr<AocvObjectSpec>> _object_specs;
 
-  DISALLOW_COPY_AND_ASSIGN(AocvObjectSpecSet);
+  FORBIDDEN_COPY(AocvObjectSpecSet);
 };
 
 /**
@@ -158,7 +158,7 @@ class AocvLibrary
   std::vector<std::unique_ptr<AocvObjectSpecSet>> _object_spec_sets;           //!< The all object specs of the aocv file.
   ieda::Multimap<std::string_view, AocvObjectSpecSet*> _obj_name_to_spec_set;  //!< The obj name map to the object spec set.
 
-  DISALLOW_COPY_AND_ASSIGN(AocvLibrary);
+  FORBIDDEN_COPY(AocvLibrary);
 };
 
 /**

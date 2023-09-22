@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-/**
- * @file LibertyEquivCells.cc
- * @author simin tao (taosm@pcl.ac.cn)
- * @brief The implemention of find the function equivalently cells.
- * @version 0.1
- * @date 2021-09-24
- */
+
 #include "mLibertyEquivCells.hh"
 
 namespace ista {

@@ -25,7 +25,7 @@
 
 #include <utility>
 
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "StaVertex.hh"
 #include "Vector.hh"
 
@@ -53,7 +53,7 @@ class StaWaveForm {
   Vector<int> _wave_edges;  //!< We assume that the edges compose of rising and
                             //!< falling edge pair.
 
-  DISALLOW_COPY_AND_ASSIGN(StaWaveForm);
+  FORBIDDEN_COPY(StaWaveForm);
 };
 
 /**
@@ -71,7 +71,7 @@ class StaClock {
   StaClock& operator=(StaClock&& rhs);
 
   void addVertex(StaVertex* the_vertex) { _clock_vertexes.insert(the_vertex); }
-  Set<StaVertex*>& get_clock_vertexes() { return _clock_vertexes; }
+  auto& get_clock_vertexes() { return _clock_vertexes; }
 
   const char* get_clock_name() { return _clock_name; }
 
@@ -87,9 +87,13 @@ class StaClock {
 
   int getRisingEdge() { return _wave_form.getRisingEdge(); }
   int getFallingEdge() { return _wave_form.getFallingEdge(); }
-   
-  void set_is_generated_clock_prop() { _is_generated_clock_prop = true; }
-  bool get_is_generated_clock_prop() const { return _is_generated_clock_prop; }
+
+  void set_is_need_update_period_waveform(bool is_true) {
+    _is_need_update_period_waveform = is_true;
+  }
+  bool isNeedUpdatePeriodWaveform() const {
+    return _is_need_update_period_waveform;
+  }
 
   [[nodiscard]] int get_period() const { return _period; }
   double getPeriodNs() const { return PS_TO_NS(_period); }
@@ -109,7 +113,8 @@ class StaClock {
 
  private:
   const char* _clock_name;
-  Set<StaVertex*> _clock_vertexes;  //!< The graph vertex which is clock point.
+  BTreeSet<StaVertex*>
+      _clock_vertexes;  //!< The graph vertex which is clock point.
   ClockType _clock_type;
 
   std::optional<int> _ideal_network_latency;  //!< The clock network latency
@@ -117,8 +122,10 @@ class StaClock {
 
   int _period;  // unit is ps.
   StaWaveForm _wave_form;
-  bool _is_generated_clock_prop = false;     //!< The flag of the time to clock prop.
-  DISALLOW_COPY_AND_ASSIGN(StaClock);
+
+  bool _is_need_update_period_waveform =
+      false;  //!< The flag of the time to clock prop.
+  FORBIDDEN_COPY(StaClock);
 };
 
 }  // namespace ista

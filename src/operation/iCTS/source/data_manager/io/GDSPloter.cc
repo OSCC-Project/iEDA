@@ -14,10 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "GDSPloter.h"
+/**
+ * @file GDSPloter.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "GDSPloter.hh"
 
-#include "CTSAPI.hpp"
-#include "CtsDBWrapper.h"
+#include "CTSAPI.hh"
+#include "CtsDBWrapper.hh"
 
 namespace icts {
 
@@ -57,12 +61,8 @@ void GDSPloter::plotDesign()
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();
   for (auto idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
-    auto lp = inst_box->get_low_point();
-    auto hp = inst_box->get_high_point();
-    auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
-                         Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
     auto name = idb_inst->get_name();
-    plotter.insertPolygon(rect, name, 1);
+    plotter.insertPolygon(inst_box, name, 1);
   }
 
   auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
@@ -74,13 +74,9 @@ void GDSPloter::plotDesign()
     }
     int i = 0;
     for (auto* blockage_rect : blockage_rect_list) {
-      auto lp = blockage_rect->get_low_point();
-      auto hp = blockage_rect->get_high_point();
-      auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
-                           Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
       auto name = blockage->get_instance_name() + std::to_string(i);
       ++i;
-      plotter.insertPolygon(rect, name, 1);
+      plotter.insertPolygon(blockage_rect, name, 1);
     }
   }
 
@@ -133,12 +129,8 @@ void GDSPloter::plotFlyLine()
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();
   for (auto idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
-    auto lp = inst_box->get_low_point();
-    auto hp = inst_box->get_high_point();
-    auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
-                         Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
     auto name = idb_inst->get_name();
-    plotter.insertPolygon(rect, name, 1);
+    plotter.insertPolygon(inst_box, name, 1);
   }
 
   auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
@@ -150,17 +142,13 @@ void GDSPloter::plotFlyLine()
     }
     int i = 0;
     for (auto* blockage_rect : blockage_rect_list) {
-      auto lp = blockage_rect->get_low_point();
-      auto hp = blockage_rect->get_high_point();
-      auto rect = Polygon({Point(lp.get_x(), lp.get_y()), Point(lp.get_x(), hp.get_y()), Point(hp.get_x(), hp.get_y()),
-                           Point(hp.get_x(), lp.get_y()), Point(lp.get_x(), lp.get_y())});
       auto name = blockage->get_instance_name() + std::to_string(i);
       ++i;
-      plotter.insertPolygon(rect, name, 1);
+      plotter.insertPolygon(blockage_rect, name, 1);
     }
   }
 
-  auto core = db_wrapper->get_core_bounding_box();
+  auto* core = db_wrapper->get_core_bounding_box();
   plotter.insertPolygon(core, "core", 100);
   plotter.strBegin();
   plotter.topBegin();
@@ -226,6 +214,39 @@ void GDSPloter::insertWire(const Point& begin, const Point& end, const int& laye
 void GDSPloter::refInstance(CtsInstance* inst)
 {
   refPolygon(inst->get_name());
+}
+
+void GDSPloter::plotPolygons(const std::vector<IdbRect*>& polys, const string& name, int layer)
+{
+  head();
+  size_t idx = 0;
+  for (auto poly : polys) {
+    insertPolygon(poly, name + std::to_string(idx++));
+  }
+  tail();
+}
+
+void GDSPloter::insertPolygon(IdbRect* poly, const string& name, int layer)
+{
+  insertPolygon(*poly, name, layer);
+}
+
+void GDSPloter::insertPolygon(IdbRect& poly, const string& name, int layer)
+{
+  std::vector<Point> points
+      = {Point(poly.get_low_x(), poly.get_low_y()), Point(poly.get_low_x(), poly.get_high_y()), Point(poly.get_high_x(), poly.get_high_y()),
+         Point(poly.get_high_x(), poly.get_low_y()), Point(poly.get_low_x(), poly.get_low_y())};
+  _log_ofs << "BGNSTR" << std::endl;
+  _log_ofs << "STRNAME " << name << std::endl;
+
+  _log_ofs << "BOUNDARY" << std::endl;
+  _log_ofs << "LAYER " << layer << std::endl;
+  _log_ofs << "DATATYPE 0" << std::endl;
+  _log_ofs << "XY" << std::endl;
+  std::ranges::for_each(points, [&](const Point& point) { _log_ofs << point << std::endl; });
+  _log_ofs << "ENDEL" << std::endl;
+
+  _log_ofs << "ENDSTR" << std::endl;
 }
 
 void GDSPloter::topBegin()

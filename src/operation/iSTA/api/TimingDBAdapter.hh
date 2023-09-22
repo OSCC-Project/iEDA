@@ -23,7 +23,7 @@
  * @date 2021-09-04
  */
 #pragma once
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "sta/Sta.hh"
 
 namespace ista {
@@ -62,7 +62,7 @@ class TimingDBAdapter {
   Sta* _ista = nullptr;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(TimingDBAdapter);
+  FORBIDDEN_COPY(TimingDBAdapter);
 };
 
 }  // namespace ista

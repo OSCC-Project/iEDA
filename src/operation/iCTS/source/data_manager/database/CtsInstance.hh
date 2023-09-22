@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsInstance.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <cassert>
@@ -21,9 +25,8 @@
 #include <vector>
 
 #include "CtsPin.hh"
+#include "CtsPoint.hh"
 #include "DesignObject.hh"
-#include "pgl.h"
-
 namespace icts {
 class CtsPin;
 enum class CtsPinType;
@@ -60,17 +63,19 @@ class CtsInstance : public DesignObject
   CtsPin* get_load_pin() const;
   int get_level() const { return _level; }
   bool is_virtual() { return _b_virtual; }
-  int getSubWirelength() const { return _sub_wirelength; }
 
   // setter
   void set_name(const std::string& name) { _name = name; }
   void set_cell_master(const std::string& cell_master) { _cell_master = cell_master; }
   void set_type(CtsInstanceType type) { _type = type; }
   void set_location(const Point& location) { _location = location; }
-  void set_location(int x, int y);
+  void set_location(int x, int y)
+  {
+    _location.x(x);
+    _location.y(y);
+  }
   void set_virtual(bool b_virtual) { _b_virtual = b_virtual; }
   void set_level(const int& level) { _level = level; }
-  void setSubWirelength(const int& sub_wirelength) { _sub_wirelength = sub_wirelength; }
   void addPin(CtsPin* pin);
 
   // bool
@@ -89,13 +94,6 @@ class CtsInstance : public DesignObject
   Point _location;
   int _level = 0;
   bool _b_virtual = false;
-  int _sub_wirelength = 0;
 };
-
-inline void CtsInstance::set_location(int x, int y)
-{
-  _location.x(x);
-  _location.y(y);
-}
 
 }  // namespace icts

@@ -1,4 +1,0 @@
-*** Error 208: "size" value -17 not >= 1
-*** File: e208.zpl Line 2
-*** set A := argmin(-17) <i> in { 1 .. 20 } : i;
-***                                            ^^^

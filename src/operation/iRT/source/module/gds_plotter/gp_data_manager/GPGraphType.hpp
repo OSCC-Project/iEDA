@@ -30,7 +30,8 @@ enum class GPGraphType
   kKey,
   kTrackAxis,
   kPath,
-  kLayoutShape,
+  kBlockage,
+  kNetShape,
   kReservedVia
 };
 
@@ -64,8 +65,11 @@ struct GetGPGraphTypeName
       case GPGraphType::kPath:
         data_type_name = "path";
         break;
-      case GPGraphType::kLayoutShape:
-        data_type_name = "layout_shape";
+      case GPGraphType::kBlockage:
+        data_type_name = "blockage";
+        break;
+      case GPGraphType::kNetShape:
+        data_type_name = "net_shape";
         break;
       case GPGraphType::kReservedVia:
         data_type_name = "reserved_via";
