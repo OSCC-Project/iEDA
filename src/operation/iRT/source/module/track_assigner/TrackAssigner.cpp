@@ -1349,7 +1349,7 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
     }
   }
   {
-#if 1
+#if 0
     // 支持 prefer 和 non-prefer
     std::set<Orientation> routing_offset_set;
     for (std::vector<TANode*>& start_node_comb : start_node_list_list) {
