@@ -389,7 +389,7 @@ class StaDataBucket {
   std::unique_ptr<StaDataBucket>
       _next;  //!< The next data bucket which has different signature.
 
-  DISALLOW_COPY_AND_ASSIGN(StaDataBucket);
+  FORBIDDEN_COPY(StaDataBucket);
 };
 
 /**

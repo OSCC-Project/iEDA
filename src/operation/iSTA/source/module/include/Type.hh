@@ -118,7 +118,7 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 // Disallow the copy constructor and operator= functions.
-#define DISALLOW_COPY_AND_ASSIGN(class_name) \
+#define FORBIDDEN_COPY(class_name) \
   class_name(const class_name&) = delete;    \
   void operator=(const class_name&) = delete
 

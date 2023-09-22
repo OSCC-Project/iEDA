@@ -116,7 +116,7 @@ class Power {
       _type_to_group_data;  //!< The mapping of type to group data.
 
   static Power* _power;
-  DISALLOW_COPY_AND_ASSIGN(Power);
+  FORBIDDEN_COPY(Power);
 };
 
 /**
