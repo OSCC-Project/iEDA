@@ -172,7 +172,7 @@ class PwrSeqVertex {
   TricolorMark _tricolor_mark =
       TricolorMark::kWhite;  //!< The tricolor mark for check pipeline loop.
 
-  DISALLOW_COPY_AND_ASSIGN(PwrSeqVertex);
+  FORBIDDEN_COPY(PwrSeqVertex);
 };
 
 /**
@@ -199,7 +199,7 @@ class PwrSeqArc {
 
   PwrSeqVertex* _src;  //!< The arc src vertex.
   PwrSeqVertex* _snk;  //!< The arc snk vertex.
-  DISALLOW_COPY_AND_ASSIGN(PwrSeqArc);
+  FORBIDDEN_COPY(PwrSeqArc);
 };
 
 /**

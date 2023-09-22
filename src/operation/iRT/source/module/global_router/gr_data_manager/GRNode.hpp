@@ -43,18 +43,23 @@ class GRNode : public LayerCoord
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   std::map<GRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
-  irt_int get_whole_wire_demand() const { return _whole_wire_demand; }
+  // gcell 布线消耗
+  irt_int get_cross_wire_demand() const { return _cross_wire_demand; }
+  irt_int get_local_wire_demand() const { return _local_wire_demand; }
   irt_int get_whole_via_demand() const { return _whole_via_demand; }
-  std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orien_wire_demand_map() { return _net_orien_wire_demand_map; }
   std::map<irt_int, irt_int>& get_net_via_demand_map() { return _net_via_demand_map; }
   irt_int get_whole_access_demand() const { return _whole_access_demand; }
   std::map<irt_int, std::map<Orientation, irt_int>>& get_net_orien_access_demand_map() { return _net_orien_access_demand_map; }
+  // gcell 入口控制
   std::map<Orientation, irt_int>& get_orien_access_supply_map() { return _orien_access_supply_map; }
   std::map<Orientation, irt_int>& get_orien_access_demand_map() { return _orien_access_demand_map; }
+  // gcell 集成资源
   irt_int get_resource_supply() const { return _resource_supply; }
   irt_int get_resource_demand() const { return _resource_demand; }
+  // gcell 历史代价
   std::map<Orientation, double>& get_history_orien_access_cost_map() { return _history_orien_access_cost_map; }
   double get_history_resource_cost() const { return _history_resource_cost; }
+  // gcell 经过的线网
   std::set<irt_int>& get_passed_net_set() { return _passed_net_set; }
   // setter
   void set_gr_node_id(const GRNodeId& gr_node_id) { _gr_node_id = gr_node_id; }
@@ -64,14 +69,17 @@ class GRNode : public LayerCoord
   {
     _source_region_query_map = source_region_query_map;
   }
-  void set_whole_wire_demand(const irt_int whole_wire_demand) { _whole_wire_demand = whole_wire_demand; }
+  // gcell 布线消耗
+  void set_cross_wire_demand(const irt_int cross_wire_demand) { _cross_wire_demand = cross_wire_demand; }
+  void set_local_wire_demand(const irt_int local_wire_demand) { _local_wire_demand = local_wire_demand; }
   void set_whole_via_demand(const irt_int whole_via_demand) { _whole_via_demand = whole_via_demand; }
-  void set_net_orien_wire_demand_map(const std::map<irt_int, std::map<Orientation, irt_int>>& net_orien_wire_demand_map)
-  {
-    _net_orien_wire_demand_map = net_orien_wire_demand_map;
-  }
   void set_net_via_demand_map(const std::map<irt_int, irt_int>& net_via_demand_map) { _net_via_demand_map = net_via_demand_map; }
   void set_whole_access_demand(const irt_int whole_access_demand) { _whole_access_demand = whole_access_demand; }
+  void set_net_orien_access_demand_map(const std::map<irt_int, std::map<Orientation, irt_int>>& net_orien_access_demand_map)
+  {
+    _net_orien_access_demand_map = net_orien_access_demand_map;
+  }
+  // gcell 入口控制
   void set_orien_access_supply_map(const std::map<Orientation, irt_int>& orien_access_supply_map)
   {
     _orien_access_supply_map = orien_access_supply_map;
@@ -80,13 +88,16 @@ class GRNode : public LayerCoord
   {
     _orien_access_demand_map = orien_access_demand_map;
   }
+  // gcell 集成资源
   void set_resource_supply(const irt_int resource_supply) { _resource_supply = resource_supply; }
   void set_resource_demand(const irt_int resource_demand) { _resource_demand = resource_demand; }
+  // gcell 历史代价
   void set_history_orien_access_cost_map(const std::map<Orientation, double>& history_orien_access_cost_map)
   {
     _history_orien_access_cost_map = history_orien_access_cost_map;
   }
   void set_history_resource_cost(const double history_resource_cost) { _history_resource_cost = history_resource_cost; }
+  // gcell 经过的线网
   void set_passed_net_set(const std::set<irt_int>& passed_net_set) { _passed_net_set = passed_net_set; }
   // function
   GRNode* getNeighborNode(Orientation orientation)
@@ -102,8 +113,8 @@ class GRNode : public LayerCoord
   {
     double cost = 0;
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      // 区分默认还是线网自定义
       irt_int net_access_demand = _whole_access_demand;
+      // 查看是否有补偿
       if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
         if (RTUtil::exist(_net_orien_access_demand_map[net_idx], orientation)) {
           net_access_demand = _net_orien_access_demand_map[net_idx][orientation];
@@ -118,26 +129,20 @@ class GRNode : public LayerCoord
         node_access_supply = _orien_access_supply_map[orientation];
       }
       // 放大，统一access和wire的cost
-      irt_int converted_demand = (net_access_demand + node_access_demand) * (_whole_wire_demand / 2);
-      irt_int converted_supply = node_access_supply * (_whole_wire_demand / 2);
+      irt_int converted_demand = (net_access_demand + node_access_demand) * (_cross_wire_demand / 2);
+      irt_int converted_supply = node_access_supply * (_cross_wire_demand / 2);
       cost += RTUtil::calcCost(converted_demand, converted_supply);
       if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
         cost += _history_orien_access_cost_map[orientation];
       }
     }
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      // 区分默认还是线网自定义
-      irt_int net_wire_demand = (_whole_wire_demand / 2);
-      if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
-        if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], orientation)) {
-          net_wire_demand = _net_orien_wire_demand_map[net_idx][orientation];
-        }
-      }
-      cost += RTUtil::calcCost(net_wire_demand + _resource_demand, _resource_supply);
+      // 在计算cost时，无法看到后续布线结果，所有demand都使用_cross_wire_demand
+      cost += RTUtil::calcCost(_cross_wire_demand + _resource_demand, _resource_supply);
       cost += _history_resource_cost;
     } else {
-      // 区分默认还是线网自定义
       irt_int net_via_demand = _whole_via_demand;
+      // 查看是否有补偿
       if (RTUtil::exist(_net_via_demand_map, net_idx)) {
         net_via_demand = _net_via_demand_map[net_idx];
       }
@@ -148,6 +153,8 @@ class GRNode : public LayerCoord
   }
   void updateDemand(irt_int net_idx, std::set<Orientation> orien_set, ChangeType change_type)
   {
+    irt_int update_num = (change_type == ChangeType::kAdd ? 1 : -1);
+
     std::set<Orientation> access_orien_set;
     std::set<Orientation> wire_orien_set;
     std::set<Orientation> via_orien_set;
@@ -159,45 +166,38 @@ class GRNode : public LayerCoord
         via_orien_set.insert(orien);
       }
     }
-    irt_int update_num = (change_type == ChangeType::kAdd ? 1 : -1);
-    if (!access_orien_set.empty()) {
-      /**
-       * 加access_demand
-       */
-      for (Orientation access_orien : access_orien_set) {
-        irt_int net_access_demand = _whole_access_demand;
-        if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
-          if (RTUtil::exist(_net_orien_access_demand_map[net_idx], access_orien)) {
-            net_access_demand = _net_orien_access_demand_map[net_idx][access_orien];
-          }
-        }
-        _orien_access_demand_map[access_orien] += (update_num * net_access_demand);
-      }
-    }
     if (!wire_orien_set.empty()) {
-      /**
-       * 加wire_demand
-       */
-      for (Orientation wire_orien : wire_orien_set) {
-        irt_int net_wire_demand = (_whole_wire_demand / 2);
-        if (RTUtil::exist(_net_orien_wire_demand_map, net_idx)) {
-          if (RTUtil::exist(_net_orien_wire_demand_map[net_idx], wire_orien)) {
-            net_wire_demand = _net_orien_wire_demand_map[net_idx][wire_orien];
-          }
-        }
-        _resource_demand += (update_num * net_wire_demand);
+      if ((RTUtil::exist(wire_orien_set, Orientation::kEast) && RTUtil::exist(wire_orien_set, Orientation::kWest))
+          || (RTUtil::exist(wire_orien_set, Orientation::kSouth) && RTUtil::exist(wire_orien_set, Orientation::kNorth))) {
+        // _cross_wire_demand
+        _resource_demand += (update_num * _cross_wire_demand);
+      } else {
+        // _local_wire_demand
+        _resource_demand += (update_num * _local_wire_demand);
       }
-    }
-    if (!via_orien_set.empty()) {
-      /**
-       * 加via_demand
-       */
+    } else if (!via_orien_set.empty()) {
+      // _whole_via_demand
+      // _net_via_demand_map
       irt_int net_via_demand = _whole_via_demand;
       if (RTUtil::exist(_net_via_demand_map, net_idx)) {
         net_via_demand = _net_via_demand_map[net_idx];
       }
       _resource_demand += (update_num * net_via_demand);
+    } else {
+      LOG_INST.error(Loc::current(), "Both wire_orien_set and via_orien_set are empty!");
     }
+    //  _whole_access_demand
+    //  _net_orien_access_demand_map
+    for (Orientation access_orien : access_orien_set) {
+      irt_int net_access_demand = _whole_access_demand;
+      if (RTUtil::exist(_net_orien_access_demand_map, net_idx)) {
+        if (RTUtil::exist(_net_orien_access_demand_map[net_idx], access_orien)) {
+          net_access_demand = _net_orien_access_demand_map[net_idx][access_orien];
+        }
+      }
+      _orien_access_demand_map[access_orien] += (update_num * net_access_demand);
+    }
+    // _passed_net_set
     if (change_type == ChangeType::kAdd) {
       _passed_net_set.insert(net_idx);
     } else if (change_type == ChangeType::kDel) {
@@ -230,24 +230,24 @@ class GRNode : public LayerCoord
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
   std::map<GRSourceType, RegionQuery> _source_region_query_map;
   /**
-   * gcell 布线结果该算多少demand?
+   * gcell 布线消耗
    *
-   * wire消耗(单个方向)
-   *  默认：(_whole_wire_demand/2)
-   *  线网方向自定义：(_net_orien_wire_demand_map)
+   * wire消耗(无方向差别)
+   *  贯穿GCell的布线消耗：(_cross_wire_demand)
+   *  不贯穿GCell的布线消耗：(_local_wire_demand)
    *
    * via消耗(无方向差别)
    *  默认：(_whole_via_demand)
-   *  线网方向自定义：(_net_via_demand_map)
+   *  线网通孔资源补偿，用于补偿pin_shape挡住的via资源：(_net_via_demand_map)
    *
    * access消耗(单个方向)
    *  默认：(_whole_access_demand)
-   *  线网方向自定义：(_net_orien_access_demand_map)
+   *  线网access资源补偿，用于补偿pin_shape挡住的access资源：(_net_orien_access_demand_map)
    *
    */
-  irt_int _whole_wire_demand = 0;
+  irt_int _cross_wire_demand = 0;
+  irt_int _local_wire_demand = 0;
   irt_int _whole_via_demand = 0;
-  std::map<irt_int, std::map<Orientation, irt_int>> _net_orien_wire_demand_map;
   std::map<irt_int, irt_int> _net_via_demand_map;
   irt_int _whole_access_demand = 1;
   std::map<irt_int, std::map<Orientation, irt_int>> _net_orien_access_demand_map;
@@ -273,7 +273,7 @@ class GRNode : public LayerCoord
   std::map<Orientation, double> _history_orien_access_cost_map;
   double _history_resource_cost = 0.0;
   /**
-   * gcell 从此node经过的线网
+   * gcell 经过的线网
    */
   std::set<irt_int> _passed_net_set;
 #if 1  // astar

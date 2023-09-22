@@ -25,7 +25,8 @@ namespace irt {
 enum class DRSourceType
 {
   kNone,
-  kLayoutShape,
+  kBlockage,
+  kNetShape,
   kReservedVia
 };
 
@@ -38,8 +39,11 @@ struct GetDRSourceTypeName
       case DRSourceType::kNone:
         dr_source_type_name = "none";
         break;
-      case DRSourceType::kLayoutShape:
-        dr_source_type_name = "layout_shape";
+      case DRSourceType::kBlockage:
+        dr_source_type_name = "blockage";
+        break;
+      case DRSourceType::kNetShape:
+        dr_source_type_name = "net_shape";
         break;
       case DRSourceType::kReservedVia:
         dr_source_type_name = "reserved_via";

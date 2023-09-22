@@ -89,7 +89,7 @@ class Instance : public DesignObject {
   Vector<std::unique_ptr<PinBus>> _pin_buses;
 
   std::optional<Coordinate> _coordinate;
-  DISALLOW_COPY_AND_ASSIGN(Instance);
+  FORBIDDEN_COPY(Instance);
 };
 
 /**
@@ -108,7 +108,7 @@ class PinIterator {
   Instance* _inst;
   Vector<std::unique_ptr<Pin>>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PinIterator);
+  FORBIDDEN_COPY(PinIterator);
 };
 
 /**
@@ -141,7 +141,7 @@ class PinBusIterator {
   Instance* _inst;
   Vector<std::unique_ptr<PinBus>>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PinBusIterator);
+  FORBIDDEN_COPY(PinBusIterator);
 };
 
 /**
