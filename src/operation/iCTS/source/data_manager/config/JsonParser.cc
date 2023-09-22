@@ -14,10 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "JsonParser.h"
+/**
+ * @file JsonParser.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
+#include "JsonParser.hh"
 
-#include "COMUtil.h"
-#include "CTSAPI.hpp"
+#include "COMUtil.hh"
+#include "CTSAPI.hh"
 #include "json/json.hpp"
 #include "log/Log.hh"
 namespace icts {

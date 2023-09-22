@@ -92,7 +92,7 @@ class StaArc {
   unsigned _is_loop_disable : 1 = 0;
   unsigned _is_disable_arc : 1 = 0;
   unsigned _reserved : 30 = 0;
-  DISALLOW_COPY_AND_ASSIGN(StaArc);
+  FORBIDDEN_COPY(StaArc);
 };
 
 /**
@@ -165,7 +165,7 @@ class StaNetArc : public StaArc {
 
   StaDataBucket _arc_waveform_bucket;
 
-  DISALLOW_COPY_AND_ASSIGN(StaNetArc);
+  FORBIDDEN_COPY(StaNetArc);
 };
 
 /**
@@ -236,7 +236,7 @@ class StaInstArc : public StaArc {
   LibertyArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;       //!< The owned inst.
 
-  DISALLOW_COPY_AND_ASSIGN(StaInstArc);
+  FORBIDDEN_COPY(StaInstArc);
 };
 
 }  // namespace ista

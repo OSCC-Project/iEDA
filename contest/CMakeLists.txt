@@ -1,4 +1,4 @@
-option(OPENDACS_2023 "If ON, run contest of OpenDACS 2003 porject." ON)
+option(OPENDACS_2023 "If ON, run contest of OpenDACS 2003 porject." OFF)
 
 if(OPENDACS_2023)
     add_subdirectory(OpenDACS_2023/code)

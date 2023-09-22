@@ -1,8 +1,0 @@
-CXX	=	cxx
-CPPFLAGS=	-Isrc -DNDEBUG
-CXXFLAGS=	-std strict_ansi -O2 -arch host -noexceptions -nortti \
-		-ansi_alias -inline speed -assume accuracy_sensitive #-ieee
-LDFLAGS	=	-lcpml -lm
-ARFLAGS	=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

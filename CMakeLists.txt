@@ -65,6 +65,12 @@ if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
 
+option(CONTEST "If ON, run contest porject." OFF)
+if(CONTEST)
+    add_definitions(-DCONTEST)
+    add_subdirectory(contest)
+endif()
+
 add_subdirectory(src/third_party)
 add_subdirectory(src/utility)
 add_subdirectory(src/apps)

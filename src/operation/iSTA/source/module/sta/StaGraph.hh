@@ -27,8 +27,8 @@
 #include <string>
 #include <vector>
 
-#include "Map.hh"
-#include "Set.hh"
+#include "BTreeMap.hh"
+#include "BTreeSet.hh"
 #include "StaArc.hh"
 #include "StaVertex.hh"
 #include "Vector.hh"
@@ -120,10 +120,10 @@ class StaGraph {
     }));
   }
 
-  Set<StaVertex*>& get_start_vertexes() { return _start_vertexes; }
-  Set<StaVertex*>& get_end_vertexes() { return _end_vertexes; }
-  Set<StaVertex*>& get_const_vertexes() { return _const_vertexes; }
-  Set<StaVertex*>& get_port_vertexes() { return _port_vertexes; }
+  BTreeSet<StaVertex*>& get_start_vertexes() { return _start_vertexes; }
+  BTreeSet<StaVertex*>& get_end_vertexes() { return _end_vertexes; }
+  BTreeSet<StaVertex*>& get_const_vertexes() { return _const_vertexes; }
+  BTreeSet<StaVertex*>& get_port_vertexes() { return _port_vertexes; }
 
   std::vector<std::unique_ptr<StaVertex>>& get_vertexes() { return _vertexes; }
   std::vector<std::unique_ptr<StaArc>>& get_arcs() { return _arcs; }
@@ -144,18 +144,22 @@ class StaGraph {
 
  private:
   Netlist* _nl;
-  Set<StaVertex*> _port_vertexes;
-  Set<StaVertex*> _start_vertexes;  //<! The start vertexes of the timing path.
-  Set<StaVertex*> _end_vertexes;  //<! The endpoint vertexes of the timing path.
-  Set<StaVertex*> _const_vertexes;                    //<! The const vertexes.
+  BTreeSet<StaVertex*> _port_vertexes;
+  BTreeSet<StaVertex*>
+      _start_vertexes;  //<! The start vertexes of the timing path.
+  BTreeSet<StaVertex*>
+      _end_vertexes;  //<! The endpoint vertexes of the timing path.
+  BTreeSet<StaVertex*> _const_vertexes;               //<! The const vertexes.
   std::vector<std::unique_ptr<StaVertex>> _vertexes;  //!< all vertexes.
   std::vector<std::unique_ptr<StaArc>> _arcs;         //!< all arcs.
-  ieda::Map<DesignObject*, StaVertex*> _obj2vertex;   //!< design obj to vertex.
-  ieda::Map<StaVertex*, DesignObject*> _vertex2obj;   //!< vertex to design obj.
-  ieda::Map<StaVertex*, std::unique_ptr<StaVertex>>
+  ieda::BTreeMap<DesignObject*, StaVertex*>
+      _obj2vertex;  //!< design obj to vertex.
+  ieda::BTreeMap<StaVertex*, DesignObject*>
+      _vertex2obj;  //!< vertex to design obj.
+  ieda::BTreeMap<StaVertex*, std::unique_ptr<StaVertex>>
       _main2assistant;  //!< for inout node, set one node main, another
                         //!< assistant.
-  ieda::Map<StaVertex*, StaVertex*>
+  ieda::BTreeMap<StaVertex*, StaVertex*>
       _assistant2main;  //!< assistant to main map.
 };
 

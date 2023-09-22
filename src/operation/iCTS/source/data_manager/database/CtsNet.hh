@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsNet.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <string>
@@ -23,7 +27,6 @@
 #include "CtsPin.hh"
 #include "CtsSignalWire.hh"
 #include "DesignObject.hh"
-#include "pgl.h"
 
 namespace icts {
 
@@ -49,11 +52,11 @@ class CtsNet : public DesignObject
   // setter
   void set_net_name(const std::string& net_name) { _net_name = net_name; }
   template <typename WireIterator>
-  void setSignalWire(WireIterator begin, WireIterator end)
+  void set_signal_wire(WireIterator begin, WireIterator end)
   {
     _signal_wires.clear();
     for (auto itr = begin; itr != end; itr++) {
-      addSignalWire(*itr);
+      add_signal_wire(*itr);
     }
   }
 
@@ -69,7 +72,7 @@ class CtsNet : public DesignObject
   CtsPin* findPin(const std::string& pin_name);
   void addPin(CtsPin* pin);
   void removePin(CtsPin* pin);
-  void addSignalWire(const CtsSignalWire& signal_wire) { _signal_wires.push_back(signal_wire); }
+  void add_signal_wire(const CtsSignalWire& signal_wire) { _signal_wires.push_back(signal_wire); }
   void clearWires() { _signal_wires.clear(); }
 
   CtsInstance* findInstance(const std::string& inst_name);

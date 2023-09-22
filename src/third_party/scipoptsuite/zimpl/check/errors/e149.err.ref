@@ -1,4 +1,0 @@
-*** Error 149: skip value 0.5 is too big or not an integer
-*** File: e149.zpl Line 2
-*** set A := { read "dummy.dat" as "<1n>" skip 0.5 };
-***                                                ^^^

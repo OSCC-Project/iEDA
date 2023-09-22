@@ -1,7 +1,0 @@
-CXX	  	=	g++
-CPPFLAGS	=	-Isrc -DNDEBUG -m32
-CXXFLAGS	=	-O -g -mtune=native
-LDFLAGS		=	-m32 -lm
-ARFLAGS		=	crs
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=	-lz

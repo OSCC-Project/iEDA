@@ -1,4 +1,0 @@
-*** Error 147: use value 1.5 is too big or not an integer
-*** File: e147.zpl Line 2
-*** set A := { read "dummy.dat" as "<1n>" use 1.5 };
-***                                               ^^^

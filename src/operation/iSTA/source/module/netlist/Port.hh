@@ -79,7 +79,7 @@ class Port : public DesignObject {
 
   PortBus* _port_bus = nullptr;  //!< The port owned by the port bus.
 
-  DISALLOW_COPY_AND_ASSIGN(Port);
+  FORBIDDEN_COPY(Port);
 };
 
 /**
@@ -118,7 +118,7 @@ class PortBus : public DesignObject {
 
   std::unique_ptr<Port*[]> _ports;  //!< The ports.
   unsigned _size;                   //!< The port bus size.
-  DISALLOW_COPY_AND_ASSIGN(PortBus);
+  FORBIDDEN_COPY(PortBus);
 };
 
 }  // namespace ista

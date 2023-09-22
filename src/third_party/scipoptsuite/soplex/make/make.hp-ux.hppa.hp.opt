@@ -1,7 +1,0 @@
-CXX	=	aCC
-CPPFLAGS=	-Isrc -DNDEBUG 
-CXXFLAGS=	-AA +W67 -fast 
-LDFLAGS	=	-lstd_v2 -lCsup_v2 -lm
-RANLIB	=	true
-ZLIB_FLAGS	=
-ZLIB_LDFLAGS 	=
