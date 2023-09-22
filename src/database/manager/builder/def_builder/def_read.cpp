@@ -1227,6 +1227,8 @@ int32_t DefRead::specialNetBeginCallback(defrCallbackType_e type, int def_num, d
     return kDbFail;
   }
 
+  std::cout << "Begin parse Specialnet." << std::endl;
+
   return kDbSuccess;
 }
 
@@ -1321,6 +1323,26 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   }
 
   IdbSpecialWireList* wire_list = net->get_wire_list();
+  parse_special_net_wire(def_net, wire_list);
+  parse_special_net_rects(def_net, wire_list);
+
+  if (net_list->get_num() % 1000 == 0) {
+    std::cout << "-" << std::flush;
+
+    if (net_list->get_num() % 100000 == 0) {
+      std::cout << std::endl;
+    }
+  }
+
+  return kDbSuccess;
+}
+
+int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wire_list)
+{
+  IdbDesign* design = _def_service->get_design();  // Def
+  IdbLayout* layout = _def_service->get_layout();  // Lef
+  IdbLayers* layer_list = layout->get_layers();
+
   for (int i = 0; i < def_net->numWires(); ++i) {
     defiWire* def_wire = def_net->wire(i);
     IdbSpecialWire* wire = wire_list->add_wire(nullptr);
@@ -1404,13 +1426,27 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
       segment->set_bounding_box();
     }
   }
+  return kDbSuccess;
+}
 
-  if (net_list->get_num() % 1000 == 0) {
-    std::cout << "-" << std::flush;
+int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
+{
+  IdbDesign* design = _def_service->get_design();  // Def
+  IdbLayout* layout = _def_service->get_layout();  // Lef
+  IdbLayers* layer_list = layout->get_layers();
 
-    if (net_list->get_num() % 100000 == 0) {
-      std::cout << std::endl;
-    }
+  for (int i = 0; i < def_net->numRectangles(); ++i) {
+    IdbSpecialWire* wire = wire_list->add_wire(nullptr);
+    wire->set_wire_state(def_net->rectShapeType(i));
+
+    /// set as rect to idb
+    /// layer
+    std::string layer = def_net->rectName(i);
+    /// coordinate
+    int llx = def_net->xl(i);
+    int lly = def_net->yl(i);
+    int urx = def_net->xh(i);
+    int ury = def_net->yh(i);
   }
 
   return kDbSuccess;
@@ -1425,6 +1461,8 @@ int32_t DefRead::specialNetEndCallback(defrCallbackType_e type, void*, defiUserD
   }
 
   std::cout << std::endl;
+
+  std::cout << "End parse Specialnet." << std::endl;
 
   return kDbSuccess;
 }
@@ -1757,7 +1795,7 @@ int32_t DefRead::parse_via(defiVia* def_via)
     {
       int32_t num_rows = 1;
       int32_t num_cols = 1;
-      if(def_via->hasRowCol()){
+      if (def_via->hasRowCol()) {
         def_via->rowCol(&num_rows, &num_cols);
       }
       master_generate->set_cut_row_col(num_rows, num_cols);
