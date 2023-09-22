@@ -11,6 +11,7 @@ pub fn parse_lib_file(file: &str) -> Result<(), pest::error::Error<Rule>> {
     match parser {
         Ok(pairs) => {
             for pair in pairs {
+                println!("{:?}", pair);
                 // Process each pair
                 match pair.as_rule() {
                     Rule::float => {
@@ -44,11 +45,13 @@ pub fn parse_lib_file(file: &str) -> Result<(), pest::error::Error<Rule>> {
                     Rule::statement => todo!(),
                     Rule::statements => todo!(),
                     Rule::lib_file => todo!(),
+                    Rule::COMMENT => todo!(),
                 }
             }
         }
         Err(err) => {
             // Handle parsing error
+            println!("Error: {}", err);
         }
     }
     // Continue with the rest of the code
