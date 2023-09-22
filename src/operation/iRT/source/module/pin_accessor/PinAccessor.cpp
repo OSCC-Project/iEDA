@@ -936,7 +936,11 @@ void PinAccessor::selectByAccessOrienSet(PANet& pa_net)
 void PinAccessor::selectByNetDistance(PANet& pa_net)
 {
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    LayerCoord balance_coord = RTUtil::getBalanceCoord(pa_pin.getRealCoordList());
+    std::vector<LayerCoord> real_coord_list;
+    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      real_coord_list.push_back(access_point.getRealLayerCoord());
+    }
+    LayerCoord balance_coord = RTUtil::getBalanceCoord(real_coord_list);
     std::map<irt_int, std::vector<AccessPoint>> distance_access_point_map;
     std::vector<AccessPoint>& pin_access_point_list = pa_pin.get_access_point_list();
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {

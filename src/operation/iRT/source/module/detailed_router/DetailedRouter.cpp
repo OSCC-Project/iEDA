@@ -184,9 +184,8 @@ void DetailedRouter::buildBoxTrackAxis(DRModel& dr_model)
   std::map<PlanarCoord, std::vector<PlanarCoord>, CmpPlanarCoordByXASC> grid_ap_coord_map;
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
     for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
-        grid_ap_coord_map[access_point.get_grid_coord()].push_back(access_point.get_real_coord());
-      }
+      AccessPoint& protected_access_point = dr_pin.get_protected_access_point();
+      grid_ap_coord_map[protected_access_point.get_grid_coord()].push_back(protected_access_point.get_real_coord());
     }
   }
 
@@ -505,9 +504,7 @@ void DetailedRouter::updateNetReservedViaMap(DRModel& dr_model)
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
     std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      for (LayerCoord& real_coord : dr_pin.getRealCoordList()) {
-        real_coord_set.insert(real_coord);
-      }
+      real_coord_set.insert(dr_pin.get_protected_access_point().getRealLayerCoord());
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
@@ -627,10 +624,9 @@ DRGroup DetailedRouter::makeDRGroup(DRBox& dr_box, DRPin& dr_pin)
   PlanarRect& dr_base_region = dr_box.get_base_region();
 
   DRGroup dr_group;
-  for (LayerCoord& real_coord : dr_pin.getRealCoordList()) {
-    if (RTUtil::isInside(dr_base_region, real_coord)) {
-      dr_group.get_coord_direction_map()[real_coord].insert({});
-    }
+  LayerCoord real_coord = dr_pin.get_protected_access_point().getRealLayerCoord();
+  if (RTUtil::isInside(dr_base_region, real_coord)) {
+    dr_group.get_coord_direction_map()[real_coord].insert({});
   }
   return dr_group;
 }

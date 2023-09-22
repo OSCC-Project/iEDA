@@ -25,6 +25,7 @@ enum class GPLayoutType
   kNone,
   kText,
   kPinShape,
+  kProtectedAccessPoint,
   kAccessPoint,
   kGuide,
   kPreferTrack,
@@ -50,6 +51,9 @@ struct GetGPLayoutTypeName
         break;
       case GPLayoutType::kPinShape:
         data_type_name = "pin_shape";
+        break;
+      case GPLayoutType::kProtectedAccessPoint:
+        data_type_name = "protected_access_point";
         break;
       case GPLayoutType::kAccessPoint:
         data_type_name = "access_point";

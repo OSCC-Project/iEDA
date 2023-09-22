@@ -277,10 +277,9 @@ void GlobalRouter::updateNetViaDemandMap(GRModel& gr_model)
   std::map<GRNodeId, std::set<irt_int>, CmpGRNodeId> node_net_map;
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-        GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
-        node_net_map[gr_node_id].insert(gr_net.get_net_idx());
-      }
+      LayerCoord grid_coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+      GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
+      node_net_map[gr_node_id].insert(gr_net.get_net_idx());
     }
   }
   for (auto& [gr_node_id, net_idx_set] : node_net_map) {
@@ -302,11 +301,10 @@ void GlobalRouter::updateNetAccessDemandMap(GRModel& gr_model)
   std::map<GRNodeId, std::map<irt_int, std::vector<LayerCoord>>, CmpGRNodeId> node_net_coord_map;
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (AccessPoint& access_point : gr_pin.get_access_point_list()) {
-        LayerCoord grid_coord = access_point.getGridLayerCoord();
-        GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
-        node_net_coord_map[gr_node_id][gr_net.get_net_idx()].push_back(access_point.getRealLayerCoord());
-      }
+      AccessPoint& access_point = gr_pin.get_protected_access_point();
+      LayerCoord grid_coord = access_point.getGridLayerCoord();
+      GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
+      node_net_coord_map[gr_node_id][gr_net.get_net_idx()].push_back(access_point.getRealLayerCoord());
     }
   }
   for (auto& [gr_node_id, net_coord_map] : node_net_coord_map) {
@@ -1031,9 +1029,8 @@ void GlobalRouter::outputGRDataset(GRModel& gr_model, GRNet& gr_net)
   RTUtil::pushStream(gr_dataset, "pin_list", "\n");
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
     RTUtil::pushStream(gr_dataset, "pin", " ", gr_pin.get_pin_idx(), "\n");
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      RTUtil::pushStream(gr_dataset, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
-    }
+    LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+    RTUtil::pushStream(gr_dataset, coord.get_x(), " ", coord.get_y(), " ", coord.get_layer_idx(), "\n");
   }
   RTUtil::pushStream(gr_dataset, "cost_map", "\n");
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
@@ -1107,9 +1104,7 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
 
     std::vector<PlanarCoord> planar_coord_list;
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-        planar_coord_list.push_back(coord.get_planar_coord());
-      }
+      planar_coord_list.push_back(gr_pin.get_protected_access_point().get_grid_coord());
     }
     std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
     planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
@@ -1118,9 +1113,8 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       GRTask gr_task;
       for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
         GRGroup gr_group;
-        for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-        }
+        LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+        gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
         gr_task.get_gr_group_list().push_back(gr_group);
       }
       gr_model.get_gr_task_list().push_back(gr_task);
@@ -1129,10 +1123,9 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
       std::map<PlanarCoord, std::vector<GRGroup>, CmpPlanarCoordByXASC> key_planar_group_map;
       for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
         GRGroup gr_group;
-        for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-          gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-        }
-        key_planar_group_map[gr_pin.getGridCoordList().front().get_planar_coord()].push_back(gr_group);
+        LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+        gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
+        key_planar_group_map[coord].push_back(gr_group);
       }
 
       // steiner point的GRGroup
@@ -1201,9 +1194,8 @@ void GlobalRouter::initSingleNet(GRModel& gr_model, GRNet& gr_net)
     GRTask gr_task;
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
       GRGroup gr_group;
-      for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-        gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
-      }
+      LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+      gr_group.get_gr_node_list().push_back(&layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()]);
       gr_task.get_gr_group_list().push_back(gr_group);
     }
     gr_model.get_gr_task_list().push_back(gr_task);
@@ -1450,14 +1442,13 @@ void GlobalRouter::updateRoutingTree(GRModel& gr_model, GRNet& gr_net)
   for (Segment<GRNode*>& node_segment : node_segment_list) {
     routing_segment_list.emplace_back(*node_segment.get_first(), *node_segment.get_second());
   }
-  std::vector<LayerCoord> driving_grid_coord_list = gr_net.get_gr_driving_pin().getGridCoordList();
+  LayerCoord root_coord = gr_net.get_gr_driving_pin().get_protected_access_point().getGridLayerCoord();
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
-    }
+    LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+    key_coord_pin_map[coord].insert(gr_pin.get_pin_idx());
   }
-  gr_net.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
+  gr_net.set_routing_tree(RTUtil::getTreeByFullFlow({root_coord}, routing_segment_list, key_coord_pin_map));
 }
 
 void GlobalRouter::updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType change_type)
@@ -1466,10 +1457,9 @@ void GlobalRouter::updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType cha
 
   std::set<GRNode*> key_node_set;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-      GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-      key_node_set.insert(gr_node);
-    }
+    LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+    GRNode* gr_node = &layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
+    key_node_set.insert(gr_node);
   }
   std::vector<Segment<GRNode*>> node_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(gr_net.get_routing_tree())) {
@@ -1750,9 +1740,8 @@ void GlobalRouter::buildRoutingResult(GRNet& gr_net)
   }
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
   for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-    for (LayerCoord& grid_coord : gr_pin.getGridCoordList()) {
-      key_coord_pin_map[grid_coord].insert(gr_pin.get_pin_idx());
-    }
+    LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+    key_coord_pin_map[coord].insert(gr_pin.get_pin_idx());
   }
   std::function<RTNode(LayerCoord&, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>&)> convert
       = std::bind(&GlobalRouter::convertToRTNode, this, std::placeholders::_1, std::placeholders::_2);
@@ -2417,15 +2406,14 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
     if (curr_net_idx == -1 || gr_net.get_net_idx() == curr_net_idx) {
       for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-        for (LayerCoord& coord : gr_pin.getGridCoordList()) {
-          PlanarRect real_rect = RTUtil::getRealRect(coord.get_planar_coord(), gcell_axis);
+        LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+        PlanarRect real_rect = RTUtil::getRealRect(coord.get_planar_coord(), gcell_axis);
 
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
-          gp_boundary.set_rect(real_rect);
-          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
-          net_struct.push(gp_boundary);
-        }
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
+        gp_boundary.set_rect(real_rect);
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
+        net_struct.push(gp_boundary);
       }
     }
     {
