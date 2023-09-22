@@ -135,7 +135,7 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
           continue;
         }
 
-        auto out_slew_ns = lib_arc->getSlew(out_trans_type, in_slew, load);
+        auto out_slew_ns = lib_arc->getSlewNs(out_trans_type, in_slew, load);
 
         auto output_current =
             lib_arc->getOutputCurrent(out_trans_type, in_slew, load);
@@ -154,7 +154,8 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
             continue;
           }
 
-          auto out_slew1_ns = lib_arc->getSlew(out_trans_type1, in_slew, load);
+          auto out_slew1_ns =
+              lib_arc->getSlewNs(out_trans_type1, in_slew, load);
 
           auto output_current1 =
               lib_arc->getOutputCurrent(out_trans_type1, in_slew, load);

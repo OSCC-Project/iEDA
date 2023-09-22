@@ -1067,14 +1067,31 @@ unsigned LibertyArc::isClockGateCheckArc()
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
  * @param index2 The second axis value.
- * @return double The delay or constrain value.
+ * @return double The delay or constrain value in ns.
  */
-double LibertyArc::getDelayOrConstrainCheck(TransType trans_type, double slew, double load_or_constrain_slew)
+double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew)
 {
+  // get/set time unit of liberty and derate
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
+  // set convert derate of units
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateDelay()` and return conveted Delay
   if (isDelayArc()) {
-    return _table_model->gateDelay(trans_type, slew, load_or_constrain_slew);
+    return _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew) * liberty_to_output_convert;
   } else {
-    return _table_model->gateCheckConstrain(trans_type, slew, load_or_constrain_slew);
+    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew)
+           * liberty_to_output_convert;
   }
 }
 
@@ -1084,16 +1101,35 @@ double LibertyArc::getDelayOrConstrainCheck(TransType trans_type, double slew, d
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
  * @param load The second axis value.
- * @return double The slew value.
+ * @return double The slew value in ns.
  */
-double LibertyArc::getSlew(TransType trans_type, double slew, double load)
+double LibertyArc::getSlewNs(TransType trans_type, double slew, double load)
 {
   if (!isDelayArc()) {
     LOG_FATAL << "check arc has not output slew.";
   }
-  double found_slew = _table_model->gateSlew(trans_type, slew, load);
+
+  // set/get time units in liberty
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
   double slew_derate_from_library = get_owner_cell()->get_owner_lib()->get_slew_derate_from_library();
-  double ret_value = found_slew * slew_derate_from_library;
+
+  // set convert derate
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateSlew()` and return in ns
+  double found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
+  double ret_value = found_slew * liberty_to_output_convert * slew_derate_from_library;
+
   return ret_value;
 }
 
@@ -2231,6 +2267,13 @@ unsigned LibertyReader::visitSimpleAttri(LibertyStmt* attri)
     cap_unit_convert = 1.0;
   }
 
+  double time_unit_convert = 1.0;  // sta use ns internal
+  if (TimeUnit::kPS == current_lib->get_time_unit()) {
+    time_unit_convert = 0.001;
+  } else if (TimeUnit::kFS == current_lib->get_time_unit()) {
+    time_unit_convert = 1e-6;
+  }
+
   auto* the_attri = dynamic_cast<LibertySimpleAttrStmt*>(attri);
   const char* attri_name = the_attri->get_attri_name();
 
@@ -2300,13 +2343,15 @@ unsigned LibertyReader::visitSimpleAttri(LibertyStmt* attri)
               current_lib->set_resistance_unit(ResistanceUnit::kkOHM);
             }
           }},
-
-         {"nom_voltage",
+         {"time_unit",
           [=]() {
-            double nom_voltage = attri_value->getFloatValue();
-            current_lib->set_nom_voltage(nom_voltage);
+            const char* time_unit = attri_value->getStringValue();
+            if (Str::noCaseEqual(time_unit, "1FS")) {
+              current_lib->set_time_unit(TimeUnit::kFS);
+            } else if (Str::noCaseEqual(time_unit, "1PS")) {
+              current_lib->set_time_unit(TimeUnit::kPS);
+            }
           }},
-
          {"default_max_transition",
           [=]() {
             double default_max_transition = attri_value->getFloatValue();
