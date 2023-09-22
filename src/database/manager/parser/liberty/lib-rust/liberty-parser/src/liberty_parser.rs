@@ -14,9 +14,7 @@ pub fn parse_lib_file(file: &str) -> Result<(), pest::error::Error<Rule>> {
                 println!("{:?}", pair);
                 // Process each pair
                 match pair.as_rule() {
-                    Rule::float => {
-                        let dstr = pair.as_str();
-                    }
+                    Rule::float => todo!(),
                     Rule::EOI => todo!(),
                     Rule::decimal_digits => todo!(),
                     Rule::decimal_integer => todo!(),
@@ -56,4 +54,53 @@ pub fn parse_lib_file(file: &str) -> Result<(), pest::error::Error<Rule>> {
     }
     // Continue with the rest of the code
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+
+    use pest::iterators::Pairs;
+
+    use super::*;
+
+    fn print_parse_result(parse_result: Result<Pairs<Rule>, pest::error::Error<Rule>>) {
+        match parse_result {
+            Ok(pairs) => {
+                for pair in pairs {
+                    // A pair is a combination of the rule which matched and a span of input
+                    println!("Rule:    {:?}", pair.as_rule());
+                    println!("Span:    {:?}", pair.as_span());
+                    println!("Text:    {}", pair.as_str());
+                }
+            }
+            Err(err) => {
+                // Handle parsing error
+                println!("Error: {}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse1() {
+        let input_str = "/*test*/";
+        let parse_result = LibertyParser::parse(Rule::COMMENT, input_str);
+
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse2() {
+        let input_str = "1.5";
+        let parse_result = LibertyParser::parse(Rule::float, input_str);
+
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse3() {
+        let input_str = "A";
+        let parse_result = LibertyParser::parse(Rule::float, input_str);
+
+        print_parse_result(parse_result);
+    }
 }

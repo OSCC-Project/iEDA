@@ -3,7 +3,7 @@ decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
 dec_int         = _{ decimal_integer }
 optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits? }
 optional_frac   = _{ "." ~ decimal_digits? }
-float           = @{ dec_int ~ optional_frac ~ optional_exp }
+float           =  { dec_int ~ optional_frac ~ optional_exp? }
 
 bus_index  = _{ "[" ~ decimal_digits+ ~ "]" }
 bus_slice  = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
@@ -19,7 +19,7 @@ WHITESPACE  = _{ " " | "\t" | "\r" | "\n" }
 line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-COMMENT = _{ line_comment | multiline_comment }
+COMMENT = { line_comment | multiline_comment }
 
 multiline_string = { "\"" ~ (ASCII)* ~ ("\"") }
 
