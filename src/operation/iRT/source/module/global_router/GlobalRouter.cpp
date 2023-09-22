@@ -142,8 +142,7 @@ void GlobalRouter::buildGRModel(GRModel& gr_model)
   updateBlockageMap(gr_model);
   updateNetShapeMap(gr_model);
   updateWholeDemand(gr_model);
-  updateNetViaDemandMap(gr_model);
-  updateNetAccessDemandMap(gr_model);
+  updateNetDemandMap(gr_model);
   updateNodeResourceSupply(gr_model);
   updateNodeAccessSupply(gr_model);
   makeRoutingState(gr_model);
@@ -270,118 +269,44 @@ void GlobalRouter::updateWholeDemand(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::updateNetViaDemandMap(GRModel& gr_model)
+void GlobalRouter::updateNetDemandMap(GRModel& gr_model)
 {
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
 
-  std::map<GRNodeId, std::set<irt_int>, CmpGRNodeId> node_net_map;
   for (GRNet& gr_net : gr_model.get_gr_net_list()) {
+    irt_int net_idx = gr_net.get_net_idx();
     for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      LayerCoord grid_coord = gr_pin.get_protected_access_point().getGridLayerCoord();
-      GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
-      node_net_map[gr_node_id].insert(gr_net.get_net_idx());
-    }
-  }
-  for (auto& [gr_node_id, net_idx_set] : node_net_map) {
-    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
-    std::map<irt_int, irt_int>& net_via_demand_map = gr_node.get_net_via_demand_map();
-    for (irt_int net_idx : net_idx_set) {
-      // 由于pin_shape阻塞，打GR的通孔不算消耗
-      net_via_demand_map[net_idx] = 0;
-    }
-  }
-}
+      LayerCoord curr_coord = gr_pin.get_protected_access_point().getGridLayerCoord();
+      std::set<Orientation>& access_orien_set = gr_pin.get_protected_access_point().get_access_orien_set();
 
-void GlobalRouter::updateNetAccessDemandMap(GRModel& gr_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+      GridMap<GRNode>& gr_node_map = layer_node_map[curr_coord.get_layer_idx()];
+      GRNode& curr_node = gr_node_map[curr_coord.get_x()][curr_coord.get_y()];
 
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  std::map<GRNodeId, std::map<irt_int, std::vector<LayerCoord>>, CmpGRNodeId> node_net_coord_map;
-  for (GRNet& gr_net : gr_model.get_gr_net_list()) {
-    for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
-      AccessPoint& access_point = gr_pin.get_protected_access_point();
-      LayerCoord grid_coord = access_point.getGridLayerCoord();
-      GRNodeId gr_node_id(grid_coord.get_x(), grid_coord.get_y(), grid_coord.get_layer_idx());
-      node_net_coord_map[gr_node_id][gr_net.get_net_idx()].push_back(access_point.getRealLayerCoord());
-    }
-  }
-  for (auto& [gr_node_id, net_coord_map] : node_net_coord_map) {
-    RoutingLayer& routing_layer = routing_layer_list[gr_node_id.get_layer_idx()];
-    GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
-    std::map<irt_int, std::map<Orientation, irt_int>>& net_orien_access_demand_map = gr_node.get_net_orien_access_demand_map();
-
-    for (auto& [net_id, coord_list] : net_coord_map) {
-      std::map<Orientation, std::vector<LayerRect>> access_wire_map;
-      for (LayerCoord& real_coord : coord_list) {
-        for (Orientation& orientation : routing_layer.getPreferOrientationList()) {
-          access_wire_map[orientation].push_back(getOrientationWireList(gr_node, real_coord, orientation));
-        }
+      // 补偿via资源
+      if (RTUtil::exist(access_orien_set, Orientation::kUp) || RTUtil::exist(access_orien_set, Orientation::kDown)) {
+        // 由于pin_shape阻塞，打GR的通孔不算消耗
+        curr_node.get_net_via_demand_map()[net_idx] = 0;
       }
-      for (auto& [orientation, wire_list] : access_wire_map) {
-        bool is_access = false;
-        for (LayerRect& wire : wire_list) {
-          if (!hasViolation(gr_model, GRSourceType::kBlockage, DRCRect(net_id, wire, true))
-              && !hasViolation(gr_model, GRSourceType::kNetShape, DRCRect(net_id, wire, true))) {
-            is_access = true;
-            break;
-          }
+      // 补偿access资源
+      for (const Orientation& access_orien : access_orien_set) {
+        curr_node.get_net_orien_access_demand_map()[net_idx][access_orien] = 0;
+        LayerCoord neighbor_coord = curr_coord;
+        if (access_orien == Orientation::kEast) {
+          neighbor_coord.set_x(curr_coord.get_x() + 1);
+        } else if (access_orien == Orientation::kWest) {
+          neighbor_coord.set_x(curr_coord.get_x() - 1);
+        } else if (access_orien == Orientation::kSouth) {
+          neighbor_coord.set_y(curr_coord.get_y() - 1);
+        } else if (access_orien == Orientation::kNorth) {
+          neighbor_coord.set_y(curr_coord.get_y() + 1);
         }
-        if (is_access) {
-          // 由于pin_shape阻塞，access不算消耗
-          net_orien_access_demand_map[net_id][orientation] = 0;
+        if (gr_node_map.isInside(neighbor_coord.get_x(), neighbor_coord.get_y())) {
+          GRNode& east_node = gr_node_map[neighbor_coord.get_x()][neighbor_coord.get_y()];
+          east_node.get_net_orien_access_demand_map()[net_idx][RTUtil::getOppositeOrientation(access_orien)] = 0;
         }
       }
     }
   }
-}
-
-LayerRect GlobalRouter::getOrientationWireList(GRNode& gr_node, LayerCoord& real_coord, Orientation orientation)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  RoutingLayer& routing_layer = routing_layer_list[real_coord.get_layer_idx()];
-  irt_int half_width = routing_layer.get_min_width() / 2;
-
-  if (routing_layer.isPreferH()) {
-    if (orientation != Orientation::kEast && orientation != Orientation::kWest) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
-    }
-  } else {
-    if (orientation != Orientation::kSouth && orientation != Orientation::kNorth) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
-    }
-  }
-
-  irt_int real_lb_x = gr_node.get_base_region().get_lb_x();
-  irt_int real_lb_y = gr_node.get_base_region().get_lb_y();
-  irt_int real_rt_x = gr_node.get_base_region().get_rt_x();
-  irt_int real_rt_y = gr_node.get_base_region().get_rt_y();
-
-  irt_int coord_x = real_coord.get_x();
-  irt_int coord_y = real_coord.get_y();
-
-  LayerRect orien_wire;
-  switch (orientation) {
-    case Orientation::kEast:
-      orien_wire.set_rect(coord_x - half_width, coord_y - half_width, real_rt_x, coord_y + half_width);
-      break;
-    case Orientation::kWest:
-      orien_wire.set_rect(real_lb_x, coord_y - half_width, coord_x + half_width, coord_y + half_width);
-      break;
-    case Orientation::kSouth:
-      orien_wire.set_rect(coord_x - half_width, real_lb_y, coord_x + half_width, coord_y + half_width);
-      break;
-    case Orientation::kNorth:
-      orien_wire.set_rect(coord_x - half_width, coord_y - half_width, coord_x + half_width, real_rt_y);
-      break;
-    default:
-      LOG_INST.error(Loc::current(), "The orientation is error!");
-      break;
-  }
-  orien_wire.set_layer_idx(real_coord.get_layer_idx());
-  return orien_wire;
 }
 
 void GlobalRouter::updateNodeResourceSupply(GRModel& gr_model)
