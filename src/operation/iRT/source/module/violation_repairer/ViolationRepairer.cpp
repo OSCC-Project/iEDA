@@ -276,26 +276,23 @@ void ViolationRepairer::buildKeyCoordPinMap(VRNet& vr_net)
 {
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map = vr_net.get_key_coord_pin_map();
   for (Pin& vr_pin : vr_net.get_vr_pin_list()) {
-    for (LayerCoord& real_coord : vr_pin.getRealCoordList()) {
-      key_coord_pin_map[real_coord].insert(vr_pin.get_pin_idx());
-    }
+    LayerCoord real_coord = vr_pin.get_protected_access_point().getRealLayerCoord();
+    key_coord_pin_map[real_coord].insert(vr_pin.get_pin_idx());
   }
 }
 
 void ViolationRepairer::buildCoordTree(VRNet& vr_net)
 {
+  LayerCoord root_coord = vr_net.get_vr_driving_pin().get_protected_access_point().getRealLayerCoord();
+
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (TNode<RTNode>* rt_node_node : RTUtil::getNodeList(vr_net.get_dr_result_tree())) {
     for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(rt_node_node->value().get_routing_tree())) {
       routing_segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
     }
   }
-  std::vector<LayerCoord> candidate_root_coord_list;
-  for (LayerCoord& real_coord : vr_net.get_vr_driving_pin().getRealCoordList()) {
-    candidate_root_coord_list.push_back(real_coord);
-  }
   MTree<LayerCoord>& coord_tree = vr_net.get_coord_tree();
-  coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, vr_net.get_key_coord_pin_map());
+  coord_tree = RTUtil::getTreeByFullFlow({root_coord}, routing_segment_list, vr_net.get_key_coord_pin_map());
 }
 
 void ViolationRepairer::buildPHYNodeResult(VRNet& vr_net)
@@ -419,33 +416,6 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 
 void ViolationRepairer::checkVRModel(VRModel& vr_model)
 {
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    if (vr_net.get_net_idx() < 0) {
-      LOG_INST.error(Loc::current(), "The net idx : ", vr_net.get_net_idx(), " is illegal!");
-    }
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = vr_pin.get_access_point_list();
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "The pin ", vr_pin.get_pin_idx(), " access point list is empty!");
-      }
-      for (AccessPoint& access_point : access_point_list) {
-        if (access_point.get_type() == AccessPointType::kNone) {
-          LOG_INST.error(Loc::current(), "The access point type is wrong!");
-        }
-        bool is_legal = false;
-        for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
-              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
-            is_legal = true;
-            break;
-          }
-        }
-        if (!is_legal) {
-          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
-        }
-      }
-    }
-  }
 }
 
 #endif

@@ -128,9 +128,7 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
     std::vector<PlanarCoord> coord_list;
     for (RAPin& ra_pin : ra_pin_list) {
-      for (LayerCoord& grid_coord : ra_pin.getGridCoordList()) {
-        coord_list.push_back(grid_coord.get_planar_coord());
-      }
+      coord_list.push_back(ra_pin.get_protected_access_point().getGridLayerCoord());
     }
     std::sort(coord_list.begin(), coord_list.end(), CmpPlanarCoordByXASC());
     coord_list.erase(std::unique(coord_list.begin(), coord_list.end()), coord_list.end());
@@ -215,9 +213,7 @@ void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (LayerCoord& real_coord : ra_pin.getRealCoordList()) {
-        real_coord_set.insert(real_coord);
-      }
+      real_coord_set.insert(ra_pin.get_protected_access_point().getRealLayerCoord());
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
@@ -700,9 +696,8 @@ void ResourceAllocator::processRAModel(RAModel& ra_model)
     GridMap<double> cost_map = getCostMap(allocation_map, lower_cost);
     normalizeCostMap(cost_map, lower_cost);
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (LayerCoord& grid_coord : ra_pin.getGridCoordList()) {
-        cost_map[grid_coord.get_x() - grid_lb_x][grid_coord.get_y() - grid_lb_y] = lower_cost;
-      }
+      LayerCoord grid_coord = ra_pin.get_protected_access_point().getGridLayerCoord();
+      cost_map[grid_coord.get_x() - grid_lb_x][grid_coord.get_y() - grid_lb_y] = lower_cost;
     }
     ra_net.set_ra_cost_map(cost_map);
   }

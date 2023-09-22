@@ -832,9 +832,9 @@ class LibertyArc : public LibertyObject
   void set_table_model(std::unique_ptr<LibertyTableModel>&& table_model) { _table_model = std::move(table_model); }
   LibertyTableModel* get_table_model() { return _table_model.get(); }
 
-  double getDelayOrConstrainCheck(TransType trans_type, double slew, double load_or_constrain_slew);
+  double getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew);
 
-  double getSlew(TransType trans_type, double slew, double load);
+  double getSlewNs(TransType trans_type, double slew, double load);
 
   std::unique_ptr<LibetyCurrentData> getOutputCurrent(TransType trans_type, double slew, double load);
 
@@ -1424,6 +1424,20 @@ class LibertyLibrary
   void set_resistance_unit(ResistanceUnit resistance_unit) { _resistance_unit = resistance_unit; }
   auto get_resistance_unit() { return _resistance_unit; }
 
+  void set_time_unit(TimeUnit time_unit) { _time_unit = time_unit; }
+  auto get_time_unit() { return _time_unit; }
+  double convert_time_unit_to_ns(double src_value)
+  {
+    if (get_time_unit() == TimeUnit::kNS) {
+      return src_value;
+    } else if (get_time_unit() == TimeUnit::kPS) {
+      return src_value * 1e-3;
+    } else if (get_time_unit() == TimeUnit::kFS) {
+      return src_value * 1e-6;
+    }
+    return 0.0;
+  }
+
   std::vector<std::unique_ptr<LibertyCell>>& get_cells() { return _cells; }
 
   void set_default_max_transition(double default_max_transition) { _default_max_transition = default_max_transition; }
@@ -1512,6 +1526,7 @@ class LibertyLibrary
 
   CapacitiveUnit _cap_unit = CapacitiveUnit::kFF;
   ResistanceUnit _resistance_unit = ResistanceUnit::kkOHM;
+  TimeUnit _time_unit = TimeUnit::kNS;
 
   std::optional<double> _default_max_transition;
   std::optional<double> _default_max_fanout;

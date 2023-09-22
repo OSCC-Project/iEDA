@@ -301,9 +301,7 @@ void TrackAssigner::updateNetReservedViaMap(TAModel& ta_model)
   for (TANet& ta_net : ta_model.get_ta_net_list()) {
     std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      for (LayerCoord& real_coord : ta_pin.getRealCoordList()) {
-        real_coord_set.insert(real_coord);
-      }
+      real_coord_set.insert(ta_pin.get_protected_access_point().getRealLayerCoord());
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
@@ -390,7 +388,7 @@ std::map<TNode<RTNode>*, TATask> TrackAssigner::makeTANodeTaskMap(TAModel& ta_mo
     // pin_coord_list
     std::vector<LayerCoord> pin_coord_list;
     for (irt_int pin_idx : dr_node_node->value().get_pin_idx_set()) {
-      pin_coord_list.push_back(ta_net.get_ta_pin_list()[pin_idx].getRealCoordList().front());
+      pin_coord_list.push_back(ta_net.get_ta_pin_list()[pin_idx].get_protected_access_point().getRealLayerCoord());
     }
     std::map<TNode<RTNode>*, TAGroup> ta_group_map;
     for (TNode<RTNode>* ta_node_node : ta_node_node_list) {
@@ -1349,7 +1347,7 @@ void TrackAssigner::initSingleTask(TAPanel& ta_panel, TATask& ta_task)
     }
   }
   {
-#if 1
+#if 0
     // 支持 prefer 和 non-prefer
     std::set<Orientation> routing_offset_set;
     for (std::vector<TANode*>& start_node_comb : start_node_list_list) {
