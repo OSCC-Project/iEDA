@@ -468,7 +468,7 @@ class StaVertex {
   BTreeSet<StaVertex*>
       _fanin_start_vertexes;  //<! The start vertexes of the timing path.
 
-  DISALLOW_COPY_AND_ASSIGN(StaVertex);
+  FORBIDDEN_COPY(StaVertex);
 };
 
 /**

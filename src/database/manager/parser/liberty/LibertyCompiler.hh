@@ -78,7 +78,7 @@ class LibertyCompiler
   // Singleton sta.
   static LibertyCompiler* _liberty_compiler;
 
-  DISALLOW_COPY_AND_ASSIGN(LibertyCompiler);
+  FORBIDDEN_COPY(LibertyCompiler);
 };
 
 }  // namespace ista

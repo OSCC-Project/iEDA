@@ -50,7 +50,7 @@ class PwrArc {
   PwrVertex* _src;  //!< The arc src vertex.
   PwrVertex* _snk;  //!< The arc snk vertex.
 
-  DISALLOW_COPY_AND_ASSIGN(PwrArc);
+  FORBIDDEN_COPY(PwrArc);
 };
 
 /**

@@ -62,7 +62,7 @@ class TimingDBAdapter {
   Sta* _ista = nullptr;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(TimingDBAdapter);
+  FORBIDDEN_COPY(TimingDBAdapter);
 };
 
 }  // namespace ista
