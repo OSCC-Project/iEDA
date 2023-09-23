@@ -27,19 +27,19 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
   auto report_tbl = std::make_unique<CtsReportTable>(tbl_name);
 
   switch (type) {
-    case CtsReportType::kWIRE_LENGTH:
+    case CtsReportType::kWireLength:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Type";
       (*report_tbl)[0][1] = "Wire Length";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kHP_WIRE_LENGTH:
+    case CtsReportType::kHpWireLength:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Type";
       (*report_tbl)[0][1] = "HP Wire Length";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kCELL_STATS:
+    case CtsReportType::kCellStatus:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Cell type";
       (*report_tbl)[0][1] = "Count";
@@ -47,7 +47,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][3] = "Capacitance";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLIB_CELL_DIST:
+    case CtsReportType::kLibCellDist:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Name";
       (*report_tbl)[0][1] = "Type";
@@ -55,31 +55,14 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][3] = "Inst Area\n(um^2)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kNET_LEVEL:
+    case CtsReportType::kNetLevel:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Num";
       (*report_tbl)[0][2] = "Ratio";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kTIMING_NODE_LOG:
-      (*report_tbl) << TABLE_HEAD;
-      (*report_tbl)[0][0] = "ID";
-      (*report_tbl)[0][1] = "Name";
-      (*report_tbl)[0][2] = "Net Length";
-      (*report_tbl)[0][3] = "Net Snake";
-      (*report_tbl)[0][4] = "Total Net Length";
-      (*report_tbl)[0][5] = "Location";
-      (*report_tbl)[0][6] = "Fanout";
-      (*report_tbl)[0][7] = "Min Delay";
-      (*report_tbl)[0][8] = "Max Delay";
-      (*report_tbl)[0][9] = "Insertion Type";
-      (*report_tbl)[0][10] = "Slew In";
-      (*report_tbl)[0][11] = "Cap Out";
-      (*report_tbl)[0][12] = "Insertion Delay";
-      (*report_tbl) << TABLE_ENDLINE;
-      break;
-    case CtsReportType::kLEVEL_LOG:
+    case CtsReportType::kLevelLog:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -89,7 +72,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Max Insert Delay";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_FANOUT:
+    case CtsReportType::kLevelFanout:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -99,7 +82,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_NET_LEN:
+    case CtsReportType::kLevelNetLen:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -109,7 +92,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_CAP:
+    case CtsReportType::kLevelCap:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -119,7 +102,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_SLEW:
+    case CtsReportType::kLevelSlew:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -129,7 +112,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_DELAY:
+    case CtsReportType::kLevelDelay:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -139,7 +122,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_INSERT_DELAY:
+    case CtsReportType::kLevelInsertDelay:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
@@ -149,7 +132,7 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
-    case CtsReportType::kLEVEL_SKEW:
+    case CtsReportType::kLevelSkew:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";

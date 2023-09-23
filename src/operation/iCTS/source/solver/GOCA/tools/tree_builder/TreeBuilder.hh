@@ -36,6 +36,9 @@ namespace icts {
  *                  2.1 remove root pin
  *          3. place & cancel place buffer for feasible location
  */
+using SteinerTreeFunc = void (*)(Pin*, const std::vector<Pin*>&);
+using SkewTreeFunc
+    = Inst* (*) (const std::string&, const std::vector<Pin*>&, const std::optional<double>&, const std::optional<Point>&, const TopoType&);
 class TreeBuilder
 {
  public:
@@ -63,12 +66,26 @@ class TreeBuilder
                             const TopoType& topo_type = TopoType::kGreedyDist);
   static Inst* beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
-  static void recoverNet(Net* net);
+
+  static std::string funcName(const SteinerTreeFunc& func);
+  static std::string funcName(const SkewTreeFunc& func);
+
+  static std::vector<SteinerTreeFunc> getSteinerTreeFuncs();
+  static std::vector<SkewTreeFunc> getSkewTreeFuncs();
 
   static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);
+  static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
 
   // debug
   static void printGraphviz(Node* root, const std::string& name = "debug");
   static void writePy(Node* root, const std::string& name = "debug");
+
+ private:
+  // function interface to name
+
+  static const std::unordered_map<SteinerTreeFunc, std::string> kSteinterTreeName;
+
+  static const std::unordered_map<SkewTreeFunc, std::string> kSkewTreeName;
 };
+
 }  // namespace icts

@@ -190,7 +190,6 @@ class BoundSkewTree
   double ptSkew(const Pt& pt) const;
   Line getJrLine(const size_t& side) const;
   Line getJsLine(const size_t& side) const;
-  Line getJsLine(const size_t& side, const Side<Pts>& join_segment) const;
   void setJrLine(const size_t& side, const Line& line);
   void setJsLine(const size_t& side, const Line& line);
   void checkPtDelay(Pt& pt) const;
@@ -198,6 +197,7 @@ class BoundSkewTree
   void checkUpdateJs(const Area* cur, Line& left, Line& right) const;
   void printPoint(const Pt& pt) const;
   void printArea(const Area* area) const;
+  void writePy(const std::vector<Pt>& pts, const std::string& file = "debug") const;
   /**
    * @brief data
    *
@@ -206,7 +206,6 @@ class BoundSkewTree
 
   Inst* _root_buf = nullptr;
   std::vector<Pin*> _load_pins;
-  Net* _net = nullptr;
   std::vector<Area*> _unmerged_nodes;
   std::unordered_map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;

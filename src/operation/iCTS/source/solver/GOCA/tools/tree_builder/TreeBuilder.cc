@@ -20,6 +20,7 @@
  */
 #include "TreeBuilder.hh"
 
+#include <filesystem>
 #include <unordered_set>
 
 #include "CTSAPI.hh"
@@ -29,6 +30,15 @@
 #include "TimingPropagator.hh"
 namespace icts {
 
+const std::unordered_map<SteinerTreeFunc, std::string> TreeBuilder::kSteinterTreeName = {
+    {shallowLightTree, "ShallowLightTree"},
+    {fluteTree, "FluteTree"},
+};
+const std::unordered_map<SkewTreeFunc, std::string> TreeBuilder::kSkewTreeName = {
+    {boundSkewTree, "BoundSkewTree"},
+    {beatSaltTree, "BeatSaltTree"},
+    {beatTree, "BeatTree"},
+};
 /**
  * @brief get the sub insts of inst
  *
@@ -304,38 +314,51 @@ Inst* TreeBuilder::beatTree(const std::string& net_name, const std::vector<Pin*>
   return CTSAPIInst.genBeatTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 /**
- * @brief recover net
- *       remove root node
- *       save the leaf node and disconnect the leaf node
+ * @brief find steiner tree function name
  *
- * @param net
+ * @param func
+ * @return std::string
  */
-void TreeBuilder::recoverNet(Net* net)
+std::string TreeBuilder::funcName(const SteinerTreeFunc& func)
 {
-  auto* driver_pin = net->get_driver_pin();
-  auto load_pins = net->get_load_pins();
-  std::vector<Node*> to_be_removed;
-  auto find_steiner = [&to_be_removed](Node* node) {
-    if (node->isSteiner()) {
-      to_be_removed.push_back(node);
-    }
+  if (kSteinterTreeName.find(func) == kSteinterTreeName.end()) {
+    LOG_FATAL << "Unsupported function";
+  }
+  return kSteinterTreeName.at(func);
+}
+/**
+ * @brief find skew tree function name
+ *
+ * @param func
+ * @return std::string
+ */
+std::string TreeBuilder::funcName(const SkewTreeFunc& func)
+{
+  if (kSkewTreeName.find(func) == kSkewTreeName.end()) {
+    LOG_FATAL << "Unsupported function";
+  }
+  return kSkewTreeName.at(func);
+}
+/**
+ * @brief get all steiner tree functions
+ *
+ * @return std::vector<SteinerTreeFunc>
+ */
+std::vector<SteinerTreeFunc> TreeBuilder::getSteinerTreeFuncs()
+{
+  return {fluteTree, shallowLightTree};
+}
+/**
+ * @brief get all skew tree functions
+ *
+ * @return std::vector<SkewTreeFunc>
+ */
+std::vector<SkewTreeFunc> TreeBuilder::getSkewTreeFuncs()
+{
+  return {
+      boundSkewTree, beatSaltTree
+      // , beatTree TBD
   };
-  driver_pin->preOrder(find_steiner);
-  // recover load pins' timing
-  std::ranges::for_each(load_pins, [](Pin* pin) {
-    pin->set_parent(nullptr);
-    pin->set_children({});
-    pin->set_slew_in(0);
-    pin->set_cap_load(0);
-    pin->set_net(nullptr);
-    TimingPropagator::updatePinCap(pin);
-    TimingPropagator::initLoadPinDelay(pin);
-  });
-  // release buffer and its pins
-  auto* buffer = driver_pin->get_inst();
-  delete buffer;
-  // release steiner node
-  std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
 }
 /**
  * @brief local place, if location is repeated, then move the inst to the feasible location
@@ -346,6 +369,10 @@ void TreeBuilder::recoverNet(Net* net)
 void TreeBuilder::localPlace(Inst* inst, const std::vector<Pin*>& load_pins)
 {
   LocalLegalization(inst, load_pins);
+}
+void TreeBuilder::localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs)
+{
+  LocalLegalization(variable_locs, fixed_locs);
 }
 /**
  * @brief print tree to graphviz
@@ -394,7 +421,10 @@ void TreeBuilder::printGraphviz(Node* root, const std::string& name)
 void TreeBuilder::writePy(Node* root, const std::string& name)
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = config->get_sta_workspace();
+  auto dir = config->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directory(dir);
+  }
   auto file_name = dir + "/" + name + ".py";
   std::ofstream out(file_name);
   if (!out.is_open()) {

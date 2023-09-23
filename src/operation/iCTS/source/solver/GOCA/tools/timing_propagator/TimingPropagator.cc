@@ -92,6 +92,40 @@ Net* TimingPropagator::genNet(const std::string& net_name, Pin* driver_pin, cons
   }
 }
 /**
+ * @brief recover net
+ *       remove root node
+ *       save the leaf node and disconnect the leaf node
+ *
+ * @param net
+ */
+void TimingPropagator::resetNet(Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto load_pins = net->get_load_pins();
+  std::vector<Node*> to_be_removed;
+  auto find_steiner = [&to_be_removed](Node* node) {
+    if (node->isSteiner()) {
+      to_be_removed.push_back(node);
+    }
+  };
+  driver_pin->preOrder(find_steiner);
+  // recover load pins' timing
+  std::ranges::for_each(load_pins, [](Pin* pin) {
+    pin->set_parent(nullptr);
+    pin->set_children({});
+    pin->set_slew_in(0);
+    pin->set_cap_load(0);
+    pin->set_net(nullptr);
+    updatePinCap(pin);
+    initLoadPinDelay(pin);
+  });
+  // release buffer and its pins
+  auto* buffer = driver_pin->get_inst();
+  delete buffer;
+  // release steiner node
+  std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
+}
+/**
  * @brief update net's load pins
  *
  * @param net
@@ -268,7 +302,7 @@ bool TimingPropagator::skewFeasible(Node* node, const std::optional<double>& ske
 {
   auto skew = calcSkew(node);
   auto delta = skew - skew_bound.value_or(_skew_bound);
-  if (delta > 0 && delta < _epsilon) {
+  if (delta > 0 && delta < kEpsilon) {
     node->set_min_delay(node->get_max_delay() - skew_bound.value_or(_skew_bound));
     return true;
   }

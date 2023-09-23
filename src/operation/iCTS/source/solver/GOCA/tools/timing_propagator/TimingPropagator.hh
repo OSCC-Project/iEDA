@@ -150,6 +150,7 @@ class TimingPropagator
   static void init();
   // net based
   static Net* genNet(const std::string& net_name, Pin* driver_pin, const std::vector<Pin*>& load_pins = {});
+  static void resetNet(Net* net);
   static void updateLoads(Net* net);
   static void updatePinCap(Pin* pin);
   static void update(Net* net);
@@ -182,7 +183,6 @@ class TimingPropagator
   static icts::CtsCellLib* getMinSizeLib() { return _delay_libs.front(); }
   static icts::CtsCellLib* getMaxSizeLib() { return _delay_libs.back(); }
   static std::vector<icts::CtsCellLib*> getDelayLibs() { return _delay_libs; }
-  static double getEpisilon() { return _epsilon; }
   // node based
   /**
    * @brief update net's wirelength
@@ -355,7 +355,7 @@ class TimingPropagator
         auto len = calcLen(parent, child);
         if constexpr (SnakeAble<T>) {
           delay = calcElmoreDelay(cap_load, len + child->get_required_snake());
-        }else{
+        } else {
           delay = calcElmoreDelay(cap_load, len);
         }
         break;
@@ -467,7 +467,7 @@ class TimingPropagator
   }
 
  private:
-  constexpr static double _epsilon = 5e-5;
+  constexpr static double kEpsilon = 5e-5;
   static double _unit_cap;  // pf
   static double _unit_res;  // ohm
   static double _unit_h_cap;
