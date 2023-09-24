@@ -1,50 +1,76 @@
+//mod liberty_data;
+
 use pest::Parser;
 use pest_derive::Parser;
 
+use pest::iterators::Pair;
+
 #[derive(Parser)]
-#[grammar = "liberty.pest"]
+#[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
 
-pub fn parse_lib_file(file: &str) -> Result<(), pest::error::Error<Rule>> {
+fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    match pair.into_inner().as_str().parse::<f64>() {
+        Ok(value) => Ok(value),
+        Err(_) => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+fn process_pair(pair: Pair<Rule>) -> Result<(), pest::error::Error<Rule>> {
+    match pair.as_rule() {
+        Rule::float => todo!(),
+        Rule::EOI => todo!(),
+        Rule::decimal_digits => todo!(),
+        Rule::decimal_integer => todo!(),
+        Rule::dec_int => todo!(),
+        Rule::optional_exp => todo!(),
+        Rule::optional_frac => todo!(),
+        Rule::bus_index => todo!(),
+        Rule::bus_slice => todo!(),
+        Rule::pin_id => todo!(),
+        Rule::bus_id => todo!(),
+        Rule::bus_bus_id => todo!(),
+        Rule::lib_id => todo!(),
+        Rule::WHITESPACE => todo!(),
+        Rule::line_comment => todo!(),
+        Rule::multiline_comment => todo!(),
+        Rule::oneline_string => todo!(),
+        Rule::multiline_string => todo!(),
+        Rule::semicolon_opt => todo!(),
+        Rule::string => todo!(),
+        Rule::attribute_value => todo!(),
+        Rule::attribute_values => todo!(),
+        Rule::simple_attribute_value => todo!(),
+        Rule::simple_attribute => todo!(),
+        Rule::complex_attribute => todo!(),
+        Rule::group => todo!(),
+        Rule::statement => todo!(),
+        Rule::statements => todo!(),
+        Rule::lib_file => todo!(),
+        Rule::COMMENT => todo!(),
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair.as_span(),
+        )),
+    }
+}
+
+pub fn parse_lib_file(lib_file_path: &str) -> Result<(), pest::error::Error<Rule>> {
     // Generate liberty.pest parser
-    let parser = LibertyParser::parse(Rule::lib_file, file);
-    match parser {
+    let input_str =
+        std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
+    let parse_result = LibertyParser::parse(Rule::lib_file, input_str.as_str());
+
+    match parse_result {
         Ok(pairs) => {
             for pair in pairs {
                 println!("{:?}", pair);
                 // Process each pair
-                match pair.as_rule() {
-                    Rule::float => todo!(),
-                    Rule::EOI => todo!(),
-                    Rule::decimal_digits => todo!(),
-                    Rule::decimal_integer => todo!(),
-                    Rule::dec_int => todo!(),
-                    Rule::optional_exp => todo!(),
-                    Rule::optional_frac => todo!(),
-                    Rule::bus_index => todo!(),
-                    Rule::bus_slice => todo!(),
-                    Rule::pin_id => todo!(),
-                    Rule::bus_id => todo!(),
-                    Rule::bus_bus_id => todo!(),
-                    Rule::lib_id => todo!(),
-                    Rule::WHITESPACE => todo!(),
-                    Rule::line_comment => todo!(),
-                    Rule::multiline_comment => todo!(),
-                    Rule::oneline_string => todo!(),
-                    Rule::multiline_string => todo!(),
-                    Rule::semicolon_opt => todo!(),
-                    Rule::string => todo!(),
-                    Rule::attribute_value => todo!(),
-                    Rule::attribute_values => todo!(),
-                    Rule::simple_attribute_value => todo!(),
-                    Rule::simple_attribute => todo!(),
-                    Rule::complex_attribute => todo!(),
-                    Rule::group => todo!(),
-                    Rule::statement => todo!(),
-                    Rule::statements => todo!(),
-                    Rule::lib_file => todo!(),
-                    Rule::COMMENT => todo!(),
-                }
+                process_pair(pair)?;
             }
         }
         Err(err) => {
