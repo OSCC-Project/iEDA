@@ -305,7 +305,7 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
     }
   }
   // remove salt
-  TreeBuilder::recoverNet(net);
+  TimingPropagator::resetNet(net);
 
   // skew violation, try to opt salt
   auto* opt_salt_net = saltOpt(insts, assign);
@@ -315,10 +315,12 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
   }
 
   // build DME
-  buffer = TreeBuilder::boundSkewTree(_net_name, cluster_load_pins, skew_bound, guide_loc);
+  buffer = TreeBuilder::boundSkewTree(net_name, cluster_load_pins, skew_bound, guide_loc);
 
   driver_pin = buffer->get_driver_pin();
-  auto* bst_net = driver_pin->get_net();
+  auto* bst_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  TimingPropagator::update(bst_net);
   _nets.push_back(bst_net);
 
   return buffer;
@@ -377,7 +379,7 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
         auto skew = TimingPropagator::calcSkew(driver_pin);
         feasible_assign.push_back({buffer->get_location(), i, skew});
       }
-      TreeBuilder::recoverNet(net);
+      TimingPropagator::resetNet(net);
     }
   });
 
@@ -483,7 +485,7 @@ void GOCA::levelReport() const
   };
   // fanout rpt
   gen_level_rpt(
-      CtsReportType::kLEVEL_FANOUT, "Fanout", "fanout",
+      CtsReportType::kLevelFanout, "Fanout", "fanout",
       [](const Inst* inst) {
         auto* driver_pin = inst->get_driver_pin();
         auto* net = driver_pin->get_net();
@@ -496,7 +498,7 @@ void GOCA::levelReport() const
       });
   // net len rpt
   gen_level_rpt(
-      CtsReportType::kLEVEL_NET_LEN, "Net Length", "net_len",
+      CtsReportType::kLevelNetLen, "Net Length", "net_len",
       [](const Inst* inst) {
         auto* driver_pin = inst->get_driver_pin();
         return driver_pin->get_sub_len();
@@ -507,7 +509,7 @@ void GOCA::levelReport() const
       });
   // cap rpt
   gen_level_rpt(
-      CtsReportType::kLEVEL_CAP, "Cap", "cap",
+      CtsReportType::kLevelCap, "Cap", "cap",
       [](const Inst* inst) {
         auto* driver_pin = inst->get_driver_pin();
         return driver_pin->get_cap_load();
@@ -518,7 +520,7 @@ void GOCA::levelReport() const
       });
   // slew rpt
   gen_level_rpt(
-      CtsReportType::kLEVEL_SLEW, "Slew", "slew",
+      CtsReportType::kLevelSlew, "Slew", "slew",
       [](const Inst* inst) {
         auto* load_pin = inst->get_load_pin();
         return load_pin->get_slew_in();
@@ -528,21 +530,21 @@ void GOCA::levelReport() const
         return load_pin->get_slew_in() > TimingPropagator::getMaxBufTran();
       });
   // min delay rpt
-  gen_level_rpt(CtsReportType::kLEVEL_DELAY, "Min Delay", "min_delay", [](const Inst* inst) {
+  gen_level_rpt(CtsReportType::kLevelDelay, "Min Delay", "min_delay", [](const Inst* inst) {
     auto* driver_pin = inst->get_driver_pin();
     return driver_pin->get_min_delay();
   });
   // max delay rpt
-  gen_level_rpt(CtsReportType::kLEVEL_DELAY, "Max Delay", "max_delay", [](const Inst* inst) {
+  gen_level_rpt(CtsReportType::kLevelDelay, "Max Delay", "max_delay", [](const Inst* inst) {
     auto* driver_pin = inst->get_driver_pin();
     return driver_pin->get_max_delay();
   });
   // insert delay rpt
-  gen_level_rpt(CtsReportType::kLEVEL_INSERT_DELAY, "Insert Delay", "insert_delay",
+  gen_level_rpt(CtsReportType::kLevelInsertDelay, "Insert Delay", "insert_delay",
                 [](const Inst* inst) { return inst->get_insert_delay(); });
   // skew rpt
   gen_level_rpt(
-      CtsReportType::kLEVEL_SKEW, "Skew", "skew",
+      CtsReportType::kLevelSkew, "Skew", "skew",
       [](const Inst* inst) {
         auto* driver_pin = inst->get_driver_pin();
         return driver_pin->get_max_delay() - driver_pin->get_min_delay();

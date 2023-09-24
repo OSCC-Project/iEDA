@@ -115,8 +115,7 @@ void BoundSkewTree::convert()
     auto* parent = cur->get_parent();
     if (parent == nullptr) {
       // is root, make buffer
-      _root_buf = TreeBuilder::genBufInst(CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId()), loc);
-      _root_buf->set_cell_master(Timing::getMinSizeLib()->get_cell_master());
+      _root_buf = TreeBuilder::genBufInst(_net_name, loc);
       cur->set_name(_root_buf->get_name());
       _node_map.insert({_root_buf->get_name(), _root_buf->get_driver_pin()});
       continue;
@@ -139,12 +138,10 @@ void BoundSkewTree::convert()
     node->set_parent(parent_node);
     auto direction = parent->get_left() == cur ? kLeft : kRight;
     auto edge_len = parent->get_edge_len(direction);
-    auto snake = edge_len > 0 ? edge_len - parent->get_radius() : 0;
-    LOG_FATAL_IF(snake < 0) << "snake is less than 0";
+    auto snake = edge_len - Geom::distance(parent->get_location(), cur->get_location());
+    LOG_FATAL_IF(snake < -kEpsilon) << "snake is less than 0";
     node->set_required_snake(snake);
   }
-  _net = Timing::genNet(_root_buf->get_name(), _root_buf->get_driver_pin(), _load_pins);
-  Timing::update(_net);
 }
 Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
 {
@@ -704,12 +701,8 @@ void BoundSkewTree::embedding(Area* cur) const
   auto right_pt = right->get_location();
   pt.min = std::numeric_limits<double>::max();
   pt.max = std::numeric_limits<double>::min();
-  auto delay_left = cur->get_edge_len(kLeft) > 0
-                        ? ptDelayIncrease(pt, left_pt, cur->get_edge_len(kLeft), left->get_cap_load(), left->get_pattern())
-                        : ptDelayIncrease(pt, left_pt, left->get_cap_load(), left->get_pattern());
-  auto delay_right = cur->get_edge_len(kRight) > 0
-                         ? ptDelayIncrease(pt, right_pt, cur->get_edge_len(kRight), right->get_cap_load(), right->get_pattern())
-                         : ptDelayIncrease(pt, right_pt, right->get_cap_load(), right->get_pattern());
+  auto delay_left = ptDelayIncrease(pt, left_pt, cur->get_edge_len(kLeft), left->get_cap_load(), left->get_pattern());
+  auto delay_right = ptDelayIncrease(pt, right_pt, cur->get_edge_len(kRight), right->get_cap_load(), right->get_pattern());
   pt.min = std::min(left_pt.min + delay_left, right_pt.min + delay_right);
   pt.max = std::max(left_pt.max + delay_left, right_pt.max + delay_right);
   LOG_FATAL_IF(ptSkew(pt) > _skew_bound + 100 * kEpsilon) << "skew is so larger than skew bound, skew: " << ptSkew(pt);
@@ -821,7 +814,7 @@ void BoundSkewTree::updateJS(Area* cur, Line& left, Line& right, PtPair closest)
   } else {
     // single point case
   }
-  if (Geom::lineType(getJsLine(kLeft)) == LineType::kManhattan && left_type != LineType::kManhattan) {
+  if (Geom::lineType(getJsLine(kLeft)) == LineType::kManhattan && left_type != LineType::kManhattan && right_type != LineType::kManhattan) {
     _ms[kLeft].makeDiamond(closest[kLeft], 0);
     _ms[kRight].makeDiamond(closest[kRight], 0);
   }
@@ -844,6 +837,7 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     Geom::sortPtsByFront(_join_segment[side]);
   }
   // add points on other side
+  auto new_js = _join_segment;
   FOR_EACH_SIDE(side)
   {
     auto other_side = side == kLeft ? kRight : kLeft;
@@ -851,16 +845,20 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     auto relative_type = Geom::lineRelative(getJsLine(kLeft), getJsLine(kRight), other_side);
     for (auto pt : other_mr) {
       Geom::calcRelativeCoord(pt, relative_type, parent->get_radius());
-      for (auto it = _join_segment[side].begin(); it != _join_segment[side].end() - 1; ++it) {
-        Line line = {*it, *(it + 1)};
-        // unique and sort
-        if (Geom::onLine(pt, line) && !Geom::isSame(pt, *it) && !Geom::isSame(pt, *(it + 1))) {
+      for (size_t i = 0; i < _join_segment[side].size() - 1; ++i) {
+        Line line = {_join_segment[side][i], _join_segment[side][i + 1]};
+        if (Geom::onLine(pt, line) && !Geom::isSame(pt, _join_segment[side][i]) && !Geom::isSame(pt, _join_segment[side][i + 1])) {
           calcPtDelays(nullptr, pt, line);
-          _join_segment[side].insert(it + 1, pt);
+          new_js[side].push_back(pt);
           break;
         }
       }
     }
+    Geom::sortPtsByFront(new_js[side]);
+  }
+  FOR_EACH_SIDE(side)
+  {
+    _join_segment[side] = new_js[side];
   }
 }
 
@@ -919,8 +917,14 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
       pt.max = std::max(pt.max, _join_segment[other_side][i].max + delay_from[other_side]);
       _join_region[side][i] = pt;
     }
+    Geom::uniquePtsLoc(_join_region[side]);
+  }
+  FOR_EACH_SIDE(side)
+  {
+    auto other_side = side == kLeft ? kRight : kLeft;
     // add JR turn points which delay slope is changed
-    for (size_t i = 0; i < _join_region[side].size() - 1; ++i) {
+    auto n = _join_region[side].size() - 1;
+    for (size_t i = 0; i < n; ++i) {
       auto delta = (_join_segment[side][i].min - _join_segment[other_side][i].min - delay_from[other_side])
                    * (_join_segment[side][i + 1].min - _join_segment[other_side][i + 1].min - delay_from[other_side]);
       if (delta < -kEpsilon) {
@@ -933,6 +937,10 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
       }
     }
     Geom::sortPtsByFront(_join_region[side]);
+    Geom::uniquePtsLoc(_join_region[side]);
+  }
+  FOR_EACH_SIDE(side)
+  {
     // remove redundant turn points which have same slope
     for (size_t i = 0; i < _join_region[side].size() - 1; ++i) {
       auto pt1 = _join_region[side][i];
@@ -951,7 +959,7 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
         incr_pts.push_back(_join_region[side][j]);
       }
     }
-    incr_pts.push_back(_join_segment[side].back());
+    incr_pts.push_back(_join_region[side].back());
     _join_region[side] = incr_pts;
   }
 }
@@ -1020,7 +1028,7 @@ void BoundSkewTree::calcJrCorner(Area* cur)
 {
   FOR_EACH_SIDE(side)
   {
-    LOG_FATAL_IF(_join_segment[side].front().y < _join_segment[side].back().y) << "join segment direction is not correct";
+    LOG_FATAL_IF(_join_segment[side].front().y + kEpsilon < _join_segment[side].back().y) << "join segment direction is not correct";
   }
   if (calcAreaLineType(cur) == LineType::kManhattan && !Equal(cur->get_radius(), 0)) {
     FOR_EACH_SIDE(end_side)
@@ -1054,6 +1062,10 @@ bool BoundSkewTree::jrCornerExist(const size_t& end_side) const
 }
 void BoundSkewTree::calcBalancePt(Area* cur)
 {
+  FOR_EACH_SIDE(end_side)
+  {
+    _bal_points[end_side].clear();
+  }
   if (Equal(cur->get_radius(), 0)) {
     return;
   }
@@ -1390,8 +1402,8 @@ void BoundSkewTree::mrBetweenJs(Area* cur, const size_t& end_side) const
   auto right_line = cur->get_line(kRight);
   Pt ref_js_pt = end_side == kHead ? left_line[end_side] : right_line[end_side];
   std::ranges::for_each(mr_pts, [&](Pt& pt) { pt.val = Geom::distance(pt, ref_js_pt); });
-  Geom::uniquePtsVal(mr_pts);
-  Geom::sortPtsByVal(mr_pts);
+  Geom::sortPtsByValDec(mr_pts);
+  Geom::uniquePtsLoc(mr_pts);
   std::ranges::for_each(mr_pts, [&cur](const Pt& p) { cur->add_mr_point(p); });
 }
 void BoundSkewTree::mrOnJs(Area* cur, const size_t& side) const
@@ -1410,9 +1422,9 @@ void BoundSkewTree::mrOnJs(Area* cur, const size_t& side) const
   }
   p = _join_region[side].back();
   q = _join_region[other_side].back();
-  size_t jr_right_id = _join_region[other_side].size() - 2;
+  size_t jr_right_id = _join_region[side].size() - 2;
   if (_fms_points[kTail].empty() && ptSkew(p) < ptSkew(q)) {
-    for (; jr_right_id > 0; --jr_right_id) {
+    for (; jr_right_id >= jr_left_id; --jr_right_id) {
       if (Equal(ptSkew(_join_region[side][jr_right_id]), _skew_bound)) {
         break;
       }
@@ -1436,11 +1448,10 @@ void BoundSkewTree::fmsOfLineExist(Area* cur, const size_t& side, const size_t& 
   if (dist <= 0) {
     cur->add_mr_point(pt);
   } else if (dist <= cur->get_radius()) {
-    auto other_side = side == kLeft ? kRight : kLeft;
-    auto relative_type = Geom::lineRelative(getJsLine(side), getJsLine(other_side), other_side);
+    auto relative_type = Geom::lineRelative(getJsLine(kLeft), getJsLine(kRight), side);
     Geom::calcRelativeCoord(pt, relative_type, dist);
-    auto x = std::abs(pt.x - _join_segment[side][idx].x);
-    auto y = std::abs(pt.y - _join_segment[side][idx].y);
+    auto x = std::abs(pt.x - _join_region[side][idx].x);
+    auto y = std::abs(pt.y - _join_region[side][idx].y);
     LOG_FATAL_IF(!Equal(x, 0) && !Equal(y, 0)) << "not horizontal or vertical";
     auto incr_delay = side == kLeft ? calcDelayIncrease(x, y, cur->get_left()->get_cap_load())
                                     : calcDelayIncrease(x, y, cur->get_right()->get_cap_load());
@@ -1547,7 +1558,7 @@ void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) con
   Pt child_loc;
   auto parent_loc = parent->get_location();
   auto mr = child->get_mr();
-  if (mr.size() == 4 && isTrrArea(parent)) {
+  if (mr.size() == 4 && isTrrArea(child)) {
     Trr trr;
     mrToTrr(mr, trr);
     auto dist = Geom::ptToTrrDist(parent_loc, trr);
@@ -1565,7 +1576,7 @@ void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) con
     auto x = std::abs(head.x - tail.x);
     auto y = std::abs(head.y - tail.y);
     if (Equal(x, 0) && Equal(y, 0)) {
-      // parent loc is same as child loc
+      // kHead loc is same as kTail loc
       child_loc = head;
     } else if (Equal(x, 0)) {
       // vertical
@@ -1584,6 +1595,8 @@ void BoundSkewTree::embedding(Area* parent, Area* child, const size_t& side) con
   child->set_location(child_loc);
   if (parent->get_edge_len(side) >= 0) {
     LOG_FATAL_IF(parent->get_edge_len(side) < Geom::distance(parent_loc, child_loc) - kEpsilon) << "edge len is less than distance";
+  } else {
+    parent->set_edge_len(side, Geom::distance(parent_loc, child_loc));
   }
 }
 bool BoundSkewTree::isTrrArea(Area* cur) const
@@ -1632,9 +1645,9 @@ void BoundSkewTree::mrToTrr(const Region& mr, Trr& trr) const
   }
   if (mr.size() == 4) {
     Trr trr_left;
-    Geom::lineToMs(trr_left, mr[kLeft + kHead], mr[kLeft + kTail]);
+    Geom::lineToMs(trr_left, mr[0], mr[1]);
     Trr trr_right;
-    Geom::lineToMs(trr_right, mr[kRight + kHead], mr[kRight + kTail]);
+    Geom::lineToMs(trr_right, mr[3], mr[2]);
     trr = trr_left;
     trr.enclose(trr_right);
     return;
@@ -1810,17 +1823,12 @@ double BoundSkewTree::ptSkew(const Pt& pt) const
 Line BoundSkewTree::getJrLine(const size_t& side) const
 {
   auto jr = _join_region[side];
-  return {jr[kHead], jr[kTail]};
+  return Line{jr[kHead], jr[kTail]};
 }
 Line BoundSkewTree::getJsLine(const size_t& side) const
 {
   auto js = _join_segment[side];
-  return {js[kHead], js[kTail]};
-}
-Line BoundSkewTree::getJsLine(const size_t& side, const Side<Pts>& join_segment) const
-{
-  auto js = join_segment[side];
-  return {js[kHead], js[kTail]};
+  return Line{js[kHead], js[kTail]};
 }
 void BoundSkewTree::setJrLine(const size_t& side, const Line& line)
 {
@@ -1882,6 +1890,27 @@ void BoundSkewTree::printArea(const Area* area) const
     printPoint(line[kHead]);
     printPoint(line[kTail]);
   });
+}
+void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file) const
+{
+  auto dir = CTSAPIInst.get_config()->get_sta_workspace();
+  std::ofstream ofs(dir + "/" + file + ".py");
+  ofs << "import matplotlib.pyplot as plt\n";
+  ofs << "import numpy as np\n";
+  ofs << "x = [";
+  for (auto pt : pts) {
+    ofs << pt.x << ", ";
+  }
+  ofs << pts.front().x << "]\n";
+  ofs << "y = [";
+  for (auto pt : pts) {
+    ofs << pt.y << ", ";
+  }
+  ofs << pts.front().y << "]\n";
+  ofs << "plt.plot(x, y)\n";
+  ofs << "plt.show()\n";
+  ofs << "plt.savefig('" + file + ".png')\n";
+  ofs.close();
 }
 }  // namespace bst
 }  // namespace icts

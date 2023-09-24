@@ -636,7 +636,7 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
   TimingPropagator::update(net);
   auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
 
-  TreeBuilder::recoverNet(net);
+  TimingPropagator::resetNet(net);
 
   return skew;
 }

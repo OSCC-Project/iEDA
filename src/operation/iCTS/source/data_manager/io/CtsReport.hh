@@ -39,22 +39,21 @@ using std::map;
 using std::string;
 using std::vector;
 
-enum CtsReportType
+enum class CtsReportType
 {
-  kWIRE_LENGTH = 0,
-  kHP_WIRE_LENGTH = 1,
-  kCELL_STATS = 2,
-  kLIB_CELL_DIST = 3,
-  kNET_LEVEL = 4,
-  kTIMING_NODE_LOG = 5,
-  kLEVEL_LOG = 6,
-  kLEVEL_FANOUT = 7,
-  kLEVEL_NET_LEN = 8,
-  kLEVEL_CAP = 9,
-  kLEVEL_SLEW = 10,
-  kLEVEL_DELAY = 11,
-  kLEVEL_INSERT_DELAY = 12,
-  kLEVEL_SKEW = 13,
+  kWireLength,
+  kHpWireLength,
+  kCellStatus,
+  kLibCellDist,
+  kNetLevel,
+  kLevelLog,
+  kLevelFanout,
+  kLevelNetLen,
+  kLevelCap,
+  kLevelSlew,
+  kLevelDelay,
+  kLevelInsertDelay,
+  kLevelSkew,
 };
 
 class CtsReportTable : public ieda::ReportTable

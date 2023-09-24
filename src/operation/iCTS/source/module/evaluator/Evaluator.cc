@@ -25,7 +25,6 @@
 #include "CTSAPI.hh"
 #include "CtsReport.hh"
 #include "Net.hh"
-#include "log/Log.hh"
 namespace icts {
 
 void Evaluator::init()
@@ -115,8 +114,8 @@ void Evaluator::statistics(const std::string& save_dir) const
   auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
-  auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWIRE_LENGTH);
-  auto hpwl_wl_rpt = CtsReportTable::createReportTable("HPWL Wire length stats", CtsReportType::kHP_WIRE_LENGTH);
+  auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWireLength);
+  auto hpwl_wl_rpt = CtsReportTable::createReportTable("HPWL Wire length stats", CtsReportType::kHpWireLength);
   std::map<std::string, int> cell_count_map;
   double top_wire_len = 0.0;
   double trunk_wire_len = 0.0;
@@ -192,7 +191,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   // TBD
 
   // cell stats(Cell type, Count, Area, Capacitance)
-  auto cell_stats_rpt = CtsReportTable::createReportTable("Cell stats", CtsReportType::kCELL_STATS);
+  auto cell_stats_rpt = CtsReportTable::createReportTable("Cell stats", CtsReportType::kCellStatus);
   struct CellStatsProperty
   {
     int total_num;
@@ -222,7 +221,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   cell_stats_save_file << cell_stats_rpt->c_str();
 
   // lib cell distribution(Name, Type, Inst Count, Inst Area)
-  auto lib_cell_dist_rpt = CtsReportTable::createReportTable("Library cell distribution", CtsReportType::kLIB_CELL_DIST);
+  auto lib_cell_dist_rpt = CtsReportTable::createReportTable("Library cell distribution", CtsReportType::kLibCellDist);
   for (auto [cell_master, count] : cell_count_map) {
     (*lib_cell_dist_rpt) << cell_master << CTSAPIInst.getCellType(cell_master) << count << count * CTSAPIInst.getCellArea(cell_master)
                          << TABLE_ENDLINE;
@@ -234,7 +233,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   lib_cell_dist_save_file << lib_cell_dist_rpt->c_str();
 
   // net level distribution(Level, Num)
-  auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNET_LEVEL);
+  auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNetLevel);
   std::map<int, int> net_level_map;
   int all_num = 0;
   for (auto eval_net : _eval_nets) {

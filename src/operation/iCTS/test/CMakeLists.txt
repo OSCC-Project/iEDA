@@ -11,7 +11,11 @@ if(PY_MODEL)
   target_link_libraries(icts_py_test PUBLIC icts_source icts_test_external_libs)
 endif()
 
+add_library(icts_solver_aux INTERFACE)
+target_link_libraries(icts_solver_aux INTERFACE icts_source icts_api
+                                                icts_test_external_libs)
+target_include_directories(icts_solver_aux INTERFACE ${ICTS_TEST})
+
 add_executable(icts_solver_test ${ICTS_TEST}/SolverTest.cc)
-target_link_libraries(icts_solver_test PUBLIC icts_source
-                                              icts_api
-                                              icts_test_external_libs)
+target_link_libraries(icts_solver_test PUBLIC icts_solver_aux)
+target_include_directories(icts_solver_test PUBLIC ${ICTS_TEST})

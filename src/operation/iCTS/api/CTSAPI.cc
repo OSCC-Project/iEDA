@@ -712,6 +712,10 @@ icts::Inst* CTSAPI::genBeatSaltTree(const std::string& net_name, const std::vect
   // build BST
   auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
   auto* driver_pin = buf->get_driver_pin();
+  buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  TimingPropagator::update(bst_net);
+
   std::vector<Pin*> pins{driver_pin};
   std::ranges::copy(loads, std::back_inserter(pins));
 
@@ -753,7 +757,7 @@ icts::Inst* CTSAPI::genBeatSaltTree(const std::string& net_name, const std::vect
   builder.run(salt_net, bound_skew_tree, 0);
 
   // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  icts::TreeBuilder::recoverNet(driver_pin->get_net());
+  icts::TimingPropagator::resetNet(bst_net);
   auto source = bound_skew_tree.source;
   buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
   driver_pin = buf->get_driver_pin();
@@ -776,8 +780,6 @@ icts::Inst* CTSAPI::genBeatSaltTree(const std::string& net_name, const std::vect
     parent_node->add_child(current_node);
   };
   salt::TreeNode::preOrder(source, connect_node_func);
-  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
-  icts::TimingPropagator::update(net);
   return buf;
 }
 
@@ -785,8 +787,12 @@ icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<i
                                 const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
 {
   // build BST
-  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc);
+  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
   auto* driver_pin = buf->get_driver_pin();
+  buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  TimingPropagator::update(bst_net);
+
   std::vector<Pin*> pins{driver_pin};
   std::ranges::copy(loads, std::back_inserter(pins));
 
@@ -828,7 +834,7 @@ icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<i
   beat_builder.run(salt_net, bound_skew_tree, 0);
 
   // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  icts::TreeBuilder::recoverNet(driver_pin->get_net());
+  icts::TimingPropagator::resetNet(bst_net);
   auto source = bound_skew_tree.source;
   buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
   driver_pin = buf->get_driver_pin();
@@ -851,8 +857,6 @@ icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<i
     parent_node->add_child(current_node);
   };
   salt::TreeNode::preOrder(source, connect_node_func);
-  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
-  icts::TimingPropagator::update(net);
   return buf;
 }
 
