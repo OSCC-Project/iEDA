@@ -414,9 +414,9 @@ std::vector<LayerRect> DRCChecker::getMinSpacingRect(const std::vector<ids::DRCR
       RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[routing_layer_idx];
       min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, routing_layer.getMinSpacing(rect)), routing_layer_idx);
     } else if (RTUtil::exist(cut_layer_name_to_idx_map, layer_name)) {
-      irt_int cut_spacing = 0;  // TODO
       irt_int cut_layer_idx = cut_layer_name_to_idx_map[layer_name];
-      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, cut_spacing), cut_layer_idx);
+      CutLayer& cut_layer = DM_INST.getDatabase().get_cut_layer_list()[cut_layer_idx];
+      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, cut_layer.getMinSpacing()), cut_layer_idx);
     } else {
       LOG_INST.error(Loc::current(), "There has no layer name : ", layer_name, " !");
     }

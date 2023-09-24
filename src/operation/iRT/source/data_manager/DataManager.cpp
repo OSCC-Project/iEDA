@@ -913,7 +913,6 @@ void DataManager::makeLayerList()
 
 void DataManager::checkLayerList()
 {
-  Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
@@ -930,18 +929,12 @@ void DataManager::checkLayerList()
       LOG_INST.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
     }
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
-      if (x_track_grid.get_start_line() < die.get_real_lb_x() || die.get_real_rt_x() < x_track_grid.get_end_line()) {
-        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " x_track_grid outside the die!");
-      }
       if (x_track_grid.get_step_length() <= 0) {
         LOG_INST.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
                        "' is wrong!");
       }
     }
     for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
-      if (y_track_grid.get_start_line() < die.get_real_lb_y() || die.get_real_rt_y() < y_track_grid.get_end_line()) {
-        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " y_track_grid outside the die!");
-      }
       if (y_track_grid.get_step_length() <= 0) {
         LOG_INST.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
                        "' is wrong!");

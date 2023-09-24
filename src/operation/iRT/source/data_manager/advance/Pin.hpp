@@ -33,15 +33,15 @@ class Pin
   std::string& get_pin_name() { return _pin_name; }
   std::vector<EXTLayerRect>& get_routing_shape_list() { return _routing_shape_list; }
   std::vector<EXTLayerRect>& get_cut_shape_list() { return _cut_shape_list; }
-  AccessPoint& get_protected_access_point() { return _protected_access_point; }
   std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  AccessPoint& get_protected_access_point() { return _protected_access_point; }
   // setter
   void set_pin_idx(const irt_int pin_idx) { _pin_idx = pin_idx; }
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
   void set_routing_shape_list(const std::vector<EXTLayerRect>& routing_shape_list) { _routing_shape_list = routing_shape_list; }
   void set_cut_shape_list(const std::vector<EXTLayerRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
-  void set_protected_access_point(const AccessPoint& protected_access_point) { _protected_access_point = protected_access_point; }
   void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_protected_access_point(const AccessPoint& protected_access_point) { _protected_access_point = protected_access_point; }
   // function
 
  private:
@@ -49,8 +49,8 @@ class Pin
   std::string _pin_name;
   std::vector<EXTLayerRect> _routing_shape_list;
   std::vector<EXTLayerRect> _cut_shape_list;
-  AccessPoint _protected_access_point;
   std::vector<AccessPoint> _access_point_list;
+  AccessPoint _protected_access_point;
 };
 
 }  // namespace irt
