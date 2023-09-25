@@ -56,18 +56,16 @@ TEST_F(SolverTest, RegressionTreeBuilderTest)
 {
   TreeBuilderTest tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
                                "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
-  double skew_bound = 0.004;
+  double skew_bound = 0.01;
   size_t case_num = 500;
   // design DB unit is 2000
-  EnvInfo env_info{50000, 200000, 50000, 200000, 30, 40};
+  EnvInfo env_info{50000, 200000, 50000, 200000, 20, 40};
   auto data_set = tree_builder.runRegressTest(env_info, case_num, skew_bound);
 
   auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
-  auto method_list = {
-      TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
-      TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::beatSaltTree)
-      // ,TreeBuilder::funcName(TreeBuilder::beatTree) TBD
-  };
+  auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
+                      TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
+                      TreeBuilder::funcName(TreeBuilder::beatTree)};
   auto topo_type_list = {
       TopoTypeToString(TopoType::kGreedyDist),
       TopoTypeToString(TopoType::kGreedyMerge),
@@ -76,14 +74,17 @@ TEST_F(SolverTest, RegressionTreeBuilderTest)
   };
   data_set.writeCSV(method_list, topo_type_list, dir, "regression.csv");
 
-  auto target_method = TreeBuilder::funcName(TreeBuilder::beatSaltTree);
-  auto ref_method = TreeBuilder::funcName(TreeBuilder::fluteTree);
-  auto topo_type = TopoTypeToString(TopoType::kGreedyDist);
-  data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
-  ref_method = TreeBuilder::funcName(TreeBuilder::shallowLightTree);
-  data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
-  ref_method = TreeBuilder::funcName(TreeBuilder::boundSkewTree);
-  data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
+  auto target_method = TreeBuilder::funcName(TreeBuilder::beatTree);
+  std::ranges::for_each(topo_type_list, [&](const std::string& topo_type) {
+    auto ref_method = TreeBuilder::funcName(TreeBuilder::fluteTree);
+    data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
+    ref_method = TreeBuilder::funcName(TreeBuilder::shallowLightTree);
+    data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
+    ref_method = TreeBuilder::funcName(TreeBuilder::boundSkewTree);
+    data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
+    ref_method = TreeBuilder::funcName(TreeBuilder::bstSaltTree);
+    data_set.writeReduceCSV(target_method, ref_method, topo_type, dir);
+  });
 }
 
 }  // namespace

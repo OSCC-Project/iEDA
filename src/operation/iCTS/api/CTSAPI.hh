@@ -112,7 +112,9 @@ class CTSAPI
   int genId();
   void genFluteTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
   void genShallowLightTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
-  icts::Inst* genBeatSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+  icts::Inst* genBoundSkewTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                               const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+  icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                               const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                           const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);

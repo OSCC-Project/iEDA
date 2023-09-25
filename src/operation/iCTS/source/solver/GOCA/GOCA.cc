@@ -141,7 +141,7 @@ void GOCA::breakLongWire()
     }
     final_load_pins.push_back(load_pin);
   });
-  TreeBuilder::shallowLightTree(_driver, final_load_pins);
+  TreeBuilder::shallowLightTree("Salt", _driver, final_load_pins);
   auto* net = TimingPropagator::genNet(_net_name, _driver, final_load_pins);
   TimingPropagator::update(net);
   _nets.push_back(net);
@@ -231,8 +231,9 @@ std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign&
   auto est_net_dist = BalanceClustering::estimateNetLength(insts, 1.0 * max_dist / TimingPropagator::getDbUnit(), max_fanout)
                       * TimingPropagator::getDbUnit();
   while (est_net_dist > max_dist) {
-    std::sort(sorted_insts.begin(), sorted_insts.end(),
-              [](Inst* inst1, Inst* inst2) { return inst1->get_driver_pin()->get_max_delay() < inst2->get_driver_pin()->get_max_delay(); });
+    std::ranges::sort(sorted_insts, [](Inst* inst1, Inst* inst2) {
+      return inst1->get_driver_pin()->get_max_delay() < inst2->get_driver_pin()->get_max_delay();
+    });
     auto min_delay_inst = sorted_insts.front();
     auto loc = min_delay_inst->get_location();
     sorted_insts.erase(sorted_insts.begin());
@@ -288,7 +289,7 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
     auto* load_pin = cluster_load_pins.front();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
   } else {
-    TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
+    TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
   }
   auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
@@ -372,7 +373,7 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
       auto* driver_pin = buffer->get_driver_pin();
       buffer->set_cell_master(cell_master);
       TreeBuilder::localPlace(buffer, cluster_load_pins);
-      TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
+      TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
       auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
       TimingPropagator::update(net);
       if (TimingPropagator::skewFeasible(driver_pin, skew_bound)) {
@@ -386,7 +387,7 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
   if (feasible_assign.empty()) {
     return nullptr;
   }
-  std::sort(feasible_assign.begin(), feasible_assign.end(), [&](const Buffering& assign1, const Buffering& assign2) {
+  std::ranges::sort(feasible_assign, [&](const Buffering& assign1, const Buffering& assign2) {
     if (assign1.cell_id == assign2.cell_id) {
       return assign1.skew < assign2.skew;  // sort by skew
     }
@@ -400,7 +401,7 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
   auto cell_master = lib_list[best_assign.cell_id]->get_cell_master();
   buffer->set_cell_master(cell_master);
   TreeBuilder::localPlace(buffer, cluster_load_pins);
-  TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
+  TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
   auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
   return net;

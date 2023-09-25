@@ -440,7 +440,7 @@ std::vector<Inst*> BalanceClustering::getWorstViolationCluster(const std::vector
     auto score = calcScore(cluster, max_cap, max_net_length, max_fanout);
     vio_scores.push_back(score);
   });
-  std::sort(vio_scores.begin(), vio_scores.end(), vio_cmp);
+  std::ranges::sort(vio_scores, vio_cmp);
   auto is_violation = [&](const ViolationScore& vio_score) {
     if (vio_score.skew_vio_score > TimingPropagator::getSkewBound() || vio_score.cap_vio_score > max_cap
         || vio_score.net_len_vio_score > max_net_length) {
@@ -475,8 +475,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::getMostRecentClusters(const s
     auto dist = TimingPropagator::calcDist(loc, center);
     id_dist_pairs.push_back({i, dist});
   }
-  std::sort(id_dist_pairs.begin(), id_dist_pairs.end(),
-            [](const std::pair<size_t, double>& p1, const std::pair<size_t, double>& p2) { return p1.second < p2.second; });
+  std::ranges::sort(id_dist_pairs,
+                    [](const std::pair<size_t, double>& p1, const std::pair<size_t, double>& p2) { return p1.second < p2.second; });
   std::vector<std::vector<Inst*>> recent_clusters;
   size_t inst_num = center_cluster.size();
   for (auto id_dist_pair : id_dist_pairs) {
@@ -520,7 +520,7 @@ std::pair<std::vector<Inst*>, std::vector<Inst*>> BalanceClustering::divideBy(co
 {
   auto cmp = [&](const Inst* inst1, const Inst* inst2) { return func(inst1) < func(inst2); };
   std::vector<Inst*> sorted_insts = insts;
-  std::sort(sorted_insts.begin(), sorted_insts.end(), cmp);
+  std::ranges::sort(sorted_insts, cmp);
   size_t num = sorted_insts.size();
   size_t split_id = num * ratio;
   std::vector<Inst*> left(sorted_insts.begin(), sorted_insts.begin() + split_id);
@@ -630,7 +630,7 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
     auto load_pin = cluster_load_pins.front();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
   } else {
-    TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
+    TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
   }
   auto* net = TimingPropagator::genNet("temp", driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
@@ -902,7 +902,7 @@ void BalanceClustering::convexHull(std::vector<Point>& pts)
     return;
   }
   // calculate convex hull by Andrew algorithm
-  std::sort(pts.begin(), pts.end());
+  std::ranges::sort(pts);
   std::vector<Point> ans(2 * pts.size());
   size_t k = 0;
   for (size_t i = 0; i < pts.size(); ++i) {
