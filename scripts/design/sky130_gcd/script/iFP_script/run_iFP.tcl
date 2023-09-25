@@ -21,7 +21,13 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read verilog
 #===========================================================
-verilog_init -path ./result/verilog/gcd.v -top gcd
+if { $DESIGN == "gcd" } {
+    verilog_init -path ./result/verilog/gcd.v -top gcd
+} elseif { $DESIGN == "APU" } {
+    verilog_init -path ./result/verilog/APU.v -top APU
+} else {
+    verilog_init -path ./result/verilog/gcd.v -top gcd
+}
 
 #===========================================================
 ##   read def
@@ -30,10 +36,18 @@ verilog_init -path ./result/verilog/gcd.v -top gcd
 
 #===========================================================
 ##   init floorplan
-##   gcd & uart
+##   gcd & & APU & uart
 #===========================================================
-set DIE_AREA "0.0    0.0   149.96   150.128"
-set CORE_AREA "9.996 10.08 139.964  140.048"
+if { $DESIGN == "gcd" } {
+    set DIE_AREA "0.0    0.0   149.96   150.128"
+    set CORE_AREA "9.996 10.08 139.964  140.048"
+} elseif { $DESIGN == "APU" } {
+    set DIE_AREA "0.0    0.0   500   500"
+    set CORE_AREA "10.0  10.0  490   490"
+} else {
+    set DIE_AREA "0.0    0.0   149.96   150.128"
+    set CORE_AREA "9.996 10.08 139.964  140.048"
+}
 
 #===========================================================
 ##   init floorplan
