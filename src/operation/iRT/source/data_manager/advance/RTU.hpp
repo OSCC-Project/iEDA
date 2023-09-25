@@ -68,12 +68,21 @@ using irt_int = int32_t;
 
 namespace gtl = boost::polygon;
 using namespace boost::polygon::operators;
+using GTLPoint = gtl::point_data<irt_int>;
+using GTLRectangle = gtl::rectangle_data<irt_int>;
+using GTLPolygon = gtl::polygon_90_data<irt_int>;
+using GTLPolygonSet = gtl::polygon_90_set_data<irt_int>;
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-using BoostPoint = bg::model::d2::point_xy<irt_int, bg::cs::cartesian>;
-using BoostBox = bg::model::box<BoostPoint>;
+using BGPoint = bg::model::d2::point_xy<irt_int>;
+using BGMultiPoint = bg::model::multi_point<BGPoint>;
+
+using BGBox = bg::model::box<BGPoint>;
+
+using BGPolygon = bg::model::polygon<BGPoint>;
+using BGMultiPolygon = bg::model::multi_polygon<BGPolygon>;
 
 template <class... Fs>
 struct Overload : Fs...

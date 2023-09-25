@@ -2130,19 +2130,19 @@ class RTUtil
     return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
   }
 
-  static PlanarRect convertToPlanarRect(BoostBox& boost_box)
+  static PlanarRect convertToPlanarRect(BGBox& boost_box)
   {
     return PlanarRect(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
   }
 
-  static BoostBox convertToBoostBox(const PlanarRect& rect)
+  static BGBox convertToBGBox(const PlanarRect& rect)
   {
-    return BoostBox(BoostPoint(rect.get_lb_x(), rect.get_lb_y()), BoostPoint(rect.get_rt_x(), rect.get_rt_y()));
+    return BGBox(BGPoint(rect.get_lb_x(), rect.get_lb_y()), BGPoint(rect.get_rt_x(), rect.get_rt_y()));
   }
 
-  static BoostBox convertToBoostBox(gtl::rectangle_data<irt_int>& gtl_rect)
+  static BGBox convertToBGBox(gtl::rectangle_data<irt_int>& gtl_rect)
   {
-    return BoostBox(BoostPoint(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BoostPoint(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
+    return BGBox(BGPoint(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BGPoint(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
   }
 
   static gtl::rectangle_data<irt_int> convertToGTLRect(const PlanarRect& rect)
@@ -2150,30 +2150,30 @@ class RTUtil
     return gtl::rectangle_data<irt_int>(rect.get_lb_x(), rect.get_lb_y(), rect.get_rt_x(), rect.get_rt_y());
   }
 
-  static gtl::rectangle_data<irt_int> convertToGTLRect(BoostBox& boost_box)
+  static gtl::rectangle_data<irt_int> convertToGTLRect(BGBox& boost_box)
   {
     return gtl::rectangle_data<irt_int>(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(),
                                         boost_box.max_corner().y());
   }
 
-  static irt_int getLength(BoostBox& a) { return std::abs(a.max_corner().x() - a.min_corner().x()); }
+  static irt_int getLength(BGBox& a) { return std::abs(a.max_corner().x() - a.min_corner().x()); }
 
-  static irt_int getWidth(BoostBox& a) { return std::abs(a.max_corner().y() - a.min_corner().y()); }
+  static irt_int getWidth(BGBox& a) { return std::abs(a.max_corner().y() - a.min_corner().y()); }
 
-  static PlanarCoord getCenter(BoostBox& a)
+  static PlanarCoord getCenter(BGBox& a)
   {
     irt_int center_x = std::abs(a.max_corner().x() + a.min_corner().x()) / 2;
     irt_int center_y = std::abs(a.max_corner().y() + a.min_corner().y()) / 2;
     return PlanarCoord(center_x, center_y);
   }
 
-  static BoostBox enlargeBoostBox(BoostBox& a, irt_int enlarge_size)
+  static BGBox enlargeBGBox(BGBox& a, irt_int enlarge_size)
   {
-    return BoostBox(BoostPoint(a.min_corner().x() - enlarge_size, a.min_corner().y() - enlarge_size),
-                    BoostPoint(a.max_corner().x() + enlarge_size, a.max_corner().y() + enlarge_size));
+    return BGBox(BGPoint(a.min_corner().x() - enlarge_size, a.min_corner().y() - enlarge_size),
+                    BGPoint(a.max_corner().x() + enlarge_size, a.max_corner().y() + enlarge_size));
   }
 
-  static void offsetBoostBox(BoostBox& boost_box, PlanarCoord& coord)
+  static void offsetBGBox(BGBox& boost_box, PlanarCoord& coord)
   {
     boost_box.min_corner().set<0>(boost_box.min_corner().x() + coord.get_x());
     boost_box.min_corner().set<1>(boost_box.min_corner().y() + coord.get_y());
@@ -2182,7 +2182,7 @@ class RTUtil
     boost_box.max_corner().set<1>(boost_box.max_corner().y() + coord.get_y());
   }
 
-  static bool isOverlap(BoostBox& a, BoostBox& b, bool consider_edge = true)
+  static bool isOverlap(BGBox& a, BGBox& b, bool consider_edge = true)
   {
     irt_int a_lb_x = a.min_corner().x(), a_lb_y = a.min_corner().y();
     irt_int a_rt_x = a.max_corner().x(), a_rt_y = a.max_corner().y();
@@ -2200,7 +2200,7 @@ class RTUtil
     }
   }
 
-  static BoostBox getOverlap(BoostBox& a, BoostBox& b)
+  static BGBox getOverlap(BGBox& a, BGBox& b)
   {
     irt_int overlap_lb_x = std::max(a.min_corner().x(), b.min_corner().x());
     irt_int overlap_lb_y = std::max(a.min_corner().y(), b.min_corner().y());
@@ -2208,22 +2208,22 @@ class RTUtil
     irt_int overlap_rt_y = std::min(a.max_corner().y(), b.max_corner().y());
 
     if (overlap_lb_x > overlap_rt_x || overlap_lb_y > overlap_rt_y) {
-      return BoostBox(BoostPoint(0, 0), BoostPoint(0, 0));
+      return BGBox(BGPoint(0, 0), BGPoint(0, 0));
     } else {
-      return BoostBox(BoostPoint(overlap_lb_x, overlap_lb_y), BoostPoint(overlap_rt_x, overlap_rt_y));
+      return BGBox(BGPoint(overlap_lb_x, overlap_lb_y), BGPoint(overlap_rt_x, overlap_rt_y));
     }
   }
 
-  static bool isHorizontal(BoostBox a) { return (a.max_corner().x() - a.min_corner().x()) >= (a.max_corner().y() - a.min_corner().y()); }
+  static bool isHorizontal(BGBox a) { return (a.max_corner().x() - a.min_corner().x()) >= (a.max_corner().y() - a.min_corner().y()); }
 
-  static irt_int getDiagonalLength(BoostBox& a)
+  static irt_int getDiagonalLength(BGBox& a)
   {
     irt_int length = getLength(a);
     irt_int width = getWidth(a);
     return (irt_int) std::sqrt((length * length + width * width));
   }
 
-  static irt_int getEuclideanDistance(BoostBox& a, BoostBox& b)
+  static irt_int getEuclideanDistance(BGBox& a, BGBox& b)
   {
     irt_int a_lb_x = a.min_corner().x(), a_lb_y = a.min_corner().y();
     irt_int a_rt_x = a.max_corner().x(), a_rt_y = a.max_corner().y();

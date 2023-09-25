@@ -481,7 +481,7 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, gtl::polygon_90_set_data<irt_int>> layer_polygon_set_map;
+  std::map<irt_int, GTLPolygonSet> layer_polygon_set_map;
   {
     // pin_shape
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
@@ -501,9 +501,9 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
   std::map<LayerRect, irt_int, CmpLayerRectByXASC> violation_rect_added_area_map;
   for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
     irt_int layer_min_area = routing_layer_list[layer_idx].get_min_area();
-    std::vector<gtl::polygon_90_data<irt_int>> polygon_list;
+    std::vector<GTLPolygon> polygon_list;
     polygon_set.get_polygons(polygon_list);
-    for (gtl::polygon_90_data<irt_int>& polygon : polygon_list) {
+    for (GTLPolygon& polygon : polygon_list) {
       if (gtl::area(polygon) >= layer_min_area) {
         continue;
       }
