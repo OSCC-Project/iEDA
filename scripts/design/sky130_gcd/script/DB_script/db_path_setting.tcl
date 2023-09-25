@@ -1,4 +1,10 @@
 #===========================================================
+##   set design
+## support design : gcd APU
+#===========================================================
+set DESIGN "gcd"
+
+#===========================================================
 ##   set HD or HS
 #===========================================================
 set CELL_TYPE "HS"
@@ -127,9 +133,18 @@ set LIB_PATH_SETUP ${LIB_PATH}
 #===========================================================
 ##   set sdc path
 #===========================================================
-set SDC_PATH "./../../foundry/sky130/sdc/gcd.sdc"
+if { $DESIGN == "gcd" } {
+    set SDC_PATH "./../../foundry/sky130/sdc/gcd.sdc"
+} elseif { $DESIGN == "APU" } {
+    set SDC_PATH "./../../foundry/sky130/sdc/APU.sdc"
+} else {
+    set SDC_PATH "./../../foundry/sky130/sdc/gcd.sdc"
+}
+
+# set SDC_PATH "./../../foundry/sky130/sdc/gcd.sdc"
 #set SDC_PATH "./../../foundry/sky130/sdc/uart.sdc"
 #set SDC_PATH "./../../foundry/sky130/sdc/aes_cipher_top.sdc"
+#set SDC_PATH "./../../foundry/sky130/sdc/APU.sdc"
 #===========================================================
 ##   set spef path
 #===========================================================
