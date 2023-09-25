@@ -36,7 +36,7 @@ namespace icts {
  *                  2.1 remove root pin
  *          3. place & cancel place buffer for feasible location
  */
-using SteinerTreeFunc = void (*)(Pin*, const std::vector<Pin*>&);
+using SteinerTreeFunc = void (*)(const std::string&, Pin*, const std::vector<Pin*>&);
 using SkewTreeFunc
     = Inst* (*) (const std::string&, const std::vector<Pin*>&, const std::optional<double>&, const std::optional<Point>&, const TopoType&);
 class TreeBuilder
@@ -55,18 +55,21 @@ class TreeBuilder
   static void connect(Node* parent, Node* child);
   static void disconnect(Node* parent, Node* child);
   static void directConnectTree(Pin* driver, Pin* load);
-  static void fluteTree(Pin* driver, const std::vector<Pin*>& loads);
-  static void shallowLightTree(Pin* driver, const std::vector<Pin*>& loads);
+  static void fluteTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
+  static void shallowLightTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
 
   static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
                              const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
                              const TopoType& topo_type = TopoType::kGreedyDist);
-  static Inst* beatSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                            const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
-                            const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
+                           const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+                           const TopoType& topo_type = TopoType::kGreedyDist);
   static Inst* beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* tempTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
+                        const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
+  static void convertToBinaryTree(Node* root);
   static std::string funcName(const SteinerTreeFunc& func);
   static std::string funcName(const SkewTreeFunc& func);
 

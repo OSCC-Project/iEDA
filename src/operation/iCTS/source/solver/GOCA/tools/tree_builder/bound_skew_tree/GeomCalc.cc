@@ -546,7 +546,7 @@ void GeomCalc::sortPtsByVal(Pts& pts)
   if (pts.empty()) {
     return;
   }
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
 }
 
 void GeomCalc::sortPtsByValDec(Pts& pts)
@@ -554,7 +554,7 @@ void GeomCalc::sortPtsByValDec(Pts& pts)
   if (pts.empty()) {
     return;
   }
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val > p2.val; });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val > p2.val; });
 }
 
 void GeomCalc::uniquePtsLoc(std::vector<Pt>& pts)
@@ -606,7 +606,7 @@ void GeomCalc::convexHull(std::vector<Pt>& pts)
     return;
   }
   // calculate convex hull by Andrew algorithm
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.x < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.x < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
   std::vector<Pt> ans(2 * pts.size());
   size_t k = 0;
   for (size_t i = 0; i < pts.size(); ++i) {

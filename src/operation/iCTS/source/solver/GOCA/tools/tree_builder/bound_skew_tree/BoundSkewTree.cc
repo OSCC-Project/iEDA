@@ -57,8 +57,8 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
 {
   _net_name = net_name;
   _skew_bound = skew_bound.value_or(Timing::getSkewBound());
-
-  // Input topology
+  TreeBuilder::convertToBinaryTree(driver_pin);
+  // Copy topology
   std::unordered_map<Node*, Area*> node_area_map;
   driver_pin->postOrder([&](Node* node) {
     if (node->isPin() && node->isLoad()) {
@@ -67,6 +67,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
       Timing::updatePinCap(pin);
     }
     auto* area = new Area(node);
+    node_area_map[node] = area;
     area->set_pattern(node->get_pattern());
     _node_map.insert({node->get_name(), node});
     if (node->isPin() && node->isDriver()) {
@@ -93,54 +94,14 @@ void BoundSkewTree::run()
 {
   bottomUp();
   topDown();
+  convert();
 }
 void BoundSkewTree::convert()
 {
-  std::stack<Area*> stack;
-  stack.push(_root);
-  // pre-order build Node, leaf node will in _node_map
-  while (!stack.empty()) {
-    auto* cur = stack.top();
-    stack.pop();
-
-    if (cur->get_right()) {
-      stack.push(cur->get_right());
-    }
-    if (cur->get_left()) {
-      stack.push(cur->get_left());
-    }
-
-    auto pt = cur->get_location();
-    auto loc = Point(pt.x * _db_unit, pt.y * _db_unit);
-    auto* parent = cur->get_parent();
-    if (parent == nullptr) {
-      // is root, make buffer
-      _root_buf = TreeBuilder::genBufInst(_net_name, loc);
-      cur->set_name(_root_buf->get_name());
-      _node_map.insert({_root_buf->get_name(), _root_buf->get_driver_pin()});
-      continue;
-    }
-
-    Node* node = nullptr;
-    Node* parent_node = nullptr;
-    parent_node = _node_map[parent->get_name()];
-    LOG_FATAL_IF(parent_node == nullptr) << "node " << parent->get_name() << " is not in _node_map";
-    if (cur->get_left() == nullptr && cur->get_right() == nullptr) {
-      // is load pin, find from _node_map
-      node = _node_map[cur->get_name()];
-      LOG_FATAL_IF(node == nullptr) << "node " << cur->get_name() << " is not in _node_map";
-    } else {
-      // is steiner node
-      node = new Node(cur->get_name(), loc);
-      _node_map.insert({node->get_name(), node});
-    }
-    parent_node->add_child(node);
-    node->set_parent(parent_node);
-    auto direction = parent->get_left() == cur ? kLeft : kRight;
-    auto edge_len = parent->get_edge_len(direction);
-    auto snake = edge_len - Geom::distance(parent->get_location(), cur->get_location());
-    LOG_FATAL_IF(snake < -kEpsilon) << "snake is less than 0";
-    node->set_required_snake(snake);
+  if (_topo_type == TopoType::kInputTopo) {
+    inputTopologyConvert();
+  } else {
+    noneInputTopologyConvert();
   }
 }
 Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
@@ -200,6 +161,8 @@ double BoundSkewTree::distanceCost(Area* left, Area* right) const
 Area* BoundSkewTree::merge(Area* left, Area* right) const
 {
   auto* parent = new Area();
+  auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
+  parent->set_pattern(pattern);
   parent->set_left(left);
   parent->set_right(right);
   left->set_parent(parent);
@@ -301,7 +264,7 @@ std::pair<std::vector<Area*>, std::vector<Area*>> BoundSkewTree::octagonDivide(s
       pt.val = diameter;
       area->set_location(pt);
     });
-    std::sort(areas.begin(), areas.end(), [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
+    std::ranges::sort(areas, [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
     auto left = std::vector<Area*>(areas.begin(), areas.begin() + areas.size() / 2);
     auto right = std::vector<Area*>(areas.begin() + areas.size() / 2, areas.end());
     auto cost = bound_diameter(left) + bound_diameter(right);
@@ -363,7 +326,7 @@ std::vector<Area*> BoundSkewTree::areaOnOctagonBound(const std::vector<Area*> ar
     pt.val = arc_tan2;
     area->set_location(pt);
   });
-  std::sort(result.begin(), result.end(), [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
+  std::ranges::sort(result, [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
   return result;
 }
 
@@ -494,7 +457,6 @@ void BoundSkewTree::bottomUp()
       bottomUpTopoBased();
       break;
     case TopoType::kInputTopo:
-      LOG_INFO << "exist input topology...";
       bottomUpTopoBased();
       break;
     case TopoType::kGreedyDist:
@@ -551,7 +513,6 @@ void BoundSkewTree::bottomUpTopoBased()
       biPartition();
       break;
     case TopoType::kInputTopo:
-      LOG_INFO << "exist input topology...";
       break;
     default:
       LOG_FATAL << "topo type is not supported";
@@ -566,8 +527,6 @@ void BoundSkewTree::recursiveBottomUp(Area* cur)
   if (left && right) {
     recursiveBottomUp(left);
     recursiveBottomUp(right);
-    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
-    cur->set_pattern(pattern);
     merge(cur, left, right);
   }
 }
@@ -1645,14 +1604,114 @@ void BoundSkewTree::mrToTrr(const Region& mr, Trr& trr) const
   }
   if (mr.size() == 4) {
     Trr trr_left;
-    Geom::lineToMs(trr_left, mr[0], mr[1]);
+    if (Geom::lineType(mr[0], mr[1]) == LineType::kManhattan) {
+      Geom::lineToMs(trr_left, mr[0], mr[1]);
+    } else {
+      LOG_FATAL_IF(Geom::lineType(mr[2], mr[1]) != LineType::kManhattan) << "mr is not manhattan";
+      Geom::lineToMs(trr_left, mr[1], mr[2]);
+    }
     Trr trr_right;
-    Geom::lineToMs(trr_right, mr[3], mr[2]);
+    if (Geom::lineType(mr[2], mr[3]) == LineType::kManhattan) {
+      Geom::lineToMs(trr_right, mr[2], mr[3]);
+    } else {
+      LOG_FATAL_IF(Geom::lineType(mr[0], mr[3]) != LineType::kManhattan) << "mr is not manhattan";
+      Geom::lineToMs(trr_right, mr[3], mr[0]);
+    }
     trr = trr_left;
     trr.enclose(trr_right);
     return;
   }
   LOG_FATAL << "mr size is not 1, 2 or 4";
+}
+
+void BoundSkewTree::inputTopologyConvert()
+{
+  std::stack<Area*> stack;
+  stack.push(_root);
+  while (!stack.empty()) {
+    auto* cur = stack.top();
+    stack.pop();
+
+    if (cur->get_right()) {
+      stack.push(cur->get_right());
+    }
+    if (cur->get_left()) {
+      stack.push(cur->get_left());
+    }
+
+    auto pt = cur->get_location();
+    auto loc = Point(pt.x * _db_unit, pt.y * _db_unit);
+    auto* node = _node_map[cur->get_name()];
+    if (node == nullptr) {
+      node = new Node(cur->get_name(), loc);
+      _node_map.insert({node->get_name(), node});
+    }
+
+    if (node->isPin() && node->isDriver()) {
+      auto* pin = dynamic_cast<Pin*>(node);
+      auto* inst = pin->get_inst();
+      inst->set_location(loc);
+    } else {
+      node->set_location(loc);
+    }
+    auto* parent = cur->get_parent();
+    if (parent) {
+      auto direction = parent->get_left() == cur ? kLeft : kRight;
+      auto edge_len = parent->get_edge_len(direction);
+      auto snake = edge_len - Geom::distance(parent->get_location(), cur->get_location());
+      LOG_FATAL_IF(snake < -kEpsilon) << "snake is less than 0";
+      node->set_required_snake(snake);
+    }
+  }
+}
+
+void BoundSkewTree::noneInputTopologyConvert()
+{
+  std::stack<Area*> stack;
+  stack.push(_root);
+  // pre-order build Node, leaf node will in _node_map
+  while (!stack.empty()) {
+    auto* cur = stack.top();
+    stack.pop();
+
+    if (cur->get_right()) {
+      stack.push(cur->get_right());
+    }
+    if (cur->get_left()) {
+      stack.push(cur->get_left());
+    }
+
+    auto pt = cur->get_location();
+    auto loc = Point(pt.x * _db_unit, pt.y * _db_unit);
+    auto* parent = cur->get_parent();
+    if (parent == nullptr) {
+      // is root, make buffer
+      _root_buf = TreeBuilder::genBufInst(_net_name, loc);
+      cur->set_name(_root_buf->get_name());
+      _node_map.insert({_root_buf->get_name(), _root_buf->get_driver_pin()});
+      continue;
+    }
+
+    Node* node = nullptr;
+    Node* parent_node = _node_map[parent->get_name()];
+    LOG_FATAL_IF(parent_node == nullptr) << "node " << parent->get_name() << " is not in _node_map";
+    if (cur->get_left() == nullptr && cur->get_right() == nullptr) {
+      // is load pin, find from _node_map
+      node = _node_map[cur->get_name()];
+      LOG_FATAL_IF(node == nullptr) << "node " << cur->get_name() << " is not in _node_map";
+    } else {
+      // is steiner node
+      node = new Node(cur->get_name(), loc);
+      _node_map.insert({node->get_name(), node});
+    }
+    parent_node->add_child(node);
+    node->set_parent(parent_node);
+    auto direction = parent->get_left() == cur ? kLeft : kRight;
+    auto edge_len = parent->get_edge_len(direction);
+    auto snake = edge_len - Geom::distance(parent->get_location(), cur->get_location());
+    LOG_FATAL_IF(snake < -kEpsilon) << "snake is less than 0";
+    node->set_required_snake(snake);
+  }
 }
 
 LineType BoundSkewTree::calcAreaLineType(Area* cur) const
