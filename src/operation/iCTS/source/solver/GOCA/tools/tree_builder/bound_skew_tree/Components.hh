@@ -136,8 +136,10 @@ class Area
     _location = Pt(x, y, node->get_max_delay(), node->get_min_delay(), node->get_cap_load());
     _sub_len = 1.0 * node->get_sub_len() / Timing::getDbUnit();
     _cap_load = node->get_cap_load();
-    _mr.push_back(_location);
-    _convex_hull.push_back(_location);
+    if (node->isPin() && node->isLoad()) {
+      _mr.push_back(_location);
+      _convex_hull.push_back(_location);
+    }
     _id = CTSAPIInst.genId();
   }
 

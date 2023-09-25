@@ -177,11 +177,13 @@ class DataSet
       auto& tree_info_map = data_unit.get_tree_info_map();
       auto target_info = tree_info_map.at(std::make_pair(target_method_key, topo_type_key));
       auto ref_info = tree_info_map.at(std::make_pair(ref_method_key, topo_type_key));
-      ofs << i << "," << target_method_key << "," << topo_type_key << ","
-          << (ref_info.wirelength - target_info.wirelength) / target_info.wirelength << ","
-          << (ref_info.cap - target_info.cap) / target_info.cap << "," << (ref_info.skew - target_info.skew) / target_info.skew << ","
-          << (ref_info.max_wire_delay - target_info.max_wire_delay) / target_info.max_wire_delay << ","
-          << (ref_info.max_delay - target_info.max_delay) / target_info.max_delay << "," << data_unit.get_pin_num() << std::endl;
+      auto wl_ratio = (ref_info.wirelength - target_info.wirelength) / target_info.wirelength;
+      auto cap_ratio = (ref_info.cap - target_info.cap) / target_info.cap;
+      auto skew_ratio = (ref_info.skew - target_info.skew) / target_info.skew;
+      auto max_wire_delay_ratio = (ref_info.max_wire_delay - target_info.max_wire_delay) / target_info.max_wire_delay;
+      auto max_delay_ratio = (ref_info.max_delay - target_info.max_delay) / target_info.max_delay;
+      ofs << i << "," << target_method_key << "," << topo_type_key << "," << wl_ratio << "," << cap_ratio << "," << skew_ratio << ","
+          << max_wire_delay_ratio << "," << max_delay_ratio << "," << data_unit.get_pin_num() << std::endl;
     }
     ofs.close();
     LOG_INFO << "Write csv done...";
@@ -324,7 +326,7 @@ class TreeBuilderTest : public TestInterface
     Inst* buf = nullptr;
     if constexpr (std::is_same_v<TreeFunc, SteinerTreeFunc>) {
       buf = TreeBuilder::genBufInst(method_name, guide_loc);
-      func(buf->get_driver_pin(), load_pins);
+      func(method_name, buf->get_driver_pin(), load_pins);
     } else if constexpr (std::is_same_v<TreeFunc, SkewTreeFunc>) {
       buf = func(method_name, load_pins, skew_bound, guide_loc, topo_type);
     } else {
@@ -336,6 +338,7 @@ class TreeBuilderTest : public TestInterface
     auto* net = TimingPropagator::genNet(method_name, driver_pin, load_pins);
     TimingPropagator::update(net);
 
+    // TreeBuilder::writePy(driver_pin, method_name + "_" + TopoTypeToString(topo_type));
     auto topo_type_str = TopoTypeToString(topo_type);
     TreeInfo info{driver_pin->get_sub_len(), driver_pin->get_cap_load(), driver_pin->get_max_delay() - driver_pin->get_min_delay(),
                   driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay(), driver_pin->get_max_delay()};

@@ -43,9 +43,32 @@ class BeatInterface
   std::vector<std::shared_ptr<salt::TreeNode>> _nodes;  // nodes of the bound-skew tree
   std::vector<double> _shortest_latency;
   std::vector<double> _cur_latency;
-  std::vector<double> _cap_loads;
   std::shared_ptr<salt::TreeNode> _src;  // source node of the bound-skew tree
 
+  void init(salt::Tree& min_tree, std::shared_ptr<salt::Pin> src_pin);  // tree of minimum weight
+  void finalize(const salt::Net& net, salt::Tree& tree);
+  virtual bool relax(const std::shared_ptr<salt::TreeNode>& u, const std::shared_ptr<salt::TreeNode>& v) = 0;  // from u to v
+  virtual void dfs(const std::shared_ptr<salt::TreeNode>& tree_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps) = 0;
+};
+
+class TreeSaltBuilder : public BeatInterface
+{
+ public:
+  void run(const salt::Net& net, salt::Tree& input_tree, double eps, int refine_level = 3);
+
+ protected:
+  bool relax(const std::shared_ptr<salt::TreeNode>& u,
+             const std::shared_ptr<salt::TreeNode>& v);  // from u to v
+  void dfs(const std::shared_ptr<salt::TreeNode>& tree_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps);
+};
+
+class TempBuilder : public BeatInterface
+{
+ public:
+  void run(const salt::Net& net, salt::Tree& input_tree, double eps, int refine_level = 3);
+
+ protected:
+  std::vector<double> _cap_loads;
   template <DelayType T1, DelayType T2>
   double delay(const T1& from, const T2& to) const
   {
@@ -64,34 +87,11 @@ class BeatInterface
     auto cap_load = _cap_loads[to->id];
     return TimingPropagator::calcElmoreDelay(cap_load, len);
   }
-  void init(salt::Tree& min_tree, std::shared_ptr<salt::Pin> src_pin);  // tree of minimum weight
-  void finalize(const salt::Net& net, salt::Tree& tree);
-  virtual bool relax(const std::shared_ptr<salt::TreeNode>& u, const std::shared_ptr<salt::TreeNode>& v) = 0;  // from u to v
-  virtual void dfs(const std::shared_ptr<salt::TreeNode>& bst_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps) = 0;
-};
-
-class BeatSaltBuilder : public BeatInterface
-{
- public:
-  void run(const salt::Net& net, salt::Tree& bound_skew_tree, double eps, int refine_level = 3);
-
- protected:
   void init(salt::Tree& min_tree, std::shared_ptr<salt::Pin> src_pin);
-  bool relax(const std::shared_ptr<salt::TreeNode>& u,
-             const std::shared_ptr<salt::TreeNode>& v);  // from u to v
-  void dfs(const std::shared_ptr<salt::TreeNode>& bst_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps);
-};
-
-class BeatBuilder : public BeatInterface
-{
- public:
-  void run(const salt::Net& net, salt::Tree& bound_skew_tree, double eps, int refine_level = 3);
-
- protected:
   void resetParent(const std::shared_ptr<salt::TreeNode>& child, const std::shared_ptr<salt::TreeNode>& parent);
   bool relax(const std::shared_ptr<salt::TreeNode>& u,
              const std::shared_ptr<salt::TreeNode>& v);  // from u to v
-  void dfs(const std::shared_ptr<salt::TreeNode>& bst_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps);
+  void dfs(const std::shared_ptr<salt::TreeNode>& tree_node, const std::shared_ptr<salt::TreeNode>& beat_node, double eps);
 };
 
 }  // namespace icts

@@ -175,6 +175,10 @@ class BoundSkewTree
   bool isManhattanArea(Area* cur) const;
   void mrToTrr(const Region& mr, Trr& trr) const;
 
+  // convert
+  void inputTopologyConvert();
+  void noneInputTopologyConvert();
+
   // basic function
   LineType calcAreaLineType(Area* cur) const;
   void calcConvexHull(Area* cur) const;
