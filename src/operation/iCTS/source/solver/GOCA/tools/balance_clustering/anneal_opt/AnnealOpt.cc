@@ -45,8 +45,8 @@ void AnnealOpt::initParameter(const size_t& net_num, const int& max_fanout, cons
   _max_cap = max_cap;
   _max_net_dist = max_net_dist;
   _p = p;
-  _q = q;
-  _r = r;
+  _cooling_ratio = q;
+  _temperature = r;
 
   _inst_num = _flatten_insts.size();
 
@@ -62,6 +62,14 @@ void AnnealOpt::initParameter(const size_t& net_num, const int& max_fanout, cons
 std::vector<std::vector<Inst*>> AnnealOpt::run()
 {
   return std::vector<std::vector<Inst*>>();
+}
+
+void AnnealOpt::randomSwap()
+{
+}
+
+void AnnealOpt::randomMove()
+{
 }
 
 }  // namespace icts

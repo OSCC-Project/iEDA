@@ -692,6 +692,34 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     stack.push(children.back());
   }
 }
+void TreeBuilder::removeRedundant(Node* root)
+{
+  std::vector<Node*> to_be_removed;
+  std::stack<Node*> stack;
+  stack.push(root);
+  while (!stack.empty()) {
+    auto* node = stack.top();
+    stack.pop();
+    auto children = node->get_children();
+    std::ranges::for_each(children, [&](Node* child) { stack.push(child); });
+    if (node->isPin()) {
+      continue;
+    }
+    auto* parent = node->get_parent();
+    if (parent == nullptr) {
+      continue;
+    }
+    if (node->get_location() == parent->get_location()) {
+      disconnect(parent, node);
+      std::ranges::for_each(children, [&](Node* child) {
+        disconnect(node, child);
+        connect(parent, child);
+      });
+      to_be_removed.push_back(node);
+    }
+  }
+  std::ranges::for_each(to_be_removed, [&](Node* node) { delete node; });
+}
 /**
  * @brief find steiner tree function name
  *

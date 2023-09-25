@@ -56,7 +56,7 @@ TEST_F(SolverTest, RegressionTreeBuilderTest)
 {
   TreeBuilderTest tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
                                "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
-  double skew_bound = 0.01;
+  double skew_bound = 0.005;
   size_t case_num = 500;
   // design DB unit is 2000
   EnvInfo env_info{50000, 200000, 50000, 200000, 20, 40};

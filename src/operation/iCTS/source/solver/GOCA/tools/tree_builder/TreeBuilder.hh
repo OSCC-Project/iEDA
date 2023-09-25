@@ -70,6 +70,7 @@ class TreeBuilder
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
   static void convertToBinaryTree(Node* root);
+  static void removeRedundant(Node* root);
   static std::string funcName(const SteinerTreeFunc& func);
   static std::string funcName(const SkewTreeFunc& func);
 
