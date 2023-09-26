@@ -23,9 +23,10 @@ namespace irt {
 enum class AccessPointType
 {
   kNone = 0,
-  kTrackGrid = 1,
-  kOnTrack = 2,
-  kOnShape = 3
+  kPrefTrackGrid = 1,
+  kCurrTrackGrid = 2,
+  kOnTrack = 3,
+  kOnShape = 4
 };
 
 struct GetAccessPointTypeName
@@ -37,8 +38,11 @@ struct GetAccessPointTypeName
       case AccessPointType::kNone:
         access_point_name = "none";
         break;
-      case AccessPointType::kTrackGrid:
-        access_point_name = "track_grid";
+      case AccessPointType::kPrefTrackGrid:
+        access_point_name = "prefer_track_grid";
+        break;
+      case AccessPointType::kCurrTrackGrid:
+        access_point_name = "curr_track_grid";
         break;
       case AccessPointType::kOnTrack:
         access_point_name = "on_track";
