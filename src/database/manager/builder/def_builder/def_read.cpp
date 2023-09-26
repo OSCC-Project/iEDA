@@ -1437,7 +1437,11 @@ int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* w
 
   for (int i = 0; i < def_net->numRectangles(); ++i) {
     IdbSpecialWire* wire = wire_list->add_wire(nullptr);
-    wire->set_wire_state(def_net->rectShapeType(i));
+    IdbSpecialWireSegment* segment = wire->add_segment(nullptr);
+    wire->set_wire_state(def_net->rectRouteStatus(i));
+    if (wire->get_wire_state() == IdbWiringStatement::kShield) {
+      wire->set_shield_name(def_net->rectRouteStatusShieldName(i));
+    }
 
     /// set as rect to idb
     /// layer
@@ -1447,6 +1451,13 @@ int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* w
     int lly = def_net->yl(i);
     int urx = def_net->xh(i);
     int ury = def_net->yh(i);
+
+    segment->set_shape_type(def_net->rectShapeType(i));
+    segment->set_layer(layer_list->find_layer(layer));
+    segment->set_is_rect(true);
+    segment->set_delta_rect(llx, lly, urx, ury);
+
+    segment->set_bounding_box();
   }
 
   return kDbSuccess;

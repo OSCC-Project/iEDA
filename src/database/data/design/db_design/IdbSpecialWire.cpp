@@ -48,7 +48,9 @@ IdbSpecialWireSegment::IdbSpecialWireSegment()
   _shape_type = IdbWireShapeType::kNone;
   _style = -1;
   _is_via = false;
+  _is_rect = false;
   _via = nullptr;  // new IdbVia();
+  _delta_rect = nullptr;
 }
 
 IdbSpecialWireSegment::~IdbSpecialWireSegment()
@@ -100,6 +102,11 @@ IdbCoordinate<int32_t>* IdbSpecialWireSegment::add_point(int32_t x, int32_t y)
   _point_list.emplace_back(point);
 
   return point;
+}
+
+void IdbSpecialWireSegment::set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y)
+{
+  _delta_rect = new IdbRect(ll_x, ll_y, ur_x, ur_y);
 }
 
 IdbVia* IdbSpecialWireSegment::copy_via(IdbVia* via)

@@ -56,6 +56,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
 BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound)
 {
   _net_name = net_name;
+  _root_buf = driver_pin->get_inst();
   _skew_bound = skew_bound.value_or(Timing::getSkewBound());
   TreeBuilder::convertToBinaryTree(driver_pin);
   // Copy topology
@@ -95,6 +96,7 @@ void BoundSkewTree::run()
   bottomUp();
   topDown();
   convert();
+  TreeBuilder::removeRedundant(_root_buf->get_driver_pin());
 }
 void BoundSkewTree::convert()
 {
@@ -1648,9 +1650,7 @@ void BoundSkewTree::inputTopologyConvert()
     }
 
     if (node->isPin() && node->isDriver()) {
-      auto* pin = dynamic_cast<Pin*>(node);
-      auto* inst = pin->get_inst();
-      inst->set_location(loc);
+      _root_buf->set_location(loc);
     } else {
       node->set_location(loc);
     }

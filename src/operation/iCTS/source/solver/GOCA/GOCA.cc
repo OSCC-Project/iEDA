@@ -316,7 +316,7 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
   }
 
   // build DME
-  buffer = TreeBuilder::boundSkewTree(net_name, cluster_load_pins, skew_bound, guide_loc);
+  buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc);
 
   driver_pin = buffer->get_driver_pin();
   auto* bst_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
