@@ -1,4 +1,4 @@
-//mod liberty_data;
+mod liberty_data;
 
 use pest::Parser;
 use pest_derive::Parser;
