@@ -2335,6 +2335,38 @@ std::optional<double> Sta::getInstWorstSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get total negative slack of all instance pins.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                     Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_total_negative_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_total_negative_slack = the_vertex->getTNSNs(analysis_mode);
+    if (the_total_negative_slack) {
+      if (!the_total_negative_inst_slack) {
+        the_total_negative_inst_slack = *the_total_negative_slack;
+      } else {
+        *the_total_negative_inst_slack += *the_total_negative_slack;
+      }
+    }
+  }
+
+  // LOG_FATAL_IF(the_total_negative_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_total_negative_inst_slack;
+  return the_total_negative_inst_slack;
+}
+
+/**
  * @brief get the instance worst transition.
  *
  * @param analysis_mode
@@ -2393,6 +2425,32 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   }
 
   return loc_to_inst_slack;
+}
+
+/**
+ * @brief display timing tns map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingTNSMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_tns;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_tns = getInstTotalNegativeSlack(analysis_mode, the_inst);
+    if (the_inst_tns) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_tns[*inst_coordinate] = *the_inst_tns;
+    }
+  }
+
+  return loc_to_inst_tns;
 }
 
 /**

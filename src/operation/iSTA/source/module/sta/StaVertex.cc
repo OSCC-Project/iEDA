@@ -696,6 +696,37 @@ std::optional<int64_t> StaVertex::getSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get total negative slack in Ns.
+ *
+ * @param analysis_mode
+ * @return std::optional<double>
+ */
+std::optional<double> StaVertex::getTNSNs(AnalysisMode analysis_mode) {
+  std::optional<double> vertex_tns_ns;
+  StaData* data;
+  FOREACH_DELAY_DATA(this, data) {
+    if (data->get_delay_type() == analysis_mode) {
+      auto* path_delay = dynamic_cast<StaPathDelayData*>(data);
+      auto at_fs = path_delay->get_arrive_time();
+      auto rt_fs = path_delay->get_req_time();
+      if (!rt_fs) {
+        continue;
+      }
+
+      double slack_fs = (analysis_mode == AnalysisMode::kMax)
+                            ? (*rt_fs - at_fs)
+                            : (at_fs - *rt_fs);
+      double slack_ns = FS_TO_NS(slack_fs);
+      if (slack_ns < 0.0) {
+        vertex_tns_ns ? (*vertex_tns_ns) += slack_ns : vertex_tns_ns = slack_ns;
+      }
+    }
+  }
+
+  return vertex_tns_ns;
+}
+
+/**
  * @brief Get slew.
  *
  * @param analysis_mode

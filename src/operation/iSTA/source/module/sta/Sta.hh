@@ -476,11 +476,16 @@ class Sta {
 
   std::optional<double> getInstWorstSlack(AnalysisMode analysis_mode,
                                           Instance* the_inst);
+  std::optional<double> getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                  Instance* the_inst);
   std::optional<double> getInstTransition(AnalysisMode analysis_mode,
                                           Instance* the_inst);
 
   std::map<Instance::Coordinate, double> displayTimingMap(
       AnalysisMode analysis_mode);
+  std::map<Instance::Coordinate, double> displayTimingTNSMap(
+      AnalysisMode analysis_mode);
+
   std::map<Instance::Coordinate, double> displayTransitionMap(
       AnalysisMode analysis_mode);
 
