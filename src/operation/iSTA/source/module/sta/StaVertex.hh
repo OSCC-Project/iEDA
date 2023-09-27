@@ -370,6 +370,8 @@ class StaVertex {
     return std::nullopt;
   }
 
+  std::optional<double> getTNSNs(AnalysisMode analysis_mode);
+
   std::optional<int> getSlew(AnalysisMode analysis_mode, TransType trans_type);
   std::optional<double> getSlewNs(AnalysisMode analysis_mode,
                                   TransType trans_type) {
