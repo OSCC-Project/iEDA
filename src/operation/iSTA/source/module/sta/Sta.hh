@@ -474,8 +474,8 @@ class Sta {
   void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
   double convertCapUnit(const double src_value);
 
-  std::optional<double> getInstSlack(AnalysisMode analysis_mode,
-                                     Instance* the_inst);
+  std::optional<double> getInstWorstSlack(AnalysisMode analysis_mode,
+                                          Instance* the_inst);
   std::optional<double> getInstTransition(AnalysisMode analysis_mode,
                                           Instance* the_inst);
 

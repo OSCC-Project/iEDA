@@ -2310,8 +2310,8 @@ void Sta::buildClockTrees() {
  * @param the_inst
  * @return std::optional<double>
  */
-std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
-                                        Instance *the_inst) {
+std::optional<double> Sta::getInstWorstSlack(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
   Pin *the_pin;
   std::optional<double> the_worst_inst_slack;
   FOREACH_INSTANCE_PIN(the_inst, the_pin) {
@@ -2380,7 +2380,7 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   std::map<Instance::Coordinate, double> loc_to_inst_slack;
   Instance *the_inst;
   FOREACH_INSTANCE(&_netlist, the_inst) {
-    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    auto the_inst_worst_slack = getInstWorstSlack(analysis_mode, the_inst);
     if (the_inst_worst_slack) {
       auto inst_coordinate = the_inst->get_coordinate();
       if (!inst_coordinate) {
