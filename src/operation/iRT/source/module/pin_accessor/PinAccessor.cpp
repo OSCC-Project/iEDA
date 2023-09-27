@@ -1099,8 +1099,19 @@ void PinAccessor::countPAModel(PAModel& pa_model)
     for (irt_int y = 0; y < pa_gcell_map.get_y_size(); y++) {
       PAGCell& pa_gcell = pa_gcell_map[x][y];
 
+      std::vector<DRCRect> drc_rect_list;
+      for (bool is_routing : {true, false}) {
+        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(pa_gcell.getRegionQuery(PASourceType::kNetShape), is_routing)) {
+          for (auto& [net_idx, rect_set] : net_rect_map) {
+            for (const LayerRect& rect : rect_set) {
+              drc_rect_list.emplace_back(net_idx, rect, is_routing);
+            }
+          }
+        }
+      }
+
       for (PASourceType pa_source_type : {PASourceType::kBlockage, PASourceType::kNetShape}) {
-        for (auto& [drc, violation_info_list] : getViolationInfo(pa_gcell, pa_source_type)) {
+        for (auto& [drc, violation_info_list] : getViolationInfo(pa_gcell, pa_source_type, drc_rect_list)) {
           for (ViolationInfo& violation_info : violation_info_list) {
             irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
             if (violation_info.get_is_routing()) {
@@ -1195,18 +1206,15 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   RTUtil::printTableList({pin_table, port_table});
 
   // build drc table
-  std::map<PASourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> source_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : pa_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetPASourceTypeName()(source), routing_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetPASourceTypeName()(source), routing_drc_violation_map));
   }
   for (auto& [source, cut_drc_violation_map] : pa_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetPASourceTypeName()(source), cut_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetPASourceTypeName()(source), cut_drc_violation_map));
   }
   // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(source_drc_table_list);
 }
 
 bool PinAccessor::stopPAModel(PAModel& pa_model)

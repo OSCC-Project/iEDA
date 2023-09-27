@@ -1825,12 +1825,23 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   ta_panel_stat.set_total_prefer_wire_length(total_prefer_wire_length);
   ta_panel_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
 
+  std::vector<DRCRect> drc_rect_list;
+  for (bool is_routing : {true, false}) {
+    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(ta_panel.getRegionQuery(TASourceType::kNetShape), is_routing)) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        for (const LayerRect& rect : rect_set) {
+          drc_rect_list.emplace_back(net_idx, rect, is_routing);
+        }
+      }
+    }
+  }
+
   std::map<TASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_routing_drc_violation_map
       = ta_panel_stat.get_source_routing_drc_violation_map();
   std::map<TASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = ta_panel_stat.get_source_cut_drc_violation_map();
   for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getViolationInfo(ta_panel, ta_source_type)) {
+    for (auto& [drc, violation_info_list] : getViolationInfo(ta_panel, ta_source_type, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -1894,18 +1905,15 @@ void TrackAssigner::reportTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   RTUtil::printTableList(wire_table);
 
   // build drc table
-  std::map<TASourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> source_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : ta_panel_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetTASourceTypeName()(source), routing_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetTASourceTypeName()(source), routing_drc_violation_map));
   }
   for (auto& [source, cut_drc_violation_map] : ta_panel_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetTASourceTypeName()(source), cut_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetTASourceTypeName()(source), cut_drc_violation_map));
   }
   // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(source_drc_table_list);
 }
 
 bool TrackAssigner::stopTAPanel(TAModel& ta_model, TAPanel& ta_panel)
@@ -2016,18 +2024,15 @@ void TrackAssigner::reportTAModel(TAModel& ta_model)
   RTUtil::printTableList(wire_table);
 
   // build drc table
-  std::map<TASourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> source_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : ta_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetTASourceTypeName()(source), routing_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetTASourceTypeName()(source), routing_drc_violation_map));
   }
   for (auto& [source, cut_drc_violation_map] : ta_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetTASourceTypeName()(source), cut_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetTASourceTypeName()(source), cut_drc_violation_map));
   }
   // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(source_drc_table_list);
 }
 
 bool TrackAssigner::stopTAModel(TAModel& ta_model)

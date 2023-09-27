@@ -1444,15 +1444,36 @@ void DataManager::updateHelper()
     }
   }
 
-  std::map<irt_int, std::pair<irt_int, irt_int>>& cut_to_adjacent_routing_map = _helper.get_cut_to_adjacent_routing_map();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  for (size_t i = 0; i < layer_via_master_list.size(); i++) {
-    if (layer_via_master_list[i].empty()) {
+  std::map<irt_int, std::vector<irt_int>>& cut_to_adjacent_routing_map = _helper.get_cut_to_adjacent_routing_map();
+
+  std::map<irt_int, std::pair<bool, irt_int>> layer_order_to_idx_map;
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    layer_order_to_idx_map[routing_layer.get_layer_order()] = std::make_pair(false, routing_layer.get_layer_idx());
+  }
+  for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
+    layer_order_to_idx_map[cut_layer.get_layer_order()] = std::make_pair(true, cut_layer.get_layer_idx());
+  }
+  std::vector<std::pair<bool, irt_int>> layer_idx_pair_list;
+  for (auto& [layer_order, type_layer_idx_pair] : layer_order_to_idx_map) {
+    layer_idx_pair_list.push_back(type_layer_idx_pair);
+  }
+
+  for (size_t i = 0; i < layer_idx_pair_list.size(); i++) {
+    bool is_cut = layer_idx_pair_list[i].first;
+    irt_int cut_layer_idx = layer_idx_pair_list[i].second;
+    if (!is_cut) {
       continue;
     }
-    ViaMaster& via_master = layer_via_master_list[i].front();
-    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].first = via_master.get_below_enclosure().get_layer_idx();
-    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].second = via_master.get_above_enclosure().get_layer_idx();
+    std::vector<irt_int> adj_routing_layer_idx_list;
+    if (i - 1 >= 0 && layer_idx_pair_list[i - 1].first == false) {
+      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i - 1].second);
+    }
+    if (i + 1 < layer_idx_pair_list.size() && layer_idx_pair_list[i + 1].first == false) {
+      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i + 1].second);
+    }
+    if (!adj_routing_layer_idx_list.empty()) {
+      cut_to_adjacent_routing_map[cut_layer_idx] = adj_routing_layer_idx_list;
+    }
   }
 }
 

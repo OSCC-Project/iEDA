@@ -1150,11 +1150,11 @@ std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter:
   }
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> grid_orientation_map;
 
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
   irt_int cut_layer_idx = drc_rect.get_layer_rect().get_layer_idx();
-  std::pair<irt_int, irt_int> adjacent_routing_layer_idx = DM_INST.getHelper().getAdjacentRoutingLayerIdx(cut_layer_idx);
-  irt_int below_routing_layer_idx = adjacent_routing_layer_idx.first;
-  irt_int above_routing_layer_idx = adjacent_routing_layer_idx.second;
-  RTUtil::swapASC(below_routing_layer_idx, above_routing_layer_idx);
+  std::vector<irt_int> adjacent_routing_layer_idx_list = DM_INST.getHelper().getAdjacentRoutingLayerIdx(cut_layer_idx);
 
   irt_int enlarge_x_size = drc_rect.get_layer_rect().getXSpan() / 2;
   irt_int enlarge_y_size = drc_rect.get_layer_rect().getYSpan() / 2;
@@ -1166,8 +1166,13 @@ std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> DetailedRouter:
       PlanarRect grid_rect = RTUtil::getGridRect(check_rect, box_track_axis);
       for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
         for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
-          grid_orientation_map[LayerCoord(grid_x, grid_y, below_routing_layer_idx)].insert(Orientation::kUp);
-          grid_orientation_map[LayerCoord(grid_x, grid_y, above_routing_layer_idx)].insert(Orientation::kDown);
+          for (irt_int routing_layer_idx : adjacent_routing_layer_idx_list) {
+            if (cut_layer_list[cut_layer_idx].get_layer_order() < routing_layer_list[routing_layer_idx].get_layer_order()) {
+              grid_orientation_map[LayerCoord(grid_x, grid_y, routing_layer_idx)].insert(Orientation::kDown);
+            } else {
+              grid_orientation_map[LayerCoord(grid_x, grid_y, routing_layer_idx)].insert(Orientation::kUp);
+            }
+          }
         }
       }
     }
@@ -2277,12 +2282,23 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
     }
   }
 
+  std::vector<DRCRect> drc_rect_list;
+  for (bool is_routing : {true, false}) {
+    for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(DRSourceType::kNetShape), is_routing)) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        for (const LayerRect& rect : rect_set) {
+          drc_rect_list.emplace_back(net_idx, rect, is_routing);
+        }
+      }
+    }
+  }
+
   std::map<DRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_routing_drc_violation_map
       = dr_box_stat.get_source_routing_drc_violation_map();
   std::map<DRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = dr_box_stat.get_source_cut_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kBlockage, DRSourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getViolationInfo(dr_box, dr_source_type)) {
+    for (auto& [drc, violation_info_list] : getViolationInfo(dr_box, dr_source_type, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -2379,18 +2395,15 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
   RTUtil::printTableList({wire_table, via_table});
 
   // build drc table
-  std::map<DRSourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> source_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : dr_box_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
   }
   for (auto& [source, cut_drc_violation_map] : dr_box_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
   }
   // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(source_drc_table_list);
 }
 
 bool DetailedRouter::stopDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -2459,33 +2472,32 @@ void DetailedRouter::countDRModel(DRModel& dr_model)
           }
         }
       }
-
-      double total_wire_length = 0;
-      double total_prefer_wire_length = 0;
-      double total_nonprefer_wire_length = 0;
-      irt_int total_via_number = 0;
-      for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-        total_wire_length += wire_length;
-      }
-      for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
-        total_prefer_wire_length += prefer_wire_length;
-      }
-      for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
-        total_nonprefer_wire_length += nonprefer_wire_length;
-      }
-      for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
-        total_via_number += via_number;
-      }
-
-      dr_model_stat.set_total_wire_length(total_wire_length);
-      dr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
-      dr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
-      dr_model_stat.set_total_via_number(total_via_number);
-      dr_model_stat.set_total_drc_number(total_drc_number);
-
-      dr_model.set_dr_model_stat(dr_model_stat);
     }
   }
+  double total_wire_length = 0;
+  double total_prefer_wire_length = 0;
+  double total_nonprefer_wire_length = 0;
+  irt_int total_via_number = 0;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    total_wire_length += wire_length;
+  }
+  for (auto& [routing_layer_idx, prefer_wire_length] : routing_prefer_wire_length_map) {
+    total_prefer_wire_length += prefer_wire_length;
+  }
+  for (auto& [routing_layer_idx, nonprefer_wire_length] : routing_nonprefer_wire_length_map) {
+    total_nonprefer_wire_length += nonprefer_wire_length;
+  }
+  for (auto& [cut_layer_idx, via_number] : cut_via_number_map) {
+    total_via_number += via_number;
+  }
+
+  dr_model_stat.set_total_wire_length(total_wire_length);
+  dr_model_stat.set_total_prefer_wire_length(total_prefer_wire_length);
+  dr_model_stat.set_total_nonprefer_wire_length(total_nonprefer_wire_length);
+  dr_model_stat.set_total_via_number(total_via_number);
+  dr_model_stat.set_total_drc_number(total_drc_number);
+
+  dr_model.set_dr_model_stat(dr_model_stat);
 }
 
 void DetailedRouter::reportDRModel(DRModel& dr_model)
@@ -2530,18 +2542,15 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
   RTUtil::printTableList({wire_table, via_table});
 
   // build drc table
-  std::map<DRSourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> source_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : dr_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
   }
   for (auto& [source, cut_drc_violation_map] : dr_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
+    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
   }
   // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(source_drc_table_list);
 }
 
 bool DetailedRouter::stopDRModel(DRModel& dr_model)
