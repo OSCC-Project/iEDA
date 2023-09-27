@@ -717,9 +717,7 @@ std::optional<double> StaVertex::getTNSNs(AnalysisMode analysis_mode) {
                             ? (*rt_fs - at_fs)
                             : (at_fs - *rt_fs);
       double slack_ns = FS_TO_NS(slack_fs);
-      if (slack_ns < 0.0) {
-        vertex_tns_ns ? (*vertex_tns_ns) += slack_ns : vertex_tns_ns = slack_ns;
-      }
+      vertex_tns_ns ? (*vertex_tns_ns) += slack_ns : vertex_tns_ns = slack_ns;
     }
   }
 
