@@ -1278,7 +1278,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   }
 
-  // LOG_INFO << "\n" << _report_tbl_summary->c_str();
+  LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
