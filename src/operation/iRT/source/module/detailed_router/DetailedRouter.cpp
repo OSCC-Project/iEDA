@@ -2395,15 +2395,17 @@ void DetailedRouter::reportDRBox(DRModel& dr_model, DRBox& dr_box)
   RTUtil::printTableList({wire_table, via_table});
 
   // build drc table
-  std::vector<fort::char_table> source_drc_table_list;
+  std::vector<fort::char_table> routing_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : dr_box_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
+    routing_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
   }
+  RTUtil::printTableList(routing_drc_table_list);
+
+  std::vector<fort::char_table> cut_drc_table_list;
   for (auto& [source, cut_drc_violation_map] : dr_box_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
+    cut_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
   }
-  // print
-  RTUtil::printTableList(source_drc_table_list);
+  RTUtil::printTableList(cut_drc_table_list);
 }
 
 bool DetailedRouter::stopDRBox(DRModel& dr_model, DRBox& dr_box)
@@ -2542,15 +2544,17 @@ void DetailedRouter::reportDRModel(DRModel& dr_model)
   RTUtil::printTableList({wire_table, via_table});
 
   // build drc table
-  std::vector<fort::char_table> source_drc_table_list;
+  std::vector<fort::char_table> routing_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : dr_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
+    routing_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetDRSourceTypeName()(source), routing_drc_violation_map));
   }
+  RTUtil::printTableList(routing_drc_table_list);
+
+  std::vector<fort::char_table> cut_drc_table_list;
   for (auto& [source, cut_drc_violation_map] : dr_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
+    cut_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetDRSourceTypeName()(source), cut_drc_violation_map));
   }
-  // print
-  RTUtil::printTableList(source_drc_table_list);
+  RTUtil::printTableList(cut_drc_table_list);
 }
 
 bool DetailedRouter::stopDRModel(DRModel& dr_model)
@@ -2957,10 +2961,13 @@ void DetailedRouter::removeInvalidViolationInfo(DRBox& dr_box, std::map<std::str
         valid_violation_list.push_back(violation_info);
       }
     }
-    if (valid_violation_list.empty()) {
-      drc_violation_map.erase(drc);
+    drc_violation_map[drc] = valid_violation_list;
+  }
+  for (auto iter = drc_violation_map.begin(); iter != drc_violation_map.end();) {
+    if (iter->second.empty()) {
+      iter = drc_violation_map.erase(iter);
     } else {
-      drc_violation_map[drc] = violation_list;
+      iter++;
     }
   }
 }

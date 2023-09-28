@@ -1206,15 +1206,17 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
   RTUtil::printTableList({pin_table, port_table});
 
   // build drc table
-  std::vector<fort::char_table> source_drc_table_list;
+  std::vector<fort::char_table> routing_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : pa_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetPASourceTypeName()(source), routing_drc_violation_map));
+    routing_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetPASourceTypeName()(source), routing_drc_violation_map));
   }
+  RTUtil::printTableList(routing_drc_table_list);
+
+  std::vector<fort::char_table> cut_drc_table_list;
   for (auto& [source, cut_drc_violation_map] : pa_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetPASourceTypeName()(source), cut_drc_violation_map));
+    cut_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetPASourceTypeName()(source), cut_drc_violation_map));
   }
-  // print
-  RTUtil::printTableList(source_drc_table_list);
+  RTUtil::printTableList(cut_drc_table_list);
 }
 
 bool PinAccessor::stopPAModel(PAModel& pa_model)
@@ -1324,10 +1326,13 @@ void PinAccessor::removeInvalidViolationInfo(PAGCell& pa_gcell, std::map<std::st
         valid_violation_list.push_back(violation_info);
       }
     }
-    if (valid_violation_list.empty()) {
-      drc_violation_map.erase(drc);
+    drc_violation_map[drc] = valid_violation_list;
+  }
+  for (auto iter = drc_violation_map.begin(); iter != drc_violation_map.end();) {
+    if (iter->second.empty()) {
+      iter = drc_violation_map.erase(iter);
     } else {
-      drc_violation_map[drc] = violation_list;
+      iter++;
     }
   }
 }

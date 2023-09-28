@@ -234,6 +234,7 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
 
   std::vector<ViolationInfo> violation_info_list;
   checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
+  // checkMinArea(region_query_ref, drc_rect_list, violation_info_list);
   uniqueViolationInfoList(violation_info_list);
   for (ViolationInfo& violation_info : violation_info_list) {
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
@@ -469,6 +470,12 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       if (!RTUtil::isOverlap(enlarge_rect1, check_rect2) && !RTUtil::isOverlap(enlarge_rect2, check_rect1)) {
         LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
+      std::string rule_name;
+      if (drc_rect.get_is_routing()) {
+        rule_name = RTUtil::isOverlap(check_rect1, check_rect2) ? "Metal Short" : "Metal Spacing";
+      } else {
+        rule_name = RTUtil::isOverlap(check_rect1, check_rect2) ? "Cut Short" : "Cut Spacing";
+      }
       if (!RTUtil::isOverlap(enlarge_rect1, enlarge_rect2)) {
         continue;
       }
@@ -480,10 +487,73 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
 
       ViolationInfo violation;
       violation.set_is_routing(drc_rect.get_is_routing());
-      violation.set_rule_name("RT Spacing");
+      violation.set_rule_name(rule_name);
       violation.set_violation_region(violation_region);
       violation.set_net_shape_map(violation_net_shape_map);
       violation_info_list.push_back(violation);
+    }
+  }
+}
+
+void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
+                              std::vector<ViolationInfo>& violation_info_list)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  std::map<irt_int, std::map<irt_int, GTLPolygonSet>> layer_net_polgon_set_map;
+  {
+    for (auto& [layer_idx, net_rect_map] : region_query->get_routing_net_rect_map()) {
+      if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          if (rect_set.empty() || net_idx == -1) {
+            continue;
+          }
+          GTLPolygonSet& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+          for (const LayerRect& rect : rect_set) {
+            poly_set += RTUtil::convertToGTLRect(rect);
+          }
+        }
+      }
+    }
+    for (const DRCRect& drc_rect : drc_rect_list) {
+      if (!drc_rect.get_is_routing()) {
+        continue;
+      }
+      irt_int layer_idx = drc_rect.get_layer_idx();
+      irt_int net_idx = drc_rect.get_net_idx();
+      if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
+        GTLPolygonSet& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+        poly_set += RTUtil::convertToGTLRect(drc_rect.get_layer_rect());
+      }
+    }
+  }
+
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  for (auto& [layer_idx, net_poly_set_map] : layer_net_polgon_set_map) {
+    for (auto& [net_idx, poly_set] : net_poly_set_map) {
+      std::vector<GTLPolygon> poly_list;
+      poly_set.get_polygons(poly_list);
+      for (GTLPolygon& poly : poly_list) {
+        if (gtl::area(poly) >= routing_layer_list[layer_idx].get_min_area()) {
+          continue;
+        }
+        std::vector<GTLRectangle> gtl_rect_list;
+        gtl::get_rectangles(gtl_rect_list, poly);
+
+        std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
+        for (GTLRectangle& gtl_rect : gtl_rect_list) {
+          violation_net_shape_map[net_idx].emplace_back(RTUtil::convertToPlanarRect(gtl_rect), layer_idx);
+        }
+        LayerRect violation_region = violation_net_shape_map[net_idx].front();
+
+        ViolationInfo violation;
+        violation.set_is_routing(true);
+        violation.set_rule_name("Min Area");
+        violation.set_violation_region(violation_region);
+        violation.set_net_shape_map(violation_net_shape_map);
+        violation_info_list.push_back(violation);
+      }
     }
   }
 }

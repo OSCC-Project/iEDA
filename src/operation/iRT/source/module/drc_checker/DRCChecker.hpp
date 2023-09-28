@@ -92,6 +92,7 @@ class DRCChecker
   void checkMinSpacingByOther(RegionQuery* region_query, const DRCRect& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
                               std::vector<ViolationInfo>& violation_info_list);
+  void checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list);
 #endif
 };
