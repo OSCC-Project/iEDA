@@ -501,7 +501,7 @@ void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRe
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
-  std::map<irt_int, std::map<irt_int, GTLPolygonSet>> layer_net_polgon_set_map;
+  std::map<irt_int, std::map<irt_int, GTLPolySetInt>> layer_net_polgon_set_map;
   {
     for (auto& [layer_idx, net_rect_map] : region_query->get_routing_net_rect_map()) {
       if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
@@ -509,9 +509,9 @@ void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRe
           if (rect_set.empty() || net_idx == -1) {
             continue;
           }
-          GTLPolygonSet& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+          GTLPolySetInt& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
           for (const LayerRect& rect : rect_set) {
-            poly_set += RTUtil::convertToGTLRect(rect);
+            poly_set += RTUtil::convertToGTLRectInt(rect);
           }
         }
       }
@@ -523,8 +523,8 @@ void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRe
       irt_int layer_idx = drc_rect.get_layer_idx();
       irt_int net_idx = drc_rect.get_net_idx();
       if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
-        GTLPolygonSet& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
-        poly_set += RTUtil::convertToGTLRect(drc_rect.get_layer_rect());
+        GTLPolySetInt& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+        poly_set += RTUtil::convertToGTLRectInt(drc_rect.get_layer_rect());
       }
     }
   }
@@ -532,17 +532,17 @@ void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRe
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   for (auto& [layer_idx, net_poly_set_map] : layer_net_polgon_set_map) {
     for (auto& [net_idx, poly_set] : net_poly_set_map) {
-      std::vector<GTLPolygon> poly_list;
+      std::vector<GTLPolyInt> poly_list;
       poly_set.get_polygons(poly_list);
-      for (GTLPolygon& poly : poly_list) {
+      for (GTLPolyInt& poly : poly_list) {
         if (gtl::area(poly) >= routing_layer_list[layer_idx].get_min_area()) {
           continue;
         }
-        std::vector<GTLRectangle> gtl_rect_list;
+        std::vector<GTLRectInt> gtl_rect_list;
         gtl::get_rectangles(gtl_rect_list, poly);
 
         std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
-        for (GTLRectangle& gtl_rect : gtl_rect_list) {
+        for (GTLRectInt& gtl_rect : gtl_rect_list) {
           violation_net_shape_map[net_idx].emplace_back(RTUtil::convertToPlanarRect(gtl_rect), layer_idx);
         }
         LayerRect violation_region = violation_net_shape_map[net_idx].front();
