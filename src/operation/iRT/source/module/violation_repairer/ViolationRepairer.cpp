@@ -686,8 +686,19 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
+      std::vector<DRCRect> drc_rect_list;
+      for (bool is_routing : {true, false}) {
+        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(vr_gcell.getRegionQuery(VRSourceType::kNetShape), is_routing)) {
+          for (auto& [net_idx, rect_set] : net_rect_map) {
+            for (const LayerRect& rect : rect_set) {
+              drc_rect_list.emplace_back(net_idx, rect, is_routing);
+            }
+          }
+        }
+      }
+
       for (VRSourceType vr_source_type : {VRSourceType::kBlockage, VRSourceType::kNetShape}) {
-        for (auto& [drc, violation_info_list] : getViolationInfo(vr_gcell, vr_source_type)) {
+        for (auto& [drc, violation_info_list] : getViolationInfo(vr_gcell, vr_source_type, drc_rect_list)) {
           for (ViolationInfo& violation_info : violation_info_list) {
             irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
             if (violation_info.get_is_routing()) {
@@ -816,18 +827,17 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   RTUtil::printTableList(resource_overflow_table);
 
   // build drc table
-  std::map<VRSourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> routing_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : vr_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetVRSourceTypeName()(source), routing_drc_violation_map));
+    routing_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetVRSourceTypeName()(source), routing_drc_violation_map));
   }
+  RTUtil::printTableList(routing_drc_table_list);
+
+  std::vector<fort::char_table> cut_drc_table_list;
   for (auto& [source, cut_drc_violation_map] : vr_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetVRSourceTypeName()(source), cut_drc_violation_map));
+    cut_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetVRSourceTypeName()(source), cut_drc_violation_map));
   }
-  // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(cut_drc_table_list);
 }
 
 bool ViolationRepairer::stopVRModel(VRModel& vr_model)
@@ -920,10 +930,13 @@ void ViolationRepairer::removeInvalidViolationInfo(VRGCell& vr_gcell, std::map<s
         valid_violation_list.push_back(violation_info);
       }
     }
-    if (valid_violation_list.empty()) {
-      drc_violation_map.erase(drc);
+    drc_violation_map[drc] = violation_list;
+  }
+  for (auto iter = drc_violation_map.begin(); iter != drc_violation_map.end();) {
+    if (iter->second.empty()) {
+      iter = drc_violation_map.erase(iter);
     } else {
-      drc_violation_map[drc] = violation_list;
+      iter++;
     }
   }
 }

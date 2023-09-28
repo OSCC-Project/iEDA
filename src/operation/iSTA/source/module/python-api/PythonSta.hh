@@ -176,6 +176,22 @@ std::map<std::pair<double, double>, double> display_timing_map(
 }
 
 /**
+ * @brief get the inst slack of timing map.
+ *
+ * @param analysis_mode
+ * @return std::map<std::pair<double, double>, double>
+ */
+std::map<std::pair<double, double>, double> display_timing_tns_map(
+    const std::string& analysis_mode) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  if (analysis_mode == "max") {
+    return ista->displayTimingTNSMap(AnalysisMode::kMax);
+  }
+
+  return ista->displayTimingTNSMap(AnalysisMode::kMin);
+}
+
+/**
  * @brief dispaly the inst slew of map.
  *
  * @param analysis_mode

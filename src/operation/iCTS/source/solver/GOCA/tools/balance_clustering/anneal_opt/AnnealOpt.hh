@@ -53,6 +53,22 @@ class AnnealOpt
 
  private:
   /**
+   * @brief random operation
+   *
+   */
+  void randomSwap();
+
+  void randomMove();
+
+  /**
+   * @brief cost function
+   *
+   */
+
+  // latency, empty buffering will lead more latency
+  double cost(const std::vector<std::vector<Inst*>>& clusters);
+
+  /**
    * @brief Database and parameters
    *
    */
@@ -63,8 +79,8 @@ class AnnealOpt
   double _max_cap = 0;
   int _max_net_dist = 0;
   double _p = 0;
-  double _q = 0;
-  double _r = 0;
+  double _cooling_ratio = 0;
+  double _temperature = 0;
 
   size_t _net_num = 0;
   size_t _inst_num = 0;

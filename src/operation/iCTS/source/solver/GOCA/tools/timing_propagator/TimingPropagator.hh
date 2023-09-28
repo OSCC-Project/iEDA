@@ -467,7 +467,7 @@ class TimingPropagator
   }
 
  private:
-  constexpr static double kEpsilon = 5e-5;
+  constexpr static double kEpsilon = 1e-6;
   static double _unit_cap;  // pf
   static double _unit_res;  // ohm
   static double _unit_h_cap;

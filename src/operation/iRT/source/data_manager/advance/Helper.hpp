@@ -36,7 +36,7 @@ class Helper
   std::map<irt_int, irt_int>& get_cut_layer_idx_db_to_rt_map() { return _cut_layer_idx_db_to_rt_map; }
   std::map<std::string, irt_int>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
   std::map<std::string, ViaMasterIdx>& get_via_name_to_idx_map() { return _via_name_to_idx_map; }
-  std::map<irt_int, std::pair<irt_int, irt_int>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
+  std::map<irt_int, std::vector<irt_int>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
@@ -47,7 +47,7 @@ class Helper
   inline irt_int getRoutingLayerIdxByName(const std::string& routing_layer_name);
   inline irt_int getCutLayerIdxByName(const std::string& cut_layer_name);
   inline ViaMasterIdx getRTViaMasterIdxByName(const std::string& via_name);
-  inline std::pair<irt_int, irt_int> getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx);
+  inline std::vector<irt_int> getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx);
 
  private:
   std::string _design_name;
@@ -58,7 +58,7 @@ class Helper
   std::map<irt_int, irt_int> _cut_layer_idx_db_to_rt_map;
   std::map<std::string, irt_int> _cut_layer_name_to_idx_map;
   std::map<std::string, ViaMasterIdx> _via_name_to_idx_map;
-  std::map<irt_int, std::pair<irt_int, irt_int>> _cut_to_adjacent_routing_map;
+  std::map<irt_int, std::vector<irt_int>> _cut_to_adjacent_routing_map;
 };
 
 inline irt_int Helper::wrapIDBRoutingLayerIdxToRT(const irt_int idb_layer_id)
@@ -116,9 +116,9 @@ inline ViaMasterIdx Helper::getRTViaMasterIdxByName(const std::string& via_name)
   return via_master_idx;
 }
 
-inline std::pair<irt_int, irt_int> Helper::getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx)
+inline std::vector<irt_int> Helper::getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx)
 {
-  std::pair<irt_int, irt_int> adjacent_routing_layer_idx;
+  std::vector<irt_int> adjacent_routing_layer_idx;
   if (RTUtil::exist(_cut_to_adjacent_routing_map, cut_layer_idx)) {
     adjacent_routing_layer_idx = _cut_to_adjacent_routing_map[cut_layer_idx];
   } else {
