@@ -409,7 +409,7 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
     }
     // 当前层缩小后的结果
     enclosure_reduced_list
-        = RTUtil::getClosedReducedRectByBoost(enclosure_reduced_list, half_x_span, half_y_span, half_x_span, half_y_span);
+        = RTUtil::getClosedReducedRectListByBoost(enclosure_reduced_list, half_x_span, half_y_span, half_x_span, half_y_span);
   }
   // pin_shape 原始的形状
   std::vector<PlanarRect> origin_pin_shape_list;
@@ -483,8 +483,8 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
   std::vector<PlanarRect> routing_layer_legal_rect_list
       = RTUtil::getClosedCuttingRectListByBoost(origin_pin_shape_list, routing_obs_shape_list);
   std::vector<PlanarRect> cut_layer_legal_rect_list = RTUtil::getClosedCuttingRectListByBoost(origin_pin_shape_list, cut_obs_shape_list);
-  std::vector<PlanarRect> via_legal_rect_list = RTUtil::getClosedOverlapByBoost(routing_layer_legal_rect_list, cut_layer_legal_rect_list);
-  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getClosedOverlapByBoost(via_legal_rect_list, enclosure_reduced_list);
+  std::vector<PlanarRect> via_legal_rect_list = RTUtil::getClosedOverlapRectListByBoost(routing_layer_legal_rect_list, cut_layer_legal_rect_list);
+  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getClosedOverlapRectListByBoost(via_legal_rect_list, enclosure_reduced_list);
   if (!reduced_legal_rect_list.empty()) {
     via_legal_rect_list = reduced_legal_rect_list;
   }
@@ -512,7 +512,7 @@ std::vector<PlanarRect> PinAccessor::getWireLegalRectList(PAModel& pa_model, irt
       wire_reduced_list.push_back(pin_shape.get_real_rect());
     }
     // 当前层缩小后的结果
-    wire_reduced_list = RTUtil::getClosedReducedRectByBoost(wire_reduced_list, half_width);
+    wire_reduced_list = RTUtil::getClosedReducedRectListByBoost(wire_reduced_list, half_width);
   }
   // pin_shape 原始的形状
   std::vector<PlanarRect> origin_pin_shape_list;
@@ -547,7 +547,7 @@ std::vector<PlanarRect> PinAccessor::getWireLegalRectList(PAModel& pa_model, irt
     }
   }
   std::vector<PlanarRect> wire_legal_rect_list = RTUtil::getClosedCuttingRectListByBoost(origin_pin_shape_list, routing_obs_shape_list);
-  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getClosedOverlapByBoost(wire_legal_rect_list, wire_reduced_list);
+  std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getClosedOverlapRectListByBoost(wire_legal_rect_list, wire_reduced_list);
   if (!reduced_legal_rect_list.empty()) {
     wire_legal_rect_list = reduced_legal_rect_list;
   }

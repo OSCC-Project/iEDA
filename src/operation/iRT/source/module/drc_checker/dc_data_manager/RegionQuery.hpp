@@ -22,7 +22,7 @@
 
 namespace irt {
 
-using StaticBox = std::pair<BGBox, RQShape*>;
+using StaticBox = std::pair<BGRectInt, RQShape*>;
 
 class RegionQuery
 {
@@ -86,8 +86,8 @@ class RegionQuery
   {
     return _cut_net_shape_map;
   }
-  std::map<irt_int, bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16>>>& get_routing_region_map() { return _routing_region_map; }
-  std::map<irt_int, bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16>>>& get_cut_region_map() { return _cut_region_map; }
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>>& get_routing_region_map() { return _routing_region_map; }
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>>& get_cut_region_map() { return _cut_region_map; }
   // setters
   void set_idrc_region_query(void* idrc_region_query) { _idrc_region_query = idrc_region_query; }
   // function
@@ -100,8 +100,8 @@ class RegionQuery
       _routing_net_shape_map;  // layer-net-rect
   std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<RQShape*>, CmpLayerRectByLayerASC>>>
       _cut_net_shape_map;  // layer-net-rect
-  std::map<irt_int, bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16>>> _routing_region_map;
-  std::map<irt_int, bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16>>> _cut_region_map;
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>> _routing_region_map;
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>> _cut_region_map;
 };
 
 }  // namespace irt

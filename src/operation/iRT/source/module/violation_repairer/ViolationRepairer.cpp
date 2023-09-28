@@ -481,13 +481,13 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, GTLPolygonSet> layer_polygon_set_map;
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
   {
     // pin_shape
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
       for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRect(shape_real_rect);
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
       }
     }
     // vr_result_tree
@@ -495,23 +495,23 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
       if (!drc_rect.get_is_routing()) {
         continue;
       }
-      layer_polygon_set_map[drc_rect.get_layer_idx()] += RTUtil::convertToGTLRect(drc_rect.get_layer_rect());
+      layer_polygon_set_map[drc_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(drc_rect.get_layer_rect());
     }
   }
   std::map<LayerRect, irt_int, CmpLayerRectByXASC> violation_rect_added_area_map;
   for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
     irt_int layer_min_area = routing_layer_list[layer_idx].get_min_area();
-    std::vector<GTLPolygon> polygon_list;
+    std::vector<GTLPolyInt> polygon_list;
     polygon_set.get_polygons(polygon_list);
-    for (GTLPolygon& polygon : polygon_list) {
+    for (GTLPolyInt& polygon : polygon_list) {
       if (gtl::area(polygon) >= layer_min_area) {
         continue;
       }
       // 取polygon中最大的矩形进行膨胀
       PlanarRect max_violation_rect;
-      std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+      std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_max_rectangles(gtl_rect_list, polygon);
-      for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
         if (max_violation_rect.getArea() < gtl::area(gtl_rect)) {
           max_violation_rect = RTUtil::convertToPlanarRect(gtl_rect);
         }

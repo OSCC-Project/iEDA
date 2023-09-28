@@ -292,10 +292,10 @@ void DRCChecker::addEnvRectList(RegionQuery* region_query, const std::vector<DRC
   for (const DRCRect& drc_rect : drc_rect_list) {
     irt_int net_idx = drc_rect.get_net_idx();
     const LayerRect& layer_rect = drc_rect.get_layer_rect();
-    BGBox shape = RTUtil::convertToBGBox(layer_rect);
+    BGRectInt shape = RTUtil::convertToBGRectInt(layer_rect);
     irt_int layer_idx = layer_rect.get_layer_idx();
     irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(layer_rect);
-    BGBox enlarged_shape = RTUtil::enlargeBGBox(shape, min_spacing);
+    BGRectInt enlarged_shape = RTUtil::enlargeBGRectInt(shape, min_spacing);
 
     RQShape* rq_shape = new RQShape();
     rq_shape->set_shape(shape);
@@ -385,10 +385,10 @@ RQShape DRCChecker::convertToRQShape(const DRCRect& drc_rect)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   const LayerRect& layer_rect = drc_rect.get_layer_rect();
-  BGBox shape = RTUtil::convertToBGBox(layer_rect);
+  BGRectInt shape = RTUtil::convertToBGRectInt(layer_rect);
   irt_int layer_idx = layer_rect.get_layer_idx();
   irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(layer_rect);
-  BGBox enlarged_shape = RTUtil::enlargeBGBox(shape, min_spacing);
+  BGRectInt enlarged_shape = RTUtil::enlargeBGRectInt(shape, min_spacing);
 
   RQShape rq_shape;
   rq_shape.set_net_id(drc_rect.get_net_idx());
@@ -439,14 +439,14 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
     RQShape drc_shape = convertToRQShape(drc_rect);
     irt_int layer_idx = drc_shape.get_routing_layer_idx();
     // 查询重叠
-    std::vector<std::pair<BGBox, RQShape*>> result_list;
+    std::vector<std::pair<BGRectInt, RQShape*>> result_list;
     if (drc_shape.get_is_routing()) {
       auto& routing_region_map = region_query->get_routing_region_map();
-      bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[layer_idx];
+      bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     } else {
       auto& cut_region_map = region_query->get_cut_region_map();
-      bgi::rtree<std::pair<BGBox, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[layer_idx];
+      bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     }
 
