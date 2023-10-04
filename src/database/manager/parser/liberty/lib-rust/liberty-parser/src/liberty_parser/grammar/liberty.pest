@@ -31,7 +31,7 @@ semicolon_opt = _{ ";" }
 
 string = { lib_id | multiline_string | pin_id | bus_id | bus_bus_id }
 
-attribute_value  =  { float | string }
+attribute_value  = _{ float | string }
 attribute_values = _{ attribute_value ~ (("," | WHITESPACE) ~ attribute_value)* }
 
 simple_attribute = { lib_id ~ ":" ~ attribute_value ~ semicolon_opt }

@@ -14,7 +14,7 @@ pub struct LibertyParser;
 /// process float data.
 fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
-    match pair.into_inner().as_str().parse::<f64>() {
+    match pair.as_str().parse::<f64>() {
         Ok(value) => Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
@@ -26,7 +26,12 @@ fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pe
 /// process string data.
 fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
-    match pair.into_inner().as_str().parse::<String>() {
+
+    println!("Rule:    {:?}", pair_clone.as_rule());
+    println!("Span:    {:?}", pair_clone.as_span());
+    println!("Text:    {}", pair_clone.as_str());
+
+    match pair.as_str().parse::<String>() {
         Ok(value) => {
             Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue { value: value.to_string() }))
         }
@@ -148,10 +153,13 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
+    println!("Rule:    {:?}", pair_clone.as_rule());
+    println!("Span:    {:?}", pair_clone.as_span());
+    println!("Text:    {}", pair_clone.as_str());
+
     match pair_clone.as_rule() {
         Rule::float => process_float(pair_clone),
         Rule::string => process_string(pair_clone),
-        Rule::attribute_value => process_pair(pair_clone, parser_queue),
         Rule::simple_attribute => process_simple_attribute(pair_clone, parser_queue),
         Rule::complex_attribute => process_complex_attribute(pair_clone, parser_queue),
         Rule::group => process_group_attribute(pair_clone, parser_queue),
