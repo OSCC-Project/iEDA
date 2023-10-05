@@ -190,6 +190,14 @@ impl LibertyGroupStmt {
             stmts,
         }
     }
+
+    pub fn get_group_name(&self) -> &str {
+        &self.group_name
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_values.first().unwrap().get_string_value()
+    }
 }
 
 impl LibertyStmt for LibertyGroupStmt {
