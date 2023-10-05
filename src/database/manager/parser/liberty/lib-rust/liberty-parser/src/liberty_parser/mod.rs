@@ -27,14 +27,14 @@ fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pe
 fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
 
-    println!("Rule:    {:?}", pair_clone.as_rule());
-    println!("Span:    {:?}", pair_clone.as_span());
-    println!("Text:    {}", pair_clone.as_str());
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
 
     match pair.as_str().parse::<String>() {
-        Ok(value) => {
-            Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue { value: value.to_string() }))
-        }
+        Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue {
+            value: value.trim_matches('"').to_string(),
+        })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
             pair_clone.as_span(),
@@ -129,6 +129,7 @@ fn process_group_attribute(
                 liberty_data::LibertyParserData::Float(f) => attri_values.push(Box::new(f)),
                 liberty_data::LibertyParserData::SimpleStmt(simple_stmt) => stmts.push(Box::new(simple_stmt)),
                 liberty_data::LibertyParserData::ComplexStmt(complex_stmt) => stmts.push(Box::new(complex_stmt)),
+                liberty_data::LibertyParserData::GroupStmt(group_stmt) => stmts.push(Box::new(group_stmt)),
                 _ => todo!(),
             }
         }
@@ -148,6 +149,7 @@ fn process_pair(
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
+    let current_queue_len = parser_queue.len();
     for inner_pair in pair.into_inner() {
         let pair_result = process_pair(inner_pair, parser_queue);
         parser_queue.push_back(pair_result.unwrap());
@@ -157,12 +159,18 @@ fn process_pair(
     println!("Span:    {:?}", pair_clone.as_span());
     println!("Text:    {}", pair_clone.as_str());
 
+    let mut substitute_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
+    while parser_queue.len() > current_queue_len {
+        substitute_queue.push_front(parser_queue.pop_back().unwrap());
+    }
+
     match pair_clone.as_rule() {
         Rule::float => process_float(pair_clone),
-        Rule::string => process_string(pair_clone),
-        Rule::simple_attribute => process_simple_attribute(pair_clone, parser_queue),
-        Rule::complex_attribute => process_complex_attribute(pair_clone, parser_queue),
-        Rule::group => process_group_attribute(pair_clone, parser_queue),
+        Rule::multiline_string => process_string(pair_clone),
+        Rule::id => process_string(pair_clone),
+        Rule::simple_attribute => process_simple_attribute(pair_clone, &mut substitute_queue),
+        Rule::complex_attribute => process_complex_attribute(pair_clone, &mut substitute_queue),
+        Rule::group => process_group_attribute(pair_clone, &mut substitute_queue),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
             pair_clone.as_span(),
@@ -170,7 +178,7 @@ fn process_pair(
     }
 }
 
-pub fn parse_lib_file(lib_file_path: &str) -> Result<(), pest::error::Error<Rule>> {
+pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     // Generate liberty.pest parser
     let input_str =
         std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
@@ -179,19 +187,16 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<(), pest::error::Error<Rule
 
     match parse_result {
         Ok(pairs) => {
-            for pair in pairs {
-                // println!("{:?}", pair);
-                // Process each pair
-                process_pair(pair, &mut parser_queue)?;
-            }
+            let lib_data = process_pair(pairs.into_iter().next().unwrap(), &mut parser_queue);
+            assert_eq!(parser_queue.len(), 0);
+            lib_data
         }
         Err(err) => {
             // Handle parsing error
             println!("Error: {}", err);
+            Err(err.clone())
         }
     }
-    // Continue with the rest of the code
-    Ok(())
 }
 
 #[cfg(test)]

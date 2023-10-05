@@ -192,6 +192,12 @@ impl LibertyGroupStmt {
     }
 }
 
+impl LibertyStmt for LibertyGroupStmt {
+    fn is_attr_stmt(&self) -> u32 {
+        1
+    }
+}
+
 pub enum LibertyParserData {
     GroupStmt(LibertyGroupStmt),
     ComplexStmt(LibertyComplexAttrStmt),
