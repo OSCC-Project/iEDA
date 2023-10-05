@@ -7,6 +7,9 @@ use pest::iterators::Pair;
 
 use std::collections::VecDeque;
 
+use std::ffi::CStr;
+use std::os::raw::c_char;
+
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
@@ -196,6 +199,16 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
             println!("Error: {}", err);
             Err(err.clone())
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parse_lib(lib_file_path: *const c_char) {
+    unsafe {
+        let c_str = CStr::from_ptr(lib_file_path);
+        let lib_file_path_str = c_str.to_str().unwrap();
+
+        parse_lib_file(lib_file_path_str);
     }
 }
 

@@ -5,6 +5,11 @@ edition = "2021"
 exclude = ["build"]
 rust-version = "1.72"
 
+[lib]
+name = "liberty_parser"
+path = "src/liberty_parser/mod.rs"
+crate-type = ["cdylib"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

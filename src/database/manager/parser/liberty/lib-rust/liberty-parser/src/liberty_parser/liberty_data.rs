@@ -25,6 +25,7 @@ pub trait LibertyAttrValue {
 /// liberty float value.
 /// # Examples
 /// 1.7460
+#[repr(C)]
 pub struct LibertyFloatValue {
     pub(crate) value: f64,
 }
@@ -42,6 +43,7 @@ impl LibertyAttrValue for LibertyFloatValue {
 /// liberty string value.
 /// # Examples
 /// "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
+#[repr(C)]
 pub struct LibertyStringValue {
     pub(crate) value: String,
 }
@@ -73,6 +75,7 @@ pub trait LibertyStmt {
 }
 
 /// liberty attribute stmt.
+#[repr(C)]
 pub struct LibertyAttrStmt {
     file_name: String,
     line_no: u32,
@@ -87,6 +90,7 @@ impl LibertyAttrStmt {
 /// The simple attribute statement.
 /// # Example
 /// capacitance : 1.774000e-01;
+#[repr(C)]
 pub struct LibertySimpleAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -120,6 +124,7 @@ impl LibertyStmt for LibertySimpleAttrStmt {
 /// The complex attribute statement.
 /// # Example
 /// index_1 ("0.0010,0.0020,0.0030");
+#[repr(C)]
 pub struct LibertyComplexAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -168,6 +173,7 @@ impl LibertyStmt for LibertyComplexAttrStmt {
 /// fanout_length( 9, 25.4842 );
 /// fanout_length( 11, 27.0320 );
 /// }
+#[repr(C)]
 pub struct LibertyGroupStmt {
     attri: LibertyAttrStmt,
     group_name: String,
