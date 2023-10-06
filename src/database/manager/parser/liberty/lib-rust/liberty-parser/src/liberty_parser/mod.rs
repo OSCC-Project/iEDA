@@ -212,6 +212,12 @@ pub extern "C" fn rust_parse_lib(lib_file_path: *const c_char) {
     }
 }
 
+#[repr(C)]
+struct Point {
+    x: f32,
+    y: f32,
+}
+
 #[cfg(test)]
 mod tests {
 

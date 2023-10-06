@@ -212,6 +212,7 @@ impl LibertyStmt for LibertyGroupStmt {
     }
 }
 
+#[repr(C)]
 pub enum LibertyParserData {
     GroupStmt(LibertyGroupStmt),
     ComplexStmt(LibertyComplexAttrStmt),
@@ -220,3 +221,4 @@ pub enum LibertyParserData {
     Float(LibertyFloatValue),
     Null,
 }
+
