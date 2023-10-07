@@ -1,6 +1,5 @@
 # 指定编译器
 CXX = g++
-CXXFLAGS += -std=c++20
 
 # 源文件名
 SRC = test.cpp
@@ -19,13 +18,14 @@ INCLUDES = -I/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/li
 
 # 编译参数
 CXXFLAGS = -g -Wall $(INCLUDES)
+CXXFLAGS += -std=c++20
 
 # 链接参数
 LDFLAGS = -L$(LIBDIR) $(LIBS)
 
 # 编译命令
 $(TARGET): $(SRC)
-	$(CXX) -std=c++20 $(SRC) -o $(TARGET) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS)
 
 # 清理命令
 clean: 
