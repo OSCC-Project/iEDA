@@ -11,6 +11,7 @@ cbindgen = "0.26"
 [lib]
 name = "liberty_parser"
 path = "src/liberty_parser/mod.rs"
+#crate-type = ["staticlib"]
 crate-type = ["cdylib"]
 
 

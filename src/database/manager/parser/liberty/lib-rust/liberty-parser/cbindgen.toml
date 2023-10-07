@@ -10,4 +10,4 @@ tab_width = 4
 language = "C"
 
 [parse]
-include = ["src/liberty_parser/liberty_data.rs"]
+include = ["src/liberty_parser/mod.rs"]

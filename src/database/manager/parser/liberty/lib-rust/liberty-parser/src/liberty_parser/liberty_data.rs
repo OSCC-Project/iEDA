@@ -221,4 +221,3 @@ pub enum LibertyParserData {
     Float(LibertyFloatValue),
     Null,
 }
-

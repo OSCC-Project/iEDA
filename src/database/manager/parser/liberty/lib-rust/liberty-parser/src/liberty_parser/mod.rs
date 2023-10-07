@@ -7,7 +7,7 @@ use pest::iterators::Pair;
 
 use std::collections::VecDeque;
 
-use std::ffi::CStr;
+use std::ffi::CString;
 use std::os::raw::c_char;
 
 #[derive(Parser)]
@@ -202,20 +202,36 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rust_parse_lib(lib_file_path: *const c_char) {
-    unsafe {
-        let c_str = CStr::from_ptr(lib_file_path);
-        let lib_file_path_str = c_str.to_str().unwrap();
-
-        parse_lib_file(lib_file_path_str);
-    }
+#[repr(C)]
+pub struct Point {
+    x: f64,
+    y: f64,
 }
 
-#[repr(C)]
-struct Point {
-    x: f32,
-    y: f32,
+// #[no_mangle]
+// pub extern "C" fn rust_parse_lib(lib_file_path: *const c_char) -> liberty_data::LibertyParserData {
+//     unsafe {
+//         let c_str = unsafe { CString::from_raw(lib_file_path as *mut c_char) };
+//         let r_str = c_str.to_str().unwrap();
+
+//         println!("lib file path {}", r_str);
+
+//         let lib_file = parse_lib_file(&r_str);
+//         lib_file.unwrap()
+//     }
+// }
+
+#[no_mangle]
+pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut liberty_data::LibertyParserData {
+    let c_str = unsafe { std::ffi::CStr::from_ptr(s) };
+    let r_str = c_str.to_string_lossy().into_owned();
+    println!("r str {}", r_str);
+
+    let lib_file = parse_lib_file(&r_str);
+    let lib_file_pointer = Box::new(lib_file.unwrap());
+
+    let raw_pointer = Box::into_raw(lib_file_pointer);
+    raw_pointer
 }
 
 #[cfg(test)]
