@@ -2298,7 +2298,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   std::map<DRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = dr_box_stat.get_source_cut_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kBlockage, DRSourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getViolationInfo(dr_box, dr_source_type, drc_rect_list)) {
+    for (auto& [drc, violation_info_list] : getDRViolationInfo(dr_box, dr_source_type, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -2920,7 +2920,7 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
   bool has_violation = false;
   for (const auto& [dr_box_id, drc_rect_list] : box_rect_map) {
     DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-    if (getViolationInfo(dr_box, dr_source_type, drc_rect_list).size() > 0) {
+    if (getDRViolationInfo(dr_box, dr_source_type, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2928,24 +2928,16 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
   return has_violation;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
+std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDRViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
                                                                                    const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list);
-  removeInvalidViolationInfo(dr_box, drc_violation_map);
+  removeInvalidDRViolationInfo(dr_box, drc_violation_map);
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type));
-  removeInvalidViolationInfo(dr_box, drc_violation_map);
-  return drc_violation_map;
-}
-
-void DetailedRouter::removeInvalidViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+void DetailedRouter::removeInvalidDRViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
 {
   for (auto& [drc, violation_list] : drc_violation_map) {
     std::vector<ViolationInfo> valid_violation_list;

@@ -1841,7 +1841,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   std::map<TASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = ta_panel_stat.get_source_cut_drc_violation_map();
   for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getViolationInfo(ta_panel, ta_source_type, drc_rect_list)) {
+    for (auto& [drc, violation_info_list] : getTAViolationInfo(ta_panel, ta_source_type, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -2396,7 +2396,7 @@ bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type,
   bool has_violation = false;
   for (const auto& [ta_panel_id, drc_rect_list] : panel_rect_map) {
     TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
-    if (getViolationInfo(ta_panel, ta_source_type, drc_rect_list).size() > 0) {
+    if (getTAViolationInfo(ta_panel, ta_source_type, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2404,24 +2404,16 @@ bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type,
   return has_violation;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getTAViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
                                                                                   const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list);
-  removeInvalidViolationInfo(ta_panel, drc_violation_map);
+  removeInvalidTAViolationInfo(ta_panel, drc_violation_map);
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type));
-  removeInvalidViolationInfo(ta_panel, drc_violation_map);
-  return drc_violation_map;
-}
-
-void TrackAssigner::removeInvalidViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+void TrackAssigner::removeInvalidTAViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
 {
   for (auto& [drc, violation_list] : drc_violation_map) {
     std::vector<ViolationInfo> valid_violation_list;

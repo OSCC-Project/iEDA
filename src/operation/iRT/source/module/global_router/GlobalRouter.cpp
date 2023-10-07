@@ -2409,7 +2409,7 @@ bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, 
   bool has_violation = false;
   for (const auto& [gr_node_id, drc_rect_list] : node_rect_map) {
     GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
-    if (getViolationInfo(gr_node, gr_source_type, drc_rect_list).size() > 0) {
+    if (getGRViolationInfo(gr_node, gr_source_type, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2417,24 +2417,16 @@ bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, 
   return has_violation;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getGRViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
                                                                                  const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), drc_rect_list);
-  removeInvalidViolationInfo(gr_node, drc_violation_map);
+  removeInvalidGRViolationInfo(gr_node, drc_violation_map);
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type));
-  removeInvalidViolationInfo(gr_node, drc_violation_map);
-  return drc_violation_map;
-}
-
-void GlobalRouter::removeInvalidViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+void GlobalRouter::removeInvalidGRViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
 {
   for (auto& [drc, violation_list] : drc_violation_map) {
     std::vector<ViolationInfo> valid_violation_list;
