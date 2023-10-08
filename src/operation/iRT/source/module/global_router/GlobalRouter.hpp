@@ -141,10 +141,9 @@ class GlobalRouter
 #if 1  // valid drc
   bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const DRCRect& drc_rect);
   bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+  std::map<std::string, std::vector<ViolationInfo>> getGRViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(GRNode& gr_node, GRSourceType gr_source_type);
-  void removeInvalidViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  void removeInvalidGRViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

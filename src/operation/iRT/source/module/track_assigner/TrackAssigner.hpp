@@ -150,10 +150,9 @@ class TrackAssigner
 #if 1  // valid drc
   bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const DRCRect& drc_rect);
   bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+  std::map<std::string, std::vector<ViolationInfo>> getTAViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
                                                                      const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type);
-  void removeInvalidViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  void removeInvalidTAViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 
