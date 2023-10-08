@@ -64,7 +64,7 @@ class DetailedRouter
   void buildSchedule(DRModel& dr_model);
   void buildBoxTrackAxis(DRModel& dr_model);
   void updateBlockageMap(DRModel& dr_model);
-  void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
+  void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   void updateNetShapeMap(DRModel& dr_model);
   void decomposeLengthyTANode(DRModel& dr_model);
   void decomposeTANode(DRModel& dr_model, DRNet& dr_net);
@@ -91,7 +91,7 @@ class DetailedRouter
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
-  void updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
+  void updateRectGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getRoutingGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getCutGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);

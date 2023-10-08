@@ -62,7 +62,7 @@ class TrackAssigner
   void shrinkPanelRegion(TAModel& ta_model);
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateBlockageMap(TAModel& ta_model);
-  void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, TAPanelId ta_panel_id, DRCRect drc_rect);
+  void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
   void updateNetShapeMap(TAModel& ta_model);
   void updateNetReservedViaMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
@@ -85,7 +85,7 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildSourceOrienTaskMap(TAPanel& ta_panel);
-  void updateRectCostToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
+  void updateRectGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCRect& drc_rect);
   std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);

@@ -229,21 +229,15 @@ void DetailedRouter::updateBlockageMap(DRModel& dr_model)
 
   for (Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRBoxId(), DRCRect(-1, blockage_real_rect, true));
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
     LayerRect blockage_real_rect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx());
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRBoxId(), DRCRect(-1, blockage_real_rect, false));
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kBlockage, DRCRect(-1, blockage_real_rect, false));
   }
 }
 
-/**
- * dr_box_id是产生drc_rect的box
- * 若添加的box与dr_box_id一致，则按照原drc_rect
- * 若添加的box与dr_box_id不一致(box_a产生的往box_b添加)，则将drc_rect的net_idx设置为-1
- */
-void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id,
-                                     DRCRect drc_rect)
+void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -255,11 +249,7 @@ void DetailedRouter::updateRectToEnv(DRModel& dr_model, ChangeType change_type, 
     PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        DRBox& target_box = dr_box_map[x][y];
-        if (target_box.get_dr_box_id() != dr_box_id) {
-          drc_rect.set_net_idx(-1);
-        }
-        DC_INST.updateRectList(target_box.getRegionQuery(dr_source_type), change_type, drc_rect);
+        DC_INST.updateRectList(dr_box_map[x][y].getRegionQuery(dr_source_type), change_type, drc_rect);
       }
     }
   }
@@ -271,13 +261,11 @@ void DetailedRouter::updateNetShapeMap(DRModel& dr_model)
     for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
       for (EXTLayerRect& routing_shape : dr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(),
-                        DRCRect(dr_net.get_net_idx(), shape_real_rect, true));
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRCRect(dr_net.get_net_idx(), shape_real_rect, true));
       }
       for (EXTLayerRect& cut_shape : dr_pin.get_cut_shape_list()) {
         LayerRect shape_real_rect(cut_shape.get_real_rect(), cut_shape.get_layer_idx());
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(),
-                        DRCRect(dr_net.get_net_idx(), shape_real_rect, false));
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRCRect(dr_net.get_net_idx(), shape_real_rect, false));
       }
     }
   }
@@ -490,7 +478,7 @@ void DetailedRouter::updateNetPanelResultMap(DRModel& dr_model)
         routing_segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
       }
       for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), routing_segment_list)) {
-        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, DRBoxId(), drc_rect);
+        updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, drc_rect);
       }
     }
   }
@@ -514,7 +502,7 @@ void DetailedRouter::updateNetReservedViaMap(DRModel& dr_model)
         segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
                                   LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
         for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_net.get_net_idx(), segment_list)) {
-          updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kReservedVia, DRBoxId(), drc_rect);
+          updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kReservedVia, drc_rect);
         }
       }
     }
@@ -1063,7 +1051,7 @@ void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
       for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(dr_box.getRegionQuery(dr_source_type), is_routing)) {
         for (auto& [net_idx, rect_set] : net_rect_map) {
           for (const LayerRect& rect : rect_set) {
-            updateRectCostToGraph(dr_box, ChangeType::kAdd, dr_source_type, DRCRect(net_idx, rect, is_routing));
+            updateRectGraph(dr_box, ChangeType::kAdd, dr_source_type, DRCRect(net_idx, rect, is_routing));
           }
         }
       }
@@ -1075,7 +1063,7 @@ void DetailedRouter::buildSourceOrienTaskMap(DRBox& dr_box)
  * 当drc_rect是由于dr_box布线产生时，dr_source_type必须设置为kSelfBox
  * 当drc_rect是由blockage或pin_shape或其他不由dr_box布线产生时，dr_source_type可设置为对应值
  */
-void DetailedRouter::updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
+void DetailedRouter::updateRectGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect)
 {
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
@@ -1721,11 +1709,11 @@ void DetailedRouter::ripupDRBox(DRModel& dr_model, DRBox& dr_box)
     }
     // 将env中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-      updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kNetShape, dr_box.get_dr_box_id(), drc_rect);
+      updateRectToEnv(dr_model, ChangeType::kDel, DRSourceType::kNetShape, drc_rect);
     }
     // 将graph中的布线结果清空
     for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-      updateRectCostToGraph(dr_box, ChangeType::kDel, DRSourceType::kNetShape, drc_rect);
+      updateRectGraph(dr_box, ChangeType::kDel, DRSourceType::kNetShape, drc_rect);
     }
     // 清空routing_tree
     dr_task.get_routing_tree().clear();
@@ -2019,11 +2007,11 @@ void DetailedRouter::updateTaskResult(DRModel& dr_model, DRBox& dr_box, DRTask& 
   dr_task.set_routing_tree(RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map));
   // 将布线结果添加到env中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, dr_box.get_dr_box_id(), drc_rect);
+    updateRectToEnv(dr_model, ChangeType::kAdd, DRSourceType::kNetShape, drc_rect);
   }
   // 将布线结果添加到graph中
   for (DRCRect& drc_rect : DC_INST.getDRCRectList(dr_task.get_origin_net_idx(), dr_task.get_routing_tree())) {
-    updateRectCostToGraph(dr_box, ChangeType::kAdd, DRSourceType::kNetShape, drc_rect);
+    updateRectGraph(dr_box, ChangeType::kAdd, DRSourceType::kNetShape, drc_rect);
   }
   dr_task.set_routing_state(RoutingState::kRouted);
 }
@@ -2947,7 +2935,7 @@ void DetailedRouter::removeInvalidDRViolationInfo(DRBox& dr_box, std::map<std::s
     for (ViolationInfo& violation_info : violation_list) {
       bool is_valid = false;
       for (auto& [net_idx, rect_list] : violation_info.get_net_shape_map()) {
-        if (net_idx != -1) {
+        if (RTUtil::exist(dr_box.get_net_task_map(), net_idx)) {
           is_valid = true;
           break;
         }
