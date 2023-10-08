@@ -17,6 +17,7 @@
 #pragma once
 
 #include "ChangeType.hpp"
+#include "DRCCheckType.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "RTAPI.hpp"
@@ -68,8 +69,10 @@ class DRCChecker
    * 获得违例信息
    * 暂时不进行线网自检
    */
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const DRCRect& drc_rect);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const DRCRect& drc_rect,
+                                                                     const std::vector<DRCCheckType>& check_type_list);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list,
+                                                                     const std::vector<DRCCheckType>& check_type_list);
   std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
 
  private:

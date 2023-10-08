@@ -335,7 +335,7 @@ void PinAccessor::initAccessPointList(PAModel& pa_model, PANet& pa_net)
 
 std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin)
 {
-#if 0
+#if 1
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
@@ -371,7 +371,7 @@ std::vector<LayerRect> PinAccessor::getLegalPinShapeList(PAModel& pa_model, irt_
   if (!legal_rect_list.empty()) {
     return legal_rect_list;
   }
-  // LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " use all pin shapes as a legal area!");
+  LOG_INST.warning(Loc::current(), "The pin ", pa_pin.get_pin_name(), " use all pin shapes as a legal area!");
   for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
     legal_rect_list.emplace_back(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
   }
@@ -495,7 +495,8 @@ std::vector<PlanarRect> PinAccessor::getViaLegalRectList(PAModel& pa_model, irt_
   std::vector<PlanarRect> routing_layer_legal_rect_list
       = RTUtil::getClosedCuttingRectListByBoost(origin_pin_shape_list, routing_obs_shape_list);
   std::vector<PlanarRect> cut_layer_legal_rect_list = RTUtil::getClosedCuttingRectListByBoost(origin_pin_shape_list, cut_obs_shape_list);
-  std::vector<PlanarRect> via_legal_rect_list = RTUtil::getClosedOverlapRectListByBoost(routing_layer_legal_rect_list, cut_layer_legal_rect_list);
+  std::vector<PlanarRect> via_legal_rect_list
+      = RTUtil::getClosedOverlapRectListByBoost(routing_layer_legal_rect_list, cut_layer_legal_rect_list);
   std::vector<PlanarRect> reduced_legal_rect_list = RTUtil::getClosedOverlapRectListByBoost(via_legal_rect_list, enclosure_reduced_list);
   if (!reduced_legal_rect_list.empty()) {
     via_legal_rect_list = reduced_legal_rect_list;
@@ -1297,7 +1298,7 @@ std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getViolationInfo(
                                                                                 const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list);
+  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list, {DRCCheckType::kSpacing});
   removeInvalidViolationInfo(pa_gcell, drc_violation_map);
   return drc_violation_map;
 }

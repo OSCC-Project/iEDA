@@ -2932,7 +2932,7 @@ std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getViolationIn
                                                                                    const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list);
+  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list, {DRCCheckType::kSpacing});
   removeInvalidViolationInfo(dr_box, drc_violation_map);
   return drc_violation_map;
 }

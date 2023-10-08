@@ -2408,7 +2408,7 @@ std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getViolationInf
                                                                                   const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list);
+  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list, {DRCCheckType::kSpacing});
   removeInvalidViolationInfo(ta_panel, drc_violation_map);
   return drc_violation_map;
 }

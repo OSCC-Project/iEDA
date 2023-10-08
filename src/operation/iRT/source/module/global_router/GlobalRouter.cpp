@@ -2421,7 +2421,7 @@ std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getViolationInfo
                                                                                  const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), drc_rect_list);
+  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), drc_rect_list, {DRCCheckType::kSpacing});
   removeInvalidViolationInfo(gr_node, drc_violation_map);
   return drc_violation_map;
 }

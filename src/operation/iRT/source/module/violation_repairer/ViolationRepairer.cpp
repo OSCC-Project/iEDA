@@ -901,7 +901,8 @@ std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getViolatio
                                                                                       const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type), drc_rect_list);
+  drc_violation_map = DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type), drc_rect_list,
+                                               {DRCCheckType::kSpacing, DRCCheckType::kMinArea, DRCCheckType::kMinStep});
   removeInvalidViolationInfo(vr_gcell, drc_violation_map);
   return drc_violation_map;
 }

@@ -226,16 +226,29 @@ std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_r
 #if 1  // 获得违例信息
 
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query,
-                                                                               const std::vector<DRCRect>& drc_rect_list)
+                                                                               const std::vector<DRCRect>& drc_rect_list,
+                                                                               const std::vector<DRCCheckType>& check_type_list)
 {
   RegionQuery* region_query_ref = &region_query;
 
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-
   std::vector<ViolationInfo> violation_info_list;
-  checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
-  // checkMinArea(region_query_ref, drc_rect_list, violation_info_list);
+  for (DRCCheckType check_type : check_type_list) {
+    switch (check_type) {
+      case DRCCheckType::kSpacing:
+        checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
+        break;
+      case DRCCheckType::kMinArea:
+        checkMinArea(region_query_ref, drc_rect_list, violation_info_list);
+        break;
+      case DRCCheckType::kMinStep:
+        break;
+      default:
+        break;
+    }
+  }
   uniqueViolationInfoList(violation_info_list);
+
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   for (ViolationInfo& violation_info : violation_info_list) {
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
   }
