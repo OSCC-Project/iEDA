@@ -160,10 +160,13 @@ class DetailedRouter
 #endif
 
 #if 1  // valid drc
-  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const DRCRect& drc_rect);
-  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
   std::map<std::string, std::vector<ViolationInfo>> getDRViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
-                                                                     const std::vector<DRCRect>& drc_rect_list);
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
   void removeInvalidDRViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };

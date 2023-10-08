@@ -226,8 +226,8 @@ std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_r
 #if 1  // 获得违例信息
 
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query,
-                                                                               const std::vector<DRCRect>& drc_rect_list,
-                                                                               const std::vector<DRCCheckType>& check_type_list)
+                                                                               const std::vector<DRCCheckType>& check_type_list,
+                                                                               const std::vector<DRCRect>& drc_rect_list)
 {
   RegionQuery* region_query_ref = &region_query;
 
@@ -255,26 +255,26 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(R
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query)
-{
-  RegionQuery* region_query_ref = &region_query;
+// std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query)
+// {
+//   RegionQuery* region_query_ref = &region_query;
 
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+//   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
 
-  std::vector<ViolationInfo> violation_info_list;
-  for (auto& [layer_idx, net_rect_list_map] : region_query.get_routing_net_rect_map()) {
-    for (auto& [net_idx, rect_list] : net_rect_list_map) {
-      for (const LayerRect& rect : rect_list) {
-        checkMinSpacingByOther(region_query_ref, DRCRect(net_idx, rect, true), violation_info_list);
-      }
-    }
-  }
-  uniqueViolationInfoList(violation_info_list);
-  for (ViolationInfo& violation_info : violation_info_list) {
-    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
-  }
-  return drc_violation_map;
-}
+//   std::vector<ViolationInfo> violation_info_list;
+//   for (auto& [layer_idx, net_rect_list_map] : region_query.get_routing_net_rect_map()) {
+//     for (auto& [net_idx, rect_list] : net_rect_list_map) {
+//       for (const LayerRect& rect : rect_list) {
+//         checkMinSpacingByOther(region_query_ref, DRCRect(net_idx, rect, true), violation_info_list);
+//       }
+//     }
+//   }
+//   uniqueViolationInfoList(violation_info_list);
+//   for (ViolationInfo& violation_info : violation_info_list) {
+//     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+//   }
+//   return drc_violation_map;
+// }
 
 #endif
 

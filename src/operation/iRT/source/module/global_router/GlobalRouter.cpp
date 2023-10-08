@@ -2381,13 +2381,15 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
 #if 1  // valid drc
 
-bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const DRCRect& drc_rect)
+bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list = {drc_rect};
-  return hasViolation(gr_model, gr_source_type, drc_rect_list);
+  return hasViolation(gr_model, gr_source_type, check_type_list, drc_rect_list);
 }
 
-bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                const std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -2409,7 +2411,7 @@ bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, 
   bool has_violation = false;
   for (const auto& [gr_node_id, drc_rect_list] : node_rect_map) {
     GRNode& gr_node = layer_node_map[gr_node_id.get_layer_idx()][gr_node_id.get_x()][gr_node_id.get_y()];
-    if (getGRViolationInfo(gr_node, gr_source_type, drc_rect_list).size() > 0) {
+    if (getGRViolationInfo(gr_node, gr_source_type, check_type_list, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2418,10 +2420,11 @@ bool GlobalRouter::hasViolation(GRModel& gr_model, GRSourceType gr_source_type, 
 }
 
 std::map<std::string, std::vector<ViolationInfo>> GlobalRouter::getGRViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
-                                                                                 const std::vector<DRCRect>& drc_rect_list)
+                                                                                   const std::vector<DRCCheckType>& check_type_list,
+                                                                                   const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), drc_rect_list, {DRCCheckType::kSpacing});
+  drc_violation_map = DC_INST.getViolationInfo(gr_node.getRegionQuery(gr_source_type), check_type_list, drc_rect_list);
   removeInvalidGRViolationInfo(gr_node, drc_violation_map);
   return drc_violation_map;
 }

@@ -2298,7 +2298,7 @@ void DetailedRouter::countDRBox(DRModel& dr_model, DRBox& dr_box)
   std::map<DRSourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = dr_box_stat.get_source_cut_drc_violation_map();
   for (DRSourceType dr_source_type : {DRSourceType::kBlockage, DRSourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getDRViolationInfo(dr_box, dr_source_type, drc_rect_list)) {
+    for (auto& [drc, violation_info_list] : getDRViolationInfo(dr_box, dr_source_type, {DRCCheckType::kSpacing}, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -2892,13 +2892,15 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
 #if 1  // valid drc
 
-bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const DRCRect& drc_rect)
+bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                  const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list = {drc_rect};
-  return hasViolation(dr_model, dr_source_type, drc_rect_list);
+  return hasViolation(dr_model, dr_source_type, check_type_list, drc_rect_list);
 }
 
-bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                  const std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -2920,7 +2922,7 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
   bool has_violation = false;
   for (const auto& [dr_box_id, drc_rect_list] : box_rect_map) {
     DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-    if (getDRViolationInfo(dr_box, dr_source_type, drc_rect_list).size() > 0) {
+    if (getDRViolationInfo(dr_box, dr_source_type, check_type_list, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2929,10 +2931,11 @@ bool DetailedRouter::hasViolation(DRModel& dr_model, DRSourceType dr_source_type
 }
 
 std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDRViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
-                                                                                   const std::vector<DRCRect>& drc_rect_list)
+                                                                                     const std::vector<DRCCheckType>& check_type_list,
+                                                                                     const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), drc_rect_list, {DRCCheckType::kSpacing});
+  drc_violation_map = DC_INST.getViolationInfo(dr_box.getRegionQuery(dr_source_type), check_type_list, drc_rect_list);
   removeInvalidDRViolationInfo(dr_box, drc_violation_map);
   return drc_violation_map;
 }

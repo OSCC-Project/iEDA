@@ -1841,7 +1841,7 @@ void TrackAssigner::countTAPanel(TAModel& ta_model, TAPanel& ta_panel)
   std::map<TASourceType, std::map<irt_int, std::map<std::string, std::vector<ViolationInfo>>>>& source_cut_drc_violation_map
       = ta_panel_stat.get_source_cut_drc_violation_map();
   for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape}) {
-    for (auto& [drc, violation_info_list] : getTAViolationInfo(ta_panel, ta_source_type, drc_rect_list)) {
+    for (auto& [drc, violation_info_list] : getTAViolationInfo(ta_panel, ta_source_type, {DRCCheckType::kSpacing}, drc_rect_list)) {
       for (ViolationInfo& violation_info : violation_info_list) {
         irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
         if (violation_info.get_is_routing()) {
@@ -2362,13 +2362,15 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx)
 
 #if 1  // valid drc
 
-bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const DRCRect& drc_rect)
+bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                 const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list = {drc_rect};
-  return hasViolation(ta_model, ta_source_type, drc_rect_list);
+  return hasViolation(ta_model, ta_source_type, check_type_list, drc_rect_list);
 }
 
-bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                 const std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -2396,7 +2398,7 @@ bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type,
   bool has_violation = false;
   for (const auto& [ta_panel_id, drc_rect_list] : panel_rect_map) {
     TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
-    if (getTAViolationInfo(ta_panel, ta_source_type, drc_rect_list).size() > 0) {
+    if (getTAViolationInfo(ta_panel, ta_source_type, check_type_list, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -2405,10 +2407,11 @@ bool TrackAssigner::hasViolation(TAModel& ta_model, TASourceType ta_source_type,
 }
 
 std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getTAViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
-                                                                                  const std::vector<DRCRect>& drc_rect_list)
+                                                                                    const std::vector<DRCCheckType>& check_type_list,
+                                                                                    const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), drc_rect_list, {DRCCheckType::kSpacing});
+  drc_violation_map = DC_INST.getViolationInfo(ta_panel.getRegionQuery(ta_source_type), check_type_list, drc_rect_list);
   removeInvalidTAViolationInfo(ta_panel, drc_violation_map);
   return drc_violation_map;
 }

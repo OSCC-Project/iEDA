@@ -645,8 +645,8 @@ void PinAccessor::updateViaAccessByDRC(PAModel& pa_model, PANet& pa_net)
         }
       }
 
-      if (!hasViolation(pa_model, PASourceType::kBlockage, drc_rect_list)
-          && !hasViolation(pa_model, PASourceType::kNetShape, drc_rect_list)) {
+      if (!hasViolation(pa_model, PASourceType::kBlockage, {DRCCheckType::kSpacing}, drc_rect_list)
+          && !hasViolation(pa_model, PASourceType::kNetShape, {DRCCheckType::kSpacing}, drc_rect_list)) {
         if (access_layer_idx <= reserved_via_below_layer_idx_list.front()) {
           access_point.get_access_orien_set().insert(Orientation::kUp);
         } else {
@@ -702,7 +702,8 @@ void PinAccessor::updateWireAccessByDRC(PAModel& pa_model, PANet& pa_net)
         }
         wire.set_layer_idx(curr_real.get_layer_idx());
         DRCRect drc_rect(pa_net.get_net_idx(), wire, true);
-        if (!hasViolation(pa_model, PASourceType::kBlockage, drc_rect) && !hasViolation(pa_model, PASourceType::kNetShape, drc_rect)) {
+        if (!hasViolation(pa_model, PASourceType::kBlockage, {DRCCheckType::kSpacing}, drc_rect)
+            && !hasViolation(pa_model, PASourceType::kNetShape, {DRCCheckType::kSpacing}, drc_rect)) {
           access_point.get_access_orien_set().insert(orientation);
         }
       }
@@ -772,7 +773,8 @@ void PinAccessor::updateWeakAccessByDRC(PAModel& pa_model, PANet& pa_net)
         }
         wire.set_layer_idx(curr_real.get_layer_idx());
         DRCRect drc_rect(pa_net.get_net_idx(), wire, true);
-        if (!hasViolation(pa_model, PASourceType::kBlockage, drc_rect) && !hasViolation(pa_model, PASourceType::kNetShape, drc_rect)) {
+        if (!hasViolation(pa_model, PASourceType::kBlockage, {DRCCheckType::kSpacing}, drc_rect)
+            && !hasViolation(pa_model, PASourceType::kNetShape, {DRCCheckType::kSpacing}, drc_rect)) {
           access_point.get_access_orien_set().insert(orientation);
         }
       }
@@ -910,7 +912,7 @@ void PinAccessor::filterGoodByViaConflict(PANet& pa_net, PAModel& pa_model)
         segment_list.emplace_back(LayerCoord(access_point.get_real_coord(), via_below_layer_idx),
                                   LayerCoord(access_point.get_real_coord(), via_below_layer_idx + 1));
         std::vector<DRCRect> drc_rect_list = DC_INST.getDRCRectList(pa_net.get_net_idx(), segment_list);
-        if (!hasViolation(pa_model, PASourceType::kCandidateVia, drc_rect_list)) {
+        if (!hasViolation(pa_model, PASourceType::kCandidateVia, {DRCCheckType::kSpacing}, drc_rect_list)) {
           via_num++;
         } else {
           break;
@@ -1112,7 +1114,7 @@ void PinAccessor::countPAModel(PAModel& pa_model)
       }
 
       for (PASourceType pa_source_type : {PASourceType::kBlockage, PASourceType::kNetShape}) {
-        for (auto& [drc, violation_info_list] : getPAViolationInfo(pa_gcell, pa_source_type, drc_rect_list)) {
+        for (auto& [drc, violation_info_list] : getPAViolationInfo(pa_gcell, pa_source_type, {DRCCheckType::kSpacing}, drc_rect_list)) {
           for (ViolationInfo& violation_info : violation_info_list) {
             irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
             if (violation_info.get_is_routing()) {
@@ -1258,13 +1260,15 @@ void PinAccessor::update(PAModel& pa_model)
 
 #if 1  // valid drc
 
-bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const DRCRect& drc_rect)
+bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCCheckType>& check_type_list,
+                               const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list = {drc_rect};
-  return hasViolation(pa_model, pa_source_type, drc_rect_list);
+  return hasViolation(pa_model, pa_source_type, check_type_list, drc_rect_list);
 }
 
-bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCCheckType>& check_type_list,
+                               const std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -1286,7 +1290,7 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, c
   bool has_violation = false;
   for (const auto& [pa_gcell_id, drc_rect_list] : gcell_rect_map) {
     PAGCell& pa_gcell = pa_gcell_map[pa_gcell_id.get_x()][pa_gcell_id.get_y()];
-    if (getPAViolationInfo(pa_gcell, pa_source_type, drc_rect_list).size() > 0) {
+    if (getPAViolationInfo(pa_gcell, pa_source_type, check_type_list, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -1295,10 +1299,11 @@ bool PinAccessor::hasViolation(PAModel& pa_model, PASourceType pa_source_type, c
 }
 
 std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getPAViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
-                                                                                const std::vector<DRCRect>& drc_rect_list)
+                                                                                  const std::vector<DRCCheckType>& check_type_list,
+                                                                                  const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), drc_rect_list, {DRCCheckType::kSpacing});
+  drc_violation_map = DC_INST.getViolationInfo(pa_gcell.getRegionQuery(pa_source_type), check_type_list, drc_rect_list);
   removeInvalidPAViolationInfo(pa_gcell, drc_violation_map);
   return drc_violation_map;
 }
