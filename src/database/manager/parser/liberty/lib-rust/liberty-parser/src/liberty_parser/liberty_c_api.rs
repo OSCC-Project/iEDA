@@ -4,7 +4,10 @@ use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::os::raw::c_char;
+use std::os::raw::c_double;
 use std::os::raw::c_void;
+
+use super::liberty_data::LibertyAttrValue;
 
 #[repr(C)]
 pub struct RustVec {
@@ -46,7 +49,9 @@ pub struct RustLibertyGroupStmt {
 }
 
 #[no_mangle]
-fn rust_convert_group_stmt(group_stmt: *mut liberty_data::LibertyGroupStmt) -> *mut RustLibertyGroupStmt {
+pub extern "C" fn rust_convert_group_stmt(
+    group_stmt: *mut liberty_data::LibertyGroupStmt,
+) -> *mut RustLibertyGroupStmt {
     unsafe {
         let file_name_str = (*group_stmt).get_attri().get_file_name();
         let file_name = string_to_c_char(file_name_str);
@@ -124,6 +129,45 @@ pub extern "C" fn rust_convert_complex_attribute_stmt(
 
         let lib_complex_attri_stmt_pointer = Box::new(lib_complex_attri_stmt);
         let raw_pointer = Box::into_raw(lib_complex_attri_stmt_pointer);
+        raw_pointer
+    }
+}
+
+#[repr(C)]
+pub struct RustLibertyStringValue {
+    value: *mut c_char,
+}
+
+pub extern "C" fn rust_convert_string_value(
+    string_value: *mut liberty_data::LibertyStringValue,
+) -> *mut RustLibertyStringValue {
+    unsafe {
+        let rust_value = (*string_value).get_string_value();
+        let value = string_to_c_char(rust_value);
+
+        let lib_value = RustLibertyStringValue { value };
+
+        let lib_value_pointer = Box::new(lib_value);
+        let raw_pointer = Box::into_raw(lib_value_pointer);
+        raw_pointer
+    }
+}
+
+#[repr(C)]
+pub struct RustLibertyFloatValue {
+    value: c_double,
+}
+
+pub extern "C" fn rust_convert_float_value(
+    float_value: *mut liberty_data::LibertyFloatValue,
+) -> *mut RustLibertyFloatValue {
+    unsafe {
+        let value = (*float_value).get_float_value();
+
+        let lib_value = RustLibertyFloatValue { value };
+
+        let lib_value_pointer = Box::new(lib_value);
+        let raw_pointer = Box::into_raw(lib_value_pointer);
         raw_pointer
     }
 }
