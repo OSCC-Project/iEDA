@@ -1,13 +1,12 @@
+pub mod liberty_c_api;
 pub mod liberty_data;
 
+use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
 
-use pest::iterators::Pair;
-
 use std::collections::VecDeque;
 
-use std::ffi::CString;
 use std::os::raw::c_char;
 
 #[derive(Parser)]
@@ -201,25 +200,6 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
         }
     }
 }
-
-#[repr(C)]
-pub struct Point {
-    x: f64,
-    y: f64,
-}
-
-// #[no_mangle]
-// pub extern "C" fn rust_parse_lib(lib_file_path: *const c_char) -> liberty_data::LibertyParserData {
-//     unsafe {
-//         let c_str = unsafe { CString::from_raw(lib_file_path as *mut c_char) };
-//         let r_str = c_str.to_str().unwrap();
-
-//         println!("lib file path {}", r_str);
-
-//         let lib_file = parse_lib_file(&r_str);
-//         lib_file.unwrap()
-//     }
-// }
 
 #[no_mangle]
 pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut liberty_data::LibertyParserData {

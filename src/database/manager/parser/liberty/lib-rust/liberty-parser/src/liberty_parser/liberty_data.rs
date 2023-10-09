@@ -219,5 +219,4 @@ pub enum LibertyParserData {
     SimpleStmt(LibertySimpleAttrStmt),
     String(LibertyStringValue),
     Float(LibertyFloatValue),
-    Null,
 }
