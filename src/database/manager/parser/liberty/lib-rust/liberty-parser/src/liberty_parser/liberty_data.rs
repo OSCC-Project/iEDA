@@ -85,6 +85,14 @@ impl LibertyAttrStmt {
     fn new(file_name: &str, line_no: u32) -> LibertyAttrStmt {
         LibertyAttrStmt { file_name: file_name.to_string(), line_no: line_no }
     }
+
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
+    }
+
+    pub fn get_line_no(&self) -> u32 {
+        self.line_no
+    }
 }
 
 /// The simple attribute statement.
@@ -109,6 +117,18 @@ impl LibertySimpleAttrStmt {
             attri_name: attri_name.to_string(),
             attri_value: attri_value,
         }
+    }
+
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_name
+    }
+
+    pub fn get_attri_value(&self) -> &Box<dyn LibertyAttrValue> {
+        &self.attri_value
     }
 }
 
@@ -143,6 +163,18 @@ impl LibertyComplexAttrStmt {
             attri_name: attri_name.to_string(),
             attri_values: attri_values,
         }
+    }
+
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_name
+    }
+
+    pub fn get_attri_values(&self) -> &Vec<Box<dyn LibertyAttrValue>> {
+        &self.attri_values
     }
 }
 
@@ -201,8 +233,20 @@ impl LibertyGroupStmt {
         &self.group_name
     }
 
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
     pub fn get_attri_name(&self) -> &str {
         &self.attri_values.first().unwrap().get_string_value()
+    }
+
+    pub fn get_attri_values(&self) -> &Vec<Box<dyn LibertyAttrValue>> {
+        &self.attri_values
+    }
+
+    pub fn get_stmts(&self) -> &Vec<Box<dyn LibertyStmt>> {
+        &self.stmts
     }
 }
 

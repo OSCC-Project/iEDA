@@ -216,7 +216,6 @@ pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut liberty_data::Liberty
 
 #[cfg(test)]
 mod tests {
-
     use pest::error;
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
