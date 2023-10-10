@@ -5,6 +5,7 @@ add_subdirectory(tool_api/ifp_io)
 add_subdirectory(tool_api/ieval_io)
 add_subdirectory(tool_api/ipdn_io)
 add_subdirectory(tool_api/ista_io)
+add_subdirectory(tool_api/ipw_io)
 add_subdirectory(tool_api/icts_io)
 add_subdirectory(tool_api/idrc_io)
 add_subdirectory(tool_api/ipl_io)
@@ -29,6 +30,7 @@ target_link_libraries(tool_manager
         tool_api_ipl
         tool_api_irt
         tool_api_ista
+        tool_api_ipw
         tool_api_ito
         tool_api_ino
 
