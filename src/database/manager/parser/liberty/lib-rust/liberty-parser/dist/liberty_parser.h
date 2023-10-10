@@ -73,7 +73,6 @@ typedef enum LibertyParserData_Tag {
     SimpleStmt,
     String,
     Float,
-    Null,
 } LibertyParserData_Tag;
 
 typedef struct LibertyParserData {
@@ -97,4 +96,42 @@ typedef struct LibertyParserData {
     };
 } LibertyParserData;
 
+typedef struct RustVec {
+    void *data;
+    uintptr_t len;
+    uintptr_t cap;
+} RustVec;
+
+typedef struct RustLibertyGroupStmt {
+    char *file_name;
+    uint32_t line_no;
+    char *group_name;
+    struct RustVec attri_values;
+    struct RustVec stmts;
+} RustLibertyGroupStmt;
+
+typedef struct RustLibertySimpleAttrStmt {
+    char *file_name;
+    uint32_t line_no;
+    char *attri_name;
+    const void *attri_value;
+} RustLibertySimpleAttrStmt;
+
+typedef struct RustLibertyComplexAttrStmt {
+    char *file_name;
+    uint32_t line_no;
+    char *attri_name;
+    struct RustVec attri_values;
+} RustLibertyComplexAttrStmt;
+
 struct LibertyParserData *rust_parse_lib(const char *s);
+
+uintptr_t rust_vec_len(const struct RustVec *vec);
+
+void free_c_char(char *s);
+
+struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *group_stmt);
+
+struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(struct LibertySimpleAttrStmt *simple_attri_stmt);
+
+struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(struct LibertyComplexAttrStmt *complex_attri_stmt);
