@@ -3,15 +3,15 @@ decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
 dec_int         = _{ decimal_integer }
 optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits* }
 optional_frac   = _{ "." ~ decimal_digits* }
-float           =  { dec_int ~ optional_frac? ~ optional_exp? }
+float           = @{ dec_int ~ optional_frac? ~ optional_exp? }
 
-bus_index  = _{ "[" ~ decimal_digits+ ~ "]" }
-bus_slice  = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
+bus_index  = !{ "[" ~ decimal_digits+ ~ "]" }
+bus_slice  = !{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
 pin_id     =  { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
-bus_id     =  { pin_id ~ (bus_index | bus_slice) }
-bus_bus_id =  { pin_id ~ bus_index ~ (bus_index | bus_slice) }
+bus_id     = @{ pin_id ~ (bus_index | bus_slice) }
+bus_bus_id = @{ pin_id ~ bus_index ~ (bus_index | bus_slice) }
 
-lib_id = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
+lib_id = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
 
 // punctuation = _{ "," | ":" | "=" | "+" | "*" | "&" | "|" | "!" }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
@@ -19,29 +19,30 @@ WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-COMMENT = { line_comment | multiline_comment }
+COMMENT = _{ line_comment | multiline_comment }
 
-oneline_string = { "\"" ~ (!"\"" ~ ANY)* ~ ("\"") }
+oneline_string = _{ "\"" ~ (!"\"" ~ ANY)* ~ ("\"") }
 
-multiline_string = { oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
+multiline_string = !{ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
 
 semicolon_opt = _{ ";" }
 
 // expr_operator = _{ "+" | "-" | "*" | "/"}
 
-string = _{ lib_id | multiline_string | pin_id | bus_id | bus_bus_id }
+id = @{ lib_id | pin_id | bus_id | bus_bus_id }
 
-attribute_value  =  { float | string }
+string = _{ id | multiline_string }
+
+attribute_value  = _{ float | string }
 attribute_values = _{ attribute_value ~ (("," | WHITESPACE) ~ attribute_value)* }
 
-simple_attribute_value = _{ attribute_value }
-simple_attribute       =  { lib_id ~ ":" ~ simple_attribute_value ~ semicolon_opt }
+simple_attribute = { id ~ ":" ~ attribute_value ~ semicolon_opt }
 
-complex_attribute = { lib_id ~ "(" ~ ")" ~ semicolon_opt | lib_id ~ "(" ~ attribute_values ~ ")" ~ semicolon_opt }
+complex_attribute = { id ~ "(" ~ ")" ~ semicolon_opt | id ~ "(" ~ attribute_values ~ ")" ~ semicolon_opt }
 
-group = { lib_id ~ "(" ~ ")" ~ "{" ~ statements ~ "}" | lib_id ~ "(" ~ attribute_values ~ ")" ~ "{" ~ statements ~ "}" }
+group = { id ~ "(" ~ ")" ~ "{" ~ statements ~ "}" | id ~ "(" ~ attribute_values ~ ")" ~ "{" ~ statements ~ "}" }
 
-statement  = { simple_attribute | complex_attribute | group }
-statements = { statement+ }
+statement  = _{ simple_attribute | complex_attribute | group }
+statements = _{ statement+ }
 
 lib_file = _{ SOI ~ group ~ EOI }

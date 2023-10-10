@@ -1,18 +1,23 @@
-mod liberty_data;
+pub mod liberty_c_api;
+pub mod liberty_data;
 
+use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
 
-use pest::iterators::Pair;
+use std::collections::VecDeque;
+
+use std::os::raw::c_char;
 
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
 
-fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
+/// process float data.
+fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
-    match pair.into_inner().as_str().parse::<f64>() {
-        Ok(value) => Ok(value),
+    match pair.as_str().parse::<f64>() {
+        Ok(value) => Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
             pair_clone.as_span(),
@@ -20,71 +25,197 @@ fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
     }
 }
 
-fn process_pair(pair: Pair<Rule>) -> Result<(), pest::error::Error<Rule>> {
-    match pair.as_rule() {
-        Rule::float => todo!(),
-        Rule::EOI => todo!(),
-        Rule::decimal_digits => todo!(),
-        Rule::decimal_integer => todo!(),
-        Rule::dec_int => todo!(),
-        Rule::optional_exp => todo!(),
-        Rule::optional_frac => todo!(),
-        Rule::bus_index => todo!(),
-        Rule::bus_slice => todo!(),
-        Rule::pin_id => todo!(),
-        Rule::bus_id => todo!(),
-        Rule::bus_bus_id => todo!(),
-        Rule::lib_id => todo!(),
-        Rule::WHITESPACE => todo!(),
-        Rule::line_comment => todo!(),
-        Rule::multiline_comment => todo!(),
-        Rule::oneline_string => todo!(),
-        Rule::multiline_string => todo!(),
-        Rule::semicolon_opt => todo!(),
-        Rule::string => todo!(),
-        Rule::attribute_value => todo!(),
-        Rule::attribute_values => todo!(),
-        Rule::simple_attribute_value => todo!(),
-        Rule::simple_attribute => todo!(),
-        Rule::complex_attribute => todo!(),
-        Rule::group => todo!(),
-        Rule::statement => todo!(),
-        Rule::statements => todo!(),
-        Rule::lib_file => todo!(),
-        Rule::COMMENT => todo!(),
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+/// process string data.
+fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
+
+    match pair.as_str().parse::<String>() {
+        Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue {
+            value: value.trim_matches('"').to_string(),
+        })),
+        Err(_) => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
+            pair_clone.as_span(),
         )),
     }
 }
 
-pub fn parse_lib_file(lib_file_path: &str) -> Result<(), pest::error::Error<Rule>> {
+/// process simple attribute
+fn process_simple_attribute(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let file_name = "tbd";
+    let line_no = 0;
+    if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
+        let lib_id = &liberty_string_value.value;
+        let attribute_value = parser_queue.pop_front().unwrap();
+        match attribute_value {
+            liberty_data::LibertyParserData::String(s) => {
+                let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
+                    file_name,
+                    line_no,
+                    lib_id,
+                    Box::new(s) as Box<dyn liberty_data::LibertyAttrValue>,
+                );
+                Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
+            }
+            liberty_data::LibertyParserData::Float(f) => {
+                let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
+                    file_name,
+                    line_no,
+                    lib_id,
+                    Box::new(f) as Box<dyn liberty_data::LibertyAttrValue>,
+                );
+                Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
+            }
+            _ => Err(pest::error::Error::new_from_span(
+                pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+                pair.as_span(),
+            )),
+        }
+    } else {
+        Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair.as_span(),
+        ))
+    }
+}
+
+/// process complex attribute
+fn process_complex_attribute(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let file_name = "tbd";
+    let line_no = 0;
+    let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
+    if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
+        let lib_id = &liberty_string_value.value;
+        for _ in 0..parser_queue.len() {
+            let attribute_value = parser_queue.pop_front().unwrap();
+            match attribute_value {
+                liberty_data::LibertyParserData::String(s) => attri_values.push(Box::new(s)),
+                liberty_data::LibertyParserData::Float(f) => attri_values.push(Box::new(f)),
+                _ => todo!(),
+            }
+        }
+        let complex_stmt = liberty_data::LibertyComplexAttrStmt::new(file_name, line_no, lib_id, attri_values);
+        Ok(liberty_data::LibertyParserData::ComplexStmt(complex_stmt))
+    } else {
+        Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair.as_span(),
+        ))
+    }
+}
+
+fn process_group_attribute(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let file_name = "tbd";
+    let line_no = 0;
+    let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
+    let mut stmts: Vec<Box<dyn liberty_data::LibertyStmt>> = Vec::new();
+    if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
+        let lib_id = &liberty_string_value.value;
+        for _ in 0..parser_queue.len() {
+            let attribute_value_or_stmt = parser_queue.pop_front().unwrap();
+            match attribute_value_or_stmt {
+                liberty_data::LibertyParserData::String(s) => attri_values.push(Box::new(s)),
+                liberty_data::LibertyParserData::Float(f) => attri_values.push(Box::new(f)),
+                liberty_data::LibertyParserData::SimpleStmt(simple_stmt) => stmts.push(Box::new(simple_stmt)),
+                liberty_data::LibertyParserData::ComplexStmt(complex_stmt) => stmts.push(Box::new(complex_stmt)),
+                liberty_data::LibertyParserData::GroupStmt(group_stmt) => stmts.push(Box::new(group_stmt)),
+                _ => todo!(),
+            }
+        }
+        let group_stmt = liberty_data::LibertyGroupStmt::new(file_name, line_no, lib_id, attri_values, stmts);
+        Ok(liberty_data::LibertyParserData::GroupStmt(group_stmt))
+    } else {
+        Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair.as_span(),
+        ))
+    }
+}
+
+/// process pest pair data.
+fn process_pair(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    let current_queue_len = parser_queue.len();
+    for inner_pair in pair.into_inner() {
+        let pair_result = process_pair(inner_pair, parser_queue);
+        parser_queue.push_back(pair_result.unwrap());
+    }
+
+    println!("Rule:    {:?}", pair_clone.as_rule());
+    println!("Span:    {:?}", pair_clone.as_span());
+    println!("Text:    {}", pair_clone.as_str());
+
+    let mut substitute_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
+    while parser_queue.len() > current_queue_len {
+        substitute_queue.push_front(parser_queue.pop_back().unwrap());
+    }
+
+    match pair_clone.as_rule() {
+        Rule::float => process_float(pair_clone),
+        Rule::multiline_string => process_string(pair_clone),
+        Rule::id => process_string(pair_clone),
+        Rule::simple_attribute => process_simple_attribute(pair_clone, &mut substitute_queue),
+        Rule::complex_attribute => process_complex_attribute(pair_clone, &mut substitute_queue),
+        Rule::group => process_group_attribute(pair_clone, &mut substitute_queue),
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     // Generate liberty.pest parser
     let input_str =
         std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
     let parse_result = LibertyParser::parse(Rule::lib_file, input_str.as_str());
+    let mut parser_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
 
     match parse_result {
         Ok(pairs) => {
-            for pair in pairs {
-                println!("{:?}", pair);
-                // Process each pair
-                process_pair(pair)?;
-            }
+            let lib_data = process_pair(pairs.into_iter().next().unwrap(), &mut parser_queue);
+            assert_eq!(parser_queue.len(), 0);
+            lib_data
         }
         Err(err) => {
             // Handle parsing error
             println!("Error: {}", err);
+            Err(err.clone())
         }
     }
-    // Continue with the rest of the code
-    Ok(())
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut liberty_data::LibertyParserData {
+    let c_str = unsafe { std::ffi::CStr::from_ptr(s) };
+    let r_str = c_str.to_string_lossy().into_owned();
+    println!("r str {}", r_str);
+
+    let lib_file = parse_lib_file(&r_str);
+    let lib_file_pointer = Box::new(lib_file.unwrap());
+
+    let raw_pointer = Box::into_raw(lib_file_pointer);
+    raw_pointer
 }
 
 #[cfg(test)]
 mod tests {
-
     use pest::error;
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
@@ -148,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_parse_bus_id() {
-        let input_str = "A[1]";
+        let input_str = "A[ 1 ]";
         let parse_result = LibertyParser::parse(Rule::bus_id, input_str);
 
         print_parse_result(parse_result);
@@ -180,9 +311,15 @@ mod tests {
 
     #[test]
     fn test_parse_multiline_string() {
-        let input_str = r#""test""#;
+        let input_str = r#""test",\
+        "test""#;
         let parse_result = LibertyParser::parse(Rule::multiline_string, input_str);
 
+        // let tokens = parse_result.unwrap().tokens();
+
+        // for token in tokens {
+        //     println!("token {:?}", token);
+        // }
         print_parse_result(parse_result);
     }
 

@@ -6,7 +6,7 @@
 //!     group statement.
 //!
 
-trait LibertyAttrValue {
+pub trait LibertyAttrValue {
     fn is_string(&self) -> u32 {
         0
     }
@@ -25,8 +25,9 @@ trait LibertyAttrValue {
 /// liberty float value.
 /// # Examples
 /// 1.7460
-struct LibertyFloatValue {
-    value: f64,
+#[repr(C)]
+pub struct LibertyFloatValue {
+    pub(crate) value: f64,
 }
 
 impl LibertyAttrValue for LibertyFloatValue {
@@ -42,8 +43,9 @@ impl LibertyAttrValue for LibertyFloatValue {
 /// liberty string value.
 /// # Examples
 /// "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
-struct LibertyStringValue {
-    value: String,
+#[repr(C)]
+pub struct LibertyStringValue {
+    pub(crate) value: String,
 }
 
 impl LibertyAttrValue for LibertyStringValue {
@@ -57,7 +59,7 @@ impl LibertyAttrValue for LibertyStringValue {
 }
 
 /// liberty stmt.
-trait LibertyStmt {
+pub trait LibertyStmt {
     fn is_simple_attr_stmt(&self) -> u32 {
         0
     }
@@ -73,7 +75,8 @@ trait LibertyStmt {
 }
 
 /// liberty attribute stmt.
-struct LibertyAttrStmt {
+#[repr(C)]
+pub struct LibertyAttrStmt {
     file_name: String,
     line_no: u32,
 }
@@ -82,19 +85,28 @@ impl LibertyAttrStmt {
     fn new(file_name: &str, line_no: u32) -> LibertyAttrStmt {
         LibertyAttrStmt { file_name: file_name.to_string(), line_no: line_no }
     }
+
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
+    }
+
+    pub fn get_line_no(&self) -> u32 {
+        self.line_no
+    }
 }
 
 /// The simple attribute statement.
 /// # Example
 /// capacitance : 1.774000e-01;
-struct LibertySimpleAttrStmt {
+#[repr(C)]
+pub struct LibertySimpleAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
     attri_value: Box<dyn LibertyAttrValue>,
 }
 
 impl LibertySimpleAttrStmt {
-    fn new(
+    pub fn new(
         file_name: &str,
         line_no: u32,
         attri_name: &str,
@@ -106,19 +118,41 @@ impl LibertySimpleAttrStmt {
             attri_value: attri_value,
         }
     }
+
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_name
+    }
+
+    pub fn get_attri_value(&self) -> &Box<dyn LibertyAttrValue> {
+        &self.attri_value
+    }
+}
+
+impl LibertyStmt for LibertySimpleAttrStmt {
+    fn is_simple_attr_stmt(&self) -> u32 {
+        1
+    }
+    fn is_attr_stmt(&self) -> u32 {
+        1
+    }
 }
 
 /// The complex attribute statement.
 /// # Example
 /// index_1 ("0.0010,0.0020,0.0030");
-struct LibertyComplexAttrStmt {
+#[repr(C)]
+pub struct LibertyComplexAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
     attri_values: Vec<Box<dyn LibertyAttrValue>>,
 }
 
 impl LibertyComplexAttrStmt {
-    fn new(
+    pub fn new(
         file_name: &str,
         line_no: u32,
         attri_name: &str,
@@ -129,6 +163,27 @@ impl LibertyComplexAttrStmt {
             attri_name: attri_name.to_string(),
             attri_values: attri_values,
         }
+    }
+
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_name
+    }
+
+    pub fn get_attri_values(&self) -> &Vec<Box<dyn LibertyAttrValue>> {
+        &self.attri_values
+    }
+}
+
+impl LibertyStmt for LibertyComplexAttrStmt {
+    fn is_complex_attr_stmt(&self) -> u32 {
+        1
+    }
+    fn is_attr_stmt(&self) -> u32 {
+        1
     }
 }
 
@@ -150,26 +205,62 @@ impl LibertyComplexAttrStmt {
 /// fanout_length( 9, 25.4842 );
 /// fanout_length( 11, 27.0320 );
 /// }
-struct LibertyGroupStmt {
+#[repr(C)]
+pub struct LibertyGroupStmt {
     attri: LibertyAttrStmt,
     group_name: String,
     attri_values: Vec<Box<dyn LibertyAttrValue>>,
-    stmts: Vec<Box<LibertyAttrStmt>>,
+    stmts: Vec<Box<dyn LibertyStmt>>,
 }
 
 impl LibertyGroupStmt {
-    fn new(
+    pub fn new(
         file_name: &str,
         line_no: u32,
         group_name: &str,
         attri_values: Vec<Box<dyn LibertyAttrValue>>,
-        stmts: Vec<Box<LibertyAttrStmt>>,
+        stmts: Vec<Box<dyn LibertyStmt>>,
     ) -> LibertyGroupStmt {
         LibertyGroupStmt {
             attri: LibertyAttrStmt::new(file_name, line_no),
             group_name: group_name.to_string(),
-            attri_values: attri_values,
-            stmts: stmts,
+            attri_values,
+            stmts,
         }
     }
+
+    pub fn get_group_name(&self) -> &str {
+        &self.group_name
+    }
+
+    pub fn get_attri(&self) -> &LibertyAttrStmt {
+        &self.attri
+    }
+
+    pub fn get_attri_name(&self) -> &str {
+        &self.attri_values.first().unwrap().get_string_value()
+    }
+
+    pub fn get_attri_values(&self) -> &Vec<Box<dyn LibertyAttrValue>> {
+        &self.attri_values
+    }
+
+    pub fn get_stmts(&self) -> &Vec<Box<dyn LibertyStmt>> {
+        &self.stmts
+    }
+}
+
+impl LibertyStmt for LibertyGroupStmt {
+    fn is_attr_stmt(&self) -> u32 {
+        1
+    }
+}
+
+#[repr(C)]
+pub enum LibertyParserData {
+    GroupStmt(LibertyGroupStmt),
+    ComplexStmt(LibertyComplexAttrStmt),
+    SimpleStmt(LibertySimpleAttrStmt),
+    String(LibertyStringValue),
+    Float(LibertyFloatValue),
 }
