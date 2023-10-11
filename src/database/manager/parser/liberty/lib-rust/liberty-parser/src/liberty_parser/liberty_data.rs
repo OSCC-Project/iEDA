@@ -7,11 +7,11 @@
 //!
 
 pub trait LibertyAttrValue {
-    fn is_string(&self) -> u32 {
-        0
+    fn is_string(&self) -> bool {
+        false
     }
-    fn is_float(&self) -> u32 {
-        0
+    fn is_float(&self) -> bool {
+        false
     }
 
     fn get_float_value(&self) -> f64 {
@@ -31,8 +31,8 @@ pub struct LibertyFloatValue {
 }
 
 impl LibertyAttrValue for LibertyFloatValue {
-    fn is_float(&self) -> u32 {
-        1
+    fn is_float(&self) -> bool {
+        true
     }
 
     fn get_float_value(&self) -> f64 {
@@ -49,8 +49,8 @@ pub struct LibertyStringValue {
 }
 
 impl LibertyAttrValue for LibertyStringValue {
-    fn is_string(&self) -> u32 {
-        1
+    fn is_string(&self) -> bool {
+        true
     }
 
     fn get_string_value(&self) -> &str {

@@ -7,6 +7,7 @@ use pest_derive::Parser;
 
 use std::collections::VecDeque;
 
+use std::ffi::c_void;
 use std::os::raw::c_char;
 
 #[derive(Parser)]
@@ -157,9 +158,9 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
-    println!("Rule:    {:?}", pair_clone.as_rule());
-    println!("Span:    {:?}", pair_clone.as_span());
-    println!("Text:    {}", pair_clone.as_str());
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
 
     let mut substitute_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
     while parser_queue.len() > current_queue_len {
@@ -202,16 +203,20 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
 }
 
 #[no_mangle]
-pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut liberty_data::LibertyParserData {
+pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut c_void {
     let c_str = unsafe { std::ffi::CStr::from_ptr(s) };
     let r_str = c_str.to_string_lossy().into_owned();
     println!("r str {}", r_str);
 
     let lib_file = parse_lib_file(&r_str);
-    let lib_file_pointer = Box::new(lib_file.unwrap());
+    if let liberty_data::LibertyParserData::GroupStmt(lib_file_group) = lib_file.unwrap() {
+        let lib_file_pointer = Box::new(lib_file_group);
 
-    let raw_pointer = Box::into_raw(lib_file_pointer);
-    raw_pointer
+        let raw_pointer = Box::into_raw(lib_file_pointer);
+        raw_pointer as *mut c_void
+    } else {
+        panic!("error type");
+    }
 }
 
 #[cfg(test)]

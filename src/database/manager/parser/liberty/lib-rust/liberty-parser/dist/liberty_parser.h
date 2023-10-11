@@ -47,60 +47,19 @@ typedef struct LibertyGroupStmt LibertyGroupStmt;
  */
 typedef struct LibertySimpleAttrStmt LibertySimpleAttrStmt;
 
-typedef struct String String;
-
-/**
- * liberty string value.
- * # Examples
- * "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
- */
-typedef struct LibertyStringValue {
-    struct String value;
-} LibertyStringValue;
-
-/**
- * liberty float value.
- * # Examples
- * 1.7460
- */
-typedef struct LibertyFloatValue {
-    double value;
-} LibertyFloatValue;
-
-typedef enum LibertyParserData_Tag {
-    GroupStmt,
-    ComplexStmt,
-    SimpleStmt,
-    String,
-    Float,
-} LibertyParserData_Tag;
-
-typedef struct LibertyParserData {
-    LibertyParserData_Tag tag;
-    union {
-        struct {
-            struct LibertyGroupStmt group_stmt;
-        };
-        struct {
-            struct LibertyComplexAttrStmt complex_stmt;
-        };
-        struct {
-            struct LibertySimpleAttrStmt simple_stmt;
-        };
-        struct {
-            struct LibertyStringValue string;
-        };
-        struct {
-            struct LibertyFloatValue float_;
-        };
-    };
-} LibertyParserData;
-
 typedef struct RustVec {
     void *data;
     uintptr_t len;
     uintptr_t cap;
 } RustVec;
+
+typedef struct RustLibertyStringValue {
+    char *value;
+} RustLibertyStringValue;
+
+typedef struct RustLibertyFloatValue {
+    double value;
+} RustLibertyFloatValue;
 
 typedef struct RustLibertyGroupStmt {
     char *file_name;
@@ -124,11 +83,19 @@ typedef struct RustLibertyComplexAttrStmt {
     struct RustVec attri_values;
 } RustLibertyComplexAttrStmt;
 
-struct LibertyParserData *rust_parse_lib(const char *s);
+void *rust_parse_lib(const char *s);
 
 uintptr_t rust_vec_len(const struct RustVec *vec);
 
 void free_c_char(char *s);
+
+struct RustLibertyStringValue *rust_convert_string_value(void *string_value);
+
+struct RustLibertyFloatValue *rust_convert_float_value(void *float_value);
+
+bool rust_is_float_value(void *c_attribute_value);
+
+bool rust_is_string_value(void *c_attribute_value);
 
 struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *group_stmt);
 

@@ -3,9 +3,7 @@ use crate::liberty_parser::liberty_data;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use std::os::raw::c_char;
-use std::os::raw::c_double;
-use std::os::raw::c_void;
+use std::os::raw::*;
 
 use super::liberty_data::LibertyAttrValue;
 
@@ -37,6 +35,60 @@ pub extern "C" fn free_c_char(s: *mut c_char) {
     unsafe {
         let _ = CString::from_raw(s);
     }
+}
+
+#[repr(C)]
+pub struct RustLibertyStringValue {
+    value: *mut c_char,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_string_value(string_value: *mut c_void) -> *mut RustLibertyStringValue {
+    let mut attribute_value = unsafe { &mut *(string_value as *mut Box<dyn liberty_data::LibertyAttrValue>) };
+    unsafe {
+        let rust_value = (*attribute_value).get_string_value();
+        let value = string_to_c_char(rust_value);
+
+        let lib_value = RustLibertyStringValue { value };
+
+        let lib_value_pointer = Box::new(lib_value);
+        let raw_pointer = Box::into_raw(lib_value_pointer);
+        raw_pointer
+    }
+}
+
+#[repr(C)]
+pub struct RustLibertyFloatValue {
+    value: c_double,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_float_value(float_value: *mut c_void) -> *mut RustLibertyFloatValue {
+    unsafe {
+        let mut attribute_value = unsafe { &mut *(float_value as *mut Box<dyn liberty_data::LibertyAttrValue>) };
+        let value = attribute_value.get_float_value();
+
+        let lib_value = RustLibertyFloatValue { value };
+
+        let lib_value_pointer = Box::new(lib_value);
+        let raw_pointer = Box::into_raw(lib_value_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_float_value(c_attribute_value: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyAttrValue
+    let mut attribute_value = unsafe { &mut *(c_attribute_value as *mut Box<dyn liberty_data::LibertyAttrValue>) };
+
+    unsafe { (*attribute_value).is_float() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_string_value(c_attribute_value: *mut c_void) -> bool {
+    let mut attribute_value = unsafe { &mut *(c_attribute_value as *mut Box<dyn liberty_data::LibertyAttrValue>) };
+
+    unsafe { (*attribute_value).is_string() }
 }
 
 #[repr(C)]
@@ -129,45 +181,6 @@ pub extern "C" fn rust_convert_complex_attribute_stmt(
 
         let lib_complex_attri_stmt_pointer = Box::new(lib_complex_attri_stmt);
         let raw_pointer = Box::into_raw(lib_complex_attri_stmt_pointer);
-        raw_pointer
-    }
-}
-
-#[repr(C)]
-pub struct RustLibertyStringValue {
-    value: *mut c_char,
-}
-
-pub extern "C" fn rust_convert_string_value(
-    string_value: *mut liberty_data::LibertyStringValue,
-) -> *mut RustLibertyStringValue {
-    unsafe {
-        let rust_value = (*string_value).get_string_value();
-        let value = string_to_c_char(rust_value);
-
-        let lib_value = RustLibertyStringValue { value };
-
-        let lib_value_pointer = Box::new(lib_value);
-        let raw_pointer = Box::into_raw(lib_value_pointer);
-        raw_pointer
-    }
-}
-
-#[repr(C)]
-pub struct RustLibertyFloatValue {
-    value: c_double,
-}
-
-pub extern "C" fn rust_convert_float_value(
-    float_value: *mut liberty_data::LibertyFloatValue,
-) -> *mut RustLibertyFloatValue {
-    unsafe {
-        let value = (*float_value).get_float_value();
-
-        let lib_value = RustLibertyFloatValue { value };
-
-        let lib_value_pointer = Box::new(lib_value);
-        let raw_pointer = Box::into_raw(lib_value_pointer);
         raw_pointer
     }
 }
