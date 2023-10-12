@@ -21,6 +21,7 @@
 #include "BalanceClustering.hh"
 
 #include <algorithm>
+#include <filesystem>
 #include <limits>
 #include <random>
 #include <ranges>
@@ -249,132 +250,19 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
  * @param max_fanout
  * @param max_cap
  * @param max_net_length
- * @param iter
- * @param p
- * @param q
+ * @param max_iter
+ * @param cooling_rate
+ * @param temperature
  * @return std::vector<std::vector<Inst*>>
  */
 std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters,
                                                                          const int& max_fanout, const double& max_cap,
-                                                                         const double& max_net_length, const size_t& iter, const double& p,
-                                                                         const double& q, const double& r)
+                                                                         const double& max_net_length, const size_t& max_iter,
+                                                                         const double& cooling_rate, const double& temperature)
 {
-  auto enhanced_clusters = clusters;
-  auto back_up = enhanced_clusters;
-  for (size_t i = 0; i < iter; ++i) {
-    // // opt min delay cluster
-    auto min_delay_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMinDelay, p, q, r);
-    // check result
-    auto new_min_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    auto new_min_delay = estimateNetDelay(new_min_cluster, max_net_length, max_fanout);
-    auto old_min_delay = estimateNetDelay(min_delay_cluster, max_net_length, max_fanout);
-    if (new_min_delay < old_min_delay) {
-      enhanced_clusters = back_up;
-    }
-    // opt max delay cluster
-    auto max_delay_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMaxDelay, p, q, r);
-    // check result
-    auto new_max_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    auto new_max_delay = estimateNetDelay(new_max_cluster, max_net_length, max_fanout);
-    auto old_max_delay = estimateNetDelay(max_delay_cluster, max_net_length, max_fanout);
-    if (new_max_delay > old_max_delay) {
-      enhanced_clusters = back_up;
-    }
-    // screen violation cluster
-    auto worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
-    if (worst_cluster.empty()) {
-      if (isSame(enhanced_clusters, back_up)) {
-        break;
-      }
-      back_up = enhanced_clusters;
-      continue;
-    }
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWorstViolation, p, q, r);
-    auto new_worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
-    if (!new_worst_cluster.empty()) {
-      auto new_skew = estimateSkew(new_worst_cluster);
-      auto old_skew = estimateSkew(worst_cluster);
-      if (new_skew > old_skew) {
-        enhanced_clusters = back_up;
-      }
-    }
-    // check no change
-    if (isSame(enhanced_clusters, back_up)) {
-      break;
-    }
-    back_up = enhanced_clusters;
-  }
-  return enhanced_clusters;
-}
-/**
- * @brief AnnealOpt enhancement
- *
- * @param enhanced_clusters
- * @param center_cluster
- * @param max_fanout
- * @param max_cap
- * @param max_net_length
- * @param enhance_type
- * @param p
- * @param q
- * @return std::vector<std::vector<Inst*>>
- */
-std::vector<std::vector<Inst*>> BalanceClustering::annealEnhancement(std::vector<std::vector<Inst*>>& enhanced_clusters,
-                                                                     const std::vector<Inst*>& center_cluster, const int& max_fanout,
-                                                                     const double& max_cap, const double& max_net_length,
-                                                                     const EnhanceType& enhance_type, const double& p, const double& q,
-                                                                     const double& r)
-{
-  // remove center cluster
-  enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                         [&center_cluster](const std::vector<Inst*>& cluster) { return cluster == center_cluster; }),
-                          enhanced_clusters.end());
-  // find the closest clusters
-  std::vector<std::vector<Inst*>> neighbors = {};
-
-  neighbors = getMostRecentClusters(enhanced_clusters, center_cluster);
-
-  // remove neighbors
-  enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                         [&neighbors](const std::vector<Inst*>& cluster) {
-                                           return std::find(neighbors.begin(), neighbors.end(), cluster) != neighbors.end();
-                                         }),
-                          enhanced_clusters.end());
-  // enhanced center and neighbors
-  auto to_be_enhanced_clusters = neighbors;
-  to_be_enhanced_clusters.push_back(center_cluster);
-  // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
-  auto anneal_solver = AnnealOpt(to_be_enhanced_clusters);
-  size_t net_num = to_be_enhanced_clusters.size();
-  anneal_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
-  auto opt_clusters = anneal_solver.run();
-  while (opt_clusters.empty()) {
-    std::ranges::copy(neighbors, std::back_inserter(enhanced_clusters));
-    neighbors = getMostRecentClusters(enhanced_clusters, center_cluster, 36, 2);
-    enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                           [&neighbors](const std::vector<Inst*>& cluster) {
-                                             return std::find(neighbors.begin(), neighbors.end(), cluster) != neighbors.end();
-                                           }),
-                            enhanced_clusters.end());
-    to_be_enhanced_clusters = neighbors;
-    to_be_enhanced_clusters.push_back(center_cluster);
-    // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
-    auto temp_solver = AnnealOpt(to_be_enhanced_clusters);
-    temp_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
-    opt_clusters = temp_solver.run();
-    net_num += 1;
-  }
-  opt_clusters.erase(
-      std::remove_if(opt_clusters.begin(), opt_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
-      opt_clusters.end());
-  // writeClusterPy(opt_clusters, "anneal_after");
-  std::ranges::for_each(opt_clusters, [&enhanced_clusters](const std::vector<Inst*>& cluster) { enhanced_clusters.push_back(cluster); });
-  return enhanced_clusters;
+  VioAnnealOpt solver(clusters);
+  solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_length);
+  return solver.run();
 }
 /**
  * @brief get the min delay cluster
@@ -881,7 +769,7 @@ ViolationScore BalanceClustering::calcScore(const std::vector<Inst*>& cluster, c
  */
 double BalanceClustering::crossProduct(const Point& p1, const Point& p2, const Point& p3)
 {
-  return (p2.x() - p1.x()) * (p3.y() - p1.y()) - (p3.x() - p1.x()) * (p2.y() - p1.y());
+  return 1.0 * (p2.x() - p1.x()) * (p3.y() - p1.y()) - 1.0 * (p3.x() - p1.x()) * (p2.y() - p1.y());
 }
 /**
  * @brief calculate convex hull of points
@@ -920,6 +808,63 @@ void BalanceClustering::convexHull(std::vector<Point>& pts)
   pts = std::vector<Point>(ans.begin(), ans.begin() + k - 1);
 }
 /**
+ * @brief check whether p is in pts
+ *
+ * @param p
+ * @param pts
+ * @return true
+ * @return false
+ */
+bool BalanceClustering::isContain(const Point& p, const std::vector<Point>& pts)
+{
+  auto on_line = [](const Point& p, const std::pair<Point, Point>& line) {
+    auto s_x = line.first.x();
+    auto s_y = line.first.y();
+    auto t_x = line.second.x();
+    auto t_y = line.second.y();
+    auto p_x = p.x();
+    auto p_y = p.y();
+    auto cross_product = (p_x - s_x) * (t_y - s_y) - (p_y - s_y) * (t_x - s_x);
+    if (cross_product != 0) {
+      return false;
+    }
+    if (std::min(s_x, t_x) <= p_x && p_x <= std::max(s_x, t_x) && std::min(s_y, t_y) <= p_y && p_y <= std::max(s_y, t_y)) {
+      return true;
+    }
+    return false;
+  };
+
+  auto bound = pts;
+  convexHull(bound);
+  auto is_in_bound = false;
+  auto p_x = p.x();
+  auto p_y = p.y();
+  auto n = bound.size();
+  auto j = n - 1;
+  for (size_t i = 0; i < n; j = i, ++i) {
+    auto s_x = bound[i].x();
+    auto s_y = bound[i].y();
+    auto t_x = bound[j].x();
+    auto t_y = bound[j].y();
+    if ((s_y < p_y && t_y >= p_y) || (t_y < p_y && s_y >= p_y)) {
+      if (s_x + (p_y - s_y) / (t_y - s_y) * (t_x - s_x) < p_x) {
+        is_in_bound = !is_in_bound;
+      }
+    }
+  }
+  if (is_in_bound) {
+    return true;
+  }
+  auto pt = p;
+  for (size_t i = 0; i < bound.size(); ++i) {
+    auto j = (i + 1) % bound.size();
+    if (on_line(pt, {bound[i], bound[j]})) {
+      return true;
+    }
+  }
+  return false;
+}
+/**
  * @brief judge whether two clusters are the same
  *
  * @param clusters1
@@ -950,7 +895,10 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
   LOG_INFO << "Writing clusters to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace();
+  auto path = config->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(path)) {
+    std::filesystem::create_directory(path);
+  }
   std::ofstream ofs(path + "/" + save_name + ".py");
   ofs << "import matplotlib.pyplot as plt" << std::endl;
   ofs << "import numpy as np" << std::endl;
@@ -981,10 +929,10 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
     }
     ofs << "]" << std::endl;
     ofs << "plt.scatter(x" << i << ", y" << i << ",label='Class " + std::to_string(i + 1) + "',color=colors[" << i << "],s=1)" << std::endl;
-    for (size_t j = 0; j < clusters[i].size(); ++j) {
-      ofs << "plt.text(" << clusters[i][j]->get_location().x() << ", " << clusters[i][j]->get_location().y() << ", '"
-          << clusters[i][j]->getCapLoad() << "', fontsize=3)" << std::endl;
-    }
+    // for (size_t j = 0; j < clusters[i].size(); ++j) {
+    //   ofs << "plt.text(" << clusters[i][j]->get_location().x() << ", " << clusters[i][j]->get_location().y() << ", '"
+    //       << clusters[i][j]->getCapLoad() << "', fontsize=3)" << std::endl;
+    // }
     ofs << "rect" << i << " = plt.Rectangle((np.min(x" << i << "), np.min(y" << i << ")),"
         << "np.max(x" << i << ") - np.min(x" << i << "),"
         << "np.max(y" << i << ") - np.min(y" << i << "),"

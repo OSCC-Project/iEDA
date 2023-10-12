@@ -191,14 +191,16 @@ void BoundSkewTree::ptReset(Area* cur)
     ptReset(cur->get_right());
   }
 }
-
+/**
+ * @brief BiPartition method
+ *
+ */
 void BoundSkewTree::biPartition()
 {
   LOG_FATAL_IF(_unmerged_nodes.size() < 2) << "unmerged nodes size is less than 2";
   _root = biPartition(_unmerged_nodes);
   areaReset();
 }
-
 Area* BoundSkewTree::biPartition(std::vector<Area*>& areas) const
 {
   LOG_FATAL_IF(areas.empty()) << "areas is empty";
@@ -221,7 +223,6 @@ Area* BoundSkewTree::biPartition(std::vector<Area*>& areas) const
   parent->set_location(loc);
   return parent;
 }
-
 std::pair<std::vector<Area*>, std::vector<Area*>> BoundSkewTree::octagonDivide(std::vector<Area*>& areas) const
 {
   auto octagon = calcOctagon(areas);
@@ -278,7 +279,6 @@ std::pair<std::vector<Area*>, std::vector<Area*>> BoundSkewTree::octagonDivide(s
   }
   return {left_set, right_set};
 }
-
 std::vector<Pt> BoundSkewTree::calcOctagon(const std::vector<Area*>& areas) const
 {
   auto x_p = std::numeric_limits<double>::min(), y_p = std::numeric_limits<double>::min(), ymx_p = std::numeric_limits<double>::min(),
@@ -304,7 +304,6 @@ std::vector<Pt> BoundSkewTree::calcOctagon(const std::vector<Area*>& areas) cons
   Geom::convexHull(octagon);
   return octagon;
 }
-
 std::vector<Area*> BoundSkewTree::areaOnOctagonBound(const std::vector<Area*> areas, const std::vector<Pt>& octagon) const
 {
   std::vector<Area*> result;
@@ -331,14 +330,16 @@ std::vector<Area*> BoundSkewTree::areaOnOctagonBound(const std::vector<Area*> ar
   std::ranges::sort(result, [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
   return result;
 }
-
+/**
+ * @brief BiCluster method
+ *
+ */
 void BoundSkewTree::biCluster()
 {
   LOG_FATAL_IF(_unmerged_nodes.size() < 2) << "unmerged nodes size is less than 2";
   _root = biCluster(_unmerged_nodes);
   areaReset();
 }
-
 Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas) const
 {
   LOG_FATAL_IF(areas.empty()) << "areas is empty";
@@ -361,7 +362,6 @@ Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas) const
   parent->set_location(loc);
   return parent;
 }
-
 std::vector<std::vector<Area*>> BoundSkewTree::kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed,
                                                       const size_t& max_iter) const
 {
@@ -623,7 +623,6 @@ void BoundSkewTree::jsProcess(Area* cur)
     cur->set_line(side, getJsLine(side));
   }
 }
-
 void BoundSkewTree::constructMr(Area* parent, Area* left, Area* right)
 {
   calcJr(parent, left, right);
@@ -822,7 +821,6 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     _join_segment[side] = new_js[side];
   }
 }
-
 double BoundSkewTree::delayFromJs(const size_t& js_side, const size_t& side, const size_t& idx, const size_t& timing_type,
                                   const Side<double>& delay_from) const
 {

@@ -52,11 +52,13 @@ void Router::init()
 }
 void Router::build()
 {
+  CTSAPIInst.saveToLog("##Router Build Log##");
   for (auto* clock : _clocks) {
     auto* design = CTSAPIInst.get_design();
     auto& clock_nets = clock->get_clock_nets();
     CTSAPIInst.saveToLog("\n\n");
     for (auto* clk_net : clock_nets) {
+      CTSAPIInst.saveToLog("\n####################");
       CTSAPIInst.saveToLog("clock net: ", clk_net->get_net_name());
       LOG_INFO << "clock net: " << clk_net->get_net_name();
       design->resetId();

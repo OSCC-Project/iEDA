@@ -115,13 +115,14 @@ class CTSAPI
   icts::Inst* genBoundSkewTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+                             const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                           const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);
   void buildRCTree(const icts::EvalNet& eval_net);
+  void buildPinPortsRCTree(const icts::EvalNet& eval_net);
   void resetRCTree(const std::string& net_name);
 
   // log

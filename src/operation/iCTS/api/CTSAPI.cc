@@ -202,15 +202,16 @@ double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pa
 {
   std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  auto* db_adapter = getStaDbAdapter();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return getStaDbAdapter()->getCapacitance(_config->get_h_layer(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      return getStaDbAdapter()->getCapacitance(_config->get_v_layer(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
@@ -222,15 +223,16 @@ double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pa
 {
   std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  auto* db_adapter = getStaDbAdapter();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return getStaDbAdapter()->getResistance(_config->get_h_layer(), 1.0, width);
+      return db_adapter->getResistance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      return getStaDbAdapter()->getResistance(_config->get_v_layer(), 1.0, width);
+      return db_adapter->getResistance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
+      return db_adapter->getResistance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
@@ -335,7 +337,8 @@ icts::CtsPin* CTSAPI::findDriverPin(icts::CtsNet* net)
 
 std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
 {
-  auto* sta_net = getStaDbAdapter()->makeNet(eval_net.get_name().c_str(), nullptr);
+  auto* db_adapter = getStaDbAdapter();
+  auto* sta_net = db_adapter->makeNet(eval_net.get_name().c_str(), nullptr);
   buildRCTree(eval_net);
   auto* rc_net = _timing_engine->get_ista()->getRcNet(sta_net);
   auto* rc_tree = rc_net->rct();
@@ -348,7 +351,7 @@ std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
     auto delay = rc_tree->delay(pin_name);
     delay_map[pin->get_instance()->get_name()] = delay;
   }
-  getStaDbAdapter()->removeNet(sta_net);
+  db_adapter->removeNet(sta_net);
   return delay_map;
 }
 
@@ -569,34 +572,37 @@ bool CTSAPI::isInDie(const icts::Point& point) const
 
 idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const std::string& cell_master)
 {
-  auto sta_inst = getStaDbAdapter()->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
-  auto idb_inst = getStaDbAdapter()->staToDb(sta_inst);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_inst = db_adapter->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
+  auto idb_inst = db_adapter->staToDb(sta_inst);
   return idb_inst;
 }
 
 idb::IdbNet* CTSAPI::makeIdbNet(const std::string& net_name)
 {
-  auto sta_net = getStaDbAdapter()->makeNet(net_name.c_str(), nullptr);
-  auto idb_net = getStaDbAdapter()->staToDb(sta_net);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_net = db_adapter->makeNet(net_name.c_str(), nullptr);
+  auto idb_net = db_adapter->staToDb(sta_net);
   return idb_net;
 }
 
 void CTSAPI::linkIdbNetToSta(idb::IdbNet* idb_net)
 {
-  auto sta_net = getStaDbAdapter()->makeNet(idb_net->get_net_name().c_str(), nullptr);
-  getStaDbAdapter()->crossRef(sta_net, idb_net);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_net = db_adapter->makeNet(idb_net->get_net_name().c_str(), nullptr);
+  db_adapter->crossRef(sta_net, idb_net);
 }
 
 void CTSAPI::disconnect(idb::IdbPin* pin)
 {
-  auto db_adapter = getStaDbAdapter();
+  auto* db_adapter = getStaDbAdapter();
   auto sta_pin = db_adapter->dbToStaPin(pin);
   db_adapter->disconnectPin(sta_pin);
 }
 
 void CTSAPI::connect(idb::IdbInstance* idb_inst, const std::string& pin_name, idb::IdbNet* net)
 {
-  auto db_adapter = getStaDbAdapter();
+  auto* db_adapter = getStaDbAdapter();
   auto sta_inst = _timing_engine->get_netlist()->findInstance(idb_inst->get_name().c_str());
   auto sta_net = db_adapter->dbToSta(net);
   db_adapter->connect(sta_inst, pin_name.c_str(), sta_net);
@@ -669,7 +675,9 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
   auto layer_id = _config->get_routing_layers().back();
   auto* solver_net = _design->findSolverNet(net_name);
   if (!solver_net) {
-    LOG_WARNING << "Can't find solver net: " << net_name;
+    LOG_WARNING << "Can't find solver net: " << net_name << ", It may be a pin-port(s) net";
+    // buildPinPortsRCTree(eval_net);
+    return;
   }
   auto* driver_pin = solver_net->get_driver_pin();
   driver_pin->preOrder([&](Node* node) {
@@ -689,6 +697,42 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
     _timing_engine->incrCap(back_node, cap / 2, true);
   });
 
+  _timing_engine->updateRCTreeInfo(sta_net);
+}
+
+void CTSAPI::buildPinPortsRCTree(const icts::EvalNet& eval_net)
+{
+  auto* sta_net = findStaNet(eval_net);
+  auto net_name = eval_net.get_name();
+  LOG_FATAL_IF(!sta_net) << "Can't find sta net: " << net_name;
+  auto pins = sta_net->get_pin_ports();
+  ista::DesignObject* driver_pin = nullptr;
+  for (auto* pin : pins) {
+    if (pin->isPin()) {
+      driver_pin = pin;
+      break;
+    }
+  }
+  LOG_FATAL_IF(!driver_pin) << "Can't find driver pin of sta net: " << net_name;
+  auto* driver_node = _timing_engine->makeOrFindRCTreeNode(driver_pin);
+  auto* db_adapter = getStaDbAdapter();
+  auto driver_loc = db_adapter->idbLocation(driver_pin);
+  auto pt_dist = [](idb::IdbCoordinate<int32_t>* p1, idb::IdbCoordinate<int32_t>* p2) {
+    return std::abs(p1->get_x() - p2->get_x()) + std::abs(p1->get_y() - p2->get_y());
+  };
+  std::ranges::for_each(pins, [&](ista::DesignObject* pin) {
+    if (pin == driver_pin) {
+      return;
+    }
+    auto* load_node = _timing_engine->makeOrFindRCTreeNode(pin);
+    auto load_loc = db_adapter->idbLocation(pin);
+    auto dist = pt_dist(driver_loc, load_loc);
+    auto res = getResistance(1.0 * dist / TimingPropagator::getDbUnit(), _config->get_routing_layers().back());
+    auto cap = getCapacitance(1.0 * dist / TimingPropagator::getDbUnit(), _config->get_routing_layers().back());
+    _timing_engine->makeResistor(sta_net, driver_node, load_node, res);
+    _timing_engine->incrCap(driver_node, cap / 2, true);
+    _timing_engine->incrCap(load_node, cap / 2, true);
+  });
   _timing_engine->updateRCTreeInfo(sta_net);
 }
 

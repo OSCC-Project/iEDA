@@ -22,54 +22,515 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 
 #include "TimingPropagator.hh"
+#include "TreeBuilder.hh"
 #include "log/Log.hh"
 namespace icts {
 /**
- * @brief init the AnnealOpt solver parameters
+ * @brief interface to run the AnnealOpt solver
  *
- * @param net_num
+ * @param log
+ * @return std::vector<std::vector<Inst*>>
+ */
+std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
+{
+  LOG_INFO_IF(log) << "Start AnnealOpt --- ";
+  LOG_INFO_IF(log) << "  Iteration: " << _max_iter;
+  LOG_INFO_IF(log) << "  Temperature: " << _temperature;
+  LOG_INFO_IF(log) << "  Cooling Rate: " << _cooling_rate;
+
+  initCostMap();
+  auto init_cost = _cur_cost;
+  LOG_INFO_IF(log) << "  Initial Cost: " << init_cost;
+  _best_cost = _cur_cost;
+  auto temperature = _temperature;
+  auto cooling_ratio = _cooling_rate;
+  auto best_solution = _cur_solution;
+  size_t iter = 0;
+  while (iter < _max_iter) {
+    bool best_update = false;
+    auto operation = randomMove(_cur_solution);
+    auto new_solution = commitOperation(operation);
+    auto delta_cost = _new_cost - _cur_cost;
+    if (delta_cost < 0) {
+      updateSolution(new_solution, operation);
+      if (_new_cost < _best_cost) {
+        best_solution = new_solution;
+        _best_cost = _new_cost;
+        best_update = true;
+      }
+    } else {
+      auto prob = std::exp(-delta_cost / temperature);
+      if (prob > 0.5) {
+        updateSolution(new_solution, operation);
+      }
+    }
+    temperature *= cooling_ratio;
+    iter++;
+    // align the log
+    auto update_label = best_update ? " *" : "";
+    LOG_INFO_IF(log) << "  Iteration: " << std::left << std::setfill(' ') << std::setw(std::log10(_max_iter) + 1) << iter
+                     << "  Temperature: " << std::left << std::setfill(' ') << std::setw(std::log10(_temperature) + 2) << std::fixed
+                     << std::setprecision(2) << temperature << "  Cost: " << std::left << std::setfill(' ')
+                     << std::setw(std::log10(init_cost) + 3) << std::fixed << std::setprecision(3) << _cur_cost
+                     << "  Delta Cost: " << std::left << std::setfill(' ') << std::setw(6) << std::fixed << std::setprecision(3)
+                     << delta_cost << "  Best Cost: " << std::left << std::setfill(' ') << std::setw(std::log10(init_cost) + 3)
+                     << std::fixed << std::setprecision(3) << _best_cost << update_label;
+    if (_best_cost <= std::numeric_limits<float>::epsilon()) {
+      LOG_INFO_IF(log) << "  Found Optimal Solution!";
+      break;
+    }
+  }
+  LOG_INFO_IF(log) << "End AnnealOpt --- ";
+  LOG_INFO_IF(log) << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost
+                   << "  Improvement: " << (init_cost - _best_cost) / init_cost * 100 << "%";
+  return best_solution;
+}
+/**
+ * @brief update the solution and cost map
+ *
+ * @param new_solution
+ * @param op
+ */
+void AnnealOptInterface::updateSolution(const std::vector<std::vector<Inst*>>& new_solution, const Operation& op)
+{
+  _cur_solution = new_solution;
+  _cur_cost = _new_cost;
+  updateCostMap(op);
+}
+/**
+ * @brief commit the operation
+ *
+ * @param op
+ * @return std::vector<std::vector<Inst*>>
+ */
+std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(const Operation& op)
+{
+  auto cluster_id = op.cluster_id;
+  auto neighbor_id = op.neighbor_id;
+  auto inst_id = op.inst_id;
+
+  auto both_cost = [&](const std::vector<std::vector<Inst*>>& solution) {
+    auto* from_net = buildNet(solution[cluster_id]);
+    auto* to_net = buildNet(solution[neighbor_id]);
+    auto both_cost = cost(from_net) + cost(to_net);
+    TimingPropagator::resetNet(from_net);
+    TimingPropagator::resetNet(to_net);
+    return both_cost;
+  };
+  auto pre_both_cost = both_cost(_cur_solution);
+
+  auto new_solution = _cur_solution;
+  auto* inst = new_solution[cluster_id][inst_id];
+  new_solution[cluster_id].erase(new_solution[cluster_id].begin() + inst_id);
+  new_solution[neighbor_id].push_back(inst);
+
+  auto cur_both_cost = both_cost(new_solution);
+
+  _new_cost = _cur_cost - pre_both_cost + cur_both_cost;
+  return new_solution;
+}
+/**
+ * @brief random move the inst to a new cluster
+ *
+ * @return Operation
+ */
+Operation AnnealOptInterface::randomMove(const std::vector<std::vector<Inst*>>& clusters)
+{
+  // random choose a cluster (not empty)
+  auto cluster_id = randomChooseCluster(clusters, 0.03);
+
+  // random choose a inst in the cluster octagon boundary
+  auto inst_id = randomChooseInst(clusters[cluster_id]);
+
+  // choose a neighbor cluster (closest cluster or empty cluster)
+  auto new_cluster_id = randomChooseNeighbor(clusters, cluster_id, inst_id);
+
+  return Operation{cluster_id, new_cluster_id, inst_id};
+}
+/**
+ * @brief random choose a cluster in the clusters which cost is in the first [ratio * {clusters.size() - empty_num}] clusters
+ *
+ * @param clusters
+ * @param ratio
+ * @return size_t
+ */
+size_t AnnealOptInterface::randomChooseCluster(const std::vector<std::vector<Inst*>>& clusters, const double& ratio)
+{
+  std::vector<double> cluster_cost;
+  size_t empty_num = 0;
+  std::ranges::transform(clusters, std::back_inserter(cluster_cost), [&](const std::vector<Inst*>& cluster) {
+    if (cluster.empty()) {
+      ++empty_num;
+      return -1.0;
+    }
+    auto* temp_net = buildNet(cluster);
+    auto temp_cost = cost(temp_net);
+    TimingPropagator::resetNet(temp_net);
+    return temp_cost;
+  });
+  // sort cluster id by cost, and take the first ratio clusters
+  std::vector<size_t> cluster_id_list(clusters.size());
+  std::iota(cluster_id_list.begin(), cluster_id_list.end(), 0);
+  std::ranges::sort(cluster_id_list, [&](const int& a, const int& b) { return cluster_cost[a] > cluster_cost[b]; });
+  auto num = static_cast<size_t>(std::ceil((cluster_id_list.size() - empty_num) * ratio));
+  std::vector<size_t> cluster_id(cluster_id_list.begin(), cluster_id_list.begin() + num);
+  std::uniform_int_distribution<size_t> cluster_dist(0, cluster_id.size() - 1);
+  auto cluster_id_index = cluster_dist(_gen);
+  LOG_FATAL_IF(clusters[cluster_id[cluster_id_index]].empty()) << "Empty cluster";
+  return cluster_id[cluster_id_index];
+}
+/**
+ * @brief random choose a inst's id in the cluster which is in the boundary
+ *
+ * @param cluster
+ * @return size_t
+ */
+size_t AnnealOptInterface::randomChooseInst(const std::vector<Inst*>& cluster)
+{
+  auto bound_id = findBoundId(cluster);
+  std::uniform_int_distribution<size_t> inst_dist(0, bound_id.size() - 1);
+  auto inst_id = bound_id[inst_dist(_gen)];
+  return inst_id;
+}
+/**
+ * @brief random choose a neighbor cluster id
+ *
+ * @param clusters
+ * @param cluster_id
+ * @param inst_id
+ * @return size_t
+ */
+size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<Inst*>>& clusters, const size_t& cluster_id,
+                                                const size_t& inst_id)
+{
+  auto* inst = clusters[cluster_id][inst_id];
+
+  auto cluster_dist = [&](const Point& pt, const std::vector<Inst*>& cluster) {
+    std::vector<Point> bound;
+    std::ranges::transform(cluster, std::back_inserter(bound), [](const Inst* inst) { return inst->get_location(); });
+    BalanceClustering::convexHull(bound);
+    if (BalanceClustering::isContain(pt, bound)) {
+      return 0;
+    }
+    auto min_dist = std::numeric_limits<int>::max();
+    std::ranges::for_each(bound, [&](const Point& bound_pt) { min_dist = std::min(min_dist, Point::manhattanDistance(pt, bound_pt)); });
+    return min_dist;
+  };
+
+  std::vector<double> dist;
+
+  std::ranges::transform(clusters, std::back_inserter(dist), [&](const std::vector<Inst*>& cluster) {
+    return cluster.empty() ? 0 : cluster_dist(inst->get_location(), cluster);
+  });
+
+  // sort clusters by distance
+  std::vector<size_t> cluster_id_list(clusters.size());
+  std::iota(cluster_id_list.begin(), cluster_id_list.end(), 0);
+  std::ranges::sort(cluster_id_list, [&](const int& a, const int& b) { return dist[a] < dist[b]; });
+
+  // new_cluster_id is random choose from the [empty_cluster (Up to 1), contain_cluster (All), closest_cluster (Up to 4)]
+  auto empty_cluster_count = 0;
+  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) { empty_cluster_count += cluster.empty() ? 1 : 0; });
+  auto contain_cluster_count = 0;
+  std::ranges::for_each(dist, [&](const double& d) { contain_cluster_count += d == 0 ? 1 : 0; });
+
+  size_t start = empty_cluster_count > 0 ? empty_cluster_count - 1 : 0;
+  // size_t end = start + contain_cluster_count + static_cast<size_t>(empty_cluster_count > 0);
+  size_t end = start + 1;
+  size_t new_cluster_id = 0;
+  if (start < end) {
+    std::uniform_int_distribution<size_t> new_cluster_dist(start, end);
+    new_cluster_id = cluster_id_list[new_cluster_dist(_gen)];
+    while (new_cluster_id == cluster_id) {
+      new_cluster_id = cluster_id_list[new_cluster_dist(_gen)];
+    }
+  }
+  return new_cluster_id;
+}
+/**
+ * @brief find instance's id which is close to the boundary
+ *
+ * @param cluster
+ * @return std::vector<size_t>
+ */
+std::vector<size_t> AnnealOptInterface::findBoundId(const std::vector<Inst*>& cluster)
+{
+  std::vector<Point> bound;
+  std::ranges::transform(cluster, std::back_inserter(bound), [](const Inst* inst) { return inst->get_location(); });
+  BalanceClustering::convexHull(bound);
+  auto is_on_bound = [&](const Inst* inst) {
+    auto loc = inst->get_location();
+    auto x = loc.x();
+    auto y = loc.y();
+    for (size_t i = 0; i < bound.size(); ++i) {
+      auto start = bound[i];
+      auto end = bound[(i + 1) % bound.size()];
+      auto cross = (end.x() - start.x()) * (y - start.y()) - (end.y() - start.y()) * (x - start.x());
+      if (cross == 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+  std::vector<size_t> bound_id;
+  for (size_t i = 0; i < cluster.size(); ++i) {
+    auto* inst = cluster[i];
+    if (is_on_bound(inst)) {
+      bound_id.push_back(i);
+    }
+  }
+  return bound_id;
+}
+/**
+ * @brief init the cost map
+ *
+ */
+void AnnealOptInterface::initCostMap()
+{
+  _cost_map.resize(_cur_solution.size());
+  for (size_t i = 0; i < _cur_solution.size(); ++i) {
+    auto cluster = _cur_solution[i];
+    auto* net = buildNet(cluster);
+    auto net_cost = cost(net);
+    TimingPropagator::resetNet(net);
+    _cost_map[i] = net_cost;
+  }
+  _cur_cost = std::accumulate(_cost_map.begin(), _cost_map.end(), 0.0);
+}
+/**
+ * @brief update the cost map
+ *
+ * @param op
+ */
+void AnnealOptInterface::updateCostMap(const Operation& op)
+{
+  auto cluster_id = op.cluster_id;
+  auto neighbor_id = op.neighbor_id;
+  auto* from_net = buildNet(_cur_solution[cluster_id]);
+  auto* to_net = buildNet(_cur_solution[neighbor_id]);
+  auto from_cost = cost(from_net);
+  auto to_cost = cost(to_net);
+  TimingPropagator::resetNet(from_net);
+  TimingPropagator::resetNet(to_net);
+  _cost_map[cluster_id] = from_cost;
+  _cost_map[neighbor_id] = to_cost;
+}
+/**
+ * @brief center of the cluster
+ *
+ * @param cluster
+ * @return Point
+ */
+Point AnnealOptInterface::center(const std::vector<Inst*>& cluster)
+{
+  int64_t x = 0;
+  int64_t y = 0;
+  x = std::accumulate(cluster.begin(), cluster.end(), x, [](int64_t total, const Inst* inst) { return total + inst->get_location().x(); });
+  y = std::accumulate(cluster.begin(), cluster.end(), y, [](int64_t total, const Inst* inst) { return total + inst->get_location().y(); });
+
+  return Point(x / cluster.size(), y / cluster.size());
+}
+/**
+ * @brief build net for the cluster
+ *
+ * @param cluster
+ * @return Net*
+ */
+Net* AnnealOptInterface::buildNet(const std::vector<Inst*>& cluster)
+{
+  if (cluster.empty()) {
+    return nullptr;
+  }
+  std::vector<Pin*> load_pins;
+  std::ranges::transform(cluster, std::back_inserter(load_pins), [](Inst* inst) { return inst->get_load_pin(); });
+
+  TreeBuilder::localPlace(load_pins);
+  auto* temp_buf = TreeBuilder::beatTree("temp", load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
+  temp_buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+
+  auto* temp_net = TimingPropagator::genNet("temp", temp_buf->get_driver_pin(), load_pins);
+  TimingPropagator::update(temp_net);
+  return temp_net;
+}
+/**
+ * @brief build nets for the clusters
+ *
+ * @param clusters
+ * @return std::vector<Net*>
+ */
+std::vector<Net*> AnnealOptInterface::buildNets(const std::vector<std::vector<Inst*>>& clusters)
+{
+  std::vector<Net*> temp_nets;
+  // for all not empty clusters, build salt net
+  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
+    if (cluster.empty()) {
+      return;
+    }
+    auto* temp_net = buildNet(cluster);
+    temp_nets.push_back(temp_net);
+  });
+  return temp_nets;
+}
+/**
+ * @brief latency cost of the clusters
+ *
+ * @param net
+ * @return double
+ */
+double LatAnnealOpt::cost(Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  return driver_pin->get_max_delay() * _correct_coef;
+}
+/**
+ * @brief init the Violation solver parameters
+ *
+ * @param max_iter
+ * @param cooling_rate
+ * @param temperature
+ */
+void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature)
+{
+  AnnealOptInterface::initParameter(max_iter, cooling_rate, temperature);
+  _max_fanout = TimingPropagator::getMaxFanout();
+  _max_cap = TimingPropagator::getMaxCap();
+  _max_net_len = TimingPropagator::getMaxLength();
+}
+/**
+ * @brief init the VioAnnealOpt solver parameters
+ *
+ * @param max_iter
+ * @param cooling_rate
+ * @param temperature
  * @param max_fanout
  * @param max_cap
- * @param max_net_dist
- * @param p
- * @param q
- * @param r
+ * @param max_net_len
  */
-void AnnealOpt::initParameter(const size_t& net_num, const int& max_fanout, const double& max_cap, const int& max_net_dist, const double& p,
-                              const double& q, const double& r)
+void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature, const int& max_fanout,
+                                 const double& max_cap, const double& max_net_len)
 {
-  _net_num = net_num;
+  initParameter(max_iter, cooling_rate, temperature);
   _max_fanout = max_fanout;
   _max_cap = max_cap;
-  _max_net_dist = max_net_dist;
-  _p = p;
-  _cooling_ratio = q;
-  _temperature = r;
-
-  _inst_num = _flatten_insts.size();
-
-  std::ranges::for_each(_flatten_insts, [&](const Inst* inst) {
-    auto loc = inst->get_location();
-    _min_x = std::min(_min_x, loc.x());
-    _min_y = std::min(_min_y, loc.y());
-    _max_x = std::max(_max_x, loc.x());
-    _max_y = std::max(_max_y, loc.y());
-  });
+  _max_net_len = max_net_len;
 }
-
-std::vector<std::vector<Inst*>> AnnealOpt::run()
+/**
+ * @brief violation cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::cost(Net* net)
 {
-  return std::vector<std::vector<Inst*>>();
+  return _correct_coef * (capVioCost(net) + wireLengthVioCost(net) + fanoutVioCost(net));
 }
-
-void AnnealOpt::randomSwap()
+/**
+ * @brief design cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::designCost(const Net* net)
 {
+  return capCost(net) + wireLengthCost(net) + skewCost(net) + levelCapLoadCost(net);
 }
-
-void AnnealOpt::randomMove()
+/**
+ * @brief wire length cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::wireLengthCost(const Net* net)
 {
+  auto* driver_pin = net->get_driver_pin();
+  auto wire_length = driver_pin->get_sub_len();
+  return wire_length * TimingPropagator::getUnitCap();
+}
+/**
+ * @brief wire length violation cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::wireLengthVioCost(const Net* net)
+{
+  double wire_cost = 0.0;
+  auto* driver_pin = net->get_driver_pin();
+  auto wire_length = driver_pin->get_sub_len();
+  if (wire_length > _max_net_len) {
+    wire_cost += (wire_length - _max_net_len) * TimingPropagator::getUnitCap();
+  }
+  return wire_cost;
+}
+/**
+ * @brief cap load of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::capCost(const Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  return driver_pin->get_cap_load();
+}
+/**
+ * @brief cap load violation of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::capVioCost(const Net* net)
+{
+  double cap_cost = 0.0;
+  auto* driver_pin = net->get_driver_pin();
+  auto cap_load = driver_pin->get_cap_load();
+  if (cap_load > _max_cap) {
+    cap_cost += cap_load - _max_cap;
+  }
+  return cap_cost;
+}
+/**
+ * @brief fanout violation cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::fanoutVioCost(const Net* net)
+{
+  double fanout_cost = 0.0;
+  auto fanout = net->getFanout();
+  if (fanout > _max_fanout) {
+    fanout_cost += (fanout - _max_fanout) * (wireLengthVioCost(net) + capVioCost(net));
+  }
+  return fanout_cost;
+}
+/**
+ * @brief skew cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::skewCost(const Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  auto cost = skew / TimingPropagator::getUnitRes();
+  return cost;
+}
+/**
+ * @brief level cap load cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::levelCapLoadCost(const Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto* inst = driver_pin->get_inst();
+  return inst->get_load_pin()->get_cap_load();
 }
 
 }  // namespace icts

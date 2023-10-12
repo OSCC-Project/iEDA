@@ -15,32 +15,24 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file SolverAux.hh
+ * @file TreeBuilderAux.hh
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #include <filesystem>
 #include <random>
 
-#include "../../platform/data_manager/idm.h"
 #include "BoundSkewTree.hh"
-#include "TimingPropagator.hh"
-#include "TreeBuilder.hh"
+#include "TestInterface.hh"
 #include "log/Log.hh"
 
 namespace {
-using icts::Inst;
-using icts::Pin;
-using icts::Point;
-using icts::TopoType;
-using ieda::Log;
 
 using icts::LayerPattern;
 using icts::Node;
-using icts::RCPattern;
 using icts::SkewTreeFunc;
 using icts::SteinerTreeFunc;
-using icts::TimingPropagator;
-using icts::TreeBuilder;
+using icts::TopoType;
+using ieda::Log;
 
 struct TreeInfo
 {
@@ -49,16 +41,6 @@ struct TreeInfo
   double skew;
   double max_wire_delay;
   double max_delay;
-};
-
-struct EnvInfo
-{
-  int min_x;
-  int max_x;
-  int min_y;
-  int max_y;
-  size_t min_pin_num;
-  size_t max_pin_num;
 };
 
 struct StringPairHash
@@ -157,37 +139,47 @@ class DataSet
     LOG_INFO << "The file is written to csv in the path of " << path;
   }
 
-  void writeReduceCSV(const std::string& target_method_key, const std::string& ref_method_key, const std::string& topo_type_key,
-                      const std::string& dir)
+  void writeReduceCSV(const std::string& target_method_key, const std::string& dir, const std::string& suffix)
   {
     LOG_INFO << std::endl;
     LOG_INFO << "Write reduce csv...";
     LOG_INFO << "Target method: " << target_method_key;
-    LOG_INFO << "Ref method: " << ref_method_key;
-    LOG_INFO << "Topo type: " << topo_type_key;
     LOG_INFO << "Case num: " << _case_num;
-    if (!std::filesystem::exists(dir)) {
-      std::filesystem::create_directories(dir);
+    auto csv_dir = dir + "/" + target_method_key + "_" + suffix;
+    if (!std::filesystem::exists(csv_dir)) {
+      std::filesystem::create_directories(csv_dir);
     }
-    auto path = dir + "/" + target_method_key + "_cmp2_" + ref_method_key + "_(" + topo_type_key + ")_reduce.csv";
-    std::ofstream ofs(path);
-    ofs << "id,method,topo_type,wirelength,cap,skew,max_wire_delay,max_delay,pin_num" << std::endl;
-    for (size_t i = 0; i < _data_units.size(); ++i) {
-      auto& data_unit = _data_units[i];
-      auto& tree_info_map = data_unit.get_tree_info_map();
-      auto target_info = tree_info_map.at(std::make_pair(target_method_key, topo_type_key));
-      auto ref_info = tree_info_map.at(std::make_pair(ref_method_key, topo_type_key));
-      auto wl_ratio = (ref_info.wirelength - target_info.wirelength) / target_info.wirelength;
-      auto cap_ratio = (ref_info.cap - target_info.cap) / target_info.cap;
-      auto skew_ratio = (ref_info.skew - target_info.skew) / target_info.skew;
-      auto max_wire_delay_ratio = (ref_info.max_wire_delay - target_info.max_wire_delay) / target_info.max_wire_delay;
-      auto max_delay_ratio = (ref_info.max_delay - target_info.max_delay) / target_info.max_delay;
-      ofs << i << "," << target_method_key << "," << topo_type_key << "," << wl_ratio << "," << cap_ratio << "," << skew_ratio << ","
-          << max_wire_delay_ratio << "," << max_delay_ratio << "," << data_unit.get_pin_num() << std::endl;
-    }
-    ofs.close();
+    auto topo_type_list = {TopoType::kGreedyDist, TopoType::kGreedyMerge, TopoType::kBiCluster, TopoType::kBiPartition};
+    auto write_csv = [&](const auto& func) {
+      auto ref_method_key = TreeBuilder::funcName(func);
+      if (target_method_key == ref_method_key) {
+        return;
+      }
+      std::ranges::for_each(topo_type_list, [&](const auto& topo_type) {
+        auto topo_type_key = TopoTypeToString(topo_type);
+        auto path = csv_dir + "/" + target_method_key + "_cmp2_" + ref_method_key + "_(" + topo_type_key + ")_reduce_" + suffix + ".csv";
+        std::ofstream ofs(path);
+        ofs << "id,method,topo_type,wirelength,cap,skew,max_wire_delay,max_delay,pin_num" << std::endl;
+        for (size_t i = 0; i < _data_units.size(); ++i) {
+          auto& data_unit = _data_units[i];
+          auto& tree_info_map = data_unit.get_tree_info_map();
+          auto target_info = tree_info_map.at(std::make_pair(target_method_key, topo_type_key));
+          auto ref_info = tree_info_map.at(std::make_pair(ref_method_key, topo_type_key));
+          auto wl_ratio = (ref_info.wirelength - target_info.wirelength) / target_info.wirelength;
+          auto cap_ratio = (ref_info.cap - target_info.cap) / target_info.cap;
+          auto skew_ratio = (ref_info.skew - target_info.skew) / target_info.skew;
+          auto max_wire_delay_ratio = (ref_info.max_wire_delay - target_info.max_wire_delay) / target_info.max_wire_delay;
+          auto max_delay_ratio = (ref_info.max_delay - target_info.max_delay) / target_info.max_delay;
+          ofs << i << "," << target_method_key << "," << topo_type_key << "," << wl_ratio << "," << cap_ratio << "," << skew_ratio << ","
+              << max_wire_delay_ratio << "," << max_delay_ratio << "," << data_unit.get_pin_num() << std::endl;
+        }
+        ofs.close();
+      });
+    };
+    std::ranges::for_each(TreeBuilder::getSteinerTreeFuncs(), [&](const auto& func) { write_csv(func); });
+    std::ranges::for_each(TreeBuilder::getSkewTreeFuncs(), [&](const auto& func) { write_csv(func); });
     LOG_INFO << "Write csv done...";
-    LOG_INFO << "The file is written to csv in the path of " << path;
+    LOG_INFO << "The file is written to csv in the path of " << csv_dir;
   }
 
  private:
@@ -195,28 +187,17 @@ class DataSet
   std::vector<DataUnit> _data_units;
 };
 
-class TestInterface
+class TreeBuilderAux : public TestInterface
 {
  public:
-  TestInterface(const std::string& db_config_path, const std::string& cts_config_path)
-  {
-    dmInst->init(db_config_path);
-    CTSAPIInst.init(cts_config_path);
-  }
-  virtual ~TestInterface() = default;
-};
-
-class TreeBuilderTest : public TestInterface
-{
- public:
-  TreeBuilderTest(const std::string& db_config_path, const std::string& cts_config_path) : TestInterface(db_config_path, cts_config_path)
+  TreeBuilderAux(const std::string& db_config_path, const std::string& cts_config_path) : TestInterface(db_config_path, cts_config_path)
   {
     LOG_INFO << "Router unit res (H): " << CTSAPIInst.getClockUnitRes(LayerPattern::kH);
     LOG_INFO << "Router unit cap (H): " << CTSAPIInst.getClockUnitCap(LayerPattern::kH);
     LOG_INFO << "Router unit res (V): " << CTSAPIInst.getClockUnitRes(LayerPattern::kV);
     LOG_INFO << "Router unit cap (V): " << CTSAPIInst.getClockUnitCap(LayerPattern::kV);
   }
-  ~TreeBuilderTest() = default;
+  ~TreeBuilderAux() = default;
 
   void runFixedTest(const double& skew_bound) const
   {
@@ -310,7 +291,7 @@ class TreeBuilderTest : public TestInterface
   {
     auto* buf = TreeBuilder::boundSkewTree("BoundSkewTree", load_pins, skew_bound, std::nullopt, topo_type);
     auto* driver_pin = buf->get_driver_pin();
-    driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
+    driver_pin->preOrder([](Node* node) { node->set_pattern(static_cast<RCPattern>(1 + std::rand() % 2)); });
     auto* net = TimingPropagator::genNet("BoundSkewTree", driver_pin, load_pins);
     TreeBuilder::localPlace(buf, load_pins);
     auto loc = driver_pin->get_location();
@@ -333,7 +314,7 @@ class TreeBuilderTest : public TestInterface
       LOG_FATAL << "Unknown TreeFunc type";
     }
     auto* driver_pin = buf->get_driver_pin();
-    driver_pin->preOrder([](Node* node) { node->set_pattern(RCPattern::kHV); });
+    driver_pin->preOrder([](Node* node) { node->set_pattern(static_cast<RCPattern>(1 + std::rand() % 2)); });
     buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
     auto* net = TimingPropagator::genNet(method_name, driver_pin, load_pins);
     TimingPropagator::update(net);
@@ -369,41 +350,13 @@ class TreeBuilderTest : public TestInterface
       buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
       load_bufs.push_back(buf);
       auto* load_pin = buf->get_load_pin();
-      auto pattern = RCPattern::kHV;
+      auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
       load_pin->set_pattern(pattern);
       TimingPropagator::updatePinCap(load_pin);
       TimingPropagator::initLoadPinDelay(load_pin);
     }
     std::vector<Pin*> load_pins;
-    std::transform(load_bufs.begin(), load_bufs.end(), std::back_inserter(load_pins), [](Inst* buf) { return buf->get_load_pin(); });
-    return load_pins;
-  }
-
-  std::vector<Pin*> genRandomPins(const EnvInfo& env_info, const int& seed = 0) const
-  {
-    std::random_device rd;
-    std::mt19937 gen(static_cast<std::mt19937::result_type>(seed));
-    std::set<Point> locs;
-    size_t pin_num = std::uniform_int_distribution<>(env_info.min_pin_num, env_info.max_pin_num)(gen);
-    while (locs.size() < pin_num) {
-      auto x = std::uniform_int_distribution<>(env_info.min_x / 1000, env_info.max_x / 1000)(gen) * 1000;
-      auto y = std::uniform_int_distribution<>(env_info.min_y / 1000, env_info.max_y / 1000)(gen) * 1000;
-      locs.insert(Point(x, y));
-    }
-    std::vector<Inst*> load_bufs;
-    size_t i = 0;
-    for (auto loc : locs) {
-      auto* buf = TreeBuilder::genBufInst(CTSAPIInst.toString("buf_", i++), loc);
-      buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-      load_bufs.push_back(buf);
-      auto* load_pin = buf->get_load_pin();
-      auto pattern = RCPattern::kHV;
-      load_pin->set_pattern(pattern);
-      TimingPropagator::updatePinCap(load_pin);
-      TimingPropagator::initLoadPinDelay(load_pin);
-    }
-    std::vector<Pin*> load_pins;
-    std::transform(load_bufs.begin(), load_bufs.end(), std::back_inserter(load_pins), [](Inst* buf) { return buf->get_load_pin(); });
+    std::ranges::transform(load_bufs, std::back_inserter(load_pins), [](Inst* buf) { return buf->get_load_pin(); });
     return load_pins;
   }
 };
