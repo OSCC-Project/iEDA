@@ -61,8 +61,8 @@ class BalanceClustering
 
   static std::vector<std::vector<Inst*>> clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters, const int& max_fanout,
                                                                const double& max_cap, const double& max_net_length,
-                                                               const size_t& max_iter = 100, const double& cooling_rate = 0.99,
-                                                               const double& temperature = 2000000);
+                                                               const double& skew_bound, const size_t& max_iter = 100,
+                                                               const double& cooling_rate = 0.99, const double& temperature = 2000000);
 
   static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
                                                const size_t& max_fanout);

@@ -138,7 +138,7 @@ class VioAnnealOpt : public AnnealOptInterface
   // init parameters
   void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature);
   void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature, const int& max_fanout,
-                     const double& max_cap, const double& max_net_len);
+                     const double& max_cap, const double& max_net_len, const double& skew_bound);
 
   std::vector<std::vector<Inst*>> run(const bool& log = false)
   {
@@ -156,10 +156,12 @@ class VioAnnealOpt : public AnnealOptInterface
   double capVioCost(const Net* net);
   double fanoutVioCost(const Net* net);
   double skewCost(const Net* net);
+  double skewVioCost(const Net* net);
   double levelCapLoadCost(const Net* net);
 
   int _max_fanout = 0;
   double _max_cap = 0;
   double _max_net_len = 0;
+  double _skew_bound = 0;
 };
 }  // namespace icts

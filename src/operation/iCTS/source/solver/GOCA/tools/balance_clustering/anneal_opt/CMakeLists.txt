@@ -18,4 +18,5 @@ target_include_directories(
   icts_anneal_opt
   PUBLIC ${ICTS_SOLVER}/GOCA/database
          ${ICTS_SOLVER}/GOCA/tools/timing_propagator
-         ${ICTS_SOLVER}/GOCA/tools/tree_builder)
+         ${ICTS_SOLVER}/GOCA/tools/tree_builder
+         ${ICTS_SOLVER}/GOCA/tools/balance_clustering/anneal_opt)

@@ -844,7 +844,7 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
   auto* config = CTSAPIInst.get_config();
   auto dir = config->get_sta_workspace() + "/file";
   if (!std::filesystem::exists(dir)) {
-    std::filesystem::create_directory(dir);
+    std::filesystem::create_directories(dir);
   }
   auto file_name = dir + "/" + name + ".py";
   std::ofstream out(file_name);

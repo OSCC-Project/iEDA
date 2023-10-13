@@ -2,8 +2,7 @@ add_library(icts_test_external_libs INTERFACE)
 
 target_link_libraries(
   icts_test_external_libs
-  INTERFACE libgtest.a
-            libgtest_main.a
+  INTERFACE gtest
             pthread
             geometry_db
             idb

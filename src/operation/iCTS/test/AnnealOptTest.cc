@@ -50,13 +50,14 @@ class AnnealOptAux : public TestInterface
   }
 
   void runViolationCostTest(const EnvInfo& env_info, const size_t& cluster_num, const size_t& max_iter, const double& cooling_rate,
-                            const double& temperature, const int& max_fanout, const double& max_cap, const double& max_net_len) const
+                            const double& temperature, const int& max_fanout, const double& max_cap, const double& max_net_len,
+                            const double& skew_bound) const
   {
     auto bufs = genRandomBuffers(env_info);
     auto clusters = BalanceClustering::kMeans(bufs, cluster_num);
     BalanceClustering::writeClusterPy(clusters, "before");
     VioAnnealOpt solver(clusters);
-    solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len);
+    solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);
     clusters = solver.run(true);
     BalanceClustering::writeClusterPy(clusters, "after");
     std::ranges::for_each(bufs, [](auto& buf) { delete buf; });
@@ -100,7 +101,8 @@ TEST_F(AnnealOptTest, ViolationCostSmallTest)
   auto max_fanout = TimingPropagator::getMaxFanout();
   auto max_cap = TimingPropagator::getMaxCap();
   auto max_net_len = TimingPropagator::getMaxLength();
-  anneal_opt.runViolationCostTest(env_info, cluster_num, max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len);
+  auto skew_bound = TimingPropagator::getSkewBound();
+  anneal_opt.runViolationCostTest(env_info, cluster_num, max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);
 }
 
 TEST_F(AnnealOptTest, ViolationCostTest)
@@ -115,6 +117,7 @@ TEST_F(AnnealOptTest, ViolationCostTest)
   auto max_fanout = TimingPropagator::getMaxFanout();
   auto max_cap = TimingPropagator::getMaxCap();
   auto max_net_len = TimingPropagator::getMaxLength();
-  anneal_opt.runViolationCostTest(env_info, cluster_num, max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len);
+  auto skew_bound = TimingPropagator::getSkewBound();
+  anneal_opt.runViolationCostTest(env_info, cluster_num, max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);
 }
 }  // namespace

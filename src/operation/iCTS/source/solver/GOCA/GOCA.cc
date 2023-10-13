@@ -26,10 +26,10 @@
 
 #include "BalanceClustering.hh"
 #include "CtsDesign.hh"
-#include "CtsReport.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
 #include "log/Log.hh"
+#include "report/CtsReport.hh"
 #include "time/Time.hh"
 namespace icts {
 void GOCA::run()

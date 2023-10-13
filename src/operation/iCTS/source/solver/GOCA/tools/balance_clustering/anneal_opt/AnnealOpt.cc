@@ -398,6 +398,7 @@ void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_r
   _max_fanout = TimingPropagator::getMaxFanout();
   _max_cap = TimingPropagator::getMaxCap();
   _max_net_len = TimingPropagator::getMaxLength();
+  _skew_bound = TimingPropagator::getSkewBound();
 }
 /**
  * @brief init the VioAnnealOpt solver parameters
@@ -408,14 +409,16 @@ void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_r
  * @param max_fanout
  * @param max_cap
  * @param max_net_len
+ * @param skew_bound
  */
 void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature, const int& max_fanout,
-                                 const double& max_cap, const double& max_net_len)
+                                 const double& max_cap, const double& max_net_len, const double& skew_bound)
 {
   initParameter(max_iter, cooling_rate, temperature);
   _max_fanout = max_fanout;
   _max_cap = max_cap;
   _max_net_len = max_net_len;
+  _skew_bound = skew_bound;
 }
 /**
  * @brief violation cost of the net
@@ -425,7 +428,7 @@ void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_r
  */
 double VioAnnealOpt::cost(Net* net)
 {
-  return _correct_coef * (capVioCost(net) + wireLengthVioCost(net) + fanoutVioCost(net));
+  return _correct_coef * (capVioCost(net) + wireLengthVioCost(net) + skewVioCost(net) + fanoutVioCost(net));
 }
 /**
  * @brief design cost of the net
@@ -503,7 +506,7 @@ double VioAnnealOpt::fanoutVioCost(const Net* net)
   double fanout_cost = 0.0;
   auto fanout = net->getFanout();
   if (fanout > _max_fanout) {
-    fanout_cost += (fanout - _max_fanout) * (wireLengthVioCost(net) + capVioCost(net));
+    fanout_cost += (fanout - _max_fanout) * (wireLengthVioCost(net) + capVioCost(net) + skewVioCost(net));
   }
   return fanout_cost;
 }
@@ -518,6 +521,22 @@ double VioAnnealOpt::skewCost(const Net* net)
   auto* driver_pin = net->get_driver_pin();
   auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
   auto cost = skew / TimingPropagator::getUnitRes();
+  return cost;
+}
+/**
+ * @brief skew violation cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::skewVioCost(const Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  double cost = 0;
+  if (skew > _skew_bound) {
+    cost = (skew - _skew_bound) / TimingPropagator::getUnitRes();
+  }
   return cost;
 }
 /**

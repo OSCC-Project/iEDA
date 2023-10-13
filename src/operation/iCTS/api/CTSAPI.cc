@@ -31,7 +31,6 @@
 #include "CtsConfig.hh"
 #include "CtsDBWrapper.hh"
 #include "CtsDesign.hh"
-#include "CtsReport.hh"
 #include "Evaluator.hh"
 #include "GDSPloter.hh"
 #include "JsonParser.hh"
@@ -48,6 +47,7 @@
 #include "model/ModelFactory.hh"
 #include "model/mplHelper/MplHelper.hh"
 #include "model/python/PyToolBase.hh"
+#include "report/CtsReport.hh"
 #ifdef PY_MODEL
 #include "PyModel.h"
 #endif

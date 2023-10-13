@@ -23,8 +23,8 @@
 #include <fstream>
 
 #include "CTSAPI.hh"
-#include "CtsReport.hh"
 #include "Net.hh"
+#include "report/CtsReport.hh"
 namespace icts {
 
 void Evaluator::init()

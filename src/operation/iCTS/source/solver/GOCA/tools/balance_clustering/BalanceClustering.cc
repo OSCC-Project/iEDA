@@ -250,6 +250,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
  * @param max_fanout
  * @param max_cap
  * @param max_net_length
+ * @param skew_bound
  * @param max_iter
  * @param cooling_rate
  * @param temperature
@@ -257,11 +258,12 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
  */
 std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters,
                                                                          const int& max_fanout, const double& max_cap,
-                                                                         const double& max_net_length, const size_t& max_iter,
-                                                                         const double& cooling_rate, const double& temperature)
+                                                                         const double& max_net_length, const double& skew_bound,
+                                                                         const size_t& max_iter, const double& cooling_rate,
+                                                                         const double& temperature)
 {
   VioAnnealOpt solver(clusters);
-  solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_length);
+  solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_length, skew_bound);
   return solver.run();
 }
 /**
@@ -897,7 +899,7 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
   auto* config = CTSAPIInst.get_config();
   auto path = config->get_sta_workspace() + "/file";
   if (!std::filesystem::exists(path)) {
-    std::filesystem::create_directory(path);
+    std::filesystem::create_directories(path);
   }
   std::ofstream ofs(path + "/" + save_name + ".py");
   ofs << "import matplotlib.pyplot as plt" << std::endl;
