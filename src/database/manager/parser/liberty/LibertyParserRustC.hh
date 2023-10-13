@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <string>
+#include <type_traits>
 
 extern "C" {
 
@@ -37,6 +38,7 @@ typedef struct RustVec {
   void* data;
   uintptr_t len;
   uintptr_t cap;
+  uintptr_t type_size;
 } RustVec;
 
 /**
@@ -214,7 +216,13 @@ class RustVecIterator {
 
   bool hasNext() { return _index < _rust_vec->len; }
   T* next() {
-    auto* ret_value = static_cast<T*>(_rust_vec->data) + _index++;
+    auto* ret_value = static_cast<T*>(_rust_vec->data) + _index;
+
+    if (std::is_same_v<T, void>) {
+      _index += _rust_vec->type_size;
+    } else {
+      ++_index;
+    }
     return ret_value;
   }
 

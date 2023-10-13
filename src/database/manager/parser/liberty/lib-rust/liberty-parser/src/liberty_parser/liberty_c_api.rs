@@ -12,10 +12,16 @@ pub struct RustVec {
     data: *mut c_void,
     len: usize,
     cap: usize,
+    type_size: usize,
 }
 
 fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
-    RustVec { data: vec.as_ptr() as *mut c_void, len: vec.len(), cap: vec.capacity() }
+    RustVec {
+        data: vec.as_ptr() as *mut c_void,
+        len: vec.len(),
+        cap: vec.capacity(),
+        type_size: std::mem::size_of::<T>(),
+    }
 }
 
 #[no_mangle]

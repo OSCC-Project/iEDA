@@ -51,6 +51,7 @@ typedef struct RustVec {
     void *data;
     uintptr_t len;
     uintptr_t cap;
+    uintptr_t type_size;
 } RustVec;
 
 typedef struct RustLibertyStringValue {
