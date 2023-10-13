@@ -35,10 +35,10 @@ extern "C" {
  *
  */
 typedef struct RustVec {
-  void* data;
-  uintptr_t len;
-  uintptr_t cap;
-  uintptr_t type_size;
+  void* data;           //!< vec elem data storage
+  uintptr_t len;        //!< vec elem num
+  uintptr_t cap;        //!< vec elem capacitance
+  uintptr_t type_size;  //!< vec elem type size
 } RustVec;
 
 /**
