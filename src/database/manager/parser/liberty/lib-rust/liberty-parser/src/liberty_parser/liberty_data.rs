@@ -60,17 +60,17 @@ impl LibertyAttrValue for LibertyStringValue {
 
 /// liberty stmt.
 pub trait LibertyStmt {
-    fn is_simple_attr_stmt(&self) -> u32 {
-        0
+    fn is_simple_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_complex_attr_stmt(&self) -> u32 {
-        0
+    fn is_complex_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_attr_stmt(&self) -> u32 {
-        0
+    fn is_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_group_stmt(&self) -> u32 {
-        0
+    fn is_group_stmt(&self) -> bool {
+        false
     }
 }
 
@@ -133,11 +133,11 @@ impl LibertySimpleAttrStmt {
 }
 
 impl LibertyStmt for LibertySimpleAttrStmt {
-    fn is_simple_attr_stmt(&self) -> u32 {
-        1
+    fn is_simple_attr_stmt(&self) -> bool {
+        true
     }
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_attr_stmt(&self) -> bool {
+        true
     }
 }
 
@@ -179,11 +179,11 @@ impl LibertyComplexAttrStmt {
 }
 
 impl LibertyStmt for LibertyComplexAttrStmt {
-    fn is_complex_attr_stmt(&self) -> u32 {
-        1
+    fn is_complex_attr_stmt(&self) -> bool {
+        true
     }
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_attr_stmt(&self) -> bool {
+        true
     }
 }
 
@@ -251,8 +251,8 @@ impl LibertyGroupStmt {
 }
 
 impl LibertyStmt for LibertyGroupStmt {
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_group_stmt(&self) -> bool {
+        true
     }
 }
 

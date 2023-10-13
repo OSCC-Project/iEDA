@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 set (CMAKE_CXX_STANDARD 20)
-
+set (CMAKE_BUILD_TYPE "Debug")
 
 ################################################################
 #
@@ -64,6 +64,8 @@ ExternalProject_Add(
 )
 
 file(MAKE_DIRECTORY ${RUST_OUTPUT_DIR})
+message("Liberty Parser Rust lib path ${RUST_LIB_PATH}")
+message("Liberty Parser Rust outut path ${RUST_OUTPUT_DIR}")
 
 add_custom_command(
     TARGET ${RUST_PROJECT_NAME} POST_BUILD
@@ -72,8 +74,7 @@ add_custom_command(
             ${RUST_OUTPUT_DIR}
 )
 
-target_link_directories(liberty PRIVATE ${RUST_OUTPUT_DIR})
-target_link_libraries(liberty str sta-solver log)
+target_link_libraries(liberty str sta-solver log ${RUST_LIB_PATH})
 target_include_directories(liberty PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR} 
     ${HOME_THIRDPARTY}/parser/liberty/)

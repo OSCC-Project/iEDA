@@ -184,3 +184,35 @@ pub extern "C" fn rust_convert_complex_attribute_stmt(
         raw_pointer
     }
 }
+
+#[no_mangle]
+pub extern "C" fn rust_is_simple_attri_stmt(c_lib_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut lib_stmt = unsafe { &mut *(c_lib_stmt as *mut Box<dyn liberty_data::LibertyStmt>) };
+
+    unsafe { (*lib_stmt).is_simple_attr_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_complex_attri_stmt(c_lib_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut lib_stmt = unsafe { &mut *(c_lib_stmt as *mut Box<dyn liberty_data::LibertyStmt>) };
+
+    unsafe { (*lib_stmt).is_complex_attr_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_attri_stmt(c_lib_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut lib_stmt = unsafe { &mut *(c_lib_stmt as *mut Box<dyn liberty_data::LibertyStmt>) };
+
+    unsafe { (*lib_stmt).is_attr_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_group_stmt(c_lib_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut lib_stmt = unsafe { &mut *(c_lib_stmt as *mut Box<dyn liberty_data::LibertyStmt>) };
+
+    unsafe { (*lib_stmt).is_group_stmt() }
+}

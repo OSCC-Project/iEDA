@@ -102,3 +102,11 @@ struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *gr
 struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(struct LibertySimpleAttrStmt *simple_attri_stmt);
 
 struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(struct LibertyComplexAttrStmt *complex_attri_stmt);
+
+bool rust_is_simple_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_complex_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_group_stmt(void *c_lib_stmt);

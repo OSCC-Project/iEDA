@@ -23,3 +23,5 @@ catboost_info
 
 rpt*/
 target/
+*-stamp/
+tmp/
