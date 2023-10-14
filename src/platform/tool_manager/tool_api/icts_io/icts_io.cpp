@@ -19,7 +19,7 @@
 #include "builder.h"
 #include "dm_cts_config.h"
 #include "flow_config.h"
-#include "iCTS/api/CTSAPI.hpp"
+#include "iCTS/api/CTSAPI.hh"
 #include "ista_io.h"
 #include "source/module/sta/StaClockTree.hh"
 #include "usage/usage.hh"

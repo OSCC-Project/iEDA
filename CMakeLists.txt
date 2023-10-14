@@ -42,7 +42,7 @@ set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and exam
 # SET(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-set(CMAKE_BUILD_TYPE "Release")
+# set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_BUILD_TYPE "Debug")
 #set(BUILD_SHARED_LIBS ON)
 
@@ -65,7 +65,7 @@ if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
 
-option(CONTEST "If ON, run contest porject." ON)
+option(CONTEST "If ON, run contest porject." OFF)
 if(CONTEST)
     add_definitions(-DCONTEST)
     add_subdirectory(contest)

@@ -28,7 +28,6 @@ target_link_libraries(ipl-source
         ipl-configurator
         ipl-module
         ipl-solver
-        ipl-bridge
         ipl-utility
 )
 

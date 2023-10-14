@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -74,10 +74,14 @@ unsigned CmdSetInputTransition::exec() {
     return 0;
   }
 
+  Sta* ista = Sta::getOrCreateSta();
+  SdcConstrain* the_constrain = ista->getConstrain();
+  Netlist* design_nl = ista->get_netlist();
+
   auto* transition_value = getOptionOrArg("transition");
 
   auto* set_input_transiton = new SdcSetInputTransition(
-      get_cmd_name(), transition_value->getDoubleVal());
+      get_cmd_name(), ista->convertTimeUnit(transition_value->getDoubleVal()));
 
   auto* rise_option = getOptionOrArg("-rise");
   auto* fall_option = getOptionOrArg("-fall");
@@ -99,10 +103,6 @@ unsigned CmdSetInputTransition::exec() {
   if (min_option->is_set_val() && !max_option->is_set_val()) {
     set_input_transiton->set_max(false);
   }
-
-  Sta* ista = Sta::getOrCreateSta();
-  SdcConstrain* the_constrain = ista->getConstrain();
-  Netlist* design_nl = ista->get_netlist();
 
   TclOption* pin_port_list_option = getOptionOrArg("pin_port_list");
   std::string pin_port_name = pin_port_list_option->getStringVal();

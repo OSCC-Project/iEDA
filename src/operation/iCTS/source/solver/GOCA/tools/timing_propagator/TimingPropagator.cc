@@ -22,8 +22,8 @@
 
 #include <ranges>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "TreeBuilder.hh"
 namespace icts {
 double TimingPropagator::_unit_cap = 0;
@@ -92,6 +92,40 @@ Net* TimingPropagator::genNet(const std::string& net_name, Pin* driver_pin, cons
   }
 }
 /**
+ * @brief recover net
+ *       remove root node
+ *       save the leaf node and disconnect the leaf node
+ *
+ * @param net
+ */
+void TimingPropagator::resetNet(Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto load_pins = net->get_load_pins();
+  std::vector<Node*> to_be_removed;
+  auto find_steiner = [&to_be_removed](Node* node) {
+    if (node->isSteiner()) {
+      to_be_removed.push_back(node);
+    }
+  };
+  driver_pin->preOrder(find_steiner);
+  // recover load pins' timing
+  std::ranges::for_each(load_pins, [](Pin* pin) {
+    pin->set_parent(nullptr);
+    pin->set_children({});
+    pin->set_slew_in(0);
+    pin->set_cap_load(0);
+    pin->set_net(nullptr);
+    updatePinCap(pin);
+    initLoadPinDelay(pin);
+  });
+  // release buffer and its pins
+  auto* buffer = driver_pin->get_inst();
+  delete buffer;
+  // release steiner node
+  std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
+}
+/**
  * @brief update net's load pins
  *
  * @param net
@@ -115,6 +149,9 @@ void TimingPropagator::updatePinCap(Pin* pin)
   }
   if (pin->isBufferPin()) {
     auto cell_name = pin->get_cell_master();
+    if (cell_name.empty()) {
+      return;
+    }
     auto* lib = CTSAPIInst.getCellLib(cell_name);
     cap_load = lib->get_init_cap();
   }
@@ -154,7 +191,6 @@ void TimingPropagator::netLenPropagate(Net* net)
  */
 void TimingPropagator::capPropagate(Net* net)
 {
-  auto* driver_pin = net->get_driver_pin();
   std::ranges::for_each(net->get_load_pins(), [](Pin* pin) {
     double cap_load = 0;
     if (pin->isSinkPin()) {
@@ -170,6 +206,7 @@ void TimingPropagator::capPropagate(Net* net)
     }
     pin->set_cap_load(cap_load);
   });
+  auto* driver_pin = net->get_driver_pin();
   driver_pin->postOrder(updateCapLoad<Node>);
 }
 /**
@@ -264,7 +301,12 @@ double TimingPropagator::calcSkew(Node* node)
 bool TimingPropagator::skewFeasible(Node* node, const std::optional<double>& skew_bound)
 {
   auto skew = calcSkew(node);
-  return skew <= skew_bound.value_or(_skew_bound) || (skew - skew_bound.value_or(_skew_bound)) < 1e-6;
+  auto delta = skew - skew_bound.value_or(_skew_bound);
+  if (delta > 0 && delta < kEpsilon) {
+    node->set_min_delay(node->get_max_delay() - skew_bound.value_or(_skew_bound));
+    return true;
+  }
+  return skew <= skew_bound.value_or(_skew_bound);
 }
 /**
  * @brief init load pin delay (predict cell delay by cell)
@@ -277,12 +319,16 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
   LOG_FATAL_IF(!pin->isLoad()) << "The pin: " << pin->get_name() << " is not load pin";
   auto* inst = pin->get_inst();
   if (inst->isSink()) {
-    return;
+    pin->set_min_delay(0);
+    pin->set_max_delay(0);
   } else {
     auto* driver_pin = inst->get_driver_pin();
     double insert_delay = 0;
     if (by_cell) {
       auto cell_name = pin->get_cell_master();
+      if (cell_name.empty()) {
+        return;
+      }
       for (auto* lib : _delay_libs) {
         if (lib->get_cell_master() == cell_name) {
           auto cap_coef = lib->get_delay_coef().back();

@@ -72,18 +72,18 @@ class StaIO
                     std::pair<std::string, std::string>& master_inst_buffer, std::pair<int, int> buffer_center_loc,
                     idb::IdbConnectType connect_type);
 
- private:
-  static StaIO* _instance;
-
-  StaIO() {}
-  ~StaIO() = default;
-
   bool setStaWorkDirectory(std::string path = "");
   bool readIdb(idb::IdbBuilder* idb_builder = nullptr);
   bool runSDC(std::string path = "");
   bool runLiberty(std::vector<std::string> paths);
   bool runSpef(std::string path = "");
   bool reportTiming();
+
+ private:
+  static StaIO* _instance;
+
+  StaIO() {}
+  ~StaIO() = default;
 };
 
 }  // namespace iplf

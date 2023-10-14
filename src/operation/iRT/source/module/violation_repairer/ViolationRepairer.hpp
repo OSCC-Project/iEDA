@@ -56,8 +56,9 @@ class ViolationRepairer
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
-  void updateNetFixedRectMap(VRModel& vr_model);
+  void updateBlockageMap(VRModel& vr_model);
   void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(VRModel& vr_model);
   void calcVRGCellSupply(VRModel& vr_model);
   std::vector<PlanarRect> getWireList(VRGCell& vr_gcell, RoutingLayer& routing_layer);
   void updateVRResultTree(VRModel& vr_model);
@@ -92,12 +93,14 @@ class ViolationRepairer
 #endif
 
 #if 1  // valid drc
-  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const DRCRect& drc_rect);
-  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
-                                                                     const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type);
-  void removeInvalidViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVRViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
+  void removeInvalidVRViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

@@ -109,6 +109,7 @@ class GeomCalc
   // Pts
   static void sortPtsByFront(Pts& pts);
   static void sortPtsByVal(Pts& pts);
+  static void sortPtsByValDec(Pts& pts);
   static void uniquePtsLoc(std::vector<Pt>& pts);
   static void uniquePtsVal(std::vector<Pt>& pts);
   // Region

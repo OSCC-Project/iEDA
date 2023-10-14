@@ -1,4 +1,0 @@
-*** Error 188: Index tuple <1> has wrong dimension 1, expected 2
-*** File: e188_2.zpl Line 3
-*** set C := { <i> in A with <i> in B };
-***                                   ^^^

@@ -1,4 +1,0 @@
-*** Error 153: Invalid field number [70000]
-*** File: e153.zpl Line 2
-*** set A := { read "dummy.dat" as "<70000n>" };
-***                                           ^^^

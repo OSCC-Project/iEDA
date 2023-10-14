@@ -9,3 +9,7 @@ endif()
 add_library(icts_min_cost_flow INTERFACE)
 
 target_link_libraries(icts_min_cost_flow INTERFACE lemon)
+
+target_include_directories(
+  icts_min_cost_flow
+  INTERFACE ${ICTS_SOLVER}/GOCA/tools/balance_clustering/min_cost_flow)

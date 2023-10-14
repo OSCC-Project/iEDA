@@ -96,16 +96,16 @@ void Cancel(array<shared_ptr<TreeNode>, 2> oric) {
     auto rootN = oric[1 - minD]->parent;
     shared_ptr<TreeNode> mergeN = nullptr;
     for (int d = 0; d < 2; ++d) {
-        TreeNode::ResetParent(oric[d]);
+        TreeNode::resetParent(oric[d]);
         if (oric[d]->loc == cclosest[d]) mergeN = oric[d];
     }
     if (!mergeN) mergeN = make_shared<TreeNode>(cclosest[minD]);
-    TreeNode::SetParent(mergeN, rootN);
+    TreeNode::setParent(mergeN, rootN);
     for (int d = 0; d < 2; ++d)
-        if (oric[d] != mergeN) TreeNode::SetParent(oric[d], mergeN);
+        if (oric[d] != mergeN) TreeNode::setParent(oric[d], mergeN);
 }
 
-void Refine::CancelIntersect(Tree& tree) {
+void Refine::cancelIntersect(Tree& tree) {
     bgi::rtree<RNode, bgi::linear<16>, bgi::indexable<RNode>, RNodeComp> rtree;
     auto nodes = tree.ObtainNodes();
     for (int i = 0; i < nodes.size(); ++i) {

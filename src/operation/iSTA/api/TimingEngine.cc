@@ -27,7 +27,7 @@
 #include <iostream>
 #include <optional>
 
-#include "HashSet.hh"
+#include "FlatSet.hh"
 #include "TimingIDBAdapter.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
@@ -701,7 +701,7 @@ void TimingEngine::insertBuffer(const char* instance_name) {
   StaBuildGraph build_graph;
   build_graph.buildInst(&the_graph, instance);
 
-  HashSet<StaArc*> to_be_removed_arcs;
+  FlatSet<StaArc*> to_be_removed_arcs;
   Vector<Net*> buffer_nets;
   Pin* pin;
   FOREACH_INSTANCE_PIN(instance, pin) {
@@ -764,7 +764,7 @@ void TimingEngine::removeBuffer(const char* instance_name) {
   LOG_FATAL_IF(!instance);
   auto& the_graph = ista->get_graph();
 
-  HashSet<StaArc*> to_be_changed_arcs;
+  FlatSet<StaArc*> to_be_changed_arcs;
   StaVertex* buffer_driver_vertex = nullptr;
   Net* buffer_driver_net = nullptr;
 

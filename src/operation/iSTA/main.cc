@@ -59,6 +59,7 @@ using namespace ista;
 int registerCommands() {
   registerTclCmd(CmdSetDesignWorkSpace, "set_design_workspace");
   registerTclCmd(CmdReadVerilog, "read_netlist");
+  registerTclCmd(CmdReadLefDef, "read_lef_def");
   registerTclCmd(CmdReadLiberty, "read_liberty");
   registerTclCmd(CmdLinkDesign, "link_design");
   registerTclCmd(CmdReadSpef, "read_spef");

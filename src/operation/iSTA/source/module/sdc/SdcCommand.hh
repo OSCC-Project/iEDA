@@ -53,7 +53,7 @@ class SdcCommandObj {
   const char* _file_name = nullptr;  //!< the sdc file name.
   unsigned _line_no = 0;             //!< the sdc file line no.
 
-  DISALLOW_COPY_AND_ASSIGN(SdcCommandObj);
+  FORBIDDEN_COPY(SdcCommandObj);
 };
 
 /**

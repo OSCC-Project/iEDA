@@ -226,7 +226,7 @@ class RctNode {
   LaplaceMoments _moments;
   PiModel _pi;
 
-  DISALLOW_COPY_AND_ASSIGN(RctNode);
+  FORBIDDEN_COPY(RctNode);
 };
 
 /**
@@ -318,7 +318,7 @@ class RctEdge {
 
   double _res = 0.0;
 
-  DISALLOW_COPY_AND_ASSIGN(RctEdge);
+  FORBIDDEN_COPY(RctEdge);
 };
 
 /**
@@ -451,7 +451,7 @@ class RcTree {
 
   RctNode* rcNode(const std::string&);
 
-  DISALLOW_COPY_AND_ASSIGN(RcTree);
+  FORBIDDEN_COPY(RcTree);
 };
 
 /**

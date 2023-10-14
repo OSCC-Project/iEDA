@@ -226,41 +226,55 @@ std::vector<LayerRect> DRCChecker::getMaxScope(const std::vector<DRCRect>& drc_r
 #if 1  // 获得违例信息
 
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query,
+                                                                               const std::vector<DRCCheckType>& check_type_list,
                                                                                const std::vector<DRCRect>& drc_rect_list)
 {
   RegionQuery* region_query_ref = &region_query;
 
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-
   std::vector<ViolationInfo> violation_info_list;
-  checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
-  uniqueViolationInfoList(violation_info_list);
-  for (ViolationInfo& violation_info : violation_info_list) {
-    drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
-  }
-  return drc_violation_map;
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query)
-{
-  RegionQuery* region_query_ref = &region_query;
-
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-
-  std::vector<ViolationInfo> violation_info_list;
-  for (auto& [layer_idx, net_rect_list_map] : region_query.get_routing_net_rect_map()) {
-    for (auto& [net_idx, rect_list] : net_rect_list_map) {
-      for (const LayerRect& rect : rect_list) {
-        checkMinSpacingByOther(region_query_ref, DRCRect(net_idx, rect, true), violation_info_list);
-      }
+  for (DRCCheckType check_type : check_type_list) {
+    switch (check_type) {
+      case DRCCheckType::kSpacing:
+        checkMinSpacingByOther(region_query_ref, drc_rect_list, violation_info_list);
+        break;
+      case DRCCheckType::kMinArea:
+        checkMinArea(region_query_ref, drc_rect_list, violation_info_list);
+        break;
+      case DRCCheckType::kMinStep:
+        break;
+      default:
+        break;
     }
   }
   uniqueViolationInfoList(violation_info_list);
+
+  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
   for (ViolationInfo& violation_info : violation_info_list) {
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
   }
   return drc_violation_map;
 }
+
+// std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getViolationInfo(RegionQuery& region_query)
+// {
+//   RegionQuery* region_query_ref = &region_query;
+
+//   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
+
+//   std::vector<ViolationInfo> violation_info_list;
+//   for (auto& [layer_idx, net_rect_list_map] : region_query.get_routing_net_rect_map()) {
+//     for (auto& [net_idx, rect_list] : net_rect_list_map) {
+//       for (const LayerRect& rect : rect_list) {
+//         checkMinSpacingByOther(region_query_ref, DRCRect(net_idx, rect, true), violation_info_list);
+//       }
+//     }
+//   }
+//   uniqueViolationInfoList(violation_info_list);
+//   for (ViolationInfo& violation_info : violation_info_list) {
+//     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
+//   }
+//   return drc_violation_map;
+// }
 
 #endif
 
@@ -292,10 +306,10 @@ void DRCChecker::addEnvRectList(RegionQuery* region_query, const std::vector<DRC
   for (const DRCRect& drc_rect : drc_rect_list) {
     irt_int net_idx = drc_rect.get_net_idx();
     const LayerRect& layer_rect = drc_rect.get_layer_rect();
-    BoostBox shape = RTUtil::convertToBoostBox(layer_rect);
+    BGRectInt shape = RTUtil::convertToBGRectInt(layer_rect);
     irt_int layer_idx = layer_rect.get_layer_idx();
     irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(layer_rect);
-    BoostBox enlarged_shape = RTUtil::enlargeBoostBox(shape, min_spacing);
+    BGRectInt enlarged_shape = RTUtil::enlargeBGRectInt(shape, min_spacing);
 
     RQShape* rq_shape = new RQShape();
     rq_shape->set_shape(shape);
@@ -385,10 +399,10 @@ RQShape DRCChecker::convertToRQShape(const DRCRect& drc_rect)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   const LayerRect& layer_rect = drc_rect.get_layer_rect();
-  BoostBox shape = RTUtil::convertToBoostBox(layer_rect);
+  BGRectInt shape = RTUtil::convertToBGRectInt(layer_rect);
   irt_int layer_idx = layer_rect.get_layer_idx();
   irt_int min_spacing = routing_layer_list[layer_idx].getMinSpacing(layer_rect);
-  BoostBox enlarged_shape = RTUtil::enlargeBoostBox(shape, min_spacing);
+  BGRectInt enlarged_shape = RTUtil::enlargeBGRectInt(shape, min_spacing);
 
   RQShape rq_shape;
   rq_shape.set_net_id(drc_rect.get_net_idx());
@@ -414,9 +428,9 @@ std::vector<LayerRect> DRCChecker::getMinSpacingRect(const std::vector<ids::DRCR
       RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[routing_layer_idx];
       min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, routing_layer.getMinSpacing(rect)), routing_layer_idx);
     } else if (RTUtil::exist(cut_layer_name_to_idx_map, layer_name)) {
-      irt_int cut_spacing = 0;  // TODO
       irt_int cut_layer_idx = cut_layer_name_to_idx_map[layer_name];
-      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, cut_spacing), cut_layer_idx);
+      CutLayer& cut_layer = DM_INST.getDatabase().get_cut_layer_list()[cut_layer_idx];
+      min_scope_list.emplace_back(RTUtil::getEnlargedRect(rect, cut_layer.getMinSpacing()), cut_layer_idx);
     } else {
       LOG_INST.error(Loc::current(), "There has no layer name : ", layer_name, " !");
     }
@@ -439,14 +453,14 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
     RQShape drc_shape = convertToRQShape(drc_rect);
     irt_int layer_idx = drc_shape.get_routing_layer_idx();
     // 查询重叠
-    std::vector<std::pair<BoostBox, RQShape*>> result_list;
+    std::vector<std::pair<BGRectInt, RQShape*>> result_list;
     if (drc_shape.get_is_routing()) {
       auto& routing_region_map = region_query->get_routing_region_map();
-      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[layer_idx];
+      bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16UL>>& rtree = routing_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     } else {
       auto& cut_region_map = region_query->get_cut_region_map();
-      bgi::rtree<std::pair<BoostBox, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[layer_idx];
+      bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16UL>>& rtree = cut_region_map[layer_idx];
       rtree.query(bgi::intersects(drc_shape.get_enlarged_shape()), std::back_inserter(result_list));
     }
 
@@ -469,7 +483,15 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       if (!RTUtil::isOverlap(enlarge_rect1, check_rect2) && !RTUtil::isOverlap(enlarge_rect2, check_rect1)) {
         LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
-
+      std::string rule_name;
+      if (drc_rect.get_is_routing()) {
+        rule_name = RTUtil::isOverlap(check_rect1, check_rect2) ? "Metal Short" : "Metal Spacing";
+      } else {
+        rule_name = RTUtil::isOverlap(check_rect1, check_rect2) ? "Cut Short" : "Cut Spacing";
+      }
+      if (!RTUtil::isOverlap(enlarge_rect1, enlarge_rect2)) {
+        continue;
+      }
       LayerRect violation_region(RTUtil::getOverlap(enlarge_rect1, enlarge_rect2), layer_idx);
 
       std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
@@ -478,10 +500,73 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
 
       ViolationInfo violation;
       violation.set_is_routing(drc_rect.get_is_routing());
-      violation.set_rule_name("RT Spacing");
+      violation.set_rule_name(rule_name);
       violation.set_violation_region(violation_region);
       violation.set_net_shape_map(violation_net_shape_map);
       violation_info_list.push_back(violation);
+    }
+  }
+}
+
+void DRCChecker::checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
+                              std::vector<ViolationInfo>& violation_info_list)
+{
+  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+
+  std::map<irt_int, std::map<irt_int, GTLPolySetInt>> layer_net_polgon_set_map;
+  {
+    for (auto& [layer_idx, net_rect_map] : region_query->get_routing_net_rect_map()) {
+      if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
+        for (auto& [net_idx, rect_set] : net_rect_map) {
+          if (rect_set.empty() || net_idx == -1) {
+            continue;
+          }
+          GTLPolySetInt& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+          for (const LayerRect& rect : rect_set) {
+            poly_set += RTUtil::convertToGTLRectInt(rect);
+          }
+        }
+      }
+    }
+    for (const DRCRect& drc_rect : drc_rect_list) {
+      if (!drc_rect.get_is_routing()) {
+        continue;
+      }
+      irt_int layer_idx = drc_rect.get_layer_idx();
+      irt_int net_idx = drc_rect.get_net_idx();
+      if (bottom_routing_layer_idx <= layer_idx && layer_idx <= top_routing_layer_idx) {
+        GTLPolySetInt& poly_set = layer_net_polgon_set_map[layer_idx][net_idx];
+        poly_set += RTUtil::convertToGTLRectInt(drc_rect.get_layer_rect());
+      }
+    }
+  }
+
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  for (auto& [layer_idx, net_poly_set_map] : layer_net_polgon_set_map) {
+    for (auto& [net_idx, poly_set] : net_poly_set_map) {
+      std::vector<GTLPolyInt> poly_list;
+      poly_set.get_polygons(poly_list);
+      for (GTLPolyInt& poly : poly_list) {
+        if (gtl::area(poly) >= routing_layer_list[layer_idx].get_min_area()) {
+          continue;
+        }
+        std::vector<GTLRectInt> gtl_rect_list;
+        gtl::get_rectangles(gtl_rect_list, poly);
+
+        std::map<irt_int, std::vector<LayerRect>> violation_net_shape_map;
+        for (GTLRectInt& gtl_rect : gtl_rect_list) {
+          violation_net_shape_map[net_idx].emplace_back(RTUtil::convertToPlanarRect(gtl_rect), layer_idx);
+        }
+        LayerRect violation_region = violation_net_shape_map[net_idx].front();
+
+        ViolationInfo violation;
+        violation.set_is_routing(true);
+        violation.set_rule_name("Min Area");
+        violation.set_violation_region(violation_region);
+        violation.set_net_shape_map(violation_net_shape_map);
+        violation_info_list.push_back(violation);
+      }
     }
   }
 }

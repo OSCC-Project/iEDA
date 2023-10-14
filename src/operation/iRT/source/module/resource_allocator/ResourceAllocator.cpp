@@ -114,7 +114,8 @@ void ResourceAllocator::buildRAModel(RAModel& ra_model)
 {
   initRANetDemand(ra_model);
   initRAGCellList(ra_model);
-  updateNetFixedRectMap(ra_model);
+  updateBlockageMap(ra_model);
+  updateNetShapeMap(ra_model);
   calcRAGCellSupply(ra_model);
   buildRelation(ra_model);
   initTempObject(ra_model);
@@ -127,9 +128,7 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
     std::vector<PlanarCoord> coord_list;
     for (RAPin& ra_pin : ra_pin_list) {
-      for (LayerCoord& grid_coord : ra_pin.getGridCoordList()) {
-        coord_list.push_back(grid_coord.get_planar_coord());
-      }
+      coord_list.push_back(ra_pin.get_protected_access_point().getGridLayerCoord());
     }
     std::sort(coord_list.begin(), coord_list.end(), CmpPlanarCoordByXASC());
     coord_list.erase(std::unique(coord_list.begin(), coord_list.end()), coord_list.end());
@@ -162,21 +161,13 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::updateNetFixedRectMap(RAModel& ra_model)
+void ResourceAllocator::updateBlockageMap(RAModel& ra_model)
 {
   std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(-1, blockage_real_rect, true));
-  }
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, RASourceType::kLayoutShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
-      }
-    }
+    addRectToEnv(ra_model, RASourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
   }
 }
 
@@ -202,6 +193,18 @@ void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_t
   }
 }
 
+void ResourceAllocator::updateNetShapeMap(RAModel& ra_model)
+{
+  for (RANet& ra_net : ra_model.get_ra_net_list()) {
+    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
+      for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        addRectToEnv(ra_model, RASourceType::kNetShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
+      }
+    }
+  }
+}
+
 void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
@@ -210,9 +213,7 @@ void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (LayerCoord& real_coord : ra_pin.getRealCoordList()) {
-        real_coord_set.insert(real_coord);
-      }
+      real_coord_set.insert(ra_pin.get_protected_access_point().getRealLayerCoord());
     }
     for (const LayerCoord& real_coord : real_coord_set) {
       irt_int layer_idx = real_coord.get_layer_idx();
@@ -254,7 +255,7 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kLayoutShape, RASourceType::kReservedVia}) {
+      for (RASourceType ra_source_type : {RASourceType::kBlockage, RASourceType::kNetShape, RASourceType::kReservedVia}) {
         for (const auto& [net_idx, rect_set] :
              DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {
@@ -695,9 +696,8 @@ void ResourceAllocator::processRAModel(RAModel& ra_model)
     GridMap<double> cost_map = getCostMap(allocation_map, lower_cost);
     normalizeCostMap(cost_map, lower_cost);
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (LayerCoord& grid_coord : ra_pin.getGridCoordList()) {
-        cost_map[grid_coord.get_x() - grid_lb_x][grid_coord.get_y() - grid_lb_y] = lower_cost;
-      }
+      LayerCoord grid_coord = ra_pin.get_protected_access_point().getGridLayerCoord();
+      cost_map[grid_coord.get_x() - grid_lb_x][grid_coord.get_y() - grid_lb_y] = lower_cost;
     }
     ra_net.set_ra_cost_map(cost_map);
   }

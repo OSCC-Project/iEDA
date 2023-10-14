@@ -26,12 +26,13 @@ void Legalizer::initLegalizer(Config* pl_config, PlacerDB* placer_db)
   initLGConfig(pl_config);
   initLGDatabase(placer_db);
 
-  // change legalizer mode
-  LG_METHOD lg_mode = LG_METHOD::kAbacus;
+  // change legalizer method
+  LG_METHOD lg_method = LG_METHOD::kAbacus;
 
-  if (lg_mode == LG_METHOD::kAbacus) {
+  if (lg_method == LG_METHOD::kAbacus) {
     _method = new Abacus();
   } else {
+    LOG_ERROR << "Target legalizetion method has not been realized!";
   }
 }
 

@@ -6,11 +6,11 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-add_library(
-  icts_io
-  ${ICTS_DATA_MANAGER}/io/CtsDBWrapper.cc ${ICTS_DATA_MANAGER}/io/GDSPloter.cc
-  ${ICTS_DATA_MANAGER}/io/CtsReport.cc)
+add_subdirectory(report)
 
-target_link_libraries(icts_io PUBLIC icts_data_manager report_table)
+add_library(icts_io ${ICTS_DATA_MANAGER}/io/CtsDBWrapper.cc
+                    ${ICTS_DATA_MANAGER}/io/GDSPloter.cc)
+
+target_link_libraries(icts_io PUBLIC icts_data_manager icts_report)
 
 target_include_directories(icts_io PUBLIC ${ICTS_DATA_MANAGER}/io)

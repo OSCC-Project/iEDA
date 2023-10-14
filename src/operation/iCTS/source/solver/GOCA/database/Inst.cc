@@ -37,6 +37,7 @@ void Inst::init(Node* driver_node)
     _driver_pin = new Pin(std::move(*driver_node));
     delete driver_node;
 
+    _driver_pin->set_name(_name + "_driver");
     _driver_pin->set_type(NodeType::kBufferPin);
     _driver_pin->set_inst(this);
     _driver_pin->set_pin_type(PinType::kDriver);

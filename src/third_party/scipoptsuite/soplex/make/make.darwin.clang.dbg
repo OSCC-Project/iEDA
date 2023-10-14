@@ -1,2 +1,0 @@
-CPPFLAGS	+=
-CXXFLAGS	+=	-O0 -g -fomit-frame-pointer

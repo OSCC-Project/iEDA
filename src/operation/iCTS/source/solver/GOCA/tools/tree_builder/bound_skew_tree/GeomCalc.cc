@@ -546,13 +546,32 @@ void GeomCalc::sortPtsByVal(Pts& pts)
   if (pts.empty()) {
     return;
   }
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+}
+
+void GeomCalc::sortPtsByValDec(Pts& pts)
+{
+  if (pts.empty()) {
+    return;
+  }
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val > p2.val; });
 }
 
 void GeomCalc::uniquePtsLoc(std::vector<Pt>& pts)
 {
-  pts.erase(std::unique(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return Equal(p1.x, p2.x) && Equal(p1.y, p2.y); }),
-            pts.end());
+  if (pts.size() < 2) {
+    return;
+  }
+  std::vector<Pt> unique_pts = {pts.front()};
+  std::ranges::for_each(pts, [&unique_pts](const Pt& p) {
+    if (!isSame(p, unique_pts.back())) {
+      unique_pts.push_back(p);
+    }
+  });
+  if (unique_pts.size() > 1 && isSame(unique_pts.front(), unique_pts.back())) {
+    unique_pts.pop_back();
+  }
+  pts = unique_pts;
 }
 
 void GeomCalc::uniquePtsVal(std::vector<Pt>& pts)
@@ -586,24 +605,23 @@ void GeomCalc::convexHull(std::vector<Pt>& pts)
     }
     return;
   }
-  // calculate convex hull
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.x < p2.x; });
-  std::vector<Pt> hull;
-  hull.push_back(pts.front());
-  hull.push_back(pts[1]);
-  for (size_t i = 2; i < pts.size(); ++i) {
-    while (hull.size() >= 2) {
-      auto j = hull.size() - 1;
-      auto k = hull.size() - 2;
-      auto cross = crossProduct(pts[i], hull[j], hull[k]);
-      if (cross > 0) {
-        break;
-      }
-      hull.pop_back();
+  // calculate convex hull by Andrew algorithm
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.x < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
+  std::vector<Pt> ans(2 * pts.size());
+  size_t k = 0;
+  for (size_t i = 0; i < pts.size(); ++i) {
+    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= 0) {
+      --k;
     }
-    hull.push_back(pts[i]);
+    ans[k++] = pts[i];
   }
-  pts = hull;
+  for (size_t i = pts.size() - 1, t = k + 1; i > 0; --i) {
+    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= 0) {
+      --k;
+    }
+    ans[k++] = pts[i - 1];
+  }
+  pts = {ans.begin(), ans.begin() + k - 1};
 }
 
 Pt GeomCalc::centerPt(const std::vector<Pt>& pts)
@@ -621,21 +639,33 @@ Pt GeomCalc::centerPt(const std::vector<Pt>& pts)
 
 bool GeomCalc::isRegionContain(const Pt& p, const std::vector<Pt>& region)
 {
+  auto is_in_region = false;
+  auto p_x = p.x;
+  auto p_y = p.y;
+  auto n = region.size();
+  auto j = n - 1;
+  for (size_t i = 0; i < n; j = i, ++i) {
+    auto s_x = region[i].x;
+    auto s_y = region[i].y;
+    auto t_x = region[j].x;
+    auto t_y = region[j].y;
+    if ((s_y < p_y && t_y >= p_y) || (t_y < p_y && s_y >= p_y)) {
+      if (s_x + (p_y - s_y) / (t_y - s_y) * (t_x - s_x) < p_x) {
+        is_in_region = !is_in_region;
+      }
+    }
+  }
+  if (is_in_region) {
+    return true;
+  }
   auto pt = p;
-  auto count = 0;
   for (size_t i = 0; i < region.size(); ++i) {
     auto j = (i + 1) % region.size();
     if (onLine(pt, {region[i], region[j]})) {
       return true;
     }
-    if ((region[i].y > pt.y) != (region[j].y > pt.y)) {
-      auto cross = crossProduct(pt, region[i], region[j]);
-      if (cross > 0) {
-        ++count;
-      }
-    }
   }
-  return count % 2 == 1;
+  return false;
 }
 
 Pt GeomCalc::closestPtOnRegion(const Pt& p, const std::vector<Pt>& region)
@@ -663,7 +693,7 @@ void GeomCalc::lineToMs(Trr& ms, const Line& l)
 
 void GeomCalc::lineToMs(Trr& ms, const Pt& p1, const Pt& p2)
 {
-  if (p1.y < p2.y) {
+  if (p1.y <= p2.y) {
     ms.x_low(p2.x - p2.y);
     ms.x_high(p1.x - p1.y);
     ms.y_low(p1.x + p1.y);

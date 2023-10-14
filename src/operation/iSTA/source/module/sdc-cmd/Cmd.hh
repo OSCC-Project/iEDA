@@ -361,4 +361,15 @@ class CmdSetMulticyclePath : public TclCmd {
   unsigned exec() override;
 };
 
+class CmdSetUnits : public TclCmd {
+ public:
+  explicit CmdSetUnits(const char* cmd_name);
+  ~CmdSetUnits() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  bool isOptionValid(const char* unit_type, std::string inputStr);
+};
 }  // namespace ista

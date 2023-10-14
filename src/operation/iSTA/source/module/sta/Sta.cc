@@ -811,6 +811,10 @@ void Sta::initSdcCmd() {
       std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
   LOG_FATAL_IF(!set_clock_uncertainty);
   TclCmds::addTclCmd(std::move(set_clock_uncertainty));
+
+  auto set_units = std::make_unique<CmdSetUnits>("set_units");
+  LOG_FATAL_IF(!set_units);
+  TclCmds::addTclCmd(std::move(set_units));
 }
 
 /**
@@ -1274,7 +1278,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   }
 
-  // LOG_INFO << "\n" << _report_tbl_summary->c_str();
+  LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
@@ -2306,8 +2310,8 @@ void Sta::buildClockTrees() {
  * @param the_inst
  * @return std::optional<double>
  */
-std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
-                                        Instance *the_inst) {
+std::optional<double> Sta::getInstWorstSlack(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
   Pin *the_pin;
   std::optional<double> the_worst_inst_slack;
   FOREACH_INSTANCE_PIN(the_inst, the_pin) {
@@ -2328,6 +2332,38 @@ std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
   //     << "inst " << the_inst->get_name() << "the worst slack "
   //     << *the_worst_inst_slack;
   return the_worst_inst_slack;
+}
+
+/**
+ * @brief get total negative slack of all instance pins.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                     Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_total_negative_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_total_negative_slack = the_vertex->getTNSNs(analysis_mode);
+    if (the_total_negative_slack) {
+      if (!the_total_negative_inst_slack) {
+        the_total_negative_inst_slack = *the_total_negative_slack;
+      } else {
+        *the_total_negative_inst_slack += *the_total_negative_slack;
+      }
+    }
+  }
+
+  // LOG_FATAL_IF(the_total_negative_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_total_negative_inst_slack;
+  return the_total_negative_inst_slack;
 }
 
 /**
@@ -2376,7 +2412,7 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   std::map<Instance::Coordinate, double> loc_to_inst_slack;
   Instance *the_inst;
   FOREACH_INSTANCE(&_netlist, the_inst) {
-    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    auto the_inst_worst_slack = getInstWorstSlack(analysis_mode, the_inst);
     if (the_inst_worst_slack) {
       auto inst_coordinate = the_inst->get_coordinate();
       if (!inst_coordinate) {
@@ -2389,6 +2425,32 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   }
 
   return loc_to_inst_slack;
+}
+
+/**
+ * @brief display timing tns map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingTNSMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_tns;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_tns = getInstTotalNegativeSlack(analysis_mode, the_inst);
+    if (the_inst_tns) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_tns[*inst_coordinate] = *the_inst_tns;
+    }
+  }
+
+  return loc_to_inst_tns;
 }
 
 /**
@@ -2417,4 +2479,27 @@ std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
   return loc_to_inst_transition;
 }
 
+double Sta::convertTimeUnit(const double src_value) {
+  TimeUnit current_time_unit = getTimeUnit();
+  if (current_time_unit == TimeUnit::kNS) {
+    return src_value;
+  } else if (current_time_unit == TimeUnit::kFS) {
+    return FS_TO_NS(src_value);
+  } else if (current_time_unit == TimeUnit::kPS) {
+    return PS_TO_NS(src_value);
+  }
+  return -1;
+}
+
+double Sta::convertCapUnit(const double src_value) {
+  CapacitiveUnit current_cap_unit = getCapUnit();
+  if (current_cap_unit == CapacitiveUnit::kPF) {
+    return src_value;
+  } else if (current_cap_unit == CapacitiveUnit::kFF) {
+    return FF_TO_PF(src_value);
+  } else if (current_cap_unit == CapacitiveUnit::kF) {
+    return F_TO_PF(src_value);
+  }
+  return -1;
+}
 }  // namespace ista

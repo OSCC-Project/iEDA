@@ -1,4 +1,0 @@
-*** Error 120: Intersection of sets with different types
-*** File: e120_3.zpl Line 2
-*** set A:={"a", "b", "c"} inter {1..3};
-***                                    ^^^

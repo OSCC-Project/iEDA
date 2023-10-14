@@ -19,12 +19,13 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #pragma once
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <string>
 
-#include "CTSAPI.hpp"
-#include "CtsConfig.h"
+#include "CTSAPI.hh"
+#include "CtsConfig.hh"
 #include "CtsInstance.hh"
 #include "Enum.hh"
 #include "log/Log.hh"

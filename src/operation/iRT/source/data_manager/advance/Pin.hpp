@@ -34,15 +34,15 @@ class Pin
   std::vector<EXTLayerRect>& get_routing_shape_list() { return _routing_shape_list; }
   std::vector<EXTLayerRect>& get_cut_shape_list() { return _cut_shape_list; }
   std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  AccessPoint& get_protected_access_point() { return _protected_access_point; }
   // setter
   void set_pin_idx(const irt_int pin_idx) { _pin_idx = pin_idx; }
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
   void set_routing_shape_list(const std::vector<EXTLayerRect>& routing_shape_list) { _routing_shape_list = routing_shape_list; }
   void set_cut_shape_list(const std::vector<EXTLayerRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
   void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_protected_access_point(const AccessPoint& protected_access_point) { _protected_access_point = protected_access_point; }
   // function
-  inline std::vector<LayerCoord> getGridCoordList();
-  inline std::vector<LayerCoord> getRealCoordList();
 
  private:
   irt_int _pin_idx = -1;
@@ -50,26 +50,7 @@ class Pin
   std::vector<EXTLayerRect> _routing_shape_list;
   std::vector<EXTLayerRect> _cut_shape_list;
   std::vector<AccessPoint> _access_point_list;
+  AccessPoint _protected_access_point;
 };
-
-inline std::vector<LayerCoord> Pin::getGridCoordList()
-{
-  std::vector<LayerCoord> grid_coord_list;
-  for (AccessPoint& access_point : _access_point_list) {
-    grid_coord_list.push_back(access_point.getGridLayerCoord());
-  }
-  RTUtil::merge(grid_coord_list, [](LayerCoord& sentry, LayerCoord& soldier) { return sentry == soldier; });
-  return grid_coord_list;
-}
-
-inline std::vector<LayerCoord> Pin::getRealCoordList()
-{
-  std::vector<LayerCoord> real_coord_list;
-  for (AccessPoint& access_point : _access_point_list) {
-    real_coord_list.push_back(access_point.getRealLayerCoord());
-  }
-  RTUtil::merge(real_coord_list, [](LayerCoord& sentry, LayerCoord& soldier) { return sentry == soldier; });
-  return real_coord_list;
-}
 
 }  // namespace irt

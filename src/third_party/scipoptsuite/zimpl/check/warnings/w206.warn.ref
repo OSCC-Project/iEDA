@@ -1,4 +1,0 @@
---- Warning 206: argmin/argmax over empty set
-*** File: w206.zpl Line 2
-*** set B := argmax <i> in { 1..10 } with i > 11 : i;
-***                                                 ^^^

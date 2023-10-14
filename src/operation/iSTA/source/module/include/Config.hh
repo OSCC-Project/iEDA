@@ -41,10 +41,10 @@
 #define Z_NULL nullptr
 #endif
 
-#include "HashMap.hh"
-#include "HashSet.hh"
-#include "Map.hh"
-#include "Set.hh"
+#include "FlatMap.hh"
+#include "FlatSet.hh"
+#include "BTreeMap.hh"
+#include "BTreeSet.hh"
 #include "Vector.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
@@ -54,12 +54,12 @@
 #include "usage/usage.hh"
 
 namespace ista {
-using ieda::HashMap;
-using ieda::HashSet;
+using ieda::FlatMap;
+using ieda::FlatSet;
 using ieda::Log;
-using ieda::Map;
+using ieda::BTreeMap;
 using ieda::Multimap;
-using ieda::Set;
+using ieda::BTreeSet;
 using ieda::Str;
 using ieda::StrMap;
 using ieda::Time;

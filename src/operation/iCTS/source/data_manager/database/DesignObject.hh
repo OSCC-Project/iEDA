@@ -14,14 +14,19 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file DesignObject.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 namespace icts {
 
-class DesignObject {
+class DesignObject
+{
  public:
   DesignObject() : _is_newly(true) {}
-  DesignObject(const DesignObject &) = default;
+  DesignObject(const DesignObject&) = default;
   ~DesignObject() = default;
 
   void set_is_newly(bool newly) { _is_newly = newly; }

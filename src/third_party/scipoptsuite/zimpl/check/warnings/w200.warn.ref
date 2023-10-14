@@ -1,4 +1,0 @@
---- Warning 200: Weights are not unique for SOS c1_1
-*** File: w200.zpl Line 3
-*** sos c1: type1 priority 100 : 5 * x[1] + 5 * x[2];
-***                                                 ^^^

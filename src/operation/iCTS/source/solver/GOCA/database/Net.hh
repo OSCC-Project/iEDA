@@ -20,7 +20,7 @@
  */
 #pragma once
 class Pin;
-#include "CTSAPI.hpp"
+#include "CTSAPI.hh"
 #include "Pin.hh"
 
 namespace icts {

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -26,11 +26,11 @@
 #include <memory>
 #include <vector>
 
+#include "BTreeSet.hh"
 #include "PwrArc.hh"
 #include "PwrCell.hh"
 #include "PwrClock.hh"
 #include "PwrVertex.hh"
-#include "Set.hh"
 #include "netlist/Instance.hh"
 #include "sta/StaClock.hh"
 #include "sta/StaGraph.hh"
@@ -61,7 +61,7 @@ class PwrGraph {
   PwrGraph(PwrGraph&& other) noexcept = default;
   PwrGraph& operator=(PwrGraph&& other) noexcept = default;
 
-  using PwrVertexSet = Set<PwrVertex*, PwrVertexComp>;
+  using PwrVertexSet = BTreeSet<PwrVertex*, PwrVertexComp>;
 
   void set_sta_graph(StaGraph* sta_graph) { _sta_graph = sta_graph; }
   auto* get_sta_graph() { return _sta_graph; }

@@ -1,4 +1,0 @@
---- Warning 187: Maximizing over empty set -- zero assumed
-*** File: w187.zpl Line 2
-*** param x := max <i> in {1..2} with i > 3 : 1;
-***                                         ^^^

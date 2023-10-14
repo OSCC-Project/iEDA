@@ -1,5 +1,0 @@
-*** Error 157: Not enough fields in data (value)
-***            File: e157.dat line 1
-*** File: e157.zpl Line 2
-*** set A:={read "e157.dat" as "<1n> 2n"};
-***                                     ^^^

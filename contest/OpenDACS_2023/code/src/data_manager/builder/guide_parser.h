@@ -29,6 +29,8 @@
 #include <string>
 #include <vector>
 
+#include "contest_net.h"
+
 namespace ieda_contest {
 class ContestNet;
 

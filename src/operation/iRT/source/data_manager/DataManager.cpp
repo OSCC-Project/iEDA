@@ -125,18 +125,20 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.ta_corner_unit = RTUtil::getConfigValue<double>(config_map, "-ta_corner_unit", 1);
   _config.ta_pin_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_pin_distance_unit", 1);
   _config.ta_group_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_group_distance_unit", 0.5);
-  _config.ta_layout_shape_unit = RTUtil::getConfigValue<double>(config_map, "-ta_layout_shape_unit", 128);
+  _config.ta_blockage_unit = RTUtil::getConfigValue<double>(config_map, "-ta_blockage_unit", 2048);
+  _config.ta_net_shape_unit = RTUtil::getConfigValue<double>(config_map, "-ta_net_shape_unit", 128);
   _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 32);
-  _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-ta_history_cost_unit", 2);
+  _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-ta_history_cost_unit", 4);
   _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
   _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 5);
   _config.dr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_prefer_wire_unit", 1);
   _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_nonprefer_wire_unit", 2);
   _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_via_unit", 1);
   _config.dr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-dr_corner_unit", 1);
-  _config.dr_layout_shape_unit = RTUtil::getConfigValue<double>(config_map, "-dr_layout_shape_unit", 128);
+  _config.dr_blockage_unit = RTUtil::getConfigValue<double>(config_map, "-dr_blockage_unit", 2048);
+  _config.dr_net_shape_unit = RTUtil::getConfigValue<double>(config_map, "-dr_net_shape_unit", 128);
   _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_reserved_via_unit", 32);
-  _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 2);
+  _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 4);
   _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
   _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 5);
   _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
@@ -724,6 +726,8 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  irt_int bottom_routing_layer_idx = _config.bottom_routing_layer_idx;
+  irt_int top_routing_layer_idx = _config.top_routing_layer_idx;
 
   irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
   irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
@@ -731,6 +735,9 @@ std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_in
   std::set<irt_int> base_layer_idx_set;
   std::map<irt_int, std::set<irt_int>> scale_layer_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
+    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
+      continue;
+    }
     base_layer_idx_set.insert(routing_layer.get_layer_idx());
 
     std::vector<ScaleGrid> track_grid_list;
@@ -906,7 +913,6 @@ void DataManager::makeLayerList()
 
 void DataManager::checkLayerList()
 {
-  Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
@@ -923,18 +929,12 @@ void DataManager::checkLayerList()
       LOG_INST.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
     }
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
-      if (x_track_grid.get_start_line() < die.get_real_lb_x() || die.get_real_rt_x() < x_track_grid.get_end_line()) {
-        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " x_track_grid outside the die!");
-      }
       if (x_track_grid.get_step_length() <= 0) {
         LOG_INST.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
                        "' is wrong!");
       }
     }
     for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
-      if (y_track_grid.get_start_line() < die.get_real_lb_y() || die.get_real_rt_y() < y_track_grid.get_end_line()) {
-        LOG_INST.warning(Loc::current(), "The layer ", routing_layer.get_layer_name(), " y_track_grid outside the die!");
-      }
       if (y_track_grid.get_step_length() <= 0) {
         LOG_INST.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
                        "' is wrong!");
@@ -1379,7 +1379,7 @@ void DataManager::cutBlockageList()
       for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
         planar_enlarge_net_rect_list.push_back(enlarge_net_rect.get_rect());
       }
-      for (PlanarRect& cutting_rect : RTUtil::getCuttingRectList(blockage_rect, planar_enlarge_net_rect_list)) {
+      for (PlanarRect& cutting_rect : RTUtil::getOpenCuttingRectListByBoost(blockage_rect, planar_enlarge_net_rect_list)) {
         Blockage routing_blockage;
         routing_blockage.set_real_rect(cutting_rect);
         routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
@@ -1444,15 +1444,36 @@ void DataManager::updateHelper()
     }
   }
 
-  std::map<irt_int, std::pair<irt_int, irt_int>>& cut_to_adjacent_routing_map = _helper.get_cut_to_adjacent_routing_map();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  for (size_t i = 0; i < layer_via_master_list.size(); i++) {
-    if (layer_via_master_list[i].empty()) {
+  std::map<irt_int, std::vector<irt_int>>& cut_to_adjacent_routing_map = _helper.get_cut_to_adjacent_routing_map();
+
+  std::map<irt_int, std::pair<bool, irt_int>> layer_order_to_idx_map;
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    layer_order_to_idx_map[routing_layer.get_layer_order()] = std::make_pair(false, routing_layer.get_layer_idx());
+  }
+  for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
+    layer_order_to_idx_map[cut_layer.get_layer_order()] = std::make_pair(true, cut_layer.get_layer_idx());
+  }
+  std::vector<std::pair<bool, irt_int>> layer_idx_pair_list;
+  for (auto& [layer_order, type_layer_idx_pair] : layer_order_to_idx_map) {
+    layer_idx_pair_list.push_back(type_layer_idx_pair);
+  }
+
+  for (size_t i = 0; i < layer_idx_pair_list.size(); i++) {
+    bool is_cut = layer_idx_pair_list[i].first;
+    irt_int cut_layer_idx = layer_idx_pair_list[i].second;
+    if (!is_cut) {
       continue;
     }
-    ViaMaster& via_master = layer_via_master_list[i].front();
-    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].first = via_master.get_below_enclosure().get_layer_idx();
-    cut_to_adjacent_routing_map[via_master.get_cut_layer_idx()].second = via_master.get_above_enclosure().get_layer_idx();
+    std::vector<irt_int> adj_routing_layer_idx_list;
+    if (i - 1 >= 0 && layer_idx_pair_list[i - 1].first == false) {
+      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i - 1].second);
+    }
+    if (i + 1 < layer_idx_pair_list.size() && layer_idx_pair_list[i + 1].first == false) {
+      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i + 1].second);
+    }
+    if (!adj_routing_layer_idx_list.empty()) {
+      cut_to_adjacent_routing_map[cut_layer_idx] = adj_routing_layer_idx_list;
+    }
   }
 }
 
@@ -1514,8 +1535,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_pin_distance_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_group_distance_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_group_distance_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_layout_shape_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_layout_shape_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_blockage_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_blockage_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_net_shape_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_net_shape_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_reserved_via_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_reserved_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_history_cost_unit");
@@ -1532,8 +1555,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_layout_shape_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_layout_shape_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_blockage_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_blockage_unit);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_net_shape_unit");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_net_shape_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_reserved_via_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_reserved_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_history_cost_unit");

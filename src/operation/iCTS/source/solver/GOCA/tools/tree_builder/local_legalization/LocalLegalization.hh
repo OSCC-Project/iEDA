@@ -37,9 +37,11 @@ class LocalLegalization
   LocalLegalization(std::vector<Point>& variable_locations, const std::vector<Point>& fixed_locations = std::vector<Point>());
 
   ~LocalLegalization() = default;
+  static void setIgnoreCore(const bool& ignore_core) { _ignore_core = ignore_core; }
 
  private:
   void legalize();
+  static bool _ignore_core;
   std::vector<Point> _variable_locations;
   std::vector<Point> _fixed_locations;
 };

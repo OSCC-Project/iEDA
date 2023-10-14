@@ -34,7 +34,7 @@
 #include "spef/parser-spef.hpp"
 #include "sta/Sta.hh"
 using ieda::Log;
-using ieda::Map;
+using ieda::BTreeMap;
 using ista::ArnoldiNet;
 using ista::DesignObject;
 using ista::Liberty;

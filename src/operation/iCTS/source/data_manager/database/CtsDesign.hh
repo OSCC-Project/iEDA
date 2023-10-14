@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsDesign.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <unordered_map>

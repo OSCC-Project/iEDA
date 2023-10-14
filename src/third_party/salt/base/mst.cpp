@@ -68,7 +68,7 @@ void MstBuilder::RunPrimAlg(const Net& net, const vector<vector<int>>& adjLists,
     }
     for (int i = 0; i < numPins; ++i) {
         if (prefixes[i] >= 0) {
-            TreeNode::SetParent(nodes[i], nodes[prefixes[i]]);
+            TreeNode::setParent(nodes[i], nodes[prefixes[i]]);
         }
     }
     tree.source = nodes[0];

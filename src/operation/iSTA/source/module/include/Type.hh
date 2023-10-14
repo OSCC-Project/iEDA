@@ -75,16 +75,17 @@ using ModeTransPair = std::pair<AnalysisMode, TransType>;
 #define PS_TO_FS(delay) ((delay) * static_cast<int64_t>(g_ps2fs))
 #define FS_TO_PS(delay) ((delay) / static_cast<double>(g_ps2fs))
 
-#define PF_TO_FF(cap) (static_cast<int>(std::ceil((cap)*g_pf2ff)))
+#define PF_TO_FF(cap) (static_cast<int>(std::ceil((cap) * g_pf2ff)))
 #define FF_TO_PF(cap) ((cap) / static_cast<double>(g_pf2ff))
 
-#define PF_TO_F(cap) ((cap)*g_pf2f)
+#define PF_TO_F(cap) ((cap) * g_pf2f)
 #define F_TO_PF(cap) ((cap) / g_pf2f)
 
 enum class DelayCalcMethod : int { kElmore = 0, kArnoldi = 1 };
 
-enum class CapacitiveUnit { kPF = 0, kFF = 1 };
+enum class CapacitiveUnit { kPF = 0, kFF = 1, kF = 2 };
 enum class ResistanceUnit { kOHM = 0, kkOHM = 1 };
+enum class TimeUnit { kNS = 0, kPS = 1, kFS = 2 };
 
 inline double ConvertCapUnit(CapacitiveUnit src_unit, CapacitiveUnit snk_unit,
                              double cap) {
@@ -117,8 +118,8 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 // Disallow the copy constructor and operator= functions.
-#define DISALLOW_COPY_AND_ASSIGN(class_name) \
-  class_name(const class_name&) = delete;    \
+#define FORBIDDEN_COPY(class_name)        \
+  class_name(const class_name&) = delete; \
   void operator=(const class_name&) = delete
 
 }  // namespace ista
