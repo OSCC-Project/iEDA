@@ -22,7 +22,7 @@
 #include "MPDB.hh"
 #include "Module.hh"
 #include "Setting.hh"
-#include "solver/partition/metis.h"
+// #include "solver/partition/metis.h"
 
 namespace ipl::imp {
 class HierParttion
