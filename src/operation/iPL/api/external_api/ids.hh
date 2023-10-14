@@ -50,21 +50,24 @@ class Rectangle;
 
 template <typename T>
 class Point;
-
 }  // namespace ipl
 
 namespace eval {
 class EvalAPI;
 class TimingPin;
+class TimingNet;
 class CongGrid;
 class CongInst;
+class CongPin;
 
 }  // namespace eval
 
 namespace ista {
-
 enum class AnalysisMode;
+}
 
+namespace ieda {
+class ReportTable;
 }
 
 #endif  // SRC_OPERATION_IPL_API_IDS_HH_
