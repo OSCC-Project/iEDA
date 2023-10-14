@@ -245,7 +245,23 @@ class RustVecIterator {
   for (RustVecIterator<T> iter(vec);   \
        iter.hasNext() ? elem = iter.next(), true : false;)
 
+/**
+ * @brief Get the Rust Vec Elem object
+ *
+ * @tparam T
+ * @param rust_vec
+ * @param index
+ * @return T*
+ */
+template <typename T>
+T* GetRustVecElem(RustVec* rust_vec, uintptr_t index) {
+  auto* ret_value = static_cast<T*>(rust_vec->data) + index;
+  return ret_value;
+}
+
 namespace ista {
+
+class LibertyBuilder;
 
 /**
  * @brief The liberty reader is used to read rust data.
@@ -259,27 +275,41 @@ class RustLibertyReader {
   RustLibertyReader(RustLibertyReader&& other) noexcept = default;
   RustLibertyReader& operator=(RustLibertyReader&& rhs) noexcept = default;
 
-  unsigned visitVector(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitPowerTable(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitCurrentTable(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitTable(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitInternalPower(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitTiming(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitPin(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitBus(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitLeakagePower(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitCell(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitWireLoad(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitLuTableTemplate(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitType(RustLibertyGroupStmt* group) { return 1; }
-  unsigned visitOutputCurrentTemplate(RustLibertyGroupStmt* group) { return 1; }
+  unsigned visitSimpleAttri(RustLibertySimpleAttrStmt* attri);
+
+  unsigned visitAxisOrValues(RustLibertyComplexAttrStmt* attri);
+  unsigned visitComplexAttri(RustLibertyComplexAttrStmt* attri);
+
   unsigned visitLibrary(RustLibertyGroupStmt* group);
+  unsigned visitLuTableTemplate(RustLibertyGroupStmt* group);
+  unsigned visitWireLoad(RustLibertyGroupStmt* group);
+  unsigned visitType(RustLibertyGroupStmt* group);
+  unsigned visitOutputCurrentTemplate(RustLibertyGroupStmt* group);
+  unsigned visitLeakagePower(RustLibertyGroupStmt* group);
+  unsigned visitCell(RustLibertyGroupStmt* group);
+  unsigned visitPin(RustLibertyGroupStmt* group);
+  unsigned visitBus(RustLibertyGroupStmt* group);
+  unsigned visitTiming(RustLibertyGroupStmt* group);
+  unsigned visitInternalPower(RustLibertyGroupStmt* group);
+  unsigned visitCurrentTable(RustLibertyGroupStmt* group);
+  unsigned visitVector(RustLibertyGroupStmt* group);
+  unsigned visitTable(RustLibertyGroupStmt* group);
+  unsigned visitPowerTable(RustLibertyGroupStmt* group);
 
   unsigned visitGroup(RustLibertyGroupStmt* group);
   unsigned readLib();
 
+  void set_library_builder(LibertyBuilder* library_builder) {
+    _library_builder = library_builder;
+  }
+  auto* get_library_builder() { return _library_builder; }
+
  private:
-  std::string _file_name;  //!< The verilog file name.
+  const char* getGroupAttriName(RustLibertyGroupStmt* group);
+  unsigned visitStmtInGroup(RustLibertyGroupStmt* group);
+
+  std::string _file_name;            //!< The liberty file name.
+  LibertyBuilder* _library_builder;  //!< The liberty library builder.
 };
 
 }  // namespace ista

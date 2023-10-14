@@ -2053,8 +2053,8 @@ class LibertyReader {
   std::unique_ptr<LibertyGroupStmt> _library_group;
   std::unique_ptr<LibertyBuilder> _library_builder;
 
-  std::string _file_name;    //!< The verilog file name.
-  int _line_no = 0;          //!< The verilog file line no.
+  std::string _file_name;    //!< The liberty file name.
+  int _line_no = 0;          //!< The liberty file line no.
   std::string _string_buf;   //!< For flex record inner string.
   void* _scanner = nullptr;  //!< The flex scanner.
 
