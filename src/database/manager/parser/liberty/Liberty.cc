@@ -2808,6 +2808,15 @@ std::unique_ptr<LibertyLibrary> Liberty::loadLibertyWithRustParser(
 
   unsigned is_success = lib_rust_reader.readLib();
 
+  if (is_success) {
+    auto lib = lib_rust_reader.get_library_builder()->takeLib();
+
+    auto* lib_builder = lib_rust_reader.get_library_builder();
+    delete lib_builder;
+
+    return lib;
+  }
+
   return nullptr;
 }
 

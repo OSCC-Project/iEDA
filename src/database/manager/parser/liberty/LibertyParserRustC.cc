@@ -593,9 +593,8 @@ unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
 unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group) {
   const char* lib_name = getGroupAttriName(group);
 
-  std::unique_ptr<LibertyBuilder> library_builder =
-      std::make_unique<LibertyBuilder>(lib_name);
-  set_library_builder(library_builder.get());
+  auto* library_builder = new LibertyBuilder(lib_name);
+  set_library_builder(library_builder);
 
   unsigned is_ok = visitStmtInGroup(group);
 
