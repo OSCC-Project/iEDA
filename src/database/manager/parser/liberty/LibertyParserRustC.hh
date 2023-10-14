@@ -47,7 +47,7 @@ typedef struct RustVec {
  */
 typedef struct RustLibertyGroupStmt {
   char* file_name;
-  uint32_t line_no;
+  uintptr_t line_no;
   char* group_name;
   struct RustVec attri_values;
   struct RustVec stmts;
@@ -59,7 +59,7 @@ typedef struct RustLibertyGroupStmt {
  */
 typedef struct RustLibertySimpleAttrStmt {
   char* file_name;
-  uint32_t line_no;
+  uintptr_t line_no;
   char* attri_name;
   const void* attri_value;
 } RustLibertySimpleAttrStmt;
@@ -70,7 +70,7 @@ typedef struct RustLibertySimpleAttrStmt {
  */
 typedef struct RustLibertyComplexAttrStmt {
   char* file_name;
-  uint32_t line_no;
+  uintptr_t line_no;
   char* attri_name;
   struct RustVec attri_values;
 } RustLibertyComplexAttrStmt;
@@ -141,6 +141,15 @@ bool rust_is_attri_stmt(void* lib_stmt);
  * @return false
  */
 bool rust_is_group_stmt(void* lib_stmt);
+
+/**
+ * @brief Rust convert raw point group stmt to C struct, while below
+ * rust_convert_group_stmt convert dyn LibertyStmt.
+ *
+ * @param group_stmt
+ * @return struct RustLibertyGroupStmt*
+ */
+struct RustLibertyGroupStmt* rust_convert_raw_group_stmt(void* group_stmt);
 
 /**
  * @brief Rust convert group stmt to C struct.
@@ -216,13 +225,11 @@ class RustVecIterator {
 
   bool hasNext() { return _index < _rust_vec->len; }
   T* next() {
-    auto* ret_value = static_cast<T*>(_rust_vec->data) + _index;
+    uintptr_t ptr_move =
+        std::is_same_v<T, void> ? _index * _rust_vec->type_size : _index;
+    auto* ret_value = static_cast<T*>(_rust_vec->data) + ptr_move;
 
-    if (std::is_same_v<T, void>) {
-      _index += _rust_vec->type_size;
-    } else {
-      ++_index;
-    }
+    ++_index;
     return ret_value;
   }
 
@@ -255,7 +262,9 @@ class RustVecIterator {
  */
 template <typename T>
 T* GetRustVecElem(RustVec* rust_vec, uintptr_t index) {
-  auto* ret_value = static_cast<T*>(rust_vec->data) + index;
+  uintptr_t ptr_move =
+      std::is_same_v<T, void> ? index * rust_vec->type_size : index;
+  auto* ret_value = static_cast<T*>(rust_vec->data) + ptr_move;
   return ret_value;
 }
 

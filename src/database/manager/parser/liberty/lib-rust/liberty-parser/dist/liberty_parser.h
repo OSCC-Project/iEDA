@@ -12,13 +12,6 @@ Do not modify this manually.
 #include <stdlib.h>
 
 /**
- * The complex attribute statement.
- * # Example
- * index_1 ("0.0010,0.0020,0.0030");
- */
-typedef struct LibertyComplexAttrStmt LibertyComplexAttrStmt;
-
-/**
  * The group statement.
  * # Example
  *
@@ -40,13 +33,6 @@ typedef struct LibertyComplexAttrStmt LibertyComplexAttrStmt;
  */
 typedef struct LibertyGroupStmt LibertyGroupStmt;
 
-/**
- * The simple attribute statement.
- * # Example
- * capacitance : 1.774000e-01;
- */
-typedef struct LibertySimpleAttrStmt LibertySimpleAttrStmt;
-
 typedef struct RustVec {
     void *data;
     uintptr_t len;
@@ -64,7 +50,7 @@ typedef struct RustLibertyFloatValue {
 
 typedef struct RustLibertyGroupStmt {
     char *file_name;
-    uint32_t line_no;
+    uintptr_t line_no;
     char *group_name;
     struct RustVec attri_values;
     struct RustVec stmts;
@@ -72,14 +58,14 @@ typedef struct RustLibertyGroupStmt {
 
 typedef struct RustLibertySimpleAttrStmt {
     char *file_name;
-    uint32_t line_no;
+    uintptr_t line_no;
     char *attri_name;
     const void *attri_value;
 } RustLibertySimpleAttrStmt;
 
 typedef struct RustLibertyComplexAttrStmt {
     char *file_name;
-    uint32_t line_no;
+    uintptr_t line_no;
     char *attri_name;
     struct RustVec attri_values;
 } RustLibertyComplexAttrStmt;
@@ -98,11 +84,13 @@ bool rust_is_float_value(void *c_attribute_value);
 
 bool rust_is_string_value(void *c_attribute_value);
 
-struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *group_stmt);
+struct RustLibertyGroupStmt *rust_convert_raw_group_stmt(struct LibertyGroupStmt *group_stmt);
 
-struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(struct LibertySimpleAttrStmt *simple_attri_stmt);
+struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *c_group_stmt);
 
-struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(struct LibertyComplexAttrStmt *complex_attri_stmt);
+struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(void *c_simple_attri_stmt);
+
+struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(void *c_complex_attri_stmt);
 
 bool rust_is_simple_attri_stmt(void *c_lib_stmt);
 

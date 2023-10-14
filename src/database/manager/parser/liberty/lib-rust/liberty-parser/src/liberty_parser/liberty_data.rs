@@ -72,17 +72,18 @@ pub trait LibertyStmt {
     fn is_group_stmt(&self) -> bool {
         false
     }
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// liberty attribute stmt.
 #[repr(C)]
 pub struct LibertyAttrStmt {
     file_name: String,
-    line_no: u32,
+    line_no: usize,
 }
 
 impl LibertyAttrStmt {
-    fn new(file_name: &str, line_no: u32) -> LibertyAttrStmt {
+    fn new(file_name: &str, line_no: usize) -> LibertyAttrStmt {
         LibertyAttrStmt { file_name: file_name.to_string(), line_no: line_no }
     }
 
@@ -90,7 +91,7 @@ impl LibertyAttrStmt {
         &self.file_name
     }
 
-    pub fn get_line_no(&self) -> u32 {
+    pub fn get_line_no(&self) -> usize {
         self.line_no
     }
 }
@@ -108,7 +109,7 @@ pub struct LibertySimpleAttrStmt {
 impl LibertySimpleAttrStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         attri_name: &str,
         attri_value: Box<dyn LibertyAttrValue>,
     ) -> LibertySimpleAttrStmt {
@@ -139,6 +140,9 @@ impl LibertyStmt for LibertySimpleAttrStmt {
     fn is_attr_stmt(&self) -> bool {
         true
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 /// The complex attribute statement.
@@ -154,7 +158,7 @@ pub struct LibertyComplexAttrStmt {
 impl LibertyComplexAttrStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         attri_name: &str,
         attri_values: Vec<Box<dyn LibertyAttrValue>>,
     ) -> LibertyComplexAttrStmt {
@@ -184,6 +188,9 @@ impl LibertyStmt for LibertyComplexAttrStmt {
     }
     fn is_attr_stmt(&self) -> bool {
         true
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -216,7 +223,7 @@ pub struct LibertyGroupStmt {
 impl LibertyGroupStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         group_name: &str,
         attri_values: Vec<Box<dyn LibertyAttrValue>>,
         stmts: Vec<Box<dyn LibertyStmt>>,
@@ -253,6 +260,9 @@ impl LibertyGroupStmt {
 impl LibertyStmt for LibertyGroupStmt {
     fn is_group_stmt(&self) -> bool {
         true
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

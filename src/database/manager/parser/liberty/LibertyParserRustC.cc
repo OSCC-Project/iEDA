@@ -337,7 +337,7 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
        }},
       {"value",
        [=]() {
-         if (rust_is_float_value(attri_value)) {
+         if (rust_is_string_value(attri_value)) {
            const char* value =
                rust_convert_string_value(attri_value)->value;  // ysxy
            leakage_power->set_value(atof(value));
@@ -572,14 +572,12 @@ unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
   void* lib_stmt;
   FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
     if (rust_is_simple_attri_stmt(lib_stmt)) {
-      is_ok &=
-          visitSimpleAttri(static_cast<RustLibertySimpleAttrStmt*>(lib_stmt));
+      is_ok &= visitSimpleAttri(rust_convert_simple_attribute_stmt(lib_stmt));
     } else if (rust_is_complex_attri_stmt(lib_stmt)) {
-      is_ok &=
-          visitComplexAttri(static_cast<RustLibertyComplexAttrStmt*>(lib_stmt));
+      is_ok &= visitComplexAttri(rust_convert_complex_attribute_stmt(lib_stmt));
     } else {
       // group stmt.
-      is_ok &= visitGroup(static_cast<RustLibertyGroupStmt*>(lib_stmt));
+      is_ok &= visitGroup(rust_convert_group_stmt(lib_stmt));
     }
   }
 
@@ -884,8 +882,7 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
     if (rust_is_simple_attri_stmt(lib_stmt)) {
       // for the power arc attribute.
-      is_ok &=
-          visitSimpleAttri(static_cast<RustLibertySimpleAttrStmt*>(lib_stmt));
+      is_ok &= visitSimpleAttri(rust_convert_simple_attribute_stmt(lib_stmt));
     }
   }
 
@@ -894,7 +891,7 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
     if (rust_is_group_stmt(lib_stmt)) {
       // for the power data.
       // group stmt.
-      is_ok &= visitGroup(static_cast<RustLibertyGroupStmt*>(lib_stmt));
+      is_ok &= visitGroup(rust_convert_group_stmt(lib_stmt));
     }
   }
 
@@ -1063,7 +1060,11 @@ unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group) {
  * @return unsigned
  */
 unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
-  DLOG_INFO << "visit group " << group->group_name;
+  DLOG_INFO << "visit group " << group->group_name << " line no "
+            << group->line_no;
+  if (group->line_no == 470) {
+    LOG_INFO << "Debug";
+  }
   unsigned is_ok = 1;
   const char* group_name = group->group_name;
 
@@ -1108,7 +1109,7 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
   } else if (power_table_names.contains(group_name)) {
     is_ok = visitPowerTable(group);
   } else {
-    LOG_FATAL << "group " << group_name << " is not supported.";
+    LOG_INFO << "group " << group_name << " is not supported.";
   }
 
   return 1;
@@ -1124,7 +1125,7 @@ unsigned RustLibertyReader::readLib() {
 
   auto* lib_file = rust_parse_lib(_file_name.c_str());
   if (lib_file) {
-    auto* lib_group = rust_convert_group_stmt(lib_file);
+    auto* lib_group = rust_convert_raw_group_stmt(lib_file);
     unsigned result = visitGroup(lib_group);
 
     LOG_INFO << "load liberty file " << _file_name << " success.";

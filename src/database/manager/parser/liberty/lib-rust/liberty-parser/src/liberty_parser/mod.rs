@@ -51,7 +51,8 @@ fn process_simple_attribute(
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let file_name = "tbd";
-    let line_no = 0;
+    // let line_no = pair.as_span().start_pos().line_col().0;
+    let line_no = pair.line_col().0;
     if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
         let lib_id = &liberty_string_value.value;
         let attribute_value = parser_queue.pop_front().unwrap();
@@ -93,7 +94,7 @@ fn process_complex_attribute(
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let file_name = "tbd";
-    let line_no = 0;
+    let line_no = pair.line_col().0;
     let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
     if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
         let lib_id = &liberty_string_value.value;
@@ -120,7 +121,7 @@ fn process_group_attribute(
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let file_name = "tbd";
-    let line_no = 0;
+    let line_no = pair.line_col().0;
     let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
     let mut stmts: Vec<Box<dyn liberty_data::LibertyStmt>> = Vec::new();
     if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
