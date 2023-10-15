@@ -13,7 +13,6 @@ add_library(eval_congestion
 target_link_libraries(eval_congestion
     PUBLIC
         eval_data
-        eval_wrapper
 )
 
 target_include_directories(eval_congestion

@@ -42,8 +42,6 @@ class WirelengthEval
   int64_t evalDriver2LoadWL(WLNet* wl_net, const std::string& sink_pin_name);
   // int64_t evalDriver2LoadWL(WLNet* wl_net, const std::string& sink_pin_name);
 
-  std::map<std::string, int64_t> getName2WLmap(const std::string& wl_type);
-
   void set_net_list(const std::vector<WLNet*>& net_list) { _net_list = net_list; }
   void set_name2net_map(const std::map<std::string, WLNet*>& name2net_map) { _name2net_map = name2net_map; }
 
