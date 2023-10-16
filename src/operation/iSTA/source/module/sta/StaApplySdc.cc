@@ -612,9 +612,17 @@ unsigned StaApplySdc::processClockUncertainty(
   auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
                                                auto* uncertainty) {
     unsigned n_worst =
-        100;  // hard code for only apply uncertainty on top 100 seq path.
+        100;  // hard code for only apply uncertainty on top 100 worst seq path.
+    auto cmp = [](StaPathData* left, StaPathData* right) -> bool {
+      int left_slack = left->getSlack();
+      int right_slack = right->getSlack();
+      return left_slack > right_slack;
+    };
+    std::priority_queue<StaPathData*, std::vector<StaPathData*>, decltype(cmp)>
+        seq_data_queue(cmp);
+
     auto& clk_groups = ista->get_clock_groups();
-    for (auto& [clk, clk_group] : clk_groups) {
+    for (auto& [clk, seq_path_group] : clk_groups) {
       if (Str::equal(clk->get_clock_name(),
                      dynamic_cast<SdcClock*>(sdc_clk)->get_clock_name())) {
         StaPathEnd* path_end;
@@ -622,14 +630,17 @@ unsigned StaApplySdc::processClockUncertainty(
         auto mode =
             uncertainty->isSetup() ? AnalysisMode::kMax : AnalysisMode::kMin;
         double uncertainty_value = uncertainty->getUncertaintyValueFs();
-        unsigned index = 0;
-        FOREACH_PATH_GROUP_END(clk_group.get(), path_end)
+
+        FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
         FOREACH_PATH_END_DATA(path_end, mode, path_data) {
-          if (n_worst >= index) {
-            return;
-          }
-          auto* seq_data = dynamic_cast<StaSeqPathData*>(path_data);
-          seq_data->set_uncertainty(uncertainty_value);
+          seq_data_queue.push(path_data);
+        }
+
+        unsigned index = 0;
+        while (!seq_data_queue.empty() && index < n_worst) {
+          auto* seq_path_data =
+              dynamic_cast<StaSeqPathData*>(seq_data_queue.top());
+          seq_path_data->set_uncertainty(uncertainty_value);
           ++index;
         }
       }
