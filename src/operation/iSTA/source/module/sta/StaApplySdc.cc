@@ -626,7 +626,7 @@ unsigned StaApplySdc::processClockUncertainty(
         FOREACH_PATH_GROUP_END(clk_group.get(), path_end)
         FOREACH_PATH_END_DATA(path_end, mode, path_data) {
           if (n_worst >= index) {
-            break;
+            return;
           }
           auto* seq_data = dynamic_cast<StaSeqPathData*>(path_data);
           seq_data->set_uncertainty(uncertainty_value);
