@@ -100,6 +100,13 @@ typedef struct RustLibertyFloatValue {
 void* rust_parse_lib(const char* lib_path);
 
 /**
+ * @brief rust free lib group memory after build data of lib.
+ *
+ * @param c_lib_group
+ */
+void rust_free_lib_group(void* c_lib_group);
+
+/**
  * @brief free Rust string convert to C.
  *
  * @param s

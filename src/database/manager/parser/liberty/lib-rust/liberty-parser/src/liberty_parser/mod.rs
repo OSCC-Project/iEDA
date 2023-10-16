@@ -10,6 +10,8 @@ use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::os::raw::c_char;
 
+use self::liberty_data::LibertyGroupStmt;
+
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
@@ -204,8 +206,8 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
 }
 
 #[no_mangle]
-pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut c_void {
-    let c_str = unsafe { std::ffi::CStr::from_ptr(s) };
+pub extern "C" fn rust_parse_lib(lib_path: *const c_char) -> *mut c_void {
+    let c_str = unsafe { std::ffi::CStr::from_ptr(lib_path) };
     let r_str = c_str.to_string_lossy().into_owned();
     println!("r str {}", r_str);
 
@@ -218,6 +220,11 @@ pub extern "C" fn rust_parse_lib(s: *const c_char) -> *mut c_void {
     } else {
         panic!("error type");
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_lib_group(c_lib_group: *mut LibertyGroupStmt) {
+    let _: Box<liberty_data::LibertyGroupStmt> = unsafe { Box::from_raw(c_lib_group) };
 }
 
 #[cfg(test)]

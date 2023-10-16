@@ -70,7 +70,9 @@ typedef struct RustLibertyComplexAttrStmt {
     struct RustVec attri_values;
 } RustLibertyComplexAttrStmt;
 
-void *rust_parse_lib(const char *s);
+void *rust_parse_lib(const char *lib_path);
+
+void rust_free_lib_group(struct LibertyGroupStmt *c_lib_group);
 
 uintptr_t rust_vec_len(const struct RustVec *vec);
 

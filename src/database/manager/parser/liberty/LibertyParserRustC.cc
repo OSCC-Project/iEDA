@@ -1126,6 +1126,7 @@ unsigned RustLibertyReader::readLib() {
   if (lib_file) {
     auto* lib_group = rust_convert_raw_group_stmt(lib_file);
     unsigned result = visitGroup(lib_group);
+    rust_free_lib_group(lib_file);
 
     LOG_INFO << "load liberty file " << _file_name << " success.";
     return result;
