@@ -611,6 +611,7 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
                                                auto* uncertainty) {
+    unsigned n_worst = ista->get_n_worst_path_per_clock();
     auto& clk_groups = ista->get_clock_groups();
     for (auto& [clk, clk_group] : clk_groups) {
       if (Str::equal(clk->get_clock_name(),
@@ -620,10 +621,15 @@ unsigned StaApplySdc::processClockUncertainty(
         auto mode =
             uncertainty->isSetup() ? AnalysisMode::kMax : AnalysisMode::kMin;
         double uncertainty_value = uncertainty->getUncertaintyValueFs();
+        unsigned index = 0;
         FOREACH_PATH_GROUP_END(clk_group.get(), path_end)
         FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+          if (n_worst >= index) {
+            break;
+          }
           auto* seq_data = dynamic_cast<StaSeqPathData*>(path_data);
           seq_data->set_uncertainty(uncertainty_value);
+          ++index;
         }
       }
     }
