@@ -494,12 +494,16 @@ std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
         if (auto* prop_clock =
                 path_delay->get_launch_clock_data()->get_prop_clock();
             prop_clock) {
-          prop_clocks.insert(prop_clock);
+          if (!prop_clocks.contains(prop_clock)) {
+            prop_clocks.insert(prop_clock);
+          }
         }
       } else {
         auto* clock_data = dynamic_cast<StaClockData*>(data);
         auto* prop_clock = clock_data->get_prop_clock();
-        prop_clocks.insert(prop_clock);
+        if (!prop_clocks.contains(prop_clock)) {
+          prop_clocks.insert(prop_clock);
+        }
       }
     }
   };
