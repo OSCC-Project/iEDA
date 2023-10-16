@@ -360,7 +360,7 @@ unsigned StaApplySdc::setupTimingDrc(
                       }
                     }
 
-                    if (is_fall && !is_satified) {
+                    if (is_fall && !is_satified && the_vertex->is_start()) {
                       if (is_clock) {
                         auto prop_clocks = the_vertex->getPropagatedClock(
                             AnalysisMode::kMaxMin, TransType::kFall, false);
