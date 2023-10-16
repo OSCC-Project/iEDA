@@ -611,8 +611,6 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
                                                auto* uncertainty) {
-    unsigned n_worst =
-        100;  // hard code for only apply uncertainty on top 100 worst seq path.
     auto cmp = [](StaPathData* left, StaPathData* right) -> bool {
       int left_slack = left->getSlack();
       int right_slack = right->getSlack();
@@ -636,12 +634,10 @@ unsigned StaApplySdc::processClockUncertainty(
           seq_data_queue.push(path_data);
         }
 
-        unsigned index = 0;
-        while (!seq_data_queue.empty() && index < n_worst) {
+        while (!seq_data_queue.empty()) {
           auto* seq_path_data =
               dynamic_cast<StaSeqPathData*>(seq_data_queue.top());
           seq_path_data->set_uncertainty(uncertainty_value);
-          ++index;
         }
       }
     }
