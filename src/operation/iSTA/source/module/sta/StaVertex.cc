@@ -478,12 +478,11 @@ StaClock* StaVertex::getPropClock(AnalysisMode analysis_mode,
  * @param analysis_mode
  * @param trans_type
  * @param is_data_path
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
-                                                  TransType trans_type,
-                                                  bool is_data_path) {
-  std::set<StaClock*> prop_clocks;
+std::unordered_set<StaClock*> StaVertex::getPropagatedClock(
+    AnalysisMode analysis_mode, TransType trans_type, bool is_data_path) {
+  std::unordered_set<StaClock*> prop_clocks;
   auto get_data_clock = [&prop_clocks, analysis_mode, trans_type](auto* data) {
     if ((data->get_delay_type() == analysis_mode ||
          AnalysisMode::kMaxMin == analysis_mode) &&
