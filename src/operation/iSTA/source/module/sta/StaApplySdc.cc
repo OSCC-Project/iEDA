@@ -611,7 +611,8 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
                                                auto* uncertainty) {
-    unsigned n_worst = ista->get_n_worst_path_per_clock();
+    unsigned n_worst =
+        100;  // hard code for only apply uncertainty on top 100 seq path.
     auto& clk_groups = ista->get_clock_groups();
     for (auto& [clk, clk_group] : clk_groups) {
       if (Str::equal(clk->get_clock_name(),
