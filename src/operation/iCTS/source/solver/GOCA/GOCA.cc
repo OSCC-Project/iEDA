@@ -26,10 +26,10 @@
 
 #include "BalanceClustering.hh"
 #include "CtsDesign.hh"
-#include "CtsReport.hh"
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
 #include "log/Log.hh"
+#include "report/CtsReport.hh"
 #include "time/Time.hh"
 namespace icts {
 void GOCA::run()
@@ -150,32 +150,31 @@ void GOCA::breakLongWire()
 std::vector<Assign> GOCA::globalAssign()
 {
   std::vector<Assign> global_assigns;
-  auto max_net_dist = static_cast<int>(TimingPropagator::getMaxLength()) * TimingPropagator::getDbUnit();
+  auto max_net_len = TimingPropagator::getMaxLength();
   auto max_fanout = TimingPropagator::getMaxFanout();
   auto max_cap = TimingPropagator::getMaxCap();
   auto skew_bound = TimingPropagator::getSkewBound();
-  // global_assigns.push_back({max_net_dist * 10000, max_fanout * 10000, max_cap * 10000, skew_bound * 10000, 0.98});
+  // global_assigns.push_back({max_net_len * 10000, max_fanout * 10000, max_cap * 10000, skew_bound * 10000, 0.98});
   // level 1 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout, max_cap * 1.0, skew_bound * 0.25, 0.98});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout, max_cap * 1.0, skew_bound * 0.25, 0.98});
   // level 2 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout * 4 / 4, max_cap * 0.8, skew_bound * 0.6, 0.9});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout * 4 / 4, max_cap * 0.8, skew_bound * 0.6, 0.9});
   // level 3 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout * 3 / 4, max_cap * 0.7, skew_bound * 0.8, 0.9});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout * 3 / 4, max_cap * 0.7, skew_bound * 0.8, 0.9});
   // level 4 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
   // level 5 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
   // level 6 test
-  global_assigns.push_back({max_net_dist * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
-  // global_assigns.push_back({max_net_dist, max_fanout, max_cap, skew_bound * 1.0, 0.8});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout / 8, max_cap * 0.5, skew_bound * 1, 0.8});
+  // global_assigns.push_back({max_net_len, max_fanout, max_cap, skew_bound * 1.0, 0.8});
   return global_assigns;
 }
 std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assign& assign)
 {
   LOG_INFO << "Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << std::endl;
   // pre-processing
-  auto max_dist = assign.max_dist;
-  auto max_net_len = 1.0 * max_dist / TimingPropagator::getDbUnit();
+  auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
   // auto max_cap = assign.max_cap;
   auto cluster_ratio = assign.ratio;
@@ -225,11 +224,11 @@ std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assi
 }
 std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign& assign)
 {
-  auto max_dist = assign.max_dist;
+  auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
   auto sorted_insts = insts;
-  auto est_net_dist = BalanceClustering::estimateNetLength(insts, 1.0 * max_dist / TimingPropagator::getDbUnit(), max_fanout)
-                      * TimingPropagator::getDbUnit();
+  int max_dist = max_net_len * 1.0 / TimingPropagator::getDbUnit();
+  int est_net_dist = BalanceClustering::estimateNetLength(insts, max_net_len, max_fanout) * TimingPropagator::getDbUnit();
   while (est_net_dist > max_dist) {
     std::ranges::sort(sorted_insts, [](Inst* inst1, Inst* inst2) {
       return inst1->get_driver_pin()->get_max_delay() < inst2->get_driver_pin()->get_max_delay();
@@ -260,14 +259,14 @@ std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign&
 }
 Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& level_center, const bool& shift)
 {
-  auto max_dist = assign.max_dist;
+  auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
   auto skew_bound = assign.skew_bound;
   auto center = BalanceClustering::calcBoundCentroid(insts);
   auto guide_loc = center;
   // center shift
-  int net_dist = BalanceClustering::estimateNetLength(insts, 1.0 * max_dist / TimingPropagator::getDbUnit(), max_fanout)
-                 * TimingPropagator::getDbUnit();
+  int max_dist = max_net_len * 1.0 / TimingPropagator::getDbUnit();
+  int net_dist = BalanceClustering::estimateNetLength(insts, max_net_len, max_fanout) * TimingPropagator::getDbUnit();
   if (shift && net_dist <= max_dist) {
     auto center_dist = TimingPropagator::calcDist(center, level_center);
     auto shift_dist = std::min(max_dist - net_dist, center_dist);

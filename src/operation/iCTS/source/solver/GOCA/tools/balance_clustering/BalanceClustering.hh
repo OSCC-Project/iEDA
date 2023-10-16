@@ -60,14 +60,9 @@ class BalanceClustering
                                                          const size_t& max_fanout);
 
   static std::vector<std::vector<Inst*>> clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters, const int& max_fanout,
-                                                               const double& max_cap, const double& max_net_length, const size_t& iter = 5,
-                                                               const double& p = 5e-4, const double& q = 0.5, const double& r = 5000);
-
-  static std::vector<std::vector<Inst*>> annealEnhancement(std::vector<std::vector<Inst*>>& enhanced_clusters,
-                                                           const std::vector<Inst*>& center_cluster, const int& max_fanout,
-                                                           const double& max_cap, const double& max_net_length,
-                                                           const EnhanceType& enhance_type, const double& p, const double& q,
-                                                           const double& r);
+                                                               const double& max_cap, const double& max_net_length,
+                                                               const double& skew_bound, const size_t& max_iter = 100,
+                                                               const double& cooling_rate = 0.99, const double& temperature = 2000000);
 
   static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
                                                const size_t& max_fanout);
@@ -126,6 +121,8 @@ class BalanceClustering
   static double crossProduct(const Point& p1, const Point& p2, const Point& p3);
 
   static void convexHull(std::vector<Point>& pts);
+
+  static bool isContain(const Point& p, const std::vector<Point>& pts);
 
   static bool isSame(const std::vector<std::vector<Inst*>>& clusters1, const std::vector<std::vector<Inst*>>& clusters2);
 

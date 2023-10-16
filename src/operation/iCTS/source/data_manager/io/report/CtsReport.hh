@@ -27,9 +27,6 @@
 #include <utility>
 #include <vector>
 
-#include "CTSAPI.hh"
-#include "CtsConfig.hh"
-#include "CtsInstance.hh"
 #include "report/ReportTable.hh"
 
 namespace icts {

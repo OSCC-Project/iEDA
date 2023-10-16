@@ -19,75 +19,149 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #pragma once
-
 #include <limits>
+#include <random>
 #include <ranges>
 
 #include "Inst.hh"
 
 namespace icts {
+enum class AnnealOptType
+{
+  kLatencyCost,
+  kViolationCost,
+};
+struct Operation
+{
+  size_t cluster_id;
+  size_t neighbor_id;
+  size_t inst_id;
+};
 /**
  * @brief AnnealOpt for rebalance clustering
  *       input: clusters
- *       constraint: net_num, max_fanout, max_cap, max_net_dist,
+ *       constraint: net_num, max_fanout, max_cap, max_net_len,
  *                   p(coefficient of net length), q(coefficient of net skew)
  *       output: new clusters which satisfy the constraints
  *
  */
-class AnnealOpt
+class AnnealOptInterface
 {
  public:
-  AnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : _clusters(clusters)
+  AnnealOptInterface(const std::vector<std::vector<Inst*>>& clusters) : _cur_solution(clusters){};
+  ~AnnealOptInterface() = default;
+  void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature)
   {
-    std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
-      std::ranges::for_each(cluster, [&](Inst* inst) { _flatten_insts.push_back(inst); });
-    });
-  };
-  ~AnnealOpt() = default;
-  // init parameters
-  void initParameter(const size_t& net_num, const int& max_fanout, const double& max_cap, const int& max_net_dist, const double& p,
-                     const double& q, const double& r);
-
+    _max_iter = max_iter;
+    _cooling_rate = cooling_rate;
+    _temperature = temperature;
+  }
   // run
-  std::vector<std::vector<Inst*>> run();
+  std::vector<std::vector<Inst*>> run(const bool& log = false);
 
- private:
+  double get_best_cost() const { return _best_cost; };
+
+ protected:
+  void updateSolution(const std::vector<std::vector<Inst*>>& new_solution, const Operation& op);
   /**
    * @brief random operation
    *
    */
-  void randomSwap();
 
-  void randomMove();
+  std::vector<std::vector<Inst*>> commitOperation(const Operation& op);
 
+  std::vector<std::vector<Inst*>> randomSwap(const std::vector<std::vector<Inst*>>& clusters);
+
+  Operation randomMove(const std::vector<std::vector<Inst*>>& clusters);
+
+  size_t randomChooseCluster(const std::vector<std::vector<Inst*>>& clusters, const double& ratio);
+
+  size_t randomChooseInst(const std::vector<Inst*>& cluster);
+
+  size_t randomChooseNeighbor(const std::vector<std::vector<Inst*>>& clusters, const size_t& cluster_id, const size_t& inst_id);
+
+  std::vector<size_t> findBoundId(const std::vector<Inst*>& clusters);
   /**
    * @brief cost function
    *
    */
+  void initCostMap();
+  void updateCostMap(const Operation& op);
+  Point center(const std::vector<Inst*>& cluster);
 
-  // latency, empty buffering will lead more latency
-  double cost(const std::vector<std::vector<Inst*>>& clusters);
+  /**
+   * @brief Net builder
+   *
+   */
+  Net* buildNet(const std::vector<Inst*>& cluster);
+  std::vector<Net*> buildNets(const std::vector<std::vector<Inst*>>& clusters);
 
+  virtual double cost(Net* net) = 0;
   /**
    * @brief Database and parameters
    *
    */
-  std::vector<std::vector<Inst*>> _clusters;
-  std::vector<Inst*> _flatten_insts;
+  std::vector<std::vector<Inst*>> _cur_solution;
+
+  const std::mt19937::result_type _seed = 0;
+  std::mt19937 _gen = std::mt19937(_seed);
+  const double _correct_coef = 1e6;
+  size_t _max_iter = 0;
+  double _cooling_rate = 0;
+  double _temperature = 0;
+
+  std::vector<double> _cost_map;
+  double _new_cost = std::numeric_limits<double>::max();
+  double _cur_cost = std::numeric_limits<double>::max();
+  double _best_cost = std::numeric_limits<double>::max();
+};
+class LatAnnealOpt : public AnnealOptInterface
+{
+ public:
+  LatAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters){};
+  ~LatAnnealOpt() = default;
+  std::vector<std::vector<Inst*>> run(const bool& log = false)
+  {
+    LOG_INFO_IF(log) << "Begin Anneal Optimization By [Latency Cost]";
+    return AnnealOptInterface::run(log);
+  }
+
+ private:
+  // latency, empty buffering will lead more latency
+  double cost(Net* net) override;
+};
+class VioAnnealOpt : public AnnealOptInterface
+{
+ public:
+  VioAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters){};
+  ~VioAnnealOpt() = default;
+  // init parameters
+  void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature);
+  void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature, const int& max_fanout,
+                     const double& max_cap, const double& max_net_len, const double& skew_bound);
+
+  std::vector<std::vector<Inst*>> run(const bool& log = false)
+  {
+    LOG_INFO_IF(log) << "Begin Anneal Optimization By [Violation Cost]";
+    return AnnealOptInterface::run(log);
+  }
+
+ private:
+  // violation, convert all violation to wirelength
+  double cost(Net* net) override;
+  double designCost(const Net* net);
+  double wireLengthCost(const Net* net);
+  double wireLengthVioCost(const Net* net);
+  double capCost(const Net* net);
+  double capVioCost(const Net* net);
+  double fanoutVioCost(const Net* net);
+  double skewCost(const Net* net);
+  double skewVioCost(const Net* net);
+  double levelCapLoadCost(const Net* net);
 
   int _max_fanout = 0;
   double _max_cap = 0;
-  int _max_net_dist = 0;
-  double _p = 0;
-  double _cooling_ratio = 0;
-  double _temperature = 0;
-
-  size_t _net_num = 0;
-  size_t _inst_num = 0;
-  int _min_x = std::numeric_limits<int>::max();
-  int _min_y = std::numeric_limits<int>::max();
-  int _max_x = std::numeric_limits<int>::min();
-  int _max_y = std::numeric_limits<int>::min();
-  const double _lambda = 1e8;
+  double _max_net_len = 0;
+  double _skew_bound = 0;
 };
 }  // namespace icts

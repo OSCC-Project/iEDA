@@ -2301,56 +2301,6 @@ double CongestionEval::getPinRudy(CongBin* bin, CongNet* net, DIRECTION directio
   return horizontal + vertical;
 }
 
-double CongestionEval::getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map)
-{
-  double result = 0.0;
-  int64_t net_height = net->get_height();
-  int64_t net_width = net->get_width();
-
-  int64_t flute_wl = 0;
-  auto net_pair = map.find(net->get_name());
-  if (net_pair != map.end()) {
-    flute_wl = net_pair->second;
-  } else {
-    flute_wl = 0;
-  }
-
-  for (auto& pin : net->get_pin_list()) {
-    auto pin_x = pin->get_x();
-    auto pin_y = pin->get_y();
-    if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
-      if (net_height != 0 && net_width != 0) {
-        result += flute_wl / static_cast<double>(net_height) / net_width;
-      }
-    }
-  }
-
-  return result;
-}
-
-double CongestionEval::getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map)
-{
-  double result = 0.0;
-  int64_t net_height = net->get_height();
-  int64_t net_width = net->get_width();
-
-  int64_t flute_wl = 0;
-  auto net_pair = map.find(net->get_name());
-  if (net_pair != map.end()) {
-    flute_wl = net_pair->second;
-  } else {
-    flute_wl = 0;
-  }
-
-  if (net_height == 0 || net_width == 0) {
-    result = 1;
-  } else {
-    result = flute_wl / static_cast<double>(net_height) / net_width * bin->get_average_wire_width();
-  }
-  std::cout << "steiner rudy :" << result << std::endl;
-  return result;
-}
-
 double CongestionEval::getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map)
 {
   double result = 0.0;

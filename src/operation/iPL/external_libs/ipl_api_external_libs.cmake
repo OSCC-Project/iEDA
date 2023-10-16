@@ -4,7 +4,6 @@ find_package(OpenMP REQUIRED)
 target_link_libraries(ipl-api_external_libs
     INTERFACE
         eval_api
-        eval_source
         tool_manager
         idm
         OpenMP::OpenMP_CXX

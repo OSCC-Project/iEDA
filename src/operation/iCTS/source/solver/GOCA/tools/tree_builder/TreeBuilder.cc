@@ -358,6 +358,12 @@ void TreeBuilder::shallowLightTree(const std::string& net_name, Pin* driver, con
 Inst* TreeBuilder::boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
                                  const std::optional<Point>& guide_loc, const TopoType& topo_type)
 {
+  if (loads.size() == 1) {
+    auto loc = guide_loc.value_or(loads.front()->get_location());
+    auto* buf = genBufInst(net_name, loc);
+    directConnectTree(buf->get_driver_pin(), loads.front());
+    return buf;
+  }
   auto solver = bst::BoundSkewTree(net_name, loads, skew_bound, topo_type);
   if (guide_loc.has_value()) {
     solver.set_root_guide(*guide_loc);
@@ -383,6 +389,7 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   auto* driver_pin = buf->get_driver_pin();
   buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  localPlace(buf, loads);
   TimingPropagator::update(bst_net);
 
   std::vector<Pin*> pins{driver_pin};
@@ -464,6 +471,12 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
 Inst* TreeBuilder::beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
                             const std::optional<Point>& guide_loc, const TopoType& topo_type)
 {
+  if (loads.size() == 1) {
+    auto loc = guide_loc.value_or(loads.front()->get_location());
+    auto* buf = genBufInst(net_name, loc);
+    directConnectTree(buf->get_driver_pin(), loads.front());
+    return buf;
+  }
   auto* inst = bstSaltTree(net_name, loads, skew_bound, guide_loc, topo_type);
   auto solver = bst::BoundSkewTree(net_name, inst->get_driver_pin(), skew_bound);
   solver.run();
@@ -774,6 +787,10 @@ void TreeBuilder::localPlace(Inst* inst, const std::vector<Pin*>& load_pins)
 {
   LocalLegalization(inst, load_pins);
 }
+void TreeBuilder::localPlace(const std::vector<Pin*>& pins)
+{
+  auto sovler = LocalLegalization(pins);
+}
 void TreeBuilder::localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs)
 {
   LocalLegalization(variable_locs, fixed_locs);
@@ -827,7 +844,7 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
   auto* config = CTSAPIInst.get_config();
   auto dir = config->get_sta_workspace() + "/file";
   if (!std::filesystem::exists(dir)) {
-    std::filesystem::create_directory(dir);
+    std::filesystem::create_directories(dir);
   }
   auto file_name = dir + "/" + name + ".py";
   std::ofstream out(file_name);

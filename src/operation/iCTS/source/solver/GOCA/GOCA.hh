@@ -30,9 +30,9 @@
 namespace icts {
 struct Assign
 {
-  int max_dist;    // max distance between centorid and inst
-  int max_fanout;  // max fanout of a cluster
-  double max_cap;  // max cap of a cluster
+  double max_net_len;  // max wire length of a cluster
+  int max_fanout;      // max fanout of a cluster
+  double max_cap;      // max cap of a cluster
   double skew_bound;
   double ratio;  // clustering margin
 };

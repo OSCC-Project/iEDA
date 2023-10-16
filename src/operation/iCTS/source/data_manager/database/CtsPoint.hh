@@ -109,7 +109,7 @@ class CtsPoint
   bool operator!=(const CtsPoint& that) const { return !(*this == that); }
   bool operator<(const CtsPoint& rhs) const
   {
-    return _coords[kY] < rhs._coords[kY] || (_coords[kY] == rhs._coords[kY] && _coords[kX] < rhs._coords[kX]);
+    return _coords[kX] < rhs._coords[kX] || (_coords[kX] == rhs._coords[kX] && _coords[kY] < rhs._coords[kY]);
   }
   bool operator<=(const CtsPoint& that) const { return !(that < *this); }
   bool operator>(const CtsPoint& that) const { return that < *this; }

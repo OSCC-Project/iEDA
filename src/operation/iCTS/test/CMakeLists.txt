@@ -7,15 +7,22 @@ else()
 endif()
 
 if(PY_MODEL)
+  # Python test
   add_executable(icts_py_test ${ICTS_TEST}/PyTest.cc)
-  target_link_libraries(icts_py_test PUBLIC icts_source icts_test_external_libs)
+  target_link_libraries(icts_py_test PUBLIC icts_source icts_test_external_libs
+                                            gtest_main)
 endif()
 
-add_library(icts_solver_aux INTERFACE)
-target_link_libraries(icts_solver_aux INTERFACE icts_source icts_api
-                                                icts_test_external_libs)
-target_include_directories(icts_solver_aux INTERFACE ${ICTS_TEST})
+# TreeBuilderTest
+add_executable(icts_tree_builder_test ${ICTS_TEST}/TreeBuilderTest.cc)
+target_link_libraries(
+  icts_tree_builder_test PUBLIC icts_source icts_api icts_test_external_libs
+                                gtest_main)
+target_include_directories(icts_tree_builder_test PUBLIC ${ICTS_TEST})
 
-add_executable(icts_solver_test ${ICTS_TEST}/SolverTest.cc)
-target_link_libraries(icts_solver_test PUBLIC icts_solver_aux)
-target_include_directories(icts_solver_test PUBLIC ${ICTS_TEST})
+# AnnealOptTest
+add_executable(icts_anneal_opt_test ${ICTS_TEST}/AnnealOptTest.cc)
+target_link_libraries(
+  icts_anneal_opt_test PUBLIC icts_source icts_api icts_test_external_libs
+                              gtest_main)
+target_include_directories(icts_anneal_opt_test PUBLIC ${ICTS_TEST})

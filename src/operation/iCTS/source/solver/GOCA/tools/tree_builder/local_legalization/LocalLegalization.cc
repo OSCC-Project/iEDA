@@ -1,4 +1,3 @@
-#include "LocalLegalization.hh"
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
 // Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
@@ -20,9 +19,12 @@
  * @file LocalLegalization.cc
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
+#include "LocalLegalization.hh"
 
 #include "CtsDBWrapper.hh"
 namespace icts {
+bool LocalLegalization::_ignore_core = false;
+
 LocalLegalization::LocalLegalization(Inst* inst, const std::vector<Pin*>& load_pins)
 {
   _variable_locations.push_back(inst->get_location());
@@ -99,7 +101,7 @@ void LocalLegalization::legalize()
     while (!legal && step < max_step) {
       for (auto dir : derection) {
         auto new_loc = loc + dir * step;
-        if (!set.contains(new_loc) && db_wrapper->withinCore(new_loc)) {
+        if (!set.contains(new_loc) && (_ignore_core || db_wrapper->withinCore(new_loc))) {
           loc = new_loc;
           set.insert(loc);
           legal = true;
