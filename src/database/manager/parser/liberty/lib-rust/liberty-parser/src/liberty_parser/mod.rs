@@ -68,7 +68,7 @@ fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, p
 
     match pair.as_str().parse::<String>() {
         Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue {
-            value: value.trim_matches('"').to_string(),
+            value: value.trim_matches('"').trim().to_string(),
         })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
@@ -229,9 +229,9 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
-    println!("Rule:    {:?}", pair_clone.as_rule());
-    println!("Span:    {:?}", pair_clone.as_span());
-    println!("Text:    {}", pair_clone.as_str());
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
 
     let mut substitute_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
     while parser_queue.len() > current_queue_len {
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn test_parse_lib_id() {
         let input_str = "A";
-        let parse_result = LibertyParser::parse(Rule::lib_id, input_str);
+        let parse_result = LibertyParser::parse(Rule::id, input_str);
 
         print_parse_result(parse_result);
     }
@@ -380,15 +380,15 @@ mod tests {
     #[test]
     fn test_parse_bus_id() {
         let input_str = "A[ 1 ]";
-        let parse_result = LibertyParser::parse(Rule::bus_id, input_str);
+        let parse_result = LibertyParser::parse(Rule::id, input_str);
 
         print_parse_result(parse_result);
     }
 
     #[test]
     fn test_parse_bus_id1() {
-        let input_str = "A[1:2]";
-        let parse_result = LibertyParser::parse(Rule::bus_id, input_str);
+        let input_str = "Q[31:0]";
+        let parse_result = LibertyParser::parse(Rule::id, input_str);
 
         print_parse_result(parse_result);
     }
@@ -396,7 +396,7 @@ mod tests {
     #[test]
     fn test_parse_bus_bus_id() {
         let input_str = "A[1][1:2]";
-        let parse_result = LibertyParser::parse(Rule::bus_bus_id, input_str);
+        let parse_result = LibertyParser::parse(Rule::id, input_str);
 
         print_parse_result(parse_result);
     }
@@ -464,12 +464,7 @@ mod tests {
 
     #[test]
     fn test_parse_group_attribute() {
-        let input_str = r#"operating_conditions("ssg0p81v125c"){
-            process : 1; /* SSGlobalCorner_LocalMC_MOS_MOSCAP-SSGlobalCorner_LocalMC_RES_BIP_DIO_DISRES */
-            temperature : 125;
-            voltage : 0.81;
-            tree_type : "balanced_tree";
-        }"#;
+        let input_str = r#"pin ( Q[31:0] ) {}"#;
         let parse_result = LibertyParser::parse(Rule::group, input_str);
 
         print_parse_result(parse_result);
@@ -495,12 +490,12 @@ mod tests {
     fn test_parse_lib_file_path() {
         let lib_file_path =
             "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/example/example1_slow.lib";
-        // let lib_file_path = "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs.lib";
+        // let lib_file_path = "/home/taosimin/T28/ccslib/ts5n28hpcplvta256x32m4fw_130a_ssg0p81v125c.lib";
 
         let input_str =
             std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
         let parse_result = LibertyParser::parse(Rule::lib_file, input_str.as_str());
 
-        print_parse_result(parse_result);
+        test_process_parse_result(parse_result);
     }
 }

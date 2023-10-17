@@ -1059,11 +1059,6 @@ unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group) {
  * @return unsigned
  */
 unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
-  DLOG_INFO << "visit group " << group->group_name << " line no "
-            << group->line_no;
-  if (group->line_no == 470) {
-    LOG_INFO << "Debug";
-  }
   unsigned is_ok = 1;
   const char* group_name = group->group_name;
 
@@ -1108,7 +1103,7 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
   } else if (power_table_names.contains(group_name)) {
     is_ok = visitPowerTable(group);
   } else {
-    LOG_INFO << "group " << group_name << " is not supported.";
+    DLOG_INFO_EVERY_N(100000) << "group " << group_name << " is not supported.";
   }
 
   return 1;

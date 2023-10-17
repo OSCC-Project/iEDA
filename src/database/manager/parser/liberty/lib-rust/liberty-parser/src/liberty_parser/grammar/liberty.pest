@@ -5,13 +5,9 @@ optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits* }
 optional_frac   = _{ "." ~ decimal_digits* }
 float           = @{ dec_int ~ optional_frac? ~ optional_exp? }
 
-bus_index  = !{ "[" ~ decimal_digits+ ~ "]" }
-bus_slice  = !{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
-pin_id     =  { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
-bus_id     = @{ pin_id ~ (bus_index | bus_slice) }
-bus_bus_id = @{ pin_id ~ bus_index ~ (bus_index | bus_slice) }
-
-lib_id = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
+bus_index = _{ "[" ~ decimal_digits+ ~ "]" }
+bus_slice = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
+lib_id    = _{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
 
 // punctuation = _{ "," | ":" | "=" | "+" | "*" | "&" | "|" | "!" }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
@@ -32,7 +28,7 @@ expr_operator          = _{ "+" | "-" | "*" | "/" }
 expr_token             = ${ float ~ string? | string }
 simple_attribute_value = _{ expr_token ~ (expr_operator ~ expr_token)? }
 
-id = @{ lib_id | pin_id | bus_id | bus_bus_id }
+id = { lib_id ~ bus_index? ~ (bus_index | bus_slice)? }
 
 string = _{ id | multiline_string }
 
