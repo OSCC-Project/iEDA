@@ -28,6 +28,36 @@ fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pe
     }
 }
 
+/// process string text data not include quote.
+fn process_string_text(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    match pair.as_str().parse::<String>() {
+        Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue { value })),
+        Err(_) => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse string".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+/// process multiline string data, concate one line string together.
+fn process_multiline_string(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let mut concate_str = String::new();
+    while let Some(string_data) = parser_queue.pop_front() {
+        match string_data {
+            liberty_data::LibertyParserData::String(str) => {
+                concate_str.push_str(str.get_string_value());
+            }
+            _ => panic!("should be string type"),
+        }
+    }
+
+    Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue { value: concate_str }))
+}
+
 /// process string data.
 fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
@@ -204,8 +234,9 @@ fn process_pair(
 
     match pair_clone.as_rule() {
         Rule::float => process_float(pair_clone),
-        Rule::multiline_string => process_string(pair_clone),
+        Rule::string_text => process_string_text(pair_clone),
         Rule::id => process_string(pair_clone),
+        Rule::multiline_string => process_multiline_string(pair_clone, &mut substitute_queue),
         Rule::expr_token => process_expr_token(pair_clone, &mut substitute_queue),
         Rule::simple_attribute => process_simple_attribute(pair_clone, &mut substitute_queue),
         Rule::complex_attribute => process_complex_attribute(pair_clone, &mut substitute_queue),

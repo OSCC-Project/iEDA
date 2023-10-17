@@ -21,7 +21,8 @@ multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 COMMENT = _{ line_comment | multiline_comment }
 
-oneline_string = _{ "\"" ~ (!"\"" ~ ANY)* ~ ("\"") ~ "\\"? }
+string_text    =  { (!"\"" ~ ANY)* }
+oneline_string = _{ "\"" ~ string_text ~ ("\"") ~ "\\"? }
 
 multiline_string = !{ "\\"? ~ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
 
