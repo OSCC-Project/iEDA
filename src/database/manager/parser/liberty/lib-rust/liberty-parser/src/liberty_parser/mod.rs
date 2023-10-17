@@ -47,6 +47,38 @@ fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, p
     }
 }
 
+/// prcess simple attribute expr token such as: 1nW, 1.9, "test"
+fn process_expr_token(
+    pair: Pair<Rule>,
+    parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
+) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+
+    let attribute_value = parser_queue.pop_front().unwrap();
+    match attribute_value {
+        liberty_data::LibertyParserData::String(_) => Ok(attribute_value),
+        liberty_data::LibertyParserData::Float(_) => {
+            if parser_queue.is_empty() {
+                Ok(attribute_value)
+            } else {
+                match pair.as_str().parse::<String>() {
+                    Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue {
+                        value: value.trim_matches('"').to_string(),
+                    })),
+                    Err(_) => Err(pest::error::Error::new_from_span(
+                        pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
+                        pair_clone.as_span(),
+                    )),
+                }
+            }
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair.as_span(),
+        )),
+    }
+}
+
 /// process simple attribute
 fn process_simple_attribute(
     pair: Pair<Rule>,
@@ -69,35 +101,13 @@ fn process_simple_attribute(
                 Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
             }
             liberty_data::LibertyParserData::Float(f) => {
-                if (parser_queue.is_empty()) {
-                    let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
-                        file_name,
-                        line_no,
-                        lib_id,
-                        Box::new(f) as Box<dyn liberty_data::LibertyAttrValue>,
-                    );
-                    Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
-                } else {
-                    // should be unit id.
-                    let second_attribute_value = parser_queue.pop_front().unwrap();
-                    if let liberty_data::LibertyParserData::String(s) = second_attribute_value {
-                        let concate_id = liberty_data::LibertyStringValue {
-                            value: f.get_float_value().to_string() + s.get_string_value(),
-                        };
-                        let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
-                            file_name,
-                            line_no,
-                            lib_id,
-                            Box::new(concate_id) as Box<dyn liberty_data::LibertyAttrValue>,
-                        );
-                        Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
-                    } else {
-                        Err(pest::error::Error::new_from_span(
-                            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-                            pair.as_span(),
-                        ))
-                    }
-                }
+                let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
+                    file_name,
+                    line_no,
+                    lib_id,
+                    Box::new(f) as Box<dyn liberty_data::LibertyAttrValue>,
+                );
+                Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
             }
             _ => Err(pest::error::Error::new_from_span(
                 pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -183,9 +193,9 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
-    // println!("Rule:    {:?}", pair_clone.as_rule());
-    // println!("Span:    {:?}", pair_clone.as_span());
-    // println!("Text:    {}", pair_clone.as_str());
+    println!("Rule:    {:?}", pair_clone.as_rule());
+    println!("Span:    {:?}", pair_clone.as_span());
+    println!("Text:    {}", pair_clone.as_str());
 
     let mut substitute_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
     while parser_queue.len() > current_queue_len {
@@ -196,6 +206,7 @@ fn process_pair(
         Rule::float => process_float(pair_clone),
         Rule::multiline_string => process_string(pair_clone),
         Rule::id => process_string(pair_clone),
+        Rule::expr_token => process_expr_token(pair_clone, &mut substitute_queue),
         Rule::simple_attribute => process_simple_attribute(pair_clone, &mut substitute_queue),
         Rule::complex_attribute => process_complex_attribute(pair_clone, &mut substitute_queue),
         Rule::group => process_group_attribute(pair_clone, &mut substitute_queue),
@@ -257,14 +268,14 @@ mod tests {
 
     use super::*;
 
-    fn process_pair(pair: Pair<Rule>) {
+    fn test_process_pair(pair: Pair<Rule>) {
         // A pair is a combination of the rule which matched and a span of input
         println!("Rule:    {:?}", pair.as_rule());
         println!("Span:    {:?}", pair.as_span());
         println!("Text:    {}", pair.as_str());
 
         for inner_pair in pair.into_inner() {
-            process_pair(inner_pair);
+            test_process_pair(inner_pair);
         }
     }
 
@@ -274,7 +285,7 @@ mod tests {
             Ok(pairs) => {
                 for pair in pairs {
                     // A pair is a combination of the rule which matched and a span of input
-                    process_pair(pair);
+                    test_process_pair(pair);
                 }
             }
             Err(err) => {
@@ -284,6 +295,22 @@ mod tests {
         }
 
         assert!(!parse_result_clone.is_err());
+    }
+
+    fn test_process_parse_result(parse_result: Result<Pairs<Rule>, pest::error::Error<Rule>>) {
+        let mut parser_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
+
+        match parse_result {
+            Ok(pairs) => {
+                for pair in pairs {
+                    let _ = process_pair(pair, &mut parser_queue);
+                }
+            }
+            Err(err) => {
+                // Handle parsing error
+                println!("Error: {}", err);
+            }
+        }
     }
 
     #[test]
@@ -363,7 +390,8 @@ mod tests {
         let input_str = r#"leakage_power_unit : 1nW;"#;
         let parse_result = LibertyParser::parse(Rule::simple_attribute, input_str);
 
-        print_parse_result(parse_result);
+        test_process_parse_result(parse_result);
+        // print_parse_result(parse_result);
     }
 
     #[test]
@@ -405,9 +433,9 @@ mod tests {
 
     #[test]
     fn test_parse_lib_file_path() {
-        // let lib_file_path =
-        // "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/example/example1_slow.lib";
-        let lib_file_path = "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs.lib";
+        let lib_file_path =
+            "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/example/example1_slow.lib";
+        // let lib_file_path = "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs.lib";
 
         let input_str =
             std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));

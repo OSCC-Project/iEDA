@@ -28,7 +28,7 @@ multiline_string = !{ "\\"? ~ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
 semicolon = _{ ";" }
 
 expr_operator          = _{ "+" | "-" | "*" | "/" }
-expr_token             = @{ float ~ string? | string }
+expr_token             = ${ float ~ string? | string }
 simple_attribute_value = _{ expr_token ~ (expr_operator ~ expr_token)? }
 
 id = @{ lib_id | pin_id | bus_id | bus_bus_id }
