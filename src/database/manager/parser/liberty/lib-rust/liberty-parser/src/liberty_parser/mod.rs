@@ -201,8 +201,14 @@ fn process_group_attribute(
                 _ => todo!(),
             }
         }
-        let group_stmt = liberty_data::LibertyGroupStmt::new(file_name, line_no, lib_id, attri_values, stmts);
-        Ok(liberty_data::LibertyParserData::GroupStmt(group_stmt))
+        // for group and complex stmt, may be complex stmt parsed by group pair, because not used semicolon as end.
+        if stmts.is_empty() {
+            let complex_stmt = liberty_data::LibertyComplexAttrStmt::new(file_name, line_no, lib_id, attri_values);
+            Ok(liberty_data::LibertyParserData::ComplexStmt(complex_stmt))
+        } else {
+            let group_stmt = liberty_data::LibertyGroupStmt::new(file_name, line_no, lib_id, attri_values, stmts);
+            Ok(liberty_data::LibertyParserData::GroupStmt(group_stmt))
+        }
     } else {
         Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
