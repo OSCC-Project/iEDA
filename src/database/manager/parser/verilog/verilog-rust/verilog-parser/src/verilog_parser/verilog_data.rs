@@ -8,7 +8,7 @@ pub trait VerilogVirtualBaseID {
         0
     }
 
-    fn get_name(&self) -> &str {
+    fn get_name(&self) -> String {
         panic!("This is unknown value.");
     }
 }
@@ -37,7 +37,7 @@ pub struct VerilogIndexID {
 }
 
 impl VerilogIndexID {
-    pub fn new(id: &str, index: int) -> VerilogIndexID {
+    pub fn new(id: &str, index: i32) -> VerilogIndexID {
         VerilogIndexID {
             id: VerilogID::new(id),
             index:index
@@ -58,8 +58,8 @@ impl VerilogVirtualBaseID for VerilogIndexID {
         1
     }
     // &str?
-    fn get_name(&self) -> &str {
-        format!("{}[{}]", &self.id.get_base_name(), self.index).as_str()
+    fn get_name(&self) -> String {
+       format!("{}[{}]", &self.id.get_base_name(), self.index)
     }
 }
 
@@ -92,8 +92,8 @@ impl VerilogSliceID {
         self.range_to
     }
 
-    pub  fn get_name_with_index(&self, index: i32) -> &str {
-        format!("{}[{}]", &self.id.get_base_name(), index).as_str()
+    pub  fn get_name_with_index(&self, index: i32) -> String {
+        format!("{}[{}]", &self.id.get_base_name(), index)
     }
 }
 
@@ -102,8 +102,8 @@ impl VerilogVirtualBaseID for VerilogSliceID {
         1
     }
     // &str?
-    fn get_name(&self) -> &str {
-        format!("{}[{}:{}]", &self.id.get_base_name(), self.range_from, self.range_to).as_str()
+    fn get_name(&self) -> String {
+        format!("{}[{}:{}]", &self.id.get_base_name(), self.range_from, self.range_to)
     }
 }
 
@@ -158,15 +158,18 @@ impl VerilogNetIDExpr {
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
         &self.net_expr
     }
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        &self.verilog_id
+    }
 }
 
 impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     fn is_id_expr(&self) -> u32 {
         1
     }
-    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
-        &self.verilog_id
-    }
+    // fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+    //     &self.verilog_id
+    // }
 }
 
 /// such as { 2'b00, _0_ }
@@ -190,6 +193,10 @@ impl VerilogNetConcatExpr {
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
         &self.net_expr
     }
+    //get_verilog_id_concat
+    fn get_verilog_id(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
+        &self.verilog_id_concat
+    }
 }
 
 impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
@@ -197,9 +204,9 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
         1
     }
     //get_verilog_id_concat
-    fn get_verilog_id(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
-        &self.verilog_id_concat
-    }
+    // fn get_verilog_id(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
+    //     &self.verilog_id_concat
+    // }
 }
 
 /// 1'b0 or 1'b1.
@@ -223,18 +230,16 @@ impl VerilogConstantExpr {
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
         &self.net_expr
     }
-
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        &self.verilog_id
+    }
+    // get_verilog_id should realize in impl struct or impl trait? (according to simpleAttr, supposed to be struct)
 }
 
 impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     fn is_constant(&self) -> u32 {
         1
     }
-
-    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
-        &self.verilog_id
-    }
-    // get_verilog_id should realize in impl struct or impl trait? (according to simpleAttr, supposed to be struct)
 }
 
 /// The port connection such as .port_id(net_id).
@@ -372,7 +377,7 @@ impl VerilogAssign {
         &self.left_net_expr
     }
 
-    pub fn get_right_net_expr(&self) -> &str {
+    pub fn get_right_net_expr(&self) -> &Box<dyn VerilogVirtualBaseNetExpr> {
         &self.right_net_expr
     }
 }
@@ -409,7 +414,7 @@ impl VerilogDcl {
     pub fn new(
         line_no: u32,  
         dcl_type: DclType,
-        dcl_name: &Str,
+        dcl_name: &str,
         range: Option<(i32, i32)>
     ) -> VerilogDcl {
         VerilogDcl {
@@ -423,8 +428,8 @@ impl VerilogDcl {
     pub fn get_stmt(&self) -> &VerilogStmt {
         &self.stmt
     }
-    pub fn get_dcl_type(&self) -> DclType {
-        self.dcl_type
+    pub fn get_dcl_type(&self) -> &DclType {
+        &self.dcl_type
     }
     pub fn get_dcl_name(&self) -> &str {
         &self.dcl_name
@@ -491,21 +496,21 @@ pub enum PortDclType {
 pub struct VerilogModule {
     stmt: VerilogStmt,  //stmt denote line_no 
     module_name: String,
-    port_list: Vec<Box<VerilogID>>,
-    module_stmts: Vec<Box<VerilogStmt>>,
+    port_list: Vec<Box<dyn VerilogVirtualBaseID>>,
+    module_stmts: Vec<Box<dyn VerilogVirtualBaseStmt>>,
 }
 
 ///The verilog module class.
 impl VerilogModule {
     pub fn new(
         line_no: u32,  
-        module_name: &Str,
-        port_list: Vec<Box<VerilogID>>,
-        module_stmts: Vec<Box<VerilogStmt>>,
+        module_name: &str,
+        port_list: Vec<Box<dyn VerilogVirtualBaseID>>,
+        module_stmts: Vec<Box<dyn VerilogVirtualBaseStmt>>,
     ) -> VerilogModule {
         VerilogModule {
             stmt: VerilogStmt::new(line_no),  
-            module_name: &Str,
+            module_name: module_name.to_string(),
             port_list: port_list,
             module_stmts: module_stmts,
         }
@@ -514,13 +519,13 @@ impl VerilogModule {
     pub fn get_stmt(&self) -> &VerilogStmt {
         &self.stmt
     }
-    pub fn get_module_name(&self) -> &Str {
+    pub fn get_module_name(&self) -> &str {
         &self.module_name
     }
-    pub fn get_port_list(&self) -> &Vec<Box<VerilogID>> {
+    pub fn get_port_list(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
         &self.port_list
     }
-    pub fn get_module_stmts(&self) -> &Vec<Box<VerilogStmt>> {
+    pub fn get_module_stmts(&self) -> &Vec<Box<dyn VerilogVirtualBaseStmt>> {
         &self.module_stmts
     }
 }
