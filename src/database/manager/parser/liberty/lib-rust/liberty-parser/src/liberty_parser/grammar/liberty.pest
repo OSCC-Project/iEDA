@@ -21,28 +21,30 @@ multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 COMMENT = _{ line_comment | multiline_comment }
 
-oneline_string = _{ "\"" ~ (!"\"" ~ ANY)* ~ ("\"") }
+oneline_string = _{ "\"" ~ (!"\"" ~ ANY)* ~ ("\"") ~ "\\"? }
 
-multiline_string = !{ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
+multiline_string = !{ "\\"? ~ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
 
-semicolon_opt = _{ ";" }
+semicolon = _{ ";" }
 
-// expr_operator = _{ "+" | "-" | "*" | "/"}
+expr_operator          = _{ "+" | "-" | "*" | "/" }
+expr_token             = @{ float ~ string? | string }
+simple_attribute_value = _{ expr_token ~ (expr_operator ~ expr_token)? }
 
 id = @{ lib_id | pin_id | bus_id | bus_bus_id }
 
 string = _{ id | multiline_string }
 
 attribute_value  = _{ float | string }
-attribute_values = _{ attribute_value ~ (("," | WHITESPACE) ~ attribute_value)* }
+attribute_values = _{ attribute_value? ~ (("," | WHITESPACE) ~ attribute_value)* }
 
-simple_attribute = { id ~ ":" ~ attribute_value ~ semicolon_opt }
+simple_attribute = { id ~ ":" ~ simple_attribute_value ~ semicolon? }
 
-complex_attribute = { id ~ "(" ~ ")" ~ semicolon_opt | id ~ "(" ~ attribute_values ~ ")" ~ semicolon_opt }
+complex_attribute = { id ~ "(" ~ attribute_values ~ ")" ~ semicolon }
 
-group = { id ~ "(" ~ ")" ~ "{" ~ statements ~ "}" | id ~ "(" ~ attribute_values ~ ")" ~ "{" ~ statements ~ "}" }
+group = { id ~ "(" ~ attribute_values ~ ")" ~ ("{" ~ statements ~ "}")? }
 
 statement  = _{ simple_attribute | complex_attribute | group }
-statements = _{ statement+ }
+statements = _{ statement* }
 
 lib_file = _{ SOI ~ group ~ EOI }

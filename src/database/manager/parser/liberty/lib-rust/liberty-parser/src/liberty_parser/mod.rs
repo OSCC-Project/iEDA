@@ -10,7 +10,7 @@ use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::os::raw::c_char;
 
-use self::liberty_data::LibertyGroupStmt;
+use self::liberty_data::{LibertyAttrValue, LibertyGroupStmt};
 
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
@@ -69,13 +69,35 @@ fn process_simple_attribute(
                 Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
             }
             liberty_data::LibertyParserData::Float(f) => {
-                let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
-                    file_name,
-                    line_no,
-                    lib_id,
-                    Box::new(f) as Box<dyn liberty_data::LibertyAttrValue>,
-                );
-                Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
+                if (parser_queue.is_empty()) {
+                    let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
+                        file_name,
+                        line_no,
+                        lib_id,
+                        Box::new(f) as Box<dyn liberty_data::LibertyAttrValue>,
+                    );
+                    Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
+                } else {
+                    // should be unit id.
+                    let second_attribute_value = parser_queue.pop_front().unwrap();
+                    if let liberty_data::LibertyParserData::String(s) = second_attribute_value {
+                        let concate_id = liberty_data::LibertyStringValue {
+                            value: f.get_float_value().to_string() + s.get_string_value(),
+                        };
+                        let simple_stmt = liberty_data::LibertySimpleAttrStmt::new(
+                            file_name,
+                            line_no,
+                            lib_id,
+                            Box::new(concate_id) as Box<dyn liberty_data::LibertyAttrValue>,
+                        );
+                        Ok(liberty_data::LibertyParserData::SimpleStmt(simple_stmt))
+                    } else {
+                        Err(pest::error::Error::new_from_span(
+                            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+                            pair.as_span(),
+                        ))
+                    }
+                }
             }
             _ => Err(pest::error::Error::new_from_span(
                 pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -276,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_parse_float() {
-        let input_str = "1.774000e-01";
+        let input_str = "0";
         let parse_result = LibertyParser::parse(Rule::float, input_str);
 
         print_parse_result(parse_result);
@@ -338,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_parse_simple_attribute() {
-        let input_str = r#"process       	: 1.01;"#;
+        let input_str = r#"leakage_power_unit : 1nW;"#;
         let parse_result = LibertyParser::parse(Rule::simple_attribute, input_str);
 
         print_parse_result(parse_result);
@@ -354,13 +376,12 @@ mod tests {
 
     #[test]
     fn test_parse_group_attribute() {
-        let input_str = r#"operating_conditions (slow) {
-            process_corner	: "SlowSlow";
-            process       	: 1.00;
-            voltage       	: 0.95;
-            temperature   	: 125.00;
-            tree_type     	: balanced_tree;
-          }"#;
+        let input_str = r#"operating_conditions("ssg0p81v125c"){
+            process : 1; /* SSGlobalCorner_LocalMC_MOS_MOSCAP-SSGlobalCorner_LocalMC_RES_BIP_DIO_DISRES */
+            temperature : 125;
+            voltage : 0.81;
+            tree_type : "balanced_tree";
+        }"#;
         let parse_result = LibertyParser::parse(Rule::group, input_str);
 
         print_parse_result(parse_result);
@@ -368,13 +389,15 @@ mod tests {
 
     #[test]
     fn test_parse_lib_file() {
-        let input_str = r#"   library (NangateOpenCellLibrary_slow) {
-
-            /* Documentation Attributes */
-            date                    		: "Thu 10 Feb 2011, 18:11:58";
-            revision                		: "revision 1.0";
-            comment                 		: "Copyright (c) 2004-2011 Nangate Inc. All Rights Reserved.";
-        }"#;
+        let input_str = r#"library (tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs) {
+            /*  library head: tcbn28hpcplusbwp30p140ulvt */
+            operating_conditions("ssg0p81v125c"){
+                process : 1; /* SSGlobalCorner_LocalMC_MOS_MOSCAP-SSGlobalCorner_LocalMC_RES_BIP_DIO_DISRES */
+                temperature : 125;
+                voltage : 0.81;
+                tree_type : "balanced_tree";
+            }
+       }"#;
         let parse_result = LibertyParser::parse(Rule::lib_file, input_str);
 
         print_parse_result(parse_result);
@@ -382,8 +405,9 @@ mod tests {
 
     #[test]
     fn test_parse_lib_file_path() {
-        let lib_file_path =
-            "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/example/example1_slow.lib";
+        // let lib_file_path =
+        // "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/example/example1_slow.lib";
+        let lib_file_path = "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs.lib";
 
         let input_str =
             std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
