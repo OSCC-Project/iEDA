@@ -6,7 +6,9 @@
 //!     group statement.
 //!
 
-pub trait LibertyAttrValue {
+use std::fmt::Debug;
+
+pub trait LibertyAttrValue: Debug {
     fn is_string(&self) -> bool {
         false
     }
@@ -25,7 +27,7 @@ pub trait LibertyAttrValue {
 /// liberty float value.
 /// # Examples
 /// 1.7460
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyFloatValue {
     pub(crate) value: f64,
 }
@@ -43,7 +45,7 @@ impl LibertyAttrValue for LibertyFloatValue {
 /// liberty string value.
 /// # Examples
 /// "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyStringValue {
     pub(crate) value: String,
 }
@@ -59,7 +61,7 @@ impl LibertyAttrValue for LibertyStringValue {
 }
 
 /// liberty stmt.
-pub trait LibertyStmt {
+pub trait LibertyStmt: Debug {
     fn is_simple_attr_stmt(&self) -> bool {
         false
     }
@@ -76,7 +78,7 @@ pub trait LibertyStmt {
 }
 
 /// liberty attribute stmt.
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyAttrStmt {
     file_name: String,
     line_no: usize,
@@ -99,7 +101,7 @@ impl LibertyAttrStmt {
 /// The simple attribute statement.
 /// # Example
 /// capacitance : 1.774000e-01;
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertySimpleAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -148,7 +150,7 @@ impl LibertyStmt for LibertySimpleAttrStmt {
 /// The complex attribute statement.
 /// # Example
 /// index_1 ("0.0010,0.0020,0.0030");
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyComplexAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -212,7 +214,7 @@ impl LibertyStmt for LibertyComplexAttrStmt {
 /// fanout_length( 9, 25.4842 );
 /// fanout_length( 11, 27.0320 );
 /// }
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyGroupStmt {
     attri: LibertyAttrStmt,
     group_name: String,
@@ -266,7 +268,7 @@ impl LibertyStmt for LibertyGroupStmt {
     }
 }
 
-#[repr(C)]
+#[derive(Debug)]
 pub enum LibertyParserData {
     GroupStmt(LibertyGroupStmt),
     ComplexStmt(LibertyComplexAttrStmt),
