@@ -759,6 +759,19 @@ void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, con
   }
 }
 
+// function
+std::vector<std::string> CTSAPI::splitString(std::string str, const char split)
+{
+  std::vector<std::string> string_list;
+
+  std::istringstream iss(str);
+  std::string token;
+  while (getline(iss, token, split)) {
+    string_list.push_back(token);
+  }
+  return string_list;
+}
+
 // debug
 
 void CTSAPI::writeVerilog() const
@@ -794,19 +807,6 @@ icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, c
 
 #endif
 
-// function
-std::vector<std::string> CTSAPI::splitString(std::string str, const char split)
-{
-  std::vector<std::string> string_list;
-
-  std::istringstream iss(str);
-  std::string token;
-  while (getline(iss, token, split)) {
-    string_list.push_back(token);
-  }
-  return string_list;
-}
-
 // private STA
 void CTSAPI::readSTAFile()
 {
@@ -829,7 +829,7 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   auto* inst = eval_net.get_instance(name);
   if (inst == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
-    if (string_list.size() == 2 && (string_list[0] == "steiner" || string_list[0] == "Salt")) {
+    if (string_list.size() == 2 && (string_list[0] == "steiner")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;

@@ -31,17 +31,9 @@ const double& Inst::getCapOut() const
   return _driver_pin->get_cap_load();
 }
 
-void Inst::init(Node* driver_node)
+void Inst::init()
 {
-  if (driver_node) {
-    _driver_pin = new Pin(std::move(*driver_node));
-    delete driver_node;
-
-    _driver_pin->set_name(_name + "_driver");
-    _driver_pin->set_type(NodeType::kBufferPin);
-    _driver_pin->set_inst(this);
-    _driver_pin->set_pin_type(PinType::kDriver);
-  } else if (isBuffer()) {
+  if (isBuffer()) {
     _driver_pin = new Pin(this, _location, _name + "_driver", PinType::kDriver);
   }
   _load_pin = new Pin(this, _location, _name + "_load", PinType::kLoad);

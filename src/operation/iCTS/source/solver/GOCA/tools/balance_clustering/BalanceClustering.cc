@@ -141,17 +141,18 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
  * @param iters
  * @param no_change_stop
  * @param limit_ratio
+ * @param log
  * @return std::vector<std::vector<Inst*>>
  */
 std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vector<Inst*>& insts, const size_t& max_fanout,
                                                                   const size_t& iters, const size_t& no_change_stop,
-                                                                  const double& limit_ratio)
+                                                                  const double& limit_ratio, const bool& log)
 {
   LOG_FATAL_IF(max_fanout < 2) << "max_fanout should be greater than 1";
   if (insts.size() == 2) {
     return {insts};
   }
-  LOG_INFO << "iterative clustering";
+  LOG_INFO_IF(log) << "iterative clustering";
   // initialize clusters
   size_t cluster_num = std::ceil(1.0 * insts.size() / (limit_ratio * max_fanout));
   if (cluster_num == insts.size()) {
@@ -162,7 +163,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
       = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
   LOG_FATAL_IF(kmeans_num != insts.size()) << "num of insts is not equal to num of clusters";
   LOG_WARNING_IF(max_fanout * clusters.size() < insts.size()) << "multiply max_fanout by num of clusters is less than num of insts";
-  LOG_INFO << "initial clusters: " << clusters.size();
+  LOG_INFO_IF(log) << "initial clusters: " << clusters.size();
   if (clusters.size() == 1) {
     return clusters;
   }
@@ -171,16 +172,16 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
   auto best_clusters = clusters;
   auto kmeans_var = calcBalanceVariance(clusters, buffers);
   auto mcf_var = std::numeric_limits<double>::max();
-  LOG_INFO << "initial kmeans var: " << kmeans_var;
+  LOG_INFO_IF(log) << "initial kmeans var: " << kmeans_var;
   size_t no_change = 0;
   // iterate
   for (size_t i = 0; i < iters; ++i, ++no_change) {
     if (no_change > no_change_stop) {
-      LOG_INFO << "no change should stop in iter: " << i;
+      LOG_INFO_IF(log) << "no change should stop in iter: " << i;
       break;
     }
     if ((i + 1) % 50 == 0) {
-      LOG_INFO << "iter: " << i + 1;
+      LOG_INFO_IF(log) << "iter: " << i + 1;
     }
     MinCostFlow<Inst*> mcf;
     std::ranges::for_each(insts, [&mcf](Inst* inst) { mcf.add_node(inst->get_location().x(), inst->get_location().y(), inst); });
@@ -195,7 +196,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
       mcf_var = new_mcf_var;
       best_clusters = clusters;
       no_change = 0;
-      LOG_INFO << "update in mcf iter: " << i + 1;
+      LOG_INFO_IF(log) << "update in mcf iter: " << i + 1;
     } else {
       clusters = kMeans(insts, cluster_num, i, 5);
       auto temp_buffers = getCentroidBuffers(clusters);
@@ -204,12 +205,12 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
         kmeans_var = temp_kmeans_var;
         buffers = temp_buffers;
         no_change = 0;
-        LOG_INFO << "update in kmeans iter: " << i + 1;
+        LOG_INFO_IF(log) << "update in kmeans iter: " << i + 1;
       }
     }
   }
-  LOG_INFO << "final mcf var: " << mcf_var;
-  LOG_INFO << "final kmeans var: " << kmeans_var;
+  LOG_INFO_IF(log) << "final mcf var: " << mcf_var;
+  LOG_INFO_IF(log) << "final kmeans var: " << kmeans_var;
   // remove empty clusters
   best_clusters.erase(
       std::remove_if(best_clusters.begin(), best_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
@@ -234,7 +235,18 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
       slack_clusters.push_back(cluster);
     } else {
       // reclustering
-      auto new_clusters = kMeans(cluster, std::ceil(est_net_length / max_net_length));
+      auto recluster_num = std::ceil(est_net_length / max_net_length);
+      if (recluster_num >= cluster.size()) {
+        // LOG_WARNING << "Clusters num: " << cluster.size() << ", Estimation net length: " << est_net_length
+        //             << ", Max net length: " << max_net_length << ", Recluster num: " << recluster_num
+        //             << ", Recluster num is equal to cluster size";
+        recluster_num = cluster.size() - 1;
+      }
+      if (recluster_num == 1) {
+        slack_clusters.push_back(cluster);
+        return;
+      }
+      auto new_clusters = kMeans(cluster, recluster_num);
       std::ranges::for_each(new_clusters, [&](const std::vector<Inst*>& new_cluster) {
         auto re_slack_clusters = slackClustering({new_cluster}, max_net_length, max_fanout);
         slack_clusters.insert(slack_clusters.end(), re_slack_clusters.begin(), re_slack_clusters.end());
@@ -262,9 +274,13 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
                                                                          const size_t& max_iter, const double& cooling_rate,
                                                                          const double& temperature)
 {
+  if (clusters.size() == 1) {
+    return clusters;
+  }
   VioAnnealOpt solver(clusters);
   solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_length, skew_bound);
-  return solver.run();
+  solver.automaticTemperature();
+  return solver.run(true);
 }
 /**
  * @brief get the min delay cluster

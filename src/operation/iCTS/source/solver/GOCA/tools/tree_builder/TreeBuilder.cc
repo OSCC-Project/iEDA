@@ -78,19 +78,6 @@ Inst* TreeBuilder::genBufInst(const std::string& prefix, const Point& location)
   return buf_inst;
 }
 /**
- * @brief convert node to buffer inst
- *
- * @param prefix
- * @param driver_node
- * @return Inst*
- */
-Inst* TreeBuilder::toBufInst(const std::string& prefix, Node* driver_node)
-{
-  auto buf_name = prefix + "_buf";
-  auto buf_inst = new Inst(buf_name, driver_node->get_location(), driver_node);
-  return buf_inst;
-}
-/**
  * @brief amplify the buffer size of inst
  *
  * @param inst
@@ -283,7 +270,7 @@ void TreeBuilder::fluteTree(const std::string& net_name, Pin* driver, const std:
     }
     // steiner point, need to create a new node
     if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = CTSAPIInst.toString(net_name, "_", salt_node->id);
+      auto name = CTSAPIInst.toString("steiner_", salt_node->id);
       auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
       id_to_node[salt_node->id] = node;
     }
@@ -332,7 +319,7 @@ void TreeBuilder::shallowLightTree(const std::string& net_name, Pin* driver, con
     }
     // steiner point, need to create a new node
     if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = CTSAPIInst.toString(net_name, "_", salt_node->id);
+      auto name = CTSAPIInst.toString("steiner_", salt_node->id);
       auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
       id_to_node[salt_node->id] = node;
     }
@@ -444,7 +431,7 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
     }
     // steiner point, need to create a new node
     if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = CTSAPIInst.toString(net_name, "_", salt_node->id);
+      auto name = CTSAPIInst.toString("steiner_", salt_node->id);
       auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
       id_to_node[salt_node->id] = node;
     }
@@ -554,7 +541,7 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
     }
     // steiner point, need to create a new node
     if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = CTSAPIInst.toString(net_name, "_", salt_node->id);
+      auto name = CTSAPIInst.toString("steiner_", salt_node->id);
       auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
       id_to_node[salt_node->id] = node;
     }
@@ -575,27 +562,43 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
  */
 void TreeBuilder::convertToBinaryTree(Node* root)
 {
+  auto id = root->getMaxId();
   // convert to binary tree for bound skew tree
   auto one_child_refine = [&](Node* node) {
     auto children = node->get_children();
     LOG_FATAL_IF(children.size() != 1) << "node " << node->get_name() << " children size is not 1";
-
-    // upstream refine
-    auto* parent = node->get_parent();
-    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
-    if (parent) {
-      disconnect(parent, node);
-      connect(parent, copy_node);
-    }
     // case 1: size is 1
-    // downstream refine
-    LOG_FATAL_IF(!node->isPin()) << "node " << node->get_name() << " is not pin";
     auto* child = children.front();
-    disconnect(node, child);
-    connect(copy_node, child);
-    connect(copy_node, node);
-
-    return copy_node;
+    // upstream refine
+    if ((node->isPin() && node->isLoad())) {
+      // debug
+      if (child->isPin()) {
+        LOG_FATAL_IF(!node->isPin()) << "node " << node->get_name() << " is not pin";
+      }
+      auto* parent = node->get_parent();
+      auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+      if (parent) {
+        disconnect(parent, node);
+        connect(parent, copy_node);
+      }
+      // downstream refine
+      LOG_FATAL_IF(!node->isPin()) << "node " << node->get_name() << " is not pin";
+      disconnect(node, child);
+      connect(copy_node, child);
+      connect(copy_node, node);
+      return copy_node;
+    }
+    auto grand_children = child->get_children();
+    LOG_FATAL_IF(grand_children.empty()) << "node " << child->get_name() << " children size is 0";
+    std::ranges::for_each(grand_children, [&](Node* grand_child) {
+      disconnect(child, grand_child);
+      connect(node, grand_child);
+    });
+    if (!child->isPin()) {
+      disconnect(node, child);
+      delete child;
+    }
+    return node;
   };
 
   auto two_child_refine = [&](Node* node) {
@@ -605,7 +608,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
 
     // upstream refine
     auto* parent = node->get_parent();
-    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
+    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
     if (parent) {
       disconnect(parent, node);
       connect(parent, copy_node);
@@ -613,7 +616,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     // case 2: size is 2 and node is pin
     // downstream refine
     connect(copy_node, node);
-    auto* trunk = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
+    auto* trunk = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
     connect(copy_node, trunk);
     std::ranges::for_each(children, [&](Node* child) {
       disconnect(node, child);
@@ -637,12 +640,15 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     // downstream refine
     auto* left_child = children[0];
     auto* right_child = children[1];
-    auto* trunk = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
+    auto* trunk = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
     disconnect(node, left_child);
     disconnect(node, right_child);
     connect(node, trunk);
     connect(trunk, left_child);
     connect(trunk, right_child);
+    if (node->isPin() && node->isLoad()) {
+      return two_child_refine(node);
+    }
     return node;
   };
 
@@ -653,8 +659,8 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     // upstream check
     LOG_FATAL_IF(node->get_parent()) << "node " << node->get_name() << "have 4 children, so parent should be nullptr";
     // case 4: size is 4
-    auto* copy_left_node = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
-    auto* copy_right_node = new Node(CTSAPIInst.toString("steiner_", CTSAPIInst.genId()), node->get_location());
+    auto* copy_left_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+    auto* copy_right_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
     std::ranges::for_each(children, [&](Node* child) { disconnect(node, child); });
     connect(node, copy_left_node);
     connect(node, copy_right_node);
@@ -668,6 +674,9 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     std::ranges::for_each(left_children, [&](Node* child) { connect(copy_left_node, child); });
     auto right_children = std::vector<Node*>(children.begin() + 2, children.end());
     std::ranges::for_each(right_children, [&](Node* child) { connect(copy_right_node, child); });
+    if (node->isPin() && node->isLoad()) {
+      return two_child_refine(node);
+    }
     return node;
   };
 
@@ -787,7 +796,7 @@ void TreeBuilder::localPlace(Inst* inst, const std::vector<Pin*>& load_pins)
 {
   LocalLegalization(inst, load_pins);
 }
-void TreeBuilder::localPlace(const std::vector<Pin*>& pins)
+void TreeBuilder::localPlace(std::vector<Pin*>& pins)
 {
   auto sovler = LocalLegalization(pins);
 }

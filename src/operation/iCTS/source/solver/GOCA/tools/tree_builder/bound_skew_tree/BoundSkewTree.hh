@@ -86,16 +86,16 @@ class BoundSkewTree
    * @brief topology
    *
    */
-  Area* merge(Area* left, Area* right) const;
+  Area* merge(Area* left, Area* right);
   void areaReset();
   void ptReset(Area* cur);
   void biPartition();
-  Area* biPartition(std::vector<Area*>& areas) const;
+  Area* biPartition(std::vector<Area*>& areas);
   std::pair<std::vector<Area*>, std::vector<Area*>> octagonDivide(std::vector<Area*>& areas) const;
   std::vector<Pt> calcOctagon(const std::vector<Area*>& areas) const;
   std::vector<Area*> areaOnOctagonBound(const std::vector<Area*> areas, const std::vector<Pt>& octagon) const;
   void biCluster();
-  Area* biCluster(const std::vector<Area*>& areas) const;
+  Area* biCluster(const std::vector<Area*>& areas);
   std::vector<std::vector<Area*>> kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
                                          const size_t& max_iter = 10) const;
   /**
@@ -206,6 +206,7 @@ class BoundSkewTree
    * @brief data
    *
    */
+  size_t _id = 0;
   std::string _net_name = "";
 
   Inst* _root_buf = nullptr;

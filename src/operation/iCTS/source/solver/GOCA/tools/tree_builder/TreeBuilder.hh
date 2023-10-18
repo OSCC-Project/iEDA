@@ -47,7 +47,6 @@ class TreeBuilder
 
   static std::vector<Inst*> getSubInsts(Inst* inst);
   static Inst* genBufInst(const std::string& prefix, const Point& location);
-  static Inst* toBufInst(const std::string& prefix, Node* driver_node);
   static void amplifyBufferSize(Inst* inst, const size_t& level = 1);
   static void reduceBufferSize(Inst* inst, const size_t& level = 1);
   static std::vector<std::string> feasibleCell(Inst* inst, const double& skew_bound);
@@ -78,7 +77,7 @@ class TreeBuilder
   static std::vector<SkewTreeFunc> getSkewTreeFuncs();
 
   static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);
-  static void localPlace(const std::vector<Pin*>& pins);
+  static void localPlace(std::vector<Pin*>& pins);
   static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
 
   // debug

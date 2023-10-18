@@ -20,6 +20,7 @@
  */
 #pragma once
 #include <limits>
+#include <map>
 #include <random>
 #include <ranges>
 
@@ -36,6 +37,28 @@ struct Operation
   size_t cluster_id;
   size_t neighbor_id;
   size_t inst_id;
+  double from_cost;
+  double to_cost;
+};
+struct ClusterState
+{
+  size_t size;
+  double cost;
+};
+struct ClusterStateCompare
+{
+  bool operator()(const ClusterState& lhs, const ClusterState& rhs) const
+  {
+    auto size_rhs = rhs.size;
+    if (size_rhs == 0) {
+      return true;
+    }
+    auto size_lhs = lhs.size;
+    if (size_lhs == 0) {
+      return false;
+    }
+    return lhs.cost > rhs.cost;
+  }
 };
 /**
  * @brief AnnealOpt for rebalance clustering
@@ -57,6 +80,7 @@ class AnnealOptInterface
     _temperature = temperature;
   }
   // run
+  void automaticTemperature();
   std::vector<std::vector<Inst*>> run(const bool& log = false);
 
   double get_best_cost() const { return _best_cost; };
@@ -68,7 +92,7 @@ class AnnealOptInterface
    *
    */
 
-  std::vector<std::vector<Inst*>> commitOperation(const Operation& op);
+  std::vector<std::vector<Inst*>> commitOperation(Operation& op);
 
   std::vector<std::vector<Inst*>> randomSwap(const std::vector<std::vector<Inst*>>& clusters);
 
@@ -103,8 +127,13 @@ class AnnealOptInterface
    */
   std::vector<std::vector<Inst*>> _cur_solution;
 
+  std::multimap<ClusterState, size_t, ClusterStateCompare> _sorted_cluster_id_map;
+
   const std::mt19937::result_type _seed = 0;
   std::mt19937 _gen = std::mt19937(_seed);
+
+  bool _auto_temp = false;
+
   const double _correct_coef = 1e6;
   size_t _max_iter = 0;
   double _cooling_rate = 0;
@@ -118,7 +147,7 @@ class AnnealOptInterface
 class LatAnnealOpt : public AnnealOptInterface
 {
  public:
-  LatAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters){};
+  LatAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters) { initCostMap(); };
   ~LatAnnealOpt() = default;
   std::vector<std::vector<Inst*>> run(const bool& log = false)
   {
