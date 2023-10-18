@@ -482,11 +482,10 @@ unsigned RustLibertyReader::visitAxisOrValues(
     return result_values;
   };
 
-  auto result_values = convert_attri_values(attribute_values);
-
   auto* lib_obj = lib_builder->get_obj();
-
   if (lib_obj) {
+    auto result_values = convert_attri_values(attribute_values);
+
     if (Str::equal(attri_name, "values")) {
       auto* lib_table = dynamic_cast<LibertyTable*>(lib_obj);
       LOG_FATAL_IF(!lib_table);
@@ -571,11 +570,17 @@ unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
   auto lib_stmts = group->stmts;
   void* lib_stmt;
   FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+    // simple attri stmt first, we need set attribute.
     if (rust_is_simple_attri_stmt(lib_stmt)) {
       is_ok &= visitSimpleAttri(rust_convert_simple_attribute_stmt(lib_stmt));
-    } else if (rust_is_complex_attri_stmt(lib_stmt)) {
+    }
+  }
+
+  // visit complex/group data finally.
+  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+    if (rust_is_complex_attri_stmt(lib_stmt)) {
       is_ok &= visitComplexAttri(rust_convert_complex_attribute_stmt(lib_stmt));
-    } else {
+    } else if (rust_is_group_stmt(lib_stmt)) {
       // group stmt.
       is_ok &= visitGroup(rust_convert_group_stmt(lib_stmt));
     }
@@ -618,6 +623,7 @@ unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group) {
   unsigned is_ok = visitStmtInGroup(group);
 
   lib->addWireLoad(std::move(wire_load));
+  lib_builder->set_obj(nullptr);
   return is_ok;
 }
 
@@ -717,6 +723,8 @@ unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group) {
 
   lib->addLibertyCell(std::move(lib_cell));
 
+  lib_builder->set_obj(nullptr);
+
   return is_ok;
 }
 
@@ -739,6 +747,8 @@ unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group) {
   unsigned is_ok = visitStmtInGroup(group);
 
   lib_cell->addLeakagePower(std::move(leakage_power));
+
+  lib_builder->set_obj(nullptr);
 
   return is_ok;
 }
@@ -958,6 +968,8 @@ unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group) {
   current_table->addTable(std::move(lib_table));
 
   unsigned is_ok = visitStmtInGroup(group);
+
+  lib_builder->set_obj(nullptr);
 
   return is_ok;
 }

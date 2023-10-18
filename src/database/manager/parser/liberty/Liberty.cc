@@ -210,7 +210,11 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load) {
   };
 
   auto get_table_value = [this](auto index) {
-    return get_table_values()[index]->getFloatValue();
+    auto& table_values = get_table_values();
+    LOG_FATAL_IF(index >= table_values.size())
+        << "index " << index << " beyond table value size "
+        << table_values.size();
+    return table_values[index]->getFloatValue();
   };
 
   if (1 == get_axes().size()) {

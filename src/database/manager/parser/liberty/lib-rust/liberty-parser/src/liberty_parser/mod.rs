@@ -49,6 +49,9 @@ fn process_multiline_string(
     while let Some(string_data) = parser_queue.pop_front() {
         match string_data {
             liberty_data::LibertyParserData::String(str) => {
+                if !concate_str.is_empty() {
+                    concate_str.push_str(", ");
+                }
                 concate_str.push_str(str.get_string_value());
             }
             _ => panic!("should be string type"),
