@@ -17,7 +17,7 @@
 
 #include "Legalizer.hh"
 
-#include "method/abacus/Abacus.hh"
+#include "abacus/Abacus.hh"
 
 namespace ipl {
 
