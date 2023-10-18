@@ -51,54 +51,54 @@ TEST_F(TreeBuilderTest, GeomTest)
   EXPECT_EQ(poly_t.size(), 8);
 }
 
+TEST_F(TreeBuilderTest, LocalLegalizationTest)
+{
+  auto* load1 = TreeBuilder::genBufInst("load1", Point(2606905, 3009850));
+  TreeBuilder::localPlace({load1->get_load_pin()});
+  LOG_INFO << "load1 location: " << load1->get_location();
+}
+
 TEST_F(TreeBuilderTest, SimpleTreeBuilderTest)
 {
-  // TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
-  //                             "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
-  // double skew_bound = 0.08;
-  // tree_builder.runFixedTest(skew_bound);
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  double skew_bound = 0.08;
+  tree_builder.runFixedTest(skew_bound);
 }
 
 TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
 {
-  // TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
-  //                             "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
-  // std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
-  // size_t case_num = 500;
-  // // design DB unit is 2000
-  // EnvInfo env_info{50000, 200000, 50000, 200000, 20, 40};
-  // std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
-  //   auto data_set = tree_builder.runRegressTest(env_info, case_num, skew_bound);
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
+  size_t case_num = 500;
+  // design DB unit is 2000
+  EnvInfo env_info{50000, 200000, 50000, 200000, 20, 40};
+  std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
+    auto data_set = tree_builder.runRegressTest(env_info, case_num, skew_bound);
 
-  //   auto suffix = "skew_" + std::to_string(skew_bound);
-  //   // drop "0" in the suffix end
-  //   while (suffix.back() == '0') {
-  //     suffix.pop_back();
-  //   }
+    auto suffix = "skew_" + std::to_string(skew_bound);
+    // drop "0" in the suffix end
+    while (suffix.back() == '0') {
+      suffix.pop_back();
+    }
 
-  //   auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
-  //   auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
-  //                       TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
-  //                       TreeBuilder::funcName(TreeBuilder::beatTree)};
-  //   auto topo_type_list = {
-  //       TopoTypeToString(TopoType::kGreedyDist),
-  //       TopoTypeToString(TopoType::kGreedyMerge),
-  //       TopoTypeToString(TopoType::kBiCluster),
-  //       TopoTypeToString(TopoType::kBiPartition),
-  //   };
-  //   // all data
-  //   data_set.writeCSV(method_list, topo_type_list, dir, "regression_" + suffix + ".csv");
+    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
+                        TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
+                        TreeBuilder::funcName(TreeBuilder::beatTree)};
+    auto topo_type_list = {
+        TopoTypeToString(TopoType::kGreedyDist),
+        TopoTypeToString(TopoType::kGreedyMerge),
+        TopoTypeToString(TopoType::kBiCluster),
+        TopoTypeToString(TopoType::kBiPartition),
+    };
+    // all data
+    data_set.writeCSV(method_list, topo_type_list, dir, "regression_" + suffix + ".csv");
 
-  //   // relative compare
-  //   std::ranges::for_each(method_list, [&](const auto& target_method) { data_set.writeReduceCSV(target_method, dir, suffix); });
-  // });
+    // relative compare
+    std::ranges::for_each(method_list, [&](const auto& target_method) { data_set.writeReduceCSV(target_method, dir, suffix); });
+  });
 }
 
 }  // namespace
-
-// int main(int argc, char** argv)
-// {
-//   std::cout << "Running main() from gtest_main.cc\n";
-//   testing::InitGoogleTest(&argc, argv);
-//   return RUN_ALL_TESTS();
-// }

@@ -33,7 +33,7 @@ class LocalLegalization
 {
  public:
   LocalLegalization(Inst* inst, const std::vector<Pin*>& load_pins);
-  LocalLegalization(const std::vector<Pin*>& pins);
+  LocalLegalization(std::vector<Pin*>& pins);
   LocalLegalization(std::vector<Point>& variable_locations, const std::vector<Point>& fixed_locations = std::vector<Point>());
 
   ~LocalLegalization() = default;

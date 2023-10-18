@@ -54,15 +54,15 @@ class BalanceClustering
 
   static std::vector<std::vector<Inst*>> iterClustering(const std::vector<Inst*>& sinks, const size_t& max_fanout,
                                                         const size_t& iters = 100, const size_t& no_change_stop = 5,
-                                                        const double& limit_ratio = 0.8);
+                                                        const double& limit_ratio = 0.8, const bool& log = false);
 
   static std::vector<std::vector<Inst*>> slackClustering(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
                                                          const size_t& max_fanout);
 
   static std::vector<std::vector<Inst*>> clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters, const int& max_fanout,
                                                                const double& max_cap, const double& max_net_length,
-                                                               const double& skew_bound, const size_t& max_iter = 100,
-                                                               const double& cooling_rate = 0.99, const double& temperature = 2000000);
+                                                               const double& skew_bound, const size_t& max_iter = 200,
+                                                               const double& cooling_rate = 0.99, const double& temperature = 50000);
 
   static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
                                                const size_t& max_fanout);

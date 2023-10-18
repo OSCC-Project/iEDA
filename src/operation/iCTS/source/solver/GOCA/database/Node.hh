@@ -117,6 +117,22 @@ class Node
   virtual bool isDriver() const { return false; }
   virtual bool isLoad() const { return false; }
 
+  // for id suffix
+  int getMaxId()
+  {
+    int max_id = 0;
+    preOrder([&](Node* node) {
+      if (node->get_type() != NodeType::kSteiner) {
+        return;
+      }
+      auto split_str = CTSAPIInst.splitString(node->get_name(), '_');
+      LOG_FATAL_IF(split_str.size() != 2) << "Node name is not steiner";
+      auto id = std::stoi(split_str[1]);
+      max_id = std::max(max_id, id);
+    });
+    return max_id;
+  }
+
  protected:
   void set_type(const NodeType& type) { _type = type; }
 

@@ -38,17 +38,21 @@ LocalLegalization::LocalLegalization(Inst* inst, const std::vector<Pin*>& load_p
   legalize();
   inst->set_location(_variable_locations.front());
   if (_variable_locations.size() > 1) {
-    std::list<Point> loc_list(_variable_locations.begin() + 1, _variable_locations.end());
+    _variable_locations.erase(_variable_locations.begin());
     std::ranges::for_each(load_pins, [&](Pin* pin) {
       if (pin->isBufferPin()) {
-        pin->set_location(loc_list.front());
-        loc_list.pop_front();
+        auto* inst = pin->get_inst();
+        inst->set_location(_variable_locations.front());
+        _variable_locations.erase(_variable_locations.begin());
       }
     });
   }
 }
-LocalLegalization::LocalLegalization(const std::vector<Pin*>& pins)
+LocalLegalization::LocalLegalization(std::vector<Pin*>& pins)
 {
+  if (pins.size() <= 1) {
+    return;
+  }
   std::ranges::for_each(pins, [&](Pin* pin) {
     if (pin->isBufferPin()) {
       _variable_locations.push_back(pin->get_location());
@@ -60,11 +64,11 @@ LocalLegalization::LocalLegalization(const std::vector<Pin*>& pins)
     return;
   }
   legalize();
-  std::list<Point> loc_list(_variable_locations.begin(), _variable_locations.end());
   std::ranges::for_each(pins, [&](Pin* pin) {
     if (pin->isBufferPin()) {
-      pin->set_location(loc_list.front());
-      loc_list.pop_front();
+      auto* inst = pin->get_inst();
+      inst->set_location(_variable_locations.front());
+      _variable_locations.erase(_variable_locations.begin());
     }
   });
 }
@@ -88,22 +92,23 @@ void LocalLegalization::legalize()
     }
     set.insert(loc);
   });
-  std::ranges::for_each(_variable_locations, [&](Point& loc) {
+  auto derection = {Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)};
+  for (size_t i = 0; i < _variable_locations.size(); ++i) {
+    auto loc = _variable_locations[i];
     if (!set.contains(loc)) {
       set.insert(loc);
-      return;
+      continue;
     }
     // legalizing
-    auto derection = {Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)};
     bool legal = false;
     int step = 1;
     int max_step = _variable_locations.size() + _fixed_locations.size() + 1;
     while (!legal && step < max_step) {
-      for (auto dir : derection) {
+      for (auto& dir : derection) {
         auto new_loc = loc + dir * step;
         if (!set.contains(new_loc) && (_ignore_core || db_wrapper->withinCore(new_loc))) {
-          loc = new_loc;
-          set.insert(loc);
+          set.insert(new_loc);
+          _variable_locations[i] = new_loc;
           legal = true;
           break;
         }
@@ -113,6 +118,6 @@ void LocalLegalization::legalize()
     if (!legal) {
       LOG_FATAL << "Can not legalize the location" << std::endl;
     }
-  });
+  }
 }
 }  // namespace icts

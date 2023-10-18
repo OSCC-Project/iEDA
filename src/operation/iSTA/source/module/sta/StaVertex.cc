@@ -478,12 +478,11 @@ StaClock* StaVertex::getPropClock(AnalysisMode analysis_mode,
  * @param analysis_mode
  * @param trans_type
  * @param is_data_path
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
-                                                  TransType trans_type,
-                                                  bool is_data_path) {
-  std::set<StaClock*> prop_clocks;
+std::unordered_set<StaClock*> StaVertex::getPropagatedClock(
+    AnalysisMode analysis_mode, TransType trans_type, bool is_data_path) {
+  std::unordered_set<StaClock*> prop_clocks;
   auto get_data_clock = [&prop_clocks, analysis_mode, trans_type](auto* data) {
     if ((data->get_delay_type() == analysis_mode ||
          AnalysisMode::kMaxMin == analysis_mode) &&
@@ -494,12 +493,16 @@ std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
         if (auto* prop_clock =
                 path_delay->get_launch_clock_data()->get_prop_clock();
             prop_clock) {
-          prop_clocks.insert(prop_clock);
+          if (!prop_clocks.contains(prop_clock)) {
+            prop_clocks.insert(prop_clock);
+          }
         }
       } else {
         auto* clock_data = dynamic_cast<StaClockData*>(data);
         auto* prop_clock = clock_data->get_prop_clock();
-        prop_clocks.insert(prop_clock);
+        if (!prop_clocks.contains(prop_clock)) {
+          prop_clocks.insert(prop_clock);
+        }
       }
     }
   };

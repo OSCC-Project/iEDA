@@ -108,6 +108,7 @@ void Router::gocaRouting(CtsNet* clk_net)
   auto net_name = clk_net->get_net_name();
   // total topology
   auto goca = GOCA(net_name, clk_net->get_driver_pin(), pins);
+  goca.set_max_thread(32);
   goca.run();
   auto clk_nets = goca.get_solver_nets();
   if (clk_nets.empty()) {
@@ -194,6 +195,7 @@ void Router::synthesisNet(Net* net)
   });
   // synthesis wire
   auto* driver_pin = net->get_driver_pin();
+  auto id = driver_pin->getMaxId();
   driver_pin->preOrder([&](Node* node) {
     auto* parent = node->get_parent();
     if (parent == nullptr) {
@@ -216,8 +218,7 @@ void Router::synthesisNet(Net* net)
         snake_p1 = Point(trunk_x, parent_loc.y());
         snake_p2 = Point(trunk_x, current_loc.y());
       }
-      std::vector<std::string> name_vec
-          = {parent_name, "steiner_" + std::to_string(CTSAPIInst.genId()), "steiner_" + std::to_string(CTSAPIInst.genId()), current_name};
+      std::vector<std::string> name_vec = {parent_name, "steiner_" + std::to_string(++id), "steiner_" + std::to_string(++id), current_name};
       std::vector<Point> point_vec = {parent_loc, snake_p1, snake_p2, current_loc};
       for (size_t i = 0; i < name_vec.size() - 1; ++i) {
         cts_net->add_signal_wire(CtsSignalWire(Endpoint{name_vec[i], point_vec[i]}, Endpoint{name_vec[i + 1], point_vec[i + 1]}));
@@ -227,7 +228,7 @@ void Router::synthesisNet(Net* net)
         cts_net->add_signal_wire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{current_name, current_loc}));
       } else {
         auto trunk_loc = Point(parent_loc.x(), current_loc.y());
-        auto trunk_name = "steiner_" + std::to_string(CTSAPIInst.genId());
+        auto trunk_name = "steiner_" + std::to_string(++id);
         cts_net->add_signal_wire(CtsSignalWire(Endpoint{parent_name, parent_loc}, Endpoint{trunk_name, trunk_loc}));
         cts_net->add_signal_wire(CtsSignalWire(Endpoint{trunk_name, trunk_loc}, Endpoint{current_name, current_loc}));
       }

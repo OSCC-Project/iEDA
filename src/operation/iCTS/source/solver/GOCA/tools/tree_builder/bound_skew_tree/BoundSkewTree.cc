@@ -42,7 +42,7 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
   _topo_type = topo_type;
   std::ranges::for_each(pins, [&](Pin* pin) {
     LOG_FATAL_IF(!pin->isLoad()) << "pin " << pin->get_name() << " is not load pin";
-    Timing::initLoadPinDelay(pin);
+    Timing::initLoadPinDelay(pin, true);
     Timing::updatePinCap(pin);
     if (!Timing::skewFeasible(pin, _skew_bound)) {
       LOG_ERROR << "pin " << pin->get_name() << " skew is not feasible with error: " << Timing::calcSkew(pin) - _skew_bound;
@@ -64,8 +64,12 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
   driver_pin->postOrder([&](Node* node) {
     if (node->isPin() && node->isLoad()) {
       auto* pin = dynamic_cast<Pin*>(node);
-      Timing::initLoadPinDelay(pin);
+      Timing::initLoadPinDelay(pin, true);
       Timing::updatePinCap(pin);
+      if (!Timing::skewFeasible(pin, _skew_bound)) {
+        LOG_ERROR << "pin " << pin->get_name() << " skew is not feasible with error: " << Timing::calcSkew(pin) - _skew_bound;
+        pin->set_min_delay(pin->get_max_delay() - _skew_bound);
+      }
     }
     auto* area = new Area(node);
     node_area_map[node] = area;
@@ -160,9 +164,9 @@ double BoundSkewTree::distanceCost(Area* left, Area* right) const
   return min_dist;
 }
 
-Area* BoundSkewTree::merge(Area* left, Area* right) const
+Area* BoundSkewTree::merge(Area* left, Area* right)
 {
-  auto* parent = new Area();
+  auto* parent = new Area(++_id);
   auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
   parent->set_pattern(pattern);
   parent->set_left(left);
@@ -201,7 +205,7 @@ void BoundSkewTree::biPartition()
   _root = biPartition(_unmerged_nodes);
   areaReset();
 }
-Area* BoundSkewTree::biPartition(std::vector<Area*>& areas) const
+Area* BoundSkewTree::biPartition(std::vector<Area*>& areas)
 {
   LOG_FATAL_IF(areas.empty()) << "areas is empty";
 
@@ -340,7 +344,7 @@ void BoundSkewTree::biCluster()
   _root = biCluster(_unmerged_nodes);
   areaReset();
 }
-Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas) const
+Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas)
 {
   LOG_FATAL_IF(areas.empty()) << "areas is empty";
 
@@ -492,7 +496,7 @@ void BoundSkewTree::bottomUpAllPairBased()
     auto best_match = getBestMatch(cost_func);
     auto* left = best_match.left;
     auto* right = best_match.right;
-    auto* parent = new Area();
+    auto* parent = new Area(++_id);
     // random select RCpattern
     auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
     parent->set_pattern(pattern);
@@ -1899,7 +1903,7 @@ void BoundSkewTree::setJsLine(const size_t& side, const Line& line)
 }
 void BoundSkewTree::checkPtDelay(Pt& pt) const
 {
-  LOG_FATAL_IF(pt.min <= -kEpsilon) << "pt min delay is negative";
+  LOG_ERROR_IF(pt.min <= -kEpsilon) << "pt min delay is negative";
   LOG_FATAL_IF(pt.max - pt.min <= -kEpsilon) << "pt skew is negative";
   if (pt.min < 0) {
     pt.min = 0;

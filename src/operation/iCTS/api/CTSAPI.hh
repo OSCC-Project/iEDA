@@ -147,6 +147,9 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
+  
+  // function
+  std::vector<std::string> splitString(std::string str, const char split);
 
   // debug
   void writeVerilog() const;
@@ -170,8 +173,6 @@ class CTSAPI
   ~CTSAPI() = default;
   CTSAPI& operator=(const CTSAPI& other) = delete;
   CTSAPI& operator=(CTSAPI&& other) = delete;
-  // function
-  std::vector<std::string> splitString(std::string str, const char split);
   // private STA
   void readSTAFile();
   ista::RctNode* makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name);

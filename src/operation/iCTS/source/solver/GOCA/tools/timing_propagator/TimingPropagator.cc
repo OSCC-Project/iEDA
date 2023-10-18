@@ -100,6 +100,9 @@ Net* TimingPropagator::genNet(const std::string& net_name, Pin* driver_pin, cons
  */
 void TimingPropagator::resetNet(Net* net)
 {
+  if (net == nullptr) {
+    return;
+  }
   auto* driver_pin = net->get_driver_pin();
   auto load_pins = net->get_load_pins();
   std::vector<Node*> to_be_removed;
@@ -334,6 +337,7 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
           auto cap_coef = lib->get_delay_coef().back();
           auto intercept = lib->getDelayIntercept();
           insert_delay = intercept + cap_coef * inst->getCapOut();
+          break;
         }
       }
     } else {

@@ -113,7 +113,7 @@ TEST_F(AnnealOptTest, ViolationCostTest)
   size_t cluster_num = 250;
   size_t max_iter = 200;
   double cooling_rate = 0.99;
-  double temperature = 50000.0;
+  double temperature = 60000.0;
   auto max_fanout = TimingPropagator::getMaxFanout();
   auto max_cap = TimingPropagator::getMaxCap();
   auto max_net_len = TimingPropagator::getMaxLength();

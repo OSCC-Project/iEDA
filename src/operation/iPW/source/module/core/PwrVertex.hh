@@ -163,7 +163,7 @@ class PwrVertex {
 
   auto& get_mutex() { return _mutex; }
 
-  std::set<StaClock*> getOwnClockDomain();
+  std::unordered_set<StaClock*> getOwnClockDomain();
   std::optional<StaClock*> getOwnFastestClockDomain();
 
   bool isHaveConstSrcVertex();

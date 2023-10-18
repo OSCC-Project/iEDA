@@ -29,6 +29,14 @@
 #include "log/Log.hh"
 namespace icts {
 /**
+ * @brief automatic temperature
+ *
+ */
+void AnnealOptInterface::automaticTemperature()
+{
+  _auto_temp = true;
+}
+/**
  * @brief interface to run the AnnealOpt solver
  *
  * @param log
@@ -36,17 +44,25 @@ namespace icts {
  */
 std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
 {
+  initCostMap();
+  if (_auto_temp) {
+    _temperature = _cur_cost / std::ceil(1.0 * _cur_solution.size() / 20);  // TBD optimize
+  }
   LOG_INFO_IF(log) << "Start AnnealOpt --- ";
   LOG_INFO_IF(log) << "  Iteration: " << _max_iter;
   LOG_INFO_IF(log) << "  Temperature: " << _temperature;
   LOG_INFO_IF(log) << "  Cooling Rate: " << _cooling_rate;
 
-  initCostMap();
   auto init_cost = _cur_cost;
   LOG_INFO_IF(log) << "  Initial Cost: " << init_cost;
   _best_cost = _cur_cost;
+  if (_best_cost <= std::numeric_limits<float>::epsilon()) {
+    LOG_INFO_IF(log) << "  No Need to Optimize!";
+    LOG_INFO_IF(log) << "End AnnealOpt --- ";
+    return _cur_solution;
+  }
   auto temperature = _temperature;
-  auto cooling_ratio = _cooling_rate;
+  auto cooling_rate = _cooling_rate;
   auto best_solution = _cur_solution;
   size_t iter = 0;
   while (iter < _max_iter) {
@@ -67,7 +83,7 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
         updateSolution(new_solution, operation);
       }
     }
-    temperature *= cooling_ratio;
+    temperature *= cooling_rate;
     iter++;
     // align the log
     auto update_label = best_update ? " *" : "";
@@ -84,8 +100,12 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
     }
   }
   LOG_INFO_IF(log) << "End AnnealOpt --- ";
-  LOG_INFO_IF(log) << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost
-                   << "  Improvement: " << (init_cost - _best_cost) / init_cost * 100 << "%";
+  LOG_INFO << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost
+           << "  Improvement: " << (init_cost - _best_cost) / init_cost * 100 << "%";
+  // remove empty
+  best_solution.erase(
+      std::remove_if(best_solution.begin(), best_solution.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
+      best_solution.end());
   return best_solution;
 }
 /**
@@ -106,30 +126,31 @@ void AnnealOptInterface::updateSolution(const std::vector<std::vector<Inst*>>& n
  * @param op
  * @return std::vector<std::vector<Inst*>>
  */
-std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(const Operation& op)
+std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(Operation& op)
 {
   auto cluster_id = op.cluster_id;
   auto neighbor_id = op.neighbor_id;
   auto inst_id = op.inst_id;
 
-  auto both_cost = [&](const std::vector<std::vector<Inst*>>& solution) {
-    auto* from_net = buildNet(solution[cluster_id]);
-    auto* to_net = buildNet(solution[neighbor_id]);
-    auto both_cost = cost(from_net) + cost(to_net);
-    TimingPropagator::resetNet(from_net);
-    TimingPropagator::resetNet(to_net);
-    return both_cost;
-  };
-  auto pre_both_cost = both_cost(_cur_solution);
+  auto pre_both_cost = _cost_map[cluster_id] + _cost_map[neighbor_id];
 
   auto new_solution = _cur_solution;
   auto* inst = new_solution[cluster_id][inst_id];
   new_solution[cluster_id].erase(new_solution[cluster_id].begin() + inst_id);
   new_solution[neighbor_id].push_back(inst);
+  auto* from_net = buildNet(new_solution[cluster_id]);
+  auto* to_net = buildNet(new_solution[neighbor_id]);
+  auto from_cost = cost(from_net);
+  auto to_cost = cost(to_net);
 
-  auto cur_both_cost = both_cost(new_solution);
+  TimingPropagator::resetNet(from_net);
+  TimingPropagator::resetNet(to_net);
+
+  auto cur_both_cost = from_cost + to_cost;
 
   _new_cost = _cur_cost - pre_both_cost + cur_both_cost;
+  op.from_cost = from_cost;
+  op.to_cost = to_cost;
   return new_solution;
 }
 /**
@@ -159,24 +180,13 @@ Operation AnnealOptInterface::randomMove(const std::vector<std::vector<Inst*>>& 
  */
 size_t AnnealOptInterface::randomChooseCluster(const std::vector<std::vector<Inst*>>& clusters, const double& ratio)
 {
-  std::vector<double> cluster_cost;
-  size_t empty_num = 0;
-  std::ranges::transform(clusters, std::back_inserter(cluster_cost), [&](const std::vector<Inst*>& cluster) {
-    if (cluster.empty()) {
-      ++empty_num;
-      return -1.0;
-    }
-    auto* temp_net = buildNet(cluster);
-    auto temp_cost = cost(temp_net);
-    TimingPropagator::resetNet(temp_net);
-    return temp_cost;
-  });
-  // sort cluster id by cost, and take the first ratio clusters
-  std::vector<size_t> cluster_id_list(clusters.size());
-  std::iota(cluster_id_list.begin(), cluster_id_list.end(), 0);
-  std::ranges::sort(cluster_id_list, [&](const int& a, const int& b) { return cluster_cost[a] > cluster_cost[b]; });
-  auto num = static_cast<size_t>(std::ceil((cluster_id_list.size() - empty_num) * ratio));
-  std::vector<size_t> cluster_id(cluster_id_list.begin(), cluster_id_list.begin() + num);
+  size_t empty_num = std::ranges::count_if(clusters, [&](const std::vector<Inst*>& cluster) { return cluster.empty(); });
+  auto num = static_cast<size_t>(std::ceil((_cur_solution.size() - empty_num) * ratio));
+  std::vector<size_t> cluster_id;
+  // choose the first num id from _sorted_cluster_id_map (only "num" clusters)
+  for (auto it = _sorted_cluster_id_map.begin(); it != _sorted_cluster_id_map.end() && cluster_id.size() < num; ++it) {
+    cluster_id.push_back(it->second);
+  }
   std::uniform_int_distribution<size_t> cluster_dist(0, cluster_id.size() - 1);
   auto cluster_id_index = cluster_dist(_gen);
   LOG_FATAL_IF(clusters[cluster_id[cluster_id_index]].empty()) << "Empty cluster";
@@ -297,6 +307,7 @@ void AnnealOptInterface::initCostMap()
     auto net_cost = cost(net);
     TimingPropagator::resetNet(net);
     _cost_map[i] = net_cost;
+    _sorted_cluster_id_map.insert({ClusterState{cluster.size(), net_cost}, i});
   }
   _cur_cost = std::accumulate(_cost_map.begin(), _cost_map.end(), 0.0);
 }
@@ -309,14 +320,18 @@ void AnnealOptInterface::updateCostMap(const Operation& op)
 {
   auto cluster_id = op.cluster_id;
   auto neighbor_id = op.neighbor_id;
-  auto* from_net = buildNet(_cur_solution[cluster_id]);
-  auto* to_net = buildNet(_cur_solution[neighbor_id]);
-  auto from_cost = cost(from_net);
-  auto to_cost = cost(to_net);
-  TimingPropagator::resetNet(from_net);
-  TimingPropagator::resetNet(to_net);
-  _cost_map[cluster_id] = from_cost;
-  _cost_map[neighbor_id] = to_cost;
+  _cost_map[cluster_id] = op.from_cost;
+  _cost_map[neighbor_id] = op.to_cost;
+  // remove multimap which value is cluster_id or neighbor_id
+  for (auto it = _sorted_cluster_id_map.begin(); it != _sorted_cluster_id_map.end();) {
+    if (it->second == cluster_id || it->second == neighbor_id) {
+      it = _sorted_cluster_id_map.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  _sorted_cluster_id_map.insert({ClusterState{_cur_solution[cluster_id].size(), op.from_cost}, cluster_id});
+  _sorted_cluster_id_map.insert({ClusterState{_cur_solution[neighbor_id].size(), op.to_cost}, neighbor_id});
 }
 /**
  * @brief center of the cluster
@@ -382,6 +397,9 @@ std::vector<Net*> AnnealOptInterface::buildNets(const std::vector<std::vector<In
  */
 double LatAnnealOpt::cost(Net* net)
 {
+  if (net == nullptr) {
+    return 0;
+  }
   auto* driver_pin = net->get_driver_pin();
   return driver_pin->get_max_delay() * _correct_coef;
 }
@@ -428,6 +446,9 @@ void VioAnnealOpt::initParameter(const size_t& max_iter, const double& cooling_r
  */
 double VioAnnealOpt::cost(Net* net)
 {
+  if (net == nullptr) {
+    return 0;
+  }
   return _correct_coef * (capVioCost(net) + wireLengthVioCost(net) + skewVioCost(net) + fanoutVioCost(net));
 }
 /**

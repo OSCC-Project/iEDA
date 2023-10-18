@@ -51,6 +51,7 @@ class GOCA
 
   ~GOCA() = default;
   // run
+  void set_max_thread(const uint8_t& max_thread) { _max_thread = max_thread; }
   void run();
   // get
   std::vector<Net*> get_solver_nets() const { return _nets; }
@@ -79,5 +80,6 @@ class GOCA
   Pin* _driver = nullptr;
   std::vector<Net*> _nets;
   int _level = 1;
+  uint8_t _max_thread = 1;
 };
 }  // namespace icts
