@@ -14,26 +14,17 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/*
- * @Author: Shijian Chen  chenshj@pcl.ac.cn
- * @Date: 2023-02-01 19:36:53
- * @LastEditors: Shijian Chen  chenshj@pcl.ac.cn
- * @LastEditTime: 2023-02-17 10:50:00
- * @FilePath: /irefactor/src/operation/iPL/source/module/legalizer_refactor/database/LGCluster.hh
- * @Description: Instance Clusters of LG
- *
- *
- */
-#ifndef IPL_ABACUS_CLUSTER_H
-#define IPL_ABACUS_CLUSTER_H
+#pragma once
 
 #include <string>
 #include <vector>
 
-#include "database/LGInstance.hh"
-#include "database/LGInterval.hh"
-
 namespace ipl {
+class LGInstance;
+class LGInterval;
+}  // namespace ipl
+
+namespace ieda_solver {
 
 class AbacusCluster
 {
@@ -96,8 +87,8 @@ class AbacusCluster
 
   // getter
   std::string get_name() const { return _name; }
-  std::vector<LGInstance*> get_inst_list() const { return _inst_list; }
-  LGInterval* get_belong_interval() const { return _belong_segment; }
+  std::vector<ipl::LGInstance*> get_inst_list() const { return _inst_list; }
+  ipl::LGInterval* get_belong_interval() const { return _belong_segment; }
   int32_t get_min_x() const { return _min_x; }
   int32_t get_max_x();
   double get_weight_e() const { return _weight_e; }
@@ -108,22 +99,22 @@ class AbacusCluster
 
   // setter
   void set_name(std::string name) { _name = name; }
-  void add_inst(LGInstance* inst) { _inst_list.push_back(inst); }
-  void set_belong_interval(LGInterval* seg) { _belong_segment = seg; }
+  void add_inst(ipl::LGInstance* inst) { _inst_list.push_back(inst); }
+  void set_belong_interval(ipl::LGInterval* seg) { _belong_segment = seg; }
   void set_min_x(int32_t min_x) { _min_x = min_x; }
   void set_front_cluster(AbacusCluster* cluster) { _front_cluster = cluster; }
   void set_back_cluster(AbacusCluster* cluster) { _back_cluster = cluster; }
 
   // function
   void clearAbacusInfo();
-  void insertInstance(LGInstance* inst);
+  void insertInstance(ipl::LGInstance* inst);
   void appendCluster(AbacusCluster& cluster);
-  void updateAbacusInfo(LGInstance* inst);
+  void updateAbacusInfo(ipl::LGInstance* inst);
 
  private:
   std::string _name;
-  std::vector<LGInstance*> _inst_list;
-  LGInterval* _belong_segment;
+  std::vector<ipl::LGInstance*> _inst_list;
+  ipl::LGInterval* _belong_segment;
 
   int32_t _min_x;
   double _weight_e;
@@ -133,5 +124,4 @@ class AbacusCluster
   AbacusCluster* _front_cluster;
   AbacusCluster* _back_cluster;
 };
-}  // namespace ipl
-#endif
+}  // namespace ieda_solver

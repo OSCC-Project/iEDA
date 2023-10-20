@@ -15,29 +15,43 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#ifndef SOLVER_LG_METHOD_H
-#define SOLVER_LG_METHOD_H
-
-#include <vector>
+#include "LGCustomization.hh"
 
 #include "LGDatabase.hh"
-#include "LegalizerConfig.hh"
+#include "LGInstance.hh"
+#include "LGInterval.hh"
 
-namespace ipl {
+namespace ieda_solver {
 
-class LGMethodInterface
+LGCustomization::LGCustomization()
 {
- public:
-  virtual ~LGMethodInterface() {}
+}
 
-  virtual void initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database) = 0;
-  virtual bool isInitialized() = 0;
-  virtual bool runLegalization() = 0;
+LGCustomization::~LGCustomization()
+{
+}
 
-  virtual void specifyTargetInstList(std::vector<LGInstance*>& target_inst_list) = 0;
-  virtual bool runIncrLegalization() = 0;
-};
+void LGCustomization::initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database)
+{
+}
 
-}  // namespace ipl
+bool LGCustomization::isInitialized()
+{
+  return true;
+}
 
-#endif
+void LGCustomization::specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list)
+{
+}
+
+bool LGCustomization::runLegalization()
+{
+  return true;
+}
+
+bool LGCustomization::runIncrLegalization()
+{
+  return true;
+}
+
+}  // namespace ieda_solver

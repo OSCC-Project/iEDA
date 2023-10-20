@@ -17,11 +17,13 @@
 
 #include "Abacus.hh"
 
-namespace ipl {
+#include <iostream>
 
-Abacus::Abacus() : _database(nullptr), _config(nullptr), _row_height(-1), _site_width(-1)
-{
-}
+#include "LGDatabase.hh"
+#include "LGInstance.hh"
+#include "LGInterval.hh"
+
+namespace ieda_solver {
 
 Abacus::~Abacus()
 {
@@ -34,7 +36,7 @@ Abacus::~Abacus()
   _interval_remain_length.clear();
 }
 
-void Abacus::initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database)
+void Abacus::initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database)
 {
   // clean abacus info first.
   _cluster_map.clear();
@@ -65,7 +67,7 @@ bool Abacus::isInitialized()
   return !_cluster_map.empty();
 }
 
-void Abacus::specifyTargetInstList(std::vector<LGInstance*>& target_inst_list)
+void Abacus::specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list)
 {
   _target_inst_list.clear();
   _target_inst_list = target_inst_list;
@@ -74,7 +76,7 @@ void Abacus::specifyTargetInstList(std::vector<LGInstance*>& target_inst_list)
 bool Abacus::runLegalization()
 {
   // Sort all movable instances
-  std::vector<LGInstance*> movable_inst_list;
+  std::vector<ipl::LGInstance*> movable_inst_list;
   pickAndSortMovableInstList(movable_inst_list);
 
   int32_t inst_id = 0;
@@ -131,30 +133,30 @@ bool Abacus::runIncrLegalization()
   return true;
 }
 
-void Abacus::pickAndSortMovableInstList(std::vector<LGInstance*>& movable_inst_list)
+void Abacus::pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_inst_list)
 {
   for (auto* inst : _database->get_lgInstance_list()) {
-    if (inst->get_state() == LGINSTANCE_STATE::kFixed) {
+    if (inst->get_state() == ipl::LGINSTANCE_STATE::kFixed) {
       continue;
     }
     movable_inst_list.push_back(inst);
   }
 
   std::sort(movable_inst_list.begin(), movable_inst_list.end(),
-            [](LGInstance* l_inst, LGInstance* r_inst) { return (l_inst->get_coordi().get_x() < r_inst->get_coordi().get_x()); });
+            [](ipl::LGInstance* l_inst, ipl::LGInstance* r_inst) { return (l_inst->get_coordi().get_x() < r_inst->get_coordi().get_x()); });
 }
 
-int32_t Abacus::placeRow(LGInstance* inst, int32_t row_idx, bool is_trial)
+int32_t Abacus::placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial)
 {
-  Rectangle<int32_t> inst_shape = std::move(inst->get_shape());
+  ipl::Rectangle<int32_t> inst_shape = std::move(inst->get_shape());
 
   // Determine clusters and their optimal positions x_c(c):
-  std::vector<LGInterval*> interval_list = _database->get_lg_layout()->get_interval_2d_list()[row_idx];
+  std::vector<ipl::LGInterval*> interval_list = _database->get_lg_layout()->get_interval_2d_list()[row_idx];
 
   // Select the nearest interval for the instance
   int32_t row_interval_idx = searchNearestIntervalIndex(interval_list, inst_shape);
   if (row_interval_idx == INT32_MAX) {
-    // LOG_WARNING << "Instance is not overlap with interval!";
+    // std::cout << "Instance is not overlap with interval!" << std::endl;
     return INT32_MAX;
   }
 
@@ -204,7 +206,7 @@ int32_t Abacus::placeRow(LGInstance* inst, int32_t row_idx, bool is_trial)
   return movement_cost;
 }
 
-int32_t Abacus::searchNearestIntervalIndex(std::vector<LGInterval*>& segment_list, Rectangle<int32_t>& inst_shape)
+int32_t Abacus::searchNearestIntervalIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape)
 {
   if (segment_list.size() == 1) {
     return 0;
@@ -243,7 +245,8 @@ int32_t Abacus::calDistanceWithBox(int32_t min_x, int32_t max_x, int32_t box_min
   }
 }
 
-int32_t Abacus::searchRemainSpaceSegIndex(std::vector<LGInterval*>& segment_list, Rectangle<int32_t>& inst_shape, int32_t origin_index)
+int32_t Abacus::searchRemainSpaceSegIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape,
+                                          int32_t origin_index)
 {
   int32_t segment_idx = origin_index;
   // int32_t max_range = segment_list.size() - 1;
@@ -273,7 +276,7 @@ int32_t Abacus::searchRemainSpaceSegIndex(std::vector<LGInterval*>& segment_list
   return segment_idx;
 }
 
-AbacusCluster Abacus::arrangeInstIntoIntervalCluster(LGInstance* inst, LGInterval* interval)
+AbacusCluster Abacus::arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl::LGInterval* interval)
 {
   auto inst_shape = std::move(inst->get_shape());
   AbacusCluster record_cluster;
@@ -365,7 +368,7 @@ void Abacus::arrangeClusterMinXCoordi(AbacusCluster& cluster)
   cluster_x + cluster.get_total_width() > boundary_max_x ? cluster_x = boundary_max_x - cluster.get_total_width() : cluster_x;
 
   if (cluster_x < boundary_min_x) {
-    LOG_WARNING << "Cluster width is out of interval capcity";
+    std::cout << "Cluster width is out of interval capcity" << std::endl;
   }
 
   cluster.set_min_x(cluster_x);
@@ -408,7 +411,7 @@ void Abacus::replaceClusterInfo(AbacusCluster& modify_cluster)
     AbacusCluster* new_cluster = new AbacusCluster(std::move(modify_cluster));
     auto inst_list = new_cluster->get_inst_list();
     if (inst_list.size() > 1 || inst_list.size() == 0) {
-      LOG_WARNING << "Cluster Inst is not correctly set";
+      std::cout << "Cluster Inst is not correctly set" << std::endl;
     }
 
     // cluster setting.
@@ -483,7 +486,7 @@ void Abacus::insertCluster(std::string name, AbacusCluster* cluster)
 {
   auto it = _cluster_map.find(name);
   if (it != _cluster_map.end()) {
-    LOG_WARNING << "Cluster : " << name << " was added before";
+    std::cout << "Cluster : " << name << " was added before" << std::endl;
   }
   _cluster_map.emplace(name, cluster);
 }
@@ -494,14 +497,14 @@ void Abacus::deleteCluster(std::string name)
   if (it != _cluster_map.end()) {
     _cluster_map.erase(it);
   } else {
-    LOG_WARNING << "Cluster: " << name << " has not been insert";
+    std::cout << "Cluster: " << name << " has not been insert" << std::endl;
   }
 }
 
-void Abacus::updateRemainLength(LGInterval* interval, int32_t delta)
+void Abacus::updateRemainLength(ipl::LGInterval* interval, int32_t delta)
 {
   int32_t cur_value = _interval_remain_length[interval->get_index()];
   _interval_remain_length[interval->get_index()] = cur_value + delta;
 }
 
-}  // namespace ipl
+}  // namespace ieda_solver

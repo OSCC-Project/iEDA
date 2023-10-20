@@ -16,9 +16,13 @@
 // ***************************************************************************************
 #include "AbacusCluster.hh"
 
+#include <iostream>
+
+#include "LGInstance.hh"
+#include "LGInterval.hh"
 #include "module/logger/Log.hh"
 
-namespace ipl {
+namespace ieda_solver {
 
 AbacusCluster::AbacusCluster(std::string name)
     : _name(name),
@@ -49,7 +53,7 @@ void AbacusCluster::clearAbacusInfo()
   _total_width = 0;
 }
 
-void AbacusCluster::insertInstance(LGInstance* inst)
+void AbacusCluster::insertInstance(ipl::LGInstance* inst)
 {
   int32_t inst_min_x = inst->get_coordi().get_x();
 
@@ -80,7 +84,7 @@ void AbacusCluster::insertInstance(LGInstance* inst)
     front_min_x = front_max_x;
   }
   if (index == INT32_MIN) {
-    LOG_WARNING << "Instance " << inst->get_name() << " cannot insert in the cluster";
+    std::cout << "Instance " << inst->get_name() << " cannot insert in the cluster" << std::endl;
     return;
   }
   _inst_list.insert(std::next(_inst_list.begin(), index), inst);
@@ -96,11 +100,11 @@ void AbacusCluster::appendCluster(AbacusCluster& cluster)
   _total_width += cluster.get_total_width();
 }
 
-void AbacusCluster::updateAbacusInfo(LGInstance* inst)
+void AbacusCluster::updateAbacusInfo(ipl::LGInstance* inst)
 {
   _weight_e += inst->get_weight();
   _weight_q += inst->get_weight() * (inst->get_coordi().get_x() - _total_width);
   _total_width += inst->get_shape().get_width();
 }
 
-}  // namespace ipl
+}  // namespace ieda_solver

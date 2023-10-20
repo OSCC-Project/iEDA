@@ -16,6 +16,7 @@ target_link_libraries(ipl-module-legalizer
         ipl-module-logger
         ipl-bridge
         ipl-configurator
+        solver_legalization
 
 )
 

@@ -38,9 +38,11 @@ def_init -path ./result/iPL_lg_result.def
 #===========================================================
 init_rt -temp_directory_path "./result/rt/" \
         -bottom_routing_layer "met1" \
-        -top_routing_layer "met5"
+        -top_routing_layer "met5" \
+        -ta_panel_max_iter_num 1 \
+        -dr_box_max_iter_num 1
 
-run_rt 
+run_rt
 
 destroy_rt
 

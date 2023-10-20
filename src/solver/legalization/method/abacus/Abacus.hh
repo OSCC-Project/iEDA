@@ -15,8 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#ifndef IPL_ABACUS_H
-#define IPL_ABACUS_H
+#pragma once
 
 #include <map>
 
@@ -24,11 +23,18 @@
 #include "LGMethodInterface.hh"
 
 namespace ipl {
+class LGInstance;
+class LGInterval;
+template <class T>
+class Rectangle;
+}  // namespace ipl
+
+namespace ieda_solver {
 
 class Abacus : public LGMethodInterface
 {
  public:
-  Abacus();
+  Abacus() {}
   Abacus(const Abacus&) = delete;
   Abacus(Abacus&&) = delete;
   ~Abacus();
@@ -36,30 +42,26 @@ class Abacus : public LGMethodInterface
   Abacus& operator=(const Abacus&) = delete;
   Abacus& operator=(Abacus&&) = delete;
 
-  void initDataRequirement(LGConfig* lg_config, LGDatabase* lg_database) override;
+  void initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database) override;
   bool isInitialized() override;
-  void specifyTargetInstList(std::vector<LGInstance*>& target_inst_list) override;
+  void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) override;
   bool runLegalization() override;
   bool runIncrLegalization() override;
 
  private:
-  LGDatabase* _database;
-  LGConfig* _config;
-
-  std::vector<LGInstance*> _target_inst_list;
   std::map<std::string, AbacusCluster*> _cluster_map;
   std::vector<AbacusCluster*> _inst_belong_cluster;
   std::vector<AbacusCluster*> _interval_cluster_root;
   std::vector<int32_t> _interval_remain_length;
 
-  int32_t _row_height;
-  int32_t _site_width;
+  int32_t _row_height = -1;
+  int32_t _site_width = -1;
 
-  void pickAndSortMovableInstList(std::vector<LGInstance*>& movable_inst_list);
-  int32_t placeRow(LGInstance* inst, int32_t row_idx, bool is_trial);
-  int32_t searchNearestIntervalIndex(std::vector<LGInterval*>& segment_list, Rectangle<int32_t>& inst_shape);
-  int32_t searchRemainSpaceSegIndex(std::vector<LGInterval*>& segment_list, Rectangle<int32_t>& inst_shape, int32_t origin_index);
-  AbacusCluster arrangeInstIntoIntervalCluster(LGInstance* inst, LGInterval* interval);
+  void pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_inst_list);
+  int32_t placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial);
+  int32_t searchNearestIntervalIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape);
+  int32_t searchRemainSpaceSegIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape, int32_t origin_index);
+  AbacusCluster arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl::LGInterval* interval);
   void replaceClusterInfo(AbacusCluster& cluster);
   void arrangeClusterMinXCoordi(AbacusCluster& cluster);
   void legalizeCluster(AbacusCluster& cluster);
@@ -73,9 +75,7 @@ class Abacus : public LGMethodInterface
   void insertCluster(std::string name, AbacusCluster* cluster);
   void deleteCluster(std::string name);
 
-  void updateRemainLength(LGInterval* interval, int32_t delta);
+  void updateRemainLength(ipl::LGInterval* interval, int32_t delta);
 };
 
-}  // namespace ipl
-
-#endif
+}  // namespace ieda_solver
