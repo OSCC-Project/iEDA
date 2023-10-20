@@ -1,5 +1,7 @@
 //mod verilog_data;
 
+pub mod verilog_data;
+
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -10,28 +12,176 @@ use pest::iterators::Pairs;
 #[grammar = "verilog_parser/grammar/verilog.pest"]
 pub struct VerilogParser;
 
-fn process_pair(pair: Pair<Rule>) -> Result<(), pest::error::Error<Rule>>{
-    match pair.as_rule() {
-
-        Rule::COMMENT => todo!(),
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+fn process_module_id(pair: Pair<Rule>) -> Result<String, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    // println!("{:?}", pair);
+    // println!("{:?}", pair_clone);
+    match pair_clone.as_str().parse::<String>() {
+        Ok(value) => Ok(value.trim_matches('"').to_string()),
+        Err(_) => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse module id".into() },
+            pair_clone.as_span(),
         )),
     }
 }
-pub fn parse_verilog_file(verilog_file_path: &str) -> Result<(), pest::error::Error<Rule>> {
+
+fn process_port_or_wire_id(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::VerilogVirtualBaseID>, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    // println!("{:?}", pair);
+    // println!("{:?}", pair_clone);
+    match pair_clone.as_rule() {
+            Rule::port_or_wire_id => {
+                let id = pair_clone.as_str();
+                let verilog_id = verilog_data::VerilogID::new(id);
+                let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(verilog_id);
+                 // Box::new(verilog_id) as Box<dyn verilog_data::VerilogVirtualBaseID>
+                // println!("{:?}",verilog_virtual_base_id);
+               
+                Ok(verilog_virtual_base_id)
+
+            },
+            _ => todo!(),
+        }
+
+}
+
+fn process_inner_port_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclType) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>>{
+    match pair.as_rule() {
+        Rule::bus_slice => {                   
+            // let mut decimal_digits = pair.into_inner();
+            let start = pair.as_str().parse::<i32>().unwrap();
+            let end = pair.as_str().parse::<i32>().unwrap();
+            let range = Some((start, end));
+            let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
+            for inner_pair in pair.into_inner(){
+                let dcl_name = inner_pair.as_str().to_string(); 
+                let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
+                // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
+                verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
+            }
+            let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+            
+        }
+        Rule::port_list => {
+            let range = None;
+            let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
+            for inner_pair in pair.into_inner(){
+                let dcl_name = inner_pair.as_str().to_string(); 
+                let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
+                // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
+                verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
+            }
+            let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+        }
+        _ => panic!("Unexpected rule"),
+
+    }
+}
+fn process_port_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    println!("{:#?}", pair);
+    println!("{:?}", pair_clone);
+    match pair_clone.as_rule() {
+        Rule::output_declaration => {
+            let port_list_or_bus_slice0 = pair_clone.into_inner().next();
+            println!("{:#?}", port_list_or_bus_slice0);
+            // let port_list_or_bus_slice = pair_clone.into_inner().next().unwrap();
+            // println!("{:#?}", port_list_or_bus_slice);
+            let dcl_type = verilog_data::DclType::KOutput;
+            let verilog_dcls = process_inner_port_declaration(port_list_or_bus_slice,dcl_type);
+            verilog_dcls
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+// fn process_pair(pair: Pair<Rule>) -> Result<(), pest::error::Error<Rule>>{
+//     match pair_clone.as_rule() {
+//                     // record line_no,file_name
+//         Rule::module_id => process_module_id(pair_clone),
+//         Rule::port_list => process_port_list(pair_clone),
+//         Rule::port_block_declaration => process_port_block_declaration(pair_clone),
+//         Rule::wire_block_declaration => process_wire_block_declaration(pair_clone, &mut substitute_queue),
+//         Rule::inst_block_declaration => process_inst_block_declaration(pair_clone, &mut substitute_queue),
+//         _ => Err(pest::error::Error::new_from_span(
+//         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+//         pair_clone.as_span(),
+// )),}
+    
+//     match pair.as_rule() {
+
+//         Rule::COMMENT => todo!(),
+//         _ => Err(pest::error::Error::new_from_span(
+//             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+//             pair.as_span(),
+//         )),
+//     }
+// }
+pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::VerilogModule, pest::error::Error<Rule>> {
     // Generate verilog.pest parser
     let input_str = std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
-    println!("{:#?}", input_str);
-    let parse_result = VerilogParser::parse(Rule::module_declaration, input_str.as_str());
+    // println!("{:#?}", input_str);
+    let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
+    // println!("{:#?}", parse_result);
+
+    // add the module_id,port_list,port_block_declaration,wire_block_declaration,inst_block_declaration datastructure to store the processed data.
+    let file_name = "tbd";
+    let line_no = 0;
+    let mut verilog_module = verilog_data::VerilogModule::new(1, "MyModule", vec![], vec![]);
+    let mut module_name;
+    let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
+    // first verilog_dcl push to verilog_dcls, then verilog_dcls push to module_stmts
+    // let mut verilog_dcls: Vec<Box<dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
+    let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
 
     match parse_result {
         Ok(pairs) => {
+            // pairs:module_declaration+
             for pair in pairs {
-                println!("{:?}", pair);
+                // println!("{:?}", pair);
                 // Process each pair
-                process_pair(pair)?;
+                let mut inner_pairs = pair.into_inner();
+                for inner_pair in inner_pairs {
+                    // the way similar to tao
+                    // let pair_result = process_pair(inner_pair, parser_queue);
+                    // parser_queue.push_back(pair_result.unwrap());
+
+                    // println!("{:#?}", inner_pair);
+                    match inner_pair.as_rule() {
+        
+                        // record line_no,file_name
+                        Rule::module_id => {
+                            module_name = process_module_id(inner_pair).unwrap();
+                        }
+                        Rule::port_list => {
+                            // process_port_list(inner_pair);
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let  port_id = process_port_or_wire_id(inner_inner_pair).unwrap();
+                                port_list.push(port_id);
+                            }
+                        }
+                        Rule::port_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                            println!("{:#?}", inner_inner_pair);
+                            let verilog_dcls =  process_port_declaration(inner_inner_pair).unwrap();
+                            }
+                        }
+                        // Rule::wire_block_declaration => process_wire_block_declaration(inner_pair, &mut substitute_queue),
+                        // Rule::inst_block_declaration => process_inst_block_declaration(inner_pair, &mut substitute_queue),
+                        // other rule: no clone the pair
+                        // _ => Err(pest::error::Error::new_from_span(
+                        // pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+                        // inner_pair.as_span(),
+                        // )),
+                        Rule::EOI => (),
+                        _ => unreachable!(),
+                    }
+                }
             }
         }
         Err(err) => {
@@ -39,8 +189,12 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<(), pest::error::Er
             println!("Error: {}", err);
         }
     }
-    // Continue with the rest of the code
-    Ok(())
+
+    // store the verilogModule.
+
+    // delete later
+    Ok(verilog_module)
+    //Err(pest::error::Error::new_from_span(pest::error::ErrorVariant::CustomError { message: "Unknown rule" }, span))
 }
 
 
@@ -102,6 +256,14 @@ mod tests {
     }
 
     #[test] 
+    fn test_parse_port_list() {
+        let input_str = "in1, in2, clk1, clk2, clk3, out";
+        let parse_result = VerilogParser::parse(Rule::port_list, input_str);
+        println!("{:#?}",parse_result);
+        print_parse_result(parse_result);
+    }
+
+    #[test] 
     fn test_parse_port_or_wire_id1() {
         let input_str = "\\clk_cfg[6]";
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
@@ -127,11 +289,11 @@ mod tests {
 
     #[test] 
     fn test_parse_port_block_declaration() {
-        let input_str = r#"output osc_25m_out_pad;
+        let input_str = r#"output [3:0] osc_25m_out_pad;
         input osc_100m_in_pad;
         output osc_100m_out_pad;"#;
         let parse_result = VerilogParser::parse(Rule::port_block_declaration, input_str);
-        
+        println!("{:#?}",parse_result);
         print_parse_result(parse_result);
     }
 
@@ -286,8 +448,8 @@ mod tests {
         std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
        
         let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
-        // println!("{:#?}",parse_result);
-        print_parse_result(parse_result);
+        println!("{:#?}",parse_result);
+        // print_parse_result(parse_result);
     }
 
 }
