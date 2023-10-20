@@ -1,76 +1,65 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
-/*header*/
-DATE = {ANY+}
+/* header */
 
-scale_unit = {"s"|"ms"|"us"|"ns"|"ps"|"fs"}
-scale_number = {ASCII_DIGIT+}
-SCALE = @{scale_number ~ scale_unit}
+scale_unit   = _{ "s" | "ms" | "us" | "ns" | "ps" | "fs" }
+scale_number = _{ ASCII_DIGIT+ }
+scale        = @{ scale_number ~ scale_unit }
 
-COMMENT = {ANY+}
+header_text = { (!"$" ~ ANY)+ }
+date        = { "$date" ~ header_text ~ "$end" }
+timescale   = { "$timescale" ~ scale ~ "$end" }
 
-
-date = { "$date" ~ WHITESPACE ~ DATE ~ WHITESPACE ~ "$end" }
-timescale = { "$timescale" ~ WHITESPACE ~ SCALE ~ WHITESPACE ~"$end" }
-comment = { "$comment" ~ WHITESPACE ~ COMMENT ~ WHITESPACE ~"$end" }
+vcd_comment = { "$comment" ~ header_text ~ "$end" }
 
 header_section = {
-    date ~ WHITESPACE ~
-    timescale ~ WHITESPACE ~
-    comment ~ WHITESPACE
-  }
+    date ~ timescale ~ vcd_comment
+}
 
-/*definition*/
-module_var_name = {(ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "(" | ")" | "." | "[" | "]" | "/" | "$" | "*" )*}
-MODULE = {"module" ~ WHITESPACE ~ module_var_name}
+/* definition */
+module_var_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "(" | ")" | "." | "[" | "]" | "/" | "$" | "*")* }
 
-variable_type = _{"reg" | "wire"}
-variable_number = _{ASCII_DIGIT+}
-variable_ref = _{(ASCII_ALPHA | ASCII_DIGIT | "!" | "/" | "," | "@" | "'" | ":" | "~" | "#" | "*" 
-| "("| ")"| "+"| "{"| "}"| "$"| "%"| "["| "]"| "`"| "\""| "&"| ";"| "<"| ">"
-| "="| "?"| "-"| "^"| "|"| "\\")+}
+variable_type   = _{ "reg" | "wire" }
+variable_number = _{ ASCII_DIGIT+ }
+variable_ref    = @{
+    (ASCII_ALPHA | ASCII_DIGIT | "!" | "/" | "," | "@" | "'" | ":" | "~" | "#" | "*" | "(" | ")" | "+" | "{" | "}" | "$" | "%" | "[" | "]" | "`" | "\"" | "&" | ";" | "<" | ">" | "=" | "?" | "-" | "^" | "|" | "\\")+
+}
 
-bus_slice  = _{ "[" ~ ASCII_DIGIT+ ~ ":" ~ ASCII_DIGIT+ ~ "]" }
+bus_slice = _{ "[" ~ ASCII_DIGIT+ ~ ":" ~ ASCII_DIGIT+ ~ "]" }
 
-variable = {"$var" ~ WHITESPACE ~ 
-            variable_type ~ WHITESPACE ~
-            variable_number ~ WHITESPACE ~
-            variable_ref ~ WHITESPACE ~
-            module_var_name ~ WHITESPACE ~ 
-            (bus_slice ~ WHITESPACE )? ~ 
-            "$end" ~ WHITESPACE}
+variable = {
+    "$var" ~ variable_type ~ variable_number ~ variable_ref ~ module_var_name ~ (bus_slice)? ~ "$end"
+}
 
-open_scope =  { "$scope" ~ WHITESPACE ~ MODULE ~ WHITESPACE ~ "$end"~ WHITESPACE}
-close_scope = {"$upscope" ~ WHITESPACE ~ "$end" ~ WHITESPACE}
+open_scope  = { "$scope" ~ "module" ~ module_var_name ~ "$end" }
+close_scope = { "$upscope" ~ "$end" }
 
-scope = { open_scope ~ (scope | variable)+ ~ close_scope }
+scope  = { open_scope ~ (scope | variable)+ ~ close_scope }
 scopes = { scope+ }
 
-variable_definition_section = {scopes ~  "$enddefinitions" ~ WHITESPACE ~ "$end" ~ WHITESPACE}
+variable_definition_section = { scopes ~ "$enddefinitions" ~ "$end" }
 
-
-/*change*/
-scalar_num = {"0"| "1"| "x" | "X" | "z" | "Z"}
-bin_num = {("b"|"B") ~ WHITESPACE ~ scalar_num+}
-real_num = {("r"|"R") ~ WHITESPACE ~ ("-")? ~ ASCII_DIGIT+ ~ 
-           (("e"|"E") ~ ("+"|"-")? ~ ASCII_DIGIT+)?}
-
-
-simulation_keyword = {"$dumpall"|"$dumpoff"|"$dumpon"|"$dumpvars"}
-simulation_time = {"#"~ASCII_DIGIT+}
-
-value_change = {
-    simulation_time ~ WHITESPACE ~
-    (simulation_keyword ~ WHITESPACE)? ~
-    ((scalar_num | bin_num | real_num) ~ WHITESPACE ~ variable_ref ~ WHITESPACE)*
+/* change */
+scalar_num = { "0" | "1" | "x" | "X" | "z" | "Z" }
+bin_num    = { ("b" | "B") ~ scalar_num+ }
+real_num   = {
+    ("r" | "R") ~ ("-")? ~ ASCII_DIGIT+ ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
-value_change_section = {value_change+}
 
+simulation_keyword =  { "$dumpall" | "$dumpoff" | "$dumpon" | "$dumpvars" }
+simulation_time    = @{ "#" ~ ASCII_DIGIT+ }
+
+scalar_value_change = { scalar_num ~ variable_ref }
+vector_value_change = { (bin_num | real_num) ~ variable_ref }
+
+signal_value_change = { scalar_value_change | vector_value_change }
+
+value_change         = {
+    simulation_time ~ simulation_keyword ~ (signal_value_change)* ~ "$end"
+  | simulation_time ~ (signal_value_change)*
+}
+value_change_section = { value_change+ }
 
 vcd_file = {
-    SOI ~
-    header_section ~
-    variable_definition_section ~
-    value_change_section ~
-    EOI
-  }
+    SOI ~ header_section ~ variable_definition_section ~ value_change_section ~ EOI
+}
