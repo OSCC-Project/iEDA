@@ -42,31 +42,31 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 - Achieve the adaptability of the EDA platform for **cloud-native**
 
 <div align="center">
- <img src= "docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
+ <img src="docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
 </div>
 
 ## **iEDA Structure**
 
 <div align="center">
- <img src= "docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
+ <img src="docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
 </div>
 
 ## **iEDA Infrastructure**
 
 <div align="center">
- <img src= "docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
+ <img src="docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
 </div>
 
 ## **iEDA Operations (Tools)**
 
 <div align="center">
- <img src= "docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
+ <img src="docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
 </div>
 
 ## **iEDA Tapeout**
 
 <div align="center">
- <img src= "docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
 </div>
 
 ## 论文和报告
