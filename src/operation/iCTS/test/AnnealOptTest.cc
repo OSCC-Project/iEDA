@@ -42,7 +42,7 @@ class AnnealOptAux : public TestInterface
                           const double& temperature) const
   {
     auto bufs = genRandomBuffers(env_info);
-    auto clusters = BalanceClustering::kMeans(bufs, cluster_num);
+    auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
     LatAnnealOpt solver(clusters);
     solver.initParameter(max_iter, cooling_rate, temperature);
     clusters = solver.run(true);
@@ -54,7 +54,7 @@ class AnnealOptAux : public TestInterface
                             const double& skew_bound) const
   {
     auto bufs = genRandomBuffers(env_info);
-    auto clusters = BalanceClustering::kMeans(bufs, cluster_num);
+    auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
     BalanceClustering::writeClusterPy(clusters, "before");
     VioAnnealOpt solver(clusters);
     solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);

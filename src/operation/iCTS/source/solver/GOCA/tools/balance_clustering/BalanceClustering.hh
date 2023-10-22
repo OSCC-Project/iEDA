@@ -49,10 +49,13 @@ class BalanceClustering
  public:
   BalanceClustering() = delete;
   ~BalanceClustering() = default;
-  static std::vector<std::vector<Inst*>> kMeans(const std::vector<Inst*>& sinks, const size_t& k, const int& seed = 0,
-                                                const size_t& max_iter = 100, const size_t& no_change_stop = 5);
+  static std::vector<std::vector<Inst*>> kMeansPlus(const std::vector<Inst*>& insts, const size_t& k, const int& seed = 0,
+                                                    const size_t& max_iter = 100, const size_t& no_change_stop = 5);
 
-  static std::vector<std::vector<Inst*>> iterClustering(const std::vector<Inst*>& sinks, const size_t& max_fanout,
+  static std::vector<std::vector<Inst*>> kMeans(const std::vector<Inst*>& insts, const size_t& k, const int& seed = 0,
+                                                const size_t& max_iter = 100);
+
+  static std::vector<std::vector<Inst*>> iterClustering(const std::vector<Inst*>& insts, const size_t& max_fanout,
                                                         const size_t& iters = 100, const size_t& no_change_stop = 5,
                                                         const double& limit_ratio = 0.8, const bool& log = false);
 

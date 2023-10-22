@@ -669,7 +669,9 @@ void CTSAPI::buildRCTree(const std::vector<icts::EvalNet>& eval_nets)
 void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
 {
   auto net_name = eval_net.get_name();
+#ifdef DEBUG_ICTS_EVALUATOR
   LOG_INFO << "Evaluate: " << net_name;
+#endif
   resetRCTree(net_name);
   auto* sta_net = findStaNet(eval_net);
   auto layer_id = _config->get_routing_layers().back();

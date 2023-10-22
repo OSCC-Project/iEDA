@@ -143,6 +143,8 @@ class AnnealOptInterface
   double _new_cost = std::numeric_limits<double>::max();
   double _cur_cost = std::numeric_limits<double>::max();
   double _best_cost = std::numeric_limits<double>::max();
+
+  int _no_change = 0;
 };
 class LatAnnealOpt : public AnnealOptInterface
 {
@@ -192,5 +194,10 @@ class VioAnnealOpt : public AnnealOptInterface
   double _max_cap = 0;
   double _max_net_len = 0;
   double _skew_bound = 0;
+
+  const double _cap_coef = 1;
+  const double _fanout_coef = 1000;
+  const double _skew_coef = 10;
+  const double _wirelength_coef = 100;
 };
 }  // namespace icts
