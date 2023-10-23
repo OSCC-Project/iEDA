@@ -17,7 +17,7 @@ LIBS = -lliberty_parser -lpthread
 INCLUDES = -I/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/liberty-parser/dist 
 
 # 编译参数
-CXXFLAGS = -g -Wall $(INCLUDES)
+CXXFLAGS = -g -O0 -Wall $(INCLUDES)
 CXXFLAGS += -std=c++20
 
 # 链接参数
@@ -25,7 +25,7 @@ LDFLAGS = -L$(LIBDIR) $(LIBS)
 
 # 编译命令
 $(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS) -O0 -g
 
 # 清理命令
 clean: 

@@ -12,13 +12,6 @@ Do not modify this manually.
 #include <stdlib.h>
 
 /**
- * The complex attribute statement.
- * # Example
- * index_1 ("0.0010,0.0020,0.0030");
- */
-typedef struct LibertyComplexAttrStmt LibertyComplexAttrStmt;
-
-/**
  * The group statement.
  * # Example
  *
@@ -40,61 +33,71 @@ typedef struct LibertyComplexAttrStmt LibertyComplexAttrStmt;
  */
 typedef struct LibertyGroupStmt LibertyGroupStmt;
 
-/**
- * The simple attribute statement.
- * # Example
- * capacitance : 1.774000e-01;
- */
-typedef struct LibertySimpleAttrStmt LibertySimpleAttrStmt;
+typedef struct RustVec {
+    void *data;
+    uintptr_t len;
+    uintptr_t cap;
+    uintptr_t type_size;
+} RustVec;
 
-typedef struct String String;
+typedef struct RustLibertyStringValue {
+    char *value;
+} RustLibertyStringValue;
 
-/**
- * liberty string value.
- * # Examples
- * "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
- */
-typedef struct LibertyStringValue {
-    struct String value;
-} LibertyStringValue;
-
-/**
- * liberty float value.
- * # Examples
- * 1.7460
- */
-typedef struct LibertyFloatValue {
+typedef struct RustLibertyFloatValue {
     double value;
-} LibertyFloatValue;
+} RustLibertyFloatValue;
 
-typedef enum LibertyParserData_Tag {
-    GroupStmt,
-    ComplexStmt,
-    SimpleStmt,
-    String,
-    Float,
-    Null,
-} LibertyParserData_Tag;
+typedef struct RustLibertyGroupStmt {
+    char *file_name;
+    uintptr_t line_no;
+    char *group_name;
+    struct RustVec attri_values;
+    struct RustVec stmts;
+} RustLibertyGroupStmt;
 
-typedef struct LibertyParserData {
-    LibertyParserData_Tag tag;
-    union {
-        struct {
-            struct LibertyGroupStmt group_stmt;
-        };
-        struct {
-            struct LibertyComplexAttrStmt complex_stmt;
-        };
-        struct {
-            struct LibertySimpleAttrStmt simple_stmt;
-        };
-        struct {
-            struct LibertyStringValue string;
-        };
-        struct {
-            struct LibertyFloatValue float_;
-        };
-    };
-} LibertyParserData;
+typedef struct RustLibertySimpleAttrStmt {
+    char *file_name;
+    uintptr_t line_no;
+    char *attri_name;
+    const void *attri_value;
+} RustLibertySimpleAttrStmt;
 
-struct LibertyParserData *rust_parse_lib(const char *s);
+typedef struct RustLibertyComplexAttrStmt {
+    char *file_name;
+    uintptr_t line_no;
+    char *attri_name;
+    struct RustVec attri_values;
+} RustLibertyComplexAttrStmt;
+
+void *rust_parse_lib(const char *lib_path);
+
+void rust_free_lib_group(struct LibertyGroupStmt *c_lib_group);
+
+uintptr_t rust_vec_len(const struct RustVec *vec);
+
+void free_c_char(char *s);
+
+struct RustLibertyStringValue *rust_convert_string_value(void *string_value);
+
+struct RustLibertyFloatValue *rust_convert_float_value(void *float_value);
+
+bool rust_is_float_value(void *c_attribute_value);
+
+bool rust_is_string_value(void *c_attribute_value);
+
+struct RustLibertyGroupStmt *rust_convert_raw_group_stmt(struct LibertyGroupStmt *group_stmt);
+
+struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *c_group_stmt);
+
+struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(void *c_simple_attri_stmt);
+
+struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(void *c_complex_attri_stmt);
+
+bool rust_is_simple_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_complex_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_attri_stmt(void *c_lib_stmt);
+
+bool rust_is_group_stmt(void *c_lib_stmt);

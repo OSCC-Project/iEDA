@@ -1,0 +1,62 @@
+$date
+	Tue Aug 23 16:03:49 2022
+$end
+
+$timescale
+	1ns
+$end
+
+$comment Csum: 1 9ba2991b94438432 $end
+
+
+$scope module test $end
+
+$scope module top_i $end
+$var wire 1 ! clk $end
+$var wire 1 " reset $end
+$var wire 4 # out [3:0] $end
+
+$scope module sub_i $end
+$var wire 1 " reset $end
+$var wire 1 ! clk $end
+$var reg 4 # out [3:0] $end
+$upscope $end
+
+$upscope $end
+
+$upscope $end
+
+$enddefinitions $end
+
+#0
+$dumpvars
+bxxxx #
+0!
+1"
+$end
+#50
+1!
+b0000 #
+#100
+0"
+0!
+#150
+1!
+b0001 #
+#200
+0!
+#250
+1!
+b0010 #
+#300
+0!
+#350
+1!
+b0011 #
+#400
+0!
+#450
+1!
+b0100 #
+#500
+0!

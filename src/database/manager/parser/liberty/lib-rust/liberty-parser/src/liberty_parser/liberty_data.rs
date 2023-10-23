@@ -6,12 +6,14 @@
 //!     group statement.
 //!
 
-pub trait LibertyAttrValue {
-    fn is_string(&self) -> u32 {
-        0
+use std::fmt::Debug;
+
+pub trait LibertyAttrValue: Debug {
+    fn is_string(&self) -> bool {
+        false
     }
-    fn is_float(&self) -> u32 {
-        0
+    fn is_float(&self) -> bool {
+        false
     }
 
     fn get_float_value(&self) -> f64 {
@@ -25,14 +27,14 @@ pub trait LibertyAttrValue {
 /// liberty float value.
 /// # Examples
 /// 1.7460
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyFloatValue {
     pub(crate) value: f64,
 }
 
 impl LibertyAttrValue for LibertyFloatValue {
-    fn is_float(&self) -> u32 {
-        1
+    fn is_float(&self) -> bool {
+        true
     }
 
     fn get_float_value(&self) -> f64 {
@@ -43,14 +45,14 @@ impl LibertyAttrValue for LibertyFloatValue {
 /// liberty string value.
 /// # Examples
 /// "0.0010,0.0020,0.0030,0.0040,0.0050,0.0060,0.0070"
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyStringValue {
     pub(crate) value: String,
 }
 
 impl LibertyAttrValue for LibertyStringValue {
-    fn is_string(&self) -> u32 {
-        1
+    fn is_string(&self) -> bool {
+        true
     }
 
     fn get_string_value(&self) -> &str {
@@ -59,30 +61,31 @@ impl LibertyAttrValue for LibertyStringValue {
 }
 
 /// liberty stmt.
-pub trait LibertyStmt {
-    fn is_simple_attr_stmt(&self) -> u32 {
-        0
+pub trait LibertyStmt: Debug {
+    fn is_simple_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_complex_attr_stmt(&self) -> u32 {
-        0
+    fn is_complex_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_attr_stmt(&self) -> u32 {
-        0
+    fn is_attr_stmt(&self) -> bool {
+        false
     }
-    fn is_group_stmt(&self) -> u32 {
-        0
+    fn is_group_stmt(&self) -> bool {
+        false
     }
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// liberty attribute stmt.
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyAttrStmt {
     file_name: String,
-    line_no: u32,
+    line_no: usize,
 }
 
 impl LibertyAttrStmt {
-    fn new(file_name: &str, line_no: u32) -> LibertyAttrStmt {
+    fn new(file_name: &str, line_no: usize) -> LibertyAttrStmt {
         LibertyAttrStmt { file_name: file_name.to_string(), line_no: line_no }
     }
 
@@ -90,7 +93,7 @@ impl LibertyAttrStmt {
         &self.file_name
     }
 
-    pub fn get_line_no(&self) -> u32 {
+    pub fn get_line_no(&self) -> usize {
         self.line_no
     }
 }
@@ -98,7 +101,7 @@ impl LibertyAttrStmt {
 /// The simple attribute statement.
 /// # Example
 /// capacitance : 1.774000e-01;
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertySimpleAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -108,7 +111,7 @@ pub struct LibertySimpleAttrStmt {
 impl LibertySimpleAttrStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         attri_name: &str,
         attri_value: Box<dyn LibertyAttrValue>,
     ) -> LibertySimpleAttrStmt {
@@ -133,18 +136,21 @@ impl LibertySimpleAttrStmt {
 }
 
 impl LibertyStmt for LibertySimpleAttrStmt {
-    fn is_simple_attr_stmt(&self) -> u32 {
-        1
+    fn is_simple_attr_stmt(&self) -> bool {
+        true
     }
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_attr_stmt(&self) -> bool {
+        true
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
 /// The complex attribute statement.
 /// # Example
 /// index_1 ("0.0010,0.0020,0.0030");
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyComplexAttrStmt {
     attri: LibertyAttrStmt,
     attri_name: String,
@@ -154,7 +160,7 @@ pub struct LibertyComplexAttrStmt {
 impl LibertyComplexAttrStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         attri_name: &str,
         attri_values: Vec<Box<dyn LibertyAttrValue>>,
     ) -> LibertyComplexAttrStmt {
@@ -179,11 +185,14 @@ impl LibertyComplexAttrStmt {
 }
 
 impl LibertyStmt for LibertyComplexAttrStmt {
-    fn is_complex_attr_stmt(&self) -> u32 {
-        1
+    fn is_complex_attr_stmt(&self) -> bool {
+        true
     }
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_attr_stmt(&self) -> bool {
+        true
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -205,7 +214,7 @@ impl LibertyStmt for LibertyComplexAttrStmt {
 /// fanout_length( 9, 25.4842 );
 /// fanout_length( 11, 27.0320 );
 /// }
-#[repr(C)]
+#[derive(Debug)]
 pub struct LibertyGroupStmt {
     attri: LibertyAttrStmt,
     group_name: String,
@@ -216,7 +225,7 @@ pub struct LibertyGroupStmt {
 impl LibertyGroupStmt {
     pub fn new(
         file_name: &str,
-        line_no: u32,
+        line_no: usize,
         group_name: &str,
         attri_values: Vec<Box<dyn LibertyAttrValue>>,
         stmts: Vec<Box<dyn LibertyStmt>>,
@@ -251,12 +260,15 @@ impl LibertyGroupStmt {
 }
 
 impl LibertyStmt for LibertyGroupStmt {
-    fn is_attr_stmt(&self) -> u32 {
-        1
+    fn is_group_stmt(&self) -> bool {
+        true
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
-#[repr(C)]
+#[derive(Debug)]
 pub enum LibertyParserData {
     GroupStmt(LibertyGroupStmt),
     ComplexStmt(LibertyComplexAttrStmt),
