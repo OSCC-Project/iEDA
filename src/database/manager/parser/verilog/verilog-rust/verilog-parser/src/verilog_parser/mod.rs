@@ -46,51 +46,148 @@ fn process_port_or_wire_id(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::Ver
 }
 
 fn process_inner_port_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclType) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>>{
-    match pair.as_rule() {
+    println!("{:#?}", pair);
+    let pair_clone = pair.clone();
+    let pair_clone2 = pair.clone();
+    let mut inner_pair = pair.into_inner();
+    let port_list_or_bus_slice_pair = inner_pair.next();
+    // println!("{:#?}", port_list_or_bus_slice_pair);
+    match port_list_or_bus_slice_pair.clone().unwrap().as_rule() {
         Rule::bus_slice => {                   
             // let mut decimal_digits = pair.into_inner();
-            let start = pair.as_str().parse::<i32>().unwrap();
-            let end = pair.as_str().parse::<i32>().unwrap();
-            let range = Some((start, end));
+            let mut decimal_digits_pair = port_list_or_bus_slice_pair.unwrap().into_inner();
+            let range_from = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
+            let range_to = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
+            let range = Some((range_from, range_to));
             let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
-            for inner_pair in pair.into_inner(){
-                let dcl_name = inner_pair.as_str().to_string(); 
+            // inner_pair.next():get the second pair:port_list
+            let port_list_pair = inner_pair.next();
+            for port_pair in port_list_pair.unwrap().into_inner() {
+                println!("{:#?}", port_pair);
+                let dcl_name = port_pair.as_str().to_string(); 
                 let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
                 // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            // print verilog_dcls for debug.
+            println!("{:#?}", verilog_dcls);
             Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
             
         }
         Rule::port_list => {
             let range = None;
             let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
-            for inner_pair in pair.into_inner(){
-                let dcl_name = inner_pair.as_str().to_string(); 
+            let port_list_pair = port_list_or_bus_slice_pair;
+            for port_pair in port_list_pair.unwrap().into_inner() {
+                let dcl_name = port_pair.as_str().to_string(); 
                 let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
                 // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            println!("{:#?}", verilog_dcls);
             Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
         }
-        _ => panic!("Unexpected rule"),
-
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
     }
 }
+
 fn process_port_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
     println!("{:#?}", pair);
     println!("{:?}", pair_clone);
-    match pair_clone.as_rule() {
+    match pair.as_rule() {
+        Rule::input_declaration => {
+            // let port_list_or_bus_slice_pair = pair_clone.into_inner().next().unwrap();
+            // println!("{:#?}", port_list_or_bus_slice_pair);
+            let dcl_type = verilog_data::DclType::KInput;
+            let verilog_dcls = process_inner_port_declaration(pair,dcl_type);
+            verilog_dcls
+        }
         Rule::output_declaration => {
-            let port_list_or_bus_slice0 = pair_clone.into_inner().next();
-            println!("{:#?}", port_list_or_bus_slice0);
-            // let port_list_or_bus_slice = pair_clone.into_inner().next().unwrap();
-            // println!("{:#?}", port_list_or_bus_slice);
+            // let port_list_or_bus_slice_pair = pair_clone.into_inner().next().unwrap();
+            // println!("{:#?}", port_list_or_bus_slice_pair);
             let dcl_type = verilog_data::DclType::KOutput;
-            let verilog_dcls = process_inner_port_declaration(port_list_or_bus_slice,dcl_type);
+            let verilog_dcls = process_inner_port_declaration(pair,dcl_type);
+            verilog_dcls
+        }
+        Rule::inout_declaration => {
+            let dcl_type = verilog_data::DclType::KInout;
+            let verilog_dcls = process_inner_port_declaration(pair,dcl_type);
+            verilog_dcls
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+fn process_inner_wire_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclType) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>>{
+    println!("{:#?}", pair);
+    let pair_clone = pair.clone();
+    let pair_clone2 = pair.clone();
+    let mut inner_pair = pair.into_inner();
+    let wire_list_or_bus_slice_pair = inner_pair.next();
+    // println!("{:#?}", wire_list_or_bus_slice_pair);
+    match wire_list_or_bus_slice_pair.clone().unwrap().as_rule() {
+        Rule::bus_slice => {                   
+            // let mut decimal_digits = pair.into_inner();
+            let mut decimal_digits_pair = wire_list_or_bus_slice_pair.unwrap().into_inner();
+            let range_from = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
+            let range_to = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
+            let range = Some((range_from, range_to));
+            let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
+            // inner_pair.next():get the second pair:wire_list
+            let wire_list_pair = inner_pair.next();
+            for wire_pair in wire_list_pair.unwrap().into_inner() {
+                println!("{:#?}", wire_pair);
+                let dcl_name = wire_pair.as_str().to_string(); 
+                let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
+                // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
+                verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
+            }
+            let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            // print verilog_dcls for debug.
+            println!("{:#?}", verilog_dcls);
+            Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+            
+        }
+        Rule::wire_list => {
+            let range = None;
+            let mut verilog_dcl_vec : Vec<Box<verilog_data::VerilogDcl>>= Vec::new();
+            let wire_list_pair = wire_list_or_bus_slice_pair;
+            for wire_pair in wire_list_pair.unwrap().into_inner() {
+                let dcl_name = wire_pair.as_str().to_string(); 
+                let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
+                // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
+                verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
+            }
+            let verilog_dcls = verilog_data::VerilogDcls::new(0, verilog_dcl_vec);
+            println!("{:#?}", verilog_dcls);
+            Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+fn process_wire_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    println!("{:#?}", pair);
+    println!("{:?}", pair_clone);
+    match pair.as_rule() {
+        Rule::wire_declaration => {
+            // let port_list_or_bus_slice_pair = pair_clone.into_inner().next().unwrap();
+            // println!("{:#?}", port_list_or_bus_slice_pair);
+            let dcl_type = verilog_data::DclType::KWire;
+            let verilog_dcls = process_inner_wire_declaration(pair,dcl_type);
             verilog_dcls
         }
         _ => Err(pest::error::Error::new_from_span(
@@ -151,7 +248,7 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
                     // let pair_result = process_pair(inner_pair, parser_queue);
                     // parser_queue.push_back(pair_result.unwrap());
 
-                    // println!("{:#?}", inner_pair);
+                    println!("{:#?}", inner_pair);
                     match inner_pair.as_rule() {
         
                         // record line_no,file_name
@@ -162,17 +259,30 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
                             // process_port_list(inner_pair);
                             for inner_inner_pair in inner_pair.into_inner() {
                                 let  port_id = process_port_or_wire_id(inner_inner_pair).unwrap();
+                                // println!("{:#?}", port_id);
                                 port_list.push(port_id);
                             }
                         }
                         Rule::port_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
-                            println!("{:#?}", inner_inner_pair);
-                            let verilog_dcls =  process_port_declaration(inner_inner_pair).unwrap();
+                                // println!("{:#?}", inner_inner_pair);
+                                let verilog_dcls =  process_port_declaration(inner_inner_pair).unwrap();
+                                // at the positon, only print trait debug.
+                                // println!("{:#?}", verilog_dcls);
+                                module_stmts.push(verilog_dcls);
                             }
                         }
-                        // Rule::wire_block_declaration => process_wire_block_declaration(inner_pair, &mut substitute_queue),
-                        // Rule::inst_block_declaration => process_inst_block_declaration(inner_pair, &mut substitute_queue),
+                        Rule::wire_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                println!("{:#?}", inner_inner_pair);
+                                let verilog_dcls =  process_wire_declaration(inner_inner_pair).unwrap();
+                                // at the positon, only print trait debug.
+                                println!("{:#?}", verilog_dcls);
+                                module_stmts.push(verilog_dcls);
+                            }
+                            let _a = 0;
+                        }
+                        Rule::inst_block_declaration => unreachable!(),
                         // other rule: no clone the pair
                         // _ => Err(pest::error::Error::new_from_span(
                         // pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },

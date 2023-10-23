@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 exclude = ["build"]
 rust-version = "1.66"
+authors = ["longshuaiying <longshy@pcl.ac.cn>"]
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

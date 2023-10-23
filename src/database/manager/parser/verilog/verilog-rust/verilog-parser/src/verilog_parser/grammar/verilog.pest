@@ -1,4 +1,4 @@
-decimal_digits  = _{ ASCII_DIGIT }
+decimal_digits  = { ASCII_DIGIT }
 // bus_index  = _{ "[" ~ decimal_digits+ ~ "]" }
 bus_slice  = { "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
 
@@ -6,13 +6,15 @@ scalar_constant = { "1'b0" | "1'b1" | "1'B0" | "1'B1" | "'b0" | "'b1" | "'B0" | 
 
 line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
-COMMENT = { line_comment | multiline_comment }
+COMMENT = _{ line_comment | multiline_comment }
 
 char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" }
 
 
 port_or_wire_id = { char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
+// To do (.v before DC)
+// port_bus_list 
 wire_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
 wire_list_with_scalar_constant = { (scalar_constant | port_or_wire_id) ~ (("," ~ scalar_constant) | ("," ~ port_or_wire_id))* }
 
@@ -21,26 +23,24 @@ module_id = { char+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 semicolon_opt = _{ ";" }
 
-
-// input_flag = _{"input" ~ WHITESPACE }
 input_declaration = { "input" ~ bus_slice? ~ port_list  ~ semicolon_opt }
 output_declaration = { "output " ~ bus_slice? ~ port_list ~ semicolon_opt }
 inout_declaration = { "inout " ~ bus_slice? ~ port_list ~ semicolon_opt }
-port_declaration = { (input_declaration | output_declaration | inout_declaration) }
+port_declaration = _{ input_declaration | output_declaration | inout_declaration }
 port_block_declaration = { port_declaration+ }
 
 wire_declaration = {"wire " ~ bus_slice? ~ wire_list ~ semicolon_opt }
 wire_block_declaration = { wire_declaration+ }
 
-
 //(ps:first_port_connection) first rule adapt to .REN(n_Logic1_ ) or .REN( ) or .io_interrupt(1'b0)
-//(ps:first_port_connection) second rule adapt to .FBDIV({  \u0_rcg/n33 ,  \u0_rcg/n33 ,  \u0_rcg/n33 } )
-//(ps:first_port_connection) second rule adapt to .io_interrupt(1'b0) or .io_master_bid({ 1'b0,1'b0,io_master_bid_041461 }) (begin)
-// or .io_master_bresp({ io_master_bresp_041461_1_, 1'b0 }) (end) or .rid_nic400_axi4_ps2({ 1'b0,1'b0,rid_nic400_axi4_ps2_1_,1'b0 }) (begin_end)
+//(ps:first_port_connection) second rule adapt to .FBDIV({  \u0_rcg/n33 ,  \u0_rcg/n33 ,  \u0_rcg/n33 })
+//(ps:first_port_connection) or .io_master_bid({ 1'b0,1'b0,io_master_bid_041461 }) (begin)
+//or .io_master_bresp({ io_master_bresp_041461_1_, 1'b0 }) (end) or .rid_nic400_axi4_ps2({ 1'b0,1'b0,rid_nic400_axi4_ps2_1_,1'b0 }) (begin_end)
 first_port_connection = { ("." ~ port_or_wire_id ~ "(" ~ ( scalar_constant | port_or_wire_id )? ~ ")") 
 | ( "." ~ port_or_wire_id ~ "(" ~ "{" ~ wire_list_with_scalar_constant ~ "}" ~ ")" ) }
 port_connection = { "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
+
 inst_declaration = ${ inst_or_cell_id ~ WHITESPACE ~ inst_or_cell_id ~ WHITESPACE ~ port_block_connection }
 inst_block_declaration = { inst_declaration+ }
 

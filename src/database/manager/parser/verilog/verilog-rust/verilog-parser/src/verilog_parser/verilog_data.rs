@@ -1,4 +1,4 @@
-
+use std::fmt;
 pub trait VerilogVirtualBaseID {
     fn is_bus_index_id(&self) -> u32 {
         0
@@ -13,14 +13,21 @@ pub trait VerilogVirtualBaseID {
     }
 }
 
+impl fmt::Debug for dyn VerilogVirtualBaseID {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "VerilogVirtualBaseID {{ id: {} }}", self.get_name())
+    }
+}
+
 /// verilog id.
 #[repr(C)]
+#[derive(Debug)]
 pub struct VerilogID {
     id: String,
 }
 
 impl VerilogID {
-    fn new(id: &str) -> VerilogID {
+    pub fn new(id: &str) -> VerilogID {
         VerilogID { id: id.to_string() }
     }
 
@@ -28,6 +35,20 @@ impl VerilogID {
         &self.id
     }
 }
+
+// impl fmt::Debug for VerilogID {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "VerilogID {{ id: {} }}", self.id)
+//     }
+// }
+
+impl VerilogVirtualBaseID for VerilogID {
+    fn get_name(&self) -> String {
+        self.id.clone()
+    }
+}
+
+
 
 
 #[repr(C)]
@@ -285,11 +306,22 @@ pub trait VerilogVirtualBaseStmt {
     fn is_module_stmt(&self) -> u32 {
         0
     }
+    fn get_line_no(&self) -> u32 {
+        panic!("This is unknown value.");
+    }
+}
+
+impl fmt::Debug for dyn VerilogVirtualBaseStmt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "VerilogVirtualBaseStmt {{ line_no: {} }}", self.get_line_no())
+    }
 }
 
 /// The base class for verilog stmt,include module dcl, module instance, module assign.
 /// maybe dont need the base class***************************************
 #[repr(C)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct VerilogStmt {
     line_no: u32,
 }
@@ -337,15 +369,14 @@ impl VerilogInst {
     pub fn get_cell_name(&self) -> &str {
         &self.cell_name
     }
-
-    pub fn get_port_connections(&self) -> &Vec<Box<VerilogPortRefPortConnect>> {  
-        &self.port_connections
-    }
 }
 
 impl VerilogVirtualBaseStmt for VerilogInst {
     fn is_module_inst_stmt(&self) -> u32 {
         1
+    }
+    fn get_line_no(&self) -> u32 {
+        self.stmt.get_line_no()
     }
 }
 /// #define FOREACH_VERILOG_PORT_CONNECT(inst, port_connect) for (auto& port_connect : inst->get_port_connections())
@@ -386,11 +417,15 @@ impl VerilogVirtualBaseStmt for VerilogAssign {
     fn is_module_assign_stmt(&self) -> u32 {
         1
     }
+    fn get_line_no(&self) -> u32 {
+        self.stmt.get_line_no()
+    }
 }
 
 /// The wire or port declaration.
 #[repr(C)]
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum DclType {
     KInput = 0,
     KInout = 1,
@@ -402,7 +437,9 @@ pub enum DclType {
     KWire = 7,
     KWor = 8,
 }
-
+#[repr(C)]
+#[derive(Clone)]
+#[derive(Debug)]
 pub struct VerilogDcl {
     stmt: VerilogStmt,  //stmt denote line_no 
     dcl_type: DclType,
@@ -443,9 +480,15 @@ impl VerilogVirtualBaseStmt for VerilogDcl {
     fn is_verilog_dcl_stmt(&self) -> u32 {
         1
     }
+    fn get_line_no(&self) -> u32 {
+        self.stmt.get_line_no()
+    }
 }
 
 ///The mutiple verilg dcl.
+#[repr(C)]
+#[derive(Clone)]
+#[derive(Debug)]
 pub struct VerilogDcls {
     stmt: VerilogStmt,  //stmt denote line_no 
     verilog_dcls: Vec<Box<VerilogDcl>>,
@@ -476,6 +519,9 @@ impl VerilogDcls {
 impl VerilogVirtualBaseStmt for VerilogDcls {
     fn is_verilog_dcls_stmt(&self) -> u32 {
         1
+    }
+    fn get_line_no(&self) -> u32 {
+        self.stmt.get_line_no()
     }
 }
 
@@ -534,7 +580,19 @@ impl VerilogVirtualBaseStmt for VerilogModule {
     fn is_module_stmt(&self) -> u32 {
         1
     }
+    fn get_line_no(&self) -> u32 {
+        self.stmt.get_line_no()
+    }
 }
+
+// #[repr(C)]
+// pub enum VerilogParserData {
+//     GroupStmt(LibertyGroupStmt),
+//     ComplexStmt(LibertyComplexAttrStmt),
+//     SimpleStmt(LibertySimpleAttrStmt),
+//     String(LibertyStringValue),
+//     Float(LibertyFloatValue),
+// }
 
 
 
