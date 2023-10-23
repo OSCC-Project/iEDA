@@ -3,8 +3,10 @@ use pest_derive::Parser;
 
 use pest::iterators::Pair;
 
+pub mod vcd_data;
+
 #[derive(Parser)]
-#[grammar = "vcd_parser/grammar.pest"]
+#[grammar = "vcd_parser/grammar/grammar.pest"]
 pub struct VCDParser;
 
 #[cfg(test)]
