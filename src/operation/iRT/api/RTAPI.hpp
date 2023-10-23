@@ -79,6 +79,10 @@ class RTAPI
   // CTS
   std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
 
+  // STA
+  void reportGRTiming();
+  void reportDRTiming();
+
  private:
   static RTAPI* _rt_api_instance;
 

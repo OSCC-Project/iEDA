@@ -37,7 +37,16 @@ def_init -path ./result/iRT_result.def
 ##   run STA
 #===========================================================
 
-run_sta -output ./result/rt/sta/
+init_rt -temp_directory_path "./result/rt/" \
+        -bottom_routing_layer "met1" \
+        -top_routing_layer "met5"
+
+run_rt
+
+init_sta -output ./result/sta/timing.log
+report_timing -stage "dr"
+
+destroy_rt
 
 #===========================================================
 ##   Exit 

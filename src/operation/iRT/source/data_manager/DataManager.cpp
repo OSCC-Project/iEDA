@@ -486,7 +486,7 @@ void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
       continue;
     }
     Pin pin;
-    pin.set_pin_name(RTUtil::getString(idb_pin->get_instance()->get_name(), ": ", idb_pin->get_pin_name()));
+    pin.set_pin_name(RTUtil::getString(idb_pin->get_instance()->get_name(), ":", idb_pin->get_pin_name()));
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
@@ -529,7 +529,7 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
   }
   std::string driving_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
-    driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ": ", driving_pin_name);
+    driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
   }
   net.get_driving_pin().set_pin_name(driving_pin_name);
 }
