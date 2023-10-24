@@ -44,6 +44,9 @@ init_rt -temp_directory_path "./result/rt/" \
 
 run_rt
 
+init_sta -output ./result/rt/sta/
+report_timing -stage "dr"
+
 destroy_rt
 
 #===========================================================

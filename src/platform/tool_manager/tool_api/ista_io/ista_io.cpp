@@ -102,7 +102,7 @@ std::vector<std::unique_ptr<ista::StaClockTree>>& StaIO::getClockTree()
 bool StaIO::initSTA(std::string path)
 {
   /// init
-  setStaWorkDirectory();
+  setStaWorkDirectory(path);
   std::vector<std::string> paths;
   runLiberty(paths);
   readIdb();

@@ -55,7 +55,7 @@ os.system('./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl')
 # #   run Router
 os.system('./iEDA -script ./script/iRT_script/run_iRT.tcl')
 os.system('./iEDA -script ./script/iRT_script/run_iRT_eval.tcl')
-os.system('./iEDA -script ./script/iRT_script/run_iRT_STA.tcl')
+# os.system('./iEDA -script ./script/iRT_script/run_iRT_STA.tcl')
 os.system('./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl')
 
 #===========================================================

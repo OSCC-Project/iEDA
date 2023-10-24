@@ -41,9 +41,10 @@ init_rt -temp_directory_path "./result/rt/" \
         -bottom_routing_layer "met1" \
         -top_routing_layer "met5"
 
+# run_rt -flow vr
 run_rt
 
-init_sta -output ./result/sta/timing.log
+init_sta -output ./result/rt/sta/
 report_timing -stage "dr"
 
 destroy_rt
