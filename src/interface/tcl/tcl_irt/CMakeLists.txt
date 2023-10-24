@@ -2,6 +2,7 @@ add_library(tcl_irt
     ${HOME_INTERFACE}/tcl/tcl_irt/egr/tcl_run_egr.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_destroy_rt.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_init_rt.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_report_timing.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_run_rt.cpp
 )
 

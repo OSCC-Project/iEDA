@@ -82,6 +82,7 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
   if (driver->get_level() > 0) {
     return;
   }
+
   auto* design = CTSAPIInst.get_design();
   auto loads = net->get_load_insts();
   int max_level = 0;
@@ -94,8 +95,10 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
     auto sub_net_name = load->get_name().substr(0, load->get_name().length() - 4);
     auto* sub_net = design->findNet(sub_net_name);
     recursiveSetLevel(sub_net);
+
     max_level = std::max(load->get_level(), max_level);
   }
+
   driver->set_level(max_level + 1);
 }
 

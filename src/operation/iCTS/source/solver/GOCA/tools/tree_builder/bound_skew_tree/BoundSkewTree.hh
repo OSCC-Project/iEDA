@@ -96,8 +96,8 @@ class BoundSkewTree
   std::vector<Area*> areaOnOctagonBound(const std::vector<Area*> areas, const std::vector<Pt>& octagon) const;
   void biCluster();
   Area* biCluster(const std::vector<Area*>& areas);
-  std::vector<std::vector<Area*>> kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
-                                         const size_t& max_iter = 10) const;
+  std::vector<std::vector<Area*>> kMeansPlus(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
+                                             const size_t& max_iter = 10) const;
   /**
    * @brief flow require
    *

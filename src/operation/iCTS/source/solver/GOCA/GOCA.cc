@@ -88,7 +88,7 @@ void GOCA::resolveSinks()
     auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
     if (insts.size() > max_num) {
       LOG_INFO << "insts divide into " << std::ceil(insts.size() / max_num) << " clusters";
-      auto clusters = BalanceClustering::kMeans(insts, std::ceil(insts.size() / max_num), 0, 100, 5);
+      auto clusters = BalanceClustering::kMeansPlus(insts, std::ceil(insts.size() / max_num), 0, 100);
       insts.clear();
       if (_max_thread > 1) {
         ThreadPool pool(_max_thread);
@@ -169,17 +169,17 @@ std::vector<Assign> GOCA::globalAssign()
   auto skew_bound = TimingPropagator::getSkewBound();
   // global_assigns.push_back({max_net_len * 10000, max_fanout * 10000, max_cap * 10000, skew_bound * 10000, 0.98});
   // level 1 test
-  global_assigns.push_back({max_net_len, max_fanout, max_cap * 1.0, skew_bound * 0.25, 0.98});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout, max_cap * 1.0, skew_bound * 0.25, 0.98});
   // level 2 test
-  global_assigns.push_back({max_net_len, max_fanout * 3 / 4, max_cap * 0.9, skew_bound * 0.6, 0.9});
+  global_assigns.push_back({max_net_len * 6 / 8, max_fanout * 3 / 4, max_cap * 0.9, skew_bound * 0.6, 0.9});
   // level 3 test
-  global_assigns.push_back({max_net_len, max_fanout / 2, max_cap * 0.8, skew_bound * 0.8, 0.9});
+  global_assigns.push_back({max_net_len * 7 / 8, max_fanout / 2, max_cap * 0.8, skew_bound * 0.8, 0.9});
   // level 4 test
-  global_assigns.push_back({max_net_len, max_fanout / 4, max_cap * 0.7, skew_bound * 1, 0.8});
+  global_assigns.push_back({max_net_len * 7 / 8, max_fanout / 4, max_cap * 0.7, skew_bound * 1, 0.8});
   // level 5 test
-  global_assigns.push_back({max_net_len, max_fanout / 8, max_cap * 0.7, skew_bound * 1, 0.8});
+  global_assigns.push_back({max_net_len * 7 / 8, max_fanout / 8, max_cap * 0.7, skew_bound * 1, 0.8});
   // level 6 test
-  global_assigns.push_back({max_net_len, max_fanout / 8, max_cap * 0.7, skew_bound * 1, 0.8});
+  global_assigns.push_back({max_net_len * 7 / 8, max_fanout / 8, max_cap * 0.7, skew_bound * 1, 0.8});
   // global_assigns.push_back({max_net_len, max_fanout, max_cap, skew_bound * 1.0, 0.8});
   return global_assigns;
 }
@@ -204,7 +204,7 @@ std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assi
   auto enhanced_clusters = BalanceClustering::slackClustering(clusters, max_net_len, max_fanout);
 
   enhanced_clusters
-      = BalanceClustering::clusteringEnhancement(enhanced_clusters, max_fanout, max_cap, max_net_len, skew_bound, 200, 0.99, 10000);
+      = BalanceClustering::clusteringEnhancement(enhanced_clusters, max_fanout, max_cap, max_net_len, skew_bound, 200, 0.95, 10000);
 
   // BalanceClustering::writeClusterPy(enhanced_clusters, "cluster_level_" + std::to_string(_level));
 
@@ -274,50 +274,25 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
     auto load_pin = inst->get_load_pin();
     cluster_load_pins.push_back(load_pin);
   });
-  auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
-  // set min size cell master
-  buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  // location legitimization
-  TreeBuilder::localPlace(buffer, cluster_load_pins);
-  auto* driver_pin = buffer->get_driver_pin();
+
   if (cluster_load_pins.size() == 1) {
+    auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
+    // set min size cell master
+    buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+    // location legitimization
+    TreeBuilder::localPlace(buffer, cluster_load_pins);
+    auto* driver_pin = buffer->get_driver_pin();
     auto* load_pin = cluster_load_pins.front();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
-  } else {
-    TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
   }
-  auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
-  TimingPropagator::update(net);
-  if (TimingPropagator::skewFeasible(driver_pin, skew_bound)) {
-    _nets.push_back(net);
-    return buffer;
-  } else {
-    auto feasible_cell = TreeBuilder::feasibleCell(buffer, skew_bound);
-    if (!feasible_cell.empty()) {
-      buffer->set_cell_master(feasible_cell.front());
-      TimingPropagator::update(net);
-      _nets.push_back(net);
-      return buffer;
-    }
-  }
-  // remove salt
-  TimingPropagator::resetNet(net);
+  // build BEAT
+  auto* buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc, TopoType::kBiPartition);
 
-  // skew violation, try to opt salt
-  auto* opt_salt_net = saltOpt(insts, assign);
-  if (opt_salt_net) {
-    _nets.push_back(opt_salt_net);
-    return opt_salt_net->get_driver_pin()->get_inst();
-  }
-
-  // build DME
-  buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc);
-
-  driver_pin = buffer->get_driver_pin();
-  auto* bst_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  auto* driver_pin = buffer->get_driver_pin();
+  auto* beat_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  TimingPropagator::update(bst_net);
-  _nets.push_back(bst_net);
+  TimingPropagator::update(beat_net);
+  _nets.push_back(beat_net);
 
   return buffer;
 }
