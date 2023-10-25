@@ -638,6 +638,7 @@ unsigned StaApplySdc::processClockUncertainty(
           auto* seq_path_data =
               dynamic_cast<StaSeqPathData*>(seq_data_queue.top());
           seq_path_data->set_uncertainty(uncertainty_value);
+          seq_data_queue.pop();
         }
       }
     }
