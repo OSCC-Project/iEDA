@@ -59,10 +59,15 @@ void GDSPloter::plotDesign()
 
   auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();
-  for (auto idb_inst : idb_insts) {
+  for (auto* idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
     auto name = idb_inst->get_name();
-    plotter.insertPolygon(inst_box, name, 1);
+    auto* cts_inst = design->findInstance(name);
+    if (cts_inst) {
+      plotter.insertInstance(cts_inst);
+    } else {
+      plotter.insertPolygon(inst_box, name, 1);
+    }
   }
 
   auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
@@ -84,7 +89,7 @@ void GDSPloter::plotDesign()
   plotter.insertPolygon(core, "core", 100);
   plotter.strBegin();
   plotter.topBegin();
-  for (auto idb_inst : idb_insts) {
+  for (auto* idb_inst : idb_insts) {
     auto name = idb_inst->get_name();
     plotter.refPolygon(name);
   }
@@ -127,10 +132,15 @@ void GDSPloter::plotFlyLine()
 
   auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();
-  for (auto idb_inst : idb_insts) {
+  for (auto* idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
     auto name = idb_inst->get_name();
-    plotter.insertPolygon(inst_box, name, 1);
+    auto* cts_inst = design->findInstance(name);
+    if (cts_inst) {
+      plotter.insertInstance(cts_inst);
+    } else {
+      plotter.insertPolygon(inst_box, name, 1);
+    }
   }
 
   auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list();
@@ -152,7 +162,7 @@ void GDSPloter::plotFlyLine()
   plotter.insertPolygon(core, "core", 100);
   plotter.strBegin();
   plotter.topBegin();
-  for (auto idb_inst : idb_insts) {
+  for (auto* idb_inst : idb_insts) {
     auto name = idb_inst->get_name();
     plotter.refPolygon(name);
   }
@@ -241,7 +251,7 @@ void GDSPloter::insertPolygon(IdbRect& poly, const string& name, int layer)
 
   _log_ofs << "BOUNDARY" << std::endl;
   _log_ofs << "LAYER " << layer << std::endl;
-  _log_ofs << "DATATYPE 0" << std::endl;
+  _log_ofs << "DATATYPE 1" << std::endl;
   _log_ofs << "XY" << std::endl;
   std::ranges::for_each(points, [&](const Point& point) { _log_ofs << point << std::endl; });
   _log_ofs << "ENDEL" << std::endl;

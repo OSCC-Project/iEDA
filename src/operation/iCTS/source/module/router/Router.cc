@@ -52,11 +52,12 @@ void Router::init()
 }
 void Router::build()
 {
-  CTSAPIInst.saveToLog("##Router Build Log##");
+  ieda::Stats stats;
+  CTSAPIInst.saveToLog("\n\n##Router Build Log##");
   for (auto* clock : _clocks) {
     auto* design = CTSAPIInst.get_design();
     auto& clock_nets = clock->get_clock_nets();
-    CTSAPIInst.saveToLog("\n\n");
+    CTSAPIInst.saveToLog("\n");
     for (auto* clk_net : clock_nets) {
       CTSAPIInst.saveToLog("\n####################");
       CTSAPIInst.saveToLog("clock net: ", clk_net->get_net_name());
@@ -72,6 +73,8 @@ void Router::build()
       clk_net->setClockRouted();
     }
   }
+  CTSAPIInst.saveToLog("Router build memory usage ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("Router build elapsed time ", stats.elapsedRunTime(), "s");
 }
 void Router::update()
 {

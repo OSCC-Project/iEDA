@@ -414,8 +414,9 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
       salt_parent->children.push_back(salt_node);
     }
   });
-  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
+
   // BEAT Salt
+  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
   TreeSaltBuilder builder;
   builder.run(salt_net, bound_skew_tree, 0);
 
@@ -563,18 +564,38 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
 void TreeBuilder::convertToBinaryTree(Node* root)
 {
   auto id = root->getMaxId();
+
+  auto pin_node_refine = [&](Node* node) {
+    if (!node->isPin() || !node->isLoad()) {
+      return node;
+    }
+    auto children = node->get_children();
+    if (children.empty()) {
+      return node;
+    }
+    auto* parent = node->get_parent();
+    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+    LOG_FATAL_IF(!parent) << "node is load pin but not have parent node";
+    disconnect(parent, node);
+    connect(parent, copy_node);
+    connect(copy_node, node);
+
+    // downstream refine
+    std::ranges::for_each(children, [&](Node* child) {
+      disconnect(node, child);
+      connect(copy_node, child);
+    });
+    return copy_node;
+  };
+
   // convert to binary tree for bound skew tree
   auto one_child_refine = [&](Node* node) {
     auto children = node->get_children();
     LOG_FATAL_IF(children.size() != 1) << "node " << node->get_name() << " children size is not 1";
     // case 1: size is 1
     auto* child = children.front();
-    // upstream refine
     if ((node->isPin() && node->isLoad())) {
-      // debug
-      if (child->isPin()) {
-        LOG_FATAL_IF(!node->isPin()) << "node " << node->get_name() << " is not pin";
-      }
+      // upstream refine
       auto* parent = node->get_parent();
       auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
       if (parent) {
@@ -601,31 +622,6 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     return node;
   };
 
-  auto two_child_refine = [&](Node* node) {
-    auto children = node->get_children();
-    LOG_FATAL_IF(!(node->isPin() && node->isLoad()) || children.size() != 2)
-        << "node " << node->get_name() << " is not Pin or children size is not 2";
-
-    // upstream refine
-    auto* parent = node->get_parent();
-    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
-    if (parent) {
-      disconnect(parent, node);
-      connect(parent, copy_node);
-    }
-    // case 2: size is 2 and node is pin
-    // downstream refine
-    connect(copy_node, node);
-    auto* trunk = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
-    connect(copy_node, trunk);
-    std::ranges::for_each(children, [&](Node* child) {
-      disconnect(node, child);
-      connect(trunk, child);
-    });
-
-    return copy_node;
-  };
-
   auto three_child_refine = [&](Node* node) {
     auto children = node->get_children();
     LOG_FATAL_IF(children.size() != 3) << "node " << node->get_name() << " children size is not 3";
@@ -646,9 +642,6 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     connect(node, trunk);
     connect(trunk, left_child);
     connect(trunk, right_child);
-    if (node->isPin() && node->isLoad()) {
-      return two_child_refine(node);
-    }
     return node;
   };
 
@@ -657,7 +650,6 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     LOG_FATAL_IF(children.size() != 4) << "node " << node->get_name() << " children size is not 4";
 
     // upstream check
-    LOG_FATAL_IF(node->get_parent()) << "node " << node->get_name() << "have 4 children, so parent should be nullptr";
     // case 4: size is 4
     auto* copy_left_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
     auto* copy_right_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
@@ -674,14 +666,13 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     std::ranges::for_each(left_children, [&](Node* child) { connect(copy_left_node, child); });
     auto right_children = std::vector<Node*>(children.begin() + 2, children.end());
     std::ranges::for_each(right_children, [&](Node* child) { connect(copy_right_node, child); });
-    if (node->isPin() && node->isLoad()) {
-      return two_child_refine(node);
-    }
     return node;
   };
 
   auto to_binary = [&](Node* node) {
+    node = pin_node_refine(node);
     auto children = node->get_children();
+    LOG_FATAL_IF(node->isSteiner() && children.empty()) << "steiner node but not children";
     if (children.empty()) {
       return node;
     }
@@ -689,7 +680,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
       return one_child_refine(node);
     }
     if (children.size() == 2) {
-      return (node->isPin() && node->isLoad()) ? two_child_refine(node) : node;
+      return node;
     }
     if (children.size() == 3) {
       return three_child_refine(node);
@@ -704,6 +695,10 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     stack.pop();
 
     cur = to_binary(cur);
+    if (cur == root) {
+      // driver_pin should be checked
+      cur = to_binary(cur);
+    }
     auto children = cur->get_children();
     if (children.empty()) {
       continue;

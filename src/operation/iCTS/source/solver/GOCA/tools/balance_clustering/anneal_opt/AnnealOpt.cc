@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <unordered_set>
 
 #include "TimingPropagator.hh"
 #include "TreeBuilder.hh"
@@ -76,6 +77,7 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
         best_solution = new_solution;
         _best_cost = _new_cost;
         best_update = true;
+        _no_change = 0;
       }
     } else {
       auto prob = std::exp(-delta_cost / temperature);
@@ -84,7 +86,8 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
       }
     }
     temperature *= cooling_rate;
-    iter++;
+    ++iter;
+    ++_no_change;
     // align the log
     auto update_label = best_update ? " *" : "";
     LOG_INFO_IF(log) << "  Iteration: " << std::left << std::setfill(' ') << std::setw(std::log10(_max_iter) + 1) << iter
@@ -102,6 +105,7 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
   LOG_INFO_IF(log) << "End AnnealOpt --- ";
   LOG_INFO << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost
            << "  Improvement: " << (init_cost - _best_cost) / init_cost * 100 << "%";
+  CTSAPIInst.saveToLog("Best Cost: ", _best_cost, "  Improvement: ", (init_cost - _best_cost) / init_cost * 100, "%");
   // remove empty
   best_solution.erase(
       std::remove_if(best_solution.begin(), best_solution.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
@@ -149,6 +153,9 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(Operation& o
   auto cur_both_cost = from_cost + to_cost;
 
   _new_cost = _cur_cost - pre_both_cost + cur_both_cost;
+  if (_new_cost < TimingPropagator::kEpsilon) {
+    _new_cost = 0;
+  }
   op.from_cost = from_cost;
   op.to_cost = to_cost;
   return new_solution;
@@ -268,16 +275,19 @@ size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<In
  */
 std::vector<size_t> AnnealOptInterface::findBoundId(const std::vector<Inst*>& cluster)
 {
-  std::vector<Point> bound;
-  std::ranges::transform(cluster, std::back_inserter(bound), [](const Inst* inst) { return inst->get_location(); });
+  std::vector<Point> points;
+  std::ranges::transform(cluster, std::back_inserter(points), [](const Inst* inst) { return inst->get_location(); });
+
+  auto bound = points;
   BalanceClustering::convexHull(bound);
-  auto is_on_bound = [&](const Inst* inst) {
+
+  auto is_on_bound = [&](const Inst* inst, std::vector<Point>& boundary) {
     auto loc = inst->get_location();
     auto x = loc.x();
     auto y = loc.y();
-    for (size_t i = 0; i < bound.size(); ++i) {
-      auto start = bound[i];
-      auto end = bound[(i + 1) % bound.size()];
+    for (size_t i = 0; i < boundary.size(); ++i) {
+      auto start = boundary[i];
+      auto end = boundary[(i + 1) % boundary.size()];
       auto cross = (end.x() - start.x()) * (y - start.y()) - (end.y() - start.y()) * (x - start.x());
       if (cross == 0) {
         return true;
@@ -285,14 +295,31 @@ std::vector<size_t> AnnealOptInterface::findBoundId(const std::vector<Inst*>& cl
     }
     return false;
   };
-  std::vector<size_t> bound_id;
+
+  points.clear();
+  std::unordered_set<size_t> bound_id;
   for (size_t i = 0; i < cluster.size(); ++i) {
     auto* inst = cluster[i];
-    if (is_on_bound(inst)) {
-      bound_id.push_back(i);
+    if (is_on_bound(inst, bound)) {
+      bound_id.insert(i);
+    } else {
+      points.push_back(inst->get_location());
     }
   }
-  return bound_id;
+  // // second convex hull opt
+  // if (_no_change > 15 && bound_id.size() < cluster.size()) {
+  //   // remove bound points in "points"
+  //   auto bound = points;
+  //   BalanceClustering::convexHull(bound);
+  //   for (size_t i = 0; i < cluster.size(); ++i) {
+  //     auto* inst = cluster[i];
+  //     if (is_on_bound(inst, bound)) {
+  //       bound_id.insert(i);
+  //     }
+  //   }
+  // }
+
+  return std::vector<size_t>(bound_id.begin(), bound_id.end());
 }
 /**
  * @brief init the cost map
@@ -449,7 +476,9 @@ double VioAnnealOpt::cost(Net* net)
   if (net == nullptr) {
     return 0;
   }
-  return _correct_coef * (capVioCost(net) + wireLengthVioCost(net) + skewVioCost(net) + fanoutVioCost(net));
+  return _correct_coef
+         * (_cap_coef * capVioCost(net) + _wirelength_coef * wireLengthVioCost(net) + _skew_coef * skewVioCost(net)
+            + _fanout_coef * fanoutVioCost(net));
 }
 /**
  * @brief design cost of the net

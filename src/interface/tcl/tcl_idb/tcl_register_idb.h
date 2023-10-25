@@ -46,6 +46,7 @@ int registerCmdDB()
   registerTclCmd(CmdSaveDef, "def_save");
   registerTclCmd(CmdSaveNetlist, "netlist_save");
   registerTclCmd(CmdSaveGDS, "gds_save");
+  registerTclCmd(CmdGenerateMPScript, "aimp_random");
 
   /// idb operator
   registerTclCmd(CmdIdbSetNet, "set_net");

@@ -355,7 +355,7 @@ Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas)
   if (areas.size() == 2) {
     parent = merge(areas.front(), areas.back());
   } else {
-    auto clusters = kMeans(areas, 2);
+    auto clusters = kMeansPlus(areas, 2);
     auto* left = biCluster(clusters.front());
     auto* right = biCluster(clusters.back());
     parent = merge(left, right);
@@ -366,8 +366,8 @@ Area* BoundSkewTree::biCluster(const std::vector<Area*>& areas)
   parent->set_location(loc);
   return parent;
 }
-std::vector<std::vector<Area*>> BoundSkewTree::kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed,
-                                                      const size_t& max_iter) const
+std::vector<std::vector<Area*>> BoundSkewTree::kMeansPlus(const std::vector<Area*>& areas, const size_t& k, const int& seed,
+                                                          const size_t& max_iter) const
 {
   std::vector<std::vector<Area*>> best_clusters(k);
 

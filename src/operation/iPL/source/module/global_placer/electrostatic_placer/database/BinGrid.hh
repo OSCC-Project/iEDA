@@ -111,8 +111,8 @@ class BinGrid
 inline BinGrid::BinGrid(GridManager* grid_manager)
     : _grid_manager(grid_manager), _thread_nums(1), _overflow_area_wfiller(INT64_MIN), _overflow_area_wofiller(INT64_MIN)
 {
-  _bin_cnt_x = _grid_manager->get_grid_size_x();
-  _bin_cnt_y = _grid_manager->get_grid_size_y();
+  _bin_cnt_x = _grid_manager->get_grid_cnt_x();
+  _bin_cnt_y = _grid_manager->get_grid_cnt_y();
   _bin_size_x = _grid_manager->get_grid_size_x();
   _bin_size_y = _grid_manager->get_grid_size_y();
 

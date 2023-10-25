@@ -14,23 +14,38 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #pragma once
 
-#include "tcl_egr.h"
-#include "tcl_rt.h"
+#include "LGMethodInterface.hh"
 
-using namespace ieda;
+namespace ipl {
+class LGInstance;
+class LGInterval;
+template <class T>
+class Rectangle;
+}  // namespace ipl
 
-namespace tcl {
+namespace ieda_solver {
 
-int registerCmdRT()
+class LGCustomization : public LGMethodInterface
 {
-  registerTclCmd(TclRunEGR, "run_egr");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunRT, "run_rt");
-  registerTclCmd(TclReportTiming, "report_timing");
-  return EXIT_SUCCESS;
-}
+ public:
+  LGCustomization();
+  LGCustomization(const LGCustomization&) = delete;
+  LGCustomization(LGCustomization&&) = delete;
+  ~LGCustomization();
 
-}  // namespace tcl
+  LGCustomization& operator=(const LGCustomization&) = delete;
+  LGCustomization& operator=(LGCustomization&&) = delete;
+
+  void initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database) override;
+  bool isInitialized() override;
+  void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) override;
+  bool runLegalization() override;
+  bool runIncrLegalization() override;
+
+ private:
+};
+
+}  // namespace ieda_solver

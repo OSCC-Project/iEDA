@@ -14,23 +14,31 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "LGMethodCreator.hh"
 
-#include "tcl_egr.h"
-#include "tcl_rt.h"
+#include "Abacus.hh"
+#include "LGCustomization.hh"
+#include "LGMethodInterface.hh"
 
-using namespace ieda;
+namespace ieda_solver {
 
-namespace tcl {
-
-int registerCmdRT()
+LGMethodInterface* LGMethodCreator::createMethod(LG_METHOD method_type)
 {
-  registerTclCmd(TclRunEGR, "run_egr");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunRT, "run_rt");
-  registerTclCmd(TclReportTiming, "report_timing");
-  return EXIT_SUCCESS;
+  LGMethodInterface* method = nullptr;
+
+  switch (method_type) {
+    case LG_METHOD::kAbacus:
+      method = new Abacus();
+      break;
+    case LG_METHOD::kCustomized:
+      method = new LGCustomization();
+      break;
+
+    default:
+      break;
+  }
+
+  return method;
 }
 
-}  // namespace tcl
+}  // namespace ieda_solver

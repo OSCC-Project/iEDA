@@ -23,15 +23,12 @@
 #include "config/LegalizerConfig.hh"
 #include "database/LGDatabase.hh"
 
+namespace ieda_solver {
+class LGMethodCreator;
+}
 namespace ipl {
 
 #define LegalizerInst (ipl::Legalizer::getInst())
-
-enum class LG_METHOD
-{
-  kNone,
-  kAbacus
-};
 
 enum class LG_MODE
 {
@@ -63,7 +60,7 @@ class Legalizer
   LGConfig _config;
   LGDatabase _database;
   std::vector<LGInstance*> _target_inst_list;
-  LGMethodInterface* _method;
+  ieda_solver::LGMethodInterface* _method;
 
   Legalizer() = default;
   Legalizer(const Legalizer&) = delete;

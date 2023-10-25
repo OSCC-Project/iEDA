@@ -56,6 +56,12 @@ class TimingDBAdapter {
     LOG_FATAL << "The function is not implemented.";
     return 1;
   }
+
+  virtual unsigned BuildRCTreeWithRoutingSegment() {
+    LOG_FATAL << "The function is not implemented.";
+    return 1;
+  }
+
   Netlist* getNetlist() { return _ista->get_netlist(); }
 
  protected:
