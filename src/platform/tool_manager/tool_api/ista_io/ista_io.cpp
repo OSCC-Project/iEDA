@@ -272,6 +272,39 @@ bool StaIO::reportTiming()
 
   return true;
 }
+
+void StaIO::buildNetGraph()
+{
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  timing_engine->initRcTree();
+  ista::Netlist* sta_netlist = timing_engine->get_netlist();
+
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto* idb_nets = idb_design->get_net_list();
+
+  for (auto* idb_net : idb_nets->get_net_list()) {
+    ista::Net* ista_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
+
+    /// build pin
+    auto* idb_io_pin = idb_net->get_io_pin();
+    if (idb_io_pin != nullptr) {
+    }
+
+    auto* idb_inst_pins = idb_net->get_instance_pin_list();
+    if (idb_inst_pins != nullptr) {
+    }
+
+    /// build wire
+    auto* idb_wires = idb_net->get_wire_list();
+    for (auto* idb_wires : idb_wires->get_wire_list()) {
+      for (auto* idb_segment : idb_wires->get_segment_list()) {
+        /// build segment
+        ista::RctNode* rct_node = nullptr;
+      }
+    }
+  }
+}
 /**
  * @brief get all the clock net name list for this design
  *
