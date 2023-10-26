@@ -16,7 +16,9 @@ port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
 // To do (.v before DC)
 // port_bus_list 
 wire_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
-wire_list_with_scalar_constant = { (scalar_constant | port_or_wire_id) ~ (("," ~ scalar_constant) | ("," ~ port_or_wire_id))* }
+first_wire_list_with_scalar_constant = _{ scalar_constant | port_or_wire_id }
+next_wire_list_with_scalar_constant = _{ (("," ~ scalar_constant) | ("," ~ port_or_wire_id))* }
+wire_list_with_scalar_constant = _{ first_wire_list_with_scalar_constant ~ next_wire_list_with_scalar_constant }
 
 inst_or_cell_id = { char+ }
 module_id = { char+ }
@@ -36,9 +38,10 @@ wire_block_declaration = { wire_declaration+ }
 //(ps:first_port_connection) second rule adapt to .FBDIV({  \u0_rcg/n33 ,  \u0_rcg/n33 ,  \u0_rcg/n33 })
 //(ps:first_port_connection) or .io_master_bid({ 1'b0,1'b0,io_master_bid_041461 }) (begin)
 //or .io_master_bresp({ io_master_bresp_041461_1_, 1'b0 }) (end) or .rid_nic400_axi4_ps2({ 1'b0,1'b0,rid_nic400_axi4_ps2_1_,1'b0 }) (begin_end)
-first_port_connection = { ("." ~ port_or_wire_id ~ "(" ~ ( scalar_constant | port_or_wire_id )? ~ ")") 
-| ( "." ~ port_or_wire_id ~ "(" ~ "{" ~ wire_list_with_scalar_constant ~ "}" ~ ")" ) }
-port_connection = { "," ~ first_port_connection }
+first_port_connection_single_connect = { "." ~ port_or_wire_id ~ "(" ~ ( scalar_constant | port_or_wire_id )? ~ ")" }
+first_port_connection_multiple_connect = { "." ~ port_or_wire_id ~ "(" ~ "{" ~ wire_list_with_scalar_constant ~ "}" ~ ")" }
+first_port_connection = _{ first_port_connection_single_connect | first_port_connection_multiple_connect }
+port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
 
 inst_declaration = ${ inst_or_cell_id ~ WHITESPACE ~ inst_or_cell_id ~ WHITESPACE ~ port_block_connection }

@@ -1,4 +1,5 @@
 use std::fmt;
+
 pub trait VerilogVirtualBaseID {
     fn is_bus_index_id(&self) -> u32 {
         0
@@ -15,7 +16,7 @@ pub trait VerilogVirtualBaseID {
 
 impl fmt::Debug for dyn VerilogVirtualBaseID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "VerilogVirtualBaseID {{ id: {} }}", self.get_name())
+        write!(f, "VerilogVirtualBaseID {{ id: {:?} }}", self.get_name())
     }
 }
 
@@ -48,8 +49,11 @@ impl VerilogVirtualBaseID for VerilogID {
     }
 }
 
-
-
+impl Default for VerilogID {
+    fn default() -> Self {
+        VerilogID { id: String::new() }
+    }
+}
 
 #[repr(C)]
 pub struct VerilogIndexID {
@@ -139,8 +143,17 @@ pub trait VerilogVirtualBaseNetExpr {
     fn is_constant(&self) -> u32 {
         0
     }
-    fn get_verilog_id(&self) -> &VerilogID {
+    fn get_verilog_id(&self) ->&Box<dyn VerilogVirtualBaseID> {
         panic!("This is unknown value.");
+    }
+    fn get_verilog_ids(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
+        panic!("This is unknown value.");
+    }
+}
+
+impl fmt::Debug for dyn VerilogVirtualBaseNetExpr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "VerilogVirtualBaseNetExpr {{ verilog_id: {:?} }}", self.get_verilog_id())
     }
 }
 
@@ -179,7 +192,7 @@ impl VerilogNetIDExpr {
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
         &self.net_expr
     }
-    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+    pub fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
 }
@@ -188,9 +201,9 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     fn is_id_expr(&self) -> u32 {
         1
     }
-    // fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
-    //     &self.verilog_id
-    // }
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        &self.verilog_id
+    }
 }
 
 /// such as { 2'b00, _0_ }
@@ -215,7 +228,7 @@ impl VerilogNetConcatExpr {
         &self.net_expr
     }
     //get_verilog_id_concat
-    fn get_verilog_id(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
+    fn get_verilog_ids(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
         &self.verilog_id_concat
     }
 }
@@ -224,10 +237,14 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
     fn is_concat_expr(&self) -> u32 {
         1
     }
-    //get_verilog_id_concat
-    // fn get_verilog_id(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
-    //     &self.verilog_id_concat
-    // }
+    // get_verilog_id_concat
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        &self.verilog_id_concat.first().unwrap()
+    }
+
+    fn get_verilog_ids(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
+        &self.verilog_id_concat
+    }
 }
 
 /// 1'b0 or 1'b1.
@@ -251,7 +268,7 @@ impl VerilogConstantExpr {
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
         &self.net_expr
     }
-    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+    pub fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
     // get_verilog_id should realize in impl struct or impl trait? (according to simpleAttr, supposed to be struct)
@@ -261,19 +278,23 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     fn is_constant(&self) -> u32 {
         1
     }
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        &self.verilog_id
+    }
 }
 
 /// The port connection such as .port_id(net_id).
 #[repr(C)]
+#[derive(Debug)]
 pub struct VerilogPortRefPortConnect {
     port_id: Box<dyn VerilogVirtualBaseID>,
-    net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
+    net_expr: Option<Box<dyn VerilogVirtualBaseNetExpr>>,
 }
 
 impl VerilogPortRefPortConnect {
     pub fn new(
         port_id: Box<dyn VerilogVirtualBaseID>,
-        net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
+        net_expr: Option<Box<dyn VerilogVirtualBaseNetExpr>>,
     ) -> VerilogPortRefPortConnect {
         VerilogPortRefPortConnect {
             port_id: port_id,
@@ -285,7 +306,7 @@ impl VerilogPortRefPortConnect {
         &self.port_id
     }
 
-    pub fn get_net_expr(&self) -> &Box<dyn VerilogVirtualBaseNetExpr> {
+    pub fn get_net_expr(&self) -> &Option<Box<dyn VerilogVirtualBaseNetExpr>> {
         &self.net_expr
     }
 }
@@ -336,6 +357,8 @@ impl VerilogStmt {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
 pub struct VerilogInst {
     stmt: VerilogStmt,  //stmt denote line_no 
     inst_name: String,
@@ -353,7 +376,7 @@ impl VerilogInst {
         VerilogInst {
             stmt: VerilogStmt::new(line_no),  
             inst_name: inst_name.to_string(),          // add for other to do 
-            cell_name: inst_name.to_string(),
+            cell_name: cell_name.to_string(),
             port_connections: port_connections,  
         }
     }
@@ -539,6 +562,8 @@ pub enum PortDclType {
     KOutputReg = 7,
 }
 
+#[repr(C)]
+#[derive(Debug)]
 pub struct VerilogModule {
     stmt: VerilogStmt,  //stmt denote line_no 
     module_name: String,
@@ -584,15 +609,6 @@ impl VerilogVirtualBaseStmt for VerilogModule {
         self.stmt.get_line_no()
     }
 }
-
-// #[repr(C)]
-// pub enum VerilogParserData {
-//     GroupStmt(LibertyGroupStmt),
-//     ComplexStmt(LibertyComplexAttrStmt),
-//     SimpleStmt(LibertySimpleAttrStmt),
-//     String(LibertyStringValue),
-//     Float(LibertyFloatValue),
-// }
 
 
 
