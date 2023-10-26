@@ -64,7 +64,7 @@ void PLAPI::reportPLInfo()
   }
 
   // report congestion
-  reportCongestionInfo(summary_stream);
+  // reportCongestionInfo(summary_stream);
 
   summary_stream.close();
 
