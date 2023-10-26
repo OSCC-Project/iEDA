@@ -12,13 +12,16 @@ use pest::iterators::Pairs;
 #[grammar = "verilog_parser/grammar/verilog.pest"]
 pub struct VerilogParser;
 
-fn process_module_id(pair: Pair<Rule>) -> Result<String, pest::error::Error<Rule>> {
+fn process_module_id(pair: Pair<Rule>) -> Result<&str, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
     // println!("{:?}", pair);
     // println!("{:?}", pair_clone);
-    match pair_clone.as_str().parse::<String>() {
-        Ok(value) => Ok(value.trim_matches('"').to_string()),
-        Err(_) => Err(pest::error::Error::new_from_span(
+    match pair_clone.as_rule() {
+        Rule::module_id => {
+            let module_name = pair_clone.as_str();
+            Ok(module_name)
+        }
+        _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse module id".into() },
             pair_clone.as_span(),
         )),
@@ -250,6 +253,7 @@ fn build_verilog_virtual_base_id(input: &str) -> Box<dyn verilog_data::VerilogVi
 
 
 fn process_first_port_connection_single_connect(pair: Pair<Rule>)->Result<Box<verilog_data::VerilogPortRefPortConnect>, pest::error::Error<Rule>> {
+    println!("{:#?}", pair);
     let pair_clone = pair.clone();
     let mut inner_pairs = pair.into_inner();
     let length = inner_pairs.clone().count();
@@ -407,8 +411,8 @@ fn process_inst_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::Ve
     match pair.as_rule() {
         Rule::inst_declaration => {
             println!("{:#?}", pair);
-            let verilog_dcls = process_inner_inst_declaration(pair);
-            verilog_dcls
+            let verilog_inst = process_inner_inst_declaration(pair);
+            verilog_inst
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -449,8 +453,7 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
     // add the module_id,port_list,port_block_declaration,wire_block_declaration,inst_block_declaration datastructure to store the processed data.
     let file_name = "tbd";
     let line_no = 0;
-    let mut verilog_module = verilog_data::VerilogModule::new(1, "MyModule", vec![], vec![]);
-    let mut module_name;
+    let mut module_name = " ";
     let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
     // first verilog_dcl push to verilog_dcls, then verilog_dcls push to module_stmts
     // let mut verilog_dcls: Vec<Box<dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
@@ -474,6 +477,7 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
                         // record line_no,file_name
                         Rule::module_id => {
                             module_name = process_module_id(inner_pair).unwrap();
+                            println!("{:#?}", module_name);
                         }
                         Rule::port_list => {
                             // process_port_list(inner_pair);
@@ -505,10 +509,10 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
                         Rule::inst_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
                                 // println!("{:#?}", inner_inner_pair);
-                                let verilog_dcls =  process_inst_declaration(inner_inner_pair).unwrap();
+                                let verilog_inst =  process_inst_declaration(inner_inner_pair).unwrap();
                                 // at the positon, only print trait debug.
-                                println!("{:#?}", verilog_dcls);
-                                module_stmts.push(verilog_dcls);
+                                println!("{:#?}", verilog_inst);
+                                module_stmts.push(verilog_inst);
                             }
                             // let _a = 0;
                         }
@@ -530,10 +534,11 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
     }
 
     // store the verilogModule.
-
+    let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
+    println!("{:#?}", verilog_module);
     // delete later
     Ok(verilog_module)
-    //Err(pest::error::Error::new_from_span(pest::error::ErrorVariant::CustomError { message: "Unknown rule" }, span))
+    
 }
 
 
