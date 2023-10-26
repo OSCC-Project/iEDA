@@ -9,7 +9,7 @@
 use std::collections::{HashMap, VecDeque};
 
 /// VCD signal bit value.
-enum VCDBit {
+pub enum VCDBit {
     BitZero(u8),
     BitOne(u8),
     BitX(u8),
@@ -17,20 +17,20 @@ enum VCDBit {
 }
 
 /// VCD value type.
-enum VCDValue {
+pub enum VCDValue {
     BitScalar(VCDBit),
     BitVector(Vec<VCDBit>),
     BitReal(f64),
 }
 
 /// VCD signal value, include time and value
-struct VCDTimeAndValue {
+pub struct VCDTimeAndValue {
     time: u64,
     value: VCDValue,
 }
 
 /// VCD variable type of vcd signal
-enum VCDVariableType {
+pub enum VCDVariableType {
     VarEvent,
     VarInteger,
     VarParameter,
@@ -52,7 +52,7 @@ enum VCDVariableType {
 }
 
 /// VCD signal
-struct VCDSignal<'a> {
+pub struct VCDSignal<'a> {
     hash: String,
     reference_name: String,
     signal_size: u32,
@@ -63,7 +63,7 @@ struct VCDSignal<'a> {
 }
 
 /// VCD Scope type
-enum VCDScopeType {
+pub enum VCDScopeType {
     ScopeBegin,
     ScopeFork,
     ScopeFunction,
@@ -73,16 +73,47 @@ enum VCDScopeType {
 }
 
 /// VCD Scope
-struct VCDScope<'a> {
+pub struct VCDScope<'a> {
     name: String,
     scope_type: VCDScopeType,
-    parent_scope: &'a VCDScope<'a>,
+    parent_scope: Option<&'a VCDScope<'a>>,
     children_scopes: Vec<Box<VCDScope<'a>>>,
     scope_signals: Vec<Box<VCDSignal<'a>>>,
 }
 
+impl<'a> VCDScope<'a> {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            scope_type: VCDScopeType::ScopeModule,
+            parent_scope: None,
+            children_scopes: Default::default(),
+            scope_signals: Default::default(),
+        }
+    }
+
+    pub fn set_scope_type(&mut self, type_str: &str) {
+        match type_str {
+            "module" => self.scope_type = VCDScopeType::ScopeModule,
+            "begin" => self.scope_type = VCDScopeType::ScopeBegin,
+            "fork" => self.scope_type = VCDScopeType::ScopeFork,
+            "function" => self.scope_type = VCDScopeType::ScopeFunction,
+            "task" => self.scope_type = VCDScopeType::ScopeTask,
+            _ => panic!("unknown scope type {}", type_str),
+        }
+    }
+
+    pub fn set_parent_scope(&mut self, parent_scope: &'a VCDScope) {
+        self.parent_scope = Some(parent_scope);
+    }
+
+    pub fn add_child_scope(&mut self, child_scope: Box<VCDScope<'a>>) {
+        self.children_scopes.push(child_scope);
+    }
+}
+
 /// VCD time unit
-enum VCDTimeUnit {
+pub enum VCDTimeUnit {
     UnitSecond,
     UnitMS,
     UnitNS,
@@ -91,14 +122,85 @@ enum VCDTimeUnit {
 }
 
 /// VCD File
-struct VCDFile<'a> {
+pub struct VCDFile<'a> {
     start_time: i64,
     end_time: i64,
     time_unit: VCDTimeUnit,
-    time_resulution: u32,
+    time_resolution: u32,
     date: String,
     version: String,
     comment: String,
-    scope_root: Box<VCDScope<'a>>,
+    scope_root: Option<Box<VCDScope<'a>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
+}
+
+impl<'a> VCDFile<'a> {
+    pub fn new() -> Self {
+        Self {
+            start_time: 0,
+            end_time: 0,
+            time_unit: VCDTimeUnit::UnitNS,
+            time_resolution: 0,
+            date: Default::default(),
+            version: Default::default(),
+            comment: Default::default(),
+            scope_root: Default::default(),
+            signal_values: Default::default(),
+        }
+    }
+
+    pub fn set_date(&mut self, date_text: String) {
+        self.date = date_text;
+    }
+
+    pub fn set_time_unit(&mut self, time_unit: &str) {
+        match time_unit {
+            "s" => self.time_unit = VCDTimeUnit::UnitSecond,
+            "ms" => self.time_unit = VCDTimeUnit::UnitMS,
+            "ns" => self.time_unit = VCDTimeUnit::UnitNS,
+            "ps" => self.time_unit = VCDTimeUnit::UnitPS,
+            "fs" => self.time_unit = VCDTimeUnit::UnitFS,
+            _ => panic!("unknown time unit {}", time_unit),
+        }
+    }
+
+    pub fn set_time_resolution(&mut self, time_resolution: u32) {
+        self.time_resolution = time_resolution;
+    }
+
+    pub fn set_comment(&mut self, comment: String) {
+        self.comment = comment;
+    }
+}
+
+/// VCD File parser
+pub struct VCDFileParser<'a> {
+    vcd_file: VCDFile<'a>,
+    scope_stack: VecDeque<VCDScope<'a>>,
+}
+
+impl<'a> VCDFileParser<'a> {
+    pub fn new() -> Self {
+        Self {
+            vcd_file: VCDFile::new(),
+            scope_stack: VecDeque::new(),
+        }
+    }
+
+    pub fn get_vcd_file(&mut self) -> &mut VCDFile<'a> {
+        return &mut self.vcd_file;
+    }
+
+    pub fn get_vcd_file_imute(self) -> VCDFile<'a> {
+        return self.vcd_file;
+    }
+
+    pub fn get_scope_stack(&'a mut self) -> &'a mut VecDeque<VCDScope<'a>> {
+        return &mut self.scope_stack;
+    }
+}
+
+/// unified vcd data structure
+pub enum VCDParserData<'a> {
+    FileData(VCDFile<'a>),
 }

@@ -2,17 +2,21 @@ WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
 /* header */
 
-scale_unit   = _{ "s" | "ms" | "us" | "ns" | "ps" | "fs" }
-scale_number = _{ ASCII_DIGIT+ }
-scale        = @{ scale_number ~ scale_unit }
+scale_unit   = { "s" | "ms" | "us" | "ns" | "ps" | "fs" }
+scale_number = { ASCII_DIGIT+ }
+scale_text   = { scale_number ~ scale_unit }
 
-header_text = { (!"$" ~ ANY)+ }
-date        = { "$date" ~ header_text ~ "$end" }
-timescale   = { "$timescale" ~ scale ~ "$end" }
+header_text = _{ (!"$" ~ ANY)+ }
 
-vcd_comment = { "$comment" ~ header_text ~ "$end" }
+date_text =  { header_text }
+date      = _{ "$date" ~ date_text ~ "$end" }
 
-header_section = {
+timescale = _{ "$timescale" ~ scale_text ~ "$end" }
+
+comment_text =  { header_text }
+vcd_comment  = _{ "$comment" ~ comment_text ~ "$end" }
+
+header_section = _{
     date ~ timescale ~ vcd_comment
 }
 
@@ -31,13 +35,15 @@ variable = {
     "$var" ~ variable_type ~ variable_number ~ variable_ref ~ module_var_name ~ (bus_slice)? ~ "$end"
 }
 
-open_scope  = { "$scope" ~ "module" ~ module_var_name ~ "$end" }
+scope_type = { "module" | "begin" | "fork" | "function" | "task" }
+
+open_scope  = { "$scope" ~ scope_type ~ module_var_name ~ "$end" }
 close_scope = { "$upscope" ~ "$end" }
 
-scope  = { open_scope ~ (scope | variable)+ ~ close_scope }
-scopes = { scope+ }
+scope  =  { open_scope ~ (scope | variable)+ ~ close_scope }
+scopes = _{ scope+ }
 
-variable_definition_section = { scopes ~ "$enddefinitions" ~ "$end" }
+variable_definition_section = _{ scopes ~ "$enddefinitions" ~ "$end" }
 
 /* change */
 scalar_num = { "0" | "1" | "x" | "X" | "z" | "Z" }
@@ -54,11 +60,11 @@ vector_value_change = { (bin_num | real_num) ~ variable_ref }
 
 signal_value_change = { scalar_value_change | vector_value_change }
 
-value_change         = {
+value_change         =  {
     simulation_time ~ simulation_keyword ~ (signal_value_change)* ~ "$end"
   | simulation_time ~ (signal_value_change)*
 }
-value_change_section = { value_change+ }
+value_change_section = _{ value_change+ }
 
 vcd_file = {
     SOI ~ header_section ~ variable_definition_section ~ value_change_section ~ EOI
