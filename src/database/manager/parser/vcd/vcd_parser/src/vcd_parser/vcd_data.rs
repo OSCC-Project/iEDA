@@ -6,7 +6,10 @@
 //! 5) VCDScope
 //! 6) VCDFile
 
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
+use std::sync::Arc;
 
 /// VCD signal bit value.
 pub enum VCDBit {
@@ -76,9 +79,9 @@ pub enum VCDScopeType {
 pub struct VCDScope<'a> {
     name: String,
     scope_type: VCDScopeType,
-    parent_scope: Option<&'a VCDScope<'a>>,
-    children_scopes: Vec<Box<VCDScope<'a>>>,
-    scope_signals: Vec<Box<VCDSignal<'a>>>,
+    parent_scope: Option<Rc<RefCell<VCDScope<'a>>>>,
+    children_scopes: Vec<Rc<RefCell<VCDScope<'a>>>>,
+    scope_signals: Vec<Rc<VCDSignal<'a>>>,
 }
 
 impl<'a> VCDScope<'a> {
@@ -103,11 +106,11 @@ impl<'a> VCDScope<'a> {
         }
     }
 
-    pub fn set_parent_scope(&mut self, parent_scope: &'a VCDScope) {
+    pub fn set_parent_scope(&mut self, parent_scope: Rc<RefCell<VCDScope<'a>>>) {
         self.parent_scope = Some(parent_scope);
     }
 
-    pub fn add_child_scope(&mut self, child_scope: Box<VCDScope<'a>>) {
+    pub fn add_child_scope(&mut self, child_scope: Rc<RefCell<VCDScope<'a>>>) {
         self.children_scopes.push(child_scope);
     }
 }
@@ -130,7 +133,7 @@ pub struct VCDFile<'a> {
     date: String,
     version: String,
     comment: String,
-    scope_root: Option<Box<VCDScope<'a>>>,
+    scope_root: Option<Arc<VCDScope<'a>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
 }
 
@@ -176,7 +179,7 @@ impl<'a> VCDFile<'a> {
 /// VCD File parser
 pub struct VCDFileParser<'a> {
     vcd_file: VCDFile<'a>,
-    scope_stack: VecDeque<VCDScope<'a>>,
+    scope_stack: VecDeque<Rc<RefCell<VCDScope<'a>>>>,
 }
 
 impl<'a> VCDFileParser<'a> {
@@ -195,7 +198,7 @@ impl<'a> VCDFileParser<'a> {
         return self.vcd_file;
     }
 
-    pub fn get_scope_stack(&'a mut self) -> &'a mut VecDeque<VCDScope<'a>> {
+    pub fn get_scope_stack(&mut self) -> &mut VecDeque<Rc<RefCell<VCDScope<'a>>>> {
         return &mut self.scope_stack;
     }
 }

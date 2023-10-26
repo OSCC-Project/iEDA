@@ -6,6 +6,7 @@ use pest::iterators::Pair;
 
 pub mod vcd_data;
 use std::rc::Rc;
+use std::sync::Mutex;
 
 #[derive(Parser)]
 #[grammar = "vcd_parser/grammar/grammar.pest"]
@@ -51,7 +52,7 @@ fn process_comment(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePars
 }
 
 /// process scope.
-fn process_open_scope<'a>(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
     let mut inner_pairs = pair.into_inner().into_iter();
     let pair_type = inner_pairs.next().unwrap();
     let scope_type = pair_type.as_str();
@@ -59,14 +60,22 @@ fn process_open_scope<'a>(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDF
     let pair_module = inner_pairs.next_back().unwrap();
     let module_name = pair_module.as_str();
 
-    let mut new_scope = Box::new(vcd_data::VCDScope::new(String::from(module_name)));
-    new_scope.set_scope_type(&scope_type);
+    let new_scope = Rc::new(RefCell::new(vcd_data::VCDScope::new(String::from(
+        module_name,
+    ))));
+    new_scope.borrow_mut().set_scope_type(&scope_type);
 
-    // if !vcd_file_parser.get_scope_stack().is_empty() {
-    //     let parent_scope = scope_stack.back_mut().unwrap();
-    //     new_scope.set_parent_scope(parent_scope);
-    //     parent_scope.add_child_scope(new_scope);
-    // }
+    let mut scope_stack = vcd_file_parser.get_scope_stack();
+
+    if !scope_stack.is_empty() {
+        let parent_scope = scope_stack.back_mut().unwrap();
+
+        new_scope
+            .borrow_mut()
+            .set_parent_scope(Rc::clone(&*parent_scope));
+
+        parent_scope.borrow_mut().add_child_scope(new_scope);
+    }
 }
 
 /// process vcd data.
