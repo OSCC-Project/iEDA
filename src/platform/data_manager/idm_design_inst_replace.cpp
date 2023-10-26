@@ -53,11 +53,15 @@ void DataManager::place_macro_generate_tcl(std::string directory, std::string tc
 {
   // 写出摆放macro的脚本
   int index = 0;
+  int iterate_index = 0;
+
   while (index < number) {
     std::string tcl_path = directory + "/" + tcl_name + "_" + std::to_string(index) + ".tcl";
     if (true == place_macro_loc_rand(tcl_path)) {
       ++index;
     }
+
+    std::cout << " iterate_index = " << iterate_index++ << std::endl;
   }
 }
 
@@ -81,16 +85,20 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
     return (left1 < right2 && right1 > left2 && top1 < bottom2 && bottom1 > top2);
   };
 
-  int size_x = 100, size_y = 100;
+  int size_x = 200, size_y = 200;
   std::vector<std::vector<bool>> mask_map(size_x, std::vector<bool>(size_y, false));
 
-  double grid_width = _layout->get_core()->get_bounding_box()->get_width() / size_x;
-  double grid_height = _layout->get_core()->get_bounding_box()->get_height() / size_y;
-  int llx = _layout->get_core()->get_bounding_box()->get_low_x();
-  int lly = _layout->get_core()->get_bounding_box()->get_low_y();
-  int urx = _layout->get_core()->get_bounding_box()->get_high_x();
-  int ury = _layout->get_core()->get_bounding_box()->get_high_y();
+  double grid_width = _layout->get_die()->get_bounding_box()->get_width() / size_x;
+  double grid_height = _layout->get_die()->get_bounding_box()->get_height() / size_y;
+  int llx = _layout->get_die()->get_bounding_box()->get_low_x();
+  int lly = _layout->get_die()->get_bounding_box()->get_low_y();
+  int urx = _layout->get_die()->get_bounding_box()->get_high_x();
+  int ury = _layout->get_die()->get_bounding_box()->get_high_y();
+  double Avaliable_area = (double) (urx - llx) * (double) (ury - lly);
+  // std::cout << " grid_width = " << grid_width << " grid_height = " << grid_height << std::endl;
+  // std::cout << " llx = " << llx << " lly = " << lly << " urx = " << urx << " ury = " << ury << std::endl;
 
+  double total_area = 0.0;
   // Macro包含center_coor, orient, width, height(宽高可包含halo)
   std::vector<Macro> Avaliable_macro;
   // 将所有macro按大小排序存入Avalible_macro;
@@ -105,10 +113,13 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
         Macro macro(inst_id, inst_name, 0.0, 0.0, instance->get_orient(), instance->get_bounding_box()->get_width(),
                     instance->get_bounding_box()->get_height());
         Avaliable_macro.push_back(macro);
+        total_area += (double) instance->get_bounding_box()->get_width() * (double) instance->get_bounding_box()->get_height();
       }
     }
   }
   std::sort(Avaliable_macro.begin(), Avaliable_macro.end(), compareByArea);
+  // std::cout << " Avaliable_macro.size() = " << Avaliable_macro.size() << " total_area = " << total_area
+  //           << " Avaliable_area = " << Avaliable_area << std::endl;
 
   string orientations[] = {"R0", "MX", "R180", "MY"};
   for (int i = 0; i < Avaliable_macro.size(); i++) {
@@ -177,13 +188,15 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
         }
       }
     }
+    // std::cout << " falseGridPoints.size() = " << falseGridPoints.size() << std::endl;
     if (!falseGridPoints.empty()) {
       int random_number = rand() % (falseGridPoints.size() + 1);
       std::pair<int, int> selectedPoint = falseGridPoints[random_number];
       Avaliable_macro[i].center_x = selectedPoint.first * grid_width + grid_width / 2;
       Avaliable_macro[i].center_y = selectedPoint.second * grid_height + grid_height / 2;
     } else {
-      std::cout << "没有可选的false格点" << std::endl;
+      std::cout << "没有可选的false格点"
+                << " i = " << i << std::endl;
       return false;
     }
   }
