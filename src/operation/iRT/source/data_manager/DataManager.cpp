@@ -310,26 +310,6 @@ void DataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
   if (!idb_blockage_list->get_blockage_list().empty()) {
     LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
   }
-
-  // std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-
-  // LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
-
-  // // Artificial
-  // idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
-  // for (idb::IdbBlockage* idb_blockage : idb_blockage_list->get_blockage_list()) {
-  //   if (idb_blockage->is_routing_blockage()) {
-  //     idb::IdbRoutingBlockage* idb_routing_blockage = dynamic_cast<idb::IdbRoutingBlockage*>(idb_blockage);
-  //     for (idb::IdbRect* rect : idb_routing_blockage->get_rect_list()) {
-  //       Blockage blockage;
-  //       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-  //       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-  //       blockage.set_layer_idx(idb_routing_blockage->get_layer()->get_id());
-  //       blockage.set_is_artificial(true);
-  //       routing_blockage_list.push_back(std::move(blockage));
-  //     }
-  //   }
-  // }
 }
 
 void DataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
@@ -359,6 +339,9 @@ void DataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
       blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
       blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
       blockage.set_layer_idx(layer_shape->get_layer()->get_id());
+      if (blockage.get_real_rect().getArea() < DBL_ERROR) {
+        continue;
+      }
       if (layer_shape->get_layer()->is_routing()) {
         routing_blockage_list.push_back(std::move(blockage));
       } else if (layer_shape->get_layer()->is_cut()) {
@@ -390,6 +373,9 @@ void DataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
               blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
               blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
               blockage.set_layer_idx(layer_shape.get_layer()->get_id());
+              if (blockage.get_real_rect().getArea() < DBL_ERROR) {
+                continue;
+              }
               if (layer_shape.get_layer()->is_routing()) {
                 routing_blockage_list.push_back(std::move(blockage));
               } else if (layer_shape.get_layer()->is_cut()) {
@@ -404,6 +390,9 @@ void DataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
           blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
           blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
           blockage.set_layer_idx(idb_segment->get_layer()->get_id());
+          if (blockage.get_real_rect().getArea() < DBL_ERROR) {
+            continue;
+          }
           routing_blockage_list.push_back(std::move(blockage));
         }
       }
@@ -427,6 +416,7 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
       net.set_net_name(idb_net->get_net_name());
       net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
       wrapPinList(net, idb_net);
+      processEmptyShapePin(net);
       wrapDrivingPin(net, idb_net);
       net_list.push_back(std::move(net));
       number++;
@@ -465,6 +455,7 @@ bool DataManager::checkSkipping(idb::IdbNet* idb_net)
     return true;
   }
 
+  // check connect_type
   if (idb_net->get_connect_type() == idb::IdbConnectType::kNone) {
     idb_net->set_connect_type(idb::IdbConnectType::kSignal);
   }
@@ -517,6 +508,36 @@ void DataManager::wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin)
         cut_shape_list.push_back(std::move(pin_shape));
       }
     }
+  }
+}
+
+void DataManager::processEmptyShapePin(Net& net)
+{
+  std::vector<Pin>& pin_list = net.get_pin_list();
+
+  std::vector<irt_int> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    Pin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
+  }
+
+  irt_int legal_pin_idx = -1;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    Pin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      legal_pin_idx = i;
+      break;
+    }
+  }
+
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", net.get_net_name());
+  }
+
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
   }
 }
 
@@ -1175,12 +1196,14 @@ void DataManager::transBlockageList()
 
 void DataManager::makeBlockageList()
 {
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
   std::set<LayerRect, CmpLayerRectByXASC> routing_blockage_rect_set;
   for (Blockage& routing_blockage : routing_blockage_list) {
+    routing_blockage.set_real_rect(RTUtil::getRegularRect(routing_blockage.get_real_rect(), die.get_real_rect()));
     routing_blockage_rect_set.insert(LayerRect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx()));
   }
   routing_blockage_list.clear();
@@ -1193,6 +1216,7 @@ void DataManager::makeBlockageList()
   }
   std::set<LayerRect, CmpLayerRectByXASC> cut_blockage_rect_set;
   for (Blockage& cut_blockage : cut_blockage_list) {
+    cut_blockage.set_real_rect(RTUtil::getRegularRect(cut_blockage.get_real_rect(), die.get_real_rect()));
     cut_blockage_rect_set.insert(LayerRect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx()));
   }
   cut_blockage_list.clear();
@@ -1246,39 +1270,8 @@ void DataManager::buildNetList()
   }
 }
 
-void processPinList(Net& net)
-{
-  std::vector<Pin>& pin_list = net.get_pin_list();
-
-  std::vector<irt_int> empty_pin_idx_list;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    Pin& pin = pin_list[i];
-    if (pin.get_routing_shape_list().empty()) {
-      empty_pin_idx_list.push_back(i);
-    }
-  }
-
-  irt_int legal_pin_idx = -1;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    Pin& pin = pin_list[i];
-    if (!pin.get_routing_shape_list().empty()) {
-      legal_pin_idx = i;
-      break;
-    }
-  }
-
-  if (legal_pin_idx == -1) {
-    LOG_INST.error(Loc::current(), "There is no legal pin for net ", net.get_net_name());
-  }
-
-  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
-    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
-  }
-}
-
 void DataManager::buildPinList(Net& net)
 {
-  processPinList(net);
   transPinList(net);
   makePinList(net);
   checkPinList(net);
@@ -1298,16 +1291,19 @@ void DataManager::transPinList(Net& net)
 
 void DataManager::makePinList(Net& net)
 {
-  std::vector<Pin>& pin_list = net.get_pin_list();
+  Die& die = _database.get_die();
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::vector<Pin>& pin_list = net.get_pin_list();
 
   for (size_t pin_idx = 0; pin_idx < pin_list.size(); pin_idx++) {
     Pin& pin = pin_list[pin_idx];
     pin.set_pin_idx(static_cast<irt_int>(pin_idx));
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+      routing_shape.set_real_rect(RTUtil::getRegularRect(routing_shape.get_real_rect(), die.get_real_rect()));
       routing_shape.set_grid_rect(RTUtil::getClosedGridRect(routing_shape.get_real_rect(), gcell_axis));
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+      cut_shape.set_real_rect(RTUtil::getRegularRect(cut_shape.get_real_rect(), die.get_real_rect()));
       cut_shape.set_grid_rect(RTUtil::getClosedGridRect(cut_shape.get_real_rect(), gcell_axis));
     }
   }
@@ -1355,9 +1351,6 @@ void DataManager::buildDrivingPin(Net& net)
   LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
 }
 
-/**
- * 主要针对io_cell的pin_shape被blockage覆盖的问题
- */
 void DataManager::cutBlockageList()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
@@ -1380,7 +1373,7 @@ void DataManager::cutBlockageList()
           if (blockage_rect.get_layer_idx() != net_rect.get_layer_idx()) {
             continue;
           }
-          if (RTUtil::isInside(blockage_rect, net_rect)) {
+          if (RTUtil::isInside(blockage_rect, net_rect) || RTUtil::isInside(net_rect, blockage_rect)) {
             irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
             PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_rect, enlarged_size);
             enlarge_net_rect_set.insert(LayerRect(enlarged_rect, net_rect.get_layer_idx()));
