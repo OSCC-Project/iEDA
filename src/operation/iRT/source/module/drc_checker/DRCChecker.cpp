@@ -364,7 +364,7 @@ void DRCChecker::delEnvRectList(RegionQuery* region_query, const std::vector<DRC
         LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
       }
       if (!routing_region_map[layer_idx].remove(std::make_pair<>(rq_shape->get_enlarged_shape(), rq_shape))) {
-        LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
+        // LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
       }
     } else {
       // 从cut_net_shape_map中删除数据
@@ -385,7 +385,7 @@ void DRCChecker::delEnvRectList(RegionQuery* region_query, const std::vector<DRC
         LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
       }
       if (!cut_region_map[layer_idx].remove(std::make_pair<>(rq_shape->get_enlarged_shape(), rq_shape))) {
-        LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
+        // LOG_INST.error(Loc::current(), "There is no rect in net_", net_idx, "!");
       }
     }
     // 释放资源
@@ -481,7 +481,7 @@ void DRCChecker::checkMinSpacingByOther(RegionQuery* region_query, const std::ve
       PlanarRect enlarge_rect1 = RTUtil::getEnlargedRect(check_rect1, require_spacing);
       PlanarRect enlarge_rect2 = RTUtil::getEnlargedRect(check_rect2, require_spacing);
       if (!RTUtil::isOverlap(enlarge_rect1, check_rect2) && !RTUtil::isOverlap(enlarge_rect2, check_rect1)) {
-        LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
+        // LOG_INST.error(Loc::current(), "Spacing violation rect is not overlap!");
       }
       std::string rule_name;
       if (drc_rect.get_is_routing()) {
