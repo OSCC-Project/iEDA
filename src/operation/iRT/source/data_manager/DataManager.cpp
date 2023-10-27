@@ -1249,12 +1249,30 @@ void DataManager::buildNetList()
 void processPinList(Net& net)
 {
   std::vector<Pin>& pin_list = net.get_pin_list();
+
+  std::vector<irt_int> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    Pin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
+  }
+
+  irt_int legal_pin_idx = -1;
   for (size_t i = 0; i < pin_list.size(); i++) {
     Pin& pin = pin_list[i];
     if (!pin.get_routing_shape_list().empty()) {
-      continue;
+      legal_pin_idx = i;
+      break;
     }
-    pin.set_routing_shape_list(pin_list.front().get_routing_shape_list());
+  }
+
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", net.get_net_name());
+  }
+
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
   }
 }
 
