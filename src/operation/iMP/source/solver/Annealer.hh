@@ -14,6 +14,7 @@
 #include <functional>
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "Logger.hpp"
 namespace imp {
@@ -26,10 +27,6 @@ struct SAOption
   double start_temperature = 1000;
 };
 
-void test()
-{
-  std::cout << "test";
-}
 class SASolution
 {
  public:
@@ -49,35 +46,40 @@ class SimulateAnneal
   ~SimulateAnneal() = delete;
 };
 template <typename T>
-bool SASolve(T& solution, std::function<double(const T&)>& evaluate, std::function<void(T&)>& action, int max_iters, int num_actions,
-             double cool_rate, double temperature)
+std::vector<T> SASolve(T& solution, std::function<double(const T&)>& evaluate, std::function<void(T&)>& action, int max_iters,
+                       int num_actions, double cool_rate, double temperature)
 {
-  double curr_cost = evaluate(solution);
+  std::vector<T> historys;
+  double inital_temp = temperature;
+  double cur_cost = evaluate(solution);
   double last_cost = 0.;
   double temp_cost{0.}, delta_cost{0.}, random{0.};
   std::random_device r;
-  std::default_random_engine e1(r());
+  std::mt19937 e1(r());
   std::uniform_real_distribution<double> real_rand(0., 1.);
   // fast sa
   T solution_t = solution;
-  for (int iter = 0; iter < max_iters && temperature >= 0.1; ++iter) {
-    last_cost = curr_cost;
+  for (int iter = 0; iter < max_iters && temperature >= 0.01; ++iter) {
+    last_cost = cur_cost;
     for (int times = 0; times < num_actions; ++times) {
       action(solution_t);
       temp_cost = evaluate(solution_t);
-      delta_cost = temp_cost - curr_cost;
+      delta_cost = temp_cost - cur_cost;
       random = real_rand(e1);
-      if (delta_cost < 0 || exp(-delta_cost / temperature) > random) {
+      if (exp(-delta_cost * inital_temp / temperature) > random) {
         solution = solution_t;
-        curr_cost = temp_cost;
+        cur_cost = temp_cost;
       } else {
         solution_t = solution;
       }
     }
-    INFO("iter: ", iter, " temperature: ", temperature, " cost: ", curr_cost, " dis: ", curr_cost - last_cost);
+    INFO("iter: ", iter, " temperature: ", temperature, " cost: ", cur_cost, " dis: ", cur_cost - last_cost);
     temperature *= cool_rate;
+    if ((cur_cost - last_cost) != 0)
+      historys.push_back(solution);
   }
-  return true;
+
+  return historys;
 }
 }  // namespace imp
 

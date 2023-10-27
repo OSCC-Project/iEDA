@@ -3,6 +3,7 @@
 
 #include "Evaluator.hh"
 #include "NetList.hh"
+#include "PyPlot.hh"
 #include "SeqPair.hh"
 namespace imp {
 SeqPair::SeqPair(const size_t sz) : size(sz)  //, max_status(max_st)
@@ -138,22 +139,31 @@ inline T SpLocation<T>::pack(const std::vector<size_t>& pos, const std::vector<s
 
 double SpEvaluate::operator()(const SeqPair& sp)
 {
-  if (_pin_x_buffer.empty()) {
-    _pin_x_buffer.resize(_netlist._pin_x_off.size());
-    _pin_y_buffer.resize(_netlist._pin_x_off.size());
-    _lx_buffer = _netlist._lx;
-    _ly_buffer = _netlist._ly;
-  }
-  auto [bound_w, bound_h] = _get_locaton(sp, _netlist._dx, _netlist._dy, _lx_buffer, _ly_buffer);
-  for (size_t i = 0; i < _netlist._pin2vertex.size(); i++) {
-    size_t j = _netlist._pin2vertex[i];
-    _pin_x_buffer[i] = static_cast<double>(_netlist._region_lx + _lx_buffer[j] + _netlist._pin_x_off[i]) + _netlist._dx[j] / 2.0;
-    _pin_y_buffer[i] = static_cast<double>(_netlist._region_ly + _ly_buffer[j] + _netlist._pin_y_off[i]) + _netlist._dy[j] / 2.0;
-  }
-  double wl = hpwl(_pin_x_buffer, _pin_y_buffer, _netlist._net_span);
-  double A = std::max(bound_w - _netlist._region_dx, int64_t(0)) + std::max(bound_h - _netlist._region_dy, int64_t(0));
+  packing(sp);
 
-  return A;
+  double norm_wl = _wl / _avg_wl;
+
+  double norm_bound = std::max((_bound_dx * 1. - _netlist.region_dx * 1.) / (_netlist.region_dx * 1.), 0.)
+                      + std::max((_bound_dy * 1. - _netlist.region_dy * 1.) / (_netlist.region_dy * 1.), 0.);
+  // double norm_area = _bound_dx * _bound_dy / _netlist.sum_vertex_area;
+  // double norm_area = 0.;
+  double weight_hpwl = 0.7;
+
+  return (1 - weight_hpwl) * norm_bound + weight_hpwl * norm_wl;
+}
+void SpEvaluate::packing(const SeqPair& sp)
+{
+  auto [bound_w, bound_h] = _get_locaton(sp, _netlist.dx, _netlist.dy, _lx_buffer, _ly_buffer);
+  _bound_dx = bound_w;
+  _bound_dy = bound_h;
+  for (size_t i = 0; i < _netlist.pin2vertex.size(); i++) {
+    size_t j = _netlist.pin2vertex[i];
+    if (_netlist.pin2vertex[i] >= sp.size)
+      continue;
+    _pin_x_buffer[i] = static_cast<double>(_netlist.region_lx + _lx_buffer[j] + _netlist.pin_x_off[i]) + _netlist.dx[j] / 2.0;
+    _pin_y_buffer[i] = static_cast<double>(_netlist.region_ly + _ly_buffer[j] + _netlist.pin_y_off[i]) + _netlist.dy[j] / 2.0;
+  }
+  _wl = hpwl(_pin_x_buffer, _pin_y_buffer, _netlist.net_span, 16);
 }
 
 SpAction::SpAction(size_t size)
@@ -161,55 +171,95 @@ SpAction::SpAction(size_t size)
   std::random_device r;
   _gen = std::mt19937(r());
   _random_index = std::uniform_int_distribution<size_t>(size_t(0), size_t(size - 1));
-
-  auto index_pair = [&]() {
-    size_t first = _random_index(_gen);
-    size_t second = _random_index(_gen);
-    while (first == second) {
-      second = _random_index(_gen);
-    }
-    return std::make_pair(first, second);
-  };
-
-  auto pos_swap = [&](SeqPair& sp) {
-    auto [first, second] = index_pair();
-    std::swap(sp.pos[first], sp.pos[second]);
-  };
-
-  auto neg_swap = [&](SeqPair& sp) {
-    auto [first, second] = index_pair();
-    std::swap(sp.neg[first], sp.neg[second]);
-  };
-
-  auto double_swap = [&](SeqPair& sp) {
-    auto [first1, second1] = index_pair();
-    std::swap(sp.pos[first1], sp.pos[second1]);
-    auto [first2, second2] = index_pair();
-    std::swap(sp.neg[first2], sp.neg[second2]);
-  };
-
-  auto pos_insert = [&](SeqPair& sp) {
-    auto [first, second] = index_pair();
-    size_t val = sp.pos[first];
-    sp.pos.erase(std::begin(sp.pos) + first);
-    sp.pos.insert(std::begin(sp.pos) + second, val);
-  };
-
-  auto neg_insert = [&](SeqPair& sp) {
-    auto [first, second] = index_pair();
-    size_t val = sp.neg[first];
-    sp.neg.erase(std::begin(sp.neg) + first);
-    sp.neg.insert(std::begin(sp.neg) + second, val);
-  };
-
-  _actions = {pos_swap, neg_swap, double_swap, pos_insert, neg_insert};
-
+  _actions = {_pos_swap, _neg_swap, _double_swap, _pos_insert, _neg_insert};
   _random_probaility = std::discrete_distribution<size_t>({150, 150, 80, 100, 100});
 }
 
 void SpAction::operator()(SeqPair& sp)
 {
-  _actions[_random_probaility(_gen)](sp);
+  _actions[_random_probaility(_gen)](sp, this);
 }
 
+void SpAction::_pos_swap(SeqPair& sp, SpAction* action)
+{
+  auto [first, second] = action->index_pair();
+  std::swap(sp.pos[first], sp.pos[second]);
+}
+void SpAction::_neg_swap(SeqPair& sp, SpAction* action)
+{
+  auto [first, second] = action->index_pair();
+  std::swap(sp.neg[first], sp.neg[second]);
+};
+
+void SpAction::_double_swap(SeqPair& sp, SpAction* action)
+{
+  auto [first1, second1] = action->index_pair();
+  std::swap(sp.pos[first1], sp.pos[second1]);
+  auto [first2, second2] = action->index_pair();
+  std::swap(sp.neg[first2], sp.neg[second2]);
+};
+
+void SpAction::_pos_insert(SeqPair& sp, SpAction* action)
+{
+  auto [first, second] = action->index_pair();
+  size_t val = sp.pos[first];
+  sp.pos.erase(std::begin(sp.pos) + first);
+  sp.pos.insert(std::begin(sp.pos) + second, val);
+};
+
+void SpAction::_neg_insert(SeqPair& sp, SpAction* action)
+{
+  auto [first, second] = action->index_pair();
+  size_t val = sp.neg[first];
+  sp.neg.erase(std::begin(sp.neg) + first);
+  sp.neg.insert(std::begin(sp.neg) + second, val);
+};
+
+bool SpPlot::operator()(const SeqPair& sp, std::string filename)
+{
+  auto eval = SpEvaluate(_netlist);
+  eval(sp);
+  auto lx = eval.get_lx();
+  auto ly = eval.get_ly();
+  PyPlot<int64_t> plt;
+  for (size_t i = _netlist.num_cells; i < _netlist.num_cells + _netlist.num_clusters; i++) {
+    plt.addCluster(lx[i], ly[i], _netlist.dx[i], _netlist.dy[i]);
+  }
+  for (size_t i = _netlist.num_clusters; i < _netlist.num_macros + _netlist.num_clusters; i++) {
+    plt.addMacro(lx[i], ly[i], _netlist.dx[i], _netlist.dy[i]);
+  }
+  // size_t space = std::max(size_t(_netlist.net_span.size() / 500), size_t(1));
+  // for (size_t i = 0; i < _netlist.net_span.size() - 1; i += space) {
+  //   double x_0 = std::numeric_limits<double>::max(), y_0 = 0.;
+  //   double x_1 = 0., y_1 = std::numeric_limits<double>::max();
+  //   double x_2 = std::numeric_limits<double>::lowest(), y_2 = 0.;
+  //   double x_3 = 0., y_3 = std::numeric_limits<double>::lowest();
+  //   for (size_t j = _netlist.net_span[i]; j < _netlist.net_span[i + 1]; j++) {
+  //     double x = eval.get_pin_x().at(j);
+  //     double y = eval.get_pin_y().at(j);
+  //     if (x < x_0) {
+  //       x_0 = x;
+  //       y_0 = y;
+  //     }
+  //     if (y < y_1) {
+  //       x_1 = x;
+  //       y_1 = y;
+  //     }
+  //     if (x > x_2) {
+  //       x_2 = x;
+  //       y_2 = y;
+  //     }
+  //     if (y > y_3) {
+  //       x_3 = x;
+  //       y_3 = y;
+  //     }
+  //   }
+  //   // plt.addFlyLine(x_0, y_0, x_1, y_1, x_2, y_2, x_3, y_3);
+  // }
+
+  plt.addRectangle(_netlist.region_lx, _netlist.region_ly, _netlist.region_dx, _netlist.region_dy);
+  plt.addTitle("Wirelength: " + std::to_string(eval.get_wl()));
+  plt.set_limitation(_xlim, _ylim);
+  return plt.save(filename);
+}
 }  // namespace imp

@@ -1,5 +1,7 @@
 #include "MP.hh"
 
+#include <omp.h>
+
 #include <unordered_map>
 
 #include "Annealer.hh"
@@ -8,8 +10,8 @@
 #include "Layout.hh"
 #include "Logger.hpp"
 #include "NetList.hh"
-#include "SA.hh"
 #include "SeqPair.hh"
+#include "fstream"
 namespace imp {
 
 MacroPlacer::MacroPlacer(DataManager* dm, Option* opt)
@@ -40,22 +42,42 @@ MacroPlacer::~MacroPlacer()
 void MacroPlacer::runMP()
 {
   auto netlist = plToNetlist();
-  netlist.cellClustering(100);
-  for (auto&& var : netlist.report()) {
-    INFO(var);
+  netlist.unFixMacro();
+  netlist.cellClustering(std::clamp(netlist.num_macros * 10, 100 - netlist.num_macros, size_t(500)));
+  for (auto report = netlist.report(); auto&& i : report) {
+    INFO(i);
   }
-  auto sp = makeRandomSeqPair(netlist._num_moveable);
+  auto sp = makeRandomSeqPair(netlist.num_moveable);
+  // SpEvaluate eval(netlist);
   auto eval = makeSeqPairEvalFn(netlist);
-  std::function<void(SeqPair&)> action = SpAction(netlist._num_moveable);
+  // std::function<double(SeqPair&)> evalf = eval;
+  std::function<void(SeqPair&)> action = SpAction(netlist.num_moveable);
 
-  SASolve(sp, eval, action, 500, 1.5 * netlist._num_moveable, 0.95, 30000);
+  auto history = SASolve(sp, eval, action, 1000, 1.5 * netlist.num_moveable, 0.98, 30000);
 
-  for (size_t i = 0; i < 500; i++) {
-    double cost = eval(sp);
-    if (i % 100 == 0)
-      INFO(cost);
+  auto plot = SpPlot(netlist, netlist.region_dx * 1.5, netlist.region_dx * 1.5);
+
+  std::vector<std::string> images;
+#pragma omp parallel for num_threads(16)
+  for (size_t i = 0; i < history.size(); i++) {
+    plot(history[i], "Sp_SA_result_" + std::to_string(i) + ".jpg");
   }
-  SASolve(sp, eval, action, 500, 1.5 * netlist._num_moveable, 0.99, 5000);
+
+  for (size_t i = 0; i < history.size(); i++) {
+    images.push_back("Sp_SA_result_" + std::to_string(i) + ".jpg");
+  }
+  images.resize(images.size() + 10, images.back());
+  makeGif(images, "Sp_SA_result.gif", 3);
+  for (size_t i = 0; i < history.size() - 1; i++) {
+    std::remove(images[i].c_str());
+  }
+
+  // for (size_t i = 0; i < 500; i++) {
+  //   double cost = eval(sp);
+  //   if (i % 100 == 0)
+  //     INFO(cost);
+  // }
+  // SASolve(sp, eval, action, 500, 1.5 * netlist.num_moveable, 0.99, 5000);
 }
 
 NetList MacroPlacer::plToNetlist()
@@ -121,7 +143,7 @@ NetList MacroPlacer::plToNetlist()
   netlist.set_connectivity(std::move(net_span), std::move(pin2vertex), std::move(pin_x_off), std::move(pin_y_off));
   netlist.sortToFit();
 
-  for (auto&& i : netlist.report()) {
+  for (auto report = netlist.report(); auto&& i : report) {
     INFO(i);
   }
 

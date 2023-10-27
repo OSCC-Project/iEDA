@@ -4,7 +4,7 @@ add_library(imp-solver
 
 
 target_link_libraries(imp-solver 
-                      PRIVATE
+                      PUBLIC
                       imp-logger)
 
 target_include_directories(imp-solver 

@@ -19,9 +19,10 @@ target_link_libraries(imp_source
         imp-datamanager
         imp-structure
         imp-representation
-        imp-module
+        imp-netlist
         imp-logger
         imp-solver
+        imp-plot
         # imp_utility
 )
 
