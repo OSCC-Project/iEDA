@@ -92,6 +92,8 @@ value_change         = _{
 }
 value_change_section = _{ value_change+ }
 
-vcd_file = {
-    SOI ~ header_section ~ variable_definition_section ~ value_change_section ~ EOI
+vcd_file_text = { header_section ~ variable_definition_section ~ value_change_section }
+
+vcd_file = _{
+    SOI ~ vcd_file_text ~ EOI
 }

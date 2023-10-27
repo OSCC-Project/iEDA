@@ -63,6 +63,7 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
     let new_scope = Rc::new(RefCell::new(vcd_data::VCDScope::new(String::from(
         module_name,
     ))));
+    let new_scope_copy = new_scope.clone();
     new_scope.borrow_mut().set_scope_type(&scope_type);
 
     let mut scope_stack = vcd_file_parser.get_scope_stack();
@@ -76,6 +77,8 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
 
         parent_scope.borrow_mut().add_child_scope(new_scope);
     }
+
+    scope_stack.push_back(new_scope_copy);
 }
 
 /// process signal variable.
@@ -419,6 +422,6 @@ mod tests {
         let vcd_path =
             "/home/taosimin/iEDA/src/database/manager/parser/vcd/vcd_parser/benchmark/test1.vcd";
         let parse_result = parse_vcd_file(vcd_path);
-        assert!(parse_result.is_err());
+        assert!(parse_result.is_ok());
     }
 }
