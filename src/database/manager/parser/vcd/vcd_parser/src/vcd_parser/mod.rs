@@ -78,10 +78,142 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
     }
 }
 
+/// process signal variable.
+fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let mut vcd_signal = vcd_data::VCDSignal::new();
+    for inner_pair in pair.into_inner() {
+        match inner_pair.as_rule() {
+            Rule::variable_type => vcd_signal.set_signal_type(inner_pair.as_str()),
+            Rule::variable_number => {
+                let signal_size = inner_pair.as_str().parse::<u32>().unwrap();
+                vcd_signal.set_signal_size(signal_size);
+            }
+            Rule::variable_ref => {
+                let ref_name = inner_pair.as_str();
+                vcd_signal.set_hash(String::from(ref_name));
+            }
+            Rule::module_var_name => {
+                let module_var_name = inner_pair.as_str();
+                vcd_signal.set_name(String::from(module_var_name));
+            }
+            Rule::bus_slice => {
+                let mut slice_pairs = inner_pair.into_inner().into_iter();
+                let slice_left_pair = slice_pairs.next().unwrap();
+                let slice_right_pair = slice_pairs.next_back().unwrap();
+
+                let left_index = slice_left_pair.as_str().parse::<i32>().unwrap();
+                let right_index = slice_right_pair.as_str().parse::<i32>().unwrap();
+
+                vcd_signal.set_bus_index(left_index, right_index);
+            }
+            _ => todo!(),
+        }
+    }
+
+    let scope_stack = vcd_file_parser.get_scope_stack();
+    let the_scope = scope_stack.back_mut().unwrap();
+    the_scope.borrow_mut().add_scope_signal(vcd_signal);
+}
+
+/// process close scope.
+fn process_close_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let scope_stack = vcd_file_parser.get_scope_stack();
+    scope_stack.pop_back();
+}
+
+/// process simulate time.
+fn process_simulation_time(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let simu_time_str = pair.as_str().trim_start_matches('#');
+    let simu_time = simu_time_str.parse::<i64>().unwrap();
+    vcd_file_parser.set_current_time(simu_time);
+}
+
+/// process scalar value change.
+fn process_scalar_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let mut scalar_value_change_pairs = pair.into_inner().into_iter();
+    let scalar_value_pair = scalar_value_change_pairs.next().unwrap();
+
+    let scalar_value = match scalar_value_pair.as_str() {
+        "0" => vcd_data::VCDBit::BitZero,
+        "1" => vcd_data::VCDBit::BitOne,
+        "x" | "X" => vcd_data::VCDBit::BitX,
+        "z" | "Z" => vcd_data::VCDBit::BitZ,
+        _ => panic!("unkown value"),
+    };
+    let hash_pair = scalar_value_change_pairs.next_back().unwrap();
+    let hash_str = String::from(hash_pair.as_str());
+
+    let current_time = vcd_file_parser.get_current_time();
+    let vcd_value = vcd_data::VCDValue::BitScalar(scalar_value);
+
+    let vcd_time_value = Box::new(vcd_data::VCDTimeAndValue {
+        time: current_time,
+        value: vcd_value,
+    });
+
+    let vcd_file = vcd_file_parser.get_vcd_file();
+    vcd_file.add_signal_value(hash_str, vcd_time_value);
+}
+
+/// process vector value change.
+fn process_bitvector_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let mut bitvector_value_change_pairs = pair.into_inner().into_iter();
+    let bitvector_value_pair = bitvector_value_change_pairs.next().unwrap();
+    let bitvector_value_str = bitvector_value_pair.as_str();
+
+    let mut vcd_bit_vec: Vec<vcd_data::VCDBit> = Vec::with_capacity(bitvector_value_str.len());
+    for bit in bitvector_value_str.chars() {
+        let bit_value = match bit {
+            '0' => vcd_data::VCDBit::BitZero,
+            '1' => vcd_data::VCDBit::BitOne,
+            'x' | 'X' => vcd_data::VCDBit::BitX,
+            'z' | 'Z' => vcd_data::VCDBit::BitZ,
+            _ => panic!("unkown value"),
+        };
+
+        vcd_bit_vec.push(bit_value);
+    }
+
+    let hash_pair = bitvector_value_change_pairs.next_back().unwrap();
+    let hash_str = String::from(hash_pair.as_str());
+
+    let current_time = vcd_file_parser.get_current_time();
+    let vcd_value = vcd_data::VCDValue::BitVector(vcd_bit_vec);
+
+    let vcd_time_value = Box::new(vcd_data::VCDTimeAndValue {
+        time: current_time,
+        value: vcd_value,
+    });
+
+    let vcd_file = vcd_file_parser.get_vcd_file();
+    vcd_file.add_signal_value(hash_str, vcd_time_value);
+}
+
+/// process real value change.
+fn process_real_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let mut real_value_change_pairs = pair.into_inner().into_iter();
+
+    let real_value_pair: Pair<'_, Rule> = real_value_change_pairs.next().unwrap();
+    let bit_real = real_value_pair.as_str().parse::<f64>().unwrap();
+
+    let hash_pair = real_value_change_pairs.next_back().unwrap();
+    let hash_str = String::from(hash_pair.as_str());
+
+    let current_time = vcd_file_parser.get_current_time();
+    let vcd_value = vcd_data::VCDValue::BitReal(bit_real);
+
+    let vcd_time_value = Box::new(vcd_data::VCDTimeAndValue {
+        time: current_time,
+        value: vcd_value,
+    });
+
+    let vcd_file = vcd_file_parser.get_vcd_file();
+    vcd_file.add_signal_value(hash_str, vcd_time_value);
+}
+
 /// process vcd data.
 fn process_vcd(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
     let pair_clone = pair.clone();
-
     println!("Rule:    {:?}", pair_clone.as_rule());
     println!("Span:    {:?}", pair_clone.as_span());
     println!("Text:    {}", pair_clone.as_str());
@@ -92,6 +224,14 @@ fn process_vcd(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) 
             Rule::scale_text => process_scale(inner_pair, vcd_file_parser),
             Rule::comment_text => process_comment(inner_pair, vcd_file_parser),
             Rule::open_scope => process_open_scope(inner_pair, vcd_file_parser),
+            Rule::variable => process_variable(inner_pair, vcd_file_parser),
+            Rule::close_scope => process_close_scope(inner_pair, vcd_file_parser),
+            Rule::simulation_time => process_simulation_time(inner_pair, vcd_file_parser),
+            Rule::scalar_value_change => process_scalar_value_change(inner_pair, vcd_file_parser),
+            Rule::bitvector_value_change => {
+                process_bitvector_value_change(inner_pair, vcd_file_parser)
+            }
+            Rule::real_value_change => process_real_value_change(inner_pair, vcd_file_parser),
 
             _ => panic!("not process: rule {:?}", inner_pair.as_rule()),
         }

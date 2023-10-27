@@ -13,10 +13,10 @@ use std::sync::Arc;
 
 /// VCD signal bit value.
 pub enum VCDBit {
-    BitZero(u8),
-    BitOne(u8),
-    BitX(u8),
-    BitZ(u8),
+    BitZero,
+    BitOne,
+    BitX,
+    BitZ,
 }
 
 /// VCD value type.
@@ -28,8 +28,8 @@ pub enum VCDValue {
 
 /// VCD signal value, include time and value
 pub struct VCDTimeAndValue {
-    time: u64,
-    value: VCDValue,
+    pub time: i64,
+    pub value: VCDValue,
 }
 
 /// VCD variable type of vcd signal
@@ -52,17 +52,72 @@ pub enum VCDVariableType {
     VarWAnd,
     VarWire,
     VarWor,
+    Default,
 }
 
 /// VCD signal
 pub struct VCDSignal<'a> {
+    /// hash or called ref name.
     hash: String,
-    reference_name: String,
+    name: String,
+    bus_index: Option<(i32, i32)>,
     signal_size: u32,
-    var_type: VCDVariableType,
-    left_index: i32,
-    right_index: i32,
-    scope: &'a VCDScope<'a>,
+    signal_type: VCDVariableType,
+    scope: Option<Rc<RefCell<VCDScope<'a>>>>,
+}
+
+impl<'a> VCDSignal<'a> {
+    pub fn new() -> Self {
+        Self {
+            hash: Default::default(),
+            name: Default::default(),
+            bus_index: None,
+            signal_size: 0,
+            signal_type: VCDVariableType::Default,
+            scope: None,
+        }
+    }
+
+    pub fn set_hash(&mut self, hash: String) {
+        self.hash = hash;
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    pub fn set_bus_index(&mut self, left_index: i32, right_index: i32) {
+        let bus_index = (left_index, right_index);
+        self.bus_index = Some(bus_index);
+    }
+
+    pub fn set_signal_size(&mut self, signal_size: u32) {
+        self.signal_size = signal_size;
+    }
+
+    pub fn set_signal_type(&mut self, type_str: &str) {
+        match type_str {
+            "event" => self.signal_type = VCDVariableType::VarEvent,
+            "integer" => self.signal_type = VCDVariableType::VarInteger,
+            "parameter" => self.signal_type = VCDVariableType::VarParameter,
+            "real" => self.signal_type = VCDVariableType::VarReal,
+            "realtime" => self.signal_type = VCDVariableType::VarRealTime,
+            "reg" => self.signal_type = VCDVariableType::VarReg,
+            "supply0" => self.signal_type = VCDVariableType::VarSupply0,
+            "supply1" => self.signal_type = VCDVariableType::VarSupply1,
+            "time" => self.signal_type = VCDVariableType::VarTime,
+            "tri" => self.signal_type = VCDVariableType::VarTri,
+            "triand" => self.signal_type = VCDVariableType::VarTriAnd,
+            "trior" => self.signal_type = VCDVariableType::VarTriOr,
+            "trireg" => self.signal_type = VCDVariableType::VarTriReg,
+            "tri0" => self.signal_type = VCDVariableType::VarTri0,
+            "tri1" => self.signal_type = VCDVariableType::VarTri1,
+            "wand" => self.signal_type = VCDVariableType::VarWAnd,
+            "wire" => self.signal_type = VCDVariableType::VarWire,
+            "wor" => self.signal_type = VCDVariableType::VarWor,
+            _ => panic!("unknown signal type {}", type_str),
+        }
+    }
 }
 
 /// VCD Scope type
@@ -112,6 +167,10 @@ impl<'a> VCDScope<'a> {
 
     pub fn add_child_scope(&mut self, child_scope: Rc<RefCell<VCDScope<'a>>>) {
         self.children_scopes.push(child_scope);
+    }
+
+    pub fn add_scope_signal(&mut self, vcd_signal: VCDSignal<'a>) {
+        self.scope_signals.push(vcd_signal.into());
     }
 }
 
@@ -174,12 +233,24 @@ impl<'a> VCDFile<'a> {
     pub fn set_comment(&mut self, comment: String) {
         self.comment = comment;
     }
+
+    pub fn add_signal_value(&mut self, signal_hash: String, signal_value: Box<VCDTimeAndValue>) {
+        if self.signal_values.contains_key(&signal_hash) {
+            let signal_vec = self.signal_values.get_mut(&signal_hash).unwrap();
+            signal_vec.push_back(signal_value);
+        } else {
+            let mut signal_vec = VecDeque::<Box<VCDTimeAndValue>>::new();
+            signal_vec.push_back(signal_value);
+            self.signal_values.insert(signal_hash, signal_vec);
+        }
+    }
 }
 
 /// VCD File parser
 pub struct VCDFileParser<'a> {
     vcd_file: VCDFile<'a>,
     scope_stack: VecDeque<Rc<RefCell<VCDScope<'a>>>>,
+    current_time: i64,
 }
 
 impl<'a> VCDFileParser<'a> {
@@ -187,6 +258,7 @@ impl<'a> VCDFileParser<'a> {
         Self {
             vcd_file: VCDFile::new(),
             scope_stack: VecDeque::new(),
+            current_time: 0,
         }
     }
 
@@ -201,9 +273,12 @@ impl<'a> VCDFileParser<'a> {
     pub fn get_scope_stack(&mut self) -> &mut VecDeque<Rc<RefCell<VCDScope<'a>>>> {
         return &mut self.scope_stack;
     }
-}
 
-/// unified vcd data structure
-pub enum VCDParserData<'a> {
-    FileData(VCDFile<'a>),
+    pub fn set_current_time(&mut self, current_time: i64) {
+        self.current_time = current_time;
+    }
+
+    pub fn get_current_time(&self) -> i64 {
+        return self.current_time;
+    }
 }
