@@ -4,7 +4,9 @@ use std::{cell::RefCell, collections::VecDeque};
 
 use pest::iterators::Pair;
 
+pub mod vcd_c_api;
 pub mod vcd_data;
+
 use std::rc::Rc;
 use std::sync::Mutex;
 

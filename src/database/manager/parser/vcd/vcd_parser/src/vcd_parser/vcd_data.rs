@@ -172,6 +172,22 @@ impl<'a> VCDScope<'a> {
     pub fn add_scope_signal(&mut self, vcd_signal: VCDSignal<'a>) {
         self.scope_signals.push(vcd_signal.into());
     }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_parent_scope(&self) -> &Option<Rc<RefCell<VCDScope<'a>>>> {
+        &self.parent_scope
+    }
+
+    pub fn get_children_scopes(&self) -> &Vec<Rc<RefCell<VCDScope<'a>>>> {
+        &self.children_scopes
+    }
+
+    pub fn get_scope_signals(&mut self) -> &Vec<Rc<VCDSignal<'a>>> {
+        &self.scope_signals
+    }
 }
 
 /// VCD time unit
@@ -192,7 +208,7 @@ pub struct VCDFile<'a> {
     date: String,
     version: String,
     comment: String,
-    scope_root: Option<Arc<VCDScope<'a>>>,
+    scope_root: Option<Rc<VCDScope<'a>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
 }
 
@@ -209,6 +225,34 @@ impl<'a> VCDFile<'a> {
             scope_root: Default::default(),
             signal_values: Default::default(),
         }
+    }
+
+    pub fn get_start_time(&mut self) -> i64 {
+        self.start_time
+    }
+
+    pub fn get_end_time(&mut self) -> i64 {
+        self.end_time
+    }
+
+    pub fn get_time_resolution(&mut self) -> u32 {
+        self.time_resolution
+    }
+
+    pub fn get_date(&mut self) -> &str {
+        &self.date
+    }
+
+    pub fn get_version(&mut self) -> &str {
+        &self.version
+    }
+
+    pub fn get_comment(&mut self) -> &str {
+        &self.comment
+    }
+
+    pub fn get_root_scope(&self) -> &Option<Rc<VCDScope<'a>>> {
+        &self.scope_root
     }
 
     pub fn set_date(&mut self, date_text: String) {
