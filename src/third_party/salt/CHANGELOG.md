@@ -25,7 +25,7 @@ Only in {ORIGIN REPOSITORY}/src/salt/base: flute
 diff -r ./base/flute.cpp {ORIGIN REPOSITORY}/src/salt/base/flute.cpp
 6,7c6,7
 < #include "flute3/flute.h" // should be included after boost/functional/hash.hpp
-< #define MAXD 5000          // max. degree that can be handled
+< #define MAXD 20000          // max. degree that can be handled
 ---
 > #include "flute/flute.h" // should be included after boost/functional/hash.hpp
 > 

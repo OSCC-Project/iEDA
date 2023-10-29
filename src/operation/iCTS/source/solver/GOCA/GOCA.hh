@@ -64,7 +64,7 @@ class GOCA
   std::vector<Assign> globalAssign();
   std::vector<Inst*> assignApply(const std::vector<Inst*>& insts, const Assign& assign);
   std::vector<Inst*> topGuide(const std::vector<Inst*>& insts, const Assign& assign);
-  Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& level_center, const bool& shift = true);
+  Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& guide_center, const bool& shift = true);
   Net* saltOpt(const std::vector<Inst*>& insts, const Assign& assign);
 
   // report

@@ -35,35 +35,35 @@ using std::string;
 class GDSPloter
 {
  public:
-  GDSPloter();
-  explicit GDSPloter(const string& gds_file);
-  GDSPloter(GDSPloter&) = default;
-  ~GDSPloter() { _log_ofs.close(); }
-  void plotDesign();
-  void plotFlyLine();
+  GDSPloter(){};
+  ~GDSPloter(){};
+  static void plotDesign(const std::string& path = "");
+  static void plotFlyLine(const std::string& path = "");
 
-  void plotInstances(vector<CtsInstance*>& insts);
-  void insertInstance(CtsInstance* inst);
+  static void writePyDesign(const std::string& path = "");
+  static void writePyFlyLine(const std::string& path = "");
 
-  void refPolygon(const string& name);
-  void refInstance(CtsInstance* inst);
+  static void plotInstances(std::fstream& log_ofs, vector<CtsInstance*>& insts);
+  static void insertInstance(std::fstream& log_ofs, CtsInstance* inst);
 
-  void plotPolygons(const std::vector<IdbRect*>& polys, const string& name = "polyogn", int layer = 0);
+  static void refPolygon(std::fstream& log_ofs, const string& name);
+  static void refInstance(std::fstream& log_ofs, CtsInstance* inst);
 
-  void insertPolygon(IdbRect* poly, const string& name = "polygon", int layer = 0);
+  static void plotPolygons(std::fstream& log_ofs, const std::vector<IdbRect*>& polys, const string& name = "polyogn", int layer = 0);
 
-  void insertPolygon(IdbRect& poly, const string& name = "polygon", int layer = 0);
+  static void insertPolygon(std::fstream& log_ofs, IdbRect* poly, const string& name = "polygon", int layer = 0);
 
-  void insertWire(const Point& begin, const Point& end, const int& layer = 0, const int& width = 80);
+  static void insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name = "polygon", int layer = 0);
 
-  void head();
-  void tail();
-  void topBegin();
-  void strBegin();
-  void strEnd();
+  static void insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const int& layer = 0, const int& width = 80);
+
+  static void head(std::fstream& log_ofs);
+  static void tail(std::fstream& log_ofs);
+  static void topBegin(std::fstream& log_ofs);
+  static void strBegin(std::fstream& log_ofs);
+  static void strEnd(std::fstream& log_ofs);
 
  private:
-  fstream _log_ofs;
 };
 
 }  // namespace icts
