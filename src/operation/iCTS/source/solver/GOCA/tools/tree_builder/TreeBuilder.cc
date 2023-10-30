@@ -376,12 +376,13 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   auto* driver_pin = buf->get_driver_pin();
   buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
-  localPlace(buf, loads);
+
   TimingPropagator::update(bst_net);
 
   std::vector<Pin*> pins{driver_pin};
   std::ranges::copy(loads, std::back_inserter(pins));
-
+  localPlace(pins);
+  removeRedundant(driver_pin);
   std::unordered_map<int, Node*> id_to_node;
   std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
   std::vector<std::shared_ptr<salt::Pin>> salt_pins;
@@ -398,6 +399,8 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   // convert bound skew tree to salt data structure
   std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
   int id = pins.size();
+  // debug
+  writePy(driver_pin, "debug");
   driver_pin->preOrder([&](Node* node) {
     auto loc = salt::Point(node->get_location().x(), node->get_location().y());
     std::shared_ptr<salt::TreeNode> salt_node;
@@ -415,7 +418,7 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
     }
   });
 
-  // BEAT Salt
+  // BST Salt
   salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
   TreeSaltBuilder builder;
   builder.run(salt_net, bound_skew_tree, 0);

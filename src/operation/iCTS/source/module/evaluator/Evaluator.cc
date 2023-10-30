@@ -268,7 +268,7 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/" + file;
-  GDSPloter ploter(path);
+  auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   CtsInstance* path_inst = nullptr;
   for (auto& eval_net : _eval_nets) {
@@ -280,10 +280,10 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
   }
   LOG_FATAL_IF(path_inst == nullptr) << "Cannot find instance: " << inst_name;
 
-  ploter.head();
+  GDSPloter::head(ofs);
   vector<CtsInstance*> insts;
   while (path_inst) {
-    ploter.insertInstance(path_inst);
+    GDSPloter::insertInstance(ofs, path_inst);
     insts.emplace_back(path_inst);
     auto before_load_pin = path_inst->get_load_pin();
     if (before_load_pin) {
@@ -300,24 +300,24 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
         }
       }
       auto driver_inst = driver_pin->get_instance();
-      ploter.insertWire(driver_inst->get_location(), path_inst->get_location());
+      GDSPloter::insertWire(ofs, driver_inst->get_location(), path_inst->get_location());
       path_inst = driver_inst;
     } else {
       break;
     }
   }
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", _default_size);
-  ploter.strBegin();
-  ploter.topBegin();
+  GDSPloter::insertPolygon(ofs, core, "core", _default_size);
+  GDSPloter::strBegin(ofs);
+  GDSPloter::topBegin(ofs);
   for (auto* inst : insts) {
-    ploter.refInstance(inst);
+    GDSPloter::refInstance(ofs, inst);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
+  GDSPloter::refPolygon(ofs, "core");
+  GDSPloter::refPolygon(ofs, "WIRE");
+  GDSPloter::strEnd(ofs);
 
-  ploter.tail();
+  GDSPloter::tail(ofs);
   LOG_INFO << "Path to " << inst_name << " has been written to " << path;
 }
 
@@ -337,30 +337,30 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/" + file;
-  GDSPloter ploter(path);
+  auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
-  ploter.head();
+  GDSPloter::head(ofs);
   auto insts = net->get_instances();
   for (auto* inst : insts) {
-    ploter.insertInstance(inst);
+    GDSPloter::insertInstance(ofs, inst);
   }
   for (const auto& wire : net->get_signal_wires()) {
     auto first = wire.get_first().point;
     auto second = wire.get_second().point;
-    ploter.insertWire(first, second);
+    GDSPloter::insertWire(ofs, first, second);
   }
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", _default_size);
-  ploter.strBegin();
-  ploter.topBegin();
+  GDSPloter::insertPolygon(ofs, core, "core", _default_size);
+  GDSPloter::strBegin(ofs);
+  GDSPloter::topBegin(ofs);
   for (auto* inst : insts) {
-    ploter.refInstance(inst);
+    GDSPloter::refInstance(ofs, inst);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
+  GDSPloter::refPolygon(ofs, "core");
+  GDSPloter::refPolygon(ofs, "WIRE");
+  GDSPloter::strEnd(ofs);
 
-  ploter.tail();
+  GDSPloter::tail(ofs);
   LOG_INFO << "Net: " << net_name << " has been written to " << path;
 }
 }  // namespace icts

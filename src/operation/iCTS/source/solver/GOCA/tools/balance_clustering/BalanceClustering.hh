@@ -37,6 +37,95 @@ struct ViolationScore
   double net_len_vio_score;
   std::vector<Inst*> cluster;
 };
+class LCA
+{
+ public:
+  LCA(Node* root) : _root(root) { init(); }
+
+  ~LCA() = default;
+
+  Node* query(const std::vector<Node*>& nodes)
+  {
+    // find min/max dfs id
+    int min_dfs_id = std::numeric_limits<int>::max();
+    int max_dfs_id = std::numeric_limits<int>::min();
+    for (auto node : nodes) {
+      min_dfs_id = std::min(min_dfs_id, _node_id[node]);
+      max_dfs_id = std::max(max_dfs_id, _node_id[node]);
+    }
+    return query(_nodes[min_dfs_id], _nodes[max_dfs_id]);
+  }
+
+  Node* query(Node* node1, Node* node2)
+  {
+    int l = _node_id[node1];
+    int r = _node_id[node2];
+    if (l > r) {
+      std::swap(l, r);
+    }
+    return _nodes[query(l, r)];
+  }
+
+ private:
+  void init()
+  {
+    // dfs
+    dfs(_root, 0);
+    // init rmq
+    int n = _nodes.size();
+    int k = 0;
+    while ((1 << k) < n) {
+      k++;
+    }
+    _rmq.resize(n, std::vector<int>(k + 1));
+    _log2.resize(n + 1);
+    _log2[1] = 0;
+    for (int i = 2; i <= n; i++) {
+      _log2[i] = _log2[i / 2] + 1;
+    }
+    for (int i = 0; i < n; i++) {
+      _rmq[i][0] = i;
+    }
+    for (int j = 1; j <= k; j++) {
+      for (int i = 0; i + (1 << j) - 1 < n; i++) {
+        int lca1 = _rmq[i][j - 1];
+        int lca2 = _rmq[i + (1 << (j - 1))][j - 1];
+        _rmq[i][j] = _depths[lca1] < _depths[lca2] ? lca1 : lca2;
+      }
+    }
+  }
+
+  void dfs(Node* node, int depth)
+  {
+    _nodes.push_back(node);
+    _node_id[node] = _nodes.size() - 1;
+    _depths.push_back(depth);
+    for (auto child : node->get_children()) {
+      dfs(child, depth + 1);
+      _nodes.push_back(node);
+      _node_id[node] = _nodes.size() - 1;
+      _depths.push_back(depth);
+    }
+  }
+  
+  // find LCA by Four Russians Algorithm and +1/-1 RMQ technique
+  int query(int l, int r)
+  {
+    int len = r - l + 1;
+    int k = _log2[len];
+    int lca1 = _rmq[l][k];
+    int lca2 = _rmq[r - (1 << k) + 1][k];
+    return _depths[lca1] < _depths[lca2] ? lca1 : lca2;
+  }
+
+  Node* _root;
+  std::vector<Node*> _nodes;
+  std::unordered_map<Node*, int> _node_id;
+  std::vector<int> _depths;
+  std::vector<std::vector<int>> _rmq;
+  std::vector<int> _log2;
+};
+
 /**
  * @brief BalanceClustering class
  *       clustering sinks by max distance and max fanout
@@ -67,14 +156,13 @@ class BalanceClustering
                                                                const double& skew_bound, const size_t& max_iter = 200,
                                                                const double& cooling_rate = 0.99, const double& temperature = 50000);
 
-  static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
-                                               const size_t& max_fanout);
+  static std::vector<Point> guideCenter(const std::vector<std::vector<Inst*>>& clusters, const size_t& level = 1);
 
-  static std::vector<Inst*> getMaxDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
-                                               const size_t& max_fanout);
+  static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters);
 
-  static std::vector<Inst*> getWorstViolationCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_cap,
-                                                     const double& max_net_length, const size_t& max_fanout);
+  static std::vector<Inst*> getMaxDelayCluster(const std::vector<std::vector<Inst*>>& clusters);
+
+  static std::vector<Inst*> getWorstViolationCluster(const std::vector<std::vector<Inst*>>& clusters);
 
   static std::vector<std::vector<Inst*>> getMostRecentClusters(const std::vector<std::vector<Inst*>>& clusters,
                                                                const std::vector<Inst*>& center_cluster, const size_t& num_limit = 42,
@@ -92,12 +180,11 @@ class BalanceClustering
 
   static double estimateSkew(const std::vector<Inst*>& cluster);
 
-  static double estimateNetDelay(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout,
-                                 const bool& is_max = true);
+  static double estimateNetDelay(const std::vector<Inst*>& cluster, const bool& is_max = true);
 
-  static double estimateNetCap(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout);
+  static double estimateNetCap(const std::vector<Inst*>& cluster);
 
-  static double estimateNetLength(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout);
+  static double estimateNetLength(const std::vector<Inst*>& cluster);
 
   static Point calcCentroid(const std::vector<Inst*>& cluster);
 
@@ -118,8 +205,7 @@ class BalanceClustering
 
   static double calcVariance(const std::vector<double>& values);
 
-  static ViolationScore calcScore(const std::vector<Inst*>& cluster, const double& max_cap, const double& max_net_length,
-                                  const size_t& max_fanout);
+  static ViolationScore calcScore(const std::vector<Inst*>& cluster);
 
   static double crossProduct(const Point& p1, const Point& p2, const Point& p3);
 

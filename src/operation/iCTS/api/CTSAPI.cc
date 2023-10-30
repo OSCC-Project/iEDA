@@ -91,9 +91,10 @@ void CTSAPI::writeDB()
 
 void CTSAPI::writeGDS()
 {
-  GDSPloter plotter;
-  plotter.plotDesign();
-  plotter.plotFlyLine();
+  GDSPloter::plotDesign();
+  GDSPloter::plotFlyLine();
+  GDSPloter::writePyDesign();
+  GDSPloter::writePyFlyLine();
 }
 
 void CTSAPI::report(const std::string& save_dir)
