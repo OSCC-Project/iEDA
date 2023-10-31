@@ -2,13 +2,16 @@ use crate::vcd_parser::parse_vcd_file;
 use crate::vcd_parser::vcd_data;
 
 use std::borrow::BorrowMut;
+use std::cell::RefCell;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::os::raw::*;
 use std::ptr::null_mut;
+use std::rc::Rc;
 
 use super::vcd_data::VCDScope;
+use crate::vcd_parser::vcd_calc_tc_sp::FindScopeClosure;
 
 #[repr(C)]
 pub struct RustVec {
@@ -286,9 +289,14 @@ pub extern "C" fn rust_calc_scope_tc_sp(
     c_vcd_file: *mut vcd_data::VCDFile,
 ) {
     unsafe {
-        // let top_vcd_scope: *mut RustVCDScope = (*c_vcd_file).find_scope(c_top_vcd_scope_name);
+        let c_str = unsafe { std::ffi::CStr::from_ptr(c_top_vcd_scope_name) };
+        let r_str = c_str.to_string_lossy().into_owned();
+        println!("r str {}", r_str);
 
-        let recursive_closure: TraverseScopeClosure = TraverseScopeClosure::new();
+        // let top_vcd_scope = (*c_vcd_file).get_root_scope();
+        // let ref_top_vcd_scope = Rc::new(RefCell::new(top_vcd_scope));
+        // let find_scope_closure = FindScopeClosure::new(&ref_top_vcd_scope, &r_str);
+
         // (recursive_closure.closure)(&*c_top_vcd_scope);
     }
 }

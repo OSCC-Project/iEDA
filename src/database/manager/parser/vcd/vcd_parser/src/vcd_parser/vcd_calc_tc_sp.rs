@@ -18,32 +18,36 @@ pub struct SignalDuration {
     bit_z_duration: u64,
 }
 
-// struct FindScopeClosure {
-//     closure: Box<dyn Fn(&VCDScope, &str) -> Option<&Rc<RefCell<VCDScope>>>>,
-// }
+pub struct FindScopeClosure {
+    closure: Box<dyn Fn(&Rc<RefCell<VCDScope>>, &str) -> Option<Rc<RefCell<VCDScope>>>>,
+}
 
-// impl FindScopeClosure {
-//     fn new(parent_scope: &VCDScope, top_instance_name: &str) -> Self {
-//         let closure = Box::new(move |parent_scope: &VCDScope, top_instance_name: &str| {
-//             let children_scopes = parent_scope.get_children_scopes();
-//             for child_scope in children_scopes {
-//                 if child_scope.clone().borrow_mut().get_name() == top_instance_name {
-//                     return Some(child_scope);
-//                 }
-//             }
+impl FindScopeClosure {
+    pub fn new(parent_scope: &Rc<RefCell<VCDScope>>, top_instance_name: &str) -> Self {
+        let closure = Box::new(
+            move |parent_scope: &Rc<RefCell<VCDScope>>, top_instance_name: &str| {
+                let children_scopes = parent_scope
+                    .as_ref()
+                    .borrow_mut()
+                    .get_children_scopes()
+                    .clone();
+                for child_scope in children_scopes.clone() {
+                    if child_scope.clone().borrow_mut().get_name() == top_instance_name {
+                        return Some(child_scope);
+                    }
+                }
 
-//             // for child_scope in children_scopes {
-//             //     let recursive_closure =
-//             //         FindScopeClosure::new(child_scope.as_ref().get_mut(), top_instance_name);
-//             //     if let Some(found_scope) = (recursive_closure.closure)(
-//             //         child_scope.as_ref().get_mut(),
-//             //         top_instance_name,
-//             //     ) {
-//             //         return Some(found_scope);
-//             //     }
-//             // }
-//             None
-//         });
-//         Self { closure }
-//     }
-// }
+                for child_scope in children_scopes.clone() {
+                    let recursive_closure = FindScopeClosure::new(&child_scope, top_instance_name);
+                    if let Some(found_scope) =
+                        (recursive_closure.closure)(&child_scope, top_instance_name)
+                    {
+                        return Some(found_scope);
+                    }
+                }
+                None
+            },
+        );
+        Self { closure }
+    }
+}
