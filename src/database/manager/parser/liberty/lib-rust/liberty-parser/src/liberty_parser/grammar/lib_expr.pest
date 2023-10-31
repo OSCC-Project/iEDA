@@ -1,0 +1,13 @@
+port     = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "[" | "]")* }
+expr_var =  { port | "0" | "1" | "(" ~ expr ~ ")" }
+
+not_expr         = { "!" ~ expr_var }
+expr_leaf        = { expr_var | not_expr }
+default_and_expr = { expr_leaf ~ expr_leaf+ }
+
+expr_op    = { "+" | "|" | "*" | "&" | "^" }
+expr_value = { expr_leaf | default_and_expr }
+
+expr = { expr_value ~ (expr_op ~ expr_value)* }
+
+expr_result = { expr ~ ";"? }
