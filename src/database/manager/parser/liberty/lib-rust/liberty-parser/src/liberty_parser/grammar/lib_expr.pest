@@ -12,4 +12,6 @@ expr_value = _{ expr_leaf | default_and_expr }
 
 expr = { expr_value ~ (expr_op ~ expr_value)* }
 
-expr_result = _{ expr ~ ";"? }
+expr_result = _{ expr ~ ";" }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }

@@ -103,9 +103,9 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
-    // println!("Rule:    {:?}", pair_clone.as_rule());
-    // println!("Span:    {:?}", pair_clone.as_span());
-    // println!("Text:    {}", pair_clone.as_str());
+    println!("Rule:    {:?}", pair.as_rule());
+    println!("Span:    {:?}", pair.as_span());
+    println!("Text:    {}", pair.as_str());
 
     let mut substitute_queue: VecDeque<Box<liberty_expr_data::LibertyExpr>> = VecDeque::new();
     while parser_queue.len() > current_queue_len {
@@ -143,5 +143,18 @@ pub fn parse_expr_file(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyE
             println!("Error: {}", err);
             Err(err.clone())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::liberty_parser::liberty_expr::parse_expr_file;
+
+    #[test]
+    fn test_parse_expr_path() {
+        let expr_str = "A1 & !A2 & B1 & !B2 & !C1 & C2;";
+        let parse_result = parse_expr_file(expr_str);
+        assert!(parse_result.is_ok());
     }
 }
