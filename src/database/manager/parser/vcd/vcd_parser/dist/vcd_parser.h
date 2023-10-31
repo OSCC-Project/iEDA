@@ -21,6 +21,11 @@ typedef struct VCDFile VCDFile;
  */
 typedef struct VCDScope VCDScope;
 
+/**
+ * VCD signal
+ */
+typedef struct VCDSignal VCDSignal;
+
 typedef struct RustVec {
     void *data;
     uintptr_t len;
@@ -28,16 +33,32 @@ typedef struct RustVec {
     uintptr_t type_size;
 } RustVec;
 
+typedef struct Indexes {
+    int32_t lindex;
+    int32_t rindex;
+} Indexes;
+
+typedef struct RustVCDSignal {
+    char *hash;
+    char *name;
+    void *bus_index;
+    unsigned int signal_size;
+    unsigned int signal_type;
+    void *scope;
+} RustVCDSignal;
+
 typedef struct RustVCDScope {
     char *name;
     void *parent_scope;
     struct RustVec children_scope;
+    struct RustVec scope_signals;
 } RustVCDScope;
 
 typedef struct RustVCDFile {
     long long start_time;
     long long end_time;
     unsigned int time_resolution;
+    unsigned int time_unit;
     char *date;
     char *version;
     char *comment;
@@ -48,8 +69,14 @@ uintptr_t rust_vec_len(const struct RustVec *vec);
 
 void free_c_char(char *s);
 
+struct Indexes *rust_convert_signal_index(void *bus_index);
+
+struct RustVCDSignal *rust_convert_vcd_signal(const struct VCDSignal *c_vcd_signal);
+
 struct RustVCDScope *rust_convert_vcd_scope(const struct VCDScope *c_vcd_scope);
 
 struct RustVCDFile *rust_convert_vcd_file(struct VCDFile *c_vcd_file);
 
 void *rust_parse_vcd(const char *lib_path);
+
+void rust_calc_scope_tc_sp(const char *c_top_vcd_scope_name, struct VCDFile *c_vcd_file);

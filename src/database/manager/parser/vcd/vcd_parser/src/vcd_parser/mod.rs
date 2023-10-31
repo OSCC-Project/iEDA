@@ -5,6 +5,7 @@ use std::{cell::RefCell, collections::VecDeque};
 use pest::iterators::Pair;
 
 pub mod vcd_c_api;
+pub mod vcd_calc_tc_sp;
 pub mod vcd_data;
 
 use std::rc::Rc;
