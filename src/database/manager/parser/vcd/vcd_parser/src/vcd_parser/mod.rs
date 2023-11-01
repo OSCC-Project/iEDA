@@ -63,15 +63,14 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
     let pair_module = inner_pairs.next_back().unwrap();
     let module_name = pair_module.as_str();
 
-    let new_scope = Rc::new(RefCell::new(vcd_data::VCDScope::new(String::from(
-        module_name,
-    ))));
+    let new_scope: Rc<RefCell<vcd_data::VCDScope>> = Rc::new(RefCell::new(
+        vcd_data::VCDScope::new(String::from(module_name)),
+    ));
     let new_scope_copy = new_scope.clone();
     new_scope.borrow_mut().set_scope_type(&scope_type);
 
-    let mut scope_stack = vcd_file_parser.get_scope_stack();
-
-    if !scope_stack.is_empty() {
+    if !vcd_file_parser.is_scope_empty() {
+        let scope_stack = vcd_file_parser.get_scope_stack();
         let parent_scope = scope_stack.back_mut().unwrap();
 
         new_scope
@@ -79,9 +78,10 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
             .set_parent_scope(Rc::clone(&*parent_scope));
 
         parent_scope.borrow_mut().add_child_scope(new_scope);
+        scope_stack.push_back(new_scope_copy);
+    } else {
+        vcd_file_parser.set_root_scope(new_scope);
     }
-
-    scope_stack.push_back(new_scope_copy);
 }
 
 /// process signal variable.

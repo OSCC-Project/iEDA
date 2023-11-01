@@ -218,9 +218,16 @@ pub extern "C" fn rust_convert_vcd_file(c_vcd_file: *mut vcd_data::VCDFile) -> *
         let comment = string_to_c_char(vcd_comment);
 
         let vcd_root_scope = (*c_vcd_file).get_root_scope();
-        let root_scope = vcd_root_scope.as_ref().unwrap().as_ref();
 
-        let void_ptr = root_scope as *const VCDScope;
+        let root_scope = match vcd_root_scope {
+            Some(the_scope) => {
+                let scope_ptr = the_scope.deref().as_ptr();
+                scope_ptr as *mut c_void
+            }
+            None => null_mut(),
+        };
+
+        let void_ptr = root_scope as *mut VCDScope;
 
         let scope_root = rust_convert_vcd_scope(void_ptr);
 
@@ -293,9 +300,13 @@ pub extern "C" fn rust_calc_scope_tc_sp(
         let r_str = c_str.to_string_lossy().into_owned();
         println!("r str {}", r_str);
 
-        // let top_vcd_scope = (*c_vcd_file).get_root_scope();
-        // let ref_top_vcd_scope = Rc::new(RefCell::new(top_vcd_scope));
-        // let find_scope_closure = FindScopeClosure::new(&ref_top_vcd_scope, &r_str);
+        match (*c_vcd_file).get_root_scope() {
+            Some(the_scope) => {
+                let find_scope_closure = FindScopeClosure::new(&the_scope, &r_str);
+                (find_scope_closure.closure)(&the_scope, &r_str);
+            }
+            None => panic!("root scope not exist."),
+        };
 
         // (recursive_closure.closure)(&*c_top_vcd_scope);
     }

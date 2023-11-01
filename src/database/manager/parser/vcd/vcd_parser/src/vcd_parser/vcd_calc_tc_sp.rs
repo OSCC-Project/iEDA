@@ -19,7 +19,7 @@ pub struct SignalDuration {
 }
 
 pub struct FindScopeClosure {
-    closure: Box<dyn Fn(&Rc<RefCell<VCDScope>>, &str) -> Option<Rc<RefCell<VCDScope>>>>,
+    pub closure: Box<dyn Fn(&Rc<RefCell<VCDScope>>, &str) -> Option<Rc<RefCell<VCDScope>>>>,
 }
 
 impl FindScopeClosure {

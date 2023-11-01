@@ -235,7 +235,7 @@ pub struct VCDFile {
     date: String,
     version: String,
     comment: String,
-    scope_root: Option<Rc<VCDScope>>,
+    root_scope: Option<Rc<RefCell<VCDScope>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
 }
 
@@ -249,7 +249,7 @@ impl VCDFile {
             date: Default::default(),
             version: Default::default(),
             comment: Default::default(),
-            scope_root: Default::default(),
+            root_scope: Default::default(),
             signal_values: Default::default(),
         }
     }
@@ -282,8 +282,12 @@ impl VCDFile {
         &self.comment
     }
 
-    pub fn get_root_scope(&self) -> &Option<Rc<VCDScope>> {
-        &self.scope_root
+    pub fn get_root_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
+        &self.root_scope
+    }
+
+    pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
+        self.root_scope = Some(root_scope);
     }
 
     pub fn set_date(&mut self, date_text: String) {
@@ -349,6 +353,9 @@ impl VCDFileParser {
     pub fn get_scope_stack(&mut self) -> &mut VecDeque<Rc<RefCell<VCDScope>>> {
         return &mut self.scope_stack;
     }
+    pub fn is_scope_empty(&self) -> bool {
+        return self.scope_stack.is_empty();
+    }
 
     pub fn set_current_time(&mut self, current_time: i64) {
         self.current_time = current_time;
@@ -356,5 +363,10 @@ impl VCDFileParser {
 
     pub fn get_current_time(&self) -> i64 {
         return self.current_time;
+    }
+
+    pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
+        self.scope_stack.push_back(root_scope.clone());
+        self.vcd_file.set_root_scope(root_scope);
     }
 }
