@@ -42,6 +42,90 @@ typedef struct RustVec {
 } RustVec;
 
 /**
+ * @brief liberty expression operation.
+ *
+ */
+enum RustLibertyExprOp {
+  kBuffer,
+  kNot,
+  kOr,
+  kAnd,
+  kXor,
+  kOne,
+  kZero,
+  kPlus,
+  kMult,
+};
+
+/**
+ * @brief liberty expr.
+ *
+ */
+typedef struct RustLibertyExpr {
+  enum RustLibertyExprOp op;
+  struct RustLibertyExpr* left;
+  struct RustLibertyExpr* right;
+  char* port_name;
+} RustLibertyExpr;
+
+/**
+ * @brief parse expression in rust.
+ *
+ * @param expr_str
+ * @return void*
+ */
+void* rust_parse_expr(const char* expr_str);
+
+/**
+ * @brief convert expr to c expr.
+ *
+ * @param c_expr
+ * @return struct RustLibertyExpr*
+ */
+RustLibertyExpr* rust_convert_expr(void* c_expr);
+
+/**
+ * @brief Get the expr lef object
+ *
+ * @param c_expr
+ * @return LibertyExpr*
+ */
+inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
+  return rust_convert_expr(c_expr->left);
+}
+
+/**
+ * @brief Get the expr right object
+ *
+ * @param c_expr
+ * @return LibertyExpr*
+ */
+inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
+  return rust_convert_expr(c_expr->right);
+}
+
+/**
+ * @brief judge expr func is one.
+ *
+ * @param c_expr
+ * @return true
+ * @return false
+ */
+inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr) {
+  return c_expr->op == RustLibertyExprOp::kOne;
+}
+
+/**
+ * @brief judge expr func is zero.
+ *
+ * @param c_expr
+ * @return true
+ * @return false
+ */
+inline bool rust_expr_func_is_zero(RustLibertyExpr* c_expr) {
+  return c_expr->op == RustLibertyExprOp::kZero;
+}
+/**
  * @brief Rust liberty group stmt for C.
  *
  */
@@ -289,10 +373,11 @@ class RustLibertyExprBuilder {
   ~RustLibertyExprBuilder() = default;
 
   void execute();
-  void get_result_expr();
+  RustLibertyExpr* get_result_expr() { return _result_expr; }
 
  private:
-  std::string _expr_str;  //!< The expression string need to be parsed.
+  std::string _expr_str;          //!< The expression string need to be parsed.
+  RustLibertyExpr* _result_expr;  //!< The parsed expr result.
 };
 
 /**

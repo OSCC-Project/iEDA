@@ -34,6 +34,15 @@
 namespace ista {
 
 /**
+ * @brief liberty expr builder.
+ *
+ */
+void RustLibertyExprBuilder::execute() {
+  auto* rust_expr_result = rust_parse_expr(_expr_str.c_str());
+  _result_expr = rust_convert_expr(rust_expr_result);
+}
+
+/**
  * @brief Visit the liberty simple attribute statement.
  *
  * @param attri
@@ -294,7 +303,7 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
       {"function",
        [=]() {
          const char* expr_str = rust_convert_string_value(attri_value)->value;
-         LibertyExprBuilder expr_builder(lib_port, expr_str);
+         RustLibertyExprBuilder expr_builder(expr_str);
          expr_builder.execute();
          auto* func_expr = expr_builder.get_result_expr();
          lib_port->set_func_expr(func_expr);

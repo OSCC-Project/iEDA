@@ -29,7 +29,6 @@
 #include <set>
 #include <utility>
 
-#include "LibertyParserRustC.hh"
 #include "mLibertyExpr.hh"
 #include "mLibertyExprParse.hh"
 #include "mLibertyParse.hh"
@@ -827,11 +826,11 @@ std::optional<double> LibertyPort::get_port_slew_limit(AnalysisMode mode) {
   }
 }
 
-void LibertyPort::set_func_expr(LibertyExpr* lib_expr) {
+void LibertyPort::set_func_expr(RustLibertyExpr* lib_expr) {
   _func_expr.reset(lib_expr);
 }
 
-LibertyExpr* LibertyPort::get_func_expr() { return _func_expr.get(); }
+RustLibertyExpr* LibertyPort::get_func_expr() { return _func_expr.get(); }
 
 /**
  * @brief Calc port drive resistance use slew/cap.
@@ -1408,7 +1407,7 @@ void LibertyCell::bufferPorts(LibertyPort*& input, LibertyPort*& output) {
  */
 bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output) {
   auto* func_expr = output->get_func_expr();
-  return func_expr && func_expr->get_op() == LibertyExpr::Operator::kBuffer;
+  return func_expr && func_expr->op == RustLibertyExprOp::kBuffer;
 }
 
 /**
@@ -1421,7 +1420,7 @@ bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output) {
  */
 bool LibertyCell::hasInverterFunc(LibertyPort* input, LibertyPort* output) {
   auto* func_expr = output->get_func_expr();
-  return func_expr && func_expr->get_op() == LibertyExpr::Operator::kNot;
+  return func_expr && func_expr->op == RustLibertyExprOp::kNot;
 }
 
 /**
@@ -2457,7 +2456,7 @@ unsigned LibertyReader::visitSimpleAttri(LibertyStmt* attri) {
       {"function",
        [=]() {
          const char* expr_str = attri_value->getStringValue();
-         LibertyExprBuilder expr_builder(lib_port, expr_str);
+         RustLibertyExprBuilder expr_builder(expr_str);
          expr_builder.execute();
          auto* func_expr = expr_builder.get_result_expr();
          lib_port->set_func_expr(func_expr);

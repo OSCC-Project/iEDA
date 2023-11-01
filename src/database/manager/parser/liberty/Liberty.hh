@@ -36,6 +36,7 @@
 #include "BTreeMap.hh"
 #include "FlatMap.hh"
 #include "FlatSet.hh"
+#include "LibertyParserRustC.hh"
 #include "Vector.hh"
 #include "include/Config.hh"
 #include "include/Type.hh"
@@ -564,8 +565,8 @@ class LibertyPort : public LibertyObject {
   void set_port_slew_limit(AnalysisMode mode, double slew_limit);
   std::optional<double> get_port_slew_limit(AnalysisMode mode);
 
-  void set_func_expr(LibertyExpr* lib_expr);
-  LibertyExpr* get_func_expr();
+  void set_func_expr(RustLibertyExpr* lib_expr);
+  RustLibertyExpr* get_func_expr();
 
   void set_func_expr_str(const char* func_expr_str) {
     _func_expr_str = func_expr_str;
@@ -614,7 +615,7 @@ class LibertyPort : public LibertyObject {
   LibertyPortType _port_type = LibertyPortType::kDefault;
   bool _clock_gate_clock_pin = false;   //!< The flag of gate clock pin.
   bool _clock_gate_enable_pin = false;  //!< The flag of gate enable pin.
-  std::unique_ptr<LibertyExpr> _func_expr;
+  std::unique_ptr<RustLibertyExpr> _func_expr;
   std::string _func_expr_str;  //!< store func expr string for debug.
   double _port_cap =
       0.0;  //!< The input pin corresponding to the port has capacitance.
