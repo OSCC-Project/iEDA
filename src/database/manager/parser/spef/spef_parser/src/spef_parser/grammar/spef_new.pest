@@ -1,0 +1,30 @@
+decimal_digits  = _{ ASCII_DIGIT }
+decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
+dec_int         = _{ decimal_integer }
+optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits* }
+optional_frac   = _{ "." ~ decimal_digits* }
+float           = @{ dec_int ~ optional_frac? ~ optional_exp? }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
+multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+COMMENT = _{ line_comment | multiline_comment }
+
+string_text = { (!"\"" ~ ANY)* }
+string = _{ "\"" ~ string_text ~ ("\"") }
+
+attribute_value  = _{ float | string }
+
+header_entry = { header_keywords ~ attribute_value }
+header_keywords = { "*SPEF" | "*DESIGN" | "*DATE" 
+    | "*VENDOR" | "*PROGRAM" | "*VERSION" 
+    | "*DESIGN_FLOW" | "*DIVIDER" | "*DELIMITER" 
+    | "*BUS_DELIMITER" | "*T_UNIT" | "*C_UNIT" 
+    | "*R_UNIT" | "*L_UNIT" 
+}
+
+spef_file = _{
+    SOI 
+    ~ ( header_entry | NEWLINE )* 
+    ~ EOI
+}
