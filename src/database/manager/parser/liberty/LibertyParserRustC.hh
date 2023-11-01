@@ -91,7 +91,7 @@ RustLibertyExpr* rust_convert_expr(void* c_expr);
  * @return LibertyExpr*
  */
 inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
-  return rust_convert_expr(c_expr->left);
+  return c_expr->left ? rust_convert_expr(c_expr->left) : nullptr;
 }
 
 /**
@@ -101,7 +101,7 @@ inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
  * @return LibertyExpr*
  */
 inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
-  return rust_convert_expr(c_expr->right);
+  return c_expr->right ? rust_convert_expr(c_expr->right) : nullptr;
 }
 
 /**

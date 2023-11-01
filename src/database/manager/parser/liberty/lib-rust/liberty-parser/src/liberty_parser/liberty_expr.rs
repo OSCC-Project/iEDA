@@ -108,9 +108,9 @@ fn process_pair(
         parser_queue.push_back(pair_result.unwrap());
     }
 
-    println!("Rule:    {:?}", pair.as_rule());
-    println!("Span:    {:?}", pair.as_span());
-    println!("Text:    {}", pair.as_str());
+    // println!("Rule:    {:?}", pair.as_rule());
+    // println!("Span:    {:?}", pair.as_span());
+    // println!("Text:    {}", pair.as_str());
 
     let mut substitute_queue: VecDeque<Box<liberty_expr_data::LibertyExpr>> = VecDeque::new();
     while parser_queue.len() > current_queue_len {
@@ -154,8 +154,12 @@ pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>,
 #[no_mangle]
 pub extern "C" fn rust_parse_expr(expr_str: *const c_char) -> *mut c_void {
     let c_expr_str = unsafe { std::ffi::CStr::from_ptr(expr_str) };
-    let r_expr_str = c_expr_str.to_string_lossy().into_owned();
-    println!("r str {}", r_expr_str);
+    let mut r_expr_str = c_expr_str.to_string_lossy().into_owned();
+    // println!("r str {}", r_expr_str);
+
+    if (!r_expr_str.ends_with(";")) {
+        r_expr_str = r_expr_str + ";";
+    }
 
     let lib_expr = parse_expr(&r_expr_str);
     assert!(lib_expr.is_ok());
