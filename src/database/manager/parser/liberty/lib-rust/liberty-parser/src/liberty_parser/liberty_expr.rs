@@ -6,6 +6,11 @@ use pest_derive::Parser;
 
 use std::collections::VecDeque;
 
+use std::ffi::c_void;
+use std::os::raw::c_char;
+
+use crate::liberty_parser::liberty_c_api::string_to_c_char;
+
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/lib_expr.pest"]
 pub struct LibertyExprParser;
@@ -128,7 +133,7 @@ fn process_pair(
 }
 
 /// process vcd file data.
-pub fn parse_expr_file(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
+pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let parse_result = LibertyExprParser::parse(Rule::expr_result, expr_str);
     let mut parser_queue: VecDeque<Box<liberty_expr_data::LibertyExpr>> = VecDeque::new();
 
@@ -146,15 +151,59 @@ pub fn parse_expr_file(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyE
     }
 }
 
+#[no_mangle]
+pub extern "C" fn rust_parse_expr(expr_str: *const c_char) -> *mut c_void {
+    let c_expr_str = unsafe { std::ffi::CStr::from_ptr(expr_str) };
+    let r_expr_str = c_expr_str.to_string_lossy().into_owned();
+    println!("r str {}", r_expr_str);
+
+    let lib_expr = parse_expr(&r_expr_str);
+    assert!(lib_expr.is_ok());
+
+    let raw_pointer = Box::into_raw(lib_expr.unwrap());
+    raw_pointer as *mut c_void
+}
+
+#[repr(C)]
+pub struct RustLibertyExpr {
+    op: liberty_expr_data::LibertyExprOp,
+    left: *mut c_void,
+    right: *mut c_void,
+    port_name: *mut c_char,
+}
+
+/// convert expr to c expr.
+#[no_mangle]
+pub extern "C" fn rust_convert_expr(c_expr: *mut liberty_expr_data::LibertyExpr) -> *mut RustLibertyExpr {
+    unsafe {
+        let op = (*c_expr).get_op();
+        let left = (*c_expr).get_left();
+        let right = (*c_expr).get_right();
+        let port_name = (*c_expr).get_port_name();
+
+        let c_left =
+            if left.is_some() { left.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
+        let c_right =
+            if right.is_some() { right.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
+        let c_port_name =
+            if port_name.is_some() { string_to_c_char(&port_name.as_deref().unwrap()) } else { std::ptr::null_mut() };
+
+        let expr =
+            RustLibertyExpr { op, left: c_left as *mut c_void, right: c_right as *mut c_void, port_name: c_port_name };
+        let expr_pointer = Box::new(expr);
+        Box::into_raw(expr_pointer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::liberty_parser::liberty_expr::parse_expr_file;
+    use crate::liberty_parser::liberty_expr::parse_expr;
 
     #[test]
     fn test_parse_expr_path() {
         let expr_str = "A1 & !A2 & B1 & !B2 & !C1 & C2;";
-        let parse_result = parse_expr_file(expr_str);
+        let parse_result = parse_expr(expr_str);
         assert!(parse_result.is_ok());
     }
 }

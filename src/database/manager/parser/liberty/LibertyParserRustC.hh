@@ -280,6 +280,22 @@ namespace ista {
 class LibertyBuilder;
 
 /**
+ * @brief The liberty expression builder for parser function string.
+ *
+ */
+class RustLibertyExprBuilder {
+ public:
+  RustLibertyExprBuilder(const char* expr_str) : _expr_str(expr_str) {}
+  ~RustLibertyExprBuilder() = default;
+
+  void execute();
+  void get_result_expr();
+
+ private:
+  std::string _expr_str;  //!< The expression string need to be parsed.
+};
+
+/**
  * @brief The liberty reader is used to read rust data.
  *
  */

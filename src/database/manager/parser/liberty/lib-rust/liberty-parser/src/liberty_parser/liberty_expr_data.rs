@@ -1,6 +1,8 @@
 use std::default::Default;
 
 /// liberty expression operation.
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub enum LibertyExprOp {
     Buffer,
     Not,
@@ -14,6 +16,7 @@ pub enum LibertyExprOp {
 }
 
 /// liberty expr.
+#[repr(C)]
 pub struct LibertyExpr {
     op: LibertyExprOp,
     left: Option<Box<LibertyExpr>>,
@@ -24,6 +27,10 @@ pub struct LibertyExpr {
 impl LibertyExpr {
     pub fn new(op: LibertyExprOp) -> Self {
         Self { op, left: Option::None, right: Option::None, port_name: Option::None }
+    }
+
+    pub fn get_op(&self) -> LibertyExprOp {
+        self.op
     }
 
     pub fn set_port_name(&mut self, port_name: String) {
