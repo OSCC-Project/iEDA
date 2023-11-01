@@ -15,6 +15,6 @@ fn main() {
     let elapsed_time = end_time.duration_since(start_time);
     let elapsed_s = elapsed_time.as_secs();
 
-    println!("Program execution time (milliseconds): {} ms", elapsed_s);
+    println!("Program execution time (milliseconds): {} s", elapsed_s);
 
 }

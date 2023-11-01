@@ -6,6 +6,14 @@ exclude = ["build"]
 rust-version = "1.66"
 authors = ["longshuaiying <longshy@pcl.ac.cn>"]
 
+[build-dependencies]
+cbindgen = "0.26"
+
+[lib]
+name = "verilog_parser"
+# #crate-type = ["staticlib"]
+crate-type = ["cdylib"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

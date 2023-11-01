@@ -1,12 +1,14 @@
-//mod verilog_data;
-
+pub mod verilog_c_api;
 pub mod verilog_data;
 
+use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
 
-use pest::iterators::Pair;
-use pest::iterators::Pairs;
+use std::ffi::c_void;
+use std::os::raw::c_char;
+
+use self::verilog_data::VerilogModule;
 
 #[derive(Parser)]
 #[grammar = "verilog_parser/grammar/verilog.pest"]
@@ -500,6 +502,24 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
     Ok(verilog_module)
 }
 
+#[no_mangle]
+pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void {
+    let c_str = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
+    let r_str = c_str.to_string_lossy().into_owned();
+    println!("r str {}", r_str);
+
+    let verilog_result = parse_verilog_file(&r_str);
+    let verilog_module:verilog_data::VerilogModule = verilog_result.unwrap(); 
+    let verilog_module_pointer = Box::new(verilog_module);
+
+    let raw_pointer = Box::into_raw(verilog_module_pointer);
+    raw_pointer as *mut c_void
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut VerilogModule) {
+    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
+}
 
 
 
