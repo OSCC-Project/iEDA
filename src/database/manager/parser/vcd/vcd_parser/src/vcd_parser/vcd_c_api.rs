@@ -9,9 +9,10 @@ use std::ops::DerefMut;
 use std::os::raw::*;
 use std::ptr::null_mut;
 use std::rc::Rc;
+use threadpool::ThreadPool;
 
 use super::vcd_data::VCDScope;
-use crate::vcd_parser::vcd_calc_tc_sp::FindScopeClosure;
+use crate::vcd_parser::vcd_calc_tc_sp;
 
 #[repr(C)]
 pub struct RustVec {
@@ -262,34 +263,6 @@ pub extern "C" fn rust_parse_vcd(lib_path: *const c_char) -> *mut c_void {
     raw_pointer as *mut c_void
 }
 
-struct TraverseScopeClosure {
-    closure: Box<dyn Fn(&VCDScope)>,
-}
-
-impl TraverseScopeClosure {
-    fn new() -> Self {
-        let closure = Box::new(|parent_scope: &VCDScope| {
-            let signals = parent_scope.get_scope_signals();
-            // Calculate the signal of the current layer scope
-            for scope_signal in signals {
-                if let vcd_data::VCDVariableType::VarWire = *scope_signal.get_signal_type() {
-                } else {
-                    continue;
-                }
-            }
-
-            // View the next level of the scope
-            let children_scopes = parent_scope.get_children_scopes();
-            for child_scope in children_scopes {
-                let recursive_closure = TraverseScopeClosure::new();
-                // (recursive_closure.closure)(child_scope.as_ref().get_mut());
-            }
-        });
-
-        Self { closure }
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn rust_calc_scope_tc_sp(
     c_top_vcd_scope_name: *const c_char,
@@ -300,14 +273,26 @@ pub extern "C" fn rust_calc_scope_tc_sp(
         let r_str = c_str.to_string_lossy().into_owned();
         println!("r str {}", r_str);
 
-        match (*c_vcd_file).get_root_scope() {
+        /*find top scope by top scope name */
+        let find_scope_option = match (*c_vcd_file).get_root_scope() {
             Some(the_scope) => {
-                let find_scope_closure = FindScopeClosure::new(&the_scope, &r_str);
-                (find_scope_closure.closure)(&the_scope, &r_str);
+                let find_scope_closure = vcd_calc_tc_sp::FindScopeClosure::new();
+                let find_scope = (find_scope_closure.closure)(&the_scope, &r_str);
+                find_scope
             }
             None => panic!("root scope not exist."),
         };
 
-        // (recursive_closure.closure)(&*c_top_vcd_scope);
+        let num_thread = 48;
+        let thread_pool = ThreadPool::new(num_thread);
+
+        /*traverse scope to calc tc sp */
+        let mut signal_tc_vec: Vec<vcd_calc_tc_sp::SignalTC> = Vec::new();
+        let mut signal_duration_vec: Vec<vcd_calc_tc_sp::SignalDuration> = Vec::new();
+
+        let find_top_scope: Rc<RefCell<VCDScope>> = find_scope_option.unwrap();
+        // let traverse_scope_closure =
+        //     vcd_calc_tc_sp::TraverseScopeClosure::new(&mut signal_tc_vec, &mut signal_duration_vec);
+        // (traverse_scope_closure.closure)(find_top_scope.borrow().deref(), &thread_pool);
     }
 }
