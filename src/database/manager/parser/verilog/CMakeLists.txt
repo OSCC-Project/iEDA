@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 set (CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
 
 ################################################################
 #
@@ -28,11 +28,14 @@ add_library(verilog-parser ${SRC}
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
 
-target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES}) 
+target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES} netlist) 
 
 target_include_directories(verilog-parser 
     PUBLIC
-        ${HOME_OPERATION}/iSTA/include  
+        ${HOME_DATABASE}/manager/parser
+        ${HOME_THIRDPARTY}/parser/liberty/
+        ${HOME_OPERATION}/iSTA/source/module/
+        ${HOME_OPERATION}/iSTA/include   
         ${HOME_THIRDPARTY}/parser/verilog
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
