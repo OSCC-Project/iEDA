@@ -29,7 +29,7 @@ pub extern "C" fn rust_vec_len(vec: &RustVec) -> usize {
 
 // More functions to manipulate the Vec...
 
-fn string_to_c_char(s: &str) -> *mut c_char {
+pub fn string_to_c_char(s: &str) -> *mut c_char {
     let cs = CString::new(s).unwrap();
     cs.into_raw()
 }
