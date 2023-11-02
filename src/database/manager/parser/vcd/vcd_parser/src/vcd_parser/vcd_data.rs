@@ -33,6 +33,7 @@ pub struct VCDTimeAndValue {
 }
 
 /// VCD variable type of vcd signal
+#[derive(Copy, Clone)]
 pub enum VCDVariableType {
     VarEvent,
     VarInteger,
@@ -56,17 +57,17 @@ pub enum VCDVariableType {
 }
 
 /// VCD signal
-pub struct VCDSignal<'a> {
+pub struct VCDSignal {
     /// hash or called ref name.
     hash: String,
     name: String,
     bus_index: Option<(i32, i32)>,
     signal_size: u32,
     signal_type: VCDVariableType,
-    scope: Option<Rc<RefCell<VCDScope<'a>>>>,
+    scope: Option<Rc<RefCell<VCDScope>>>,
 }
 
-impl<'a> VCDSignal<'a> {
+impl VCDSignal {
     pub fn new() -> Self {
         Self {
             hash: Default::default(),
@@ -118,6 +119,30 @@ impl<'a> VCDSignal<'a> {
             _ => panic!("unknown signal type {}", type_str),
         }
     }
+
+    pub fn get_hash(&self) -> &str {
+        &self.hash
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_bus_index(&self) -> &Option<(i32, i32)> {
+        &self.bus_index
+    }
+
+    pub fn get_signal_size(&self) -> u32 {
+        self.signal_size
+    }
+
+    pub fn get_signal_type(&self) -> &VCDVariableType {
+        &self.signal_type
+    }
+
+    pub fn get_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
+        &self.scope
+    }
 }
 
 /// VCD Scope type
@@ -131,15 +156,15 @@ pub enum VCDScopeType {
 }
 
 /// VCD Scope
-pub struct VCDScope<'a> {
+pub struct VCDScope {
     name: String,
     scope_type: VCDScopeType,
-    parent_scope: Option<Rc<RefCell<VCDScope<'a>>>>,
-    children_scopes: Vec<Rc<RefCell<VCDScope<'a>>>>,
-    scope_signals: Vec<Rc<VCDSignal<'a>>>,
+    parent_scope: Option<Rc<RefCell<VCDScope>>>,
+    children_scopes: Vec<Rc<RefCell<VCDScope>>>,
+    scope_signals: Vec<Rc<VCDSignal>>,
 }
 
-impl<'a> VCDScope<'a> {
+impl VCDScope {
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -161,15 +186,15 @@ impl<'a> VCDScope<'a> {
         }
     }
 
-    pub fn set_parent_scope(&mut self, parent_scope: Rc<RefCell<VCDScope<'a>>>) {
+    pub fn set_parent_scope(&mut self, parent_scope: Rc<RefCell<VCDScope>>) {
         self.parent_scope = Some(parent_scope);
     }
 
-    pub fn add_child_scope(&mut self, child_scope: Rc<RefCell<VCDScope<'a>>>) {
+    pub fn add_child_scope(&mut self, child_scope: Rc<RefCell<VCDScope>>) {
         self.children_scopes.push(child_scope);
     }
 
-    pub fn add_scope_signal(&mut self, vcd_signal: VCDSignal<'a>) {
+    pub fn add_scope_signal(&mut self, vcd_signal: VCDSignal) {
         self.scope_signals.push(vcd_signal.into());
     }
 
@@ -177,42 +202,44 @@ impl<'a> VCDScope<'a> {
         &self.name
     }
 
-    pub fn get_parent_scope(&self) -> &Option<Rc<RefCell<VCDScope<'a>>>> {
+    pub fn get_parent_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
         &self.parent_scope
     }
 
-    pub fn get_children_scopes(&self) -> &Vec<Rc<RefCell<VCDScope<'a>>>> {
+    pub fn get_children_scopes(&self) -> &Vec<Rc<RefCell<VCDScope>>> {
         &self.children_scopes
     }
 
-    pub fn get_scope_signals(&mut self) -> &Vec<Rc<VCDSignal<'a>>> {
+    pub fn get_scope_signals(&self) -> &Vec<Rc<VCDSignal>> {
         &self.scope_signals
     }
 }
 
 /// VCD time unit
+#[derive(Copy, Clone)]
 pub enum VCDTimeUnit {
     UnitSecond,
     UnitMS,
+    UnitUS,
     UnitNS,
     UnitPS,
     UnitFS,
 }
 
 /// VCD File
-pub struct VCDFile<'a> {
+pub struct VCDFile {
     start_time: i64,
     end_time: i64,
-    time_unit: VCDTimeUnit,
     time_resolution: u32,
+    time_unit: VCDTimeUnit,
     date: String,
     version: String,
     comment: String,
-    scope_root: Option<Rc<VCDScope<'a>>>,
+    root_scope: Option<Rc<RefCell<VCDScope>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
 }
 
-impl<'a> VCDFile<'a> {
+impl VCDFile {
     pub fn new() -> Self {
         Self {
             start_time: 0,
@@ -222,7 +249,7 @@ impl<'a> VCDFile<'a> {
             date: Default::default(),
             version: Default::default(),
             comment: Default::default(),
-            scope_root: Default::default(),
+            root_scope: Default::default(),
             signal_values: Default::default(),
         }
     }
@@ -239,6 +266,10 @@ impl<'a> VCDFile<'a> {
         self.time_resolution
     }
 
+    pub fn get_time_unit(&mut self) -> &VCDTimeUnit {
+        &self.time_unit
+    }
+
     pub fn get_date(&mut self) -> &str {
         &self.date
     }
@@ -251,8 +282,12 @@ impl<'a> VCDFile<'a> {
         &self.comment
     }
 
-    pub fn get_root_scope(&self) -> &Option<Rc<VCDScope<'a>>> {
-        &self.scope_root
+    pub fn get_root_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
+        &self.root_scope
+    }
+
+    pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
+        self.root_scope = Some(root_scope);
     }
 
     pub fn set_date(&mut self, date_text: String) {
@@ -263,6 +298,7 @@ impl<'a> VCDFile<'a> {
         match time_unit {
             "s" => self.time_unit = VCDTimeUnit::UnitSecond,
             "ms" => self.time_unit = VCDTimeUnit::UnitMS,
+            "us" => self.time_unit = VCDTimeUnit::UnitUS,
             "ns" => self.time_unit = VCDTimeUnit::UnitNS,
             "ps" => self.time_unit = VCDTimeUnit::UnitPS,
             "fs" => self.time_unit = VCDTimeUnit::UnitFS,
@@ -291,13 +327,13 @@ impl<'a> VCDFile<'a> {
 }
 
 /// VCD File parser
-pub struct VCDFileParser<'a> {
-    vcd_file: VCDFile<'a>,
-    scope_stack: VecDeque<Rc<RefCell<VCDScope<'a>>>>,
+pub struct VCDFileParser {
+    vcd_file: VCDFile,
+    scope_stack: VecDeque<Rc<RefCell<VCDScope>>>,
     current_time: i64,
 }
 
-impl<'a> VCDFileParser<'a> {
+impl VCDFileParser {
     pub fn new() -> Self {
         Self {
             vcd_file: VCDFile::new(),
@@ -306,16 +342,19 @@ impl<'a> VCDFileParser<'a> {
         }
     }
 
-    pub fn get_vcd_file(&mut self) -> &mut VCDFile<'a> {
+    pub fn get_vcd_file(&mut self) -> &mut VCDFile {
         return &mut self.vcd_file;
     }
 
-    pub fn get_vcd_file_imute(self) -> VCDFile<'a> {
+    pub fn get_vcd_file_imute(self) -> VCDFile {
         return self.vcd_file;
     }
 
-    pub fn get_scope_stack(&mut self) -> &mut VecDeque<Rc<RefCell<VCDScope<'a>>>> {
+    pub fn get_scope_stack(&mut self) -> &mut VecDeque<Rc<RefCell<VCDScope>>> {
         return &mut self.scope_stack;
+    }
+    pub fn is_scope_empty(&self) -> bool {
+        return self.scope_stack.is_empty();
     }
 
     pub fn set_current_time(&mut self, current_time: i64) {
@@ -324,5 +363,10 @@ impl<'a> VCDFileParser<'a> {
 
     pub fn get_current_time(&self) -> i64 {
         return self.current_time;
+    }
+
+    pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
+        self.scope_stack.push_back(root_scope.clone());
+        self.vcd_file.set_root_scope(root_scope);
     }
 }

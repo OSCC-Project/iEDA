@@ -12,6 +12,21 @@ Do not modify this manually.
 #include <stdlib.h>
 
 /**
+ * liberty expression operation.
+ */
+typedef enum LibertyExprOp {
+    Buffer,
+    Not,
+    Or,
+    And,
+    Xor,
+    One,
+    Zero,
+    Plus,
+    Mult,
+} LibertyExprOp;
+
+/**
  * The group statement.
  * # Example
  *
@@ -32,6 +47,8 @@ Do not modify this manually.
  * }
  */
 typedef struct LibertyGroupStmt LibertyGroupStmt;
+
+typedef struct Option_String Option_String;
 
 typedef struct RustVec {
     void *data;
@@ -70,6 +87,23 @@ typedef struct RustLibertyComplexAttrStmt {
     struct RustVec attri_values;
 } RustLibertyComplexAttrStmt;
 
+typedef struct RustLibertyExpr {
+    enum LibertyExprOp op;
+    void *left;
+    void *right;
+    char *port_name;
+} RustLibertyExpr;
+
+/**
+ * liberty expr.
+ */
+typedef struct LibertyExpr {
+    enum LibertyExprOp op;
+    struct LibertyExpr *left;
+    struct LibertyExpr *right;
+    struct Option_String port_name;
+} LibertyExpr;
+
 void *rust_parse_lib(const char *lib_path);
 
 void rust_free_lib_group(struct LibertyGroupStmt *c_lib_group);
@@ -101,3 +135,10 @@ bool rust_is_complex_attri_stmt(void *c_lib_stmt);
 bool rust_is_attri_stmt(void *c_lib_stmt);
 
 bool rust_is_group_stmt(void *c_lib_stmt);
+
+void *rust_parse_expr(const char *expr_str);
+
+/**
+ * convert expr to c expr.
+ */
+struct RustLibertyExpr *rust_convert_expr(struct LibertyExpr *c_expr);

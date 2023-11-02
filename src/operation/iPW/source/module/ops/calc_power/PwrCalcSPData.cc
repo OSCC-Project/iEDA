@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -70,37 +70,37 @@ double PwrCalcSPData::getSPData(std::string_view port_name, Instance* inst) {
  * @param inst
  * @return double
  */
-double PwrCalcSPData::calcSPData(LibertyExpr* expr, Instance* inst) {
+double PwrCalcSPData::calcSPData(RustLibertyExpr* expr, Instance* inst) {
   double sp_data;
-  const char* port_name = expr->get_port();
-  auto* left_expr = expr->get_left();
-  auto* right_expr = expr->get_right();
+  const char* port_name = expr->port_name;
+  auto* left_expr = rust_get_expr_left(expr);
+  auto* right_expr = rust_get_expr_right(expr);
 
-  switch (expr->get_op()) {
+  switch (expr->op) {
     /*Monocular calculation.*/
-    case LibertyExpr::Operator::kBuffer: {
+    case RustLibertyExprOp::kBuffer: {
       sp_data = getSPData(port_name, inst);
       break;
     }
 
-    case LibertyExpr::Operator::kOne: {
+    case RustLibertyExprOp::kOne: {
       sp_data = 1.0;
       break;
     }
 
-    case LibertyExpr::Operator::kZero: {
+    case RustLibertyExprOp::kZero: {
       sp_data = 0.0;
       break;
     }
 
-    case LibertyExpr::Operator::kNot: {
+    case RustLibertyExprOp::kNot: {
       auto left_port_sp_data = calcSPData(left_expr, inst);
       sp_data = 1 - left_port_sp_data;
       break;
     }
 
     /*Binocular calculation.*/
-    case LibertyExpr::Operator::kOr: {
+    case RustLibertyExprOp::kOr: {
       auto left_port_sp_data = calcSPData(left_expr, inst);
       auto right_port_sp_data = calcSPData(right_expr, inst);
 
@@ -111,8 +111,8 @@ double PwrCalcSPData::calcSPData(LibertyExpr* expr, Instance* inst) {
       break;
     }
 
-    case LibertyExpr::Operator::kMult:
-    case LibertyExpr::Operator::kAnd: {
+    case RustLibertyExprOp::kMult:
+    case RustLibertyExprOp::kAnd: {
       auto left_port_sp_data = calcSPData(left_expr, inst);
       auto right_port_sp_data = calcSPData(right_expr, inst);
 
@@ -120,8 +120,8 @@ double PwrCalcSPData::calcSPData(LibertyExpr* expr, Instance* inst) {
       break;
     }
 
-    case LibertyExpr::Operator::kPlus:
-    case LibertyExpr::Operator::kXor: {
+    case RustLibertyExprOp::kPlus:
+    case RustLibertyExprOp::kXor: {
       auto left_port_sp_data = calcSPData(left_expr, inst);
       auto right_port_sp_data = calcSPData(right_expr, inst);
       double p0 = left_port_sp_data * (1.0 - right_port_sp_data);

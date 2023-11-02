@@ -1,5 +1,7 @@
 pub mod liberty_c_api;
 pub mod liberty_data;
+pub mod liberty_expr;
+pub mod liberty_expr_data;
 
 use pest::iterators::Pair;
 use pest::Parser;

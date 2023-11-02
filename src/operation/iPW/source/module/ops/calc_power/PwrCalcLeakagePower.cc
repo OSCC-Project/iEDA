@@ -42,7 +42,7 @@ double PwrCalcLeakagePower::calcLeakagePower(LibertyLeakagePower* leakage_power,
 
   if (!when.empty()) {
     /*Parse conditional statements of the leakage power*/
-    LibertyExprBuilder expr_builder(nullptr, when.c_str());
+    RustLibertyExprBuilder expr_builder(when.c_str());
     expr_builder.execute();
     auto* expr = expr_builder.get_result_expr();
 

@@ -16,3 +16,8 @@ crate-type = ["cdylib"]
 [dependencies]
 pest = "2.6"
 pest_derive = "2.6"
+threadpool = "1.8.1"
+
+#[features]
+#default = ["multithreading"]
+#multithreading = []
