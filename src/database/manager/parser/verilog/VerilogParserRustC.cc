@@ -58,36 +58,4 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file)
   return is_ok;
 }
 
-/**
- * @brief Link the design file to design netlist use rust parser.
- *
- */
-void RustVerilogReader::linkDesign()
-{
-  Sta* sta = get_sta();
-  const auto* const top_cell_name = _top_module->module_name;
-  auto top_module_stmts = _top_module->module_stmts;
-  auto port_list = _top_module->port_list;
-
-  LOG_INFO << "link design " << top_cell_name << " start";
-  _design_netlist.set_name(top_cell_name);
-
-  void* stmt;
-  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt)
-  {
-    if (rust_is_verilog_dcls_stmt(stmt)) {
-      RustVerilogDcls* verilog_dcls_struct = rust_convert_verilog_dcls(stmt);
-      auto verilog_dcls = verilog_dcls_struct->verilog_dcls;
-      void* verilog_dcl;
-      //   FOREACH_VEC_ELEM(&verilog_dcls, void, verilog_dcl) { process_dcl_stmt(rust_convert_verilog_dcl(verilog_dcl)); }
-    } else if (rust_is_module_inst_stmt(stmt)) {
-      RustVerilogInst* verilog_inst = rust_convert_verilog_inst(stmt);
-      const char* inst_name = verilog_inst->inst_name;
-      const char* liberty_cell_name = verilog_inst->cell_name;
-      auto port_connections = verilog_inst->port_connections;
-
-      auto* inst_cell = sta->findLibertyCell(liberty_cell_name);
-    }
-  }
-}
 }  // namespace ista

@@ -65,13 +65,10 @@ add_custom_command(
             ${RUST_OUTPUT_DIR}
 )
 
-target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES} netlist sta ${RUST_LIB_PATH}) 
+target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
 
 target_include_directories(verilog-parser 
     PUBLIC
-        ${HOME_DATABASE}/manager/parser
-        ${HOME_THIRDPARTY}/parser/liberty/
-        ${HOME_OPERATION}/iSTA/source/module/
         ${HOME_OPERATION}/iSTA/include   
         ${HOME_THIRDPARTY}/parser/verilog
         ${CMAKE_CURRENT_SOURCE_DIR}

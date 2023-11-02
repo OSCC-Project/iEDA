@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::Debug;
 
 pub trait VerilogVirtualBaseID {
     fn is_bus_index_id(&self) -> bool {
@@ -303,7 +304,7 @@ impl VerilogPortRefPortConnect {
     }
 }
 
-pub trait VerilogVirtualBaseStmt {
+pub trait VerilogVirtualBaseStmt: Debug {
     fn is_module_inst_stmt(&self) -> bool {
         false
     }
@@ -322,13 +323,14 @@ pub trait VerilogVirtualBaseStmt {
     fn get_line_no(&self) -> usize {
         panic!("This is unknown value.");
     }
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
-impl fmt::Debug for dyn VerilogVirtualBaseStmt {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "VerilogVirtualBaseStmt {{ line_no: {} }}", self.get_line_no())
-    }
-}
+// impl fmt::Debug for dyn VerilogVirtualBaseStmt {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "VerilogVirtualBaseStmt {{ line_no: {} }}", self.get_line_no())
+//     }
+// }
 
 /// The base class for verilog stmt,include module dcl, module instance, module assign.
 /// maybe dont need the base class***************************************
@@ -382,6 +384,10 @@ impl VerilogInst {
     pub fn get_cell_name(&self) -> &str {
         &self.cell_name
     }
+
+    pub fn get_port_connections(&self) -> &Vec<Box<VerilogPortRefPortConnect>> {
+        &self.port_connections
+    }
 }
 
 impl VerilogVirtualBaseStmt for VerilogInst {
@@ -391,9 +397,12 @@ impl VerilogVirtualBaseStmt for VerilogInst {
     fn get_line_no(&self) -> usize {
         self.stmt.get_line_no()
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 /// #define FOREACH_VERILOG_PORT_CONNECT(inst, port_connect) for (auto& port_connect : inst->get_port_connections())
-
+#[derive(Debug)]
 pub struct VerilogAssign {
     stmt: VerilogStmt,  //stmt denote line_no 
     left_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
@@ -432,6 +441,9 @@ impl VerilogVirtualBaseStmt for VerilogAssign {
     }
     fn get_line_no(&self) -> usize {
         self.stmt.get_line_no()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -494,6 +506,9 @@ impl VerilogVirtualBaseStmt for VerilogDcl {
     fn get_line_no(&self) -> usize {
         self.stmt.get_line_no()
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 ///The mutiple verilg dcl.
@@ -518,10 +533,10 @@ impl VerilogDcls {
     pub fn get_stmt(&self) -> &VerilogStmt {
         &self.stmt
     }
-    fn get_verilog_dcls(&self) -> &Vec<Box<VerilogDcl>> {
+    pub fn get_verilog_dcls(&self) -> &Vec<Box<VerilogDcl>> {
         &self.verilog_dcls
     }
-    fn get_dcl_num(&self) -> usize {
+    pub fn get_dcl_num(&self) -> usize {
         self.verilog_dcls.len()
     }
 }
@@ -532,6 +547,9 @@ impl VerilogVirtualBaseStmt for VerilogDcls {
     }
     fn get_line_no(&self) -> usize {
         self.stmt.get_line_no()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -592,6 +610,9 @@ impl VerilogVirtualBaseStmt for VerilogModule {
     }
     fn get_line_no(&self) -> usize {
         self.stmt.get_line_no()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

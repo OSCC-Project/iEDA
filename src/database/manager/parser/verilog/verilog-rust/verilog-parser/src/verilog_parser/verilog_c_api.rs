@@ -71,5 +71,101 @@ pub extern "C" fn rust_convert_raw_verilog_module(verilog_module: *mut verilog_d
     }
 }
 
+#[repr(C)]
+pub struct RustVerilogDcls {
+    line_no: usize,
+    verilog_dcls: RustVec,
+} 
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_dcls(c_verilog_dcls_struct: *mut c_void)
+-> *mut RustVerilogDcls {
+    unsafe {
+        let mut verilog_stmt = unsafe { &mut *(c_verilog_dcls_struct as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+        let verilog_dcls_struct = (*verilog_stmt).as_any().downcast_ref::<verilog_data::VerilogDcls>().unwrap();
+        let line_no = (*verilog_dcls_struct).get_stmt().get_line_no();
+        let verilog_dcls_rust_vec = (*verilog_dcls_struct).get_verilog_dcls();
+        let verilog_dcls= rust_vec_to_c_array(verilog_dcls_rust_vec);
+        let rust_verilog_dcls = RustVerilogDcls { line_no, verilog_dcls };
+        let rust_verilog_dcls_pointer = Box::new(rust_verilog_dcls);
+        let raw_pointer = Box::into_raw(rust_verilog_dcls_pointer);
+        raw_pointer
+    }
+}
+
+#[repr(C)]
+pub struct RustVerilogInst {
+    line_no: usize,
+    inst_name: *mut c_char,
+    cell_name: *mut c_char,
+    port_connections: RustVec,  
+} 
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_inst(c_verilog_inst: *mut c_void)
+-> *mut RustVerilogInst {
+    unsafe {
+        let mut verilog_stmt = unsafe { &mut *(c_verilog_inst as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+        let verilog_inst = (*verilog_stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+
+        // get value in verilog_inst.
+        let line_no = (*verilog_inst).get_stmt().get_line_no();
+        let inst_name_str = (*verilog_inst).get_inst_name();
+        let cell_name_str = (*verilog_inst).get_cell_name();
+        let port_connections_rust_vec = (*verilog_inst).get_port_connections();
+
+        // convert str,vec.
+        let inst_name = string_to_c_char(inst_name_str);
+        let cell_name = string_to_c_char(cell_name_str);
+        let port_connections = rust_vec_to_c_array(port_connections_rust_vec);
+
+        let rust_verilog_inst = RustVerilogInst { line_no, inst_name,cell_name, port_connections};
+        let rust_verilog_inst_pointer = Box::new(rust_verilog_inst);
+        let raw_pointer = Box::into_raw(rust_verilog_inst_pointer);
+        raw_pointer
+    }
+}
+
+
+#[no_mangle]
+pub extern "C" fn rust_is_module_inst_stmt(c_verilog_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+
+    unsafe { (*verilog_stmt).is_module_inst_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_module_assign_stmt(c_verilog_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+
+    unsafe { (*verilog_stmt).is_module_assign_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_verilog_dcl_stmt(c_verilog_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+
+    unsafe { (*verilog_stmt).is_verilog_dcl_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_verilog_dcls_stmt(c_verilog_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+
+    unsafe { (*verilog_stmt).is_verilog_dcls_stmt() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_module_stmt(c_verilog_stmt: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+
+    unsafe { (*verilog_stmt).is_module_stmt() }
+}
+
 
 

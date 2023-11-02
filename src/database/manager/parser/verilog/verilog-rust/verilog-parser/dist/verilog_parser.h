@@ -27,6 +27,18 @@ typedef struct RustVerilogModule {
     struct RustVec module_stmts;
 } RustVerilogModule;
 
+typedef struct RustVerilogDcls {
+    uintptr_t line_no;
+    struct RustVec verilog_dcls;
+} RustVerilogDcls;
+
+typedef struct RustVerilogInst {
+    uintptr_t line_no;
+    char *inst_name;
+    char *cell_name;
+    struct RustVec port_connections;
+} RustVerilogInst;
+
 void *rust_parse_verilog(const char *verilog_path);
 
 void rust_free_verilog_module(struct VerilogModule *c_verilog_module);
@@ -36,3 +48,17 @@ uintptr_t rust_vec_len(const struct RustVec *vec);
 void free_c_char(char *s);
 
 struct RustVerilogModule *rust_convert_raw_verilog_module(struct VerilogModule *verilog_module);
+
+struct RustVerilogDcls *rust_convert_verilog_dcls(void *c_verilog_dcls_struct);
+
+struct RustVerilogInst *rust_convert_verilog_inst(void *c_verilog_inst);
+
+bool rust_is_module_inst_stmt(void *c_verilog_stmt);
+
+bool rust_is_module_assign_stmt(void *c_verilog_stmt);
+
+bool rust_is_verilog_dcl_stmt(void *c_verilog_stmt);
+
+bool rust_is_verilog_dcls_stmt(void *c_verilog_stmt);
+
+bool rust_is_module_stmt(void *c_verilog_stmt);

@@ -29,8 +29,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
-
-#include "netlist/Netlist.hh"
+#include <vector>
 
 extern "C" {
 /**
@@ -56,6 +55,28 @@ typedef struct RustVerilogModule
   struct RustVec port_list;
   struct RustVec module_stmts;
 } RustVerilogModule;
+
+/**
+ * @brief Rust verilog dcls for C.
+ *
+ */
+typedef struct RustVerilogDcls
+{
+  uintptr_t line_no;
+  struct RustVec verilog_dcls;
+} RustVerilogDcls;
+
+/**
+ * @brief Rust verilog inst for C.
+ *
+ */
+typedef struct RustVerilogInst
+{
+  uintptr_t line_no;
+  char* inst_name;
+  char* cell_name;
+  struct RustVec port_connections;
+} RustVerilogInst;
 
 /**
  * @brief Rust parser verilog interface.
@@ -87,6 +108,122 @@ void free_c_char(char* s);
  * @return struct RustVerilogModule*
  */
 struct RustVerilogModule* rust_convert_raw_verilog_module(void* verilog_module);
+
+/**
+ * @brief Rust convert verilog_dcls_struct to C struct.
+ *
+ * @param verilog_dcls_struct
+ * @return struct RustVerilogDcls*
+ */
+struct RustVerilogDcls* rust_convert_verilog_dcls(void* verilog_dcls_struct);
+
+/**
+ * @brief Rust convert verilog_inst to C struct.
+ *
+ * @param verilog_inst
+ * @return struct RustVerilogInst*
+ */
+struct RustVerilogInst* rust_convert_verilog_inst(void* verilog_inst);
+
+/**
+ * @brief judge whether stmt is module inst stmt.
+ *
+ * @param c_verilog_stmt
+ * @return true
+ * @return false
+ */
+bool rust_is_module_inst_stmt(void* c_verilog_stmt);
+
+/**
+ * @brief judge whether stmt is module assign stmt.
+ *
+ * @param c_verilog_stmt
+ * @return true
+ * @return false
+ */
+bool rust_is_module_assign_stmt(void* c_verilog_stmt);
+
+/**
+ * @brief judge whether stmt is verilog_dcl stmt.
+ *
+ * @param c_verilog_stmt
+ * @return true
+ * @return false
+ */
+bool rust_is_verilog_dcl_stmt(void* c_verilog_stmt);
+
+/**
+ * @brief judge whether stmt is verilog_dcls stmt.
+ *
+ * @param c_verilog_stmt
+ * @return true
+ * @return false
+ */
+bool rust_is_verilog_dcls_stmt(void* c_verilog_stmt);
+
+/**
+ * @brief judge whether stmt is module stmt.
+ *
+ * @param c_verilog_stmt
+ * @return true
+ * @return false
+ */
+bool rust_is_module_stmt(void* c_verilog_stmt);
+}
+
+/**
+ * @brief Rust C vector iterator.
+ *
+ * @tparam T vector element type.
+ */
+template <typename T>
+class RustVecIterator
+{
+ public:
+  explicit RustVecIterator(RustVec* rust_vec) : _rust_vec(rust_vec) {}
+  ~RustVecIterator() = default;
+
+  bool hasNext() { return _index < _rust_vec->len; }
+  T* next()
+  {
+    uintptr_t ptr_move = std::is_same_v<T, void> ? _index * _rust_vec->type_size : _index;
+    auto* ret_value = static_cast<T*>(_rust_vec->data) + ptr_move;
+
+    ++_index;
+    return ret_value;
+  }
+
+ private:
+  RustVec* _rust_vec;
+  uintptr_t _index = 0;
+};
+
+/**
+ * @brief usage:
+ * RustVec* vec;
+ * T* elem;
+ * FOREACH_VEC_ELEM(vec, T, elem)
+ * {
+ *    do_something_for_elem();
+ * }
+ *
+ */
+#define FOREACH_VEC_ELEM(vec, T, elem) for (RustVecIterator<T> iter(vec); iter.hasNext() ? elem = iter.next(), true : false;)
+
+/**
+ * @brief Get the Rust Vec Elem object
+ *
+ * @tparam T
+ * @param rust_vec
+ * @param index
+ * @return T*
+ */
+template <typename T>
+T* GetRustVecElem(RustVec* rust_vec, uintptr_t index)
+{
+  uintptr_t ptr_move = std::is_same_v<T, void> ? index * rust_vec->type_size : index;
+  auto* ret_value = static_cast<T*>(rust_vec->data) + ptr_move;
+  return ret_value;
 }
 
 namespace ista {
@@ -94,21 +231,18 @@ namespace ista {
 class RustVerilogReader
 {
  public:
-  explicit RustVerilogReader(const char* file_name) : _file_name(file_name) {}
+  explicit RustVerilogReader() = default;
   ~RustVerilogReader() = default;
 
   RustVerilogReader(RustVerilogReader&& other) noexcept = default;
   RustVerilogReader& operator=(RustVerilogReader&& rhs) noexcept = default;
 
-  unsigned readVerilog();
-  // flatten.v
-  // void linkDesign(const char* top_cell_name);
-  void linkDesign();
+  auto* get_top_module() { return _top_module; }
+
+  unsigned readVerilog(const char* verilog_file);
 
  private:
-  std::string _file_name;                            //!< The verilog file name.
   std::vector<RustVerilogModule*> _verilog_modules;  //!< The current design parsed from verilog file. whether need unique_ptr?
   RustVerilogModule* _top_module = nullptr;          //!< The design top module.
-  Netlist _netlist;
 };
 }  // namespace ista

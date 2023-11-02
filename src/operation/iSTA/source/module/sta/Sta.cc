@@ -167,6 +167,8 @@ unsigned Sta::readDesign(const char *verilog_file) {
   return 1;
 }
 
+unsigned Sta::readDesignWithRustParser(const char *file_name) {}
+
 /**
  * @brief read the sdc file.
  *
@@ -301,6 +303,19 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
+void Sta::readVerilogWithRustParser(const char *verilog_file) {
+  LOG_INFO << "read verilog file " << verilog_file << " start";
+  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
+  _rust_top_module = _rust_verilog_reader.get_top_module();
+  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
+  LOG_INFO << "read verilog end";
+}
+
+/**
+ * @brief Read the verilog file.
+ *
+ * @param verilog_file
+ */
 void Sta::readVerilog(const char *verilog_file) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _verilog_reader.read(verilog_file);
@@ -329,7 +344,7 @@ VerilogModule *Sta::findModule(const char *module_name) {
 }
 
 /**
- * @brief Link the design file to design netlist.
+ * @brief Link the design file to design netlist .
  *
  */
 void Sta::linkDesign(const char *top_cell_name) {
@@ -628,6 +643,239 @@ void Sta::linkDesign(const char *top_cell_name) {
 
   LOG_INFO << "link design " << top_cell_name << " end";
 }
+
+/**
+ * @brief Link the design file to design netlist use rust parser.
+ *
+ * @param top_cell_name
+ */
+// void Sta::linkDesignWithRustParser() {
+//   const char *top_cell_name = _rust_top_module->module_name;
+//   auto top_module_stmts = _rust_top_module->module_stmts;
+//   auto port_list = _rust_top_module->port_list;
+
+//   LOG_INFO << "link design " << top_cell_name << " start";
+//   Netlist &design_netlist = _netlist;
+//   design_netlist.set_name(top_cell_name);
+
+//   void *stmt;
+//   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
+//     if (rust_is_verilog_dcls_stmt(stmt)) {
+//       RustVerilogDcls *verilog_dcls_struct = rust_convert_verilog_dcls(stmt);
+//       auto verilog_dcls = verilog_dcls_struct->verilog_dcls;
+//       void *verilog_dcl;
+//       FOREACH_VEC_ELEM(&verilog_dcls, void, verilog_dcl) {
+//         // process_dcl_stmt(rust_convert_verilog_dcl(verilog_dcl));
+//       }
+//     } else if (rust_is_module_inst_stmt(stmt)) {
+//       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
+//       const char *inst_name = verilog_inst->inst_name;
+//       const char *liberty_cell_name = verilog_inst->cell_name;
+//       auto port_connections = verilog_inst->port_connections;
+
+//       auto *inst_cell = findLibertyCell(liberty_cell_name);
+
+//       if (!inst_cell) {
+//         LOG_INFO << "liberty cell " << liberty_cell_name << " is not exist.";
+//         continue;
+//       }
+
+//       Instance inst(inst_name, inst_cell);
+
+//       /*lambda function create net for connect instance pin*/
+//       // /////////////////////////////////////////cell_port_id,net_expr
+//       replace. auto create_net_connection = [verilog_inst, inst_cell, &inst,
+//                                     &design_netlist](auto *cell_port_id,
+//                                                      auto *net_expr,
+//                                                      std::optional<int>
+//                                                      index, PinBus *pin_bus)
+//                                                      {
+//         const char *cell_port_name = cell_port_id->getName();
+
+//         auto *library_port_or_port_bus =
+//             inst_cell->get_cell_port_or_port_bus(cell_port_name);
+//         LOG_INFO_IF(!library_port_or_port_bus)
+//             << cell_port_name << " port is not found.";
+//         if (!library_port_or_port_bus) {
+//           return;
+//         }
+
+//         auto add_pin_to_net = [cell_port_id, verilog_inst, &design_netlist](
+//                                   Pin *inst_pin, std::string &net_name) {
+//           if (net_name.empty()) {
+//             return;
+//           }
+
+//           Net *the_net = design_netlist.findNet(net_name.c_str());
+//           if (the_net) {
+//             the_net->addPinPort(inst_pin);
+//           } else {
+//             // DLOG_INFO << "create net " << net_name;
+//             auto &created_net = design_netlist.addNet(Net(net_name.c_str()));
+
+//             created_net.addPinPort(inst_pin);
+//             the_net = &created_net;
+//           }
+//           // The same name port is default connect to net.
+//           if (auto *design_port = design_netlist.findPort(net_name.c_str());
+//               design_port && !the_net->isNetPinPort(design_port)) {
+//             the_net->addPinPort(design_port);
+//           }
+//         };
+
+//         auto add_pin_to_inst = [&inst, &add_pin_to_net, pin_bus](
+//                                    auto *pin_name, auto *library_port,
+//                                    std::optional<int> pin_index) -> Pin * {
+//           auto *inst_pin = inst.addPin(pin_name, library_port);
+//           if (pin_bus) {
+//             pin_bus->addPin(pin_index.value(), inst_pin);
+//           }
+
+//           return inst_pin;
+//         };
+
+//         LibertyPort *library_port = nullptr;
+//         std::string pin_name;
+//         std::string net_name;
+
+//         ////////////////if (net_expr) need replace
+//         if (net_expr) {
+//           if (net_expr->isIDExpr()) {
+//             auto *net_id = net_expr->get_verilog_id();
+//             LOG_FATAL_IF(!net_id)
+//                 << "The port connection " << cell_port_id->getName()
+//                 << " net id is not exist "
+//                 << "at line " << verilog_inst->line_no;
+//             net_name = net_id->getName();
+//             // fix net name contain backslash
+//             net_name = Str::trimBackslash(net_name);
+//           } else if (net_expr->isConstant()) {
+//             LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
+//           }
+//         }
+
+//         if (!library_port_or_port_bus->isLibertyPortBus()) {
+//           library_port = dynamic_cast<LibertyPort
+//           *>(library_port_or_port_bus); pin_name = cell_port_name; auto
+//           *inst_pin =
+//               add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
+
+//           add_pin_to_net(inst_pin, net_name);
+
+//         } else {
+//           auto *library_port_bus =
+//               dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
+//           if (index) {
+//             library_port = (*library_port_bus)[index.value()];
+//             pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
+//             auto *inst_pin =
+//                 add_pin_to_inst(pin_name.c_str(), library_port,
+//                 index.value());
+
+//             add_pin_to_net(inst_pin, net_name);
+
+//           } else {
+//             for (size_t i = 0; i < library_port_bus->getBusSize(); ++i) {
+//               library_port = (*library_port_bus)[i];
+//               pin_name = Str::printf("%s[%d]", cell_port_name, i);
+//               auto *inst_pin =
+//                   add_pin_to_inst(pin_name.c_str(), library_port, i);
+
+//               std::string net_index_name;
+//               if (net_expr->get_verilog_id()->isBusSliceID()) {
+//                 auto *net_slice_id =
+//                     dynamic_cast<VerilogSliceID
+//                     *>(net_expr->get_verilog_id());
+
+//                 net_index_name =
+//                     net_slice_id->getName(i +
+//                     net_slice_id->get_range_base());
+//               } else {
+//                 net_index_name = Str::printf("%s[%d]", net_name.c_str(), i);
+//               }
+
+//               add_pin_to_net(inst_pin, net_index_name);
+//             }
+//           }
+//         }
+//       };
+
+//       ////////////////////////////////VerilogNetConcatExpr *net_concat_expr,
+//       /// replace
+//       ////////////////////////////////std::vector<VerilogNetExpr *>
+//       ///&net_concat_vec  replace
+//       /*lambda function flatten concate net, which maybe nested.*/
+//       std::function<void(VerilogNetConcatExpr *,
+//                          std::vector<VerilogNetExpr *> &)>
+//           flatten_concat_net_expr =
+//               [&flatten_concat_net_expr](
+//                   VerilogNetConcatExpr *net_concat_expr,
+//                   std::vector<VerilogNetExpr *> &net_concat_vec) {
+//                 auto &verilog_id_concat =
+//                     net_concat_expr->get_verilog_id_concat();
+//                 for (auto &verilog_id_net_expr : verilog_id_concat) {
+//                   if (verilog_id_net_expr->isConcatExpr()) {
+//                     flatten_concat_net_expr(
+//                         dynamic_cast<VerilogNetConcatExpr *>(
+//                             verilog_id_net_expr.get()),
+//                         net_concat_vec);
+//                   } else {
+//                     net_concat_vec.push_back(verilog_id_net_expr.get());
+//                   }
+//                 }
+//               };
+
+//       // create net
+//       void *port_connection;
+//       FOREACH_VEC_ELEM(&port_connections, void, port_connection) {
+//         LOG_FATAL_IF(!port_connection)
+//             << "The inst " << inst_name << " at line " <<
+//             verilog_inst->line_no
+//             << " port connection is null";
+//         auto *cell_port_id = port_connection->get_port_id();
+//         auto *net_expr = port_connection->get_net_expr();
+
+//         // create pin bus
+//         const char *cell_port_name = cell_port_id->getName();
+//         auto *library_port_bus =
+//             inst_cell->get_cell_port_or_port_bus(cell_port_name);
+//         std::unique_ptr<PinBus> pin_bus;
+//         if (library_port_bus->isLibertyPortBus()) {
+//           auto bus_size =
+//               dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
+//           pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
+//                                              bus_size);
+//         }
+
+//         if (!net_expr || net_expr->isIDExpr() || net_expr->isConstant()) {
+//           create_net_connection(cell_port_id, net_expr, std::nullopt,
+//                                 pin_bus.get());
+//         } else {
+//           LOG_FATAL_IF(!pin_bus) << "pin bus is null.";
+
+//           auto *net_concat_expr =
+//               (dynamic_cast<VerilogNetConcatExpr *>(net_expr));
+//           std::vector<VerilogNetExpr *> verilog_id_concat_vec;
+//           flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
+
+//           for (int i = (verilog_id_concat_vec.size() - 1);
+//                auto *verilog_id_net_expr : verilog_id_concat_vec) {
+//             create_net_connection(cell_port_id, verilog_id_net_expr, i--,
+//                                   pin_bus.get());
+//           }
+//         }
+
+//         if (pin_bus) {
+//           inst.addPinBus(std::move(pin_bus));
+//         }
+//       }
+
+//       design_netlist.addInstance(std::move(inst));
+//     }
+//   }
+
+//   LOG_INFO << "link design " << top_cell_name << " end";
+// }
 
 /**
  * @brief reset constraint.
