@@ -287,12 +287,19 @@ pub extern "C" fn rust_calc_scope_tc_sp(
         let thread_pool = ThreadPool::new(num_thread);
 
         /*traverse scope to calc tc sp */
-        let mut signal_tc_vec: Vec<vcd_calc_tc_sp::SignalTC> = Vec::new();
-        let mut signal_duration_vec: Vec<vcd_calc_tc_sp::SignalDuration> = Vec::new();
+        let mut signal_tc_vec = Vec::new();
+        let mut signal_duration_vec = Vec::new();
 
-        let find_top_scope: Rc<RefCell<VCDScope>> = find_scope_option.unwrap();
-        // let traverse_scope_closure =
-        //     vcd_calc_tc_sp::TraverseScopeClosure::new(&mut signal_tc_vec, &mut signal_duration_vec);
-        // (traverse_scope_closure.closure)(find_top_scope.borrow().deref(), &thread_pool);
+        let find_top_scope = find_scope_option.unwrap();
+        let top_scope = find_top_scope.borrow();
+        let calc_tc_sp =
+            vcd_calc_tc_sp::CalcTcAndSp::new(top_scope.deref(), c_vcd_file.as_ref().unwrap());
+
+        calc_tc_sp.traverse_scope_signal(
+            top_scope.deref(),
+            &thread_pool,
+            &mut signal_tc_vec,
+            &mut signal_duration_vec,
+        );
     }
 }

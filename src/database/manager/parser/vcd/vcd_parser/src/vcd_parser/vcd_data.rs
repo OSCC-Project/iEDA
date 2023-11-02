@@ -12,6 +12,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 /// VCD signal bit value.
+#[derive(Eq, Hash, PartialEq)]
 pub enum VCDBit {
     BitZero,
     BitOne,

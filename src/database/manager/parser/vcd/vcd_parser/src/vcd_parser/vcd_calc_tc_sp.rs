@@ -1,14 +1,20 @@
 use crate::vcd_parser::vcd_data;
 
+use super::vcd_data::VCDBit;
+use super::vcd_data::VCDFile;
 use super::vcd_data::VCDScope;
 use super::vcd_data::VCDSignal;
+use super::vcd_data::VCDTimeAndValue;
+use super::vcd_data::VCDValue;
 
 use core::panic;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+
 use threadpool::ThreadPool;
 
 #[derive(Clone)]
@@ -24,6 +30,102 @@ pub struct SignalDuration {
     bit_1_duration: u64,
     bit_x_duration: u64,
     bit_z_duration: u64,
+}
+
+pub trait VcdCounter {
+    fn is_trasition(
+        pre_time_value: &VCDTimeAndValue,
+        cur_time_value: &VCDTimeAndValue,
+        bus_index: Option<i32>,
+    ) -> bool {
+        if pre_time_value.time == cur_time_value.time {
+            return false;
+        }
+
+        let pre_bit_value = match &pre_time_value.value {
+            VCDValue::BitScalar(bit) => Ok(bit),
+            VCDValue::BitVector(vec) => {
+                if let Some(index) = bus_index {
+                    Ok(&vec[index as usize])
+                } else {
+                    Err("No bus index provided")
+                }
+            }
+            _ => Err("Unmatched value"),
+        }
+        .unwrap();
+
+        let cur_bit_value = match &cur_time_value.value {
+            VCDValue::BitScalar(bit) => Ok(bit),
+            VCDValue::BitVector(vec) => {
+                if let Some(index) = bus_index {
+                    Ok(&vec[index as usize])
+                } else {
+                    Err("No bus index provided")
+                }
+            }
+            _ => Err("Unmatched value"),
+        }
+        .unwrap();
+
+        if *pre_bit_value != VCDBit::BitX
+            && *cur_bit_value != VCDBit::BitX
+            && *pre_bit_value != *cur_bit_value
+        {
+            return true;
+        }
+
+        false
+    }
+
+    fn get_duration(pre_time_value: &VCDTimeAndValue, cur_time_value: &VCDTimeAndValue) -> i64 {
+        let pre_time = pre_time_value.time;
+        let cur_time = cur_time_value.time;
+
+        cur_time - pre_time
+    }
+
+    fn update_duration(signal_duration: &mut SignalDuration, bit_value: VCDBit, duration: u64) {
+        match bit_value {
+            VCDBit::BitZero => signal_duration.bit_0_duration += duration,
+            VCDBit::BitOne => signal_duration.bit_1_duration += duration,
+            VCDBit::BitX => signal_duration.bit_x_duration += duration,
+            VCDBit::BitZ => signal_duration.bit_z_duration += duration,
+        }
+    }
+}
+
+pub struct VcdScalarCounter<'a> {
+    top_vcd_scope: &'a VCDScope,
+    vcd_file: &'a VCDFile,
+    signal: &'a VCDSignal,
+    pub signal_tc_vec: &'a mut Vec<SignalTC>,
+    pub signal_duration_vec: &'a mut Vec<SignalDuration>,
+}
+impl<'a> VcdCounter for VcdScalarCounter<'a> {}
+
+impl<'a> VcdScalarCounter<'a> {
+    pub fn new(
+        top_vcd_scope: &'a VCDScope,
+        vcd_file: &'a VCDFile,
+        signal: &'a VCDSignal,
+        signal_tc_vec: &'a mut Vec<SignalTC>,
+        signal_duration_vec: &'a mut Vec<SignalDuration>,
+    ) -> Self {
+        Self {
+            top_vcd_scope: top_vcd_scope,
+            vcd_file,
+            signal,
+            signal_tc_vec,
+            signal_duration_vec,
+        }
+    }
+
+    pub fn count_tc_and_glitch(&mut self) {}
+
+    pub fn count_duration(&mut self) {}
+
+    pub fn run(&mut self) {}
 }
 
 pub struct FindScopeClosure {
@@ -60,57 +162,72 @@ impl FindScopeClosure {
     }
 }
 
-fn count_signal(
-    signal: &VCDSignal,
-    signal_tc_vec: &mut Vec<SignalTC>,
-    signal_duration_vec: &mut Vec<SignalDuration>,
-) {
-    let signal_size = signal.get_signal_size();
-    if signal_size == 1 {
-        // scalar signal
-    } else {
-        // bus signal
-    }
+pub struct CalcTcAndSp<'a> {
+    top_vcd_scope: &'a VCDScope,
+    vcd_file: &'a VCDFile,
 }
 
-pub fn traverse_scope_signal(
-    parent_scope: &VCDScope,
-    thread_pool: &ThreadPool,
-    signal_tc_vec: &mut Vec<SignalTC>,
-    signal_duration_vec: &mut Vec<SignalDuration>,
-) {
-    let signals = parent_scope.get_scope_signals();
-
-    for scope_signal in signals {
-        if let vcd_data::VCDVariableType::VarWire = *scope_signal.get_signal_type() {
-            /*count signal */
-            let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
-            // Select whether to use multithreading for count signal
-            #[cfg(feature = "multithreading")]
-            {
-                thread_pool.execute(move || {
-                    count_signal(cur_signal, signal_tc_vec, signal_duration_vec);
-                });
-            }
-
-            #[cfg(not(feature = "multithreading"))]
-            {
-                count_signal(scope_signal, signal_tc_vec, signal_duration_vec);
-            }
+impl<'a> CalcTcAndSp<'a> {
+    pub fn new(top_vcd_scope: &'a VCDScope, vcd_file: &'a VCDFile) -> Self {
+        Self {
+            top_vcd_scope,
+            vcd_file,
+        }
+    }
+    pub fn count_signal(
+        &self,
+        signal: &VCDSignal,
+        signal_tc_vec: &mut Vec<SignalTC>,
+        signal_duration_vec: &mut Vec<SignalDuration>,
+    ) {
+        let signal_size = signal.get_signal_size();
+        if signal_size == 1 {
+            // scalar signal
         } else {
-            continue;
+            // bus signal
         }
     }
 
-    // View the next level of the scope
-    let children_scopes = parent_scope.get_children_scopes();
-    for child_scope in children_scopes {
-        traverse_scope_signal(
-            &child_scope.borrow(),
-            thread_pool,
-            signal_tc_vec,
-            signal_duration_vec,
-        );
+    pub fn traverse_scope_signal(
+        &self,
+        parent_scope: &VCDScope,
+        thread_pool: &ThreadPool,
+        signal_tc_vec: &mut Vec<SignalTC>,
+        signal_duration_vec: &mut Vec<SignalDuration>,
+    ) {
+        let signals = parent_scope.get_scope_signals();
+
+        for scope_signal in signals {
+            if let vcd_data::VCDVariableType::VarWire = *scope_signal.get_signal_type() {
+                /*count signal */
+                let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
+                // Select whether to use multithreading for count signal
+                #[cfg(feature = "multithreading")]
+                {
+                    thread_pool.execute(move || {
+                        self.count_signal(cur_signal, signal_tc_vec, signal_duration_vec);
+                    });
+                }
+
+                #[cfg(not(feature = "multithreading"))]
+                {
+                    self.count_signal(scope_signal, signal_tc_vec, signal_duration_vec);
+                }
+            } else {
+                continue;
+            }
+        }
+
+        // View the next level of the scope
+        let children_scopes = parent_scope.get_children_scopes();
+        for child_scope in children_scopes {
+            self.traverse_scope_signal(
+                &child_scope.borrow(),
+                thread_pool,
+                signal_tc_vec,
+                signal_duration_vec,
+            );
+        }
     }
 }
 
