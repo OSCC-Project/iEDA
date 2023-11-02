@@ -126,6 +126,30 @@ pub extern "C" fn rust_convert_verilog_inst(c_verilog_inst: *mut c_void)
     }
 }
 
+#[repr(C)]
+pub struct RustVerilogPortRefPortConnect {
+    port_id: *const c_void,
+    net_expr: *mut c_void, 
+} 
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_port_ref_port_connect(c_port_connect: *mut verilog_data::VerilogPortRefPortConnect) -> *mut RustVerilogPortRefPortConnect {
+    unsafe {
+        let port_id = (*c_port_connect).get_port_id();
+        let net_expr = (*c_port_connect).get_net_expr();
+
+        let c_port_id = &*port_id as *const _ as *const c_void;
+        let c_net_expr = 
+            if net_expr.is_some() { net_expr.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
+
+        let port_connect =
+        RustVerilogPortRefPortConnect { port_id:c_port_id, net_expr: c_net_expr as *mut c_void };
+        let port_connect_pointer = Box::new(port_connect);
+        Box::into_raw(port_connect_pointer)
+
+    }
+}
+
 
 #[no_mangle]
 pub extern "C" fn rust_is_module_inst_stmt(c_verilog_stmt: *mut c_void) -> bool {

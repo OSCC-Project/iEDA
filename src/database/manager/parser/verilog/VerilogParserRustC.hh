@@ -32,6 +32,7 @@
 #include <vector>
 
 extern "C" {
+
 /**
  * @brief Rust C vector.
  *
@@ -79,6 +80,16 @@ typedef struct RustVerilogInst
 } RustVerilogInst;
 
 /**
+ * @brief Rust verilog port ref portConnect for C.
+ *
+ */
+typedef struct RustVerilogPortRefPortConnect
+{
+  const void* port_id;
+  void* net_expr;
+} RustVerilogPortRefPortConnect;
+
+/**
  * @brief Rust parser verilog interface.
  *
  * @param verilog_path
@@ -124,6 +135,14 @@ struct RustVerilogDcls* rust_convert_verilog_dcls(void* verilog_dcls_struct);
  * @return struct RustVerilogInst*
  */
 struct RustVerilogInst* rust_convert_verilog_inst(void* verilog_inst);
+
+/**
+ * @brief Rust convert verilog_port_ref_port_connect to C struct.
+ *
+ * @param c_port_connect
+ * @return struct RustVerilogPortRefPortConnect*
+ */
+struct RustVerilogPortRefPortConnect* rust_convert_verilog_port_ref_port_connect(struct VerilogPortRefPortConnect* c_port_connect);
 
 /**
  * @brief judge whether stmt is module inst stmt.

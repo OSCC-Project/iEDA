@@ -13,6 +13,11 @@ Do not modify this manually.
 
 typedef struct VerilogModule VerilogModule;
 
+/**
+ * The port connection such as .port_id(net_id).
+ */
+typedef struct VerilogPortRefPortConnect VerilogPortRefPortConnect;
+
 typedef struct RustVec {
     void *data;
     uintptr_t len;
@@ -39,6 +44,11 @@ typedef struct RustVerilogInst {
     struct RustVec port_connections;
 } RustVerilogInst;
 
+typedef struct RustVerilogPortRefPortConnect {
+    const void *port_id;
+    void *net_expr;
+} RustVerilogPortRefPortConnect;
+
 void *rust_parse_verilog(const char *verilog_path);
 
 void rust_free_verilog_module(struct VerilogModule *c_verilog_module);
@@ -52,6 +62,8 @@ struct RustVerilogModule *rust_convert_raw_verilog_module(struct VerilogModule *
 struct RustVerilogDcls *rust_convert_verilog_dcls(void *c_verilog_dcls_struct);
 
 struct RustVerilogInst *rust_convert_verilog_inst(void *c_verilog_inst);
+
+struct RustVerilogPortRefPortConnect *rust_convert_verilog_port_ref_port_connect(struct VerilogPortRefPortConnect *c_port_connect);
 
 bool rust_is_module_inst_stmt(void *c_verilog_stmt);
 
