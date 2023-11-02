@@ -1,10 +1,10 @@
 #pragma once
-#include <cstring>
-#include <experimental/filesystem>
-#include <memory>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
+// #include <cstring>
+// #include <experimental/filesystem>
+// #include <memory>
+// #include <string_view>
+// #include <unordered_map>
+// #include <vector>
 
 #include "rust/cxx.h"
 
@@ -12,28 +12,26 @@ namespace ista {
 namespace spef {
 
 // Shared or opaque types and structs from rust mod ffi.
-struct SpefExchange;
-struct SpefFloatValue;
-struct SpefStringValue;
-struct SpefHeaderEntry;
-struct SpefNameMapEntry;
-struct SpefPortEntry;
-struct SpefConnEntry;
-struct SpefNet;
+struct SpefFile;
 
+class Parser {
+public:
+  Parser();
+  SpefFile read(rust::String path);
+};
 // SpefParserData: the data in a SPEF.
 // SpefParserClient: apis to acess SpefParserData.
-class SpefParserClient {
+// class SpefParserClient {
   //   struct Error
   //   {
   //     std::string line;
   //     size_t line_number;
   //     size_t byte_in_line;
   //   };
-public:
-  SpefParserClient();
-  std::string get_header_standard() const;
-  void consume_header_entry(SpefHeaderEntry& header_entry);
+// public:
+//   SpefParserClient();
+//   std::string get_header_standard() const;
+  // void consume_header_entry(SpefHeaderEntry& header_entry);
   //   std::optional<Error> error;
 
   //   std::string dump() const;
@@ -62,11 +60,11 @@ public:
   // std::string get_standard()
 
 
- private:
-  class spef_parser_data;
-  std::shared_ptr<spef_parser_data> spef_parser_data;
-};
+//  private:
+//   class spef_parser_data;
+//   std::shared_ptr<spef_parser_data> spef_parser_data;
+// };
 
-std::unique_ptr<SpefParserClient> new_spefparser_client();
+// std::unique_ptr<SpefParserClient> new_spefparser_client();
 }  // namespace spef
 }  // namespace ista

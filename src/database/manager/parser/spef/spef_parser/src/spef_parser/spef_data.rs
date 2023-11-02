@@ -1,46 +1,37 @@
 #[cxx::bridge(namespace = "ista::spef")]
 mod ffi {
-    // Shared structure between cpp and rust, it uses the types in the `exter "Rust" section`
-    struct SpefFile<'a> {
-        name: &'a str,
-        header: Vec<SpefHeaderEntry>,
-        name_vector: Vec<SpefNameMapEntry>,
-        ports: Vec<SpefPortEntry>,
-        nets: Vec<SpefNet>
-    }
-
     // data structures and their methods exposed from rust to cpp
     extern "Rust" {
-        type SpefHeaderEntry;
-        
-        fn get_header_key(self: &SpefHeaderEntry) -> &str;
-        fn get_header_value(self: &SpefHeaderEntry) -> &str;
+        // type SpefHeaderEntry;
 
-        type SpefNameMapEntry;
+        // fn get_header_key(self: &SpefHeaderEntry) -> &str;
+        // fn get_header_value(self: &SpefHeaderEntry) -> &str;
 
-        fn get_index(self: &SpefNameMapEntry) -> usize;
-        fn get_name(self: &SpefNameMapEntry) -> &str;
+        // type SpefNameMapEntry;
 
-        type SpefPortEntry;
-        type ConnectionDirection;
+        // fn get_index(self: &SpefNameMapEntry) -> usize;
+        // fn get_name(self: &SpefNameMapEntry) -> &str;
 
-        fn get_name(self: &SpefPortEntry) -> &str;
-        fn get_direction(self: &SpefPortEntry) -> &ConnectionDirection;
-        fn get_coordinates(self: &SpefPortEntry) -> Vec<f64>;
+        // type SpefPortEntry;
+        // // type ConnectionDirection;
 
-        type SpefConnEntry;
-        type ConnectionType;
+        // fn get_name(self: &SpefPortEntry) -> &str;
+        // // fn get_direction(self: &SpefPortEntry) -> &ConnectionDirection;
+        // // fn get_coordinates(self: &SpefPortEntry) -> Vec<f64>;
 
-        // get pin name in the connection entry
-        fn get_name(self: &SpefConnEntry) -> &str;
+        // type SpefConnEntry;
+        // // type ConnectionType;
 
-        fn get_conn_direction(self: &SpefConnEntry) -> &ConnectionDirection;
-        fn get_conn_type(self: &SpefConnEntry) -> &ConnectionType;
-        fn get_coordinates(self: &SpefConnEntry) -> Vec<f64>;
-        
-        type SpefNet;
-        
-        fn get_net_name(self: &SpefNet) -> &str;
+        // // get pin name in the connection entry
+        // fn get_name(self: &SpefConnEntry) -> &str;
+
+        // // fn get_conn_direction(self: &SpefConnEntry) -> &ConnectionDirection;
+        // // fn get_conn_type(self: &SpefConnEntry) -> &ConnectionType;
+        // fn get_coordinates(self: &SpefConnEntry) -> Vec<f64>;
+
+        // type SpefNet;
+
+        // fn get_net_name(self: &SpefNet) -> &str;
     }
 }
 
@@ -63,7 +54,7 @@ pub trait SpefValue: Debug {
     fn get_float_value(&self) -> f64 {
         panic!("This is unknown value.");
     }
-    fn get_str_value(&self) -> &str {
+    fn get_str_value(&self) -> String {
         panic!("This is unknown value.");
     }
     fn get_name_string(&self) -> String {
@@ -97,7 +88,7 @@ impl SpefValue for SpefFloatValue {
 /// "sky130_fd_sc_hd__dfxtp_2"
 #[derive(Clone, Debug)]
 pub struct SpefStringValue {
-    pub(crate) value: String,
+    pub value: String,
 }
 
 impl SpefValue for SpefStringValue {
@@ -105,8 +96,8 @@ impl SpefValue for SpefStringValue {
         true
     }
 
-    fn get_str_value(&self) -> &str {
-        &self.value
+    fn get_str_value(&self) -> String {
+        self.value.clone()
     }
 }
 
@@ -165,8 +156,8 @@ impl SpefEntryBasicInfo {
         SpefEntryBasicInfo { file_name: SpefStringValue { value: file_name.to_string() }, line_no: line_no }
     }
 
-    pub fn get_file_name(&self) -> &str {
-        &self.file_name.get_str_value()
+    pub fn get_file_name(&self) -> String {
+        self.file_name.get_str_value()
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -182,13 +173,13 @@ pub enum SectionType {
     CONN,
     CAP,
     RES,
-    END
+    END,
 }
 
 #[derive(Clone, Debug)]
 pub struct SpefSectionEntry {
     basic_info: SpefEntryBasicInfo,
-    section_type: SectionType
+    section_type: SectionType,
 }
 
 impl SpefSectionEntry {
@@ -223,10 +214,10 @@ pub struct SpefHeaderEntry {
 
 impl SpefHeaderEntry {
     pub fn new(file_name: &str, line_no: usize, header_key: String, header_value: String) -> SpefHeaderEntry {
-        SpefHeaderEntry { 
-            basic_info: SpefEntryBasicInfo::new(file_name, line_no), 
-            header_key: SpefStringValue { value: header_key }, 
-            header_value: SpefStringValue { value: header_value } 
+        SpefHeaderEntry {
+            basic_info: SpefEntryBasicInfo::new(file_name, line_no),
+            header_key: SpefStringValue { value: header_key },
+            header_value: SpefStringValue { value: header_value },
         }
     }
 
@@ -234,12 +225,12 @@ impl SpefHeaderEntry {
         &self.basic_info
     }
 
-    pub fn get_header_key(&self) -> &str {
-        &self.header_key.get_str_value()
+    pub fn get_header_key(&self) -> String {
+        self.header_key.get_str_value()
     }
-    
-    pub fn get_header_value(&self) -> &str {
-        &self.header_value.get_str_value()
+
+    pub fn get_header_value(&self) -> String {
+        self.header_value.get_str_value()
     }
 }
 
@@ -275,9 +266,9 @@ impl SpefNameMapEntry {
     pub fn get_index(&self) -> usize {
         self.index
     }
-    
-    pub fn get_name(&self) -> &str {
-        &self.name.as_str()
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -312,27 +303,34 @@ pub struct SpefPortEntry {
 }
 
 impl SpefPortEntry {
-    pub fn new(file_name: &str, line_no: usize, name: String, direction: ConnectionDirection, coordinates: (f64, f64)) -> SpefPortEntry {
+    pub fn new(
+        file_name: &str,
+        line_no: usize,
+        name: String,
+        direction: ConnectionDirection,
+        coordinates: (f64, f64),
+    ) -> SpefPortEntry {
         SpefPortEntry { basic_info: SpefEntryBasicInfo::new(file_name, line_no), name, direction, coordinates }
     }
 
     pub fn get_basic_info(&self) -> &SpefEntryBasicInfo {
         &self.basic_info
     }
-    
-    pub fn get_name(&self) -> &str {
-        &self.name.as_str()
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 
-    pub fn get_direction(&self) -> &ConnectionDirection {
-        &self.direction
+    pub fn get_direction(&self) -> ConnectionDirection {
+        self.direction.clone()
     }
 
-    pub fn get_coordinates(&self) -> Vec<f64> {
-        let mut result = Vec::<f64>::new();
-        result.push(self.coordinates.0);
-        result.push(self.coordinates.1);
-        result
+    pub fn get_coordinates(&self) -> (f64, f64) {
+        // let mut result = Vec::<f64>::new();
+        // result.push(self.coordinates.0);
+        // result.push(self.coordinates.1);
+        // result
+        self.coordinates
     }
 }
 
@@ -352,11 +350,10 @@ impl SpefEntryTrait for SpefPortEntry {
 /// coordinates: (633.84, 0.242)
 /// driving_cell: "sky130_fd_sc_hd__dfxtp_1"
 #[derive(Clone, Debug)]
-pub enum ConnectionType
-{
-  INTERNAL,
-  EXTERNAL,
-  UNITIALIZED,
+pub enum ConnectionType {
+    INTERNAL,
+    EXTERNAL,
+    UNITIALIZED,
 }
 
 #[derive(Clone, Debug)]
@@ -376,49 +373,57 @@ pub struct SpefConnEntry {
 
 impl SpefConnEntry {
     pub fn new(
-        file_name: &str, 
-        line_no: usize, 
+        file_name: &str,
+        line_no: usize,
         conn_type: ConnectionType,
         conn_direction: ConnectionDirection,
-        name: String) -> SpefConnEntry {
-        SpefConnEntry { 
-            basic_info: SpefEntryBasicInfo::new(file_name, line_no), 
-            conn_type, 
+        name: String,
+    ) -> SpefConnEntry {
+        SpefConnEntry {
+            basic_info: SpefEntryBasicInfo::new(file_name, line_no),
+            conn_type,
             conn_direction,
-            name, 
-            driving_cell: String::new(), 
-            load: 0.0, 
-            layer: 0, 
-            coordinates: (0.0, 0.0), 
-            ll_coordinate: (0.0, 0.0), 
-            ur_coordinate: (0.0, 0.0) }
+            name,
+            driving_cell: String::new(),
+            load: 0.0,
+            layer: 0,
+            coordinates: (0.0, 0.0),
+            ll_coordinate: (0.0, 0.0),
+            ur_coordinate: (0.0, 0.0),
+        }
     }
 
     pub fn get_basic_info(&self) -> &SpefEntryBasicInfo {
         &self.basic_info
     }
-    
-    pub fn get_name(&self) -> &str {
-        &self.name.as_str()
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 
-    pub fn get_conn_direction(&self) -> &ConnectionDirection {
-        &self.conn_direction
+    pub fn get_conn_direction(&self) -> ConnectionDirection {
+        self.conn_direction.clone()
     }
 
-    pub fn get_conn_type(&self) -> &ConnectionType {
-        &self.conn_type
+    pub fn get_conn_type(&self) -> ConnectionType {
+        self.conn_type.clone()
     }
-    
-    pub fn get_coordinates(&self) -> Vec<f64> {
-        let mut result = Vec::<f64>::new();
-        result.push(self.coordinates.0);
-        result.push(self.coordinates.1);
-        result
+
+    pub fn get_xy_coordinates(&self) -> (f64, f64) {
+        self.coordinates.clone()
+    }
+    pub fn get_ll_coordinates(&self) -> (f64, f64) {
+        self.ll_coordinate.clone()
+    }
+    pub fn get_ur_coordinates(&self) -> (f64, f64) {
+        self.ur_coordinate.clone()
     }
 
     pub fn set_layer(&mut self, layer: usize) {
         self.layer = layer;
+    }
+    pub fn get_layer(&self) -> usize {
+        self.layer
     }
     pub fn set_ll_corr(&mut self, coordinates: (f64, f64)) {
         self.ll_coordinate = coordinates;
@@ -429,8 +434,14 @@ impl SpefConnEntry {
     pub fn set_driving_cell(&mut self, driving_cell: String) {
         self.driving_cell = driving_cell;
     }
+    pub fn get_driving_cell(&self) -> String {
+        self.driving_cell.clone()
+    }
     pub fn set_load(&mut self, load: f64) {
         self.load = load;
+    }
+    pub fn get_load(&self) -> f64 {
+        self.load.clone()
     }
     pub fn set_xy_coordinates(&mut self, coordinates: (f64, f64)) {
         self.coordinates = coordinates;
@@ -464,10 +475,7 @@ pub struct SpefNet {
 }
 
 impl SpefNet {
-    pub fn new(
-        line_no: usize,
-        name: String,
-        lcap: f64,) -> SpefNet {
+    pub fn new(line_no: usize, name: String, lcap: f64) -> SpefNet {
         SpefNet { name, line_no, lcap, connection: Vec::new(), caps: Vec::new(), ress: Vec::new() }
     }
 
@@ -483,34 +491,39 @@ impl SpefNet {
         self.ress.push(res);
     }
 
-    pub fn get_net_name(&self) -> &str {
-        self.name.as_str()
+    pub fn get_net_name(&self) -> String {
+        self.name.clone()
     }
 
     pub fn get_lcap(&self) -> f64 {
         self.lcap
     }
 
-    pub fn get_conns(&self) -> &Vec<SpefConnEntry> {
-        &self.connection
+    pub fn get_conns(&self) -> Vec<SpefConnEntry> {
+        self.connection.clone()
     }
 
+    pub fn get_caps(&self) -> Vec<(String, String, f64)> {
+       self.caps.clone()
+    }
+
+    pub fn get_ress(&self) -> Vec<(String, String, f64)> {
+        self.ress.clone()
+    }
 }
 
 #[derive(Clone, Debug)]
 /// Spef Exchange data structure with cpp
 pub struct SpefExchange {
-    file_name: SpefStringValue,
-    header: Vec<SpefHeaderEntry>,
-    namemap: Vec<SpefNameMapEntry>,
-    ports: Vec<SpefPortEntry>,
-    nets: Vec<SpefNet>
+    pub file_name: SpefStringValue,
+    pub header: Vec<SpefHeaderEntry>,
+    pub namemap: Vec<SpefNameMapEntry>,
+    pub ports: Vec<SpefPortEntry>,
+    pub nets: Vec<SpefNet>,
 }
 
 impl SpefExchange {
-    pub fn new(
-        file_name: SpefStringValue,
-    ) -> SpefExchange {
+    pub fn new(file_name: SpefStringValue) -> SpefExchange {
         SpefExchange { file_name, header: Vec::new(), namemap: Vec::new(), ports: Vec::new(), nets: Vec::new() }
     }
 
@@ -524,16 +537,14 @@ impl SpefExchange {
     pub fn add_port_entry(&mut self, port_entry: SpefPortEntry) {
         self.ports.push(port_entry);
     }
-    
+
     pub fn add_net(&mut self, net: SpefNet) {
         self.nets.push(net);
     }
 
-    pub fn get_header(&self) -> &Vec<SpefHeaderEntry> {
-        &self.header
+    pub fn get_file_name(&self) -> SpefStringValue {
+        self.file_name.clone()
     }
-
-    
 }
 
 #[derive(Clone, Debug)]

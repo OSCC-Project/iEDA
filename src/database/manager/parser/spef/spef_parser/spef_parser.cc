@@ -9,9 +9,14 @@
 namespace ista {
 namespace spef {
 
+Parser::Parser() {};
+
+SpefFile Parser::read(rust::String path) {
+  return parse_spef_file(path);
+};
 // There are four parts: header, name map, ports, nets.
-class SpefParserClient::spef_parser_data
-{
+// class SpefParserClient::spef_parser_data
+// {
   // SpefParserData() {
   //   standard = nullptr;
   //   design_name = nullptr;
@@ -29,10 +34,10 @@ class SpefParserClient::spef_parser_data
   //   inductance_unit= nullptr;
   // }
 
-  friend SpefParserClient;
+  // friend SpefParserClient;
 
   // Header info.
-  std::unordered_map<std::string, std::string> header;
+  // std::unordered_map<std::string, std::string> header;
   // std::string standard;
   // SpefHeaderEntry* design_name;
   // SpefHeaderEntry* date;
@@ -52,20 +57,20 @@ class SpefParserClient::spef_parser_data
   // std::unordered_map<size_t, SpefStringValue> name_map;
   // std::vector<SpefPortEntry> ports;
   // std::vector<SpefNet> nets;
-};
+// };
 
 // SpefParserClient::SpefParserClient() : SpefParserData(new class SpefParserClient::SpefParserData) {}
 
-std::unique_ptr<SpefParserClient> new_spefparser_client() {
-    return std::make_unique<SpefParserClient>();
-}
+// std::unique_ptr<SpefParserClient> new_spefparser_client() {
+//     return std::make_unique<SpefParserClient>();
+// }
 
 // Consume a header_entry and add header key-value to spef_parser_data
-void SpefParserClient::consume_header_entry(SpefHeaderEntry &header_entry) {
-  rust::Str header_key = header_entry.get_header_key();
-  rust::Str header_value = header_entry.get_header_value();
-  spef_parser_data->header.insert(header_key, header_value);
-}
+// void SpefParserClient::consume_header_entry(SpefHeaderEntry &header_entry) {
+//   rust::Str header_key = header_entry.get_header_key();
+//   rust::Str header_value = header_entry.get_header_value();
+//   spef_parser_data->header.insert(header_key, header_value);
+// }
 
 
 
