@@ -23,6 +23,19 @@ pub struct SignalTC {
     signal_tc: u64,
 }
 
+impl SignalTC {
+    pub fn new(signal_name: String) -> Self {
+        Self {
+            signal_name,
+            signal_tc: 0,
+        }
+    }
+
+    pub fn incr_tc(&mut self) {
+        self.signal_tc += 1;
+    }
+}
+
 #[derive(Clone)]
 pub struct SignalDuration {
     signal_name: String,
@@ -32,8 +45,21 @@ pub struct SignalDuration {
     bit_z_duration: u64,
 }
 
+impl SignalDuration {
+    pub fn new(signal_name: String) -> Self {
+        Self {
+            signal_name,
+            bit_0_duration: 0,
+            bit_1_duration: 0,
+            bit_x_duration: 0,
+            bit_z_duration: 0,
+        }
+    }
+}
+
 pub trait VcdCounter {
     fn is_trasition(
+        &self,
         pre_time_value: &VCDTimeAndValue,
         cur_time_value: &VCDTimeAndValue,
         bus_index: Option<i32>,
@@ -121,7 +147,34 @@ impl<'a> VcdScalarCounter<'a> {
         }
     }
 
-    pub fn count_tc_and_glitch(&mut self) {}
+    pub fn count_tc_and_glitch(&mut self) -> SignalTC {
+        let signal_hash = self.signal.get_hash();
+        let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
+
+        let signal_name = self.signal.get_name().to_string();
+
+        let mut signal_toggle = SignalTC::new(signal_name);
+
+        // count the toggle, if current signal value is rise transition or fall
+        // transition, count add one.
+        let mut prev_time_signal_value: Option<&vcd_data::VCDTimeAndValue> = None;
+
+        if let Some(signal_time_values) = signal_time_values.as_deref() {
+            for signal_time_value in signal_time_values {
+                let signal_time_value = signal_time_value.as_ref();
+                if let Some(prev) = prev_time_signal_value {
+                    if self.is_trasition(prev, signal_time_value, None) {
+                        // is transition, incr tc.
+                        signal_toggle.incr_tc();
+                    } else {
+                        // TODO glitch
+                    }
+                }
+                prev_time_signal_value = Some(signal_time_value);
+            }
+        }
+        signal_toggle
+    }
 
     pub fn count_duration(&mut self) {}
 
@@ -183,6 +236,14 @@ impl<'a> CalcTcAndSp<'a> {
         let signal_size = signal.get_signal_size();
         if signal_size == 1 {
             // scalar signal
+            let mut scalar_counter = VcdScalarCounter::new(
+                self.top_vcd_scope,
+                self.vcd_file,
+                signal,
+                signal_tc_vec,
+                signal_duration_vec,
+            );
+            scalar_counter.run();
         } else {
             // bus signal
         }

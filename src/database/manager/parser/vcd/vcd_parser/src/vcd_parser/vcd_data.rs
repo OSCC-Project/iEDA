@@ -33,6 +33,8 @@ pub struct VCDTimeAndValue {
     pub value: VCDValue,
 }
 
+impl VCDTimeAndValue {}
+
 /// VCD variable type of vcd signal
 #[derive(Copy, Clone)]
 pub enum VCDVariableType {
@@ -285,6 +287,10 @@ impl VCDFile {
 
     pub fn get_root_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
         &self.root_scope
+    }
+
+    pub fn get_signal_values(&self) -> &HashMap<String, VecDeque<Box<VCDTimeAndValue>>> {
+        &self.signal_values
     }
 
     pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
