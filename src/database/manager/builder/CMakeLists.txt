@@ -3,6 +3,7 @@ add_subdirectory(def_builder)
 add_subdirectory(lef_builder)
 add_subdirectory(verilog_builder)
 add_subdirectory(gds_builder)
+add_subdirectory(json_builder)
 
 add_library(IdbBuilder
     builder.cpp
@@ -11,7 +12,7 @@ add_library(IdbBuilder
     buildLefData.cpp
 )
 
-target_link_libraries(IdbBuilder def_service def_builder lef_service lef_builder verilog_builder gds_builder)
+target_link_libraries(IdbBuilder def_service def_builder lef_service lef_builder verilog_builder gds_builder json_builder)
 
 target_include_directories(IdbBuilder 
     PUBLIC 
@@ -19,6 +20,7 @@ target_include_directories(IdbBuilder
         ${CMAKE_CURRENT_SOURCE_DIR}/def_builder
         ${CMAKE_CURRENT_SOURCE_DIR}/lef_builder
         ${CMAKE_CURRENT_SOURCE_DIR}/verilog_builder
+        ${CMAKE_CURRENT_SOURCE_DIR}/json_builder
         ${CMAKE_CURRENT_SOURCE_DIR}/gds_builder
         ${HOME_DATABASE}/data/design
         ${HOME_DATABASE}/data/design/db_design
