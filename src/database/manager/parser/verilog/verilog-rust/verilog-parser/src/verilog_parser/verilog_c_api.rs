@@ -42,6 +42,90 @@ pub extern "C" fn free_c_char(s: *mut c_char) {
 }
 
 #[repr(C)]
+pub struct RustVerilogID {
+    id:*mut c_char,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogID {
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+    unsafe {
+        let rust_name = (*virtual_base_id).get_name();
+        let name = string_to_c_char(rust_name.as_str());
+
+        let rust_verilog_id = RustVerilogID{id:name};
+
+        let rust_verilog_id_pointer = Box::new(rust_verilog_id);
+        let raw_pointer = Box::into_raw(rust_verilog_id_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_id(c_verilog_virtual_base_id: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyAttrValue
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+
+    unsafe { (*virtual_base_id).is_id() }
+}
+
+#[repr(C)]
+pub struct RustVerilogIndexID {
+    id:*mut c_char,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_index_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogIndexID {
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+    unsafe {
+        let rust_name = (*virtual_base_id).get_name();
+        let name = string_to_c_char(rust_name.as_str());
+
+        let rust_verilog_index_id = RustVerilogIndexID{id:name};
+
+        let rust_verilog_index_id_pointer = Box::new(rust_verilog_index_id);
+        let raw_pointer = Box::into_raw(rust_verilog_index_id_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_bus_index_id(c_verilog_virtual_base_id: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyAttrValue
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+
+    unsafe { (*virtual_base_id).is_bus_index_id() }
+}
+
+#[repr(C)]
+pub struct RustVerilogSliceID {
+    id:*mut c_char,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogSliceID {
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+    unsafe {
+        let rust_name = (*virtual_base_id).get_name();
+        let name = string_to_c_char(rust_name.as_str());
+
+        let rust_verilog_slice_id = RustVerilogSliceID{id:name};
+
+        let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
+        let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_bus_slice_id(c_verilog_virtual_base_id: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyAttrValue
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+
+    unsafe { (*virtual_base_id).is_bus_slice_id() }
+}
+
+#[repr(C)]
 pub struct RustVerilogModule {
     line_no: usize,
     module_name: *mut c_char,
@@ -64,9 +148,9 @@ pub extern "C" fn rust_convert_raw_verilog_module(verilog_module: *mut verilog_d
         let port_list = rust_vec_to_c_array(port_list_rust_vec);
         let module_stmts = rust_vec_to_c_array(module_stmts_rust_vec);
 
-        let verilog_module = RustVerilogModule {line_no,module_name,port_list,module_stmts};
-        let verilog_module_pointer = Box::new(verilog_module);
-        let raw_pointer = Box::into_raw(verilog_module_pointer);
+        let rust_verilog_module = RustVerilogModule {line_no,module_name,port_list,module_stmts};
+        let rust_verilog_module_pointer = Box::new(rust_verilog_module);
+        let raw_pointer = Box::into_raw(rust_verilog_module_pointer);
         raw_pointer
     }
 }
@@ -142,10 +226,10 @@ pub extern "C" fn rust_convert_verilog_port_ref_port_connect(c_port_connect: *mu
         let c_net_expr = 
             if net_expr.is_some() { net_expr.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
 
-        let port_connect =
+        let rust_port_connect =
         RustVerilogPortRefPortConnect { port_id:c_port_id, net_expr: c_net_expr as *mut c_void };
-        let port_connect_pointer = Box::new(port_connect);
-        Box::into_raw(port_connect_pointer)
+        let rust_port_connect_pointer = Box::new(rust_port_connect);
+        Box::into_raw(rust_port_connect_pointer)
 
     }
 }

@@ -34,6 +34,32 @@
 #include "rust-common/RustCommon.hh"
 
 extern "C" {
+/**
+ * @brief Rust verilog id for C.
+ *
+ */
+typedef struct RustVerilogID
+{
+  char* id;
+} RustVerilogID;
+
+/**
+ * @brief Rust verilog index id for C.
+ *
+ */
+typedef struct RustVerilogIndexID
+{
+  char* id;
+} RustVerilogIndexID;
+
+/**
+ * @brief Rust verilog slice id for C.
+ *
+ */
+typedef struct RustVerilogSliceID
+{
+  char* id;
+} RustVerilogSliceID;
 
 /**
  * @brief Rust verilog module for C.
@@ -94,12 +120,25 @@ void* rust_parse_verilog(const char* verilog_path);
  */
 void rust_free_verilog_module(void* c_verilog_module);
 
+uintptr_t rust_vec_len(const struct RustVec* vec);
 /**
  * @brief free Rust string convert to C.
  *
  * @param s
  */
 void free_c_char(char* s);
+
+struct RustVerilogID* rust_convert_verilog_id(void* c_verilog_virtual_base_id);
+
+bool rust_is_id(void* c_verilog_virtual_base_id);
+
+struct RustVerilogIndexID* rust_convert_verilog_index_id(void* c_verilog_virtual_base_id);
+
+bool rust_is_bus_index_id(void* c_verilog_virtual_base_id);
+
+struct RustVerilogSliceID* rust_convert_verilog_slice_id(void* c_verilog_virtual_base_id);
+
+bool rust_is_bus_slice_id(void* c_verilog_virtual_base_id);
 
 ///////////////////////////////////////////////////////////////////////////
 /**

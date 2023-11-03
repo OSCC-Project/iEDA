@@ -19,34 +19,46 @@ typedef struct VerilogModule VerilogModule;
 typedef struct VerilogPortRefPortConnect VerilogPortRefPortConnect;
 
 typedef struct RustVec {
-    void *data;
-    uintptr_t len;
-    uintptr_t cap;
-    uintptr_t type_size;
+  void *data;
+  uintptr_t len;
+  uintptr_t cap;
+  uintptr_t type_size;
 } RustVec;
 
+typedef struct RustVerilogID {
+  char *id;
+} RustVerilogID;
+
+typedef struct RustVerilogIndexID {
+  char *id;
+} RustVerilogIndexID;
+
+typedef struct RustVerilogSliceID {
+  char *id;
+} RustVerilogSliceID;
+
 typedef struct RustVerilogModule {
-    uintptr_t line_no;
-    char *module_name;
-    struct RustVec port_list;
-    struct RustVec module_stmts;
+  uintptr_t line_no;
+  char *module_name;
+  struct RustVec port_list;
+  struct RustVec module_stmts;
 } RustVerilogModule;
 
 typedef struct RustVerilogDcls {
-    uintptr_t line_no;
-    struct RustVec verilog_dcls;
+  uintptr_t line_no;
+  struct RustVec verilog_dcls;
 } RustVerilogDcls;
 
 typedef struct RustVerilogInst {
-    uintptr_t line_no;
-    char *inst_name;
-    char *cell_name;
-    struct RustVec port_connections;
+  uintptr_t line_no;
+  char *inst_name;
+  char *cell_name;
+  struct RustVec port_connections;
 } RustVerilogInst;
 
 typedef struct RustVerilogPortRefPortConnect {
-    const void *port_id;
-    void *net_expr;
+  const void *port_id;
+  void *net_expr;
 } RustVerilogPortRefPortConnect;
 
 void *rust_parse_verilog(const char *verilog_path);
@@ -57,13 +69,30 @@ uintptr_t rust_vec_len(const struct RustVec *vec);
 
 void free_c_char(char *s);
 
-struct RustVerilogModule *rust_convert_raw_verilog_module(struct VerilogModule *verilog_module);
+struct RustVerilogID *rust_convert_verilog_id(void *c_verilog_virtual_base_id);
+
+bool rust_is_id(void *c_verilog_virtual_base_id);
+
+struct RustVerilogIndexID *rust_convert_verilog_index_id(
+    void *c_verilog_virtual_base_id);
+
+bool rust_is_bus_index_id(void *c_verilog_virtual_base_id);
+
+struct RustVerilogSliceID *rust_convert_verilog_slice_id(
+    void *c_verilog_virtual_base_id);
+
+bool rust_is_bus_slice_id(void *c_verilog_virtual_base_id);
+
+struct RustVerilogModule *rust_convert_raw_verilog_module(
+    struct VerilogModule *verilog_module);
 
 struct RustVerilogDcls *rust_convert_verilog_dcls(void *c_verilog_dcls_struct);
 
 struct RustVerilogInst *rust_convert_verilog_inst(void *c_verilog_inst);
 
-struct RustVerilogPortRefPortConnect *rust_convert_verilog_port_ref_port_connect(struct VerilogPortRefPortConnect *c_port_connect);
+struct RustVerilogPortRefPortConnect *
+rust_convert_verilog_port_ref_port_connect(
+    struct VerilogPortRefPortConnect *c_port_connect);
 
 bool rust_is_module_inst_stmt(void *c_verilog_stmt);
 
