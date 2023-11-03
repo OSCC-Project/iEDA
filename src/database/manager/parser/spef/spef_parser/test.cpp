@@ -14,6 +14,10 @@ int main() {
   //   std::string spef_file_str =
   //       "/home/immelon/projects/scripts_test_ipd/skywater_aes_cipher_top.spef";
 
-  // Parser spef_parser();
+  ista::spef::Parser spef_parser;
+
+  bool result = spef_parser.read(spef_file_str);
+
+  std::cout << result << std::endl;
 
 }

@@ -361,10 +361,12 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
             let coor_pair_result = process_coordinates(pair);
             match coor_pair_result {
                 Ok(coors) => coors,
-                Err(_) => (0.0, 0.0),
+                // (-1.0, -1.0) is used as a special tuple as uninitialized value
+                // the reason is cxx currently not support std::optional<T> to be transfered
+                Err(_) => (-1.0, -1.0),
             }
         }
-        None => (0.0, 0.0),
+        None => (-1.0, -1.0),
     };
 
     // load may be None
@@ -375,10 +377,10 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
             let load_pair_result = process_float(pair);
             match load_pair_result {
                 Ok(load) => load,
-                Err(_) => 0.0,
+                Err(_) => -1.0,
             }
         }
-        None => 0.0,
+        None => -1.0,
     };
 
     // driver_pair may be None

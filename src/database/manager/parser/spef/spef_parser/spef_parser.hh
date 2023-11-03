@@ -1,70 +1,96 @@
 #pragma once
-// #include <cstring>
+#include <cstring>
 // #include <experimental/filesystem>
 // #include <memory>
 // #include <string_view>
-// #include <unordered_map>
+#include <unordered_map>
+#include <optional>
 // #include <vector>
 
-#include "rust/cxx.h"
+#include "include/cxx.h"
+#include "spef_parser/src/spef_parser/mod.rs.h"
+#include "spef_parser/src/spef_parser/spef_data.rs.h"
 
 namespace ista {
 namespace spef {
 
 // Shared or opaque types and structs from rust mod ffi.
 struct SpefFile;
+struct HeaderItem;
+struct NameMapItem;
+struct PortItem;
+struct ConnItem;
+struct NetItem;
+// enum ConnectionType;
+// enum ConnectionDirection;
+
+// Port: the port in *PORTS section
+struct Port
+{
+  Port() = default;
+  Port(const std::string& s) : name(s) {}
+  std::string name;
+  ConnectionDirection direction;  // I, O, B
+};
+
+// Connection: the *CONN section in *D_NET
+struct Connection
+{
+  std::string name;
+  ConnectionType type;
+  ConnectionDirection direction;
+
+  std::optional<std::pair<float, float>> coordinate;
+  std::optional<float> load;
+  std::string driving_cell;
+  std::optional<std::pair<float, float>> ll_coordinate;
+  std::optional<std::pair<float, float>> ur_coordinate;
+  std::optional<int> layer;
+
+  Connection() = default;
+
+  void scale_capacitance(float);
+};
+
+// Net: the data in a *D_NET section
+//   - Capacitor can be ground (one node) or coupled (two nodes)
+struct Net
+{
+  std::string name;
+  float lcap;
+  std::vector<Connection> connections;
+  std::vector<std::tuple<std::string, std::string, float>> caps;
+  std::vector<std::tuple<std::string, std::string, float>> ress;
+
+  Net() = default;
+  Net(const std::string& s, const float f) : name{s}, lcap{f} {}
+
+  void scale_capacitance(float);
+  void scale_resistance(float);
+};
 
 class Parser {
-public:
-  Parser();
-  SpefFile read(rust::String path);
+ public:
+  Parser() {};
+
+  std::unordered_map<std::string, std::string> header;
+  std::unordered_map<size_t, std::string> name_map;
+  std::vector<Port> ports;
+  std::vector<Net> nets;
+
+  bool read(rust::String path);
+  void process_rust_data();
+  void expand_name(unsigned num_threads);
+
+  void generate_namemap(rust::Vec<NameMapItem> name_map_vec);
+  void generate_header(rust::Vec<HeaderItem> header_vec);
+
+  void process_nets(rust::Vec<NetItem> nets_rust);
+  void process_ports(rust::Vec<PortItem> ports_rust);
+ 
+ private:
+  SpefFile file_data_rust;
 };
-// SpefParserData: the data in a SPEF.
-// SpefParserClient: apis to acess SpefParserData.
-// class SpefParserClient {
-  //   struct Error
-  //   {
-  //     std::string line;
-  //     size_t line_number;
-  //     size_t byte_in_line;
-  //   };
-// public:
-//   SpefParserClient();
-//   std::string get_header_standard() const;
-  // void consume_header_entry(SpefHeaderEntry& header_entry);
-  //   std::optional<Error> error;
 
-  //   std::string dump() const;
-  //   std::string dump_compact() const;
-
-  //   void dump(std::ostream&) const;
-  //   void dump_compact(std::ostream&) const;
-  //   void clear();
-  // void expand_name(unsigned num_threads);
-  // void expand_name(Net&);
-  // void expand_name(Port&);
-  // void scale_capacitance(float);
-  // void scale_resistance(float);
-  // bool read(const std::string);
-  // auto& getNets() { return nets; }
-
-  // SpefNet* findSpefNet(const std::string& net_name)
-  // {
-  //   for (auto& net : nets) {
-  //     if (net.name == net_name) {
-  //       return &net;
-  //     }
-  //   }
-  //   return nullptr;
-  // }
-  // std::string get_standard()
-
-
-//  private:
-//   class spef_parser_data;
-//   std::shared_ptr<spef_parser_data> spef_parser_data;
-// };
-
-// std::unique_ptr<SpefParserClient> new_spefparser_client();
 }  // namespace spef
 }  // namespace ista

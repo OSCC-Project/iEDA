@@ -387,9 +387,9 @@ impl SpefConnEntry {
             driving_cell: String::new(),
             load: 0.0,
             layer: 0,
-            coordinates: (0.0, 0.0),
-            ll_coordinate: (0.0, 0.0),
-            ur_coordinate: (0.0, 0.0),
+            coordinates: (-1.0, -1.0),
+            ll_coordinate: (-1.0, -1.0),
+            ur_coordinate: (-1.0, -1.0),
         }
     }
 
