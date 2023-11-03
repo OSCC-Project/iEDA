@@ -21,6 +21,7 @@ pub enum VCDBit {
 }
 
 /// VCD value type.
+#[derive(PartialEq)]
 pub enum VCDValue {
     BitScalar(VCDBit),
     BitVector(Vec<VCDBit>),
@@ -28,6 +29,8 @@ pub enum VCDValue {
 }
 
 /// VCD signal value, include time and value
+
+#[derive(PartialEq)]
 pub struct VCDTimeAndValue {
     pub time: i64,
     pub value: VCDValue,
@@ -38,6 +41,13 @@ impl VCDValue {
         match self {
             VCDValue::BitScalar(bit) => *bit,
             _ => panic!("Not a BitScalar"),
+        }
+    }
+
+    pub fn get_vector_bit(&self, index: usize) -> VCDBit {
+        match self {
+            VCDValue::BitVector(vec) => vec[index],
+            _ => panic!("Not a BitVector"),
         }
     }
 }

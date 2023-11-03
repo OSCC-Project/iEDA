@@ -58,7 +58,7 @@ impl SignalDuration {
 }
 
 pub trait VcdCounter {
-    fn is_trasition(
+    fn is_transition(
         &self,
         pre_time_value: &VCDTimeAndValue,
         cur_time_value: &VCDTimeAndValue,
@@ -131,7 +131,6 @@ pub trait VcdCounter {
 }
 
 pub struct VcdScalarCounter<'a> {
-    top_vcd_scope: &'a VCDScope,
     vcd_file: &'a VCDFile,
     signal: &'a VCDSignal,
     pub signal_tc_vec: &'a mut Vec<SignalTC>,
@@ -141,14 +140,12 @@ impl<'a> VcdCounter for VcdScalarCounter<'a> {}
 
 impl<'a> VcdScalarCounter<'a> {
     pub fn new(
-        top_vcd_scope: &'a VCDScope,
         vcd_file: &'a VCDFile,
         signal: &'a VCDSignal,
         signal_tc_vec: &'a mut Vec<SignalTC>,
         signal_duration_vec: &'a mut Vec<SignalDuration>,
     ) -> Self {
         Self {
-            top_vcd_scope: top_vcd_scope,
             vcd_file,
             signal,
             signal_tc_vec,
@@ -156,7 +153,7 @@ impl<'a> VcdScalarCounter<'a> {
         }
     }
 
-    pub fn count_tc_and_glitch(&mut self) -> SignalTC {
+    fn count_tc_and_glitch(&mut self) {
         let signal_hash = self.signal.get_hash();
         let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
 
@@ -171,7 +168,7 @@ impl<'a> VcdScalarCounter<'a> {
             for signal_time_value in signal_time_values {
                 let signal_time_value = signal_time_value.as_ref();
                 if let Some(prev) = prev_time_signal_value {
-                    if self.is_trasition(prev, signal_time_value, None) {
+                    if self.is_transition(prev, signal_time_value, None) {
                         // is transition, incr tc.
                         signal_toggle.incr_tc();
                     } else {
@@ -181,10 +178,10 @@ impl<'a> VcdScalarCounter<'a> {
                 prev_time_signal_value = Some(signal_time_value);
             }
         }
-        signal_toggle
+        self.signal_tc_vec.push(signal_toggle)
     }
 
-    pub fn count_duration(&mut self) -> SignalDuration {
+    fn count_duration(&mut self) {
         let signal_hash = self.signal.get_hash();
         let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
 
@@ -227,14 +224,12 @@ impl<'a> VcdScalarCounter<'a> {
                 );
             }
         }
-        annotate_signal_duration_time
+        self.signal_duration_vec.push(annotate_signal_duration_time);
     }
 
     pub fn run(&mut self) {
-        let tc_record: SignalTC = self.count_tc_and_glitch();
-        let sp_recotd: SignalDuration = self.count_duration();
-        self.signal_tc_vec.push(tc_record);
-        self.signal_duration_vec.push(sp_recotd);
+        self.count_tc_and_glitch();
+        self.count_duration();
     }
 }
 
@@ -272,6 +267,164 @@ impl FindScopeClosure {
     }
 }
 
+pub struct VcdBusCounter<'a> {
+    vcd_file: &'a VCDFile,
+    signal: &'a VCDSignal,
+    pub signal_tc_vec: &'a mut Vec<SignalTC>,
+    pub signal_duration_vec: &'a mut Vec<SignalDuration>,
+}
+impl<'a> VcdCounter for VcdBusCounter<'a> {}
+
+impl<'a> VcdBusCounter<'a> {
+    pub fn new(
+        vcd_file: &'a VCDFile,
+        signal: &'a VCDSignal,
+        signal_tc_vec: &'a mut Vec<SignalTC>,
+        signal_duration_vec: &'a mut Vec<SignalDuration>,
+    ) -> Self {
+        Self {
+            vcd_file,
+            signal,
+            signal_tc_vec,
+            signal_duration_vec,
+        }
+    }
+    pub fn count_tc_and_glitch(&mut self) {
+        let signal_hash = self.signal.get_hash();
+        let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
+
+        let signal_name = self.signal.get_name().to_string();
+
+        // count the toggle, if current signal value is rise transition or fall
+        // transition, count add one.
+
+        /*get bus size by lindex and rindex */
+        let (lindex, rindex) = self.signal.get_bus_index().unwrap();
+        let bus_size = lindex - rindex + 1;
+
+        let mut annotate_signal_toggles: Vec<SignalTC> = Vec::new();
+        for i in 0..bus_size {
+            let name = format!("{}[{}]", signal_name, i);
+            annotate_signal_toggles.push(SignalTC::new(name));
+        }
+
+        let mut prev_time_signal_value: Option<&vcd_data::VCDTimeAndValue> = None;
+
+        // loop access to the bus signal
+        for i in rindex..=lindex {
+            let vec_i = lindex - i; // bus signal value is high bit first.
+            if let Some(signal_time_values) = signal_time_values.as_deref() {
+                for signal_time_value in signal_time_values {
+                    let signal_time_value = signal_time_value.as_ref();
+                    if let Some(prev) = prev_time_signal_value {
+                        if self.is_transition(prev, signal_time_value, Some(vec_i)) {
+                            // is transition, incr tc.
+                            /*Each signal inside the bus needs to be recorded separately*/
+                            let i_usize = i as usize; // convert i to usize
+                            annotate_signal_toggles[i_usize].incr_tc();
+                        } else {
+                            // TODO glitch
+                        }
+                    }
+                    prev_time_signal_value = Some(signal_time_value);
+                }
+            }
+        }
+        self.signal_tc_vec.extend(annotate_signal_toggles);
+    }
+
+    pub fn count_duration(&mut self) {
+        let signal_hash = self.signal.get_hash();
+        let signal_time_values: Option<&std::collections::VecDeque<Box<VCDTimeAndValue>>> =
+            self.vcd_file.get_signal_values().get(signal_hash);
+
+        //TODO set simulation time
+        let simulation_end_time = self.vcd_file.get_end_time();
+
+        let signal_name = self.signal.get_name().to_string();
+        // count signal t0,t1,tx,tz duration, the signal may be not start zero time,
+        // need consider the start time, such as t0, we accumulate the VCD bit0 time.
+
+        /*get bus size by lindex and rindex */
+        let (lindex, rindex) = self.signal.get_bus_index().unwrap();
+        let bus_size = lindex - rindex + 1;
+
+        let mut annotate_signal_duration_times: Vec<SignalDuration> = Vec::new();
+        for i in 0..bus_size {
+            let name = format!("{}[{}]", signal_name, i);
+            annotate_signal_duration_times.push(SignalDuration::new(name));
+        }
+
+        let mut prev_time_signal_values: Vec<Option<&VCDTimeAndValue>> =
+            vec![None; bus_size.try_into().unwrap()];
+
+        // loop access to the bus signal
+        for i in (lindex..=rindex).rev() {
+            let vec_i = lindex - i;
+            let mut if_first_value = true;
+
+            if let Some(signal_time_values) = signal_time_values.as_deref() {
+                for signal_time_value in signal_time_values {
+                    let signal_time_value = signal_time_value.as_ref();
+                    if let Some(prev_time_signal_value) = prev_time_signal_values[i as usize] {
+                        let prev_vector = &prev_time_signal_value.value;
+
+                        let bit_value = signal_time_value.value.get_vector_bit(vec_i as usize);
+                        let prev_bit_value = prev_vector.get_vector_bit(vec_i as usize);
+
+                        // if is the last signal value of this bus signal or current value is different from prev
+                        if bit_value != prev_bit_value
+                            || signal_time_value == signal_time_values.back().unwrap().as_ref()
+                        {
+                            let duration =
+                                self.get_duration(prev_time_signal_value, signal_time_value);
+
+                            self.update_duration(
+                                &mut annotate_signal_duration_times[i as usize],
+                                prev_bit_value,
+                                duration.try_into().unwrap(),
+                            );
+
+                            prev_time_signal_values[i as usize] = Some(signal_time_value);
+                        }
+                        if if_first_value {
+                            prev_time_signal_values[i as usize] = Some(signal_time_value);
+                            if_first_value = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // for last time, the signal should steady to end.
+        if let Some(signal_time_values) = signal_time_values {
+            if let Some(last_time_signal_value) = signal_time_values.back() {
+                let last_time = last_time_signal_value.time;
+
+                let last_time_duration = simulation_end_time - last_time;
+                for i in (lindex..=rindex).rev() {
+                    let vec_i = lindex - i;
+                    let last_bit_value =
+                        last_time_signal_value.value.get_vector_bit(vec_i as usize);
+
+                    self.update_duration(
+                        &mut annotate_signal_duration_times[i as usize],
+                        last_bit_value,
+                        last_time_duration.try_into().unwrap(),
+                    );
+                }
+            }
+        }
+        self.signal_duration_vec
+            .extend(annotate_signal_duration_times);
+    }
+
+    pub fn run(&mut self) {
+        self.count_tc_and_glitch();
+        self.count_duration();
+    }
+}
+
 pub struct CalcTcAndSp<'a> {
     top_vcd_scope: &'a VCDScope,
     vcd_file: &'a VCDFile,
@@ -284,7 +437,7 @@ impl<'a> CalcTcAndSp<'a> {
             vcd_file,
         }
     }
-    pub fn count_signal(
+    fn count_signal(
         &self,
         signal: &VCDSignal,
         signal_tc_vec: &mut Vec<SignalTC>,
@@ -293,16 +446,14 @@ impl<'a> CalcTcAndSp<'a> {
         let signal_size = signal.get_signal_size();
         if signal_size == 1 {
             // scalar signal
-            let mut scalar_counter = VcdScalarCounter::new(
-                self.top_vcd_scope,
-                self.vcd_file,
-                signal,
-                signal_tc_vec,
-                signal_duration_vec,
-            );
+            let mut scalar_counter =
+                VcdScalarCounter::new(self.vcd_file, signal, signal_tc_vec, signal_duration_vec);
             scalar_counter.run();
         } else {
             // bus signal
+            let mut bus_counter =
+                VcdBusCounter::new(self.vcd_file, signal, signal_tc_vec, signal_duration_vec);
+            bus_counter.run();
         }
     }
 
@@ -348,54 +499,3 @@ impl<'a> CalcTcAndSp<'a> {
         }
     }
 }
-
-// pub struct TraverseScopeClosure {
-//     pub closure: Box<dyn Fn(&VCDScope, &ThreadPool)>,
-//     // pub signal_tc_vec: Vec<SignalTC>,
-//     // pub signal_duration_vec: Vec<SignalDuration>,
-// }
-
-// impl TraverseScopeClosure {
-//     pub fn new(
-//         signal_tc_vec: &mut Vec<SignalTC>,
-//         signal_duration_vec: &mut Vec<SignalDuration>,
-//     ) -> Self {
-//         let closure = Box::new(|parent_scope: &VCDScope, thread_pool: &ThreadPool| {
-//             let signals = parent_scope.get_scope_signals();
-//             // Calculate the signal of the current layer scope
-//             for scope_signal in signals {
-//                 if let vcd_data::VCDVariableType::VarWire = *scope_signal.get_signal_type() {
-//                     /*count signal */
-//                     let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
-//                     // Select whether to use multithreading for count signal
-//                     #[cfg(feature = "multithreading")]
-//                     {
-//                         thread_pool.execute(move || {
-//                             count_signal(cur_signal, signal_tc_vec, signal_duration_vec);
-//                         });
-//                     }
-
-//                     #[cfg(not(feature = "multithreading"))]
-//                     {
-//                         count_signal(scope_signal, signal_tc_vec, signal_duration_vec);
-//                     }
-//                 } else {
-//                     continue;
-//                 }
-//             }
-
-//             // View the next level of the scope
-//             let children_scopes = parent_scope.get_children_scopes();
-//             for child_scope in children_scopes {
-//                 let recursive_closure =
-//                     TraverseScopeClosure::new(signal_tc_vec, signal_duration_vec);
-//                 (recursive_closure.closure)(child_scope.borrow().deref(), thread_pool);
-//             }
-//         });
-
-//         Self {
-//             closure, // signal_tc_vec: signal_tc_vec.to_vec(),
-//                      // signal_duration_vec: signal_duration_vec.to_vec(),
-//         }
-//     }
-// }
