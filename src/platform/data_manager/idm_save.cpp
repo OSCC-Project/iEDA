@@ -80,5 +80,12 @@ bool DataManager::saveGDSII(string path)
   }
   return _idb_builder->saveGDSII(path);
 }
+bool DataManager::saveJSON(string path,string options)
+{
+  if (_idb_builder == nullptr || _idb_lef_service == nullptr || _layout == nullptr) {
+    return false;
+  }
+  return _idb_builder->saveJSON(path,options);
+}
 
 }  // namespace idm
