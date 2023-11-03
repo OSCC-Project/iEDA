@@ -12,7 +12,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 /// VCD signal bit value.
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum VCDBit {
     BitZero,
     BitOne,
@@ -33,7 +33,14 @@ pub struct VCDTimeAndValue {
     pub value: VCDValue,
 }
 
-impl VCDTimeAndValue {}
+impl VCDValue {
+    pub fn get_bit_scalar(&self) -> VCDBit {
+        match self {
+            VCDValue::BitScalar(bit) => *bit,
+            _ => panic!("Not a BitScalar"),
+        }
+    }
+}
 
 /// VCD variable type of vcd signal
 #[derive(Copy, Clone)]
@@ -261,7 +268,7 @@ impl VCDFile {
         self.start_time
     }
 
-    pub fn get_end_time(&mut self) -> i64 {
+    pub fn get_end_time(&self) -> i64 {
         self.end_time
     }
 

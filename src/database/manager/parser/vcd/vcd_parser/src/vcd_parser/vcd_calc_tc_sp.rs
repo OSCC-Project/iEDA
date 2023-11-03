@@ -104,14 +104,23 @@ pub trait VcdCounter {
         false
     }
 
-    fn get_duration(pre_time_value: &VCDTimeAndValue, cur_time_value: &VCDTimeAndValue) -> i64 {
+    fn get_duration(
+        &self,
+        pre_time_value: &VCDTimeAndValue,
+        cur_time_value: &VCDTimeAndValue,
+    ) -> i64 {
         let pre_time = pre_time_value.time;
         let cur_time = cur_time_value.time;
 
         cur_time - pre_time
     }
 
-    fn update_duration(signal_duration: &mut SignalDuration, bit_value: VCDBit, duration: u64) {
+    fn update_duration(
+        &self,
+        signal_duration: &mut SignalDuration,
+        bit_value: VCDBit,
+        duration: u64,
+    ) {
         match bit_value {
             VCDBit::BitZero => signal_duration.bit_0_duration += duration,
             VCDBit::BitOne => signal_duration.bit_1_duration += duration,
@@ -152,7 +161,6 @@ impl<'a> VcdScalarCounter<'a> {
         let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
 
         let signal_name = self.signal.get_name().to_string();
-
         let mut signal_toggle = SignalTC::new(signal_name);
 
         // count the toggle, if current signal value is rise transition or fall
@@ -176,9 +184,58 @@ impl<'a> VcdScalarCounter<'a> {
         signal_toggle
     }
 
-    pub fn count_duration(&mut self) {}
+    pub fn count_duration(&mut self) -> SignalDuration {
+        let signal_hash = self.signal.get_hash();
+        let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
 
-    pub fn run(&mut self) {}
+        //TODO set simulation time
+        let simulation_end_time = self.vcd_file.get_end_time();
+
+        let signal_name = self.signal.get_name().to_string();
+        let mut annotate_signal_duration_time = SignalDuration::new(signal_name);
+        // count signal t0,t1,tx,tz duration, the signal may be not start zero time,
+        // need consider the start time, such as t0, we accumulate the VCD bit0 time.
+        let mut prev_time_signal_value: Option<&vcd_data::VCDTimeAndValue> = None;
+        if let Some(signal_time_values) = signal_time_values.as_deref() {
+            for signal_time_value in signal_time_values {
+                let signal_time_value = signal_time_value.as_ref();
+                if let Some(prev) = prev_time_signal_value {
+                    let duration = self.get_duration(prev, signal_time_value);
+                    let prev_bit_value = &prev.value;
+
+                    let one_bit_value = prev_bit_value.get_bit_scalar();
+                    self.update_duration(
+                        &mut annotate_signal_duration_time,
+                        one_bit_value,
+                        duration.try_into().unwrap(),
+                    );
+                }
+                prev_time_signal_value = Some(signal_time_value);
+            }
+        }
+
+        // for last time, the signal should steady to end.
+        if let Some(signal_time_values) = signal_time_values {
+            if let Some(last_time_signal_value) = signal_time_values.back() {
+                let last_time = last_time_signal_value.time;
+                let last_bit_value = last_time_signal_value.value.get_bit_scalar();
+                let last_time_duration = simulation_end_time - last_time;
+                self.update_duration(
+                    &mut annotate_signal_duration_time,
+                    last_bit_value,
+                    last_time_duration.try_into().unwrap(),
+                );
+            }
+        }
+        annotate_signal_duration_time
+    }
+
+    pub fn run(&mut self) {
+        let tc_record: SignalTC = self.count_tc_and_glitch();
+        let sp_recotd: SignalDuration = self.count_duration();
+        self.signal_tc_vec.push(tc_record);
+        self.signal_duration_vec.push(sp_recotd);
+    }
 }
 
 pub struct FindScopeClosure {
