@@ -28,24 +28,16 @@
 #include <string>
 #include <type_traits>
 
-extern "C" {
+#include "rust-common/RustCommon.hh"
 
-/**
- * @brief Rust C vector.
- *
- */
-typedef struct RustVec {
-  void* data;           //!< vec elem data storage
-  uintptr_t len;        //!< vec elem num
-  uintptr_t cap;        //!< vec elem capacitance
-  uintptr_t type_size;  //!< vec elem type size
-} RustVec;
+extern "C" {
 
 /**
  * @brief liberty expression operation.
  *
  */
-enum RustLibertyExprOp {
+enum RustLibertyExprOp
+{
   kBuffer,
   kNot,
   kOr,
@@ -61,7 +53,8 @@ enum RustLibertyExprOp {
  * @brief liberty expr.
  *
  */
-typedef struct RustLibertyExpr {
+typedef struct RustLibertyExpr
+{
   enum RustLibertyExprOp op;
   struct RustLibertyExpr* left;
   struct RustLibertyExpr* right;
@@ -90,7 +83,8 @@ RustLibertyExpr* rust_convert_expr(void* c_expr);
  * @param c_expr
  * @return LibertyExpr*
  */
-inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
+inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr)
+{
   return c_expr->left ? rust_convert_expr(c_expr->left) : nullptr;
 }
 
@@ -100,7 +94,8 @@ inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
  * @param c_expr
  * @return LibertyExpr*
  */
-inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
+inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr)
+{
   return c_expr->right ? rust_convert_expr(c_expr->right) : nullptr;
 }
 
@@ -111,7 +106,8 @@ inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
  * @return true
  * @return false
  */
-inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr) {
+inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr)
+{
   return c_expr->op == RustLibertyExprOp::kOne;
 }
 
@@ -122,14 +118,16 @@ inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr) {
  * @return true
  * @return false
  */
-inline bool rust_expr_func_is_zero(RustLibertyExpr* c_expr) {
+inline bool rust_expr_func_is_zero(RustLibertyExpr* c_expr)
+{
   return c_expr->op == RustLibertyExprOp::kZero;
 }
 /**
  * @brief Rust liberty group stmt for C.
  *
  */
-typedef struct RustLibertyGroupStmt {
+typedef struct RustLibertyGroupStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* group_name;
@@ -141,7 +139,8 @@ typedef struct RustLibertyGroupStmt {
  * @brief Rust liberty simple attribute stmt for C.
  *
  */
-typedef struct RustLibertySimpleAttrStmt {
+typedef struct RustLibertySimpleAttrStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* attri_name;
@@ -152,7 +151,8 @@ typedef struct RustLibertySimpleAttrStmt {
  * @brief Rust liberty complex attribute stmt for C.
  *
  */
-typedef struct RustLibertyComplexAttrStmt {
+typedef struct RustLibertyComplexAttrStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* attri_name;
@@ -163,7 +163,8 @@ typedef struct RustLibertyComplexAttrStmt {
  * @brief Rust liberty string value for C.
  *
  */
-typedef struct RustLibertyStringValue {
+typedef struct RustLibertyStringValue
+{
   char* value;
 } RustLibertyStringValue;
 
@@ -171,7 +172,8 @@ typedef struct RustLibertyStringValue {
  * @brief Rust liberty float value for C.
  *
  */
-typedef struct RustLibertyFloatValue {
+typedef struct RustLibertyFloatValue
+{
   double value;
 } RustLibertyFloatValue;
 
@@ -256,8 +258,7 @@ struct RustLibertyGroupStmt* rust_convert_group_stmt(void* group_stmt);
  * @param simple_attri_stmt
  * @return struct RustLibertySimpleAttrStmt*
  */
-struct RustLibertySimpleAttrStmt* rust_convert_simple_attribute_stmt(
-    void* simple_attri_stmt);
+struct RustLibertySimpleAttrStmt* rust_convert_simple_attribute_stmt(void* simple_attri_stmt);
 
 /**
  * @brief Rust convert complex attribute stmt to C struct.
@@ -265,8 +266,7 @@ struct RustLibertySimpleAttrStmt* rust_convert_simple_attribute_stmt(
  * @param complex_attri_stmt
  * @return struct RustLibertyComplexAttrStmt*
  */
-struct RustLibertyComplexAttrStmt* rust_convert_complex_attribute_stmt(
-    void* complex_attri_stmt);
+struct RustLibertyComplexAttrStmt* rust_convert_complex_attribute_stmt(void* complex_attri_stmt);
 
 /**
  * @brief Judge Rust attribue whether is float value.
@@ -303,62 +303,6 @@ struct RustLibertyStringValue* rust_convert_string_value(void* string_value);
 struct RustLibertyFloatValue* rust_convert_float_value(void* float_value);
 }
 
-/**
- * @brief Rust C vector iterator.
- *
- * @tparam T vector element type.
- */
-template <typename T>
-class RustVecIterator {
- public:
-  explicit RustVecIterator(RustVec* rust_vec) : _rust_vec(rust_vec) {}
-  ~RustVecIterator() = default;
-
-  bool hasNext() { return _index < _rust_vec->len; }
-  T* next() {
-    uintptr_t ptr_move =
-        std::is_same_v<T, void> ? _index * _rust_vec->type_size : _index;
-    auto* ret_value = static_cast<T*>(_rust_vec->data) + ptr_move;
-
-    ++_index;
-    return ret_value;
-  }
-
- private:
-  RustVec* _rust_vec;
-  uintptr_t _index = 0;
-};
-
-/**
- * @brief usage:
- * RustVec* vec;
- * T* elem;
- * FOREACH_VEC_ELEM(vec, T, elem)
- * {
- *    do_something_for_elem();
- * }
- *
- */
-#define FOREACH_VEC_ELEM(vec, T, elem) \
-  for (RustVecIterator<T> iter(vec);   \
-       iter.hasNext() ? elem = iter.next(), true : false;)
-
-/**
- * @brief Get the Rust Vec Elem object
- *
- * @tparam T
- * @param rust_vec
- * @param index
- * @return T*
- */
-template <typename T>
-T* GetRustVecElem(RustVec* rust_vec, uintptr_t index) {
-  uintptr_t ptr_move =
-      std::is_same_v<T, void> ? index * rust_vec->type_size : index;
-  auto* ret_value = static_cast<T*>(rust_vec->data) + ptr_move;
-  return ret_value;
-}
-
 namespace ista {
 
 class LibertyBuilder;
@@ -367,7 +311,8 @@ class LibertyBuilder;
  * @brief The liberty expression builder for parser function string.
  *
  */
-class RustLibertyExprBuilder {
+class RustLibertyExprBuilder
+{
  public:
   RustLibertyExprBuilder(const char* expr_str) : _expr_str(expr_str) {}
   ~RustLibertyExprBuilder() = default;
@@ -384,7 +329,8 @@ class RustLibertyExprBuilder {
  * @brief The liberty reader is used to read rust data.
  *
  */
-class RustLibertyReader {
+class RustLibertyReader
+{
  public:
   explicit RustLibertyReader(const char* file_name) : _file_name(file_name) {}
   ~RustLibertyReader() = default;
@@ -416,9 +362,7 @@ class RustLibertyReader {
   unsigned visitGroup(RustLibertyGroupStmt* group);
   unsigned readLib();
 
-  void set_library_builder(LibertyBuilder* library_builder) {
-    _library_builder = library_builder;
-  }
+  void set_library_builder(LibertyBuilder* library_builder) { _library_builder = library_builder; }
   auto* get_library_builder() { return _library_builder; }
 
  private:
