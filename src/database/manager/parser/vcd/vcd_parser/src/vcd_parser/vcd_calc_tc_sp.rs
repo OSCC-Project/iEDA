@@ -311,7 +311,7 @@ impl<'a> VcdBusCounter<'a> {
         let mut prev_time_signal_value: Option<&vcd_data::VCDTimeAndValue> = None;
 
         // loop access to the bus signal
-        for i in rindex..=lindex {
+        for i in (lindex..=rindex).rev() {
             let vec_i = lindex - i; // bus signal value is high bit first.
             if let Some(signal_time_values) = signal_time_values.as_deref() {
                 for signal_time_value in signal_time_values {
