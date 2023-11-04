@@ -18,17 +18,9 @@
 
 #include <vector>
 
-#include "ops/annotate_toggle_sp/AnnotateData.hh"
+#include "rust-common/RustCommon.hh"
 
 extern "C" {
-
-typedef struct RustVec
-{
-  void* data;
-  uintptr_t len;
-  uintptr_t cap;
-  uintptr_t type_size;
-} RustVec;
 
 typedef struct RustVCDSignal
 {
@@ -109,80 +101,7 @@ namespace ipower {
 class RustVcdReader
 {
  public:
-  unsigned readVcdFile(const char* vcd_file_path);
-
-  unsigned buildAnnotateDB(const char* top_instance_name);
-  unsigned calcScopeToggleAndSp(const char* top_instance_name);
-
-  // std::vector<RustSignalTC> countTC();
-  // std::vector<RustSignalDuration> countDuration();
-  void printAnnotateDB(std::ostream& out) { _annotate_db.printAnnotateDB(out); }
-  auto* get_annotate_db() { return &_annotate_db; }
-
- private:
-  RustVCDFile* _vcd_file;
-  void* _vcd_file_ptr;
-  RustVCDScope* _top_instance_scope;
-
-  // std::vector<RustSignalTC> _signal_tc_vec;
-
-  std::optional<int64_t> _begin_time;  //!< simulation begin time.
-  std::optional<int64_t> _end_time;    //!< simulation end time.
-  AnnotateDB _annotate_db;             //!< The annotate database for store waveform data.
+  RustVCDFile* readVcdFile(const char* vcd_file_path);
 };
 
-/**
- * @brief Rust C vector iterator.
- *
- * @tparam T vector element type.
- */
-template <typename T>
-class RustVecIterator
-{
- public:
-  explicit RustVecIterator(RustVec* rust_vec) : _rust_vec(rust_vec) {}
-  ~RustVecIterator() = default;
-
-  bool hasNext() { return _index < _rust_vec->len; }
-  T* next()
-  {
-    uintptr_t ptr_move = std::is_same_v<T, void> ? _index * _rust_vec->type_size : _index;
-    auto* ret_value = static_cast<T*>(_rust_vec->data) + ptr_move;
-
-    ++_index;
-    return ret_value;
-  }
-
- private:
-  RustVec* _rust_vec;
-  uintptr_t _index = 0;
-};
-
-/**
- * @brief usage:
- * RustVec* vec;
- * T* elem;
- * FOREACH_VEC_ELEM(vec, T, elem)
- * {
- *    do_something_for_elem();
- * }
- *
- */
-#define FOREACH_VEC_ELEM(vec, T, elem) for (RustVecIterator<T> iter(vec); iter.hasNext() ? elem = iter.next(), true : false;)
-
-/**
- * @brief Get the Rust Vec Elem object
- *
- * @tparam T
- * @param rust_vec
- * @param index
- * @return T*
- */
-template <typename T>
-T* GetRustVecElem(RustVec* rust_vec, uintptr_t index)
-{
-  uintptr_t ptr_move = std::is_same_v<T, void> ? index * rust_vec->type_size : index;
-  auto* ret_value = static_cast<T*>(rust_vec->data) + ptr_move;
-  return ret_value;
-}
 }  // namespace ipower
