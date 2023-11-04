@@ -398,15 +398,21 @@ pub fn parse_spef_file(spef_file_path: &str) {
     // This is used to replace the .expect()
     // !TODO Use crate anyhow to handle all the errors, this will reduce the code amount.
     let unparsed_file = fs::read_to_string(spef_file_path).unwrap();
-    let spef_entries = SpefParser::parse(Rule::file, &unparsed_file).unwrap();
+    let spef_entries = SpefParser::parse(Rule::spef_file, &unparsed_file).unwrap();
 
-    let mut exchange_data =
-        spef_data::SpefExchange::new(spef_data::SpefStringValue { value: spef_file_path.to_string() });
+    let mut exchange_data = spef_data::SpefExchange::new(spef_file_path.to_string());
 
     let mut current_net: spef_data::SpefNet = spef_data::SpefNet::new(0, "None".to_string(), 0.0);
     let mut current_section: spef_data::SectionType = spef_data::SectionType::HEADER;
 
-    for entry in spef_entries {
+    let spef_file_pair = spef_entries.into_iter().next().unwrap();
+
+    for entry in spef_file_pair.into_inner() {
+        let entry_clone = entry.clone();
+        println!("Rule:    {:?}", entry_clone.as_rule());
+        println!("Span:    {:?}", entry_clone.as_span());
+        println!("Text:    {}", entry_clone.as_str());
+
         match entry.as_rule() {
             Rule::section => {
                 // Section entries are not included in SpefParserData, it is used as a label for this function.
@@ -488,7 +494,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                 }
             }
 
-            _ => panic!("unkonwn rule."),
+            _ => panic!("unkonwn rule {}.", entry.as_str()),
         };
     }
 

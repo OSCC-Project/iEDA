@@ -1,4 +1,4 @@
-WHITESPACE = _{ " " | "\t" | "\r" }
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
 int   = _{ ("+" | "-")? ~ ASCII_DIGIT+ }
 num   = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
@@ -43,11 +43,11 @@ direction        =  { "I" | "O" | "B" }
 coordinate_param = _{ "*C" }
 xy_coordinates   =  { num{2} }
 
-dnet_entry =  { "*D_NET" ~ (index_name | str_name) ~ cap_or_res_val }
-cap_or_res_val    = { num{1} }
+dnet_entry     = { "*D_NET" ~ (index_name | str_name) ~ cap_or_res_val }
+cap_or_res_val = { num{1} }
 
-conn_entry  =  { conn_type ~ pin_port ~ direction ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
-conn_type   =  { "*P" | "*I" | "*S" | "*C" | "*R" | "*L" }
+conn_entry = { conn_type ~ pin_port ~ direction ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
+conn_type  = { "*P" | "*I" | "*S" | "*C" | "*R" | "*L" }
 // !TODO, Add str_name to pin_port because it's legal too.
 // Noting that str_name may wrongly matches cap_or_res_value, which leading to wrong paring.
 pin_port    = ${ (index_name) ~ (":" ~ pin_name)? }
@@ -55,9 +55,11 @@ pin_name    =  { (ASCII_ALPHANUMERIC | "_")+ }
 load_param  = _{ "*L" }
 drive_param = _{ "*D" }
 
-cap_or_res_entry = { id ~ pin_port{1, 2} ~ cap_or_res_val }
-id = _{ ASCII_DIGIT+ }
+cap_or_res_entry =  { id ~ pin_port{1, 2} ~ cap_or_res_val }
+id               = _{ ASCII_DIGIT+ }
 
-file = _{
-    SOI ~ (section | header_entry | name_map_entry | ports_entry | dnet_entry | conn_entry | cap_or_res_entry | NEWLINE)* ~ EOI
+spef_file_text = { (section | header_entry | name_map_entry | ports_entry | dnet_entry | conn_entry | cap_or_res_entry)+ }
+
+spef_file = _{
+    SOI ~ spef_file_text ~ EOI
 }

@@ -1,126 +1,19 @@
 use std::fmt::Debug;
 
-pub trait SpefValue: Debug {
-    fn is_string(&self) -> bool {
-        false
-    }
-    fn is_float(&self) -> bool {
-        false
-    }
-    fn is_name(&self) -> bool {
-        false
-    }
-    fn is_coordinates(&self) -> bool {
-        false
-    }
-
-    fn get_float_value(&self) -> f64 {
-        panic!("This is unknown value.");
-    }
-    fn get_str_value(&self) -> String {
-        panic!("This is unknown value.");
-    }
-    fn get_name_string(&self) -> String {
-        panic!("This is unknown value.");
-    }
-    fn get_coordinates(&self) -> (f64, f64) {
-        panic!("This is unknown value.");
-    }
-}
-
-/// spef float value.
-/// # Examples
-/// 1.7460
-#[derive(Clone, Debug)]
-pub struct SpefFloatValue {
-    pub(crate) value: f64,
-}
-
-impl SpefValue for SpefFloatValue {
-    fn is_float(&self) -> bool {
-        true
-    }
-
-    fn get_float_value(&self) -> f64 {
-        self.value
-    }
-}
-
-/// spef string value.
-/// # Examples
-/// "sky130_fd_sc_hd__dfxtp_2"
-#[derive(Clone, Debug)]
-pub struct SpefStringValue {
-    pub value: String,
-}
-
-impl SpefValue for SpefStringValue {
-    fn is_string(&self) -> bool {
-        true
-    }
-
-    fn get_str_value(&self) -> String {
-        self.value.clone()
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct SpefCoordinatesValue {
-    pub(crate) value: (f64, f64),
-}
-
-impl SpefValue for SpefCoordinatesValue {
-    fn is_coordinates(&self) -> bool {
-        true
-    }
-
-    fn get_coordinates(&self) -> (f64, f64) {
-        self.value
-    }
-}
-/// spef line entry trait
-pub trait SpefEntryTrait: Debug {
-    fn is_section_entry(&self) -> bool {
-        false
-    }
-    fn is_header_entry(&self) -> bool {
-        false
-    }
-    fn is_namemap_entry(&self) -> bool {
-        false
-    }
-    fn is_port_entry(&self) -> bool {
-        false
-    }
-    fn is_dnet_entry(&self) -> bool {
-        false
-    }
-    fn is_conn_entry(&self) -> bool {
-        false
-    }
-    fn is_cap_entry(&self) -> bool {
-        false
-    }
-    fn is_res_entry(&self) -> bool {
-        false
-    }
-    fn as_any(&self) -> &dyn std::any::Any;
-}
-
 /// spef line entry basic info and it's methods
 #[derive(Clone, Debug)]
 pub struct SpefEntryBasicInfo {
-    file_name: SpefStringValue,
+    file_name: String,
     line_no: usize,
 }
 
 impl SpefEntryBasicInfo {
     pub fn new(file_name: &str, line_no: usize) -> SpefEntryBasicInfo {
-        SpefEntryBasicInfo { file_name: SpefStringValue { value: file_name.to_string() }, line_no: line_no }
+        SpefEntryBasicInfo { file_name: file_name.to_string(), line_no: line_no }
     }
 
-    pub fn get_file_name(&self) -> String {
-        self.file_name.get_str_value()
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -159,28 +52,19 @@ impl SpefSectionEntry {
     }
 }
 
-impl SpefEntryTrait for SpefSectionEntry {
-    fn is_section_entry(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct SpefHeaderEntry {
     basic_info: SpefEntryBasicInfo,
-    header_key: SpefStringValue,
-    header_value: SpefStringValue,
+    header_key: String,
+    header_value: String,
 }
 
 impl SpefHeaderEntry {
     pub fn new(file_name: &str, line_no: usize, header_key: String, header_value: String) -> SpefHeaderEntry {
         SpefHeaderEntry {
             basic_info: SpefEntryBasicInfo::new(file_name, line_no),
-            header_key: SpefStringValue { value: header_key },
-            header_value: SpefStringValue { value: header_value },
+            header_key: header_key,
+            header_value: header_value,
         }
     }
 
@@ -188,21 +72,12 @@ impl SpefHeaderEntry {
         &self.basic_info
     }
 
-    pub fn get_header_key(&self) -> String {
-        self.header_key.get_str_value()
+    pub fn get_header_key(&self) -> &str {
+        &self.header_key
     }
 
-    pub fn get_header_value(&self) -> String {
-        self.header_value.get_str_value()
-    }
-}
-
-impl SpefEntryTrait for SpefHeaderEntry {
-    fn is_header_entry(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
+    pub fn get_header_value(&self) -> &str {
+        &self.header_value
     }
 }
 
@@ -232,15 +107,6 @@ impl SpefNameMapEntry {
 
     pub fn get_name(&self) -> String {
         self.name.clone()
-    }
-}
-
-impl SpefEntryTrait for SpefNameMapEntry {
-    fn is_namemap_entry(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
     }
 }
 
@@ -294,15 +160,6 @@ impl SpefPortEntry {
         // result.push(self.coordinates.1);
         // result
         self.coordinates
-    }
-}
-
-impl SpefEntryTrait for SpefPortEntry {
-    fn is_port_entry(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
     }
 }
 
@@ -411,15 +268,6 @@ impl SpefConnEntry {
     }
 }
 
-impl SpefEntryTrait for SpefConnEntry {
-    fn is_conn_entry(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-
 /// Store everthing about a net
 /// Conn entry example: 3 *1:2 0.000520945
 /// name: "1:2"
@@ -478,7 +326,7 @@ impl SpefNet {
 #[derive(Clone, Debug)]
 /// Spef Exchange data structure with cpp
 pub struct SpefExchange {
-    pub file_name: SpefStringValue,
+    pub file_name: String,
     pub header: Vec<SpefHeaderEntry>,
     pub namemap: Vec<SpefNameMapEntry>,
     pub ports: Vec<SpefPortEntry>,
@@ -486,7 +334,7 @@ pub struct SpefExchange {
 }
 
 impl SpefExchange {
-    pub fn new(file_name: SpefStringValue) -> SpefExchange {
+    pub fn new(file_name: String) -> SpefExchange {
         SpefExchange { file_name, header: Vec::new(), namemap: Vec::new(), ports: Vec::new(), nets: Vec::new() }
     }
 
@@ -505,15 +353,13 @@ impl SpefExchange {
         self.nets.push(net);
     }
 
-    pub fn get_file_name(&self) -> SpefStringValue {
-        self.file_name.clone()
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum SpefParserData {
-    // String(SpefStringValue),
-    // Float(SpefFloatValue),
     SectionEntry(SpefSectionEntry),
     HeaderEntry(SpefHeaderEntry),
     NameMapEntry(SpefNameMapEntry),
