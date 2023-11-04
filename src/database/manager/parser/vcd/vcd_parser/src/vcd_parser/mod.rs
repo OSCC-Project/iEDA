@@ -1,6 +1,6 @@
 use pest::Parser;
 use pest_derive::Parser;
-use std::{cell::RefCell, collections::VecDeque};
+use std::cell::RefCell;
 
 use pest::iterators::Pair;
 
@@ -9,7 +9,7 @@ pub mod vcd_calc_tc_sp;
 pub mod vcd_data;
 
 use std::rc::Rc;
-use std::sync::Mutex;
+// use std::sync::Mutex;
 
 #[derive(Parser)]
 #[grammar = "vcd_parser/grammar/grammar.pest"]
@@ -122,7 +122,7 @@ fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePar
 }
 
 /// process close scope.
-fn process_close_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+fn process_close_scope(_pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
     let scope_stack = vcd_file_parser.get_scope_stack();
     scope_stack.pop_back();
 }
@@ -266,7 +266,7 @@ pub fn parse_vcd_file(vcd_file_path: &str) -> Result<vcd_data::VCDFile, pest::er
 
 #[cfg(test)]
 mod tests {
-    use pest::error;
+    // use pest::error;
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
 

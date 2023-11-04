@@ -9,7 +9,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
-use std::sync::Arc;
 
 /// VCD signal bit value.
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -172,7 +171,7 @@ pub enum VCDScopeType {
     ScopeFunction,
     ScopeModule,
     ScopeTask,
-    ScopeRoot,
+    // ScopeRoot,
 }
 
 /// VCD Scope

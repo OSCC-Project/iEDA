@@ -1,14 +1,12 @@
 use crate::vcd_parser::parse_vcd_file;
 use crate::vcd_parser::vcd_data;
 
-use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::ffi::CString;
 use std::ops::Deref;
-use std::ops::DerefMut;
+
 use std::os::raw::*;
 use std::ptr::null_mut;
-use std::rc::Rc;
+
 use threadpool::ThreadPool;
 
 use super::vcd_data::VCDScope;
@@ -99,6 +97,46 @@ pub struct Indexes {
     lindex: i32,
     rindex: i32,
 }
+
+#[no_mangle]
+pub extern "C" fn rust_convert_signal_tc(
+    c_signal_tc: *mut vcd_calc_tc_sp::SignalTC,
+) -> *mut RustSignalTC {
+    unsafe {
+        let name = &(*c_signal_tc).signal_name;
+        let signal_name = string_to_c_char(name);
+        let rust_signal_tc = RustSignalTC {
+            signal_name,
+            signal_tc: (*c_signal_tc).signal_tc,
+        };
+
+        let signal_tc_pointer = Box::new(rust_signal_tc);
+        let raw_pointer = Box::into_raw(signal_tc_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_signal_duration(
+    c_signal_duration: *mut vcd_calc_tc_sp::SignalDuration,
+) -> *mut RustSignalDuration {
+    unsafe {
+        let name = &(*c_signal_duration).signal_name;
+        let signal_name = string_to_c_char(name);
+        let rust_signal_duration = RustSignalDuration {
+            signal_name,
+            bit_0_duration: (*c_signal_duration).bit_0_duration,
+            bit_1_duration: (*c_signal_duration).bit_1_duration,
+            bit_x_duration: (*c_signal_duration).bit_x_duration,
+            bit_z_duration: (*c_signal_duration).bit_z_duration,
+        };
+
+        let signal_duration_pointer = Box::new(rust_signal_duration);
+        let raw_pointer = Box::into_raw(signal_duration_pointer);
+        raw_pointer
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rust_convert_signal_index(bus_index: *mut c_void) -> *mut Indexes {
     let bus_index_ptr = bus_index as *mut (i32, i32);
@@ -139,7 +177,7 @@ pub extern "C" fn rust_convert_vcd_signal(
         let signal_type = (*signal_type_c) as u32;
 
         let scope_option = (*c_vcd_signal).get_scope().clone();
-        let mut scope_ptr = match scope_option {
+        let scope_ptr = match scope_option {
             Some(scope) => {
                 let scope_ptr = scope.deref().as_ptr();
                 scope_ptr as *mut c_void
@@ -171,7 +209,7 @@ pub extern "C" fn rust_convert_vcd_scope(
         let name = string_to_c_char(scope_name);
 
         let parent_scope_option = (*c_vcd_scope).get_parent_scope().clone();
-        let mut parent_scope_ptr = match parent_scope_option {
+        let parent_scope_ptr = match parent_scope_option {
             Some(parent_scope) => {
                 let scope_ptr = parent_scope.deref().as_ptr();
                 scope_ptr as *mut c_void
@@ -263,13 +301,19 @@ pub extern "C" fn rust_parse_vcd(lib_path: *const c_char) -> *mut c_void {
     raw_pointer as *mut c_void
 }
 
+#[repr(C)]
+pub struct RustTcAndSpResVecs {
+    signal_tc_vec: RustVec,
+    signal_duration_vec: RustVec,
+}
+
 #[no_mangle]
 pub extern "C" fn rust_calc_scope_tc_sp(
     c_top_vcd_scope_name: *const c_char,
     c_vcd_file: *mut vcd_data::VCDFile,
-) {
+) -> *mut RustTcAndSpResVecs {
     unsafe {
-        let c_str = unsafe { std::ffi::CStr::from_ptr(c_top_vcd_scope_name) };
+        let c_str = std::ffi::CStr::from_ptr(c_top_vcd_scope_name);
         let r_str = c_str.to_string_lossy().into_owned();
         println!("r str {}", r_str);
 
@@ -292,8 +336,7 @@ pub extern "C" fn rust_calc_scope_tc_sp(
 
         let find_top_scope = find_scope_option.unwrap();
         let top_scope = find_top_scope.borrow();
-        let calc_tc_sp =
-            vcd_calc_tc_sp::CalcTcAndSp::new(top_scope.deref(), c_vcd_file.as_ref().unwrap());
+        let calc_tc_sp = vcd_calc_tc_sp::CalcTcAndSp::new(c_vcd_file.as_ref().unwrap());
 
         calc_tc_sp.traverse_scope_signal(
             top_scope.deref(),
@@ -301,5 +344,38 @@ pub extern "C" fn rust_calc_scope_tc_sp(
             &mut signal_tc_vec,
             &mut signal_duration_vec,
         );
+
+        let vec_res = RustTcAndSpResVecs {
+            signal_tc_vec: rust_vec_to_c_array(&signal_tc_vec),
+            signal_duration_vec: rust_vec_to_c_array(&signal_duration_vec),
+        };
+
+        let vec_res_pointer = Box::new(vec_res);
+        let raw_pointer = Box::into_raw(vec_res_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn find_scope_by_name(
+    scope_name: *const c_char,
+    c_vcd_file: *mut vcd_data::VCDFile,
+) -> *mut RustVCDScope {
+    unsafe {
+        let c_str = std::ffi::CStr::from_ptr(scope_name);
+        let r_str = c_str.to_string_lossy().into_owned();
+        println!("r str {}", r_str);
+
+        let find_scope_option = match (*c_vcd_file).get_root_scope() {
+            Some(the_scope) => {
+                let find_scope_closure = vcd_calc_tc_sp::FindScopeClosure::new();
+                let find_scope = (find_scope_closure.closure)(&the_scope, &r_str);
+                find_scope
+            }
+            None => panic!("root scope not exist."),
+        };
+        let find_scope = find_scope_option.unwrap();
+        let raw_pointer = rust_convert_vcd_scope(find_scope.borrow().deref());
+        raw_pointer
     }
 }

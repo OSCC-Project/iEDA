@@ -7,20 +7,18 @@ use super::vcd_data::VCDSignal;
 use super::vcd_data::VCDTimeAndValue;
 use super::vcd_data::VCDValue;
 
-use core::panic;
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::ops::Deref;
+// use std::collections::HashMap;
+// use std::ops::Deref;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+// use std::sync::{Arc, Mutex};
 
 use threadpool::ThreadPool;
 
 #[derive(Clone)]
 pub struct SignalTC {
-    signal_name: String,
-    signal_tc: u64,
+    pub signal_name: String,
+    pub signal_tc: u64,
 }
 
 impl SignalTC {
@@ -38,11 +36,11 @@ impl SignalTC {
 
 #[derive(Clone)]
 pub struct SignalDuration {
-    signal_name: String,
-    bit_0_duration: u64,
-    bit_1_duration: u64,
-    bit_x_duration: u64,
-    bit_z_duration: u64,
+    pub signal_name: String,
+    pub bit_0_duration: u64,
+    pub bit_1_duration: u64,
+    pub bit_x_duration: u64,
+    pub bit_z_duration: u64,
 }
 
 impl SignalDuration {
@@ -426,16 +424,12 @@ impl<'a> VcdBusCounter<'a> {
 }
 
 pub struct CalcTcAndSp<'a> {
-    top_vcd_scope: &'a VCDScope,
     vcd_file: &'a VCDFile,
 }
 
 impl<'a> CalcTcAndSp<'a> {
-    pub fn new(top_vcd_scope: &'a VCDScope, vcd_file: &'a VCDFile) -> Self {
-        Self {
-            top_vcd_scope,
-            vcd_file,
-        }
+    pub fn new(vcd_file: &'a VCDFile) -> Self {
+        Self { vcd_file }
     }
     fn count_signal(
         &self,
@@ -469,7 +463,7 @@ impl<'a> CalcTcAndSp<'a> {
         for scope_signal in signals {
             if let vcd_data::VCDVariableType::VarWire = *scope_signal.get_signal_type() {
                 /*count signal */
-                let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
+                // let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
                 // Select whether to use multithreading for count signal
                 #[cfg(feature = "multithreading")]
                 {
