@@ -97,25 +97,28 @@ pub extern "C" fn rust_is_bus_index_id(c_verilog_virtual_base_id: *mut c_void) -
     unsafe { (*virtual_base_id).is_bus_index_id() }
 }
 
-#[repr(C)]
-pub struct RustVerilogSliceID {
-    id:*mut c_char,
-}
+// #[repr(C)]
+// pub struct RustVerilogSliceID {
+//     id:*mut c_char,
+//     base_id:*mut c_char,
+//     range_base:i32,
+//     range_max:i32,
+// }
 
-#[no_mangle]
-pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogSliceID {
-    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
-    unsafe {
-        let rust_name = (*virtual_base_id).get_name();
-        let name = string_to_c_char(rust_name.as_str());
+// #[no_mangle]
+// pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogSliceID {
+//     let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+//     unsafe {
+//         let rust_name = (*virtual_base_id).get_name();
+//         let name = string_to_c_char(rust_name.as_str());
 
-        let rust_verilog_slice_id = RustVerilogSliceID{id:name};
+//         let rust_verilog_slice_id = RustVerilogSliceID{id:name};
 
-        let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
-        let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
-        raw_pointer
-    }
-}
+//         let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
+//         let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
+//         raw_pointer
+//     }
+// }
 
 #[no_mangle]
 pub extern "C" fn rust_is_bus_slice_id(c_verilog_virtual_base_id: *mut c_void) -> bool {

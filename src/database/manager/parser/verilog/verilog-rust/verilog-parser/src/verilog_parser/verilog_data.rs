@@ -2,6 +2,10 @@ use std::fmt;
 use std::fmt::Debug;
 
 pub trait VerilogVirtualBaseID {
+    fn is_id(&self) -> bool {
+        false
+    }
+
     fn is_bus_index_id(&self) -> bool {
         false
     }
@@ -44,6 +48,10 @@ impl VerilogID {
 // }
 
 impl VerilogVirtualBaseID for VerilogID {
+    fn is_id(&self) -> bool {
+        true
+    }
+
     fn get_name(&self) -> String {
         self.id.clone()
     }
@@ -131,7 +139,7 @@ impl VerilogVirtualBaseID for VerilogSliceID {
 }
 
 
-pub trait VerilogVirtualBaseNetExpr {
+pub trait VerilogVirtualBaseNetExpr : Debug{
     fn is_id_expr(&self) -> bool {
         false
     }
@@ -144,17 +152,19 @@ pub trait VerilogVirtualBaseNetExpr {
     fn get_verilog_id(&self) ->&Box<dyn VerilogVirtualBaseID> {
         panic!("This is unknown value.");
     }
-    fn get_verilog_ids(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
+    fn get_verilog_id_concat(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
         panic!("This is unknown value.");
     }
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
-impl fmt::Debug for dyn VerilogVirtualBaseNetExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "VerilogVirtualBaseNetExpr {{ verilog_id: {:?} }}", self.get_verilog_id())
-    }
-}
+// impl fmt::Debug for dyn VerilogVirtualBaseNetExpr {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "VerilogVirtualBaseNetExpr {{ verilog_id: {:?} }}", self.get_verilog_id())
+//     }
+// }
 
+#[derive(Debug)]
 pub struct VerilogNetExpr {
     line_no: usize,
 }
@@ -169,6 +179,7 @@ impl VerilogNetExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct VerilogNetIDExpr {
     net_expr: VerilogNetExpr,
     verilog_id: Box<dyn VerilogVirtualBaseID>,
@@ -200,8 +211,12 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
+#[derive(Debug)]
 /// such as { 2'b00, _0_ }
 pub struct VerilogNetConcatExpr {
     net_expr: VerilogNetExpr,
@@ -223,7 +238,7 @@ impl VerilogNetConcatExpr {
         &self.net_expr
     }
     //get_verilog_id_concat
-    fn get_verilog_ids(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
+    pub fn get_verilog_id_concat(&self) -> &Vec<Box<dyn VerilogVirtualBaseID>> {
         &self.verilog_id_concat
     }
 }
@@ -237,11 +252,16 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
         &self.verilog_id_concat.first().unwrap()
     }
 
-    fn get_verilog_ids(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
+    fn get_verilog_id_concat(&self) ->&Vec<Box<dyn VerilogVirtualBaseID>> {
         &self.verilog_id_concat
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
+#[derive(Debug)]
 /// 1'b0 or 1'b1.
 pub struct VerilogConstantExpr {
     net_expr: VerilogNetExpr,
@@ -274,6 +294,9 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
