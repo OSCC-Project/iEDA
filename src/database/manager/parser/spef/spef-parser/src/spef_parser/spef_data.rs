@@ -1,40 +1,3 @@
-#[cxx::bridge(namespace = "ista::spef")]
-mod ffi {
-    // data structures and their methods exposed from rust to cpp
-    extern "Rust" {
-        // type SpefHeaderEntry;
-
-        // fn get_header_key(self: &SpefHeaderEntry) -> &str;
-        // fn get_header_value(self: &SpefHeaderEntry) -> &str;
-
-        // type SpefNameMapEntry;
-
-        // fn get_index(self: &SpefNameMapEntry) -> usize;
-        // fn get_name(self: &SpefNameMapEntry) -> &str;
-
-        // type SpefPortEntry;
-        // // type ConnectionDirection;
-
-        // fn get_name(self: &SpefPortEntry) -> &str;
-        // // fn get_direction(self: &SpefPortEntry) -> &ConnectionDirection;
-        // // fn get_coordinates(self: &SpefPortEntry) -> Vec<f64>;
-
-        // type SpefConnEntry;
-        // // type ConnectionType;
-
-        // // get pin name in the connection entry
-        // fn get_name(self: &SpefConnEntry) -> &str;
-
-        // // fn get_conn_direction(self: &SpefConnEntry) -> &ConnectionDirection;
-        // // fn get_conn_type(self: &SpefConnEntry) -> &ConnectionType;
-        // fn get_coordinates(self: &SpefConnEntry) -> Vec<f64>;
-
-        // type SpefNet;
-
-        // fn get_net_name(self: &SpefNet) -> &str;
-    }
-}
-
 use std::fmt::Debug;
 
 pub trait SpefValue: Debug {
@@ -504,7 +467,7 @@ impl SpefNet {
     }
 
     pub fn get_caps(&self) -> Vec<(String, String, f64)> {
-       self.caps.clone()
+        self.caps.clone()
     }
 
     pub fn get_ress(&self) -> Vec<(String, String, f64)> {

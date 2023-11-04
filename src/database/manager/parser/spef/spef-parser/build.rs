@@ -1,11 +1,10 @@
 fn main() {
-    let source_files = vec!["src/spef_parser/mod.rs", "src/spef_parser/spef_data.rs"];
-    cxx_build::bridges(source_files)
-        .file("spef_parser.cc")
-        .flag_if_supported("-std=c++17")
-        .compile("spef_parser");
+    // let config = cbindgen::Config::from_file("cbindgen.toml").expect("Failed to read cbindgen configuration file");
 
-    // println!("cargo:rerun-if-changed=src/main.rs");
-    // println!("cargo:rerun-if-changed=src/blobstore.cc");
-    // println!("cargo:rerun-if-changed=include/blobstore.h");
+    // cbindgen::Builder::new()
+    //     .with_config(config)
+    //     .with_crate("./")
+    //     .generate()
+    //     .expect("Unable to generate bindings")
+    //     .write_to_file("dist/spef_parser.h");
 }
