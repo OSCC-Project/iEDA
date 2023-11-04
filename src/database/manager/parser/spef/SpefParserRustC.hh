@@ -6,6 +6,10 @@
 
 namespace ista {
 
+extern "C" {
+void rust_parser_spef(const char* spef_path);
+}
+
 // Port: the port in *PORTS section
 struct SpefPort
 {

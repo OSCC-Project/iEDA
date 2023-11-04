@@ -10,3 +10,5 @@ Do not modify this manually.
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+void rust_parser_spef(const char *spef_path);

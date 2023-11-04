@@ -1,3 +1,4 @@
+pub mod spef_c_api;
 pub mod spef_data;
 
 use pest::iterators::Pair;

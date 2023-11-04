@@ -50,4 +50,9 @@ target_link_libraries(spef log ${RUST_LIB_PATH})
 target_include_directories(spef PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_executable(test_spef ${CMAKE_CURRENT_SOURCE_DIR}/spef-parser/test/test.cpp)
+target_link_libraries(test_spef spef)
+target_include_directories(test_spef PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR})
+
 

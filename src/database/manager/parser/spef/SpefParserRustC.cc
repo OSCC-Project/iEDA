@@ -7,6 +7,7 @@ namespace ista {
 
 bool SpefParser::read(std::string file_path)
 {
+  rust_parser_spef(file_path.c_str());
   return true;
 }
 

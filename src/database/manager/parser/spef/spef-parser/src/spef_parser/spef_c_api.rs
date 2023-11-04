@@ -1,11 +1,16 @@
-#[derive(Clone, Debug)]
+use std::ffi::c_void;
+use std::os::raw::c_char;
+
+use crate::spef_parser::parse_spef_file;
+
+#[repr(C)]
 enum ConnectionType {
     INTERNAL,
     EXTERNAL,
     UNITIALIZED,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 enum ConnectionDirection {
     INPUT,
     OUTPUT,
@@ -13,26 +18,26 @@ enum ConnectionDirection {
     UNITIALIZED,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct HeaderItem {
     key: String,
     value: String,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct NameMapItem {
     index: usize,
     name: String,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct PortItem {
     name: String,
     direction: ConnectionDirection,
     coordinates: [f64; 2],
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct ConnItem {
     conn_type: ConnectionType,
     conn_direction: ConnectionDirection,
@@ -45,19 +50,19 @@ struct ConnItem {
     ur_coordinate: [f64; 2],
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct CapItem {
     pin_port: [String; 2],
     cap_val: f64,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct ResItem {
     pin_port: [String; 2],
     res: f64,
 }
 
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct NetItem {
     name: String,
     lcap: f64,
@@ -66,11 +71,20 @@ struct NetItem {
     ress: Vec<ResItem>,
 }
 // Shared structure between cpp and rust, it uses the types in the `exter "Rust" section`
-#[derive(Clone, Debug)]
+#[repr(C)]
 struct SpefFile {
     name: String,
     header: Vec<HeaderItem>,
     name_vector: Vec<NameMapItem>,
     ports: Vec<PortItem>,
     nets: Vec<NetItem>,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parser_spef(spef_path: *const c_char) {
+    let c_str = unsafe { std::ffi::CStr::from_ptr(spef_path) };
+    let r_str = c_str.to_string_lossy().into_owned();
+    println!("r str {}", r_str);
+
+    parse_spef_file(&r_str);
 }
