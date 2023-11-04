@@ -12,15 +12,15 @@ struct SpefPort
   SpefPort() = default;
   SpefPort(const std::string& s) : name(s) {}
   std::string name;
-  ConnectionDirection direction;  // I, O, B
+  // ConnectionDirection direction;  // I, O, B
 };
 
 // Connection: the *CONN section in *D_NET
 struct SpefConnection
 {
   std::string name;
-  ConnectionType type;
-  ConnectionDirection direction;
+  // ConnectionType type;
+  // ConnectionDirection direction;
 
   std::optional<std::pair<float, float>> coordinate;
   std::optional<float> load;
@@ -61,14 +61,14 @@ class SpefParser
   void process_rust_data();
   void expand_name(unsigned num_threads);
 
-  void generate_namemap(rust::Vec<NameMapItem> name_map_vec);
-  void generate_header(rust::Vec<HeaderItem> header_vec);
+  //   void generate_namemap(rust::Vec<NameMapItem> name_map_vec);
+  //   void generate_header(rust::Vec<HeaderItem> header_vec);
 
-  void process_nets(rust::Vec<NetItem> nets_rust);
-  void process_ports(rust::Vec<PortItem> ports_rust);
+  //   void process_nets(rust::Vec<NetItem> nets_rust);
+  //   void process_ports(rust::Vec<PortItem> ports_rust);
 
- private:
-  SpefFile file_data_rust;
+  //  private:
+  //   SpefFile file_data_rust;
 };
 
 }  // namespace ista
