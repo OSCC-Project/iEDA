@@ -12,6 +12,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 /// VCD signal bit value.
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub enum VCDBit {
     BitZero,
     BitOne,
@@ -20,6 +21,7 @@ pub enum VCDBit {
 }
 
 /// VCD value type.
+#[derive(PartialEq)]
 pub enum VCDValue {
     BitScalar(VCDBit),
     BitVector(Vec<VCDBit>),
@@ -27,9 +29,27 @@ pub enum VCDValue {
 }
 
 /// VCD signal value, include time and value
+
+#[derive(PartialEq)]
 pub struct VCDTimeAndValue {
     pub time: i64,
     pub value: VCDValue,
+}
+
+impl VCDValue {
+    pub fn get_bit_scalar(&self) -> VCDBit {
+        match self {
+            VCDValue::BitScalar(bit) => *bit,
+            _ => panic!("Not a BitScalar"),
+        }
+    }
+
+    pub fn get_vector_bit(&self, index: usize) -> VCDBit {
+        match self {
+            VCDValue::BitVector(vec) => vec[index],
+            _ => panic!("Not a BitVector"),
+        }
+    }
 }
 
 /// VCD variable type of vcd signal
@@ -258,7 +278,7 @@ impl VCDFile {
         self.start_time
     }
 
-    pub fn get_end_time(&mut self) -> i64 {
+    pub fn get_end_time(&self) -> i64 {
         self.end_time
     }
 
@@ -284,6 +304,10 @@ impl VCDFile {
 
     pub fn get_root_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
         &self.root_scope
+    }
+
+    pub fn get_signal_values(&self) -> &HashMap<String, VecDeque<Box<VCDTimeAndValue>>> {
+        &self.signal_values
     }
 
     pub fn set_root_scope(&mut self, root_scope: Rc<RefCell<VCDScope>>) {
