@@ -61,6 +61,24 @@ typedef struct RustVerilogSliceID
   char* id;
 } RustVerilogSliceID;
 
+typedef struct RustVerilogNetIDExpr
+{
+  uintptr_t line_no;
+  const void* verilog_id;
+} RustVerilogNetIDExpr;
+
+typedef struct RustVerilogNetConcatExpr
+{
+  uintptr_t line_no;
+  struct RustVec verilog_id_concat;
+} RustVerilogNetConcatExpr;
+
+typedef struct RustVerilogConstantExpr
+{
+  uintptr_t line_no;
+  const void* verilog_id;
+} RustVerilogConstantExpr;
+
 /**
  * @brief Rust verilog module for C.
  *
@@ -139,6 +157,18 @@ bool rust_is_bus_index_id(void* c_verilog_virtual_base_id);
 struct RustVerilogSliceID* rust_convert_verilog_slice_id(void* c_verilog_virtual_base_id);
 
 bool rust_is_bus_slice_id(void* c_verilog_virtual_base_id);
+
+struct RustVerilogNetIDExpr* rust_convert_verilog_net_id_expr(void* c_verilog_net_id_expr);
+
+struct RustVerilogNetConcatExpr* rust_convert_verilog_net_concat_expr(void* c_verilog_net_concat_expr);
+
+struct RustVerilogConstantExpr* rust_convert_verilog_constant_expr(void* c_verilog_constant_expr);
+
+bool rust_is_id_expr(void* c_verilog_virtual_base_net_expr);
+
+bool rust_is_concat_expr(void* c_verilog_virtual_base_net_expr);
+
+bool rust_is_constant(void* c_verilog_virtual_base_net_expr);
 
 ///////////////////////////////////////////////////////////////////////////
 /**

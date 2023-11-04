@@ -125,6 +125,103 @@ pub extern "C" fn rust_is_bus_slice_id(c_verilog_virtual_base_id: *mut c_void) -
     unsafe { (*virtual_base_id).is_bus_slice_id() }
 }
 
+
+#[repr(C)]
+pub struct RustVerilogNetIDExpr {
+    line_no: usize,
+    verilog_id: *const c_void,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_net_id_expr(c_verilog_net_id_expr: *mut c_void) -> *mut RustVerilogNetIDExpr {
+    unsafe {
+        let mut virtual_base_id = unsafe { &mut *(c_verilog_net_id_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+        let verilog_net_id_expr = (*virtual_base_id).as_any().downcast_ref::<verilog_data::VerilogNetIDExpr>().unwrap();
+
+        let line_no = (*verilog_net_id_expr).get_net_expr().get_line_no();
+        let verilog_id_box = (*verilog_net_id_expr).get_verilog_id();
+        let verilog_id = &*verilog_id_box as *const _ as *const c_void;
+
+        let rust_verilog_net_id_expr = RustVerilogNetIDExpr { line_no, verilog_id };
+
+        let rust_verilog_net_id_expr_pointer = Box::new(rust_verilog_net_id_expr);
+        let raw_pointer = Box::into_raw(rust_verilog_net_id_expr_pointer);
+        raw_pointer  
+    }
+}
+
+#[repr(C)]
+pub struct RustVerilogNetConcatExpr {
+    line_no: usize,
+    verilog_id_concat: RustVec,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_net_concat_expr(c_verilog_net_concat_expr: *mut c_void) -> *mut RustVerilogNetConcatExpr {
+    unsafe {
+        let mut virtual_base_id = unsafe { &mut *(c_verilog_net_concat_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+        let verilog_net_concat_expr = (*virtual_base_id).as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
+
+        let line_no = (*verilog_net_concat_expr).get_net_expr().get_line_no();
+        let verilog_id_concat_rust_vec = (*verilog_net_concat_expr).get_verilog_id_concat();
+        let verilog_id_concat = rust_vec_to_c_array(verilog_id_concat_rust_vec);
+
+        let rust_verilog_net_concat_expr = RustVerilogNetConcatExpr { line_no, verilog_id_concat };
+
+        let rust_verilog_net_concat_expr_pointer = Box::new(rust_verilog_net_concat_expr);
+        let raw_pointer = Box::into_raw(rust_verilog_net_concat_expr_pointer);
+        raw_pointer  
+    }
+}
+
+#[repr(C)]
+pub struct RustVerilogConstantExpr {
+    line_no: usize,
+    verilog_id: *const c_void,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_constant_expr(c_verilog_constant_expr: *mut c_void) -> *mut RustVerilogConstantExpr {
+    unsafe {
+        let mut virtual_base_id = unsafe { &mut *(c_verilog_constant_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+        let verilog_constant_expr = (*virtual_base_id).as_any().downcast_ref::<verilog_data::VerilogConstantExpr>().unwrap();
+
+        let line_no = (*verilog_constant_expr).get_net_expr().get_line_no();
+        let verilog_id_box = (*verilog_constant_expr).get_verilog_id();
+        let verilog_id = &*verilog_id_box as *const _ as *const c_void;
+
+        let rust_verilog_constant_expr = RustVerilogConstantExpr { line_no, verilog_id };
+
+        let rust_verilog_constant_expr_pointer = Box::new(rust_verilog_constant_expr);
+        let raw_pointer = Box::into_raw(rust_verilog_constant_expr_pointer);
+        raw_pointer  
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_id_expr(c_verilog_virtual_base_net_expr: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_virtual_base_net_expr = unsafe { &mut *(c_verilog_virtual_base_net_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+
+    unsafe { (*verilog_virtual_base_net_expr).is_id_expr() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_concat_expr(c_verilog_virtual_base_net_expr: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_virtual_base_net_expr = unsafe { &mut *(c_verilog_virtual_base_net_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+
+    unsafe { (*verilog_virtual_base_net_expr).is_concat_expr() }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_is_constant(c_verilog_virtual_base_net_expr: *mut c_void) -> bool {
+    // Casting c_void pointer to *mut dyn LibertyStmt
+    let mut verilog_virtual_base_net_expr = unsafe { &mut *(c_verilog_virtual_base_net_expr as *mut Box<dyn verilog_data::VerilogVirtualBaseNetExpr>) };
+
+    unsafe { (*verilog_virtual_base_net_expr).is_constant() }
+}
+
 #[repr(C)]
 pub struct RustVerilogModule {
     line_no: usize,
