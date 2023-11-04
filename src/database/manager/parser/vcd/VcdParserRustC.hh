@@ -116,6 +116,8 @@ class RustVcdReader
 
   // std::vector<RustSignalTC> countTC();
   // std::vector<RustSignalDuration> countDuration();
+  void printAnnotateDB(std::ostream& out) { _annotate_db.printAnnotateDB(out); }
+  auto* get_annotate_db() { return &_annotate_db; }
 
  private:
   RustVCDFile* _vcd_file;
