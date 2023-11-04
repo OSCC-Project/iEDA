@@ -4,6 +4,7 @@ use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::os::raw::*;
+use std::ffi::CStr;
 
 #[repr(C)]
 pub struct RustVec {
@@ -97,28 +98,62 @@ pub extern "C" fn rust_is_bus_index_id(c_verilog_virtual_base_id: *mut c_void) -
     unsafe { (*virtual_base_id).is_bus_index_id() }
 }
 
-// #[repr(C)]
-// pub struct RustVerilogSliceID {
-//     id:*mut c_char,
-//     base_id:*mut c_char,
-//     range_base:i32,
-//     range_max:i32,
-// }
+#[repr(C)]
+pub struct RustVerilogSliceID {
+    id:*mut c_char,
+    base_id:*mut c_char,
+    range_base:i32,
+    range_max:i32,
+}
 
-// #[no_mangle]
-// pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogSliceID {
-//     let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
-//     unsafe {
-//         let rust_name = (*virtual_base_id).get_name();
-//         let name = string_to_c_char(rust_name.as_str());
+#[no_mangle]
+pub extern "C" fn rust_get_index_name(verilog_slice_id: *mut RustVerilogSliceID,index: usize) -> *const c_char {
+    let base_id = unsafe { CStr::from_ptr((*verilog_slice_id).base_id).to_str().unwrap() };
+    let result = format!("{}[{}]", base_id, index);
+    let result_cstring = CString::new(result).unwrap();
+    result_cstring.into_raw()
+}
 
-//         let rust_verilog_slice_id = RustVerilogSliceID{id:name};
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut c_void) -> *mut RustVerilogSliceID {
+    let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
+    unsafe {
+        let rust_name = (*virtual_base_id).get_name();
+        let name = string_to_c_char(rust_name.as_str());
 
-//         let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
-//         let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
-//         raw_pointer
-//     }
-// }
+        let mut base_id = std::ptr::null_mut();
+        let mut range_max = 0;
+        let mut range_base = 0;
+
+        // Extracting the base_id, range_max, and range_base from the name.
+        // need test range_base/range_max is obtained correctly.
+        if let Some(open_bracket_index) = rust_name.find('[') {
+            if let Some(colon_index) = rust_name.find(':') {
+                if let Some(close_bracket_index) = rust_name.find(']') {
+                    base_id = string_to_c_char(&rust_name[..open_bracket_index]);
+                    let range_from:i32 = rust_name[open_bracket_index + 1..colon_index].parse().unwrap();
+                    let range_to:i32 = rust_name[colon_index + 1..close_bracket_index].parse().unwrap();
+                    let (range_base, range_max) = if range_from < range_to {
+                        (range_from, range_to)
+                    } else {
+                        (range_to, range_from)
+                    };
+                }
+            }
+        }
+
+        let rust_verilog_slice_id = RustVerilogSliceID {
+            id: name,
+            base_id,
+            range_base,
+            range_max,
+        };
+
+        let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
+        let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
+        raw_pointer
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn rust_is_bus_slice_id(c_verilog_virtual_base_id: *mut c_void) -> bool {
