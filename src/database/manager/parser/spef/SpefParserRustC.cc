@@ -9,7 +9,7 @@
 namespace ista {
 namespace spef {
 
-bool Parser::read(rust::String path) {
+bool SpefParser::read(rust::String path) {
   try {
     auto result = parse_spef_file(path);
 
@@ -28,7 +28,7 @@ bool Parser::read(rust::String path) {
 
 /// @brief Generate unordered_map in cpp from rust Vec<NameMapItem>
 /// @param name_map_vec
-void Parser::generate_namemap(rust::Vec<NameMapItem> name_map_vec) {
+void SpefParser::generate_namemap(rust::Vec<NameMapItem> name_map_vec) {
   for (auto item : name_map_vec) {
     name_map.insert(std::make_pair(item.index, item.name));
   }
@@ -36,7 +36,7 @@ void Parser::generate_namemap(rust::Vec<NameMapItem> name_map_vec) {
 
 /// @brief Generate and set header info from HeaderItem
 /// @param header_vec
-void Parser::generate_header(rust::Vec<HeaderItem> header_vec) {
+void SpefParser::generate_header(rust::Vec<HeaderItem> header_vec) {
   for (auto item : header_vec) {
     header.insert(std::make_pair(item.key, item.value));
   }
@@ -44,7 +44,7 @@ void Parser::generate_header(rust::Vec<HeaderItem> header_vec) {
 
 /// @brief Convert NetItem to Net
 /// @param nets_rust
-void Parser::process_nets(rust::Vec<NetItem> nets_rust) {
+void SpefParser::process_nets(rust::Vec<NetItem> nets_rust) {
   for (auto net_rust : nets_rust) {
     std::string name = std::string(net_rust.name);
     float lcap = net_rust.lcap;
@@ -126,7 +126,7 @@ void Parser::process_nets(rust::Vec<NetItem> nets_rust) {
 
 /// @brief Convert PortItem to Port
 /// @param ports_rust 
-void Parser::process_ports(rust::Vec<PortItem> ports_rust) {
+void SpefParser::process_ports(rust::Vec<PortItem> ports_rust) {
   for (auto port : ports_rust) {
     
   }
