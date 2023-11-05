@@ -96,7 +96,6 @@ struct RustNetItem {
 struct RustSpefFile {
     file_name: *mut c_char,
     header: RustVec,
-    name_map: RustVec,
     ports: RustVec,
     nets: RustVec,
 }
@@ -121,11 +120,10 @@ pub extern "C" fn rust_covert_spef_file(c_spef_data: *mut spef_data::SpefExchang
     unsafe {
         let file_name = string_to_c_char(&(*c_spef_data).file_name);
         let header = rust_vec_to_c_array(&(*c_spef_data).header);
-        let name_map = rust_vec_to_c_array(&(*c_spef_data).namemap);
         let ports = rust_vec_to_c_array(&(*c_spef_data).ports);
         let nets = rust_vec_to_c_array(&(*c_spef_data).nets);
 
-        let rust_spef_data = RustSpefFile { file_name, header, name_map, ports, nets };
+        let rust_spef_data = RustSpefFile { file_name, header, ports, nets };
 
         let spef_data_pointer = Box::new(rust_spef_data);
         let raw_pointer = Box::into_raw(spef_data_pointer);
@@ -196,5 +194,13 @@ pub extern "C" fn rust_convert_spef_net_cap_res(c_spef_net_cap_res: *mut spef_da
         let spef_net_cap_res_pointer = Box::new(rust_spef_net_cap_res);
         let raw_pointer = Box::into_raw(spef_net_cap_res_pointer);
         raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_expand_name(c_spef_data: *mut spef_data::SpefExchange, index: usize) -> *mut c_char {
+    unsafe {
+        let name = (*c_spef_data).name_map.get(&index).unwrap();
+        string_to_c_char(name)
     }
 }

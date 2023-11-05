@@ -58,4 +58,6 @@ int main() {
       std::cout << rust_spef_cap->_res_or_cap << std::endl;
     }
   }
+
+  std::cout << spef_parser.expand_name("*33487:A2") << std::endl;
 }

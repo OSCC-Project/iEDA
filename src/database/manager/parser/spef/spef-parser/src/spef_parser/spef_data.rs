@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// spef line entry basic info and it's methods
@@ -88,8 +89,8 @@ impl SpefHeaderEntry {
 #[derive(Clone, Debug)]
 pub struct SpefNameMapEntry {
     basic_info: SpefEntryBasicInfo,
-    index: usize,
-    name: String,
+    pub index: usize,
+    pub name: String,
 }
 
 impl SpefNameMapEntry {
@@ -99,14 +100,6 @@ impl SpefNameMapEntry {
 
     pub fn get_basic_info(&self) -> &SpefEntryBasicInfo {
         &self.basic_info
-    }
-
-    pub fn get_index(&self) -> usize {
-        self.index
-    }
-
-    pub fn get_name(&self) -> String {
-        self.name.clone()
     }
 }
 
@@ -339,21 +332,21 @@ impl SpefNet {
 pub struct SpefExchange {
     pub file_name: String,
     pub header: Vec<SpefHeaderEntry>,
-    pub namemap: Vec<SpefNameMapEntry>,
+    pub name_map: HashMap<usize, String>,
     pub ports: Vec<SpefPortEntry>,
     pub nets: Vec<SpefNet>,
 }
 
 impl SpefExchange {
     pub fn new(file_name: String) -> SpefExchange {
-        SpefExchange { file_name, header: Vec::new(), namemap: Vec::new(), ports: Vec::new(), nets: Vec::new() }
+        SpefExchange { file_name, header: Vec::new(), name_map: HashMap::new(), ports: Vec::new(), nets: Vec::new() }
     }
 
     pub fn add_header_entry(&mut self, header: SpefHeaderEntry) {
         self.header.push(header);
     }
     pub fn add_namemap_entry(&mut self, namemap_entry: SpefNameMapEntry) {
-        self.namemap.push(namemap_entry);
+        self.name_map.insert(namemap_entry.index, namemap_entry.name);
     }
 
     pub fn add_port_entry(&mut self, port_entry: SpefPortEntry) {

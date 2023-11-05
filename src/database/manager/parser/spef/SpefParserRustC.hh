@@ -1,6 +1,9 @@
 #pragma once
+#include <iostream>
 #include <optional>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -12,6 +15,7 @@ void* rust_covert_spef_file(void* c_spef_data);
 void* rust_convert_spef_net(void* c_spef_net);
 void* rust_convert_spef_conn(void* c_spef_net);
 void* rust_convert_spef_net_cap_res(void* c_spef_net_cap_res);
+char* rust_expand_name(void* c_spef_data, uintptr_t index);
 
 typedef struct RustSpefCoord {
   double _x;
@@ -75,7 +79,6 @@ typedef struct RustSpefNet {
 typedef struct RustSpefFile {
   char* _file_name;
   struct RustVec _header;
-  struct RustVec _name_map;
   struct RustVec _ports;
   struct RustVec _nets;
 } RustSpefFile;
@@ -93,9 +96,23 @@ class SpefRustReader {
 
   bool read(std::string file_path);
   void expand_name(unsigned num_threads);
+  char* expand_name(std::string str) {
+    auto pos = str.find(':');
+    std::string index_str = str.substr(0, pos);
+    std::string node_str = str.substr(pos + 1);
+
+    if (std::isdigit(node_str[0])) {
+      return nullptr;  // only expand pin name.
+    }
+
+    uintptr_t index = std::stoull(index_str.substr(1));
+    char* index_map_name = rust_expand_name(_rust_spef_file, index);
+    return index_map_name;
+  }
 
  private:
-  RustSpefFile* _spef_file;
+  void* _rust_spef_file = nullptr;     //!< The not converted spef file data.
+  RustSpefFile* _spef_file = nullptr;  //!< The converted spef file data.
 };
 
 }  // namespace ista

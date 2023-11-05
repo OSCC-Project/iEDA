@@ -41,3 +41,5 @@ void *rust_convert_spef_net(struct SpefNet *c_spef_net);
 void *rust_convert_spef_conn(struct SpefConnEntry *c_spef_net);
 
 void *rust_convert_spef_net_cap_res(struct SpefResCap *c_spef_net_cap_res);
+
+char *rust_expand_name(struct SpefExchange *c_spef_data, uintptr_t index);

@@ -6,9 +6,9 @@
 namespace ista {
 
 bool SpefRustReader::read(std::string file_path) {
-  auto* rust_spef_data = rust_parser_spef(file_path.c_str());
+  _rust_spef_file = rust_parser_spef(file_path.c_str());
   _spef_file =
-      static_cast<RustSpefFile*>(rust_covert_spef_file(rust_spef_data));
+      static_cast<RustSpefFile*>(rust_covert_spef_file(_rust_spef_file));
   return true;
 }
 
