@@ -34,6 +34,28 @@
 #include "rust-common/RustCommon.hh"
 
 extern "C" {
+
+/**
+ * The wire or port declaration.
+ */
+typedef enum DclType {
+    KInput = 0,
+    KInout = 1,
+    KOutput = 2,
+    KSupply0 = 3,
+    KSupply1 = 4,
+    KTri = 5,
+    KWand = 6,
+    KWire = 7,
+    KWor = 8,
+} DclType;
+
+typedef struct VerilogModule VerilogModule;
+
+/**
+ * The port connection such as .port_id(net_id).
+ */
+typedef struct VerilogPortRefPortConnect VerilogPortRefPortConnect;
 /**
  * @brief Rust verilog id for C.
  *
@@ -93,6 +115,20 @@ typedef struct RustVerilogModule
   struct RustVec port_list;
   struct RustVec module_stmts;
 } RustVerilogModule;
+
+
+typedef struct CRange {
+    bool has_value;
+    int32_t start;
+    int32_t end;
+} CRange;
+
+typedef struct RustVerilogDcl {
+    uintptr_t line_no;
+    enum DclType dcl_type;
+    char *dcl_name;
+    struct CRange range;
+} RustVerilogDcl;
 
 /**
  * @brief Rust verilog dcls for C.
@@ -183,6 +219,8 @@ bool rust_is_constant(void* c_verilog_virtual_base_net_expr);
  * @return struct RustVerilogModule*
  */
 struct RustVerilogModule* rust_convert_raw_verilog_module(void* verilog_module);
+
+struct RustVerilogDcl *rust_convert_verilog_dcl(void *c_verilog_dcl_struct);
 
 /**
  * @brief Rust convert verilog_dcls_struct to C struct.

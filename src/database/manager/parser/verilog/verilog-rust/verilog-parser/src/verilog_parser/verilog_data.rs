@@ -470,9 +470,10 @@ impl VerilogVirtualBaseStmt for VerilogAssign {
     }
 }
 
+#[repr(C)]
 /// The wire or port declaration.
 #[derive(Debug)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum DclType {
     KInput = 0,
     KInout = 1,
@@ -484,6 +485,8 @@ pub enum DclType {
     KWire = 7,
     KWor = 8,
 }
+
+#[repr(C)]
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct VerilogDcl {
@@ -511,8 +514,8 @@ impl VerilogDcl {
     pub fn get_stmt(&self) -> &VerilogStmt {
         &self.stmt
     }
-    pub fn get_dcl_type(&self) -> &DclType {
-        &self.dcl_type
+    pub fn get_dcl_type(&self) -> DclType {
+        self.dcl_type
     }
     pub fn get_dcl_name(&self) -> &str {
         &self.dcl_name

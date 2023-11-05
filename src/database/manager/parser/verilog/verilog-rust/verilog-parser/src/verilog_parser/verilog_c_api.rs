@@ -43,6 +43,13 @@ pub extern "C" fn free_c_char(s: *mut c_char) {
 }
 
 #[repr(C)]
+pub struct CRange {
+    has_value: bool,
+    start: i32,
+    end: i32,
+}
+
+#[repr(C)]
 pub struct RustVerilogID {
     id:*mut c_char,
 }
@@ -289,6 +296,40 @@ pub extern "C" fn rust_convert_raw_verilog_module(verilog_module: *mut verilog_d
         raw_pointer
     }
 }
+
+
+
+#[repr(C)]
+pub struct RustVerilogDcl {
+    line_no: usize,
+    dcl_type: verilog_data::DclType,
+    dcl_name: *mut c_char,
+    range: CRange,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_dcl(c_verilog_dcl_struct: *mut c_void)
+-> *mut RustVerilogDcl {
+    unsafe {
+        let mut verilog_stmt = unsafe { &mut *(c_verilog_dcl_struct as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+        let verilog_dcl_struct = (*verilog_stmt).as_any().downcast_ref::<verilog_data::VerilogDcl>().unwrap();
+        let line_no = (*verilog_dcl_struct).get_stmt().get_line_no();
+        let dcl_type = (*verilog_dcl_struct).get_dcl_type();
+        let dcl_name_str = (*verilog_dcl_struct).get_dcl_name();
+        let dcl_name = string_to_c_char(dcl_name_str);
+        let rust_range = (*verilog_dcl_struct).get_range();
+        let range =match rust_range {
+            Some((start, end)) => CRange { has_value: true, start: *start, end: *end},
+            None => CRange { has_value: false, start: 0, end: 0 },
+        };
+
+        let rust_verilog_dcl = RustVerilogDcl { line_no, dcl_type, dcl_name, range};
+        let rust_verilog_dcl_pointer = Box::new(rust_verilog_dcl);
+        let raw_pointer = Box::into_raw(rust_verilog_dcl_pointer);
+        raw_pointer
+    }
+}
+
 
 #[repr(C)]
 pub struct RustVerilogDcls {
