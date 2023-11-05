@@ -409,9 +409,9 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
 
     for entry in spef_file_pair.into_inner() {
         let entry_clone = entry.clone();
-        println!("Rule:    {:?}", entry_clone.as_rule());
-        println!("Span:    {:?}", entry_clone.as_span());
-        println!("Text:    {}", entry_clone.as_str());
+        // println!("Rule:    {:?}", entry_clone.as_rule());
+        // println!("Span:    {:?}", entry_clone.as_span());
+        // println!("Text:    {}", entry_clone.as_str());
 
         match entry.as_rule() {
             Rule::section => {

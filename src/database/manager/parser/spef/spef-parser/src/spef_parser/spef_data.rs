@@ -280,9 +280,9 @@ pub struct SpefNet {
     pub name: String,
     pub line_no: usize,
     pub lcap: f64,
-    connection: Vec<SpefConnEntry>,
-    caps: Vec<(String, String, f64)>,
-    ress: Vec<(String, String, f64)>,
+    pub connection: Vec<SpefConnEntry>,
+    pub caps: Vec<(String, String, f64)>,
+    pub ress: Vec<(String, String, f64)>,
 }
 
 impl SpefNet {
