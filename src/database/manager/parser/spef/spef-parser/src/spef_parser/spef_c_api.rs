@@ -4,6 +4,23 @@ use std::os::raw::c_char;
 use crate::spef_parser::parse_spef_file;
 
 #[repr(C)]
+pub struct RustVec {
+    data: *mut c_void,
+    len: usize,
+    cap: usize,
+    type_size: usize,
+}
+
+fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
+    RustVec {
+        data: vec.as_ptr() as *mut c_void,
+        len: vec.len(),
+        cap: vec.capacity(),
+        type_size: std::mem::size_of::<T>(),
+    }
+}
+
+#[repr(C)]
 enum ConnectionType {
     INTERNAL,
     EXTERNAL,
@@ -41,8 +58,8 @@ struct PortItem {
 struct ConnItem {
     conn_type: ConnectionType,
     conn_direction: ConnectionDirection,
-    pin_name: String,
-    driving_cell: String,
+    pin_name: *mut c_char,
+    driving_cell: *mut c_char,
     load: f64,
     layer: usize,
     coordinates: [f64; 2],
@@ -52,32 +69,32 @@ struct ConnItem {
 
 #[repr(C)]
 struct CapItem {
-    pin_port: [String; 2],
+    pin_port: [*mut c_char; 2],
     cap_val: f64,
 }
 
 #[repr(C)]
 struct ResItem {
-    pin_port: [String; 2],
+    pin_port: [*mut c_char; 2],
     res: f64,
 }
 
 #[repr(C)]
 struct NetItem {
-    name: String,
+    name: *mut c_char,
     lcap: f64,
-    conns: Vec<ConnItem>,
-    caps: Vec<CapItem>,
-    ress: Vec<ResItem>,
+    conns: RustVec,
+    caps: RustVec,
+    ress: RustVec,
 }
 // Shared structure between cpp and rust, it uses the types in the `exter "Rust" section`
 #[repr(C)]
 struct SpefFile {
-    name: String,
-    header: Vec<HeaderItem>,
-    name_vector: Vec<NameMapItem>,
-    ports: Vec<PortItem>,
-    nets: Vec<NetItem>,
+    name: *mut c_char,
+    header: RustVec,
+    name_map: RustVec,
+    ports: RustVec,
+    nets: RustVec,
 }
 
 #[no_mangle]

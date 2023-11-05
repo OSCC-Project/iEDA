@@ -4,10 +4,21 @@
 #include <unordered_map>
 #include <vector>
 
+#include "rust-common/RustCommon.hh"
+
 namespace ista {
 
 extern "C" {
 void* rust_parser_spef(const char* spef_path);
+
+typedef struct RustSpefFile
+{
+  char* file_name;
+  struct RustVec header;
+  struct RustVec name_map;
+  struct RustVec ports;
+  struct RustVec nets;
+} RustLibertyGroupStmt;
 }
 
 /**
