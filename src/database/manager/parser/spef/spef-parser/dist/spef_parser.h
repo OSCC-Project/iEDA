@@ -11,4 +11,4 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
-void rust_parser_spef(const char *spef_path);
+void *rust_parser_spef(const char *spef_path);

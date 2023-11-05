@@ -81,10 +81,14 @@ struct SpefFile {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_parser_spef(spef_path: *const c_char) {
+pub extern "C" fn rust_parser_spef(spef_path: *const c_char) -> *mut c_void {
     let c_str = unsafe { std::ffi::CStr::from_ptr(spef_path) };
     let r_str = c_str.to_string_lossy().into_owned();
     println!("r str {}", r_str);
 
-    parse_spef_file(&r_str);
+    let spef_data = parse_spef_file(&r_str);
+
+    let spef_data_pointer = Box::new(spef_data);
+    let raw_pointer = Box::into_raw(spef_data_pointer);
+    raw_pointer as *mut c_void
 }
