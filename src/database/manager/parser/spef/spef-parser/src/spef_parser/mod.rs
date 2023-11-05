@@ -30,8 +30,8 @@ fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
     }
 }
 
-/// process xy coordinates, returning a (f64, f64) or an Err
-fn process_coordinates(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error<Rule>> {
+/// process xy coordinate, returning a (f64, f64) or an Err
+fn process_coordinate(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
 
     let tuple_pair = pair.clone();
@@ -53,7 +53,7 @@ fn process_coordinates(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Erro
             }
         }
         _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Failed to parse xy_coordinates".into() },
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse xy_coordinate".into() },
             tuple_pair.as_span(),
         )),
     }
@@ -198,15 +198,15 @@ fn process_port_entry(pair: Pair<Rule>) -> Result<spef_data::SpefPortEntry, pest
     // name_index_pair is float pair, name_value_pair is string pair
     let name_index_pair = inner_rules.next().unwrap();
     let conn_dir_pair = inner_rules.next().unwrap();
-    let coordinates_pair = inner_rules.next().unwrap();
+    let coordinate_pair = inner_rules.next().unwrap();
 
     let index_pair_result = process_float(name_index_pair);
     let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
-    let coor_pair_result = process_coordinates(coordinates_pair);
+    let coor_pair_result = process_coordinate(coordinate_pair);
 
     match (index_pair_result, dir_pair_result, coor_pair_result) {
-        (Ok(index), Ok(direction), Ok(coordinates)) => {
-            Ok(spef_data::SpefPortEntry::new("tbd", line_no, index.to_string(), direction, coordinates))
+        (Ok(index), Ok(direction), Ok(coordinate)) => {
+            Ok(spef_data::SpefPortEntry::new("tbd", line_no, index.to_string(), direction, coordinate))
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -260,12 +260,12 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
     let conn_dir_pair = inner_rules.next().unwrap();
     let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
 
-    // xy_coordinates may be None
-    let coordinates_pair = inner_rules.next();
+    // xy_coordinate may be None
+    let coordinate_pair = inner_rules.next();
 
-    let xy_coordinates = match coordinates_pair {
+    let xy_coordinate = match coordinate_pair {
         Some(pair) => {
-            let coor_pair_result = process_coordinates(pair);
+            let coor_pair_result = process_coordinate(pair);
             match coor_pair_result {
                 Ok(coors) => coors,
                 // (-1.0, -1.0) is used as a special tuple as uninitialized value
@@ -308,7 +308,7 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
         (Ok(conn_type), Ok(pin_name), Ok(conn_dir)) => {
             let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no, conn_type, conn_dir, pin_name);
             current_conn.set_load(load);
-            current_conn.set_xy_coordinates(xy_coordinates);
+            current_conn.set_xy_coordinate(xy_coordinate);
             current_conn.set_driving_cell(driver_name);
             Ok(current_conn)
         }
@@ -346,7 +346,7 @@ fn process_cap_or_res_entry(
                 // ground cap
                 let cap_val_result = process_float(next_pair);
                 match (start_pin_result, cap_val_result) {
-                    (Ok(start_pin_name), Ok(cap_result)) => Ok((start_pin_name, "GROUND".to_string(), cap_result)),
+                    (Ok(start_pin_name), Ok(cap_result)) => Ok((start_pin_name, "".to_string(), cap_result)),
                     _ => Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
                         pair.as_span(),

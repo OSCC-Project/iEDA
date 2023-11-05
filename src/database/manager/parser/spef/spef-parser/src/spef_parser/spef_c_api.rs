@@ -10,6 +10,12 @@ use crate::spef_parser::parse_spef_file;
 use crate::spef_parser::spef_data;
 
 #[repr(C)]
+struct RustPair<T> {
+    first: T,
+    second: T,
+}
+
+#[repr(C)]
 pub struct RustVec {
     data: *mut c_void,
     len: usize,
@@ -39,21 +45,6 @@ pub extern "C" fn free_c_char(s: *mut c_char) {
 }
 
 #[repr(C)]
-enum ConnectionType {
-    INTERNAL,
-    EXTERNAL,
-    UNITIALIZED,
-}
-
-#[repr(C)]
-enum ConnectionDirection {
-    INPUT,
-    OUTPUT,
-    INOUT,
-    UNITIALIZED,
-}
-
-#[repr(C)]
 struct RustHeaderItem {
     key: *mut c_char,
     value: String,
@@ -68,33 +59,28 @@ struct RustNameMapItem {
 #[repr(C)]
 struct RustPortItem {
     name: *mut c_char,
-    direction: ConnectionDirection,
-    coordinates: [f64; 2],
+    direction: spef_data::ConnectionDirection,
+    coordinate: [f64; 2],
 }
 
 #[repr(C)]
 struct RustConnItem {
-    conn_type: ConnectionType,
-    conn_direction: ConnectionDirection,
-    pin_name: *mut c_char,
+    conn_type: spef_data::ConnectionType,
+    conn_direction: spef_data::ConnectionDirection,
+    name: *mut c_char,
     driving_cell: *mut c_char,
-    load: f64,
-    layer: usize,
-    coordinates: [f64; 2],
-    ll_coordinate: [f64; 2],
-    ur_coordinate: [f64; 2],
+    load: c_double,
+    layer: u32,
+    coordinate: RustPair<c_double>,
+    ll_coordinate: RustPair<c_double>,
+    ur_coordinate: RustPair<c_double>,
 }
 
 #[repr(C)]
-struct RustCapItem {
-    pin_port: [*mut c_char; 2],
-    cap_val: f64,
-}
-
-#[repr(C)]
-struct RustResItem {
-    pin_port: [*mut c_char; 2],
-    res: f64,
+struct RustResCapItem {
+    node1: *mut c_char,
+    node2: *mut c_char,
+    res_cap: f64,
 }
 
 #[repr(C)]
@@ -160,6 +146,55 @@ pub extern "C" fn rust_convert_spef_net(c_spef_net: *mut spef_data::SpefNet) -> 
 
         let spef_net_pointer = Box::new(rust_spef_net);
         let raw_pointer = Box::into_raw(spef_net_pointer);
+        raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_spef_conn(c_spef_net: *mut spef_data::SpefConnEntry) -> *mut c_void {
+    unsafe {
+        let conn_type = (*c_spef_net).conn_type;
+        let conn_direction = (*c_spef_net).conn_direction;
+        let name = string_to_c_char(&(*c_spef_net).name);
+        let driving_cell = string_to_c_char(&(*c_spef_net).driving_cell);
+        let load = (*c_spef_net).load;
+        let layer = (*c_spef_net).layer;
+
+        let coordinate = RustPair { first: (*c_spef_net).coordinate.0, second: (*c_spef_net).coordinate.1 };
+
+        let ll_coordinate = RustPair { first: (*c_spef_net).ll_coordinate.0, second: (*c_spef_net).ll_coordinate.1 };
+
+        let ur_coordinate = RustPair { first: (*c_spef_net).ur_coordinate.0, second: (*c_spef_net).ur_coordinate.1 };
+
+        let rust_spef_conn = RustConnItem {
+            conn_type,
+            conn_direction,
+            name,
+            driving_cell,
+            load,
+            layer,
+            coordinate,
+            ll_coordinate,
+            ur_coordinate,
+        };
+
+        let spef_conn_pointer = Box::new(rust_spef_conn);
+        let raw_pointer = Box::into_raw(spef_conn_pointer);
+        raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_spef_net_cap_res(c_spef_net_cap_res: *mut spef_data::SpefResCap) -> *mut c_void {
+    unsafe {
+        let node1 = string_to_c_char(&(*c_spef_net_cap_res).node1);
+        let node2 = string_to_c_char(&(*c_spef_net_cap_res).node2);
+        let res_cap = (*c_spef_net_cap_res).res_or_cap;
+
+        let rust_spef_net_cap_res = RustResCapItem { node1, node2, res_cap };
+
+        let spef_net_cap_res_pointer = Box::new(rust_spef_net_cap_res);
+        let raw_pointer = Box::into_raw(spef_net_cap_res_pointer);
         raw_pointer as *mut c_void
     }
 }

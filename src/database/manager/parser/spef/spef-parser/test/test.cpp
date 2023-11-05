@@ -28,7 +28,34 @@ int main() {
 
     std::cout << rust_spef_net->_name << std::endl;
     std::cout << rust_spef_net->_lcap << std::endl;
-  }
 
-  std::cout << result << std::endl;
+    void* spef_net_conn;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_conns), void, spef_net_conn) {
+      auto* rust_spef_conn = static_cast<RustSpefConnEntry*>(
+          rust_convert_spef_conn(spef_net_conn));
+      std::cout << rust_spef_conn->_name << std::endl;
+      std::cout << rust_spef_conn->_load << std::endl;
+      std::cout << rust_spef_conn->_driving_cell << std::endl;
+      std::cout << rust_spef_conn->_coordinate._x << " "
+                << rust_spef_conn->_coordinate._y << std::endl;
+    }
+
+    void* spef_net_cap;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_caps), void, spef_net_cap) {
+      auto* rust_spef_cap = static_cast<RustSpefResCap*>(
+          rust_convert_spef_net_cap_res(spef_net_cap));
+      std::cout << rust_spef_cap->_node1 << std::endl;
+      std::cout << rust_spef_cap->_node2 << std::endl;
+      std::cout << rust_spef_cap->_res_or_cap << std::endl;
+    }
+
+    void* spef_net_res;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_ress), void, spef_net_res) {
+      auto* rust_spef_cap = static_cast<RustSpefResCap*>(
+          rust_convert_spef_net_cap_res(spef_net_res));
+      std::cout << rust_spef_cap->_node1 << std::endl;
+      std::cout << rust_spef_cap->_node2 << std::endl;
+      std::cout << rust_spef_cap->_res_or_cap << std::endl;
+    }
+  }
 }

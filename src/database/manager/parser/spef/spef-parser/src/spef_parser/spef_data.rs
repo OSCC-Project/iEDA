@@ -114,8 +114,9 @@ impl SpefNameMapEntry {
 /// Port entry example: *37 I *C 633.84 0.242
 /// name: "37"
 /// direction: ConnectionType::INPUT
-/// coordinates: (633.84, 0.242)
-#[derive(Clone, Debug)]
+/// coordinate: (633.84, 0.242)
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub enum ConnectionDirection {
     INPUT,
     OUTPUT,
@@ -128,7 +129,7 @@ pub struct SpefPortEntry {
     basic_info: SpefEntryBasicInfo,
     name: String,
     direction: ConnectionDirection,
-    coordinates: (f64, f64),
+    coordinate: (f64, f64),
 }
 
 impl SpefPortEntry {
@@ -137,9 +138,9 @@ impl SpefPortEntry {
         line_no: usize,
         name: String,
         direction: ConnectionDirection,
-        coordinates: (f64, f64),
+        coordinate: (f64, f64),
     ) -> SpefPortEntry {
-        SpefPortEntry { basic_info: SpefEntryBasicInfo::new(file_name, line_no), name, direction, coordinates }
+        SpefPortEntry { basic_info: SpefEntryBasicInfo::new(file_name, line_no), name, direction, coordinate }
     }
 
     pub fn get_basic_info(&self) -> &SpefEntryBasicInfo {
@@ -154,12 +155,12 @@ impl SpefPortEntry {
         self.direction.clone()
     }
 
-    pub fn get_coordinates(&self) -> (f64, f64) {
+    pub fn get_coordinate(&self) -> (f64, f64) {
         // let mut result = Vec::<f64>::new();
-        // result.push(self.coordinates.0);
-        // result.push(self.coordinates.1);
+        // result.push(self.coordinate.0);
+        // result.push(self.coordinate.1);
         // result
-        self.coordinates
+        self.coordinate
     }
 }
 
@@ -167,9 +168,10 @@ impl SpefPortEntry {
 /// Conn entry example: *I *33272:Q O *C 635.66 405.835 *L 0 *D sky130_fd_sc_hd__dfxtp_1
 /// name: "37"
 /// direction: ConnectionType::INPUT
-/// coordinates: (633.84, 0.242)
+/// coordinate: (633.84, 0.242)
 /// driving_cell: "sky130_fd_sc_hd__dfxtp_1"
-#[derive(Clone, Debug)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub enum ConnectionType {
     INTERNAL,
     EXTERNAL,
@@ -184,9 +186,9 @@ pub struct SpefConnEntry {
     pub name: String,
     pub driving_cell: String,
     pub load: f64,
-    pub layer: usize,
+    pub layer: u32,
 
-    pub coordinates: (f64, f64),
+    pub coordinate: (f64, f64),
     pub ll_coordinate: (f64, f64),
     pub ur_coordinate: (f64, f64),
 }
@@ -207,7 +209,7 @@ impl SpefConnEntry {
             driving_cell: String::new(),
             load: 0.0,
             layer: 0,
-            coordinates: (-1.0, -1.0),
+            coordinate: (-1.0, -1.0),
             ll_coordinate: (-1.0, -1.0),
             ur_coordinate: (-1.0, -1.0),
         }
@@ -229,27 +231,27 @@ impl SpefConnEntry {
         self.conn_type.clone()
     }
 
-    pub fn get_xy_coordinates(&self) -> (f64, f64) {
-        self.coordinates.clone()
+    pub fn get_xy_coordinate(&self) -> (f64, f64) {
+        self.coordinate.clone()
     }
-    pub fn get_ll_coordinates(&self) -> (f64, f64) {
+    pub fn get_ll_coordinate(&self) -> (f64, f64) {
         self.ll_coordinate.clone()
     }
-    pub fn get_ur_coordinates(&self) -> (f64, f64) {
+    pub fn get_ur_coordinate(&self) -> (f64, f64) {
         self.ur_coordinate.clone()
     }
 
-    pub fn set_layer(&mut self, layer: usize) {
+    pub fn set_layer(&mut self, layer: u32) {
         self.layer = layer;
     }
-    pub fn get_layer(&self) -> usize {
+    pub fn get_layer(&self) -> u32 {
         self.layer
     }
-    pub fn set_ll_corr(&mut self, coordinates: (f64, f64)) {
-        self.ll_coordinate = coordinates;
+    pub fn set_ll_corr(&mut self, coordinate: (f64, f64)) {
+        self.ll_coordinate = coordinate;
     }
-    pub fn set_ur_corr(&mut self, coordinates: (f64, f64)) {
-        self.ur_coordinate = coordinates;
+    pub fn set_ur_corr(&mut self, coordinate: (f64, f64)) {
+        self.ur_coordinate = coordinate;
     }
     pub fn set_driving_cell(&mut self, driving_cell: String) {
         self.driving_cell = driving_cell;
@@ -263,16 +265,23 @@ impl SpefConnEntry {
     pub fn get_load(&self) -> f64 {
         self.load.clone()
     }
-    pub fn set_xy_coordinates(&mut self, coordinates: (f64, f64)) {
-        self.coordinates = coordinates;
+    pub fn set_xy_coordinate(&mut self, coordinate: (f64, f64)) {
+        self.coordinate = coordinate;
     }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct SpefResCap {
+    pub node1: String,
+    pub node2: String,
+    pub res_or_cap: f64,
 }
 
 /// Store everthing about a net
 /// Conn entry example: 3 *1:2 0.000520945
 /// name: "1:2"
 /// direction: ConnectionType::INPUT
-/// coordinates: (633.84, 0.242)
+/// coordinate: (633.84, 0.242)
 /// driving_cell: "sky130_fd_sc_hd__dfxtp_1"
 
 #[derive(Clone, Debug, Default)]
@@ -281,8 +290,8 @@ pub struct SpefNet {
     pub line_no: usize,
     pub lcap: f64,
     pub connection: Vec<SpefConnEntry>,
-    pub caps: Vec<(String, String, f64)>,
-    pub ress: Vec<(String, String, f64)>,
+    pub caps: Vec<SpefResCap>,
+    pub ress: Vec<SpefResCap>,
 }
 
 impl SpefNet {
@@ -295,11 +304,13 @@ impl SpefNet {
     }
 
     pub fn add_cap(&mut self, cap: (String, String, f64)) {
-        self.caps.push(cap);
+        let cap_item = SpefResCap { node1: cap.0, node2: cap.1, res_or_cap: cap.2 };
+        self.caps.push(cap_item);
     }
 
     pub fn add_res(&mut self, res: (String, String, f64)) {
-        self.ress.push(res);
+        let res_item = SpefResCap { node1: res.0, node2: res.1, res_or_cap: res.2 };
+        self.ress.push(res_item);
     }
 
     pub fn get_net_name(&self) -> String {
@@ -310,16 +321,16 @@ impl SpefNet {
         self.lcap
     }
 
-    pub fn get_conns(&self) -> Vec<SpefConnEntry> {
-        self.connection.clone()
+    pub fn get_conns(&self) -> &Vec<SpefConnEntry> {
+        &self.connection
     }
 
-    pub fn get_caps(&self) -> Vec<(String, String, f64)> {
-        self.caps.clone()
+    pub fn get_caps(&self) -> &Vec<SpefResCap> {
+        &self.caps
     }
 
-    pub fn get_ress(&self) -> Vec<(String, String, f64)> {
-        self.ress.clone()
+    pub fn get_ress(&self) -> &Vec<SpefResCap> {
+        &self.ress
     }
 }
 
