@@ -11,6 +11,21 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+/**
+ * The wire or port declaration.
+ */
+typedef enum DclType {
+    KInput = 0,
+    KInout = 1,
+    KOutput = 2,
+    KSupply0 = 3,
+    KSupply1 = 4,
+    KTri = 5,
+    KWand = 6,
+    KWire = 7,
+    KWor = 8,
+} DclType;
+
 typedef struct VerilogModule VerilogModule;
 
 /**
@@ -61,6 +76,19 @@ typedef struct RustVerilogModule {
     struct RustVec port_list;
     struct RustVec module_stmts;
 } RustVerilogModule;
+
+typedef struct CRange {
+    bool has_value;
+    int32_t start;
+    int32_t end;
+} CRange;
+
+typedef struct RustVerilogDcl {
+    uintptr_t line_no;
+    enum DclType dcl_type;
+    char *dcl_name;
+    struct CRange range;
+} RustVerilogDcl;
 
 typedef struct RustVerilogDcls {
     uintptr_t line_no;
@@ -114,6 +142,8 @@ bool rust_is_concat_expr(void *c_verilog_virtual_base_net_expr);
 bool rust_is_constant(void *c_verilog_virtual_base_net_expr);
 
 struct RustVerilogModule *rust_convert_raw_verilog_module(struct VerilogModule *verilog_module);
+
+struct RustVerilogDcl *rust_convert_verilog_dcl(void *c_verilog_dcl_struct);
 
 struct RustVerilogDcls *rust_convert_verilog_dcls(void *c_verilog_dcls_struct);
 
