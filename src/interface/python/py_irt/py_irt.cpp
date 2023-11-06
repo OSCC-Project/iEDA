@@ -24,25 +24,14 @@ namespace python_interface {
 
 bool destroyRT()
 {
-  RTAPIInst.destroyRT();
-  return true;
-}
-
-bool runDR()
-{
-  RTAPIInst.runDR();
-  return true;
-}
-
-bool runGR()
-{
-  RTAPIInst.runGR();
+  RTAPI_INST.destroyRT();
   return true;
 }
 
 bool runRT()
 {
-  RTAPIInst.runRT();
+  RTAPI_INST.runRT({irt::Tool::kPinAccessor, irt::Tool::kResourceAllocator, irt::Tool::kGlobalRouter, irt::Tool::kTrackAssigner, \
+                    irt::Tool::kDetailedRouter, irt::Tool::kViolationRepairer});
   return true;
 }
 
@@ -59,7 +48,7 @@ bool initRT(std::string& config, std::map<std::string, std::string>& config_dict
   if (!pass) {
     return false;
   }
-  RTAPIInst.initRT(config_map);
+  RTAPI_INST.initRT(config_map);
   return true;
 }
 
