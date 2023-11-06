@@ -219,7 +219,7 @@ void ArnoldiNet::assignRcNodeID() {
  *
  * @param parser
  */
-void ArnoldiNet::updateRcTiming(const spef::Net& spef_net) {
+void ArnoldiNet::updateRcTiming(RustSpefNet* spef_net) {
   makeRct(spef_net);
   updateRcTreeInfo();
   makeRcTreeReduce();

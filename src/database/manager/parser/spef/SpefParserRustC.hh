@@ -16,6 +16,10 @@ void* rust_convert_spef_net(void* c_spef_net);
 void* rust_convert_spef_conn(void* c_spef_net);
 void* rust_convert_spef_net_cap_res(void* c_spef_net_cap_res);
 char* rust_expand_name(void* c_spef_data, uintptr_t index);
+void rust_expand_all_name(void* c_spef_data);
+
+char* rust_get_spef_cap_unit(void* c_spef_data);
+char* rust_get_spef_res_unit(void* c_spef_data);
 
 typedef struct RustSpefCoord {
   double _x;
@@ -95,20 +99,10 @@ class SpefRustReader {
   RustSpefFile* get_spef_file() { return _spef_file; }
 
   bool read(std::string file_path);
-  void expand_name(unsigned num_threads);
-  char* expand_name(std::string str) {
-    auto pos = str.find(':');
-    std::string index_str = str.substr(0, pos);
-    std::string node_str = str.substr(pos + 1);
 
-    if (std::isdigit(node_str[0])) {
-      return nullptr;  // only expand pin name.
-    }
-
-    uintptr_t index = std::stoull(index_str.substr(1));
-    char* index_map_name = rust_expand_name(_rust_spef_file, index);
-    return index_map_name;
-  }
+  void expandName() { rust_expand_all_name(_rust_spef_file); }
+  char* getSpefCapUnit() { return rust_get_spef_cap_unit(_rust_spef_file); }
+  char* getSpefResUnit() { return rust_get_spef_res_unit(_rust_spef_file); }
 
  private:
   void* _rust_spef_file = nullptr;     //!< The not converted spef file data.

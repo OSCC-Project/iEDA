@@ -18,6 +18,7 @@ int main() {
   ista::SpefRustReader spef_parser;
 
   bool result = spef_parser.read(spef_file_str);
+  spef_parser.expandName();
 
   auto* spef_file = spef_parser.get_spef_file();
 
@@ -59,5 +60,6 @@ int main() {
     }
   }
 
-  std::cout << spef_parser.expand_name("*33487:A2") << std::endl;
+  std::cout << spef_parser.getSpefCapUnit() << std::endl;
+  std::cout << spef_parser.getSpefResUnit() << std::endl;
 }

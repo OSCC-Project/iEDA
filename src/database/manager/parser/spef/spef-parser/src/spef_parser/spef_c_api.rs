@@ -100,6 +100,17 @@ struct RustSpefFile {
     nets: RustVec,
 }
 
+pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
+    let v: Vec<&str> = index_name.split(":").collect();
+    let index_str = v.first().unwrap();
+    let node_str = v.last().unwrap();
+    if v.len() == 2 {
+        (&index_str[1..], *node_str)
+    } else {
+        (&index_str[1..], "")
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rust_parser_spef(spef_path: *const c_char) -> *mut c_void {
     unsafe {
@@ -202,5 +213,88 @@ pub extern "C" fn rust_expand_name(c_spef_data: *mut spef_data::SpefExchange, in
     unsafe {
         let name = (*c_spef_data).name_map.get(&index).unwrap();
         string_to_c_char(name)
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange) {
+    unsafe {
+        let expand_name = |name: &str, spef_data: &mut spef_data::SpefExchange| -> String {
+            let split_names = split_spef_index_str(&name);
+            let index = split_names.0.parse::<usize>().unwrap();
+            let node1_map_name = spef_data.name_map.get(&index).unwrap();
+            let remove_slash_name: String = node1_map_name.chars().filter(|&c| c != '\\').collect();
+            if !split_names.1.is_empty() {
+                let expand_node1_name = remove_slash_name + ":" + split_names.1;
+                return expand_node1_name;
+            }
+            remove_slash_name
+        };
+
+        for spef_net in &mut (*c_spef_data).nets {
+            let net_name = &spef_net.name;
+            let index = net_name[1..].parse::<usize>().unwrap();
+            let expand_net_name = (*c_spef_data).name_map.get(&index).unwrap();
+            let remove_slash_net_name = expand_net_name.chars().filter(|&c| c != '\\').collect();
+            spef_net.name = remove_slash_net_name;
+
+            for spef_conn in &mut spef_net.connection {
+                let conn_name = &spef_conn.name;
+                let expand_conn_name = expand_name(conn_name, &mut (*c_spef_data));
+                spef_conn.set_name(expand_conn_name);
+            }
+
+            for spef_cap in &mut spef_net.caps {
+                let node1_name = &spef_cap.node1;
+                let expand_node1_name = expand_name(node1_name, &mut (*c_spef_data));
+                spef_cap.node1 = expand_node1_name;
+
+                let node2_name = &spef_cap.node2;
+                if !node2_name.is_empty() {
+                    let expand_node2_name = expand_name(node2_name, &mut (*c_spef_data));
+                    spef_cap.node2 = expand_node2_name;
+                }
+            }
+
+            for spef_res in &mut spef_net.ress {
+                let node1_name = &spef_res.node1;
+                let expand_node1_name = expand_name(node1_name, &mut (*c_spef_data));
+                spef_res.node1 = expand_node1_name;
+
+                let node2_name = &spef_res.node2;
+                if !node2_name.is_empty() {
+                    let expand_node2_name = expand_name(node2_name, &mut (*c_spef_data));
+                    spef_res.node2 = expand_node2_name;
+                }
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_get_spef_cap_unit(c_spef_data: *mut spef_data::SpefExchange) -> *mut c_char {
+    unsafe {
+        let mut unit_str: &str = "";
+        for entry in &(*c_spef_data).header {
+            if entry.header_key == "*C_UNIT" {
+                unit_str = &entry.header_value;
+                break;
+            }
+        }
+        string_to_c_char(unit_str)
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_get_spef_res_unit(c_spef_data: *mut spef_data::SpefExchange) -> *mut c_char {
+    unsafe {
+        let mut unit_str: &str = "";
+        for entry in &(*c_spef_data).header {
+            if entry.header_key == "*R_UNIT" {
+                unit_str = &entry.header_value;
+                break;
+            }
+        }
+        string_to_c_char(unit_str)
     }
 }

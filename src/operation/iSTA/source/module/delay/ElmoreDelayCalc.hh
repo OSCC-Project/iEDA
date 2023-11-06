@@ -39,6 +39,7 @@
 #include "netlist/Net.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
+#include "spef/SpefParserRustC.hh"
 #include "spef/parser-spef.hpp"
 
 namespace ista {
@@ -481,7 +482,7 @@ class RCNetCommonInfo {
  public:
   void set_spef_cap_unit(const std::string& spef_cap_unit) {
     // The unit is 1.0 FF, fix me
-    if (Str::contain(spef_cap_unit.c_str(), "FF")) {
+    if (Str::contain(spef_cap_unit.c_str(), "1 FF")) {
       _spef_cap_unit = CapacitiveUnit::kFF;
     } else {
       _spef_cap_unit = CapacitiveUnit::kPF;
@@ -489,7 +490,7 @@ class RCNetCommonInfo {
   }
   void set_spef_resistance_unit(const std::string& spef_resistance_unit) {
     // The unit is 1.0 OHM, fix me
-    if (Str::contain(spef_resistance_unit.c_str(), "OHM")) {
+    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM")) {
       _spef_resistance_unit = ResistanceUnit::kOHM;
     } else {
       _spef_resistance_unit = ResistanceUnit::kOHM;
@@ -524,12 +525,12 @@ class RcNet {
 
   RcTree* rct() { return std::get_if<RcTree>(&_rct); }
   void makeRct() { _rct.emplace<RcTree>(); }
-  virtual void makeRct(const spef::Net& spef_net);
+  virtual void makeRct(RustSpefNet* spef_net);
   void updateRcTreeInfo();
   virtual void dfsTranverse(RctNode* parent, RctNode& node);
   virtual void checkLoop();
   virtual void breakLoop();
-  virtual void updateRcTiming(const spef::Net& spef_net);
+  virtual void updateRcTiming(RustSpefNet* spef_net);
 
   double load();
   double load(AnalysisMode mode, TransType trans_type);

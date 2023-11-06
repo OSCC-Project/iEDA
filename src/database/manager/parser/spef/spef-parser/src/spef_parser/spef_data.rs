@@ -56,8 +56,8 @@ impl SpefSectionEntry {
 #[derive(Clone, Debug)]
 pub struct SpefHeaderEntry {
     basic_info: SpefEntryBasicInfo,
-    header_key: String,
-    header_value: String,
+    pub header_key: String,
+    pub header_value: String,
 }
 
 impl SpefHeaderEntry {
@@ -212,8 +212,11 @@ impl SpefConnEntry {
         &self.basic_info
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     pub fn get_conn_direction(&self) -> ConnectionDirection {
