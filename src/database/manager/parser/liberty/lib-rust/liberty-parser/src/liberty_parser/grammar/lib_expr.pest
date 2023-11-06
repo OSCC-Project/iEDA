@@ -3,12 +3,12 @@ zero     =  { "0" }
 one      =  { "1" }
 expr_var = _{ port | zero | one | "(" ~ expr ~ ")" }
 
-not_expr         =  { "!" ~ expr_var }
-expr_leaf        = _{ expr_var | not_expr }
+not_expr         =  { "!" ~ expr_var | expr_var ~ "'" }
+expr_leaf        = _{ not_expr | expr_var }
 default_and_expr =  { expr_leaf ~ expr_leaf+ }
 
 expr_op    =  { "+" | "|" | "*" | "&" | "^" }
-expr_value = _{ expr_leaf | default_and_expr }
+expr_value = _{ default_and_expr | expr_leaf }
 
 expr = { expr_value ~ (expr_op ~ expr_value)* }
 
