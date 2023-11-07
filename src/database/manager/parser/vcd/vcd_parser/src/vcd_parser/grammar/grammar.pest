@@ -23,7 +23,7 @@ header_section = _{
 /* definition */
 module_var_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "(" | ")" | "." | "[" | "]" | "/" | "$" | "*")* }
 
-variable_type   = _{
+variable_type   = {
     "event"
   | "integer"
   | "parameter"
@@ -43,13 +43,13 @@ variable_type   = _{
   | "wire"
   | "wor"
 }
-variable_number = _{ ASCII_DIGIT+ }
+variable_number = @{ ASCII_DIGIT+ }
 variable_ref    = @{
     (ASCII_ALPHA | ASCII_DIGIT | "!" | "/" | "," | "@" | "'" | ":" | "~" | "#" | "*" | "(" | ")" | "+" | "{" | "}" | "$" | "%" | "[" | "]" | "`" | "\"" | "&" | ";" | "<" | ">" | "=" | "?" | "-" | "^" | "|" | "\\")+
 }
 
-bus_slice_left  = { ASCII_DIGIT+ }
-bus_slice_right = { ASCII_DIGIT+ }
+bus_slice_left  = @{ ASCII_DIGIT+ }
+bus_slice_right = @{ ASCII_DIGIT+ }
 
 bus_slice = { "[" ~ bus_slice_left ~ (":" ~ bus_slice_right)? ~ "]" }
 

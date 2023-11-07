@@ -12,6 +12,39 @@ Do not modify this manually.
 #include <stdlib.h>
 
 /**
+ * VCD variable type of vcd signal
+ */
+typedef enum VCDVariableType {
+    VarEvent,
+    VarInteger,
+    VarParameter,
+    VarReal,
+    VarRealTime,
+    VarReg,
+    VarSupply0,
+    VarSupply1,
+    VarTime,
+    VarTri,
+    VarTriAnd,
+    VarTriOr,
+    VarTriReg,
+    VarTri0,
+    VarTri1,
+    VarWAnd,
+    VarWire,
+    VarWor,
+    Default,
+} VCDVariableType;
+
+typedef struct Rc_RefCell_VCDScope Rc_RefCell_VCDScope;
+
+typedef struct Rc_VCDSignal Rc_VCDSignal;
+
+typedef struct SignalDuration SignalDuration;
+
+typedef struct SignalTC SignalTC;
+
+/**
  * VCD File
  */
 typedef struct VCDFile VCDFile;
@@ -33,6 +66,19 @@ typedef struct RustVec {
     uintptr_t type_size;
 } RustVec;
 
+typedef struct RustSignalTC {
+    char *signal_name;
+    uint64_t signal_tc;
+} RustSignalTC;
+
+typedef struct RustSignalDuration {
+    char *signal_name;
+    uint64_t bit_0_duration;
+    uint64_t bit_1_duration;
+    uint64_t bit_x_duration;
+    uint64_t bit_z_duration;
+} RustSignalDuration;
+
 typedef struct Indexes {
     int32_t lindex;
     int32_t rindex;
@@ -43,7 +89,7 @@ typedef struct RustVCDSignal {
     char *name;
     void *bus_index;
     unsigned int signal_size;
-    unsigned int signal_type;
+    enum VCDVariableType signal_type;
     void *scope;
 } RustVCDSignal;
 
@@ -65,13 +111,26 @@ typedef struct RustVCDFile {
     void *scope_root;
 } RustVCDFile;
 
+typedef struct RustTcAndSpResVecs {
+    struct RustVec signal_tc_vec;
+    struct RustVec signal_duration_vec;
+} RustTcAndSpResVecs;
+
 uintptr_t rust_vec_len(const struct RustVec *vec);
 
 void free_c_char(char *s);
 
+struct RustSignalTC *rust_convert_signal_tc(struct SignalTC *c_signal_tc);
+
+struct RustSignalDuration *rust_convert_signal_duration(struct SignalDuration *c_signal_duration);
+
 struct Indexes *rust_convert_signal_index(void *bus_index);
 
 struct RustVCDSignal *rust_convert_vcd_signal(const struct VCDSignal *c_vcd_signal);
+
+void *rust_convert_rc_ref_cell_scope(const struct Rc_RefCell_VCDScope *c_data);
+
+const void *rust_convert_rc_ref_cell_signal(const struct Rc_VCDSignal *c_data);
 
 struct RustVCDScope *rust_convert_vcd_scope(const struct VCDScope *c_vcd_scope);
 
@@ -79,4 +138,9 @@ struct RustVCDFile *rust_convert_vcd_file(struct VCDFile *c_vcd_file);
 
 void *rust_parse_vcd(const char *lib_path);
 
-void rust_calc_scope_tc_sp(const char *c_top_vcd_scope_name, struct VCDFile *c_vcd_file);
+struct RustTcAndSpResVecs *rust_calc_scope_tc_sp(const char *c_top_vcd_scope_name,
+                                                 struct VCDFile *c_vcd_file);
+
+struct RustVCDScope *find_scope_by_name(const char *scope_name, struct VCDFile *c_vcd_file);
+
+struct RustVCDSignal *find_signal_by_name(const char *scope_name, struct VCDFile *c_vcd_file);

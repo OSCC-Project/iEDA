@@ -1,3 +1,4 @@
+pub mod spef_c_api;
 pub mod spef_data;
 
 use pest::iterators::Pair;
@@ -29,8 +30,8 @@ fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
     }
 }
 
-/// process xy coordinates, returning a (f64, f64) or an Err
-fn process_coordinates(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error<Rule>> {
+/// process xy coordinate, returning a (f64, f64) or an Err
+fn process_coordinate(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
 
     let tuple_pair = pair.clone();
@@ -52,7 +53,7 @@ fn process_coordinates(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Erro
             }
         }
         _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Failed to parse xy_coordinates".into() },
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse xy_coordinate".into() },
             tuple_pair.as_span(),
         )),
     }
@@ -90,6 +91,7 @@ fn process_conn_type_enum(pair: Pair<Rule>) -> Result<spef_data::ConnectionType,
     match pair.as_str() {
         "*I" => Ok(spef_data::ConnectionType::INTERNAL),
         "*P" => Ok(spef_data::ConnectionType::EXTERNAL),
+        "*N" => Ok(spef_data::ConnectionType::INTERNAL),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse connection type".into() },
             pair_clone.as_span(),
@@ -111,15 +113,14 @@ fn process_section_entry(pair: Pair<Rule>) -> Result<spef_data::SpefSectionEntry
 
     match section_name_result {
         Ok(result) => {
-            let section_type: spef_data::SectionType = match result {
-                s if s == "NAME_MAP" => spef_data::SectionType::NAMEMAP,
-                s if s == "PORTS" => spef_data::SectionType::PORTS,
-                s if s == "CONN" => spef_data::SectionType::CONN,
-                s if s == "CAP" => spef_data::SectionType::CAP,
-                s if s == "RES" => spef_data::SectionType::RES,
-                s if s == "END" => spef_data::SectionType::END,
+            let section_type: spef_data::SectionType = match result.as_str() {
+                "NAME_MAP" => spef_data::SectionType::NAMEMAP,
+                "PORTS" => spef_data::SectionType::PORTS,
+                "CONN" => spef_data::SectionType::CONN,
+                "CAP" => spef_data::SectionType::CAP,
+                "RES" => spef_data::SectionType::RES,
+                "END" => spef_data::SectionType::END,
                 _ => {
-                    // 处理未知规则的情况
                     return Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
                         pair.as_span(),
@@ -198,15 +199,19 @@ fn process_port_entry(pair: Pair<Rule>) -> Result<spef_data::SpefPortEntry, pest
     // name_index_pair is float pair, name_value_pair is string pair
     let name_index_pair = inner_rules.next().unwrap();
     let conn_dir_pair = inner_rules.next().unwrap();
-    let coordinates_pair = inner_rules.next().unwrap();
+    let coordinate_pair = inner_rules.next();
 
     let index_pair_result = process_float(name_index_pair);
     let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
-    let coor_pair_result = process_coordinates(coordinates_pair);
+
+    let mut coor_pair_result: Result<(f64, f64), pest::error::Error<Rule>> = Ok((-1.0, -1.0));
+    if coordinate_pair.is_some() {
+        coor_pair_result = process_coordinate(coordinate_pair.unwrap());
+    }
 
     match (index_pair_result, dir_pair_result, coor_pair_result) {
-        (Ok(index), Ok(direction), Ok(coordinates)) => {
-            Ok(spef_data::SpefPortEntry::new("tbd", line_no, index.to_string(), direction, coordinates))
+        (Ok(index), Ok(direction), Ok(coordinate)) => {
+            Ok(spef_data::SpefPortEntry::new("tbd", line_no, index.to_string(), direction, coordinate))
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -252,20 +257,26 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
     let mut inner_rules = pair_clone.into_inner();
 
     let conn_type_pair = inner_rules.next().unwrap();
+    let conn_type_pair_clone = conn_type_pair.clone();
     let type_pair_result = process_conn_type_enum(conn_type_pair);
 
     let pin_name_pair = inner_rules.next().unwrap();
     let name_pair_result = process_string(pin_name_pair);
 
-    let conn_dir_pair = inner_rules.next().unwrap();
-    let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
+    let conn_dir_pair = inner_rules.next();
+    let dir_pair_result: Result<spef_data::ConnectionDirection, pest::error::Error<Rule>>;
+    if conn_type_pair_clone.as_str() != "*N" {
+        dir_pair_result = process_conn_dir_enum(conn_dir_pair.unwrap());
+    } else {
+        dir_pair_result = Ok(spef_data::ConnectionDirection::Internal);
+    }
 
-    // xy_coordinates may be None
-    let coordinates_pair = inner_rules.next();
+    // xy_coordinate may be None
+    let coordinate_pair = inner_rules.next();
 
-    let xy_coordinates = match coordinates_pair {
+    let xy_coordinate = match coordinate_pair {
         Some(pair) => {
-            let coor_pair_result = process_coordinates(pair);
+            let coor_pair_result = process_coordinate(pair);
             match coor_pair_result {
                 Ok(coors) => coors,
                 // (-1.0, -1.0) is used as a special tuple as uninitialized value
@@ -308,7 +319,7 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
         (Ok(conn_type), Ok(pin_name), Ok(conn_dir)) => {
             let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no, conn_type, conn_dir, pin_name);
             current_conn.set_load(load);
-            current_conn.set_xy_coordinates(xy_coordinates);
+            current_conn.set_xy_coordinate(xy_coordinate);
             current_conn.set_driving_cell(driver_name);
             Ok(current_conn)
         }
@@ -346,7 +357,7 @@ fn process_cap_or_res_entry(
                 // ground cap
                 let cap_val_result = process_float(next_pair);
                 match (start_pin_result, cap_val_result) {
-                    (Ok(start_pin_name), Ok(cap_result)) => Ok((start_pin_name, "GROUND".to_string(), cap_result)),
+                    (Ok(start_pin_name), Ok(cap_result)) => Ok((start_pin_name, "".to_string(), cap_result)),
                     _ => Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
                         pair.as_span(),
@@ -393,7 +404,7 @@ fn process_cap_or_res_entry(
     }
 }
 
-pub fn parse_spef_file(spef_file_path: &str) {
+pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
     // Add '?' to the end of a statement will possiably return an error,
     // This is used to replace the .expect()
     // !TODO Use crate anyhow to handle all the errors, this will reduce the code amount.
@@ -409,9 +420,9 @@ pub fn parse_spef_file(spef_file_path: &str) {
 
     for entry in spef_file_pair.into_inner() {
         let entry_clone = entry.clone();
-        println!("Rule:    {:?}", entry_clone.as_rule());
-        println!("Span:    {:?}", entry_clone.as_span());
-        println!("Text:    {}", entry_clone.as_str());
+        // println!("Rule:    {:?}", entry_clone.as_rule());
+        // println!("Span:    {:?}", entry_clone.as_span());
+        // println!("Text:    {}", entry_clone.as_str());
 
         match entry.as_rule() {
             Rule::section => {
@@ -428,7 +439,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                             _ => (),
                         };
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::header_entry => {
@@ -437,7 +448,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                     Ok(result) => {
                         exchange_data.add_header_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::name_map_entry => {
@@ -446,7 +457,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                     Ok(result) => {
                         exchange_data.add_namemap_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::ports_entry => {
@@ -455,7 +466,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                     Ok(result) => {
                         exchange_data.add_port_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::dnet_entry => {
@@ -471,7 +482,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                     Ok(result) => {
                         current_net.add_connection(&result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::cap_or_res_entry => {
@@ -490,7 +501,7 @@ pub fn parse_spef_file(spef_file_path: &str) {
                             _ => {}
                         };
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
 
@@ -498,129 +509,5 @@ pub fn parse_spef_file(spef_file_path: &str) {
         };
     }
 
-    // Here we got a SpefExchange, it includes everthing about the spef file
-    // But we need a SpefFile to transfer data to cpp, it also includes everything about the spef file, but with ffi types.
-    // Ok(convert_to_file(exchange_data))
+    exchange_data
 }
-
-// Convert SpefExchange to SpefFile
-// SpefExchange is compound with refined rust types: SpefStringValue, SpefHeaderEntry, SpefNameMapEntry, SpefPortEntry, SpefNet, etc
-// SpefFile is compound with restriced rust types: [T, N], &str, f64, usize, enum, Vec<T>, etc
-// fn convert_to_file(source: SpefExchange) -> ffi::SpefFile {
-//     let source_clone = source.clone();
-//     let mut res = ffi::SpefFile {
-//         name: String::from(""),
-//         header: Vec::new(),
-//         name_vector: Vec::new(),
-//         ports: Vec::new(),
-//         nets: Vec::new(),
-//     };
-
-//     let name = source_clone.get_file_name().get_str_value();
-//     res.name = name;
-
-//     for header_entry in source_clone.header {
-//         // let header_entry_clone = header_entry.clone();
-//         let key = header_entry.get_header_key();
-//         let value = header_entry.get_header_value();
-//         res.header.push(ffi::HeaderItem { key, value });
-//     }
-//     for name_map_entry in source_clone.namemap {
-//         // let namemap_entry_clone = name_map_entry.clone();
-//         let index = name_map_entry.get_index();
-//         let name = name_map_entry.get_name();
-//         res.name_vector.push(ffi::NameMapItem { index, name });
-//     }
-//     for port_entry in source.ports {
-//         let pin_name = port_entry.get_name();
-
-//         // spef_data has a ConnectionDirection, it is used in parse fucntions.
-//         // ffi has a ConnectionDirection, it is passed to cpp.
-//         let direction = match port_entry.get_direction() {
-//             spef_data::ConnectionDirection::INOUT => ffi::ConnectionDirection::INOUT,
-//             spef_data::ConnectionDirection::OUTPUT => ffi::ConnectionDirection::OUTPUT,
-//             spef_data::ConnectionDirection::INPUT => ffi::ConnectionDirection::INPUT,
-//             spef_data::ConnectionDirection::UNITIALIZED => ffi::ConnectionDirection::UNITIALIZED,
-//         };
-
-//         let coordinates: [f64; 2];
-//         let (x, y) = port_entry.get_coordinates();
-//         coordinates = [x, y];
-
-//         res.ports.push(ffi::PortItem { name: pin_name, direction, coordinates });
-//     }
-//     for net in source.nets {
-//         let net_name = net.get_net_name();
-//         let lcap = net.get_lcap();
-
-//         // conns_spef is the vector of SpefConnEntry
-//         // conns is the vector of ConnItem, it will be pushed into the NetItem.
-//         let conns_spef = net.get_conns();
-//         let mut conns = Vec::<ConnItem>::new();
-//         for conn in conns_spef {
-//             let pin_name = conn.get_name();
-//             let driving_cell = conn.get_driving_cell();
-//             let load = conn.get_load();
-//             let layer = conn.get_layer();
-
-//             let conn_type = match conn.get_conn_type() {
-//                 spef_data::ConnectionType::INTERNAL => ffi::ConnectionType::INTERNAL,
-//                 spef_data::ConnectionType::EXTERNAL => ffi::ConnectionType::EXTERNAL,
-//                 spef_data::ConnectionType::UNITIALIZED => ffi::ConnectionType::UNITIALIZED,
-//             };
-
-//             let conn_direction = match conn.get_conn_direction() {
-//                 spef_data::ConnectionDirection::INOUT => ffi::ConnectionDirection::INOUT,
-//                 spef_data::ConnectionDirection::OUTPUT => ffi::ConnectionDirection::OUTPUT,
-//                 spef_data::ConnectionDirection::INPUT => ffi::ConnectionDirection::INPUT,
-//                 spef_data::ConnectionDirection::UNITIALIZED => ffi::ConnectionDirection::UNITIALIZED,
-//             };
-
-//             let xy_coordinates: [f64; 2];
-//             let (x, y) = conn.get_xy_coordinates();
-//             xy_coordinates = [x, y];
-
-//             let ll_coordinate: [f64; 2];
-//             let (ll_x, ll_y) = conn.get_ll_coordinates();
-//             ll_coordinate = [ll_x, ll_y];
-
-//             let ur_coordinate: [f64; 2];
-//             let (ur_x, ur_y) = conn.get_ur_coordinates();
-//             ur_coordinate = [ur_x, ur_y];
-
-//             conns.push(ffi::ConnItem {
-//                 conn_type,
-//                 conn_direction,
-//                 pin_name,
-//                 driving_cell,
-//                 load,
-//                 layer,
-//                 coordinates: xy_coordinates,
-//                 ll_coordinate,
-//                 ur_coordinate,
-//             });
-//         }
-
-//         // caps_spef is the vector of (String, String, f64)
-//         // caps is the vector of CapItem, it will be pushed into the NetItem
-//         let caps_spef = net.get_caps();
-//         let mut caps = Vec::<CapItem>::new();
-//         for cap in caps_spef {
-//             let (start_pin, end_pin, cap_value) = cap;
-//             caps.push(ffi::CapItem { pin_port: [start_pin, end_pin], cap_val: cap_value });
-//         }
-
-//         // ress_spef is the vector of (String, String, f64)
-//         // ress is the vector of ResItem, it will be pushed into the NetItem
-//         let ress_spef = net.get_ress();
-//         let mut ress = Vec::<ffi::ResItem>::new();
-//         for res_entry in ress_spef {
-//             let (start_pin, end_pin, res_value) = res_entry;
-//             ress.push(ffi::ResItem { pin_port: [start_pin, end_pin], res: res_value });
-//         }
-
-//         res.nets.push(ffi::NetItem { name: net_name, lcap, conns, caps, ress });
-//     }
-
-//     res
-// }

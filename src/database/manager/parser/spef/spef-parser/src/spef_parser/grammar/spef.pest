@@ -38,7 +38,7 @@ name_map_entry =  { index_name ~ !direction ~ str_name }
 str_name       = @{ char+ }
 index_name     = ${ "*" ~ index }
 
-ports_entry      =  { index_name ~ direction ~ coordinate_param ~ xy_coordinates }
+ports_entry      =  { index_name ~ direction ~ (coordinate_param ~ xy_coordinates)? }
 direction        =  { "I" | "O" | "B" }
 coordinate_param = _{ "*C" }
 xy_coordinates   =  { num{2} }
@@ -46,12 +46,12 @@ xy_coordinates   =  { num{2} }
 dnet_entry     = { "*D_NET" ~ (index_name | str_name) ~ cap_or_res_val }
 cap_or_res_val = { num{1} }
 
-conn_entry = { conn_type ~ pin_port ~ direction ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
-conn_type  = { "*P" | "*I" | "*S" | "*C" | "*R" | "*L" }
+conn_entry = { conn_type ~ pin_port ~ direction? ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
+conn_type  = { "*P" | "*I" | "*N" | "*S" | "*C" | "*R" | "*L" }
 // !TODO, Add str_name to pin_port because it's legal too.
 // Noting that str_name may wrongly matches cap_or_res_value, which leading to wrong paring.
 pin_port    = ${ (index_name) ~ (":" ~ pin_name)? }
-pin_name    =  { (ASCII_ALPHANUMERIC | "_")+ }
+pin_name    =  { (ASCII_ALPHANUMERIC | "_" | "[" | "]")+ }
 load_param  = _{ "*L" }
 drive_param = _{ "*D" }
 

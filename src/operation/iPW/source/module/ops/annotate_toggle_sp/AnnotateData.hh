@@ -44,6 +44,10 @@ namespace ipower {
  */
 class AnnotateTime {
  public:
+  AnnotateTime(int64_t t0, int64_t t1, int64_t tx, int64_t tz)
+      : _T0(t0), _T1(t1), _TX(tx), _TZ(tz) {}
+  AnnotateTime() = default;
+  ~AnnotateTime() = default;
   auto& get_T0() { return _T0; }
   void incrT0(int64_t duration) { _T0 += duration; }
   auto& get_T1() { return _T1; }
@@ -77,6 +81,7 @@ class AnnotateToggle {
 
   void printAnnotateToggle(std::ostream& out);
   int64_t get_toggle() { return _TC.get_ui(); }
+  void set_TC(int tc) { _TC = tc; }
 
  private:
   mpz_class _TC{0};  //!< The total number of transition.
@@ -95,6 +100,7 @@ class AnnotateRecord {
   AnnotateRecord(AnnotateToggle&& toggle_record, AnnotateTime&& time_record)
       : _toggle_record(std::move(toggle_record)),
         _time_record(std::move(time_record)) {}
+
   ~AnnotateRecord() = default;
 
   AnnotateRecord(AnnotateRecord&& other) noexcept = default;
