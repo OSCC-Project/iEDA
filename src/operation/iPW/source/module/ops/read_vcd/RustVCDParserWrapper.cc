@@ -1,10 +1,14 @@
 #include "RustVCDParserWrapper.hh"
 
+#include "string/Str.hh"
+
 namespace ipower {
 
 unsigned RustVcdParserWrapper::readVcdFile(const char* vcd_file_path) {
   RustVcdReader vcd_reader;
-  _vcd_file = vcd_reader.readVcdFile(vcd_file_path);
+  _vcd_file_ptr = vcd_reader.readVcdFile(vcd_file_path);
+  _vcd_file = rust_convert_vcd_file(_vcd_file_ptr);
+
   return 1;
 }
 
@@ -15,14 +19,16 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
     auto children_scopes = parent_scope->children_scope;
     void* children_scope;
     FOREACH_VEC_ELEM(&children_scopes, void, children_scope) {
-      RustVCDScope* cur_vcd_scope = rust_convert_vcd_scope(children_scope);
-      if (cur_vcd_scope->name == top_instance_name) {
+      void* children_scope_ptr = rust_convert_rc_ref_cell_scope(children_scope);
+      RustVCDScope* cur_vcd_scope = rust_convert_vcd_scope(children_scope_ptr);
+      if (ieda::Str::equal(cur_vcd_scope->name, top_instance_name)) {
         return cur_vcd_scope;
       }
     }
 
     FOREACH_VEC_ELEM(&children_scopes, void, children_scope) {
-      RustVCDScope* cur_vcd_scope = rust_convert_vcd_scope(children_scope);
+      void* children_scope_ptr = rust_convert_rc_ref_cell_scope(children_scope);
+      RustVCDScope* cur_vcd_scope = rust_convert_vcd_scope(children_scope_ptr);
       auto* found_scope = traverse_scope(cur_vcd_scope);
       if (found_scope) {
         return found_scope;
@@ -32,10 +38,10 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
     return nullptr;
   };
 
-  auto* root_scope = rust_convert_vcd_scope(_vcd_file->scope_root);
+  auto* root_scope = static_cast<RustVCDScope*>(_vcd_file->scope_root);
   RustVCDScope* found_scope = nullptr;
 
-  if (root_scope->name == top_instance_name) {
+  if (ieda::Str::equal(root_scope->name, top_instance_name)) {
     found_scope = root_scope;
   } else {
     found_scope = traverse_scope(root_scope);
@@ -85,9 +91,10 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
         auto scope_signals = the_scope->scope_signals;
         void* scope_signal;
         FOREACH_VEC_ELEM(&scope_signals, void, scope_signal) {
-          RustVCDSignal* signal = rust_convert_vcd_signal(scope_signal);
-          // signal type var wire is enum 16.
-          if (signal->signal_type != 16) {
+          void* signal_ptr = rust_convert_rc_ref_cell_signal(scope_signal);
+          RustVCDSignal* signal = rust_convert_vcd_signal(signal_ptr);
+
+          if (signal->signal_type != VCDVariableType::kVarWire) {
             continue;
           }
           if (signal->signal_size == 1) {
@@ -102,8 +109,10 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
             int lindex = bus_index->lindex;
             int rindex = bus_index->rindex;
             for (auto i = rindex; i <= lindex; ++i) {
-              auto annotate_signal = std::make_unique<AnnotateSignal>(
-                  signal->name + '[' + i + ']');
+              std::string signal_name(signal->name);
+              std::string name = signal_name + "[" + std::to_string(i) + "]";
+
+              auto annotate_signal = std::make_unique<AnnotateSignal>(name);
               the_scope_instance_ptr->addSignal(std::move(annotate_signal));
             }
           }
@@ -112,7 +121,10 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
         auto children_scopes = the_scope->children_scope;
         void* child_scope;
         FOREACH_VEC_ELEM(&children_scopes, void, child_scope) {
-          RustVCDScope* cur_child_scope = rust_convert_vcd_scope(child_scope);
+          void* children_scope_ptr =
+              rust_convert_rc_ref_cell_scope(child_scope);
+          RustVCDScope* cur_child_scope =
+              rust_convert_vcd_scope(children_scope_ptr);
           build_scope_instance_signal(cur_child_scope, the_scope_instance_ptr);
         }
       };
@@ -139,11 +151,18 @@ unsigned RustVcdParserWrapper::calcScopeToggleAndSp(
 
     /*get the scope's parent path*/
     std::vector<std::string_view> parent_instance_names;
-    RustVCDScope* signal_scope = find_scope_by_name(cur_name, _vcd_file_ptr);
-    while (signal_scope && (signal_scope != _top_instance_scope)) {
+    /*get signal parent scope*/
+    auto* cur_signal = find_signal_by_name(cur_name, _vcd_file_ptr);
+    RustVCDScope* signal_scope = rust_convert_vcd_scope(cur_signal->scope);
+    while (signal_scope &&
+           (!ieda::Str::equal(signal_scope->name, _top_instance_scope->name))) {
       parent_instance_names.emplace_back(signal_scope->name);
       void* parent_scope = signal_scope->parent_scope;
-      signal_scope = rust_convert_vcd_scope(parent_scope);
+      if (parent_scope) {
+        signal_scope = rust_convert_vcd_scope(parent_scope);
+      } else {
+        break;
+      }
     }
 
     /*add the toggle record to annotate data*/
@@ -160,18 +179,24 @@ unsigned RustVcdParserWrapper::calcScopeToggleAndSp(
   FOREACH_VEC_ELEM(&signal_sp_vec, void, signal_sp) {
     RustSignalDuration* cur_signal_sp = rust_convert_signal_duration(signal_sp);
     auto cur_name = cur_signal_sp->signal_name;
-    auto cur_0 = cur_signal_sp->bit_0_duration;
     AnnotateTime annotate_time(
         cur_signal_sp->bit_0_duration, cur_signal_sp->bit_1_duration,
         cur_signal_sp->bit_x_duration, cur_signal_sp->bit_z_duration);
 
     /*get the scope's parent path*/
     std::vector<std::string_view> parent_instance_names;
-    RustVCDScope* signal_scope = find_scope_by_name(cur_name, _vcd_file_ptr);
-    while (signal_scope && (signal_scope != _top_instance_scope)) {
+
+    auto* cur_signal = find_signal_by_name(cur_name, _vcd_file_ptr);
+    RustVCDScope* signal_scope = rust_convert_vcd_scope(cur_signal->scope);
+    while (signal_scope &&
+           (!ieda::Str::equal(signal_scope->name, _top_instance_scope->name))) {
       parent_instance_names.emplace_back(signal_scope->name);
       void* parent_scope = signal_scope->parent_scope;
-      signal_scope = rust_convert_vcd_scope(parent_scope);
+      if (parent_scope) {
+        signal_scope = rust_convert_vcd_scope(parent_scope);
+      } else {
+        break;
+      }
     }
 
     /*add the toggle record to annotate data*/

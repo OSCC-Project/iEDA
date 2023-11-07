@@ -6,6 +6,7 @@
 //! 5) VCDScope
 //! 6) VCDFile
 
+use crate::vcd_parser::vcd_calc_tc_sp;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
@@ -53,6 +54,7 @@ impl VCDValue {
 
 /// VCD variable type of vcd signal
 #[derive(Copy, Clone)]
+#[repr(C)]
 pub enum VCDVariableType {
     VarEvent,
     VarInteger,
@@ -92,7 +94,7 @@ impl VCDSignal {
             hash: Default::default(),
             name: Default::default(),
             bus_index: None,
-            signal_size: 0,
+            signal_size: 1,
             signal_type: VCDVariableType::Default,
             scope: None,
         }
@@ -137,6 +139,10 @@ impl VCDSignal {
             "wor" => self.signal_type = VCDVariableType::VarWor,
             _ => panic!("unknown signal type {}", type_str),
         }
+    }
+
+    pub fn set_scope(&mut self, parent_scope: Rc<RefCell<VCDScope>>) {
+        self.scope = Some(parent_scope);
     }
 
     pub fn get_hash(&self) -> &str {
@@ -205,10 +211,6 @@ impl VCDScope {
         }
     }
 
-    pub fn set_parent_scope(&mut self, parent_scope: Rc<RefCell<VCDScope>>) {
-        self.parent_scope = Some(parent_scope);
-    }
-
     pub fn add_child_scope(&mut self, child_scope: Rc<RefCell<VCDScope>>) {
         self.children_scopes.push(child_scope);
     }
@@ -223,6 +225,10 @@ impl VCDScope {
 
     pub fn get_parent_scope(&self) -> &Option<Rc<RefCell<VCDScope>>> {
         &self.parent_scope
+    }
+
+    pub fn set_parent_scope(&mut self, parent_scope: Rc<RefCell<VCDScope>>) {
+        self.parent_scope = Some(parent_scope);
     }
 
     pub fn get_children_scopes(&self) -> &Vec<Rc<RefCell<VCDScope>>> {
@@ -256,6 +262,8 @@ pub struct VCDFile {
     comment: String,
     root_scope: Option<Rc<RefCell<VCDScope>>>,
     signal_values: HashMap<String, VecDeque<Box<VCDTimeAndValue>>>,
+    signal_tc_vec: Vec<vcd_calc_tc_sp::SignalTC>,
+    signal_duration_vec: Vec<vcd_calc_tc_sp::SignalDuration>,
 }
 
 impl VCDFile {
@@ -270,15 +278,23 @@ impl VCDFile {
             comment: Default::default(),
             root_scope: Default::default(),
             signal_values: Default::default(),
+            signal_tc_vec: Default::default(),
+            signal_duration_vec: Default::default(),
         }
     }
 
     pub fn get_start_time(&mut self) -> i64 {
         self.start_time
     }
+    pub fn _set_start_time(&mut self, start_time: i64) {
+        self.start_time = start_time;
+    }
 
     pub fn get_end_time(&self) -> i64 {
         self.end_time
+    }
+    pub fn set_end_time(&mut self, end_time: i64) {
+        self.end_time = end_time;
     }
 
     pub fn get_time_resolution(&mut self) -> u32 {
@@ -347,6 +363,24 @@ impl VCDFile {
             self.signal_values.insert(signal_hash, signal_vec);
         }
     }
+
+    pub fn set_signal_tc_vec(&mut self, signal_tc_vec: Vec<vcd_calc_tc_sp::SignalTC>) {
+        self.signal_tc_vec = signal_tc_vec;
+    }
+    pub fn get_signal_tc_vec(&self) -> &Vec<vcd_calc_tc_sp::SignalTC> {
+        return &self.signal_tc_vec;
+    }
+
+    pub fn set_signal_duration_vec(
+        &mut self,
+        signal_duration_vec: Vec<vcd_calc_tc_sp::SignalDuration>,
+    ) {
+        self.signal_duration_vec = signal_duration_vec;
+    }
+
+    pub fn get_signal_duration_vec(&self) -> &Vec<vcd_calc_tc_sp::SignalDuration> {
+        return &self.signal_duration_vec;
+    }
 }
 
 /// VCD File parser
@@ -382,6 +416,7 @@ impl VCDFileParser {
 
     pub fn set_current_time(&mut self, current_time: i64) {
         self.current_time = current_time;
+        self.vcd_file.set_end_time(current_time);
     }
 
     pub fn get_current_time(&self) -> i64 {

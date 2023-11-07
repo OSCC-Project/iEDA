@@ -12,11 +12,10 @@
 
 namespace ipower {
 
-RustVCDFile* RustVcdReader::readVcdFile(const char* vcd_file_path)
+void* RustVcdReader::readVcdFile(const char* vcd_file_path)
 {
   auto* vcd_file_ptr = rust_parse_vcd(vcd_file_path);
-  auto* vcd_file = rust_convert_vcd_file(vcd_file_ptr);
-  return vcd_file;
+  return vcd_file_ptr;
 }
 
 }  // namespace ipower

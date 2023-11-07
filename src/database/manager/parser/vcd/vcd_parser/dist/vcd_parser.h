@@ -11,6 +11,35 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+/**
+ * VCD variable type of vcd signal
+ */
+typedef enum VCDVariableType {
+    VarEvent,
+    VarInteger,
+    VarParameter,
+    VarReal,
+    VarRealTime,
+    VarReg,
+    VarSupply0,
+    VarSupply1,
+    VarTime,
+    VarTri,
+    VarTriAnd,
+    VarTriOr,
+    VarTriReg,
+    VarTri0,
+    VarTri1,
+    VarWAnd,
+    VarWire,
+    VarWor,
+    Default,
+} VCDVariableType;
+
+typedef struct Rc_RefCell_VCDScope Rc_RefCell_VCDScope;
+
+typedef struct Rc_VCDSignal Rc_VCDSignal;
+
 typedef struct SignalDuration SignalDuration;
 
 typedef struct SignalTC SignalTC;
@@ -60,7 +89,7 @@ typedef struct RustVCDSignal {
     char *name;
     void *bus_index;
     unsigned int signal_size;
-    unsigned int signal_type;
+    enum VCDVariableType signal_type;
     void *scope;
 } RustVCDSignal;
 
@@ -99,6 +128,10 @@ struct Indexes *rust_convert_signal_index(void *bus_index);
 
 struct RustVCDSignal *rust_convert_vcd_signal(const struct VCDSignal *c_vcd_signal);
 
+void *rust_convert_rc_ref_cell_scope(const struct Rc_RefCell_VCDScope *c_data);
+
+const void *rust_convert_rc_ref_cell_signal(const struct Rc_VCDSignal *c_data);
+
 struct RustVCDScope *rust_convert_vcd_scope(const struct VCDScope *c_vcd_scope);
 
 struct RustVCDFile *rust_convert_vcd_file(struct VCDFile *c_vcd_file);
@@ -109,3 +142,5 @@ struct RustTcAndSpResVecs *rust_calc_scope_tc_sp(const char *c_top_vcd_scope_nam
                                                  struct VCDFile *c_vcd_file);
 
 struct RustVCDScope *find_scope_by_name(const char *scope_name, struct VCDFile *c_vcd_file);
+
+struct RustVCDSignal *find_signal_by_name(const char *scope_name, struct VCDFile *c_vcd_file);

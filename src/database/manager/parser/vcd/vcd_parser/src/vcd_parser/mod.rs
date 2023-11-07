@@ -91,8 +91,9 @@ fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePar
         match inner_pair.as_rule() {
             Rule::variable_type => vcd_signal.set_signal_type(inner_pair.as_str()),
             Rule::variable_number => {
-                let signal_size = inner_pair.as_str().parse::<u32>().unwrap();
-                vcd_signal.set_signal_size(signal_size);
+                let signal_size_str = inner_pair.as_str();
+                let signal_size = signal_size_str.parse::<u32>();
+                vcd_signal.set_signal_size(signal_size.unwrap());
             }
             Rule::variable_ref => {
                 let ref_name = inner_pair.as_str();
@@ -118,6 +119,7 @@ fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePar
 
     let scope_stack = vcd_file_parser.get_scope_stack();
     let the_scope = scope_stack.back_mut().unwrap();
+    vcd_signal.set_scope(the_scope.clone());
     the_scope.borrow_mut().add_scope_signal(vcd_signal);
 }
 

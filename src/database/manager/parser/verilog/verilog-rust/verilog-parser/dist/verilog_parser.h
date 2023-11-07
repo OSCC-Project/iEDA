@@ -33,10 +33,6 @@ typedef struct RustVerilogIndexID {
     char *id;
 } RustVerilogIndexID;
 
-typedef struct RustVerilogSliceID {
-    char *id;
-} RustVerilogSliceID;
-
 typedef struct RustVerilogNetIDExpr {
     uintptr_t line_no;
     const void *verilog_id;
@@ -91,8 +87,6 @@ bool rust_is_id(void *c_verilog_virtual_base_id);
 struct RustVerilogIndexID *rust_convert_verilog_index_id(void *c_verilog_virtual_base_id);
 
 bool rust_is_bus_index_id(void *c_verilog_virtual_base_id);
-
-struct RustVerilogSliceID *rust_convert_verilog_slice_id(void *c_verilog_virtual_base_id);
 
 bool rust_is_bus_slice_id(void *c_verilog_virtual_base_id);
 

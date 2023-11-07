@@ -32,6 +32,10 @@ impl SignalTC {
     pub fn incr_tc(&mut self) {
         self.signal_tc += 1;
     }
+
+    pub fn get_name(&self) -> &str {
+        &self.signal_name
+    }
 }
 
 #[derive(Clone)]
@@ -52,6 +56,10 @@ impl SignalDuration {
             bit_x_duration: 0,
             bit_z_duration: 0,
         }
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.signal_name
     }
 }
 
@@ -261,6 +269,34 @@ impl FindScopeClosure {
                 None
             },
         );
+        Self { closure }
+    }
+}
+
+pub struct FindSignalClosure {
+    pub closure: Box<dyn Fn(&Rc<RefCell<VCDScope>>, &str) -> Option<Rc<VCDSignal>>>,
+}
+
+impl FindSignalClosure {
+    pub fn new() -> Self {
+        let closure = Box::new(move |scope: &Rc<RefCell<VCDScope>>, signal_name: &str| {
+            let signals = scope.borrow().get_scope_signals().clone();
+            for signal in signals.clone() {
+                if signal.get_name() == signal_name {
+                    return Some(signal);
+                }
+            }
+
+            let children_scopes = scope.borrow().get_children_scopes().clone();
+            for child_scope in children_scopes.clone() {
+                if let Some(found_signal) =
+                    (FindSignalClosure::new().closure)(&child_scope, signal_name)
+                {
+                    return Some(found_signal);
+                }
+            }
+            None
+        });
         Self { closure }
     }
 }
