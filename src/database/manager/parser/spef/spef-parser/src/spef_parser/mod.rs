@@ -91,6 +91,7 @@ fn process_conn_type_enum(pair: Pair<Rule>) -> Result<spef_data::ConnectionType,
     match pair.as_str() {
         "*I" => Ok(spef_data::ConnectionType::INTERNAL),
         "*P" => Ok(spef_data::ConnectionType::EXTERNAL),
+        "*N" => Ok(spef_data::ConnectionType::INTERNAL),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse connection type".into() },
             pair_clone.as_span(),
@@ -198,11 +199,15 @@ fn process_port_entry(pair: Pair<Rule>) -> Result<spef_data::SpefPortEntry, pest
     // name_index_pair is float pair, name_value_pair is string pair
     let name_index_pair = inner_rules.next().unwrap();
     let conn_dir_pair = inner_rules.next().unwrap();
-    let coordinate_pair = inner_rules.next().unwrap();
+    let coordinate_pair = inner_rules.next();
 
     let index_pair_result = process_float(name_index_pair);
     let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
-    let coor_pair_result = process_coordinate(coordinate_pair);
+
+    let mut coor_pair_result: Result<(f64, f64), pest::error::Error<Rule>> = Ok((-1.0, -1.0));
+    if coordinate_pair.is_some() {
+        coor_pair_result = process_coordinate(coordinate_pair.unwrap());
+    }
 
     match (index_pair_result, dir_pair_result, coor_pair_result) {
         (Ok(index), Ok(direction), Ok(coordinate)) => {
@@ -252,13 +257,19 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
     let mut inner_rules = pair_clone.into_inner();
 
     let conn_type_pair = inner_rules.next().unwrap();
+    let conn_type_pair_clone = conn_type_pair.clone();
     let type_pair_result = process_conn_type_enum(conn_type_pair);
 
     let pin_name_pair = inner_rules.next().unwrap();
     let name_pair_result = process_string(pin_name_pair);
 
-    let conn_dir_pair = inner_rules.next().unwrap();
-    let dir_pair_result = process_conn_dir_enum(conn_dir_pair);
+    let conn_dir_pair = inner_rules.next();
+    let dir_pair_result: Result<spef_data::ConnectionDirection, pest::error::Error<Rule>>;
+    if conn_type_pair_clone.as_str() != "*N" {
+        dir_pair_result = process_conn_dir_enum(conn_dir_pair.unwrap());
+    } else {
+        dir_pair_result = Ok(spef_data::ConnectionDirection::Internal);
+    }
 
     // xy_coordinate may be None
     let coordinate_pair = inner_rules.next();
@@ -428,7 +439,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                             _ => (),
                         };
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::header_entry => {
@@ -437,7 +448,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                     Ok(result) => {
                         exchange_data.add_header_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::name_map_entry => {
@@ -446,7 +457,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                     Ok(result) => {
                         exchange_data.add_namemap_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::ports_entry => {
@@ -455,7 +466,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                     Ok(result) => {
                         exchange_data.add_port_entry(result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::dnet_entry => {
@@ -471,7 +482,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                     Ok(result) => {
                         current_net.add_connection(&result);
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
             Rule::cap_or_res_entry => {
@@ -490,7 +501,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                             _ => {}
                         };
                     }
-                    Err(_) => panic!("prcocess failed."),
+                    Err(_) => panic!("process failed"),
                 }
             }
 

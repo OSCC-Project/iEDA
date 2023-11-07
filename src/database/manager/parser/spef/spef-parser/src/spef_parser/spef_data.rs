@@ -114,7 +114,7 @@ pub enum ConnectionDirection {
     INPUT,
     OUTPUT,
     INOUT,
-    UNITIALIZED,
+    Internal,
 }
 
 #[derive(Clone, Debug)]

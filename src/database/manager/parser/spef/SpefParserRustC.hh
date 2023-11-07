@@ -26,11 +26,7 @@ typedef struct RustSpefCoord {
   double _y;
 } RustSpefCoord;
 
-enum RustConnectionDirection {
-  kINPUT,
-  kOUTPUT,
-  kINOUT,
-};
+enum RustConnectionDirection { kINPUT, kOUTPUT, kINOUT, kInternal };
 
 enum RustConnectionType {
   kINTERNAL,
