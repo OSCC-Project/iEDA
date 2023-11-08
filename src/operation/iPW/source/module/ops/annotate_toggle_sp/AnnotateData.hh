@@ -209,6 +209,8 @@ class AnnotateInstance {
 
   void calcInstancesTcSP(int64_t duration);
   auto& get_signals_tc_sp() { return _signals_tc_sp; }
+  auto& get_children_instances() { return _children_instances; }
+  auto& get_signals() { return _signals; }
 
  private:
   std::string _module_instance_name;
@@ -219,6 +221,18 @@ class AnnotateInstance {
   std::vector<std::unique_ptr<AnnotateSignalToggleSPData>>
       _signals_tc_sp;  //!< The signal toggle and sp data.
 };
+
+#define FOREACH_SIGNAL(instance, signal)                           \
+  if (auto& signals = (instance)->get_signals(); !signals.empty()) \
+    for (auto it = signals.begin();                                \
+         it != signals.end() ? signal = it->second.get(), true : false; ++it)
+
+#define FOREACH_CHILD_INSTANCE(parent_instance, instance)                   \
+  if (auto& instances = (parent_instance)->get_children_instances();        \
+      !instances.empty())                                                   \
+    for (auto it = instances.begin();                                       \
+         it != instances.end() ? instance = it->second.get(), true : false; \
+         ++it)
 
 /**
  * @brief Time scale of vcd simulation.

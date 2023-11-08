@@ -138,74 +138,52 @@ unsigned RustVcdParserWrapper::calcScopeToggleAndSp(
     const char* top_instance_name) {
   RustTcAndSpResVecs* res_vecs =
       rust_calc_scope_tc_sp(top_instance_name, _vcd_file_ptr);
-
-  /*set toggle data to annotate db*/
   auto signal_tc_vec = res_vecs->signal_tc_vec;
-  void* signal_tc;
-  FOREACH_VEC_ELEM(&signal_tc_vec, void, signal_tc) {
-    RustSignalTC* cur_signal_tc = rust_convert_signal_tc(signal_tc);
-    auto cur_name = cur_signal_tc->signal_name;
-    auto cur_tc = cur_signal_tc->signal_tc;
-    AnnotateToggle annotate_toggle;
-    annotate_toggle.set_TC(cur_tc);
-
-    /*get the scope's parent path*/
-    std::vector<std::string_view> parent_instance_names;
-    /*get signal parent scope*/
-    auto* cur_signal = find_signal_by_name(cur_name, _vcd_file_ptr);
-    RustVCDScope* signal_scope = rust_convert_vcd_scope(cur_signal->scope);
-    while (signal_scope &&
-           (!ieda::Str::equal(signal_scope->name, _top_instance_scope->name))) {
-      parent_instance_names.emplace_back(signal_scope->name);
-      void* parent_scope = signal_scope->parent_scope;
-      if (parent_scope) {
-        signal_scope = rust_convert_vcd_scope(parent_scope);
-      } else {
-        break;
-      }
-    }
-
-    /*add the toggle record to annotate data*/
-    auto* record_data =
-        _annotate_db.findSignalRecord(parent_instance_names, cur_name);
-    LOG_FATAL_IF(!record_data) << "not found record data";
-
-    (*record_data).set_toggle_record(std::move(annotate_toggle));
-  }
-
-  /*set toggle data to annotate db*/
   auto signal_sp_vec = res_vecs->signal_duration_vec;
-  void* signal_sp;
-  FOREACH_VEC_ELEM(&signal_sp_vec, void, signal_sp) {
-    RustSignalDuration* cur_signal_sp = rust_convert_signal_duration(signal_sp);
-    auto cur_name = cur_signal_sp->signal_name;
-    AnnotateTime annotate_time(
-        cur_signal_sp->bit_0_duration, cur_signal_sp->bit_1_duration,
-        cur_signal_sp->bit_x_duration, cur_signal_sp->bit_z_duration);
 
-    /*get the scope's parent path*/
-    std::vector<std::string_view> parent_instance_names;
+  /*set data to annotate db*/
+  auto* top_instance = _annotate_db.get_top_instance();
+  std::function<void(AnnotateInstance*)> traverse_instance =
+      [&traverse_instance, this, &signal_tc_vec,
+       &signal_sp_vec](auto* instance) {
+        AnnotateSignal* signal;
+        FOREACH_SIGNAL(instance, signal) {
+          auto& signal_name = signal->get_signal_name();
+          auto* record_data = signal->get_record_data();
+          // set toggle
+          void* signal_tc;
+          FOREACH_VEC_ELEM(&signal_tc_vec, void, signal_tc) {
+            RustSignalTC* cur_signal_tc = rust_convert_signal_tc(signal_tc);
+            auto* cur_name = cur_signal_tc->signal_name;
+            if (ieda::Str::equal(signal_name.c_str(), cur_name)) {
+              auto cur_tc = cur_signal_tc->signal_tc;
+              AnnotateToggle annotate_toggle;
+              annotate_toggle.set_TC(cur_tc);
+              (*record_data).set_toggle_record(std::move(annotate_toggle));
+            }
+          }
+          // set sp
+          void* signal_sp;
+          FOREACH_VEC_ELEM(&signal_sp_vec, void, signal_sp) {
+            RustSignalDuration* cur_signal_sp =
+                rust_convert_signal_duration(signal_sp);
+            auto* cur_name = cur_signal_sp->signal_name;
+            if (ieda::Str::equal(signal_name.c_str(), cur_name)) {
+              AnnotateTime annotate_time(
+                  cur_signal_sp->bit_0_duration, cur_signal_sp->bit_1_duration,
+                  cur_signal_sp->bit_x_duration, cur_signal_sp->bit_z_duration);
+              (*record_data).set_time_record(std::move(annotate_time));
+            }
+          }
+        }
 
-    auto* cur_signal = find_signal_by_name(cur_name, _vcd_file_ptr);
-    RustVCDScope* signal_scope = rust_convert_vcd_scope(cur_signal->scope);
-    while (signal_scope &&
-           (!ieda::Str::equal(signal_scope->name, _top_instance_scope->name))) {
-      parent_instance_names.emplace_back(signal_scope->name);
-      void* parent_scope = signal_scope->parent_scope;
-      if (parent_scope) {
-        signal_scope = rust_convert_vcd_scope(parent_scope);
-      } else {
-        break;
-      }
-    }
+        AnnotateInstance* child_instance;
+        FOREACH_CHILD_INSTANCE(instance, child_instance) {
+          traverse_instance(child_instance);
+        }
+      };
 
-    /*add the toggle record to annotate data*/
-    auto* record_data =
-        _annotate_db.findSignalRecord(parent_instance_names, cur_name);
-    LOG_FATAL_IF(!record_data) << "not found record data";
-
-    (*record_data).set_time_record(std::move(annotate_time));
-  }
+  traverse_instance(top_instance);
 
   return 1;
 }
