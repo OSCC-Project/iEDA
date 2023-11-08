@@ -311,8 +311,8 @@ pub struct RustVerilogDcl {
 pub extern "C" fn rust_convert_verilog_dcl(c_verilog_dcl_struct: *mut c_void)
 -> *mut RustVerilogDcl {
     unsafe {
-        let mut verilog_stmt = unsafe { &mut *(c_verilog_dcl_struct as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
-        let verilog_dcl_struct = (*verilog_stmt).as_any().downcast_ref::<verilog_data::VerilogDcl>().unwrap();
+        let mut verilog_dcl_struct = unsafe 
+        { &mut *(c_verilog_dcl_struct as *mut Box<verilog_data::VerilogDcl>) };    
         let line_no = (*verilog_dcl_struct).get_stmt().get_line_no();
         let dcl_type = (*verilog_dcl_struct).get_dcl_type();
         let dcl_name_str = (*verilog_dcl_struct).get_dcl_name();
@@ -393,14 +393,19 @@ pub struct RustVerilogPortRefPortConnect {
 } 
 
 #[no_mangle]
-pub extern "C" fn rust_convert_verilog_port_ref_port_connect(c_port_connect: *mut verilog_data::VerilogPortRefPortConnect) -> *mut RustVerilogPortRefPortConnect {
+pub extern "C" fn rust_convert_verilog_port_ref_port_connect(c_port_connect: *mut c_void) -> *mut RustVerilogPortRefPortConnect {
     unsafe {
+        let c_port_connect = unsafe {
+            &mut *(c_port_connect as *mut Box<verilog_data::VerilogPortRefPortConnect>)
+        };
         let port_id = (*c_port_connect).get_port_id();
+        let _ = port_id.is_id();
+
         let net_expr = (*c_port_connect).get_net_expr();
 
         let c_port_id = &*port_id as *const _ as *const c_void;
         let c_net_expr = 
-            if net_expr.is_some() { net_expr.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
+            if let Some(net_expr_box) = net_expr { net_expr_box as *const _ as *mut c_void } else { std::ptr::null_mut() };
 
         let rust_port_connect =
         RustVerilogPortRefPortConnect { port_id:c_port_id, net_expr: c_net_expr as *mut c_void };

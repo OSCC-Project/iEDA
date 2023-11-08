@@ -48,8 +48,8 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file)
     LOG_FATAL_IF(!verilog_module) << "convert verilog module failed.";
     _top_module = verilog_module;
     _verilog_modules.push_back(verilog_module);
-    // generate3
-    rust_free_verilog_module(verilog_result);
+    // generate3.why can not free?
+    // rust_free_verilog_module(verilog_result);
     LOG_INFO << "load verilog file " << verilog_file << " success.";
   } else {
     is_ok = 0;

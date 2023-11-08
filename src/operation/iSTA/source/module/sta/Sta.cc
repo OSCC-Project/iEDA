@@ -261,7 +261,7 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  */
 unsigned Sta::readLiberty(const char *lib_file) {
   Liberty lib;
-  auto load_lib = lib.loadLibertyWithRustParser(lib_file);
+  auto load_lib = lib.loadLiberty(lib_file);
   addLib(std::move(load_lib));
 
   return 1;
@@ -658,41 +658,37 @@ void Sta::linkDesignWithRustParser() {
   Netlist &design_netlist = _netlist;
   design_netlist.set_name(top_cell_name);
 
- /*The verilog decalre statement process lookup table.*/
-  std::map<DclType,
-           std::function<DesignObject *(DclType, const char *)>>
+  /*The verilog decalre statement process lookup table.*/
+  std::map<DclType, std::function<DesignObject *(DclType, const char *)>>
       dcl_process = {
           {DclType::KInput,
-           [&design_netlist](DclType dcl_type,
-                             const char *dcl_name) {
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Port in_port(dcl_name, PortDir::kIn);
              auto &ret_val = design_netlist.addPort(std::move(in_port));
              return &ret_val;
            }},
           {DclType::KOutput,
-           [&design_netlist](DclType dcl_type,
-                             const char *dcl_name) {
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Port out_port(dcl_name, PortDir::kOut);
              auto &ret_val = design_netlist.addPort(std::move(out_port));
              return &ret_val;
            }},
           {DclType::KInout,
-           [&design_netlist](DclType dcl_type,
-                             const char *dcl_name) {
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Port out_port(dcl_name, PortDir::kInOut);
              auto &ret_val = design_netlist.addPort(std::move(out_port));
              return &ret_val;
            }},
           {DclType::KWire,
-           [&design_netlist](DclType dcl_type,
-                             const char *dcl_name) {
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
            }}};
 
   /*process the verilog declare statement.*/
-  auto process_dcl_stmt = [&dcl_process, &design_netlist](auto *rust_verilog_dcl) {
+  auto process_dcl_stmt = [&dcl_process,
+                           &design_netlist](auto *rust_verilog_dcl) {
     auto dcl_type = rust_verilog_dcl->dcl_type;
     const auto *dcl_name = rust_verilog_dcl->dcl_name;
     auto dcl_range = rust_verilog_dcl->range;
@@ -985,6 +981,7 @@ void Sta::linkDesignWithRustParser() {
   }
 
   LOG_INFO << "link design " << top_cell_name << " end";
+  int a = 0;
 }
 
 /**
