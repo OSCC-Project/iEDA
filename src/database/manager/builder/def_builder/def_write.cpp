@@ -577,9 +577,9 @@ int32_t DefWrite::write_specialnet_wire_segment_rect(IdbSpecialWireSegment* segm
     shape = "+ SHAPE " + IdbEnum::GetInstance()->get_connect_property()->get_wire_shape_name(segment->get_shape_type());
   }
 
-  fprintf(file_write, " %s%s + RECT %s (%d %d) (%d %d) \n", wire_new_str.c_str(), shape.c_str(), segment->get_layer()->get_name().c_str(), 
-          segment->get_delta_rect()->get_low_x(), segment->get_delta_rect()->get_low_y(), segment->get_delta_rect()->get_high_x(), 
-          segment->get_delta_rect()->get_high_x());
+  fprintf(file_write, " %s%s + RECT %s ( %d %d ) ( %d %d ) \n", wire_new_str.c_str(), shape.c_str(),
+          segment->get_layer()->get_name().c_str(), segment->get_delta_rect()->get_low_x(), segment->get_delta_rect()->get_low_y(),
+          segment->get_delta_rect()->get_high_x(), segment->get_delta_rect()->get_high_x());
 
   return kDbSuccess;
 }
