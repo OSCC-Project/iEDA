@@ -72,6 +72,7 @@ class Str
   static std::pair<std::string, std::optional<std::pair<int, int>>> matchBusSliceName(const char* str);
 
   static std::string trimBackslash(std::string origin_str);
+  static std::string removeBackslash(std::string origin_str);
   static std::string addBackslash(std::string origin_str);
 };
 

@@ -645,6 +645,36 @@ std::string Str::trimBackslash(std::string origin_str)
 }
 
 /**
+ * @brief trim \\key[0] to key[0].
+ *
+ * @param str
+ * @return std::string
+ */
+std::string Str::removeBackslash(std::string origin_str)
+{
+  std::string result;
+  bool hasBrackets = false;
+
+  for (char c : origin_str) {
+    if (c == '[' || c == ']') {
+      hasBrackets = true;
+      break;
+    }
+  }
+
+  for (size_t i = 0; i < origin_str.size(); i++) {
+    if (origin_str[i] == '\\' && i + 1 < origin_str.size()) {
+      result += origin_str[i + 1];
+      i++;
+    } else if (!hasBrackets || origin_str[i] != '[') {
+      result += origin_str[i];
+    }
+  }
+
+  return result;
+}
+
+/**
  * @brief change [] to \[\]
  *
  * @param origin_str

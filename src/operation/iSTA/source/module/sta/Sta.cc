@@ -700,10 +700,20 @@ void Sta::linkDesignWithRustParser() {
         LOG_INFO << "not support the declaration " << dcl_name;
       }
     } else {
+      if (dcl_type == DclType::KWire && strcmp(dcl_name, "key") == 0) {
+        LOG_INFO << "Debug";
+      }
       auto bus_range = std::make_pair(dcl_range.start, dcl_range.end);
       for (int index = bus_range.second; index <= bus_range.first; index++) {
         // for port or wire bus, we split to one bye one port.
         const char *one_name = Str::printf("%s[%d]", dcl_name, index);
+        if (dcl_type == DclType::KWire && strcmp(one_name, "key[0]") == 0) {
+          LOG_INFO << "Debug";
+        }
+        std::string new_one_name = one_name;
+        if (new_one_name.find("key[0]") != std::string::npos) {
+          LOG_INFO << "Debug";
+        }
         if (dcl_process.contains(dcl_type)) {
           auto *design_obj = dcl_process[dcl_type](dcl_type, one_name);
           if (design_obj->isPort()) {
@@ -789,6 +799,9 @@ void Sta::linkDesignWithRustParser() {
             the_net->addPinPort(inst_pin);
           } else {
             // DLOG_INFO << "create net " << net_name;
+            if (net_name.find("key[0]") != std::string::npos) {
+              LOG_INFO << "Debug";
+            }
             auto &created_net = design_netlist.addNet(Net(net_name.c_str()));
 
             created_net.addPinPort(inst_pin);
@@ -833,8 +846,10 @@ void Sta::linkDesignWithRustParser() {
             } else {
               net_name = rust_convert_verilog_slice_id(net_id)->id;
             }
+
             // fix net name contain backslash
             net_name = Str::trimBackslash(net_name);
+            net_name = Str::removeBackslash(net_name);
           } else if (rust_is_constant(net_expr)) {
             LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
           }
