@@ -68,7 +68,7 @@ fn process_inner_port_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclTyp
             // inner_pair.next():get the second pair:port_list
             let port_list_pair = inner_pair.next();
             for port_pair in port_list_pair.unwrap().into_inner() {
-                println!("{:#?}", port_pair);
+                //println!("{:#?}", port_pair);
                 let dcl_name = port_pair.as_str().to_string(); 
                 let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
                 // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
@@ -143,6 +143,7 @@ fn process_inner_wire_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclTyp
         Rule::bus_slice => {                   
             // let mut decimal_digits = pair.into_inner();
             let mut decimal_digits_pair = wire_list_or_bus_slice_pair.unwrap().into_inner();
+            // println!("{:#?}", decimal_digits_pair);
             let range_from = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
             let range_to = decimal_digits_pair.next().unwrap().as_str().parse::<i32>().unwrap();
             let range = Some((range_from, range_to));
@@ -152,6 +153,7 @@ fn process_inner_wire_declaration(pair: Pair<Rule>,dcl_type:verilog_data::DclTyp
             for wire_pair in wire_list_pair.unwrap().into_inner() {
                 // println!("{:#?}", wire_pair);
                 let dcl_name = wire_pair.as_str().to_string(); 
+                // println!("{:#?}", dcl_name);
                 let verilog_dcl = verilog_data::VerilogDcl::new(0, dcl_type.clone(), &dcl_name, range);
                 // let verilog_virtual_base_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcl);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
@@ -228,9 +230,9 @@ fn extract_single(input: &str) -> Option<(&str, i32)> {
 }
 
 fn extract_name(input: &str) -> Option<&str> {
-    if input.contains('[') || input.contains(']') {
-        return None;
-    }
+    // if input.contains('[') || input.contains(']') {
+    //     return None;
+    // }
     Some(input)
 }
 
@@ -244,8 +246,10 @@ fn build_verilog_virtual_base_id(input: &str) -> Box<dyn verilog_data::VerilogVi
         let verilog_index_id = verilog_data::VerilogIndexID::new(name, index);
         verilog_virtual_base_id = Box::new(verilog_index_id);
     } else if let Some(name) = extract_name(input) {
-        let verilog_id = verilog_data::VerilogID::new(name);        
+        let verilog_id = verilog_data::VerilogID::new(name);
+        println!("{:#?}", verilog_id);        
         verilog_virtual_base_id = Box::new(verilog_id);
+        println!("{:#?}", verilog_virtual_base_id);
     } else {
         let verilog_id = verilog_data::VerilogID::default();
         verilog_virtual_base_id = Box::new(verilog_id);
@@ -278,7 +282,7 @@ fn process_first_port_connection_single_connect(pair: Pair<Rule>)->Result<Box<ve
                 Rule::port_or_wire_id => {
                     let net_connect = net_connect_pair.as_str();
                     let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> = build_verilog_virtual_base_id(net_connect);
-                    let  verilog_net_id_expr = verilog_data::VerilogNetIDExpr::new(0,verilog_virtual_base_id);
+                    let verilog_net_id_expr = verilog_data::VerilogNetIDExpr::new(0,verilog_virtual_base_id);
                     let net_expr:Box<dyn verilog_data::VerilogVirtualBaseNetExpr> =Box::new(verilog_net_id_expr);
                     let port_ref = Box::new(verilog_data::VerilogPortRefPortConnect::new(port_id, Some(net_expr)));
                     Ok(port_ref)
@@ -331,24 +335,6 @@ fn process_first_port_connection_multiple_connect(pair: Pair<Rule>)->Result<Box<
     let port_ref = Box::new(verilog_data::VerilogPortRefPortConnect::new(port_id, Some(net_expr)));
     Ok(port_ref)
 }
-
-// fn process_first_port_connection(pair: Pair<Rule>)->Result<(Box<verilog_data::VerilogPortRefPortConnect>), pest::error::Error<Rule>> {
-//     let pair_clone = pair.clone();
-//     match pair.as_rule() {
-//         Rule::first_port_connection_single_connect => {
-//             let port_connection = process_first_port_connection_single_connect(pair);
-//             port_connection
-//         }
-//         Rule::first_port_connection_multiple_connect => {
-//             let port_connection = process_first_port_connection_multiple_connect(pair);
-//             port_connection
-//             }
-//         _ => Err(pest::error::Error::new_from_span(
-//             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-//             pair_clone.as_span(),
-//         )),
-//     }
-// }
 
 fn process_port_block_connection(pair: Pair<Rule>)-> Result<Vec<Box<verilog_data::VerilogPortRefPortConnect>>, pest::error::Error<Rule>> {
     // println!("{:#?}", pair);

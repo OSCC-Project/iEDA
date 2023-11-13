@@ -822,7 +822,6 @@ void Sta::linkDesignWithRustParser() {
         std::string pin_name;
         std::string net_name;
 
-        ////////////////if (net_expr) need replace
         if (net_expr) {
           if (rust_is_id_expr(net_expr)) {
             auto *net_id = const_cast<void *>(
