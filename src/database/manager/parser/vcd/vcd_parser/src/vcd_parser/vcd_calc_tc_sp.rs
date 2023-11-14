@@ -345,7 +345,7 @@ impl<'a> VcdBusCounter<'a> {
         let mut prev_time_signal_value: Option<&vcd_data::VCDTimeAndValue> = None;
 
         // loop access to the bus signal
-        for i in (lindex..=rindex).rev() {
+        for i in rindex..=lindex {
             let vec_i = lindex - i; // bus signal value is high bit first.
             if let Some(signal_time_values) = signal_time_values.as_deref() {
                 for signal_time_value in signal_time_values {
@@ -393,7 +393,7 @@ impl<'a> VcdBusCounter<'a> {
             vec![None; bus_size.try_into().unwrap()];
 
         // loop access to the bus signal
-        for i in (lindex..=rindex).rev() {
+        for i in rindex..=lindex {
             let vec_i = lindex - i;
             let mut if_first_value = true;
 
@@ -421,10 +421,10 @@ impl<'a> VcdBusCounter<'a> {
 
                             prev_time_signal_values[i as usize] = Some(signal_time_value);
                         }
-                        if if_first_value {
-                            prev_time_signal_values[i as usize] = Some(signal_time_value);
-                            if_first_value = false;
-                        }
+                    }
+                    if if_first_value {
+                        prev_time_signal_values[i as usize] = Some(signal_time_value);
+                        if_first_value = false;
                     }
                 }
             }
@@ -436,7 +436,7 @@ impl<'a> VcdBusCounter<'a> {
                 let last_time = last_time_signal_value.time;
 
                 let last_time_duration = simulation_end_time - last_time;
-                for i in (lindex..=rindex).rev() {
+                for i in rindex..=lindex {
                     let vec_i = lindex - i;
                     let last_bit_value =
                         last_time_signal_value.value.get_vector_bit(vec_i as usize);
