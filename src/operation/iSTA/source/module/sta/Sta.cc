@@ -681,6 +681,7 @@ void Sta::linkDesignWithRustParser() {
            }},
           {DclType::KWire,
            [&design_netlist](DclType dcl_type, const char *dcl_name) {
+             dcl_name = Str::trimmedWithSquareBracket(dcl_name);
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -694,10 +695,6 @@ void Sta::linkDesignWithRustParser() {
     auto dcl_range = rust_verilog_dcl->range;
 
     if (!dcl_range.has_value) {
-      // std::string dcl_name_str(dcl_name);
-      // if (dcl_name_str.find("us11/_0008_") != std::string::npos) {
-      //   LOG_INFO << "Debug";
-      // }
       if (dcl_process.contains(dcl_type)) {
         dcl_process[dcl_type](dcl_type, dcl_name);
       } else {
@@ -709,7 +706,6 @@ void Sta::linkDesignWithRustParser() {
         // for port or wire bus, we split to one bye one port.
         const char *one_name = Str::printf("%s[%d]", dcl_name, index);
 
-        std::string new_one_name = one_name;
         if (dcl_process.contains(dcl_type)) {
           auto *design_obj = dcl_process[dcl_type](dcl_type, one_name);
           if (design_obj->isPort()) {
@@ -838,7 +834,6 @@ void Sta::linkDesignWithRustParser() {
             } else {
               net_name = rust_convert_verilog_slice_id(net_id)->id;
             }
-
             // fix net name contain backslash
             net_name = Str::trimBackslash(net_name);
             net_name = Str::trimmedWithSquareBracket(net_name.c_str());

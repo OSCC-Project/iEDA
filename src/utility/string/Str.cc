@@ -685,35 +685,4 @@ std::string Str::addBackslash(std::string origin_str)
   return origin_str;
 }
 
-/**
- * @brief judge whether a string need escape.
- *
- * @param name
- * @return true
- * @return false
- */
-bool Str::isNeedEscape(const std::string& name)
-{
-  bool is_need_escape = false;
-  for (const auto& ch : name) {
-    if (ch == '/' || ch == '[' || ch == ']' || ch == '.') {
-      is_need_escape = true;
-      break;
-    }
-  }
-  return is_need_escape;
-}
-
-/**
- * @brief escape the name.
- *
- * @param name
- * @return std::string escape_name.
- */
-std::string Str::escapeName(const std::string& name)
-{
-  std::string escape_name = isNeedEscape(name) ? ("\\" + name) : name;
-  return escape_name;
-}
-
 }  // namespace ieda

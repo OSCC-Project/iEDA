@@ -155,9 +155,6 @@ void NetlistWriter::writeWire() {
   Net *net;
   FOREACH_NET(&_netlist, net) {
     std::string net_name = net->getFullName();
-    if (net_name == "dcnt\\[0\\]") {
-      LOG_INFO << "Debug";
-    }
     std::string new_net_name = Str::replace(net_name, R"(\\)", "");
     std::string escape_net_name = escapeName(new_net_name);
     fprintf(_stream, "wire %s ;", escape_net_name.c_str());

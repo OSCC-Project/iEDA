@@ -185,7 +185,6 @@ pub extern "C" fn rust_convert_verilog_net_id_expr(c_verilog_net_id_expr: *mut c
 
         let line_no = (*verilog_net_id_expr).get_net_expr().get_line_no();
         let verilog_id_box = (*verilog_net_id_expr).get_verilog_id();
-        println!("{}", verilog_id_box.get_name());
         let verilog_id = &*verilog_id_box as *const _ as *const c_void;
 
         let rust_verilog_net_id_expr = RustVerilogNetIDExpr { line_no, verilog_id };
