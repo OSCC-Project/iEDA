@@ -230,9 +230,6 @@ fn extract_single(input: &str) -> Option<(&str, i32)> {
 }
 
 fn extract_name(input: &str) -> Option<&str> {
-    // if input.contains('[') || input.contains(']') {
-    //     return None;
-    // }
     Some(input)
 }
 
@@ -246,10 +243,8 @@ fn build_verilog_virtual_base_id(input: &str) -> Box<dyn verilog_data::VerilogVi
         let verilog_index_id = verilog_data::VerilogIndexID::new(name, index);
         verilog_virtual_base_id = Box::new(verilog_index_id);
     } else if let Some(name) = extract_name(input) {
-        let verilog_id = verilog_data::VerilogID::new(name);
-        println!("{:#?}", verilog_id);        
+        let verilog_id = verilog_data::VerilogID::new(name);       
         verilog_virtual_base_id = Box::new(verilog_id);
-        println!("{:#?}", verilog_virtual_base_id);
     } else {
         let verilog_id = verilog_data::VerilogID::default();
         verilog_virtual_base_id = Box::new(verilog_id);
