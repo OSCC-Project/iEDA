@@ -743,6 +743,8 @@ void Sta::linkDesignWithRustParser() {
     } else if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
       const char *inst_name = verilog_inst->inst_name;
+      inst_name = Str::trimmed(inst_name);
+
       const char *liberty_cell_name = verilog_inst->cell_name;
       auto port_connections = verilog_inst->port_connections;
 
@@ -836,7 +838,7 @@ void Sta::linkDesignWithRustParser() {
             }
             // fix net name contain backslash
             net_name = Str::trimBackslash(net_name);
-            net_name = Str::trimmedWithSquareBracket(net_name.c_str());
+            net_name = Str::trimmed(net_name.c_str());
           } else if (rust_is_constant(net_expr)) {
             LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
           }
@@ -983,7 +985,6 @@ void Sta::linkDesignWithRustParser() {
   }
 
   LOG_INFO << "link design " << top_cell_name << " end";
-  int a = 0;
 }
 
 /**
