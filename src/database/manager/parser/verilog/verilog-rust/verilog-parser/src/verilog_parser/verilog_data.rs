@@ -14,7 +14,7 @@ pub trait VerilogVirtualBaseID {
         false
     }
 
-    fn get_name(&self) -> String {
+    fn get_name(&self) -> &str {
         panic!("This is unknown value.");
     }
 }
@@ -41,19 +41,13 @@ impl VerilogID {
     }
 }
 
-// impl fmt::Debug for VerilogID {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "VerilogID {{ id: {} }}", self.id)
-//     }
-// }
-
 impl VerilogVirtualBaseID for VerilogID {
     fn is_id(&self) -> bool {
         true
     }
 
-    fn get_name(&self) -> String {
-        self.id.clone()
+    fn get_name(&self) -> &str {
+        &self.id
     }
 }
 
@@ -66,13 +60,16 @@ impl Default for VerilogID {
 pub struct VerilogIndexID {
  id: VerilogID,
  index: i32,
+ formatted_index_id: String,
 }
 
 impl VerilogIndexID {
     pub fn new(id: &str, index: i32) -> VerilogIndexID {
+        let formatted_index_id = format!("{}[{}]", id, index);
         VerilogIndexID {
             id: VerilogID::new(id),
-            index:index
+            index:index,
+            formatted_index_id:formatted_index_id,
         }
     }
 
@@ -89,9 +86,9 @@ impl VerilogVirtualBaseID for VerilogIndexID {
     fn is_bus_index_id(&self) -> bool {
         true
     }
-    // &str?
-    fn get_name(&self) -> String {
-       format!("{}[{}]", &self.id.get_base_name(), self.index)
+
+    fn get_name(&self) -> &str {
+        &self.formatted_index_id
     }
 }
 
@@ -100,14 +97,17 @@ pub struct VerilogSliceID {
  id: VerilogID,
  range_from: i32, 
  range_to: i32,
+ formatted_slice_id: String,
 }
 
 impl VerilogSliceID {
     pub fn new(id: &str, range_from: i32, range_to: i32) -> VerilogSliceID {
+        let formatted_slice_id = format!("{}[{}:{}]", id, range_from, range_to);
         VerilogSliceID {
             id: VerilogID::new(id),
             range_from:range_from,
-            range_to:range_to
+            range_to:range_to,
+            formatted_slice_id:formatted_slice_id,
         }
     }
 
@@ -132,9 +132,9 @@ impl VerilogVirtualBaseID for VerilogSliceID {
     fn is_bus_slice_id(&self) -> bool {
         true
     }
-    // &str?
-    fn get_name(&self) -> String {
-        format!("{}[{}:{}]", &self.id.get_base_name(), self.range_from, self.range_to)
+
+    fn get_name(&self) -> &str {
+        &self.formatted_slice_id
     }
 }
 
@@ -157,12 +157,6 @@ pub trait VerilogVirtualBaseNetExpr : Debug{
     }
     fn as_any(&self) -> &dyn std::any::Any;
 }
-
-// impl fmt::Debug for dyn VerilogVirtualBaseNetExpr {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "VerilogVirtualBaseNetExpr {{ verilog_id: {:?} }}", self.get_verilog_id())
-//     }
-// }
 
 #[derive(Debug)]
 pub struct VerilogNetExpr {
@@ -348,12 +342,6 @@ pub trait VerilogVirtualBaseStmt: Debug {
     }
     fn as_any(&self) -> &dyn std::any::Any;
 }
-
-// impl fmt::Debug for dyn VerilogVirtualBaseStmt {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "VerilogVirtualBaseStmt {{ line_no: {} }}", self.get_line_no())
-//     }
-// }
 
 /// The base class for verilog stmt,include module dcl, module instance, module assign.
 /// maybe dont need the base class***************************************

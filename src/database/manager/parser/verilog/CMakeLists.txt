@@ -24,7 +24,7 @@ aux_source_directory(./ SRC)
 
 # add_library(verilog-parser ${SRC} ${FLEX_VerilogLex_OUTPUTS} ${BISON_VerilogParser_OUTPUTS})
 
-add_library(verilog-parser ${SRC} 
+add_library(verilog ${SRC} 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
 
@@ -65,9 +65,9 @@ add_custom_command(
             ${RUST_OUTPUT_DIR}
 )
 
-target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
+target_link_libraries(verilog str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
 
-target_include_directories(verilog-parser 
+target_include_directories(verilog
     PUBLIC
         ${HOME_OPERATION}/iSTA/include   
         ${HOME_THIRDPARTY}/parser/verilog

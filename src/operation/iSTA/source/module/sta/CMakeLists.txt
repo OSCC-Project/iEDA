@@ -8,5 +8,5 @@ add_library(sta ${SRC})
 
 find_package(yaml-cpp REQUIRED)
 
-target_link_libraries(sta liberty delay spef sdc sdc-cmd verilog-parser aocv-parser graph sdc absl::btree tcl time report_table stdc++fs log yaml-cpp)
+target_link_libraries(sta liberty delay spef sdc sdc-cmd verilog aocv-parser graph sdc absl::btree tcl time report_table stdc++fs log yaml-cpp)
 

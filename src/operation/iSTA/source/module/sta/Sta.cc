@@ -764,7 +764,6 @@ void Sta::linkDesignWithRustParser() {
                                                      auto *net_expr,
                                                      std::optional<int> index,
                                                      PinBus *pin_bus) {
-        // replace:const char *cell_port_name = cell_port_id->getName();
         const char *cell_port_name;
         if (rust_is_id(cell_port_id)) {
           cell_port_name = rust_convert_verilog_id(cell_port_id)->id;
@@ -960,8 +959,6 @@ void Sta::linkDesignWithRustParser() {
         } else {
           LOG_FATAL_IF(!pin_bus) << "pin bus is null.";
 
-          // replace:auto *net_concat_expr =
-          //     (dynamic_cast<VerilogNetConcatExpr *>(net_expr));
           auto *net_concat_expr =
               rust_convert_verilog_net_concat_expr(net_expr);
 

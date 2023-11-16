@@ -59,7 +59,7 @@ pub extern "C" fn rust_convert_verilog_id(c_verilog_virtual_base_id: *mut c_void
     let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
     unsafe {
         let rust_name = (*virtual_base_id).get_name();
-        let name = string_to_c_char(rust_name.as_str());
+        let name = string_to_c_char(rust_name);
 
         let rust_verilog_id = RustVerilogID{id:name};
 
@@ -87,7 +87,7 @@ pub extern "C" fn rust_convert_verilog_index_id(c_verilog_virtual_base_id: *mut 
     let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
     unsafe {
         let rust_name = (*virtual_base_id).get_name();
-        let name = string_to_c_char(rust_name.as_str());
+        let name = string_to_c_char(rust_name);
 
         let rust_verilog_index_id = RustVerilogIndexID{id:name};
 
@@ -126,7 +126,7 @@ pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut 
     let mut virtual_base_id = unsafe { &mut *(c_verilog_virtual_base_id as *mut Box<dyn verilog_data::VerilogVirtualBaseID>) };
     unsafe {
         let rust_name = (*virtual_base_id).get_name();
-        let name = string_to_c_char(rust_name.as_str());
+        let name = string_to_c_char(rust_name);
 
         let mut base_id = std::ptr::null_mut();
         let mut range_max = 0;
