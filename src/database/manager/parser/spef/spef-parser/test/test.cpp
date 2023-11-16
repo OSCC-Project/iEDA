@@ -8,8 +8,7 @@ int main() {
   //   "/home/immelon/projects/iPD/src/database/manager/parser/spef/spef-parser/"
   //   "aes.spef";
   std::string spef_file_str =
-      "/home/taosimin/iEDA/src/database/manager/parser/spef/spef-parser/"
-      "example/aes_simple.spef";
+      "/home/taosimin/T28/spef/asic_top.rcworst.125c.spef";
   //   std::string spef_file_str =
   //       "/home/immelon/projects/scripts_test_ipd/nangate45_example.spef";
   //   std::string spef_file_str =
@@ -18,7 +17,10 @@ int main() {
   ista::SpefRustReader spef_parser;
 
   bool result = spef_parser.read(spef_file_str);
+
+  std::cout << "expand name start" << std::endl;
   spef_parser.expandName();
+  std::cout << "expand name finish" << std::endl;
 
   auto* spef_file = spef_parser.get_spef_file();
 

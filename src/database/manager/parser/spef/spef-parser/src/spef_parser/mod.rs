@@ -423,6 +423,8 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
         // println!("Rule:    {:?}", entry_clone.as_rule());
         // println!("Span:    {:?}", entry_clone.as_span());
         // println!("Text:    {}", entry_clone.as_str());
+        let line_no = entry_clone.line_col().0;
+        println!("line no {}", line_no);
 
         match entry.as_rule() {
             Rule::section => {
@@ -510,4 +512,69 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
     }
 
     exchange_data
+}
+
+#[cfg(test)]
+mod tests {
+    use pest::error;
+    use pest::iterators::Pair;
+    use pest::iterators::Pairs;
+
+    use super::*;
+
+    fn test_process_pair(pair: Pair<Rule>) {
+        // A pair is a combination of the rule which matched and a span of input
+        println!("Rule:    {:?}", pair.as_rule());
+        println!("Span:    {:?}", pair.as_span());
+        println!("Text:    {}", pair.as_str());
+
+        for inner_pair in pair.into_inner() {
+            test_process_pair(inner_pair);
+        }
+    }
+
+    fn print_parse_result(parse_result: Result<Pairs<Rule>, pest::error::Error<Rule>>) {
+        let parse_result_clone = parse_result.clone();
+        match parse_result {
+            Ok(pairs) => {
+                for pair in pairs {
+                    // A pair is a combination of the rule which matched and a span of input
+                    test_process_pair(pair);
+                }
+            }
+            Err(err) => {
+                // Handle parsing error
+                println!("Error: {}", err);
+            }
+        }
+
+        assert!(!parse_result_clone.is_err());
+    }
+
+    #[test]
+    fn test_parse() {
+        let input_str = r#"*D_NET in1 0.275
+        *CONN
+        *P in1 I
+        *I r1:D I *L 0.0036
+        *CAP
+        1 in1 0.243
+        2 r1:D 0.032
+        *RES
+        3 in1 r1:D 40
+        *END
+        "#;
+        let parse_result = SpefParser::parse(Rule::spef_file, input_str);
+
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse1() {
+        let input_str = r#"1 in1 0.243
+        "#;
+        let parse_result = SpefParser::parse(Rule::cap_or_res_entry, input_str);
+
+        print_parse_result(parse_result);
+    }
 }
