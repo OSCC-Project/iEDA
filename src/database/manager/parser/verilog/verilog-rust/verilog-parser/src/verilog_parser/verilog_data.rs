@@ -279,7 +279,6 @@ impl VerilogConstantExpr {
     pub fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
-    // get_verilog_id should realize in impl struct or impl trait? (according to simpleAttr, supposed to be struct)
 }
 
 impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {

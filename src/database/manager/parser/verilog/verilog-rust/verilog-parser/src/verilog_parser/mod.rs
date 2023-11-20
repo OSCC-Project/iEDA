@@ -341,22 +341,24 @@ fn process_inst_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::Ve
     }
 }
 
-pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::VerilogModule, pest::error::Error<Rule>> {
+pub fn parse_verilog_file(verilog_file_path: &str) -> Result<Vec<verilog_data::VerilogModule>, pest::error::Error<Rule>> {
     // Generate verilog.pest parser
     let input_str = std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
     let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
 
     let file_name = "tbd";
     let line_no = 0;
-    let mut module_name = " ";
-    let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
-    let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
+    let mut verilog_modules: Vec<verilog_data::VerilogModule> = Vec::new();
 
     match parse_result {
         Ok(pairs) => {
             // pairs:module_declaration+
+            println!("{:#?}", pairs);
             for pair in pairs {
                 let inner_pairs = pair.into_inner();
+                let mut module_name = " ";
+                let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
+                let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
                 for inner_pair in inner_pairs {
                     match inner_pair.as_rule() {
                         Rule::module_id => {
@@ -386,11 +388,13 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
                                 module_stmts.push(verilog_inst);
                             }
                         }
-                        Rule::EOI => (),
                         _ => unreachable!(),
                     }
                 }
+                let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
+                verilog_modules.push(verilog_module);
             }
+            
         }
         Err(err) => {
             // Handle parsing error
@@ -398,9 +402,7 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
         }
     }
 
-    // store the verilogModule.
-    let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
-    Ok(verilog_module)
+    Ok(verilog_modules)
 }
 
 #[no_mangle]
@@ -410,16 +412,16 @@ pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void
     println!("r str {}", r_str);
 
     let verilog_result = parse_verilog_file(&r_str);
-    let verilog_module:verilog_data::VerilogModule = verilog_result.unwrap(); 
-    let verilog_module_pointer = Box::new(verilog_module);
+    let verilog_modules:Vec<verilog_data::VerilogModule> = verilog_result.unwrap(); 
+    let verilog_modules_pointer = Box::new(verilog_modules);
 
-    let raw_pointer = Box::into_raw(verilog_module_pointer);
+    let raw_pointer = Box::into_raw(verilog_modules_pointer);
     raw_pointer as *mut c_void
 }
 
 #[no_mangle]
-pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut verilog_data::VerilogModule) {
-    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
+pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut Vec<verilog_data::VerilogModule>) {
+    let _: Box<Vec<verilog_data::VerilogModule>> = unsafe { Box::from_raw(c_verilog_module) };
 }
 
 

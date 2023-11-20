@@ -758,7 +758,6 @@ void Sta::linkDesignWithRustParser() {
       Instance inst(inst_name, inst_cell);
 
       /*lambda function create net for connect instance pin*/
-      // /////////////////////////////////////////cell_port_id,net_expr replace.
       auto create_net_connection = [verilog_inst, inst_cell, &inst,
                                     &design_netlist](auto *cell_port_id,
                                                      auto *net_expr,
@@ -932,7 +931,6 @@ void Sta::linkDesignWithRustParser() {
         void *net_expr = rust_port_connection->net_expr;
 
         // create pin bus
-        // replace:const char *cell_port_name = cell_port_id->getName();
         const char *cell_port_name;
         if (rust_is_id(cell_port_id)) {
           cell_port_name = rust_convert_verilog_id(cell_port_id)->id;
@@ -958,7 +956,6 @@ void Sta::linkDesignWithRustParser() {
                                 pin_bus.get());
         } else {
           LOG_FATAL_IF(!pin_bus) << "pin bus is null.";
-
           auto *net_concat_expr =
               rust_convert_verilog_net_concat_expr(net_expr);
 
