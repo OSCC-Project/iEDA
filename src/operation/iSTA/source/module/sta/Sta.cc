@@ -681,7 +681,7 @@ void Sta::linkDesignWithRustParser() {
            }},
           {DclType::KWire,
            [&design_netlist](DclType dcl_type, const char *dcl_name) {
-             dcl_name = Str::trimmedWithSquareBracket(dcl_name);
+             dcl_name = Str::trimmed(dcl_name);
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -825,7 +825,6 @@ void Sta::linkDesignWithRustParser() {
             LOG_FATAL_IF(!net_id) << "The port connection " << cell_port_name
                                   << " net id is not exist "
                                   << "at line " << verilog_inst->line_no;
-            // net_name = net_id->getName();
 
             if (rust_is_id(net_id)) {
               net_name = rust_convert_verilog_id(net_id)->id;
