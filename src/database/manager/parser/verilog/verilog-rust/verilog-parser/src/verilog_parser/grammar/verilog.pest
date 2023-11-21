@@ -46,7 +46,7 @@ first_port_connection = _{ first_port_connection_single_connect | first_port_con
 port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
 
-inst_declaration = ${ inst_or_cell_id ~ WHITESPACE ~ inst_or_cell_id ~ WHITESPACE ~ port_block_connection }
+inst_declaration = ${ inst_or_cell_id ~ WHITESPACE ~ inst_or_cell_id ~ WHITESPACE+ ~ port_block_connection }
 inst_block_declaration = { inst_declaration+ }
 
 module_declaration = { "module" ~ module_id ~ "(" ~ port_list ~ ");" ~ port_block_declaration ~ wire_block_declaration 
