@@ -507,6 +507,13 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
   return all_buf_libs;
 }
 
+icts::CtsCellLib* CTSAPI::getRootBufferLib()
+{
+  auto root_buffer_type = _config->get_root_buffer_type();
+  auto* buf_lib = getCellLib(root_buffer_type);
+  return buf_lib;
+}
+
 std::vector<std::string> CTSAPI::getMasterClocks(icts::CtsNet* net) const
 {
   auto* sta_net = findStaNet(net->get_net_name());
@@ -840,14 +847,14 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   } else {
     for (auto pin : eval_net.get_pins()) {
       if (pin->get_instance() == inst) {
-        return makeLogicRCTreeNode(pin);
+        return makePinRCTreeNode(pin);
       }
     }
   }
   return nullptr;
 }
 
-ista::RctNode* CTSAPI::makeLogicRCTreeNode(icts::CtsPin* pin)
+ista::RctNode* CTSAPI::makePinRCTreeNode(icts::CtsPin* pin)
 {
   auto* pin_port = findStaPin(pin->is_io() ? pin->get_pin_name() : pin->get_full_name());
   return _timing_engine->makeOrFindRCTreeNode(pin_port);

@@ -51,9 +51,9 @@ void GOCA::init()
 
   std::ranges::for_each(_cts_pins, [&](CtsPin* pin) {
     auto* cts_inst = pin->get_instance();
-    auto type = cts_inst->get_type() == CtsInstanceType::kSink  ? InstType::kSink
-                : cts_inst->get_type() == CtsInstanceType::kMux ? InstType::kNoneLib
-                                                                : InstType::kBuffer;
+    auto type = cts_inst->get_type() == CtsInstanceType::kSink
+                    ? InstType::kSink
+                    : cts_inst->get_type() == CtsInstanceType::kMux ? InstType::kNoneLib : InstType::kBuffer;
     auto* inst = new Inst(cts_inst->get_name(), cts_inst->get_location(), type);
     auto* load_pin = inst->get_load_pin();
     load_pin->set_name(pin->get_full_name());
@@ -62,8 +62,10 @@ void GOCA::init()
       TimingPropagator::updatePinCap(load_pin);
       _sink_pins.push_back(load_pin);
     } else {
-      inst->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-      _top_pins.push_back(load_pin);
+      // inst->set_cell_master(TimingPropagator::getMinSizeCell());
+      // _top_pins.push_back(load_pin);
+      inst->set_cell_master(cts_inst->get_cell_master());
+      _sink_pins.push_back(load_pin);  // TBD for mux pin
     }
   });
 }
@@ -81,35 +83,10 @@ void GOCA::resolveSinks()
   std::vector<Inst*> insts;
   std::ranges::for_each(_sink_pins, [&](Pin* pin) { insts.push_back(pin->get_inst()); });
   _level_insts.push_back(insts);
-  auto assigns = globalAssign();
   // clustering
-  const int max_num = 20000;
   while (insts.size() > 1) {
-    auto assign = _level > (int) assigns.size() ? assigns.back() : assigns[_level - 1];
-    if (insts.size() > max_num) {
-      LOG_INFO << "insts divide into " << std::ceil(insts.size() / max_num) << " clusters";
-      auto clusters = BalanceClustering::kMeansPlus(insts, std::ceil(insts.size() / max_num), 0, 100);
-      insts.clear();
-      if (_max_thread > 1) {
-        ThreadPool pool(_max_thread);
-        std::vector<std::future<std::vector<Inst*>>> results;
-        std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
-          results.emplace_back(pool.enqueue([&]() { return assignApply(cluster, assign); }));
-        });
-        for (auto&& result : results) {
-          auto assign_insts = result.get();
-          insts.insert(insts.end(), assign_insts.begin(), assign_insts.end());
-        }
-      } else {
-        std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
-          auto assign_insts = assignApply(cluster, assign);
-          insts.insert(insts.end(), assign_insts.begin(), assign_insts.end());
-        });
-      }
-    } else {
-      insts = assignApply(insts, assign);
-    }
-
+    auto assign = get_level_assign(_level);
+    insts = assignApply(insts, assign);
     _level_insts.push_back(insts);
     std::ranges::for_each(insts, [](Inst* inst) {
       auto* load_pin = inst->get_load_pin();
@@ -119,10 +96,66 @@ void GOCA::resolveSinks()
     ++_level;
   }
   auto* root = insts.front();
-  root->set_cell_master(TimingPropagator::getMaxSizeLib()->get_cell_master());
-  TimingPropagator::update(root->get_driver_pin()->get_net());
-  TimingPropagator::initLoadPinDelay(root->get_load_pin());
-  _top_pins.push_back(root->get_load_pin());
+  root->set_cell_master(TimingPropagator::getRootSizeCell());
+  auto* root_driver_pin = root->get_driver_pin();
+  auto* root_net = root_driver_pin->get_net();
+  if (_root_buffer_required) {
+    TimingPropagator::update(root_net);
+    TimingPropagator::initLoadPinDelay(root->get_load_pin());
+    _top_pins.push_back(root->get_load_pin());
+    return;
+  }
+  // if (TimingPropagator::calcLen(_driver, root_driver_pin) + root_driver_pin->get_sub_len() <= TimingPropagator::getMaxLength()) {
+  auto load_pins = root_net->get_load_pins();
+  std::ranges::for_each(load_pins, [](Pin* pin) {
+    auto* inst = pin->get_inst();
+    inst->set_cell_master(TimingPropagator::getRootSizeCell());
+  });
+  auto net_name = root_net->get_name();
+  _nets.erase(std::remove_if(_nets.begin(), _nets.end(), [&](Net* net) { return net == root_net; }), _nets.end());
+  TimingPropagator::resetNet(root_net);
+  std::ranges::for_each(load_pins, [&](Pin* load_pin) { _top_pins.push_back(load_pin); });
+  _level_insts.erase(_level_insts.end() - 1);
+  // } else {
+  //   _top_pins.push_back(root->get_load_pin());
+  // }
+}
+
+std::vector<Inst*> GOCA::levelProcess(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point> guide_locs,
+                                      const Assign& assign)
+{
+  auto skew_bound = assign.skew_bound;
+  std::vector<Inst*> level_insts;
+  if (_max_thread > 1) {
+    ThreadPool pool(_max_thread);
+    std::vector<std::future<Inst*>> results;
+    for (size_t i = 0; i < clusters.size(); ++i) {
+      auto cluster = clusters[i];
+      auto guide_center = guide_locs[i];
+      results.emplace_back(pool.enqueue([&] {
+        if (_level > _latency_opt_level) {
+          BalanceClustering::latencyOpt(cluster, skew_bound, _local_latency_opt_ratio);
+        }
+        auto* buf = netAssign(cluster, assign, guide_center, _level > _shift_level);
+        return buf;
+      }));
+    }
+    for (auto&& result : results) {
+      level_insts.push_back(result.get());
+    }
+    return level_insts;
+  }
+
+  for (size_t i = 0; i < clusters.size(); ++i) {
+    auto cluster = clusters[i];
+    auto guide_center = guide_locs[i];
+    if (_level > _latency_opt_level) {
+      BalanceClustering::latencyOpt(cluster, skew_bound, _local_latency_opt_ratio);
+    }
+    auto* buf = netAssign(cluster, assign, guide_center, _level > _shift_level);
+    level_insts.push_back(buf);
+  }
+  return level_insts;
 }
 
 void GOCA::breakLongWire()
@@ -132,7 +165,7 @@ void GOCA::breakLongWire()
   }
   std::vector<Pin*> final_load_pins;
   // auto max_len = 0.8 * TimingPropagator::getMaxLength();
-  auto max_len = std::numeric_limits<double>::max();
+  auto max_len = _break_long_wire ? TimingPropagator::getMaxLength() : std::numeric_limits<double>::max();
   std::ranges::for_each(_top_pins, [&](Pin* pin) {
     auto len = TimingPropagator::calcLen(_driver->get_location(), pin->get_location());
     if (len < max_len) {
@@ -148,7 +181,7 @@ void GOCA::breakLongWire()
       driver_loc += delta_loc;
       auto buf_name = CTSAPIInst.toString(_net_name, "_break_", pin->get_name(), "_", insert_num);
       auto* buf = TreeBuilder::genBufInst(buf_name, driver_loc);
-      buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+      buf->set_cell_master(TimingPropagator::getMinSizeCell());
       TreeBuilder::directConnectTree(buf->get_driver_pin(), load_pin);
       auto* net = TimingPropagator::genNet(buf_name, buf->get_driver_pin(), {load_pin});
       TimingPropagator::update(net);
@@ -163,32 +196,23 @@ void GOCA::breakLongWire()
   _nets.push_back(net);
 }
 
-std::vector<Assign> GOCA::globalAssign()
+Assign GOCA::get_level_assign(const int& level) const
 {
-  std::vector<Assign> global_assigns;
-  auto max_net_len = TimingPropagator::getMaxLength();
-  auto max_fanout = TimingPropagator::getMaxFanout();
-  auto max_cap = TimingPropagator::getMaxCap();
-  auto skew_bound = TimingPropagator::getSkewBound();
-  // global_assigns.push_back({max_net_len * 10000, max_fanout * 10000, max_cap * 10000, skew_bound * 10000, 0.98});
-  // level 1 test
-  global_assigns.push_back({max_net_len * 8 / 8, max_fanout, max_cap, skew_bound * 1, 1});
-  // level 2 test
-  global_assigns.push_back({max_net_len * 7 / 8, max_fanout, max_cap, skew_bound * 1, 0.9});
-  // level 3 test
-  global_assigns.push_back({max_net_len * 8 / 8, max_fanout * 3 / 4, max_cap, skew_bound * 1, 0.9});
-  // level 4 test
-  global_assigns.push_back({max_net_len * 8 / 8, max_fanout / 2, max_cap, skew_bound * 1, 0.8});
-  // level 5 test
-  global_assigns.push_back({max_net_len * 8 / 8, max_fanout / 4, max_cap, skew_bound * 1, 0.8});
-  // level 6 test
-  global_assigns.push_back({max_net_len * 8 / 8, max_fanout / 8, max_cap, skew_bound * 1, 0.8});
-  // global_assigns.push_back({max_net_len, max_fanout, max_cap, skew_bound * 1.0, 0.8});
-  return global_assigns;
+  auto* config = CTSAPIInst.get_config();
+  auto assign = config->query_assign(level);
+#ifdef DEBUG_ICTS_GOCA
+  LOG_INFO << "Level " << level << " Assign: " << std::endl;
+  LOG_INFO << "max_net_len: " << assign.max_net_len << std::endl;
+  LOG_INFO << "max_fanout: " << assign.max_fanout << std::endl;
+  LOG_INFO << "max_cap: " << assign.max_cap << std::endl;
+  LOG_INFO << "ratio: " << assign.ratio << std::endl;
+  LOG_INFO << "skew_bound: " << assign.skew_bound << std::endl;
+#endif
+  return assign;
 }
 std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assign& assign)
 {
-  LOG_INFO << "Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << std::endl;
+  LOG_INFO << "Level: " << _level << " Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << std::endl;
   // pre-processing
   auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
@@ -196,31 +220,50 @@ std::vector<Inst*> GOCA::assignApply(const std::vector<Inst*>& insts, const Assi
   auto cluster_ratio = assign.ratio;
   auto skew_bound = assign.skew_bound;
 
-  std::vector<Inst*> level_insts;
   auto target_insts = insts;
-  if (_level > 1) {
-    BalanceClustering::latencyOpt(insts, skew_bound, 0.3);
+  if (_level > _latency_opt_level) {
+    BalanceClustering::latencyOpt(insts, skew_bound, _global_latency_opt_ratio);
   }
 
   auto clusters = BalanceClustering::iterClustering(target_insts, max_fanout, 5, 5, cluster_ratio);
   // auto enhanced_clusters = clusters;
   auto enhanced_clusters = BalanceClustering::slackClustering(clusters, max_net_len, max_fanout);
-
-  enhanced_clusters
-      = BalanceClustering::clusteringEnhancement(enhanced_clusters, max_fanout, max_cap, max_net_len, skew_bound, 200, 0.95, 10000);
-
+  if (enhanced_clusters.size() < insts.size()) {
+    enhanced_clusters
+        = BalanceClustering::clusteringEnhancement(enhanced_clusters, max_fanout, max_cap, max_net_len, skew_bound, 200, 0.95, 10000);
+  }
+  // top guide
+  auto guide_centers = BalanceClustering::guideCenter(enhanced_clusters, std::nullopt, TimingPropagator::getMinLength(), 1);
+  std::vector<icts::Inst*> level_insts;
+  if (_level > 1) {
+    // higherDelayOpt(enhanced_clusters, guide_centers, level_insts);
+  }
+  // if (enhanced_clusters.size() == insts.size() - level_insts.size()) {
+  //   std::sort(enhanced_clusters.begin(), enhanced_clusters.end(),
+  //             [](const std::vector<Inst*>& cluster1, const std::vector<Inst*>& cluster2) {
+  //               auto* inst1 = cluster1.front();
+  //               auto* inst2 = cluster2.front();
+  //               return inst1->get_driver_pin()->get_max_delay() < inst2->get_driver_pin()->get_max_delay();
+  //             });
+  //   for (size_t i = 0; i < enhanced_clusters.size(); ++i) {
+  //     auto bound = std::ceil(1.0 * enhanced_clusters.size() / 2);
+  //     if (i < bound) {
+  //       // lower case, insert buf
+  //       auto cluster = enhanced_clusters[i];
+  //       auto* inst = cluster.front();
+  //       auto* single_buf = levelProcess({cluster}, {inst->get_location()}, assign).front();
+  //       level_insts.push_back(single_buf);
+  //     } else {
+  //       // higher case, return to next level
+  //       level_insts.push_back(enhanced_clusters[i].front());
+  //     }
+  //   }
+  //   return level_insts;
+  // }
   // BalanceClustering::writeClusterPy(enhanced_clusters, "cluster_level_" + std::to_string(_level));
 
-  auto guide_centers = BalanceClustering::guideCenter(enhanced_clusters, 1);
-  for (size_t i = 0; i < enhanced_clusters.size(); ++i) {
-    auto cluster = enhanced_clusters[i];
-    auto guide_center = guide_centers[i];
-    if (_level > 1) {
-      BalanceClustering::latencyOpt(cluster, skew_bound, 0.4);
-    }
-    auto buf = netAssign(cluster, assign, guide_center, _level > 1 ? true : false);
-    level_insts.push_back(buf);
-  }
+  auto bufs = levelProcess(enhanced_clusters, guide_centers, assign);
+  level_insts.insert(level_insts.end(), bufs.begin(), bufs.end());
   return level_insts;
 }
 std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign& assign)
@@ -243,7 +286,7 @@ std::vector<Inst*> GOCA::topGuide(const std::vector<Inst*>& insts, const Assign&
     auto new_loc = (center - loc) * (1.0 * shift_dist / center_dist) + loc;
     auto net_name = CTSAPIInst.toString(_net_name, "_", CTSAPIInst.genId());
     auto* buffer = TreeBuilder::genBufInst(net_name, new_loc);
-    buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+    buffer->set_cell_master(TimingPropagator::getMinSizeCell());
     auto* load_pin = min_delay_inst->get_load_pin();
     auto* driver_pin = buffer->get_driver_pin();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
@@ -280,73 +323,81 @@ Inst* GOCA::netAssign(const std::vector<Inst*>& insts, const Assign& assign, con
     auto load_pin = inst->get_load_pin();
     cluster_load_pins.push_back(load_pin);
   });
-  if (!shift) {
-    if (cluster_load_pins.size() == 1) {
-      auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
-      // set min size cell master
-      buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-      // location legitimization
-      TreeBuilder::localPlace(buffer, cluster_load_pins);
-      auto* driver_pin = buffer->get_driver_pin();
-      auto* load_pin = cluster_load_pins.front();
-      TreeBuilder::directConnectTree(driver_pin, load_pin);
-    }
-
-    // build BEAT
-    auto* buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc, TopoType::kBiPartition);
-
-    auto* driver_pin = buffer->get_driver_pin();
-    auto* beat_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
-    buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-    TimingPropagator::update(beat_net);
-    _nets.push_back(beat_net);
-    return buffer;
-  }
-
-  auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
-  // set min size cell master
-  buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  // location legitimization
-  TreeBuilder::localPlace(buffer, cluster_load_pins);
-  auto* driver_pin = buffer->get_driver_pin();
+  // if (!shift) {
   if (cluster_load_pins.size() == 1) {
+    auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
+    // set min size cell master
+    buffer->set_cell_master(TimingPropagator::getMinSizeCell());
+    // location legitimization
+    TreeBuilder::localPlace(buffer, cluster_load_pins);
+    auto* driver_pin = buffer->get_driver_pin();
     auto* load_pin = cluster_load_pins.front();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
-  } else {
-    TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
-  }
-  auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
-  TimingPropagator::update(net);
-  if (TimingPropagator::skewFeasible(driver_pin, skew_bound)) {
+    auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+    TimingPropagator::update(net);
     _nets.push_back(net);
     return buffer;
-  } else {
-    auto feasible_cell = TreeBuilder::feasibleCell(buffer, skew_bound);
-    if (!feasible_cell.empty()) {
-      buffer->set_cell_master(feasible_cell.front());
-      TimingPropagator::update(net);
-      _nets.push_back(net);
-      return buffer;
-    }
-  }
-  // remove salt
-  TimingPropagator::resetNet(net);
-
-  // skew violation, try to opt salt
-  auto* opt_salt_net = saltOpt(insts, assign);
-  if (opt_salt_net) {
-    _nets.push_back(opt_salt_net);
-    return opt_salt_net->get_driver_pin()->get_inst();
   }
 
-  // build DME
-  buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc);
+  // build BEAT
+  auto* buffer = TreeBuilder::shiftBeatTree(net_name, cluster_load_pins, skew_bound, guide_loc, TopoType::kBiPartition,
+                                            _level > _shift_level, max_net_len);
 
-  driver_pin = buffer->get_driver_pin();
-  auto* bst_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
-  buffer->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  TimingPropagator::update(bst_net);
-  _nets.push_back(bst_net);
+  auto* driver_pin = buffer->get_driver_pin();
+  auto* beat_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  buffer->set_cell_master(TimingPropagator::getMinSizeCell());
+  TimingPropagator::update(beat_net);
+  _nets.push_back(beat_net);
+  return buffer;
+  // }
+
+  // auto* buffer = TreeBuilder::genBufInst(net_name, guide_loc);
+  // // set min size cell master
+  // buffer->set_cell_master(TimingPropagator::getMinSizeCell());
+  // // location legitimization
+  // TreeBuilder::localPlace(buffer, cluster_load_pins);
+  // auto* driver_pin = buffer->get_driver_pin();
+  // if (cluster_load_pins.size() == 1) {
+  //   auto* load_pin = cluster_load_pins.front();
+  //   TreeBuilder::directConnectTree(driver_pin, load_pin);
+  //   auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  //   TimingPropagator::update(net);
+  //   _nets.push_back(net);
+  //   return buffer;
+  // }
+  // TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
+  // auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  // TimingPropagator::update(net);
+  // if (TimingPropagator::skewFeasible(driver_pin, skew_bound)) {
+  //   _nets.push_back(net);
+  //   return buffer;
+  // } else {
+  //   auto feasible_cell = TreeBuilder::feasibleCell(buffer, skew_bound);
+  //   if (!feasible_cell.empty()) {
+  //     buffer->set_cell_master(feasible_cell.front());
+  //     TimingPropagator::update(net);
+  //     _nets.push_back(net);
+  //     return buffer;
+  //   }
+  // }
+  // // remove salt
+  // TimingPropagator::resetNet(net);
+
+  // // skew violation, try to opt salt
+  // auto* opt_salt_net = saltOpt(insts, assign);
+  // if (opt_salt_net) {
+  //   _nets.push_back(opt_salt_net);
+  //   return opt_salt_net->get_driver_pin()->get_inst();
+  // }
+
+  // // build DME
+  // buffer = TreeBuilder::beatTree(net_name, cluster_load_pins, skew_bound, guide_loc);
+
+  // driver_pin = buffer->get_driver_pin();
+  // auto* bst_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
+  // buffer->set_cell_master(TimingPropagator::getMinSizeCell());
+  // TimingPropagator::update(bst_net);
+  // _nets.push_back(bst_net);
 
   return buffer;
 }
@@ -428,6 +479,43 @@ Net* GOCA::saltOpt(const std::vector<Inst*>& insts, const Assign& assign)
   auto* net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
   return net;
+}
+void GOCA::higherDelayOpt(std::vector<std::vector<Inst*>>& clusters, std::vector<Point>& guide_centers,
+                          std::vector<Inst*>& level_insts) const
+{
+  auto calc_max_delay = [](const std::vector<Inst*> cluster) {
+    auto max_delay = std::numeric_limits<double>::min();
+    std::ranges::for_each(cluster, [&](const Inst* inst) {
+      if (!inst->isBuffer()) {
+        return;
+      }
+      auto* driver_pin = inst->get_driver_pin();
+      max_delay = std::max(driver_pin->get_max_delay(), max_delay);
+    });
+    return max_delay;
+  };
+  std::vector<double> max_delay_list(clusters.size());
+  for (size_t i = 0; i < clusters.size(); ++i) {
+    max_delay_list[i] = calc_max_delay(clusters[i]);
+  }
+  auto min_val = std::ranges::min(max_delay_list);
+  auto max_val = std::ranges::max(max_delay_list);
+  if (max_val - min_val < 3 * TimingPropagator::getMinInsertDelay()) {
+    return;
+  }
+  auto bound = min_val + 3 * TimingPropagator::getMinInsertDelay();
+  std::vector<std::vector<Inst*>> lower_clusters;
+  std::vector<Point> lower_guide_centers;
+  for (size_t i = 0; i < clusters.size(); ++i) {
+    if (max_delay_list[i] <= bound) {
+      lower_clusters.push_back(clusters[i]);
+      lower_guide_centers.push_back(guide_centers[i]);
+    } else {
+      level_insts.insert(level_insts.end(), clusters[i].begin(), clusters[i].end());
+    }
+  }
+  clusters = lower_clusters;
+  guide_centers = lower_guide_centers;
 }
 void GOCA::writeNetPy(Pin* root, const std::string& save_name) const
 {

@@ -50,6 +50,9 @@ class TestInterface
  public:
   TestInterface(const std::string& db_config_path, const std::string& cts_config_path)
   {
+    if (db_config_path.empty() && cts_config_path.empty()) {
+      return;
+    }
     dmInst->init(db_config_path);
     CTSAPIInst.init(cts_config_path);
     LocalLegalization::setIgnoreCore(true);
@@ -72,7 +75,7 @@ class TestInterface
     size_t i = 0;
     for (auto loc : locs) {
       auto* buf = TreeBuilder::genBufInst(CTSAPIInst.toString("buf_", i++), loc);
-      buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+      buf->set_cell_master(TimingPropagator::getMinSizeCell());
       load_bufs.push_back(buf);
       auto* load_pin = buf->get_load_pin();
       auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);

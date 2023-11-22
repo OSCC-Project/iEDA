@@ -107,7 +107,7 @@ class LCA
       _depths.push_back(depth);
     }
   }
-  
+
   // find LCA by Four Russians Algorithm and +1/-1 RMQ technique
   int query(int l, int r)
   {
@@ -156,7 +156,8 @@ class BalanceClustering
                                                                const double& skew_bound, const size_t& max_iter = 200,
                                                                const double& cooling_rate = 0.99, const double& temperature = 50000);
 
-  static std::vector<Point> guideCenter(const std::vector<std::vector<Inst*>>& clusters, const size_t& level = 1);
+  static std::vector<Point> guideCenter(const std::vector<std::vector<Inst*>>& clusters, const std::optional<Point>& center = std::nullopt,
+                                        const double& min_length = 50, const size_t& level = 1);
 
   static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters);
 

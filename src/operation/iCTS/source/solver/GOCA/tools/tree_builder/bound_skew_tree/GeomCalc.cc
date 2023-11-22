@@ -606,17 +606,17 @@ void GeomCalc::convexHull(std::vector<Pt>& pts)
     return;
   }
   // calculate convex hull by Andrew algorithm
-  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.x < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.x + kEpsilon < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
   std::vector<Pt> ans(2 * pts.size());
   size_t k = 0;
   for (size_t i = 0; i < pts.size(); ++i) {
-    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= 0) {
+    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= kEpsilon) {
       --k;
     }
     ans[k++] = pts[i];
   }
   for (size_t i = pts.size() - 1, t = k + 1; i > 0; --i) {
-    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= 0) {
+    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= kEpsilon) {
       --k;
     }
     ans[k++] = pts[i - 1];
@@ -675,15 +675,17 @@ Pt GeomCalc::closestPtOnRegion(const Pt& p, const std::vector<Pt>& region)
   }
   auto pt = p;
   Pt closest;
+  Pt ans;
   auto min_dist = std::numeric_limits<double>::max();
   for (size_t i = 0; i < region.size(); ++i) {
     auto j = (i + 1) % region.size();
     auto dist = ptToLineDist(pt, {region[i], region[j]}, closest);
     if (dist < min_dist) {
       min_dist = dist;
+      ans = closest;
     }
   }
-  return closest;
+  return ans;
 }
 
 void GeomCalc::lineToMs(Trr& ms, const Line& l)

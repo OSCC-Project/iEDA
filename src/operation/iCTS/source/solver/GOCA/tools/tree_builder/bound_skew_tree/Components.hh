@@ -44,7 +44,7 @@ constexpr static size_t kX = 0;
 constexpr static size_t kY = 1;
 constexpr static size_t kH = 0;
 constexpr static size_t kV = 1;
-constexpr static double kEpsilon = 1e-6;
+constexpr static double kEpsilon = 1e-7;
 
 /**
  * @brief Global function

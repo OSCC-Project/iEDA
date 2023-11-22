@@ -60,11 +60,19 @@ class TreeBuilder
   static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
                              const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
                              const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* fluteBstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
+                                const std::optional<double>& skew_bound = std::nullopt,
+                                const std::optional<Point>& guide_loc = std::nullopt);
   static Inst* bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
                            const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
                            const TopoType& topo_type = TopoType::kGreedyDist);
   static Inst* beatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
+  static Inst* shiftBeatTree(const std::string& net_name, const std::vector<Pin*>& loads,
+                             const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+                             const TopoType& topo_type = TopoType::kGreedyDist, const bool& shift = false,
+                             const std::optional<double>& max_len = std::nullopt);
+
   static Inst* tempTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
@@ -80,9 +88,12 @@ class TreeBuilder
   static void localPlace(std::vector<Pin*>& pins);
   static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
 
+  static void updateId(Node* root);
+
   // debug
   static void printGraphviz(Node* root, const std::string& name = "debug");
   static void writePy(Node* root, const std::string& name = "debug");
+  static void writeInstInfo(Node* root, const std::string& name = "debug");
 
  private:
   // function interface to name

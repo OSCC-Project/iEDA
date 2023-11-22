@@ -84,6 +84,7 @@ class AnnealOptInterface
   std::vector<std::vector<Inst*>> run(const bool& log = false);
 
   double get_best_cost() const { return _best_cost; };
+  double get_improve() const { return _improve; };
 
  protected:
   void updateSolution(const std::vector<std::vector<Inst*>>& new_solution, const Operation& op);
@@ -143,7 +144,7 @@ class AnnealOptInterface
   double _new_cost = std::numeric_limits<double>::max();
   double _cur_cost = std::numeric_limits<double>::max();
   double _best_cost = std::numeric_limits<double>::max();
-
+  double _improve = 0;
   int _no_change = 0;
 };
 class LatAnnealOpt : public AnnealOptInterface
@@ -186,6 +187,7 @@ class VioAnnealOpt : public AnnealOptInterface
   double capCost(const Net* net);
   double capVioCost(const Net* net);
   double fanoutVioCost(const Net* net);
+  double latencyCost(const Net* net);
   double skewCost(const Net* net);
   double skewVioCost(const Net* net);
   double levelCapLoadCost(const Net* net);
@@ -196,8 +198,8 @@ class VioAnnealOpt : public AnnealOptInterface
   double _skew_bound = 0;
 
   const double _cap_coef = 1;
-  const double _fanout_coef = 1000;
-  const double _skew_coef = 10;
-  const double _wirelength_coef = 100;
+  const double _fanout_coef = 10;
+  const double _skew_coef = 1;
+  const double _wirelength_coef = 1;
 };
 }  // namespace icts
