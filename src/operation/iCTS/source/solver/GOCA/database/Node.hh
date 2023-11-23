@@ -35,13 +35,14 @@ class Node
 {
  public:
   // basic
+  Node(const int& id, const Point& location) : _id(id), _location(location) { _name = "steiner_" + std::to_string(id); }
   Node(const std::string& name, const Point& location) : _name(name), _location(location) {}
   // steiner
-  Node(const Point& location) : _location(location)
-  {
-    auto id = CTSAPIInst.genId();
-    _name = "steiner_" + std::to_string(id);
-  }
+  // Node(const Point& location) : _location(location)
+  // {
+  //   _id = CTSAPIInst.genId();
+  //   _name = "steiner_" + std::to_string(_id);
+  // }
   Node(const Node& other) = default;
   Node(Node&& other) = default;
 
@@ -51,6 +52,7 @@ class Node
     _parent = nullptr;
   }
   // get
+  const int& get_id() const { return _id; }
   const std::string& get_name() const { return _name; }
   const Point& get_location() const { return _location; }
   const double& get_sub_len() const { return _sub_len; }
@@ -64,6 +66,7 @@ class Node
   const std::vector<Node*>& get_children() const { return _children; }
   const RCPattern& get_pattern() const { return _pattern; }
   // set
+  void set_id(const int& id) { _id = id; }
   void set_name(const std::string& name) { _name = name; }
   void set_location(const Point& location) { _location = location; }
   void set_sub_len(const double& sub_len) { _sub_len = sub_len; }
@@ -125,9 +128,7 @@ class Node
       if (node->get_type() != NodeType::kSteiner) {
         return;
       }
-      auto split_str = CTSAPIInst.splitString(node->get_name(), '_');
-      LOG_FATAL_IF(split_str.size() != 2) << "Node name is not steiner";
-      auto id = std::stoi(split_str[1]);
+      auto id = node->get_id();
       max_id = std::max(max_id, id);
     });
     return max_id;
@@ -137,6 +138,7 @@ class Node
   void set_type(const NodeType& type) { _type = type; }
 
  private:
+  int _id = 0;
   std::string _name = "";
   Point _location = Point(-1, -1);
   double _sub_len = 0;

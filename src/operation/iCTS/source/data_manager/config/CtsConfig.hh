@@ -23,10 +23,15 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-
 namespace icts {
+struct Assign
+{
+  double max_net_len;  // max wire length of a cluster
+  int max_fanout;      // max fanout of a cluster
+  double max_cap;      // max cap of a cluster
+  double skew_bound;
+  double ratio;  // clustering margin
+};
 /**
  * @brief RC Pattern definition
  *
@@ -54,80 +59,196 @@ class CtsConfig
   CtsConfig() {}
   CtsConfig(const CtsConfig& rhs) = default;
   ~CtsConfig() = default;
-
+  // algorithm
+  const std::string& get_router_type() const { return _router_type; }
+  const std::string& get_delay_type() const { return _delay_type; }
+  const std::string& get_cluster_type() const { return _cluster_type; }
   double get_skew_bound() const { return _skew_bound; }
   double get_max_buf_tran() const { return _max_buf_tran; }
   double get_max_sink_tran() const { return _max_sink_tran; }
   double get_max_cap() const { return _max_cap; }
   int get_max_fanout() const { return _max_fanout; }
+  double get_min_length() const { return _min_length; }
   double get_max_length() const { return _max_length; }
   int get_scale_size() const { return _scale_size; }
-
-  const string& get_router_type() const { return _router_type; }
-  const string& get_delay_type() const { return _delay_type; }
-  const string& get_cluster_type() const { return _cluster_type; }
   int get_cluster_size() const { return _cluster_size; }
-  const string& get_sta_workspace() const { return _sta_workspace; }
-  const string& get_output_def_path() const { return _output_def_path; }
-  const string& get_log_file() const { return _log_file; }
-  vector<string> get_buffer_types() const { return _buffer_types; }
   const int& get_h_layer() const { return _h_layer; }
   const int& get_v_layer() const { return _v_layer; }
-  vector<int> get_routing_layers() const { return _routing_layers; }
-  const string& get_gds_file() const { return _gds_file; }
-  const string& get_use_netlist_string() const { return _gds_file; }
+  std::vector<int> get_routing_layers() const { return _routing_layers; }
+  std::vector<std::string> get_buffer_types() const { return _buffer_types; }
+  std::string get_root_buffer_type() const { return _root_buffer_type; }
+  bool is_root_buffer_required() const { return _root_buffer_required; }
+  bool is_break_long_wire() const { return _break_long_wire; }
+  // level constraint
+  std::vector<double> get_level_max_length() const { return _level_max_length; }
+  std::vector<int> get_level_max_fanout() const { return _level_max_fanout; }
+  std::vector<double> get_level_max_cap() const { return _level_max_cap; }
+  std::vector<double> get_level_skew_bound() const { return _level_skew_bound; }
+  std::vector<double> get_level_cluster_ratio() const { return _level_cluster_ratio; }
+  const int& get_shift_level() const { return _shift_level; }
+  const int& get_latency_opt_level() const { return _latency_opt_level; }
+  const double& get_global_latency_opt_ratio() const { return _global_latency_opt_ratio; }
+  const double& get_local_latency_opt_ratio() const { return _local_latency_opt_ratio; }
+  // file
+  const std::string& get_sta_workspace() const { return _sta_workspace; }
+  const std::string& get_output_def_path() const { return _output_def_path; }
+  const std::string& get_log_file() const { return _log_file; }
+  const std::string& get_gds_file() const { return _gds_file; }
+  const std::string& get_use_netlist_string() const { return _gds_file; }
   bool is_use_netlist() { return _use_netlist == "ON" ? true : false; }
-  const vector<std::pair<string, string>> get_clock_netlist() const { return _net_list; }
-  const vector<std::pair<string, string>> get_external_models() const { return _external_models; }
+  const std::vector<std::pair<std::string, std::string>> get_clock_netlist() const { return _net_list; }
+  const std::vector<std::pair<std::string, std::string>> get_external_models() const { return _external_models; }
 
+  // algorithm
+  void set_router_type(const std::string& router_type) { _router_type = router_type; }
+  void set_delay_type(const std::string& delay_type) { _delay_type = delay_type; }
+  void set_cluster_type(const std::string& cluster_type) { _cluster_type = cluster_type; }
   void set_skew_bound(double skew_bound) { _skew_bound = skew_bound; }
   void set_max_buf_tran(double max_buf_tran) { _max_buf_tran = max_buf_tran; }
   void set_max_sink_tran(double max_sink_tran) { _max_sink_tran = max_sink_tran; }
   void set_max_cap(double max_cap) { _max_cap = max_cap; }
   void set_max_fanout(int max_fanout) { _max_fanout = max_fanout; }
+  void set_min_length(double min_length) { _min_length = min_length; }
   void set_max_length(double max_length) { _max_length = max_length; }
   void set_scale_size(int scale_size) { _scale_size = scale_size; }
-
-  void set_router_type(const string& router_type) { _router_type = router_type; }
-  void set_delay_type(const string& delay_type) { _delay_type = delay_type; }
-  void set_cluster_type(const string& cluster_type) { _cluster_type = cluster_type; }
   void set_cluster_size(int size) { _cluster_size = size; }
-  void set_sta_workspace(const string& sta_workspace) { _sta_workspace = sta_workspace; }
-  void set_output_def_path(const string& output_def_path) { _output_def_path = output_def_path; }
-  void set_log_file(const string& file) { _log_file = file; }
-  void set_buffer_types(const vector<string>& types) { _buffer_types = types; }
   void set_h_layer(const int& h_layer) { _h_layer = h_layer; }
   void set_v_layer(const int& v_layer) { _v_layer = v_layer; }
-  void set_routing_layers(const vector<int>& routing_layers) { _routing_layers = routing_layers; }
-  void set_gds_file(const string& file) { _gds_file = file; }
-  void set_use_netlist(const string& use_netlist) { _use_netlist = use_netlist; }
-  void set_netlist(const vector<std::pair<string, string>>& net_list) { _net_list = net_list; }
-  void set_external_models(const vector<std::pair<string, string>>& external_models) { _external_models = external_models; }
+  void set_routing_layers(const std::vector<int>& routing_layers) { _routing_layers = routing_layers; }
+  void set_buffer_types(const std::vector<std::string>& types) { _buffer_types = types; }
+  void set_root_buffer_type(const std::string& type) { _root_buffer_type = type; }
+  void set_root_buffer_required(const bool& required) { _root_buffer_required = required; }
+  void set_break_long_wire(const bool& break_long_wire) { _break_long_wire = break_long_wire; }
+  // level constraint
+  void set_level_max_length(const std::vector<double>& level_max_length) { _level_max_length = level_max_length; }
+  void set_level_max_fanout(const std::vector<int>& level_max_fanout) { _level_max_fanout = level_max_fanout; }
+  void set_level_max_cap(const std::vector<double>& level_max_cap) { _level_max_cap = level_max_cap; }
+  void set_level_skew_bound(const std::vector<double>& level_skew_bound) { _level_skew_bound = level_skew_bound; }
+  void set_level_cluster_ratio(const std::vector<double>& level_cluster_ratio) { _level_cluster_ratio = level_cluster_ratio; }
+  void set_shift_level(const int& shift_level) { _shift_level = shift_level; }
+  void set_latency_opt_level(const int& latency_opt_level) { _latency_opt_level = latency_opt_level; }
+  void set_global_latency_opt_ratio(const double& global_latency_opt_ratio) { _global_latency_opt_ratio = global_latency_opt_ratio; }
+  void set_local_latency_opt_ratio(const double& local_latency_opt_ratio) { _local_latency_opt_ratio = local_latency_opt_ratio; }
+
+  // file
+  void set_sta_workspace(const std::string& sta_workspace) { _sta_workspace = sta_workspace; }
+  void set_output_def_path(const std::string& output_def_path) { _output_def_path = output_def_path; }
+  void set_log_file(const std::string& file) { _log_file = file; }
+  void set_gds_file(const std::string& file) { _gds_file = file; }
+  void set_use_netlist(const std::string& use_netlist) { _use_netlist = use_netlist; }
+  void set_netlist(const std::vector<std::pair<std::string, std::string>>& net_list) { _net_list = net_list; }
+  void set_external_models(const std::vector<std::pair<std::string, std::string>>& external_models) { _external_models = external_models; }
+
+  // query
+  Assign query_assign(const int& level) const
+  {
+    Assign assign;
+    assign.max_net_len = query_max_length(level);
+    assign.max_fanout = query_max_fanout(level);
+    assign.max_cap = query_max_cap(level);
+    assign.skew_bound = query_skew_bound(level);
+    assign.ratio = query_cluster_ratio(level);
+    return assign;
+  }
+
+  double query_max_length(const int& level) const
+  {
+    if (level <= 0 || _level_max_length.empty()) {
+      return _max_length;
+    }
+    int n = _level_max_length.size();
+    if (level - 1 >= n) {
+      return _level_max_length.back();
+    }
+    return _level_max_length[level - 1];
+  }
+  int query_max_fanout(const int& level) const
+  {
+    if (level <= 0 || _level_max_fanout.empty()) {
+      return _max_fanout;
+    }
+    int n = _level_max_fanout.size();
+    if (level - 1 >= n) {
+      return _level_max_fanout.back();
+    }
+    return _level_max_fanout[level - 1];
+  }
+  double query_max_cap(const int& level) const
+  {
+    if (level <= 0 || _level_max_cap.empty()) {
+      return _max_cap;
+    }
+    int n = _level_max_cap.size();
+    if (level - 1 >= n) {
+      return _level_max_cap.back();
+    }
+    return _level_max_cap[level - 1];
+  }
+
+  double query_skew_bound(const int& level) const
+  {
+    if (level <= 0 || _level_skew_bound.empty()) {
+      return _skew_bound;
+    }
+    int n = _level_skew_bound.size();
+    if (level - 1 >= n) {
+      return _level_skew_bound.back();
+    }
+    return _level_skew_bound[level - 1];
+  }
+
+  double query_cluster_ratio(const int& level) const
+  {
+    if (level <= 0 || _level_cluster_ratio.empty()) {
+      return 0.9;
+    }
+    int n = _level_cluster_ratio.size();
+    if (level - 1 >= n) {
+      return _level_cluster_ratio.back();
+    }
+    return _level_cluster_ratio[level - 1];
+  }
 
  private:
   // algorithm
-  string _router_type = "ZST";
-  string _delay_type = "elmore";
+  std::string _router_type = "GOCA";
+  std::string _delay_type = "elmore";
+  std::string _cluster_type = "kmeans";
   double _skew_bound = 0.04;
   double _max_buf_tran = 1.5;
   double _max_sink_tran = 1.5;
   double _max_cap = 1.5;
   int _max_fanout = 32;
+  double _min_length = 50;
   double _max_length = 300;
   int _scale_size = 50;
-  string _cluster_type = "kmeans";
   int _cluster_size = 32;
   int _h_layer = 1;
   int _v_layer = 1;
+  std::vector<int> _routing_layers;
+  std::vector<std::string> _buffer_types;
+  std::string _root_buffer_type;
+  bool _root_buffer_required = false;
+  bool _break_long_wire = false;
+  // level constraint
+  std::vector<double> _level_max_length;
+  std::vector<int> _level_max_fanout;
+  std::vector<double> _level_max_cap;
+  std::vector<double> _level_skew_bound;
+  std::vector<double> _level_cluster_ratio;
+  int _shift_level = 1;
+  int _latency_opt_level = 1;
+  double _global_latency_opt_ratio = 0.3;
+  double _local_latency_opt_ratio = 0.4;
+
   // file
-  string _sta_workspace = "./result/cts";
-  string _output_def_path = "./result/cts";
-  string _log_file = "./result/cts/cts.log";
-  string _gds_file = "./result/cts/cts.gds";
-  vector<string> _buffer_types;
-  vector<int> _routing_layers;
-  string _use_netlist = "OFF";
-  vector<std::pair<string, string>> _net_list;
-  vector<std::pair<string, string>> _external_models;
+  std::string _sta_workspace = "./result/cts";
+  std::string _output_def_path = "./result/cts";
+  std::string _log_file = "./result/cts/cts.log";
+  std::string _gds_file = "./result/cts/cts.gds";
+
+  std::string _use_netlist = "OFF";
+  std::vector<std::pair<std::string, std::string>> _net_list;
+  std::vector<std::pair<std::string, std::string>> _external_models;
 };
 }  // namespace icts

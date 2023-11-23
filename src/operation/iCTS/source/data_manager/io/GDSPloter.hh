@@ -51,9 +51,9 @@ class GDSPloter
 
   static void plotPolygons(std::fstream& log_ofs, const std::vector<IdbRect*>& polys, const string& name = "polyogn", int layer = 0);
 
-  static void insertPolygon(std::fstream& log_ofs, IdbRect* poly, const string& name = "polygon", int layer = 0);
+  static void insertPolygon(std::fstream& log_ofs, IdbRect* poly, const string& name = "polygon", int layer = 0, const int& type = 1);
 
-  static void insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name = "polygon", int layer = 0);
+  static void insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name = "polygon", int layer = 0, const int& type = 1);
 
   static void insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const int& layer = 0, const int& width = 80);
 

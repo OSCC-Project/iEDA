@@ -4,7 +4,7 @@
 #include <boost/functional/hash.hpp>
 
 #include "flute3/flute.h" // should be included after boost/functional/hash.hpp
-#define MAXD 20000          // max. degree that can be handled
+#define MAXD 100000          // max. degree that can be handled
 void salt::FluteBuilder::Run(const salt::Net& net, salt::Tree& saltTree) {
     // load LUT
     static bool once = false;

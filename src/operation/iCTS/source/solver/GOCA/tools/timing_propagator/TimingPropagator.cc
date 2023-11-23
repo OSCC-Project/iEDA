@@ -38,9 +38,11 @@ double TimingPropagator::_max_buf_tran = 0;
 double TimingPropagator::_max_sink_tran = 0;
 double TimingPropagator::_max_cap = 0;
 int TimingPropagator::_max_fanout = 0;
+double TimingPropagator::_min_length = 0;
 double TimingPropagator::_max_length = 0;
 double TimingPropagator::_min_insert_delay = 0;
 std::vector<icts::CtsCellLib*> TimingPropagator::_delay_libs;
+icts::CtsCellLib* TimingPropagator::_root_lib = nullptr;
 
 /**
  * @brief init timing parameters
@@ -58,6 +60,7 @@ void TimingPropagator::init()
   _unit_v_res = CTSAPIInst.getClockUnitRes(LayerPattern::kV) / 1000;
   _db_unit = CTSAPIInst.getDbUnit();
   _delay_libs = CTSAPIInst.getAllBufferLibs();
+  _root_lib = CTSAPIInst.getRootBufferLib();
   // set algorithm parameters from config
   auto* config = CTSAPIInst.get_config();
   _skew_bound = config->get_skew_bound();
@@ -65,6 +68,7 @@ void TimingPropagator::init()
   _max_sink_tran = config->get_max_sink_tran();
   _max_cap = config->get_max_cap();
   _max_fanout = config->get_max_fanout();
+  _min_length = config->get_min_length();
   _max_length = config->get_max_length();
   // temp para
   _min_insert_delay = _delay_libs.front()->getDelayIntercept();
@@ -273,6 +277,12 @@ void TimingPropagator::updateCellDelay(Inst* inst)
   if (cell_name.empty()) {
     return;
   }
+  if (cap_load == 0) {
+    inst->set_insert_delay(0);
+    load_pin->set_min_delay(0);
+    load_pin->set_max_delay(0);
+    return;
+  }
   auto* lib = CTSAPIInst.getCellLib(cell_name);
   auto insert_delay = lib->calcDelay(slew_in, cap_load);
   inst->set_insert_delay(insert_delay);
@@ -326,6 +336,12 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
     pin->set_max_delay(0);
   } else {
     auto* driver_pin = inst->get_driver_pin();
+    if (driver_pin->get_children().empty()) {
+      inst->set_insert_delay(0);
+      pin->set_min_delay(0);
+      pin->set_max_delay(0);
+      return;
+    }
     double insert_delay = 0;
     if (by_cell) {
       auto cell_name = pin->get_cell_master();

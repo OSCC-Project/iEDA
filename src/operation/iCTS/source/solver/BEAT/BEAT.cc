@@ -54,16 +54,15 @@ void TreeSaltBuilder::run(const salt::Net& net, salt::Tree& input_tree, double e
 {
   // input tree
   auto tree = input_tree;
-
   // Refine tree
   if (refine_level >= 1) {
     salt::Refine::flip(tree);
     salt::Refine::uShift(tree);
+    salt::Refine::removeRedundantCoincident(tree);
   }
 
   // init
   init(tree, net.source());
-
   // dfs
   dfs(tree.source, _src, eps);
   finalize(net, input_tree);

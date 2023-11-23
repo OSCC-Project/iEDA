@@ -20,6 +20,7 @@
  */
 #include "BoundSkewTree.hh"
 
+#include <filesystem>
 #include <numbers>
 #include <random>
 #include <stack>
@@ -45,7 +46,9 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
     Timing::initLoadPinDelay(pin, true);
     Timing::updatePinCap(pin);
     if (!Timing::skewFeasible(pin, _skew_bound)) {
+#ifdef DEBUG_ICTS_BST
       LOG_ERROR << "pin " << pin->get_name() << " skew is not feasible with error: " << Timing::calcSkew(pin) - _skew_bound;
+#endif
       pin->set_min_delay(pin->get_max_delay() - _skew_bound);
     }
     auto* node = new Area(pin);
@@ -100,6 +103,9 @@ void BoundSkewTree::run()
   bottomUp();
   topDown();
   convert();
+  auto pins = _load_pins;
+  pins.push_back(_root_buf->get_driver_pin());
+  TreeBuilder::localPlace(pins);
   TreeBuilder::removeRedundant(_root_buf->get_driver_pin());
 }
 void BoundSkewTree::convert()
@@ -229,6 +235,9 @@ Area* BoundSkewTree::biPartition(std::vector<Area*>& areas)
 }
 std::pair<std::vector<Area*>, std::vector<Area*>> BoundSkewTree::octagonDivide(std::vector<Area*>& areas) const
 {
+  auto cap_sum = std::accumulate(areas.begin(), areas.end(), 0.0, [](double sum, Area* area) { return sum + area->get_cap_load(); });
+  auto half_cap = 1.0 * cap_sum / 2;
+
   auto octagon = calcOctagon(areas);
   auto bound_areas = areaOnOctagonBound(areas, octagon);
   auto num = bound_areas.size();
@@ -272,8 +281,20 @@ std::pair<std::vector<Area*>, std::vector<Area*>> BoundSkewTree::octagonDivide(s
       area->set_location(pt);
     });
     std::ranges::sort(areas, [](Area* left, Area* right) { return left->get_location().val < right->get_location().val; });
-    auto left = std::vector<Area*>(areas.begin(), areas.begin() + areas.size() / 2);
-    auto right = std::vector<Area*>(areas.begin() + areas.size() / 2, areas.end());
+    // find half cap idx, which diff of half_cap with left's cap is minimum
+    int left_num = 0;
+    double cap_count = 0;
+    double diff = std::numeric_limits<double>::max();
+    for (size_t j = 0; j < areas.size() - 1; ++j) {
+      cap_count += areas[j]->get_cap_load();
+      auto cur_diff = std::abs(cap_count - half_cap);
+      if (cur_diff < diff) {
+        diff = cur_diff;
+        left_num = j + 1;
+      }
+    }
+    auto left = std::vector<Area*>(areas.begin(), areas.begin() + left_num);
+    auto right = std::vector<Area*>(areas.begin() + left_num, areas.end());
     auto cost = bound_diameter(left) + bound_diameter(right);
     if (cost < min_cost) {
       min_cost = cost;
@@ -670,7 +691,11 @@ void BoundSkewTree::embedding(Area* cur) const
   pt.min = std::min(left_pt.min + delay_left, right_pt.min + delay_right);
   pt.max = std::max(left_pt.max + delay_left, right_pt.max + delay_right);
   LOG_FATAL_IF(ptSkew(pt) > _skew_bound + 100 * kEpsilon) << "skew is so larger than skew bound, skew: " << ptSkew(pt);
-  LOG_WARNING_IF(ptSkew(pt) > _skew_bound + kEpsilon) << "skew is larger than skew bound with error: " << ptSkew(pt) - _skew_bound;
+  if (ptSkew(pt) > _skew_bound + kEpsilon) {
+    LOG_WARNING << cur->get_name() << " max delay: " << pt.max << " min delay: " << pt.min;
+    LOG_WARNING << "skew is larger than skew bound with error: " << ptSkew(pt) - _skew_bound;
+    pt.min = pt.max - _skew_bound + kEpsilon;
+  }
   cur->set_location(pt);
 }
 void BoundSkewTree::initSide()
@@ -820,10 +845,7 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     }
     Geom::sortPtsByFront(new_js[side]);
   }
-  FOR_EACH_SIDE(side)
-  {
-    _join_segment[side] = new_js[side];
-  }
+  FOR_EACH_SIDE(side) { _join_segment[side] = new_js[side]; }
 }
 double BoundSkewTree::delayFromJs(const size_t& js_side, const size_t& side, const size_t& idx, const size_t& timing_type,
                                   const Side<double>& delay_from) const
@@ -917,7 +939,8 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
     for (size_t j = 1; j < _join_region[side].size() - 1; ++j) {
       auto cur_val = incr_pts.back().val;
       auto next_val = _join_region[side][j].val;
-      LOG_FATAL_IF(cur_val > next_val + kEpsilon) << "skew slope is not strictly monotone increasing";
+      LOG_FATAL_IF(cur_val > next_val + 10 * kEpsilon)
+          << "cur_val: " << cur_val << "> next_val: " << next_val << ", skew slope is not strictly monotone increasing";
       if (next_val > cur_val) {
         incr_pts.push_back(_join_region[side][j]);
       }
@@ -1025,16 +1048,12 @@ bool BoundSkewTree::jrCornerExist(const size_t& end_side) const
 }
 void BoundSkewTree::calcBalancePt(Area* cur)
 {
-  FOR_EACH_SIDE(end_side)
-  {
-    _bal_points[end_side].clear();
-  }
+  FOR_EACH_SIDE(end_side) { _bal_points[end_side].clear(); }
   if (Equal(cur->get_radius(), 0)) {
     return;
   }
   FOR_EACH_SIDE(end_side)
   {
-    _bal_points[end_side].clear();
     auto left_line = cur->get_line(kLeft);
     auto right_line = cur->get_line(kRight);
     auto left_pt = left_line[end_side];
@@ -1127,7 +1146,7 @@ void BoundSkewTree::calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type
     LOG_FATAL_IF(!Equal(delay1, incr_delay + new_incr_delay + delay2)) << "delay is not equal";
     d2 += h + v;
   } else if (x > h) {
-    LOG_FATAL_IF(y <= v) << "y is illegal";
+    LOG_FATAL_IF(y <= v) << "y: " << y << " is not greater than v: " << v;
     auto temp_pt = p2;
     auto incr_delay = calcDelayIncrease(h, v, p1.val);
     temp_pt.min = p1.min + incr_delay;
@@ -1139,7 +1158,7 @@ void BoundSkewTree::calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type
     LOG_FATAL_IF(!Equal(delay2, incr_delay + new_incr_delay + delay1)) << "delay is not equal";
     d1 += h + v;
   } else {
-    LOG_FATAL_IF(y < 0 || y > v) << "y is not in range";
+    LOG_FATAL_IF(y < -kEpsilon || y > v + kEpsilon) << "y: " << y << " is not in range [0, " << v << "]";
     bal_pt.x = p1.x + x;
     bal_pt.y = p1.y < p2.y ? p1.y + y : p1.y - y;
     auto incr_delay1 = calcDelayIncrease(x, y, p1.val);
@@ -1210,12 +1229,12 @@ double BoundSkewTree::calcYBalPosition(const double& delay1, const double& delay
     // assume (x, y) and (h-x, v-y), then set x = 0
     t = delay2 - delay1 + _K[kH] * h * h + _K[kV] * v * v + cap2 * (_unit_h_res * h + _unit_v_res * v) + rc * h * v;
     y = t / r;
-    LOG_FATAL_IF(y > v) << "y is larger than v";
+    LOG_FATAL_IF(y > v + kEpsilon) << "y: " << y << " is larger than v: " << v;
   } else {
     // assume (h-x, y) and (x, v-y), then set x = 0
     t = delay2 - delay1 + _K[kV] * v * v - _K[kH] * h * h + _unit_v_res * v * cap2 - _unit_h_res * h * cap1;
     y = t / r;
-    LOG_FATAL_IF(y < 0) << "y is less than zero";
+    LOG_FATAL_IF(y < -kEpsilon) << "y: " << y << " is less than 0";
   }
   return y;
 }
@@ -1750,8 +1769,6 @@ void BoundSkewTree::calcBsLocated(Area* cur, Pt& pt, Line& line) const
       return;
     }
   }
-  printPoint(pt);
-  printArea(cur);
   LOG_FATAL << "point is not located in area";
 }
 void BoundSkewTree::calcPtDelays(Area* cur, Pt& pt, Line& line) const
@@ -1806,7 +1823,10 @@ void BoundSkewTree::calcIrregularPtDelays(Area* cur, Pt& pt, Line& line) const
   auto js_type = Geom::lineType(cur->get_line(kLeft));
   if (js_type == LineType::kManhattan) {
     LOG_FATAL_IF(!Geom::isSame(left_line[kHead], left_line[kTail]) || !Geom::isSame(right_line[kHead], right_line[kTail]))
-        << "endpoint should be same";
+        << "endpoint should be same, left head: [" << left_line[kHead].x << ", " << left_line[kHead].y << "], left tail: ["
+        << left_line[kTail].x << ", " << left_line[kTail].y << "], right head: [" << right_line[kHead].x << ", " << right_line[kHead].y
+        << "], right tail: [" << right_line[kTail].x << ", " << right_line[kTail].y << "]";
+
     auto delay_left = ptDelayIncrease(left_line[kHead], pt, cur->get_left()->get_cap_load());
     auto delay_right = ptDelayIncrease(right_line[kHead], pt, cur->get_right()->get_cap_load());
     pt.min = std::min(left_line[kHead].min + delay_left, right_line[kHead].min + delay_right);
@@ -1903,7 +1923,7 @@ void BoundSkewTree::setJsLine(const size_t& side, const Line& line)
 }
 void BoundSkewTree::checkPtDelay(Pt& pt) const
 {
-  LOG_ERROR_IF(pt.min <= -kEpsilon) << "pt min delay is negative";
+  // LOG_ERROR_IF(pt.min <= -kEpsilon) << "pt min delay is negative";
   LOG_FATAL_IF(pt.max - pt.min <= -kEpsilon) << "pt skew is negative";
   if (pt.min < 0) {
     pt.min = 0;
@@ -1954,8 +1974,13 @@ void BoundSkewTree::printArea(const Area* area) const
 }
 void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file) const
 {
-  auto dir = CTSAPIInst.get_config()->get_sta_workspace();
+  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
   std::ofstream ofs(dir + "/" + file + ".py");
+  ofs.setf(std::ios::fixed, std::ios::floatfield);
+  ofs.precision(16);
   ofs << "import matplotlib.pyplot as plt\n";
   ofs << "import numpy as np\n";
   ofs << "x = [";
