@@ -1,0 +1,56 @@
+#!/bin/csh -f
+
+#**************************************************************************
+#**
+#**    Copyright (c) 1995-1997 by ABKGroup, UCLA VLSI CAD Laboratory,
+#**    UCLA Computer Science Department, Los Angeles, CA 90095-1596 USA,
+#**    and by the Regents of the University of California.
+#**    All rights reserved.
+#**
+#**    No portion of this file may be used, copied, or transmitted for
+#**    any purpose, including any research or commercial purpose,
+#**    without the express written consent of Professor Andrew B. Kahng,
+#**    UCLA Computer Science Department, 3713 Boelter Hall, Los Angeles,
+#**    CA 90095-1596 USA.   Any copy made of this file must include this
+#**    notice.    ABKGroup and the Regents of the University of California
+#**    retain title to all copies of this file and/or its compiled
+#**    derivatives.
+#**
+#**************************************************************************/
+
+set host=`hostname`
+set f_result=result.$host
+
+/bin/rm -f $f_result
+touch $f_result
+
+
+set all=( s1423 s5378 s15850 p1 p2 r1 r2 r3 r4 r5 )
+#set all=( )
+
+set skewBound=( 0 200 ) 
+#set skewBound=( 0 1 10 50 100 200 500 ) 
+#set skewBound=( 0 1 5 ) 
+
+foreach i ($all)
+  foreach j ($skewBound)
+    echo -n bst -i ./BENCHMARKS/$i -B $j ... 
+    echo "bst -i ./BENCHMARKS/$i -B $j " >> $f_result
+    bst -i ./BENCHMARKS/$i -B $j | tail -3  >> $f_result
+    rm -f ./BENCHMARKS/*xg* ./BENCHMARKS/*top*
+    echo done 
+  end
+end
+
+set oldresult="./BENCHMARKS/BST-1.0_regression_result"  
+set oldresult="./BENCHMARKS/BST-1.1_regression_result.pc.linux"
+
+echo "regression on $host all done, bye now" 
+echo "new result is in $f_result"
+diff  $oldresult   $f_result >! diffs.out 
+
+echo " "
+echo "Differences from precomputed results ($oldresult)"
+echo "  lines:  words:  bytes:    error log:"
+wc diffs.out
+

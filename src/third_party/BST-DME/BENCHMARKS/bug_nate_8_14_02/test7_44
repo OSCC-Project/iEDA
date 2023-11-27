@@ -1,0 +1,43 @@
+# UCLA clock benchmark 1.2
+# Created       : Mon Aug 12 23:45:37 2002
+
+# User          : tsao@cs.ucla.edu
+# PlatForm      : SunOS 5.7 sparc SUNW,Ultra-1
+# Source        : Randomly generated testcases 
+# Note          : Coordinate unit can be micro-meter or anything
+  
+
+NumPins : 7  
+
+PerUnitResistance : 0.111  Ohm 
+
+PerUnitCapacitance : 1.66e-17  Farad 
+
+Sink : 0  
+     Coordinate : 1651  343 
+     Capacitive Load : 2.355071e-15
+     Downstream_Delay : 4.396362e-11
+Sink : 1  
+     Coordinate : 1861  1444 
+     Capacitive Load : 3.847855e-15
+     Downstream_Delay : 2.151731e-11
+Sink : 2  
+     Coordinate : 2134  363 
+     Capacitive Load : 1.521885e-15
+     Downstream_Delay : 1.670726e-11
+Sink : 3  
+     Coordinate : 1168  2017 
+     Capacitive Load : 1.828458e-15
+     Downstream_Delay : 3.546582e-11
+Sink : 4  
+     Coordinate : 1550  382 
+     Capacitive Load : 2.646876e-15
+     Downstream_Delay : 5.135011e-11
+Sink : 5  
+     Coordinate : 2248  2318 
+     Capacitive Load : 1.148271e-15
+     Downstream_Delay : 4.010972e-11
+Sink : 6  
+     Coordinate : 1967  641 
+     Capacitive Load : 3.726283e-15
+     Downstream_Delay : 7.904433e-12

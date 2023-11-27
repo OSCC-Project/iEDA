@@ -1,0 +1,231 @@
+
+
+>From nate@24-161-186-44.san.rr.com Sun May 26 17:34 PDT 2002
+Date: Sun, 26 May 2002 17:40:11 -0700
+From: Nathan Tuck <ntuck1@san.rr.com>
+To: Sherief Reda <sreda@cs.ucsd.edu>
+Cc: ntuck1@san.rr.com, "Andrew B. Kahng" <abk@cs.ucsd.edu>, bliu@cs.ucsd.edu,
+   yzheng@cs.ucsd.edu
+Subject: Re: FWD FYI:  Re: dme.tar uuencoded
+Mime-Version: 1.0
+Content-Disposition: inline
+User-Agent: Mutt/1.2.5i
+
+If you send me the test-case I can take a look.  I've made a few
+changes in my own tree, but I don't think any of them would fix your
+problem.
+
+Are you running with a prescribed topology?  If you are, there is a
+bug in the code that prevents it from outputting the xgraph at the
+end.  I've tried fixing it a few ways, but I've ended up breaking
+other things.  I'm hoping Albert helps me out with that one.
+
+Thanks,
+
+
+
+Nate,
+  I have fixed the crash problem. For details, please check the the 
+revision log  in  the README file, in 
+  nexus6.cs.ucla.edu:/home/userc/tsao/BSTsource1.1
+
+
+
+Andrew,
+
+  Please let me know when you replace BSTsource1.0 with BSTsource1.1 
+in your software bookshelf.
+
+
+--Albert
+
+
+Nate,
+  Curr_Npoints is the current number of nodes (leaves + internal nodes + 1).
+The leaves are numbered from 0 to nterms -1, and
+the internal nodes from nterms to 2*nterms-1.`
+
+  The node indexed by "nterms" is preserved for the clock source, which
+may not be used yet.
+
+
+  Initially, Curr_Npoints = nterms+1 , which means that
+that are nterms leaves and one clock source.
+
+Then Curr_Npoints is increased by one whenever a new tree root is produced
+during bottom-up merging.
+
+
+
+I  have problem using purify here, so I cannot fix the 
+seg-fault problem right now. If you can use
+purify there, please help to fix the problems for us.
+
+However, the seg-fault happens after the BST results are produced.
+Also, I removed  un-used varaialbes/codes so that
+the source codes is more readable.
+The new version that I am working is on 
+nexus6.cs.ucla.edu:/home/userc/tsao/BSTsource1.1
+
+
+   I also  modifies the problem in function update_Cluster,
+please check with my new version of bst codes.
+
+
+  My contact info is:
+(O)408-914-6231
+(H)408-937-1718,
+
+ other e-mail: tsao@cs.ucla.edu, tsao@cadence.com
+
+
+--Albert
+
+p.s. Nate, may I have your office number,
+  any is your e-mail from some company.
+
+
+--- Nathan Tuck <ntuck1@san.rr.com> wrote:
+> Albert,
+> 
+> I think I have found the most major problem in the
+> code.
+> 
+> In the function update_Cluster there are the
+> following lines:
+> 
+> void update_Cluster(int n_nodes) {
+> int i,j;
+> 
+>   /* init min merging cost in current Nearest
+> Neighbor Graph */
+> 
+>   for (i=0;i<n_nodes;++i) {
+>     j = Node[i].root_id;
+>     Cluster[j].y = DBL_MAX;
+>   }
+> 
+> 
+> Problem is that Node[i].root_id is sometimes -1
+> (which is a pseudonym
+> for NIL in your code).  I haven't really figured out
+> why this is not
+> set to a reasonable value as of yet, but it may be
+> that this is the
+> root of the tree.  Accessing Cluster[-1].y is bad.
+> 
+> Let me know if you know how to fix this.  I have
+> some other fixes for
+> the code, but this is I think the root of my
+> problem.
+> 
+> nate
+> 
+
+
+
+Albert,
+
+Sorry to be such a pain for you.  Let Andrew and me know if you don't
+have time.
+
+Enclosed are some changes that I made to the 1.1 BST code based on the
+recommendations of purify.  The last asserts in bst_sub1.cxx trigger
+on the root node.  It isn't a problem, but ideally cluster_id of the
+root node should be set to something other than -1 (or ignored).
+
+Thanks,
+
+nate
+
+*** BST_orig11/bst_header.h     Sat May 11 17:42:31 2002
+--- BSTsource1.1/bst_header.h   Sun May 12 10:22:10 2002
+***************
+*** 178,184 ****
+        ms = 0 ;
+      }
+      if ( area ) {
+!       delete area ;
+        area = 0 ;
+      }
+    } ;
+--- 178,184 ----
+        ms = 0 ;
+      }
+      if ( area ) {
+!       delete [] area ;
+        area = 0 ;
+      }
+    } ;
+
+*** BST_orig11/bst_sub1.cxx     Sat May 11 17:42:35 2002
+--- BSTsource1.1/bst_sub1.cxx   Sun May 12 11:14:22 2002
+***************
+*** 322,330 ****
+    node->ca = 0;
+    node->n_area = 1;
+    assert(n <= N_Area_Per_Node);
+!   node->area = (AreaType *) calloc(n, sizeof(AreaType));
+!   assert(node->area !=NULL ); 
+!   node->ms = (TrrType *) malloc(sizeof(TrrType));
+    assert(node->ms !=NULL ); 
+  }
+  
+/****************************************************************************/
+--- 322,333 ----
+    node->ca = 0;
+    node->n_area = 1;
+    assert(n <= N_Area_Per_Node);
+!   assert(node->area == 0);
+!   node->area = new AreaType[n];
+!   memset(node->area,0,n*sizeof(AreaType));
+!   assert(node->area !=NULL );
+!   assert(node->ms == 0);
+!   node->ms = new TrrType;
+    assert(node->ms !=NULL ); 
+  }
+  
+/****************************************************************************/
+***************
+*** 2464,2475 ****
+  double wl[MAX_N_SINKS], cap[MAX_N_SINKS], total_wl=0;
+  int i, j, k, n;
+  
+!   for (i=0;i<Total_CL;++i) { wl[i]=0; cap[i] = 0;}
+  
+    
+    int npoints = (int) gBoundedSkewTree->Npoints() ;
+    for (i=0;i<npoints;++i) {
+      j= Cluster_id[i];
+      if (StubLength[i]>0) {
+        assert(Buffered[i]>0);
+        k = Cluster_id[Node[i].L];
+--- 2467,2480 ----
+  double wl[MAX_N_SINKS], cap[MAX_N_SINKS], total_wl=0;
+  int i, j, k, n;
+  
+!   for (i=0;i<=Total_CL;++i) { wl[i]=0; cap[i] = 0;}
+  
+    
+    int npoints = (int) gBoundedSkewTree->Npoints() ;
+    for (i=0;i<npoints;++i) {
+      j= Cluster_id[i];
++     assert(j >= 0); /* XXXnate */
++     assert(j <= Total_CL); /* XXXnate */
+      if (StubLength[i]>0) {
+        assert(Buffered[i]>0);
+        k = Cluster_id[Node[i].L];
+
+*** BST_orig11/bst.cxx  Sat May 11 17:42:18 2002
+--- BSTsource1.1/bst.cxx        Sun May 12 10:14:10 2002
+***************
+*** 3796,3801 ****
+--- 3796,3803 ----
+  double BME_merging_cost(NodeType *node_L, NodeType *node_R) {
+  AreaType area, *area_L, *area_R;
+  
++  area.n_mr = 0; /* XXXnate */
++ 
+    area_L = &(node_L->area[node_L->ca]);
+    area_R = &(node_R->area[node_R->ca]);
+
