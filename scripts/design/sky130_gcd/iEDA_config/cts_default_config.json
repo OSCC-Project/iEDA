@@ -11,12 +11,12 @@
     "delay_type": "elmore",
     "cluster_type": "kmeans",
     "skew_bound": "0.08",
-    "max_buf_tran": "1",
-    "max_sink_tran": "1",
+    "max_buf_tran": "1.0",
+    "max_sink_tran": "1.0",
     "max_cap": "0.15",
     "max_fanout": "32",
     "min_length": "50",
-    "max_length": "30",
+    "max_length": "300",
     "scale_size": 50,
     "cluster_size": 32,
     "routing_layer": [
@@ -26,7 +26,7 @@
     "buffer_type": [
         "sky130_fd_sc_hs__buf_1"
     ],
-    "root_buffer_type": "BUFFD12BWP30P140LVT",
+    "root_buffer_type": "sky130_fd_sc_hs__buf_1",
     "root_buffer_required": "OFF",
     "break_long_wire": "OFF",
     "level_max_length": [
