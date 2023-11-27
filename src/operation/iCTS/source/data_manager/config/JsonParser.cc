@@ -89,42 +89,44 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
     if (COMUtil::getData(json, {"delay_type"}) != nullptr) {
       config->set_delay_type(COMUtil::getData(json, {"delay_type"}));
     }
+    if (COMUtil::getData(json, {"cluster_type"}) != nullptr) {
+      config->set_cluster_type(COMUtil::getData(json, {"cluster_type"}));
+    }
     if (COMUtil::getData(json, {"skew_bound"}) != nullptr) {
-      string skew_bound = COMUtil::getData(json, {"skew_bound"});
+      std::string skew_bound = COMUtil::getData(json, {"skew_bound"});
       config->set_skew_bound(std::stod(skew_bound));
     }
     if (COMUtil::getData(json, {"max_buf_tran"}) != nullptr) {
-      string max_buf_tran = COMUtil::getData(json, {"max_buf_tran"});
+      std::string max_buf_tran = COMUtil::getData(json, {"max_buf_tran"});
       config->set_max_buf_tran(std::stod(max_buf_tran));
     }
     if (COMUtil::getData(json, {"max_sink_tran"}) != nullptr) {
-      string max_sink_tran = COMUtil::getData(json, {"max_sink_tran"});
+      std::string max_sink_tran = COMUtil::getData(json, {"max_sink_tran"});
       config->set_max_sink_tran(std::stod(max_sink_tran));
     }
     if (COMUtil::getData(json, {"max_cap"}) != nullptr) {
-      string max_cap = COMUtil::getData(json, {"max_cap"});
+      std::string max_cap = COMUtil::getData(json, {"max_cap"});
       config->set_max_cap(std::stod(max_cap));
     }
     if (COMUtil::getData(json, {"max_fanout"}) != nullptr) {
-      string max_fanout = COMUtil::getData(json, {"max_fanout"});
+      std::string max_fanout = COMUtil::getData(json, {"max_fanout"});
       config->set_max_fanout(std::stoi(max_fanout));
     }
+    if (COMUtil::getData(json, {"min_length"}) != nullptr) {
+      std::string min_length = COMUtil::getData(json, {"min_length"});
+      config->set_min_length(std::stod(min_length));
+    }
     if (COMUtil::getData(json, {"max_length"}) != nullptr) {
-      string max_length = COMUtil::getData(json, {"max_length"});
+      std::string max_length = COMUtil::getData(json, {"max_length"});
       config->set_max_length(std::stod(max_length));
     }
     if (COMUtil::getData(json, {"scale_size"}) != nullptr) {
       int scale_size = COMUtil::getData(json, {"scale_size"});
       config->set_scale_size(scale_size);
     }
-    if (COMUtil::getData(json, {"cluster_type"}) != nullptr) {
-      config->set_cluster_type(COMUtil::getData(json, {"cluster_type"}));
-    }
     if (COMUtil::getData(json, {"cluster_size"}) != nullptr) {
-      config->set_cluster_size(COMUtil::getData(json, {"cluster_size"}));
-    }
-    if (COMUtil::getData(json, {"buffer_type"}) != nullptr) {
-      config->set_buffer_types(COMUtil::getData(json, {"buffer_type"}));
+      int cluster_size = COMUtil::getData(json, {"cluster_size"});
+      config->set_cluster_size(cluster_size);
     }
     if (COMUtil::getData(json, {"routing_layer"}) != nullptr) {
       std::vector<int> routing_layers = COMUtil::getData(json, {"routing_layer"});
@@ -132,17 +134,89 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
       config->set_h_layer(routing_layers.front());
       config->set_v_layer(routing_layers.back());
     }
+    if (COMUtil::getData(json, {"buffer_type"}) != nullptr) {
+      config->set_buffer_types(COMUtil::getData(json, {"buffer_type"}));
+    }
+    if (COMUtil::getData(json, {"root_buffer_type"}) != nullptr) {
+      config->set_root_buffer_type(COMUtil::getData(json, {"root_buffer_type"}));
+    }
+    if (COMUtil::getData(json, {"root_buffer_required"}) != nullptr) {
+      std::string root_buffer_required = COMUtil::getData(json, {"root_buffer_required"});
+      if (root_buffer_required == "true" || root_buffer_required == "True" || root_buffer_required == "TRUE" || root_buffer_required == "On"
+          || root_buffer_required == "ON" || root_buffer_required == "on") {
+        config->set_root_buffer_required(true);
+      } else {
+        config->set_root_buffer_required(false);
+      }
+    }
+    if (COMUtil::getData(json, {"break_long_wire"}) != nullptr) {
+      std::string break_long_wire = COMUtil::getData(json, {"break_long_wire"});
+      if (break_long_wire == "true" || break_long_wire == "True" || break_long_wire == "TRUE" || break_long_wire == "On"
+          || break_long_wire == "ON" || break_long_wire == "on") {
+        config->set_break_long_wire(true);
+      } else {
+        config->set_break_long_wire(false);
+      }
+    }
+    if (COMUtil::getData(json, {"level_max_length"}) != nullptr) {
+      std::vector<std::string> level_max_length = COMUtil::getData(json, {"level_max_length"});
+      std::vector<double> level_max_length_double;
+      std::transform(level_max_length.begin(), level_max_length.end(), std::back_inserter(level_max_length_double),
+                     [](const std::string& str) { return std::stod(str); });
+      config->set_level_max_length(level_max_length_double);
+    }
+    if (COMUtil::getData(json, {"level_max_fanout"}) != nullptr) {
+      std::vector<int> level_max_fanout = COMUtil::getData(json, {"level_max_fanout"});
+      config->set_level_max_fanout(level_max_fanout);
+    }
+    if (COMUtil::getData(json, {"level_max_cap"}) != nullptr) {
+      std::vector<std::string> level_max_cap = COMUtil::getData(json, {"level_max_cap"});
+      std::vector<double> level_max_cap_double;
+      std::transform(level_max_cap.begin(), level_max_cap.end(), std::back_inserter(level_max_cap_double),
+                     [](const std::string& str) { return std::stod(str); });
+      config->set_level_max_cap(level_max_cap_double);
+    }
+    if (COMUtil::getData(json, {"level_skew_bound"}) != nullptr) {
+      std::vector<std::string> level_skew_bound = COMUtil::getData(json, {"level_skew_bound"});
+      std::vector<double> level_skew_bound_double;
+      std::transform(level_skew_bound.begin(), level_skew_bound.end(), std::back_inserter(level_skew_bound_double),
+                     [](const std::string& str) { return std::stod(str); });
+      config->set_level_skew_bound(level_skew_bound_double);
+    }
+    if (COMUtil::getData(json, {"level_cluster_ratio"}) != nullptr) {
+      std::vector<std::string> level_cluster_ratio = COMUtil::getData(json, {"level_cluster_ratio"});
+      std::vector<double> level_cluster_ratio_double;
+      std::transform(level_cluster_ratio.begin(), level_cluster_ratio.end(), std::back_inserter(level_cluster_ratio_double),
+                     [](const std::string& str) { return std::stod(str); });
+      config->set_level_cluster_ratio(level_cluster_ratio_double);
+    }
+    if (COMUtil::getData(json, {"shift_level"}) != nullptr) {
+      int shift_level = COMUtil::getData(json, {"shift_level"});
+      config->set_shift_level(shift_level);
+    }
+    if (COMUtil::getData(json, {"latency_opt_level"}) != nullptr) {
+      int latency_opt_level = COMUtil::getData(json, {"latency_opt_level"});
+      config->set_latency_opt_level(latency_opt_level);
+    }
+    if (COMUtil::getData(json, {"global_latency_opt_ratio"}) != nullptr) {
+      std::string global_latency_opt_ratio = COMUtil::getData(json, {"global_latency_opt_ratio"});
+      config->set_global_latency_opt_ratio(std::stod(global_latency_opt_ratio));
+    }
+    if (COMUtil::getData(json, {"local_latency_opt_ratio"}) != nullptr) {
+      std::string local_latency_opt_ratio = COMUtil::getData(json, {"local_latency_opt_ratio"});
+      config->set_local_latency_opt_ratio(std::stod(local_latency_opt_ratio));
+    }
+
     if (COMUtil::getData(json, {"use_netlist"}) != nullptr) {
       config->set_use_netlist(COMUtil::getData(json, {"use_netlist"}));
     }
-
     nlohmann::json json_netlist = COMUtil::getData(json, {"net_list"});
     {
       auto clock_name_list = COMUtil::getSerializeObjectData(json_netlist, "clock_name", data_type_string);
       auto net_name_list = COMUtil::getSerializeObjectData(json_netlist, "net_name", data_type_string);
 
       int size = clock_name_list.size();
-      std::vector<std::pair<string, string>> clock_net_list;
+      std::vector<std::pair<std::string, std::string>> clock_net_list;
       for (int i = 0; i < size; ++i) {
         clock_net_list.push_back(std::make_pair(clock_name_list[i], net_name_list[i]));
       }
@@ -155,7 +229,7 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
       auto net_name_list = COMUtil::getSerializeObjectData(json_ext_models, "net_name", data_type_string);
       auto model_path_list = COMUtil::getSerializeObjectData(json_ext_models, "model_path", data_type_string);
 
-      std::vector<std::pair<string, string>> external_models;
+      std::vector<std::pair<std::string, std::string>> external_models;
       for (size_t i = 0; i < net_name_list.size(); ++i) {
         auto model_path = resolvePath(model_path_list[i]);
         external_models.push_back(std::make_pair(net_name_list[i], model_path));

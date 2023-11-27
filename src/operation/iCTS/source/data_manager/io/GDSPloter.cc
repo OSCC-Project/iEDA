@@ -55,7 +55,7 @@ void GDSPloter::plotDesign(const std::string& path)
     if (cts_inst) {
       insertInstance(ofs, cts_inst);
     } else {
-      insertPolygon(ofs, inst_box, name, 1);
+      insertPolygon(ofs, inst_box, name, 1, 0);
     }
   }
 
@@ -70,12 +70,12 @@ void GDSPloter::plotDesign(const std::string& path)
     for (auto* blockage_rect : blockage_rect_list) {
       auto name = blockage->get_instance_name() + std::to_string(i);
       ++i;
-      insertPolygon(ofs, blockage_rect, name, 1);
+      insertPolygon(ofs, blockage_rect, name, 1, 0);
     }
   }
 
   auto core = db_wrapper->get_core_bounding_box();
-  insertPolygon(ofs, core, "core", 100);
+  insertPolygon(ofs, core, "core", 100, 0);
   strBegin(ofs);
   topBegin(ofs);
   for (auto* idb_inst : idb_insts) {
@@ -128,7 +128,7 @@ void GDSPloter::plotFlyLine(const std::string& path)
     if (cts_inst) {
       insertInstance(ofs, cts_inst);
     } else {
-      insertPolygon(ofs, inst_box, name, 1);
+      insertPolygon(ofs, inst_box, name, 1, 0);
     }
   }
 
@@ -143,12 +143,12 @@ void GDSPloter::plotFlyLine(const std::string& path)
     for (auto* blockage_rect : blockage_rect_list) {
       auto name = blockage->get_instance_name() + std::to_string(i);
       ++i;
-      insertPolygon(ofs, blockage_rect, name, 1);
+      insertPolygon(ofs, blockage_rect, name, 1, 0);
     }
   }
 
   auto* core = db_wrapper->get_core_bounding_box();
-  insertPolygon(ofs, core, "core", 100);
+  insertPolygon(ofs, core, "core", 100, 0);
   strBegin(ofs);
   topBegin(ofs);
   for (auto* idb_inst : idb_insts) {
@@ -194,12 +194,22 @@ void GDSPloter::writePyDesign(const std::string& path)
   std::ofstream py_ofs(file_path, std::ios::out | std::ios::trunc);
   py_ofs << "import matplotlib.pyplot as plt" << std::endl;
   py_ofs << "import numpy as np" << std::endl;
+  py_ofs << "from matplotlib.patches import Rectangle" << std::endl;
+  py_ofs << "import scienceplots" << std::endl;
+  py_ofs << "plt.style.use(['science','no-latex'])" << std::endl;
   py_ofs << "def generate_color_sequence(n): " << std::endl;
-  py_ofs << "    cmap = plt.get_cmap('viridis')" << std::endl;
+  py_ofs << "    cmap = plt.get_cmap('summer')" << std::endl;
   py_ofs << "    colors = [cmap(i) for i in np.linspace(0, 1, n)]" << std::endl;
   py_ofs << "    return colors" << std::endl;
-  py_ofs << "colors = generate_color_sequence(" << max_level + 1 << ")" << std::endl;
-  py_ofs << "fig = plt.figure(figsize=(8,6), dpi=300)" << std::endl;
+  if (max_level > 5) {
+    py_ofs << "colors = generate_color_sequence(" << max_level + 2 << ")" << std::endl;
+  } else {
+    py_ofs << "colors = ['#FF0000', '#00FF00', '#008080', '#ff8000', '#910000', '#800080', '#FF1493', '#008B8B', '#8A2BE2', '#32CD32']"
+           << std::endl;
+  }
+  py_ofs << "line_width = np.linspace(0.5, " << (max_level + 2) * 0.5 << ", " << max_level + 2 << ")" << std::endl;
+  py_ofs << "inst_colors = generate_color_sequence(" << max_level + 2 << ")" << std::endl;
+  py_ofs << "fig = plt.figure(figsize=(8,8), dpi=300)" << std::endl;
 
   for (auto* idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
@@ -208,23 +218,47 @@ void GDSPloter::writePyDesign(const std::string& path)
     if (cts_inst) {
       level = cts_inst->get_level();
     }
-    py_ofs << "plt.plot([" << inst_box->get_low_x() << "," << inst_box->get_low_x() << "," << inst_box->get_high_x() << ","
-           << inst_box->get_high_x() << "," << inst_box->get_low_x() << "],[" << inst_box->get_low_y() << "," << inst_box->get_high_y()
-           << "," << inst_box->get_high_y() << "," << inst_box->get_low_y() << "," << inst_box->get_low_y() << "],color=colors[" << level
-           << "])" << std::endl;
+    if (level > 1) {
+      continue;
+    }
+    py_ofs << "plt.gca().add_patch(Rectangle((" << inst_box->get_low_x() << "," << inst_box->get_low_y() << "),"
+           << inst_box->get_high_x() - inst_box->get_low_x() << "," << inst_box->get_high_y() - inst_box->get_low_y()
+           << ",linewidth=0.1,edgecolor='#c0c0c0',facecolor='#c0c0c0',zorder=" << level + 1 << "))" << std::endl;
   }
   auto& clk_nets = design->get_nets();
   for (auto& clk_net : clk_nets) {
-    auto level = clk_net->get_driver_inst()->get_level();
+    auto* driver = clk_net->get_driver_inst();
+    if (driver->get_location() == Point(-1, -1)) {
+      continue;
+    }
+    auto level = driver->get_level();
+
     for (const auto& wire : clk_net->get_signal_wires()) {
       auto first = wire.get_first().point;
       auto second = wire.get_second().point;
       // line width should add with level
       py_ofs << "plt.plot([" << first.x() << "," << second.x() << "],[" << first.y() << "," << second.y() << "],color=colors[" << level
-             << "],linewidth=" << level + 1 << ")" << std::endl;
+             << "],linewidth=line_width[" << level << "],zorder=" << level << ")" << std::endl;
     }
   }
-  py_ofs << "plt.savefig('cts_design.png', dpi=300)" << std::endl;
+  for (auto* idb_inst : idb_insts) {
+    auto* inst_box = idb_inst->get_bounding_box();
+    auto* cts_inst = design->findInstance(idb_inst->get_name());
+    int level = 0;
+    if (cts_inst) {
+      level = cts_inst->get_level();
+    }
+    if (level <= 1) {
+      continue;
+    }
+    py_ofs << "plt.gca().add_patch(Rectangle((" << inst_box->get_low_x() << "," << inst_box->get_low_y() << "),"
+           << inst_box->get_high_x() - inst_box->get_low_x() << "," << inst_box->get_high_y() - inst_box->get_low_y()
+           << ",linewidth=" << 1 + 1.0 * level / 10 << ",edgecolor='black',facecolor=inst_colors[" << level + 1 << "],zorder=" << level + 1
+           << "))" << std::endl;
+  }
+  py_ofs << "plt.axis('square')\n";
+  py_ofs << "plt.axis('off')\n";
+  py_ofs << "plt.savefig('cts_design.png', dpi=300, bbox_inches='tight')" << std::endl;
 }
 
 void GDSPloter::writePyFlyLine(const std::string& path)
@@ -247,12 +281,22 @@ void GDSPloter::writePyFlyLine(const std::string& path)
   std::ofstream py_ofs(file_path, std::ios::out | std::ios::trunc);
   py_ofs << "import matplotlib.pyplot as plt" << std::endl;
   py_ofs << "import numpy as np" << std::endl;
+  py_ofs << "from matplotlib.patches import Rectangle" << std::endl;
+  py_ofs << "import scienceplots" << std::endl;
+  py_ofs << "plt.style.use(['science','no-latex'])" << std::endl;
   py_ofs << "def generate_color_sequence(n): " << std::endl;
-  py_ofs << "    cmap = plt.get_cmap('viridis')" << std::endl;
+  py_ofs << "    cmap = plt.get_cmap('summer')" << std::endl;
   py_ofs << "    colors = [cmap(i) for i in np.linspace(0, 1, n)]" << std::endl;
   py_ofs << "    return colors" << std::endl;
-  py_ofs << "colors = generate_color_sequence(" << max_level + 1 << ")" << std::endl;
-  py_ofs << "fig = plt.figure(figsize=(8,6), dpi=300)" << std::endl;
+  if (max_level > 5) {
+    py_ofs << "colors = generate_color_sequence(" << max_level + 2 << ")" << std::endl;
+  } else {
+    py_ofs << "colors = ['#FF0000', '#00FF00', '#008080', '#ff8000', '#910000', '#800080', '#FF1493', '#008B8B', '#8A2BE2', '#32CD32']"
+           << std::endl;
+  }
+  py_ofs << "line_width = np.linspace(0.5, " << (max_level + 2) * 0.5 << ", " << max_level + 2 << ")" << std::endl;
+  py_ofs << "inst_colors = generate_color_sequence(" << max_level + 2 << ")" << std::endl;
+  py_ofs << "fig = plt.figure(figsize=(8,8), dpi=300)" << std::endl;
 
   for (auto* idb_inst : idb_insts) {
     auto* inst_box = idb_inst->get_bounding_box();
@@ -261,21 +305,44 @@ void GDSPloter::writePyFlyLine(const std::string& path)
     if (cts_inst) {
       level = cts_inst->get_level();
     }
-    py_ofs << "plt.plot([" << inst_box->get_low_x() << "," << inst_box->get_low_x() << "," << inst_box->get_high_x() << ","
-           << inst_box->get_high_x() << "," << inst_box->get_low_x() << "],[" << inst_box->get_low_y() << "," << inst_box->get_high_y()
-           << "," << inst_box->get_high_y() << "," << inst_box->get_low_y() << "," << inst_box->get_low_y() << "],color=colors[" << level
-           << "])" << std::endl;
+    if (level > 1) {
+      continue;
+    }
+    py_ofs << "plt.gca().add_patch(Rectangle((" << inst_box->get_low_x() << "," << inst_box->get_low_y() << "),"
+           << inst_box->get_high_x() - inst_box->get_low_x() << "," << inst_box->get_high_y() - inst_box->get_low_y()
+           << ",linewidth=0.1,edgecolor='#c0c0c0',facecolor='#c0c0c0',zorder=" << level + 1 << "))" << std::endl;
   }
   auto& clk_nets = design->get_nets();
   for (auto& clk_net : clk_nets) {
-    auto level = clk_net->get_driver_inst()->get_level();
+    auto* driver = clk_net->get_driver_inst();
+    if (driver->get_location() == Point(-1, -1)) {
+      continue;
+    }
+    auto level = driver->get_level();
     for (auto load : clk_net->get_load_insts()) {
       py_ofs << "plt.plot([" << clk_net->get_driver_inst()->get_location().x() << "," << load->get_location().x() << "],["
              << clk_net->get_driver_inst()->get_location().y() << "," << load->get_location().y() << "],color=colors[" << level
-             << "],linewidth=" << level + 1 << ")" << std::endl;
+             << "],linewidth=line_width[" << level << "],zorder=" << level << ")" << std::endl;
     }
   }
-  py_ofs << "plt.savefig('cts_flyline.png', dpi=300)" << std::endl;
+  for (auto* idb_inst : idb_insts) {
+    auto* inst_box = idb_inst->get_bounding_box();
+    auto* cts_inst = design->findInstance(idb_inst->get_name());
+    int level = 0;
+    if (cts_inst) {
+      level = cts_inst->get_level();
+    }
+    if (level <= 1) {
+      continue;
+    }
+    py_ofs << "plt.gca().add_patch(Rectangle((" << inst_box->get_low_x() << "," << inst_box->get_low_y() << "),"
+           << inst_box->get_high_x() - inst_box->get_low_x() << "," << inst_box->get_high_y() - inst_box->get_low_y()
+           << ",linewidth=" << 1 + 1.0 * level / 10 << ",edgecolor='black',facecolor=inst_colors[" << level + 1 << "],zorder=" << level + 1
+           << "))" << std::endl;
+  }
+  py_ofs << "plt.axis('square')\n";
+  py_ofs << "plt.axis('off')\n";
+  py_ofs << "plt.savefig('cts_flyline.png', dpi=300, bbox_inches='tight')" << std::endl;
 }
 
 void GDSPloter::refPolygon(std::fstream& log_ofs, const string& name)
@@ -329,12 +396,12 @@ void GDSPloter::plotPolygons(std::fstream& log_ofs, const std::vector<IdbRect*>&
   tail(log_ofs);
 }
 
-void GDSPloter::insertPolygon(std::fstream& log_ofs, IdbRect* poly, const string& name, int layer)
+void GDSPloter::insertPolygon(std::fstream& log_ofs, IdbRect* poly, const string& name, int layer, const int& type)
 {
-  insertPolygon(log_ofs, *poly, name, layer);
+  insertPolygon(log_ofs, *poly, name, layer, type);
 }
 
-void GDSPloter::insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name, int layer)
+void GDSPloter::insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name, int layer, const int& type)
 {
   std::vector<Point> points
       = {Point(poly.get_low_x(), poly.get_low_y()), Point(poly.get_low_x(), poly.get_high_y()), Point(poly.get_high_x(), poly.get_high_y()),
@@ -344,7 +411,7 @@ void GDSPloter::insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string
 
   log_ofs << "BOUNDARY" << std::endl;
   log_ofs << "LAYER " << layer << std::endl;
-  log_ofs << "DATATYPE 1" << std::endl;
+  log_ofs << "DATATYPE " << type << std::endl;
   log_ofs << "XY" << std::endl;
   std::ranges::for_each(points, [&](const Point& point) { log_ofs << point << std::endl; });
   log_ofs << "ENDEL" << std::endl;

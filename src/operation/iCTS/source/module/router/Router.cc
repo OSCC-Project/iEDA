@@ -111,7 +111,7 @@ void Router::gocaRouting(CtsNet* clk_net)
   auto net_name = clk_net->get_net_name();
   // total topology
   auto goca = GOCA(net_name, clk_net->get_driver_pin(), pins);
-  goca.set_max_thread(32);
+  goca.set_max_thread(1);
   goca.run();
   auto clk_nets = goca.get_solver_nets();
   if (clk_nets.empty()) {
@@ -159,6 +159,10 @@ void Router::synthesisPin(Pin* pin)
   // It's a new insert buffer pin
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto buf = pin->get_inst();
+  if (!buf) {
+    // is CLK
+    return;
+  }
   auto* cts_buf = new CtsInstance(buf->get_name(), buf->get_cell_master(), CtsInstanceType::kBuffer, buf->get_location());
   db_wrapper->linkIdb(cts_buf);
 

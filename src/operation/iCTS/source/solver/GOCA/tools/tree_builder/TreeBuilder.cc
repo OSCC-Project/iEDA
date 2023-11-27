@@ -102,7 +102,7 @@ void TreeBuilder::amplifyBufferSize(Inst* inst, const size_t& level)
     }
   }
   auto cell_master = inst->get_cell_master();
-  if (cell_master == TimingPropagator::getMaxSizeLib()->get_cell_master()) {
+  if (cell_master == TimingPropagator::getMaxSizeCell()) {
     LOG_WARNING << inst->get_name() << " can't be amplified";
     return;
   }
@@ -150,7 +150,7 @@ void TreeBuilder::reduceBufferSize(Inst* inst, const size_t& level)
     }
   }
   auto cell_master = inst->get_cell_master();
-  if (cell_master == TimingPropagator::getMinSizeLib()->get_cell_master()) {
+  if (cell_master == TimingPropagator::getMinSizeCell()) {
     LOG_WARNING << inst->get_name() << " can't be reduced";
     return;
   }
@@ -359,29 +359,34 @@ Inst* TreeBuilder::boundSkewTree(const std::string& net_name, const std::vector<
   return solver.get_root_buf();
 }
 /**
- * @brief BEAT Salt Tree
+ * @brief Flute-BST Salt Tree
  *
  * @param net_name
  * @param loads
  * @param skew_bound
  * @param guide_loc
- * @param topo_type
  * @return Inst*
  */
-Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
-                               const std::optional<Point>& guide_loc, const TopoType& topo_type)
+Inst* TreeBuilder::fluteBstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                                    const std::optional<Point>& guide_loc)
 {
-  // build BST
-  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
+  // build flute-BST
+  auto* buf = genBufInst(net_name, guide_loc.value_or(loads.front()->get_location()));
   auto* driver_pin = buf->get_driver_pin();
-  buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
-  auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
-
-  TimingPropagator::update(bst_net);
-
   std::vector<Pin*> pins{driver_pin};
   std::ranges::copy(loads, std::back_inserter(pins));
   localPlace(pins);
+  // flute
+  fluteTree(net_name, driver_pin, loads);
+  // flute-BST
+  convertToBinaryTree(driver_pin);
+  auto solver = bst::BoundSkewTree(net_name, driver_pin, skew_bound);
+  solver.run();
+
+  buf->set_cell_master(TimingPropagator::getMinSizeCell());
+  auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  TimingPropagator::update(bst_net);
+
   removeRedundant(driver_pin);
   std::unordered_map<int, Node*> id_to_node;
   std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
@@ -399,8 +404,6 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   // convert bound skew tree to salt data structure
   std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
   int id = pins.size();
-  // debug
-  writePy(driver_pin, "debug");
   driver_pin->preOrder([&](Node* node) {
     auto loc = salt::Point(node->get_location().x(), node->get_location().y());
     std::shared_ptr<salt::TreeNode> salt_node;
@@ -450,6 +453,94 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   return buf;
 }
 /**
+ * @brief BEAT Salt Tree
+ *
+ * @param net_name
+ * @param loads
+ * @param skew_bound
+ * @param guide_loc
+ * @param topo_type
+ * @return Inst*
+ */
+Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                               const std::optional<Point>& guide_loc, const TopoType& topo_type)
+{
+  // build BST
+  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
+  auto* driver_pin = buf->get_driver_pin();
+  buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+
+  TimingPropagator::update(bst_net);
+  TreeBuilder::updateId(driver_pin);
+  int num = 0;
+  driver_pin->preOrder([&](Node* node) { ++num; });
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+  std::vector<Node*> cts_nodes(num);
+  std::vector<std::shared_ptr<salt::TreeNode>> salt_nodes(num);
+  driver_pin->preOrder([&](Node* node) {
+    std::shared_ptr<salt::TreeNode> salt_node;
+    auto id = node->get_id();
+    auto loc = salt::Point(node->get_location().x(), node->get_location().y());
+    if (node->isPin()) {
+      auto* pin = dynamic_cast<Pin*>(node);
+      auto salt_pin = std::make_shared<salt::Pin>(loc, id, pin->get_cap_load());
+      salt_node = std::make_shared<salt::TreeNode>(loc, salt_pin, id);
+      salt_pins.push_back(salt_pin);
+    } else {
+      salt_node = std::make_shared<salt::TreeNode>(loc, nullptr, id);
+    }
+    salt_nodes[id] = salt_node;
+    cts_nodes[id] = node;
+  });
+  salt::Net salt_net;
+  salt_net.init(0, net_name, salt_pins);
+  // convert bound skew tree to salt data structure
+  driver_pin->preOrder([&](Node* node) {
+    if (!node->get_parent()) {
+      return;
+    }
+    auto cur_id = node->get_id();
+    auto parent_id = node->get_parent()->get_id();
+    auto salt_node = salt_nodes[cur_id];
+    auto salt_parent = salt_nodes[parent_id];
+    salt::TreeNode::setParent(salt_node, salt_parent);
+  });
+
+  // BST Salt
+  salt::Tree bound_skew_tree(salt_nodes[0], &salt_net);
+  TreeSaltBuilder builder;
+  builder.run(salt_net, bound_skew_tree, 0);
+  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
+  icts::TimingPropagator::resetNet(bst_net);
+  auto source = bound_skew_tree.source;
+  buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
+  driver_pin = buf->get_driver_pin();
+  cts_nodes[source->id] = driver_pin;
+  num = 0;
+  auto count_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) { ++num; };
+  salt::TreeNode::preOrder(source, count_func);
+  cts_nodes.resize(num);
+  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+    // steiner point, need to create a new node
+    auto id = salt_node->id;
+    if (id == source->id) {
+      return;
+    }
+    if (!salt_node->pin) {
+      auto* node = new icts::Node(id, icts::Point(salt_node->loc.x, salt_node->loc.y));
+      cts_nodes[id] = node;
+    }
+    // connect to parent
+    auto* current_node = cts_nodes[id];
+    auto parent_id = salt_node->parent->id;
+    auto* parent_node = cts_nodes[parent_id];
+    connect(parent_node, current_node);
+  };
+  salt::TreeNode::preOrder(source, connect_node_func);
+  return buf;
+}
+/**
  * @brief BEAT Tree
  *
  * @param net_name
@@ -474,6 +565,46 @@ Inst* TreeBuilder::beatTree(const std::string& net_name, const std::vector<Pin*>
   return inst;
 }
 /**
+ * @brief BEAT tree with shift
+ *
+ * @param net_name
+ * @param loads
+ * @param skew_bound
+ * @param guide_loc
+ * @param topo_type
+ * @param shift
+ * @param max_len
+ * @return Inst*
+ */
+Inst* TreeBuilder::shiftBeatTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound,
+                                 const std::optional<Point>& guide_loc, const TopoType& topo_type, const bool& shift,
+                                 const std::optional<double>& max_len)
+{
+  {
+    auto* buf = beatTree(net_name, loads, skew_bound, guide_loc, topo_type);
+    auto* driver_pin = buf->get_driver_pin();
+    auto driver_loc = driver_pin->get_location();
+    driver_pin->postOrder(TimingPropagator::updateNetLen<Node>);
+    if (shift && guide_loc.has_value() && driver_loc != guide_loc
+        && driver_pin->get_sub_len() < max_len.value_or(TimingPropagator::getMaxLength())) {
+      auto id = driver_pin->getMaxId();
+      auto remain_dist = (max_len.value_or(TimingPropagator::getMaxLength()) - driver_pin->get_sub_len()) * TimingPropagator::getDbUnit();
+      auto guide_dist = TimingPropagator::calcDist(driver_loc, guide_loc.value());
+      auto feasible_loc
+          = remain_dist > guide_dist ? guide_loc.value() : driver_loc + (guide_loc.value() - driver_loc) * remain_dist / guide_dist;
+      auto* steiner = new Node(++id, driver_loc);
+      auto children = driver_pin->get_children();
+      std::ranges::for_each(children, [&](Node* child) {
+        disconnect(driver_pin, child);
+        connect(steiner, child);
+      });
+      connect(driver_pin, steiner);
+      buf->set_location(feasible_loc);
+    }
+    return buf;
+  }
+}
+/**
  * @brief temp tree
  *
  * @param net_name
@@ -489,7 +620,7 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
   // build BST
   auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
   auto* driver_pin = buf->get_driver_pin();
-  buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  buf->set_cell_master(TimingPropagator::getMinSizeCell());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
   TimingPropagator::update(bst_net);
 
@@ -577,7 +708,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
       return node;
     }
     auto* parent = node->get_parent();
-    auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+    auto* copy_node = new Node(++id, node->get_location());
     LOG_FATAL_IF(!parent) << "node is load pin but not have parent node";
     disconnect(parent, node);
     connect(parent, copy_node);
@@ -600,7 +731,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     if ((node->isPin() && node->isLoad())) {
       // upstream refine
       auto* parent = node->get_parent();
-      auto* copy_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+      auto* copy_node = new Node(++id, node->get_location());
       if (parent) {
         disconnect(parent, node);
         connect(parent, copy_node);
@@ -639,7 +770,7 @@ void TreeBuilder::convertToBinaryTree(Node* root)
     // downstream refine
     auto* left_child = children[0];
     auto* right_child = children[1];
-    auto* trunk = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+    auto* trunk = new Node(++id, node->get_location());
     disconnect(node, left_child);
     disconnect(node, right_child);
     connect(node, trunk);
@@ -654,8 +785,8 @@ void TreeBuilder::convertToBinaryTree(Node* root)
 
     // upstream check
     // case 4: size is 4
-    auto* copy_left_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
-    auto* copy_right_node = new Node(CTSAPIInst.toString("steiner_", ++id), node->get_location());
+    auto* copy_left_node = new Node(++id, node->get_location());
+    auto* copy_right_node = new Node(++id, node->get_location());
     std::ranges::for_each(children, [&](Node* child) { disconnect(node, child); });
     connect(node, copy_left_node);
     connect(node, copy_right_node);
@@ -721,21 +852,56 @@ void TreeBuilder::removeRedundant(Node* root)
     auto* node = stack.top();
     stack.pop();
     auto children = node->get_children();
-    std::ranges::for_each(children, [&](Node* child) { stack.push(child); });
+    bool exist_opt = false;
+    for (auto* child : children) {
+      if (node->get_location() == child->get_location()) {
+        exist_opt = true;
+        break;
+      }
+    }
+    if (!exist_opt) {
+      std::ranges::for_each(children, [&](Node* child) { stack.push(child); });
+      continue;
+    }
+    // move target child's children to node, and remove target child
     if (node->isPin()) {
-      continue;
-    }
-    auto* parent = node->get_parent();
-    if (parent == nullptr) {
-      continue;
-    }
-    if (node->get_location() == parent->get_location()) {
-      disconnect(parent, node);
       std::ranges::for_each(children, [&](Node* child) {
+        if (node->get_location() != child->get_location()) {
+          return;
+        }
+        LOG_FATAL_IF(node->isPin() && child->isPin()) << "Both of Node and child are pins, but have the same location";
+        // move child's children to node, and add child to to_be_removed
         disconnect(node, child);
-        connect(parent, child);
+        auto sub_children = child->get_children();
+        std::ranges::for_each(sub_children, [&](Node* sub_child) {
+          disconnect(child, sub_child);
+          connect(node, sub_child);
+        });
+        to_be_removed.push_back(child);
       });
+      stack.push(node);  // recheck new children whether have same location
+      continue;
+    }
+    // let target child be new node
+    for (auto* child : children) {
+      if (node->get_location() != child->get_location()) {
+        continue;
+      }
+      auto* parent = node->get_parent();
+      disconnect(node, child);
+      disconnect(parent, node);
+      connect(parent, child);
+      std::ranges::for_each(children, [&](Node* sub_child) {
+        if (sub_child == child) {
+          return;
+        }
+        disconnect(node, sub_child);
+        connect(child, sub_child);
+      });
+      stack.push(child);
+      node->set_children({});
       to_be_removed.push_back(node);
+      break;
     }
   }
   std::ranges::for_each(to_be_removed, [&](Node* node) { delete node; });
@@ -803,6 +969,29 @@ void TreeBuilder::localPlace(std::vector<Point>& variable_locs, const std::vecto
   LocalLegalization(variable_locs, fixed_locs);
 }
 /**
+ * @brief update tree id
+ *
+ * @param root
+ */
+void TreeBuilder::updateId(Node* root)
+{
+  std::vector<Node*> pin_nodes;
+  std::vector<Node*> steiner_nodes;
+  root->preOrder([&](Node* node) {
+    if (node->isPin()) {
+      pin_nodes.push_back(node);
+    } else {
+      steiner_nodes.push_back(node);
+    }
+  });
+  int id = 0;
+  std::ranges::for_each(pin_nodes, [&](Node* node) { node->set_id(id++); });
+  std::ranges::for_each(steiner_nodes, [&](Node* node) {
+    node->set_id(id++);
+    node->set_name(CTSAPIInst.toString("steiner_", node->get_id()));
+  });
+}
+/**
  * @brief print tree to graphviz
  *
  * @param root
@@ -811,7 +1000,10 @@ void TreeBuilder::localPlace(std::vector<Point>& variable_locs, const std::vecto
 void TreeBuilder::printGraphviz(Node* root, const std::string& name)
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = config->get_sta_workspace();
+  auto dir = config->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
   auto file_name = dir + "/" + name + ".dot";
   std::ofstream out(file_name);
   if (!out.is_open()) {
@@ -823,16 +1015,14 @@ void TreeBuilder::printGraphviz(Node* root, const std::string& name)
     // include node info
 
     if (node->isSteiner()) {
-      out << node->get_name() << " [shape=point];\n";
+      out << "\"" << node->get_name() << "\" [shape=point];\n";
     } else {
-      out << node->get_name() << " [shape=box];\n";
+      out << "\"" << node->get_name() << "\" [shape=box];\n";
     }
   };
   std::function<void(Node*)> print_edge = [&out](Node* node) {
-    if (node->isSteiner()) {
-      for (auto child : node->get_children()) {
-        out << node->get_name() << " -> " << child->get_name() << ";\n";
-      }
+    for (auto child : node->get_children()) {
+      out << "\"" << node->get_name() << "\" -> \"" << child->get_name() << "\";\n";
     }
   };
   root->preOrder(print_node);
@@ -860,26 +1050,59 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
     return;
   }
   out << "import matplotlib.pyplot as plt\n";
-  out << "fig = plt.figure(figsize=(8,6), dpi=300)\n";
+  out << "fig = plt.figure(figsize=(6,6), dpi=300)\n";
   root->preOrder([&out](Node* node) {
-    if (node->isPin() && node->isDriver()) {
-      // more big
-      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ",'*r')\n";
-    } else if (node->isSteiner()) {
-      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ",'.k')\n";
-    } else {
-      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ",'ob')\n";
-    }
-    // out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << std::fixed << std::setprecision(4)
-    //     << node->get_name() << "]')\n";
     auto* parent = node->get_parent();
     if (parent) {
       out << "plt.plot([" << parent->get_location().x() << "," << node->get_location().x() << "],"
           << "[" << parent->get_location().y() << "," << node->get_location().y() << "],'-k')\n";
     }
   });
-  out << "plt.show()\n";
-  out << "plt.savefig('./" + name + ".png')\n";
+  root->preOrder([&out](Node* node) {
+    if (node->isPin() && node->isDriver()) {
+      // more big
+      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ", c='r', marker='s', mew=0, ms=10)\n";
+    } else if (node->isSteiner()) {
+      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ", c='k', marker='o', mew=0, ms=6)\n";
+    } else {
+      out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ", c='k', marker='s', mew=0, ms=8)\n";
+    }
+    // out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << std::fixed << std::setprecision(4)
+    //     << node->get_name() << "]')\n";
+  });
+  out << "plt.axis('square')\n";
+  out << "plt.axis('off')\n";
+  out << "plt.savefig('./" + name + ".pdf', dpi=300, bbox_inches='tight')\n";
+  out.close();
+}
+/**
+ * @brief write instance info to file
+ *
+ * @param root
+ * @param name
+ */
+void TreeBuilder::writeInstInfo(Node* root, const std::string& name)
+{
+  auto* config = CTSAPIInst.get_config();
+  auto dir = config->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
+  auto file_name = dir + "/" + name + ".inst";
+  std::ofstream out(file_name);
+  if (!out.is_open()) {
+    LOG_ERROR << "Can't open file: " << file_name;
+    return;
+  }
+  root->preOrder([&](Node* node) {
+    if (node->isPin() && node->isLoad()) {
+      auto* pin = dynamic_cast<Pin*>(node);
+      auto* inst = pin->get_inst();
+      auto type = inst->get_type() == InstType::kSink ? "sink" : "buf";
+      out << node->get_name() << " " << inst->get_location().x() << " " << inst->get_location().y() << " " << node->get_cap_load() << " "
+          << type << "\n";
+    }
+  });
   out.close();
 }
 }  // namespace icts

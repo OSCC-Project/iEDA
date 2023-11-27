@@ -103,9 +103,13 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
     }
   }
   LOG_INFO_IF(log) << "End AnnealOpt --- ";
-  LOG_INFO << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost
-           << "  Improvement: " << (init_cost - _best_cost) / init_cost * 100 << "%";
-  CTSAPIInst.saveToLog("Best Cost: ", _best_cost, "  Improvement: ", (init_cost - _best_cost) / init_cost * 100, "%");
+  _improve = (init_cost - _best_cost) / init_cost;
+  if (_improve > 0) {
+    LOG_INFO << "  Best Cost: " << std::fixed << std::setprecision(3) << _best_cost << "  Improvement: " << _improve * 100 << "%";
+    CTSAPIInst.saveToLog("Best Cost: ", _best_cost, "  Improvement: ", _improve * 100, "%");
+  } else {
+    LOG_WARNING << "  No Improvement!";
+  }
   // remove empty
   best_solution.erase(
       std::remove_if(best_solution.begin(), best_solution.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
@@ -391,7 +395,7 @@ Net* AnnealOptInterface::buildNet(const std::vector<Inst*>& cluster)
 
   TreeBuilder::localPlace(load_pins);
   auto* temp_buf = TreeBuilder::beatTree("temp", load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
-  temp_buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+  temp_buf->set_cell_master(TimingPropagator::getMinSizeCell());
 
   auto* temp_net = TimingPropagator::genNet("temp", temp_buf->get_driver_pin(), load_pins);
   TimingPropagator::update(temp_net);
@@ -558,7 +562,23 @@ double VioAnnealOpt::fanoutVioCost(const Net* net)
   if (fanout > _max_fanout) {
     fanout_cost += (fanout - _max_fanout) * (wireLengthVioCost(net) + capVioCost(net) + skewVioCost(net));
   }
+  if (fanout == 1) {
+    fanout_cost += 2 * (_max_cap);
+  }
   return fanout_cost;
+}
+/**
+ * @brief latency cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::latencyCost(const Net* net)
+{
+  auto* driver_pin = net->get_driver_pin();
+  auto latency = driver_pin->get_max_delay();
+  auto cost = latency / TimingPropagator::getUnitRes();
+  return cost;
 }
 /**
  * @brief skew cost of the net

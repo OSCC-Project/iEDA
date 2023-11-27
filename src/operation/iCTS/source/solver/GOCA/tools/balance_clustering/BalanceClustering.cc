@@ -225,6 +225,19 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
     return {insts};
   }
   LOG_INFO_IF(log) << "iterative clustering";
+  const size_t max_num = 40000;
+  if (insts.size() > max_num) {
+    auto divide_num = 4;
+    LOG_INFO << "Inst num: " << insts.size() << ", K-Means init clustering to " << divide_num << " clusters";
+    auto divide_clusters = kMeansPlus(insts, divide_num, 0, iters, no_change_stop);
+    std::vector<std::vector<Inst*>> clusters;
+    std::ranges::for_each(divide_clusters, [&](const std::vector<Inst*>& divide_cluster) {
+      auto sub_cluster = iterClustering(divide_cluster, max_fanout, iters, no_change_stop, limit_ratio, log);
+      clusters.insert(clusters.end(), sub_cluster.begin(), sub_cluster.end());
+    });
+    return clusters;
+  }
+
   // initialize clusters
   size_t cluster_num = std::ceil(1.0 * insts.size() / (limit_ratio * max_fanout));
   if (cluster_num == insts.size()) {
@@ -311,13 +324,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
       slack_clusters.push_back(cluster);
     } else {
       // reclustering
-      auto recluster_num = std::ceil(est_net_length / max_net_length);
-      if (recluster_num >= cluster.size()) {
-        // LOG_WARNING << "Clusters num: " << cluster.size() << ", Estimation net length: " << est_net_length
-        //             << ", Max net length: " << max_net_length << ", Recluster num: " << recluster_num
-        //             << ", Recluster num is equal to cluster size";
-        recluster_num = cluster.size() - 1;
-      }
+      size_t recluster_num = std::ceil(est_net_length / max_net_length);
+      recluster_num = std::min(recluster_num, cluster.size());
       if (recluster_num == 1) {
         slack_clusters.push_back(cluster);
         return;
@@ -366,10 +374,12 @@ std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const s
  * @brief get all cluster guide center
  *
  * @param clusters
+ * @param center
  * @param level
  * @return std::vector<Point>
  */
-std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<Inst*>>& clusters, const size_t& level)
+std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<Inst*>>& clusters, const std::optional<Point>& center,
+                                                  const double& min_length, const size_t& level)
 {
   std::vector<Inst*> insts;
   std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
@@ -377,9 +387,8 @@ std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<
   });
   std::vector<Pin*> pins;
   std::transform(insts.begin(), insts.end(), std::back_inserter(pins), [](Inst* inst) { return inst->get_load_pin(); });
-  auto center = calcCentroid(insts);
-  auto* buf = TreeBuilder::beatTree("temp", pins, std::nullopt, center, TopoType::kBiPartition);
-  // auto* buf = TreeBuilder::genBufInst("temp", center);
+  auto* buf = TreeBuilder::beatTree("temp", pins, std::nullopt, center.value_or(calcCentroid(insts)), TopoType::kBiPartition);
+  // auto* buf = TreeBuilder::genBufInst("temp", center.value_or(calcCentroid(insts)));
   auto* driver_pin = buf->get_driver_pin();
   // TreeBuilder::shallowLightTree("temp", driver_pin, pins);
 
@@ -389,14 +398,28 @@ std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<
   std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
     std::vector<Node*> cluster_pins;
     std::transform(cluster.begin(), cluster.end(), std::back_inserter(cluster_pins), [](Inst* inst) { return inst->get_load_pin(); });
-    auto* lca = solver.query(cluster_pins);
-    size_t lca_level = 1;
-    while (lca_level < level && lca->get_parent()) {
-      lca = lca->get_parent();
-      ++lca_level;
+    Point guide_loc = Point(-1, -1);
+    if (cluster_pins.size() == 1) {
+      auto* load = cluster_pins.front();
+      auto* parent = load->get_parent();
+      while (TimingPropagator::calcLen(parent->get_location(), load->get_location()) < min_length && parent->get_parent()) {
+        parent = parent->get_parent();
+      }
+      guide_loc = parent->get_location();
+    } else {
+      auto center = calcCentroid(cluster);
+      auto* lca = solver.query(cluster_pins);
+      size_t lca_level = 1;
+      while (lca_level < level && lca->get_parent()) {
+        lca = lca->get_parent();
+        ++lca_level;
+      }
+      while (TimingPropagator::calcLen(lca->get_location(), center) < min_length && lca->get_parent()) {
+        lca = lca->get_parent();
+      }
+      guide_loc = lca->get_location();
     }
-    auto loc = lca->get_location();
-    centers.push_back(loc);
+    centers.push_back(guide_loc);
   });
   auto* net = TimingPropagator::genNet("temp", driver_pin, pins);
   TimingPropagator::resetNet(net);
@@ -698,7 +721,7 @@ double BalanceClustering::estimateNetCap(const std::vector<Inst*>& cluster)
  */
 double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster)
 {
-  if (cluster.size() == 1) {
+  if (cluster.size() <= 1) {
     return 0;
   }
   // auto center = calcCentroid(cluster);
@@ -706,7 +729,6 @@ double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster)
   std::vector<Pin*> cluster_load_pins;
   std::transform(cluster.begin(), cluster.end(), std::back_inserter(cluster_load_pins), [](Inst* inst) { return inst->get_load_pin(); });
   TreeBuilder::localPlace(cluster_load_pins);
-
   auto* buf = TreeBuilder::beatTree("temp", cluster_load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
   auto* driver_pin = buf->get_driver_pin();
   TreeBuilder::localPlace(buf, cluster_load_pins);

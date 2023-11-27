@@ -372,7 +372,7 @@ const char* Str::trimmed(const char* str)
   absl::string_view str_view(str);
   absl::ConsumePrefix(&str_view, "\\");
   absl::ConsumeSuffix(&str_view, " ");
-
+  absl::ConsumeSuffix(&str_view, "\n");
   return Str::printf("%s", std::string(str_view).c_str());
 }
 

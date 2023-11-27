@@ -90,6 +90,7 @@ class CTSAPI
   icts::CtsCellLib* getCellLib(const std::string& cell_masterconst, const std::string& from_port = "", const std::string& to_port = "",
                                const bool& use_work_value = true);
   std::vector<icts::CtsCellLib*> getAllBufferLibs();
+  icts::CtsCellLib* getRootBufferLib();
   std::vector<std::string> getMasterClocks(icts::CtsNet* net) const;
   double getClockAT(const std::string& pin_name, const std::string& belong_clock_name) const;
   std::string getCellType(const std::string& cell_master) const;
@@ -147,7 +148,7 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
-  
+
   // function
   std::vector<std::string> splitString(std::string str, const char split);
 
@@ -176,7 +177,7 @@ class CTSAPI
   // private STA
   void readSTAFile();
   ista::RctNode* makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name);
-  ista::RctNode* makeLogicRCTreeNode(icts::CtsPin* pin);
+  ista::RctNode* makePinRCTreeNode(icts::CtsPin* pin);
   ista::DesignObject* findStaPin(icts::CtsPin* pin) const;
   ista::DesignObject* findStaPin(const std::string& pin_full_name) const;
   ista::Net* findStaNet(const icts::EvalNet& eval_net) const;
