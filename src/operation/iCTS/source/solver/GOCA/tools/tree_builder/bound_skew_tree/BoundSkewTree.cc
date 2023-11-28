@@ -1153,7 +1153,7 @@ void BoundSkewTree::calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type
     temp_pt.max = p1.max + incr_delay;
     temp_pt.val = p1.val + _unit_h_cap * h + _unit_v_cap * v;
     calcBalPtOnLine(temp_pt, p2, timing_type, d1, d2, bal_pt);
-    LOG_FATAL_IF(d2 != 0) << "dist to p2 should be zero";
+    LOG_FATAL_IF(d2 > kEpsilon) << "dist to p2 should be zero";
     auto new_incr_delay = calcDelayIncrease(0, d1, temp_pt.val);
     LOG_FATAL_IF(!Equal(delay2, incr_delay + new_incr_delay + delay1)) << "delay is not equal";
     d1 += h + v;

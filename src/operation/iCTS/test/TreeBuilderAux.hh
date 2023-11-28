@@ -238,8 +238,8 @@ class TreeBuilderAux : public TestInterface
     skewTreeInfo(TreeBuilder::getSkewTreeFuncs());
     DataSet data_set(case_num);
     for (size_t i = 0; i < case_num; ++i) {
-      if (i % (case_num / 10) == 0) {
-        LOG_INFO << "Case num: " << i << "/" << case_num;
+      if ((i + 1) % (case_num / 10) == 0) {
+        LOG_INFO << "Case num: " << i + 1 << "/" << case_num;
       }
       auto load_pins = genRandomPins(env_info, i);
       DataUnit data_unit(env_info, i, load_pins.size());

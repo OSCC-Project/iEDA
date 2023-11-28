@@ -212,6 +212,8 @@ class BalanceClustering
 
   static void convexHull(std::vector<Point>& pts);
 
+  static std::vector<CtsPoint<double>> paretoFront(const std::vector<CtsPoint<double>>& pts);
+
   static bool isContain(const Point& p, const std::vector<Point>& pts);
 
   static bool isSame(const std::vector<std::vector<Inst*>>& clusters1, const std::vector<std::vector<Inst*>>& clusters2);

@@ -73,6 +73,49 @@ TEST_F(TreeBuilderTest, GeomTest)
   EXPECT_EQ(poly_t.size(), 8);
 }
 
+TEST_F(TreeBuilderTest, ParetoFrontTest)
+{
+  using icts::BalanceClustering;
+  using Pt = icts::CtsPoint<double>;
+  // random generate points with y = 1 / x
+  std::vector<Pt> points;
+  for (size_t i = 0; i < 20; ++i) {
+    auto x = 1.0 * (i + 1) / 100;
+    auto y = 1 / x;
+    points.emplace_back(x + (std::rand() % 10) / 100.0, y);
+    points.emplace_back(x + (std::rand() % 30) / 100.0, y);
+    points.emplace_back(x + (std::rand() % 60) / 100.0, y);
+  }
+  auto pareto_front = BalanceClustering::paretoFront(points);
+  // write to python file
+  std::ofstream ofs("./pareto_front.py");
+  ofs << "import matplotlib.pyplot as plt\n";
+  ofs << "x = [";
+  for (const auto& point : points) {
+    ofs << point.x() << ",";
+  }
+  ofs << "]\n";
+  ofs << "y = [";
+  for (const auto& point : points) {
+    ofs << point.y() << ",";
+  }
+  ofs << "]\n";
+  ofs << "plt.scatter(x, y)\n";
+  ofs << "x = [";
+  for (const auto& point : pareto_front) {
+    ofs << point.x() << ",";
+  }
+  ofs << "]\n";
+  ofs << "y = [";
+  for (const auto& point : pareto_front) {
+    ofs << point.y() << ",";
+  }
+  ofs << "]\n";
+  ofs << "plt.scatter(x, y, c='r', marker='o')\n";
+  ofs << "plt.savefig('pareto_front.png')\n";
+  ofs.close();
+}
+
 TEST_F(TreeBuilderTest, LocalLegalizationTest)
 {
   auto* load1 = TreeBuilder::genBufInst("load1", Point(2606905, 3009850));

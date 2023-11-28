@@ -956,6 +956,30 @@ void BalanceClustering::convexHull(std::vector<Point>& pts)
   pts = std::vector<Point>(ans.begin(), ans.begin() + k - 1);
 }
 /**
+ * @brief find the pareto front of points
+ *
+ * @param pts
+ * @return std::vector<CtsPoint<double>>
+ */
+std::vector<CtsPoint<double>> BalanceClustering::paretoFront(const std::vector<CtsPoint<double>>& pts)
+{
+  auto pareto_pts = pts;
+  auto cmp = [](const CtsPoint<double>& p1, const CtsPoint<double>& p2) {
+    return p1.x() < p2.x() || (std::abs(p1.x() - p2.x()) < std::numeric_limits<double>::epsilon() && p1.y() < p2.y());
+  };
+  std::ranges::sort(pareto_pts, cmp);
+  std::vector<CtsPoint<double>> ans;
+  double min_y = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < pareto_pts.size(); ++i) {
+    auto p = pareto_pts[i];
+    if (i == 0 || p.y() < min_y) {
+      ans.push_back(p);
+      min_y = p.y();
+    }
+  }
+  return ans;
+}
+/**
  * @brief check whether p is in pts
  *
  * @param p
