@@ -28,6 +28,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "StaData.hh"
 #include "netlist/Netlist.hh"
@@ -309,9 +310,9 @@ class StaVertex {
     }
   }
   StaClock* getPropClock(AnalysisMode analysis_mode, TransType trans_type);
-  std::set<StaClock*> getPropagatedClock(AnalysisMode analysis_mode,
-                                         TransType trans_type,
-                                         bool is_data_path);
+  std::unordered_set<StaClock*> getPropagatedClock(AnalysisMode analysis_mode,
+                                                   TransType trans_type,
+                                                   bool is_data_path);
   bool isPropClock(const char* clock_name, AnalysisMode analysis_mode,
                    TransType trans_type);
 
@@ -369,6 +370,8 @@ class StaVertex {
 
     return std::nullopt;
   }
+
+  std::optional<double> getTNSNs(AnalysisMode analysis_mode);
 
   std::optional<int> getSlew(AnalysisMode analysis_mode, TransType trans_type);
   std::optional<double> getSlewNs(AnalysisMode analysis_mode,

@@ -31,7 +31,6 @@
 #include "CtsConfig.hh"
 #include "CtsDBWrapper.hh"
 #include "CtsDesign.hh"
-#include "CtsReport.hh"
 #include "Evaluator.hh"
 #include "GDSPloter.hh"
 #include "JsonParser.hh"
@@ -48,8 +47,7 @@
 #include "model/ModelFactory.hh"
 #include "model/mplHelper/MplHelper.hh"
 #include "model/python/PyToolBase.hh"
-#include "salt/base/flute.h"
-#include "salt/salt.h"
+#include "report/CtsReport.hh"
 #ifdef PY_MODEL
 #include "PyModel.h"
 #endif
@@ -93,9 +91,10 @@ void CTSAPI::writeDB()
 
 void CTSAPI::writeGDS()
 {
-  GDSPloter plotter;
-  plotter.plotDesign();
-  plotter.plotFlyLine();
+  GDSPloter::plotDesign();
+  GDSPloter::plotFlyLine();
+  GDSPloter::writePyDesign();
+  GDSPloter::writePyFlyLine();
 }
 
 void CTSAPI::report(const std::string& save_dir)
@@ -204,15 +203,16 @@ double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pa
 {
   std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  auto* db_adapter = getStaDbAdapter();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return getStaDbAdapter()->getCapacitance(_config->get_h_layer(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      return getStaDbAdapter()->getCapacitance(_config->get_v_layer(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+      return db_adapter->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
@@ -224,15 +224,16 @@ double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pa
 {
   std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
+  auto* db_adapter = getStaDbAdapter();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return getStaDbAdapter()->getResistance(_config->get_h_layer(), 1.0, width);
+      return db_adapter->getResistance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      return getStaDbAdapter()->getResistance(_config->get_v_layer(), 1.0, width);
+      return db_adapter->getResistance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
+      return db_adapter->getResistance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
@@ -337,7 +338,8 @@ icts::CtsPin* CTSAPI::findDriverPin(icts::CtsNet* net)
 
 std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
 {
-  auto* sta_net = getStaDbAdapter()->makeNet(eval_net.get_name().c_str(), nullptr);
+  auto* db_adapter = getStaDbAdapter();
+  auto* sta_net = db_adapter->makeNet(eval_net.get_name().c_str(), nullptr);
   buildRCTree(eval_net);
   auto* rc_net = _timing_engine->get_ista()->getRcNet(sta_net);
   auto* rc_tree = rc_net->rct();
@@ -350,7 +352,7 @@ std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
     auto delay = rc_tree->delay(pin_name);
     delay_map[pin->get_instance()->get_name()] = delay;
   }
-  getStaDbAdapter()->removeNet(sta_net);
+  db_adapter->removeNet(sta_net);
   return delay_map;
 }
 
@@ -501,8 +503,15 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
     all_buf_libs.emplace_back(buf_lib);
   }
   auto cmp = [](CtsCellLib* lib_1, CtsCellLib* lib_2) { return lib_1->getDelayIntercept() < lib_1->getDelayIntercept(); };
-  std::sort(all_buf_libs.begin(), all_buf_libs.end(), cmp);
+  std::ranges::sort(all_buf_libs, cmp);
   return all_buf_libs;
+}
+
+icts::CtsCellLib* CTSAPI::getRootBufferLib()
+{
+  auto root_buffer_type = _config->get_root_buffer_type();
+  auto* buf_lib = getCellLib(root_buffer_type);
+  return buf_lib;
 }
 
 std::vector<std::string> CTSAPI::getMasterClocks(icts::CtsNet* net) const
@@ -571,34 +580,37 @@ bool CTSAPI::isInDie(const icts::Point& point) const
 
 idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const std::string& cell_master)
 {
-  auto sta_inst = getStaDbAdapter()->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
-  auto idb_inst = getStaDbAdapter()->staToDb(sta_inst);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_inst = db_adapter->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
+  auto idb_inst = db_adapter->staToDb(sta_inst);
   return idb_inst;
 }
 
 idb::IdbNet* CTSAPI::makeIdbNet(const std::string& net_name)
 {
-  auto sta_net = getStaDbAdapter()->makeNet(net_name.c_str(), nullptr);
-  auto idb_net = getStaDbAdapter()->staToDb(sta_net);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_net = db_adapter->makeNet(net_name.c_str(), nullptr);
+  auto idb_net = db_adapter->staToDb(sta_net);
   return idb_net;
 }
 
 void CTSAPI::linkIdbNetToSta(idb::IdbNet* idb_net)
 {
-  auto sta_net = getStaDbAdapter()->makeNet(idb_net->get_net_name().c_str(), nullptr);
-  getStaDbAdapter()->crossRef(sta_net, idb_net);
+  auto* db_adapter = getStaDbAdapter();
+  auto sta_net = db_adapter->makeNet(idb_net->get_net_name().c_str(), nullptr);
+  db_adapter->crossRef(sta_net, idb_net);
 }
 
 void CTSAPI::disconnect(idb::IdbPin* pin)
 {
-  auto db_adapter = getStaDbAdapter();
+  auto* db_adapter = getStaDbAdapter();
   auto sta_pin = db_adapter->dbToStaPin(pin);
   db_adapter->disconnectPin(sta_pin);
 }
 
 void CTSAPI::connect(idb::IdbInstance* idb_inst, const std::string& pin_name, idb::IdbNet* net)
 {
-  auto db_adapter = getStaDbAdapter();
+  auto* db_adapter = getStaDbAdapter();
   auto sta_inst = _timing_engine->get_netlist()->findInstance(idb_inst->get_name().c_str());
   auto sta_net = db_adapter->dbToSta(net);
   db_adapter->connect(sta_inst, pin_name.c_str(), sta_net);
@@ -621,239 +633,32 @@ int CTSAPI::genId()
 
 void CTSAPI::genFluteTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads)
 {
-  std::vector<icts::Pin*> pins{driver};
-  std::ranges::copy(loads, std::back_inserter(pins));
-
-  std::unordered_map<int, Node*> id_to_node;
-  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
-
-  for (size_t i = 0; i < pins.size(); ++i) {
-    auto pin = pins[i];
-    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
-    id_to_node[i] = pin;
-    salt_pins.push_back(salt_pin);
-  }
-  salt::Net net;
-  net.init(0, net_name, salt_pins);
-
-  salt::Tree tree;
-  salt::FluteBuilder flute_builder;
-  flute_builder.Run(net, tree);
-  tree.UpdateId();
-  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  auto source = tree.source;
-  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
-    if (salt_node->id == source->id) {
-      return;
-    }
-    // steiner point, need to create a new node
-    if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = toString(net_name, "_", salt_node->id);
-      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
-      id_to_node[salt_node->id] = node;
-    }
-    // connect to parent
-    auto* current_node = id_to_node[salt_node->id];
-    auto parent_id = salt_node->parent->id;
-    auto* parent_node = id_to_node[parent_id];
-    current_node->set_parent(parent_node);
-    parent_node->add_child(current_node);
-  };
-  salt::TreeNode::preOrder(source, connect_node_func);
+  TreeBuilder::fluteTree(net_name, driver, loads);
 }
 
 void CTSAPI::genShallowLightTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads)
 {
-  std::vector<icts::Pin*> pins{driver};
-  std::ranges::copy(loads, std::back_inserter(pins));
-
-  std::unordered_map<int, Node*> id_to_node;
-  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
-
-  for (size_t i = 0; i < pins.size(); ++i) {
-    auto pin = pins[i];
-    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
-    id_to_node[i] = pin;
-    salt_pins.push_back(salt_pin);
-  }
-  salt::Net net;
-  net.init(0, net_name, salt_pins);
-
-  salt::Tree tree;
-  salt::SaltBuilder salt_builder;
-  salt_builder.Run(net, tree, 0);
-
-  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  auto source = tree.source;
-  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
-    if (salt_node->id == source->id) {
-      return;
-    }
-    // steiner point, need to create a new node
-    if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = toString(net_name, "_", salt_node->id);
-      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
-      id_to_node[salt_node->id] = node;
-    }
-    // connect to parent
-    auto* current_node = id_to_node[salt_node->id];
-    auto parent_id = salt_node->parent->id;
-    auto* parent_node = id_to_node[parent_id];
-    current_node->set_parent(parent_node);
-    parent_node->add_child(current_node);
-  };
-  salt::TreeNode::preOrder(source, connect_node_func);
+  TreeBuilder::shallowLightTree(net_name, driver, loads);
 }
 
-icts::Inst* CTSAPI::genBeatSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads,
-                                    const std::optional<double>& skew_bound, const std::optional<icts::Point>& guide_loc,
-                                    const TopoType& topo_type)
+icts::Inst* CTSAPI::genBoundSkewTree(const std::string& net_name, const std::vector<icts::Pin*>& loads,
+                                     const std::optional<double>& skew_bound, const std::optional<icts::Point>& guide_loc,
+                                     const TopoType& topo_type)
 {
-  // build BST
-  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
-  auto* driver_pin = buf->get_driver_pin();
-  std::vector<Pin*> pins{driver_pin};
-  std::ranges::copy(loads, std::back_inserter(pins));
+  return TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc, topo_type);
+}
 
-  std::unordered_map<int, Node*> id_to_node;
-  std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
-  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
-  // init
-  for (size_t i = 0; i < pins.size(); ++i) {
-    auto pin = pins[i];
-    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
-    id_to_node[i] = pin;
-    salt_pin_map[pin] = salt_pin;
-    salt_pins.push_back(salt_pin);
-  }
-  salt::Net salt_net;
-  salt_net.init(0, net_name, salt_pins);
-  // convert bound skew tree to salt data structure
-  std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
-  int id = pins.size();
-  driver_pin->preOrder([&](Node* node) {
-    auto loc = salt::Point(node->get_location().x(), node->get_location().y());
-    std::shared_ptr<salt::TreeNode> salt_node;
-    if (node->isPin()) {
-      auto salt_pin = salt_pin_map[dynamic_cast<Pin*>(node)];
-      salt_node = std::make_shared<salt::TreeNode>(loc, salt_pin, salt_pin->id);
-    } else {
-      salt_node = std::make_shared<salt::TreeNode>(loc, nullptr, id++);
-    }
-    salt_node_map[node] = salt_node;
-    if (node->get_parent()) {
-      auto salt_parent = salt_node_map[node->get_parent()];
-      salt_node->parent = salt_parent;
-      salt_parent->children.push_back(salt_node);
-    }
-  });
-  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
-  // BEAT Salt
-  icts::BeatSaltBuilder builder;
-  builder.run(salt_net, bound_skew_tree, 0);
-
-  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  icts::TreeBuilder::recoverNet(driver_pin->get_net());
-  auto source = bound_skew_tree.source;
-  buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
-  driver_pin = buf->get_driver_pin();
-  id_to_node[0] = driver_pin;
-  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
-    if (salt_node->id == source->id) {
-      return;
-    }
-    // steiner point, need to create a new node
-    if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = toString(net_name, "_", salt_node->id);
-      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
-      id_to_node[salt_node->id] = node;
-    }
-    // connect to parent
-    auto* current_node = id_to_node[salt_node->id];
-    auto parent_id = salt_node->parent->id;
-    auto* parent_node = id_to_node[parent_id];
-    current_node->set_parent(parent_node);
-    parent_node->add_child(current_node);
-  };
-  salt::TreeNode::preOrder(source, connect_node_func);
-  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
-  icts::TimingPropagator::update(net);
-  return buf;
+icts::Inst* CTSAPI::genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads,
+                                   const std::optional<double>& skew_bound, const std::optional<icts::Point>& guide_loc,
+                                   const TopoType& topo_type)
+{
+  return TreeBuilder::bstSaltTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
 icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                                 const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
 {
-  // build BST
-  auto* buf = icts::TreeBuilder::boundSkewTree(net_name, loads, skew_bound, guide_loc);
-  auto* driver_pin = buf->get_driver_pin();
-  std::vector<Pin*> pins{driver_pin};
-  std::ranges::copy(loads, std::back_inserter(pins));
-
-  std::unordered_map<int, Node*> id_to_node;
-  std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
-  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
-  // init
-  for (size_t i = 0; i < pins.size(); ++i) {
-    auto pin = pins[i];
-    auto salt_pin = std::make_shared<salt::Pin>(pin->get_location().x(), pin->get_location().y(), i, pin->get_cap_load());
-    id_to_node[i] = pin;
-    salt_pin_map[pin] = salt_pin;
-    salt_pins.push_back(salt_pin);
-  }
-  salt::Net salt_net;
-  salt_net.init(0, net_name, salt_pins);
-  // convert bound skew tree to salt data structure
-  std::unordered_map<Node*, std::shared_ptr<salt::TreeNode>> salt_node_map;
-  int id = pins.size();
-  driver_pin->preOrder([&](Node* node) {
-    auto loc = salt::Point(node->get_location().x(), node->get_location().y());
-    std::shared_ptr<salt::TreeNode> salt_node;
-    if (node->isPin()) {
-      auto salt_pin = salt_pin_map[dynamic_cast<Pin*>(node)];
-      salt_node = std::make_shared<salt::TreeNode>(loc, salt_pin, salt_pin->id);
-    } else {
-      salt_node = std::make_shared<salt::TreeNode>(loc, nullptr, id++);
-    }
-    salt_node_map[node] = salt_node;
-    if (node->get_parent()) {
-      auto salt_parent = salt_node_map[node->get_parent()];
-      salt_node->parent = salt_parent;
-      salt_parent->children.push_back(salt_node);
-    }
-  });
-  salt::Tree bound_skew_tree(salt_node_map[driver_pin], &salt_net);
-  // BEAT Salt
-  icts::BeatBuilder beat_builder;
-  beat_builder.run(salt_net, bound_skew_tree, 0);
-
-  // connect driver node to all loads based on salt's tree(node), if node not exist, create new node
-  icts::TreeBuilder::recoverNet(driver_pin->get_net());
-  auto source = bound_skew_tree.source;
-  buf = icts::TreeBuilder::genBufInst(net_name, icts::Point(source->loc.x, source->loc.y));
-  driver_pin = buf->get_driver_pin();
-  id_to_node[0] = driver_pin;
-  auto connect_node_func = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
-    if (salt_node->id == source->id) {
-      return;
-    }
-    // steiner point, need to create a new node
-    if (salt_node->id > static_cast<int>(loads.size())) {
-      auto name = toString(net_name, "_", salt_node->id);
-      auto node = new icts::Node(name, icts::Point(salt_node->loc.x, salt_node->loc.y));
-      id_to_node[salt_node->id] = node;
-    }
-    // connect to parent
-    auto* current_node = id_to_node[salt_node->id];
-    auto parent_id = salt_node->parent->id;
-    auto* parent_node = id_to_node[parent_id];
-    current_node->set_parent(parent_node);
-    parent_node->add_child(current_node);
-  };
-  salt::TreeNode::preOrder(source, connect_node_func);
-  auto* net = icts::TimingPropagator::genNet(net_name, driver_pin, loads);
-  icts::TimingPropagator::update(net);
-  return buf;
+  return TreeBuilder::beatTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
 // evaluate
@@ -872,13 +677,17 @@ void CTSAPI::buildRCTree(const std::vector<icts::EvalNet>& eval_nets)
 void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
 {
   auto net_name = eval_net.get_name();
+#ifdef DEBUG_ICTS_EVALUATOR
   LOG_INFO << "Evaluate: " << net_name;
+#endif
   resetRCTree(net_name);
   auto* sta_net = findStaNet(eval_net);
   auto layer_id = _config->get_routing_layers().back();
   auto* solver_net = _design->findSolverNet(net_name);
   if (!solver_net) {
-    LOG_WARNING << "Can't find solver net: " << net_name;
+    LOG_WARNING << "Can't find solver net: " << net_name << ", It may be a pin-port(s) net";
+    // buildPinPortsRCTree(eval_net);
+    return;
   }
   auto* driver_pin = solver_net->get_driver_pin();
   driver_pin->preOrder([&](Node* node) {
@@ -898,6 +707,42 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
     _timing_engine->incrCap(back_node, cap / 2, true);
   });
 
+  _timing_engine->updateRCTreeInfo(sta_net);
+}
+
+void CTSAPI::buildPinPortsRCTree(const icts::EvalNet& eval_net)
+{
+  auto* sta_net = findStaNet(eval_net);
+  auto net_name = eval_net.get_name();
+  LOG_FATAL_IF(!sta_net) << "Can't find sta net: " << net_name;
+  auto pins = sta_net->get_pin_ports();
+  ista::DesignObject* driver_pin = nullptr;
+  for (auto* pin : pins) {
+    if (pin->isPin()) {
+      driver_pin = pin;
+      break;
+    }
+  }
+  LOG_FATAL_IF(!driver_pin) << "Can't find driver pin of sta net: " << net_name;
+  auto* driver_node = _timing_engine->makeOrFindRCTreeNode(driver_pin);
+  auto* db_adapter = getStaDbAdapter();
+  auto driver_loc = db_adapter->idbLocation(driver_pin);
+  auto pt_dist = [](idb::IdbCoordinate<int32_t>* p1, idb::IdbCoordinate<int32_t>* p2) {
+    return std::abs(p1->get_x() - p2->get_x()) + std::abs(p1->get_y() - p2->get_y());
+  };
+  std::ranges::for_each(pins, [&](ista::DesignObject* pin) {
+    if (pin == driver_pin) {
+      return;
+    }
+    auto* load_node = _timing_engine->makeOrFindRCTreeNode(pin);
+    auto load_loc = db_adapter->idbLocation(pin);
+    auto dist = pt_dist(driver_loc, load_loc);
+    auto res = getResistance(1.0 * dist / TimingPropagator::getDbUnit(), _config->get_routing_layers().back());
+    auto cap = getCapacitance(1.0 * dist / TimingPropagator::getDbUnit(), _config->get_routing_layers().back());
+    _timing_engine->makeResistor(sta_net, driver_node, load_node, res);
+    _timing_engine->incrCap(driver_node, cap / 2, true);
+    _timing_engine->incrCap(load_node, cap / 2, true);
+  });
   _timing_engine->updateRCTreeInfo(sta_net);
 }
 
@@ -922,6 +767,19 @@ void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, con
   if (std::filesystem::exists(origin_file_name)) {
     std::filesystem::copy_file(origin_file_name, copy_design_work_space);
   }
+}
+
+// function
+std::vector<std::string> CTSAPI::splitString(std::string str, const char split)
+{
+  std::vector<std::string> string_list;
+
+  std::istringstream iss(str);
+  std::string token;
+  while (getline(iss, token, split)) {
+    string_list.push_back(token);
+  }
+  return string_list;
 }
 
 // debug
@@ -959,19 +817,6 @@ icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, c
 
 #endif
 
-// function
-std::vector<std::string> CTSAPI::splitString(std::string str, const char split)
-{
-  std::vector<std::string> string_list;
-
-  std::istringstream iss(str);
-  std::string token;
-  while (getline(iss, token, split)) {
-    string_list.push_back(token);
-  }
-  return string_list;
-}
-
 // private STA
 void CTSAPI::readSTAFile()
 {
@@ -994,7 +839,7 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   auto* inst = eval_net.get_instance(name);
   if (inst == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
-    if (string_list.size() == 2 && (string_list[0] == "steiner" || string_list[0] == "Salt")) {
+    if (string_list.size() == 2 && (string_list[0] == "steiner")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;
@@ -1002,14 +847,14 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   } else {
     for (auto pin : eval_net.get_pins()) {
       if (pin->get_instance() == inst) {
-        return makeLogicRCTreeNode(pin);
+        return makePinRCTreeNode(pin);
       }
     }
   }
   return nullptr;
 }
 
-ista::RctNode* CTSAPI::makeLogicRCTreeNode(icts::CtsPin* pin)
+ista::RctNode* CTSAPI::makePinRCTreeNode(icts::CtsPin* pin)
 {
   auto* pin_port = findStaPin(pin->is_io() ? pin->get_pin_name() : pin->get_full_name());
   return _timing_engine->makeOrFindRCTreeNode(pin_port);

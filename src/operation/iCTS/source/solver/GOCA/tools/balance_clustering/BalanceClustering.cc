@@ -21,6 +21,7 @@
 #include "BalanceClustering.hh"
 
 #include <algorithm>
+#include <filesystem>
 #include <limits>
 #include <random>
 #include <ranges>
@@ -43,8 +44,8 @@ namespace icts {
  * @param no_change_stop
  * @return std::vector<std::vector<Inst*>>
  */
-std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst*>& insts, const size_t& k, const int& seed,
-                                                          const size_t& max_iter, const size_t& no_change_stop)
+std::vector<std::vector<Inst*>> BalanceClustering::kMeansPlus(const std::vector<Inst*>& insts, const size_t& k, const int& seed,
+                                                              const size_t& max_iter, const size_t& no_change_stop)
 {
   std::vector<std::vector<Inst*>> best_clusters(k);
 
@@ -57,9 +58,10 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
   // std::mt19937 gen(rd());
   std::mt19937 gen(static_cast<std::mt19937::result_type>(seed));
   std::uniform_int_distribution<> dis(0, num_instances - 1);
-  auto loc = insts[dis(gen)]->get_location();
-  centers.emplace_back(Point(loc.x(), loc.y()));
+
   // Choose k-1 remaining centers using kmeans++ algorithm
+  auto loc = insts[dis(gen)]->get_location();
+  centers.emplace_back(loc);
   while (centers.size() < k) {
     std::vector<double> distances(num_instances, std::numeric_limits<double>::max());
     for (size_t i = 0; i < num_instances; i++) {
@@ -73,7 +75,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
     std::discrete_distribution<> distribution(distances.begin(), distances.end());
     int selected_index = distribution(gen);
     auto select_loc = insts[selected_index]->get_location();
-    centers.emplace_back(Point(select_loc.x(), select_loc.y()));
+    centers.emplace_back(select_loc);
   }
 
   size_t num_iterations = 0;
@@ -104,6 +106,10 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
     for (size_t i = 0; i < k; i++) {
       if (center_counts[i] > 0) {
         new_centers[i] /= center_counts[i];
+      } else {
+        // random choose a sink as new center
+        auto loc = insts[dis(gen)]->get_location();
+        new_centers[i] = loc;
       }
     }
     centers = new_centers;
@@ -133,6 +139,73 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
   return best_clusters;
 }
 /**
+ * @brief normal kmeans
+ *
+ * @param insts
+ * @param k
+ * @param seed
+ * @param max_iter
+ * @return std::vector<std::vector<Inst*>>
+ */
+std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst*>& insts, const size_t& k, const int& seed,
+                                                          const size_t& max_iter)
+{
+  size_t num_instances = insts.size();
+  std::mt19937 gen(static_cast<std::mt19937::result_type>(seed));
+  std::uniform_int_distribution<> dis(0, num_instances - 1);
+
+  std::vector<int> assignments(num_instances);
+  std::vector<Point> centers(k);
+  for (size_t i = 0; i < k; ++i) {
+    auto loc = insts[i]->get_location();
+    centers[i] = loc;
+  }
+  for (size_t iter = 0; iter < max_iter; ++iter) {
+    std::vector<double> new_center_x(k, 0);
+    std::vector<double> new_center_y(k, 0);
+    std::vector<Point> new_centers(k);
+    std::vector<int> center_counts(k, 0);
+    for (size_t i = 0; i < num_instances; ++i) {
+      double min_distance = std::numeric_limits<double>::max();
+      int min_center_index = -1;
+      for (size_t j = 0; j < k; ++j) {
+        double distance = TimingPropagator::calcDist(insts[i]->get_location(), centers[j]);
+        if (distance < min_distance) {
+          min_distance = distance;
+          min_center_index = j;
+        }
+      }
+      assignments[i] = min_center_index;
+      new_center_x[min_center_index] += insts[i]->get_location().x();
+      new_center_y[min_center_index] += insts[i]->get_location().y();
+      center_counts[min_center_index]++;
+    }
+    for (size_t i = 0; i < k; ++i) {
+      if (center_counts[i] > 0) {
+        new_centers[i] = Point(new_center_x[i] / center_counts[i], new_center_y[i] / center_counts[i]);
+      } else {
+        // random choose a sink as new center
+        auto loc = insts[dis(gen)]->get_location();
+        new_centers[i] = loc;
+      }
+    }
+    if (new_centers == centers) {
+      break;
+    }
+    centers = new_centers;
+  }
+  std::vector<std::vector<Inst*>> best_clusters(k);
+  for (size_t i = 0; i < num_instances; ++i) {
+    int center_index = assignments[i];
+    best_clusters[center_index].push_back(insts[i]);
+  }
+  // remove empty clusters
+  best_clusters.erase(
+      std::remove_if(best_clusters.begin(), best_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
+      best_clusters.end());
+  return best_clusters;
+}
+/**
  * @brief iter clustering
  *
  * @param insts
@@ -140,28 +213,45 @@ std::vector<std::vector<Inst*>> BalanceClustering::kMeans(const std::vector<Inst
  * @param iters
  * @param no_change_stop
  * @param limit_ratio
+ * @param log
  * @return std::vector<std::vector<Inst*>>
  */
 std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vector<Inst*>& insts, const size_t& max_fanout,
                                                                   const size_t& iters, const size_t& no_change_stop,
-                                                                  const double& limit_ratio)
+                                                                  const double& limit_ratio, const bool& log)
 {
   LOG_FATAL_IF(max_fanout < 2) << "max_fanout should be greater than 1";
   if (insts.size() == 2) {
     return {insts};
   }
-  LOG_INFO << "iterative clustering";
+  LOG_INFO_IF(log) << "iterative clustering";
+  const size_t max_num = 40000;
+  if (insts.size() > max_num) {
+    auto divide_num = 4;
+    LOG_INFO << "Inst num: " << insts.size() << ", K-Means init clustering to " << divide_num << " clusters";
+    auto divide_clusters = kMeansPlus(insts, divide_num, 0, iters, no_change_stop);
+    std::vector<std::vector<Inst*>> clusters;
+    std::ranges::for_each(divide_clusters, [&](const std::vector<Inst*>& divide_cluster) {
+      auto sub_cluster = iterClustering(divide_cluster, max_fanout, iters, no_change_stop, limit_ratio, log);
+      clusters.insert(clusters.end(), sub_cluster.begin(), sub_cluster.end());
+    });
+    return clusters;
+  }
+
   // initialize clusters
   size_t cluster_num = std::ceil(1.0 * insts.size() / (limit_ratio * max_fanout));
   if (cluster_num == insts.size()) {
     cluster_num = insts.size() - 1;
   }
-  auto clusters = kMeans(insts, cluster_num);
+  auto clusters = kMeansPlus(insts, cluster_num);
   size_t kmeans_num
       = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
-  LOG_FATAL_IF(kmeans_num != insts.size()) << "num of insts is not equal to num of clusters";
-  LOG_WARNING_IF(max_fanout * clusters.size() < insts.size()) << "multiply max_fanout by num of clusters is less than num of insts";
-  LOG_INFO << "initial clusters: " << clusters.size();
+  LOG_FATAL_IF(kmeans_num != insts.size()) << "num of insts is not equal to num of clusters (kmeans insts num: " << kmeans_num
+                                           << ", insts num: " << insts.size() << ")";
+  LOG_WARNING_IF(max_fanout * clusters.size() < insts.size())
+      << "multiply max_fanout by num of clusters is less than num of insts, "
+      << "max_fanout: " << max_fanout << ", clusters num: " << clusters.size() << ", insts num: " << insts.size();
+  LOG_INFO_IF(log) << "initial clusters: " << clusters.size();
   if (clusters.size() == 1) {
     return clusters;
   }
@@ -170,16 +260,16 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
   auto best_clusters = clusters;
   auto kmeans_var = calcBalanceVariance(clusters, buffers);
   auto mcf_var = std::numeric_limits<double>::max();
-  LOG_INFO << "initial kmeans var: " << kmeans_var;
+  LOG_INFO_IF(log) << "initial kmeans var: " << kmeans_var;
   size_t no_change = 0;
   // iterate
   for (size_t i = 0; i < iters; ++i, ++no_change) {
     if (no_change > no_change_stop) {
-      LOG_INFO << "no change should stop in iter: " << i;
+      LOG_INFO_IF(log) << "no change should stop in iter: " << i;
       break;
     }
     if ((i + 1) % 50 == 0) {
-      LOG_INFO << "iter: " << i + 1;
+      LOG_INFO_IF(log) << "iter: " << i + 1;
     }
     MinCostFlow<Inst*> mcf;
     std::ranges::for_each(insts, [&mcf](Inst* inst) { mcf.add_node(inst->get_location().x(), inst->get_location().y(), inst); });
@@ -187,28 +277,29 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
     clusters = mcf.run(max_fanout);
     size_t mcf_num
         = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
-    LOG_FATAL_IF(mcf_num != insts.size()) << "num of insts is not equal to num of clusters";
+    LOG_FATAL_IF(mcf_num != insts.size()) << "num of insts is not equal to num of min-cost-flow result (mcf insts num: " << mcf_num
+                                          << ", insts num: " << insts.size() << ")";
     buffers = getCentroidBuffers(clusters);
     auto new_mcf_var = calcBalanceVariance(clusters, buffers);
     if (new_mcf_var < mcf_var) {
       mcf_var = new_mcf_var;
       best_clusters = clusters;
       no_change = 0;
-      LOG_INFO << "update in mcf iter: " << i + 1;
+      LOG_INFO_IF(log) << "update in mcf iter: " << i + 1;
     } else {
-      clusters = kMeans(insts, cluster_num, i, 5);
+      clusters = kMeansPlus(insts, cluster_num, i, 5);
       auto temp_buffers = getCentroidBuffers(clusters);
       auto temp_kmeans_var = calcBalanceVariance(clusters, temp_buffers);
       if (temp_kmeans_var < kmeans_var) {
         kmeans_var = temp_kmeans_var;
         buffers = temp_buffers;
         no_change = 0;
-        LOG_INFO << "update in kmeans iter: " << i + 1;
+        LOG_INFO_IF(log) << "update in kmeans iter: " << i + 1;
       }
     }
   }
-  LOG_INFO << "final mcf var: " << mcf_var;
-  LOG_INFO << "final kmeans var: " << kmeans_var;
+  LOG_INFO_IF(log) << "final mcf var: " << mcf_var;
+  LOG_INFO_IF(log) << "final kmeans var: " << kmeans_var;
   // remove empty clusters
   best_clusters.erase(
       std::remove_if(best_clusters.begin(), best_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
@@ -228,12 +319,18 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
 {
   std::vector<std::vector<Inst*>> slack_clusters;
   std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
-    auto est_net_length = estimateNetLength(cluster, max_net_length, max_fanout);
+    auto est_net_length = estimateNetLength(cluster);
     if (est_net_length < max_net_length) {
       slack_clusters.push_back(cluster);
     } else {
       // reclustering
-      auto new_clusters = kMeans(cluster, std::ceil(est_net_length / max_net_length));
+      size_t recluster_num = std::ceil(est_net_length / max_net_length);
+      recluster_num = std::min(recluster_num, cluster.size());
+      if (recluster_num == 1) {
+        slack_clusters.push_back(cluster);
+        return;
+      }
+      auto new_clusters = kMeansPlus(cluster, recluster_num);
       std::ranges::for_each(new_clusters, [&](const std::vector<Inst*>& new_cluster) {
         auto re_slack_clusters = slackClustering({new_cluster}, max_net_length, max_fanout);
         slack_clusters.insert(slack_clusters.end(), re_slack_clusters.begin(), re_slack_clusters.end());
@@ -249,148 +346,97 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
  * @param max_fanout
  * @param max_cap
  * @param max_net_length
- * @param iter
- * @param p
- * @param q
+ * @param skew_bound
+ * @param max_iter
+ * @param cooling_rate
+ * @param temperature
  * @return std::vector<std::vector<Inst*>>
  */
 std::vector<std::vector<Inst*>> BalanceClustering::clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters,
                                                                          const int& max_fanout, const double& max_cap,
-                                                                         const double& max_net_length, const size_t& iter, const double& p,
-                                                                         const double& q, const double& r)
+                                                                         const double& max_net_length, const double& skew_bound,
+                                                                         const size_t& max_iter, const double& cooling_rate,
+                                                                         const double& temperature)
 {
-  auto enhanced_clusters = clusters;
-  auto back_up = enhanced_clusters;
-  for (size_t i = 0; i < iter; ++i) {
-    // // opt min delay cluster
-    auto min_delay_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, min_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMinDelay, p, q, r);
-    // check result
-    auto new_min_cluster = getMinDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    auto new_min_delay = estimateNetDelay(new_min_cluster, max_net_length, max_fanout);
-    auto old_min_delay = estimateNetDelay(min_delay_cluster, max_net_length, max_fanout);
-    if (new_min_delay < old_min_delay) {
-      enhanced_clusters = back_up;
-    }
-    // opt max delay cluster
-    auto max_delay_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, max_delay_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kMaxDelay, p, q, r);
-    // check result
-    auto new_max_cluster = getMaxDelayCluster(enhanced_clusters, max_net_length, max_fanout);
-    auto new_max_delay = estimateNetDelay(new_max_cluster, max_net_length, max_fanout);
-    auto old_max_delay = estimateNetDelay(max_delay_cluster, max_net_length, max_fanout);
-    if (new_max_delay > old_max_delay) {
-      enhanced_clusters = back_up;
-    }
-    // screen violation cluster
-    auto worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
-    if (worst_cluster.empty()) {
-      if (isSame(enhanced_clusters, back_up)) {
-        break;
-      }
-      back_up = enhanced_clusters;
-      continue;
-    }
-    enhanced_clusters
-        = annealEnhancement(enhanced_clusters, worst_cluster, max_fanout, max_cap, max_net_length, EnhanceType::kWorstViolation, p, q, r);
-    auto new_worst_cluster = getWorstViolationCluster(enhanced_clusters, max_cap, max_net_length, max_fanout);
-    if (!new_worst_cluster.empty()) {
-      auto new_skew = estimateSkew(new_worst_cluster);
-      auto old_skew = estimateSkew(worst_cluster);
-      if (new_skew > old_skew) {
-        enhanced_clusters = back_up;
-      }
-    }
-    // check no change
-    if (isSame(enhanced_clusters, back_up)) {
-      break;
-    }
-    back_up = enhanced_clusters;
+  if (clusters.size() == 1) {
+    return clusters;
   }
-  return enhanced_clusters;
+  VioAnnealOpt solver(clusters);
+  solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_length, skew_bound);
+  solver.automaticTemperature();
+  bool log = false;
+#ifdef DEBUG_ICTS_ANNEAL_OPT
+  log = true;
+#endif
+  return solver.run(log);
 }
 /**
- * @brief AnnealOpt enhancement
+ * @brief get all cluster guide center
  *
- * @param enhanced_clusters
- * @param center_cluster
- * @param max_fanout
- * @param max_cap
- * @param max_net_length
- * @param enhance_type
- * @param p
- * @param q
- * @return std::vector<std::vector<Inst*>>
+ * @param clusters
+ * @param center
+ * @param level
+ * @return std::vector<Point>
  */
-std::vector<std::vector<Inst*>> BalanceClustering::annealEnhancement(std::vector<std::vector<Inst*>>& enhanced_clusters,
-                                                                     const std::vector<Inst*>& center_cluster, const int& max_fanout,
-                                                                     const double& max_cap, const double& max_net_length,
-                                                                     const EnhanceType& enhance_type, const double& p, const double& q,
-                                                                     const double& r)
+std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<Inst*>>& clusters, const std::optional<Point>& center,
+                                                  const double& min_length, const size_t& level)
 {
-  // remove center cluster
-  enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                         [&center_cluster](const std::vector<Inst*>& cluster) { return cluster == center_cluster; }),
-                          enhanced_clusters.end());
-  // find the closest clusters
-  std::vector<std::vector<Inst*>> neighbors = {};
+  std::vector<Inst*> insts;
+  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
+    std::transform(cluster.begin(), cluster.end(), std::back_inserter(insts), [](Inst* inst) { return inst; });
+  });
+  std::vector<Pin*> pins;
+  std::transform(insts.begin(), insts.end(), std::back_inserter(pins), [](Inst* inst) { return inst->get_load_pin(); });
+  auto* buf = TreeBuilder::beatTree("temp", pins, std::nullopt, center.value_or(calcCentroid(insts)), TopoType::kBiPartition);
+  // auto* buf = TreeBuilder::genBufInst("temp", center.value_or(calcCentroid(insts)));
+  auto* driver_pin = buf->get_driver_pin();
+  // TreeBuilder::shallowLightTree("temp", driver_pin, pins);
 
-  neighbors = getMostRecentClusters(enhanced_clusters, center_cluster);
-
-  // remove neighbors
-  enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                         [&neighbors](const std::vector<Inst*>& cluster) {
-                                           return std::find(neighbors.begin(), neighbors.end(), cluster) != neighbors.end();
-                                         }),
-                          enhanced_clusters.end());
-  // enhanced center and neighbors
-  auto to_be_enhanced_clusters = neighbors;
-  to_be_enhanced_clusters.push_back(center_cluster);
-  // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
-  auto anneal_solver = AnnealOpt(to_be_enhanced_clusters);
-  size_t net_num = to_be_enhanced_clusters.size();
-  anneal_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
-  auto opt_clusters = anneal_solver.run();
-  while (opt_clusters.empty()) {
-    std::ranges::copy(neighbors, std::back_inserter(enhanced_clusters));
-    neighbors = getMostRecentClusters(enhanced_clusters, center_cluster, 36, 2);
-    enhanced_clusters.erase(std::remove_if(enhanced_clusters.begin(), enhanced_clusters.end(),
-                                           [&neighbors](const std::vector<Inst*>& cluster) {
-                                             return std::find(neighbors.begin(), neighbors.end(), cluster) != neighbors.end();
-                                           }),
-                            enhanced_clusters.end());
-    to_be_enhanced_clusters = neighbors;
-    to_be_enhanced_clusters.push_back(center_cluster);
-    // writeClusterPy(to_be_enhanced_clusters, "anneal_before");
-    auto temp_solver = AnnealOpt(to_be_enhanced_clusters);
-    temp_solver.initParameter(net_num, max_fanout, max_cap, max_net_length * TimingPropagator::getDbUnit(), p, q, r);
-    opt_clusters = temp_solver.run();
-    net_num += 1;
-  }
-  opt_clusters.erase(
-      std::remove_if(opt_clusters.begin(), opt_clusters.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
-      opt_clusters.end());
-  // writeClusterPy(opt_clusters, "anneal_after");
-  std::ranges::for_each(opt_clusters, [&enhanced_clusters](const std::vector<Inst*>& cluster) { enhanced_clusters.push_back(cluster); });
-  return enhanced_clusters;
+  // find communis ancestor
+  LCA solver(driver_pin);
+  std::vector<Point> centers;
+  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
+    std::vector<Node*> cluster_pins;
+    std::transform(cluster.begin(), cluster.end(), std::back_inserter(cluster_pins), [](Inst* inst) { return inst->get_load_pin(); });
+    Point guide_loc = Point(-1, -1);
+    if (cluster_pins.size() == 1) {
+      auto* load = cluster_pins.front();
+      auto* parent = load->get_parent();
+      while (TimingPropagator::calcLen(parent->get_location(), load->get_location()) < min_length && parent->get_parent()) {
+        parent = parent->get_parent();
+      }
+      guide_loc = parent->get_location();
+    } else {
+      auto center = calcCentroid(cluster);
+      auto* lca = solver.query(cluster_pins);
+      size_t lca_level = 1;
+      while (lca_level < level && lca->get_parent()) {
+        lca = lca->get_parent();
+        ++lca_level;
+      }
+      while (TimingPropagator::calcLen(lca->get_location(), center) < min_length && lca->get_parent()) {
+        lca = lca->get_parent();
+      }
+      guide_loc = lca->get_location();
+    }
+    centers.push_back(guide_loc);
+  });
+  auto* net = TimingPropagator::genNet("temp", driver_pin, pins);
+  TimingPropagator::resetNet(net);
+  return centers;
 }
 /**
  * @brief get the min delay cluster
  *
  * @param clusters
- * @param max_net_length
- * @param max_fanout
  * @return std::vector<Inst*>
  */
-std::vector<Inst*> BalanceClustering::getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
-                                                         const size_t& max_fanout)
+std::vector<Inst*> BalanceClustering::getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters)
 {
   std::map<size_t, double> delay_map;
   for (size_t i = 0; i < clusters.size(); ++i) {
     auto cluster = clusters[i];
-    delay_map[i] = estimateNetDelay(cluster, max_net_length, max_fanout, false);
+    delay_map[i] = estimateNetDelay(cluster, false);
   }
   auto min_delay_cluster = clusters[std::min_element(delay_map.begin(), delay_map.end(), [](const auto& a, const auto& b) {
                                       return a.second < b.second;
@@ -401,17 +447,14 @@ std::vector<Inst*> BalanceClustering::getMinDelayCluster(const std::vector<std::
  * @brief get the max delay cluster
  *
  * @param clusters
- * @param max_net_length
- * @param max_fanout
  * @return std::vector<Inst*>
  */
-std::vector<Inst*> BalanceClustering::getMaxDelayCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
-                                                         const size_t& max_fanout)
+std::vector<Inst*> BalanceClustering::getMaxDelayCluster(const std::vector<std::vector<Inst*>>& clusters)
 {
   std::map<size_t, double> delay_map;
   for (size_t i = 0; i < clusters.size(); ++i) {
     auto cluster = clusters[i];
-    delay_map[i] = estimateNetDelay(cluster, max_net_length, max_fanout);
+    delay_map[i] = estimateNetDelay(cluster);
   }
   auto max_delay_cluster = clusters[std::max_element(delay_map.begin(), delay_map.end(), [](const auto& a, const auto& b) {
                                       return a.second < b.second;
@@ -422,13 +465,9 @@ std::vector<Inst*> BalanceClustering::getMaxDelayCluster(const std::vector<std::
  * @brief get worst violation cluster
  *
  * @param clusters
- * @param max_cap
- * @param max_net_length
- * @param max_fanout
  * @return std::vector<Inst*>
  */
-std::vector<Inst*> BalanceClustering::getWorstViolationCluster(const std::vector<std::vector<Inst*>>& clusters, const double& max_cap,
-                                                               const double& max_net_length, const size_t& max_fanout)
+std::vector<Inst*> BalanceClustering::getWorstViolationCluster(const std::vector<std::vector<Inst*>>& clusters)
 {
   // sort violation by skew, then cap, then net length
   auto vio_cmp = [](const ViolationScore& a, const ViolationScore& b) {
@@ -436,14 +475,14 @@ std::vector<Inst*> BalanceClustering::getWorstViolationCluster(const std::vector
            || (a.skew_vio_score == b.skew_vio_score && a.cap_vio_score == b.cap_vio_score && a.net_len_vio_score > b.net_len_vio_score);
   };
   std::vector<ViolationScore> vio_scores;
-  std::ranges::for_each(clusters, [&vio_scores, &max_cap, &max_net_length, &max_fanout](const std::vector<Inst*>& cluster) {
-    auto score = calcScore(cluster, max_cap, max_net_length, max_fanout);
+  std::ranges::for_each(clusters, [&vio_scores](const std::vector<Inst*>& cluster) {
+    auto score = calcScore(cluster);
     vio_scores.push_back(score);
   });
-  std::sort(vio_scores.begin(), vio_scores.end(), vio_cmp);
+  std::ranges::sort(vio_scores, vio_cmp);
   auto is_violation = [&](const ViolationScore& vio_score) {
-    if (vio_score.skew_vio_score > TimingPropagator::getSkewBound() || vio_score.cap_vio_score > max_cap
-        || vio_score.net_len_vio_score > max_net_length) {
+    if (vio_score.skew_vio_score > TimingPropagator::getSkewBound() || vio_score.cap_vio_score > TimingPropagator::getMaxCap()
+        || vio_score.net_len_vio_score > TimingPropagator::getMaxLength()) {
       return true;
     }
     return false;
@@ -475,8 +514,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::getMostRecentClusters(const s
     auto dist = TimingPropagator::calcDist(loc, center);
     id_dist_pairs.push_back({i, dist});
   }
-  std::sort(id_dist_pairs.begin(), id_dist_pairs.end(),
-            [](const std::pair<size_t, double>& p1, const std::pair<size_t, double>& p2) { return p1.second < p2.second; });
+  std::ranges::sort(id_dist_pairs,
+                    [](const std::pair<size_t, double>& p1, const std::pair<size_t, double>& p2) { return p1.second < p2.second; });
   std::vector<std::vector<Inst*>> recent_clusters;
   size_t inst_num = center_cluster.size();
   for (auto id_dist_pair : id_dist_pairs) {
@@ -520,7 +559,7 @@ std::pair<std::vector<Inst*>, std::vector<Inst*>> BalanceClustering::divideBy(co
 {
   auto cmp = [&](const Inst* inst1, const Inst* inst2) { return func(inst1) < func(inst2); };
   std::vector<Inst*> sorted_insts = insts;
-  std::sort(sorted_insts.begin(), sorted_insts.end(), cmp);
+  std::ranges::sort(sorted_insts, cmp);
   size_t num = sorted_insts.size();
   size_t split_id = num * ratio;
   std::vector<Inst*> left(sorted_insts.begin(), sorted_insts.begin() + split_id);
@@ -630,13 +669,13 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
     auto load_pin = cluster_load_pins.front();
     TreeBuilder::directConnectTree(driver_pin, load_pin);
   } else {
-    TreeBuilder::shallowLightTree(driver_pin, cluster_load_pins);
+    TreeBuilder::shallowLightTree("Salt", driver_pin, cluster_load_pins);
   }
   auto* net = TimingPropagator::genNet("temp", driver_pin, cluster_load_pins);
   TimingPropagator::update(net);
   auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
 
-  TreeBuilder::recoverNet(net);
+  TimingPropagator::resetNet(net);
 
   return skew;
 }
@@ -644,16 +683,13 @@ double BalanceClustering::estimateSkew(const std::vector<Inst*>& cluster)
  * @brief estimate net delay of cluster
  *
  * @param cluster
- * @param max_net_length
- * @param max_fanout
  * @param is_max
  * @return double
  */
-double BalanceClustering::estimateNetDelay(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout,
-                                           const bool& is_max)
+double BalanceClustering::estimateNetDelay(const std::vector<Inst*>& cluster, const bool& is_max)
 {
-  auto net_len = estimateNetLength(cluster, max_net_length, max_fanout);
-  auto total_cap = estimateNetCap(cluster, max_net_length, max_fanout);
+  auto net_len = estimateNetLength(cluster);
+  auto total_cap = estimateNetCap(cluster);
   double res = net_len * TimingPropagator::getUnitRes();
   auto net_delay = total_cap * res / 2;
   auto target_delay = is_max ? std::numeric_limits<double>::min() : std::numeric_limits<double>::max();
@@ -667,13 +703,11 @@ double BalanceClustering::estimateNetDelay(const std::vector<Inst*>& cluster, co
  * @brief  estimate cap of cluster
  *
  * @param cluster
- * @param max_net_length
- * @param max_fanout
  * @return double
  */
-double BalanceClustering::estimateNetCap(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout)
+double BalanceClustering::estimateNetCap(const std::vector<Inst*>& cluster)
 {
-  auto net_len = estimateNetLength(cluster, max_net_length, max_fanout);
+  auto net_len = estimateNetLength(cluster);
   auto pin_cap
       = std::accumulate(cluster.begin(), cluster.end(), 0.0, [](double total, const Inst* inst) { return total + inst->getCapLoad(); });
   auto total_cap = net_len * TimingPropagator::getUnitCap() + pin_cap;
@@ -683,16 +717,26 @@ double BalanceClustering::estimateNetCap(const std::vector<Inst*>& cluster, cons
  * @brief estimate net length of cluster
  *
  * @param cluster
- * @param max_net_length
- * @param max_fanout
  * @return double
  */
-double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster, const double& max_net_length, const size_t& max_fanout)
+double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster)
 {
-  auto hp_wl = calcHPWL(cluster);
-  auto fanout = cluster.size();
-  auto stn_wl = 1.3 * hp_wl + 2.53 * fanout;
-  return stn_wl;
+  if (cluster.size() <= 1) {
+    return 0;
+  }
+  // auto center = calcCentroid(cluster);
+
+  std::vector<Pin*> cluster_load_pins;
+  std::transform(cluster.begin(), cluster.end(), std::back_inserter(cluster_load_pins), [](Inst* inst) { return inst->get_load_pin(); });
+  TreeBuilder::localPlace(cluster_load_pins);
+  auto* buf = TreeBuilder::beatTree("temp", cluster_load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
+  auto* driver_pin = buf->get_driver_pin();
+  TreeBuilder::localPlace(buf, cluster_load_pins);
+  auto* net = TimingPropagator::genNet("temp", driver_pin, cluster_load_pins);
+  TimingPropagator::update(net);
+  auto net_len = driver_pin->get_sub_len();
+  TimingPropagator::resetNet(net);
+  return net_len;
 }
 /**
  * @brief calculate centroid of cluster
@@ -806,9 +850,7 @@ double BalanceClustering::calcCapVariance(const std::vector<std::vector<Inst*>>&
   std::vector<double> cluster_cap(clusters.size(), 0);
   for (size_t i = 0; i < clusters.size(); ++i) {
     auto cluster = clusters[i];
-    auto max_net_length = TimingPropagator::getMaxLength();
-    auto max_fanout = TimingPropagator::getMaxFanout();
-    cluster_cap[i] = estimateNetCap(cluster, max_net_length, max_fanout);
+    cluster_cap[i] = estimateNetCap(cluster);
   }
   // unify cluster cap
   // auto max_val = std::max_element(std::begin(cluster_cap), std::end(cluster_cap));
@@ -829,9 +871,7 @@ double BalanceClustering::calcDelayVariance(const std::vector<std::vector<Inst*>
   std::vector<double> cluster_delay(clusters.size(), 0);
   for (size_t i = 0; i < clusters.size(); ++i) {
     auto cluster = clusters[i];
-    auto max_net_length = TimingPropagator::getMaxLength();
-    auto max_fanout = TimingPropagator::getMaxFanout();
-    cluster_delay[i] = estimateNetDelay(cluster, max_net_length, max_fanout);
+    cluster_delay[i] = estimateNetDelay(cluster);
   }
   // unify cluster delay
   // auto max_val = std::max_element(std::begin(cluster_delay), std::end(cluster_delay));
@@ -858,17 +898,13 @@ double BalanceClustering::calcVariance(const std::vector<double>& values)
  * @brief calculate score of cluster
  *
  * @param cluster
- * @param max_cap
- * @param max_net_length
- * @param max_fanout
  * @return ViolationScore
  */
-ViolationScore BalanceClustering::calcScore(const std::vector<Inst*>& cluster, const double& max_cap, const double& max_net_length,
-                                            const size_t& max_fanout)
+ViolationScore BalanceClustering::calcScore(const std::vector<Inst*>& cluster)
 {
   auto skew_vio_score = estimateSkew(cluster);
-  auto cap_vio_score = estimateNetCap(cluster, max_net_length, max_fanout);
-  auto net_len_vio_score = estimateNetLength(cluster, max_net_length, max_fanout);
+  auto cap_vio_score = estimateNetCap(cluster);
+  auto net_len_vio_score = estimateNetLength(cluster);
   return ViolationScore{skew_vio_score, cap_vio_score, net_len_vio_score, cluster};
 }
 /**
@@ -881,7 +917,7 @@ ViolationScore BalanceClustering::calcScore(const std::vector<Inst*>& cluster, c
  */
 double BalanceClustering::crossProduct(const Point& p1, const Point& p2, const Point& p3)
 {
-  return (p2.x() - p1.x()) * (p3.y() - p1.y()) - (p3.x() - p1.x()) * (p2.y() - p1.y());
+  return 1.0 * (p2.x() - p1.x()) * (p3.y() - p1.y()) - 1.0 * (p3.x() - p1.x()) * (p2.y() - p1.y());
 }
 /**
  * @brief calculate convex hull of points
@@ -902,7 +938,7 @@ void BalanceClustering::convexHull(std::vector<Point>& pts)
     return;
   }
   // calculate convex hull by Andrew algorithm
-  std::sort(pts.begin(), pts.end());
+  std::ranges::sort(pts);
   std::vector<Point> ans(2 * pts.size());
   size_t k = 0;
   for (size_t i = 0; i < pts.size(); ++i) {
@@ -918,6 +954,87 @@ void BalanceClustering::convexHull(std::vector<Point>& pts)
     ans[k++] = pts[i - 1];
   }
   pts = std::vector<Point>(ans.begin(), ans.begin() + k - 1);
+}
+/**
+ * @brief find the pareto front of points
+ *
+ * @param pts
+ * @return std::vector<CtsPoint<double>>
+ */
+std::vector<CtsPoint<double>> BalanceClustering::paretoFront(const std::vector<CtsPoint<double>>& pts)
+{
+  auto pareto_pts = pts;
+  auto cmp = [](const CtsPoint<double>& p1, const CtsPoint<double>& p2) {
+    return p1.x() < p2.x() || (std::abs(p1.x() - p2.x()) < std::numeric_limits<double>::epsilon() && p1.y() < p2.y());
+  };
+  std::ranges::sort(pareto_pts, cmp);
+  std::vector<CtsPoint<double>> ans;
+  double min_y = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < pareto_pts.size(); ++i) {
+    auto p = pareto_pts[i];
+    if (i == 0 || p.y() < min_y) {
+      ans.push_back(p);
+      min_y = p.y();
+    }
+  }
+  return ans;
+}
+/**
+ * @brief check whether p is in pts
+ *
+ * @param p
+ * @param pts
+ * @return true
+ * @return false
+ */
+bool BalanceClustering::isContain(const Point& p, const std::vector<Point>& pts)
+{
+  auto on_line = [](const Point& p, const std::pair<Point, Point>& line) {
+    auto s_x = line.first.x();
+    auto s_y = line.first.y();
+    auto t_x = line.second.x();
+    auto t_y = line.second.y();
+    auto p_x = p.x();
+    auto p_y = p.y();
+    auto cross_product = (p_x - s_x) * (t_y - s_y) - (p_y - s_y) * (t_x - s_x);
+    if (cross_product != 0) {
+      return false;
+    }
+    if (std::min(s_x, t_x) <= p_x && p_x <= std::max(s_x, t_x) && std::min(s_y, t_y) <= p_y && p_y <= std::max(s_y, t_y)) {
+      return true;
+    }
+    return false;
+  };
+
+  auto bound = pts;
+  convexHull(bound);
+  auto is_in_bound = false;
+  auto p_x = p.x();
+  auto p_y = p.y();
+  auto n = bound.size();
+  auto j = n - 1;
+  for (size_t i = 0; i < n; j = i, ++i) {
+    auto s_x = bound[i].x();
+    auto s_y = bound[i].y();
+    auto t_x = bound[j].x();
+    auto t_y = bound[j].y();
+    if ((s_y < p_y && t_y >= p_y) || (t_y < p_y && s_y >= p_y)) {
+      if (s_x + (p_y - s_y) / (t_y - s_y) * (t_x - s_x) < p_x) {
+        is_in_bound = !is_in_bound;
+      }
+    }
+  }
+  if (is_in_bound) {
+    return true;
+  }
+  auto pt = p;
+  for (size_t i = 0; i < bound.size(); ++i) {
+    auto j = (i + 1) % bound.size();
+    if (on_line(pt, {bound[i], bound[j]})) {
+      return true;
+    }
+  }
+  return false;
 }
 /**
  * @brief judge whether two clusters are the same
@@ -950,7 +1067,10 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
   LOG_INFO << "Writing clusters to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace();
+  auto path = config->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(path)) {
+    std::filesystem::create_directories(path);
+  }
   std::ofstream ofs(path + "/" + save_name + ".py");
   ofs << "import matplotlib.pyplot as plt" << std::endl;
   ofs << "import numpy as np" << std::endl;
@@ -981,10 +1101,10 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
     }
     ofs << "]" << std::endl;
     ofs << "plt.scatter(x" << i << ", y" << i << ",label='Class " + std::to_string(i + 1) + "',color=colors[" << i << "],s=1)" << std::endl;
-    for (size_t j = 0; j < clusters[i].size(); ++j) {
-      ofs << "plt.text(" << clusters[i][j]->get_location().x() << ", " << clusters[i][j]->get_location().y() << ", '"
-          << clusters[i][j]->getCapLoad() << "', fontsize=3)" << std::endl;
-    }
+    // for (size_t j = 0; j < clusters[i].size(); ++j) {
+    //   ofs << "plt.text(" << clusters[i][j]->get_location().x() << ", " << clusters[i][j]->get_location().y() << ", '"
+    //       << clusters[i][j]->getCapLoad() << "', fontsize=3)" << std::endl;
+    // }
     ofs << "rect" << i << " = plt.Rectangle((np.min(x" << i << "), np.min(y" << i << ")),"
         << "np.max(x" << i << ") - np.min(x" << i << "),"
         << "np.max(y" << i << ") - np.min(y" << i << "),"

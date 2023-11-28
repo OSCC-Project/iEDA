@@ -88,21 +88,3 @@ os.system('./iEDA_gui -script ./script/iGUI_script/run_iGUI_filler.tcl')
 ##   run def to gdsii
 #===========================================================
 os.system('./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl')
-
-#===========================================================
-##   run STA
-#===========================================================
-#os.system('./iEDA -script ./script/iSTA_script/run_iSTA.tcl')
-
-#===========================================================
-##   run GUI
-# # ./iEDA -script ./script/iGUI_script/run_iGUI.tcl
-# # ./iEDA_gui -script ./script/iGUI_script/run_iGUI.tcl
-#===========================================================
-
-#===========================================================
-##   run DB
-# os.system('./iEDA -script ./script/DB_script/run_db.tcl')
-# os.system('./iEDA -script ./script/DB_script/run_def_to_gds_text.tcl')
-##./iEDA -script ./script/DB_script/run_db_checknet.tcl
-#===========================================================

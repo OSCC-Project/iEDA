@@ -17,7 +17,7 @@
 /**
  * @file TimingIDBAdapter.hh
  * @author shy long (longshy@pcl.ac.cn)
- * @brief
+ * @brief idb and ista data adapter.
  * @version 0.1
  * @date 2021-10-11
  */
@@ -712,7 +712,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
                   static_cast<double>(dbu);
   design_netlist.set_core_size(width, height);
 
-  LOG_INFO << "core area width " << width << " height " << height;
+  LOG_INFO << "core area width " << width << "um"
+           << " height " << height << "um";
 
   auto build_insts = [this, &design_netlist, dbu]() {
     // build insts

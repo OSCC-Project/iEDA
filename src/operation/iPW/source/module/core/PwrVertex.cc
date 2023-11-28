@@ -93,7 +93,7 @@ std::optional<PwrSeqVertex*> PwrVertex::getFanoutMinSeqLevel() {
  *
  * @return std::set<StaClock*>
  */
-std::set<StaClock*> PwrVertex::getOwnClockDomain() {
+std::unordered_set<StaClock*> PwrVertex::getOwnClockDomain() {
   auto* the_sta_vertex = get_sta_vertex();
   bool is_data_path = !is_clock_network();
   auto own_clock_domain_set = the_sta_vertex->getPropagatedClock(

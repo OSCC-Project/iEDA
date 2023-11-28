@@ -39,12 +39,6 @@ class Inst
   {
     init();
   }
-  // node to buffer
-  Inst(const std::string& name, const Point& location, Node* driver_node) : _name(name), _location(location)
-  {
-    _type = InstType::kBuffer;
-    init(driver_node);
-  }
   ~Inst() { release(); }
   // get
   const std::string& get_name() const { return _name; }
@@ -76,7 +70,7 @@ class Inst
   bool isNoneLib() const { return _type == InstType::kNoneLib; }
 
  private:
-  void init(Node* driver_node = nullptr);
+  void init();
   void release();
   void updatePinLocation(const Point& location);
   std::string _name = "";

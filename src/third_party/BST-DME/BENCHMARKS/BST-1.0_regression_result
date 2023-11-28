@@ -1,0 +1,80 @@
+bst -i ./BENCHMARKS/s1423 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 107277.793459
+=================================
+bst -i ./BENCHMARKS/s1423 -B 200 
+Time:00:00:16(   16 sec.)
+Total wirelength: 67276.666661
+=================================
+bst -i ./BENCHMARKS/s5378 -B 0 
+Time:00:00:02(    2 sec.)
+Total wirelength: 176517.880437
+=================================
+bst -i ./BENCHMARKS/s5378 -B 200 
+Time:00:00:49(   49 sec.)
+Total wirelength: 113518.536799
+=================================
+bst -i ./BENCHMARKS/s15850 -B 0 
+Time:00:00:10(   10 sec.)
+Total wirelength: 445659.976507
+=================================
+bst -i ./BENCHMARKS/s15850 -B 200 
+Time:00:03:34(  214 sec.)
+Total wirelength: 279556.480571
+=================================
+bst -i ./BENCHMARKS/p1 -B 0 
+Time:00:00:03(    3 sec.)
+Total wirelength: 132120.514810
+=================================
+bst -i ./BENCHMARKS/p1 -B 200 
+Time:00:00:49(   49 sec.)
+Total wirelength: 96400.937709
+=================================
+bst -i ./BENCHMARKS/p2 -B 0 
+Time:00:00:07(    7 sec.)
+Total wirelength: 313613.730824
+=================================
+bst -i ./BENCHMARKS/p2 -B 200 
+Time:00:01:34(   94 sec.)
+Total wirelength: 220336.364429
+=================================
+bst -i ./BENCHMARKS/r1 -B 0 
+Time:00:00:04(    4 sec.)
+Total wirelength: 1320665.973074
+=================================
+bst -i ./BENCHMARKS/r1 -B 200 
+Time:00:01:22(   82 sec.)
+Total wirelength: 907184.443667
+=================================
+bst -i ./BENCHMARKS/r2 -B 0 
+Time:00:00:11(   11 sec.)
+Total wirelength: 2602907.844900
+=================================
+bst -i ./BENCHMARKS/r2 -B 200 
+Time:00:04:12(  252 sec.)
+Total wirelength: 1735869.654322
+=================================
+bst -i ./BENCHMARKS/r3 -B 0 
+Time:00:00:14(   14 sec.)
+Total wirelength: 3388951.462224
+=================================
+bst -i ./BENCHMARKS/r3 -B 200 
+Time:00:05:12(  312 sec.)
+Total wirelength: 2235761.546133
+=================================
+bst -i ./BENCHMARKS/r4 -B 0 
+Time:00:00:39(   39 sec.)
+Total wirelength: 6828510.057231
+=================================
+bst -i ./BENCHMARKS/r4 -B 200 
+Time:00:13:34(  814 sec.)
+Total wirelength: 4548535.839619
+=================================
+bst -i ./BENCHMARKS/r5 -B 0 
+Time:00:01:02(   62 sec.)
+Total wirelength: 10242660.121239
+=================================
+bst -i ./BENCHMARKS/r5 -B 200 
+Time:00:21:23( 1283 sec.)
+Total wirelength: 6662721.549586
+=================================

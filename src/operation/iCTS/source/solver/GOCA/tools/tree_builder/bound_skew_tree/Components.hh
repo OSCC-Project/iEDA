@@ -44,7 +44,7 @@ constexpr static size_t kX = 0;
 constexpr static size_t kY = 1;
 constexpr static size_t kH = 0;
 constexpr static size_t kV = 1;
-constexpr static double kEpsilon = 1e-6;
+constexpr static double kEpsilon = 1e-7;
 
 /**
  * @brief Global function
@@ -119,11 +119,7 @@ using Side = std::array<T, 2>;
 class Area
 {
  public:
-  Area()
-  {
-    _id = CTSAPIInst.genId();
-    _name = CTSAPIInst.toString("steiner_", _id);
-  };
+  Area(const size_t& id) { _name = CTSAPIInst.toString("steiner_", id); };
   Area(Node* node) : _name(node->get_name())
   {
     _pattern = node->get_pattern();
@@ -136,9 +132,10 @@ class Area
     _location = Pt(x, y, node->get_max_delay(), node->get_min_delay(), node->get_cap_load());
     _sub_len = 1.0 * node->get_sub_len() / Timing::getDbUnit();
     _cap_load = node->get_cap_load();
-    _mr.push_back(_location);
-    _convex_hull.push_back(_location);
-    _id = CTSAPIInst.genId();
+    if (node->isPin() && node->isLoad()) {
+      _mr.push_back(_location);
+      _convex_hull.push_back(_location);
+    }
   }
 
   Area(const std::string& name, const double& x, const double& y, const double& cap_load) : _name(name)
@@ -147,7 +144,6 @@ class Area
     _cap_load = cap_load;
     _mr.push_back(_location);
     _convex_hull.push_back(_location);
-    _id = CTSAPIInst.genId();
   }
   // get
   const std::string& get_name() const { return _name; }
@@ -184,8 +180,6 @@ class Area
     }
     return lines;
   }
-  //  debug
-  const int& get_id() const { return _id; }
   // set
   void set_name(const std::string& name) { _name = name; }
   void set_cap_load(const double& cap_load) { _cap_load = cap_load; }
@@ -221,7 +215,6 @@ class Area
   Side<Line> _lines;
   Region _mr;
   Region _convex_hull;
-  int _id = 0;
 };
 
 struct Match

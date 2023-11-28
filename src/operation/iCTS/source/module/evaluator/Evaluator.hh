@@ -40,14 +40,9 @@ class Evaluator
 
   void init();
   void evaluate();
-  void update();
 
-  double latency() const;
-  double skew() const;
-  double fanout() const;
-  double slew() const;
   void statistics(const std::string& save_dir) const;
-  double dataCtsNetSlack() const;
+
   void plotPath(const string& inst, const string& file = "debug.gds") const;
   void plotNet(const string& net_name, const string& file = "debug.gds") const;
 

@@ -38,9 +38,11 @@ double TimingPropagator::_max_buf_tran = 0;
 double TimingPropagator::_max_sink_tran = 0;
 double TimingPropagator::_max_cap = 0;
 int TimingPropagator::_max_fanout = 0;
+double TimingPropagator::_min_length = 0;
 double TimingPropagator::_max_length = 0;
 double TimingPropagator::_min_insert_delay = 0;
 std::vector<icts::CtsCellLib*> TimingPropagator::_delay_libs;
+icts::CtsCellLib* TimingPropagator::_root_lib = nullptr;
 
 /**
  * @brief init timing parameters
@@ -58,6 +60,7 @@ void TimingPropagator::init()
   _unit_v_res = CTSAPIInst.getClockUnitRes(LayerPattern::kV) / 1000;
   _db_unit = CTSAPIInst.getDbUnit();
   _delay_libs = CTSAPIInst.getAllBufferLibs();
+  _root_lib = CTSAPIInst.getRootBufferLib();
   // set algorithm parameters from config
   auto* config = CTSAPIInst.get_config();
   _skew_bound = config->get_skew_bound();
@@ -65,6 +68,7 @@ void TimingPropagator::init()
   _max_sink_tran = config->get_max_sink_tran();
   _max_cap = config->get_max_cap();
   _max_fanout = config->get_max_fanout();
+  _min_length = config->get_min_length();
   _max_length = config->get_max_length();
   // temp para
   _min_insert_delay = _delay_libs.front()->getDelayIntercept();
@@ -90,6 +94,43 @@ Net* TimingPropagator::genNet(const std::string& net_name, Pin* driver_pin, cons
   } else {
     return new Net(net_name, driver_pin, load_pins);
   }
+}
+/**
+ * @brief recover net
+ *       remove root node
+ *       save the leaf node and disconnect the leaf node
+ *
+ * @param net
+ */
+void TimingPropagator::resetNet(Net* net)
+{
+  if (net == nullptr) {
+    return;
+  }
+  auto* driver_pin = net->get_driver_pin();
+  auto load_pins = net->get_load_pins();
+  std::vector<Node*> to_be_removed;
+  auto find_steiner = [&to_be_removed](Node* node) {
+    if (node->isSteiner()) {
+      to_be_removed.push_back(node);
+    }
+  };
+  driver_pin->preOrder(find_steiner);
+  // recover load pins' timing
+  std::ranges::for_each(load_pins, [](Pin* pin) {
+    pin->set_parent(nullptr);
+    pin->set_children({});
+    pin->set_slew_in(0);
+    pin->set_cap_load(0);
+    pin->set_net(nullptr);
+    updatePinCap(pin);
+    initLoadPinDelay(pin);
+  });
+  // release buffer and its pins
+  auto* buffer = driver_pin->get_inst();
+  delete buffer;
+  // release steiner node
+  std::ranges::for_each(to_be_removed, [](Node* node) { delete node; });
 }
 /**
  * @brief update net's load pins
@@ -236,6 +277,12 @@ void TimingPropagator::updateCellDelay(Inst* inst)
   if (cell_name.empty()) {
     return;
   }
+  if (cap_load == 0) {
+    inst->set_insert_delay(0);
+    load_pin->set_min_delay(0);
+    load_pin->set_max_delay(0);
+    return;
+  }
   auto* lib = CTSAPIInst.getCellLib(cell_name);
   auto insert_delay = lib->calcDelay(slew_in, cap_load);
   inst->set_insert_delay(insert_delay);
@@ -268,7 +315,7 @@ bool TimingPropagator::skewFeasible(Node* node, const std::optional<double>& ske
 {
   auto skew = calcSkew(node);
   auto delta = skew - skew_bound.value_or(_skew_bound);
-  if (delta > 0 && delta < _epsilon) {
+  if (delta > 0 && delta < kEpsilon) {
     node->set_min_delay(node->get_max_delay() - skew_bound.value_or(_skew_bound));
     return true;
   }
@@ -289,6 +336,12 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
     pin->set_max_delay(0);
   } else {
     auto* driver_pin = inst->get_driver_pin();
+    if (driver_pin->get_children().empty()) {
+      inst->set_insert_delay(0);
+      pin->set_min_delay(0);
+      pin->set_max_delay(0);
+      return;
+    }
     double insert_delay = 0;
     if (by_cell) {
       auto cell_name = pin->get_cell_master();
@@ -300,6 +353,7 @@ void TimingPropagator::initLoadPinDelay(Pin* pin, const bool& by_cell)
           auto cap_coef = lib->get_delay_coef().back();
           auto intercept = lib->getDelayIntercept();
           insert_delay = intercept + cap_coef * inst->getCapOut();
+          break;
         }
       }
     } else {

@@ -86,18 +86,18 @@ class BoundSkewTree
    * @brief topology
    *
    */
-  Area* merge(Area* left, Area* right) const;
+  Area* merge(Area* left, Area* right);
   void areaReset();
   void ptReset(Area* cur);
   void biPartition();
-  Area* biPartition(std::vector<Area*>& areas) const;
+  Area* biPartition(std::vector<Area*>& areas);
   std::pair<std::vector<Area*>, std::vector<Area*>> octagonDivide(std::vector<Area*>& areas) const;
   std::vector<Pt> calcOctagon(const std::vector<Area*>& areas) const;
   std::vector<Area*> areaOnOctagonBound(const std::vector<Area*> areas, const std::vector<Pt>& octagon) const;
   void biCluster();
-  Area* biCluster(const std::vector<Area*>& areas) const;
-  std::vector<std::vector<Area*>> kMeans(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
-                                         const size_t& max_iter = 10) const;
+  Area* biCluster(const std::vector<Area*>& areas);
+  std::vector<std::vector<Area*>> kMeansPlus(const std::vector<Area*>& areas, const size_t& k, const int& seed = 0,
+                                             const size_t& max_iter = 10) const;
   /**
    * @brief flow require
    *
@@ -175,6 +175,10 @@ class BoundSkewTree
   bool isManhattanArea(Area* cur) const;
   void mrToTrr(const Region& mr, Trr& trr) const;
 
+  // convert
+  void inputTopologyConvert();
+  void noneInputTopologyConvert();
+
   // basic function
   LineType calcAreaLineType(Area* cur) const;
   void calcConvexHull(Area* cur) const;
@@ -190,7 +194,6 @@ class BoundSkewTree
   double ptSkew(const Pt& pt) const;
   Line getJrLine(const size_t& side) const;
   Line getJsLine(const size_t& side) const;
-  Line getJsLine(const size_t& side, const Side<Pts>& join_segment) const;
   void setJrLine(const size_t& side, const Line& line);
   void setJsLine(const size_t& side, const Line& line);
   void checkPtDelay(Pt& pt) const;
@@ -198,15 +201,16 @@ class BoundSkewTree
   void checkUpdateJs(const Area* cur, Line& left, Line& right) const;
   void printPoint(const Pt& pt) const;
   void printArea(const Area* area) const;
+  void writePy(const std::vector<Pt>& pts, const std::string& file = "debug") const;
   /**
    * @brief data
    *
    */
+  size_t _id = 0;
   std::string _net_name = "";
 
   Inst* _root_buf = nullptr;
   std::vector<Pin*> _load_pins;
-  Net* _net = nullptr;
   std::vector<Area*> _unmerged_nodes;
   std::unordered_map<std::string, Node*> _node_map;
   std::optional<Pt> _root_guide;

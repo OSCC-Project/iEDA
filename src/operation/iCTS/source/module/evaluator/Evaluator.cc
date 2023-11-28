@@ -23,9 +23,8 @@
 #include <fstream>
 
 #include "CTSAPI.hh"
-#include "CtsReport.hh"
 #include "Net.hh"
-#include "log/Log.hh"
+#include "report/CtsReport.hh"
 namespace icts {
 
 void Evaluator::init()
@@ -83,6 +82,7 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
   if (driver->get_level() > 0) {
     return;
   }
+
   auto* design = CTSAPIInst.get_design();
   auto loads = net->get_load_insts();
   int max_level = 0;
@@ -95,8 +95,10 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
     auto sub_net_name = load->get_name().substr(0, load->get_name().length() - 4);
     auto* sub_net = design->findNet(sub_net_name);
     recursiveSetLevel(sub_net);
+
     max_level = std::max(load->get_level(), max_level);
   }
+
   driver->set_level(max_level + 1);
 }
 
@@ -115,8 +117,8 @@ void Evaluator::statistics(const std::string& save_dir) const
   auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
-  auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWIRE_LENGTH);
-  auto hpwl_wl_rpt = CtsReportTable::createReportTable("HPWL Wire length stats", CtsReportType::kHP_WIRE_LENGTH);
+  auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWireLength);
+  auto hpwl_wl_rpt = CtsReportTable::createReportTable("HPWL Wire length stats", CtsReportType::kHpWireLength);
   std::map<std::string, int> cell_count_map;
   double top_wire_len = 0.0;
   double trunk_wire_len = 0.0;
@@ -192,7 +194,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   // TBD
 
   // cell stats(Cell type, Count, Area, Capacitance)
-  auto cell_stats_rpt = CtsReportTable::createReportTable("Cell stats", CtsReportType::kCELL_STATS);
+  auto cell_stats_rpt = CtsReportTable::createReportTable("Cell stats", CtsReportType::kCellStatus);
   struct CellStatsProperty
   {
     int total_num;
@@ -222,7 +224,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   cell_stats_save_file << cell_stats_rpt->c_str();
 
   // lib cell distribution(Name, Type, Inst Count, Inst Area)
-  auto lib_cell_dist_rpt = CtsReportTable::createReportTable("Library cell distribution", CtsReportType::kLIB_CELL_DIST);
+  auto lib_cell_dist_rpt = CtsReportTable::createReportTable("Library cell distribution", CtsReportType::kLibCellDist);
   for (auto [cell_master, count] : cell_count_map) {
     (*lib_cell_dist_rpt) << cell_master << CTSAPIInst.getCellType(cell_master) << count << count * CTSAPIInst.getCellArea(cell_master)
                          << TABLE_ENDLINE;
@@ -234,7 +236,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   lib_cell_dist_save_file << lib_cell_dist_rpt->c_str();
 
   // net level distribution(Level, Num)
-  auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNET_LEVEL);
+  auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNetLevel);
   std::map<int, int> net_level_map;
   int all_num = 0;
   for (auto eval_net : _eval_nets) {
@@ -266,7 +268,7 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/" + file;
-  GDSPloter ploter(path);
+  auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   CtsInstance* path_inst = nullptr;
   for (auto& eval_net : _eval_nets) {
@@ -278,10 +280,10 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
   }
   LOG_FATAL_IF(path_inst == nullptr) << "Cannot find instance: " << inst_name;
 
-  ploter.head();
+  GDSPloter::head(ofs);
   vector<CtsInstance*> insts;
   while (path_inst) {
-    ploter.insertInstance(path_inst);
+    GDSPloter::insertInstance(ofs, path_inst);
     insts.emplace_back(path_inst);
     auto before_load_pin = path_inst->get_load_pin();
     if (before_load_pin) {
@@ -298,24 +300,24 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
         }
       }
       auto driver_inst = driver_pin->get_instance();
-      ploter.insertWire(driver_inst->get_location(), path_inst->get_location());
+      GDSPloter::insertWire(ofs, driver_inst->get_location(), path_inst->get_location());
       path_inst = driver_inst;
     } else {
       break;
     }
   }
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", _default_size);
-  ploter.strBegin();
-  ploter.topBegin();
+  GDSPloter::insertPolygon(ofs, core, "core", _default_size);
+  GDSPloter::strBegin(ofs);
+  GDSPloter::topBegin(ofs);
   for (auto* inst : insts) {
-    ploter.refInstance(inst);
+    GDSPloter::refInstance(ofs, inst);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
+  GDSPloter::refPolygon(ofs, "core");
+  GDSPloter::refPolygon(ofs, "WIRE");
+  GDSPloter::strEnd(ofs);
 
-  ploter.tail();
+  GDSPloter::tail(ofs);
   LOG_INFO << "Path to " << inst_name << " has been written to " << path;
 }
 
@@ -335,30 +337,30 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
   auto path = config->get_sta_workspace() + "/" + file;
-  GDSPloter ploter(path);
+  auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
-  ploter.head();
+  GDSPloter::head(ofs);
   auto insts = net->get_instances();
   for (auto* inst : insts) {
-    ploter.insertInstance(inst);
+    GDSPloter::insertInstance(ofs, inst);
   }
   for (const auto& wire : net->get_signal_wires()) {
     auto first = wire.get_first().point;
     auto second = wire.get_second().point;
-    ploter.insertWire(first, second);
+    GDSPloter::insertWire(ofs, first, second);
   }
   auto core = db_wrapper->get_core_bounding_box();
-  ploter.insertPolygon(core, "core", _default_size);
-  ploter.strBegin();
-  ploter.topBegin();
+  GDSPloter::insertPolygon(ofs, core, "core", _default_size);
+  GDSPloter::strBegin(ofs);
+  GDSPloter::topBegin(ofs);
   for (auto* inst : insts) {
-    ploter.refInstance(inst);
+    GDSPloter::refInstance(ofs, inst);
   }
-  ploter.refPolygon("core");
-  ploter.refPolygon("WIRE");
-  ploter.strEnd();
+  GDSPloter::refPolygon(ofs, "core");
+  GDSPloter::refPolygon(ofs, "WIRE");
+  GDSPloter::strEnd(ofs);
 
-  ploter.tail();
+  GDSPloter::tail(ofs);
   LOG_INFO << "Net: " << net_name << " has been written to " << path;
 }
 }  // namespace icts

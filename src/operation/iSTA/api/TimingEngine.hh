@@ -240,7 +240,7 @@ class TimingEngine {
   // for any clock randomly if more than one.
   StaClock *getPropClockOfNet(Net *clock_net);
   // for all propagated clock for clock mux maybe more than once.
-  std::set<StaClock *> getPropClocksOfNet(Net *clock_net);
+  std::unordered_set<StaClock *> getPropClocksOfNet(Net *clock_net);
   std::string getMasterClockOfGenerateClock(const std::string &generate_clock);
   std::string getMasterClockOfNet(Net *clock_net);
   std::vector<std::string> getMasterClocksOfNet(Net *clock_net);
