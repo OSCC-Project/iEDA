@@ -404,11 +404,11 @@ int32_t VerilogRead::build_components()
           if (bus_index) {
             if (auto found_net_bus = idb_design->get_bus_list()->findBus(bus_name); !found_net_bus) {
               // not found net bus, create it.
-              IdbBus net_bus(bus_name, bus_index.value(), bus_index.value());
-              net_bus.set_type(IdbBus::kBusType::kBusNet);
-              net_bus.addNet(idb_net);
+              IdbBus created_net_bus(bus_name, bus_index.value(), bus_index.value());
+              created_net_bus.set_type(IdbBus::kBusType::kBusNet);
+              created_net_bus.addNet(idb_net);
 
-              idb_design->get_bus_list()->addBusObject(std::move(net_bus));
+              idb_design->get_bus_list()->addBusObject(std::move(created_net_bus));
             } else {
               // exist net bus, update range.
               (*found_net_bus).get().updateRange(bus_index.value());
