@@ -420,6 +420,12 @@ int32_t VerilogRead::build_components()
         // existed bus net, get one net of bus.
         std::string pin_name = idb_pin->get_pin_name();
         auto [pin_bus_name, pin_bus_index] = Str::matchBusName(pin_name.c_str());
+        if (!pin_bus_index) {
+          // if net bus only exist one net, get the bus index directly.
+          if ((*net_bus).get().get_left() == (*net_bus).get().get_right()) {
+            pin_bus_index = (*net_bus).get().get_left();
+          }
+        }
         assert(pin_bus_index);
         idb_net = (*net_bus).get().getNet(pin_bus_index.value());
       }
