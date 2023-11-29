@@ -569,10 +569,20 @@ int32_t VerilogRead::build_components()
             bus_pin_vec.emplace_back(idb_pin);
           }
 
+          // fix verilog bus is only one bus signal and bus base index is not zero.
+          if (bus_pin_vec.empty() && (verilog_id_concat_vec.size() == 1)) {
+            auto* idb_pin = idb_instance->get_pin_by_term(cell_port_name);
+            if (idb_pin) {
+              bus_pin_vec.emplace_back(idb_pin);
+            }
+          }
+
           for (int i = bus_pin_vec.size() - 1; auto* verilog_id_net_expr : verilog_id_concat_vec) {
             assert(i >= 0);
             auto* idb_pin = bus_pin_vec[i];
-            if (i == static_cast<int>(bus_pin_vec.size() - 1)) {
+
+            // create pin bus, pin should not be one.
+            if (i == static_cast<int>(bus_pin_vec.size() - 1) && (bus_pin_vec.size() != 1)) {
               // first idb pin create instance pin bus.
               create_or_found_bus(bus_name, idb_pin, i, true);
             }
@@ -587,6 +597,7 @@ int32_t VerilogRead::build_components()
               continue;
             }
 
+            // create net bus and add net pin.
             const char* net_name = verilog_id_net_expr->get_verilog_id()->getBaseName();
             auto net_bus = idb_design->get_bus_list()->findBus(net_name);
 
