@@ -424,7 +424,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
         // println!("Span:    {:?}", entry_clone.as_span());
         // println!("Text:    {}", entry_clone.as_str());
         let line_no = entry_clone.line_col().0;
-        println!("line no {}", line_no);
+        // println!("line no {}", line_no);
 
         match entry.as_rule() {
             Rule::section => {

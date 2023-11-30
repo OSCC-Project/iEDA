@@ -114,7 +114,14 @@ void free_c_char(char *s);
 
 struct RustLibertyStringValue *rust_convert_string_value(void *string_value);
 
+/**
+ * strint value converted value should be release by the API.
+ */
+void rust_free_string_value(struct RustLibertyStringValue *c_string_value);
+
 struct RustLibertyFloatValue *rust_convert_float_value(void *float_value);
+
+void rust_free_float_value(struct RustLibertyFloatValue *c_float_value);
 
 bool rust_is_float_value(void *c_attribute_value);
 
@@ -122,11 +129,20 @@ bool rust_is_string_value(void *c_attribute_value);
 
 struct RustLibertyGroupStmt *rust_convert_raw_group_stmt(struct LibertyGroupStmt *group_stmt);
 
+void rust_free_group_stmt(struct RustLibertyGroupStmt *c_group_stmt);
+
+/**
+ * The API differenct form rust_convert_raw_group_stmt is one use thin pointer, this use fat pointer.
+ */
 struct RustLibertyGroupStmt *rust_convert_group_stmt(struct LibertyGroupStmt *c_group_stmt);
 
 struct RustLibertySimpleAttrStmt *rust_convert_simple_attribute_stmt(void *c_simple_attri_stmt);
 
+void rust_free_simple_attribute_stmt(struct RustLibertySimpleAttrStmt *c_simple_attri_stmt);
+
 struct RustLibertyComplexAttrStmt *rust_convert_complex_attribute_stmt(void *c_complex_attri_stmt);
+
+void rust_free_complex_attribute_stmt(struct RustLibertyComplexAttrStmt *c_complex_attri_stmt);
 
 bool rust_is_simple_attri_stmt(void *c_lib_stmt);
 

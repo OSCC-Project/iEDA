@@ -61,6 +61,15 @@ pub extern "C" fn rust_convert_string_value(string_value: *mut c_void) -> *mut R
     }
 }
 
+/// strint value converted value should be release by the API.
+#[no_mangle]
+pub extern "C" fn rust_free_string_value(c_string_value: *mut RustLibertyStringValue) {
+    unsafe {
+        free_c_char((*c_string_value).value);
+        let _: Box<RustLibertyStringValue> = Box::from_raw(c_string_value);
+    }
+}
+
 #[repr(C)]
 pub struct RustLibertyFloatValue {
     value: c_double,
@@ -77,6 +86,13 @@ pub extern "C" fn rust_convert_float_value(float_value: *mut c_void) -> *mut Rus
         let lib_value_pointer = Box::new(lib_value);
         let raw_pointer = Box::into_raw(lib_value_pointer);
         raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_float_value(c_float_value: *mut RustLibertyFloatValue) {
+    unsafe {
+        let _: Box<RustLibertyFloatValue> = Box::from_raw(c_float_value);
     }
 }
 
@@ -127,6 +143,17 @@ pub extern "C" fn rust_convert_raw_group_stmt(
     }
 }
 
+#[no_mangle]
+pub extern "C" fn rust_free_group_stmt(c_group_stmt: *mut RustLibertyGroupStmt) {
+    unsafe {
+        free_c_char((*c_group_stmt).file_name);
+        free_c_char((*c_group_stmt).group_name);
+
+        let _: Box<RustLibertyGroupStmt> = Box::from_raw(c_group_stmt);
+    }
+}
+
+/// The API differenct form rust_convert_raw_group_stmt is one use thin pointer, this use fat pointer.
 #[no_mangle]
 pub extern "C" fn rust_convert_group_stmt(
     c_group_stmt: *mut liberty_data::LibertyGroupStmt,
@@ -187,6 +214,16 @@ pub extern "C" fn rust_convert_simple_attribute_stmt(
     }
 }
 
+#[no_mangle]
+pub extern "C" fn rust_free_simple_attribute_stmt(c_simple_attri_stmt: *mut RustLibertySimpleAttrStmt) {
+    unsafe {
+        free_c_char((*c_simple_attri_stmt).file_name);
+        free_c_char((*c_simple_attri_stmt).attri_name);
+
+        let _: Box<RustLibertySimpleAttrStmt> = Box::from_raw(c_simple_attri_stmt);
+    }
+}
+
 #[repr(C)]
 pub struct RustLibertyComplexAttrStmt {
     file_name: *mut c_char,
@@ -218,6 +255,16 @@ pub extern "C" fn rust_convert_complex_attribute_stmt(
         let lib_complex_attri_stmt_pointer = Box::new(lib_complex_attri_stmt);
         let raw_pointer = Box::into_raw(lib_complex_attri_stmt_pointer);
         raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_complex_attribute_stmt(c_complex_attri_stmt: *mut RustLibertyComplexAttrStmt) {
+    unsafe {
+        free_c_char((*c_complex_attri_stmt).file_name);
+        free_c_char((*c_complex_attri_stmt).attri_name);
+
+        let _: Box<RustLibertyComplexAttrStmt> = Box::from_raw(c_complex_attri_stmt);
     }
 }
 
