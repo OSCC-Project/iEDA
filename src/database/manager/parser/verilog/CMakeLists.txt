@@ -35,35 +35,23 @@ set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/verilog-rust/verilog-parser)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/debug/lib${RUST_PROJECT_NAME}.so)
-    set(RUST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/rust_output/debug)
     set(RUST_BUILD_CMD_OPTION "")
 else()
     set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/release/lib${RUST_PROJECT_NAME}.so)
-    set(RUST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/rust_output/release)
     set(RUST_BUILD_CMD_OPTION "--release")
 endif()
 
-ExternalProject_Add(
-    ${RUST_PROJECT_NAME}
-    PREFIX ${RUST_PROJECT_DIR}
-    SOURCE_DIR ${RUST_PROJECT_DIR}
-    BINARY_DIR ${RUST_PROJECT_DIR}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS 1
-)
 
-file(MAKE_DIRECTORY ${RUST_OUTPUT_DIR})
-message("Verilog Parser Rust lib path ${RUST_LIB_PATH}")
-message("Verilog Parser Rust outut path ${RUST_OUTPUT_DIR}")
+message("verilog parser rust lib path ${RUST_LIB_PATH}")
 
 add_custom_command(
-    TARGET ${RUST_PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${RUST_LIB_PATH}
-            ${RUST_OUTPUT_DIR}
+    OUTPUT ${RUST_LIB_PATH}
+    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
+    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
+    COMMENT "Building Rust library"
 )
+add_custom_target(my_rust_verilog DEPENDS ${RUST_LIB_PATH})
+add_dependencies(verilog my_rust_verilog)
 
 target_link_libraries(verilog str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
 
