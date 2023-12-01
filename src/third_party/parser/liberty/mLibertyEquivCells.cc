@@ -22,8 +22,7 @@ using std::max;
 
 const size_t hash_init_value = 5381;
 
-static size_t hashString(const char* str)
-{
+static size_t hashString(const char* str) {
   size_t hash = hash_init_value;
   size_t length = strlen(str);
   for (size_t i = 0; i < length; i++) {
@@ -35,50 +34,76 @@ static size_t hashString(const char* str)
 static unsigned hashCell(LibertyCell* cell);
 static unsigned hashCellPorts(LibertyCell* cell);
 // static unsigned hashCellSequentials(LibertyCell *cell);
-static unsigned hashFuncExpr(LibertyExpr* expr);
+static unsigned hashFuncExpr(RustLibertyExpr* expr);
 static unsigned hashPort(LibertyPort* port);
 
-static bool equiv(LibertyPort* port1, LibertyPort* port2)
-{
-  return (port1 == nullptr && port2 == nullptr)
-         || (port1 != nullptr && port2 != nullptr && Str::equal(port1->get_port_name(), port2->get_port_name())
-             && port1->get_port_type() == port2->get_port_type());
+static bool equiv(LibertyPort* port1, LibertyPort* port2) {
+  return (port1 == nullptr && port2 == nullptr) ||
+         (port1 != nullptr && port2 != nullptr &&
+          Str::equal(port1->get_port_name(), port2->get_port_name()) &&
+          port1->get_port_type() == port2->get_port_type());
 }
 
-static bool equiv(LibertyArcSet* set1, LibertyArcSet* set2)
-{
-  return Str::equal(set1->front()->get_src_port(), set2->front()->get_src_port())
-         && Str::equal(set1->front()->get_snk_port(), set2->front()->get_snk_port())
-         && set1->front()->get_timing_type() == set2->front()->get_timing_type();
+static bool equiv(LibertyArcSet* set1, LibertyArcSet* set2) {
+  return Str::equal(set1->front()->get_src_port(),
+                    set2->front()->get_src_port()) &&
+         Str::equal(set1->front()->get_snk_port(),
+                    set2->front()->get_snk_port()) &&
+         set1->front()->get_timing_type() == set2->front()->get_timing_type();
 }
 
-static bool equiv(LibertyExpr* expr1, LibertyExpr* expr2)
-{
+static bool equiv(RustLibertyExpr* expr1, RustLibertyExpr* expr2) {
   if (expr1 == nullptr && expr2 == nullptr) {
     return true;
   }
 
-  if (expr1 != nullptr && expr2 != nullptr && expr1->get_op() == expr2->get_op()) {
-    switch (expr1->get_op()) {
-      case LibertyExpr::Operator::kBuffer:
-        return Str::equal(expr1->get_port(), expr2->get_port());
-      case LibertyExpr::Operator::kNot:
-        return equiv(expr1->get_left(), expr2->get_left());
-      default:
-        return equiv(expr1->get_left(), expr2->get_left()) && equiv(expr1->get_right(), expr2->get_right());
+  if (expr1 != nullptr && expr2 != nullptr && expr1->op == expr2->op) {
+    switch (expr1->op) {
+      case RustLibertyExprOp::kBuffer:
+        return Str::equal(expr1->port_name, expr2->port_name);
+      case RustLibertyExprOp::kNot: {
+        auto* left_expr1 = rust_get_expr_left(expr1);
+        auto* left_expr2 = rust_get_expr_left(expr2);
+        bool result = equiv(left_expr1, left_expr2);
+        rust_free_expr(left_expr1);
+        rust_free_expr(left_expr2);
+        return result;
+      }
+
+      default: {
+        {
+          auto* left_expr1 = rust_get_expr_left(expr1);
+          auto* left_expr2 = rust_get_expr_left(expr2);
+          bool result = equiv(left_expr1, left_expr2);
+          rust_free_expr(left_expr1);
+          rust_free_expr(left_expr2);
+          if (!result) {
+            return result;
+          }
+        }
+        {
+          auto* right_expr1 = rust_get_expr_right(expr1);
+          auto* right_expr2 = rust_get_expr_right(expr2);
+
+          bool result = equiv(right_expr1, right_expr2);
+          rust_free_expr(right_expr1);
+          rust_free_expr(right_expr2);
+
+          return result;
+        }
+      }
     }
   }
 
   return false;
 }
 
-bool equivCells(LibertyCell* cell1, LibertyCell* cell2)
-{
-  return equivCellPortsAndFuncs(cell1, cell2) && equivCellTimingArcSets(cell1, cell2);
+bool equivCells(LibertyCell* cell1, LibertyCell* cell2) {
+  return equivCellPortsAndFuncs(cell1, cell2) &&
+         equivCellTimingArcSets(cell1, cell2);
 }
 
-double cellDriveResistance(LibertyCell* cell)
-{
+double cellDriveResistance(LibertyCell* cell) {
   LibertyCellPortIterator port_iter(cell);
   while (port_iter.hasNext()) {
     auto* port = port_iter.next();
@@ -89,19 +114,16 @@ double cellDriveResistance(LibertyCell* cell)
   return 0.0;
 }
 
-class CellDriveResistanceGreater
-{
+class CellDriveResistanceGreater {
  public:
-  bool operator()(LibertyCell* cell1, LibertyCell* cell2) const { return cellDriveResistance(cell1) > cellDriveResistance(cell2); }
+  bool operator()(LibertyCell* cell1, LibertyCell* cell2) const {
+    return cellDriveResistance(cell1) > cellDriveResistance(cell2);
+  }
 };
 
-static unsigned hashCell(LibertyCell* cell)
-{
-  return hashCellPorts(cell);
-}
+static unsigned hashCell(LibertyCell* cell) { return hashCellPorts(cell); }
 
-static unsigned hashCellPorts(LibertyCell* cell)
-{
+static unsigned hashCellPorts(LibertyCell* cell) {
   unsigned hash = 0;
   LibertyCellPortIterator port_iter(cell);
   while (port_iter.hasNext()) {
@@ -112,31 +134,39 @@ static unsigned hashCellPorts(LibertyCell* cell)
   return hash;
 }
 
-static unsigned hashPort(LibertyPort* port)
-{
-  return hashString(port->get_port_name()) * 3 + static_cast<int>(port->get_port_type()) * 5;
+static unsigned hashPort(LibertyPort* port) {
+  return hashString(port->get_port_name()) * 3 +
+         static_cast<int>(port->get_port_type()) * 5;
 }
 
-static unsigned hashFuncExpr(LibertyExpr* expr)
-{
+static unsigned hashFuncExpr(RustLibertyExpr* expr) {
   if (!expr) {
     return 0;
   }
 
-  switch (expr->get_op()) {
-    case LibertyExpr::Operator::kBuffer:
-      return hashString(expr->get_port()) * 17;
-      break;
-    case LibertyExpr::Operator::kNot:
-      return hashFuncExpr(expr->get_left()) * 31;
-      break;
-    default:
-      return (hashFuncExpr(expr->get_left()) + hashFuncExpr(expr->get_right())) * ((1 << static_cast<unsigned>(expr->get_op())) - 1);
+  switch (expr->op) {
+    case RustLibertyExprOp::kBuffer:
+      return hashString(expr->port_name) * 17;
+    case RustLibertyExprOp::kNot: {
+      auto* left_expr = rust_get_expr_left(expr);
+      auto result = hashFuncExpr(left_expr) * 31;
+      rust_free_expr(left_expr);
+      return result;
+    }
+
+    default: {
+      auto* left_expr = rust_get_expr_left(expr);
+      auto* right_expr = rust_get_expr_right(expr);
+      auto result = (hashFuncExpr(left_expr) + hashFuncExpr(right_expr)) *
+                    ((1 << static_cast<unsigned>(expr->op)) - 1);
+      rust_free_expr(left_expr);
+      rust_free_expr(right_expr);
+      return result;
+    }
   }
 }
 
-bool equivCellPortsAndFuncs(LibertyCell* cell1, LibertyCell* cell2)
-{
+bool equivCellPortsAndFuncs(LibertyCell* cell1, LibertyCell* cell2) {
   bool ret_value = true;
   if (cell1->get_num_port() != cell2->get_num_port()) {
     ret_value = false;
@@ -146,7 +176,8 @@ bool equivCellPortsAndFuncs(LibertyCell* cell1, LibertyCell* cell2)
       LibertyPort* port1 = port_iter1.next();
       const char* name = port1->get_port_name();
       LibertyPort* port2 = cell2->get_cell_port_or_port_bus(name);
-      if (!(port2 && equiv(port1, port2) && equiv(port1->get_func_expr(), port2->get_func_expr()))) {
+      if (!(port2 && equiv(port1, port2) &&
+            equiv(port1->get_func_expr(), port2->get_func_expr()))) {
         ret_value = false;
       }
     }
@@ -154,8 +185,7 @@ bool equivCellPortsAndFuncs(LibertyCell* cell1, LibertyCell* cell2)
   return ret_value;
 }
 
-bool equivCellPorts(LibertyCell* cell1, LibertyCell* cell2)
-{
+bool equivCellPorts(LibertyCell* cell1, LibertyCell* cell2) {
   bool ret_value = true;
   if (cell1->get_num_port() != cell2->get_num_port()) {
     ret_value = false;
@@ -173,8 +203,7 @@ bool equivCellPorts(LibertyCell* cell1, LibertyCell* cell2)
   return ret_value;
 }
 
-bool equivCellTimingArcSets(LibertyCell* cell1, LibertyCell* cell2)
-{
+bool equivCellTimingArcSets(LibertyCell* cell1, LibertyCell* cell2) {
   bool ret_value = true;
   if (cell1->getCellArcSetCount() != cell2->getCellArcSetCount()) {
     ret_value = false;
@@ -182,7 +211,9 @@ bool equivCellTimingArcSets(LibertyCell* cell1, LibertyCell* cell2)
     LibertyCellTimingArcSetIterator set_iter1(cell1);
     while (set_iter1.hasNext()) {
       auto* set1 = set_iter1.next();
-      auto set2 = cell2->findLibertyArcSet(set1->front()->get_src_port(), set1->front()->get_snk_port(), set1->front()->get_timing_type());
+      auto set2 = cell2->findLibertyArcSet(set1->front()->get_src_port(),
+                                           set1->front()->get_snk_port(),
+                                           set1->front()->get_timing_type());
       if (!(set2 && equiv(set1, *set2))) {
         ret_value = false;
       }
@@ -191,8 +222,8 @@ bool equivCellTimingArcSets(LibertyCell* cell1, LibertyCell* cell2)
   return ret_value;
 }
 
-LibertyEquivCells::LibertyEquivCells(std::vector<LibertyLibrary*>& equiv_libs, std::vector<LibertyLibrary*>& map_libs)
-{
+LibertyEquivCells::LibertyEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
+                                     std::vector<LibertyLibrary*>& map_libs) {
   LibertyCellHashMap hash_matches;
   for (auto* lib : equiv_libs) {
     findEquivCells(lib, hash_matches);
@@ -201,7 +232,8 @@ LibertyEquivCells::LibertyEquivCells(std::vector<LibertyLibrary*>& equiv_libs, s
   // Sort the equiv sets by drive resistance.
   for (auto* cell : _unique_equiv_cells) {
     auto* equivs = _equiv_cells[cell];
-    std::stable_sort(equivs->begin(), equivs->end(), CellDriveResistanceGreater());
+    std::stable_sort(equivs->begin(), equivs->end(),
+                     CellDriveResistanceGreater());
   }
 
   for (auto* lib : map_libs) {
@@ -213,22 +245,20 @@ LibertyEquivCells::LibertyEquivCells(std::vector<LibertyLibrary*>& equiv_libs, s
   }
 }
 
-LibertyEquivCells::~LibertyEquivCells()
-{
+LibertyEquivCells::~LibertyEquivCells() {
   for (auto cell : _unique_equiv_cells) {
     delete _equiv_cells[cell];
   }
 }
 
-LibertyCellSeq* LibertyEquivCells::equivs(LibertyCell* cell)
-{
+LibertyCellSeq* LibertyEquivCells::equivs(LibertyCell* cell) {
   return _equiv_cells[cell];
 }
 
 // Use a comprehensive hash on cell properties to segregate
 // cells into groups of potential matches.
-void LibertyEquivCells::findEquivCells(LibertyLibrary* library, LibertyCellHashMap& hash_matches)
-{
+void LibertyEquivCells::findEquivCells(LibertyLibrary* library,
+                                       LibertyCellHashMap& hash_matches) {
   LibertyCellIterator cell_iter(library);
   while (cell_iter.hasNext()) {
     LibertyCell* cell = cell_iter.next();
@@ -261,8 +291,8 @@ void LibertyEquivCells::findEquivCells(LibertyLibrary* library, LibertyCellHashM
 }
 
 // Map library cells to equiv cells.
-void LibertyEquivCells::mapEquivCells(LibertyLibrary* library, LibertyCellHashMap& hash_matches)
-{
+void LibertyEquivCells::mapEquivCells(LibertyLibrary* library,
+                                      LibertyCellHashMap& hash_matches) {
   LibertyCellIterator cell_iter(library);
   while (cell_iter.hasNext()) {
     LibertyCell* cell = cell_iter.next();

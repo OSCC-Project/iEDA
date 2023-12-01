@@ -1,0 +1,17 @@
+port     = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "[" | "]")* }
+zero     =  { "0" }
+one      =  { "1" }
+expr_var = _{ port | zero | one | "(" ~ expr ~ ")" }
+
+not_expr         =  { "!" ~ expr_var | expr_var ~ "'" }
+expr_leaf        = _{ not_expr | expr_var }
+default_and_expr =  { expr_leaf ~ expr_leaf+ }
+
+expr_op    =  { "+" | "|" | "*" | "&" | "^" }
+expr_value = _{ default_and_expr | expr_leaf }
+
+expr = { expr_value ~ (expr_op ~ expr_value)* }
+
+expr_result = _{ expr ~ ";" }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }

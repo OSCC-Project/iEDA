@@ -29,6 +29,7 @@
 #include "core/PwrGroupData.hh"
 #include "core/PwrSeqGraph.hh"
 #include "include/PwrConfig.hh"
+#include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "ops/read_vcd/VCDParserWrapper.hh"
 
 namespace ipower {
@@ -62,6 +63,7 @@ class Power {
   unsigned readVCD(
       std::string_view vcd_path, std::string top_instance_name,
       std::optional<std::pair<int64_t, int64_t>> begin_end_time = std::nullopt);
+  unsigned readRustVCD(const char* vcd_path, const char* top_instance_name);
   unsigned dumpGraph();
   unsigned buildSeqGraph();
   unsigned dumpSeqGraphViz();
@@ -103,6 +105,7 @@ class Power {
   PwrSeqGraph _power_seq_graph;   //!< The power sequential graph, vertex is
                                   //!< sequential inst.
   VcdParserWrapper _vcd_wrapper;  //!< The vcd database.
+  RustVcdParserWrapper _rust_vcd_wrapper;  //!< The rust vcd database.
 
   std::vector<std::unique_ptr<PwrLeakageData>>
       _leakage_powers;  //!< The leakage power.

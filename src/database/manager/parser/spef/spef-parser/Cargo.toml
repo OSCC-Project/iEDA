@@ -1,0 +1,22 @@
+[package]
+name = "spef-parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
+
+[build-dependencies]
+cbindgen = "0.26"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "spef_parser"
+crate-type = ["cdylib"]
+
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+anyhow = "1.0"
+
+
+[profile.dev]
+debug = true

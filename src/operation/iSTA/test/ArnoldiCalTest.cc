@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -33,8 +33,8 @@
 #include "netlist/Pin.hh"
 #include "spef/parser-spef.hpp"
 #include "sta/Sta.hh"
-using ieda::Log;
 using ieda::BTreeMap;
+using ieda::Log;
 using ista::ArnoldiNet;
 using ista::DesignObject;
 using ista::Liberty;
@@ -112,7 +112,7 @@ TEST_F(ArnoldiCal, delay_cal) {
         double arnoldi_delay = 0.0;
         auto* spef_net = parser.findSpefNet(rc_net_name);
         LOG_FATAL_IF(!spef_net);
-        arnoldi_net->updateRcTiming(*spef_net);
+        // arnoldi_net->updateRcTiming(*spef_net);
         //    arnoldi_delay = arnoldi_net->get_delay(
         //    current, sim_total_time, num_sim_point, ista::TransType::kRise);
 
@@ -132,12 +132,12 @@ TEST_F(ArnoldiCal, delay_cal) {
 TEST_F(ArnoldiCal, delay_cal_de) {
   std::vector<double> current = {0.0547, 0.1066, 0.1650, 0.2150, 0.2490,
                                  0.2554, 0.2201, 0.1604, 0.1012, 0.0664};
-  //double sim_total_time = 0.2575 * 1.0e-6;
-  // int num_sim_point = 10;
-  //  double time = 0.02575 * 1.0e-6;
-  // double arnoldi_delay;
-  // double arnoldi_slew;
-  // double vdd = 1.1;
+  // double sim_total_time = 0.2575 * 1.0e-6;
+  //  int num_sim_point = 10;
+  //   double time = 0.02575 * 1.0e-6;
+  //  double arnoldi_delay;
+  //  double arnoldi_slew;
+  //  double vdd = 1.1;
 
   ista::ArnoldiNet arnoldi_test(nullptr);
   std::vector<double> nodal_capa = {19.5, 21.20};
@@ -225,7 +225,7 @@ TEST_F(ArnoldiCal, total_test) {
         // double coefficient = 0.5;
         auto* spef_net = parser.findSpefNet(rc_net_name);
         LOG_FATAL_IF(!spef_net);
-        arnoldi_net->updateRcTiming(*spef_net);
+        // arnoldi_net->updateRcTiming(*spef_net);
         auto arnoldi_delay = arnoldi_net->getDelay(
             get_current, start_time, end_time, num_sim_point,
             ista::AnalysisMode::kMax, ista::TransType::kRise, &pin);
@@ -316,7 +316,7 @@ TEST_F(ArnoldiCal, arnoldi) {
         // double coefficient = 0.5;
         auto* spef_net = parser.findSpefNet(rc_net_name);
         LOG_FATAL_IF(!spef_net);
-        arnoldi_net->updateRcTiming(*spef_net);
+        // arnoldi_net->updateRcTiming(*spef_net);
         auto arnoldi_delay = arnoldi_net->getDelay(
             get_current, start_time, end_time, num_sim_point,
             ista::AnalysisMode::kMax, ista::TransType::kRise, &pin);

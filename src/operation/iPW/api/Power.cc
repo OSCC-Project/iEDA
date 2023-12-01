@@ -123,6 +123,24 @@ unsigned Power::readVCD(
 }
 
 /**
+ * @brief read a VCD file by rust vcd parser
+ *
+ * @param vcd_path
+ * @param top_instance_name
+ * @return unsigned
+ */
+unsigned Power::readRustVCD(const char* vcd_path,
+                            const char* top_instance_name) {
+  LOG_INFO << "read vcd start";
+  _rust_vcd_wrapper.readVcdFile(vcd_path);
+  _rust_vcd_wrapper.buildAnnotateDB(top_instance_name);
+  _rust_vcd_wrapper.calcScopeToggleAndSp(top_instance_name);
+  LOG_INFO << "read vcd end";
+
+  return 1;
+}
+
+/**
  * @brief annotate vcd toggle sp to pwr vertex.
  *
  * @param annotate_db

@@ -1,0 +1,250 @@
+//cell delay
+underline=_{"_"}
+quotes=_{"\""}
+
+WHITESPACE=_{" "|"\t"|"\r"|"\n"}//告诉pest需要跳过哪些字符
+
+left_bracket=_{"("}
+right_bracket=_{")"}
+QM=_{"?"}
+colon=_{":"}//即CLN
+
+qstring=_{(ASCII_ALPHANUMERIC|underline|"."|","|colon|";"|"{"|"}"|"/"|"\\"|"-"|"+"|"*"|"@"|"#"|"$"|"%"|"^"|"&"|"="|"~"|"!"|"|"|"]"|"["|"?"|"<"|
+        ">"|" "|"\t")+}
+
+//qstring=_{(ASCII_ALPHANUMERIC|underline|"."|","|colon|"/"|"\\"|"-"|"+"|"*")+}
+
+SCALAR_CONSTANT={"1'b0"|"1'b1"|"1'B0"|"1'B1"|"'b0"|"'b1"|"'B0"|"'B1"|"0"|"1"}
+UNARY_OPERATOR={"~&"|"^~"|"~^"|"~|"|"|"|"+"|"-"|"!"|"~"|"&"|"^"}
+INVERSION_OPERATOR={"!"|"~"}
+BINARY_OPERATOR={"==="|"!=="|"=="|"!="|"||"|"&&"|"<="|">="|"^~"|"~^"|">>"|"<<"|"+"|"-"|"*"|"/"|"%"|"<"|">"|"&"|"|"|"^"}
+EQUALITY_OPERATOR={"==="|"!=="|"=="|"!="}
+
+
+number=@{((!("-")) ~ (ASCII_DIGIT|"e"|"-"|"."))+}//非负实数
+rnumber=@{(ASCII_DIGIT|"."|"-"|"+"|"e")+}//实数
+dnumber=@{"+"? ~ (ASCII_DIGIT)+}//非负整数
+
+triple_type1={number ~ colon ~ colon}
+triple_type2={colon ~ number ~ colon}
+triple_type3={colon ~ colon ~ number}
+triple_type4={number ~ colon ~ number ~ colon}
+triple_type5={number ~ colon ~ colon ~ number}
+triple_type6={colon ~ number ~ colon ~ number}
+triple_type7={number ~ colon ~ number ~ colon ~ number}
+triple={triple_type7|triple_type6|triple_type5|triple_type4|triple_type3|triple_type2|triple_type1}//非负三元组
+//value={(left_bracket ~ triple? ~ right_bracket)|(left_bracket ~ number? ~ right_bracket)}//非负实数、非负三元组
+value={left_bracket ~ (triple|number)? ~ right_bracket}
+
+rtriple_type1={rnumber ~ colon ~ colon}
+rtriple_type2={colon ~ rnumber ~ colon}
+rtriple_type3={colon ~ colon ~ rnumber}
+rtriple_type4={rnumber ~ colon ~ rnumber ~ colon}
+rtriple_type5={rnumber ~ colon ~ colon ~ rnumber}
+rtriple_type6={colon ~ rnumber ~ colon ~ rnumber}
+rtriple_type7={rnumber ~ colon ~ rnumber ~ colon ~ rnumber}
+rtriple={rtriple_type7|rtriple_type6|rtriple_type5|rtriple_type4|rtriple_type3|rtriple_type2|rtriple_type1}
+//rvalue={(left_bracket ~ rtriple? ~ right_bracket)|(left_bracket ~ rnumber? ~ right_bracket)}
+rvalue={left_bracket ~ (rtriple|rnumber)? ~ right_bracket}
+//qstring={(&!"  " ~ NEWLINE)+}
+
+//delay_file=${keyword ~ NEWLINE ~ sdf_header (~ NEWLINE ~ WHITESPACES ~ cell)+}
+keyword=@{(ASCII_ALPHA_UPPER)+}
+val_string={qstring}
+divider={"."|"/"}//默认是"."
+voltage={rtriple|rnumber}//min:typical:max
+temperature={rtriple|rnumber}//默认是1ns
+time_scale_number={rnumber}
+time_scale_unit={(ASCII_ALPHA)+}
+//time_scale 100 ns
+//time_scale 100ns
+
+//总的delay file
+//delay_file_keyword=_{keyword}
+delay_file={left_bracket ~ keyword ~ sdf_header ~ cell+ ~ right_bracket}
+
+//header组件
+sdf_header_keyword=@{keyword}
+sdf_version_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+design_name_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+date_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+vendor_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+program_name_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+version_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+divider_pair={left_bracket ~ sdf_header_keyword ~ divider ~ right_bracket}
+
+voltage_pair={left_bracket ~ sdf_header_keyword ~ (rtriple|rnumber) ~ right_bracket}
+
+process_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
+
+temperature_pair={left_bracket ~ sdf_header_keyword ~ (rtriple|rnumber) ~ right_bracket}
+
+time_scale_pair={left_bracket ~ sdf_header_keyword ~ time_scale_number ~ time_scale_unit ~ right_bracket}
+sdf_header={sdf_version_pair ~ design_name_pair? ~ date_pair? ~ vendor_pair? ~ program_name_pair? ~ version_pair? ~ divider_pair?
+            ~ voltage_pair? ~ process_pair? ~ temperature_pair? ~ time_scale_pair?}
+
+
+//构建cell
+cell={left_bracket ~ keyword ~ celltype ~ cell_instance ~ timing_spec* ~ right_bracket}
+timing_spec={del_spec|tc_spec|te_spec}//DELAY、timging check、timing environments
+
+cell_type_instance_keyword=@{keyword}
+hchar=_{"."|"/"}
+identifier=_{(ASCII_ALPHA|underline) ~ (ASCII_ALPHANUMERIC|"$"|underline)*}
+wildcard={"*"}
+path={identifier ~ (hchar ~ port)*}
+//bits_spec=_{"["|"]"|left_bracket|right_bracket|":"}
+//forbid=_{"  "|" "|NEWLINE}
+//构建cell的cell type和 cell instance
+cell_type={qstring}
+celltype={left_bracket ~ cell_type_instance_keyword ~ quotes ~ cell_type ~ quotes ~ right_bracket}
+
+cellinstance_path={left_bracket ~ cell_type_instance_keyword ~ path? ~ right_bracket}
+cellinstance_wildcard={left_bracket ~ cell_type_instance_keyword ~ wildcard ~ right_bracket}
+cell_instance={cellinstance_path|cellinstance_wildcard}
+//cell_instance=@{(path|wildcard)?}
+//cellinstance={left_bracket ~ cell_type_instance_keyword ~ cell_instance ~ right_bracket}
+
+
+
+del_spec_keyword=@{keyword}
+del_spec={left_bracket ~ del_spec_keyword ~ deltype+ ~ right_bracket}
+deltype={path_pulse_percent|absolute_increment}
+//构建deltype：path_pulse、path_pulse_percent
+deltype_keyword=@{keyword}
+path_pulse_percent={left_bracket ~ deltype_keyword ~ input_output_path? ~ value ~ value? ~ right_bracket}
+//input_output_path={port_instance ~ port_instance}//input、output、pulse rejection limit(narrowest pulse)、minimum pulse(X limit)
+//如果只有一个值value，则这两个值一样；如果input_output_path被省略，那么这个cell的所有路径都遵循这个value的限制和标准        23::29，中间没有表示0
+input_output_path={port_instance ~ port_instance}//疑问1
+port_instance=@{(identifier ~ (hchar ~ port)+)|port}//疑问2，path是什么   mem/   abc[2:3]
+port={bus_port|scalar_port}
+scalar_port=@{(identifier ~ "[" ~ dnumber ~ "]")|identifier}
+bus_port=@{identifier ~ "[" ~ dnumber ~ colon ~ dnumber ~ "]"}//mem[2:3]
+//(INTERCONNECT U1997.X U2620.S (0.000:0.000:0.000))
+
+port_spec={port_edge|port_instance}
+port_edge={left_bracket ~ edge_identifier ~ port_instance ~ right_bracket}
+posedge={"posedge"}
+negedge={"negedge"}
+edge_identifier={posedge|negedge|"01"|"10"|"0z"|"z0"|"z1"|"1z"}
+
+//构建deltype：absolute、increment
+absolute_increment={left_bracket ~ deltype_keyword ~ del_def+ ~ right_bracket}
+del_def={cond_item|condelse_item|iopath_item|interconnect_item|port_item|device_item}
+
+iopath_part1={deltype_keyword ~ port_spec ~ port_instance}
+iopath_part2_part={left_bracket ~ deltype_keyword ~ delval_list ~ right_bracket}
+iopath_part2={iopath_part2_part* ~ delval_list}
+iopath_item={left_bracket ~ iopath_part1 ~ iopath_part2 ~ right_bracket}
+
+ques_expr={qstring}
+cond_item={left_bracket ~ deltype_keyword ~ (quotes ~ ques_expr ~ quotes)? ~ conditional_port_expr ~ iopath_item ~ right_bracket}
+condelse_item={left_bracket ~ deltype_keyword ~ iopath_item ~ right_bracket}
+port_item={left_bracket ~ deltype_keyword ~ port_instance ~ delval_list ~ right_bracket}
+interconnect_item={left_bracket ~ deltype_keyword ~ input_output_path ~ delval_list ~ right_bracket}
+device_item={left_bracket ~ deltype_keyword ~ port_instance? ~ delval_list ~ right_bracket}
+
+conditional_port_expr_type1={simple_expression}
+conditional_port_expr_type2={left_bracket ~ conditional_port_expr ~ right_bracket}
+conditional_port_expr_type3={UNARY_OPERATOR ~ conditional_port_expr_type2}
+
+conditional_port_expr_othertypes={conditional_port_expr_type1|conditional_port_expr_type2|conditional_port_expr_type3}
+conditional_port_expr_type4_other={conditional_port_expr_othertypes ~ BINARY_OPERATOR ~ conditional_port_expr}
+conditional_port_expr_type4_prime={(BINARY_OPERATOR ~ conditional_port_expr)*}
+conditional_port_expr_type4={conditional_port_expr_type4_other ~ conditional_port_expr_type4_prime}
+
+conditional_port_expr={conditional_port_expr_type4|conditional_port_expr_othertypes}
+
+
+simple_expression_type1={left_bracket ~ simple_expression ~ right_bracket}
+simple_expression_type2={UNARY_OPERATOR ~ simple_expression_type1}
+simple_expression_type3={port}//终止情况
+simple_expression_type4={UNARY_OPERATOR ~ simple_expression_type3}//终止情况
+simple_expression_type5={SCALAR_CONSTANT}//终止情况
+simple_expression_type6={UNARY_OPERATOR ~ SCALAR_CONSTANT}//终止情况
+
+simple_expression_othertypes = { simple_expression_type1 | simple_expression_type2  | simple_expression_type4 | simple_expression_type6 
+    | simple_expression_type8 | simple_expression_type9 | simple_expression_type5|simple_expression_type3}
+simple_expression_type7_other = {simple_expression_othertypes ~ QM ~ simple_expression ~ colon ~ simple_expression}
+//simple_expression_type7_other = {simple_expression_other}
+simple_expression_type7_prime= { (QM ~ simple_expression ~ colon ~ simple_expression)* }
+simple_expression_type7 = {simple_expression_type7_other ~ simple_expression_type7_prime}
+simple_expression_type8={"{" ~ simple_expression ~ concat_expression? ~ "}"}
+simple_expression_type9={"{" ~ simple_expression ~ simple_expression_type8 ~ "}"}
+
+
+//simple_expression={simple_expression_type1|simple_expression_type2|simple_expression_type4|simple_expression_type6|
+//    simple_expression_type7|simple_expression_type8|simple_expression_type9|simple_expression_type5|simple_expression_type3}
+simple_expression={simple_expression_type7|simple_expression_othertypes}
+concat_expression={"," ~ simple_expression}
+
+
+delval_type1={rvalue}
+delval_type2={left_bracket ~ rvalue ~ rvalue ~ right_bracket}
+delval_type3={left_bracket ~ rvalue ~ rvalue ~ rvalue ~ right_bracket}
+delval={delval_type3|delval_type2|delval_type1}
+
+delval_list_type1={delval}
+delval_list_type2={delval ~ delval}
+delval_list_type3={delval ~ delval ~ delval}
+delval_list_type4={delval ~ delval ~ delval ~ delval ~ delval? ~ delval?}
+delval_list_type5={delval ~ delval ~ delval ~ delval ~ delval ~ delval ~ delval ~ delval? ~ delval? ~ delval? ~ delval? ~ delval?}
+delval_list={delval_list_type5|delval_list_type4|delval_list_type3|delval_list_type2|delval_list_type1}
+
+
+
+
+tchk_keyword=@{keyword}
+tc_spec={left_bracket ~ tchk_keyword ~ tchk_def+ ~ right_bracket}
+tchk_def={setup_hold_recovery_removal_item|setuphold_item1_recrem_item1_nochange_item|setuphold_item2_recrem_item2_item|skew_item|width_period_item}
+
+setup_hold_recovery_removal_item={left_bracket ~ tchk_keyword ~ port_tchk ~ port_tchk ~ value ~ right_bracket}
+setuphold_item1_recrem_item1_nochange_item={left_bracket ~ tchk_keyword ~ port_tchk ~ port_tchk ~ rvalue ~ rvalue ~ right_bracket}
+setuphold_item2_recrem_item2_item={left_bracket ~ tchk_keyword ~ port_spec ~ port_spec ~ rvalue ~ rvalue ~ sccond? ~ sccond? ~ right_bracket}
+skew_item={left_bracket ~ tchk_keyword ~ port_tchk ~ port_tchk ~ rvalue ~ right_bracket}
+width_period_item={left_bracket ~ tchk_keyword ~ port_tchk ~ value ~ right_bracket}
+
+sccond_qstring={qstring}
+sccond_keyword={"CCOND"|"SCOND"}
+sccond={left_bracket ~ sccond_keyword ~ (quotes ~ sccond_qstring ~ quotes)? ~ timing_check_condition ~ right_bracket}
+
+port_tchk_type1={port_spec}
+port_tchk_type2_keyword={"COND"}
+port_tchk_type2={left_bracket ~ port_tchk_type2_keyword ~ (quotes ~ sccond_qstring ~ quotes)? ~ timing_check_condition ~ port_spec ~ right_bracket}
+port_tchk={port_tchk_type2|port_tchk_type1}
+
+scalar_net=@{identifier}
+scalar_node={scalar_port ~ scalar_net}
+timing_check_condition_type1={scalar_node}
+timing_check_condition_type2={INVERSION_OPERATOR ~ scalar_node}
+timing_check_condition_type3={scalar_node ~ EQUALITY_OPERATOR ~ SCALAR_CONSTANT}
+timing_check_condition={timing_check_condition_type3|timing_check_condition_type2|timing_check_condition_type1}
+
+
+
+te_keyword=@{keyword}
+te_spec={left_bracket ~ te_keyword ~ te_def+ ~ right_bracket}
+te_def={cns_def|tenv_def}
+name={left_bracket ~ te_keyword ~ (quotes ~ sccond_qstring ~ quotes)? ~ right_bracket}
+exception={left_bracket ~ te_keyword ~ cell_instance+ ~ right_bracket}
+constraint_path={left_bracket ~ port_instance ~ port_instance ~ right_bracket}
+
+cns_def={path_constraint_item|period_constraint_item|sum_item|diff_item|skew_constraint_item}
+path_constraint_item={left_bracket ~ te_keyword ~ name? ~ port_instance ~ port_instance+ ~ rvalue ~ rvalue ~ right_bracket}
+period_constraint_item={left_bracket ~ te_keyword ~ port_instance ~ value ~ exception? ~ right_bracket}
+sum_item={left_bracket ~ te_keyword ~ constraint_path ~ constraint_path+ ~ rvalue ~ rvalue? ~ right_bracket}
+diff_item={left_bracket ~ te_keyword ~ constraint_path ~ constraint_path ~ value ~ value? ~ right_bracket}
+skew_constraint_item={left_bracket ~ te_keyword ~ port_spec ~ value ~ right_bracket}
+
+tenv_def={arrival_departure_item|slack_item|waveform_item}
+arrival_departure_item={left_bracket ~ te_keyword ~ port_edge? ~ port_instance ~ rvalue ~ rvalue ~ rvalue ~ rvalue ~ right_bracket}
+slack_item={left_bracket ~ te_keyword ~ port_instance ~ rvalue ~ rvalue ~ rvalue ~ rvalue ~ number? ~ right_bracket}
+waveform_item={left_bracket ~ te_keyword ~ port_instance ~ number ~ edge_list ~ right_bracket}
+
+pos_neg_pair_posedge={left_bracket ~ posedge ~ rnumber ~ rnumber? ~ right_bracket}
+pos_neg_pair_negedge={left_bracket ~ negedge ~ rnumber ~ rnumber? ~ right_bracket}
+pos_pair={pos_neg_pair_posedge ~ pos_neg_pair_negedge}
+neg_pair={pos_neg_pair_negedge ~ pos_neg_pair_posedge}
+edge_list_type1={pos_pair+}
+edge_list_type2={neg_pair+}
+edge_list={edge_list_type1|edge_list_type2}

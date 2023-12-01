@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -203,7 +203,11 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
-  auto get_table_value = [this](auto index) { return get_table_values()[index]->getFloatValue(); };
+  auto get_table_value = [this](auto index) {
+    auto& table_values = get_table_values();
+    LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
+    return table_values[index]->getFloatValue();
+  };
 
   if (1 == get_axes().size()) {
     auto num_val1 = check_val(0, val1);
@@ -783,12 +787,12 @@ std::optional<double> LibertyPort::get_port_slew_limit(AnalysisMode mode)
   }
 }
 
-void LibertyPort::set_func_expr(LibertyExpr* lib_expr)
+void LibertyPort::set_func_expr(RustLibertyExpr* lib_expr)
 {
   _func_expr.reset(lib_expr);
 }
 
-LibertyExpr* LibertyPort::get_func_expr()
+RustLibertyExpr* LibertyPort::get_func_expr()
 {
   return _func_expr.get();
 }
@@ -1090,13 +1094,11 @@ double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew,
   if (isDelayArc()) {
     return _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew) * liberty_to_output_convert;
   } else {
-    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew)
-           * liberty_to_output_convert;
+    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   }
 }
 
 /**
- * @brief Get the arc output slew.
  *
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
@@ -1431,7 +1433,7 @@ void LibertyCell::bufferPorts(LibertyPort*& input, LibertyPort*& output)
 bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output)
 {
   auto* func_expr = output->get_func_expr();
-  return func_expr && func_expr->get_op() == LibertyExpr::Operator::kBuffer;
+  return func_expr && func_expr->op == RustLibertyExprOp::kBuffer;
 }
 
 /**
@@ -1445,7 +1447,7 @@ bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output)
 bool LibertyCell::hasInverterFunc(LibertyPort* input, LibertyPort* output)
 {
   auto* func_expr = output->get_func_expr();
-  return func_expr && func_expr->get_op() == LibertyExpr::Operator::kNot;
+  return func_expr && func_expr->op == RustLibertyExprOp::kNot;
 }
 
 /**
@@ -2479,7 +2481,7 @@ unsigned LibertyReader::visitSimpleAttri(LibertyStmt* attri)
          {"function",
           [=]() {
             const char* expr_str = attri_value->getStringValue();
-            LibertyExprBuilder expr_builder(lib_port, expr_str);
+            RustLibertyExprBuilder expr_builder(expr_str);
             expr_builder.execute();
             auto* func_expr = expr_builder.get_result_expr();
             lib_port->set_func_expr(func_expr);
@@ -2796,6 +2798,30 @@ std::unique_ptr<LibertyLibrary> Liberty::loadLiberty(const char* file_name)
 
   if (is_success) {
     return lib_reader.get_library_builder()->takeLib();
+  }
+
+  return nullptr;
+}
+
+/**
+ * @brief Load liberty with rust parse API.
+ *
+ * @param file_name
+ * @return std::unique_ptr<LibertyLibrary>
+ */
+std::unique_ptr<LibertyLibrary> Liberty::loadLibertyWithRustParser(const char* file_name)
+{
+  RustLibertyReader lib_rust_reader(file_name);
+
+  unsigned is_success = lib_rust_reader.readLib();
+
+  if (is_success) {
+    auto lib = lib_rust_reader.get_library_builder()->takeLib();
+
+    auto* lib_builder = lib_rust_reader.get_library_builder();
+    delete lib_builder;
+
+    return lib;
   }
 
   return nullptr;

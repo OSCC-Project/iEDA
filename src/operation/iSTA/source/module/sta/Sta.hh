@@ -45,6 +45,7 @@
 #include "netlist/Netlist.hh"
 #include "parser/liberty/mLibertyEquivCells.hh"
 #include "sdc/SdcSetIODelay.hh"
+#include "verilog/VerilogParserRustC.hh"
 #include "verilog/VerilogReader.hh"
 
 namespace ista {
@@ -194,6 +195,7 @@ class Sta {
   SdcConstrain* getConstrain();
 
   unsigned readDesign(const char* verilog_file);
+  unsigned readDesignWithRustParser(const char* file_name);
   unsigned readLiberty(const char* lib_file);
   unsigned readLiberty(std::vector<std::string>& lib_files);
   unsigned readSdc(const char* sdc_file);
@@ -214,6 +216,8 @@ class Sta {
 
   void readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
+  void readVerilogWithRustParser(const char* verilog_file);
+  void linkDesignWithRustParser();
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
   }
@@ -503,10 +507,15 @@ class Sta {
   std::optional<std::string> _path_group;     //!< The path group.
   std::unique_ptr<SdcConstrain> _constrains;  //!< The sdc constrain.
   VerilogReader _verilog_reader;
+  RustVerilogReader _rust_verilog_reader;
   std::string _top_module_name;
   std::vector<std::unique_ptr<VerilogModule>>
       _verilog_modules;  //!< The current design parsed from verilog file.
   VerilogModule* _top_module = nullptr;  //!< The design top module.
+  std::vector<std::unique_ptr<RustVerilogModule>>
+      _rust_verilog_modules;  //!< The current design parsed from verilog file.
+                              //!< whether need unique_ptr?
+  RustVerilogModule* _rust_top_module = nullptr;
   Netlist _netlist;  //!< The current top netlist for sta analysis.
   Vector<std::unique_ptr<LibertyLibrary>>
       _libs;  //!< The design libs of different corners.

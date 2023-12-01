@@ -13,5 +13,5 @@ add_executable(iSTATest ${SourceFiles})
 
 target_link_libraries(iSTATest ista-engine
 sdc-cmd shell-cmd sta log str time netlist liberty
-delay utility sta-solver verilog-parser graph idb
-tcl usage pthread stdc++fs IdbBuilder def_service lef_service gtest gtest_main)
+delay utility sta-solver verilog graph idb
+tcl usage pthread stdc++fs IdbBuilder def_service lef_service gtest)

@@ -288,15 +288,15 @@ unsigned StaBuildGraph::buildConst(StaGraph* the_graph, Instance* inst) {
     auto the_vertex = the_graph->findVertex(pin);
     LOG_FATAL_IF(!the_vertex);
     auto port_func = pin->get_cell_port()->get_func_expr();
-    if (!pin->get_net() ||
-        (port_func && (port_func->isOne() || port_func->isZero()))) {
+    if (!pin->get_net() || (port_func && (rust_expr_func_is_one(port_func) ||
+                                          rust_expr_func_is_zero(port_func)))) {
       (*the_vertex)->set_is_const();
       the_graph->addConstVertex(*the_vertex);
 
       if (port_func) {
-        if (port_func->isOne()) {
+        if (rust_expr_func_is_one(port_func)) {
           (*the_vertex)->set_is_const_vdd();
-        } else if (port_func->isZero()) {
+        } else if (rust_expr_func_is_zero(port_func)) {
           (*the_vertex)->set_is_const_gnd();
         }
       }

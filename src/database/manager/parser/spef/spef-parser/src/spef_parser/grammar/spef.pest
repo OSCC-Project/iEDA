@@ -1,0 +1,65 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+int   = _{ ("+" | "-")? ~ ASCII_DIGIT+ }
+num   = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+index = ${ ASCII_DIGIT+ }
+
+line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
+multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+COMMENT = _{ line_comment | multiline_comment }
+
+header_char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "/" | "[" | "]" | "," | "\"" | "-" | ":" | "." }
+char        = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "/" | "[" | "]" | "," | "\"" }
+
+section      = ${ "*" ~ section_name }
+section_name = ${ "NAME_MAP" | "PORTS" | "CONN" | "CAP" | "RES" | "END" }
+
+header_entry    = { header_keywords ~ header_value }
+header_keywords = {
+    "*SPEF"
+  | "*DESIGN_FLOW"
+  | "*DESIGN"
+  | "*DATE"
+  | "*VENDOR"
+  | "*PROGRAM"
+  | "*VERSION"
+  | "*DIVIDER"
+  | "*DELIMITER"
+  | "*BUS_DELIMITER"
+  | "*T_UNIT"
+  | "*C_UNIT"
+  | "*R_UNIT"
+  | "*L_UNIT"
+}
+header_value    = { !direction ~ header_char+ }
+
+name_map_entry =  { index_name ~ !direction ~ str_name }
+str_name       = @{ (ASCII_ALPHA | "_") ~ char+ }
+index_name     = ${ "*" ~ index }
+
+ports_entry      =  { index_name ~ direction ~ (coordinate_param ~ xy_coordinates)? }
+direction        =  { "I" | "O" | "B" }
+coordinate_param = _{ "*C" }
+xy_coordinates   =  { num{2} }
+
+dnet_entry     = { "*D_NET" ~ (str_name | index_name) ~ cap_or_res_val }
+cap_or_res_val = { num{1} }
+
+conn_entry = { conn_type ~ pin_port ~ direction? ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
+conn_type  = { "*P" | "*I" | "*N" | "*S" | "*C" | "*R" | "*L" }
+// !TODO, Add str_name to pin_port because it's legal too.
+// Noting that str_name may wrongly matches cap_or_res_value, which leading to wrong paring.
+pin_port    = ${ (index_name | str_name) ~ (":" ~ pin_name)? }
+pin_name    =  { (ASCII_ALPHANUMERIC | "_" | "[" | "]")+ }
+load_param  = _{ "*L" }
+drive_param = _{ "*D" }
+
+cap_or_res_entry =  { id ~ pin_port{1, 2} ~ cap_or_res_val }
+id               = _{ ASCII_DIGIT+ }
+
+spef_file_text = { (section | header_entry | name_map_entry | ports_entry | dnet_entry | conn_entry | cap_or_res_entry)+ }
+
+spef_file = _{
+    SOI ~ spef_file_text ~ EOI
+}
