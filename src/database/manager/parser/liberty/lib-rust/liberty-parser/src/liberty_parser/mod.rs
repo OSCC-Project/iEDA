@@ -14,37 +14,38 @@ use std::os::raw::c_char;
 
 use self::liberty_data::{LibertyAttrValue, LibertyGroupStmt};
 
+use std::time::Instant;
+
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
 
 /// process float data.
 fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
     match pair.as_str().parse::<f64>() {
         Ok(value) => Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process string text data not include quote.
 fn process_string_text(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
     match pair.as_str().parse::<String>() {
         Ok(value) => Ok(liberty_data::LibertyParserData::String(liberty_data::LibertyStringValue { value })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse string".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process multiline string data, concate one line string together.
 fn process_multiline_string(
-    pair: Pair<Rule>,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let mut concate_str = String::new();
@@ -65,7 +66,7 @@ fn process_multiline_string(
 
 /// process string data.
 fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
 
     // println!("Rule:    {:?}", pair_clone.as_rule());
     // println!("Span:    {:?}", pair_clone.as_span());
@@ -77,7 +78,7 @@ fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, p
         })),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
@@ -87,7 +88,7 @@ fn process_expr_token(
     pair: Pair<Rule>,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
 
     let attribute_value = parser_queue.pop_front().unwrap();
     match attribute_value {
@@ -102,14 +103,14 @@ fn process_expr_token(
                     })),
                     Err(_) => Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-                        pair_clone.as_span(),
+                        pair_span,
                     )),
                 }
             }
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
@@ -227,9 +228,8 @@ fn process_pair(
     pair: Pair<Rule>,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
     let current_queue_len = parser_queue.len();
-    for inner_pair in pair.into_inner() {
+    for inner_pair in pair.clone().into_inner() {
         let pair_result = process_pair(inner_pair, parser_queue);
         parser_queue.push_back(pair_result.unwrap());
     }
@@ -243,33 +243,47 @@ fn process_pair(
         substitute_queue.push_front(parser_queue.pop_back().unwrap());
     }
 
-    match pair_clone.as_rule() {
-        Rule::float => process_float(pair_clone),
-        Rule::string_text => process_string_text(pair_clone),
-        Rule::id => process_string(pair_clone),
-        Rule::multiline_string => process_multiline_string(pair_clone, &mut substitute_queue),
-        Rule::expr_token => process_expr_token(pair_clone, &mut substitute_queue),
-        Rule::simple_attribute => process_simple_attribute(pair_clone, &mut substitute_queue),
-        Rule::complex_attribute => process_complex_attribute(pair_clone, &mut substitute_queue),
-        Rule::group => process_group_attribute(pair_clone, &mut substitute_queue),
+    match pair.as_rule() {
+        Rule::float => process_float(pair),
+        Rule::string_text => process_string_text(pair),
+        Rule::id => process_string(pair),
+        Rule::multiline_string => process_multiline_string(&mut substitute_queue),
+        Rule::expr_token => process_expr_token(pair, &mut substitute_queue),
+        Rule::simple_attribute => process_simple_attribute(pair, &mut substitute_queue),
+        Rule::complex_attribute => process_complex_attribute(pair, &mut substitute_queue),
+        Rule::group => process_group_attribute(pair, &mut substitute_queue),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair_clone.as_span(),
+            pair.as_span(),
         )),
     }
 }
 
+/// parse the lib file.
 pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    // Generate liberty.pest parser
+    // let start_time = Instant::now();
+
     let input_str =
         std::fs::read_to_string(lib_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", lib_file_path));
-    let parse_result = LibertyParser::parse(Rule::lib_file, input_str.as_str());
-    let mut parser_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
 
+    let parse_result = LibertyParser::parse(Rule::lib_file, input_str.as_str());
+
+    // let read_end_time = Instant::now();
+    // let read_elapsed_time = read_end_time.duration_since(start_time);
+    // let read_elapsed_s = read_elapsed_time.as_secs();
+    // println!("read {} execution time: {} s", lib_file_path, read_elapsed_s);
+
+    let mut parser_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
     match parse_result {
         Ok(pairs) => {
             let lib_data = process_pair(pairs.into_iter().next().unwrap(), &mut parser_queue);
             assert_eq!(parser_queue.len(), 0);
+
+            // let pest_end_time = Instant::now();
+            // let pest_elapsed_time = pest_end_time.duration_since(read_end_time);
+            // let pest_read_elapsed_s = pest_elapsed_time.as_secs();
+            // println!("pest parse {} execution time: {} s", lib_file_path, pest_read_elapsed_s);
+
             lib_data
         }
         Err(err) => {
@@ -284,7 +298,7 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
 pub extern "C" fn rust_parse_lib(lib_path: *const c_char) -> *mut c_void {
     let c_str = unsafe { std::ffi::CStr::from_ptr(lib_path) };
     let r_str = c_str.to_string_lossy().into_owned();
-    println!("r str {}", r_str);
+    println!("rust read lib file {}", r_str);
 
     let lib_file = parse_lib_file(&r_str);
     if let liberty_data::LibertyParserData::GroupStmt(lib_file_group) = lib_file.unwrap() {
