@@ -66,8 +66,8 @@ ExternalProject_Add(
 )
 
 file(MAKE_DIRECTORY ${RUST_OUTPUT_DIR})
-message("Liberty Parser Rust lib path ${RUST_LIB_PATH}")
-message("Liberty Parser Rust outut path ${RUST_OUTPUT_DIR}")
+message("liberty parser rust lib path ${RUST_LIB_PATH}")
+message("liberty parser rust output path ${RUST_OUTPUT_DIR}")
 
 add_custom_command(
     TARGET ${RUST_PROJECT_NAME} POST_BUILD
