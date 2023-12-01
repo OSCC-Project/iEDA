@@ -92,6 +92,6 @@ TEST_F(VCDParserWrapperTest, rust_reader) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "VCDParserWrapperTest.rust_*";
+  // testing::GTEST_FLAG(filter) = "VCDParserWrapperTest.rust_*";
   return RUN_ALL_TESTS();
 }

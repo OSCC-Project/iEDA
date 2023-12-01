@@ -573,8 +573,36 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
                analysis_mode_to_string[pwr_analysis_mode].c_str());
 
   std::fprintf(f.get(), "%s", report_tbl->c_str());
+
+  return 1;
+  
 }
 
+/**
+ * @brief report csv file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
+  std::ofstream csv_file(rpt_file_name);
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    csv_file << inst->get_name() << ","
+             << data_str(group_data->get_internal_power()) << ","
+             << data_str(group_data->get_switch_power()) << ","
+             << data_str(group_data->get_leakage_power()) << ","
+             << data_str(group_data->get_total_power()) << "\n";
+  }
+  csv_file.close();
+  return 1;
+
+}
 /**
  * @brief run report ipower
  *

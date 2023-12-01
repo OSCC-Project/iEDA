@@ -86,6 +86,7 @@ class Power {
                               PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportInstancePowerCSV(const char* rpt_file_name);
   unsigned runCompleteFlow();
 
   auto& get_leakage_powers() { return _leakage_powers; }
