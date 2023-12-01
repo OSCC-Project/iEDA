@@ -91,7 +91,7 @@ TEST_F(PowerTest, example1) {
   ipower.updatePower();
 
   // report power.
-  ipower.reportPower("report.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportSummaryPower("report.txt", PwrAnalysisMode::kAveraged);
 }
 
 }  // namespace
