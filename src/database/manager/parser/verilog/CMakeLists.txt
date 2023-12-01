@@ -44,8 +44,8 @@ endif()
 
 message("verilog parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_command(
-    OUTPUT ${RUST_LIB_PATH}
+add_custom_target(
+    RustVerilog ALL
     COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
     WORKING_DIRECTORY ${RUST_PROJECT_DIR}
     COMMENT "Building Rust library"
