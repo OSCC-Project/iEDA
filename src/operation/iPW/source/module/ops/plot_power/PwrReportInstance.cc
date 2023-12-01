@@ -24,7 +24,7 @@ std::unique_ptr<PwrReportInstanceTable> PwrReportInstance::createReportTable(
 
   (*report_tbl) << TABLE_HEAD;
   /* Fill each cell with operator[] */
-  (*report_tbl)[0][0] = "Instance name";
+  (*report_tbl)[0][0] = "Instance Name";
   (*report_tbl)[0][1] = "Internal Power";
   (*report_tbl)[0][2] = "Switch Power";
   (*report_tbl)[0][3] = "Leakage Power";
@@ -33,7 +33,5 @@ std::unique_ptr<PwrReportInstanceTable> PwrReportInstance::createReportTable(
 
   return report_tbl;
 }
-
-
 
 }  // namespace ipower

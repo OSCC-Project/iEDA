@@ -89,6 +89,7 @@ TEST_F(PowerTest, example1) {
   // report power.
   ipower.reportSummaryPower("report.txt", PwrAnalysisMode::kAveraged);
   ipower.reportInstancePower("report_instance.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportInstancePowerCSV("report_instance.csv");
 }
 
 }  // namespace

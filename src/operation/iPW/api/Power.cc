@@ -557,6 +557,8 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
                   << data_str(group_data->get_total_power()) << TABLE_ENDLINE;
   };
 
+  LOG_INFO << "\n" << report_tbl->c_str();
+
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
@@ -575,7 +577,6 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
   std::fprintf(f.get(), "%s", report_tbl->c_str());
 
   return 1;
-  
 }
 
 /**
@@ -586,12 +587,23 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
  */
 unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   std::ofstream csv_file(rpt_file_name);
+  csv_file << "Instance Name"
+           << ","
+           << "Internal Power"
+           << ","
+           << "Switch Power"
+           << ","
+           << "Leakage Power"
+           << ","
+           << "Total Power"
+           << "\n";
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {
     if (dynamic_cast<Net*>(group_data->get_obj())) {
       continue;
     }
+
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
     csv_file << inst->get_name() << ","
              << data_str(group_data->get_internal_power()) << ","
@@ -601,7 +613,6 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   }
   csv_file.close();
   return 1;
-
 }
 /**
  * @brief run report ipower
