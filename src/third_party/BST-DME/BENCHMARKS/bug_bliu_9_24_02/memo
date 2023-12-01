@@ -1,0 +1,64 @@
+From - Tue Sep 24 09:39:36 2002
+Received: from mailgate2.Cadence.COM (mailgate2.Cadence.COM [158.140.2.31])
+	by mailhub.Cadence.COM (8.10.1/8.8.5) with SMTP id g8O5SCk19612
+	for <tsao@mailhub.cadence.com>; Mon, 23 Sep 2002 22:28:12 -0700 (PDT)
+Received: from vlsicad.ucsd.edu (isvw2.Cadence.COM [158.140.2.53])
+	by mailgate2.Cadence.COM (8.9.3/8.9.3) with ESMTP id WAA19735
+	for <tsao@cadence.com>; Mon, 23 Sep 2002 22:28:28 -0700 (PDT)
+Received: from localhost (bliu@localhost)
+	by vlsicad.ucsd.edu (8.10.2+Sun/8.10.2) with ESMTP id g8O5R1R07617;
+	Mon, 23 Sep 2002 22:27:01 -0700 (PDT)
+Date: Mon, 23 Sep 2002 22:27:01 -0700 (PDT)
+From: Bao Liu <bliu@vlsicad.ucsd.edu>
+To: "Andrew B. Kahng" <abk@cs.ucsd.edu>
+cc: <matbnl@alla.cs.gsu.edu>, <tsao>, <tsao@celestry.com>,
+   <tsaoalbert@yahoo.com>, <mandoiu@cs.ucsd.edu>
+Subject: Re: a BST1.3 bug
+In-Reply-To: <200209230659.g8N6xrB06777@fast.ucsd.edu>
+Message-ID: <Pine.GSO.4.32.0209232224070.7605-100000@vlsicad.ucsd.edu>
+MIME-Version: 1.0
+X-Received: By mailgate2.Cadence.COM as WAA19735 at Mon Sep 23 22:28:28 2002
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mozilla-Status: 8011
+X-Mozilla-Status2: 00000000
+X-UIDL: [`]!!kMN"!X!N"!acY!!
+
+
+Albert,
+
+I was trying to reach you by phone in the weekend....
+
+I put the input file on the web:
+http://vlsicad.ucsd.edu/~bliu/nn830.in
+
+The bug comes when running BST1.3 version:
+./bst -i nn830.in -B 0
+
+Thanks for your help,
+--Bao
+
+I'm at San Jose now and I can be reached by
+(408)727-8988 x 135 (W)
+(408)615-8380  (H)
+
+
+On Sun, 22 Sep 2002, Andrew B. Kahng wrote:
+
+> Bao --
+>
+> How do you think Albert will see the testcase that causes
+> the failed assertion?  He doesn't have a login on vlsicad.ucsd.edu .
+>
+> Also, could you please send mail to Cadence / Yahoo, as has been
+> the obvious thing to do since we forwarded your previous email?
+>
+> Please put the tar.gz of any relevant test case and log file on
+> the web, and in general make it as easy as possible for Albert to
+> help you.   E.g., what are your phone numbers ???
+>
+> -- Andrew
+>
+>
+>
+
+

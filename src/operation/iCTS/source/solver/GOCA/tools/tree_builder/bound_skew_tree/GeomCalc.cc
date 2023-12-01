@@ -546,13 +546,32 @@ void GeomCalc::sortPtsByVal(Pts& pts)
   if (pts.empty()) {
     return;
   }
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val < p2.val; });
+}
+
+void GeomCalc::sortPtsByValDec(Pts& pts)
+{
+  if (pts.empty()) {
+    return;
+  }
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.val > p2.val; });
 }
 
 void GeomCalc::uniquePtsLoc(std::vector<Pt>& pts)
 {
-  pts.erase(std::unique(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return Equal(p1.x, p2.x) && Equal(p1.y, p2.y); }),
-            pts.end());
+  if (pts.size() < 2) {
+    return;
+  }
+  std::vector<Pt> unique_pts = {pts.front()};
+  std::ranges::for_each(pts, [&unique_pts](const Pt& p) {
+    if (!isSame(p, unique_pts.back())) {
+      unique_pts.push_back(p);
+    }
+  });
+  if (unique_pts.size() > 1 && isSame(unique_pts.front(), unique_pts.back())) {
+    unique_pts.pop_back();
+  }
+  pts = unique_pts;
 }
 
 void GeomCalc::uniquePtsVal(std::vector<Pt>& pts)
@@ -587,17 +606,17 @@ void GeomCalc::convexHull(std::vector<Pt>& pts)
     return;
   }
   // calculate convex hull by Andrew algorithm
-  std::sort(pts.begin(), pts.end(), [](const Pt& p1, const Pt& p2) { return p1.x < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
+  std::ranges::sort(pts, [](const Pt& p1, const Pt& p2) { return p1.x + kEpsilon < p2.x || (Equal(p1.x, p2.x) && p1.y < p2.y); });
   std::vector<Pt> ans(2 * pts.size());
   size_t k = 0;
   for (size_t i = 0; i < pts.size(); ++i) {
-    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= 0) {
+    while (k > 1 && crossProduct(ans[k - 2], ans[k - 1], pts[i]) <= kEpsilon) {
       --k;
     }
     ans[k++] = pts[i];
   }
   for (size_t i = pts.size() - 1, t = k + 1; i > 0; --i) {
-    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= 0) {
+    while (k >= t && crossProduct(ans[k - 2], ans[k - 1], pts[i - 1]) <= kEpsilon) {
       --k;
     }
     ans[k++] = pts[i - 1];
@@ -656,15 +675,17 @@ Pt GeomCalc::closestPtOnRegion(const Pt& p, const std::vector<Pt>& region)
   }
   auto pt = p;
   Pt closest;
+  Pt ans;
   auto min_dist = std::numeric_limits<double>::max();
   for (size_t i = 0; i < region.size(); ++i) {
     auto j = (i + 1) % region.size();
     auto dist = ptToLineDist(pt, {region[i], region[j]}, closest);
     if (dist < min_dist) {
       min_dist = dist;
+      ans = closest;
     }
   }
-  return closest;
+  return ans;
 }
 
 void GeomCalc::lineToMs(Trr& ms, const Line& l)
@@ -674,7 +695,7 @@ void GeomCalc::lineToMs(Trr& ms, const Line& l)
 
 void GeomCalc::lineToMs(Trr& ms, const Pt& p1, const Pt& p2)
 {
-  if (p1.y < p2.y) {
+  if (p1.y <= p2.y) {
     ms.x_low(p2.x - p2.y);
     ms.x_high(p1.x - p1.y);
     ms.y_low(p1.x + p1.y);

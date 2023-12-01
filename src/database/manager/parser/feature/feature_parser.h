@@ -64,6 +64,8 @@ class FeatureParser
   bool buildLayout(std::string json_path);
   bool buildInstances(std::string json_path);
   bool buildNets(std::string json_path);
+  // report
+  bool buildReportSummary(std::string json_path);
 
  private:
   IdbLayout* _layout = nullptr;

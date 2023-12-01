@@ -26,7 +26,7 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_gui.h"
-#include "tcl_qt/tcl_qt.h"
+#include "tcl_qt.h"
 #include "tcl_web.h"
 #include "tool_manager.h"
 

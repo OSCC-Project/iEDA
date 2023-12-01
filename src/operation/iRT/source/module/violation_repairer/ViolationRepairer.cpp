@@ -276,26 +276,23 @@ void ViolationRepairer::buildKeyCoordPinMap(VRNet& vr_net)
 {
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map = vr_net.get_key_coord_pin_map();
   for (Pin& vr_pin : vr_net.get_vr_pin_list()) {
-    for (LayerCoord& real_coord : vr_pin.getRealCoordList()) {
-      key_coord_pin_map[real_coord].insert(vr_pin.get_pin_idx());
-    }
+    LayerCoord real_coord = vr_pin.get_protected_access_point().getRealLayerCoord();
+    key_coord_pin_map[real_coord].insert(vr_pin.get_pin_idx());
   }
 }
 
 void ViolationRepairer::buildCoordTree(VRNet& vr_net)
 {
+  LayerCoord root_coord = vr_net.get_vr_driving_pin().get_protected_access_point().getRealLayerCoord();
+
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (TNode<RTNode>* rt_node_node : RTUtil::getNodeList(vr_net.get_dr_result_tree())) {
     for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(rt_node_node->value().get_routing_tree())) {
       routing_segment_list.emplace_back(routing_segment.get_first()->value(), routing_segment.get_second()->value());
     }
   }
-  std::vector<LayerCoord> candidate_root_coord_list;
-  for (LayerCoord& real_coord : vr_net.get_vr_driving_pin().getRealCoordList()) {
-    candidate_root_coord_list.push_back(real_coord);
-  }
   MTree<LayerCoord>& coord_tree = vr_net.get_coord_tree();
-  coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, vr_net.get_key_coord_pin_map());
+  coord_tree = RTUtil::getTreeByFullFlow({root_coord}, routing_segment_list, vr_net.get_key_coord_pin_map());
 }
 
 void ViolationRepairer::buildPHYNodeResult(VRNet& vr_net)
@@ -419,33 +416,6 @@ TNode<PHYNode>* ViolationRepairer::makePinPHYNode(VRNet& vr_net, irt_int pin_idx
 
 void ViolationRepairer::checkVRModel(VRModel& vr_model)
 {
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    if (vr_net.get_net_idx() < 0) {
-      LOG_INST.error(Loc::current(), "The net idx : ", vr_net.get_net_idx(), " is illegal!");
-    }
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = vr_pin.get_access_point_list();
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "The pin ", vr_pin.get_pin_idx(), " access point list is empty!");
-      }
-      for (AccessPoint& access_point : access_point_list) {
-        if (access_point.get_type() == AccessPointType::kNone) {
-          LOG_INST.error(Loc::current(), "The access point type is wrong!");
-        }
-        bool is_legal = false;
-        for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-          if (routing_shape.get_layer_idx() == access_point.get_layer_idx()
-              && RTUtil::isInside(routing_shape.get_real_rect(), access_point.get_real_coord())) {
-            is_legal = true;
-            break;
-          }
-        }
-        if (!is_legal) {
-          LOG_INST.error(Loc::current(), "The access point is not in routing shape!");
-        }
-      }
-    }
-  }
 }
 
 #endif
@@ -511,13 +481,13 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  std::map<irt_int, gtl::polygon_90_set_data<irt_int>> layer_polygon_set_map;
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
   {
     // pin_shape
     for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
       for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
         LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRect(shape_real_rect);
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
       }
     }
     // vr_result_tree
@@ -525,23 +495,23 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
       if (!drc_rect.get_is_routing()) {
         continue;
       }
-      layer_polygon_set_map[drc_rect.get_layer_idx()] += RTUtil::convertToGTLRect(drc_rect.get_layer_rect());
+      layer_polygon_set_map[drc_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(drc_rect.get_layer_rect());
     }
   }
   std::map<LayerRect, irt_int, CmpLayerRectByXASC> violation_rect_added_area_map;
   for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
     irt_int layer_min_area = routing_layer_list[layer_idx].get_min_area();
-    std::vector<gtl::polygon_90_data<irt_int>> polygon_list;
+    std::vector<GTLPolyInt> polygon_list;
     polygon_set.get_polygons(polygon_list);
-    for (gtl::polygon_90_data<irt_int>& polygon : polygon_list) {
+    for (GTLPolyInt& polygon : polygon_list) {
       if (gtl::area(polygon) >= layer_min_area) {
         continue;
       }
       // 取polygon中最大的矩形进行膨胀
       PlanarRect max_violation_rect;
-      std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
+      std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_max_rectangles(gtl_rect_list, polygon);
-      for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
         if (max_violation_rect.getArea() < gtl::area(gtl_rect)) {
           max_violation_rect = RTUtil::convertToPlanarRect(gtl_rect);
         }
@@ -577,7 +547,10 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
     }
     for (LayerRect& candidate_patch : candidate_patch_list) {
       DRCRect drc_rect(vr_net.get_net_idx(), candidate_patch, true);
-      if (!hasViolation(vr_model, VRSourceType::kBlockage, drc_rect) && !hasViolation(vr_model, VRSourceType::kNetShape, drc_rect)) {
+      if (!hasViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing, DRCCheckType::kMinArea, DRCCheckType::kMinStep},
+                        drc_rect)
+          && !hasViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing, DRCCheckType::kMinArea, DRCCheckType::kMinStep},
+                           drc_rect)) {
         patch_list.push_back(candidate_patch);
         break;
       }
@@ -716,8 +689,20 @@ void ViolationRepairer::countVRModel(VRModel& vr_model)
     for (irt_int y = 0; y < vr_gcell_map.get_y_size(); y++) {
       VRGCell& vr_gcell = vr_gcell_map[x][y];
 
+      std::vector<DRCRect> drc_rect_list;
+      for (bool is_routing : {true, false}) {
+        for (auto& [layer_idx, net_rect_map] : DC_INST.getLayerNetRectMap(vr_gcell.getRegionQuery(VRSourceType::kNetShape), is_routing)) {
+          for (auto& [net_idx, rect_set] : net_rect_map) {
+            for (const LayerRect& rect : rect_set) {
+              drc_rect_list.emplace_back(net_idx, rect, is_routing);
+            }
+          }
+        }
+      }
+
       for (VRSourceType vr_source_type : {VRSourceType::kBlockage, VRSourceType::kNetShape}) {
-        for (auto& [drc, violation_info_list] : getViolationInfo(vr_gcell, vr_source_type)) {
+        for (auto& [drc, violation_info_list] : getVRViolationInfo(
+                 vr_gcell, vr_source_type, {DRCCheckType::kSpacing, DRCCheckType::kMinArea, DRCCheckType::kMinStep}, drc_rect_list)) {
           for (ViolationInfo& violation_info : violation_info_list) {
             irt_int layer_idx = violation_info.get_violation_region().get_layer_idx();
             if (violation_info.get_is_routing()) {
@@ -846,18 +831,17 @@ void ViolationRepairer::reportVRModel(VRModel& vr_model)
   RTUtil::printTableList(resource_overflow_table);
 
   // build drc table
-  std::map<VRSourceType, std::vector<fort::char_table>> source_drc_table_map;
+  std::vector<fort::char_table> routing_drc_table_list;
   for (auto& [source, routing_drc_violation_map] : vr_model_stat.get_source_routing_drc_violation_map()) {
-    source_drc_table_map[source].push_back(
-        RTUtil::buildDRCTable(routing_layer_list, GetVRSourceTypeName()(source), routing_drc_violation_map));
+    routing_drc_table_list.push_back(RTUtil::buildDRCTable(routing_layer_list, GetVRSourceTypeName()(source), routing_drc_violation_map));
   }
+  RTUtil::printTableList(routing_drc_table_list);
+
+  std::vector<fort::char_table> cut_drc_table_list;
   for (auto& [source, cut_drc_violation_map] : vr_model_stat.get_source_cut_drc_violation_map()) {
-    source_drc_table_map[source].push_back(RTUtil::buildDRCTable(cut_layer_list, GetVRSourceTypeName()(source), cut_drc_violation_map));
+    cut_drc_table_list.push_back(RTUtil::buildDRCTable(cut_layer_list, GetVRSourceTypeName()(source), cut_drc_violation_map));
   }
-  // print
-  for (auto& [source, drc_table_list] : source_drc_table_map) {
-    RTUtil::printTableList(drc_table_list);
-  }
+  RTUtil::printTableList(cut_drc_table_list);
 }
 
 bool ViolationRepairer::stopVRModel(VRModel& vr_model)
@@ -881,13 +865,15 @@ void ViolationRepairer::update(VRModel& vr_model)
 
 #if 1  // valid drc
 
-bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const DRCRect& drc_rect)
+bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                     const DRCRect& drc_rect)
 {
   std::vector<DRCRect> drc_rect_list = {drc_rect};
-  return hasViolation(vr_model, vr_source_type, drc_rect_list);
+  return hasViolation(vr_model, vr_source_type, check_type_list, drc_rect_list);
 }
 
-bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCRect>& drc_rect_list)
+bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                                     const std::vector<DRCRect>& drc_rect_list)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   EXTPlanarRect& die = DM_INST.getDatabase().get_die();
@@ -909,7 +895,7 @@ bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_t
   bool has_violation = false;
   for (const auto& [vr_gcell_id, drc_rect_list] : gcell_rect_map) {
     VRGCell& vr_gcell = vr_gcell_map[vr_gcell_id.get_x()][vr_gcell_id.get_y()];
-    if (getViolationInfo(vr_gcell, vr_source_type, drc_rect_list).size() > 0) {
+    if (getVRViolationInfo(vr_gcell, vr_source_type, check_type_list, drc_rect_list).size() > 0) {
       has_violation = true;
       break;
     }
@@ -917,24 +903,18 @@ bool ViolationRepairer::hasViolation(VRModel& vr_model, VRSourceType vr_source_t
   return has_violation;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
-                                                                                      const std::vector<DRCRect>& drc_rect_list)
+std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getVRViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+                                                                                        const std::vector<DRCCheckType>& check_type_list,
+                                                                                        const std::vector<DRCRect>& drc_rect_list)
 {
   std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type), drc_rect_list);
-  removeInvalidViolationInfo(vr_gcell, drc_violation_map);
+  drc_violation_map = DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type), check_type_list, drc_rect_list);
+  removeInvalidVRViolationInfo(vr_gcell, drc_violation_map);
   return drc_violation_map;
 }
 
-std::map<std::string, std::vector<ViolationInfo>> ViolationRepairer::getViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  drc_violation_map = DC_INST.getViolationInfo(vr_gcell.getRegionQuery(vr_source_type));
-  removeInvalidViolationInfo(vr_gcell, drc_violation_map);
-  return drc_violation_map;
-}
-
-void ViolationRepairer::removeInvalidViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
+void ViolationRepairer::removeInvalidVRViolationInfo(VRGCell& vr_gcell,
+                                                     std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
 {
   for (auto& [drc, violation_list] : drc_violation_map) {
     std::vector<ViolationInfo> valid_violation_list;
@@ -950,10 +930,13 @@ void ViolationRepairer::removeInvalidViolationInfo(VRGCell& vr_gcell, std::map<s
         valid_violation_list.push_back(violation_info);
       }
     }
-    if (valid_violation_list.empty()) {
-      drc_violation_map.erase(drc);
+    drc_violation_map[drc] = violation_list;
+  }
+  for (auto iter = drc_violation_map.begin(); iter != drc_violation_map.end();) {
+    if (iter->second.empty()) {
+      iter = drc_violation_map.erase(iter);
     } else {
-      drc_violation_map[drc] = violation_list;
+      iter++;
     }
   }
 }

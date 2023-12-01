@@ -10,9 +10,13 @@ add_library(
   icts_anneal_opt
   ${ICTS_SOLVER}/GOCA/tools/balance_clustering/anneal_opt/AnnealOpt.cc)
 
-target_link_libraries(icts_anneal_opt PUBLIC icts_goca_database
-                                             icts_timing_propagator)
+target_link_libraries(
+  icts_anneal_opt PUBLIC icts_goca_database icts_timing_propagator
+                         icts_tree_builder)
 
 target_include_directories(
-  icts_anneal_opt PUBLIC ${ICTS_SOLVER}/GOCA/database
-                         ${ICTS_SOLVER}/GOCA/tools/timing_propagator)
+  icts_anneal_opt
+  PUBLIC ${ICTS_SOLVER}/GOCA/database
+         ${ICTS_SOLVER}/GOCA/tools/timing_propagator
+         ${ICTS_SOLVER}/GOCA/tools/tree_builder
+         ${ICTS_SOLVER}/GOCA/tools/balance_clustering/anneal_opt)

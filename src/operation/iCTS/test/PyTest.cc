@@ -35,7 +35,7 @@ class PyTest : public testing::Test
 {
   void SetUp()
   {
-    char config[] = "test";
+    char config[] = "PyTest";
     char* argv[] = {config};
     Log::init(argv);
   }

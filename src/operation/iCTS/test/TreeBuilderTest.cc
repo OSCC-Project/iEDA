@@ -39,7 +39,29 @@ TEST_F(TreeBuilderTest, GeomTest)
 {
   using icts::bst::GeomCalc;
   using icts::bst::Pt;
-  std::vector<Pt> poly = {Pt(0, 0), Pt(0, 0.5), Pt(0, 1), Pt(1, 1), Pt(1, 0)};
+  std::vector<Pt> poly = {Pt(14.419999999999995, 117.1),
+                          Pt(12.222348146191434, 117.10000000000001),
+                          Pt(12.105146073119494, 117.10000000000001),
+                          Pt(10.36, 117.1),
+                          Pt(10.36, 116.61827541858675),
+                          Pt(10.36, 116.45292687949919),
+                          Pt(10.36, 116.2),
+                          Pt(12.052527055946209, 116.20000000000002),
+                          Pt(12.383212964229324, 116.2),
+                          Pt(14.42, 116.2),
+                          Pt(14.419999999999998, 116.61827541858675),
+                          Pt(14.419999999999995, 117.1)};
+  GeomCalc::convexHull(poly);
+  EXPECT_EQ(poly.size(), 4);
+  poly = {Pt(111.86000000000001, 91.9),
+          Pt(111.86, 94.14238973823346),
+          Pt(111.86, 97.3),
+          Pt(110.84921068871424, 97.3),
+          Pt(110.32, 97.3),
+          Pt(110.31999999999998, 93.9634039969406),
+          Pt(110.31999999999998, 91.9),
+          Pt(110.84921068871424, 91.9),
+          Pt(111.86000000000001, 91.9)};
   GeomCalc::convexHull(poly);
   EXPECT_EQ(poly.size(), 4);
 
@@ -51,14 +73,58 @@ TEST_F(TreeBuilderTest, GeomTest)
   EXPECT_EQ(poly_t.size(), 8);
 }
 
+TEST_F(TreeBuilderTest, ParetoFrontTest)
+{
+  using icts::BalanceClustering;
+  using Pt = icts::CtsPoint<double>;
+  // random generate points with y = 1 / x
+  std::vector<Pt> points;
+  for (size_t i = 0; i < 20; ++i) {
+    auto x = 1.0 * (i + 1) / 100;
+    auto y = 1 / x;
+    points.emplace_back(x + (std::rand() % 10) / 100.0, y);
+    points.emplace_back(x + (std::rand() % 30) / 100.0, y);
+    points.emplace_back(x + (std::rand() % 60) / 100.0, y);
+  }
+  auto pareto_front = BalanceClustering::paretoFront(points);
+  // write to python file
+  std::ofstream ofs("./pareto_front.py");
+  ofs << "import matplotlib.pyplot as plt\n";
+  ofs << "x = [";
+  for (const auto& point : points) {
+    ofs << point.x() << ",";
+  }
+  ofs << "]\n";
+  ofs << "y = [";
+  for (const auto& point : points) {
+    ofs << point.y() << ",";
+  }
+  ofs << "]\n";
+  ofs << "plt.scatter(x, y)\n";
+  ofs << "x = [";
+  for (const auto& point : pareto_front) {
+    ofs << point.x() << ",";
+  }
+  ofs << "]\n";
+  ofs << "y = [";
+  for (const auto& point : pareto_front) {
+    ofs << point.y() << ",";
+  }
+  ofs << "]\n";
+  ofs << "plt.scatter(x, y, c='r', marker='o')\n";
+  ofs << "plt.savefig('pareto_front.png')\n";
+  ofs.close();
+}
+
 TEST_F(TreeBuilderTest, LocalLegalizationTest)
 {
   auto* load1 = TreeBuilder::genBufInst("load1", Point(2606905, 3009850));
-  TreeBuilder::localPlace({load1->get_load_pin()});
+  std::vector<Pin*> load_pins = {load1->get_load_pin()};
+  TreeBuilder::localPlace(load_pins);
   LOG_INFO << "load1 location: " << load1->get_location();
 }
 
-TEST_F(TreeBuilderTest, SimpleTreeBuilderTest)
+TEST_F(TreeBuilderTest, FixedTreeBuilderTest)
 {
   TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
                               "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
@@ -73,7 +139,7 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
   std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
   size_t case_num = 500;
   // design DB unit is 2000
-  EnvInfo env_info{50000, 200000, 50000, 200000, 20, 40};
+  EnvInfo env_info{0, 150000, 0, 150000, 10, 40};
   std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
     auto data_set = tree_builder.runRegressTest(env_info, case_num, skew_bound);
 

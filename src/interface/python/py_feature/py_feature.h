@@ -22,5 +22,6 @@ namespace python_interface {
 bool feature_layout(const std::string& path);
 bool feature_instances(const std::string& path);
 bool feature_nets(const std::string& path);
+bool feature_reportSummary(const std::string& path);
 
 }  // namespace python_interface

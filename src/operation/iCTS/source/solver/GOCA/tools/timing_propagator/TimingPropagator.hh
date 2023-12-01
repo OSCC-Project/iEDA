@@ -43,96 +43,123 @@ template <typename T>
 concept Numeric = std::is_arithmetic_v<T>;
 
 template <typename T>
-concept LocAble = requires(T node) {
+concept LocAble = requires(T node)
+{
   {
     node.get_location().x()
-  } -> Numeric;
+  }
+  ->Numeric;
   {
     node.get_location().y()
-  } -> Numeric;
+  }
+  ->Numeric;
 };
 
 template <typename T>
-concept ParentAble = LocAble<T> && requires(T node) {
+concept ParentAble = LocAble<T>&& requires(T node)
+{
   {
     node.get_parent()
-  } -> std::same_as<T*>;
+  }
+  ->std::same_as<T*>;
 };
 
 template <typename T>
-concept ChildrenAble = LocAble<T> && requires(T node) {
+concept ChildrenAble = LocAble<T>&& requires(T node)
+{
   {
     node.get_children()
-  } -> std::common_reference_with<const std::vector<T*>&>;
+  }
+  ->std::common_reference_with<const std::vector<T*>&>;
 };
 
 template <typename T>
-concept TreeAble = LocAble<T> && ParentAble<T> && ChildrenAble<T>;
+concept TreeAble = LocAble<T>&& ParentAble<T>&& ChildrenAble<T>;
 
 template <typename T>
-concept NetLenAble = TreeAble<T> && requires(T node, const double& sub_len) {
+concept NetLenAble = TreeAble<T>&& requires(T node, const double& sub_len)
+{
   {
     node.get_sub_len()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_sub_len(sub_len)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
 };
 
 template <typename T>
-concept CapAble = TreeAble<T> && requires(T node, const double& cap_load) {
+concept CapAble = TreeAble<T>&& requires(T node, const double& cap_load)
+{
   {
     node.get_cap_load()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_cap_load(cap_load)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
 };
 
 template <typename T>
-concept SlewAble = CapAble<T> && requires(T node, const double& slew_in) {
+concept SlewAble = CapAble<T>&& requires(T node, const double& slew_in)
+{
   {
     node.get_slew_in()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_slew_in(slew_in)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
 };
 
 template <typename T>
-concept DelayAble = CapAble<T> && requires(T node, const double& delay) {
+concept DelayAble = CapAble<T>&& requires(T node, const double& delay)
+{
   {
     node.get_min_delay()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_min_delay(delay)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
   {
     node.get_max_delay()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_max_delay(delay)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
 };
 
 template <typename T>
-concept SnakeAble = requires(T node, const double& required_snake) {
+concept SnakeAble = requires(T node, const double& required_snake)
+{
   {
     node.get_required_snake()
-  } -> std::convertible_to<double>;
+  }
+  ->std::convertible_to<double>;
   {
     node.set_required_snake(required_snake)
-  } -> std::same_as<void>;
+  }
+  ->std::same_as<void>;
 };
 
 template <typename T>
-concept LoadPinAble = requires(T node) {
+concept LoadPinAble = requires(T node)
+{
   {
     node.isPin()
-  } -> std::same_as<bool>;
+  }
+  ->std::same_as<bool>;
   {
     node.isLoad()
-  } -> std::same_as<bool>;
+  }
+  ->std::same_as<bool>;
 };
 
 /**
@@ -150,6 +177,7 @@ class TimingPropagator
   static void init();
   // net based
   static Net* genNet(const std::string& net_name, Pin* driver_pin, const std::vector<Pin*>& load_pins = {});
+  static void resetNet(Net* net);
   static void updateLoads(Net* net);
   static void updatePinCap(Pin* pin);
   static void update(Net* net);
@@ -177,12 +205,16 @@ class TimingPropagator
   static double getMaxSinkTran() { return _max_sink_tran; }
   static double getMaxCap() { return _max_cap; }
   static int getMaxFanout() { return _max_fanout; }
+  static double getMinLength() { return _min_length; }
   static double getMaxLength() { return _max_length; }
   static double getMinInsertDelay() { return _min_insert_delay; }
   static icts::CtsCellLib* getMinSizeLib() { return _delay_libs.front(); }
   static icts::CtsCellLib* getMaxSizeLib() { return _delay_libs.back(); }
+  static icts::CtsCellLib* getRootSizeLib() { return _root_lib; }
+  static std::string getMinSizeCell() { return getMinSizeLib()->get_cell_master(); }
+  static std::string getMaxSizeCell() { return getMaxSizeLib()->get_cell_master(); }
+  static std::string getRootSizeCell() { return getRootSizeLib()->get_cell_master(); }
   static std::vector<icts::CtsCellLib*> getDelayLibs() { return _delay_libs; }
-  static double getEpisilon() { return _epsilon; }
   // node based
   /**
    * @brief update net's wirelength
@@ -355,7 +387,7 @@ class TimingPropagator
         auto len = calcLen(parent, child);
         if constexpr (SnakeAble<T>) {
           delay = calcElmoreDelay(cap_load, len + child->get_required_snake());
-        }else{
+        } else {
           delay = calcElmoreDelay(cap_load, len);
         }
         break;
@@ -466,8 +498,9 @@ class TimingPropagator
     return dist;
   }
 
+  constexpr static double kEpsilon = 1e-6;
+
  private:
-  constexpr static double _epsilon = 5e-5;
   static double _unit_cap;  // pf
   static double _unit_res;  // ohm
   static double _unit_h_cap;
@@ -480,9 +513,11 @@ class TimingPropagator
   static double _max_sink_tran;
   static double _max_cap;
   static int _max_fanout;
+  static double _min_length;
   static double _max_length;
   static double _min_insert_delay;
   static std::vector<icts::CtsCellLib*> _delay_libs;
+  static icts::CtsCellLib* _root_lib;
 };
 
 }  // namespace icts

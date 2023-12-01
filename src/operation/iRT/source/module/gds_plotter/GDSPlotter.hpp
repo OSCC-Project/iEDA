@@ -72,6 +72,7 @@ class GDSPlotter
   void addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage stage);
   void addPinList(GPGDS& gp_gds, GPStruct& net_struct, std::vector<Pin>& pin_list);
   void addPinShapeList(GPStruct& pin_struct, Pin& pin);
+  void addProtectedAccessPoint(GPStruct& pin_struct, Pin& pin);
   void addAccessPointList(GPStruct& pin_struct, Pin& pin);
   void addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box);
   void addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree);

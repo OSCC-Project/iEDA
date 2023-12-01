@@ -342,22 +342,6 @@ int64_t WirelengthEval::evalDriver2LoadWL(const std::string& net_name, const std
   return net_WL;
 }
 
-std::map<std::string, int64_t> WirelengthEval::getName2WLmap(const std::string& wl_type)
-{
-  std::map<std::string, int64_t> name_WL_map;
-
-  if (wl_type == "SteinerRUDY") {
-    for (size_t i = 0; i < _net_list.size(); i++) {
-      name_WL_map.emplace(_net_list[i]->get_name(), _net_list[i]->FluteWL());
-    }
-  } else if (wl_type == "TrueRUDY") {
-    for (size_t i = 0; i < _net_list.size(); i++) {
-      name_WL_map.emplace(_net_list[i]->get_name(), _net_list[i]->detailRouteWL());
-    }
-  }
-  return name_WL_map;
-}
-
 void WirelengthEval::add_net(const std::string& name, const std::vector<std::pair<int64_t, int64_t>>& pin_list)
 {
   WLNet* length_net = new WLNet();

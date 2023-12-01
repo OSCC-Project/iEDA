@@ -13,12 +13,21 @@ add_library(icts_tree_builder
             ${ICTS_SOLVER}/GOCA/tools/tree_builder/TreeBuilder.cc)
 
 target_link_libraries(
-  icts_tree_builder PUBLIC icts_data_manager icts_api icts_database icts_bst
-                           icts_local_legalization icts_timing_propagator)
+  icts_tree_builder
+  PUBLIC icts_data_manager
+         icts_api
+         icts_database
+         icts_bst
+         icts_local_legalization
+         icts_timing_propagator
+         icts_beat
+         salt)
 
 target_include_directories(
   icts_tree_builder
   PUBLIC ${ICTS_SOLVER}/GOCA/database
          ${ICTS_SOLVER}/GOCA/tools/tree_builder/bound_skew_tree
          ${ICTS_SOLVER}/GOCA/tools/tree_builder/local_legalization
-         ${ICTS_SOLVER}/GOCA/tools/timing_propagator)
+         ${ICTS_SOLVER}/GOCA/tools/timing_propagator
+         ${ICTS_SOLVER}/BEAT
+         src/third_party/salt)

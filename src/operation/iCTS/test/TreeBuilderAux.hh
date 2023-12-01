@@ -192,6 +192,9 @@ class TreeBuilderAux : public TestInterface
  public:
   TreeBuilderAux(const std::string& db_config_path, const std::string& cts_config_path) : TestInterface(db_config_path, cts_config_path)
   {
+    if (db_config_path.empty() && cts_config_path.empty()) {
+      return;
+    }
     LOG_INFO << "Router unit res (H): " << CTSAPIInst.getClockUnitRes(LayerPattern::kH);
     LOG_INFO << "Router unit cap (H): " << CTSAPIInst.getClockUnitCap(LayerPattern::kH);
     LOG_INFO << "Router unit res (V): " << CTSAPIInst.getClockUnitRes(LayerPattern::kV);
@@ -235,8 +238,8 @@ class TreeBuilderAux : public TestInterface
     skewTreeInfo(TreeBuilder::getSkewTreeFuncs());
     DataSet data_set(case_num);
     for (size_t i = 0; i < case_num; ++i) {
-      if (i % (case_num / 10) == 0) {
-        LOG_INFO << "Case num: " << i << "/" << case_num;
+      if ((i + 1) % (case_num / 10) == 0) {
+        LOG_INFO << "Case num: " << i + 1 << "/" << case_num;
       }
       auto load_pins = genRandomPins(env_info, i);
       DataUnit data_unit(env_info, i, load_pins.size());
@@ -315,11 +318,11 @@ class TreeBuilderAux : public TestInterface
     }
     auto* driver_pin = buf->get_driver_pin();
     driver_pin->preOrder([](Node* node) { node->set_pattern(static_cast<RCPattern>(1 + std::rand() % 2)); });
-    buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+    buf->set_cell_master(TimingPropagator::getMinSizeCell());
     auto* net = TimingPropagator::genNet(method_name, driver_pin, load_pins);
     TimingPropagator::update(net);
 
-    // TreeBuilder::writePy(driver_pin, method_name + "_" + TopoTypeToString(topo_type));
+    TreeBuilder::writePy(driver_pin, method_name + "_" + TopoTypeToString(topo_type));
     auto topo_type_str = TopoTypeToString(topo_type);
     TreeInfo info{driver_pin->get_sub_len(), driver_pin->get_cap_load(), driver_pin->get_max_delay() - driver_pin->get_min_delay(),
                   driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay(), driver_pin->get_max_delay()};
@@ -339,15 +342,24 @@ class TreeBuilderAux : public TestInterface
 
   std::vector<Pin*> genFixedPins() const
   {
-    auto locs
-        = std::vector<Point>{Point(128000, 154000), Point(90000, 54000),  Point(84000, 158000), Point(98000, 186000), Point(74000, 98000),
-                             Point(108000, 146000), Point(134000, 60000), Point(80000, 198000), Point(176000, 54000), Point(128000, 150000),
-                             Point(108000, 150000), Point(98000, 158000), Point(98000, 196000), Point(134000, 54000)};
+    // auto locs
+    //     = std::vector<Point>{Point(128000, 154000), Point(90000, 54000),  Point(84000, 158000), Point(98000, 186000), Point(74000,
+    //     98000),
+    //                          Point(108000, 146000), Point(134000, 60000), Point(80000, 198000), Point(176000, 54000), Point(128000,
+    //                          150000), Point(108000, 150000), Point(98000, 158000), Point(98000, 196000), Point(134000, 54000)};
+    // auto locs = std::vector<Point>{Point(128000, 154000), Point(90000, 54000),   Point(84000, 158000), Point(98000, 186000),
+    //                                Point(54000, 98000),   Point(108000, 146000), Point(134000, 60000), Point(80000, 198000),
+    //                                Point(176000, 54000),  Point(198000, 100000), Point(178000, 80000), Point(198000, 158000),
+    //                                Point(98000, 196000),  Point(134000, 54000)};
+    auto locs = std::vector<Point>{Point(300000, 100000),  Point(1000000, 100000), Point(100000, 200000),  Point(800000, 200000),
+                                   Point(300000, 300000),  Point(1100000, 300000), Point(100000, 400000),  Point(900000, 400000),
+                                   Point(100000, 900000),  Point(400000, 900000),  Point(800000, 900000),  Point(1100000, 900000),
+                                   Point(200000, 1100000), Point(500000, 1100000), Point(700000, 1100000), Point(1000000, 1100000)};
     std::vector<Inst*> load_bufs;
     for (size_t i = 0; i < locs.size(); ++i) {
       auto loc = locs[i];
       auto* buf = TreeBuilder::genBufInst(CTSAPIInst.toString("buf_", i), loc);
-      buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
+      buf->set_cell_master(TimingPropagator::getMinSizeCell());
       load_bufs.push_back(buf);
       auto* load_pin = buf->get_load_pin();
       auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);

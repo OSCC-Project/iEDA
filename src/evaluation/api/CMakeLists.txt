@@ -11,11 +11,13 @@ add_library(eval_api
 )
 
 target_link_libraries(eval_api
-    PUBLIC
-        eval_data
-        eval_source
-        eval_wirelength
+    PRIVATE
+        eval_module
         irt_api     
+    INTERFACE
+        eval_wirelength
+        eval_congestion
+        eval_timing
 )
 
 target_include_directories(eval_api

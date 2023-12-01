@@ -1,0 +1,162 @@
+From - Thu Aug  1 11:38:31 2002
+Received: from mailgate.Cadence.COM (mailgate.Cadence.COM [158.140.2.1])
+	by mailhub.Cadence.COM (8.10.1/8.8.5) with SMTP id g71Ic0k29099
+	for <tsao@mailhub.cadence.com>; Thu, 1 Aug 2002 11:38:00 -0700 (PDT)
+Received: from web40201.mail.yahoo.com (isvw1.Cadence.COM [158.140.2.52])
+	by mailgate.Cadence.COM (8.9.3/8.9.3) with SMTP id LAA04791
+	for <tsao@cadence.com>; Thu, 1 Aug 2002 11:38:04 -0700 (PDT)
+Message-ID: <20020801183803.12873.qmail@web40201.mail.yahoo.com>
+Received: from [158.140.2.102] by web40201.mail.yahoo.com via HTTP; Thu, 01 Aug 2002 11:38:03 PDT
+Date: Thu, 1 Aug 2002 11:38:03 -0700 (PDT)
+From: Chung-Wen tsao <tsaoalbert@yahoo.com>
+Subject: Fwd: another bst bug...
+To: tsao
+MIME-Version: 1.0
+X-Received: By mailgate.Cadence.COM as LAA04791 at Thu Aug  1 11:38:04 2002
+Content-Type: multipart/mixed; boundary="0-805244900-1028227083=:12209"
+X-Mozilla-Status: 8001
+X-Mozilla-Status2: 00000000
+X-UIDL: W11"!'0n!!;?&!!3?##!
+
+
+--0-805244900-1028227083=:12209
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+
+Note: forwarded message attached.
+
+
+__________________________________________________
+Do You Yahoo!?
+Yahoo! Health - Feel better, live better
+http://health.yahoo.com
+--0-805244900-1028227083=:12209
+Content-Type: message/rfc822
+
+X-Apparently-To: tsaoalbert@yahoo.com via 66.-38.78.67; 27 Jul 2002 12:05:17 -0700 (PDT)
+X-Track: 1: 100
+Return-Path: <nate@24-161-186-192.san.rr.com>
+Received: from 24.161.186.192  (EHLO 24-161-186-192.san.rr.com) (24.161.186.192)
+  by mta588.mail.yahoo.com with SMTP; 27 Jul 2002 12:05:16 -0700 (PDT)
+Received: (from nate@localhost)
+	by 24-161-186-192.san.rr.com (8.11.6/8.11.6) id g6RJCf102058;
+	Sat, 27 Jul 2002 12:12:41 -0700
+Date: Sat, 27 Jul 2002 12:12:40 -0700
+From: Nathan Tuck <ntuck1@san.rr.com>
+To: Chung-Wen tsao <tsaoalbert@yahoo.com>
+Cc: abk@cs.ucsd.edu
+Subject: another bst bug...
+Reply-To: ntuck1@san.rr.com
+References: <006901c20a0a$98ee25d0$67814b42@sheriefp1i2de7> <20020602180700.13280.qmail@web13006.mail.yahoo.com>
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+User-Agent: Mutt/1.2.5i
+In-Reply-To: <20020602180700.13280.qmail@web13006.mail.yahoo.com>; from tsaoalbert@yahoo.com on Sun, Jun 02, 2002 at 11:07:00AM -0700
+Content-Length: 1266
+
+
+
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Albert,
+
+I've run across what appears to be another bug in the BST code.  I've
+been looking at it for a few days, and Andrew thought you might be
+interested.
+
+Run bst -i test7_3 -G topo_out -B 11 with the enclosed topology and
+test file.
+
+I get:
+
+bst: bst.cxx:4053: void embedding_sub (int, int, F_Point<double, double, true>, F_Point<double, double, true>, double, AreaType *): Assertion `edgelen >= dist - 100*1E-7' failed.
+Aborted
+
+Apparantly edgelen is 0.0 while dist is 21.0.  It's a small topology,
+but I'm still tracking through exactly how this happens.  Let me know
+if it is immediately apparant to you.  Note that it only does this for
+skew bound 11 and not 10 or 12.
+
+I'm using a program called "bitkeeper" to handle revisions that I am
+making to the BST source base.  Let me know if you would like to share
+a repository so we can coordinate changes.  It is free if you are
+willing to make your source available, which is already the case for
+BST.
+
+nate
+
+
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=topo_out
+
+#Topology
+id:8 child:0 2 par:9
+id:0 child:-1 -1 par:8
+id:2 child:-1 -1 par:8
+id:9 child:8 4 par:13
+id:4 child:-1 -1 par:9
+id:10 child:3 6 par:11
+id:3 child:-1 -1 par:10
+id:6 child:-1 -1 par:10
+id:11 child:1 10 par:12
+id:1 child:-1 -1 par:11
+id:12 child:5 11 par:13
+id:5 child:-1 -1 par:12
+id:13 child:9 12 par:-1
+
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=test7_3
+
+# UCLA clock benchmark 1.2
+# Created       : Thu Jul 25 11:49:50 2002
+
+# User          : tsao@cs.ucla.edu
+# PlatForm      : SunOS 5.7 sparc SUNW,Ultra-1
+# Source        : Randomly generated testcases 
+# Note          : Coordinate unit can be micro-meter or anything
+  
+
+NumPins : 7  
+
+PerUnitResistance : 0.111  Ohm 
+
+PerUnitCapacitance : 1.66e-17  Farad 
+
+Sink : 0  
+     Coordinate : 1851  5244 
+     Capacitive Load : 1.494429e-15
+     Downstream_Delay : 1.347525e-11
+Sink : 1  
+     Coordinate : 5744  5122 
+     Capacitive Load : 2.596368e-15
+     Downstream_Delay : 1.890367e-11
+Sink : 2  
+     Coordinate : 9488  4948 
+     Capacitive Load : 2.904359e-15
+     Downstream_Delay : 4.487217e-11
+Sink : 3  
+     Coordinate : 7747  7158 
+     Capacitive Load : 1.867231e-15
+     Downstream_Delay : 3.952941e-11
+Sink : 4  
+     Coordinate : 1832  6988 
+     Capacitive Load : 1.811635e-15
+     Downstream_Delay : 2.713246e-11
+Sink : 5  
+     Coordinate : 8461  1807 
+     Capacitive Load : 3.974780e-15
+     Downstream_Delay : 2.893049e-11
+Sink : 6  
+     Coordinate : 1232  4927 
+     Capacitive Load : 3.445386e-15
+     Downstream_Delay : 4.701833e-11
+
+--0F1p//8PRICkK4MW--
+--0-805244900-1028227083=:12209--
+

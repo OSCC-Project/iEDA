@@ -119,6 +119,8 @@ class IdbSpecialWireSegment : public IdbObject
   IdbCoordinate<int32_t>* get_point_right();
   IdbCoordinate<int32_t>* get_point_top();
   IdbCoordinate<int32_t>* get_point_bottom();
+  IdbRect* get_delta_rect() { return _delta_rect; }
+  const bool is_rect() { return _is_rect; }
   bool is_horizontal();
   bool is_vertical();
 
@@ -132,6 +134,8 @@ class IdbSpecialWireSegment : public IdbObject
   void set_style(int32_t style) { _style = style; }
   void set_is_via(bool is_via) { _is_via = is_via; }
   void set_via(IdbVia* via) { _via = via; }
+  void set_is_rect(bool is_rect) { _is_rect = is_rect; }
+  void set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y);
   IdbVia* copy_via(IdbVia* via);
   IdbCoordinate<int32_t>* add_point(int32_t x, int32_t y);
 
@@ -154,7 +158,9 @@ class IdbSpecialWireSegment : public IdbObject
   IdbWireShapeType _shape_type;
   bool _is_new_layer;
   bool _is_via;
+  bool _is_rect;
   vector<IdbCoordinate<int32_t>*> _point_list;
+  IdbRect* _delta_rect;
 };
 
 enum class CoordinatePosition : int8_t

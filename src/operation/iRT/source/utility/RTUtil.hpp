@@ -2121,59 +2121,76 @@ class RTUtil
     return cost;
   }
 
+  static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
+
+  static void addOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
+  {
+    coord.set_x(coord.get_x() + x_offset);
+    coord.set_y(coord.get_y() + y_offset);
+  }
+
+  static void minusOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { minusOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
+
+  static void minusOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
+  {
+    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
+    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
+  }
+
 #endif
 
 #if 1  // boost数据结构工具函数
 
-  static PlanarRect convertToPlanarRect(gtl::rectangle_data<irt_int>& gtl_rect)
+#if 1  // int类型
+
+  static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect)
   {
     return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
   }
 
-  static PlanarRect convertToPlanarRect(BoostBox& boost_box)
+  static PlanarRect convertToPlanarRect(BGRectInt& boost_box)
   {
     return PlanarRect(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
   }
 
-  static BoostBox convertToBoostBox(const PlanarRect& rect)
+  static BGRectInt convertToBGRectInt(const PlanarRect& rect)
   {
-    return BoostBox(BoostPoint(rect.get_lb_x(), rect.get_lb_y()), BoostPoint(rect.get_rt_x(), rect.get_rt_y()));
+    return BGRectInt(BGPointInt(rect.get_lb_x(), rect.get_lb_y()), BGPointInt(rect.get_rt_x(), rect.get_rt_y()));
   }
 
-  static BoostBox convertToBoostBox(gtl::rectangle_data<irt_int>& gtl_rect)
+  static BGRectInt convertToBGRectInt(GTLRectInt& gtl_rect)
   {
-    return BoostBox(BoostPoint(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BoostPoint(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
+    return BGRectInt(BGPointInt(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BGPointInt(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
   }
 
-  static gtl::rectangle_data<irt_int> convertToGTLRect(const PlanarRect& rect)
+  static GTLRectInt convertToGTLRectInt(const PlanarRect& rect)
   {
-    return gtl::rectangle_data<irt_int>(rect.get_lb_x(), rect.get_lb_y(), rect.get_rt_x(), rect.get_rt_y());
+    return GTLRectInt(rect.get_lb_x(), rect.get_lb_y(), rect.get_rt_x(), rect.get_rt_y());
   }
 
-  static gtl::rectangle_data<irt_int> convertToGTLRect(BoostBox& boost_box)
+  static GTLRectInt convertToGTLRectInt(BGRectInt& boost_box)
   {
-    return gtl::rectangle_data<irt_int>(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(),
-                                        boost_box.max_corner().y());
+    return GTLRectInt(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
   }
 
-  static irt_int getLength(BoostBox& a) { return std::abs(a.max_corner().x() - a.min_corner().x()); }
+  static irt_int getLength(BGRectInt& a) { return std::abs(a.max_corner().x() - a.min_corner().x()); }
 
-  static irt_int getWidth(BoostBox& a) { return std::abs(a.max_corner().y() - a.min_corner().y()); }
+  static irt_int getWidth(BGRectInt& a) { return std::abs(a.max_corner().y() - a.min_corner().y()); }
 
-  static PlanarCoord getCenter(BoostBox& a)
+  static PlanarCoord getCenter(BGRectInt& a)
   {
     irt_int center_x = std::abs(a.max_corner().x() + a.min_corner().x()) / 2;
     irt_int center_y = std::abs(a.max_corner().y() + a.min_corner().y()) / 2;
     return PlanarCoord(center_x, center_y);
   }
 
-  static BoostBox enlargeBoostBox(BoostBox& a, irt_int enlarge_size)
+  static BGRectInt enlargeBGRectInt(BGRectInt& a, irt_int enlarge_size)
   {
-    return BoostBox(BoostPoint(a.min_corner().x() - enlarge_size, a.min_corner().y() - enlarge_size),
-                    BoostPoint(a.max_corner().x() + enlarge_size, a.max_corner().y() + enlarge_size));
+    return BGRectInt(BGPointInt(a.min_corner().x() - enlarge_size, a.min_corner().y() - enlarge_size),
+                     BGPointInt(a.max_corner().x() + enlarge_size, a.max_corner().y() + enlarge_size));
   }
 
-  static void offsetBoostBox(BoostBox& boost_box, PlanarCoord& coord)
+  static void offsetBGRectInt(BGRectInt& boost_box, PlanarCoord& coord)
   {
     boost_box.min_corner().set<0>(boost_box.min_corner().x() + coord.get_x());
     boost_box.min_corner().set<1>(boost_box.min_corner().y() + coord.get_y());
@@ -2182,7 +2199,7 @@ class RTUtil
     boost_box.max_corner().set<1>(boost_box.max_corner().y() + coord.get_y());
   }
 
-  static bool isOverlap(BoostBox& a, BoostBox& b, bool consider_edge = true)
+  static bool isOverlap(BGRectInt& a, BGRectInt& b, bool consider_edge = true)
   {
     irt_int a_lb_x = a.min_corner().x(), a_lb_y = a.min_corner().y();
     irt_int a_rt_x = a.max_corner().x(), a_rt_y = a.max_corner().y();
@@ -2200,7 +2217,7 @@ class RTUtil
     }
   }
 
-  static BoostBox getOverlap(BoostBox& a, BoostBox& b)
+  static BGRectInt getOverlap(BGRectInt& a, BGRectInt& b)
   {
     irt_int overlap_lb_x = std::max(a.min_corner().x(), b.min_corner().x());
     irt_int overlap_lb_y = std::max(a.min_corner().y(), b.min_corner().y());
@@ -2208,22 +2225,22 @@ class RTUtil
     irt_int overlap_rt_y = std::min(a.max_corner().y(), b.max_corner().y());
 
     if (overlap_lb_x > overlap_rt_x || overlap_lb_y > overlap_rt_y) {
-      return BoostBox(BoostPoint(0, 0), BoostPoint(0, 0));
+      return BGRectInt(BGPointInt(0, 0), BGPointInt(0, 0));
     } else {
-      return BoostBox(BoostPoint(overlap_lb_x, overlap_lb_y), BoostPoint(overlap_rt_x, overlap_rt_y));
+      return BGRectInt(BGPointInt(overlap_lb_x, overlap_lb_y), BGPointInt(overlap_rt_x, overlap_rt_y));
     }
   }
 
-  static bool isHorizontal(BoostBox a) { return (a.max_corner().x() - a.min_corner().x()) >= (a.max_corner().y() - a.min_corner().y()); }
+  static bool isHorizontal(BGRectInt a) { return (a.max_corner().x() - a.min_corner().x()) >= (a.max_corner().y() - a.min_corner().y()); }
 
-  static irt_int getDiagonalLength(BoostBox& a)
+  static irt_int getDiagonalLength(BGRectInt& a)
   {
     irt_int length = getLength(a);
     irt_int width = getWidth(a);
     return (irt_int) std::sqrt((length * length + width * width));
   }
 
-  static irt_int getEuclideanDistance(BoostBox& a, BoostBox& b)
+  static irt_int getEuclideanDistance(BGRectInt& a, BGRectInt& b)
   {
     irt_int a_lb_x = a.min_corner().x(), a_lb_y = a.min_corner().y();
     irt_int a_rt_x = a.max_corner().x(), a_rt_y = a.max_corner().y();
@@ -2241,218 +2258,361 @@ class RTUtil
     }
   }
 
-  static std::vector<PlanarRect> getOpenOverlapByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
-  {
-    return getOpenOverlapByBoost({master}, rect_list);
-  }
+#endif
 
-  static std::vector<PlanarRect> getOpenOverlapByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    return getOpenOverlapByBoost(master_list, {rect});
-  }
+#if 1  // double类型
 
-  static std::vector<PlanarRect> getOpenOverlapByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
-  {
-    gtl::polygon_90_set_data<irt_int> master_poly;
-    for (const PlanarRect& master : master_list) {
-      master_poly += convertToGTLRect(master);
-    }
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-
-    master_poly *= rect_poly;
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, master_poly);
-
-    std::vector<PlanarRect> overlap_rect_list;
-    for (gtl::rectangle_data<irt_int>& overlap_rect : gtl_rect_list) {
-      overlap_rect_list.emplace_back(convertToPlanarRect(overlap_rect));
-    }
-    return overlap_rect_list;
-  }
-
-  static std::vector<PlanarRect> getOpenReducedRectByBoost(const PlanarRect& rect, irt_int reduce_size)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getOpenReducedRectByBoost(rect_list, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getOpenReducedRectByBoost(const PlanarRect& rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
-                                                           irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getOpenReducedRectByBoost(rect_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset);
-  }
-
-  static std::vector<PlanarRect> getOpenReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int reduce_size)
-  {
-    return getOpenReducedRectByBoost(rect_list, reduce_size, reduce_size, reduce_size, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getOpenReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int lb_x_add_offset,
-                                                           irt_int lb_y_add_offset, irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-    rect_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, rect_poly);
-
-    std::vector<PlanarRect> reduced_rect_list;
-    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
-      reduced_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
-    }
-    return reduced_rect_list;
-  }
-
-  /**
-   *  切割矩形，将master矩形用rect进行切割，求差集
-   *       ┌────────────────────────────────────┐
-   *       │ master                             │
-   *       │           ┌─────────────────┐      │
-   *       └───────────┼─────────────────┼──────┘
-   *                   │ rect            │
-   *        cut  │     └─────────────────┘  │cut
-   *             ▼                          ▼
-   *       ┌───────────┐┌────────────────┐┌──────┐
-   *       │           ││       c        ││      │
-   *       │     a     │└────────────────┘│  b   │
-   *       └───────────┘                  └──────┘
-   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
-   */
-  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const PlanarRect& master, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> master_list = {master};
-    std::vector<PlanarRect> rect_list = {rect};
-    return getOpenCuttingRectListByBoost(master_list, rect_list);
-  }
+#if 1  // cutting
 
   static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
   {
-    std::vector<PlanarRect> master_list = {master};
-    return getOpenCuttingRectListByBoost(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getOpenCuttingRectListByBoost(master_list, rect_list);
+    std::vector<PlanarRect> master_list{master};
+    return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
   static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
                                                                const std::vector<PlanarRect>& rect_list)
   {
-    gtl::polygon_90_set_data<irt_int> master_poly;
-    for (const PlanarRect& master : master_list) {
-      master_poly += convertToGTLRect(master);
-    }
-    gtl::polygon_90_set_data<irt_int> rect_poly;
-    for (const PlanarRect& rect : rect_list) {
-      rect_poly += convertToGTLRect(rect);
-    }
-
-    master_poly -= rect_poly;
-
-    std::vector<gtl::rectangle_data<irt_int>> gtl_rect_list;
-    gtl::get_rectangles(gtl_rect_list, master_poly);
-
-    std::vector<PlanarRect> cutting_rect_list;
-    for (gtl::rectangle_data<irt_int>& gtl_rect : gtl_rect_list) {
-      cutting_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
-    }
-    return cutting_rect_list;
-  }
-
-  ////////////////////////////////////////////
-
-  static std::vector<PlanarRect> getClosedOverlapByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
-  {
-    return getClosedOverlapByBoost({master}, rect_list);
-  }
-
-  static std::vector<PlanarRect> getClosedOverlapByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    return getClosedOverlapByBoost(master_list, {rect});
-  }
-
-  static std::vector<PlanarRect> getClosedOverlapByBoost(const std::vector<PlanarRect>& master_list,
-                                                         const std::vector<PlanarRect>& rect_list)
-  {
-    std::vector<PlanarRect> overlap_rect_list;
-    return overlap_rect_list;
-  }
-
-  static std::vector<PlanarRect> getClosedReducedRectByBoost(const PlanarRect& rect, irt_int reduce_size)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getClosedReducedRectByBoost(rect_list, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getClosedReducedRectByBoost(const PlanarRect& rect, irt_int lb_x_add_offset, irt_int lb_y_add_offset,
-                                                             irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getClosedReducedRectByBoost(rect_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset);
-  }
-
-  static std::vector<PlanarRect> getClosedReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int reduce_size)
-  {
-    return getClosedReducedRectByBoost(rect_list, reduce_size, reduce_size, reduce_size, reduce_size);
-  }
-
-  static std::vector<PlanarRect> getClosedReducedRectByBoost(const std::vector<PlanarRect>& rect_list, irt_int lb_x_add_offset,
-                                                             irt_int lb_y_add_offset, irt_int rt_x_minus_offset, irt_int rt_y_minus_offset)
-  {
-    std::vector<PlanarRect> reduced_rect_list;
-    return reduced_rect_list;
-  }
-
-  /**
-   *  切割矩形，将master矩形用rect进行切割，求差集
-   *       ┌────────────────────────────────────┐
-   *       │ master                             │
-   *       │           ┌─────────────────┐      │
-   *       └───────────┼─────────────────┼──────┘
-   *                   │ rect            │
-   *        cut  │     └─────────────────┘  │cut
-   *             ▼                          ▼
-   *       ┌───────────┐┌────────────────┐┌──────┐
-   *       │           ││       c        ││      │
-   *       │     a     │└────────────────┘│  b   │
-   *       └───────────┘                  └──────┘
-   *  如上图所示，输入master和rect，切割后得到a b c三个矩形
-   */
-  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const PlanarRect& master, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> master_list = {master};
-    std::vector<PlanarRect> rect_list = {rect};
-    return getClosedCuttingRectListByBoost(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
-  {
-    std::vector<PlanarRect> master_list = {master};
-    return getClosedCuttingRectListByBoost(master_list, rect_list);
-  }
-
-  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const PlanarRect& rect)
-  {
-    std::vector<PlanarRect> rect_list = {rect};
-    return getClosedCuttingRectListByBoost(master_list, rect_list);
+    return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
   static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
                                                                  const std::vector<PlanarRect>& rect_list)
   {
-    std::vector<PlanarRect> cutting_rect_list;
-    return cutting_rect_list;
+    return getCuttingRectListByBoost(master_list, rect_list, false);
   }
+
+  static std::vector<PlanarRect> getCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                           const std::vector<PlanarRect>& rect_list, bool is_open)
+  {
+    std::vector<PlanarRect> result_list;
+
+    if (!is_open) {
+      // 先保存master_list中的特殊矩形
+      for (const PlanarRect& master : master_list) {
+        if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
+          // 特殊矩形
+          result_list.push_back(master);
+        }
+      }
+    }
+    /**
+     * 下面每个字母表示一个独立的直角多边形
+     * 求解(A ∪ B) - (D ∪ E ∪ F)
+     * 转((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
+     * 其中利用(A - D)、(A - E)等式中结果不可能出现线，实现boost结果传递
+     */
+    // 将输入解析
+    // 其中master_poly_list为(A ∪ B)
+    std::vector<BGPolyDBL> master_poly_list = getBGPolyDBLList(master_list);
+    // 其中rect_poly_list为(D ∪ E ∪ F)
+    std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
+
+    // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
+    BGMultiPolyDBL top_multipoly;
+    BGMultiLineDBL top_multiline;
+    BGMultiPointDBL top_multipoint;
+    for (BGPolyDBL& master_poly : master_poly_list) {
+      // 计算(A - D)和(A - E)和(A - F)
+      std::vector<BGMultiPolyDBL> diff_mutilpoly_list;
+      {
+        for (BGPolyDBL& rect_poly : rect_poly_list) {
+          // 计算(A - D)
+          BGMultiPolyDBL diff_mutilpoly;
+          bg::difference(master_poly, rect_poly, diff_mutilpoly);
+          if (diff_mutilpoly.empty()) {
+            // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
+            diff_mutilpoly_list.clear();
+            break;
+          } else {
+            diff_mutilpoly_list.push_back(diff_mutilpoly);
+          }
+        }
+      }
+      if (diff_mutilpoly_list.empty()) {
+        continue;
+      }
+      // 计算(A - D) ∩ (A - E) ∩ (A - F)
+      BGMultiPolyDBL mid_multipoly;
+      BGMultiLineDBL mid_multiline;
+      BGMultiPointDBL mid_multipoint;
+      {
+        // 用(A - D)初始化
+        mid_multipoly = diff_mutilpoly_list.front();
+        for (size_t i = 1; i < diff_mutilpoly_list.size(); i++) {
+          BGMultiPolyDBL& curr_mutilpoly = diff_mutilpoly_list[i];
+          // (A - D) ∩ (A - E)
+          BGMultiPolyDBL mid_multipoly_temp;
+          // 与顶层poly相交
+          bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoly_temp);
+          if (!is_open) {
+            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multiline);
+            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoint);
+          }
+          mid_multipoly = mid_multipoly_temp;
+        }
+      }
+      // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
+      {
+        top_multipoly.insert(top_multipoly.end(), mid_multipoly.begin(), mid_multipoly.end());
+        top_multiline.insert(top_multiline.end(), mid_multiline.begin(), mid_multiline.end());
+        top_multipoint.insert(top_multipoint.end(), mid_multipoint.begin(), mid_multipoint.end());
+      }
+    }
+    // 生成对应的矩形结果
+    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(top_multipoly)) {
+      result_list.push_back(rect);
+    }
+    for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(top_multiline)) {
+      result_list.push_back(rect);
+    }
+    for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(top_multipoint)) {
+      result_list.push_back(rect);
+    }
+    // rect去重
+    std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
+    result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
+    return result_list;
+  }
+
+#endif
+
+#if 1  // overlap
+
+  static std::vector<PlanarRect> getOpenOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                               const std::vector<PlanarRect>& rect_list)
+  {
+    return getOverlapRectListByBoost(master_list, rect_list, true);
+  }
+
+  static std::vector<PlanarRect> getClosedOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                                 const std::vector<PlanarRect>& rect_list)
+  {
+    return getOverlapRectListByBoost(master_list, rect_list, false);
+  }
+
+  static std::vector<PlanarRect> getOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
+                                                           const std::vector<PlanarRect>& rect_list, bool is_open)
+  {
+    std::vector<PlanarRect> result_list;
+
+    if (!is_open) {
+      // 先保存master_list中的特殊矩形
+      for (const PlanarRect& master : master_list) {
+        if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
+          // 特殊矩形
+          result_list.push_back(master);
+        }
+      }
+    }
+    /**
+     * 下面每个字母表示一个独立的直角多边形
+     * 求解(A ∪ B) ∩ (D ∪ E ∪ F)
+     * 转(A ∩ D) ∪ (A ∩ E) ∪ (A ∩ F) ∪ (B ∩ D) ∪ (B ∩ E) ∪ (B ∩ F)
+     */
+    // 其中master_poly_list为(A ∪ B)
+    std::vector<BGPolyDBL> master_poly_list = getBGPolyDBLList(master_list);
+    // 其中rect_poly_list为(D ∪ E ∪ F)
+    std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
+
+    BGMultiPolyDBL result_multipoly;
+    BGMultiLineDBL result_multiline;
+    BGMultiPointDBL result_multipoint;
+    for (BGPolyDBL& master_poly : master_poly_list) {
+      for (BGPolyDBL& rect_poly : rect_poly_list) {
+        bg::intersection(master_poly, rect_poly, result_multipoly);
+        if (!is_open) {
+          bg::intersection(master_poly, rect_poly, result_multiline);
+          bg::intersection(master_poly, rect_poly, result_multipoint);
+        }
+      }
+    }
+    // 生成对应的矩形结果
+    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multipoly)) {
+      result_list.push_back(rect);
+    }
+    for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multiline)) {
+      result_list.push_back(rect);
+    }
+    for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(result_multipoint)) {
+      result_list.push_back(rect);
+    }
+    // rect去重
+    std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
+    result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
+    return result_list;
+  }
+
+#endif
+
+#if 1  // reduce
+
+  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
+                                                               int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset)
+  {
+    return getReducedRectListByBoost(master_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset, true);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int reduced_offset)
+  {
+    return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
+                                                                 int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset)
+  {
+    return getReducedRectListByBoost(master_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset, false);
+  }
+
+  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
+                                                           int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset, bool is_open)
+  {
+    std::vector<PlanarRect> result_list;
+
+    gtl::polygon_90_set_data<int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += gtl::rectangle_data<int>(master.get_lb_x(), master.get_lb_y(), master.get_rt_x(), master.get_rt_y());
+    }
+    if (!is_open) {
+      // 提取点矩形，线段矩形
+      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
+
+      std::vector<PlanarRect> candidate_rect_list;
+      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
+        candidate_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+      }
+      for (PlanarRect candidate_rect : candidate_rect_list) {
+        PlanarCoord& lb = candidate_rect.get_lb();
+        PlanarCoord& rt = candidate_rect.get_rt();
+        addOffset(lb, lb_x_add_offset, lb_y_add_offset);
+        minusOffset(rt, rt_x_minus_offset, rt_y_minus_offset);
+        if (lb.get_x() == rt.get_x() || lb.get_y() == rt.get_y()) {
+          result_list.push_back(candidate_rect);
+        }
+      }
+    }
+    // 获得常规收缩的矩形
+    {
+      master_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
+
+      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
+
+      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
+        result_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+      }
+    }
+    // rect去重
+    std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
+    result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
+
+    return result_list;
+  }
+
+#endif
+
+#if 1  // aux
+
+  static std::vector<BGPolyDBL> getBGPolyDBLList(const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<BGPolyDBL> bg_poly_list;
+    for (const PlanarRect& rect : rect_list) {
+      BGPolyDBL bg_poly;
+      for (BGPointDBL& bg_point : getPointList(rect)) {
+        bg::append(bg_poly.outer(), bg_point);
+      }
+      bg_poly_list.push_back(bg_poly);
+    }
+    return bg_poly_list;
+  }
+
+  static std::vector<BGPointDBL> getPointList(PlanarRect rect)
+  {
+    // 要求顺时针
+    std::vector<BGPointDBL> point_list;
+    point_list.emplace_back(rect.get_lb_x(), rect.get_lb_y());
+    point_list.emplace_back(rect.get_lb_x(), rect.get_rt_y());
+    point_list.emplace_back(rect.get_rt_x(), rect.get_rt_y());
+    point_list.emplace_back(rect.get_rt_x(), rect.get_lb_y());
+    point_list.emplace_back(rect.get_lb_x(), rect.get_lb_y());
+    return point_list;
+  }
+
+  static irt_int getIntScale(double double_scale)
+  {
+    irt_int integer_scale = std::round(double_scale);
+    if (std::abs(double_scale - integer_scale) > DBL_ERROR) {
+      std::cout << "Exceeding the error range of a double!" << std::endl;
+    }
+    return integer_scale;
+  }
+
+  static std::vector<PlanarRect> getRTRectListByBGMultiPolyDBL(const BGMultiPolyDBL& bg_multipoly)
+  {
+    std::vector<PlanarRect> rect_list;
+
+    GTLPolySetInt gtl_poly_set;
+    for (const BGPolyDBL& bg_poly : bg_multipoly) {
+      // 将double类型转irt_int
+      std::vector<GTLPointInt> gtl_point_list;
+      for (size_t i = 0; i < bg::num_points(bg_poly); i++) {
+        BGPointDBL bg_point = bg_poly.outer()[i];
+        gtl_point_list.emplace_back(getIntScale(bg_point.x()), getIntScale(bg_point.y()));
+      }
+      // 检查是否有斜线
+      for (size_t i = 1; i < gtl_point_list.size(); i++) {
+        GTLPointInt& pre_coord = gtl_point_list[i - 1];
+        GTLPointInt& curr_coord = gtl_point_list[i];
+        if (gtl::x(pre_coord) != gtl::x(curr_coord) && gtl::y(pre_coord) != gtl::y(curr_coord)) {
+          std::cout << "The segment is oblique!" << std::endl;
+        }
+      }
+      // 生成poly_90
+      GTLPolyInt gtl_poly;
+      gtl_poly.set(gtl_point_list.begin(), gtl_point_list.end());
+      gtl_poly_set.insert(gtl_poly);
+    }
+    // 横竖切割
+    std::vector<GTLRectInt> gtl_rect_list;
+    gtl::get_rectangles(gtl_rect_list, gtl_poly_set, gtl::HORIZONTAL);
+    gtl::get_rectangles(gtl_rect_list, gtl_poly_set, gtl::VERTICAL);
+    for (GTLRectInt& gtl_rect : gtl_rect_list) {
+      rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+    }
+    return rect_list;
+  }
+
+  static std::vector<PlanarRect> getRTRectListByBGMultiLineDBL(const BGMultiLineDBL& bg_multiline)
+  {
+    std::vector<PlanarRect> rect_list;
+
+    for (const BGLineDBL& bg_line : bg_multiline) {
+      PlanarCoord first_coord(getIntScale(bg_line[0].x()), getIntScale(bg_line[0].y()));
+      PlanarCoord second_coord(getIntScale(bg_line[1].x()), getIntScale(bg_line[1].y()));
+      rect_list.emplace_back(first_coord, second_coord);
+    }
+
+    return rect_list;
+  }
+
+  static std::vector<PlanarRect> getRTRectListByBGMultiPointDBL(const BGMultiPointDBL& bg_multipoint)
+  {
+    std::vector<PlanarRect> rect_list;
+
+    for (const BGPointDBL& bg_point : bg_multipoint) {
+      PlanarCoord coord(getIntScale(bg_point.x()), getIntScale(bg_point.y()));
+      rect_list.emplace_back(coord, coord);
+    }
+
+    return rect_list;
+  }
+
+#endif
+
+#endif
 
 #endif
 
@@ -2601,22 +2761,6 @@ class RTUtil
   static void swapASC(T& a, T& b)
   {
     swapByCMP(a, b, std::less<T>());
-  }
-
-  static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
-  static void addOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
-  {
-    coord.set_x(coord.get_x() + x_offset);
-    coord.set_y(coord.get_y() + y_offset);
-  }
-
-  static void minusOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { minusOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
-  static void minusOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
-  {
-    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
-    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
   }
 
   static irt_int getOffset(const irt_int start, const irt_int end)

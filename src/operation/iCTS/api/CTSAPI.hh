@@ -21,6 +21,7 @@
 #pragma once
 
 #include <any>
+#include <cassert>
 #include <fstream>
 #include <map>
 #include <string>
@@ -89,6 +90,7 @@ class CTSAPI
   icts::CtsCellLib* getCellLib(const std::string& cell_masterconst, const std::string& from_port = "", const std::string& to_port = "",
                                const bool& use_work_value = true);
   std::vector<icts::CtsCellLib*> getAllBufferLibs();
+  icts::CtsCellLib* getRootBufferLib();
   std::vector<std::string> getMasterClocks(icts::CtsNet* net) const;
   double getClockAT(const std::string& pin_name, const std::string& belong_clock_name) const;
   std::string getCellType(const std::string& cell_master) const;
@@ -111,14 +113,17 @@ class CTSAPI
   int genId();
   void genFluteTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
   void genShallowLightTree(const std::string& net_name, icts::Pin* driver, const std::vector<icts::Pin*>& loads);
-  icts::Inst* genBeatSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+  icts::Inst* genBoundSkewTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                               const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+  icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                             const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                           const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);
   void buildRCTree(const icts::EvalNet& eval_net);
+  void buildPinPortsRCTree(const icts::EvalNet& eval_net);
   void resetRCTree(const std::string& net_name);
 
   // log
@@ -144,6 +149,9 @@ class CTSAPI
     (*_log_ofs) << toString(args...) << std::endl;
   }
 
+  // function
+  std::vector<std::string> splitString(std::string str, const char split);
+
   // debug
   void writeVerilog() const;
   void toPyArray(const icts::Point& point, const std::string& label);
@@ -166,12 +174,10 @@ class CTSAPI
   ~CTSAPI() = default;
   CTSAPI& operator=(const CTSAPI& other) = delete;
   CTSAPI& operator=(CTSAPI&& other) = delete;
-  // function
-  std::vector<std::string> splitString(std::string str, const char split);
   // private STA
   void readSTAFile();
   ista::RctNode* makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name);
-  ista::RctNode* makeLogicRCTreeNode(icts::CtsPin* pin);
+  ista::RctNode* makePinRCTreeNode(icts::CtsPin* pin);
   ista::DesignObject* findStaPin(icts::CtsPin* pin) const;
   ista::DesignObject* findStaPin(const std::string& pin_full_name) const;
   ista::Net* findStaNet(const icts::EvalNet& eval_net) const;

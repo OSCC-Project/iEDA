@@ -561,9 +561,9 @@ StaClock* TimingEngine::getPropClockOfNet(Net* clock_net) {
  * @brief get all clocks of the clock net.
  *
  * @param clock_net
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> TimingEngine::getPropClocksOfNet(Net* clock_net) {
+std::unordered_set<StaClock*> TimingEngine::getPropClocksOfNet(Net* clock_net) {
   auto* driver = clock_net->getDriver();
   auto* driver_vertex = _ista->findVertex(driver);
   if (driver->isInout()) {

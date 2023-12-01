@@ -17,7 +17,9 @@
 
 #include "Legalizer.hh"
 
-#include "method/abacus/Abacus.hh"
+#include "LGMethodCreator.hh"
+#include "LGMethodInterface.hh"
+#include "abacus/Abacus.hh"
 
 namespace ipl {
 
@@ -26,12 +28,11 @@ void Legalizer::initLegalizer(Config* pl_config, PlacerDB* placer_db)
   initLGConfig(pl_config);
   initLGDatabase(placer_db);
 
-  // change legalizer mode
-  LG_METHOD lg_mode = LG_METHOD::kAbacus;
-
-  if (lg_mode == LG_METHOD::kAbacus) {
-    _method = new Abacus();
-  } else {
+  // change legalizer method
+  ieda_solver::LGMethodCreator method_creator;
+  _method = method_creator.createMethod();
+  if (_method == nullptr) {
+    LOG_ERROR << "Target legalizetion method has not been realized!";
   }
 }
 
