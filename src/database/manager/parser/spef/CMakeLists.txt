@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 set (CMAKE_CXX_STANDARD 20)
-set (CMAKE_BUILD_TYPE "Release")
+set (CMAKE_BUILD_TYPE "Debug")
 
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -DNDEBUG")
 
@@ -24,8 +24,8 @@ endif()
 
 message("spef parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_command(
-    OUTPUT ${RUST_LIB_PATH}
+add_custom_target(
+    RustSPEF ALL
     COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
     WORKING_DIRECTORY ${RUST_PROJECT_DIR}
     COMMENT "Building Rust library"

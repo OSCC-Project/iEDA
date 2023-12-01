@@ -231,6 +231,10 @@ pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange
             remove_slash_name
         };
 
+        if (*c_spef_data).name_map.is_empty() {
+            return;
+        }
+
         for spef_net in &mut (*c_spef_data).nets {
             let net_name = &spef_net.name;
             let index = net_name[1..].parse::<usize>().unwrap();
