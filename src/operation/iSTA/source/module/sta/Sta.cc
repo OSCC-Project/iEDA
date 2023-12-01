@@ -261,7 +261,7 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  */
 unsigned Sta::readLiberty(const char *lib_file) {
   Liberty lib;
-  auto load_lib = lib.loadLiberty(lib_file);
+  auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
 
   return 1;

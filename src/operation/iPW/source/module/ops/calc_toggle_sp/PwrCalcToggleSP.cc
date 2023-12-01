@@ -273,6 +273,14 @@ PwrToggleSPValue PwrCalcToggleSP::calcToggleSP(
     }
   }
 
+  if (left_expr) {
+    rust_free_expr(left_expr);
+  }
+
+  if (right_expr) {
+    rust_free_expr(right_expr);
+  }
+
   return output_port_toggle_sp_val;
 }
 

@@ -76,6 +76,11 @@ void* rust_parse_expr(const char* expr_str);
 RustLibertyExpr* rust_convert_expr(void* c_expr);
 
 /**
+ * free c expr after use.
+ */
+void rust_free_expr(struct RustLibertyExpr* c_expr);
+
+/**
  * @brief Get the expr lef object
  *
  * @param c_expr

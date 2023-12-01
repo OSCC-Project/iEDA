@@ -57,6 +57,11 @@ typedef struct RustVec {
     uintptr_t type_size;
 } RustVec;
 
+typedef struct RustStingView {
+    const uint8_t *data;
+    uintptr_t len;
+} RustStingView;
+
 typedef struct RustLibertyStringValue {
     char *value;
 } RustLibertyStringValue;
@@ -112,6 +117,8 @@ uintptr_t rust_vec_len(const struct RustVec *vec);
 
 void free_c_char(char *s);
 
+struct RustStingView test_string_to_view(void);
+
 struct RustLibertyStringValue *rust_convert_string_value(void *string_value);
 
 /**
@@ -158,3 +165,8 @@ void *rust_parse_expr(const char *expr_str);
  * convert expr to c expr.
  */
 struct RustLibertyExpr *rust_convert_expr(struct LibertyExpr *c_expr);
+
+/**
+ * free c expr after use.
+ */
+void rust_free_expr(struct RustLibertyExpr *c_expr);

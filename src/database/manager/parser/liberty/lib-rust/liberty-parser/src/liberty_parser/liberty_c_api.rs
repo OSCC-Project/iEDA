@@ -1,5 +1,6 @@
 use crate::liberty_parser::liberty_data;
 
+use std::ffi::CStr;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -39,6 +40,17 @@ pub extern "C" fn free_c_char(s: *mut c_char) {
     unsafe {
         let _ = CString::from_raw(s);
     }
+}
+
+#[repr(C)]
+pub struct RustStingView {
+    data: *const u8,
+    len: usize,
+}
+#[no_mangle]
+pub extern "C" fn test_string_to_view() -> RustStingView {
+    let s = "abc";
+    RustStingView { data: (s.as_ptr()), len: (s.len()) }
 }
 
 #[repr(C)]

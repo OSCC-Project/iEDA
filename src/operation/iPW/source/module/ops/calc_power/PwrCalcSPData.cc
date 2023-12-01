@@ -131,6 +131,15 @@ double PwrCalcSPData::calcSPData(RustLibertyExpr* expr, Instance* inst) {
       break;
     }
   }
+
+  if (left_expr) {
+    rust_free_expr(left_expr);
+  }
+
+  if (right_expr) {
+    rust_free_expr(right_expr);
+  }
+
   return sp_data;
 }
 

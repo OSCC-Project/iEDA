@@ -157,7 +157,7 @@ pub extern "C" fn rust_parse_expr(expr_str: *const c_char) -> *mut c_void {
     let mut r_expr_str = c_expr_str.to_string_lossy().into_owned();
     // println!("r str {}", r_expr_str);
 
-    if (!r_expr_str.ends_with(";")) {
+    if !r_expr_str.ends_with(";") {
         r_expr_str = r_expr_str + ";";
     }
 
@@ -196,6 +196,14 @@ pub extern "C" fn rust_convert_expr(c_expr: *mut liberty_expr_data::LibertyExpr)
             RustLibertyExpr { op, left: c_left as *mut c_void, right: c_right as *mut c_void, port_name: c_port_name };
         let expr_pointer = Box::new(expr);
         Box::into_raw(expr_pointer)
+    }
+}
+
+/// free c expr after use.
+#[no_mangle]
+pub extern "C" fn rust_free_expr(c_expr: *mut RustLibertyExpr) {
+    unsafe {
+        let _: Box<RustLibertyExpr> = Box::from_raw(c_expr);
     }
 }
 

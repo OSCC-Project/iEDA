@@ -61,11 +61,37 @@ static bool equiv(RustLibertyExpr* expr1, RustLibertyExpr* expr2) {
     switch (expr1->op) {
       case RustLibertyExprOp::kBuffer:
         return Str::equal(expr1->port_name, expr2->port_name);
-      case RustLibertyExprOp::kNot:
-        return equiv(rust_get_expr_left(expr1), rust_get_expr_left(expr2));
-      default:
-        return equiv(rust_get_expr_left(expr1), rust_get_expr_left(expr2)) &&
-               equiv(rust_get_expr_right(expr1), rust_get_expr_right(expr2));
+      case RustLibertyExprOp::kNot: {
+        auto* left_expr1 = rust_get_expr_left(expr1);
+        auto* left_expr2 = rust_get_expr_left(expr2);
+        bool result = equiv(left_expr1, left_expr2);
+        rust_free_expr(left_expr1);
+        rust_free_expr(left_expr2);
+        return result;
+      }
+
+      default: {
+        {
+          auto* left_expr1 = rust_get_expr_left(expr1);
+          auto* left_expr2 = rust_get_expr_left(expr2);
+          bool result = equiv(left_expr1, left_expr2);
+          rust_free_expr(left_expr1);
+          rust_free_expr(left_expr2);
+          if (!result) {
+            return result;
+          }
+        }
+        {
+          auto* right_expr1 = rust_get_expr_right(expr1);
+          auto* right_expr2 = rust_get_expr_right(expr2);
+
+          bool result = equiv(right_expr1, right_expr2);
+          rust_free_expr(right_expr1);
+          rust_free_expr(right_expr2);
+
+          return result;
+        }
+      }
     }
   }
 
@@ -121,14 +147,22 @@ static unsigned hashFuncExpr(RustLibertyExpr* expr) {
   switch (expr->op) {
     case RustLibertyExprOp::kBuffer:
       return hashString(expr->port_name) * 17;
-      break;
-    case RustLibertyExprOp::kNot:
-      return hashFuncExpr(rust_get_expr_left(expr)) * 31;
-      break;
-    default:
-      return (hashFuncExpr(rust_get_expr_left(expr)) +
-              hashFuncExpr(rust_get_expr_right(expr))) *
-             ((1 << static_cast<unsigned>(expr->op)) - 1);
+    case RustLibertyExprOp::kNot: {
+      auto* left_expr = rust_get_expr_left(expr);
+      auto result = hashFuncExpr(left_expr) * 31;
+      rust_free_expr(left_expr);
+      return result;
+    }
+
+    default: {
+      auto* left_expr = rust_get_expr_left(expr);
+      auto* right_expr = rust_get_expr_right(expr);
+      auto result = (hashFuncExpr(left_expr) + hashFuncExpr(right_expr)) *
+                    ((1 << static_cast<unsigned>(expr->op)) - 1);
+      rust_free_expr(left_expr);
+      rust_free_expr(right_expr);
+      return result;
+    }
   }
 }
 
