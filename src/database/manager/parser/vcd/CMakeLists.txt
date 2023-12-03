@@ -22,14 +22,21 @@ endif()
 
 message("vcd parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_target(
-    RustVCD ALL
-    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
-    COMMENT "Building Rust library"
+include(ExternalProject)
+
+ExternalProject_Add(
+    ${RUST_PROJECT_NAME}
+    PREFIX ${RUST_PROJECT_DIR}
+    SOURCE_DIR ${RUST_PROJECT_DIR}
+    BINARY_DIR ${RUST_PROJECT_DIR}
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS 1
+    BUILD_BYPRODUCTS ${RUST_LIB_PATH}
 )
-add_custom_target(my_rust_vcd DEPENDS ${RUST_LIB_PATH})
-add_dependencies(vcd my_rust_vcd)
+
+add_dependencies(vcd ${RUST_PROJECT_NAME})
 
 target_link_libraries(vcd ${RUST_LIB_PATH})
 target_include_directories(vcd PUBLIC 

@@ -24,15 +24,21 @@ endif()
 
 message("spef parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_target(
-    RustSPEF ALL
-    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
-    COMMENT "Building Rust library"
+include(ExternalProject)
+
+ExternalProject_Add(
+    ${RUST_PROJECT_NAME}
+    PREFIX ${RUST_PROJECT_DIR}
+    SOURCE_DIR ${RUST_PROJECT_DIR}
+    BINARY_DIR ${RUST_PROJECT_DIR}
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS 1
+    BUILD_BYPRODUCTS ${RUST_LIB_PATH}
 )
 
-add_custom_target(my_rust_spef DEPENDS ${RUST_LIB_PATH})
-add_dependencies(spef my_rust_spef)
+add_dependencies(spef ${RUST_PROJECT_NAME})
 
 target_link_libraries(spef log ${RUST_LIB_PATH})
 target_include_directories(spef PUBLIC 

@@ -44,14 +44,21 @@ endif()
 
 message("verilog parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_target(
-    RustVerilog ALL
-    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
-    COMMENT "Building Rust library"
+include(ExternalProject)
+
+ExternalProject_Add(
+    ${RUST_PROJECT_NAME}
+    PREFIX ${RUST_PROJECT_DIR}
+    SOURCE_DIR ${RUST_PROJECT_DIR}
+    BINARY_DIR ${RUST_PROJECT_DIR}
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS 1
+    BUILD_BYPRODUCTS ${RUST_LIB_PATH}
 )
-add_custom_target(my_rust_verilog DEPENDS ${RUST_LIB_PATH})
-add_dependencies(verilog my_rust_verilog)
+
+add_dependencies(verilog ${RUST_PROJECT_NAME})
 
 target_link_libraries(verilog str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
 
