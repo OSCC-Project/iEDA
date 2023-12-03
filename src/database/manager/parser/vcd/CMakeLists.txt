@@ -7,8 +7,6 @@ aux_source_directory(./ SRC)
 
 add_library(vcd ${SRC})
 
-include(ExternalProject)
-
 set(RUST_PROJECT_NAME vcd_parser)
 set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vcd_parser)
 
@@ -22,21 +20,7 @@ endif()
 
 message("vcd parser rust lib path ${RUST_LIB_PATH}")
 
-include(ExternalProject)
-
-ExternalProject_Add(
-    ${RUST_PROJECT_NAME}
-    PREFIX ${RUST_PROJECT_DIR}
-    SOURCE_DIR ${RUST_PROJECT_DIR}
-    BINARY_DIR ${RUST_PROJECT_DIR}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS 1
-    BUILD_BYPRODUCTS ${RUST_LIB_PATH}
-)
-
-add_dependencies(vcd ${RUST_PROJECT_NAME})
+ADD_EXTERNAL_PROJ(vcd)
 
 target_link_libraries(vcd ${RUST_LIB_PATH})
 target_include_directories(vcd PUBLIC 
