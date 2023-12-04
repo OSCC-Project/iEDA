@@ -28,8 +28,6 @@ add_library(verilog ${SRC}
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
 
-include(ExternalProject)
-
 set(RUST_PROJECT_NAME verilog_parser)
 set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/verilog-rust/verilog-parser)
 
@@ -44,14 +42,7 @@ endif()
 
 message("verilog parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_target(
-    RustVerilog ALL
-    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
-    COMMENT "Building Rust library"
-)
-add_custom_target(my_rust_verilog DEPENDS ${RUST_LIB_PATH})
-add_dependencies(verilog my_rust_verilog)
+ADD_EXTERNAL_PROJ(verilog)
 
 target_link_libraries(verilog str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
 

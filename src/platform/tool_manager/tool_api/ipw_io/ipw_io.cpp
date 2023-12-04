@@ -53,7 +53,7 @@ bool PowerIO::autoRunPower(std::string path)
   staInst->readIdb();
   staInst->runSDC();
   /// run
-  reportPower();
+  reportSummaryPower();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
@@ -67,7 +67,7 @@ bool PowerIO::autoRunPower(std::string path)
  * @return true
  * @return false
  */
-bool PowerIO::reportPower()
+bool PowerIO::reportSummaryPower()
 {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
