@@ -21,9 +21,9 @@ fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
     // Index name pairs are parsed as f64 too, remove the preceding "*" before the index.
     // If not index name pairs, this operation doesn't make sense to them.
     let pair_str = pair.as_str();
-    let clearned_str: String = pair_str.chars().filter(|&c| c != '*').collect();
+    let cleaned_str: String = pair_str.chars().filter(|&c| c != '*').collect();
 
-    match clearned_str.parse::<f64>() {
+    match cleaned_str.parse::<f64>() {
         Ok(value) => Ok(value),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
