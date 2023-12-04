@@ -14,6 +14,13 @@ use std::time::Instant;
 #[grammar = "spef_parser/grammar/spef.pest"]
 struct SpefParser;
 
+fn measure_elapsed_time(start_time: Instant) -> u128 {
+    let end_time = Instant::now();
+    let elapsed_time = end_time.duration_since(start_time);
+    let elapsed_us = elapsed_time.as_micros();
+    return elapsed_us;
+}
+
 /// process float pairs, returing a f64 or an Err.
 fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
     let pair_span = pair.as_span();
@@ -254,80 +261,61 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
     let pair_span = pair.as_span();
     let line_no = pair.line_col().0;
 
+    let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no);
+
     let mut inner_rules = pair.into_inner();
+    for inner_pair in inner_rules {
+        match inner_pair.as_rule() {
+            Rule::conn_type => {
+                let conn_type = process_conn_type_enum(inner_pair).unwrap();
+                current_conn.set_conn_type(conn_type);
+            }
+            Rule::pin_port => {
+                let pin_port_name = process_string(inner_pair).unwrap();
+                current_conn.set_pin_port_name(pin_port_name);
+            }
+            Rule::direction => {
+                let conn_direction: spef_data::ConnectionDirection;
+                if inner_pair.as_str() != "*N" {
+                    conn_direction = process_conn_dir_enum(inner_pair).unwrap();
+                } else {
+                    conn_direction = spef_data::ConnectionDirection::Internal;
+                }
+                current_conn.set_conn_direction(conn_direction);
+            }
+            Rule::xy_coordinates => {
+                let xy_coordinate = {
+                    let coor_pair_result = process_coordinate(inner_pair);
+                    match coor_pair_result {
+                        Ok(coors) => coors,
+                        // (-1.0, -1.0) is used as a special tuple as uninitialized value
+                        // the reason is cxx currently not support std::optional<T> to be transfered
+                        Err(_) => (-1.0, -1.0),
+                    }
+                };
+                current_conn.set_xy_coordinate(xy_coordinate);
+            }
+            Rule::cap_or_res_val => {
+                let load = {
+                    let load_pair_result = process_float(inner_pair);
+                    match load_pair_result {
+                        Ok(load) => load,
+                        Err(_) => 0.0,
+                    }
+                };
 
-    let conn_type_pair = inner_rules.next().unwrap();
-    let conn_type_pair_clone = conn_type_pair.clone();
-    let type_pair_result = process_conn_type_enum(conn_type_pair);
+                current_conn.set_load(load);
+            }
+            Rule::str_name => {
+                let driver_cell = process_string(inner_pair).unwrap();
+                current_conn.set_driving_cell(driver_cell);
+            }
 
-    let pin_name_pair = inner_rules.next().unwrap();
-    let name_pair_result = process_string(pin_name_pair);
-
-    let conn_dir_pair = inner_rules.next();
-    let dir_pair_result: Result<spef_data::ConnectionDirection, pest::error::Error<Rule>>;
-    if conn_type_pair_clone.as_str() != "*N" {
-        dir_pair_result = process_conn_dir_enum(conn_dir_pair.unwrap());
-    } else {
-        dir_pair_result = Ok(spef_data::ConnectionDirection::Internal);
+            _ => panic!("unknown rule."),
+        }
     }
 
-    // xy_coordinate may be None
-    let coordinate_pair = inner_rules.next();
-
-    let xy_coordinate = match coordinate_pair {
-        Some(pair) => {
-            let coor_pair_result = process_coordinate(pair);
-            match coor_pair_result {
-                Ok(coors) => coors,
-                // (-1.0, -1.0) is used as a special tuple as uninitialized value
-                // the reason is cxx currently not support std::optional<T> to be transfered
-                Err(_) => (-1.0, -1.0),
-            }
-        }
-        None => (-1.0, -1.0),
-    };
-
-    // load may be None
-    let load_pair = inner_rules.next();
-
-    let load = match load_pair {
-        Some(pair) => {
-            let load_pair_result = process_float(pair);
-            match load_pair_result {
-                Ok(load) => load,
-                Err(_) => -1.0,
-            }
-        }
-        None => -1.0,
-    };
-
-    // driver_pair may be None
-    let driver_pair = inner_rules.next();
-
-    let driver_name: String = match driver_pair {
-        Some(pair) => {
-            let driver_pair_result = process_string(pair);
-            match driver_pair_result {
-                Ok(driver_cell) => driver_cell,
-                Err(_) => String::new(),
-            }
-        }
-        None => String::new(),
-    };
-
-    match (type_pair_result, name_pair_result, dir_pair_result) {
-        (Ok(conn_type), Ok(pin_name), Ok(conn_dir)) => {
-            let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no, conn_type, conn_dir, pin_name);
-            current_conn.set_load(load);
-            current_conn.set_xy_coordinate(xy_coordinate);
-            current_conn.set_driving_cell(driver_name);
-            Ok(current_conn)
-        }
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair_span,
-        )),
-    }
+    Ok(current_conn)
 }
 
 // process cap or res entry into a (String, String, f64)
@@ -422,7 +410,8 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
         // println!("Rule:    {:?}", entry_clone.as_rule());
         // println!("Span:    {:?}", entry_clone.as_span());
         // println!("Text:    {}", entry_clone.as_str());
-        let line_no = entry.line_col().0;
+
+        // let line_no = entry.line_col().0;
         // println!("line no {}", line_no);
 
         match entry.as_rule() {
@@ -434,7 +423,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                         current_section = result.get_section_type().clone();
                         match current_section {
                             spef_data::SectionType::END => {
-                                exchange_data.add_net(current_net.clone());
+                                exchange_data.add_net(current_net);
                                 current_net = spef_data::SpefNet::new(0, "None".to_string(), 0.0);
                             }
                             _ => (),
@@ -510,10 +499,8 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
         };
     }
 
-    let read_end_time = Instant::now();
-    let read_elapsed_time = read_end_time.duration_since(start_time);
-    let read_elapsed_ms = read_elapsed_time.as_millis();
-    println!("read {} execution time: {} ms", spef_file_path, read_elapsed_ms);
+    let elapsed_us = measure_elapsed_time(start_time);
+    println!("read elapsed time: {} us in line {}", elapsed_us, line!());
 
     exchange_data
 }

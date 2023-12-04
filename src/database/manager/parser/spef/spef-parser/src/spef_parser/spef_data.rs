@@ -115,6 +115,7 @@ pub enum ConnectionDirection {
     OUTPUT,
     INOUT,
     Internal,
+    UNITIALIZED,
 }
 
 #[derive(Clone, Debug)]
@@ -176,7 +177,7 @@ pub struct SpefConnEntry {
     basic_info: SpefEntryBasicInfo,
     pub conn_type: ConnectionType,
     pub conn_direction: ConnectionDirection,
-    pub name: String,
+    pub pin_port_name: String,
     pub driving_cell: String,
     pub load: f64,
     pub layer: u32,
@@ -187,18 +188,12 @@ pub struct SpefConnEntry {
 }
 
 impl SpefConnEntry {
-    pub fn new(
-        file_name: &str,
-        line_no: usize,
-        conn_type: ConnectionType,
-        conn_direction: ConnectionDirection,
-        name: String,
-    ) -> SpefConnEntry {
+    pub fn new(file_name: &str, line_no: usize) -> SpefConnEntry {
         SpefConnEntry {
             basic_info: SpefEntryBasicInfo::new(file_name, line_no),
-            conn_type,
-            conn_direction,
-            name,
+            conn_type: ConnectionType::UNITIALIZED,
+            conn_direction: ConnectionDirection::UNITIALIZED,
+            pin_port_name: String::new(),
             driving_cell: String::new(),
             load: 0.0,
             layer: 0,
@@ -212,29 +207,47 @@ impl SpefConnEntry {
         &self.basic_info
     }
 
-    pub fn get_name(&self) -> &str {
-        &self.name
+    pub fn get_pin_port_name(&self) -> &str {
+        &self.pin_port_name
     }
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-    }
-
-    pub fn get_conn_direction(&self) -> ConnectionDirection {
-        self.conn_direction.clone()
+    pub fn set_pin_port_name(&mut self, pin_port_name: String) {
+        self.pin_port_name = pin_port_name;
     }
 
     pub fn get_conn_type(&self) -> ConnectionType {
         self.conn_type.clone()
     }
 
+    pub fn set_conn_type(&mut self, conn_type: ConnectionType) {
+        self.conn_type = conn_type;
+    }
+
+    pub fn get_conn_direction(&self) -> ConnectionDirection {
+        self.conn_direction.clone()
+    }
+    pub fn set_conn_direction(&mut self, conn_direction: ConnectionDirection) {
+        self.conn_direction = conn_direction;
+    }
+
     pub fn get_xy_coordinate(&self) -> (f64, f64) {
         self.coordinate.clone()
     }
+    pub fn set_xy_coordinate(&mut self, coordinate: (f64, f64)) {
+        self.coordinate = coordinate;
+    }
+
     pub fn get_ll_coordinate(&self) -> (f64, f64) {
         self.ll_coordinate.clone()
     }
     pub fn get_ur_coordinate(&self) -> (f64, f64) {
         self.ur_coordinate.clone()
+    }
+
+    pub fn set_ll_corr(&mut self, coordinate: (f64, f64)) {
+        self.ll_coordinate = coordinate;
+    }
+    pub fn set_ur_corr(&mut self, coordinate: (f64, f64)) {
+        self.ur_coordinate = coordinate;
     }
 
     pub fn set_layer(&mut self, layer: u32) {
@@ -243,12 +256,7 @@ impl SpefConnEntry {
     pub fn get_layer(&self) -> u32 {
         self.layer
     }
-    pub fn set_ll_corr(&mut self, coordinate: (f64, f64)) {
-        self.ll_coordinate = coordinate;
-    }
-    pub fn set_ur_corr(&mut self, coordinate: (f64, f64)) {
-        self.ur_coordinate = coordinate;
-    }
+
     pub fn set_driving_cell(&mut self, driving_cell: String) {
         self.driving_cell = driving_cell;
     }
@@ -260,9 +268,6 @@ impl SpefConnEntry {
     }
     pub fn get_load(&self) -> f64 {
         self.load.clone()
-    }
-    pub fn set_xy_coordinate(&mut self, coordinate: (f64, f64)) {
-        self.coordinate = coordinate;
     }
 }
 
