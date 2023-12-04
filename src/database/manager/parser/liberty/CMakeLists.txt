@@ -39,8 +39,6 @@ add_library(liberty ${SRC}
 # add_library(liberty ${SRC} ${FLEX_LibertyLex_OUTPUTS} ${BISON_LibertyParser_OUTPUTS} 
 # ${FLEX_LibertyExprLex_OUTPUTS} ${BISON_LibertyExprParser_OUTPUTS})
 
-include(ExternalProject)
-
 set(RUST_PROJECT_NAME liberty_parser)
 set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib-rust/liberty-parser)
 
@@ -54,14 +52,7 @@ endif()
 
 message("liberty parser rust lib path ${RUST_LIB_PATH}")
 
-add_custom_target(
-    RustLiberty ALL
-    COMMAND cargo build ${RUST_BUILD_CMD_OPTION}
-    WORKING_DIRECTORY ${RUST_PROJECT_DIR}
-    COMMENT "Building Rust library"
-)
-add_custom_target(my_rust_lib DEPENDS ${RUST_LIB_PATH})
-add_dependencies(liberty my_rust_lib)
+ADD_EXTERNAL_PROJ(liberty)
 
 target_link_libraries(liberty str sta-solver log ${RUST_LIB_PATH})
 
