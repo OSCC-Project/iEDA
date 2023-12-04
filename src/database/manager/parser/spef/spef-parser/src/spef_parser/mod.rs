@@ -8,13 +8,15 @@ use spef_data::SpefExchange;
 use std::fmt::Debug;
 use std::fs;
 
+use std::time::Instant;
+
 #[derive(Parser)]
 #[grammar = "spef_parser/grammar/spef.pest"]
 struct SpefParser;
 
 /// process float pairs, returing a f64 or an Err.
 fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
 
     // Index name pairs are parsed as f64 too, remove the preceding "*" before the index.
     // If not index name pairs, this operation doesn't make sense to them.
@@ -25,18 +27,16 @@ fn process_float(pair: Pair<Rule>) -> Result<f64, pest::error::Error<Rule>> {
         Ok(value) => Ok(value),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process xy coordinate, returning a (f64, f64) or an Err
 fn process_coordinate(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
 
-    let tuple_pair = pair.clone();
-
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
     let x_coordiante_pair = inner_rules.next();
     let y_coordinate_pair = inner_rules.next();
 
@@ -48,63 +48,63 @@ fn process_coordinate(pair: Pair<Rule>) -> Result<(f64, f64), pest::error::Error
                 (Ok(x), Ok(y)) => Ok((x, y)),
                 _ => Err(pest::error::Error::new_from_span(
                     pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-                    tuple_pair.as_span(),
+                    pair_span,
                 )),
             }
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse xy_coordinate".into() },
-            tuple_pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process string text data not include quote(All string values in spef file are not quoted).
 fn process_string(pair: Pair<Rule>) -> Result<String, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    match pair_clone.as_str().parse::<String>() {
+    let pair_span = pair.as_span();
+    match pair.as_str().parse::<String>() {
         Ok(value) => Ok(value),
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse string".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process connection direction enum
 fn process_conn_dir_enum(pair: Pair<Rule>) -> Result<spef_data::ConnectionDirection, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
     match pair.as_str() {
         "I" => Ok(spef_data::ConnectionDirection::INPUT),
         "O" => Ok(spef_data::ConnectionDirection::OUTPUT),
         "B" => Ok(spef_data::ConnectionDirection::INOUT),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse connection direction".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process connection type enum
 fn process_conn_type_enum(pair: Pair<Rule>) -> Result<spef_data::ConnectionType, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
     match pair.as_str() {
         "*I" => Ok(spef_data::ConnectionType::INTERNAL),
         "*P" => Ok(spef_data::ConnectionType::EXTERNAL),
         "*N" => Ok(spef_data::ConnectionType::INTERNAL),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Failed to parse connection type".into() },
-            pair_clone.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process section entry
 fn process_section_entry(pair: Pair<Rule>) -> Result<spef_data::SpefSectionEntry, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span = pair.as_span();
     let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
 
     // println!("{pair:#?}");
     let section_name_pair = inner_rules.next().unwrap();
@@ -123,7 +123,7 @@ fn process_section_entry(pair: Pair<Rule>) -> Result<spef_data::SpefSectionEntry
                 _ => {
                     return Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-                        pair.as_span(),
+                        pair_span,
                     ));
                 }
             };
@@ -131,17 +131,17 @@ fn process_section_entry(pair: Pair<Rule>) -> Result<spef_data::SpefSectionEntry
         }
         Err(_) => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process pest pairs that matches spef header section entry
 fn process_header_entry(pair: Pair<Rule>) -> Result<spef_data::SpefHeaderEntry, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    let line_no = pair_clone.line_col().0;
+    let pair_span = pair.as_span();
+    let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
     // println!("{inner_rules:#?}");
 
     // header_keyword_pair and header_value_pair are string pairs
@@ -157,17 +157,17 @@ fn process_header_entry(pair: Pair<Rule>) -> Result<spef_data::SpefHeaderEntry, 
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process pest pairs that matches spef namemap section entry
 fn process_namemap_entry(pair: Pair<Rule>) -> Result<spef_data::SpefNameMapEntry, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    let line_no = pair_clone.line_col().0;
+    let pair_span = pair.as_span();
+    let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
     // println!("{inner_rules:#?}");
 
     // name_index_pair is float pair, name_value_pair is string pair
@@ -183,17 +183,17 @@ fn process_namemap_entry(pair: Pair<Rule>) -> Result<spef_data::SpefNameMapEntry
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 /// process pest pairs that matches spef ports section entry
 fn process_port_entry(pair: Pair<Rule>) -> Result<spef_data::SpefPortEntry, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    let line_no = pair_clone.line_col().0;
+    let pair_span = pair.as_span();
+    let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
     // println!("{inner_rules:#?}");
 
     // name_index_pair is float pair, name_value_pair is string pair
@@ -215,7 +215,7 @@ fn process_port_entry(pair: Pair<Rule>) -> Result<spef_data::SpefPortEntry, pest
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
@@ -225,10 +225,10 @@ fn process_dnet_entry<'a>(
     pair: Pair<'a, Rule>,
     current_net: &'a mut spef_data::SpefNet,
 ) -> Result<spef_data::SpefNet, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    let line_no = pair_clone.line_col().0;
+    let pair_span = pair.as_span();
+    let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
 
     let name_pair = inner_rules.next().unwrap();
     let cap_pair = inner_rules.next().unwrap();
@@ -245,16 +245,16 @@ fn process_dnet_entry<'a>(
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    let line_no = pair_clone.line_col().0;
+    let pair_span = pair.as_span();
+    let line_no = pair.line_col().0;
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
 
     let conn_type_pair = inner_rules.next().unwrap();
     let conn_type_pair_clone = conn_type_pair.clone();
@@ -325,7 +325,7 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
@@ -333,11 +333,11 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
 // process cap or res entry into a (String, String, f64)
 fn process_cap_or_res_entry(
     pair: Pair<Rule>,
-    cap_or_res: spef_data::SectionType,
+    cap_or_res: &spef_data::SectionType,
 ) -> Result<(String, String, f64), pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
+    let pair_span: pest::Span<'_> = pair.as_span();
 
-    let mut inner_rules = pair_clone.into_inner();
+    let mut inner_rules = pair.into_inner();
 
     // println!("{inner_rules:#?}");
     match cap_or_res {
@@ -360,7 +360,7 @@ fn process_cap_or_res_entry(
                     (Ok(start_pin_name), Ok(cap_result)) => Ok((start_pin_name, "".to_string(), cap_result)),
                     _ => Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-                        pair.as_span(),
+                        pair_span,
                     )),
                 }
             } else {
@@ -372,7 +372,7 @@ fn process_cap_or_res_entry(
                     (Ok(start_pin_name), Ok(end_pin_name), Ok(cap_val)) => Ok((start_pin_name, end_pin_name, cap_val)),
                     _ => Err(pest::error::Error::new_from_span(
                         pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-                        pair.as_span(),
+                        pair_span,
                     )),
                 }
             }
@@ -393,21 +393,20 @@ fn process_cap_or_res_entry(
                 (Ok(start_pin_name), Ok(end_pin_name), Ok(res_val)) => Ok((start_pin_name, end_pin_name, res_val)),
                 _ => Err(pest::error::Error::new_from_span(
                     pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-                    pair.as_span(),
+                    pair_span,
                 )),
             }
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair.as_span(),
+            pair_span,
         )),
     }
 }
 
 pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
-    // Add '?' to the end of a statement will possiably return an error,
-    // This is used to replace the .expect()
-    // !TODO Use crate anyhow to handle all the errors, this will reduce the code amount.
+    let start_time = Instant::now();
+
     let unparsed_file = fs::read_to_string(spef_file_path).unwrap();
     let spef_entries = SpefParser::parse(Rule::spef_file, &unparsed_file).unwrap();
 
@@ -419,17 +418,17 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
     let spef_file_pair = spef_entries.into_iter().next().unwrap();
 
     for entry in spef_file_pair.into_inner() {
-        let entry_clone = entry.clone();
+        // let entry_clone = entry.clone();
         // println!("Rule:    {:?}", entry_clone.as_rule());
         // println!("Span:    {:?}", entry_clone.as_span());
         // println!("Text:    {}", entry_clone.as_str());
-        let line_no = entry_clone.line_col().0;
+        let line_no = entry.line_col().0;
         // println!("line no {}", line_no);
 
         match entry.as_rule() {
             Rule::section => {
                 // Section entries are not included in SpefParserData, it is used as a label for this function.
-                let parse_result = process_section_entry(entry.clone());
+                let parse_result = process_section_entry(entry);
                 match parse_result {
                     Ok(result) => {
                         current_section = result.get_section_type().clone();
@@ -445,7 +444,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                 }
             }
             Rule::header_entry => {
-                let parse_result = process_header_entry(entry.clone());
+                let parse_result = process_header_entry(entry);
                 match parse_result {
                     Ok(result) => {
                         exchange_data.add_header_entry(result);
@@ -454,7 +453,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                 }
             }
             Rule::name_map_entry => {
-                let parse_result = process_namemap_entry(entry.clone());
+                let parse_result = process_namemap_entry(entry);
                 match parse_result {
                     Ok(result) => {
                         exchange_data.add_namemap_entry(result);
@@ -463,7 +462,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                 }
             }
             Rule::ports_entry => {
-                let parse_result = process_port_entry(entry.clone());
+                let parse_result = process_port_entry(entry);
                 match parse_result {
                     Ok(result) => {
                         exchange_data.add_port_entry(result);
@@ -490,7 +489,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
             Rule::cap_or_res_entry => {
                 // Parse the cap or res entry and add it to the current_net according to the current_section
                 // This part doesn't return anything, it adds caps or ress to current net.
-                let parse_result = process_cap_or_res_entry(entry, current_section.clone());
+                let parse_result = process_cap_or_res_entry(entry, &current_section);
                 match parse_result {
                     Ok(result) => {
                         match current_section {
@@ -510,6 +509,11 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
             _ => panic!("unkonwn rule {}.", entry.as_str()),
         };
     }
+
+    let read_end_time = Instant::now();
+    let read_elapsed_time = read_end_time.duration_since(start_time);
+    let read_elapsed_ms = read_elapsed_time.as_millis();
+    println!("read {} execution time: {} ms", spef_file_path, read_elapsed_ms);
 
     exchange_data
 }
