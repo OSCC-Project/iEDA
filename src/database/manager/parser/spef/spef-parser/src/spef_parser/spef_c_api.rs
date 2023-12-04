@@ -67,7 +67,7 @@ struct RustPortItem {
 struct RustConnItem {
     conn_type: spef_data::ConnectionType,
     conn_direction: spef_data::ConnectionDirection,
-    name: *mut c_char,
+    pin_port_name: *mut c_char,
     driving_cell: *mut c_char,
     load: c_double,
     layer: u32,
@@ -164,7 +164,7 @@ pub extern "C" fn rust_convert_spef_conn(c_spef_net: *mut spef_data::SpefConnEnt
     unsafe {
         let conn_type = (*c_spef_net).conn_type;
         let conn_direction = (*c_spef_net).conn_direction;
-        let name = string_to_c_char(&(*c_spef_net).name);
+        let pin_port_name = string_to_c_char(&(*c_spef_net).pin_port_name);
         let driving_cell = string_to_c_char(&(*c_spef_net).driving_cell);
         let load = (*c_spef_net).load;
         let layer = (*c_spef_net).layer;
@@ -178,7 +178,7 @@ pub extern "C" fn rust_convert_spef_conn(c_spef_net: *mut spef_data::SpefConnEnt
         let rust_spef_conn = RustConnItem {
             conn_type,
             conn_direction,
-            name,
+            pin_port_name,
             driving_cell,
             load,
             layer,
@@ -243,9 +243,9 @@ pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange
             spef_net.name = remove_slash_net_name;
 
             for spef_conn in &mut spef_net.connection {
-                let conn_name = &spef_conn.name;
+                let conn_name = &spef_conn.pin_port_name;
                 let expand_conn_name = expand_name(conn_name, &mut (*c_spef_data));
-                spef_conn.set_name(expand_conn_name);
+                spef_conn.set_pin_port_name(expand_conn_name);
             }
 
             for spef_cap in &mut spef_net.caps {
