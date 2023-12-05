@@ -500,7 +500,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
     }
 
     let elapsed_us = measure_elapsed_time(start_time);
-    println!("read elapsed time: {} us in line {}", elapsed_us, line!());
+    println!("read spef file {} elapsed time: {} us", spef_file_path, elapsed_us);
 
     exchange_data
 }
