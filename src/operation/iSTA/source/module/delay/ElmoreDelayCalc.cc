@@ -29,7 +29,6 @@
 #include <utility>
 
 #include "log/Log.hh"
-#include "spef/parser-spef.hpp"
 
 namespace ista {
 

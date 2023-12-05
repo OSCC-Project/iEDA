@@ -26,6 +26,7 @@
 
 #include <Eigen/Core>
 #include <algorithm>
+#include <fstream>
 #include <list>
 #include <map>
 #include <optional>
@@ -40,7 +41,6 @@
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
 #include "spef/SpefParserRustC.hh"
-#include "spef/parser-spef.hpp"
 
 namespace ista {
 class RctEdge;
