@@ -118,9 +118,10 @@ fn process_expr_token(
 /// process simple attribute
 fn process_simple_attribute(
     pair: Pair<Rule>,
+    lib_file_path: &str,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let file_name = "tbd";
+    let file_name = lib_file_path;
     // let line_no = pair.as_span().start_pos().line_col().0;
     let line_no = pair.line_col().0;
     if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
@@ -161,9 +162,10 @@ fn process_simple_attribute(
 /// process complex attribute
 fn process_complex_attribute(
     pair: Pair<Rule>,
+    lib_file_path: &str,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let file_name = "tbd";
+    let file_name = lib_file_path;
     let line_no = pair.line_col().0;
     let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
     if let liberty_data::LibertyParserData::String(liberty_string_value) = parser_queue.pop_front().unwrap() {
@@ -188,9 +190,10 @@ fn process_complex_attribute(
 
 fn process_group_attribute(
     pair: Pair<Rule>,
+    lib_file_path: &str,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
-    let file_name = "tbd";
+    let file_name = lib_file_path;
     let line_no = pair.line_col().0;
     let mut attri_values: Vec<Box<dyn liberty_data::LibertyAttrValue>> = Vec::new();
     let mut stmts: Vec<Box<dyn liberty_data::LibertyStmt>> = Vec::new();
@@ -226,11 +229,12 @@ fn process_group_attribute(
 /// process pest pair data.
 fn process_pair(
     pair: Pair<Rule>,
+    lib_file_path: &str,
     parser_queue: &mut VecDeque<liberty_data::LibertyParserData>,
 ) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let current_queue_len = parser_queue.len();
     for inner_pair in pair.clone().into_inner() {
-        let pair_result = process_pair(inner_pair, parser_queue);
+        let pair_result = process_pair(inner_pair, lib_file_path, parser_queue);
         parser_queue.push_back(pair_result.unwrap());
     }
 
@@ -249,9 +253,9 @@ fn process_pair(
         Rule::id => process_string(pair),
         Rule::multiline_string => process_multiline_string(&mut substitute_queue),
         Rule::expr_token => process_expr_token(pair, &mut substitute_queue),
-        Rule::simple_attribute => process_simple_attribute(pair, &mut substitute_queue),
-        Rule::complex_attribute => process_complex_attribute(pair, &mut substitute_queue),
-        Rule::group => process_group_attribute(pair, &mut substitute_queue),
+        Rule::simple_attribute => process_simple_attribute(pair, lib_file_path, &mut substitute_queue),
+        Rule::complex_attribute => process_complex_attribute(pair, lib_file_path, &mut substitute_queue),
+        Rule::group => process_group_attribute(pair, lib_file_path, &mut substitute_queue),
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
             pair.as_span(),
@@ -276,7 +280,7 @@ pub fn parse_lib_file(lib_file_path: &str) -> Result<liberty_data::LibertyParser
     let mut parser_queue: VecDeque<liberty_data::LibertyParserData> = VecDeque::new();
     match parse_result {
         Ok(pairs) => {
-            let lib_data = process_pair(pairs.into_iter().next().unwrap(), &mut parser_queue);
+            let lib_data = process_pair(pairs.into_iter().next().unwrap(), lib_file_path, &mut parser_queue);
             assert_eq!(parser_queue.len(), 0);
 
             // let pest_end_time = Instant::now();
@@ -359,7 +363,7 @@ mod tests {
         match parse_result {
             Ok(pairs) => {
                 for pair in pairs {
-                    let data = process_pair(pair, &mut parser_queue);
+                    let data = process_pair(pair, "tbd", &mut parser_queue);
                     println!("Error: {:#?}", data);
                 }
             }

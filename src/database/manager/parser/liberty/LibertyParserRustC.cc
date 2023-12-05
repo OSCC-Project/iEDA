@@ -37,7 +37,8 @@ namespace ista {
  * @brief liberty expr builder.
  *
  */
-void RustLibertyExprBuilder::execute() {
+void RustLibertyExprBuilder::execute()
+{
   auto* rust_expr_result = rust_parse_expr(_expr_str.c_str());
   _result_expr = rust_convert_expr(rust_expr_result);
 }
@@ -48,7 +49,8 @@ void RustLibertyExprBuilder::execute() {
  * @param attri
  * @return unsigned return 1 if success, else 0
  */
-unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
+unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* current_lib = lib_builder->get_lib();
   LibertyPort* lib_port = lib_builder->get_port();
@@ -60,10 +62,8 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
   LibertyArc* lib_arc = lib_builder->get_arc();
   LibertyPowerArc* lib_power_arc = lib_builder->get_power_arc();
   auto* lib_obj = lib_builder->get_obj();
-  LibertyBuilder::LibertyOwnPortType own_port_type =
-      lib_builder->get_own_port_type();
-  LibertyBuilder::LibertyOwnPgOrWhenType own_pg_or_when_type =
-      lib_builder->get_own_pg_or_when_type();
+  LibertyBuilder::LibertyOwnPortType own_port_type = lib_builder->get_own_port_type();
+  LibertyBuilder::LibertyOwnPgOrWhenType own_pg_or_when_type = lib_builder->get_own_pg_or_when_type();
 
   double cap_unit_convert = 1.0;  // sta use pf internal
   if (CapacitiveUnit::kFF == current_lib->get_cap_unit()) {
@@ -84,429 +84,410 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
     return ret;
   };
 
-  std::map<std::string, std::function<void()>> process_attri = {
-      {"nom_voltage",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double nom_voltage = rust_attri_value->value;
-         current_lib->set_nom_voltage(nom_voltage);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slew_lower_threshold_pct_rise",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slew_lower_threshold_pct_rise = rust_attri_value->value;
-         current_lib->set_slew_lower_threshold_pct_rise(
-             slew_lower_threshold_pct_rise);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slew_upper_threshold_pct_rise",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slew_upper_threshold_pct_rise = rust_attri_value->value;
-         current_lib->set_slew_upper_threshold_pct_rise(
-             slew_upper_threshold_pct_rise);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slew_lower_threshold_pct_fall",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slew_lower_threshold_pct_fall = rust_attri_value->value;
-         current_lib->set_slew_lower_threshold_pct_fall(
-             slew_lower_threshold_pct_fall);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slew_upper_threshold_pct_fall",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slew_upper_threshold_pct_fall = rust_attri_value->value;
-         current_lib->set_slew_upper_threshold_pct_fall(
-             slew_upper_threshold_pct_fall);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"input_threshold_pct_rise",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double input_threshold_pct_rise = rust_attri_value->value;
-         current_lib->set_input_threshold_pct_rise(input_threshold_pct_rise);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"output_threshold_pct_rise",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double output_threshold_pct_rise = rust_attri_value->value;
-         current_lib->set_output_threshold_pct_rise(output_threshold_pct_rise);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"input_threshold_pct_fall",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double input_threshold_pct_fall = rust_attri_value->value;
-         current_lib->set_input_threshold_pct_fall(input_threshold_pct_fall);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"output_threshold_pct_fall",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double output_threshold_pct_fall = rust_attri_value->value;
-         current_lib->set_output_threshold_pct_fall(output_threshold_pct_fall);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slew_derate_from_library",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slew_derate_from_library = rust_attri_value->value;
-         current_lib->set_output_threshold_pct_fall(slew_derate_from_library);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"pulling_resistance_unit",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* pulling_resistance_unit = rust_attri_value->value;
-         if (Str::equal(pulling_resistance_unit, "1kohm")) {
-           current_lib->set_resistance_unit(ResistanceUnit::kkOHM);
-         }
-         rust_free_string_value(rust_attri_value);
-       }},
+  std::map<std::string, std::function<void()>> process_attri
+      = {{"nom_voltage",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double nom_voltage = rust_attri_value->value;
+            current_lib->set_nom_voltage(nom_voltage);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slew_lower_threshold_pct_rise",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slew_lower_threshold_pct_rise = rust_attri_value->value;
+            current_lib->set_slew_lower_threshold_pct_rise(slew_lower_threshold_pct_rise);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slew_upper_threshold_pct_rise",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slew_upper_threshold_pct_rise = rust_attri_value->value;
+            current_lib->set_slew_upper_threshold_pct_rise(slew_upper_threshold_pct_rise);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slew_lower_threshold_pct_fall",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slew_lower_threshold_pct_fall = rust_attri_value->value;
+            current_lib->set_slew_lower_threshold_pct_fall(slew_lower_threshold_pct_fall);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slew_upper_threshold_pct_fall",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slew_upper_threshold_pct_fall = rust_attri_value->value;
+            current_lib->set_slew_upper_threshold_pct_fall(slew_upper_threshold_pct_fall);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"input_threshold_pct_rise",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double input_threshold_pct_rise = rust_attri_value->value;
+            current_lib->set_input_threshold_pct_rise(input_threshold_pct_rise);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"output_threshold_pct_rise",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double output_threshold_pct_rise = rust_attri_value->value;
+            current_lib->set_output_threshold_pct_rise(output_threshold_pct_rise);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"input_threshold_pct_fall",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double input_threshold_pct_fall = rust_attri_value->value;
+            current_lib->set_input_threshold_pct_fall(input_threshold_pct_fall);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"output_threshold_pct_fall",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double output_threshold_pct_fall = rust_attri_value->value;
+            current_lib->set_output_threshold_pct_fall(output_threshold_pct_fall);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slew_derate_from_library",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slew_derate_from_library = rust_attri_value->value;
+            current_lib->set_output_threshold_pct_fall(slew_derate_from_library);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"pulling_resistance_unit",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* pulling_resistance_unit = rust_attri_value->value;
+            if (Str::equal(pulling_resistance_unit, "1kohm")) {
+              current_lib->set_resistance_unit(ResistanceUnit::kkOHM);
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
 
-      {"nom_voltage",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double nom_voltage = rust_attri_value->value;
-         current_lib->set_nom_voltage(nom_voltage);
-         rust_free_float_value(rust_attri_value);
-       }},
+         {"nom_voltage",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double nom_voltage = rust_attri_value->value;
+            current_lib->set_nom_voltage(nom_voltage);
+            rust_free_float_value(rust_attri_value);
+          }},
 
-      {"default_max_transition",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double default_max_transition = rust_attri_value->value;
-         current_lib->set_default_max_transition(default_max_transition);
-         rust_free_float_value(rust_attri_value);
-       }},
+         {"default_max_transition",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double default_max_transition = rust_attri_value->value;
+            current_lib->set_default_max_transition(default_max_transition);
+            rust_free_float_value(rust_attri_value);
+          }},
 
-      {"default_max_fanout",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double default_max_fanout = rust_attri_value->value;
-         current_lib->set_default_max_fanout(default_max_fanout);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"direction",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* port_type = rust_attri_value->value;
-         lib_port->set_port_type(port_type);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"clock_gate_clock_pin",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* clock_gate_clock_pin = rust_attri_value->value;
-         bool clock_gate_clock_pin1 =
-             convert_string_to_bool(clock_gate_clock_pin);
-         lib_port->set_clock_gate_clock_pin(clock_gate_clock_pin1);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"clock_gate_enable_pin",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* clock_gate_enable_pin = rust_attri_value->value;
-         bool clock_gate_enable_pin1 =
-             convert_string_to_bool(clock_gate_enable_pin);
-         lib_port->set_clock_gate_enable_pin(clock_gate_enable_pin1);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"default_fanout_load",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double default_fanout_load_val = rust_attri_value->value;
-         current_lib->set_default_fanout_load(default_fanout_load_val);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"default_wire_load",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* default_wire_load = rust_attri_value->value;
-         current_lib->set_default_wire_load(default_wire_load);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"fanout_load",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double fanout_load_val = rust_attri_value->value;
-         lib_port->set_fanout_load(fanout_load_val);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"capacitance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double cap = rust_attri_value->value;
-         cap *= cap_unit_convert;
-         if (lib_port) {
-           lib_port->set_port_cap(cap);
-         } else {
-           dynamic_cast<LibertyWireLoad*>(lib_obj)->set_cap_per_length_unit(
-               cap);
-         }
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"area",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double cell_area = rust_attri_value->value;
-         if (lib_cell) {
-           lib_cell->set_cell_area(cell_area);
-         }
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"is_macro_cell",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* is_macro = rust_attri_value->value;
-         if (Str::noCaseEqual(is_macro, "TRUE")) {
-           lib_cell->set_is_macro();
-         }
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"cell_leakage_power",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double cell_leakage_power = rust_attri_value->value;
-         //  cell_leakage_power *= power_unit_convert;
-         lib_cell->set_cell_leakage_power(cell_leakage_power);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"clock_gating_integrated_cell",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         std::string clock_gating_integrated_cell = rust_attri_value->value;
-         lib_cell->set_clock_gating_integrated_cell(
-             clock_gating_integrated_cell);
-         lib_cell->set_is_clock_gating_integrated_cell(true);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"resistance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double resistance = rust_attri_value->value;
-         resistance *= resistance_unit_convert;
-         dynamic_cast<LibertyWireLoad*>(lib_obj)
-             ->set_resistance_per_length_unit(resistance);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"slope",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double slope = rust_attri_value->value;
-         dynamic_cast<LibertyWireLoad*>(lib_obj)->set_slope(slope);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"rise_capacitance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double cap = rust_attri_value->value;
-         cap *= cap_unit_convert;
-         lib_port->set_port_cap(AnalysisMode::kMaxMin, TransType::kRise, cap);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"fall_capacitance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double cap = rust_attri_value->value;
-         cap *= cap_unit_convert;
-         lib_port->set_port_cap(AnalysisMode::kMaxMin, TransType::kFall, cap);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"max_capacitance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double max_cap_limit = rust_attri_value->value;
-         max_cap_limit *= cap_unit_convert;
-         lib_port->set_port_cap_limit(AnalysisMode::kMax, max_cap_limit);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"min_capacitance",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double min_cap_limit = rust_attri_value->value;
-         min_cap_limit *= cap_unit_convert;
-         lib_port->set_port_cap_limit(AnalysisMode::kMin, min_cap_limit);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"max_transition",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double max_slew_limit = rust_attri_value->value;
-         lib_port->set_port_cap_limit(AnalysisMode::kMax, max_slew_limit);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"min_transition",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double min_slew_limit = rust_attri_value->value;
-         lib_port->set_port_cap_limit(AnalysisMode::kMin, min_slew_limit);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"function",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* expr_str = rust_attri_value->value;
-         RustLibertyExprBuilder expr_builder(expr_str);
-         expr_builder.execute();
-         auto* func_expr = expr_builder.get_result_expr();
-         lib_port->set_func_expr(func_expr);
-         lib_port->set_func_expr_str(expr_str);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"related_pin",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* pin_name = rust_attri_value->value;
-         if (own_port_type == LibertyBuilder::LibertyOwnPortType::kTimingArc) {
-           lib_arc->set_src_port(pin_name);
-         } else if (own_port_type ==
-                    LibertyBuilder::LibertyOwnPortType::kPowerArc) {
-           lib_power_arc->set_src_port(pin_name);
-         }
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"related_pg_pin",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* pg_pin_name = rust_attri_value->value;
-         if (own_pg_or_when_type ==
-             LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
-           leakage_power->set_related_pg_port(pg_pin_name);
-         } else if (own_pg_or_when_type ==
-                    LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
-           lib_power_arc->set_related_pg_port(pg_pin_name);
-         }
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"when",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* when = rust_attri_value->value;
-         if (own_pg_or_when_type ==
-             LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
-           leakage_power->set_when(when);
-         } else if (own_pg_or_when_type ==
-                    LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
-           if (lib_power_arc) {
-             lib_power_arc->set_when(when);
-           }
-         }
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"value",
-       [=]() {
-         if (rust_is_string_value(attri_value)) {
-           auto* rust_attri_value = rust_convert_string_value(attri_value);
-           const char* value = rust_attri_value->value;  // ysxy
-           leakage_power->set_value(atof(value));
-           rust_free_string_value(rust_attri_value);
-         } else {
-           auto* rust_attri_value = rust_convert_float_value(attri_value);
-           double value = rust_attri_value->value;  // T28
-           leakage_power->set_value(value);
-           rust_free_float_value(rust_attri_value);
-         }
-       }},
-      {"timing_sense",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* timing_sense = rust_attri_value->value;
-         lib_arc->set_timing_sense(timing_sense);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"timing_type",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         const char* timing_type = rust_attri_value->value;
-         lib_arc->set_timing_type(timing_type);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"variable_1",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         auto* lib_template = lib_obj;
-         const char* variable_name = rust_attri_value->value;
-         lib_template->set_template_variable1(variable_name);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"variable_2",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         auto* lib_template = lib_obj;
-         const char* variable_name = rust_attri_value->value;
-         lib_template->set_template_variable2(variable_name);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"variable_3",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         auto* lib_template = lib_obj;
-         const char* variable_name = rust_attri_value->value;
-         lib_template->set_template_variable3(variable_name);
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"reference_time",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         auto* lib_table = dynamic_cast<LibertyVectorTable*>(lib_obj);
-         double ref_time = rust_attri_value->value;
-         lib_table->set_ref_time(ref_time);
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"base_type",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         std::string base_type = rust_attri_value->value;
-         dynamic_cast<LibertyType*>(lib_obj)->set_base_type(
-             std::move(base_type));
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"data_type",
-       [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         std::string data_type = rust_attri_value->value;
-         dynamic_cast<LibertyType*>(lib_obj)->set_data_type(
-             std::move(data_type));
-         rust_free_string_value(rust_attri_value);
-       }},
-      {"bit_width",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double bit_width = rust_attri_value->value;
-         dynamic_cast<LibertyType*>(lib_obj)->set_bit_width(
-             static_cast<unsigned>(bit_width));
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"bit_from",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double bit_from = rust_attri_value->value;
-         dynamic_cast<LibertyType*>(lib_obj)->set_bit_from(
-             static_cast<unsigned>(bit_from));
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"bit_to",
-       [=]() {
-         auto* rust_attri_value = rust_convert_float_value(attri_value);
-         double bit_to = rust_attri_value->value;
-         dynamic_cast<LibertyType*>(lib_obj)->set_bit_to(
-             static_cast<unsigned>(bit_to));
-         rust_free_float_value(rust_attri_value);
-       }},
-      {"bus_type", [=]() {
-         auto* rust_attri_value = rust_convert_string_value(attri_value);
-         auto* port_bus = lib_builder->get_port_bus();
-         std::string bus_type = rust_attri_value->value;
-         auto* lib_type = current_lib->getLibType(bus_type.c_str());
-         port_bus->set_bus_type(lib_type);
-         rust_free_string_value(rust_attri_value);
-       }}};
+         {"default_max_fanout",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double default_max_fanout = rust_attri_value->value;
+            current_lib->set_default_max_fanout(default_max_fanout);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"direction",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* port_type = rust_attri_value->value;
+            lib_port->set_port_type(port_type);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"clock_gate_clock_pin",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* clock_gate_clock_pin = rust_attri_value->value;
+            bool clock_gate_clock_pin1 = convert_string_to_bool(clock_gate_clock_pin);
+            lib_port->set_clock_gate_clock_pin(clock_gate_clock_pin1);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"clock_gate_enable_pin",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* clock_gate_enable_pin = rust_attri_value->value;
+            bool clock_gate_enable_pin1 = convert_string_to_bool(clock_gate_enable_pin);
+            lib_port->set_clock_gate_enable_pin(clock_gate_enable_pin1);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"default_fanout_load",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double default_fanout_load_val = rust_attri_value->value;
+            current_lib->set_default_fanout_load(default_fanout_load_val);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"default_wire_load",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* default_wire_load = rust_attri_value->value;
+            current_lib->set_default_wire_load(default_wire_load);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"fanout_load",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double fanout_load_val = rust_attri_value->value;
+            lib_port->set_fanout_load(fanout_load_val);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"capacitance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double cap = rust_attri_value->value;
+            cap *= cap_unit_convert;
+            if (lib_port) {
+              lib_port->set_port_cap(cap);
+            } else {
+              dynamic_cast<LibertyWireLoad*>(lib_obj)->set_cap_per_length_unit(cap);
+            }
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"area",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double cell_area = rust_attri_value->value;
+            if (lib_cell) {
+              lib_cell->set_cell_area(cell_area);
+            }
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"is_macro_cell",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* is_macro = rust_attri_value->value;
+            if (Str::noCaseEqual(is_macro, "TRUE")) {
+              lib_cell->set_is_macro();
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"cell_leakage_power",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double cell_leakage_power = rust_attri_value->value;
+            //  cell_leakage_power *= power_unit_convert;
+            lib_cell->set_cell_leakage_power(cell_leakage_power);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"clock_gating_integrated_cell",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            std::string clock_gating_integrated_cell = rust_attri_value->value;
+            lib_cell->set_clock_gating_integrated_cell(clock_gating_integrated_cell);
+            lib_cell->set_is_clock_gating_integrated_cell(true);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"resistance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double resistance = rust_attri_value->value;
+            resistance *= resistance_unit_convert;
+            dynamic_cast<LibertyWireLoad*>(lib_obj)->set_resistance_per_length_unit(resistance);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"slope",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double slope = rust_attri_value->value;
+            dynamic_cast<LibertyWireLoad*>(lib_obj)->set_slope(slope);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"rise_capacitance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double cap = rust_attri_value->value;
+            cap *= cap_unit_convert;
+            lib_port->set_port_cap(AnalysisMode::kMaxMin, TransType::kRise, cap);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"fall_capacitance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double cap = rust_attri_value->value;
+            cap *= cap_unit_convert;
+            lib_port->set_port_cap(AnalysisMode::kMaxMin, TransType::kFall, cap);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"max_capacitance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double max_cap_limit = rust_attri_value->value;
+            max_cap_limit *= cap_unit_convert;
+            lib_port->set_port_cap_limit(AnalysisMode::kMax, max_cap_limit);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"min_capacitance",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double min_cap_limit = rust_attri_value->value;
+            min_cap_limit *= cap_unit_convert;
+            lib_port->set_port_cap_limit(AnalysisMode::kMin, min_cap_limit);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"max_transition",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double max_slew_limit = rust_attri_value->value;
+            lib_port->set_port_cap_limit(AnalysisMode::kMax, max_slew_limit);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"min_transition",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double min_slew_limit = rust_attri_value->value;
+            lib_port->set_port_cap_limit(AnalysisMode::kMin, min_slew_limit);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"function",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* expr_str = rust_attri_value->value;
+            RustLibertyExprBuilder expr_builder(expr_str);
+            expr_builder.execute();
+            auto* func_expr = expr_builder.get_result_expr();
+            lib_port->set_func_expr(func_expr);
+            lib_port->set_func_expr_str(expr_str);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"related_pin",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* pin_name = rust_attri_value->value;
+            if (own_port_type == LibertyBuilder::LibertyOwnPortType::kTimingArc) {
+              lib_arc->set_src_port(pin_name);
+            } else if (own_port_type == LibertyBuilder::LibertyOwnPortType::kPowerArc) {
+              lib_power_arc->set_src_port(pin_name);
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"related_pg_pin",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* pg_pin_name = rust_attri_value->value;
+            if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
+              leakage_power->set_related_pg_port(pg_pin_name);
+            } else if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
+              lib_power_arc->set_related_pg_port(pg_pin_name);
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"when",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* when = rust_attri_value->value;
+            if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
+              leakage_power->set_when(when);
+            } else if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
+              if (lib_power_arc) {
+                lib_power_arc->set_when(when);
+              }
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"value",
+          [=]() {
+            if (rust_is_string_value(attri_value)) {
+              auto* rust_attri_value = rust_convert_string_value(attri_value);
+              const char* value = rust_attri_value->value;  // ysxy
+              leakage_power->set_value(atof(value));
+              rust_free_string_value(rust_attri_value);
+            } else {
+              auto* rust_attri_value = rust_convert_float_value(attri_value);
+              double value = rust_attri_value->value;  // T28
+              leakage_power->set_value(value);
+              rust_free_float_value(rust_attri_value);
+            }
+          }},
+         {"timing_sense",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* timing_sense = rust_attri_value->value;
+            lib_arc->set_timing_sense(timing_sense);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"timing_type",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* timing_type = rust_attri_value->value;
+            lib_arc->set_timing_type(timing_type);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"variable_1",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            auto* lib_template = lib_obj;
+            const char* variable_name = rust_attri_value->value;
+            lib_template->set_template_variable1(variable_name);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"variable_2",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            auto* lib_template = lib_obj;
+            const char* variable_name = rust_attri_value->value;
+            lib_template->set_template_variable2(variable_name);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"variable_3",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            auto* lib_template = lib_obj;
+            const char* variable_name = rust_attri_value->value;
+            lib_template->set_template_variable3(variable_name);
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"reference_time",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            auto* lib_table = dynamic_cast<LibertyVectorTable*>(lib_obj);
+            double ref_time = rust_attri_value->value;
+            lib_table->set_ref_time(ref_time);
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"base_type",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            std::string base_type = rust_attri_value->value;
+            dynamic_cast<LibertyType*>(lib_obj)->set_base_type(std::move(base_type));
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"data_type",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            std::string data_type = rust_attri_value->value;
+            dynamic_cast<LibertyType*>(lib_obj)->set_data_type(std::move(data_type));
+            rust_free_string_value(rust_attri_value);
+          }},
+         {"bit_width",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double bit_width = rust_attri_value->value;
+            dynamic_cast<LibertyType*>(lib_obj)->set_bit_width(static_cast<unsigned>(bit_width));
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"bit_from",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double bit_from = rust_attri_value->value;
+            dynamic_cast<LibertyType*>(lib_obj)->set_bit_from(static_cast<unsigned>(bit_from));
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"bit_to",
+          [=]() {
+            auto* rust_attri_value = rust_convert_float_value(attri_value);
+            double bit_to = rust_attri_value->value;
+            dynamic_cast<LibertyType*>(lib_obj)->set_bit_to(static_cast<unsigned>(bit_to));
+            rust_free_float_value(rust_attri_value);
+          }},
+         {"bus_type", [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            auto* port_bus = lib_builder->get_port_bus();
+            std::string bus_type = rust_attri_value->value;
+            auto* lib_type = current_lib->getLibType(bus_type.c_str());
+            port_bus->set_bus_type(lib_type);
+            rust_free_string_value(rust_attri_value);
+          }}};
 
   if (process_attri.contains(attri_name)) {
     process_attri[attri_name]();
@@ -521,8 +502,8 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
  * @param attri
  * @return unsigned
  */
-unsigned RustLibertyReader::visitAxisOrValues(
-    RustLibertyComplexAttrStmt* attri) {
+unsigned RustLibertyReader::visitAxisOrValues(RustLibertyComplexAttrStmt* attri)
+{
   LibertyBuilder* lib_builder = get_library_builder();
 
   const char* attri_name = attri->attri_name;
@@ -531,10 +512,8 @@ unsigned RustLibertyReader::visitAxisOrValues(
   /**
   @note the origial value may be quote by string.
    * So we need recover the double value.*/
-  auto convert_attri_values = [](auto& attribute_values)
-      -> std::vector<std::unique_ptr<LibertyAttrValue>> {
-    auto split_str = [](std::string const& original,
-                        char separator) -> std::vector<std::string> {
+  auto convert_attri_values = [](auto& attribute_values) -> std::vector<std::unique_ptr<LibertyAttrValue>> {
+    auto split_str = [](std::string const& original, char separator) -> std::vector<std::string> {
       std::vector<std::string> results;
       std::string token;
       std::istringstream is(original);
@@ -549,13 +528,13 @@ unsigned RustLibertyReader::visitAxisOrValues(
     std::vector<std::unique_ptr<LibertyAttrValue>> result_values;
 
     void* attri_value;
-    FOREACH_VEC_ELEM(&attribute_values, void, attri_value) {
+    FOREACH_VEC_ELEM(&attribute_values, void, attri_value)
+    {
       if (rust_is_string_value(attri_value)) {
         std::string val = rust_convert_string_value(attri_value)->value;
         auto str_vec = split_str(val, ',');
         for (auto& str : str_vec) {
-          auto double_val =
-              std::make_unique<LibertyFloatValue>(std::atof(str.c_str()));
+          auto double_val = std::make_unique<LibertyFloatValue>(std::atof(str.c_str()));
           result_values.emplace_back(std::move(double_val));
         }
       } else {
@@ -592,12 +571,13 @@ unsigned RustLibertyReader::visitAxisOrValues(
  * @param attri
  * @return unsigned return 1 if success, else 0
  */
-unsigned RustLibertyReader::visitComplexAttri(
-    RustLibertyComplexAttrStmt* attri) {
+unsigned RustLibertyReader::visitComplexAttri(RustLibertyComplexAttrStmt* attri)
+{
   const char* attri_name = attri->attri_name;
   LibertyBuilder* lib_builder = get_library_builder();
   auto* the_lib = lib_builder->get_lib();
   auto* lib_obj = lib_builder->get_obj();
+  auto* lib_port = lib_builder->get_port();
 
   auto& attri_values = attri->attri_values;
 
@@ -606,21 +586,35 @@ unsigned RustLibertyReader::visitComplexAttri(
   void* attri_0 = GetRustVecElem<void>(&attri_values, 0);
   void* attri_1 = GetRustVecElem<void>(&attri_values, 1);
 
-  std::map<std::string, std::function<void()>> process_attri = {
-      {"capacitive_load_unit",
-       [&]() {
-         if ((static_cast<int>(rust_convert_float_value(attri_0)->value) ==
-              1) &&
-             (Str::equal(rust_convert_string_value(attri_1)->value, "pf"))) {
-           the_lib->set_cap_unit(CapacitiveUnit::kPF);
-         }
-       }},
-      {"fanout_length", [&]() {
-         double fanout = rust_convert_float_value(attri_0)->value;
-         double length = rust_convert_float_value(attri_1)->value;
-         dynamic_cast<LibertyWireLoad*>(lib_obj)->add_length_to_map(
-             static_cast<int>(fanout), length);
-       }}};
+  std::map<std::string, std::function<void()>> process_attri
+      = {{"capacitive_load_unit",
+          [&]() {
+            if ((static_cast<int>(rust_convert_float_value(attri_0)->value) == 1)
+                && (Str::equal(rust_convert_string_value(attri_1)->value, "pf"))) {
+              the_lib->set_cap_unit(CapacitiveUnit::kPF);
+            }
+          }},
+         {{"rise_capacitance_range"},
+          [&]() {
+            double min_rise_cap = rust_convert_float_value(attri_0)->value;
+            double max_rise_cap = rust_convert_float_value(attri_1)->value;
+
+            lib_port->set_port_cap(AnalysisMode::kMin, TransType::kRise, min_rise_cap);
+            lib_port->set_port_cap(AnalysisMode::kMax, TransType::kRise, max_rise_cap);
+          }},
+         {{"fall_capacitance_range"},
+          [&]() {
+            double min_fall_cap = rust_convert_float_value(attri_0)->value;
+            double max_fall_cap = rust_convert_float_value(attri_1)->value;
+
+            lib_port->set_port_cap(AnalysisMode::kMin, TransType::kFall, min_fall_cap);
+            lib_port->set_port_cap(AnalysisMode::kMax, TransType::kFall, max_fall_cap);
+          }},
+         {"fanout_length", [&]() {
+            double fanout = rust_convert_float_value(attri_0)->value;
+            double length = rust_convert_float_value(attri_1)->value;
+            dynamic_cast<LibertyWireLoad*>(lib_obj)->add_length_to_map(static_cast<int>(fanout), length);
+          }}};
 
   if (process_attri.contains(attri_name)) {
     process_attri[attri_name]();
@@ -636,7 +630,8 @@ unsigned RustLibertyReader::visitComplexAttri(
  * @param group
  * @return const char*
  */
-const char* RustLibertyReader::getGroupAttriName(RustLibertyGroupStmt* group) {
+const char* RustLibertyReader::getGroupAttriName(RustLibertyGroupStmt* group)
+{
   auto& attri_values = group->attri_values;
   LOG_FATAL_IF(!rust_is_string_value(attri_values.data));
   auto* lib_name_attri = rust_convert_string_value(attri_values.data);
@@ -650,12 +645,14 @@ const char* RustLibertyReader::getGroupAttriName(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group)
+{
   unsigned is_ok = 1;
 
   auto lib_stmts = group->stmts;
   void* lib_stmt;
-  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt)
+  {
     // simple attri stmt first, we need set attribute.
     if (rust_is_simple_attri_stmt(lib_stmt)) {
       auto* simple_lib_stmt = rust_convert_simple_attribute_stmt(lib_stmt);
@@ -665,7 +662,8 @@ unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
   }
 
   // visit complex/group data finally.
-  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt)
+  {
     if (rust_is_complex_attri_stmt(lib_stmt)) {
       auto* complex_lib_stmt = rust_convert_complex_attribute_stmt(lib_stmt);
       is_ok &= visitComplexAttri(complex_lib_stmt);
@@ -687,7 +685,8 @@ unsigned RustLibertyReader::visitStmtInGroup(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group)
+{
   const char* lib_name = getGroupAttriName(group);
 
   auto* library_builder = new LibertyBuilder(lib_name);
@@ -704,7 +703,8 @@ unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* lib = lib_builder->get_lib();
 
@@ -725,13 +725,13 @@ unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitLuTableTemplate(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitLuTableTemplate(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* lib = lib_builder->get_lib();
 
   const char* template_name = getGroupAttriName(group);
-  auto lut_table_template =
-      std::make_unique<LibertyLutTableTemplate>(template_name);
+  auto lut_table_template = std::make_unique<LibertyLutTableTemplate>(template_name);
 
   lib_builder->set_port(nullptr);
   lib_builder->set_obj(lut_table_template.get());
@@ -751,7 +751,8 @@ unsigned RustLibertyReader::visitLuTableTemplate(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitType(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitType(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* lib = lib_builder->get_lib();
 
@@ -776,14 +777,13 @@ unsigned RustLibertyReader::visitType(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitOutputCurrentTemplate(
-    RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitOutputCurrentTemplate(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* lib = lib_builder->get_lib();
 
   const char* template_name = getGroupAttriName(group);
-  auto current_table_template =
-      std::make_unique<LibertyCurrentTemplate>(template_name);
+  auto current_table_template = std::make_unique<LibertyCurrentTemplate>(template_name);
 
   lib_builder->set_obj(current_table_template.get());
 
@@ -802,7 +802,8 @@ unsigned RustLibertyReader::visitOutputCurrentTemplate(
  * @param group
  * @return unsigned return 1 if success, else 0
  */
-unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyLibrary* lib = lib_builder->get_lib();
 
@@ -826,12 +827,12 @@ unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyCell* lib_cell = lib_builder->get_cell();
 
-  lib_builder->set_own_pg_or_when_type(
-      LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower);
+  lib_builder->set_own_pg_or_when_type(LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower);
   auto leakage_power = std::make_unique<LibertyLeakagePower>();
   lib_builder->set_leakage_power(leakage_power.get());
   leakage_power->set_owner_cell(lib_cell);
@@ -851,7 +852,8 @@ unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitBus(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitBus(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyCell* cell = lib_builder->get_cell();
 
@@ -876,7 +878,8 @@ unsigned RustLibertyReader::visitBus(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned return 1 if success, else 0
  */
-unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyCell* cell = lib_builder->get_cell();
 
@@ -905,8 +908,7 @@ unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group) {
     int port_range_right = std::atoi(ret_val[3].c_str());
 
     for (int index = port_range_left; index >= port_range_right; --index) {
-      const char* one_port_name =
-          Str::printf("%s[%d]", port_bus_name.c_str(), index);
+      const char* one_port_name = Str::printf("%s[%d]", port_bus_name.c_str(), index);
       create_port(one_port_name);
     }
   }
@@ -924,7 +926,8 @@ unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned return 1 if success, else 0
  */
-unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyPort* lib_port = lib_builder->get_port();
   LibertyPortBus* lib_port_bus;
@@ -932,13 +935,11 @@ unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group) {
     lib_port_bus = lib_builder->get_port_bus();
   }
   LibertyCell* lib_cell = lib_builder->get_cell();
-  lib_builder->set_own_port_type(
-      LibertyBuilder::LibertyOwnPortType::kTimingArc);
+  lib_builder->set_own_port_type(LibertyBuilder::LibertyOwnPortType::kTimingArc);
   auto lib_arc = std::make_unique<LibertyArc>();
   lib_builder->set_arc(lib_arc.get());
   lib_builder->set_table_model(nullptr);  // reset table model.
-  lib_port ? lib_arc->set_snk_port(lib_port->get_port_name())
-           : lib_arc->set_snk_port(lib_port_bus->get_port_name());
+  lib_port ? lib_arc->set_snk_port(lib_port->get_port_name()) : lib_arc->set_snk_port(lib_port_bus->get_port_name());
   lib_arc->set_owner_cell(lib_cell);
 
   unsigned is_ok = visitStmtInGroup(group);
@@ -954,7 +955,8 @@ unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   LibertyPort* lib_port = lib_builder->get_port();
   LibertyPortBus* lib_port_bus;
@@ -963,13 +965,11 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   }
   LibertyCell* lib_cell = lib_builder->get_cell();
   lib_builder->set_own_port_type(LibertyBuilder::LibertyOwnPortType::kPowerArc);
-  lib_builder->set_own_pg_or_when_type(
-      LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc);
+  lib_builder->set_own_pg_or_when_type(LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc);
   auto lib_power_arc = std::make_unique<LibertyPowerArc>();
   lib_builder->set_power_arc(lib_power_arc.get());
   lib_builder->set_table_model(nullptr);  // reset table model.
-  lib_port ? lib_power_arc->set_snk_port(lib_port->get_port_name())
-           : lib_power_arc->set_snk_port(lib_port_bus->get_port_name());
+  lib_port ? lib_power_arc->set_snk_port(lib_port->get_port_name()) : lib_power_arc->set_snk_port(lib_port_bus->get_port_name());
   lib_power_arc->set_owner_cell(lib_cell);
 
   auto internal_power_info = std::make_unique<LibertyInternalPowerInfo>();
@@ -980,7 +980,8 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   void* lib_stmt;
 
   // for simple stmt, need first visit set powr arc attribute.
-  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt)
+  {
     if (rust_is_simple_attri_stmt(lib_stmt)) {
       // for the power arc attribute.
       auto* simple_lib_stmt = rust_convert_simple_attribute_stmt(lib_stmt);
@@ -990,7 +991,8 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   }
 
   // visit group data finally.
-  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt) {
+  FOREACH_VEC_ELEM(&lib_stmts, void, lib_stmt)
+  {
     if (rust_is_group_stmt(lib_stmt)) {
       // for the power data.
       // group stmt.
@@ -1004,8 +1006,7 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
     lib_cell->addLibertyPowerArc(std::move(lib_power_arc));
   } else {
     auto& internal_power_info = lib_power_arc->get_internal_power_info();
-    lib_port ? lib_port->addInternalPower(std::move(internal_power_info))
-             : lib_port_bus->addInternalPower(std::move(internal_power_info));
+    lib_port ? lib_port->addInternalPower(std::move(internal_power_info)) : lib_port_bus->addInternalPower(std::move(internal_power_info));
     lib_builder->set_power_arc(nullptr);
   }
 
@@ -1018,7 +1019,8 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitCurrentTable(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitCurrentTable(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
   auto* lib_model = lib_builder->get_table_model();
   auto* lib_delay_model = dynamic_cast<LibertyDelayTableModel*>(lib_model);
@@ -1042,7 +1044,8 @@ unsigned RustLibertyReader::visitCurrentTable(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
 
   const char* table_template_name = getGroupAttriName(group);
@@ -1050,12 +1053,10 @@ unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group) {
   auto* lut_template = the_lib->getLutTemplate(table_template_name);
   LOG_FATAL_IF(!lut_template) << "not found template " << table_template_name;
 
-  auto* current_table =
-      dynamic_cast<LibertyCCSTable*>(lib_builder->get_current_table());
+  auto* current_table = dynamic_cast<LibertyCCSTable*>(lib_builder->get_current_table());
   auto table_type = current_table->get_table_type();
 
-  auto lib_table =
-      std::make_unique<LibertyVectorTable>(table_type, lut_template);
+  auto lib_table = std::make_unique<LibertyVectorTable>(table_type, lut_template);
   lib_table->set_file_name(group->file_name);
   lib_table->set_line_no(group->line_no);
 
@@ -1076,7 +1077,8 @@ unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
 
   const auto* const table_name = group->group_name;
@@ -1121,7 +1123,8 @@ unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group)
+{
   LibertyBuilder* lib_builder = get_library_builder();
 
   const auto* const table_name = group->group_name;
@@ -1166,42 +1169,33 @@ unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group) {
  * @param group
  * @return unsigned
  */
-unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
+unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group)
+{
   unsigned is_ok = 1;
   const char* group_name = group->group_name;
 
-  static const ieda::BTreeSet<std::string> table_names = {
-      "cell_rise",       "cell_fall",       "rise_transition",
-      "fall_transition", "rise_constraint", "fall_constraint"};
-  static const ieda::BTreeSet<std::string> power_table_names = {"rise_power",
-                                                                "fall_power"};
+  static const ieda::BTreeSet<std::string> table_names
+      = {"cell_rise", "cell_fall", "rise_transition", "fall_transition", "rise_constraint", "fall_constraint"};
+  static const ieda::BTreeSet<std::string> power_table_names = {"rise_power", "fall_power"};
 
   using std::placeholders::_1;
 
-  std::map<std::string, std::function<unsigned(RustLibertyGroupStmt * group)>>
-      visit_fun_map = {
-          {"library", std::bind(&RustLibertyReader::visitLibrary, this, _1)},
-          {"wire_load", std::bind(&RustLibertyReader::visitWireLoad, this, _1)},
-          {"lu_table_template",
-           std::bind(&RustLibertyReader::visitLuTableTemplate, this, _1)},
-          {"power_lut_template",
-           std::bind(&RustLibertyReader::visitLuTableTemplate, this, _1)},
-          {"type", std::bind(&RustLibertyReader::visitType, this, _1)},
-          {"output_current_template",
-           std::bind(&RustLibertyReader::visitOutputCurrentTemplate, this, _1)},
-          {"cell", std::bind(&RustLibertyReader::visitCell, this, _1)},
-          {"leakage_power",
-           std::bind(&RustLibertyReader::visitLeakagePower, this, _1)},
-          {"bus", std::bind(&RustLibertyReader::visitBus, this, _1)},
-          {"pin", std::bind(&RustLibertyReader::visitPin, this, _1)},
-          {"timing", std::bind(&RustLibertyReader::visitTiming, this, _1)},
-          {"internal_power",
-           std::bind(&RustLibertyReader::visitInternalPower, this, _1)},
-          {"output_current_rise",
-           std::bind(&RustLibertyReader::visitCurrentTable, this, _1)},
-          {"output_current_fall",
-           std::bind(&RustLibertyReader::visitCurrentTable, this, _1)},
-          {"vector", std::bind(&RustLibertyReader::visitVector, this, _1)}};
+  std::map<std::string, std::function<unsigned(RustLibertyGroupStmt * group)>> visit_fun_map
+      = {{"library", std::bind(&RustLibertyReader::visitLibrary, this, _1)},
+         {"wire_load", std::bind(&RustLibertyReader::visitWireLoad, this, _1)},
+         {"lu_table_template", std::bind(&RustLibertyReader::visitLuTableTemplate, this, _1)},
+         {"power_lut_template", std::bind(&RustLibertyReader::visitLuTableTemplate, this, _1)},
+         {"type", std::bind(&RustLibertyReader::visitType, this, _1)},
+         {"output_current_template", std::bind(&RustLibertyReader::visitOutputCurrentTemplate, this, _1)},
+         {"cell", std::bind(&RustLibertyReader::visitCell, this, _1)},
+         {"leakage_power", std::bind(&RustLibertyReader::visitLeakagePower, this, _1)},
+         {"bus", std::bind(&RustLibertyReader::visitBus, this, _1)},
+         {"pin", std::bind(&RustLibertyReader::visitPin, this, _1)},
+         {"timing", std::bind(&RustLibertyReader::visitTiming, this, _1)},
+         {"internal_power", std::bind(&RustLibertyReader::visitInternalPower, this, _1)},
+         {"output_current_rise", std::bind(&RustLibertyReader::visitCurrentTable, this, _1)},
+         {"output_current_fall", std::bind(&RustLibertyReader::visitCurrentTable, this, _1)},
+         {"vector", std::bind(&RustLibertyReader::visitVector, this, _1)}};
 
   if (visit_fun_map.contains(group_name)) {
     auto read_func = visit_fun_map[group_name];
@@ -1222,7 +1216,8 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
  *
  * @return unsigned
  */
-unsigned RustLibertyReader::readLib() {
+unsigned RustLibertyReader::readLib()
+{
   LOG_INFO << "load liberty file " << _file_name;
 
   auto* lib_file = rust_parse_lib(_file_name.c_str());
