@@ -203,10 +203,11 @@ void StaBuildRCTree::printYaml(const spef::Net& spef_net) {
         (spef_connection.type == spef::ConnectionType::INTERNAL) ? "I" : "P";
     one_node["node_name"] = spef_connection.name;
     one_node["direction"] =
-        (spef_connection.direction == spef::ConnectionDirection::OUTPUT) ? "O"
-        : (spef_connection.direction == spef::ConnectionDirection::INPUT)
-            ? "I"
-            : "IO";
+        (spef_connection.direction == spef::ConnectionDirection::OUTPUT)
+            ? "O"
+            : (spef_connection.direction == spef::ConnectionDirection::INPUT)
+                  ? "I"
+                  : "IO";
     one_node["coordinate_x"] = spef_connection.coordinate.has_value()
                                    ? spef_connection.coordinate.value().first
                                    : 0;

@@ -565,6 +565,7 @@ void RcNet::makeRct(RustSpefNet* rust_spef_net) {
       rct.insertNode(rust_spef_conn->_name,
                      ConvertCapUnit(spef_cap_unit, uniform_cap_unit,
                                     rust_spef_conn->_load));
+      rust_free_spef_conn(rust_spef_conn);
     }
   }
 
@@ -583,6 +584,8 @@ void RcNet::makeRct(RustSpefNet* rust_spef_net) {
       } else {
         rct.insertNode(node1, node2, rust_spef_cap->_res_or_cap);
       }
+
+      rust_free_spef_net_cap_res(rust_spef_cap);
     }
   }
 
@@ -596,6 +599,8 @@ void RcNet::makeRct(RustSpefNet* rust_spef_net) {
       std::string node2 = rust_spef_res->_node2;
 
       rct.insertSegment(node1, node2, rust_spef_res->_res_or_cap);
+
+      rust_free_spef_net_cap_res(rust_spef_res);
     }
   }
 }
@@ -819,6 +824,8 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
     //   rct.printGraphViz();
     // }
   }
+
+  rust_free_spef_net(spef_net);
 }
 /**
  * @brief net load

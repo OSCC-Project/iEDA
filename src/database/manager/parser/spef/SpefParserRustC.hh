@@ -21,14 +21,28 @@ void rust_expand_all_name(void* c_spef_data);
 char* rust_get_spef_cap_unit(void* c_spef_data);
 char* rust_get_spef_res_unit(void* c_spef_data);
 
-typedef struct RustSpefCoord {
+void rust_free_spef_data(void*);
+void rust_free_spef_file(void*);
+void rust_free_spef_net(void*);
+void rust_free_spef_conn(void*);
+void rust_free_spef_net_cap_res(void*);
+
+typedef struct RustSpefCoord
+{
   double _x;
   double _y;
 } RustSpefCoord;
 
-enum RustConnectionDirection { kINPUT, kOUTPUT, kINOUT, kInternal };
+enum RustConnectionDirection
+{
+  kINPUT,
+  kOUTPUT,
+  kINOUT,
+  kInternal
+};
 
-enum RustConnectionType {
+enum RustConnectionType
+{
   kINTERNAL,
   kEXTERNAL,
 };
@@ -37,7 +51,8 @@ enum RustConnectionType {
  * @brief Rust spef conn for C.
  *
  */
-typedef struct RustSpefConnEntry {
+typedef struct RustSpefConnEntry
+{
   RustConnectionType _conn_type;
   RustConnectionType _conn_direction;
   char* _name;
@@ -53,7 +68,8 @@ typedef struct RustSpefConnEntry {
  * @brief Rust spef res cap item for C.
  *
  */
-typedef struct RustSpefResCap {
+typedef struct RustSpefResCap
+{
   char* _node1;
   char* _node2;
   double _res_or_cap;
@@ -63,7 +79,8 @@ typedef struct RustSpefResCap {
  * @brief Rust spef net data for C.
  *
  */
-typedef struct RustSpefNet {
+typedef struct RustSpefNet
+{
   char* _name;
   double _lcap;
   struct RustVec _conns;
@@ -76,7 +93,8 @@ typedef struct RustSpefNet {
  * @brief Rust spef data file for C.
  *
  */
-typedef struct RustSpefFile {
+typedef struct RustSpefFile
+{
   char* _file_name;
   struct RustVec _header;
   struct RustVec _ports;
@@ -90,8 +108,16 @@ namespace ista {
  * @brief
  *
  */
-class SpefRustReader {
+class SpefRustReader
+{
  public:
+  SpefRustReader() = default;
+  ~SpefRustReader()
+  {
+    rust_free_spef_file(_spef_file);
+    rust_free_spef_data(_rust_spef_file);
+  }
+
   RustSpefFile* get_spef_file() { return _spef_file; }
 
   bool read(std::string file_path);

@@ -64,7 +64,7 @@ struct RustPortItem {
 }
 
 #[repr(C)]
-struct RustConnItem {
+pub struct RustConnItem {
     conn_type: spef_data::ConnectionType,
     conn_direction: spef_data::ConnectionDirection,
     pin_port_name: *mut c_char,
@@ -77,14 +77,14 @@ struct RustConnItem {
 }
 
 #[repr(C)]
-struct RustResCapItem {
+pub struct RustResCapItem {
     node1: *mut c_char,
     node2: *mut c_char,
     res_cap: f64,
 }
 
 #[repr(C)]
-struct RustNetItem {
+pub struct RustNetItem {
     name: *mut c_char,
     lcap: c_double,
     conns: RustVec,
@@ -93,7 +93,7 @@ struct RustNetItem {
 }
 // Shared structure between cpp and rust, it uses the types in the `exter "Rust" section`
 #[repr(C)]
-struct RustSpefFile {
+pub struct RustSpefFile {
     file_name: *mut c_char,
     header: RustVec,
     ports: RustVec,
@@ -127,6 +127,13 @@ pub extern "C" fn rust_parser_spef(spef_path: *const c_char) -> *mut c_void {
 }
 
 #[no_mangle]
+pub extern "C" fn rust_free_spef_data(c_spef_data: *mut spef_data::SpefExchange) {
+    unsafe {
+        let _: Box<spef_data::SpefExchange> = Box::from_raw(c_spef_data);
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rust_covert_spef_file(c_spef_data: *mut spef_data::SpefExchange) -> *mut c_void {
     unsafe {
         let file_name = string_to_c_char(&(*c_spef_data).file_name);
@@ -139,6 +146,14 @@ pub extern "C" fn rust_covert_spef_file(c_spef_data: *mut spef_data::SpefExchang
         let spef_data_pointer = Box::new(rust_spef_data);
         let raw_pointer = Box::into_raw(spef_data_pointer);
         raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_spef_file(c_spef_data: *mut RustSpefFile) {
+    unsafe {
+        free_c_char((*c_spef_data).file_name);
+        let _: Box<RustSpefFile> = Box::from_raw(c_spef_data);
     }
 }
 
@@ -156,6 +171,14 @@ pub extern "C" fn rust_convert_spef_net(c_spef_net: *mut spef_data::SpefNet) -> 
         let spef_net_pointer = Box::new(rust_spef_net);
         let raw_pointer = Box::into_raw(spef_net_pointer);
         raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_spef_net(c_spef_net: *mut RustNetItem) {
+    unsafe {
+        free_c_char((*c_spef_net).name);
+        let _: Box<RustNetItem> = Box::from_raw(c_spef_net);
     }
 }
 
@@ -194,6 +217,16 @@ pub extern "C" fn rust_convert_spef_conn(c_spef_net: *mut spef_data::SpefConnEnt
 }
 
 #[no_mangle]
+pub extern "C" fn rust_free_spef_conn(c_spef_net: *mut RustConnItem) {
+    unsafe {
+        free_c_char((*c_spef_net).pin_port_name);
+        free_c_char((*c_spef_net).driving_cell);
+
+        let _: Box<RustConnItem> = Box::from_raw(c_spef_net);
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rust_convert_spef_net_cap_res(c_spef_net_cap_res: *mut spef_data::SpefResCap) -> *mut c_void {
     unsafe {
         let node1 = string_to_c_char(&(*c_spef_net_cap_res).node1);
@@ -205,6 +238,16 @@ pub extern "C" fn rust_convert_spef_net_cap_res(c_spef_net_cap_res: *mut spef_da
         let spef_net_cap_res_pointer = Box::new(rust_spef_net_cap_res);
         let raw_pointer = Box::into_raw(spef_net_cap_res_pointer);
         raw_pointer as *mut c_void
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_free_spef_net_cap_res(c_spef_net_cap_res: *mut RustResCapItem) {
+    unsafe {
+        free_c_char((*c_spef_net_cap_res).node1);
+        free_c_char((*c_spef_net_cap_res).node2);
+
+        let _: Box<RustResCapItem> = Box::from_raw(c_spef_net_cap_res);
     }
 }
 
