@@ -170,104 +170,106 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   return is_ok;
 }
 
-/**
- * @brief print rc tree in yaml format.
- *
- * @param top_node
- * @param spef_net
- */
-void StaBuildRCTree::printYaml(const spef::Net& spef_net) {
-  static int node_id = 0;
-  static std::map<int, std::string> layer_index_to_name{
-      {1, "M1"},    {2, "M2"},    {3, "M3"},    {4, "M4"},    {5, "M5"},
-      {6, "M6"},    {7, "M7"},    {8, "M8"},    {9, "M9"},    {10, "AP"},
-      {11, "VIA1"}, {12, "VIA2"}, {13, "VIA3"}, {14, "VIA4"}, {15, "VIA5"},
-      {16, "VIA6"}, {17, "VIA7"}, {18, "VIA8"}, {19, "RV"}};
+// /**
+//  * @brief print rc tree in yaml format.
+//  *
+//  * @param top_node
+//  * @param spef_net
+//  */
+// void StaBuildRCTree::printYaml(const spef::Net& spef_net) {
+//   static int node_id = 0;
+//   static std::map<int, std::string> layer_index_to_name{
+//       {1, "M1"},    {2, "M2"},    {3, "M3"},    {4, "M4"},    {5, "M5"},
+//       {6, "M6"},    {7, "M7"},    {8, "M8"},    {9, "M9"},    {10, "AP"},
+//       {11, "VIA1"}, {12, "VIA2"}, {13, "VIA3"}, {14, "VIA4"}, {15, "VIA5"},
+//       {16, "VIA6"}, {17, "VIA7"}, {18, "VIA8"}, {19, "RV"}};
 
-  std::string net_id = Str::printf("net_%d", node_id++);
+//   std::string net_id = Str::printf("net_%d", node_id++);
 
-  YAML::Node net_node;
-  _top_node[net_id] = net_node;
+//   YAML::Node net_node;
+//   _top_node[net_id] = net_node;
 
-  net_node["NAME"] = spef_net.name;
+//   net_node["NAME"] = spef_net.name;
 
-  // print connection.
-  auto& spef_connections = spef_net.connections;
-  YAML::Node conn_node;
-  net_node["CONN"] = conn_node;
-  for (unsigned i = 0; const auto& spef_connection : spef_connections) {
-    std::string conn_id = Str::printf("conn_%d", i++);
-    YAML::Node one_node;
-    conn_node[conn_id] = one_node;
-    one_node["type"] =
-        (spef_connection.type == spef::ConnectionType::INTERNAL) ? "I" : "P";
-    one_node["node_name"] = spef_connection.name;
-    one_node["direction"] =
-        (spef_connection.direction == spef::ConnectionDirection::OUTPUT)
-            ? "O"
-            : (spef_connection.direction == spef::ConnectionDirection::INPUT)
-                  ? "I"
-                  : "IO";
-    one_node["coordinate_x"] = spef_connection.coordinate.has_value()
-                                   ? spef_connection.coordinate.value().first
-                                   : 0;
-    one_node["coordinate_y"] = spef_connection.coordinate.has_value()
-                                   ? spef_connection.coordinate.value().second
-                                   : 0;
-    one_node["load"] =
-        spef_connection.load.has_value() ? spef_connection.load.value() : 0;
-    one_node["cell"] = spef_connection.driving_cell.empty()
-                           ? "NA"
-                           : spef_connection.driving_cell;
+//   // print connection.
+//   auto& spef_connections = spef_net.connections;
+//   YAML::Node conn_node;
+//   net_node["CONN"] = conn_node;
+//   for (unsigned i = 0; const auto& spef_connection : spef_connections) {
+//     std::string conn_id = Str::printf("conn_%d", i++);
+//     YAML::Node one_node;
+//     conn_node[conn_id] = one_node;
+//     one_node["type"] =
+//         (spef_connection.type == spef::ConnectionType::INTERNAL) ? "I" : "P";
+//     one_node["node_name"] = spef_connection.name;
+//     one_node["direction"] =
+//         (spef_connection.direction == spef::ConnectionDirection::OUTPUT)
+//             ? "O"
+//             : (spef_connection.direction == spef::ConnectionDirection::INPUT)
+//                   ? "I"
+//                   : "IO";
+//     one_node["coordinate_x"] = spef_connection.coordinate.has_value()
+//                                    ? spef_connection.coordinate.value().first
+//                                    : 0;
+//     one_node["coordinate_y"] = spef_connection.coordinate.has_value()
+//                                    ?
+//                                    spef_connection.coordinate.value().second
+//                                    : 0;
+//     one_node["load"] =
+//         spef_connection.load.has_value() ? spef_connection.load.value() : 0;
+//     one_node["cell"] = spef_connection.driving_cell.empty()
+//                            ? "NA"
+//                            : spef_connection.driving_cell;
 
-    one_node["ll_coordinate_x"] =
-        spef_connection.ll_coordinate.has_value()
-            ? spef_connection.ll_coordinate.value().first
-            : 0;
-    one_node["ll_coordinate_y"] =
-        spef_connection.ll_coordinate.has_value()
-            ? spef_connection.ll_coordinate.value().second
-            : 0;
+//     one_node["ll_coordinate_x"] =
+//         spef_connection.ll_coordinate.has_value()
+//             ? spef_connection.ll_coordinate.value().first
+//             : 0;
+//     one_node["ll_coordinate_y"] =
+//         spef_connection.ll_coordinate.has_value()
+//             ? spef_connection.ll_coordinate.value().second
+//             : 0;
 
-    one_node["ur_coordinate_x"] =
-        spef_connection.ur_coordinate.has_value()
-            ? spef_connection.ur_coordinate.value().first
-            : 0;
-    one_node["ur_coordinate_y"] =
-        spef_connection.ur_coordinate.has_value()
-            ? spef_connection.ur_coordinate.value().second
-            : 0;
+//     one_node["ur_coordinate_x"] =
+//         spef_connection.ur_coordinate.has_value()
+//             ? spef_connection.ur_coordinate.value().first
+//             : 0;
+//     one_node["ur_coordinate_y"] =
+//         spef_connection.ur_coordinate.has_value()
+//             ? spef_connection.ur_coordinate.value().second
+//             : 0;
 
-    one_node["layer"] = spef_connection.layer.has_value()
-                            ? layer_index_to_name[spef_connection.layer.value()]
-                            : "Nil";
-  }
+//     one_node["layer"] = spef_connection.layer.has_value()
+//                             ?
+//                             layer_index_to_name[spef_connection.layer.value()]
+//                             : "Nil";
+//   }
 
-  // print cap.
-  YAML::Node cap_node;
-  net_node["CAP"] = cap_node;
-  auto& spef_caps = spef_net.caps;
-  for (unsigned i = 0; const auto& [node1, node2, cap] : spef_caps) {
-    std::string cap_id = Str::printf("cap_%d", i++);
-    YAML::Node one_node;
-    cap_node[cap_id] = one_node;
-    one_node["node1_name"] = node1;
-    one_node["node2_name"] = node2.empty() ? "NA" : node2;
-    one_node["capacitance"] = cap;
-  }
+//   // print cap.
+//   YAML::Node cap_node;
+//   net_node["CAP"] = cap_node;
+//   auto& spef_caps = spef_net.caps;
+//   for (unsigned i = 0; const auto& [node1, node2, cap] : spef_caps) {
+//     std::string cap_id = Str::printf("cap_%d", i++);
+//     YAML::Node one_node;
+//     cap_node[cap_id] = one_node;
+//     one_node["node1_name"] = node1;
+//     one_node["node2_name"] = node2.empty() ? "NA" : node2;
+//     one_node["capacitance"] = cap;
+//   }
 
-  // print resistance
-  YAML::Node resistance_node;
-  net_node["RES"] = resistance_node;
-  for (unsigned i = 0; const auto& [node1, node2, res] : spef_net.ress) {
-    std::string res_id = Str::printf("resistance_%d", i++);
-    YAML::Node one_node;
-    resistance_node[res_id] = one_node;
-    one_node["node1_name"] = node1;
-    one_node["node2_name"] = node2.empty() ? "NA" : node2;
-    one_node["resistance"] = res;
-  }
-}
+//   // print resistance
+//   YAML::Node resistance_node;
+//   net_node["RES"] = resistance_node;
+//   for (unsigned i = 0; const auto& [node1, node2, res] : spef_net.ress) {
+//     std::string res_id = Str::printf("resistance_%d", i++);
+//     YAML::Node one_node;
+//     resistance_node[res_id] = one_node;
+//     one_node["node1_name"] = node1;
+//     one_node["node2_name"] = node2.empty() ? "NA" : node2;
+//     one_node["resistance"] = res;
+//   }
+// }
 
 /**
  * @brief print yaml text.

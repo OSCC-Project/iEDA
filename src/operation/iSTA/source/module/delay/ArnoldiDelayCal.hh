@@ -36,7 +36,6 @@
 #include "ElmoreDelayCalc.hh"
 #include "Type.hh"
 #include "WaveformInfo.hh"
-#include "spef/parser-spef.hpp"
 
 using namespace Eigen;
 

@@ -196,7 +196,6 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | BST-DME        | [BST-DME](https://github.com/abk-openroad/BST-DME.git)                                                   | 以该库为基础为我们BST相关工作提供支撑，在iCTS内部对主要功能进行了C++20版本的重写. |
 | parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)          | 解析.lib文件 .                                                                    |
 | parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)          | 解析netlist文件 .                                                                 |
-| parser/spef    | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)      | 解析spef文件 .                                                                    |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
 

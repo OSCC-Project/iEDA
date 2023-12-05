@@ -196,7 +196,6 @@ In the development of iEDA, some sub-modules from the open-source community are 
 | BST-DME        | [BST-DME](https://github.com/abk-openroad/BST-DME.git)                                                   | Based on this library to provide support for our BST related work, the main functions of the iCTS were rewritten in C++20 version |
 | parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)          | parse .lib file .                                                                                                                 |
 | parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)          | parse netlist file .                                                                                                              |
-| parser/spef    | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)      | parse spef file .                                                                                                                 |
 
 We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
 

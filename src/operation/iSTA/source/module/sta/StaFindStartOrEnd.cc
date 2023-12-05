@@ -24,6 +24,8 @@
  */
 #include "StaFindStartOrEnd.hh"
 
+#include "ThreadPool/ThreadPool.h"
+
 namespace ista {
 
 /**
