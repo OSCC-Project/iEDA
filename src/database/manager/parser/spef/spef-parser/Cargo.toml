@@ -3,7 +3,7 @@ name = "spef-parser"
 version = "0.1.0"
 edition = "2021"
 authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
-include = ["**/*.rs", "*.toml"]
+include = ["**/*.rs", "*.toml", "*.pest"]
 git = "https://gitee.com/oscc-project/parser.git"
 
 description = "iEDA spef parser"
