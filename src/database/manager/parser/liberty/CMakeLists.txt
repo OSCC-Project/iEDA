@@ -27,14 +27,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -DNDEBUG")
 
 aux_source_directory(./ SRC)
 
-add_library(liberty ${SRC} 
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyEquivCells.cc 
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyExprLex.cc 
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyExprParse.cc
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyLex.cc
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyParse.cc
-    ${HOME_THIRDPARTY}/parser/liberty/mLibertyExpr.cc
-)
+add_library(liberty ${SRC})
 
 # add_library(liberty ${SRC} ${FLEX_LibertyLex_OUTPUTS} ${BISON_LibertyParser_OUTPUTS} 
 # ${FLEX_LibertyExprLex_OUTPUTS} ${BISON_LibertyExprParser_OUTPUTS})

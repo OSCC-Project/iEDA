@@ -42,8 +42,8 @@
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
+#include "liberty/LibertyClassifyCell.hh"
 #include "netlist/Netlist.hh"
-#include "parser/liberty/mLibertyEquivCells.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
 #include "verilog/VerilogReader.hh"
@@ -261,8 +261,7 @@ class Sta {
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
-                      std::vector<LibertyLibrary*>& map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs);
 
   Vector<LibertyCell*>* equivCells(LibertyCell* cell);
 
@@ -520,7 +519,7 @@ class Sta {
   Vector<std::unique_ptr<LibertyLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::unique_ptr<LibertyEquivCells>
+  std::unique_ptr<LibertyClassifyCell>
       _equiv_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.

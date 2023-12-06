@@ -122,9 +122,8 @@ class TimingEngine {
     return *this;
   }
 
-  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
-                      std::vector<LibertyLibrary *> &map_libs) {
-    return _ista->makeEquivCells(equiv_libs, map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
+    return _ista->makeEquivCells(equiv_libs);
   }
 
   Vector<LibertyCell *> *equivCells(LibertyCell *cell) {

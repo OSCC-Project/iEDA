@@ -1041,15 +1041,14 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  * @brief Make the function equivalently liberty cell map.
  *
  * @param equiv_libs
- * @param map_libs
  */
-void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
-                         std::vector<LibertyLibrary *> &map_libs) {
+void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
   if (_equiv_cells) {
     _equiv_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibertyEquivCells>(equiv_libs, map_libs);
+  _equiv_cells = std::make_unique<LibertyClassifyCell>();
+  _equiv_cells->classifyLibCell(equiv_libs);
 }
 
 /**
@@ -1060,7 +1059,7 @@ void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
  */
 Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
   if (_equiv_cells)
-    return _equiv_cells->equivs(cell);
+    return _equiv_cells->getClassOfCell(cell);
   else
     return nullptr;
 }
