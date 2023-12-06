@@ -3,6 +3,8 @@ name = "spef-parser"
 version = "0.1.0"
 edition = "2021"
 authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
+include = ["**/*.rs", "*.toml"]
+git = "https://gitee.com/oscc-project/parser.git"
 
 [build-dependencies]
 cbindgen = "0.26"
