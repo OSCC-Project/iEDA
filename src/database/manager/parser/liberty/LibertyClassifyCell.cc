@@ -286,7 +286,7 @@ void LibertyClassifyCell::classifyOneLibCell(
   LibertyCellIterator cell_iter(the_lib);
   while (cell_iter.hasNext()) {
     LibertyCell* cell = cell_iter.next();
-    if (!cell->isDontUse()) {
+    if (cell->isDontUse()) {
       continue;
     }
 
