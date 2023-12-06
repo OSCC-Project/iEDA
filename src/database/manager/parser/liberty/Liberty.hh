@@ -41,7 +41,6 @@
 #include "include/Config.hh"
 #include "include/Type.hh"
 #include "log/Log.hh"
-#include "mLibertyExpr.hh"
 #include "string/Str.hh"
 #include "string/StrMap.hh"
 
@@ -906,7 +905,8 @@ class LibertyArc : public LibertyObject {
   }
   LibertyTableModel* get_table_model() { return _table_model.get(); }
 
-  double getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew);
+  double getDelayOrConstrainCheckNs(TransType trans_type, double slew,
+                                    double load_or_constrain_slew);
   double getSlewNs(TransType trans_type, double slew, double load);
 
   std::unique_ptr<LibetyCurrentData> getOutputCurrent(TransType trans_type,
@@ -1538,8 +1538,7 @@ class LibertyLibrary {
 
   void set_time_unit(TimeUnit time_unit) { _time_unit = time_unit; }
   auto get_time_unit() { return _time_unit; }
-  double convert_time_unit_to_ns(double src_value)
-  {
+  double convert_time_unit_to_ns(double src_value) {
     if (get_time_unit() == TimeUnit::kNS) {
       return src_value;
     } else if (get_time_unit() == TimeUnit::kPS) {
@@ -2004,78 +2003,6 @@ class LibertyBuilder {
 };
 
 /**
- * @brief The liberty reader is used to read the related keyword.
- *
- */
-class LibertyReader {
- public:
-  explicit LibertyReader(const char* file_name) : _file_name(file_name) {}
-  ~LibertyReader() = default;
-
-  LibertyReader(LibertyReader&& other) noexcept = default;
-  LibertyReader& operator=(LibertyReader&& rhs) noexcept = default;
-
-  void parseBegin(FILE* fp);
-  int parse();
-  void parseEnd(FILE* fp);
-
-  unsigned readLib();
-
-  const char* get_file_name() { return _file_name.c_str(); }
-  void incrLineNo() { ++_line_no; }
-  [[nodiscard]] int get_line_no() const { return _line_no; }
-
-  void clearRecordStr() { _string_buf.erase(); }
-  const char* get_record_str() { return _string_buf.c_str(); }
-  void recordStr(const char* str) { _string_buf += str; }
-
-  void set_library_group(LibertyGroupStmt* library_group) {
-    _library_group.reset(library_group);
-  }
-
-  char* stringCopy(const char* str);
-  void stringDelete(const char* str) { delete[] str; }
-
-  unsigned visitVector(LibertyStmt* group);
-  unsigned visitPowerTable(LibertyStmt* group);
-  unsigned visitCurrentTable(LibertyStmt* group);
-  unsigned visitTable(LibertyStmt* group);
-  unsigned visitInternalPower(LibertyStmt* group);
-  unsigned visitTiming(LibertyStmt* group);
-  unsigned visitPin(LibertyStmt* group);
-  unsigned visitBus(LibertyStmt* group);
-  unsigned visitLeakagePower(LibertyStmt* group);
-  unsigned visitCell(LibertyStmt* group);
-  unsigned visitWireLoad(LibertyStmt* group);
-  unsigned visitLuTableTemplate(LibertyStmt* group);
-  unsigned visitType(LibertyStmt* group);
-  unsigned visitOutputCurrentTemplate(LibertyStmt* group);
-  unsigned visitLibrary(LibertyStmt* group);
-  unsigned visitGroup(LibertyStmt* group);
-  unsigned visitSimpleAttri(LibertyStmt* attri);
-  unsigned visitAxisOrValues(LibertyStmt* attri);
-  unsigned visitComplexAttri(LibertyStmt* attri);
-
-  LibertyGroupStmt* get_library_group() { return _library_group.get(); }
-  auto takeLibraryGroup() { return std::move(_library_group); }
-  void set_library_builder(std::unique_ptr<LibertyBuilder>&& library_builder) {
-    _library_builder = std::move(library_builder);
-  }
-  LibertyBuilder* get_library_builder() { return _library_builder.get(); }
-
- private:
-  std::unique_ptr<LibertyGroupStmt> _library_group;
-  std::unique_ptr<LibertyBuilder> _library_builder;
-
-  std::string _file_name;    //!< The liberty file name.
-  int _line_no = 0;          //!< The liberty file line no.
-  std::string _string_buf;   //!< For flex record inner string.
-  void* _scanner = nullptr;  //!< The flex scanner.
-
-  FORBIDDEN_COPY(LibertyReader);
-};
-
-/**
  * @brief This is the top interface class for liberty module.
  *
  */
@@ -2084,7 +2011,6 @@ class Liberty {
   Liberty() = default;
   ~Liberty() = default;
 
-  std::unique_ptr<LibertyLibrary> loadLiberty(const char* file_name);
   std::unique_ptr<LibertyLibrary> loadLibertyWithRustParser(
       const char* file_name);
 
