@@ -254,4 +254,25 @@ TEST_F(TimingEngineTest, move_Instance) {
   timing_engine->reportTiming();
 }
 
+TEST_F(TimingEngineTest, equiv_lib) {
+  TimingEngine* timing_engine = TimingEngine::getOrCreateTimingEngine();
+  timing_engine->set_num_threads(1);
+
+  std::vector<const char*> lib_files = {
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib"};
+
+  timing_engine->readLiberty(lib_files);
+
+  std::vector<LibertyLibrary*> equiv_libs;
+  auto& all_libs = timing_engine->getAllLib();
+  for (auto& lib : all_libs) {
+    for (auto& cell : lib->get_cells()) {
+      equiv_libs.push_back(lib.get());
+      break;
+    }
+  }
+
+  timing_engine->makeEquivCells(equiv_libs);
+}
+
 }  // namespace
