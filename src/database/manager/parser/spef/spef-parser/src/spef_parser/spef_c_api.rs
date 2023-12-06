@@ -116,7 +116,7 @@ pub extern "C" fn rust_parser_spef(spef_path: *const c_char) -> *mut c_void {
     unsafe {
         let c_str = unsafe { std::ffi::CStr::from_ptr(spef_path) };
         let r_str = c_str.to_string_lossy().into_owned();
-        println!("r str {}", r_str);
+        println!("rust read spef {}", r_str);
 
         let spef_data = parse_spef_file(&r_str);
 
