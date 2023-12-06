@@ -3,11 +3,11 @@ name = "spef-parser"
 version = "0.1.0"
 edition = "2021"
 authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
-include = ["**/*.rs", "*.toml", "*.pest"]
+include = ["**/*.rs", "*.toml", "*.pest", "LICENSE"]
 git = "https://gitee.com/oscc-project/parser.git"
 
 description = "iEDA spef parser"
-license = "Mulan PSL v2"
+license-file = "LICENSE"
 repository = "https://gitee.com/oscc-project/"
 
 [build-dependencies]
