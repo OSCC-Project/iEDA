@@ -8,7 +8,6 @@ git = "https://gitee.com/oscc-project/parser.git"
 
 description = "iEDA spef parser"
 license = "Mulan PSL v2"
-license-file = "http://license.coscl.org.cn/MulanPSL2"
 repository = "https://gitee.com/oscc-project/"
 
 [build-dependencies]
