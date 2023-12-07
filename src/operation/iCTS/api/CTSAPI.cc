@@ -26,7 +26,7 @@
 #include <ranges>
 #include <unordered_map>
 
-#include "BEAT.hh"
+#include "CBS.hh"
 #include "CtsCellLib.hh"
 #include "CtsConfig.hh"
 #include "CtsDBWrapper.hh"
@@ -655,10 +655,10 @@ icts::Inst* CTSAPI::genBstSaltTree(const std::string& net_name, const std::vecto
   return TreeBuilder::bstSaltTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
-icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+icts::Inst* CTSAPI::genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                                 const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
 {
-  return TreeBuilder::beatTree(net_name, loads, skew_bound, guide_loc, topo_type);
+  return TreeBuilder::cbsTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
 // evaluate

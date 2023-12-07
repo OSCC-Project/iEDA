@@ -117,7 +117,7 @@ class CTSAPI
                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
-  icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+  icts::Inst* genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                           const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;

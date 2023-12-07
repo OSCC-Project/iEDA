@@ -82,34 +82,26 @@ TEST_F(TreeBuilderTest, ParetoFrontTest)
   for (size_t i = 0; i < 20; ++i) {
     auto x = 1.0 * (i + 1) / 100;
     auto y = 1 / x;
-    points.emplace_back(x + (std::rand() % 10) / 100.0, y);
-    points.emplace_back(x + (std::rand() % 30) / 100.0, y);
-    points.emplace_back(x + (std::rand() % 60) / 100.0, y);
+    for (size_t j = 1; j < 10; ++j) {
+      points.emplace_back(x + (std::rand() % (j * 10)) / 1000.0, y);
+    }
   }
   auto pareto_front = BalanceClustering::paretoFront(points);
   // write to python file
   std::ofstream ofs("./pareto_front.py");
   ofs << "import matplotlib.pyplot as plt\n";
   ofs << "x = [";
-  for (const auto& point : points) {
-    ofs << point.x() << ",";
-  }
+  std::ranges::for_each(points, [&](const auto& point) { ofs << point.x() << ","; });
   ofs << "]\n";
   ofs << "y = [";
-  for (const auto& point : points) {
-    ofs << point.y() << ",";
-  }
+  std::ranges::for_each(points, [&](const auto& point) { ofs << point.y() << ","; });
   ofs << "]\n";
   ofs << "plt.scatter(x, y)\n";
   ofs << "x = [";
-  for (const auto& point : pareto_front) {
-    ofs << point.x() << ",";
-  }
+  std::ranges::for_each(pareto_front, [&](const auto& point) { ofs << point.x() << ","; });
   ofs << "]\n";
   ofs << "y = [";
-  for (const auto& point : pareto_front) {
-    ofs << point.y() << ",";
-  }
+  std::ranges::for_each(pareto_front, [&](const auto& point) { ofs << point.y() << ","; });
   ofs << "]\n";
   ofs << "plt.scatter(x, y, c='r', marker='o')\n";
   ofs << "plt.savefig('pareto_front.png')\n";
@@ -139,7 +131,7 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
   std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
   size_t case_num = 500;
   // design DB unit is 2000
-  EnvInfo env_info{0, 150000, 0, 150000, 10, 40};
+  EnvInfo env_info{0, 150000, 0, 150000, 10, 40, 0, 0, 0, 0};
   std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
     auto data_set = tree_builder.runRegressTest(env_info, case_num, skew_bound);
 
@@ -152,7 +144,7 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
     auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
     auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
                         TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
-                        TreeBuilder::funcName(TreeBuilder::beatTree)};
+                        TreeBuilder::funcName(TreeBuilder::cbsTree)};
     auto topo_type_list = {
         TopoTypeToString(TopoType::kGreedyDist),
         TopoTypeToString(TopoType::kGreedyMerge),
@@ -164,6 +156,27 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
 
     // relative compare
     std::ranges::for_each(method_list, [&](const auto& target_method) { data_set.writeReduceCSV(target_method, dir, suffix); });
+  });
+}
+
+TEST_F(TreeBuilderTest, LowBoundEstimationTest)
+{
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
+  size_t case_num = 1000;
+  // design DB unit is 2000
+  std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
+    EnvInfo env_info{0, 150000, 0, 150000, 10, 40, 0.005, 0.01, skew_bound / 100, skew_bound / 10};
+    auto suffix = "skew_" + std::to_string(skew_bound);
+    // drop "0" in the suffix end
+    while (suffix.back() == '0') {
+      suffix.pop_back();
+    }
+
+    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+
+    tree_builder.runEstimationTest(env_info, case_num, skew_bound, dir, suffix);
   });
 }
 

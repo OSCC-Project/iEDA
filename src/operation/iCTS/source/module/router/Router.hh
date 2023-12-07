@@ -92,7 +92,7 @@ class Router
 
  private:
   void printLog();
-  void gocaRouting(CtsNet* clk_net);
+  void routing(CtsNet* clk_net);
   std::vector<CtsPin*> getSinkPins(CtsNet* clk_net);
   std::vector<CtsPin*> getBufferPins(CtsNet* clk_net);
 

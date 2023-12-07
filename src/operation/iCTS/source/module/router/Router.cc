@@ -22,7 +22,7 @@
 
 #include "CTSAPI.hh"
 #include "CtsDBWrapper.hh"
-#include "GOCA.hh"
+#include "Solver.hh"
 #include "TimingPropagator.hh"
 namespace icts {
 void Router::init()
@@ -69,7 +69,7 @@ void Router::build()
       LOG_INFO << "sink pins: " << sink_pins.size();
       CTSAPIInst.saveToLog("buf pins: ", buf_pins.size());
       LOG_INFO << "buf pins: " << buf_pins.size();
-      gocaRouting(clk_net);
+      routing(clk_net);
       clk_net->setClockRouted();
     }
   }
@@ -101,7 +101,7 @@ void Router::printLog()
   LOG_INFO << "Enter router!";
 }
 
-void Router::gocaRouting(CtsNet* clk_net)
+void Router::routing(CtsNet* clk_net)
 {
   auto pins = clk_net->get_load_pins();
   if (pins.empty()) {
@@ -110,10 +110,10 @@ void Router::gocaRouting(CtsNet* clk_net)
   }
   auto net_name = clk_net->get_net_name();
   // total topology
-  auto goca = GOCA(net_name, clk_net->get_driver_pin(), pins);
-  goca.set_max_thread(1);
-  goca.run();
-  auto clk_nets = goca.get_solver_nets();
+  auto solver = Solver(net_name, clk_net->get_driver_pin(), pins);
+  solver.set_max_thread(1);
+  solver.run();
+  auto clk_nets = solver.get_solver_nets();
   if (clk_nets.empty()) {
     return;
   }
