@@ -350,9 +350,10 @@ unsigned Power::analyzeGroupPower() {
       } else {
         group_data->set_switch_power(MW_TO_W(power_data_value));
       }
+      group_data->set_nom_voltage(power_data->get_nom_voltage());
     };
 
-    // find the degisn object of power data
+    // find the design object of power data
     auto* this_obj = power_data->get_design_obj();
     auto this_data = _obj_to_datas.find(this_obj);
     if (this_data != _obj_to_datas.end()) {
@@ -589,6 +590,8 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   std::ofstream csv_file(rpt_file_name);
   csv_file << "Instance Name"
            << ","
+           << "Nominal Voltage"
+           << ","
            << "Internal Power"
            << ","
            << "Switch Power"
@@ -605,7 +608,7 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
     }
 
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
-    csv_file << inst->get_name() << ","
+    csv_file << inst->get_name() << "," << group_data->get_nom_voltage() << ","
              << data_str(group_data->get_internal_power()) << ","
              << data_str(group_data->get_switch_power()) << ","
              << data_str(group_data->get_leakage_power()) << ","

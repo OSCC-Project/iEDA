@@ -69,12 +69,17 @@ class PwrGroupData {
     return _internal_power + _switch_power + _leakage_power;
   }
 
+  void set_nom_voltage(double nom_voltage) { _nom_voltage = nom_voltage; }
+  [[nodiscard]] double get_nom_voltage() const { return _nom_voltage; }
+
  private:
   PwrGroupType _group_type;  //!< The group type.
 
   double _internal_power = 0.0;
   double _switch_power = 0.0;
   double _leakage_power = 0.0;
+
+  double _nom_voltage = 0.0;
 
   DesignObject* _obj;
 };

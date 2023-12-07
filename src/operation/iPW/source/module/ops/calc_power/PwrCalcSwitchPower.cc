@@ -124,8 +124,10 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     // calc swich power of the arc.
     // swich_power = k*toggle*Cap*(VDD^2)
     double arc_swich_power = c_switch_power_K * toggle * cap * vdd * vdd;
+    auto switch_data = std::make_unique<PwrSwitchData>(net, arc_swich_power);
+    switch_data->set_nom_voltage(vdd);
     // add power analysis data.
-    addSwitchPower(std::make_unique<PwrSwitchData>(net, arc_swich_power));
+    addSwitchPower(std::move(switch_data));
     VERBOSE_LOG(2) << "net  " << net->get_name()
                    << "  switch power: " << arc_swich_power << "mW";
 
