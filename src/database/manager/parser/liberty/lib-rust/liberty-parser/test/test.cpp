@@ -57,9 +57,14 @@ int main() {
 
   // std::cout << "lib file :" << lib_file << "\n";
 
-  auto str_view = test_string_to_view();
-  std::string_view sv((const char*)str_view.data, str_view.len);
-  std::cout << sv << "\n";
+  // auto str_view = test_string_to_view();
+  // std::string_view sv((const char*)str_view.data, str_view.len);
+  // std::cout << sv << "\n";
+
+  ista::Liberty lib;
+  lib.loadLibertyWithRustParser(
+      "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/"
+      "liberty-parser/example/example1_slow.lib");
 
   return 0;
 }
