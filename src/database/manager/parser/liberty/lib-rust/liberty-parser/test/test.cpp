@@ -2,74 +2,9 @@
 #include <string>
 #include <string_view>
 
-typedef struct RustVec {
-  void* data;
-  uintptr_t len;
-  uintptr_t cap;
-} RustVec;
-
-template <typename T>
-class RustVecIterator {
- public:
-  explicit RustVecIterator(RustVec* rust_vec) : _rust_vec(rust_vec) {}
-  ~RustVecIterator() = default;
-
-  bool hasNext() { return _index < _rust_vec->len; }
-  T* next() {
-    auto* ret_value = static_cast<T*>(_rust_vec->data) + _index++;
-    return ret_value;
-  }
-
- private:
-  RustVec* _rust_vec;
-  uintptr_t _index = 0;
-};
-
-/**
- * @brief usage:
- * RustVec* vec;
- * T* elem;
- * FOREACH_VEC_ELEM(vec, T, elem)
- * {
- *    do_something_for_elem();
- * }
- *
- */
-#define FOREACH_VEC_ELEM(vec, T, elem) \
-  for (RustVecIterator<T> iter(vec);   \
-       iter.hasNext() ? elem = iter.next(), true : false;)
+#include "Liberty.hh"
 
 extern "C" {
-
-typedef struct RustLibertyGroupStmt {
-  char* file_name;
-  uint32_t line_no;
-  char* group_name;
-  struct RustVec attri_values;
-  struct RustVec stmts;
-} RustLibertyGroupStmt;
-
-typedef struct RustLibertySimpleAttrStmt {
-  char* file_name;
-  uint32_t line_no;
-  char* attri_name;
-  const void* attri_value;
-} RustLibertySimpleAttrStmt;
-
-typedef struct RustLibertyComplexAttrStmt {
-  char* file_name;
-  uint32_t line_no;
-  char* attri_name;
-  struct RustVec attri_values;
-} RustLibertyComplexAttrStmt;
-
-typedef struct RustLibertyStringValue {
-  char* value;
-} RustLibertyStringValue;
-
-typedef struct RustLibertyFloatValue {
-  double value;
-} RustLibertyFloatValue;
 
 void* rust_parse_lib(const char* s);
 
