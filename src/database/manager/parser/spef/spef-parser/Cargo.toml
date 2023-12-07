@@ -1,5 +1,5 @@
 [package]
-name = "spef-parser"
+name = "spef_parser"
 version = "0.1.0"
 edition = "2021"
 authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
