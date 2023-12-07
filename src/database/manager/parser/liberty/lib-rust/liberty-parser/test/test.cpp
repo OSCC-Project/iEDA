@@ -63,8 +63,8 @@ int main() {
 
   ista::Liberty lib;
   lib.loadLibertyWithRustParser(
-      "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/"
-      "liberty-parser/example/example1_slow.lib");
+      "/home/taosimin/T28/ccslib/"
+      "tcbn28hpcplusbwp30p140lvtssg0p81v125c_ccs.lib");
 
   return 0;
 }
