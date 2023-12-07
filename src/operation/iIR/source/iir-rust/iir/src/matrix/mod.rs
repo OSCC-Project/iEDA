@@ -22,7 +22,7 @@ struct InstancePowerRecord {
     total_power: f64,
 }
 
-fn read_vcd_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Error>> {
+fn read_inst_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Error>> {
     let file = File::open(file_path)?;
     let mut reader = csv::Reader::from_reader(file);
     let mut records = Vec::new();
@@ -33,7 +33,7 @@ fn read_vcd_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Err
     Ok(records)
 }
 
-fn print_vcd_data(records: &[InstancePowerRecord]) {
+fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
     for record in records {
         println!(
         "Instance Name: {}, Nominal Voltage: {}, Internal Power: {}, Switch Power: {}, Leakage Power: {}, Total Power: {}",
@@ -52,10 +52,10 @@ mod vcd_data_tests {
     use super::*;
 
     #[test]
-    fn read_vcd_csv_test() -> Result<(), Box<dyn Error>> {
+    fn read_inst_pwr_csv_test() -> Result<(), Box<dyn Error>> {
         let file_path = "/home/shaozheqing/iEDA/bin/report_instance.csv";
-        let vectors = read_vcd_csv(file_path)?;
-        print_vcd_data(&vectors);
+        let vectors = read_inst_pwr_csv(file_path)?;
+        print_inst_pwr_data(&vectors);
         Ok(())
     }
 }
