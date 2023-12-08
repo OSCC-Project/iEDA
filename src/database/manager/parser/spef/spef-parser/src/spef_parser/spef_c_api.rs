@@ -3,8 +3,8 @@ use std::ffi::c_void;
 use std::os::raw::c_char;
 
 use std::ffi::CString;
-use std::ops::Deref;
-use std::ops::DerefMut;
+
+
 
 use crate::spef_parser::parse_spef_file;
 use crate::spef_parser::spef_data;
