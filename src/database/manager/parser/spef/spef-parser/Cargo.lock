@@ -357,7 +357,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "spef_parser"
+name = "spef-parser"
 version = "0.2.0"
 dependencies = [
  "anyhow",
