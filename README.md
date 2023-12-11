@@ -4,25 +4,17 @@
 
 <img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
  <h1>iEDA</h1>
- <h3>从 Netlist 到 GDS 的开源芯片设计 EDA 平台</h3>
+ <h3> An pen-source from netlist to GDS EDA platform for ASIC design.</h3>
 
 [License][License-url]
 
-**简体中文** | [English][README-path]
+[Chinese][README-CN-path] | **English**
 
 </div>
 
-iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
+iEDA Homepage：[ieda.oscc.cc][iEDA-OSCC-url]
 
----
-
-🎉 **最新消息:**
-
-关注我们8月24日在北京 RISC-V 中国峰会 2023 上举办的 [开源EDA论坛（OSEDA 论坛）](https://mp.weixin.qq.com/s/8fo8--bphJcRd1JnuRF0Rg)，和8月25日的 [开源芯片技术生态论坛](https://mp.weixin.qq.com/s/oJyQ6yYoYUzn_OMC7O8Ilw)
-
----
-
-## 关于iEDA
+## **About iEDA**
 
 - **About “i”in iEDA**
   - Meaning 1: Infrastructure
@@ -32,7 +24,7 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
   - High quality and performance EDA tool
 - **Open-source is not a goal but a way**
 
-## iEDA主要内容和规划
+## **Main Contents and Plans**
 
 - Enhance the **infrastructure** to support more design requirement
 - Complete the EDA tool chain from **RTL-GDS II**
@@ -42,137 +34,171 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 - Achieve the adaptability of the EDA platform for **cloud-native**
 
 <div align="center">
- <img src="docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
+ <img src= "docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
 </div>
 
 ## **iEDA Structure**
 
 <div align="center">
- <img src="docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
+ <img src= "docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
 </div>
 
 ## **iEDA Infrastructure**
 
 <div align="center">
- <img src="docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
+ <img src= "docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
 </div>
 
 ## **iEDA Operations (Tools)**
 
 <div align="center">
- <img src="docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
+ <img src= "docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
 </div>
 
 ## **iEDA Tapeout**
 
 <div align="center">
- <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src= "docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
 </div>
 
-## 论文和报告
+---
+
+🎉 **News:**
+
+Presentation in ISEDA-2023, May-09 2023, Nanjing, China, Session 2: [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library][ISEDA-2023-iEDA-url] \[[paper][iEDA-paper], [slides][iEDA-slides]\]，and Panel 4 [Is ML a real cure for modern design automation?][ISEDA-2023-panel4-url], and Panel 6 [Open-source EDA and Standards][ISEDA-2023-panel6-url]
+
+---
+
+## **Papers and Presentations**
 
 - ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
-# iEDA 使用指导
+# **iEDA User Guide**
 
-使用 iEDA 进行芯片设计，需首先获得 iEDA 可执行文件。
+Before designing chip by iEDA，you need to obtain the execution binary of iEDA.
 
-若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读。
+If you need to modify iEDA through source code construction, please read in sequence.
 
-您也可以直接使用最新的 [iEDA docker 镜像](https://hub.docker.com/r/iedaopensource/base)，即可跳过 "*1. 源码构建 iEDA*"。
+You can also directly  use the latest release docker， then you can skip "1. Source code construction of iEDA".
 
-PS: 关于如何安装 Docker，可参考[Docker安装及初始化](https://www.cnblogs.com/harrypotterisdead/p/17223606.html)。
+PS: you can refer [Docker install and initilization](https://www.cnblogs.com/harrypotterisdead/p/17223606.html) to know how to install Docker.
 
-## 1. 源码构建 iEDA
+## 1. Build iEDA from source code
 
-我们提供两种源码构建 iEDA 的方法作为示例。
+We provide two methods for source code construction of iEDA as examples.
 
-### 方法1 使用iEDA镜像（推荐）
+### Method 1. Use  the iEDA mirror (Redommended)
 
-从 Dockerhub 上下载最新的 iedaopensource/base 镜像，镜像中包含了最新的 master 分支代码和依赖（构建工具和依赖库）。也可使用 `-v` 命令挂载自行下载的 iEDA 代码仓库，仅使用镜像提供的编译工具和依赖库进行构建。
+Download the latest “iedaopensource/base” mirror from Dockerhub, which includes the latest master branch code and dependencies (build tools and dependency libraries). You can also use the ‘-v’ command to mount your own downloaded iEDA code repository. The build will only use the compile tools and dependency libraries provided by the mirror.
 
-参考如下命令，进入容器后的当前目录即为 iEDA master 分支代码。
+The current directory after entering the container is the iEDA master branch code, refering the following commands:
 
 ```bash
-# iedaopensource/base:(latest, ubuntu, debian)
+# ieda opensource/base:(latest, ubuntu, debian)
 docker run -it --rm iedaopensource/base:latest bash 
-# 进入容器后执行 build.sh 进行构建
+# enter docker and run build.sh to build
 bash build.sh
-# 若能够正常输出 "Hello iEDA!" 则编译成功
+# if output "Hello iEDA!", then compile successfully
 ./bin/iEDA -script scripts/hello.tcl
 ```
 
-根据个人使用习惯，有 ubuntu（基于Ubuntu20.04）和 debian（基于Debian11）两种不同镜像tag可选。
+We have ubuntu（Ubuntu20.04）and debian（Debian11）mirror tag.
 
-### 方法2 手动安装依赖并编译
+### Method 2.  Install dependencies and compile
 
-在 Ubuntu 20.04 下执行如下命令：
+installing command on Ubuntu 20.04:
 
 ```bash
-# 下载iEDA仓库
+# download iEDA repo
 git clone https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
-# 通过apt安装编译依赖，需要root权限
+# compile dependencies with an apt installation requires root permission
 sudo bash build.sh -i apt
-# 编译 iEDA
+# comple iEDA
 bash build.sh
-# 若能够正常输出 "Hello iEDA!" 则编译成功
+# if output "Hello iEDA!", then compile successfully
 ./bin/iEDA -script scripts/hello.tcl
 ```
 
-## 2. 使用 iEDA 完成芯片设计
+## 2. Design chip by using iEDA
 
-详细内容请移步至 [iEDA 用户手册](docs/user_guide/iEDA_user_guide.md)
+Here, two iEDA operation methods are provided for reference
+
+About how to use iEDA, please refer [Tcl command manual][Tcl-menu-xls]  and the tool instruction docs of `readme.md` in `src/operation`.
+
+### Method 1. Run release or demo mirror（Redommended)
+
+If you need to use custom processes and designs, mount the associated files into the docker to run. About the structure and the corresponding config files, please refer the demo in `scripts/sky130`.
+
+```
+docker run -it -v ${file directory of pdk and design}:${file directory in docker} --rm iedaopensource/release:latest
+```
+
+### Method 2.  Compile iEDA binary and run
+
+Refering the file directory in `scripts/sky130`，add the path of iEDA execution binary into the system path variable $PATH, and runing `sh run_iEDA.sh`，and seeing the result in `result`.
+
+```
+iEDA/scripts/sky130
+├── iEDA_config   # iEDA parameters configuration files
+├── lef           # lef files
+├── lib           # lib files
+├── result        # iEDA result output files
+├── script        # Tcl script files
+├── sdc           # sdc files
+├── run_iEDA.py   # Python3 script for running iEDA
+└── run_iEDA.sh   # POSIX shell script for running iEDA
+```
 
 <!-- # 未来路线图
 
 Roadmap -->
 
-## 贡献指南
+## **Contribution Guide**
 
-Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
+Fork this iEDA repository，after adding and commiting code, please summit [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
 
-请注意 iEDA 使用的[编程规范][Code-conduct-md]。
+Please note the using [Coding Style][Code-conduct-md] of iEDA。
 
-## 讨论和反馈
+## **Discussion**
 
-- 新建 [issue](https://gitee.com/oscc-project/iEDA/issues)，我们将及时反馈。
-- QQ 群：**793409748**
-- 微信讨论群：
+- Create [issue](https://gitee.com/oscc-project/iEDA/issues) in repo
+- QQ Group：**793409748**
+- WeChat Group：
 
 <div align="center">
- <img src="docs/resources/WeChatGroup.png" width="20%" height="20%" alt="微信讨论群" />
+ <img src="docs/resources/WeChatGroup.png" width="25%" height="25%" alt="微信讨论群" />
 </div>
 
-## License
+## **License**
 
-[木兰宽松许可证, 第2版][License-url]
+[MulanPSL-2.0][License-url]
 
-## 致谢
+## Acknowledgement
 
-在iEDA的开发过程中，我们采用了来自开源社区的子模块。具体情况如下：
+In the development of iEDA, some sub-modules from the open-source community are employed. All relevant usage is listed below.
 
-| 子模块       | 来源                                                                                                     | 详细用途                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| flute3       | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | 借助flute3来产生rectange steiner tree.                            |
-| abseil-cpp   | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | 使用Google的高性能C++容器和算法库提升性能，相比STL会改进程序性能. |
-| json         | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++库，用来解析程序Json配置文件.                             |
-| magic_enum   | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | 支持 enum 值和字符串的相互转换.                                   |
-| libfort      | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | C/C++ library 产生格式化的 ASCII tables.                          |
-| pegtl        | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | 使用PEGTL来方便的解析SPEF文件.                                    |
-| pybind11     | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | 方便python调用C++.                                                |
-| VCDParser    | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | 解析功耗VCD波形文件.                                              |
-| def lef      | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                          |
-| ThreadPool   | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11模板库实现的多线程池.                                        |
-| fft          | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | 快速傅立叶变换库.                                                 |
-| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | 高效的图划分算法.
-| lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | 图、网络中的高效建模和优化.                                       |
-| SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | 生成VLSI路由拓扑，在路径长度(浅度)和总线长(亮度)之间进行权衡.     |
-| scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | 用于快速求解混合整数规划 (MIP) 和混合整数非线性规划 (MINLP) .     |
-| parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            | 解析.lib文件 .     |
-| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | 解析netlist文件 .     |
-| parser/spef | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)                                                            | 解析spef文件 .     |
+| Sub-module   | Source                                                                                                   | Detail                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| flute3       | [FastRoute](http://home.eng.iastate.edu/~cnchu/FastRoute)                                                | Generate rectange steiner tree by flute3.                                                                     |
+| abseil-cpp   | [Google abseil](https://github.com/abseil/abseil-cpp.git)                                                | Use Google's high performance C++ container and algorithm library to improve performance compared to STL.     |
+| json         | [JSON for Modern C++](https://github.com/nlohmann/json)                                                  | Json C++ library, used to parse the program Json configuration file.                                          |
+| magic_enum   | [Static reflection for enums (to string, from string, iteration)](https://github.com/Neargye/magic_enum) | Supports the conversion of enum values and character strings.                                                 |
+| libfort      | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | The C/C++ library produces formatted ASCII tables.                                                            |
+| pegtl        | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | Use PEGTL to parse SPEF files easily.                                                                         |
+| pybind11     | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | Easy for python to call C++.                                                                                  |
+| VCDParser    | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | Parse power VCD waveform file.                                                                                |
+| def lef      | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | Parse physical layout and design DEF/LEF files.                                                               |
+| ThreadPool   | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11 template library implementation of multithreaded pool.                                                  |
+| fft          | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | Fast Fourier transform library.                                                                               |
+| hmetics      | [hmetics](http://glaros.dtc.umn.edu/gkhome/metis/hmetis/overview)                                        | Efficient graph partitioning algorithm.                                                                       |
+| lemon        | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | Efficient modeling and optimization in graphs and networks.                                                   |
+| SALT         | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | Generating VLSI routing topology, It trades off between path length (shallowness) and wirelength (lightness). |
+| scipoptsuite | [SCIP](https://scipopt.org/index.php#welcome)                                                            | It is used to quickly solve mixed integer programming (MIP) and mixed integer nonlinear programming (MINLP).                                                 |
+| parser/liberty | [OpenROAD/OpenSTA/liberty](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/liberty)                                                            |  parse .lib file .     |
+| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)                                                            | parse netlist file .     |
+| parser/spef | [OpenTimer/spef](https://github.com/OpenTimer/OpenTimer/blob/master/ot/parser-spef/parser-spef.hpp)                                                            | parse spef file .     |
 
-我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
+We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
 
 <!-- links -->
 
@@ -181,11 +207,12 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 <!-- links -->
 
 [License-url]: LICENSE
-[README-path]: README-En.md
+[README-CN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/
 [ISEDA-2023-iEDA-url]: https://www.eda2.com/conferenceHome/program/detail?key=s2
+[ISEDA-2023-panel4-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel4
 [ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
