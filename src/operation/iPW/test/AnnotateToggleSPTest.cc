@@ -19,7 +19,6 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "VCDFileParser.hpp"
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"

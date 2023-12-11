@@ -186,7 +186,6 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | libfort        | [Seleznev Anton libfort](https://github.com/seleznevae/libfort.git)                                      | C/C++ library 产生格式化的 ASCII tables.                                          |
 | pegtl          | [PEGTL（Parsing Expression Grammar Template Library）](https://github.com/taocpp/PEGTL/)                 | 使用PEGTL来方便的解析SPEF文件.                                                    |
 | pybind11       | [pybind 11](https://github.com/pybind/pybind11.git)                                                      | 方便python调用C++.                                                                |
-| VCDParser      | [ben-marshall verilog-vcd-parser](https://github.com/ben-marshall/verilog-vcd-parser.git)                | 解析功耗VCD波形文件.                                                              |
 | def lef        | [def lef parser](https://github.com/asyncvlsi/lefdef.git)                                                | 解析物理设计DEF/LEF文件.                                                          |
 | ThreadPool     | [Jakob Progsch, Václav Zeman threadpool](https://github.com/progschj/ThreadPool.git)                     | C++11模板库实现的多线程池.                                                        |
 | fft            | [fft](https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html)                                                  | 快速傅立叶变换库.                                                                 |

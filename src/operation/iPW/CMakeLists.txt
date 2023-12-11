@@ -25,7 +25,6 @@ include_directories(${HOME_UTILITY})
 include_directories(${HOME_DATABASE}/manager/parser)
 include_directories(SYSTEM ${HOME_THIRDPARTY})
 include(${HOME_CMAKE}/operation/ista.cmake)
-include_directories(${THIRD_PARTY_HOME}/verilog-vcd-parser/src)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW)
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source)
