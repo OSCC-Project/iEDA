@@ -228,7 +228,8 @@ We are grateful for the support of the open-source community and encourage other
 <!-- links -->
 
 [License-url]: LICENSE
-[README-CN-path]: README.md
+[README-CN-path]: README-CN.md
+[README-EN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/

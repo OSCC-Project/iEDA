@@ -28,7 +28,7 @@
     </a>
 </p>
 
-**简体中文** | [English][README-path]
+**简体中文** | [English][README-en-path]
 
 </div>
 
@@ -201,7 +201,8 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 <!-- links -->
 
 [License-url]: LICENSE
-[README-path]: README-En.md
+[README-en-path]: README.md
+[README-cn-path]: README-CN.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/
