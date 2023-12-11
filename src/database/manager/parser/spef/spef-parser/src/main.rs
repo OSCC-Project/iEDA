@@ -1,4 +1,4 @@
-mod spef_parser;
+pub mod spef_parser;
 
 fn main() {
     let spef_file_str = "/home/taosimin/iEDA/src/database/manager/parser/spef/spef-parser/example/aes_simple.spef";
