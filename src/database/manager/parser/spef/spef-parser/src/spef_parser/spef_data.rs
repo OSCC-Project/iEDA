@@ -353,16 +353,33 @@ impl SpefExchange {
     pub fn add_header_entry(&mut self, header: SpefHeaderEntry) {
         self.header.push(header);
     }
+
+    pub fn get_header(&self) -> &Vec<SpefHeaderEntry> {
+        &self.header
+    }
+
     pub fn add_namemap_entry(&mut self, namemap_entry: SpefNameMapEntry) {
         self.name_map.insert(namemap_entry.index, namemap_entry.name);
+    }
+
+    pub fn get_name_map(&self) -> &HashMap<usize, String> {
+        &self.name_map
     }
 
     pub fn add_port_entry(&mut self, port_entry: SpefPortEntry) {
         self.ports.push(port_entry);
     }
 
+    pub fn get_ports(&self) -> &Vec<SpefPortEntry> {
+        &self.ports
+    }
+
     pub fn add_net(&mut self, net: SpefNet) {
         self.nets.push(net);
+    }
+
+    pub fn get_nets(&self) -> &Vec<SpefNet> {
+        &self.nets
     }
 
     pub fn get_file_name(&self) -> &str {
