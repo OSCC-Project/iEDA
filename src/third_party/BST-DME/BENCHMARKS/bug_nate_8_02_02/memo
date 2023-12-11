@@ -1,0 +1,134 @@
+From - Sun Aug  4 18:21:48 2002
+Received: from mailgate2.Cadence.COM (mailgate2.Cadence.COM [158.140.2.31])
+	by mailhub.Cadence.COM (8.10.1/8.8.5) with SMTP id g751JZk00158
+	for <tsao@mailhub.cadence.com>; Sun, 4 Aug 2002 18:19:35 -0700 (PDT)
+Received: from web40209.mail.yahoo.com (isvw2.Cadence.COM [158.140.2.53])
+	by mailgate2.Cadence.COM (8.9.3/8.9.3) with SMTP id SAA29716
+	for <tsao@cadence.com>; Sun, 4 Aug 2002 18:19:40 -0700 (PDT)
+Message-ID: <20020805011940.82970.qmail@web40209.mail.yahoo.com>
+Received: from [158.140.2.102] by web40209.mail.yahoo.com via HTTP; Sun, 04 Aug 2002 18:19:40 PDT
+Date: Sun, 4 Aug 2002 18:19:40 -0700 (PDT)
+From: Chung-Wen tsao <tsaoalbert@yahoo.com>
+Subject: Re: another bst bug...
+To: ntuck1@san.rr.com
+Cc: ntuck1@san.rr.com, abk@cs.ucsd.edu
+In-Reply-To: <20020802105451.A1415@24-161-186-192.san.rr.com>
+MIME-Version: 1.0
+X-Received: By mailgate2.Cadence.COM as SAA29716 at Sun Aug  4 18:19:40 2002
+Content-Type: text/plain; charset=us-ascii
+X-Mozilla-Status: 8011
+X-Mozilla-Status2: 00000000
+X-UIDL: :LV!!3g[!!~Si!!6[!"!
+
+Hi, Nate,
+
+  I have fixed this bug,  which is similar to
+the last bug that you reported. Both bugs are related
+to the incorrect assignment of detour to one of
+child merging regions.
+
+  Please see the comments "fix for bug reported by
+Nate on 8-02-02" in the same bst.cxx file at the
+same place.
+
+--Albert
+
+
+--- Nathan Tuck <ntuck1@san.rr.com> wrote:
+> Albert,
+> 
+> You're not going to like this, but I've run across
+> another bug.  Try
+> the enclosed testcase with:
+> 
+> bst -i test7_0 -G topo_out -B 16
+> 
+> I'm taking a look too.
+> 
+> nate
+> 
+> On Thu, Aug 01, 2002 at 11:51:46AM -0700, Chung-Wen
+> tsao wrote:
+> > Hi, Nate,
+> > 
+> >   I have fixed this nasty bugs.
+> > 
+> > Please see the comments marked by "fix
+> > fo bug reported by nate on 7-27-02" in the
+> following
+> > new 
+> > source code:
+> > 
+> >
+>
+nexus6.cs.ucla.edu:/home/userc/tsao/BSTsource1.2/bst.cxx
+> > 
+> > 
+> > 
+> > --Albert
+> > # UCLA clock benchmark 1.2
+> # Created       : Fri Aug  2 10:49:35 2002
+> 
+> # User          : tsao@cs.ucla.edu
+> # PlatForm      : SunOS 5.7 sparc SUNW,Ultra-1
+> # Source        : Randomly generated testcases 
+> # Note          : Coordinate unit can be micro-meter
+> or anything
+>   
+> 
+> NumPins : 7  
+> 
+> PerUnitResistance : 0.111  Ohm 
+> 
+> PerUnitCapacitance : 1.66e-17  Farad 
+> 
+> Sink : 0  
+>      Coordinate : 2954  9786 
+>      Capacitive Load : 2.352753e-15
+>      Downstream_Delay : 5.665909e-11
+> Sink : 1  
+>      Coordinate : 8542  8464 
+>      Capacitive Load : 1.009694e-15
+>      Downstream_Delay : 2.607080e-11
+> Sink : 2  
+>      Coordinate : 9355  8804 
+>      Capacitive Load : 1.701675e-15
+>      Downstream_Delay : 4.999460e-11
+> Sink : 3  
+>      Coordinate : 9299  7343 
+>      Capacitive Load : 1.547667e-15
+>      Downstream_Delay : 4.272524e-11
+> Sink : 4  
+>      Coordinate : 4340  5422 
+>      Capacitive Load : 3.087951e-15
+>      Downstream_Delay : 2.483902e-11
+> Sink : 5  
+>      Coordinate : 7605  1801 
+>      Capacitive Load : 1.553867e-15
+>      Downstream_Delay : 2.082695e-11
+> Sink : 6  
+>      Coordinate : 4878  1305 
+>      Capacitive Load : 1.985123e-15
+>      Downstream_Delay : 4.384376e-11
+> > #Topology
+> id:8 child:0 4 par:10
+> id:0 child:-1 -1 par:8
+> id:4 child:-1 -1 par:8
+> id:9 child:3 6 par:11
+> id:3 child:-1 -1 par:9
+> id:6 child:-1 -1 par:9
+> id:10 child:8 5 par:11
+> id:5 child:-1 -1 par:10
+> id:11 child:10 9 par:12
+> id:12 child:2 11 par:13
+> id:2 child:-1 -1 par:12
+> id:13 child:1 12 par:-1
+> id:1 child:-1 -1 par:13
+> 
+
+
+__________________________________________________
+Do You Yahoo!?
+Yahoo! Health - Feel better, live better
+http://health.yahoo.com
+

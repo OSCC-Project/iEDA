@@ -11,7 +11,7 @@ add_library(eval_config
 )
 
 target_link_libraries(eval_config
-    PUBLIC
+    PRIVATE
         eval_util
         eval_source_external_libs
 )

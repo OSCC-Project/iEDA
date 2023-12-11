@@ -26,13 +26,13 @@
 
 #include <filesystem>
 
-#include "AbacusLegalizer.hh"
 #include "BufferInserter.hh"
 #include "CenterPlace.hh"
 #include "DetailPlacer.hh"
 #include "EvalAPI.hpp"
 #include "IDBWrapper.hh"
 #include "LayoutChecker.hh"
+#include "Legalizer.hh"
 #include "Log.hh"
 #include "MacroPlacer.hh"
 #include "NesterovPlace.hh"
@@ -40,8 +40,6 @@
 #include "RandomPlace.hh"
 #include "SteinerWirelength.hh"
 #include "src/MapFiller.h"
-#include "timing/TimingEval.hpp"
-#include "tool_api/ista_io/ista_io.h"
 
 namespace ipl {
 
@@ -63,7 +61,7 @@ PLAPI& PLAPI::getInst()
 void PLAPI::destoryInst()
 {
   if (_s_ipl_api_instance->isAbucasLGStarted()) {
-    AbacusLegalizerInst.destoryInst();
+    LegalizerInst.destoryInst();
   }
 
   if (_s_ipl_api_instance->isPlacerDBStarted()) {
@@ -77,9 +75,6 @@ void PLAPI::destoryInst()
 
 PLAPI::~PLAPI()
 {
-  // if (_timing_evaluator) {
-  //   delete _timing_evaluator;
-  // }
 }
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
@@ -134,48 +129,47 @@ void PLAPI::runIncrementalFlow()
 /*****************************Timing-driven Placement: Start*****************************/
 void PLAPI::initTimingEval()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
+  _external_api.initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 }
 
 double PLAPI::obtainPinEarlySlack(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getEarlySlack(pin_name);
+  return _external_api.obtainPinEarlySlack(pin_name);
 }
 
 double PLAPI::obtainPinLateSlack(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getLateSlack(pin_name);
+  return _external_api.obtainPinLateSlack(pin_name);
 }
 
 double PLAPI::obtainPinEarlyArrivalTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getArrivalEarlyTime(pin_name);
+  return _external_api.obtainPinEarlyArrivalTime(pin_name);
 }
 
 double PLAPI::obtainPinLateArrivalTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getArrivalLateTime(pin_name);
+  return _external_api.obtainPinLateArrivalTime(pin_name);
 }
 
 double PLAPI::obtainPinEarlyRequiredTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getRequiredEarlyTime(pin_name);
+  return _external_api.obtainPinEarlyRequiredTime(pin_name);
 }
 
 double PLAPI::obtainPinLateRequiredTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getRequiredLateTime(pin_name);
+  return _external_api.obtainPinLateRequiredTime(pin_name);
 }
 
 double PLAPI::obtainWNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return eval::EvalAPI::getInst().reportWNS(clock_name, mode);
+  return _external_api.obtainWNS(clock_name, mode);
 }
 
 double PLAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
+  return _external_api.obtainTNS(clock_name, mode);
 }
 
 void PLAPI::updateTiming()
@@ -251,17 +245,18 @@ void PLAPI::updateTiming()
     }
     timing_net_list.push_back(timing_net);
   }
-  EvalInst.updateTiming(timing_net_list);
+  _external_api.updateEvalTiming(timing_net_list);
 }
 
 void PLAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
                                      std::vector<std::string> moved_inst_list)
 {
+  _external_api.updateTimingInstMovement(influenced_net_map, moved_inst_list);
 }
 
 void PLAPI::destroyTimingEval()
 {
-  eval::EvalAPI::destroyInst();
+  _external_api.destroyTimingEval();
 }
 /*****************************Timing-driven Placement: END*****************************/
 
@@ -289,8 +284,8 @@ void PLAPI::runFlow()
 
   // // update LG Database
   // LOG_INFO << "Repeated execution of legalization to support subsequent incremental legalization";
-  // AbacusLegalizerInst.updateInstanceList();
-  // AbacusLegalizerInst.runLegalize();
+  // LegalizerInst.updateInstanceList();
+  // LegalizerInst.runLegalize();
   // printHPWLInfo();
   // std::cout << std::endl;
 
@@ -328,8 +323,8 @@ void PLAPI::runGP()
 
 bool PLAPI::runLG()
 {
-  AbacusLegalizerInst.initAbacusLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
-  bool flag = AbacusLegalizerInst.runLegalize();
+  LegalizerInst.initLegalizer(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+  bool flag = LegalizerInst.runLegalize();
   LOG_ERROR_IF(!flag) << "Legalization is not completed!";
   return flag;
 }
@@ -337,8 +332,8 @@ bool PLAPI::runLG()
 bool PLAPI::runIncrLG()
 {
   PlacerDBInst.updateFromSourceDataBase();
-  AbacusLegalizerInst.updateInstanceList();
-  bool flag = AbacusLegalizerInst.runIncrLegalize();
+  LegalizerInst.updateInstanceList();
+  bool flag = LegalizerInst.runIncrLegalize();
   return flag;
 }
 
@@ -351,8 +346,9 @@ bool PLAPI::runIncrLG(std::vector<std::string> inst_name_list)
     inst_list.push_back(inst);
   }
 
-  AbacusLegalizerInst.updateInstanceList(inst_list);
-  bool flag = AbacusLegalizerInst.runIncrLegalize();
+  LegalizerInst.updateInstanceList(inst_list);
+  bool flag = LegalizerInst.runIncrLegalize();
+
   return flag;
 }
 
@@ -374,41 +370,26 @@ void PLAPI::runDP()
 
 void PLAPI::initSTA()
 {
-  staInst->initSTA();
-  staInst->buildGraph();
+  _external_api.initSTA();
 }
 void PLAPI::updateSTATiming()
 {
-  staInst->updateTiming();
+  _external_api.updateSTATiming();
 }
 
 bool PLAPI::isClockNet(std::string net_name)
 {
-  bool flag = staInst->isClockNet(net_name);
-  return flag;
+  return _external_api.isClockNet(net_name);
 }
 
 bool PLAPI::isSequentialCell(std::string inst_name)
 {
-  return staInst->isSequentialCell(inst_name);
-
-  bool is_sequential = false;
-  auto* inst = PlacerDBInst.get_design()->find_instance(inst_name);
-  for (auto* pin : inst->get_pins()) {
-    auto* net = pin->get_net();
-    if (isClockNet(net->get_name())) {
-      is_sequential = true;
-      break;
-    }
-  }
-  return is_sequential;
+  return _external_api.isSequentialCell(inst_name);
 }
 
 bool PLAPI::isBufferCell(std::string cell_name)
 {
-  std::string cell_type = staInst->getCellType(cell_name.c_str());
-  bool flag = (cell_type == "Buffer");
-  return flag;
+  return _external_api.isBufferCell(cell_name);
 }
 
 void PLAPI::updateSequentialProperty()
@@ -470,7 +451,7 @@ void PLAPI::updateSequentialProperty()
 
 std::vector<std::string> PLAPI::obtainClockNameList()
 {
-  return staInst->getClockNameList();
+  return _external_api.obtainClockNameList();
 }
 
 void PLAPI::runBufferInsertion()
@@ -492,8 +473,7 @@ void PLAPI::updatePlacerDB(std::vector<std::string> inst_list)
 bool PLAPI::insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
                                std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc)
 {
-  bool flag = staInst->insertBuffer(source_sink_net, sink_pin_list, master_inst_buffer, buffer_center_loc, idb::IdbConnectType::kSignal);
-  return flag;
+  return _external_api.insertSignalBuffer(source_sink_net, sink_pin_list, master_inst_buffer, buffer_center_loc);
 }
 
 void PLAPI::writeBackSourceDataBase()
@@ -546,7 +526,7 @@ bool PLAPI::checkLegality()
 
 bool PLAPI::isSTAStarted()
 {
-  return staInst->isInitSTA();
+  return _external_api.isSTAStarted();
 }
 
 bool PLAPI::isPlacerDBStarted()
@@ -556,7 +536,8 @@ bool PLAPI::isPlacerDBStarted()
 
 bool PLAPI::isAbucasLGStarted()
 {
-  return AbacusLegalizerInst.isInitialized();
+  // return AbacusLegalizerInst.isInitialized();
+  return LegalizerInst.isInitialized();
 }
 
 /*****************************Congestion-driven Placement: START*****************************/
@@ -575,12 +556,7 @@ void PLAPI::runRoutabilityGP()
  */
 std::vector<float> PLAPI::evalGRCong()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-
-  std::vector<float> gr_congestion;
-  gr_congestion = eval_api.evalGRCong();
-
-  return gr_congestion;
+  return _external_api.evalGRCong();
 }
 
 /**
@@ -589,8 +565,7 @@ std::vector<float> PLAPI::evalGRCong()
  */
 std::vector<float> PLAPI::getUseCapRatioList()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
-  return eval_api.getUseCapRatioList();
+  return _external_api.getUseCapRatioList();
 }
 
 /**
@@ -600,26 +575,22 @@ std::vector<float> PLAPI::getUseCapRatioList()
  */
 void PLAPI::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
-  // layer by layer
-  eval_api.plotGRCong(plot_path, output_file_name);
-  // statistical TotalOverflow/MaximumOverflow
-  eval_api.plotOverflow(plot_path, output_file_name);
+  _external_api.plotCongMap(plot_path, output_file_name);
 }
 
 void PLAPI::destroyCongEval()
 {
-  eval::EvalAPI::destroyInst();
+  _external_api.destroyCongEval();
 }
 
 std::vector<float> PLAPI::obtainPinDens()
 {
-  return eval::EvalAPI::getInst().evalPinDens();
+  return _external_api.obtainPinDens();
 }
 
 std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)
 {
-  return eval::EvalAPI::getInst().evalNetCong(rudy_type);
+  return _external_api.obtainNetCong(rudy_type);
 }
 /*****************************Congestion-driven Placement: END*****************************/
 

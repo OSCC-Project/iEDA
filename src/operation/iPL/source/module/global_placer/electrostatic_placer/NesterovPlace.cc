@@ -1275,7 +1275,7 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
     }
 
     if (sum_overflow < _nes_config.get_target_overflow() * 4 && sum_overflow > _nes_config.get_target_overflow() * 1.1) {
-      if (checkDivergence(3, 0.03 * sum_overflow)) {
+      if (checkDivergence(3, 0.03 * sum_overflow) || checkLongTimeOverflowUnchanged(100, 0.03 * sum_overflow)) {
         // rollback to best pos.
         for (size_t i = 0; i < inst_size; i++) {
           updateDensityCenterCoordiLayoutInside(inst_list[i], best_position_list[i], core_shape);
@@ -2082,6 +2082,37 @@ bool NesterovPlace::checkDivergence(int32_t window, float threshold, bool is_rou
     } else {
       return false;
     }
+  } else {
+    return false;
+  }
+}
+
+bool NesterovPlace::checkLongTimeOverflowUnchanged(int32_t window, float threshold)
+{
+  if (static_cast<int32_t>(_overflow_record_list.size()) < window) {
+    return false;
+  }
+
+  int32_t begin_idx = static_cast<int32_t>(_overflow_record_list.size() - window);
+  int32_t end_idx = static_cast<int32_t>(_overflow_record_list.size());
+
+  float overflow_mean = 0.0f;
+  float overflow_max = FLT_MIN;
+  float overflow_min = FLT_MAX;
+
+  for (int32_t i = begin_idx; i < end_idx; i++) {
+    float overflow = _overflow_record_list[i];
+    overflow_mean += overflow;
+    overflow > overflow_max ? overflow_max = overflow : overflow;
+    overflow < overflow_min ? overflow_min = overflow : overflow;
+  }
+
+  overflow_mean /= window;
+
+  float overflow_ratio = (overflow_max - overflow_min) / overflow_mean;
+  if (overflow_ratio < 0.8 * threshold) {
+    LOG_WARNING << "Divergence detected: overflow plateau ( " << overflow_ratio << " < " << (0.8 * threshold) << ")";
+    return true;
   } else {
     return false;
   }

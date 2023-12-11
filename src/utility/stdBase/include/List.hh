@@ -76,59 +76,6 @@ class List : public std::list<T>
                        // position
   using Base::swap;    // Swaps list other with this list.
   using Base::unique;  // Removes adjacent duplicate elements
-
-  List<T>& operator+=(const T& value)
-  {
-    push_back(value);
-    return *this;
-  }
-  /**
-   * @brief Returns a List that contains all the items in List val1
-   * followed by all the items in the List val2.
-   *
-   * @param val1
-   * @param val2
-   * @return List<T>&
-   */
-  friend List<T>& operator+(const List<T>& val1, const List<T>& val2)
-  {
-    List<T>* ret_val = new List<T>;
-
-    for (List<T>::const_iterator it1 = val1.begin(); it1 != val1.end(); it1++) {
-      ret_val->push_back(*it1);
-    }
-    for (List<T>::const_iterator it2 = val2.begin(); it2 != val2.end(); it2++) {
-      ret_val->push_back(*it2);
-    }
-    return *ret_val;
-  }
-  /**
-   * @brief Returns the vectorList val1 followed by all the items in the List
-   * val2.
-   *
-   * @param val1
-   * @param val2
-   */
-  // friend void operator+(List<T>& val1, List<T>& val2) {
-  //   for (List<T>::iterator it1 = val2.begin(); it1 != val2.end();
-  //        it1++) {
-  //     val1.push_back(*it1);
-  //   }
-  // }
-
-  friend bool operator==(const List& lhs, const List& rhs) { return absl::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end()); }
-
-  friend bool operator!=(const List& lhs, const List& rhs) { return !(lhs == rhs); }
-
-  friend bool operator<(const List& lhs, const List& rhs)
-  {
-    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
-  }
-
-  friend bool operator>(const List& lhs, const List& rhs) { return rhs < lhs; }
-
-  friend bool operator<=(const List& lhs, const List& rhs) { return !(rhs < lhs); }
-
-  friend bool operator>=(const List& lhs, const List& rhs) { return !(lhs < rhs); }
+ 
 };
 }  // namespace ieda

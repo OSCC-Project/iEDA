@@ -185,7 +185,7 @@ double WaveformApproximation::calInputWaveformThresholdByCeff(
   double t50 = 0;
   for (int i = 0; i < iter_num; i++) {
     Ceff = cap * 1e12;
-    double output_slew = lib_arc->getSlew(trans_type, input_slew, Ceff);
+    double output_slew = lib_arc->getSlewNs(trans_type, input_slew, Ceff);
     t50 = calVoltageThreshold(time, current, Ceff, step_num);
     double tr = output_slew * 1e-9;
     Ceff = calCeff1(pi_model, t50, tr);

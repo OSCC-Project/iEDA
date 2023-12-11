@@ -13,8 +13,7 @@ if(PY_MODEL)
                COMPONENTS Development)
   message(STATUS "CTS: Python3 ${Python3_INCLUDE_DIRS}")
 
-  target_link_libraries(icts_python PUBLIC Python3::Python icts_polygon)
+  target_link_libraries(icts_python PUBLIC Python3::Python)
 
-  target_include_directories(icts_python PUBLIC ${ICTS_PYTHON}/python
-                                                ${ICTS_API}/polygon)
+  target_include_directories(icts_python PUBLIC ${ICTS_PYTHON}/python)
 endif(PY_MODEL)

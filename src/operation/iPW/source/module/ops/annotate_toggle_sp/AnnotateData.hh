@@ -44,6 +44,10 @@ namespace ipower {
  */
 class AnnotateTime {
  public:
+  AnnotateTime(int64_t t0, int64_t t1, int64_t tx, int64_t tz)
+      : _T0(t0), _T1(t1), _TX(tx), _TZ(tz) {}
+  AnnotateTime() = default;
+  ~AnnotateTime() = default;
   auto& get_T0() { return _T0; }
   void incrT0(int64_t duration) { _T0 += duration; }
   auto& get_T1() { return _T1; }
@@ -77,6 +81,7 @@ class AnnotateToggle {
 
   void printAnnotateToggle(std::ostream& out);
   int64_t get_toggle() { return _TC.get_ui(); }
+  void set_TC(int tc) { _TC = tc; }
 
  private:
   mpz_class _TC{0};  //!< The total number of transition.
@@ -95,6 +100,7 @@ class AnnotateRecord {
   AnnotateRecord(AnnotateToggle&& toggle_record, AnnotateTime&& time_record)
       : _toggle_record(std::move(toggle_record)),
         _time_record(std::move(time_record)) {}
+
   ~AnnotateRecord() = default;
 
   AnnotateRecord(AnnotateRecord&& other) noexcept = default;
@@ -203,6 +209,8 @@ class AnnotateInstance {
 
   void calcInstancesTcSP(int64_t duration);
   auto& get_signals_tc_sp() { return _signals_tc_sp; }
+  auto& get_children_instances() { return _children_instances; }
+  auto& get_signals() { return _signals; }
 
  private:
   std::string _module_instance_name;
@@ -213,6 +221,18 @@ class AnnotateInstance {
   std::vector<std::unique_ptr<AnnotateSignalToggleSPData>>
       _signals_tc_sp;  //!< The signal toggle and sp data.
 };
+
+#define FOREACH_SIGNAL(instance, signal)                           \
+  if (auto& signals = (instance)->get_signals(); !signals.empty()) \
+    for (auto it = signals.begin();                                \
+         it != signals.end() ? signal = it->second.get(), true : false; ++it)
+
+#define FOREACH_CHILD_INSTANCE(parent_instance, instance)                   \
+  if (auto& instances = (parent_instance)->get_children_instances();        \
+      !instances.empty())                                                   \
+    for (auto it = instances.begin();                                       \
+         it != instances.end() ? instance = it->second.get(), true : false; \
+         ++it)
 
 /**
  * @brief Time scale of vcd simulation.

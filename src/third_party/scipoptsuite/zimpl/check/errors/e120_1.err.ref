@@ -1,4 +1,0 @@
-*** Error 120: Union of sets with different types
-*** File: e120_1.zpl Line 2
-*** set A:={<1,"a">,<2,"b">}+{<"c",3>,<"e",4>};
-***                                           ^^^

@@ -1,5 +1,0 @@
-*** Error 141: Infeasible due to conflicting bounds for var x
-               lower=4 > upper=2
-*** File: e141.zpl Line 2
-*** var x >= 4 <= 2;
-***                ^^^

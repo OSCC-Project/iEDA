@@ -14,6 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file CtsCellLib.hh
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ */
 #pragma once
 
 #include <algorithm>
@@ -24,7 +28,7 @@
 #include <tuple>
 #include <vector>
 
-#include "ModelFactory.h"
+#include "ModelFactory.hh"
 
 namespace icts {
 
@@ -178,9 +182,9 @@ class CtsLibs
   }
 #endif
  private:
-  std::map<std::string, CtsCellLib*> _lib_maps;
+  std::unordered_map<std::string, CtsCellLib*> _lib_maps;
 #if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  std::map<std::string, ModelBase*> _model_maps;
+  std::unordered_map<std::string, ModelBase*> _model_maps;
 #endif
 };
 }  // namespace icts

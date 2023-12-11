@@ -26,7 +26,7 @@
 #ifndef IPL_API_H
 #define IPL_API_H
 
-#include "ids.hh"
+#include "external_api/ExternalAPI.hh"
 
 namespace ipl {
 
@@ -128,6 +128,7 @@ class PLAPI
 
  private:
   static PLAPI* _s_ipl_api_instance;
+  ExternalAPI _external_api;
 
   PLAPI() = default;
   PLAPI(const PLAPI&) = delete;

@@ -63,8 +63,9 @@ class DetailedRouter
   void buildDRModel(DRModel& dr_model);
   void buildSchedule(DRModel& dr_model);
   void buildBoxTrackAxis(DRModel& dr_model);
-  void updateNetFixedRectMap(DRModel& dr_model);
-  void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRBoxId dr_box_id, DRCRect drc_rect);
+  void updateBlockageMap(DRModel& dr_model);
+  void updateRectToEnv(DRModel& dr_model, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(DRModel& dr_model);
   void decomposeLengthyTANode(DRModel& dr_model);
   void decomposeTANode(DRModel& dr_model, DRNet& dr_net);
   std::vector<std::tuple<TNode<RTNode>*, TNode<RTNode>*, TNode<RTNode>*>> getPreTaPostList(DRNet& dr_net);
@@ -90,8 +91,10 @@ class DetailedRouter
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildSourceOrienTaskMap(DRBox& dr_box);
-  void updateRectCostToGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
+  void updateRectGraph(DRBox& dr_box, ChangeType change_type, DRSourceType dr_source_type, DRCRect drc_rect);
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getRoutingGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getCutGridOrientationMap(DRBox& dr_box, const DRCRect& drc_rect);
   std::vector<Segment<LayerCoord>> getSegmentList(DRBox& dr_box, LayerRect min_scope_rect);
   std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkDRBox(DRBox& dr_box);
@@ -157,11 +160,14 @@ class DetailedRouter
 #endif
 
 #if 1  // valid drc
-  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
-                                                                     const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(DRBox& dr_box, DRSourceType dr_source_type);
-  void removeInvalidViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getDRViolationInfo(DRBox& dr_box, DRSourceType dr_source_type,
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
+  void removeInvalidDRViolationInfo(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

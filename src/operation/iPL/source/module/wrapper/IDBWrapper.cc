@@ -164,7 +164,8 @@ void IDBWrapper::updatePLInstanceInfo(IdbInstance* idb_inst, Instance* pl_inst)
   } else if (idb_orient == IdbOrient::kFE_MY90) {
     pl_inst->set_orient(Orient::kFE_MY90);
   } else {
-    pl_inst->set_orient(Orient::kNone);
+    // pl_inst->set_orient(Orient::kNone);
+    pl_inst->set_orient(Orient::kN_R0);
   }
 
   // set coordi.
@@ -499,7 +500,8 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   } else if (idb_orient == IdbOrient::kFE_MY90) {
     inst_ptr->set_orient(Orient::kFE_MY90);
   } else {
-    inst_ptr->set_orient(Orient::kNone);
+    // inst_ptr->set_orient(Orient::kNone);
+    inst_ptr->set_orient(Orient::kN_R0);
   }
 
   // cover cell type.

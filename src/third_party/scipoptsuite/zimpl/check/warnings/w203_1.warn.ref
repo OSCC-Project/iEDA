@@ -1,4 +1,0 @@
---- Warning 203: Indexing tuple is fixed
-*** File: w203_1.zpl Line 6
-*** subto cap: forall <p> in P do sum <v> in V : x[v,p] <= 2;
-***                             ^^^

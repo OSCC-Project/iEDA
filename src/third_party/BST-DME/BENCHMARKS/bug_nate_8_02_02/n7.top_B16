@@ -1,0 +1,14 @@
+#Topology
+id:8 child:0 4 par:10
+id:0 child:-1 -1 par:8
+id:4 child:-1 -1 par:8
+id:9 child:3 6 par:11
+id:3 child:-1 -1 par:9
+id:6 child:-1 -1 par:9
+id:10 child:8 5 par:11
+id:5 child:-1 -1 par:10
+id:11 child:10 9 par:12
+id:12 child:2 11 par:13
+id:2 child:-1 -1 par:12
+id:13 child:1 12 par:-1
+id:1 child:-1 -1 par:13

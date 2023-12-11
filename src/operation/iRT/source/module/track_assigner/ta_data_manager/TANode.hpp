@@ -64,11 +64,12 @@ class TANode : public LayerCoord
   }
   double getCost(irt_int net_idx, Orientation orientation)
   {
-    double ta_layout_shape_unit = DM_INST.getConfig().ta_layout_shape_unit;
+    double ta_blockage_unit = DM_INST.getConfig().ta_blockage_unit;
+    double ta_net_shape_unit = DM_INST.getConfig().ta_net_shape_unit;
     double ta_reserved_via_unit = DM_INST.getConfig().ta_reserved_via_unit;
 
     double cost = 0;
-    for (TASourceType ta_source_type : {TASourceType::kLayoutShape, TASourceType::kReservedVia}) {
+    for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape, TASourceType::kReservedVia}) {
       irt_int violation_net_num = 0;
       if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
         std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
@@ -81,15 +82,20 @@ class TANode : public LayerCoord
           }
         }
       }
-      switch (ta_source_type) {
-        case TASourceType::kLayoutShape:
-          cost += (ta_layout_shape_unit * violation_net_num);
-          break;
-        case TASourceType::kReservedVia:
-          cost += (ta_reserved_via_unit * violation_net_num);
-          break;
-        default:
-          break;
+      if (violation_net_num > 0) {
+        switch (ta_source_type) {
+          case TASourceType::kBlockage:
+            cost += (ta_blockage_unit * violation_net_num);
+            break;
+          case TASourceType::kNetShape:
+            cost += (ta_net_shape_unit * violation_net_num);
+            break;
+          case TASourceType::kReservedVia:
+            cost += (ta_reserved_via_unit * violation_net_num);
+            break;
+          default:
+            break;
+        }
       }
     }
     if (RTUtil::exist(_orien_history_cost_map, orientation)) {

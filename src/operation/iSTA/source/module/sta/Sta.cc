@@ -34,6 +34,7 @@
 
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
+#include "StaBuildClockTree.hh"
 #include "StaBuildGraph.hh"
 #include "StaBuildPropTag.hh"
 #include "StaBuildRCTree.hh"
@@ -166,6 +167,8 @@ unsigned Sta::readDesign(const char *verilog_file) {
   return 1;
 }
 
+unsigned Sta::readDesignWithRustParser(const char *file_name) {}
+
 /**
  * @brief read the sdc file.
  *
@@ -258,7 +261,7 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  */
 unsigned Sta::readLiberty(const char *lib_file) {
   Liberty lib;
-  auto load_lib = lib.loadLiberty(lib_file);
+  auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
 
   return 1;
@@ -300,6 +303,19 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
+void Sta::readVerilogWithRustParser(const char *verilog_file) {
+  LOG_INFO << "read verilog file " << verilog_file << " start";
+  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
+  _rust_top_module = _rust_verilog_reader.get_top_module();
+  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
+  LOG_INFO << "read verilog end";
+}
+
+/**
+ * @brief Read the verilog file.
+ *
+ * @param verilog_file
+ */
 void Sta::readVerilog(const char *verilog_file) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _verilog_reader.read(verilog_file);
@@ -328,7 +344,7 @@ VerilogModule *Sta::findModule(const char *module_name) {
 }
 
 /**
- * @brief Link the design file to design netlist.
+ * @brief Link the design file to design netlist .
  *
  */
 void Sta::linkDesign(const char *top_cell_name) {
@@ -461,8 +477,8 @@ void Sta::linkDesign(const char *top_cell_name) {
           return;
         }
 
-        auto add_pin_to_net = [cell_port_id, inst_stmt, &design_netlist](
-                                  Pin *inst_pin, std::string &net_name) {
+        auto add_pin_to_net = [&design_netlist](Pin *inst_pin,
+                                                std::string &net_name) {
           if (net_name.empty()) {
             return;
           }
@@ -629,6 +645,342 @@ void Sta::linkDesign(const char *top_cell_name) {
 }
 
 /**
+ * @brief Link the design file to design netlist use rust parser.
+ *
+ * @param top_cell_name
+ */
+void Sta::linkDesignWithRustParser() {
+  const char *top_cell_name = _rust_top_module->module_name;
+  auto top_module_stmts = _rust_top_module->module_stmts;
+  // auto port_list = _rust_top_module->port_list;
+
+  LOG_INFO << "link design " << top_cell_name << " start";
+  Netlist &design_netlist = _netlist;
+  design_netlist.set_name(top_cell_name);
+
+  /*The verilog decalre statement process lookup table.*/
+  std::map<DclType, std::function<DesignObject *(DclType, const char *)>>
+      dcl_process = {
+          {DclType::KInput,
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
+             Port in_port(dcl_name, PortDir::kIn);
+             auto &ret_val = design_netlist.addPort(std::move(in_port));
+             return &ret_val;
+           }},
+          {DclType::KOutput,
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
+             Port out_port(dcl_name, PortDir::kOut);
+             auto &ret_val = design_netlist.addPort(std::move(out_port));
+             return &ret_val;
+           }},
+          {DclType::KInout,
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
+             Port out_port(dcl_name, PortDir::kInOut);
+             auto &ret_val = design_netlist.addPort(std::move(out_port));
+             return &ret_val;
+           }},
+          {DclType::KWire,
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
+             dcl_name = Str::trimmed(dcl_name);
+             Net net(dcl_name);
+             auto &ret_val = design_netlist.addNet(std::move(net));
+             return &ret_val;
+           }}};
+
+  /*process the verilog declare statement.*/
+  auto process_dcl_stmt = [&dcl_process,
+                           &design_netlist](auto *rust_verilog_dcl) {
+    auto dcl_type = rust_verilog_dcl->dcl_type;
+    const auto *dcl_name = rust_verilog_dcl->dcl_name;
+    auto dcl_range = rust_verilog_dcl->range;
+
+    if (!dcl_range.has_value) {
+      if (dcl_process.contains(dcl_type)) {
+        dcl_process[dcl_type](dcl_type, dcl_name);
+      } else {
+        LOG_INFO << "not support the declaration " << dcl_name;
+      }
+    } else {
+      auto bus_range = std::make_pair(dcl_range.start, dcl_range.end);
+      for (int index = bus_range.second; index <= bus_range.first; index++) {
+        // for port or wire bus, we split to one bye one port.
+        const char *one_name = Str::printf("%s[%d]", dcl_name, index);
+
+        if (dcl_process.contains(dcl_type)) {
+          auto *design_obj = dcl_process[dcl_type](dcl_type, one_name);
+          if (design_obj->isPort()) {
+            auto *port = dynamic_cast<Port *>(design_obj);
+            if (index == bus_range.second) {
+              unsigned bus_size = bus_range.first + 1;
+              PortBus port_bus(dcl_name, bus_range.first, bus_range.second,
+                               bus_size, port->get_port_dir());
+              port_bus.addPort(index, port);
+              auto &ret_val = design_netlist.addPortBus(std::move(port_bus));
+              port->set_port_bus(&ret_val);
+            } else {
+              auto *found_port_bus = design_netlist.findPortBus(dcl_name);
+              found_port_bus->addPort(index, port);
+              port->set_port_bus(found_port_bus);
+            }
+          }
+
+        } else {
+          LOG_INFO << "not support the declaration " << one_name;
+        }
+      }
+    }
+  };
+
+  void *stmt;
+  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
+    if (rust_is_verilog_dcls_stmt(stmt)) {
+      RustVerilogDcls *verilog_dcls_struct = rust_convert_verilog_dcls(stmt);
+      auto verilog_dcls = verilog_dcls_struct->verilog_dcls;
+      void *verilog_dcl = nullptr;
+      FOREACH_VEC_ELEM(&verilog_dcls, void, verilog_dcl) {
+        process_dcl_stmt(rust_convert_verilog_dcl(verilog_dcl));
+      }
+    } else if (rust_is_module_inst_stmt(stmt)) {
+      RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
+      const char *inst_name = verilog_inst->inst_name;
+      inst_name = Str::trimmed(inst_name);
+
+      const char *liberty_cell_name = verilog_inst->cell_name;
+      auto port_connections = verilog_inst->port_connections;
+
+      auto *inst_cell = findLibertyCell(liberty_cell_name);
+
+      if (!inst_cell) {
+        LOG_INFO << "liberty cell " << liberty_cell_name << " is not exist.";
+        continue;
+      }
+
+      Instance inst(inst_name, inst_cell);
+
+      /*lambda function create net for connect instance pin*/
+      auto create_net_connection = [verilog_inst, inst_cell, &inst,
+                                    &design_netlist](auto *cell_port_id,
+                                                     auto *net_expr,
+                                                     std::optional<int> index,
+                                                     PinBus *pin_bus) {
+        const char *cell_port_name;
+        if (rust_is_id(cell_port_id)) {
+          cell_port_name = rust_convert_verilog_id(cell_port_id)->id;
+        } else if (rust_is_bus_index_id(cell_port_id)) {
+          cell_port_name = rust_convert_verilog_index_id(cell_port_id)->id;
+        } else {
+          cell_port_name = rust_convert_verilog_slice_id(cell_port_id)->id;
+        }
+
+        auto *library_port_or_port_bus =
+            inst_cell->get_cell_port_or_port_bus(cell_port_name);
+        LOG_INFO_IF(!library_port_or_port_bus)
+            << cell_port_name << " port is not found.";
+        if (!library_port_or_port_bus) {
+          return;
+        }
+
+        auto add_pin_to_net = [&design_netlist](Pin *inst_pin,
+                                                std::string &net_name) {
+          if (net_name.empty()) {
+            return;
+          }
+
+          Net *the_net = design_netlist.findNet(net_name.c_str());
+          if (the_net) {
+            the_net->addPinPort(inst_pin);
+          } else {
+            // DLOG_INFO << "create net " << net_name;
+            auto &created_net = design_netlist.addNet(Net(net_name.c_str()));
+
+            created_net.addPinPort(inst_pin);
+            the_net = &created_net;
+          }
+          // The same name port is default connect to net.
+          if (auto *design_port = design_netlist.findPort(net_name.c_str());
+              design_port && !the_net->isNetPinPort(design_port)) {
+            the_net->addPinPort(design_port);
+          }
+        };
+
+        auto add_pin_to_inst = [&inst, &add_pin_to_net, pin_bus](
+                                   auto *pin_name, auto *library_port,
+                                   std::optional<int> pin_index) -> Pin * {
+          auto *inst_pin = inst.addPin(pin_name, library_port);
+          if (pin_bus) {
+            pin_bus->addPin(pin_index.value(), inst_pin);
+          }
+
+          return inst_pin;
+        };
+
+        LibertyPort *library_port = nullptr;
+        std::string pin_name;
+        std::string net_name;
+
+        if (net_expr) {
+          if (rust_is_id_expr(net_expr)) {
+            auto *net_id = const_cast<void *>(
+                rust_convert_verilog_net_id_expr(net_expr)->verilog_id);
+            LOG_FATAL_IF(!net_id) << "The port connection " << cell_port_name
+                                  << " net id is not exist "
+                                  << "at line " << verilog_inst->line_no;
+
+            if (rust_is_id(net_id)) {
+              net_name = rust_convert_verilog_id(net_id)->id;
+            } else if (rust_is_bus_index_id(net_id)) {
+              net_name = rust_convert_verilog_index_id(net_id)->id;
+            } else {
+              net_name = rust_convert_verilog_slice_id(net_id)->id;
+            }
+            // fix net name contain backslash
+            net_name = Str::trimBackslash(net_name);
+            net_name = Str::trimmed(net_name.c_str());
+          } else if (rust_is_constant(net_expr)) {
+            LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
+          }
+        }
+
+        if (!library_port_or_port_bus->isLibertyPortBus()) {
+          library_port = dynamic_cast<LibertyPort *>(library_port_or_port_bus);
+          pin_name = cell_port_name;
+          auto *inst_pin =
+              add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
+
+          add_pin_to_net(inst_pin, net_name);
+
+        } else {
+          auto *library_port_bus =
+              dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
+          if (index) {
+            library_port = (*library_port_bus)[index.value()];
+            pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
+            auto *inst_pin =
+                add_pin_to_inst(pin_name.c_str(), library_port, index.value());
+
+            add_pin_to_net(inst_pin, net_name);
+
+          } else {
+            for (size_t i = 0; i < library_port_bus->getBusSize(); ++i) {
+              library_port = (*library_port_bus)[i];
+              pin_name = Str::printf("%s[%d]", cell_port_name, i);
+              auto *inst_pin =
+                  add_pin_to_inst(pin_name.c_str(), library_port, i);
+
+              std::string net_index_name;
+              if (rust_is_bus_slice_id(const_cast<void *>(
+                      rust_convert_verilog_net_id_expr(net_expr)
+                          ->verilog_id)) ||
+                  rust_is_bus_slice_id(const_cast<void *>(
+                      rust_convert_verilog_constant_expr(net_expr)
+                          ->verilog_id))) {
+                void *verilog_id = nullptr;
+                if (rust_is_id_expr(net_expr)) {
+                  verilog_id = const_cast<void *>(
+                      rust_convert_verilog_net_id_expr(net_expr)->verilog_id);
+                } else if (rust_is_constant(net_expr)) {
+                  verilog_id = const_cast<void *>(
+                      rust_convert_verilog_constant_expr(net_expr)->verilog_id);
+                }
+                auto *net_slice_id = rust_convert_verilog_slice_id(verilog_id);
+
+                net_index_name = rust_get_index_name(
+                    net_slice_id, i + net_slice_id->range_base);
+              } else {
+                net_index_name = Str::printf("%s[%d]", net_name.c_str(), i);
+              }
+
+              add_pin_to_net(inst_pin, net_index_name);
+            }
+          }
+        }
+      };
+
+      /*lambda function flatten concate net, which maybe nested.*/
+      std::function<void(RustVerilogNetConcatExpr *, std::vector<void *> &)>
+          flatten_concat_net_expr =
+              [&flatten_concat_net_expr](
+                  RustVerilogNetConcatExpr *net_concat_expr,
+                  std::vector<void *> &net_concat_vec) {
+                auto verilog_id_concat = net_concat_expr->verilog_id_concat;
+
+                void *verilog_id;
+                FOREACH_VEC_ELEM(&verilog_id_concat, void, verilog_id) {
+                  if (rust_is_concat_expr(verilog_id)) {
+                    flatten_concat_net_expr(
+                        rust_convert_verilog_net_concat_expr(verilog_id),
+                        net_concat_vec);
+                  } else {
+                    net_concat_vec.push_back(verilog_id);
+                  }
+                }
+              };
+
+      // create net
+      void *port_connection;
+      FOREACH_VEC_ELEM(&port_connections, void, port_connection) {
+        LOG_FATAL_IF(!port_connection)
+            << "The inst " << inst_name << " at line " << verilog_inst->line_no
+            << " port connection is null";
+        RustVerilogPortRefPortConnect *rust_port_connection =
+            rust_convert_verilog_port_ref_port_connect(port_connection);
+        // *const c_void
+        void *cell_port_id = const_cast<void *>(rust_port_connection->port_id);
+        // *mut c_void
+        void *net_expr = rust_port_connection->net_expr;
+
+        // create pin bus
+        const char *cell_port_name;
+        if (rust_is_id(cell_port_id)) {
+          cell_port_name = rust_convert_verilog_id(cell_port_id)->id;
+        } else if (rust_is_bus_index_id(cell_port_id)) {
+          cell_port_name = rust_convert_verilog_index_id(cell_port_id)->id;
+        } else {
+          cell_port_name = rust_convert_verilog_slice_id(cell_port_id)->id;
+        }
+
+        auto *library_port_bus =
+            inst_cell->get_cell_port_or_port_bus(cell_port_name);
+        std::unique_ptr<PinBus> pin_bus;
+        if (library_port_bus->isLibertyPortBus()) {
+          auto bus_size =
+              dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
+          pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
+                                             bus_size);
+        }
+
+        if (!net_expr || rust_is_id_expr(net_expr) ||
+            rust_is_constant(net_expr)) {
+          create_net_connection(cell_port_id, net_expr, std::nullopt,
+                                pin_bus.get());
+        } else {
+          LOG_FATAL_IF(!pin_bus) << "pin bus is null.";
+          auto *net_concat_expr =
+              rust_convert_verilog_net_concat_expr(net_expr);
+
+          std::vector<void *> verilog_id_concat_vec;
+          flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
+
+          for (int i = (verilog_id_concat_vec.size() - 1);
+               auto *verilog_id_net_expr : verilog_id_concat_vec) {
+            create_net_connection(cell_port_id, verilog_id_net_expr, i--,
+                                  pin_bus.get());
+          }
+        }
+
+        if (pin_bus) {
+          inst.addPinBus(std::move(pin_bus));
+        }
+      }
+
+      design_netlist.addInstance(std::move(inst));
+    }
+  }
+
+  LOG_INFO << "link design " << top_cell_name << " end";
+}
+
+/**
  * @brief reset constraint.
  */
 void Sta::resetConstraint() { _constrains.reset(); }
@@ -689,15 +1041,14 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  * @brief Make the function equivalently liberty cell map.
  *
  * @param equiv_libs
- * @param map_libs
  */
-void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
-                         std::vector<LibertyLibrary *> &map_libs) {
+void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
   if (_equiv_cells) {
     _equiv_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibertyEquivCells>(equiv_libs, map_libs);
+  _equiv_cells = std::make_unique<LibertyClassifyCell>();
+  _equiv_cells->classifyLibCell(equiv_libs);
 }
 
 /**
@@ -708,7 +1059,7 @@ void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
  */
 Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
   if (_equiv_cells)
-    return _equiv_cells->equivs(cell);
+    return _equiv_cells->getClassOfCell(cell);
   else
     return nullptr;
 }
@@ -810,6 +1161,10 @@ void Sta::initSdcCmd() {
       std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
   LOG_FATAL_IF(!set_clock_uncertainty);
   TclCmds::addTclCmd(std::move(set_clock_uncertainty));
+
+  auto set_units = std::make_unique<CmdSetUnits>("set_units");
+  LOG_FATAL_IF(!set_units);
+  TclCmds::addTclCmd(std::move(set_units));
 }
 
 /**
@@ -960,11 +1315,11 @@ std::optional<double> Sta::getVertexSlewSlack(StaVertex *the_vertex,
                                               TransType trans_type) {
   std::optional<double> slack;
 
-  double slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto slew = the_vertex->getSlewNs(mode, trans_type);
   auto limit = getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
-    slack = *limit - slew;
+  if (limit && slew) {
+    slack = *limit - *slew;
   }
 
   return slack;
@@ -1273,7 +1628,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   }
 
-  // LOG_INFO << "\n" << _report_tbl_summary->c_str();
+  LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
@@ -1981,8 +2336,9 @@ unsigned Sta::updateTiming() {
       StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
       StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
       StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostkNormalClockProp),
-      StaClockPropagation(StaClockPropagation::PropType::kGeneratedClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+      StaClockPropagation(
+          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
       StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
       StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
@@ -2285,124 +2641,16 @@ void Sta::dumpNetlistData() {
 }
 
 /**
- * @brief Build the next pin in clock tree.
- *
- */
-void Sta::buildNextPin(
-    StaClockTree *clock_tree, StaClockTreeNode *parent_node,
-    StaVertex *parent_vertex,
-    std::map<StaVertex *, std::vector<StaData *>> &vertex_to_datas) {
-  for (auto &[fwd_vertex, fwd_datas] : vertex_to_datas) {
-    std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-
-    double max_rise_AT = 0;
-    double max_fall_AT = 0;
-    double min_rise_AT = 0;
-    double min_fall_AT = 0;
-    for (auto *fwd_clock_data : fwd_datas) {
-      if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-          (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        max_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_rise_AT = FS_TO_NS(max_rise_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMax) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kFall)) {
-        max_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        max_fall_AT = FS_TO_NS(max_fall_AT);
-      } else if ((fwd_clock_data->get_delay_type() == AnalysisMode::kMin) &&
-                 (fwd_clock_data->get_trans_type() == TransType::kRise)) {
-        min_rise_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_rise_AT = FS_TO_NS(min_rise_AT);
-      } else {
-        min_fall_AT =
-            (dynamic_cast<StaClockData *>(fwd_clock_data))->get_arrive_time();
-        min_fall_AT = FS_TO_NS(min_fall_AT);
-      }
-
-      for (auto *next_fwd_clock_data : fwd_clock_data->get_fwd_set()) {
-        auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-        next_vertex_to_datas[next_fwd_vertex].emplace_back(next_fwd_clock_data);
-      }
-    }
-
-    std::string from_name = parent_vertex->getName();
-    std::string to_name = fwd_vertex->getName();
-    ModeTransAT mode_trans_AT(from_name.c_str(), to_name.c_str(), max_rise_AT,
-                              max_fall_AT, min_rise_AT, min_fall_AT);
-
-    std::string parent_cell_type = parent_node->get_cell_type();
-    // build clock node, annotate delay
-    std::string child_cell_type = fwd_vertex->getOwnCellOrPortName();
-    std::string child_inst_name = fwd_vertex->getOwnInstanceOrPortName();
-
-    std::string parent_inst_name = parent_vertex->getOwnInstanceOrPortName();
-    StaClockTreeNode *child_node =
-        clock_tree->findNode(child_inst_name.c_str());
-    bool is_new = false;
-    if (!child_node) {
-      is_new = true;
-      child_node = new StaClockTreeNode(child_cell_type, child_inst_name);
-    }
-
-    if (parent_node != child_node) {
-      auto *child_arc = new StaClockTreeArc(parent_node, child_node);
-      child_arc->set_net_arrive_time(mode_trans_AT);
-      child_node->addFaninArc(child_arc);
-      clock_tree->addChildNode(child_node);
-      clock_tree->addChildArc(child_arc);
-    } else {
-      parent_node->addInstArrvieTime(std::move(mode_trans_AT));
-    }
-
-    if ((parent_node != child_node) && (is_new == false)) {
-      return;
-    }
-
-    if (fwd_vertex->is_clock()) {
-      return;
-    }
-
-    buildNextPin(clock_tree, child_node, fwd_vertex, next_vertex_to_datas);
-  }
-}
-
-/**
  * @brief Build clock tree for GUI.
  *
  */
 void Sta::buildClockTrees() {
+  StaBuildClockTree build_clock_tree;
   for (auto &clock : _clocks) {
-    // get_clock_vertexs: usually return one.
-    auto &vertexes = clock->get_clock_vertexes();
-
-    for (auto *vertex : vertexes) {
-      // for each vertex, make one root_node/clock_tree.
-      std::string pin_name = vertex->getName();
-      std::string cell_type = vertex->getOwnCellOrPortName();
-      std::string inst_name = vertex->getOwnInstanceOrPortName();
-      auto *root_node = new StaClockTreeNode(cell_type, inst_name);
-      auto *clock_tree = new StaClockTree(clock.get(), root_node);
-      addClockTree(clock_tree);
-
-      StaData *clock_data;
-      std::map<StaVertex *, std::vector<StaData *>> next_vertex_to_datas;
-      FOREACH_CLOCK_DATA(vertex, clock_data) {
-        if ((dynamic_cast<StaClockData *>(clock_data))->get_prop_clock() !=
-            clock_tree->get_clock()) {
-          continue;
-        }
-
-        for (auto *next_fwd_clock_data : clock_data->get_fwd_set()) {
-          auto *next_fwd_vertex = next_fwd_clock_data->get_own_vertex();
-          next_vertex_to_datas[next_fwd_vertex].emplace_back(
-              next_fwd_clock_data);
-        }
-      }
-      buildNextPin(clock_tree, root_node, vertex, next_vertex_to_datas);
-    }
+    build_clock_tree(clock.get());
   }
+
+  _clock_trees = std::move(build_clock_tree.takeClockTrees());
 }
 
 /**
@@ -2412,8 +2660,8 @@ void Sta::buildClockTrees() {
  * @param the_inst
  * @return std::optional<double>
  */
-std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
-                                        Instance *the_inst) {
+std::optional<double> Sta::getInstWorstSlack(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
   Pin *the_pin;
   std::optional<double> the_worst_inst_slack;
   FOREACH_INSTANCE_PIN(the_inst, the_pin) {
@@ -2437,6 +2685,73 @@ std::optional<double> Sta::getInstSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get total negative slack of all instance pins.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                     Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_total_negative_inst_slack;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_total_negative_slack = the_vertex->getTNSNs(analysis_mode);
+    if (the_total_negative_slack) {
+      if (!the_total_negative_inst_slack) {
+        the_total_negative_inst_slack = *the_total_negative_slack;
+      } else {
+        *the_total_negative_inst_slack += *the_total_negative_slack;
+      }
+    }
+  }
+
+  // LOG_FATAL_IF(the_total_negative_inst_slack)
+  //     << "inst " << the_inst->get_name() << "the worst slack "
+  //     << *the_total_negative_inst_slack;
+  return the_total_negative_inst_slack;
+}
+
+/**
+ * @brief get the instance worst transition.
+ *
+ * @param analysis_mode
+ * @param the_inst
+ * @return std::optional<double>
+ */
+std::optional<double> Sta::getInstTransition(AnalysisMode analysis_mode,
+                                             Instance *the_inst) {
+  Pin *the_pin;
+  std::optional<double> the_worst_inst_slew;
+  FOREACH_INSTANCE_PIN(the_inst, the_pin) {
+    auto *the_vertex = findVertex(the_pin);
+    if (!the_vertex) {
+      continue;
+    }
+    auto the_worst_pin_slew = the_vertex->getWorstSlewNs(analysis_mode);
+    if (the_worst_pin_slew) {
+      if (!the_worst_inst_slew) {
+        the_worst_inst_slew = *the_worst_pin_slew;
+      } else {
+        if ((analysis_mode == AnalysisMode::kMax) &&
+            (*the_worst_inst_slew < *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        } else if ((analysis_mode == AnalysisMode::kMin) &&
+                   (*the_worst_inst_slew > *the_worst_pin_slew)) {
+          the_worst_inst_slew = *the_worst_pin_slew;
+        }
+      }
+    }
+  }
+
+  return the_worst_inst_slew;
+}
+
+/**
  * @brief display timing map of inst worst slack.
  *
  * @param analysis_mode
@@ -2447,7 +2762,7 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   std::map<Instance::Coordinate, double> loc_to_inst_slack;
   Instance *the_inst;
   FOREACH_INSTANCE(&_netlist, the_inst) {
-    auto the_inst_worst_slack = getInstSlack(analysis_mode, the_inst);
+    auto the_inst_worst_slack = getInstWorstSlack(analysis_mode, the_inst);
     if (the_inst_worst_slack) {
       auto inst_coordinate = the_inst->get_coordinate();
       if (!inst_coordinate) {
@@ -2462,4 +2777,79 @@ std::map<Instance::Coordinate, double> Sta::displayTimingMap(
   return loc_to_inst_slack;
 }
 
+/**
+ * @brief display timing tns map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTimingTNSMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_tns;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_tns = getInstTotalNegativeSlack(analysis_mode, the_inst);
+    if (the_inst_tns) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_tns[*inst_coordinate] = *the_inst_tns;
+    }
+  }
+
+  return loc_to_inst_tns;
+}
+
+/**
+ * @brief get the inst transition map.
+ *
+ * @param analysis_mode
+ * @return std::map<Instance::Coordinate, double>
+ */
+std::map<Instance::Coordinate, double> Sta::displayTransitionMap(
+    AnalysisMode analysis_mode) {
+  std::map<Instance::Coordinate, double> loc_to_inst_transition;
+  Instance *the_inst;
+  FOREACH_INSTANCE(&_netlist, the_inst) {
+    auto the_inst_worst_transition = getInstTransition(analysis_mode, the_inst);
+    if (the_inst_worst_transition) {
+      auto inst_coordinate = the_inst->get_coordinate();
+      if (!inst_coordinate) {
+        LOG_INFO << "inst " << the_inst->get_name() << " has no coordinate.";
+        continue;
+      }
+
+      loc_to_inst_transition[*inst_coordinate] = *the_inst_worst_transition;
+    }
+  }
+
+  return loc_to_inst_transition;
+}
+
+double Sta::convertTimeUnit(const double src_value) {
+  TimeUnit current_time_unit = getTimeUnit();
+  if (current_time_unit == TimeUnit::kNS) {
+    return src_value;
+  } else if (current_time_unit == TimeUnit::kFS) {
+    return FS_TO_NS(src_value);
+  } else if (current_time_unit == TimeUnit::kPS) {
+    return PS_TO_NS(src_value);
+  }
+  return -1;
+}
+
+double Sta::convertCapUnit(const double src_value) {
+  CapacitiveUnit current_cap_unit = getCapUnit();
+  if (current_cap_unit == CapacitiveUnit::kPF) {
+    return src_value;
+  } else if (current_cap_unit == CapacitiveUnit::kFF) {
+    return FF_TO_PF(src_value);
+  } else if (current_cap_unit == CapacitiveUnit::kF) {
+    return F_TO_PF(src_value);
+  }
+  return -1;
+}
 }  // namespace ista

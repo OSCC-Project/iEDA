@@ -29,22 +29,23 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -ta_corner_unit 1 \
         -ta_pin_distance_unit 1 \
         -ta_group_distance_unit 0.5 \
-        -ta_layout_shape_unit 128 \
+        -ta_blockage_unit 2048 \
+        -ta_net_shape_unit 128 \
         -ta_reserved_via_unit 32 \
-        -ta_history_cost_unit 2 \
+        -ta_history_cost_unit 4 \
         -ta_model_max_iter_num 1 \
         -ta_panel_max_iter_num 5 \
         -dr_prefer_wire_unit 1 \
         -dr_nonprefer_wire_unit 2 \
         -dr_via_unit 1 \
         -dr_corner_unit 1 \
-        -dr_layout_shape_unit 128 \
+        -dr_blockage_unit 2048 \
+        -dr_net_shape_unit 128 \
         -dr_reserved_via_unit 32 \
-        -dr_history_cost_unit 2 \
+        -dr_history_cost_unit 4 \
         -dr_model_max_iter_num 1 \
         -dr_box_max_iter_num 5 \
         -vr_max_iter_num 1
-
 
 run_rt -flow "pa ra gr ta dr vr"
 

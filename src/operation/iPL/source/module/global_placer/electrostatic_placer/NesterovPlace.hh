@@ -74,6 +74,7 @@ class NesterovPlace
   bool checkPlateau(int32_t window, float threshold);
   void entropyInjection(float shrink_factor, float noise_intensity);
   bool checkDivergence(int32_t window, float threshold, bool is_routability = false);
+  bool checkLongTimeOverflowUnchanged(int32_t window, float threshold);
 
   void initNesConfig(Config* config);
   void initNesDatabase(PlacerDB* placer_db);

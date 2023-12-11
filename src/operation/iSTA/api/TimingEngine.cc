@@ -27,7 +27,7 @@
 #include <iostream>
 #include <optional>
 
-#include "HashSet.hh"
+#include "FlatSet.hh"
 #include "TimingIDBAdapter.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
@@ -561,9 +561,9 @@ StaClock* TimingEngine::getPropClockOfNet(Net* clock_net) {
  * @brief get all clocks of the clock net.
  *
  * @param clock_net
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> TimingEngine::getPropClocksOfNet(Net* clock_net) {
+std::unordered_set<StaClock*> TimingEngine::getPropClocksOfNet(Net* clock_net) {
   auto* driver = clock_net->getDriver();
   auto* driver_vertex = _ista->findVertex(driver);
   if (driver->isInout()) {
@@ -701,7 +701,7 @@ void TimingEngine::insertBuffer(const char* instance_name) {
   StaBuildGraph build_graph;
   build_graph.buildInst(&the_graph, instance);
 
-  HashSet<StaArc*> to_be_removed_arcs;
+  FlatSet<StaArc*> to_be_removed_arcs;
   Vector<Net*> buffer_nets;
   Pin* pin;
   FOREACH_INSTANCE_PIN(instance, pin) {
@@ -764,7 +764,7 @@ void TimingEngine::removeBuffer(const char* instance_name) {
   LOG_FATAL_IF(!instance);
   auto& the_graph = ista->get_graph();
 
-  HashSet<StaArc*> to_be_changed_arcs;
+  FlatSet<StaArc*> to_be_changed_arcs;
   StaVertex* buffer_driver_vertex = nullptr;
   Net* buffer_driver_net = nullptr;
 
@@ -1084,8 +1084,8 @@ double TimingEngine::reportSlew(const char* pin_name, AnalysisMode mode,
   auto the_vertex = the_graph.findVertex(pin);
   LOG_FATAL_IF(!the_vertex);
 
-  int64_t slew = (*the_vertex)->getSlew(mode, trans_type);
-  return FS_TO_NS(slew);
+  auto slew = (*the_vertex)->getSlewNs(mode, trans_type);
+  return slew ? *slew : 0.0;
 }
 
 /**
@@ -1756,10 +1756,11 @@ void TimingEngine::checkSlew(const char* pin_name, AnalysisMode mode,
     return;
   }
 
-  slew = FS_TO_NS(the_vertex->getSlew(mode, trans_type));
+  auto vertex_slew = the_vertex->getSlewNs(mode, trans_type);
+  slew = vertex_slew ? *vertex_slew : 0.0;
   limit = _ista->getVertexSlewLimit(the_vertex, mode, trans_type);
 
-  if (limit) {
+  if (limit && vertex_slew) {
     slack = *limit - slew;
   }
 }

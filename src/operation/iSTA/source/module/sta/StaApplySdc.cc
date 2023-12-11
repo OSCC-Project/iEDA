@@ -55,6 +55,13 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
                                   StaGraph* the_graph) {
   Sta* ista = getSta();
   for (auto& [clock_name, sdc_clock] : sdc_clocks) {
+    if (_prop_type == PropType::kApplySdcPostNormalClockProp) {
+      if (!sdc_clock->isGenerateClock() ||
+          !dynamic_cast<SdcGenerateCLock*>(sdc_clock.get())
+               ->isNeedUpdateSourceClock()) {
+        continue;
+      }
+    }
     std::unique_ptr<StaClock> sta_clock =
         std::make_unique<StaClock>(clock_name, StaClock::ClockType::kIdeal,
                                    NS_TO_PS(sdc_clock->get_period()));
@@ -78,46 +85,12 @@ unsigned StaApplySdc::setupClocks(StrMap<std::unique_ptr<SdcClock>>& sdc_clocks,
       sta_clock->setPropagateClock();
     }
 
-    ista->addClock(std::move(sta_clock));
-  }
-
-  return 1;
-}
-
-/**
- * @brief Setup the generated clocks to sta graph.
- *
- * @param sdc_clocks
- * @return unsigned success return 1, or return 0.
- */
-unsigned StaApplySdc::setupGeneratedClocks(
-    StrMap<std::unique_ptr<SdcClock>>& sdc_clocks, StaGraph* the_graph) {
-  Sta* ista = getSta();
-  for (auto& [clock_name, sdc_clock] : sdc_clocks) {
-    std::unique_ptr<StaClock> sta_clock =
-        std::make_unique<StaClock>(clock_name, StaClock::ClockType::kIdeal,
-                                   NS_TO_PS(sdc_clock->get_period()));
-
-    // if the generated clock setup sta clocks, the exec generated clock prop.
-    sta_clock->set_is_generated_clock_prop();
-
-    auto design_objs = sdc_clock->get_objs();
-    for (auto* design_obj : design_objs) {
-      auto the_vertex = the_graph->findVertex(design_obj);
-      LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
-      (*the_vertex)->set_is_sdc_clock_pin();
-      sta_clock->addVertex(*the_vertex);
-    }
-    StaWaveForm wave_form;
-    auto& edges = sdc_clock->get_edges();
-    for (auto edge : edges) {
-      wave_form.addWaveEdge(NS_TO_PS(edge));
-    }
-
-    sta_clock->set_wave_form(std::move(wave_form));
-
-    if (sdc_clock->isPropagatedClock()) {
-      sta_clock->setPropagateClock();
+    if (_prop_type == PropType::kApplySdcPreProp) {
+      if (sdc_clock->isGenerateClock() &&
+          dynamic_cast<SdcGenerateCLock*>(sdc_clock.get())
+              ->isNeedUpdateSourceClock()) {
+        sta_clock->set_is_need_update_period_waveform(true);
+      }
     }
 
     ista->addClock(std::move(sta_clock));
@@ -387,7 +360,7 @@ unsigned StaApplySdc::setupTimingDrc(
                       }
                     }
 
-                    if (is_fall && !is_satified) {
+                    if (is_fall && !is_satified && the_vertex->is_start()) {
                       if (is_clock) {
                         auto prop_clocks = the_vertex->getPropagatedClock(
                             AnalysisMode::kMaxMin, TransType::kFall, false);
@@ -610,36 +583,44 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto* ista = getSta();
 
-  auto apply_clock_latency_to_obj = [ista, the_graph](auto* design_obj,
-                                                      auto uncertainty) {
-    StaVertex* end_vertex;
-    FOREACH_END_VERTEX(the_graph, end_vertex) {
-      if (end_vertex->get_design_obj() == design_obj) {
-        StaData* delay_data;
-        FOREACH_DELAY_DATA(end_vertex, delay_data) {
-          // set uncertainty.
-          auto analysis_mode = delay_data->get_delay_type();
-          auto* seq_data = ista->getSeqData(end_vertex, delay_data);
-          if (analysis_mode == AnalysisMode::kMax) {
-            if (uncertainty->isSetup()) {
-              double uncertainty_value = uncertainty->getUncertaintyValueFs();
-              seq_data->set_uncertainty(uncertainty_value);
-            }
-          } else {
-            if (uncertainty->isHold()) {
-              double uncertainty_value = uncertainty->getUncertaintyValueFs();
-              seq_data->set_uncertainty(uncertainty_value);
-            }
-          }
+  auto apply_clock_uncetainty_to_obj = [ista, the_graph](auto* design_obj,
+                                                         auto uncertainty) {
+    StaVertex* end_vertex = ista->findVertex(design_obj);
+    if (!end_vertex->is_end()) {
+      return;
+    }
+
+    StaData* delay_data;
+    FOREACH_DELAY_DATA(end_vertex, delay_data) {
+      // set uncertainty.
+      auto analysis_mode = delay_data->get_delay_type();
+      auto* seq_data = ista->getSeqData(end_vertex, delay_data);
+      if (analysis_mode == AnalysisMode::kMax) {
+        if (uncertainty->isSetup()) {
+          double uncertainty_value = uncertainty->getUncertaintyValueFs();
+          seq_data->set_uncertainty(uncertainty_value);
         }
-        break;
+      } else {
+        if (uncertainty->isHold()) {
+          double uncertainty_value = uncertainty->getUncertaintyValueFs();
+          seq_data->set_uncertainty(uncertainty_value);
+        }
       }
     }
   };
 
-  auto apply_clock_latency_to_clk = [ista](auto* sdc_clk, auto* uncertainty) {
+  auto apply_clock_uncertainty_to_clk = [ista](auto* sdc_clk,
+                                               auto* uncertainty) {
+    auto cmp = [](StaPathData* left, StaPathData* right) -> bool {
+      int left_slack = left->getSlack();
+      int right_slack = right->getSlack();
+      return left_slack > right_slack;
+    };
+    std::priority_queue<StaPathData*, std::vector<StaPathData*>, decltype(cmp)>
+        seq_data_queue(cmp);
+
     auto& clk_groups = ista->get_clock_groups();
-    for (auto& [clk, clk_group] : clk_groups) {
+    for (auto& [clk, seq_path_group] : clk_groups) {
       if (Str::equal(clk->get_clock_name(),
                      dynamic_cast<SdcClock*>(sdc_clk)->get_clock_name())) {
         StaPathEnd* path_end;
@@ -647,10 +628,17 @@ unsigned StaApplySdc::processClockUncertainty(
         auto mode =
             uncertainty->isSetup() ? AnalysisMode::kMax : AnalysisMode::kMin;
         double uncertainty_value = uncertainty->getUncertaintyValueFs();
-        FOREACH_PATH_GROUP_END(clk_group.get(), path_end)
+
+        FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
         FOREACH_PATH_END_DATA(path_end, mode, path_data) {
-          auto* seq_data = dynamic_cast<StaSeqPathData*>(path_data);
-          seq_data->set_uncertainty(uncertainty_value);
+          seq_data_queue.push(path_data);
+        }
+
+        while (!seq_data_queue.empty()) {
+          auto* seq_path_data =
+              dynamic_cast<StaSeqPathData*>(seq_data_queue.top());
+          seq_path_data->set_uncertainty(uncertainty_value);
+          seq_data_queue.pop();
         }
       }
     }
@@ -659,17 +647,17 @@ unsigned StaApplySdc::processClockUncertainty(
   auto obj2uncertainty = get_uncertainty();
 
   for (auto [obj, uncertainty] : obj2uncertainty) {
-    std::visit(
-        overloaded{
-            [&apply_clock_latency_to_clk, uncertainty](SdcCommandObj* sdc_obj) {
-              apply_clock_latency_to_clk(sdc_obj, uncertainty);
-            },
-            [&apply_clock_latency_to_obj,
-             uncertainty](DesignObject* design_obj) {
-              apply_clock_latency_to_obj(design_obj, uncertainty);
-            },
-        },
-        obj);
+    std::visit(overloaded{
+                   [&apply_clock_uncertainty_to_clk,
+                    uncertainty](SdcCommandObj* sdc_obj) {
+                     apply_clock_uncertainty_to_clk(sdc_obj, uncertainty);
+                   },
+                   [&apply_clock_uncetainty_to_obj,
+                    uncertainty](DesignObject* design_obj) {
+                     apply_clock_uncetainty_to_obj(design_obj, uncertainty);
+                   },
+               },
+               obj);
   }
 
   return is_ok;
@@ -697,18 +685,9 @@ unsigned StaApplySdc::operator()(StaGraph* the_graph) {
     is_ok &= setupIOConstrain(the_io_constrain, the_graph);
     is_ok &= setupOcvDerate(the_ocv_derate, the_graph);
 
-  } else if (_prop_type == PropType::kApplySdcPostkNormalClockProp) {
-    StrMap<std::unique_ptr<SdcClock>> the_generated_clocks;
+  } else if (_prop_type == PropType::kApplySdcPostNormalClockProp) {
     auto& the_clocks = the_constrain->get_sdc_clocks();
-    for (auto it = the_clocks.begin(); it != the_clocks.end(); it++) {
-      if (it->second->isGenerateClock() &&
-          (dynamic_cast<SdcGenerateCLock*>(it->second.get())
-               ->get_source_pins()
-               .size() != 0)) {
-        the_generated_clocks.insert(std::move(*it));
-      }
-    }
-    is_ok = setupGeneratedClocks(the_generated_clocks, the_graph);
+    is_ok = setupClocks(the_clocks, the_graph);
   } else if (_prop_type == PropType::kApplySdcPostClockProp) {
     auto& the_sdc_exceptions = the_constrain->get_sdc_exceptions();
     is_ok = setupException(the_sdc_exceptions, the_graph);

@@ -23,7 +23,7 @@
  */
 #pragma once
 
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "StaFunc.hh"
 
 namespace ista {

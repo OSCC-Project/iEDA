@@ -75,15 +75,15 @@ bool read_netlist(const std::string& file_name) {
 }
 
 /**
- * @brief load liberty.
+ * @brief load liberty files.
  *
- * @param file_name
+ * @param lib_files
  * @return true
  * @return false
  */
-bool read_liberty(const std::string& file_name) {
+bool read_liberty(std::vector<std::string>& lib_files) {
   auto* ista = ista::Sta::getOrCreateSta();
-  ista->readLiberty(file_name.c_str());
+  ista->readLiberty(lib_files);
   return true;
 }
 
@@ -173,6 +173,38 @@ std::map<std::pair<double, double>, double> display_timing_map(
   }
 
   return ista->displayTimingMap(AnalysisMode::kMin);
+}
+
+/**
+ * @brief get the inst slack of timing map.
+ *
+ * @param analysis_mode
+ * @return std::map<std::pair<double, double>, double>
+ */
+std::map<std::pair<double, double>, double> display_timing_tns_map(
+    const std::string& analysis_mode) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  if (analysis_mode == "max") {
+    return ista->displayTimingTNSMap(AnalysisMode::kMax);
+  }
+
+  return ista->displayTimingTNSMap(AnalysisMode::kMin);
+}
+
+/**
+ * @brief dispaly the inst slew of map.
+ *
+ * @param analysis_mode
+ * @return std::map<std::pair<double, double>, double>
+ */
+std::map<std::pair<double, double>, double> display_slew_map(
+    const std::string& analysis_mode) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  if (analysis_mode == "max") {
+    return ista->displayTransitionMap(AnalysisMode::kMax);
+  }
+
+  return ista->displayTransitionMap(AnalysisMode::kMin);
 }
 
 }  // namespace ista

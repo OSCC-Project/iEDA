@@ -15,7 +15,7 @@ endif()
 add_executable(iPLTest
     ${iPL_SOURCE}/PlacerDB.cc
     ${iPL_API}/PLAPI.cc
-    # ${iPL_TEST}/APITest.cc
+    ${iPL_TEST}/APITest.cc
     # ${iPL_TEST}/ReportCongTest.cc
     # ${iPL_TEST}/DCTTest.cc
     # ${iPL_TEST}/ComputationCheck.cc
@@ -45,7 +45,7 @@ target_link_libraries(iPLTest
     tool_api_icts
     icts_api
     icts_router
-    icts_slew_aware
+    # icts_slew_aware
     icts_evaluator
     ito_api
 

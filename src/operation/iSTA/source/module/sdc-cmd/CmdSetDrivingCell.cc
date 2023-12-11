@@ -93,10 +93,12 @@ unsigned CmdSetDrivingCell::exec() {
     cell_arc = cell_arc_set->front();
   }
 
-  double transition_value_rise = cell_arc->getSlew(
-      TransType::kRise, input_transition_rise_option->getDoubleVal(), 0);
-  double transition_value_fall = cell_arc->getSlew(
-      TransType::kFall, input_transition_fall_option->getDoubleVal(), 0);
+  double transition_value_rise = cell_arc->getSlewNs(
+      TransType::kRise,
+      ista->convertTimeUnit(input_transition_rise_option->getDoubleVal()), 0);
+  double transition_value_fall = cell_arc->getSlewNs(
+      TransType::kFall,
+      ista->convertTimeUnit(input_transition_fall_option->getDoubleVal()), 0);
 
   auto* set_input_transiton_rise =
       new SdcSetInputTransition("set_input_transition", transition_value_rise);

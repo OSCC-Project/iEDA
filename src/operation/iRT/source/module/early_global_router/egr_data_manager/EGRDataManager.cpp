@@ -98,7 +98,7 @@ void EGRDataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_min_width(idb_routing_layer->get_min_width());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
+      routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
     } else if (idb_layer->is_cut()) {
@@ -551,11 +551,11 @@ void EGRDataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_direction();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_direction();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
 
@@ -567,15 +567,15 @@ void EGRDataManager::makeLayerViaMasterList()
       LayerRect& b_above = b.get_above_enclosure();
       LayerRect& b_below = b.get_below_enclosure();
       // 方向
-      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_direction();
-      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_direction();
+      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_prefer_direction();
+      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_prefer_direction();
       if (a.get_above_direction() == a_above_layer_direction && b.get_above_direction() != b_above_layer_direction) {
         return true;
       } else if (a.get_above_direction() != a_above_layer_direction && b.get_above_direction() == b_above_layer_direction) {
         return false;
       }
-      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_direction();
-      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_direction();
+      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_prefer_direction();
+      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_prefer_direction();
       if (a.get_below_direction() == a_below_layer_direction && b.get_below_direction() != b_below_layer_direction) {
         return true;
       } else if (a.get_below_direction() != a_below_layer_direction && b.get_below_direction() == b_below_layer_direction) {
@@ -642,33 +642,32 @@ void EGRDataManager::buildBlockageList()
 
 void processPinList(EGRNet& egr_net)
 {
- std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
+  std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
 
- std::vector<irt_int> empty_pin_idx_list;
- for (size_t i = 0; i < pin_list.size(); i++) {
-  EGRPin& pin = pin_list[i];
-  if (pin.get_routing_shape_list().empty()) {
-   empty_pin_idx_list.push_back(i);
+  std::vector<irt_int> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
   }
- }
 
- irt_int legal_pin_idx = -1;
-
- for (size_t i = 0; i < pin_list.size(); i++) {
-  EGRPin& pin = pin_list[i];
-  if (!pin.get_routing_shape_list().empty()) {
-   legal_pin_idx = i;
-   break;
+  irt_int legal_pin_idx = -1;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      legal_pin_idx = i;
+      break;
+    }
   }
- }
 
- if (legal_pin_idx == -1) {
-  LOG_INST.error(Loc::current(), "There is no legal pin for net ", egr_net.get_net_name());
- }
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", egr_net.get_net_name());
+  }
 
- for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
-  pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
- }
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
+  }
 }
 
 void EGRDataManager::buildNetList()

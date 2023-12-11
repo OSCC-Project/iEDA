@@ -354,13 +354,13 @@ EGRRoutingPackage EarlyGlobalRouter::initEGRRoutingPackage(EGRNet& egr_net)
 
   std::vector<LayerCoord>& pin_coord_list = egr_routing_package.get_pin_coord_list();
   for (EGRPin& egr_pin : egr_net.get_pin_list()) {
-    pin_coord_list.push_back(egr_pin.getGridCoordList().front());
+    pin_coord_list.push_back(egr_pin.get_access_point_list().front().getGridLayerCoord());
   }
   std::sort(pin_coord_list.begin(), pin_coord_list.end(), CmpLayerCoordByXASC());
   pin_coord_list.erase(std::unique(pin_coord_list.begin(), pin_coord_list.end()), pin_coord_list.end());
 
   std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
-  LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().getGridCoordList().front();
+  LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().get_access_point_list().front().getGridLayerCoord();
   routing_segment_list.emplace_back(driving_pin_grid_coord, driving_pin_grid_coord);
 
   std::map<LayerCoord, std::pair<irt_int, LayerCoord>, CmpLayerCoordByXASC>& min_distance_map = egr_routing_package.get_min_distance_map();
@@ -1126,16 +1126,17 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
 
 void EarlyGlobalRouter::updateRoutingSegmentList(EGRNet& egr_net, EGRRoutingPackage& egr_routing_package)
 {
-  std::vector<LayerCoord> candidate_root_coord_list = egr_net.get_driving_pin().getGridCoordList();
+  LayerCoord root_coord = egr_net.get_driving_pin().get_access_point_list().front().getGridLayerCoord();
+
   std::vector<Segment<LayerCoord>>& routing_segment_list = egr_routing_package.get_routing_segment_list();
 
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
   for (EGRPin& egr_pin : egr_net.get_pin_list()) {
-    for (LayerCoord& grid_coord : egr_pin.getGridCoordList()) {
-      key_coord_pin_map[grid_coord].insert(egr_pin.get_pin_idx());
+    for (AccessPoint& access_point : egr_pin.get_access_point_list()) {
+      key_coord_pin_map[access_point.getGridLayerCoord()].insert(egr_pin.get_pin_idx());
     }
   }
-  egr_net.set_coord_tree(RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map));
+  egr_net.set_coord_tree(RTUtil::getTreeByFullFlow({root_coord}, routing_segment_list, key_coord_pin_map));
 }
 
 void EarlyGlobalRouter::updateLayerResourceMap(EGRNet& egr_net)
@@ -1145,7 +1146,7 @@ void EarlyGlobalRouter::updateLayerResourceMap(EGRNet& egr_net)
 
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
   if (routing_segment_list.empty()) {
-    LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().getGridCoordList().front();
+    LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().get_access_point_list().front().getGridLayerCoord();
     irt_int layer_idx = driving_pin_grid_coord.get_layer_idx();
     irt_int x = driving_pin_grid_coord.get_x();
     irt_int y = driving_pin_grid_coord.get_y();
@@ -1283,7 +1284,7 @@ void EarlyGlobalRouter::calcuWireViaStatistics()
     if (routing_segment_list.empty()) {
       double local_net_wire_length = (cell_width + cell_height) / 2.0;
       total_wire_length += local_net_wire_length;
-      LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().getGridCoordList().front();
+      LayerCoord driving_pin_grid_coord = egr_net.get_driving_pin().get_access_point_list().front().getGridLayerCoord();
       irt_int layer_idx = driving_pin_grid_coord.get_layer_idx();
       wire_length_list[layer_idx] += local_net_wire_length;
       continue;
@@ -1335,7 +1336,6 @@ void EarlyGlobalRouter::reportCongestion()
     overflow_num_list.push_back(overflow_num);
   }
   fort::char_table table;
-  table.set_border_style(FT_SOLID_STYLE);
   // report header
   char c_buffer[1024] = {0};
   table << fort::header << "layer\\overflow";
@@ -1411,7 +1411,6 @@ void EarlyGlobalRouter::reportWireViaStatistics()
   irt_int& total_via_num = egr_stat.get_total_via_num();
 
   fort::char_table wire_table;
-  wire_table.set_border_style(FT_SOLID_STYLE);
   // report header
   wire_table << fort::header << "Routing Layer"
              << "Wire Length / um" << fort::endr;
@@ -1427,7 +1426,6 @@ void EarlyGlobalRouter::reportWireViaStatistics()
   }
 
   fort::char_table cut_table;
-  cut_table.set_border_style(FT_SOLID_STYLE);
   // report header
   cut_table << fort::header << "Cut Layer"
             << "Via Number" << fort::endr;

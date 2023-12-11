@@ -1,0 +1,27 @@
+[package]
+name = "verilog-parser"
+version = "0.1.0"
+edition = "2021"
+exclude = ["build"]
+rust-version = "1.66"
+authors = ["longshuaiying <longshy@pcl.ac.cn>"]
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[lib]
+name = "verilog_parser"
+# #crate-type = ["staticlib"]
+crate-type = ["cdylib"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# 使用Pest解析器生成器库的依赖项
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+
+# 配置build选项
+[profile.dev]
+debug = true

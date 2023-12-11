@@ -59,14 +59,15 @@ class GlobalRouter
   GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
-  void updateNetFixedRectMap(GRModel& gr_model);
+  void updateBlockageMap(GRModel& gr_model);
   void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
-  void updateNetReservedViaMap(GRModel& gr_model);
+  void updateNetShapeMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);
-  void updateNodeSupply(GRModel& gr_model);
-  std::vector<PlanarRect> getWireList(GRNode& gr_node, RoutingLayer& routing_layer);
-  void addExtraNodeSupply(GRModel& gr_model);
+  void updateNodeResourceSupply(GRModel& gr_model);
+  std::vector<PlanarRect> getCrossingWireList(PlanarRect& base_rect, RoutingLayer& routing_layer);
+  void updateNodeAccessSupply(GRModel& gr_model);
+  bool isAccess(GRNode& pre_node, GRNode& curr_node, PlanarRect& wire);
   void makeRoutingState(GRModel& gr_model);
   void checkGRModel(GRModel& gr_model);
   void writePYScript();
@@ -135,6 +136,17 @@ class GlobalRouter
 #if 1  // plot gr_model
   void outputCongestionMap(GRModel& gr_model);
   void plotGRModel(GRModel& gr_model, irt_int curr_net_idx = -1);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getGRViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
+  void removeInvalidGRViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

@@ -7,7 +7,7 @@ namespace salt {
 //  c    pp -> root
 // four Nodes:      c       - cur   - p     - pp    -> root
 // four points:     out[0]  - in[0] - in[1] - out[1]-> root
-void Refine::UShift(Tree& tree) {
+void Refine::uShift(Tree& tree) {
     auto nodes = tree.ObtainNodes();  // fix the nodes considered (no deletion will happen)
     for (auto cur : nodes) {
         Point in[2], out[2];
@@ -35,9 +35,9 @@ void Refine::UShift(Tree& tree) {
             for (int i = 0; i < 2; ++i) newP[i][d] = closer;            // set pri dir
             for (int i = 0; i < 2; ++i) newP[i][1 - d] = in[i][1 - d];  // set sec dir
 
-            TreeNode::ResetParent(c);
-            TreeNode::ResetParent(cur);
-            TreeNode::ResetParent(p);
+            TreeNode::resetParent(c);
+            TreeNode::resetParent(cur);
+            TreeNode::resetParent(p);
             //           inS[0]    inS[1]
             //              |         |
             // outS[0] - newS[0] - newS[1] - outS[1] -> root
@@ -50,13 +50,13 @@ void Refine::UShift(Tree& tree) {
                 else {
                     newS[i] = make_shared<TreeNode>(newP[i]);
                     if (i == 0)
-                        TreeNode::SetParent(outS[i], newS[i]);
+                        TreeNode::setParent(outS[i], newS[i]);
                     else
-                        TreeNode::SetParent(newS[i], outS[i]);
+                        TreeNode::setParent(newS[i], outS[i]);
                 }
-                TreeNode::SetParent(inS[i], newS[i]);
+                TreeNode::setParent(inS[i], newS[i]);
             }
-            TreeNode::SetParent(newS[0], newS[1]);
+            TreeNode::setParent(newS[0], newS[1]);
         }
     }
 

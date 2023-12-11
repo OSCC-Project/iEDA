@@ -26,6 +26,7 @@
 
 #include <Eigen/Core>
 #include <algorithm>
+#include <fstream>
 #include <list>
 #include <map>
 #include <optional>
@@ -39,7 +40,7 @@
 #include "netlist/Net.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
-#include "spef/parser-spef.hpp"
+#include "spef/SpefParserRustC.hh"
 
 namespace ista {
 class RctEdge;
@@ -226,7 +227,7 @@ class RctNode {
   LaplaceMoments _moments;
   PiModel _pi;
 
-  DISALLOW_COPY_AND_ASSIGN(RctNode);
+  FORBIDDEN_COPY(RctNode);
 };
 
 /**
@@ -318,7 +319,7 @@ class RctEdge {
 
   double _res = 0.0;
 
-  DISALLOW_COPY_AND_ASSIGN(RctEdge);
+  FORBIDDEN_COPY(RctEdge);
 };
 
 /**
@@ -451,7 +452,7 @@ class RcTree {
 
   RctNode* rcNode(const std::string&);
 
-  DISALLOW_COPY_AND_ASSIGN(RcTree);
+  FORBIDDEN_COPY(RcTree);
 };
 
 /**
@@ -481,7 +482,8 @@ class RCNetCommonInfo {
  public:
   void set_spef_cap_unit(const std::string& spef_cap_unit) {
     // The unit is 1.0 FF, fix me
-    if (Str::contain(spef_cap_unit.c_str(), "FF")) {
+    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
+        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
       _spef_cap_unit = CapacitiveUnit::kFF;
     } else {
       _spef_cap_unit = CapacitiveUnit::kPF;
@@ -489,7 +491,8 @@ class RCNetCommonInfo {
   }
   void set_spef_resistance_unit(const std::string& spef_resistance_unit) {
     // The unit is 1.0 OHM, fix me
-    if (Str::contain(spef_resistance_unit.c_str(), "OHM")) {
+    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
+        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
       _spef_resistance_unit = ResistanceUnit::kOHM;
     } else {
       _spef_resistance_unit = ResistanceUnit::kOHM;
@@ -524,12 +527,12 @@ class RcNet {
 
   RcTree* rct() { return std::get_if<RcTree>(&_rct); }
   void makeRct() { _rct.emplace<RcTree>(); }
-  virtual void makeRct(const spef::Net& spef_net);
+  virtual void makeRct(RustSpefNet* spef_net);
   void updateRcTreeInfo();
   virtual void dfsTranverse(RctNode* parent, RctNode& node);
   virtual void checkLoop();
   virtual void breakLoop();
-  virtual void updateRcTiming(const spef::Net& spef_net);
+  virtual void updateRcTiming(RustSpefNet* spef_net);
 
   double load();
   double load(AnalysisMode mode, TransType trans_type);

@@ -25,7 +25,7 @@ Only in {ORIGIN REPOSITORY}/src/salt/base: flute
 diff -r ./base/flute.cpp {ORIGIN REPOSITORY}/src/salt/base/flute.cpp
 6,7c6,7
 < #include "flute3/flute.h" // should be included after boost/functional/hash.hpp
-< #define MAXD 5000          // max. degree that can be handled
+< #define MAXD 100000          // max. degree that can be handled
 ---
 > #include "flute/flute.h" // should be included after boost/functional/hash.hpp
 > 
@@ -150,3 +150,11 @@ diff -r ./base/net.h {ORIGIN REPOSITORY}/src/salt/base/net.h
 > 
 >     friend ostream& operator<<(ostream& os, const Net& net) { net.Write(os); return os; }
 ```
+
+### Refine::removeRedundantCoincident function
+
+Fixed a bug caused by redundancy after flip and ushit
+
+### Rename variable
+
+Changing some variable names and function names for the uniform naming convention does not change the code logic

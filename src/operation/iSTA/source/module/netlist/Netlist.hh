@@ -28,7 +28,7 @@
 #include <vector>
 
 #include "Config.hh"
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "Instance.hh"
 #include "Net.hh"
 #include "Pin.hh"
@@ -194,7 +194,7 @@ class Netlist : public DesignObject {
   std::optional<CoreSize>
       _core_size;  //!< The core size(width * weight) for FP.
 
-  DISALLOW_COPY_AND_ASSIGN(Netlist);
+  FORBIDDEN_COPY(Netlist);
 };
 
 /**
@@ -213,7 +213,7 @@ class PortIterator {
   Netlist* _nl;
   std::list<Port>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PortIterator);
+  FORBIDDEN_COPY(PortIterator);
 };
 
 /**
@@ -246,7 +246,7 @@ class PortBusIterator {
   Netlist* _nl;
   std::list<PortBus>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PortBusIterator);
+  FORBIDDEN_COPY(PortBusIterator);
 };
 
 /**
@@ -279,7 +279,7 @@ class InstanceIterator {
   Netlist* _nl;
   std::list<Instance>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(InstanceIterator);
+  FORBIDDEN_COPY(InstanceIterator);
 };
 
 /**
@@ -312,7 +312,7 @@ class NetIterator {
   Netlist* _nl;
   std::list<Net>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(NetIterator);
+  FORBIDDEN_COPY(NetIterator);
 };
 
 /**

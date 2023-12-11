@@ -256,4 +256,4 @@ endif()
 
 
 #     add_subdirectory(${IDB_HOME} idb.out)
-SET(CMAKE_BUILD_TYPE "debug")
+# SET(CMAKE_BUILD_TYPE "debug")

@@ -1,10 +1,19 @@
-add_subdirectory(${ICTS_SOLVER}/GOCA)
-add_subdirectory(${ICTS_SOLVER}/polygon)
+if(DEBUG_ICTS_SOLVER)
+  message(STATUS "CTS: DEBUG_ICTS_SOLVER")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "CTS: RELEASE_ICTS_SOLVER")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
 
-add_library(icts_solver INTERFACE)
+add_subdirectory(${ICTS_SOLVER}/database)
+add_subdirectory(${ICTS_SOLVER}/tools)
 
-target_link_libraries(icts_solver INTERFACE icts_data_manager icts_polygon
-                                            icts_goca icts_api)
+add_library(icts_solver ${ICTS_SOLVER}/Solver.cc)
 
-target_include_directories(icts_solver INTERFACE ${ICTS_SOLVER}/GOCA
-                                                 ${ICTS_SOLVER}/polygon)
+target_link_libraries(icts_solver PUBLIC icts_database icts_api
+                                         icts_solver_database icts_tools)
+
+target_include_directories(
+  icts_solver PUBLIC ${ICTS_SOLVER}/Solver ${ICTS_SOLVER}/database
+                     ${ICTS_SOLVER}/tools)

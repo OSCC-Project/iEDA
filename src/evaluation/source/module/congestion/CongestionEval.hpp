@@ -149,8 +149,6 @@ class CongestionEval
   double getRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
   double getRudyDev(CongBin* bin, CongNet* net);
   double getPinRudy(CongBin* bin, CongNet* net, DIRECTION direction = DIRECTION::kNone);
-  double getPinSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
-  double getSteinerRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   double getTrueRudy(CongBin* bin, CongNet* net, const std::map<std::string, int64_t>& map);
   float calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax);
   int64_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin);

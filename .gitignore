@@ -22,3 +22,6 @@ catboost_info
 *.pwr
 
 rpt*/
+target/
+*-stamp/
+tmp/

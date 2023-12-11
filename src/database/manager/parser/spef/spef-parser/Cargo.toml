@@ -1,0 +1,28 @@
+[package]
+name = "spef-parser"
+version = "0.2.0"
+edition = "2021"
+authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
+include = ["**/*.rs", "*.toml", "*.pest", "LICENSE", "README.md"]
+git = "https://gitee.com/oscc-project/parser.git"
+
+description = "iEDA spef parser"
+license-file = "LICENSE"
+repository = "https://gitee.com/oscc-project/"
+
+[build-dependencies]
+cbindgen = "0.26"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "spef_parser"
+crate-type = ["cdylib"]
+
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+anyhow = "1.0"
+
+
+[profile.dev]
+debug = true

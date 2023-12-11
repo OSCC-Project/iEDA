@@ -154,10 +154,10 @@ void GDSPlotter::buildLayoutLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPLayoutType, bool> routing_data_type_visible_map
-      = {{GPLayoutType::kText, false},   {GPLayoutType::kPinShape, true},     {GPLayoutType::kAccessPoint, true},
-         {GPLayoutType::kGuide, false},  {GPLayoutType::kPreferTrack, false}, {GPLayoutType::kNonpreferTrack, false},
-         {GPLayoutType::kWire, true},    {GPLayoutType::kEnclosure, true},    {GPLayoutType::kPatch, true},
-         {GPLayoutType::kBlockage, true}};
+      = {{GPLayoutType::kText, false},           {GPLayoutType::kPinShape, true}, {GPLayoutType::kProtectedAccessPoint, true},
+         {GPLayoutType::kAccessPoint, true},     {GPLayoutType::kGuide, false},   {GPLayoutType::kPreferTrack, false},
+         {GPLayoutType::kNonpreferTrack, false}, {GPLayoutType::kWire, true},     {GPLayoutType::kEnclosure, true},
+         {GPLayoutType::kPatch, true},           {GPLayoutType::kBlockage, true}};
   std::map<GPLayoutType, bool> cut_data_type_visible_map
       = {{GPLayoutType::kText, false}, {GPLayoutType::kCut, true}, {GPLayoutType::kPatch, true}, {GPLayoutType::kBlockage, true}};
 
@@ -210,11 +210,11 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPGraphType, bool> routing_data_type_visible_map
-      = {{GPGraphType::kNone, false},       {GPGraphType::kOpen, false},      {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
-         {GPGraphType::kNeighbor, false},   {GPGraphType::kKey, true},        {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
-         {GPGraphType::kLayoutShape, true}, {GPGraphType::kReservedVia, true}};
+      = {{GPGraphType::kNone, false},     {GPGraphType::kOpen, false},    {GPGraphType::kClose, false},     {GPGraphType::kInfo, false},
+         {GPGraphType::kNeighbor, false}, {GPGraphType::kKey, true},      {GPGraphType::kTrackAxis, false}, {GPGraphType::kPath, true},
+         {GPGraphType::kBlockage, true},  {GPGraphType::kNetShape, true}, {GPGraphType::kReservedVia, true}};
   std::map<GPGraphType, bool> cut_data_type_visible_map
-      = {{GPGraphType::kPath, true}, {GPGraphType::kLayoutShape, true}, {GPGraphType::kReservedVia, true}};
+      = {{GPGraphType::kPath, true}, {GPGraphType::kBlockage, true}, {GPGraphType::kNetShape, true}, {GPGraphType::kReservedVia, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
@@ -335,6 +335,7 @@ void GDSPlotter::addPinList(GPGDS& gp_gds, GPStruct& net_struct, std::vector<Pin
     GPStruct pin_struct(RTUtil::getString("pin_", pin.get_pin_idx(), "(", pin.get_pin_name(), ")@", net_struct.get_alias_name()));
 
     addPinShapeList(pin_struct, pin);
+    addProtectedAccessPoint(pin_struct, pin);
     addAccessPointList(pin_struct, pin);
     pin_list_struct.push(pin_struct.get_name());
     gp_gds.addStruct(pin_struct);
@@ -359,6 +360,19 @@ void GDSPlotter::addPinShapeList(GPStruct& pin_struct, Pin& pin)
     shape_boundary.set_rect(cut_shape.get_real_rect());
     pin_struct.push(shape_boundary);
   }
+}
+
+void GDSPlotter::addProtectedAccessPoint(GPStruct& pin_struct, Pin& pin)
+{
+  AccessPoint& protected_access_point = pin.get_protected_access_point();
+  irt_int x = protected_access_point.get_real_x();
+  irt_int y = protected_access_point.get_real_y();
+
+  GPBoundary protected_access_point_boundary;
+  protected_access_point_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(protected_access_point.get_layer_idx()));
+  protected_access_point_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kProtectedAccessPoint));
+  protected_access_point_boundary.set_rect(x - 10, y - 10, x + 10, y + 10);
+  pin_struct.push(protected_access_point_boundary);
 }
 
 void GDSPlotter::addAccessPointList(GPStruct& pin_struct, Pin& pin)

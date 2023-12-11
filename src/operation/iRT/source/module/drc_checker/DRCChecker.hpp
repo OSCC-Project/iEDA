@@ -17,6 +17,7 @@
 #pragma once
 
 #include "ChangeType.hpp"
+#include "DRCCheckType.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "RTAPI.hpp"
@@ -68,9 +69,10 @@ class DRCChecker
    * 获得违例信息
    * 暂时不进行线网自检
    */
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const DRCRect& drc_rect);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query,
+                                                                     const std::vector<DRCCheckType>& check_type_list,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  // std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
 
  private:
   // self
@@ -84,22 +86,16 @@ class DRCChecker
   DRCChecker& operator=(DRCChecker&& other) = delete;
   // function
   std::vector<ids::DRCRect> convertToIDSRect(const std::vector<DRCRect>& drc_rect_list);
-  void addNetRectMap(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  void addEnvRectListByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  void delNetRectMap(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  void delEnvRectListByRTDRC(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
+  void addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
+  void delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
   RQShape convertToRQShape(const DRCRect& drc_rect);
-  bool checkMinSpacingByRTDRC(RQShape& net_shape1, RQShape& net_shape2, std::vector<RQShape>& net_shape_list);
   std::vector<LayerRect> getMinSpacingRect(const std::vector<ids::DRCRect>& drc_rect_list);
 #if 1  // violation info
   void checkMinSpacingByOther(RegionQuery* region_query, const DRCRect& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
                               std::vector<ViolationInfo>& violation_info_list);
+  void checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list);
-  void checkMinSpacingBySelf(RegionQuery* region_query, std::vector<ViolationInfo>& violation_info_list);
-  void checkMinSpacingBySelf(const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
-  void checkMinSpacingBySelf(std::map<irt_int, std::vector<RQShape>>& net_shape_map, std::vector<ViolationInfo>& violation_info_list);
-
 #endif
 };
 }  // namespace irt

@@ -7,7 +7,7 @@ namespace salt {
 
 void WireLengthEvalBase::Update(const Tree& tree) {
     wireLength = 0;
-    tree.PostOrder([&](const shared_ptr<TreeNode>& node) {
+    tree.postOrder([&](const shared_ptr<TreeNode>& node) {
         if (node->parent) {
             wireLength += node->WireToParent();
         }
@@ -60,7 +60,7 @@ void ElmoreDelayEval::Update(double rd, Tree& tree, bool normalize) {
     maxDelay = avgDelay = maxNorDelay = avgNorDelay = 0;
 
     auto delay = GetDelay(rd, tree, numNodes);  // delay for all tree nodes
-    tree.PreOrder([&](const shared_ptr<TreeNode>& node) {
+    tree.preOrder([&](const shared_ptr<TreeNode>& node) {
         if (!node->pin || node == tree.source) return;
         maxDelay = max(maxDelay, delay[node->id]);
         avgDelay += delay[node->id];
@@ -70,7 +70,7 @@ void ElmoreDelayEval::Update(double rd, Tree& tree, bool normalize) {
     if (!normalize) return;
 
     auto lb = GetDelayLB(rd, tree);  // delay lb for all pins, 0 is source
-    // tree.PreOrder([&](const shared_ptr<TreeNode>& node){
+    // tree.preOrder([&](const shared_ptr<TreeNode>& node){
     // 	if(!node->pin || node == tree.source) return;
     // 	double norDelay = delay[node->id] / lb[node->id];
     // 	maxNorDelay = max(maxNorDelay, norDelay);
@@ -85,7 +85,7 @@ void ElmoreDelayEval::Update(double rd, Tree& tree, bool normalize) {
 vector<double> ElmoreDelayEval::GetDelay(double rd, const Tree& tree, int numNode) {
     // get node cap by post-order traversal
     vector<double> cap(numNode, 0);
-    tree.PostOrder([&](const shared_ptr<TreeNode>& node) {
+    tree.postOrder([&](const shared_ptr<TreeNode>& node) {
         if (node->pin && node != tree.source) cap[node->id] = node->pin->cap;
         for (auto c : node->children) {
             cap[node->id] += cap[c->id];
@@ -95,7 +95,7 @@ vector<double> ElmoreDelayEval::GetDelay(double rd, const Tree& tree, int numNod
 
     // get delay by post-order traversal
     vector<double> delay(numNode, 0);
-    tree.PreOrder([&](const shared_ptr<TreeNode>& node) {
+    tree.preOrder([&](const shared_ptr<TreeNode>& node) {
         if (node == tree.source)
             delay[node->id] = rd * cap[node->id];
         else {

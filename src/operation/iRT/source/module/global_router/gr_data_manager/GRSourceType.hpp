@@ -25,8 +25,8 @@ namespace irt {
 enum class GRSourceType
 {
   kNone,
-  kLayoutShape,
-  kReservedVia
+  kBlockage,
+  kNetShape
 };
 
 struct GetGRSourceTypeName
@@ -38,11 +38,11 @@ struct GetGRSourceTypeName
       case GRSourceType::kNone:
         gr_source_type_name = "none";
         break;
-      case GRSourceType::kLayoutShape:
-        gr_source_type_name = "layout_shape";
+      case GRSourceType::kBlockage:
+        gr_source_type_name = "blockage";
         break;
-      case GRSourceType::kReservedVia:
-        gr_source_type_name = "reserved_via";
+      case GRSourceType::kNetShape:
+        gr_source_type_name = "net_shape";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
