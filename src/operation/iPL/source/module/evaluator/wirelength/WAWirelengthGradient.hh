@@ -31,7 +31,6 @@
 
 #include "WirelengthGradient.hh"
 #include "data/Rectangle.hh"
-
 namespace ipl {
 
 struct WAPinInfo
@@ -162,6 +161,7 @@ class WAWirelengthGradient : public WirelengthGradient
 
   void updateWirelengthForce_OLD(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num);
   void updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num) override;
+  void updateWirelengthForceDirect(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num, GridManager* grid_manager);
 
   Point<float> obtainWirelengthGradient_OLD(int32_t inst_id, float coeff_x, float coeff_y);
   Point<float> obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y) override;

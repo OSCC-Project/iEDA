@@ -501,6 +501,11 @@ void PLAPI::writeBackSourceDataBase()
   PlacerDBInst.writeBackSourceDataBase();
 }
 
+void PLAPI::writeDef(std::string file_name)
+{
+  PlacerDBInst.writeDef(file_name);
+}
+
 std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
                                                                      std::pair<int32_t, int32_t> site_range)
 {
@@ -557,6 +562,7 @@ bool PLAPI::isAbucasLGStarted()
 /*****************************Congestion-driven Placement: START*****************************/
 void PLAPI::runRoutabilityGP()
 {
+  // RandomPlace(&PlacerDBInst).runRandomPlace();
   CenterPlace(&PlacerDBInst).runCenterPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   nesterov_place.printNesterovDatabase();

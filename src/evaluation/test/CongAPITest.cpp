@@ -32,7 +32,7 @@ class CongAPITest : public testing::Test
 {
   void SetUp()
   {  // Read Def, Lef
-    std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_ispd19.json";
+    std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_default_config_t28.json";
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}
@@ -42,21 +42,21 @@ TEST_F(CongAPITest, sample)
 {
   EvalAPI& eval_api = EvalAPI::initInst();
 
-  int32_t bin_cnt_x = 256;
-  int32_t bin_cnt_y = 256;
+  int32_t bin_cnt_x = 512;
+  int32_t bin_cnt_y = 512;
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
   eval_api.evalInstDens(INSTANCE_STATUS::kPlaced);
-  std::string plot_path = "/DREAMPlace/iEDA/bin/csv/";
+  std::string plot_path = "/DREAMPlace/iEDA/bin/";
   eval_api.plotBinValue(plot_path, "stdcell_density", CONGESTION_TYPE::kInstDens);
 
-  std::string py_command = "python plot.py";
-  int result = std::system(py_command.c_str());
-  if (result == 0) {
-    std::cout << "success" << std::endl;
-  } else {
-    std::cout << "failed" << std::endl;
-  }
+  // std::string py_command = "python plot.py";
+  // int result = std::system(py_command.c_str());
+  // if (result == 0) {
+  //   std::cout << "success" << std::endl;
+  // } else {
+  //   std::cout << "failed" << std::endl;
+  // }
 
   // eval_api.initWLDataFromIDB();
   // std::string step1 = "fp";
@@ -68,9 +68,9 @@ TEST_F(CongAPITest, sample)
   // eval_api.plotFlowValue(plot_path, "wirelength", step2, std::to_string(value2));
 
 
-  // auto inst_status = INSTANCE_STATUS::kFixed;
-  // eval_api.evalInstDens(inst_status);
-  // eval_api.plotBinValue(plot_path, "macro_density", CONGESTION_TYPE::kInstDens);
+  auto inst_status = INSTANCE_STATUS::kFixed;
+  eval_api.evalInstDens(inst_status);
+  eval_api.plotBinValue(plot_path, "macro_density", CONGESTION_TYPE::kInstDens);
   // eval_api.evalPinDens(inst_status);
   // eval_api.plotBinValue(plot_path, "macro_pin_density", CONGESTION_TYPE::kPinDens);
   // eval_api.evalNetDens(inst_status);
@@ -141,7 +141,7 @@ TEST_F(CongAPITest, sample)
   // LOG_INFO << "ACE is  " << congestion_metrics[0] << " TOF is " << congestion_metrics[1] << " MOF is " << congestion_metrics[2];
   // LOG_INFO << "remain_track is " << eval_api.evalRmTrackNum();
   // LOG_INFO << "overflow_track is " << eval_api.evalOfTrackNum();
-  // eval_api.plotTileValue(plot_path, "congestion_map_");
+  eval_api.plotTileValue(plot_path, "congestion_map_");
 
   // LOG_INFO << "macro channel utilization is " << eval_api.evalMacroChannelUtil(0.3);
   // LOG_INFO << "macro channel pin ratio is " << eval_api.evalMacroChannelPinRatio(0.3);

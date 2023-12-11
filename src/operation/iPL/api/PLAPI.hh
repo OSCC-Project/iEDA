@@ -42,6 +42,7 @@ class PLAPI
   void runFlow();
   void runIncrementalFlow();
   void insertLayoutFiller();
+  void writeDef(std::string file_name);
 
   void runGP();
   void runMP();

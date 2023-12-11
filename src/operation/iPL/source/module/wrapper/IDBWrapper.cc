@@ -241,6 +241,9 @@ void IDBWrapper::wrapLayout(IdbLayout* idb_layout)
 
   // wrap cells.
   wrapCells(idb_layout);
+
+  // wrap routing info.
+  wrapRoutingInfo(idb_layout);
 }
 
 void IDBWrapper::wrapRows(IdbLayout* idb_layout)
@@ -343,6 +346,45 @@ void IDBWrapper::wrapCells(IdbLayout* idb_layout)
     ipl_layout->add_cell(cell_ptr);
   }
 }
+
+void IDBWrapper::wrapRoutingInfo(IdbLayout* idb_layout)
+{
+  auto* ipl_layout = _idbw_database->_layout;
+
+  int route_cap_h = 0;
+  int route_cap_v = 0;
+  int partial_route_cap_h = 0;
+  int partial_route_cap_v = 0;
+  int count_h = 0;
+  int count_v = 0;
+
+  IdbLayers* idb_layers = idb_layout->get_layers();
+  int route_layer_num = idb_layers->get_routing_layers_number();
+  for (int i = 0; i < route_layer_num; ++i){
+    IdbLayerRouting* layer = dynamic_cast<IdbLayerRouting*>(idb_layers->find_routing_layer(i));
+    bool is_hor = layer->is_horizontal();
+    if (is_hor){
+      count_h++;
+      route_cap_h += layer->get_prefer_track_grid()->get_track_num();
+      if (count_h == 2){
+        partial_route_cap_h = route_cap_h;
+      }
+    }
+    else{
+      count_v++;
+      route_cap_v += layer->get_prefer_track_grid()->get_track_num();
+      if (count_v == 2){
+        partial_route_cap_v = route_cap_v;
+      }
+    }
+  }
+
+  ipl_layout->set_route_cap_h(route_cap_h);
+  ipl_layout->set_route_cap_v(route_cap_v);
+  ipl_layout->set_partial_route_cap_h(partial_route_cap_h);
+  ipl_layout->set_partial_route_cap_v(partial_route_cap_v);
+}
+
 
 void IDBWrapper::wrapDesign(IdbDesign* idb_design)
 {

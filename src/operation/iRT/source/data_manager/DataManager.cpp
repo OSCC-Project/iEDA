@@ -1246,8 +1246,21 @@ void DataManager::buildNetList()
   }
 }
 
+void processPinList(Net& net)
+{
+  std::vector<Pin>& pin_list = net.get_pin_list();
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    Pin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      continue;
+    }
+    pin.set_routing_shape_list(pin_list.front().get_routing_shape_list());
+  }
+}
+
 void DataManager::buildPinList(Net& net)
 {
+  processPinList(net);
   transPinList(net);
   makePinList(net);
   checkPinList(net);

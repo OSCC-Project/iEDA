@@ -245,6 +245,14 @@ void NesterovPlace::initGridManager()
   // BinGrid specially need to parallel
   _nes_database->_bin_grid = new BinGrid(grid_manager);
   _nes_database->_bin_grid->set_thread_nums(_nes_config.get_thread_num());
+  int route_cap_h = _nes_database->_placer_db->get_layout()->get_route_cap_h();
+  int route_cap_v = _nes_database->_placer_db->get_layout()->get_route_cap_v();
+  int partial_route_cap_h = _nes_database->_placer_db->get_layout()->get_partial_route_cap_h();
+  int partial_route_cap_v = _nes_database->_placer_db->get_layout()->get_partial_route_cap_v();
+  _nes_database->_bin_grid->set_route_cap_h(route_cap_h);
+  _nes_database->_bin_grid->set_route_cap_v(route_cap_v);
+  _nes_database->_bin_grid->set_partial_route_cap_h(partial_route_cap_h);
+  _nes_database->_bin_grid->set_partial_route_cap_v(partial_route_cap_v);
 
   _nes_database->_density = new Density(grid_manager);
   _nes_database->_density_gradient = new ElectricFieldGradient(grid_manager);  // TODO : be optional.
@@ -464,18 +472,21 @@ void NesterovPlace::runNesterovPlace()
 
 void NesterovPlace::runNesterovRoutablityPlace()
 {
-  std::vector<NesInstance*> placable_inst_list = this->obtianPlacableNesInstanceList();
+  std::cout << std::endl;
+  LOG_INFO << "-----------------Start Routability-driven Global Placement-----------------";
+  ieda::Stats gp_status;
 
+  std::vector<NesInstance*> placable_inst_list = std::move(this->obtianPlacableNesInstanceList());
   initNesterovPlace(placable_inst_list);
 
-  ieda::Stats gp_status;
   // main
-  NesterovRoutablitySolve(placable_inst_list);
+  NesterovWeightedRDP(placable_inst_list);
+  PlacerDBInst.updateTopoManager();
+  PlacerDBInst.updateGridManager();
 
-  double memory_delta = gp_status.memoryDelta();
-  LOG_INFO << "GP memory usage " << memory_delta << "MB";
   double time_delta = gp_status.elapsedRunTime();
-  LOG_INFO << "GP time elapsed " << time_delta << "s";
+  LOG_INFO << "Routability-driven Global Placement Total Time Elapsed: " << time_delta << "s";
+  LOG_INFO << "-----------------Finish Routability-driven Global Placement-----------------";
 }
 
 /*****************************Congestion-driven Placement: END*****************************/
@@ -1112,6 +1123,7 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
   std::vector<Point<int32_t>> cur_position_list;
   best_position_list.resize(inst_size);
   cur_position_list.resize(inst_size);
+  // _nes_database->_bin_grid->evalRouteCap(_nes_config.get_thread_num());
 
   // core Nesterov loop.
   for (int32_t iter_num = 1; iter_num <= _nes_config.get_max_iter(); iter_num++) {
@@ -1145,6 +1157,13 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), is_cal_phi);
 
       updateTopologyManager();
+      // if (iter_num >= 300 && iter_num % 10 == 0){
+      //   _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
+      //   _nes_database->_bin_grid->fastGaussianBlur();
+      //   _nes_database->_bin_grid->evalRouteUtil();
+      //   _nes_database->_bin_grid->plotRouteUtil(iter_num);
+      //   _nes_database->_bin_grid->plotOverflowUtil(sum_overflow, iter_num);
+      // }
       _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
 
@@ -1459,10 +1478,8 @@ void NesterovPlace::printDensityMapToCsv(std::string file_name)
   file_stream.close();
 }
 
-/*****************************Congestion-driven Placement: START*****************************/
-void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list)
-{
-  // if placer diverged in init() function, global placement must be skipped.
+void NesterovPlace::NesterovWeightedRDP(std::vector<NesInstance*>& inst_list){
+    // if placer diverged in init() function, global placement must be skipped.
   if (_nes_database->_is_diverged) {
     LOG_ERROR << "diverged occured. please tune the parameters again";
     return;
@@ -1470,9 +1487,6 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
 
   auto* solver = _nes_database->_nesterov_solver;
   size_t inst_size = inst_list.size();
-  int64_t total_area = this->obtainTotalArea(inst_list);
-  int64_t total_filler_area = this->obtainTotalFillerArea(inst_list);
-  LOG_INFO << "Routability-driven placement: total area before cell inflation : " << total_area;
 
   float sum_overflow;
   int64_t prev_hpwl, hpwl;
@@ -1491,83 +1505,107 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
   // dynamic adjustment of max_phi_coef
   bool is_max_phi_coef_changed = false;
 
-  // Routability-driven placement(RDP): snapshot for tracking back previous solution
-  bool is_snapshot_saved = false;
-  std::vector<Point<int32_t>> snapshot_next_coord_list;
-  std::vector<Point<int32_t>> snapshot_next_slp_coord_list;
-  std::vector<Point<float>> snapshot_next_grad_list;
-  float snapshot_next_parameter = 0.f;
-  float snapshot_step_length = 0.f;
-  float snapshot_density_penalty = 0.f;
-  float snapshot_wl_coef = 0.f;
+  // opt setting
+  const std::vector<float>& opt_overflow_list = _nes_config.get_opt_overflow_list();
+  int32_t cur_opt_overflow_step = opt_overflow_list.size() - 1;
 
-  // Routability-driven placement(RDP): variables
-  bool is_diverge_tried_revert = false;
-  bool is_routability_mode = true;
-  bool is_routability_need = true;
-  bool is_revert_init_need = true;
-
-  int num_call_routability = 0;
-  int num_max_call_routability = 10;
-
-  int min_rc_violated_cnt = 0;
-  float min_rc = 1e30;
-  float min_rc_target_density = 0;
-  std::vector<std::pair<int, int>> min_rc_cell_size_list;
-  min_rc_cell_size_list.resize(inst_size, std::make_pair(0, 0));
-  float max_target_density = 0.9;
-  float routability_check_overflow = 0.2;
-  float target_rc = 1.1;
-  float min_inflation_ratio = 1.01;
-  float max_inflation_ratio = 2.5;
-  float inflation_ratio_coef = 2.5;
-
-  int64_t inflated_area_delta = 0;
-
-  // for record long net.
-  float layout_ratio = 0.5;
-  int32_t long_width = static_cast<float>(core_shape.get_width()) * layout_ratio;
-  int32_t long_height = static_cast<float>(core_shape.get_height()) * layout_ratio;
+  // prepare for long net opt.
+  int32_t long_width, long_height;
   std::ofstream long_net_stream;
-  if (_nes_config.isOptMaxWirelength()) {
-    layout_ratio = 0.3;
-    long_width = static_cast<float>(core_shape.get_width()) * layout_ratio;
-    long_height = static_cast<float>(core_shape.get_height()) * layout_ratio;
+  if (PRINT_LONG_NET) {
+    float layout_ratio = 0.5;
+    long_width = core_shape.get_width() * layout_ratio;
+    long_height = core_shape.get_height() * layout_ratio;
     long_net_stream.open("./result/pl/AcrossLongNet_process.txt");
     if (!long_net_stream.good()) {
       LOG_WARNING << "Cannot open file for recording across long net !";
     }
   }
-  const std::vector<float>& opt_overflow_list = _nes_config.get_opt_overflow_list();
-  int32_t cur_opt_overflow_step = opt_overflow_list.size() - 1;
 
+  // prepare for iter info record
+  std::ofstream info_stream;
+  if (RECORD_ITER_INFO) {
+    info_stream.open("./result/pl/plIterInfo.csv");
+    if (!info_stream.good()) {
+      LOG_WARNING << "Cannot open file for iter info record !";
+    }
+  }
+
+  // prepare for convergence acceleration and non-convergence treatment
+  int32_t min_perturb_interval = 50;
+  int32_t last_perturb_iter = -min_perturb_interval;
+  bool is_add_quad_penalty = false;
+  bool is_cal_phi = false;
+  bool stop_placement = false;
+  std::vector<Point<int32_t>> best_position_list;
+  std::vector<Point<int32_t>> cur_position_list;
+  best_position_list.resize(inst_size);
+  cur_position_list.resize(inst_size);
+
+  _nes_database->_bin_grid->evalRouteCap(_nes_config.get_thread_num());
+  _nes_database->_bin_grid->plotRouteCap();
   // core Nesterov loop.
   for (int32_t iter_num = 1; iter_num <= _nes_config.get_max_iter(); iter_num++) {
-    solver->runNextIter(iter_num, 1);
+    solver->runNextIter(iter_num, _nes_config.get_thread_num());
     int32_t num_backtrack = 0;
     for (; num_backtrack < _nes_config.get_max_back_track(); num_backtrack++) {
-      auto next_coordi_list = solver->get_next_coordis();
-      auto next_slp_coordi_list = solver->get_next_slp_coordis();
+      auto& next_coordi_list = solver->get_next_coordis();
+      auto& next_slp_coordi_list = solver->get_next_slp_coordis();
 
+#pragma omp parallel for num_threads(_nes_config.get_thread_num())
       for (size_t i = 0; i < inst_size; i++) {
-        updateDensityCenterCoordiLayoutInside(inst_list[i], next_coordi_list[i], core_shape);
-        solver->correctNextCoordi(i, next_coordi_list[i]);
-        updateDensityCenterCoordiLayoutInside(inst_list[i], next_slp_coordi_list[i], core_shape);
-        solver->correctNextSLPCoordi(i, next_slp_coordi_list[i]);
-        inst_list[i]->updateDensityCenterLocation(next_slp_coordi_list[i]);
+        Point<int32_t> next_coordi(next_coordi_list[i].get_x(), next_coordi_list[i].get_y());
+        Point<int32_t> next_slp_coordi(next_slp_coordi_list[i].get_x(), next_slp_coordi_list[i].get_y());
+
+        updateDensityCenterCoordiLayoutInside(inst_list[i], next_coordi, core_shape);
+        solver->correctNextCoordi(i, next_coordi);
+        cur_position_list[i] = next_coordi;
+
+        updateDensityCenterCoordiLayoutInside(inst_list[i], next_slp_coordi, core_shape);
+        solver->correctNextSLPCoordi(i, next_slp_coordi);
+        inst_list[i]->updateDensityCenterLocation(next_slp_coordi);
       }
 
-      // update next density gradient force.
       _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
 
-      // update next wirelength gradient force.
+      // print density map for debug
+      if (iter_num == 60 && PRINT_DENSITY_MAP) {
+        printDensityMapToCsv("density_map_" + std::to_string(iter_num));
+      }
+
+      _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), is_cal_phi);
+
       updateTopologyManager();
-      _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
+          // _nes_database->_bin_grid->updataOverflowArea(inst_list, _nes_config.get_thread_num());
+      sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
+      if (iter_num >= 340 && iter_num % 10 == 0){
+        _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
+        _nes_database->_bin_grid->fastGaussianBlur();
+        _nes_database->_bin_grid->evalRouteUtil();
+        _nes_database->_bin_grid->plotRouteUtil(iter_num);
+      }
+      if (sum_overflow > 0.5){
+        _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
+      }else{
+        _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
+        _nes_database->_bin_grid->fastGaussianBlur();
+        _nes_database->_bin_grid->evalRouteUtil();
+        _nes_database->_bin_grid->plotOverflowUtil(sum_overflow, iter_num);
+
+        // writeBackPlacerDB();
+        // PlacerDBInst.writeBackSourceDataBase();
+        // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+        // std::vector<float> gr_congestion = eval_api.evalGRCong();
+    
+        auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
+        _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
+                                                                 _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num(), grid_manager);
+      }
 
       // update next target penalty object.
-      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list, false);
+      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list,
+                            is_add_quad_penalty);
 
       if (_nes_database->_is_diverged) {
         break;
@@ -1581,7 +1619,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
         //
         break;
       } else {
-        solver->runBackTrackIter(1);
+        solver->runBackTrackIter(_nes_config.get_thread_num());
       }
     }
 
@@ -1597,7 +1635,14 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
       break;
     }
 
-    sum_overflow = static_cast<float>(_nes_database->_bin_grid->obtainOverflowAreaWithoutFiller()) / total_area;
+    if (RECORD_ITER_INFO) {
+      if (iter_num == 1) {
+        info_stream << "WireLength Grad Sum,Density Grad Sum,Density Weight,StepLength" << std::endl;
+      }
+      printIterInfoToCsv(info_stream, iter_num);
+    }
+
+
 
     if (_nes_config.isOptMaxWirelength()) {
       if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
@@ -1616,6 +1661,7 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
     }
 
     hpwl = _nes_database->_wirelength->obtainTotalWirelength();
+
     float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
     prev_hpwl = hpwl;
     _nes_database->_density_penalty *= phi_coef;
@@ -1625,9 +1671,20 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
       LOG_INFO << "[NesterovSolve] Iter: " << iter_num << " overflow: " << sum_overflow << " HPWL: " << prev_hpwl;
 
       if (PRINT_LONG_NET) {
-        long_net_stream << "CURRENT ITERATION : " << iter_num << std::endl;
+        long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
         long_net_stream << std::endl;
         printAcrossLongNet(long_net_stream, long_width, long_height);
+      }
+
+      if (PLOT_IMAGE) {
+        plotInstImage("inst_" + std::to_string(iter_num));
+        plotBinForceLine("bin_" + std::to_string(iter_num));
+      }
+    }
+
+    if (iter_num == 1 || iter_num % 5 == 0) {
+      if (PRINT_COORDI) {
+        saveNesterovPlaceData(iter_num);
       }
     }
 
@@ -1640,217 +1697,66 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
       LOG_ERROR << " divergence detected. \n"
                 << "    please decrease max_phi_cof value";
       _nes_database->_is_diverged = true;
-      // Routability-driven placement(RDP): snapshot for tracking back previous solution
-      // revert back to the original routability solution
-      if (!is_diverge_tried_revert && num_call_routability >= 1) {
-        // revert back to the working rc size.
-        for (size_t i = 0; i < inst_size; ++i) {
-          if (inst_list[i]->isFiller() || inst_list[i]->isFixed() || inst_list[i]->isMacro()) {
-            continue;
-          }
-          inst_list[i]->changeSize(min_rc_cell_size_list[i].first, min_rc_cell_size_list[i].second);
-        }
-        // revert back the current density penality
-        solver->set_next_coordis(snapshot_next_coord_list);
-        solver->set_next_slp_coordis(snapshot_next_slp_coord_list);
-        solver->set_next_gradients(snapshot_next_grad_list);
-        solver->set_next_parameter(snapshot_next_parameter);
-        solver->set_next_steplength(snapshot_step_length);
-        _nes_database->_density_penalty = snapshot_density_penalty;
-        _nes_database->_wirelength_coef = snapshot_wl_coef;
-        // update current cell location
-        auto next_coodis = solver->get_next_coordis();
+      break;
+    }
+
+    _overflow_record_list.push_back(sum_overflow);
+    _hpwl_record_list.push_back(hpwl);
+
+    if (sum_overflow < _best_overflow) {
+      _best_hpwl = hpwl;
+      _best_overflow = sum_overflow;
+      best_position_list.swap(cur_position_list);
+    }
+
+    if (sum_overflow < _nes_config.get_target_overflow() * 4 && sum_overflow > _nes_config.get_target_overflow() * 1.1) {
+      if (checkDivergence(3, 0.03 * sum_overflow)) {
+        // rollback to best pos.
         for (size_t i = 0; i < inst_size; i++) {
-          inst_list[i]->updateDensityCenterLocation(next_coodis[i]);
+          updateDensityCenterCoordiLayoutInside(inst_list[i], best_position_list[i], core_shape);
         }
-        // update next density gradient force.
-        _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
-        // update next wirelength gradient force.
-        updateTopologyManager();
-        _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-                                                                   _nes_config.get_min_wirelength_force_bar(),
-                                                                   _nes_config.get_thread_num());
-        // update flag, turn off the RDP forcely
-        _nes_database->_is_diverged = false;
-        is_diverge_tried_revert = true;
-        is_routability_need = false;
-      } else {
-        break;
+        sum_overflow = _best_overflow;
+        prev_hpwl = _best_hpwl;
+
+        stop_placement = true;
       }
     }
 
-    // Routability-driven placement(RDP): saving snapshots for routability
-    if (!is_snapshot_saved && is_routability_mode && sum_overflow <= 0.6) {
-      snapshot_next_coord_list = solver->get_next_coordis();
-      snapshot_next_slp_coord_list = solver->get_next_slp_coordis();
-      snapshot_next_grad_list = solver->get_next_gradients();
-      snapshot_next_parameter = solver->get_next_parameter();
-      snapshot_step_length = solver->get_next_steplength();
-      snapshot_density_penalty = _nes_database->_density_penalty;
-      snapshot_wl_coef = _nes_database->_wirelength_coef;
-      is_snapshot_saved = true;
-      LOG_INFO << "Routability-driven placement: Save snapshot at iter = " << iter_num;
-    }
-
-    // Routability-driven placement(RDP): Core code
-    if (is_routability_mode && is_routability_need && num_call_routability < num_max_call_routability
-        && sum_overflow <= routability_check_overflow) {
-      // increase count;
-      num_call_routability++;
-      LOG_INFO << "Routability-driven placement: num_call: " << num_call_routability;
-
-      // update placeDB && dmInst, get route congestion
-      writeBackPlacerDB();
-      PlacerDBInst.writeBackSourceDataBase();
-      eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-      std::vector<float> gr_congestion = eval_api.evalGRCong();
-      LOG_INFO << "Routability-driven placement: ACE: " << gr_congestion[0] << " TOF: " << gr_congestion[1] << " MOF: " << gr_congestion[2];
-
-      // no need if ACE is lower than target_rc
-      if (gr_congestion[0] < target_rc) {
-        inflated_area_delta = 0;
-        is_routability_need = false;
-        is_revert_init_need = false;
-      } else {
-        // save solution when ACE becomes lower
-        if (min_rc > gr_congestion[0]) {
-          min_rc = gr_congestion[0];
-          min_rc_target_density = _nes_config.get_target_density();
-          min_rc_violated_cnt = 0;
-          for (size_t i = 0; i < inst_size; i++) {
-            if (inst_list[i]->isFiller() || inst_list[i]->isFixed() || inst_list[i]->isMacro()) {
-              continue;
-            }
-            min_rc_cell_size_list[i]
-                = std::make_pair(inst_list[i]->get_origin_shape().get_width(), inst_list[i]->get_origin_shape().get_height());
-          }
-        } else {
-          min_rc_violated_cnt++;
+    if (iter_num - last_perturb_iter > min_perturb_interval && checkPlateau(50, 0.01)) {
+      if (sum_overflow > 0.9) {
+        // quad mode
+        is_add_quad_penalty = true;
+        is_cal_phi = true;
+        LOG_INFO << "Stuck at early stage. Turn on quadratic penalty with double density factor to accelerate convergence";
+        if (sum_overflow > 0.95) {
+          float noise_intensity = std::min(std::max(40 + (120 - 40) * (sum_overflow - 0.95) * 10, 40.0), 90.0)
+                                  * _nes_database->_placer_db->get_layout()->get_site_width();
+          entropyInjection(0.996, noise_intensity);
+          LOG_INFO << "Stuck at very early stage. Turn on entropy injection with noise intensity = " << noise_intensity
+                   << " to help convergence";
         }
-
-        // get route utilizatio list, and then get inflation ratio
-        std::vector<float> use_cap_ratio_list = eval_api.getUseCapRatioList();
-        for (size_t i = 0; i < use_cap_ratio_list.size(); ++i) {
-          float old_ratio = use_cap_ratio_list[i];
-          if (old_ratio >= min_inflation_ratio) {
-            float new_ratio = std::pow(old_ratio, inflation_ratio_coef);
-            new_ratio = std::fmin(new_ratio, max_inflation_ratio);
-            use_cap_ratio_list[i] = new_ratio;
-          }
-        }
-
-        // bloat cells and get inflated_area_delta
-        inflated_area_delta = 0;                                                   //  0 |  1 |  2  |  3  |  4 |  5
-        const std::vector<int>& grid_info = eval_api.getTileGridCoordSizeCntXY();  // lx | ly |sizex|sizey|cntx|cnty
-        for (size_t i = 0; i < inst_size; ++i) {
-          if (inst_list[i]->isFiller() || inst_list[i]->isFixed() || inst_list[i]->isMacro()) {
-            continue;
-          }
-          // match cell location and route utilization map
-          int idx_x = (inst_list[i]->get_density_center_coordi().get_x() - grid_info[0]) / grid_info[2];
-          int idx_y = (inst_list[i]->get_density_center_coordi().get_y() - grid_info[1]) / grid_info[3];
-          float cur_ratio = use_cap_ratio_list[idx_x + idx_y * grid_info[4]];
-          if (cur_ratio <= 1.0f) {
-            continue;
-          }
-          // bloat
-          int64_t prev_cell_area = static_cast<int64_t>(inst_list[i]->get_origin_shape().get_width())
-                                   * static_cast<int64_t>(inst_list[i]->get_origin_shape().get_height());
-          inst_list[i]->changeSize(static_cast<int32_t>(round(inst_list[i]->get_origin_shape().get_width() * sqrt(cur_ratio))),
-                                   static_cast<int32_t>(round(inst_list[i]->get_origin_shape().get_height() * sqrt(cur_ratio))));
-          int64_t new_cell_area = static_cast<int64_t>(inst_list[i]->get_origin_shape().get_width())
-                                  * static_cast<int64_t>(inst_list[i]->get_origin_shape().get_height());
-          inflated_area_delta += new_cell_area - prev_cell_area;
-        }
-        LOG_INFO << "Routability-driven placement: inflated_area_delta: " << inflated_area_delta;
-
-        // compute whitespace to get new target_density
-        int64_t nonplace_area = 0;
-        for (auto* n_inst : _nes_database->_nInstance_list) {
-          Rectangle<int32_t> n_inst_shape = n_inst->get_origin_shape();
-          int64_t shape_area_x = static_cast<int64_t>(n_inst_shape.get_width());
-          int64_t shape_area_y = static_cast<int64_t>(n_inst_shape.get_height());
-          if (n_inst->isFixed()) {
-            nonplace_area += shape_area_x * shape_area_y;
-            continue;
-          }
-        }
-        for (auto* blockage : _nes_database->_placer_db->get_design()->get_region_list()) {
-          for (auto boundary : blockage->get_boundaries()) {
-            int64_t boundary_width = static_cast<int64_t>(boundary.get_width());
-            int64_t boundary_height = static_cast<int64_t>(boundary.get_height());
-            nonplace_area += boundary_width * boundary_height;
-          }
-        }
-        int64_t core_area = static_cast<int64_t>(core_shape.get_width()) * static_cast<int64_t>(core_shape.get_height());
-        int64_t white_space_area = core_area - nonplace_area;
-        int64_t total_cell_area = inflated_area_delta + total_area + total_filler_area;
-        _nes_config.set_target_density(static_cast<float>(total_cell_area) / static_cast<float>(white_space_area));
-        LOG_INFO << "Routability-driven placement: target_density: " << _nes_config.get_target_density();
-
-        // max density detection or rc not improvement detection
-        if (_nes_config.get_target_density() > max_target_density || min_rc_violated_cnt >= 3) {
-          LOG_INFO << "Routability-driven placement: Revert procedure. current min_rc: " << min_rc
-                   << " target_density: " << min_rc_target_density;
-          _nes_config.set_target_density(min_rc_target_density);
-          for (size_t i = 0; i < inst_size; ++i) {
-            if (inst_list[i]->isFiller() || inst_list[i]->isFixed() || inst_list[i]->isMacro()) {
-              continue;
-            }
-            inst_list[i]->changeSize(min_rc_cell_size_list[i].first, min_rc_cell_size_list[i].second);
-          }
-          initNesInstanceDensitySize();
-          inflated_area_delta = 0;
-          is_routability_need = false;
-          is_revert_init_need = true;
-        } else {
-          // update area
-          total_area = this->obtainTotalArea(inst_list);
-          LOG_INFO << "Routability-driven placement: total area after cell inflation : " << total_area;
-          // update density_size for all cell
-          initNesInstanceDensitySize();
-          // reset
-          inflated_area_delta = 0;
-          is_routability_need = true;
-          is_revert_init_need = true;
-        }
-      }
-
-      // if routability is needed
-      if (is_routability_need || is_revert_init_need) {
-        LOG_INFO << "Routability-driven placement: enable RDP and revert back to the snapshot";
-        solver->set_next_coordis(snapshot_next_coord_list);
-        solver->set_next_slp_coordis(snapshot_next_slp_coord_list);
-        solver->set_next_gradients(snapshot_next_grad_list);
-        solver->set_next_parameter(snapshot_next_parameter);
-        solver->set_next_steplength(snapshot_step_length);
-        _nes_database->_density_penalty = snapshot_density_penalty;
-        _nes_database->_wirelength_coef = snapshot_wl_coef;
-        // update current cell location
-        auto next_coodis = solver->get_next_coordis();
-        for (size_t i = 0; i < inst_size; i++) {
-          inst_list[i]->updateDensityCenterLocation(next_coodis[i]);
-        }
-        // update next density gradient force.
-        _nes_database->_bin_grid->updateBinGrid(inst_list, _nes_config.get_thread_num());
-        _nes_database->_density_gradient->updateDensityForce(_nes_config.get_thread_num(), false);
-        // update next wirelength gradient force.
-        updateTopologyManager();
-        _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-                                                                   _nes_config.get_min_wirelength_force_bar(),
-                                                                   _nes_config.get_thread_num());
-        // reset the divergence detect conditions
-        min_sum_overflow = 1e30;
-        hpwl_with_min_sum_overflow = 1e30;
+        last_perturb_iter = iter_num;
       }
     }
 
     // minimun iteration is 50
-    if (iter_num > 50 && sum_overflow <= _nes_config.get_target_overflow()) {
+    if ((iter_num > 50 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
+      if (PRINT_LONG_NET) {
+        long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
+        long_net_stream << std::endl;
+        printAcrossLongNet(long_net_stream, long_width, long_height);
+        long_net_stream.close();
+      }
+
+      if (RECORD_ITER_INFO) {
+        info_stream.close();
+      }
+
+      if (PRINT_COORDI) {
+        saveNesterovPlaceData(iter_num);
+      }
+
       LOG_INFO << "[NesterovSolve] Finished with Overflow:" << sum_overflow << " HPWL : " << prev_hpwl;
-      LOG_INFO << "[TEST] Peak Bin Density: " << _nes_database->_density->obtainPeakBinDensity();
-      LOG_INFO << "[TEST] Final Iteration: " << iter_num;
       break;
     }
   }
@@ -1859,15 +1765,9 @@ void NesterovPlace::NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list
     exit(1);
   }
 
-  if (_nes_config.isOptMaxWirelength()) {
-    long_net_stream.close();
-  }
-
   // update PlacerDB.
   writeBackPlacerDB();
 }
-
-/*****************************Congestion-driven Placement: END*****************************/
 
 void NesterovPlace::writeBackPlacerDB()
 {
@@ -2135,7 +2035,7 @@ void NesterovPlace::entropyInjection(float shrink_factor, float noise_intensity)
   }
 }
 
-bool NesterovPlace::checkDivergence(int32_t window, float threshold)
+bool NesterovPlace::checkDivergence(int32_t window, float threshold, bool is_routability)
 {
   if (static_cast<int32_t>(_overflow_record_list.size()) < window) {
     return false;
@@ -2169,10 +2069,10 @@ bool NesterovPlace::checkDivergence(int32_t window, float threshold)
   wl_ratio = static_cast<float>(wl_mean - _best_hpwl) / _best_hpwl;
 
   if (wl_ratio > threshold * 1.2) {
-    if (overflow_ratio > threshold) {
+    if (overflow_ratio > threshold && is_routability == false) {
       LOG_WARNING << "Divergence detected: overflow increases too much than best overflow (" << overflow_ratio << " > " << threshold << ")";
       return true;
-    } else if ((overflow_max - overflow_min) / overflow_mean < threshold) {
+    } else if ((overflow_max - overflow_min) / overflow_mean < threshold && is_routability == false )  {
       LOG_WARNING << "Divergence detected: overflow plateau ( " << (overflow_max - overflow_min) / overflow_mean << " < " << threshold
                   << ")";
       return true;

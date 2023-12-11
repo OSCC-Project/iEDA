@@ -325,10 +325,6 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
   return congestion_eval.getNetCong(rudy_type);
 }
 
-// pair<vector<float>, vector<float>> EvalAPI::evalHVNetCong()
-// {
-// }
-
 vector<float> EvalAPI::evalGRCong()
 {
   // call router to get tilegrid info

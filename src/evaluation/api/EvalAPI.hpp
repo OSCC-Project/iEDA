@@ -123,8 +123,8 @@ class EvalAPI
 
   EvalAPI()
   {
-    _wirelength_eval_inst = new WirelengthEval();
-    _timing_eval_inst = new TimingEval();
+    // _wirelength_eval_inst = new WirelengthEval();
+    // _timing_eval_inst = new TimingEval();
     _congestion_eval_inst = new CongestionEval();
   }
   EvalAPI(const EvalAPI& other) = delete;
