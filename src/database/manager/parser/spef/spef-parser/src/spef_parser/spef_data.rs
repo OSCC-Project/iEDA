@@ -340,14 +340,22 @@ impl SpefNet {
 pub struct SpefExchange {
     pub file_name: String,
     pub header: Vec<SpefHeaderEntry>,
-    pub name_map: HashMap<usize, String>,
+    pub index_to_name_map: HashMap<usize, String>,
+    pub name_to_index_map: HashMap<String, usize>,
     pub ports: Vec<SpefPortEntry>,
     pub nets: Vec<SpefNet>,
 }
 
 impl SpefExchange {
     pub fn new(file_name: String) -> SpefExchange {
-        SpefExchange { file_name, header: Vec::new(), name_map: HashMap::new(), ports: Vec::new(), nets: Vec::new() }
+        SpefExchange {
+            file_name,
+            header: Vec::new(),
+            index_to_name_map: HashMap::new(),
+            name_to_index_map: HashMap::new(),
+            ports: Vec::new(),
+            nets: Vec::new(),
+        }
     }
 
     pub fn add_header_entry(&mut self, header: SpefHeaderEntry) {
@@ -358,12 +366,18 @@ impl SpefExchange {
         &self.header
     }
 
-    pub fn add_namemap_entry(&mut self, namemap_entry: SpefNameMapEntry) {
-        self.name_map.insert(namemap_entry.index, namemap_entry.name);
+    pub fn add_name_map_entry(&mut self, name_map_entry: SpefNameMapEntry) {
+        let name_clone = name_map_entry.name.clone();
+        self.index_to_name_map.insert(name_map_entry.index, name_map_entry.name);
+        self.name_to_index_map.insert(name_clone, name_map_entry.index);
     }
 
-    pub fn get_name_map(&self) -> &HashMap<usize, String> {
-        &self.name_map
+    pub fn get_index_to_name_map(&self) -> &HashMap<usize, String> {
+        &self.index_to_name_map
+    }
+
+    pub fn get_name_to_index_map(&self) -> &HashMap<String, usize> {
+        &self.name_to_index_map
     }
 
     pub fn add_port_entry(&mut self, port_entry: SpefPortEntry) {
