@@ -406,15 +406,14 @@ Inst* TreeBuilder::fluteBstSaltTree(const std::string& net_name, const std::vect
   // flute
   fluteTree(net_name, driver_pin, loads);
   // flute-BST
-  convertToBinaryTree(driver_pin);
   auto solver = bst::BoundSkewTree(net_name, driver_pin, skew_bound);
   solver.run();
 
   buf->set_cell_master(TimingPropagator::getMinSizeCell());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  removeRedundant(driver_pin);
   TimingPropagator::update(bst_net);
 
-  removeRedundant(driver_pin);
   std::unordered_map<int, Node*> id_to_node;
   std::unordered_map<Pin*, std::shared_ptr<salt::Pin>> salt_pin_map;
   std::vector<std::shared_ptr<salt::Pin>> salt_pins;
@@ -497,8 +496,9 @@ Inst* TreeBuilder::bstSaltTree(const std::string& net_name, const std::vector<Pi
   auto* driver_pin = buf->get_driver_pin();
   buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
-
+  removeRedundant(driver_pin);
   TimingPropagator::update(bst_net);
+
   TreeBuilder::updateId(driver_pin);
   int num = 0;
   driver_pin->preOrder([&](Node* node) { ++num; });
@@ -649,6 +649,7 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
   auto* driver_pin = buf->get_driver_pin();
   buf->set_cell_master(TimingPropagator::getMinSizeCell());
   auto* bst_net = TimingPropagator::genNet("BoundSkewTree", driver_pin, loads);
+  removeRedundant(driver_pin);
   TimingPropagator::update(bst_net);
 
   std::vector<Pin*> pins{driver_pin};
@@ -1094,8 +1095,10 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
     } else {
       out << "plt.plot(" << node->get_location().x() << "," << node->get_location().y() << ", c='k', marker='s', mew=0, ms=8)\n";
     }
-    // out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << std::fixed << std::setprecision(4)
-    //     << node->get_name() << "]')\n";
+    if (node->isPin()) {
+      out << "plt.text(" << node->get_location().x() << "," << node->get_location().y() << ",'[" << std::fixed << std::setprecision(4)
+          << node->get_min_delay() << "," << node->get_max_delay() << "]', fontsize=6)\n";
+    }
   });
   out << "plt.axis('square')\n";
   out << "plt.axis('off')\n";
