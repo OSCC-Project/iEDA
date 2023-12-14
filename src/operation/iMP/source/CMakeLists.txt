@@ -23,6 +23,7 @@ target_link_libraries(imp_source
         imp-logger
         imp-solver
         imp-plot
+        imp-heuristic
         # imp_utility
 )
 

@@ -45,20 +45,73 @@ class SimulateAnneal
   SimulateAnneal() = delete;
   ~SimulateAnneal() = delete;
 };
-template <typename T>
-std::vector<T> SASolve(T& solution, std::function<double(const T&)>& evaluate, std::function<void(T&)>& action, int max_iters,
-                       int num_actions, double cool_rate, double temperature)
+
+template <typename SolutionType>
+class SATask
 {
-  std::vector<T> historys;
+ public:
+  SATask(const SolutionType& solution, const std::function<double(SolutionType&)> evaluate, const std::function<void(SolutionType&)> action,
+         int max_iters, int num_actions, double cool_rate, double temperature)
+      : _solution(solution),
+        _evaluate(evaluate),
+        _action(action),
+        _max_iters(max_iters),
+        _num_actions(num_actions),
+        _cool_rate(cool_rate),
+        _temperature(temperature)
+  {
+  }
+  // getter
+  SolutionType& get_solution() { return _solution; }
+  std::function<double(SolutionType&)>& get_evaluate() { return _evaluate; }
+  std::function<void(SolutionType&)>& get_action() { return _action; }
+  int get_max_iters() const { return _max_iters; }
+  int get_num_actions() const { return _num_actions; }
+  double get_cool_rate() const { return _cool_rate; }
+  double get_temperature() const { return _temperature; }
+
+  // setter
+  void set_solution(const SolutionType& solution) { _solution = solution; }
+  void set_evaluate(const std::function<double(SolutionType&)>& evaluate) { _evaluate = evaluate; }
+  void set_action(const std::function<void(SolutionType&)>& action) { _action = action; }
+  void set_max_iters(int max_iters) { _max_iters = max_iters; }
+  void set_num_actions(int num_actions) { _num_actions = num_actions; }
+  void set_cool_rate(double cool_rate) { _cool_rate = cool_rate; }
+  void set_temperature(double temperature) { _temperature = temperature; }
+
+ private:
+  SolutionType _solution;
+  std::function<double(SolutionType&)> _evaluate;
+  std::function<void(SolutionType&)> _action;
+  int _max_iters;
+  int _num_actions;
+  double _cool_rate;
+  double _temperature;
+};
+
+template <typename SolutionType>
+std::vector<SolutionType> SASolve(SATask<SolutionType>& sa_task)
+{
+  return SASolve<SolutionType>(sa_task.get_solution(), sa_task.get_evaluate(), sa_task.get_action(), sa_task.get_max_iters(),
+                               sa_task.get_num_actions(), sa_task.get_cool_rate(), sa_task.get_temperature());
+}
+
+template <typename SolutionType>
+std::vector<SolutionType> SASolve(SolutionType& solution, std::function<double(SolutionType&)> evaluate,
+                                  std::function<void(SolutionType&)> action, int max_iters, int num_actions, double cool_rate,
+                                  double temperature = 10000)
+{
+  std::vector<SolutionType> historys;
   double inital_temp = temperature;
   double cur_cost = evaluate(solution);
   double last_cost = 0.;
   double temp_cost{0.}, delta_cost{0.}, random{0.};
+
   std::random_device r;
   std::mt19937 e1(r());
   std::uniform_real_distribution<double> real_rand(0., 1.);
   // fast sa
-  T solution_t = solution;
+  SolutionType solution_t = solution;
   for (int iter = 0; iter < max_iters && temperature >= 0.01; ++iter) {
     last_cost = cur_cost;
     for (int times = 0; times < num_actions; ++times) {
@@ -81,6 +134,7 @@ std::vector<T> SASolve(T& solution, std::function<double(const T&)>& evaluate, s
 
   return historys;
 }
+
 }  // namespace imp
 
 #endif

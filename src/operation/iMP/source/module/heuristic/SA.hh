@@ -11,7 +11,7 @@
 #ifndef IMP_SA_H
 #define IMP_SA_H
 #include "Annealer.hh"
-#include "NetList.hh"
+// #include "NetList.hh"
 namespace imp {
 void SeqPairbaseSA();
 

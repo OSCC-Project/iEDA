@@ -1,18 +1,23 @@
 #include "Partitionner.hh"
 
+#include <time.h>
+
 #include <cassert>
+#include <unordered_map>
 
 #include "Logger.hpp"
 const std::string khmetis_binary_path = HMETIS_BINARY;
 
 namespace imp {
 vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, const vector<size_t>& eptr, const vector<size_t>& eind,
-                                         size_t nparts, size_t ufactor, const vector<int64_t>& vwgt, const vector<int64_t>& hewgt)
+                                         size_t nparts, float ufactor, const vector<int64_t>& vwgt, const vector<int64_t>& hewgt,
+                                         int n_runs, int seed)
 {
   assert(vwgt.empty() || vwgt.size() == num_vertexs);
   assert(hewgt.empty() || hewgt.size() == num_hedges);
   vector<size_t> parts;
-  std::string hgraph_file_name = "./input.hgr";
+  std::string curr_time = std::to_string(int(clock()));
+  std::string hgraph_file_name = "/tmp/ieda_imp_hmetis_input" + curr_time + ".hgr";
   std::ofstream hgraph_file(hgraph_file_name);
   hgraph_file << num_hedges << " " << num_vertexs;
   if (!vwgt.empty() || !hewgt.empty()) {
@@ -39,6 +44,26 @@ vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, 
 
   std::string cmd = khmetis_binary_path + " " + hgraph_file_name + " " + std::to_string(nparts);
   //  " " + std::to_string(ufactor) + " 10 5 3 3 0 0";
+  std::string ptype = "rb";
+  std::string ctype = "gfc1";
+  std::string rtype = "moderate";
+  std::string otype = "cut";
+  int dbglvl = 0;
+  int seed = 0;
+  bool reconst = false;
+
+  cmd += " -ptype=" + ptype;
+  cmd += " -ctype=" + ctype;
+  cmd += " -rtype=" + rtype;
+  cmd += " -otype=" + otype;
+  cmd += " -ufactor=" + std::to_string(ufactor);
+  cmd += " -nruns=" + std::to_string(n_runs);
+  cmd += " -dbglvl=" + std::to_string(dbglvl);
+  cmd += " -seed=" + std::to_string(seed);
+  if (reconst) {
+    cmd += " -reconst";
+  }
+
   INFO("Starting hmetis partition ...");
   INFO(cmd);
   int status = system(cmd.c_str());

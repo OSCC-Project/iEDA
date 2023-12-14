@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <numeric>
+
 namespace imp {
 
 template <typename T>
@@ -57,6 +58,7 @@ T hpwl(int num_nets, T* x, T* y, int* nets, int* pins, T* x_off, T* y_off, int n
 
   return sum;
 }
+
 // template <typename T>
 // T hpwl(const std::vector<T>& pin_x, const std::vector<T>& pin_y, const std::vector<size_t>& netspan, int num_threads)
 // {

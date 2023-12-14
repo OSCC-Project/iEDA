@@ -41,6 +41,7 @@ T hpwl(const std::vector<T>& pin_x, const std::vector<T>& pin_y, const std::vect
   }
   return sum;
 }
+
 }  // namespace imp
 
 #endif
