@@ -38,7 +38,7 @@ iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
 🎉 **最新消息:**
 
-关注我们8月24日在北京 RISC-V 中国峰会 2023 上举办的 [开源EDA论坛（OSEDA 论坛）](https://mp.weixin.qq.com/s/8fo8--bphJcRd1JnuRF0Rg)，和8月25日的 [开源芯片技术生态论坛](https://mp.weixin.qq.com/s/oJyQ6yYoYUzn_OMC7O8Ilw)
+我们的论文 [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library](https://arxiv.org/abs/2308.01857) \[[paper][iEDA-paper], [slides][iEDA-slides]\] 获得 “**Best Paper of ISEDA 2023**”
 
 ---
 
