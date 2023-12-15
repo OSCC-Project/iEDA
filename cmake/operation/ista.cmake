@@ -11,6 +11,7 @@ include_directories(${HOME_OPERATION}/iSTA/source/module/include)
 
 include_directories(SYSTEM ${HOME_THIRDPARTY})
 include_directories(SYSTEM ${HOME_OPERATION}/iSTA/source/third-party)
+include_directories(SYSTEM ${HOME_OPERATION}/iSTA/source/third-party/parser/liberty)
 
 # set(CMAKE_BUILD_TYPE Release)
 

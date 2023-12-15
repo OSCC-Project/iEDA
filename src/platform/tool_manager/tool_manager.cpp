@@ -24,6 +24,7 @@
 #include "ifp_io.h"
 #include "ino_io.h"
 #include "ipl_io.h"
+#include "ipw_io.h"
 #include "irt_io.h"
 #include "ista_io.h"
 #include "ito_io.h"
@@ -316,6 +317,12 @@ bool ToolManager::buildClockTree(std::string config, std::string data_path)
 bool ToolManager::saveClockTree(std::string data_path)
 {
   return ctsInst->saveTreeDataToFile(data_path);
+}
+
+/// iPW
+bool ToolManager::autoRunPower(std::string config)
+{
+  return powerInst->autoRunPower(config);
 }
 
 }  // namespace iplf

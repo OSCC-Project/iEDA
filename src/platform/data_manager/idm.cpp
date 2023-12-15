@@ -69,6 +69,11 @@ bool DataManager::readLef(string config_path)
     return false;
   }
 
+  // tech lef
+  if (!initLef(std::vector<std::string>{_config.get_tech_lef_path()}, true)) {
+    return false;
+  }
+  // lef
   if (!initLef(_config.get_lef_paths())) {
     return false;
   }
@@ -76,13 +81,13 @@ bool DataManager::readLef(string config_path)
   return true;
 }
 
-bool DataManager::readLef(vector<string> lef_paths)
+bool DataManager::readLef(vector<string> lef_paths, bool b_techlef)
 {
   if (_idb_builder == nullptr) {
     _idb_builder = new IdbBuilder();
   }
 
-  if (!initLef(lef_paths)) {
+  if (!initLef(lef_paths, b_techlef)) {
     return false;
   }
 

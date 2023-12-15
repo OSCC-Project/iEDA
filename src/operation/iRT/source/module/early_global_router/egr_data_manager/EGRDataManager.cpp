@@ -98,7 +98,7 @@ void EGRDataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_min_width(idb_routing_layer->get_min_width());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
+      routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
     } else if (idb_layer->is_cut()) {
@@ -433,7 +433,9 @@ void EGRDataManager::buildCellSize()
 {
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : _egr_database.get_routing_layer_list()) {
-    pitch_count_map[routing_layer.getPreferTrackGrid().get_step_length()]++;
+    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
+      pitch_count_map[track_grid.get_step_length()]++;
+    }
   }
   irt_int ref_pitch = -1;
   irt_int max_count = INT32_MIN;
@@ -549,11 +551,11 @@ void EGRDataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_direction();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_direction();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
 
@@ -565,15 +567,15 @@ void EGRDataManager::makeLayerViaMasterList()
       LayerRect& b_above = b.get_above_enclosure();
       LayerRect& b_below = b.get_below_enclosure();
       // 方向
-      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_direction();
-      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_direction();
+      Direction a_above_layer_direction = routing_layer_list[a_above.get_layer_idx()].get_prefer_direction();
+      Direction b_above_layer_direction = routing_layer_list[b_above.get_layer_idx()].get_prefer_direction();
       if (a.get_above_direction() == a_above_layer_direction && b.get_above_direction() != b_above_layer_direction) {
         return true;
       } else if (a.get_above_direction() != a_above_layer_direction && b.get_above_direction() == b_above_layer_direction) {
         return false;
       }
-      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_direction();
-      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_direction();
+      Direction a_below_layer_direction = routing_layer_list[a_below.get_layer_idx()].get_prefer_direction();
+      Direction b_below_layer_direction = routing_layer_list[b_below.get_layer_idx()].get_prefer_direction();
       if (a.get_below_direction() == a_below_layer_direction && b.get_below_direction() != b_below_layer_direction) {
         return true;
       } else if (a.get_below_direction() != a_below_layer_direction && b.get_below_direction() == b_below_layer_direction) {
@@ -638,10 +640,41 @@ void EGRDataManager::buildBlockageList()
   }
 }
 
+void processPinList(EGRNet& egr_net)
+{
+  std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
+
+  std::vector<irt_int> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
+  }
+
+  irt_int legal_pin_idx = -1;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      legal_pin_idx = i;
+      break;
+    }
+  }
+
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", egr_net.get_net_name());
+  }
+
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
+  }
+}
+
 void EGRDataManager::buildNetList()
 {
   std::vector<EGRNet>& egr_net_list = _egr_database.get_egr_net_list();
   for (EGRNet& egr_net : egr_net_list) {
+    processPinList(egr_net);
     buildPinList(egr_net);
     buildDrivingPin(egr_net);
   }
@@ -738,8 +771,8 @@ void EGRDataManager::addResourceMapSupply()
     GridMap<EGRNode>& resource_map = layer_resource_map[i];
 
     RoutingLayer& routing_layer = routing_layer_list[i];
-    irt_int track_start_line = routing_layer.getPreferTrackGrid().get_start_line();
-    irt_int track_pitch = routing_layer.getPreferTrackGrid().get_step_length();
+    irt_int track_start_line = routing_layer.getPreferTrackGridList().front().get_start_line();
+    irt_int track_pitch = routing_layer.getPreferTrackGridList().front().get_step_length();
 
     for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
       for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {

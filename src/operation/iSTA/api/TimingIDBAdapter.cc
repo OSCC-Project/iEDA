@@ -17,7 +17,7 @@
 /**
  * @file TimingIDBAdapter.hh
  * @author shy long (longshy@pcl.ac.cn)
- * @brief
+ * @brief idb and ista data adapter.
  * @version 0.1
  * @date 2021-10-11
  */
@@ -141,18 +141,12 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
                     idb_layout->get_units()->get_micron_dbu();
   }
 
-  double lef_resistance;
-  if (idb_layout->get_units()->get_ohms() == -1) {
-    lef_resistance = routing_layer->get_resistance();
-  } else {
-    lef_resistance =
-        routing_layer->get_resistance();
-  }
+  double lef_resistance = routing_layer->get_resistance();
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
 
   return segment_resistance;
-}
+}  // namespace ista
 
 /**
  * @brief get segment capacitance.
@@ -195,6 +189,75 @@ double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
       (lef_edge_capacitance * 2 * (segment_length + (*segment_width)));
 
   return segment_capacitance;
+}
+
+/**
+ * @brief get unit capacitance.
+ *
+ * @param segment_width unit is um (micro meter)
+ * @return double
+ */
+double TimingIDBAdapter::getAverageResistance(
+    std::optional<double>& segment_width) {
+  IdbLayout* idb_layout = _idb_lef_service->get_layout();
+  vector<IdbLayer*>& routing_layers =
+      idb_layout->get_layers()->get_routing_layers();
+
+  double layers_resistance = 0;
+  for (unsigned int i = 0; i < routing_layers.size(); i++) {
+    IdbLayerRouting* routing_layer =
+        dynamic_cast<IdbLayerRouting*>(routing_layers[i]);
+
+    if (!segment_width) {
+      segment_width = (double)routing_layer->get_width() /
+                      idb_layout->get_units()->get_micron_dbu();
+    }
+
+    double lef_resistance;
+    if (idb_layout->get_units()->get_ohms() == -1) {
+      lef_resistance = routing_layer->get_resistance();
+    } else {
+      lef_resistance = routing_layer->get_resistance();
+    }
+
+    layers_resistance += lef_resistance / *segment_width;
+  }
+  double unit_resistance = layers_resistance / routing_layers.size();
+
+  return unit_resistance;
+}
+
+/**
+ * @brief get unit resistance.
+ *
+ * @param segment_width unit is um (micro meter)
+ * @return double
+ */
+double TimingIDBAdapter::getAverageCapacitance(
+    std::optional<double>& segment_width) {
+  IdbLayout* idb_layout = _idb_lef_service->get_layout();
+  vector<IdbLayer*>& routing_layers =
+      idb_layout->get_layers()->get_routing_layers();
+
+  double layers_capacitance = 0;
+  for (unsigned int i = 0; i < routing_layers.size(); i++) {
+    IdbLayerRouting* routing_layer =
+        dynamic_cast<IdbLayerRouting*>(routing_layers[i]);
+
+    if (!segment_width) {
+      segment_width = (double)routing_layer->get_width() /
+                      idb_layout->get_units()->get_micron_dbu();
+    }
+
+    double lef_capacitance = routing_layer->get_capacitance();
+    double lef_edge_capacitance = routing_layer->get_edge_capacitance();
+
+    layers_capacitance += (lef_capacitance * (*segment_width)) +
+                          (lef_edge_capacitance * 2 * (1 + (*segment_width)));
+    ;
+  }
+  double unit_capacitance = layers_capacitance / routing_layers.size();
+  return unit_capacitance;
 }
 
 /**
@@ -642,8 +705,17 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   }
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
+  int dbu = _idb_design->get_units()->get_micron_dbu();
+  double width = _idb_design->get_layout()->get_die()->get_width() /
+                 static_cast<double>(dbu);
+  double height = _idb_design->get_layout()->get_die()->get_height() /
+                  static_cast<double>(dbu);
+  design_netlist.set_core_size(width, height);
 
-  auto build_insts = [this, &design_netlist]() {
+  LOG_INFO << "core area width " << width << "um"
+           << " height " << height << "um";
+
+  auto build_insts = [this, &design_netlist, dbu]() {
     // build insts
     auto db_inst_list = _idb_design->get_instance_list()->get_instance_list();
     for (auto* db_inst : db_inst_list) {
@@ -661,6 +733,11 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
       }
 
       Instance sta_inst(inst_name.c_str(), inst_cell);
+
+      double x = db_inst->get_coordinate()->get_x() / static_cast<double>(dbu);
+      double y = db_inst->get_coordinate()->get_y() / static_cast<double>(dbu);
+
+      sta_inst.set_coordinate(x, y);
 
       // build inst pin
       auto db_inst_pin_list = db_inst->get_pin_list()->get_pin_list();

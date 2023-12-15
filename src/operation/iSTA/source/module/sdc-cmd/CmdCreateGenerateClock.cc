@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -21,7 +21,15 @@
  * @version 0.1
  * @date 2021-09-23
  */
+#include <algorithm>
+#include <variant>
+
 #include "Cmd.hh"
+#include "ScriptEngine.hh"
+#include "include/Type.hh"
+#include "log/Log.hh"
+#include "netlist/DesignObject.hh"
+#include "sdc/SdcCollection.hh"
 
 namespace ista {
 
@@ -251,22 +259,7 @@ unsigned CmdCreateGeneratedClock::exec() {
   set_add({"-add"});
   set_comment({"-comment"});
 
-  // add generate clock to constrain
   _the_constrain->addClock(_the_generate_clock);
-
-  // // print debug
-  // [this] {
-  //   LOG_INFO << "source   period: " << _source_sdc_clock->get_period();
-  //   LOG_INFO << "generate period: " << _the_generate_clock->get_period();
-  //   auto& source_edges = _source_sdc_clock->get_edges();
-  //   auto& generate_edges = _the_generate_clock->get_edges();
-  //   for (size_t i = 0; i < source_edges.size(); ++i) {
-  //     LOG_INFO << "source  : " << source_edges[i];
-  //   }
-  //   for (size_t i = 0; i < generate_edges.size(); ++i) {
-  //     LOG_INFO << "generate: " << generate_edges[i];
-  //   }
-  // }();
 
   return 1;
 }
@@ -280,12 +273,17 @@ void CmdCreateGeneratedClock::set_source_sdc_clock(
   Sta* ista = Sta::getOrCreateSta();
   Netlist* design_nl = ista->get_netlist();
   SdcConstrain* the_constrain = ista->getConstrain();
-  std::string clock_name =
-      GetClockName(source_name, design_nl, the_constrain).front();
+  auto clock_names = GetClockName(source_name, design_nl, the_constrain);
 
-  _source_sdc_clock = _the_constrain->findClock(clock_name.c_str());
-  LOG_ERROR_IF(!_source_sdc_clock)
-      << "source clock " << clock_name << " not found";
+  if (!clock_names.empty()) {
+    LOG_FATAL_IF(clock_names.size() != 1) << "beyond one clock";
+    std::string clock_name = clock_names.front();
+    _source_sdc_clock = _the_constrain->findClock(clock_name.c_str());
+    LOG_ERROR_IF(!_source_sdc_clock)
+        << "source clock " << clock_name << " not found";
+  } else {
+    _source_sdc_clock = nullptr;
+  }
 }
 
 // master_clock or source clocks ?
@@ -303,15 +301,56 @@ void CmdCreateGeneratedClock::set_master_clock(
 void CmdCreateGeneratedClock::set_generate_clock(
     std::vector<const char*> options) {
   TclOption* name_option = getOptionOrArg("-name");
-  const char* source_name = _source_sdc_clock->get_clock_name();
-  const char* generate_clock_name = source_name;
 
+  const char* generate_clock_name;
+
+  LOG_FATAL_IF(!name_option->is_set_val());
   if (name_option->is_set_val()) {
     generate_clock_name = name_option->getStringVal();
   }
 
   _the_generate_clock = new SdcGenerateCLock(generate_clock_name);
-  _the_generate_clock->set_source_name(source_name);
+
+  if (!_source_sdc_clock) {
+    // set source pins
+    TclOption* source_option = getOptionOrArg("-source");
+    const char* generate_source_pins = nullptr;
+    std::set<DesignObject*> objs;
+    if (source_option->is_set_val()) {
+      generate_source_pins = source_option->getStringVal();
+
+      if (Str::startWith(generate_source_pins,
+                         TclEncodeResult::get_encode_preamble())) {
+        auto* obj_collection = static_cast<SdcCollection*>(
+            TclEncodeResult::decode(generate_source_pins));
+        auto& obj_list = obj_collection->get_collection_objs();
+        for (auto obj : obj_list) {
+          std::visit(overloaded{
+                         [](SdcCommandObj* sdc_obj) {
+                           LOG_FATAL << "should not be sdc obj.";
+                         },
+                         [&objs](DesignObject* design_obj) {
+                           objs.insert(design_obj);
+                         },
+                     },
+                     obj);
+        }
+      } else {
+        Sta* ista = Sta::getOrCreateSta();
+        Netlist* design_nl = ista->get_netlist();
+        auto pin_ports = design_nl->findObj(generate_source_pins, false, false);
+
+        for (auto* design_obj : pin_ports) {
+          objs.insert(design_obj);
+        }
+      }
+    }
+    _the_generate_clock->set_source_pins(std::move(objs));
+    _the_generate_clock->set_is_need_update_source_clock();
+  } else {
+    const char* source_name = _source_sdc_clock->get_clock_name();
+    _the_generate_clock->set_source_name(source_name);
+  }
 }
 
 // set generate clock period
@@ -321,45 +360,55 @@ void CmdCreateGeneratedClock::set_generate_clock(
 // not a power of two, the edges are scaled from the master clock edges. ?
 void CmdCreateGeneratedClock::set_period_and_edges(
     std::vector<const char*> options) {
-  auto the_generate_edges = _source_sdc_clock->get_edges();
-  double master_period = _source_sdc_clock->get_period();
-  double generate_clock_period = master_period;
+  if (_source_sdc_clock) {
+    auto the_generate_edges = _source_sdc_clock->get_edges();
+    double master_period = _source_sdc_clock->get_period();
+    double generate_clock_period = master_period;
 
-  TclOption* edges_option = getOptionOrArg("-edges");
-  if (edges_option->is_set_val()) {
-    auto edges_list = edges_option->getIntList();
-    // set period
-    double period_start = edge2Time(*edges_list.begin(), master_period);
-    double period_end = edge2Time(*edges_list.rbegin(), master_period);
-    generate_clock_period = period_end - period_start;
-    // set edges
-    for (size_t i = 0; i < the_generate_edges.size(); ++i) {
-      the_generate_edges[i] = edge2Time(edges_list[i], master_period);
+    TclOption* edges_option = getOptionOrArg("-edges");
+    if (edges_option->is_set_val()) {
+      auto edges_list = edges_option->getIntList();
+      // set period
+      double period_start = edge2Time(*edges_list.begin(), master_period);
+      double period_end = edge2Time(*edges_list.rbegin(), master_period);
+      generate_clock_period = period_end - period_start;
+      // set edges
+      for (size_t i = 0; i < the_generate_edges.size(); ++i) {
+        the_generate_edges[i] = edge2Time(edges_list[i], master_period);
+      }
+    }
+
+    TclOption* divide_by_option = getOptionOrArg("-divide_by");
+
+    if (divide_by_option->is_set_val()) {
+      int divide_by_value = divide_by_option->getIntVal();
+      generate_clock_period = master_period * divide_by_value;
+      // set edges
+      for (size_t i = 0; i < the_generate_edges.size(); ++i) {
+        the_generate_edges[i] *= divide_by_value;
+      }
+    }
+
+    TclOption* multiply_by_option = getOptionOrArg("-multiply_by");
+    if (multiply_by_option->is_set_val()) {
+      int multiply_by_value = multiply_by_option->getIntVal();
+      generate_clock_period = master_period / multiply_by_value;
+      // set edges
+      for (size_t i = 0; i < the_generate_edges.size(); ++i) {
+        the_generate_edges[i] /= multiply_by_value;
+      }
+    }
+
+    _the_generate_clock->set_period(generate_clock_period);
+    _the_generate_clock->set_edges(std::move(the_generate_edges));
+  } else {
+    TclOption* divide_by_option = getOptionOrArg("-divide_by");
+
+    if (divide_by_option->is_set_val()) {
+      int divide_by_value = divide_by_option->getIntVal();
+      _the_generate_clock->set_divide_by(divide_by_value);
     }
   }
-
-  TclOption* divide_by_option = getOptionOrArg("-divide_by");
-  if (divide_by_option->is_set_val()) {
-    int divide_by_value = divide_by_option->getIntVal();
-    generate_clock_period = master_period * divide_by_value;
-    // set edges
-    for (size_t i = 0; i < the_generate_edges.size(); ++i) {
-      the_generate_edges[i] *= divide_by_value;
-    }
-  }
-
-  TclOption* multiply_by_option = getOptionOrArg("-multiply_by");
-  if (multiply_by_option->is_set_val()) {
-    int multiply_by_value = multiply_by_option->getIntVal();
-    generate_clock_period = master_period / multiply_by_value;
-    // set edges
-    for (size_t i = 0; i < the_generate_edges.size(); ++i) {
-      the_generate_edges[i] /= multiply_by_value;
-    }
-  }
-
-  _the_generate_clock->set_period(generate_clock_period);
-  _the_generate_clock->set_edges(std::move(the_generate_edges));
 }
 
 // TODO: duty_cycle (used to modify edge? how?)
@@ -373,13 +422,15 @@ void CmdCreateGeneratedClock::set_duty_cycle(std::vector<const char*> options) {
 // edges
 void CmdCreateGeneratedClock::set_edges_shift_and_invert(
     std::vector<const char*> options) {
+  Sta* ista = Sta::getOrCreateSta();
+
   auto& the_generate_edges = _the_generate_clock->get_edges();
   // edges shift
   TclOption* edge_shift_option = getOptionOrArg("-edge_shift");
   if (edge_shift_option->is_set_val()) {
     auto edge_shift_list = edge_shift_option->getDoubleList();
     for (size_t i = 0; i < edge_shift_list.size(); ++i) {
-      the_generate_edges[i] += edge_shift_list[i];
+      the_generate_edges[i] += ista->convertTimeUnit(edge_shift_list[i]);
     }
   }
 
@@ -415,9 +466,10 @@ void CmdCreateGeneratedClock::set_source_objects(
                      [](SdcCommandObj* sdc_obj) {
                        LOG_FATAL << "not support sdc obj.";
                      },
-                     [&pins](DesignObject* design_obj) {
-                       DLOG_INFO << "create generate clock for pin/port: "
-                                 << design_obj->get_name();
+                     [&pins, this](DesignObject* design_obj) {
+                       DLOG_INFO << "create generate clock "
+                                 << _the_generate_clock->get_clock_name()
+                                 << " for pin/port: " << design_obj->get_name();
                        pins.insert(design_obj);
                      },
                  },

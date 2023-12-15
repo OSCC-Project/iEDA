@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Logger.hpp"
+#include "PatchNode.hpp"
 #include "PinNode.hpp"
 #include "ViaNode.hpp"
 #include "WireNode.hpp"
@@ -62,7 +63,7 @@ class PHYNode
   }
 
  private:
-  std::variant<std::monostate, PinNode*, WireNode*, ViaNode*> _data_node;
+  std::variant<std::monostate, PinNode*, WireNode*, ViaNode*, PatchNode*> _data_node;
 
   // function
   void copy(const PHYNode& other)
@@ -76,7 +77,8 @@ class PHYNode
     std::visit(Overload{[&](std::monostate other_data_node) { _data_node = other_data_node; },
                         [&](PinNode* other_data_node) { _data_node = new PinNode(*other_data_node); },
                         [&](WireNode* other_data_node) { _data_node = new WireNode(*other_data_node); },
-                        [&](ViaNode* other_data_node) { _data_node = new ViaNode(*other_data_node); }},
+                        [&](ViaNode* other_data_node) { _data_node = new ViaNode(*other_data_node); },
+                        [&](PatchNode* other_data_node) { _data_node = new PatchNode(*other_data_node); }},
                other._data_node);
   }
 
@@ -95,6 +97,7 @@ class PHYNode
                    [](PinNode* data_node) { delete data_node; },
                    [](WireNode* data_node) { delete data_node; },
                    [](ViaNode* data_node) { delete data_node; },
+                   [](PatchNode* data_node) { delete data_node; },
                },
                _data_node);
     _data_node = std::monostate();

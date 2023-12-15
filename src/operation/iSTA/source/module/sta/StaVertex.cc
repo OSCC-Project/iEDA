@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -111,25 +111,6 @@ bool StaPropagationTag::isTagSet(TagType tag_type) const {
 
 StaVertex::StaVertex(DesignObject* obj)
     : _obj(obj),
-      _is_clock(0),
-      _is_clock_gate_clock(0),
-      _is_port(0),
-      _is_start(0),
-      _is_end(0),
-      _is_clock_gate_end(0),
-      _is_const(0),
-      _color(kWhite),
-      _is_slew_prop(0),
-      _is_delay_prop(0),
-      _is_bwd(0),
-      _is_fwd(0),
-      _is_crosstalk_prop(0),
-      _level(0),
-      _is_sdc_clock_pin(0),
-      _is_ideal_clock_latency(0),
-      _is_bidirection(0),
-      _is_assistant(0),
-      _reserverd(0),
       _slew_bucket(c_vertex_slew_data_bucket_size),
       _path_delay_bucket(c_vertex_path_delay_data_bucket_size) {
   if (!obj) {
@@ -497,12 +478,11 @@ StaClock* StaVertex::getPropClock(AnalysisMode analysis_mode,
  * @param analysis_mode
  * @param trans_type
  * @param is_data_path
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
-                                                  TransType trans_type,
-                                                  bool is_data_path) {
-  std::set<StaClock*> prop_clocks;
+std::unordered_set<StaClock*> StaVertex::getPropagatedClock(
+    AnalysisMode analysis_mode, TransType trans_type, bool is_data_path) {
+  std::unordered_set<StaClock*> prop_clocks;
   auto get_data_clock = [&prop_clocks, analysis_mode, trans_type](auto* data) {
     if ((data->get_delay_type() == analysis_mode ||
          AnalysisMode::kMaxMin == analysis_mode) &&
@@ -513,12 +493,16 @@ std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
         if (auto* prop_clock =
                 path_delay->get_launch_clock_data()->get_prop_clock();
             prop_clock) {
-          prop_clocks.insert(prop_clock);
+          if (!prop_clocks.contains(prop_clock)) {
+            prop_clocks.insert(prop_clock);
+          }
         }
       } else {
         auto* clock_data = dynamic_cast<StaClockData*>(data);
         auto* prop_clock = clock_data->get_prop_clock();
-        prop_clocks.insert(prop_clock);
+        if (!prop_clocks.contains(prop_clock)) {
+          prop_clocks.insert(prop_clock);
+        }
       }
     }
   };
@@ -715,13 +699,43 @@ std::optional<int64_t> StaVertex::getSlack(AnalysisMode analysis_mode,
 }
 
 /**
+ * @brief get total negative slack in Ns.
+ *
+ * @param analysis_mode
+ * @return std::optional<double>
+ */
+std::optional<double> StaVertex::getTNSNs(AnalysisMode analysis_mode) {
+  std::optional<double> vertex_tns_ns;
+  StaData* data;
+  FOREACH_DELAY_DATA(this, data) {
+    if (data->get_delay_type() == analysis_mode) {
+      auto* path_delay = dynamic_cast<StaPathDelayData*>(data);
+      auto at_fs = path_delay->get_arrive_time();
+      auto rt_fs = path_delay->get_req_time();
+      if (!rt_fs) {
+        continue;
+      }
+
+      double slack_fs = (analysis_mode == AnalysisMode::kMax)
+                            ? (*rt_fs - at_fs)
+                            : (at_fs - *rt_fs);
+      double slack_ns = FS_TO_NS(slack_fs);
+      vertex_tns_ns ? (*vertex_tns_ns) += slack_ns : vertex_tns_ns = slack_ns;
+    }
+  }
+
+  return vertex_tns_ns;
+}
+
+/**
  * @brief Get slew.
  *
  * @param analysis_mode
  * @param trans_type
- * @return int
+ * @return std::optional<int>
  */
-int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
+std::optional<int> StaVertex::getSlew(AnalysisMode analysis_mode,
+                                      TransType trans_type) {
   StaData* data;
   FOREACH_SLEW_DATA(this, data) {
     if (data->get_delay_type() == analysis_mode &&
@@ -731,7 +745,7 @@ int StaVertex::getSlew(AnalysisMode analysis_mode, TransType trans_type) {
     }
   }
 
-  return 0;
+  return std::nullopt;
 }
 
 /**
@@ -809,7 +823,7 @@ double StaVertex::getLoad(AnalysisMode analysis_mode, TransType trans_type) {
 }
 
 /**
- * @brief get net load not include pin cap.
+ * @brief get net load include pin cap.
  *
  * @return double
  */
@@ -820,8 +834,8 @@ double StaVertex::getNetLoad() {
   if (rc_net) {
     double load_include_pin_cap =
         rc_net->load(AnalysisMode::kMax, TransType::kRise);
-    double pin_cap = the_net->getLoad(AnalysisMode::kMax, TransType::kRise);
-    return (load_include_pin_cap - pin_cap);
+
+    return load_include_pin_cap;
   }
 
   return 0.0;

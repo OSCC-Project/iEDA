@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -35,8 +35,7 @@
 #include <utility>
 #include <vector>
 
-#include "DisallowCopyAssign.hh"
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "Type.hh"
 #include "delay/WaveformInfo.hh"
 #include "log/Log.hh"
@@ -59,7 +58,15 @@ class LibetyCurrentData;
 class StaData {
  public:
   StaData(AnalysisMode delay_type, TransType trans_type, StaVertex* own_vertex);
-  virtual ~StaData() = default;
+  virtual ~StaData() {
+    for (auto* fwd_data : _fwd_set) {
+      fwd_data->set_bwd(nullptr);
+    }
+
+    if (_bwd) {
+      _bwd->erase_fwd(this);
+    }
+  }
   StaData(const StaData& orig);
   StaData& operator=(const StaData& rhs);
   StaData(StaData&& other) noexcept;
@@ -134,7 +141,7 @@ class StaData {
   TransType _trans_type;         //!< The transition type, rise/fall.
   std::optional<float> _derate;  //!< The vertex derate
   StaVertex* _own_vertex;        //!< The vertex which the data belong to.
-  ieda::Set<StaData*>
+  ieda::BTreeSet<StaData*>
       _fwd_set;  //!< The propagation fwd datas, maybe more than once.
   StaData* _bwd = nullptr;  //!< The propagation bwd data, should be one.
   std::mutex _mt;
@@ -382,7 +389,7 @@ class StaDataBucket {
   std::unique_ptr<StaDataBucket>
       _next;  //!< The next data bucket which has different signature.
 
-  DISALLOW_COPY_AND_ASSIGN(StaDataBucket);
+  FORBIDDEN_COPY(StaDataBucket);
 };
 
 /**

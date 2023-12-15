@@ -40,8 +40,6 @@ class DataManager
   void output(idb::IdbBuilder* idb_builder);
   void save(Stage stage);
   void load(Stage stage);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>>& segment_list);
-  std::vector<LayerRect> getRealRectList(MTree<PHYNode>& phy_node_tree);
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Helper& getHelper() { return _helper; }
@@ -76,6 +74,7 @@ class DataManager
   bool checkSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
+  void processEmptyShapePin(Net& net);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
@@ -116,6 +115,8 @@ class DataManager
   void makePinList(Net& net);
   void checkPinList(Net& net);
   void buildDrivingPin(Net& net);
+  void cutBlockageList();
+  std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> makeGridNetRectMap();
   void updateHelper();
 #endif
 
@@ -130,6 +131,7 @@ class DataManager
   void convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net);
   void convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
   void convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
+  void convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment);
 #endif
 
 #if 1  // save & load

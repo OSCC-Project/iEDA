@@ -1,0 +1,280 @@
+./bin/bst -i ./BENCHMARKS/s1423 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 107277.793459
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 1 
+Time:00:00:01(    1 sec.)
+Total wirelength: 91605.930143
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 10 
+Time:00:00:02(    2 sec.)
+Total wirelength: 75990.375420
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 50 
+Time:00:00:02(    2 sec.)
+Total wirelength: 70721.000000
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 100 
+Time:00:00:02(    2 sec.)
+Total wirelength: 70523.000000
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 200 
+Time:00:00:02(    2 sec.)
+Total wirelength: 67276.666661
+=================================
+./bin/bst -i ./BENCHMARKS/s1423 -B 500 
+Time:00:00:02(    2 sec.)
+Total wirelength: 65207.000000
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 176517.880437
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 1 
+Time:00:00:04(    4 sec.)
+Total wirelength: 152497.076119
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 10 
+Time:00:00:06(    6 sec.)
+Total wirelength: 128199.930184
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 50 
+Time:00:00:07(    7 sec.)
+Total wirelength: 117433.232288
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 100 
+Time:00:00:07(    7 sec.)
+Total wirelength: 113390.996011
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 200 
+Time:00:00:08(    8 sec.)
+Total wirelength: 109461.947249
+=================================
+./bin/bst -i ./BENCHMARKS/s5378 -B 500 
+Time:00:00:08(    8 sec.)
+Total wirelength: 105325.989399
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 0 
+Time:00:00:01(    1 sec.)
+Total wirelength: 445659.976507
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 1 
+Time:00:00:19(   19 sec.)
+Total wirelength: 360262.250766
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 10 
+Time:00:00:27(   27 sec.)
+Total wirelength: 313343.533224
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 50 
+Time:00:00:30(   30 sec.)
+Total wirelength: 282215.438498
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 100 
+Time:00:00:32(   32 sec.)
+Total wirelength: 276458.600169
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 200 
+Time:00:00:33(   33 sec.)
+Total wirelength: 272583.707822
+=================================
+./bin/bst -i ./BENCHMARKS/s15850 -B 500 
+Time:00:00:34(   34 sec.)
+Total wirelength: 257398.619119
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 130953.309833
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 1 
+Time:00:00:02(    2 sec.)
+Total wirelength: 130564.308807
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 10 
+Time:00:00:05(    5 sec.)
+Total wirelength: 115589.681689
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 50 
+Time:00:00:06(    6 sec.)
+Total wirelength: 106105.807648
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 100 
+Time:00:00:07(    7 sec.)
+Total wirelength: 99733.097703
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 200 
+Time:00:00:08(    8 sec.)
+Total wirelength: 91389.288836
+=================================
+./bin/bst -i ./BENCHMARKS/p1 -B 500 
+Time:00:00:08(    8 sec.)
+Total wirelength: 88909.434605
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 314499.439594
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 1 
+Time:00:00:03(    3 sec.)
+Total wirelength: 303941.259512
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 10 
+Time:00:00:06(    6 sec.)
+Total wirelength: 268453.789626
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 50 
+Time:00:00:11(   11 sec.)
+Total wirelength: 242744.961745
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 100 
+Time:00:00:12(   12 sec.)
+Total wirelength: 229349.695612
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 200 
+Time:00:00:14(   14 sec.)
+Total wirelength: 221743.548317
+=================================
+./bin/bst -i ./BENCHMARKS/p2 -B 500 
+Time:00:00:15(   15 sec.)
+Total wirelength: 234307.684479
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 0 
+Time:00:00:00(    0 sec.)
+Total wirelength: 1320665.973074
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 1 
+Time:00:00:05(    5 sec.)
+Total wirelength: 1230884.083499
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 10 
+Time:00:00:09(    9 sec.)
+Total wirelength: 1067992.812188
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 50 
+Time:00:00:12(   12 sec.)
+Total wirelength: 969439.232467
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 100 
+Time:00:00:13(   13 sec.)
+Total wirelength: 929969.640450
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 200 
+Time:00:00:13(   13 sec.)
+Total wirelength: 907077.933281
+=================================
+./bin/bst -i ./BENCHMARKS/r1 -B 500 
+Time:00:00:14(   14 sec.)
+Total wirelength: 820453.598235
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 0 
+Time:00:00:01(    1 sec.)
+Total wirelength: 2602907.844900
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 1 
+Time:00:00:14(   14 sec.)
+Total wirelength: 2421655.470646
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 10 
+Time:00:00:27(   27 sec.)
+Total wirelength: 2169791.830996
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 50 
+Time:00:00:38(   38 sec.)
+Total wirelength: 1918564.364038
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 100 
+Time:00:00:39(   39 sec.)
+Total wirelength: 1862869.633482
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 200 
+Time:00:00:41(   41 sec.)
+Total wirelength: 1815189.503717
+=================================
+./bin/bst -i ./BENCHMARKS/r2 -B 500 
+Time:00:00:42(   42 sec.)
+Total wirelength: 1706787.187649
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 0 
+Time:00:00:02(    2 sec.)
+Total wirelength: 3388951.462224
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 1 
+Time:00:00:18(   18 sec.)
+Total wirelength: 3118313.690887
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 10 
+Time:00:00:35(   35 sec.)
+Total wirelength: 2735009.456334
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 50 
+Time:00:00:44(   44 sec.)
+Total wirelength: 2405578.430604
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 100 
+Time:00:00:50(   50 sec.)
+Total wirelength: 2334339.524321
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 200 
+Time:00:00:51(   51 sec.)
+Total wirelength: 2231561.374131
+=================================
+./bin/bst -i ./BENCHMARKS/r3 -B 500 
+Time:00:00:55(   55 sec.)
+Total wirelength: 2108269.892207
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 0 
+Time:00:00:05(    5 sec.)
+Total wirelength: 6828510.057231
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 1 
+Time:00:00:52(   52 sec.)
+Total wirelength: 6212878.432613
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 10 
+Time:00:01:37(   97 sec.)
+Total wirelength: 5436725.091465
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 50 
+Time:00:01:58(  118 sec.)
+Total wirelength: 4946409.701243
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 100 
+Time:00:02:07(  127 sec.)
+Total wirelength: 4706128.108867
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 200 
+Time:00:02:14(  134 sec.)
+Total wirelength: 4536953.949560
+=================================
+./bin/bst -i ./BENCHMARKS/r4 -B 500 
+Time:00:02:26(  146 sec.)
+Total wirelength: 4546532.055936
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 0 
+Time:00:00:08(    8 sec.)
+Total wirelength: 10242660.121239
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 1 
+Time:00:01:26(   86 sec.)
+Total wirelength: 9218849.196503
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 10 
+Time:00:02:33(  153 sec.)
+Total wirelength: 8043109.757870
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 50 
+Time:00:03:14(  194 sec.)
+Total wirelength: 7267365.005460
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 100 
+Time:00:03:20(  200 sec.)
+Total wirelength: 6921849.593665
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 200 
+Time:00:03:33(  213 sec.)
+Total wirelength: 6637103.128151
+=================================
+./bin/bst -i ./BENCHMARKS/r5 -B 500 
+Time:00:03:40(  220 sec.)
+Total wirelength: 6471588.906036
+=================================

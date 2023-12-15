@@ -2,7 +2,7 @@ add_library(ipl-bridge INTERFACE)
 
 target_link_libraries(ipl-bridge 
     INTERFACE 
-        ipl-api
+        ipl-external_api
         ipl-source_external_libs
 )
 

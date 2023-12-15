@@ -6,7 +6,7 @@ target_link_libraries(eval_ista_libs
     INTERFACE
         liberty
         graph
-        verilog-parser
+        verilog
         sta
         delay
         ista-engine
@@ -49,6 +49,7 @@ target_include_directories(eval_ista_libs
     ${EIGEN3_INCLUDE_DIR}
 )
 message(STATUS "Eigen3 ${EIGEN3_INCLUDE_DIR}")
+
 target_link_directories(eval_ista_libs
     INTERFACE
         ${EIGEN3_LIBRARY}

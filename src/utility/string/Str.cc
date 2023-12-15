@@ -372,6 +372,29 @@ const char* Str::trimmed(const char* str)
   absl::string_view str_view(str);
   absl::ConsumePrefix(&str_view, "\\");
   absl::ConsumeSuffix(&str_view, " ");
+  absl::ConsumeSuffix(&str_view, "\n");
+  return Str::printf("%s", std::string(str_view).c_str());
+}
+
+/**
+ * @brief Trim the string, remove the escape(\)
+ * character with square brackets at the start and the whitespace at the end.(\\key[0]->key[0])
+ *
+ * @param str
+ * @return char* May be origin str or the trimmed str, not allocate memory.
+ */
+const char* Str::trimmedWithSquareBracket(const char* str)
+{
+  if (!str) {
+    return nullptr;
+  }
+
+  absl::string_view str_view(str);
+  std::string str_(str);
+  if (str_.find('[') != std::string::npos && str_.find(']') != std::string::npos) {
+    absl::ConsumePrefix(&str_view, "\\");
+    absl::ConsumeSuffix(&str_view, " ");
+  }
 
   return Str::printf("%s", std::string(str_view).c_str());
 }

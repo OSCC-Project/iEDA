@@ -52,13 +52,15 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
 template <typename Archive>
 void save(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_protected_access_point(),
+                pin.get_access_point_list());
 }
 
 template <typename Archive>
 void load(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_protected_access_point(),
+                pin.get_access_point_list());
 }
 
 // ----------------------------------------------------------------------------
@@ -196,7 +198,7 @@ void load(Archive& ar, irt::MTree<T>& mtree, const unsigned int version)
 {
   decltype(mtree.get_root()) tnode = nullptr;
   ar >> tnode;
-  mtree.free();
+  mtree.clear();
   mtree.set_root(tnode);
 }
 
@@ -208,7 +210,7 @@ void serialize(Archive& ar, irt::LayerRect& rect, const unsigned int version)
 {
   ar& boost::serialization::base_object<irt::PlanarRect>(rect);
   int layer_id = rect.get_layer_idx();
-  ar& layer_id;
+  ar & layer_id;
   if constexpr (Archive::is_loading::value) {
     rect.set_layer_idx(layer_id);
   }
@@ -222,7 +224,7 @@ void serialize(Archive& ar, irt::LayerCoord& coord, const unsigned int version)
 {
   ar& boost::serialization::base_object<irt::PlanarCoord>(coord);
   int layer_id = coord.get_layer_idx();
-  ar& layer_id;
+  ar & layer_id;
   if constexpr (Archive::is_loading::value) {
     coord.set_layer_idx(layer_id);
   }
@@ -235,7 +237,7 @@ template <typename Archive>
 void serialize(Archive& ar, irt::Guide& guide, const unsigned int version)
 {
   ar& boost::serialization::base_object<irt::LayerRect>(guide);
-  ar& guide.get_grid_coord();
+  ar & guide.get_grid_coord();
 }
 
 // ----------------------------------------------------------------------------
@@ -244,8 +246,8 @@ void serialize(Archive& ar, irt::Guide& guide, const unsigned int version)
 template <typename Archive, typename T>
 void serialize(Archive& ar, irt::Segment<T>& segment, const unsigned int version)
 {
-  ar& segment.get_first();
-  ar& segment.get_second();
+  ar & segment.get_first();
+  ar & segment.get_second();
 }
 
 // ----------------------------------------------------------------------------
@@ -262,7 +264,8 @@ enum class NodeType : int
   monostate = 0,
   PinNode,
   WireNode,
-  ViaNode
+  ViaNode,
+  PatchNode
 };
 static NodeType PHYNodeType(irt::PHYNode& node)
 {
@@ -278,6 +281,9 @@ static NodeType PHYNodeType(irt::PHYNode& node)
   if (node.isType<irt::ViaNode>()) {
     return NodeType::ViaNode;
   }
+  if (node.isType<irt::PatchNode>()) {
+    return NodeType::PatchNode;
+  }
   assert(false);
   return NodeType::monostate;
 }
@@ -286,21 +292,25 @@ template <typename Archive>
 void serialize(Archive& ar, irt::PHYNode& node, const unsigned int version)
 {
   NodeType type = PHYNodeType(node);
-  ar& type;
+  ar & type;
   switch (type) {
     case NodeType::monostate: {
       break;
     }
     case NodeType::PinNode: {
-      ar& node.getNode<irt::PinNode>();
+      ar & node.getNode<irt::PinNode>();
       break;
     }
     case NodeType::WireNode: {
-      ar& node.getNode<irt::WireNode>();
+      ar & node.getNode<irt::WireNode>();
       break;
     }
     case NodeType::ViaNode: {
-      ar& node.getNode<irt::ViaNode>();
+      ar & node.getNode<irt::ViaNode>();
+      break;
+    }
+    case NodeType::PatchNode: {
+      ar & node.getNode<irt::PatchNode>();
       break;
     }
   }
@@ -350,6 +360,17 @@ void serialize(Archive& ar, irt::ViaNode& node, const unsigned int version)
     node.get_via_master_idx().set_via_idx(via_idx);
   }
 }
+
+template <typename Archive>
+void serialize(Archive& ar, irt::PatchNode& node, const unsigned int version)
+{
+  int net_idx = node.get_net_idx();
+  iplf::Archive(ar, net_idx, boost::serialization::base_object<irt::LayerRect>(node));
+  if constexpr (Archive::is_loading::value) {
+    node.set_net_idx(net_idx);
+  }
+}
+
 template <typename Archive>
 void save(Archive& ar, const std::vector<irt::Net>& net_list, const unsigned int version)
 {

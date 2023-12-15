@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -25,8 +25,7 @@
 
 #include <utility>
 
-#include "DisallowCopyAssign.hh"
-#include "Set.hh"
+#include "BTreeSet.hh"
 #include "StaVertex.hh"
 #include "Vector.hh"
 
@@ -54,7 +53,7 @@ class StaWaveForm {
   Vector<int> _wave_edges;  //!< We assume that the edges compose of rising and
                             //!< falling edge pair.
 
-  DISALLOW_COPY_AND_ASSIGN(StaWaveForm);
+  FORBIDDEN_COPY(StaWaveForm);
 };
 
 /**
@@ -72,7 +71,7 @@ class StaClock {
   StaClock& operator=(StaClock&& rhs);
 
   void addVertex(StaVertex* the_vertex) { _clock_vertexes.insert(the_vertex); }
-  Set<StaVertex*>& get_clock_vertexes() { return _clock_vertexes; }
+  auto& get_clock_vertexes() { return _clock_vertexes; }
 
   const char* get_clock_name() { return _clock_name; }
 
@@ -88,6 +87,13 @@ class StaClock {
 
   int getRisingEdge() { return _wave_form.getRisingEdge(); }
   int getFallingEdge() { return _wave_form.getFallingEdge(); }
+
+  void set_is_need_update_period_waveform(bool is_true) {
+    _is_need_update_period_waveform = is_true;
+  }
+  bool isNeedUpdatePeriodWaveform() const {
+    return _is_need_update_period_waveform;
+  }
 
   [[nodiscard]] int get_period() const { return _period; }
   double getPeriodNs() const { return PS_TO_NS(_period); }
@@ -107,7 +113,8 @@ class StaClock {
 
  private:
   const char* _clock_name;
-  Set<StaVertex*> _clock_vertexes;  //!< The graph vertex which is clock point.
+  BTreeSet<StaVertex*>
+      _clock_vertexes;  //!< The graph vertex which is clock point.
   ClockType _clock_type;
 
   std::optional<int> _ideal_network_latency;  //!< The clock network latency
@@ -116,7 +123,9 @@ class StaClock {
   int _period;  // unit is ps.
   StaWaveForm _wave_form;
 
-  DISALLOW_COPY_AND_ASSIGN(StaClock);
+  bool _is_need_update_period_waveform =
+      false;  //!< The flag of the time to clock prop.
+  FORBIDDEN_COPY(StaClock);
 };
 
 }  // namespace ista

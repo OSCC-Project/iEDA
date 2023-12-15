@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -29,7 +29,6 @@
 #include <utility>
 
 #include "DesignObject.hh"
-#include "DisallowCopyAssign.hh"
 #include "Pin.hh"
 #include "Vector.hh"
 #include "liberty/Liberty.hh"
@@ -53,6 +52,8 @@ class Instance : public DesignObject {
 
   friend PinIterator;
   friend PinBusIterator;
+
+  using Coordinate = std::pair<double, double>;
 
   unsigned isInstance() override { return 1; }
 
@@ -78,12 +79,17 @@ class Instance : public DesignObject {
     return nullptr;
   }
 
+  void set_coordinate(double x, double y) { _coordinate = {x, y}; }
+  auto get_coordinate() { return _coordinate; }
+
  private:
   LibertyCell* _inst_cell;
   Vector<std::unique_ptr<Pin>> _pins;
   StrMap<Pin*> _str2pin;
   Vector<std::unique_ptr<PinBus>> _pin_buses;
-  DISALLOW_COPY_AND_ASSIGN(Instance);
+
+  std::optional<Coordinate> _coordinate;
+  FORBIDDEN_COPY(Instance);
 };
 
 /**
@@ -102,7 +108,7 @@ class PinIterator {
   Instance* _inst;
   Vector<std::unique_ptr<Pin>>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PinIterator);
+  FORBIDDEN_COPY(PinIterator);
 };
 
 /**
@@ -135,7 +141,7 @@ class PinBusIterator {
   Instance* _inst;
   Vector<std::unique_ptr<PinBus>>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PinBusIterator);
+  FORBIDDEN_COPY(PinBusIterator);
 };
 
 /**

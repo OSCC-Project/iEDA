@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @project		iDB
- * @file		def_write.cpp
+ * @file		gds_write.cpp
  * @author		Yell
  * @date		25/05/2021
  * @version		0.1
@@ -562,10 +562,37 @@ int32_t Def2GdsWrite::write_specialnet_wire_segment_via(GdsStruct* gds_struct, I
   return kDbSuccess;
 }
 
+int32_t Def2GdsWrite::write_specialnet_wire_segment_rect(GdsStruct* gds_struct, IdbSpecialWireSegment* segment)
+{
+  if (segment->get_layer() == nullptr || segment->get_delta_rect() == nullptr) {
+    std::cout << "No special wire segment rect..." << std::endl;
+    return kDbFail;
+  }
+
+  IdbRect* rect_delta = segment->get_delta_rect();
+
+  IdbLayer* layer = segment->get_layer();
+  if (layer == nullptr) {
+    std::cout << "Error...createNetRect : Layer not exist :  " << std::endl;
+    return kDbFail;
+  }
+
+  IdbRect* rect = new IdbRect(rect_delta);
+
+  packRect(gds_struct, rect, layer);
+
+  delete rect;
+  rect = nullptr;
+
+  return kDbSuccess;
+}
+
 int32_t Def2GdsWrite::write_specialnet_wire_segment(GdsStruct* gds_struct, IdbSpecialWireSegment* segment)
 {
   if (segment->is_via()) {
     return write_specialnet_wire_segment_via(gds_struct, segment);
+  } if (segment->is_rect()) {
+    return write_specialnet_wire_segment_rect(gds_struct, segment);
   } else {
     return write_specialnet_wire_segment_points(gds_struct, segment);
   }

@@ -26,9 +26,8 @@ enum class DRSourceType
 {
   kNone,
   kBlockage,
-  kPanelResult,
-  kOtherBoxResult,
-  kSelfBoxResult
+  kNetShape,
+  kReservedVia
 };
 
 struct GetDRSourceTypeName
@@ -43,14 +42,11 @@ struct GetDRSourceTypeName
       case DRSourceType::kBlockage:
         dr_source_type_name = "blockage";
         break;
-      case DRSourceType::kPanelResult:
-        dr_source_type_name = "panel_result";
+      case DRSourceType::kNetShape:
+        dr_source_type_name = "net_shape";
         break;
-      case DRSourceType::kOtherBoxResult:
-        dr_source_type_name = "other_box_result";
-        break;
-      case DRSourceType::kSelfBoxResult:
-        dr_source_type_name = "self_box_result";
+      case DRSourceType::kReservedVia:
+        dr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -52,10 +52,15 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
     StaArcDelayData* arc_delay = nullptr;
     if (isIncremental()) {
       arc_delay = own_arc->getArcDelayData(delay_type, trans_type);
-      arc_delay->set_arc_delay(delay);
-    } else {
+    }
+
+    if (!arc_delay) {
       arc_delay = new StaArcDelayData(delay_type, trans_type, own_arc, delay);
       own_arc->addData(arc_delay);
+    }
+
+    if (isIncremental()) {
+      arc_delay->set_arc_delay(delay);
     }
   };
 
@@ -97,7 +102,7 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             auto snk_slew_fs =
                 dynamic_cast<StaSlewData*>(snk_slew_data)->get_slew();
             auto snk_slew = FS_TO_NS(snk_slew_fs);
-            auto delay_ns = lib_arc->getDelayOrConstrainCheck(
+            auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(
                 snk_trans_type, in_slew, snk_slew);
             auto delay = NS_TO_FS(delay_ns);
             construct_delay_data(analysis_mode, snk_trans_type, the_arc, delay);
@@ -126,8 +131,8 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             continue;
           }
 
-          auto delay_ns =
-              lib_arc->getDelayOrConstrainCheck(out_trans_type, in_slew, load);
+          auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(out_trans_type,
+                                                              in_slew, load);
           auto delay = NS_TO_FS(delay_ns);
 
           construct_delay_data(analysis_mode, out_trans_type, the_arc, delay);
@@ -140,8 +145,8 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             if (!lib_arc->isMatchTimingType(out_trans_type1)) {
               continue;
             }
-            auto delay1_ns = lib_arc->getDelayOrConstrainCheck(out_trans_type1,
-                                                               in_slew, load);
+            auto delay1_ns = lib_arc->getDelayOrConstrainCheckNs(
+                out_trans_type1, in_slew, load);
             auto delay1 = NS_TO_FS(delay1_ns);
 
             construct_delay_data(analysis_mode, out_trans_type1, the_arc,
@@ -262,7 +267,7 @@ unsigned StaDelayPropagation::operator()(StaVertex* the_vertex) {
 unsigned StaDelayPropagation::operator()(StaGraph* the_graph) {
   LOG_INFO << "delay propagation start";
   unsigned is_ok = 1;
-  
+
   {
 #if 1
     // create thread pool

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -28,8 +28,7 @@
 #include <vector>
 
 #include "Config.hh"
-#include "DisallowCopyAssign.hh"
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "Instance.hh"
 #include "Net.hh"
 #include "Pin.hh"
@@ -58,12 +57,25 @@ class Netlist : public DesignObject {
   friend InstanceIterator;
   friend NetIterator;
 
+  struct CoreSize {
+    double _width;
+    double _height;
+  };
+
   unsigned isNetlist() override { return 1; }
+
+  auto get_core_size() { return _core_size; }
+  void set_core_size(double width, double height) {
+    CoreSize core_size;
+    core_size._width = width;
+    core_size._height = height;
+    _core_size = core_size;
+  }
 
   Port& addPort(Port&& port) {
     _ports.emplace_back(std::move(port));
     Port* the_port = &(_ports.back());
-    _str2port.insert(the_port->get_name(), the_port);
+    _str2port[the_port->get_name()] = the_port;
     return *the_port;
   }
 
@@ -88,7 +100,7 @@ class Netlist : public DesignObject {
   PortBus& addPortBus(PortBus&& port_bus) {
     _port_buses.emplace_back(std::move(port_bus));
     auto* the_port_bus = &(_port_buses.back());
-    _str2portbus.insert(the_port_bus->get_name(), the_port_bus);
+    _str2portbus[the_port_bus->get_name()] = the_port_bus;
     return *the_port_bus;
   }
   auto& get_port_buses() { return _port_buses; }
@@ -106,7 +118,7 @@ class Netlist : public DesignObject {
     _nets.emplace_back(std::move(net));
     Net* the_net = &(_nets.back());
     const char* net_name = the_net->get_name();
-    _str2net.insert(net_name, the_net);
+    _str2net[net_name] = the_net;
     return *the_net;
   }
 
@@ -134,7 +146,7 @@ class Netlist : public DesignObject {
 
     Instance* the_instance = &(_instances.back());
     const char* instance_name = the_instance->get_name();
-    _str2instance.insert(instance_name, the_instance);
+    _str2instance[instance_name] = the_instance;
 
     return *the_instance;
   }
@@ -179,7 +191,10 @@ class Netlist : public DesignObject {
   std::list<Instance> _instances;
   StrMap<Instance*> _str2instance;
 
-  DISALLOW_COPY_AND_ASSIGN(Netlist);
+  std::optional<CoreSize>
+      _core_size;  //!< The core size(width * weight) for FP.
+
+  FORBIDDEN_COPY(Netlist);
 };
 
 /**
@@ -198,7 +213,7 @@ class PortIterator {
   Netlist* _nl;
   std::list<Port>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PortIterator);
+  FORBIDDEN_COPY(PortIterator);
 };
 
 /**
@@ -231,7 +246,7 @@ class PortBusIterator {
   Netlist* _nl;
   std::list<PortBus>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(PortBusIterator);
+  FORBIDDEN_COPY(PortBusIterator);
 };
 
 /**
@@ -264,7 +279,7 @@ class InstanceIterator {
   Netlist* _nl;
   std::list<Instance>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(InstanceIterator);
+  FORBIDDEN_COPY(InstanceIterator);
 };
 
 /**
@@ -297,7 +312,7 @@ class NetIterator {
   Netlist* _nl;
   std::list<Net>::iterator _iter;
 
-  DISALLOW_COPY_AND_ASSIGN(NetIterator);
+  FORBIDDEN_COPY(NetIterator);
 };
 
 /**

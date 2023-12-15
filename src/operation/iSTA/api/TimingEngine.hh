@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -122,9 +122,8 @@ class TimingEngine {
     return *this;
   }
 
-  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs,
-                      std::vector<LibertyLibrary *> &map_libs) {
-    return _ista->makeEquivCells(equiv_libs, map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
+    return _ista->makeEquivCells(equiv_libs);
   }
 
   Vector<LibertyCell *> *equivCells(LibertyCell *cell) {
@@ -152,7 +151,8 @@ class TimingEngine {
   StaVertex *findVertex(const char *pin_name) {
     return _ista->findVertex(pin_name);
   }
-
+  std::set<std::string> findStartOrEnd(const char *pin_name);
+  std::map<std::string, std::string> getStartEndPairs();
   std::string findClockPinName(const char *inst_name);
 
   void setIdealClockNetworkLatency(const char *clock_name, double latency) {
@@ -207,11 +207,18 @@ class TimingEngine {
   void incrCap(RctNode *node, double cap, bool is_incremental = false);
   void makeResistor(Net *net, RctNode *from_node, RctNode *to_node, double res);
   void updateRCTreeInfo(Net *net);
+  void buildRcTreeAndUpdateRcTreeInfo(
+      const char *net_name, std::map<std::string, double> &loadname2wl);
 
   TimingEngine &incrUpdateTiming();
 
   TimingEngine &updateTiming() {
     _ista->updateTiming();
+    return *this;
+  }
+
+  TimingEngine &updateClockTiming() {
+    _ista->updateClockTiming();
     return *this;
   }
 
@@ -232,7 +239,7 @@ class TimingEngine {
   // for any clock randomly if more than one.
   StaClock *getPropClockOfNet(Net *clock_net);
   // for all propagated clock for clock mux maybe more than once.
-  std::set<StaClock *> getPropClocksOfNet(Net *clock_net);
+  std::unordered_set<StaClock *> getPropClocksOfNet(Net *clock_net);
   std::string getMasterClockOfGenerateClock(const std::string &generate_clock);
   std::string getMasterClockOfNet(Net *clock_net);
   std::vector<std::string> getMasterClocksOfNet(Net *clock_net);
@@ -320,7 +327,7 @@ class TimingEngine {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
-                      decltype(cmp)>
+                      decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(const char *pin1_name,
                                      const char *pin2_name, AnalysisMode mode);
   std::optional<double> getWorstSlackBetweenTwoSinks(
@@ -359,7 +366,7 @@ class TimingEngine {
   // Singleton timing engine.
   static TimingEngine *_timing_engine;
 
-  DISALLOW_COPY_AND_ASSIGN(TimingEngine);
+  FORBIDDEN_COPY(TimingEngine);
 };
 
 }  // namespace ista

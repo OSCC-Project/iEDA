@@ -1,34 +1,19 @@
-add_subdirectory(${ICTS_SOLVER}/clustering)
-add_subdirectory(${ICTS_SOLVER}/DME)
-add_subdirectory(${ICTS_SOLVER}/HCTS)
-add_subdirectory(${ICTS_SOLVER}/GOCA)
-add_subdirectory(${ICTS_SOLVER}/polygon)
-add_subdirectory(${ICTS_SOLVER}/slewAware)
-add_subdirectory(${ICTS_SOLVER}/costCalculator)
-add_subdirectory(${ICTS_SOLVER}/timingCalculator)
+if(DEBUG_ICTS_SOLVER)
+  message(STATUS "CTS: DEBUG_ICTS_SOLVER")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "CTS: RELEASE_ICTS_SOLVER")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
 
-add_library(icts_solver INTERFACE)
+add_subdirectory(${ICTS_SOLVER}/database)
+add_subdirectory(${ICTS_SOLVER}/tools)
 
-target_link_libraries(
-  icts_solver
-  INTERFACE icts_data_manager
-            icts_clustering
-            icts_dme
-            icts_polygon
-            icts_hcts
-            icts_goca
-            icts_slew_aware
-            icts_cost_calculator
-            icts_timing_calculator
-            icts_api)
+add_library(icts_solver ${ICTS_SOLVER}/Solver.cc)
+
+target_link_libraries(icts_solver PUBLIC icts_database icts_api
+                                         icts_solver_database icts_tools)
 
 target_include_directories(
-  icts_solver
-  INTERFACE ${ICTS_SOLVER}/cluster
-            ${ICTS_SOLVER}/DME
-            ${ICTS_SOLVER}/polygon
-            ${ICTS_SOLVER}/HCTS
-            ${ICTS_SOLVER}/GOCA
-            ${ICTS_SOLVER}/slewAware
-            ${ICTS_SOLVER}/costCalculator
-            ${ICTS_SOLVER}/timingCalculator)
+  icts_solver PUBLIC ${ICTS_SOLVER}/Solver ${ICTS_SOLVER}/database
+                     ${ICTS_SOLVER}/tools)

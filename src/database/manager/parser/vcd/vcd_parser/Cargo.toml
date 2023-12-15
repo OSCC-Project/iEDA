@@ -1,0 +1,23 @@
+[package]
+name = "vcd_parser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[lib]
+name = "vcd_parser"
+# #crate-type = ["staticlib"]
+crate-type = ["cdylib"]
+
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+threadpool = "1.8.1"
+
+#[features]
+#default = ["multithreading"]
+#multithreading = []

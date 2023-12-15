@@ -69,6 +69,19 @@ class CmdReadVerilog : public TclCmd {
   unsigned exec();
 };
 
+/**
+ * @brief Read lef def file to convert netlist.
+ *
+ */
+class CmdReadLefDef : public TclCmd {
+ public:
+  explicit CmdReadLefDef(const char* cmd_name);
+  ~CmdReadLefDef() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
 class CmdTESTSLL : public TclCmd {
  public:
   explicit CmdTESTSLL(const char* cmd_name);
@@ -167,6 +180,19 @@ class CmdDefToVerilog : public TclCmd {
  public:
   explicit CmdDefToVerilog(const char* cmd_name);
   ~CmdDefToVerilog() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
+/**
+ * @brief read verilog file, change to def, finally write def file.
+ *
+ */
+class CmdVerilogToDef : public TclCmd {
+ public:
+  explicit CmdVerilogToDef(const char* cmd_name);
+  ~CmdVerilogToDef() override = default;
 
   unsigned check();
   unsigned exec();

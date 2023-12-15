@@ -25,30 +25,34 @@ namespace irt {
 enum class PASourceType
 {
   kNone,
-  kBlockAndPin,
-  kEnclosure
+  kBlockage,
+  kNetShape,
+  kCandidateVia
 };
 
 struct GetPASourceTypeName
 {
-  std::string operator()(const PASourceType& ta_source_type) const
+  std::string operator()(const PASourceType& pa_source_type) const
   {
-    std::string ta_source_type_name;
-    switch (ta_source_type) {
+    std::string pa_source_type_name;
+    switch (pa_source_type) {
       case PASourceType::kNone:
-        ta_source_type_name = "none";
+        pa_source_type_name = "none";
         break;
-      case PASourceType::kBlockAndPin:
-        ta_source_type_name = "block_and_pin";
+      case PASourceType::kBlockage:
+        pa_source_type_name = "blockage";
         break;
-      case PASourceType::kEnclosure:
-        ta_source_type_name = "enclosure";
+      case PASourceType::kNetShape:
+        pa_source_type_name = "net_shape";
+        break;
+      case PASourceType::kCandidateVia:
+        pa_source_type_name = "candidate_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return ta_source_type_name;
+    return pa_source_type_name;
   }
 };
 

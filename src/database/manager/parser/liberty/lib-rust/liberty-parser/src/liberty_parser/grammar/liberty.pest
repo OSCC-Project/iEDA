@@ -1,0 +1,47 @@
+decimal_digits  = _{ ASCII_DIGIT }
+decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
+dec_int         = _{ decimal_integer }
+optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits* }
+optional_frac   = _{ "." ~ decimal_digits* }
+float           = @{ dec_int ~ optional_frac? ~ optional_exp? }
+
+bus_index = _{ "[" ~ decimal_digits+ ~ "]" }
+bus_slice = _{ "[" ~ decimal_digits+ ~ ":" ~ decimal_digits+ ~ "]" }
+lib_id    = _{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." | "-")* }
+
+// punctuation = _{ "," | ":" | "=" | "+" | "*" | "&" | "|" | "!" }
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
+multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+COMMENT = _{ line_comment | multiline_comment }
+
+string_text    =  { (!"\"" ~ ANY)* }
+oneline_string = _{ "\"" ~ string_text ~ ("\"") ~ "\\"? }
+
+multiline_string = !{ "\\"? ~ oneline_string ~ ("," ~ "\\" ~ oneline_string)* }
+
+semicolon = _{ ";" }
+
+expr_operator          = _{ "+" | "-" | "*" | "/" }
+expr_token             = ${ float ~ string? | string }
+simple_attribute_value = _{ expr_token ~ (expr_operator ~ expr_token)? }
+
+id = { lib_id ~ bus_index? ~ (bus_index | bus_slice)? }
+
+string = _{ id | multiline_string }
+
+attribute_value  = _{ float | string }
+attribute_values = _{ attribute_value? ~ (("," | WHITESPACE) ~ attribute_value)* }
+
+simple_attribute = { id ~ ":" ~ simple_attribute_value ~ semicolon? }
+
+complex_attribute = { id ~ "(" ~ attribute_values ~ ")" ~ semicolon }
+
+group = { id ~ "(" ~ attribute_values ~ ")" ~ ("{" ~ statements ~ "}")? }
+
+statement  = _{ simple_attribute | complex_attribute | group }
+statements = _{ statement* }
+
+lib_file = _{ SOI ~ group ~ EOI }

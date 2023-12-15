@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -23,7 +23,6 @@
  */
 #pragma once
 
-#include "DisallowCopyAssign.hh"
 #include "StaData.hh"
 #include "liberty/Liberty.hh"
 #include "netlist/Instance.hh"
@@ -93,7 +92,7 @@ class StaArc {
   unsigned _is_loop_disable : 1 = 0;
   unsigned _is_disable_arc : 1 = 0;
   unsigned _reserved : 30 = 0;
-  DISALLOW_COPY_AND_ASSIGN(StaArc);
+  FORBIDDEN_COPY(StaArc);
 };
 
 /**
@@ -166,7 +165,7 @@ class StaNetArc : public StaArc {
 
   StaDataBucket _arc_waveform_bucket;
 
-  DISALLOW_COPY_AND_ASSIGN(StaNetArc);
+  FORBIDDEN_COPY(StaNetArc);
 };
 
 /**
@@ -237,7 +236,7 @@ class StaInstArc : public StaArc {
   LibertyArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;       //!< The owned inst.
 
-  DISALLOW_COPY_AND_ASSIGN(StaInstArc);
+  FORBIDDEN_COPY(StaInstArc);
 };
 
 }  // namespace ista

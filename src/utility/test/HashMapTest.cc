@@ -27,41 +27,41 @@
 
 using namespace testing;
 
-using ieda::HashMap;
-using ieda::HashMultimap;
+using ieda::FlatMap;
+using ieda::FlatMultimap;
 
 namespace {
 
 TEST(HashMapTest, initializer_list) {
-  HashMap<int, const char *> hmap = {{1, "test"}};
+  FlatMap<int, const char *> hmap = {{1, "test"}};
 
   EXPECT_STREQ(hmap.value(1), "test");
 }
 
 TEST(HashMapTest, copy_constructor) {
-  HashMap<int, const char *> hmap = {{1, "test"}};
-  HashMap<int, const char *> hmap1(hmap);
+  FlatMap<int, const char *> hmap = {{1, "test"}};
+  FlatMap<int, const char *> hmap1(hmap);
 
   EXPECT_STREQ(hmap1.value(1), "test");
 }
 
 TEST(HashMapTest, assignmen_operator) {
-  HashMap<int, const char *> hmap = {{1, "test"}};
-  HashMap<int, const char *> hmap1 = hmap;
+  FlatMap<int, const char *> hmap = {{1, "test"}};
+  FlatMap<int, const char *> hmap1 = hmap;
 
   EXPECT_STREQ(hmap1.value(1), "test");
 }
 
 TEST(HashMapTest, move_constructor) {
-  HashMap<int, const char *> hmap = {{1, "test"}};
-  HashMap<int, const char *> hmap1(std::move(hmap));
+  FlatMap<int, const char *> hmap = {{1, "test"}};
+  FlatMap<int, const char *> hmap1(std::move(hmap));
 
   EXPECT_STREQ(hmap1.value(1), "test");
 }
 
 TEST(HashMapTest, move_assignment) {
-  HashMap<int, const char *> hmap = {{1, "test"}};
-  HashMap<int, const char *> hmap1;
+  FlatMap<int, const char *> hmap = {{1, "test"}};
+  FlatMap<int, const char *> hmap1;
   hmap1 = std::move(hmap);
 
   EXPECT_STREQ(hmap1.value(1), "test");
@@ -69,46 +69,46 @@ TEST(HashMapTest, move_assignment) {
 
 TEST(HashMapTest, range_constructor) {
   std::vector<std::pair<int, const char *>> v = {{1, "a"}, {2, "b"}};
-  HashMap<int, const char *> hmap1(v.begin(), v.end());
+  FlatMap<int, const char *> hmap1(v.begin(), v.end());
 
   EXPECT_STREQ(hmap1.value(1), "a");
 }
 
 TEST(HashMapTest, at) {
-  HashMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
+  FlatMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
   const char *value = hmap.at(1);
 
   EXPECT_STREQ(hmap.at(1), "a");
 }
 
 TEST(HashMapTest, at_exception) {
-  HashMap<int, const char *> hmap;
+  FlatMap<int, const char *> hmap;
   ASSERT_THROW(hmap.at(1), std::out_of_range);
 }
 
 TEST(HashMapTest, begin) {
-  HashMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
+  FlatMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
   EXPECT_STREQ(hmap.begin()->second, "a");
 }
 
 TEST(HashMapTest, cbegin) {
-  HashMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
+  FlatMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
   EXPECT_STREQ(hmap.cbegin()->second, "a");
 }
 
 TEST(HashMapTest, end) {
-  HashMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
+  FlatMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
   EXPECT_TRUE(hmap.find(3) == hmap.end());
 }
 
 TEST(HashMapTest, cend) {
-  HashMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
+  FlatMap<int, const char *> hmap{{1, "a"}, {2, "b"}};
   EXPECT_TRUE(hmap.find(3) == hmap.cend());
 }
 
 TEST(HashMapTest, emplace) {
   // emplace would construct the object in place.
-  HashMap<std::string, std::string> m;
+  FlatMap<std::string, std::string> m;
 
   // uses pair's move constructor
   m.emplace(std::make_pair(std::string("a"), std::string("a")));
@@ -132,7 +132,7 @@ TEST(HashMapTest, emplace) {
 TEST(HashMapTest, emplace_hint) {
   // emplace_hint would construct the object in place and insert the object
   // before the hint.
-  HashMap<std::string, std::string> m;
+  FlatMap<std::string, std::string> m;
   auto hint = m.begin();
 
   // uses pair's move constructor
@@ -155,9 +155,9 @@ TEST(HashMapTest, emplace_hint) {
 }
 
 TEST(HashMapTest, empty) {
-  HashMap<int, std::string> m;
+  FlatMap<int, std::string> m;
 
-  // auto IsEmpty = [](HashMap<std::string, std::string> &m) { return m.empty();
+  // auto IsEmpty = [](FlatMap<std::string, std::string> &m) { return m.empty();
   // };
 
   EXPECT_THAT(m, IsEmpty());
@@ -165,7 +165,7 @@ TEST(HashMapTest, empty) {
 }
 
 TEST(HashMapTest, erase) {
-  HashMap<int, std::string> c = {{1, "one"},  {2, "two"},  {3, "three"},
+  FlatMap<int, std::string> c = {{1, "one"},  {2, "two"},  {3, "three"},
                                  {4, "four"}, {5, "five"}, {6, "six"}};
 
   for (auto &p : c) {
@@ -183,7 +183,7 @@ TEST(HashMapTest, erase) {
 }
 
 TEST(HashMapTest, extract) {
-  HashMap<int, char> cont{{1, 'a'}, {2, 'b'}, {3, 'c'}};
+  FlatMap<int, char> cont{{1, 'a'}, {2, 'b'}, {3, 'c'}};
 
   auto print = [](std::pair<const int, char> &n) {
     std::cout << " " << n.first << '(' << n.second << ')';
@@ -214,7 +214,7 @@ TEST(HashMapTest, insert) {
     std::cout << " " << n.first << '(' << n.second << ')';
   };
 
-  HashMap<int, char> cont{{1, 'a'}, {2, 'b'}, {3, 'c'}};
+  FlatMap<int, char> cont{{1, 'a'}, {2, 'b'}, {3, 'c'}};
 
   // value type insert
   auto result = cont.insert(std::make_pair(4, 'd'));
@@ -224,7 +224,7 @@ TEST(HashMapTest, insert) {
   cont.insert(cont.end(), std::make_pair(5, 'e'));
   EXPECT_EQ(cont[5], 'e');
 
-  HashMap<int, char> cont1{{6, 'f'}};
+  FlatMap<int, char> cont1{{6, 'f'}};
   // range insert
   cont.insert(cont1.begin(), cont1.end());
 
@@ -245,7 +245,7 @@ TEST(HashMapTest, insert) {
 }
 
 TEST(HashMapTest, insert_or_assign) {
-  HashMap<std::string, std::string> myHashMap;
+  FlatMap<std::string, std::string> myHashMap;
   myHashMap.insert_or_assign("a", "apple");
   myHashMap.insert_or_assign("b", "bannana");
   myHashMap.insert_or_assign("c", "cherry");
@@ -259,10 +259,10 @@ TEST(HashMapTest, insert_or_assign) {
 }
 
 TEST(HashMapTest, merge) {
-  HashMap<int, std::string> ma{{1, "apple"}, {5, "pear"}, {10, "banana"}};
-  HashMap<int, std::string> mb{
+  FlatMap<int, std::string> ma{{1, "apple"}, {5, "pear"}, {10, "banana"}};
+  FlatMap<int, std::string> mb{
       {2, "zorro"}, {4, "batman"}, {5, "X"}, {8, "alpaca"}};
-  HashMap<int, std::string> u;
+  FlatMap<int, std::string> u;
   u.merge(ma);
   std::cout << "ma.size(): " << ma.size() << '\n';
   u.merge(mb);
@@ -293,7 +293,7 @@ Os &operator<<(Os &os, const Co &co) {
   return os << " }\n";
 }
 TEST(HashMapTest, swap) {
-  HashMap<std::string, std::string> m1{
+  FlatMap<std::string, std::string> m1{
       {"γ", "gamma"},
       {"β", "beta"},
       {"α", "alpha"},
@@ -316,7 +316,7 @@ TEST(HashMapTest, swap) {
 }
 
 TEST(HashMapTest, try_emplace) {
-  HashMap<const char *, std::string> m;
+  FlatMap<const char *, std::string> m;
 
   m.try_emplace("a", "a");
   m.try_emplace("b", "abcd");
@@ -329,12 +329,12 @@ TEST(HashMapTest, try_emplace) {
 }
 
 TEST(HashMapTest, contains) {
-  HashMap<int, std::string> m{{1, "a"}};
+  FlatMap<int, std::string> m{{1, "a"}};
   EXPECT_TRUE(m.contains(1));
 }
 
 TEST(HashMapTest, count) {
-  HashMap<int, std::string> m{{1, "a"}, {1, "b"}};
+  FlatMap<int, std::string> m{{1, "a"}, {1, "b"}};
   for (const auto &p : m) {
     std::cout << p.first << " => " << p.second << '\n';
   }
@@ -342,7 +342,7 @@ TEST(HashMapTest, count) {
 }
 
 TEST(HashMapTest, equal_range) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -378,7 +378,7 @@ TEST(HashMapTest, equal_range) {
 }
 
 TEST(HashMapTest, find) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -389,7 +389,7 @@ TEST(HashMapTest, find) {
 }
 
 TEST(HashMapTest, keys) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -401,7 +401,7 @@ TEST(HashMapTest, keys) {
 }
 
 TEST(HashMapTest, values) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -413,7 +413,7 @@ TEST(HashMapTest, values) {
 }
 
 TEST(HashMapTest, haskey) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -424,7 +424,7 @@ TEST(HashMapTest, haskey) {
 }
 
 TEST(HashMapTest, value) {
-  const HashMap<int, const char *> m{
+  const FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -436,7 +436,7 @@ TEST(HashMapTest, value) {
 
 // interface refer to the qt interface.
 TEST(HashMapTest, insert_qt) {
-  HashMap<int, const char *> m{
+  FlatMap<int, const char *> m{
       {0, "zero"},
       {1, "one"},
       {3, "three"},
@@ -448,7 +448,7 @@ TEST(HashMapTest, insert_qt) {
 }
 
 TEST(HashMapTest, clear) {
-  HashMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
+  FlatMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
 
   container.clear();
 
@@ -457,13 +457,13 @@ TEST(HashMapTest, clear) {
 }
 
 TEST(HashMapTest, max_size) {
-  HashMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
-  HashMap<int, char>::size_type max_size = container.max_size();
+  FlatMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
+  FlatMap<int, char>::size_type max_size = container.max_size();
 }
 
 TEST(HashMapTest, Iterator) {
-  HashMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
-  HashMap<int, char>::Iterator iter(&container);
+  FlatMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
+  FlatMap<int, char>::Iterator iter(&container);
   while (iter.hasNext()) {
     std::cout << iter.value() << std::endl;
     iter = iter.next();
@@ -471,8 +471,8 @@ TEST(HashMapTest, Iterator) {
 }
 
 TEST(HashMapTest, ConstIterator) {
-  HashMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
-  HashMap<int, char>::ConstIterator iter(&container);
+  FlatMap<int, char> container{{1, 'x'}, {2, 'y'}, {3, 'z'}};
+  FlatMap<int, char>::ConstIterator iter(&container);
   while (iter.hasNext()) {
     int key;
     char value;
@@ -483,21 +483,21 @@ TEST(HashMapTest, ConstIterator) {
 }
 
 TEST(HashMapTest, NoMemberOperator1) {
-  HashMap<int, std::string> container1{{1, "x"}, {2, "y"}, {3, "z"}};
-  HashMap<int, std::string> container2{{1, "x"}, {2, "y"}, {3, "z"}};
+  FlatMap<int, std::string> container1{{1, "x"}, {2, "y"}, {3, "z"}};
+  FlatMap<int, std::string> container2{{1, "x"}, {2, "y"}, {3, "z"}};
 
   EXPECT_TRUE(container1 == container2);
 }
 
 TEST(HashMapTest, NoMemberOperator3) {
-  HashMap<int, std::string> container1{{1, "x1"}, {2, "y1"}, {3, "z1"}};
-  HashMap<int, std::string> container2{{1, "x2"}, {2, "y2"}, {3, "z2"}};
+  FlatMap<int, std::string> container1{{1, "x1"}, {2, "y1"}, {3, "z1"}};
+  FlatMap<int, std::string> container2{{1, "x2"}, {2, "y2"}, {3, "z2"}};
 
   EXPECT_TRUE(container1 != container2);
 }
 
 TEST(HashMultimapTest, initializer_list) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
 
   std::list<const char *> values = hmap.values(1);
 
@@ -510,8 +510,8 @@ TEST(HashMultimapTest, initializer_list) {
 }
 
 TEST(HashMultimapTest, copy_constructor) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
-  HashMultimap<int, const char *> hmap1(hmap);
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap1(hmap);
 
   std::list<const char *> values = hmap.values(1);
   EXPECT_TRUE(std::find(values.begin(), values.end(), "test") != values.end());
@@ -519,8 +519,8 @@ TEST(HashMultimapTest, copy_constructor) {
 }
 
 TEST(HashMultimapTest, assignmen_operator) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
-  HashMultimap<int, const char *> hmap1 = hmap;
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap1 = hmap;
 
   std::list<const char *> values = hmap.values(1);
   EXPECT_TRUE(std::find(values.begin(), values.end(), "test") != values.end());
@@ -528,8 +528,8 @@ TEST(HashMultimapTest, assignmen_operator) {
 }
 
 TEST(HashMultimapTest, move_constructor) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
-  HashMultimap<int, const char *> hmap1(std::move(hmap));
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap1(std::move(hmap));
 
   std::list<const char *> values = hmap.values(1);
   EXPECT_TRUE(std::find(values.begin(), values.end(), "test") != values.end());
@@ -537,8 +537,8 @@ TEST(HashMultimapTest, move_constructor) {
 }
 
 TEST(HashMultimapTest, move_assignment) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
-  HashMultimap<int, const char *> hmap1;
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap1;
   hmap1 = std::move(hmap);
 
   std::list<const char *> values = hmap.values(1);
@@ -548,7 +548,7 @@ TEST(HashMultimapTest, move_assignment) {
 
 TEST(HashMultimapTest, range_constructor) {
   std::vector<std::pair<int, const char *>> v = {{1, "a"}, {1, "b"}};
-  HashMultimap<int, const char *> hmap1(v.begin(), v.end());
+  FlatMultimap<int, const char *> hmap1(v.begin(), v.end());
 
   std::list<const char *> values = hmap1.values(1);
   EXPECT_TRUE(std::find(values.begin(), values.end(), "a") != values.end());
@@ -556,13 +556,13 @@ TEST(HashMultimapTest, range_constructor) {
 }
 
 TEST(HashMultimapTest, count) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
 
   EXPECT_EQ(hmap.count(1), 2);
 }
 
 TEST(HashMultimapTest, begin) {
-  HashMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
+  FlatMultimap<int, const char *> hmap = {{1, "test"}, {1, "test1"}};
 
   for (auto p : hmap) {
     std::cout << p.second << std::endl;
@@ -570,8 +570,8 @@ TEST(HashMultimapTest, begin) {
 }
 
 TEST(HashMultimapTest, Iterator) {
-  HashMultimap<const char *, int> hmap = {{"test", 1}, {"test", 2}};
-  HashMultimap<const char *, int>::Iterator p(&hmap);
+  FlatMultimap<const char *, int> hmap = {{"test", 1}, {"test", 2}};
+  FlatMultimap<const char *, int>::Iterator p(&hmap);
 
   while (p.hasNext()) {
     std::cout << p.key() << "=>" << p.value() << std::endl;
@@ -579,7 +579,7 @@ TEST(HashMultimapTest, Iterator) {
   }
 
   p.init(&hmap);
-  HashMultimap<const char *, int>::Iterator q = p;
+  FlatMultimap<const char *, int>::Iterator q = p;
   while (q.hasNext()) {
     const char *key;
     int value;
@@ -587,7 +587,7 @@ TEST(HashMultimapTest, Iterator) {
     std::cout << key << "=>" << value << std::endl;
   }
 
-  HashMultimap<const char *, int>::ConstIterator q1(&hmap);
+  FlatMultimap<const char *, int>::ConstIterator q1(&hmap);
   while (q1.hasNext()) {
     const char *key;
     int value;
@@ -597,22 +597,22 @@ TEST(HashMultimapTest, Iterator) {
 }
 
 TEST(HashMultimapTest, NoMemberOperator1) {
-  HashMap<int, std::string> container1{{1, "x"}, {1, "y"}, {3, "z"}};
-  HashMap<int, std::string> container2{{1, "x"}, {1, "y"}, {3, "z"}};
+  FlatMap<int, std::string> container1{{1, "x"}, {1, "y"}, {3, "z"}};
+  FlatMap<int, std::string> container2{{1, "x"}, {1, "y"}, {3, "z"}};
 
   EXPECT_TRUE(container1 == container2);
 }
 
 TEST(HashMultimapTest, NoMemberOperator3) {
-  HashMap<int, std::string> container1{{1, "x1"}, {1, "y1"}, {3, "z1"}};
-  HashMap<int, std::string> container2{{1, "x2"}, {1, "y2"}, {3, "z2"}};
+  FlatMap<int, std::string> container1{{1, "x1"}, {1, "y1"}, {3, "z1"}};
+  FlatMap<int, std::string> container2{{1, "x2"}, {1, "y2"}, {3, "z2"}};
 
   EXPECT_TRUE(container1 != container2);
 }
 
 TEST(HashMultimapTest, swap) {
-  HashMap<int, std::string> container1{{1, "x1"}, {1, "y1"}, {3, "z1"}};
-  HashMap<int, std::string> container2{{1, "x1"}, {1, "y1"}, {3, "z1"}};
+  FlatMap<int, std::string> container1{{1, "x1"}, {1, "y1"}, {3, "z1"}};
+  FlatMap<int, std::string> container2{{1, "x1"}, {1, "y1"}, {3, "z1"}};
 
   swap(container1, container2);
 }
@@ -654,9 +654,9 @@ struct DewCmp {
 
 struct DewGHash {
   size_t operator()(const Dew &rhs) const {
-    return HashMap<int, int>::hash()(rhs._a) ^
-           HashMap<int, int>::hash()(rhs._b) ^
-           HashMap<int, int>::hash()(rhs._c);
+    return FlatMap<int, int>::hash()(rhs._a) ^
+           FlatMap<int, int>::hash()(rhs._b) ^
+           FlatMap<int, int>::hash()(rhs._c);
   }
 };
 
@@ -681,7 +681,7 @@ TEST(HashMapTest, perf1) {
   constexpr int nof_operations = 20;
 
   auto map_emplace = [=]() -> int {
-    HashMap<Dew, Dew, DewGHash, DewGCmp> hmap;
+    FlatMap<Dew, Dew, DewGHash, DewGCmp> hmap;
     for (int i = 0; i < nof_operations; ++i)
       for (int j = 0; j < nof_operations; ++j)
         for (int k = 0; k < nof_operations; ++k)
@@ -712,7 +712,7 @@ TEST(HashMapTest, perf2) {
   const int nof_operations = 20;
 
   auto map_insert = [=]() -> int {
-    HashMap<Dew, Dew, DewGHash, DewGCmp> hmap;
+    FlatMap<Dew, Dew, DewGHash, DewGCmp> hmap;
     for (int i = 0; i < nof_operations; ++i)
       for (int j = 0; j < nof_operations; ++j)
         for (int k = 0; k < nof_operations; ++k)
@@ -740,7 +740,7 @@ TEST(HashMapTest, perf2) {
 TEST(HashMapTest, perf3) {
   const int nof_operations = 20;
 
-  HashMap<Dew, Dew, DewGHash, DewGCmp> hmap;
+  FlatMap<Dew, Dew, DewGHash, DewGCmp> hmap;
   for (int i = 0; i < nof_operations; ++i)
     for (int j = 0; j < nof_operations; ++j)
       for (int k = 0; k < nof_operations; ++k)
@@ -776,7 +776,7 @@ TEST(HashMapTest, perf3) {
 TEST(HashMapTest, perf4) {
   const int nof_operations = 20;
 
-  HashMap<Dew, Dew, DewGHash, DewGCmp> hmap;
+  FlatMap<Dew, Dew, DewGHash, DewGCmp> hmap;
   for (int i = 0; i < nof_operations; ++i)
     for (int j = 0; j < nof_operations; ++j)
       for (int k = 0; k < nof_operations; ++k)

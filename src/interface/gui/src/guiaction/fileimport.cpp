@@ -25,7 +25,7 @@ void FileImport::init() {
   setWindowTitle(tr("FileImport File"));
   setWindowFlags(Qt::Window);
   setWindowModality(Qt::ApplicationModal);
-  resize(800, 600);
+  resize(900, 800);
 
   initDirLayout();
   initTechLayout();

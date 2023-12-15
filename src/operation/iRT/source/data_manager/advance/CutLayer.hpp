@@ -33,8 +33,8 @@ class CutLayer
   void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const irt_int layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
-
   // function
+  irt_int getMinSpacing() { return 0; }
 
  private:
   irt_int _layer_idx = -1;

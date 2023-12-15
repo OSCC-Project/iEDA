@@ -30,9 +30,9 @@
 #include "idm.h"
 
 namespace idm {
-bool DataManager::initLef(vector<string> lef_paths)
+bool DataManager::initLef(vector<string> lef_path, bool b_techlef)
 {
-  _idb_lef_service = _idb_builder->buildLef(lef_paths);
+  _idb_lef_service = _idb_builder->buildLef(lef_path, b_techlef);
   _layout = get_idb_layout();
 
   return _idb_lef_service == nullptr ? false : true;

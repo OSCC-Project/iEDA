@@ -17,8 +17,8 @@
 #ifndef SRC_EVALUATOR_SOURCE_WIRELENGTH_DATABASE_WLFACTORY_HPP_
 #define SRC_EVALUATOR_SOURCE_WIRELENGTH_DATABASE_WLFACTORY_HPP_
 
-#include "magic_enum.hpp"
 #include "WL.hpp"
+#include "magic_enum.hpp"
 
 namespace eval {
 
@@ -76,6 +76,24 @@ class WLFactory
         break;
       case kDR:
         return new DRWL();
+        break;
+      default:
+        return nullptr;
+        break;
+    }
+  }
+
+  WL* createWL(WIRELENGTH_TYPE type)
+  {
+    switch (type) {
+      case (WIRELENGTH_TYPE::kHPWL):
+        return new HPWLWL();
+        break;
+      case (WIRELENGTH_TYPE::kFLUTE):
+        return new FluteWL();
+        break;
+      case (WIRELENGTH_TYPE::kB2B):
+        return new B2BWL();
         break;
       default:
         return nullptr;

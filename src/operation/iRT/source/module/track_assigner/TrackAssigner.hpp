@@ -16,13 +16,15 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ChangeType.hpp"
 #include "Config.hpp"
+#include "DRCChecker.hpp"
+#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
 #include "TAModel.hpp"
 #include "TAPanel.hpp"
-#include "TASchedule.hpp"
 
 namespace irt {
 
@@ -56,9 +58,13 @@ class TrackAssigner
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
-  void buildScheduleList(TAModel& ta_model);
-  void updateNetBlockageMap(TAModel& ta_model);
-  void buildPanelScaleAxis(TAModel& ta_model);
+  void buildSchedule(TAModel& ta_model);
+  void shrinkPanelRegion(TAModel& ta_model);
+  void buildPanelTrackAxis(TAModel& ta_model);
+  void updateBlockageMap(TAModel& ta_model);
+  void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(TAModel& ta_model);
+  void updateNetReservedViaMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
   std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net);
@@ -66,68 +72,90 @@ class TrackAssigner
   std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
                                                                   std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
-  void buildLayerPanelList(TAModel& ta_model);
-  void initTANodeMap(TAPanel& ta_panel);
-  void buildNeighborMap(TAPanel& ta_panel);
-  void checkTAPanel(TAPanel& ta_panel);
-  void saveTAPanel(TAPanel& ta_panel);
+  void buildBoundingBox(TATask& ta_task);
+  void buildNetTaskMap(TAModel& ta_model);
+  void outputTADataset(TAModel& ta_model);
 #endif
 
 #if 1  // iterative
   void iterative(TAModel& ta_model);
   void assignTAModel(TAModel& ta_model);
-  void iterativeTAPanel(TAModel& ta_model, TASchedule& ta_schedule);
-  void sortTAPanel(TAPanel& ta_panel);
-  void resetTAPanel(TAPanel& ta_panel);
-  void assignTAPanel(TAPanel& ta_panel);
-  void routeTATask(TAPanel& ta_panel, TATask& ta_task);
+  void iterativeTAPanel(TAModel& ta_model, TAPanelId& ta_panel_id);
+  void buildTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void initTANodeMap(TAPanel& ta_panel);
+  void buildNeighborMap(TAPanel& ta_panel);
+  void buildSourceOrienTaskMap(TAPanel& ta_panel);
+  void updateRectGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCRect& drc_rect);
+  std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
+  void checkTAPanel(TAPanel& ta_panel);
+  void saveTAPanel(TAPanel& ta_panel);
+  void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void sortTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  bool sortByMultiLevel(TAPanel& ta_panel, irt_int task_idx1, irt_int task_idx2);
+  SortStatus sortByClockPriority(TATask& task1, TATask& task2);
+  SortStatus sortByPreferLengthDESC(TATask& task1, TATask& task2);
+  void resortTAPanel(TAPanel& ta_panel);
+  std::vector<std::vector<irt_int>> getViolationTaskCombList(TAPanel& ta_panel);
+  void addHistoryCost(TAPanel& ta_panel);
+  void updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect);
+  void ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void assignTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask& ta_task);
   bool isConnectedAllEnd(TAPanel& ta_panel);
-  void routeByStrategy(TAPanel& ta_panel, TARouteStrategy ta_route_strategy);
   void routeSinglePath(TAPanel& ta_panel);
   void initPathHead(TAPanel& ta_panel);
   bool searchEnded(TAPanel& ta_panel);
   void expandSearching(TAPanel& ta_panel);
-  bool passChecking(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByPathHead(TAPanel& ta_panel);
-  bool replaceParentNode(TAPanel& ta_panel, TANode* parent_node, TANode* child_node);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
-  void updateTaskResult(TAPanel& ta_panel, TATask& ta_task);
+  void updateTaskResult(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
   void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getJointCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
+  double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
   double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  void processTAPanel(TAPanel& ta_panel);
+  void processTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void buildRoutingResult(TATask& ta_task);
-  void reportTAPanel(TAPanel& ta_panel);
-  void countTAPanel(TAPanel& ta_panel);
-  void reportTable(TAPanel& ta_panel);
-  void updateTAPanel(TAModel& ta_model, TAPanel& ta_panel);
-  void reportTAModel(TAModel& ta_model);
+  void countTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void reportTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  bool stopTAPanel(TAModel& ta_model, TAPanel& ta_panel);
+  void freeTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void countTAModel(TAModel& ta_model);
-  void reportTable(TAModel& ta_model);
+  void reportTAModel(TAModel& ta_model);
+  bool stopTAModel(TAModel& ta_model);
 #endif
 
 #if 1  // update
   void update(TAModel& ta_model);
 #endif
 
-#if 0  // plot ta_panel
-void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx);
+#if 1  // plot ta_panel
+  void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getTAViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
+  void removeInvalidTAViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

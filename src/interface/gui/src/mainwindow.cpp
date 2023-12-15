@@ -61,7 +61,7 @@ void MainWindow::initView() {
   createControlView();
   createScene();
 
-  resize(800, 600);
+  resize(900, 800);
 }
 
 void onLoadError(QString error_msg) { qDebug() << "DB set up failed: " << error_msg; }
@@ -88,7 +88,7 @@ void MainWindow::createControlView() {
   QDockWidget* widget = new QDockWidget("Control", this);
   widget->setFeatures(QDockWidget::DockWidgetMovable);
   widget->setAllowedAreas(Qt::RightDockWidgetArea);
-  widget->setMinimumWidth(200);
+  widget->setMinimumWidth(400);
   widget->setMaximumWidth(400);
   widget->setWidget(_control_tree);
   layoutTab->addDockWidget(Qt::RightDockWidgetArea, widget);

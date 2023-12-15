@@ -77,7 +77,7 @@ class DataManager
   /// iDB init
   bool init(string config_path);
   bool readLef(string config_path);
-  bool readLef(vector<string> lef_paths);
+  bool readLef(vector<string> lef_paths, bool b_techlef = false);
   bool readDef(string path);
   bool readVerilog(string path, string top_module = "");
 
@@ -127,6 +127,10 @@ class DataManager
                               IdbOrient orient = IdbOrient::kN_R0);
 
   bool placeInst(string inst_name, int32_t x, int32_t y, string orient, string cell_master_name, string source);
+
+  void place_macro_generate_tcl(std::string directory, std::string tcl_name, int number = 100);
+  bool place_macro_loc_rand(std::string tcl_path);
+  void scale_macro_loc();
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +227,7 @@ class DataManager
   /// init
   /// iDB init
   bool initConfig(string config_path);
-  bool initLef(vector<string> lef_paths);
+  bool initLef(vector<string> lef_paths, bool b_techlef = false);
   bool initDef(string def_path);
   bool initVerilog(string verilog_path, string top_module);
 

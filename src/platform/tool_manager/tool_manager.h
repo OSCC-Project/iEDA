@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: core.h
+ * @File Name: tool_manager.h
  * @Brief :
  * @Author : Yell (12112088@qq.com)
  * @Version : 1.0
@@ -111,6 +111,9 @@ class ToolManager
   bool autoRunSTA(std::string config = "");
   bool initSTA(std::string config = "");
   bool runSTA(std::string config = "");
+
+  /// iPW
+  bool autoRunPower(std::string config = "");
 
   bool buildClockTree(std::string config = "", std::string data_path = "");
   bool saveClockTree(std::string data_path);

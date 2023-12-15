@@ -10,6 +10,7 @@ target_link_libraries(ipl-source_external_libs
         def_service
         lef_service
         usage
+        solver_legalization
 )
 
 target_include_directories(ipl-source_external_libs
@@ -19,6 +20,7 @@ target_include_directories(ipl-source_external_libs
         ${HOME_DATABASE}/builder/def_builder/def_service
         ${HOME_DATABASE}/builder/lef_builder/lef_service
         ${HOME_UTILITY}
+        ${HOME_SOLVER}/legalization
 )
 
 target_include_directories(ipl-source_external_libs

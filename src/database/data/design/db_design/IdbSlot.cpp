@@ -59,6 +59,8 @@ IdbSlot::~IdbSlot()
       rect = nullptr;
     }
   }
+  _rect_list.clear();
+  std::vector<IdbRect*>().swap(_rect_list);
 }
 
 IdbRect* IdbSlot::get_rect(size_t index)
@@ -121,7 +123,7 @@ IdbSlot* IdbSlotList::add_slot()
 
 void IdbSlotList::reset()
 {
-  for (auto& slot : _slot_list) {
+  for (auto* slot : _slot_list) {
     if (slot != nullptr) {
       delete slot;
       slot = nullptr;
@@ -129,6 +131,7 @@ void IdbSlotList::reset()
   }
 
   _slot_list.clear();
+  std::vector<IdbSlot*>().swap(_slot_list);
 }
 
 }  // namespace idb

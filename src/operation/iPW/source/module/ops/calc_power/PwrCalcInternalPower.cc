@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -55,7 +55,7 @@ double PwrCalcInternalPower::getToggleData(Pin* pin) {
  */
 double PwrCalcInternalPower::calcSPByWhen(const char* when, Instance* inst) {
   /*Parse conditional statements of the leakage power*/
-  LibertyExprBuilder expr_builder(nullptr, when);
+  RustLibertyExprBuilder expr_builder(when);
   expr_builder.execute();
   auto* expr = expr_builder.get_result_expr();
 
@@ -92,16 +92,20 @@ double PwrCalcInternalPower::calcCombInputPinPower(Instance* inst,
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power
-    double rise_slew = (*the_input_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    auto rise_slew = (*the_input_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    LOG_FATAL_IF(!rise_slew)
+        << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
     double rise_power =
-        internal_power->gatePower(TransType::kRise, rise_slew, std ::nullopt);
+        internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
     // fall power
-    double fall_slew = (*the_input_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
+    auto fall_slew = (*the_input_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
+    LOG_FATAL_IF(!fall_slew)
+        << (*the_input_sta_vertex)->getName() << " fall slew is not exist.";
     double fall_power =
-        internal_power->gatePower(TransType::kFall, fall_slew, std ::nullopt);
+        internal_power->gatePower(TransType::kFall, *fall_slew, std ::nullopt);
     double fall_power_mw = lib_cell->convertTablePowerToMw(fall_power);
 
     // When the input causes the output to be flipped, the toggle needs to
@@ -185,34 +189,43 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
     auto* sta_arc =
         the_output_sta_vertex->getSrcArc(src_input_sta_vertex).front();
 
-    auto query_power = [sta_arc, convert_load_to_lib_unit](
-                           LibertyPowerArc* power_arc, TransType trans_type) {
+    auto query_power =
+        [sta_arc, convert_load_to_lib_unit](
+            LibertyPowerArc* power_arc,
+            TransType trans_type) -> std::tuple<double, double, double> {
       auto* internal_power_info = power_arc->get_internal_power_info().get();
-      double input_slew_ns = sta_arc->get_src()->getSlewNs(
+      auto input_slew_ns = sta_arc->get_src()->getSlewNs(
           AnalysisMode::kMax,
           sta_arc->isPositiveArc() ? trans_type : FLIP_TRANS(trans_type));
+      LOG_ERROR_IF(!input_slew_ns)
+          << sta_arc->get_src()->getName() << " input slew is not exist.";
+
       double output_load_pf =
           sta_arc->get_snk()->getLoad(AnalysisMode::kMax, trans_type);
       double output_load = convert_load_to_lib_unit(power_arc, output_load_pf);
       // lut power
       double internal_power_value = internal_power_info->gatePower(
-          trans_type, input_slew_ns, output_load);
+          trans_type, *input_slew_ns, output_load);
 
       double internal_power_value_mw =
           power_arc->get_owner_cell()->convertTablePowerToMw(
               internal_power_value);
 
-      return internal_power_value_mw;
+      return {internal_power_value_mw, input_slew_ns ? *input_slew_ns : 0.0,
+              output_load};
     };
 
     auto* power_arc_set =
         dynamic_cast<PwrInstArc*>(snk_arc)->get_power_arc_set();
     LibertyPowerArc* power_arc;
     FOREACH_POWER_LIB_ARC(power_arc_set, power_arc) {
-      double rise_power_mw = query_power(power_arc, TransType::kRise);
-      double fall_power_mw = query_power(power_arc, TransType::kFall);
+      auto [rise_power_mw, rise_input_slew_ns, rise_output_load] =
+          query_power(power_arc, TransType::kRise);
+      auto [fall_power_mw, fall_input_slew_ns, fall_output_load] =
+          query_power(power_arc, TransType::kFall);
       // the internal power of this power arc.
-      double table_average_power_mw = CalcAveragePower(rise_power_mw, fall_power_mw);
+      double table_average_power_mw =
+          CalcAveragePower(rise_power_mw, fall_power_mw);
 
       double output_toggle = getToggleData(output_pin);
       double the_arc_power = output_toggle * table_average_power_mw;
@@ -220,8 +233,8 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       VERBOSE_LOG(1) << "output pin " << output_pin->getFullName()
                      << " arc power(mW) " << the_arc_power << " toggle "
                      << output_toggle << " table average power(mW) "
-                     << table_average_power_mw << " rise power(mW) " << rise_power_mw
-                     << " fall_power(mW) " << fall_power_mw;
+                     << table_average_power_mw << " rise power(mW) "
+                     << rise_power_mw << " fall_power(mW) " << fall_power_mw;
 
       auto* internal_power_info = power_arc->get_internal_power_info().get();
       auto& when = internal_power_info->get_when();
@@ -231,6 +244,24 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
         pin_internal_power += sp_value * the_arc_power;
       } else {
         pin_internal_power += the_arc_power;
+      }
+
+      // for debug
+      if (0) {
+        std::ofstream out_debug("internal_out.txt");
+        out_debug << "inst: " << inst->get_name();
+        out_debug << "\nrise power :" << rise_power_mw;
+        out_debug << "\nrise input slew :" << rise_input_slew_ns;
+        out_debug << "\nrise output load :" << rise_output_load;
+
+        out_debug << "\nfall power :" << fall_power_mw;
+        out_debug << "\nfall input slew :" << fall_input_slew_ns;
+        out_debug << "\nfall output load :" << fall_output_load;
+
+        out_debug << "\nouput pin :" << output_pin->getFullName();
+        out_debug << "\ntoggle :" << output_toggle;
+
+        out_debug.close();
       }
     }
   }
@@ -264,16 +295,20 @@ double PwrCalcInternalPower::calcClockPinPower(Instance* inst, Pin* clock_pin,
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power
-    double rise_slew = (*the_clock_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    auto rise_slew = (*the_clock_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    LOG_FATAL_IF(!rise_slew)
+        << (*the_clock_sta_vertex)->getName() << " rise slew is not exist.";
     double rise_power =
-        internal_power->gatePower(TransType::kRise, rise_slew, std ::nullopt);
+        internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
     // fall power
-    double fall_slew = (*the_clock_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
+    auto fall_slew = (*the_clock_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
+    LOG_FATAL_IF(!rise_slew)
+        << (*the_clock_sta_vertex)->getName() << " fall slew is not exist.";
     double fall_power =
-        internal_power->gatePower(TransType::kFall, fall_slew, std ::nullopt);
+        internal_power->gatePower(TransType::kFall, *fall_slew, std ::nullopt);
     double fall_power_mw = lib_cell->convertTablePowerToMw(fall_power);
 
     double average_power_mw = CalcAveragePower(rise_power_mw, fall_power_mw);
@@ -335,17 +370,24 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power
-    double rise_slew = (*the_input_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    auto rise_slew = (*the_input_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
+    LOG_FATAL_IF(!rise_slew)
+        << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
     double rise_power =
-        internal_power->gatePower(TransType::kRise, rise_slew, std ::nullopt);
+        internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
     // fall power
-    double fall_slew = (*the_input_sta_vertex)
-                           ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
-    double fall_power =
-        internal_power->gatePower(TransType::kFall, fall_slew, std ::nullopt);
-    double fall_power_mw = lib_cell->convertTablePowerToMw(fall_power);
+    auto fall_slew = (*the_input_sta_vertex)
+                         ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
+    LOG_ERROR_IF(!fall_slew)
+        << (*the_input_sta_vertex)->getName() << " fall slew is not exist.";
+    double fall_power_mw = rise_power_mw;
+    if (fall_slew) {
+      double fall_power = internal_power->gatePower(TransType::kFall,
+                                                    *fall_slew, std ::nullopt);
+      fall_power_mw = lib_cell->convertTablePowerToMw(fall_power);
+    }
 
     double average_power_mw = CalcAveragePower(rise_power_mw, fall_power_mw);
 
@@ -354,13 +396,10 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
     // the internal power of this condition.
     double the_internal_power = input_pin_toggle * average_power_mw;
 
-    VERBOSE_LOG(1)
-        << "input pin " << input_pin->getFullName() << " toggle "
-        << input_pin_toggle << " average power(mW) " << average_power_mw
-        << " rise power(mW) "
-        << rise_power_mw
-        << " fall_power(mW) "
-        << fall_power_mw;
+    VERBOSE_LOG(1) << "input pin " << input_pin->getFullName() << " toggle "
+                   << input_pin_toggle << " average power(mW) "
+                   << average_power_mw << " rise power(mW) " << rise_power_mw
+                   << " fall_power(mW) " << fall_power_mw;
 
     auto& when = internal_power->get_when();
     if (!when.empty()) {
@@ -471,6 +510,28 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
 }
 
 /**
+ * @brief print internal power sorted by worst.
+ *
+ * @param out
+ * @param the_graph
+ */
+void PwrCalcInternalPower::printInternalPower(std::ostream& out,
+                                              PwrGraph* the_graph) {
+  std::ranges::sort(_internal_powers, [](auto& left, auto& right) {
+    return left->get_internal_power() > right->get_internal_power();
+  });
+
+  for (auto& internal_power : _internal_powers) {
+    auto* design_obj = internal_power->get_design_obj();
+    auto* design_inst = dynamic_cast<Instance*>(design_obj);
+
+    out << design_inst->get_name() << " : "
+        << internal_power->get_internal_power() << " mW"
+        << "\n";
+  }
+}
+
+/**
  * @brief Calc internal power.
  *
  * @param the_graph
@@ -489,10 +550,6 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
     auto* design_inst = cell->get_design_inst();
     auto* inst_cell = design_inst->get_inst_cell();
 
-    if (Str::equal(design_inst->get_name(), "hold_buf_51173")) {
-      LOG_INFO << "DEBUG";
-    }
-
     if (inst_cell->isMacroCell()) {
       // TODO
     } else if (inst_cell->isSequentialCell()) {
@@ -503,13 +560,25 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
       inst_internal_power = calcCombInternalPower(design_inst);
     }
 
+    double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
     // add power analysis data.
-    addInternalPower(
-        std::make_unique<PwrInternalData>(design_inst, inst_internal_power));
+    auto internal_data =
+        std::make_unique<PwrInternalData>(design_inst, inst_internal_power);
+    internal_data->set_nom_voltage(nom_voltage);
+
+    addInternalPower(std::move(internal_data));
     VERBOSE_LOG(1) << "cell  " << design_inst->get_name()
                    << "  internal power: " << inst_internal_power << "mW";
     _internal_power_result += inst_internal_power;
   }
+
+// debug internal power
+#if 0
+  std::ofstream out("internal.txt");
+  printInternalPower(out, the_graph);
+  out.close();
+#endif
+
   LOG_INFO << "calc internal power result " << _internal_power_result << "mW";
 
   LOG_INFO << "calc internal power end";

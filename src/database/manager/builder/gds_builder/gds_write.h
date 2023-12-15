@@ -17,7 +17,7 @@
 #pragma once
 /**
  * @project		iDB
- * @file		def_write.h
+ * @file		gds_write.h
  * @author		Yell
  * @date		25/05/2021
  * @version		0.1

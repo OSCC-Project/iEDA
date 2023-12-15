@@ -26,7 +26,7 @@
 #ifndef IPL_API_H
 #define IPL_API_H
 
-#include "ids.hh"
+#include "external_api/ExternalAPI.hh"
 
 namespace ipl {
 
@@ -61,15 +61,17 @@ class PLAPI
 
   void reportPLInfo();
   void reportTopoInfo();
+  void reportWLInfo(std::ofstream& feed);
   void reportSTWLInfo(std::ofstream& feed);
   void reportHPWLInfo(std::ofstream& feed);
   void reportLongNetInfo(std::ofstream& feed);
-  void reportLayoutInfo(std::ofstream& feed);
-  void reportPeakBinDensity(std::ofstream& feed);
-  void reportOverlapInfo(std::ofstream& feed);
+  void reportViolationInfo(std::ofstream& feed);
+  void reportBinDensity(std::ofstream& feed);
+  int32_t reportOverlapInfo(std::ofstream& feed);
   void reportLayoutWhiteInfo();
   void reportTimingInfo(std::ofstream& feed);
   void reportCongestionInfo(std::ofstream& feed);
+  void reportPLBaseInfo(std::ofstream& feed);
 
   bool isSTAStarted();
   bool isPlacerDBStarted();
@@ -115,7 +117,6 @@ class PLAPI
 
   /*****************************Congestion-driven Placement: START*****************************/
   void runRoutabilityGP();
-  void initCongestionEval();
   std::vector<float> obtainPinDens();
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
@@ -126,6 +127,7 @@ class PLAPI
 
  private:
   static PLAPI* _s_ipl_api_instance;
+  ExternalAPI _external_api;
 
   PLAPI() = default;
   PLAPI(const PLAPI&) = delete;

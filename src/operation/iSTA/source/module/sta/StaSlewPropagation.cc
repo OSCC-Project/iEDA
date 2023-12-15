@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -135,7 +135,7 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
           continue;
         }
 
-        auto out_slew_ns = lib_arc->getSlew(out_trans_type, in_slew, load);
+        auto out_slew_ns = lib_arc->getSlewNs(out_trans_type, in_slew, load);
 
         auto output_current =
             lib_arc->getOutputCurrent(out_trans_type, in_slew, load);
@@ -154,7 +154,8 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
             continue;
           }
 
-          auto out_slew1_ns = lib_arc->getSlew(out_trans_type1, in_slew, load);
+          auto out_slew1_ns =
+              lib_arc->getSlewNs(out_trans_type1, in_slew, load);
 
           auto output_current1 =
               lib_arc->getOutputCurrent(out_trans_type1, in_slew, load);
@@ -209,7 +210,7 @@ unsigned StaSlewPropagation::operator()(StaVertex* the_vertex) {
         !(obj->isPort() && obj->isInput()) &&
         !(obj->isPin() && obj->isOutput()) &&
         !(the_vertex->is_clock() && the_vertex->is_ideal_clock_latency()) &&
-        !the_vertex->is_sdc_clock_pin())
+        !the_vertex->is_sdc_clock_pin() && !the_vertex->get_snk_arcs().empty())
         << "slew propgation start point " << obj->getFullName()
         << " is not input port or output pin.";
 

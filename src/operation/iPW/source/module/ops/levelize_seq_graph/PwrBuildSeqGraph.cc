@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -73,7 +73,12 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
     /*Find a seq datain vertex, add to fanout vertexes.*/
     Instance* seq_instance = the_vertex->getOwnInstance();
     PwrSeqVertex* seq_vertex = _seq_graph.getSeqVertex(seq_instance);
-    the_vertex->addFanoutSeqVertex(seq_vertex);
+    if (seq_vertex) {
+      the_vertex->addFanoutSeqVertex(seq_vertex);
+    } else {
+      LOG_ERROR << seq_instance->get_name() << " is not seq vertex.";
+    }
+
     the_vertex->set_is_seq_visited();
     return 1;
   }
@@ -122,7 +127,7 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
 unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
   /*Lambda function of find clock to dataout vertexes.*/
   auto find_clk_to_out_vertex = [the_graph](StaVertex* clk_vertex) {
-    Set<PwrVertex*> data_out_pwr_vertexes;
+    BTreeSet<PwrVertex*> data_out_pwr_vertexes;
     auto& clk_src_arcs = clk_vertex->get_src_arcs();
     for (auto* src_arc : clk_src_arcs | std::views::filter([](auto* src_arc) {
                            return src_arc->isDelayArc();
@@ -137,7 +142,7 @@ unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
 
   /*Lamdba function of find clock to datain vertexes.*/
   auto find_clk_to_in_vertex = [the_graph](StaVertex* clk_vertex) {
-    Set<PwrVertex*> data_in_pwr_vertexes;
+    BTreeSet<PwrVertex*> data_in_pwr_vertexes;
     std::vector<StaArc*> check_arcs =
         clk_vertex->getSrcCheckArcs(AnalysisMode::kMax);
     for (auto* check_arc : check_arcs) {

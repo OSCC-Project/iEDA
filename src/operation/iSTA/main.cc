@@ -26,14 +26,18 @@
 // #include <gperftools/profiler.h>
 
 #include <iostream>
+#include <string>
 
 #include "absl/strings/match.h"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "include/Version.hh"
+#include "include/cxxopts.hpp"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
+#include "shell-cmd/ShellCmd.hh"
 #include "sta/Sta.hh"
 #include "sta/StaAnalyze.hh"
 #include "sta/StaApplySdc.hh"
@@ -48,21 +52,14 @@
 #include "tcl/UserShell.hh"
 #include "usage/usage.hh"
 
-#define TCL_USERSHELL
-
-#ifdef TCL_USERSHELL
-#include "sdc-cmd/Cmd.hh"
-#include "shell-cmd/ShellCmd.hh"
-#endif
-
 DEFINE_string(confPath, "test.conf", "program configure file.");
 
 using namespace ista;
 
-#ifdef TCL_USERSHELL
 int registerCommands() {
   registerTclCmd(CmdSetDesignWorkSpace, "set_design_workspace");
   registerTclCmd(CmdReadVerilog, "read_netlist");
+  registerTclCmd(CmdReadLefDef, "read_lef_def");
   registerTclCmd(CmdReadLiberty, "read_liberty");
   registerTclCmd(CmdLinkDesign, "link_design");
   registerTclCmd(CmdReadSpef, "read_spef");
@@ -70,15 +67,22 @@ int registerCommands() {
   registerTclCmd(CmdReportTiming, "report_timing");
   registerTclCmd(CmdReportConstraint, "report_constraint");
   registerTclCmd(CmdDefToVerilog, "def_to_verilog");
+  registerTclCmd(CmdVerilogToDef, "verilog_to_def");
 
   return EXIT_SUCCESS;
 }
-#endif
 
 using ieda::Stats;
 
 int main(int argc, char** argv) {
   Log::init(argv);
+
+  // for debug
+  // Log::setVerboseLogLevel("Arnoldi*", 1);
+
+  // for (int i = 0; i < argc; ++i) {
+  //   std::cout << "argv[" << i << "] = " << argv[i] << std::endl;
+  // }
 
   std::string hello_info =
       "\033[49;32m***************************\n"
@@ -89,25 +93,51 @@ int main(int argc, char** argv) {
       " | |/\\__/ /  | |  | | | |\n"
       " |_|\\____/   \\_/  \\_| |_/\n"
       "***************************\n"
-      "WELCOME TO iSTA TCL-shell interface. \e[0m\n";
+      "WELCOME TO iSTA TCL-shell interface. \e[0m";
 
   // get an UserShell (singleton) instance
   auto shell = ieda::UserShell::getShell();
-  shell->displayHello(hello_info);
 
   // set call back for register commands
   shell->set_init_func(registerCommands);
 
   // if no args, run interactively
-  if (argc == 1) {
-    shell->displayHelp();
+  cxxopts::Options options("iSTA", "iSTA command line help.");
+  options.add_options()("v,version", "Print Git Version")(
+      "h,help", "iSTA command usage.")("script", "Tcl script file",
+                                       cxxopts::value<std::string>());
+
+  try {
+    options.parse_positional("script");
+
+    auto argv_parse_result = options.parse(argc, argv);
+
+    if (argv_parse_result.count("help")) {
+      options.custom_help("script [OPTIONS...]");
+      std::cout << std::endl;
+      std::cout << options.help() << std::endl;
+      return 0;
+    }
+
+    shell->displayHello(hello_info);
+
+    if (argv_parse_result.count("version")) {
+      std::cout << "\033[49;32mGit Version: " << GIT_VERSION << "\033[0m"
+                << std::endl;
+    }
+
+    if (argv_parse_result.count("script")) {
+      shell->userMain(argc, argv);
+    }
+
+    if (argc == 1) {
+      shell->displayHelp();
+      shell->userMain(argc, argv);
+    }
+  } catch (const cxxopts::exceptions::exception& e) {
+    std::cerr << "Error parsing options: " << e.what() << std::endl;
+    return 1;
   }
-
-  // tcl_file_path = "/home/smtao/90bak/iEDA/src/iSTA/run_ista.tcl";
-  // shell->userMain(tcl_file_path);
-
-  // start user shell
-  shell->userMain(argc, argv);
 
   Log::end();
 

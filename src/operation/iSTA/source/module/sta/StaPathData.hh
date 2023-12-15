@@ -28,8 +28,7 @@
 #include <memory>
 #include <vector>
 
-#include "DisallowCopyAssign.hh"
-#include "Map.hh"
+#include "BTreeMap.hh"
 #include "StaClock.hh"
 
 namespace ista {
@@ -97,7 +96,7 @@ class StaPathData {
   StaClockData* _launch_clock_data;   //!< The launch clock path data.
   StaClockData* _capture_clock_data;  //!< The capture clock path data.
 
-  DISALLOW_COPY_AND_ASSIGN(StaPathData);
+  FORBIDDEN_COPY(StaPathData);
 };
 
 /**
@@ -145,7 +144,7 @@ class StaSeqPathData : public StaPathData {
   std::optional<int>
       _uncertainty;  //!< The clock uncertainty for analyze margin, unit is fs.
 
-  DISALLOW_COPY_AND_ASSIGN(StaSeqPathData);
+  FORBIDDEN_COPY(StaSeqPathData);
 };
 
 /**
@@ -163,7 +162,7 @@ class StaClockGatePathData : public StaSeqPathData {
   unsigned isStaClockGatePathData() override { return 1; }
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(StaClockGatePathData);
+  FORBIDDEN_COPY(StaClockGatePathData);
 };
 
 /**
@@ -214,7 +213,7 @@ class StaPathEnd {
 
   std::map<StaPathDelayData*, StaPathData*> _delay_data_to_path_data;
 
-  DISALLOW_COPY_AND_ASSIGN(StaPathEnd);
+  FORBIDDEN_COPY(StaPathEnd);
 };
 
 /**
@@ -258,7 +257,7 @@ class StaPathGroup {
                      std::unique_ptr<StaPathEnd>>
       _end_data;  //!< The path data.
 
-  DISALLOW_COPY_AND_ASSIGN(StaPathGroup);
+  FORBIDDEN_COPY(StaPathGroup);
 };
 
 /**
@@ -294,7 +293,7 @@ class StaSeqPathGroup : public StaPathGroup {
  private:
   StaClock* _capture_clock;  //!< The capture clock group.
 
-  DISALLOW_COPY_AND_ASSIGN(StaSeqPathGroup);
+  FORBIDDEN_COPY(StaSeqPathGroup);
 };
 
 /**
@@ -312,7 +311,7 @@ class StaClockGatePathGroup : public StaSeqPathGroup {
 
  private:
   std::string _clock_group;
-  DISALLOW_COPY_AND_ASSIGN(StaClockGatePathGroup);
+  FORBIDDEN_COPY(StaClockGatePathGroup);
 };
 
 /**

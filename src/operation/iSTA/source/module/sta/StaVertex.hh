@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -28,6 +28,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "StaData.hh"
 #include "netlist/Netlist.hh"
@@ -233,6 +234,39 @@ class StaVertex {
   unsigned is_assistant() const { return _is_assistant; }
   void reset_is_assistant() { _is_assistant = 0; }
 
+  void set_is_foward_find() { _is_foward_find = 1; }
+  unsigned is_foward_find() const { return _is_foward_find; }
+
+  void set_is_fwd_reset() { _is_fwd_reset = 1; }
+  unsigned is_fwd_reset() const { return _is_fwd_reset; }
+
+  void set_is_bwd_reset() { _is_bwd_reset = 1; }
+  unsigned is_bwd_reset() const { return _is_bwd_reset; }
+
+  void addFanoutEndVertex(StaVertex* fanout_end_vertex) {
+    LOG_FATAL_IF(!fanout_end_vertex) << "insert end vertex:nullptr.";
+    _fanout_end_vertexes.insert(fanout_end_vertex);
+  }
+  void addFanoutEndVertex(const BTreeSet<StaVertex*>& fanout_end_vertex_set) {
+    std::copy(
+        fanout_end_vertex_set.begin(), fanout_end_vertex_set.end(),
+        std::inserter(_fanout_end_vertexes, _fanout_end_vertexes.begin()));
+  }
+  auto& get_fanout_end_vertexes() { return _fanout_end_vertexes; }
+
+  void set_is_backward_find() { _is_backward_find = 1; }
+  unsigned is_backward_find() const { return _is_backward_find; }
+  void addFaninStartVertex(StaVertex* fanin_start_vertex) {
+    LOG_FATAL_IF(!fanin_start_vertex) << "insert start vertex:nullptr.";
+    _fanin_start_vertexes.insert(fanin_start_vertex);
+  }
+  void addFaninStartVertex(const BTreeSet<StaVertex*>& fanin_start_vertex_set) {
+    std::copy(
+        fanin_start_vertex_set.begin(), fanin_start_vertex_set.end(),
+        std::inserter(_fanin_start_vertexes, _fanin_start_vertexes.begin()));
+  }
+  auto& get_fanin_start_vertexes() { return _fanin_start_vertexes; }
+
   void set_prop_tag(StaPropagationTag&& prop_tag) {
     _prop_tag = std::move(prop_tag);
   }
@@ -276,9 +310,9 @@ class StaVertex {
     }
   }
   StaClock* getPropClock(AnalysisMode analysis_mode, TransType trans_type);
-  std::set<StaClock*> getPropagatedClock(AnalysisMode analysis_mode,
-                                         TransType trans_type,
-                                         bool is_data_path);
+  std::unordered_set<StaClock*> getPropagatedClock(AnalysisMode analysis_mode,
+                                                   TransType trans_type,
+                                                   bool is_data_path);
   bool isPropClock(const char* clock_name, AnalysisMode analysis_mode,
                    TransType trans_type);
 
@@ -325,11 +359,46 @@ class StaVertex {
       return std::nullopt;
     }
   }
-  int getSlew(AnalysisMode analysis_mode, TransType trans_type);
-  double getSlewNs(AnalysisMode analysis_mode, TransType trans_type) {
-    int slew = getSlew(analysis_mode, trans_type);
-    return FS_TO_NS(slew);
+  std::optional<double> getWorstSlackNs(AnalysisMode analysis_mode) {
+    auto rise_slack = getSlackNs(analysis_mode, TransType::kRise);
+    if (rise_slack) {
+      auto fall_slack = getSlackNs(analysis_mode, TransType::kFall);
+      if (rise_slack && fall_slack) {
+        return (*rise_slack < *fall_slack) ? rise_slack : fall_slack;
+      }
+    }
+
+    return std::nullopt;
   }
+
+  std::optional<double> getTNSNs(AnalysisMode analysis_mode);
+
+  std::optional<int> getSlew(AnalysisMode analysis_mode, TransType trans_type);
+  std::optional<double> getSlewNs(AnalysisMode analysis_mode,
+                                  TransType trans_type) {
+    auto slew = getSlew(analysis_mode, trans_type);
+    if (slew) {
+      return FS_TO_NS(*slew);
+    } else {
+      return std::nullopt;
+    }
+  }
+  std::optional<double> getWorstSlewNs(AnalysisMode analysis_mode) {
+    auto rise_slew = getSlewNs(analysis_mode, TransType::kRise);
+    if (rise_slew) {
+      auto fall_slew = getSlewNs(analysis_mode, TransType::kFall);
+      if (rise_slew && fall_slew) {
+        if (analysis_mode == AnalysisMode::kMax) {
+          return (*rise_slew > *fall_slew) ? rise_slew : fall_slew;
+        } else {
+          return (*rise_slew < *fall_slew) ? rise_slew : fall_slew;
+        }
+      }
+    }
+
+    return std::nullopt;
+  }
+
   double getLoad(AnalysisMode analysis_mode, TransType trans_type);
   double getNetLoad();
   double getResistance(AnalysisMode analysis_mode, TransType trans_type);
@@ -376,8 +445,12 @@ class StaVertex {
   unsigned _is_bidirection : 1 = 0;          //!< The vertex is inout pin.
   unsigned _is_assistant : 1 = 0;  // for the inout node, split two node, input
                                    // main, output assistant.
-
-  unsigned _reserverd : 4 = 0;
+  unsigned _is_foward_find : 1 =
+      0;  //!< The vertex forward propagate to find end.
+  unsigned _is_backward_find : 1 =
+      0;  //!< The vetex backward propagate to find start.
+  unsigned _is_fwd_reset : 1 = 0;  //!< The vertex is reset by fwd.
+  unsigned _is_bwd_reset : 1 = 0;  //!< The vertex is reset by bwd.
 
   std::vector<StaArc*> _src_arcs;  //!< The timing arc sourced from the vertex.
   std::vector<StaArc*> _snk_arcs;  //!< The timing arc sinked to the vertex.
@@ -393,7 +466,12 @@ class StaVertex {
 
   StaPropagationTag _prop_tag;  //!< The propagation tag.
 
-  DISALLOW_COPY_AND_ASSIGN(StaVertex);
+  BTreeSet<StaVertex*>
+      _fanout_end_vertexes;  //<! The endpoint vertexes of the timing path.
+  BTreeSet<StaVertex*>
+      _fanin_start_vertexes;  //<! The start vertexes of the timing path.
+
+  FORBIDDEN_COPY(StaVertex);
 };
 
 /**

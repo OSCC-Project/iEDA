@@ -80,13 +80,14 @@ IdbInstance::~IdbInstance()
     _route_halo = nullptr;
   }
 
-  for (auto& obs_box : _obs_box_list) {
+  for (auto* obs_box : _obs_box_list) {
     if (obs_box != nullptr) {
       delete obs_box;
       obs_box = nullptr;
     }
   }
   _obs_box_list.clear();
+  std::vector<IdbLayerShape*>().swap(_obs_box_list);
 }
 
 void IdbInstance::set_type(string type)
@@ -367,6 +368,21 @@ IdbInstanceList::IdbInstanceList()
 
 IdbInstanceList::~IdbInstanceList()
 {
+  reset();
+}
+
+void IdbInstanceList::reset(bool delete_memory)
+{
+  _instance_map.clear();
+
+  for (auto* inst : _instance_list) {
+    if (inst != nullptr && delete_memory) {
+      delete inst;
+      inst = nullptr;
+    }
+  }
+  _instance_list.clear();
+  std::vector<IdbInstance*>().swap(_instance_list);
 }
 
 IdbInstance* IdbInstanceList::find_instance(string name)

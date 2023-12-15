@@ -26,7 +26,7 @@ enum class VRSourceType
 {
   kNone,
   kBlockage,
-  kNet
+  kNetShape
 };
 
 struct GetVRSourceTypeName
@@ -41,8 +41,8 @@ struct GetVRSourceTypeName
       case VRSourceType::kBlockage:
         vr_source_type_name = "blockage";
         break;
-      case VRSourceType::kNet:
-        vr_source_type_name = "net";
+      case VRSourceType::kNetShape:
+        vr_source_type_name = "net_shape";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

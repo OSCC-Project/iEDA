@@ -71,8 +71,10 @@ bool LayoutChecker::checkAlignPower(Instance* inst)
   // make sure the inst is allign in row
   if ((inst_lly - core_lly) % _row_height == 0) {
     int32_t row_id = (inst_lly - core_lly) / _row_height;
-    auto* row = _placer_db->get_layout()->find_row(row_id);
-    if (inst->get_orient() != row->get_orient()) {
+    // auto* row = _placer_db->get_layout()->find_row(row_id);
+    Orient row_orient = _placer_db->get_layout()->find_row_orient(row_id);
+
+    if (inst->get_orient() != row_orient) {
       return false;
     }
   } else {

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -32,7 +32,7 @@
 #include <string>
 #include <utility>
 
-#include "HashMap.hh"
+#include "FlatMap.hh"
 #include "StaClock.hh"
 #include "StaClockTree.hh"
 #include "StaGraph.hh"
@@ -42,9 +42,10 @@
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
-#include "liberty/LibertyEquivCells.hh"
+#include "liberty/LibertyClassifyCell.hh"
 #include "netlist/Netlist.hh"
 #include "sdc/SdcSetIODelay.hh"
+#include "verilog/VerilogParserRustC.hh"
 #include "verilog/VerilogReader.hh"
 
 namespace ista {
@@ -54,11 +55,17 @@ class SdcConstrain;
 constexpr int g_global_derate_num = 8;
 
 // minHeap of the StaSeqPathData.
-const std::function<bool(StaSeqPathData*, StaSeqPathData*)> cmp =
+const std::function<bool(StaSeqPathData*, StaSeqPathData*)> seq_data_cmp =
     [](StaSeqPathData* left, StaSeqPathData* right) -> bool {
   unsigned left_slack = left->getSlack();
   unsigned right_slack = right->getSlack();
   return left_slack > right_slack;
+};
+
+// clock cmp for staclock.
+const std::function<unsigned(StaClock*, StaClock*)> sta_clock_cmp =
+    [](StaClock* left, StaClock* right) -> unsigned {
+  return Str::caseCmp(left->get_clock_name(), right->get_clock_name()) < 0;
 };
 
 /**
@@ -188,6 +195,7 @@ class Sta {
   SdcConstrain* getConstrain();
 
   unsigned readDesign(const char* verilog_file);
+  unsigned readDesignWithRustParser(const char* file_name);
   unsigned readLiberty(const char* lib_file);
   unsigned readLiberty(std::vector<std::string>& lib_files);
   unsigned readSdc(const char* sdc_file);
@@ -208,6 +216,8 @@ class Sta {
 
   void readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
+  void readVerilogWithRustParser(const char* verilog_file);
+  void linkDesignWithRustParser();
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
   }
@@ -251,8 +261,7 @@ class Sta {
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
-                      std::vector<LibertyLibrary*>& map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs);
 
   Vector<LibertyCell*>* equivCells(LibertyCell* cell);
 
@@ -404,15 +413,13 @@ class Sta {
   }
   void resetReportTbl() {
     _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
+    _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
     _report_tbl_details.clear();
   }
 
   auto& get_report_tbl_TNS() { return _report_tbl_TNS; }
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
-  void addClockTree(StaClockTree* clock_tree) {
-    _clock_trees.emplace_back(clock_tree);
-  }
 
   StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
@@ -432,7 +439,7 @@ class Sta {
   StaSeqPathData* getWorstSeqData(AnalysisMode mode, TransType trans_type);
 
   std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
-                      decltype(cmp)>
+                      decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(StaVertex* vertex1, StaVertex* vertex2,
                                      AnalysisMode mode);
   std::optional<double> getWorstSlackBetweenTwoSinks(StaVertex* vertex1,
@@ -448,15 +455,42 @@ class Sta {
   unsigned resetGraphData();
   unsigned resetPathData();
   unsigned updateTiming();
+  unsigned updateClockTiming();
+  std::set<std::string> findStartOrEnd(StaVertex* the_vertex, bool is_find_end);
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
                         bool is_derate = true, bool is_clock_cap = false);
 
   void dumpVertexData(std::vector<std::string> vertex_names);
+  void dumpNetlistData();
+
   void buildClockTrees();
-  void buildNextPin(
-      StaClockTree* clock_tree, StaClockTreeNode* parent_node,
-      StaVertex* parent_vertex,
-      std::map<StaVertex*, std::vector<StaData*>>& vertex_to_datas);
+
+  // const char* getUnit(const char* unit_name);
+  // void setUnit(const char* unit_name, char* unit_value);
+  // double convertToStaUnit(const char* src_type, const double src_value);
+
+  TimeUnit getTimeUnit() const { return _time_unit; };
+  void setTimeUnit(TimeUnit new_time_unit) { _time_unit = new_time_unit; };
+  double convertTimeUnit(const double src_value);
+
+  CapacitiveUnit getCapUnit() const { return _cap_unit; };
+  void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
+  double convertCapUnit(const double src_value);
+
+  std::optional<double> getInstWorstSlack(AnalysisMode analysis_mode,
+                                          Instance* the_inst);
+  std::optional<double> getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                  Instance* the_inst);
+  std::optional<double> getInstTransition(AnalysisMode analysis_mode,
+                                          Instance* the_inst);
+
+  std::map<Instance::Coordinate, double> displayTimingMap(
+      AnalysisMode analysis_mode);
+  std::map<Instance::Coordinate, double> displayTimingTNSMap(
+      AnalysisMode analysis_mode);
+
+  std::map<Instance::Coordinate, double> displayTransitionMap(
+      AnalysisMode analysis_mode);
 
  private:
   Sta();
@@ -472,15 +506,20 @@ class Sta {
   std::optional<std::string> _path_group;     //!< The path group.
   std::unique_ptr<SdcConstrain> _constrains;  //!< The sdc constrain.
   VerilogReader _verilog_reader;
+  RustVerilogReader _rust_verilog_reader;
   std::string _top_module_name;
   std::vector<std::unique_ptr<VerilogModule>>
       _verilog_modules;  //!< The current design parsed from verilog file.
   VerilogModule* _top_module = nullptr;  //!< The design top module.
+  std::vector<std::unique_ptr<RustVerilogModule>>
+      _rust_verilog_modules;  //!< The current design parsed from verilog file.
+                              //!< whether need unique_ptr?
+  RustVerilogModule* _rust_top_module = nullptr;
   Netlist _netlist;  //!< The current top netlist for sta analysis.
   Vector<std::unique_ptr<LibertyLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::unique_ptr<LibertyEquivCells>
+  std::unique_ptr<LibertyClassifyCell>
       _equiv_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
@@ -501,7 +540,7 @@ class Sta {
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.
   Multimap<StaVertex*, SdcSetIODelay*>
       _io_delays;  //!< The port vertex io delay constrain.
-  std::map<StaClock*, std::unique_ptr<StaSeqPathGroup>>
+  std::map<StaClock*, std::unique_ptr<StaSeqPathGroup>, decltype(sta_clock_cmp)>
       _clock_groups;  //!< The clock path groups.
 
   std::unique_ptr<StaClockGatePathGroup>
@@ -522,10 +561,12 @@ class Sta {
 
   std::mutex _mt;
 
+  TimeUnit _time_unit = TimeUnit::kNS;
+  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
   // Singleton sta.
   static Sta* _sta;
 
-  DISALLOW_COPY_AND_ASSIGN(Sta);
+  FORBIDDEN_COPY(Sta);
 };
 
 }  // namespace ista

@@ -6,6 +6,7 @@ add_library(idm
     idm_checker.cpp
     idm_design.cpp
     idm_design_inst.cpp
+    idm_design_inst_replace.cpp
     idm_design_net.cpp
     idm_design_pdn.cpp
     idm_design_blockage.cpp
@@ -56,4 +57,4 @@ target_include_directories(idm
 
 )
 
-# SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_BUILD_TYPE "Debug")

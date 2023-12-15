@@ -97,10 +97,13 @@ void IdbBuilder::log()
 
 IdbDefService* IdbBuilder::buildDef(string file)
 {
-  if (_def_service == nullptr) {
-    IdbLayout* layout = _lef_service->get_layout();
-    _def_service = std::make_shared<IdbDefService>(layout);
+  if (_def_service != nullptr) {
+    delete _def_service;
+    _def_service = nullptr;
   }
+
+  IdbLayout* layout = _lef_service->get_layout();
+  _def_service = new IdbDefService(layout);
 
   if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileInit(file.c_str())) {
     std::cout << "Read DEF file failed..." << endl;
@@ -109,21 +112,24 @@ IdbDefService* IdbBuilder::buildDef(string file)
 
   std::cout << "Read DEF file : " << file << endl;
 
-  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service.get());
+  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
   def_read->createDb(file.c_str());
   buildNet();
   buildBus();
   log();
 
-  return _def_service.get();
+  return _def_service;
 }
 
 IdbDefService* IdbBuilder::buildDefGzip(string gzip_file)
 {
-  if (_def_service == nullptr) {
-    IdbLayout* layout = _lef_service->get_layout();
-    _def_service = std::make_shared<IdbDefService>(layout);
+  if (_def_service != nullptr) {
+    delete _def_service;
+    _def_service = nullptr;
   }
+
+  IdbLayout* layout = _lef_service->get_layout();
+  _def_service = new IdbDefService(layout);
 
   if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileInit(gzip_file.c_str())) {
     std::cout << "Read DEF ZIP file failed..." << endl;
@@ -132,19 +138,26 @@ IdbDefService* IdbBuilder::buildDefGzip(string gzip_file)
 
   std::cout << "Read DEF ZIP file : " << gzip_file << endl;
 
-  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service.get());
+  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
   def_read->createDbGzip(gzip_file.c_str());
   buildNet();
   buildBus();
   log();
 
-  return _def_service.get();
+  return _def_service;
 }
 
-IdbLefService* IdbBuilder::buildLef(vector<string>& files)
+IdbLefService* IdbBuilder::buildLef(vector<string>& files, bool b_techfile)
 {
   if (_lef_service == nullptr) {
-    _lef_service = std::make_shared<IdbLefService>();
+    _lef_service = new IdbLefService();
+  } else {
+    // delete service before read tech file
+    if (b_techfile) {
+      delete _lef_service;
+      _lef_service = nullptr;
+      _lef_service = new IdbLefService();
+    }
   }
 
   _lef_service->LefFileInit(files);
@@ -153,24 +166,28 @@ IdbLefService* IdbBuilder::buildLef(vector<string>& files)
   for (; it != files.end(); ++it) {
     string file = *it;
     std::cout << "Read LEF file : " << file << endl;
-    std::shared_ptr<LefRead> lef_read = std::make_shared<LefRead>(_lef_service.get());
+    std::shared_ptr<LefRead> lef_read = std::make_shared<LefRead>(_lef_service);
     lef_read->createDb(file.c_str());
   }
-
-  updateLefData();
+  if (!b_techfile) {
+    updateLefData();
+  }
   // tech add
   //   std::unique_ptr<LefRead> lef_read =
-  //   std::make_unique<LefRead>(_lef_service.get()); lef_read->createTechDb();
+  //   std::make_unique<LefRead>(_lef_service); lef_read->createTechDb();
 
-  return _lef_service.get();
+  return _lef_service;
 }
 
 IdbDefService* IdbBuilder::buildVerilog(string file, std::string top_module_name)
 {
-  if (_def_service == nullptr) {
-    IdbLayout* layout = _lef_service->get_layout();
-    _def_service = std::make_shared<IdbDefService>(layout);
+  if (_def_service != nullptr) {
+    delete _def_service;
+    _def_service = nullptr;
   }
+
+  IdbLayout* layout = _lef_service->get_layout();
+  _def_service = new IdbDefService(layout);
 
   if (IdbDefServiceResult::kServiceFailed == _def_service->VerilogFileInit(file.c_str())) {
     std::cout << "Read Verilog file failed..." << endl;
@@ -179,18 +196,21 @@ IdbDefService* IdbBuilder::buildVerilog(string file, std::string top_module_name
     std::cout << "Read Verilog file success : " << file << endl;
   }
 
-  std::shared_ptr<VerilogRead> verilog_read = std::make_shared<VerilogRead>(_def_service.get());
+  std::shared_ptr<VerilogRead> verilog_read = std::make_shared<VerilogRead>(_def_service);
   verilog_read->createDb(file.c_str(), top_module_name);
 
-  return _def_service.get();
+  return _def_service;
 }
 
 IdbDefService* IdbBuilder::buildDefFloorplan(string file)
 {
-  if (_def_service == nullptr) {
-    IdbLayout* layout = _lef_service->get_layout();
-    _def_service = std::make_shared<IdbDefService>(layout);
+  if (_def_service != nullptr) {
+    delete _def_service;
+    _def_service = nullptr;
   }
+
+  IdbLayout* layout = _lef_service->get_layout();
+  _def_service = new IdbDefService(layout);
 
   if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileInit(file.c_str())) {
     std::cout << "Read DEF file failed..." << endl;
@@ -199,19 +219,19 @@ IdbDefService* IdbBuilder::buildDefFloorplan(string file)
     std::cout << "Read DEF file : " << file << endl;
   }
 
-  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service.get());
+  std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
   def_read->createFloorplanDb(file.c_str());
   //   def_read->createDb(file.c_str());
 
-  return _def_service.get();
+  return _def_service;
 }
 
 //   IdbDataService* IdbBuilder::buildData() {
 //     if (_data_service == nullptr) {
-//       _data_service = std::make_shared<IdbDataService>();
+//       _data_service = new IdbDataService();
 //     }
 
-//     return _data_service.get();
+//     return _data_service;
 //   }
 
 //   IdbDataService* IdbBuilder::buildData(IdbDefService* def_service) {
@@ -224,7 +244,7 @@ IdbDefService* IdbBuilder::buildDefFloorplan(string file)
 //       return nullptr;
 //     }
 
-//     return _data_service.get();
+//     return _data_service;
 //   }
 
 bool IdbBuilder::saveDef(string file, DefWriteType type)
@@ -234,7 +254,7 @@ bool IdbBuilder::saveDef(string file, DefWriteType type)
     return false;
   }
 
-  std::shared_ptr<DefWrite> def_write = std::make_shared<DefWrite>(_def_service.get(), type);
+  std::shared_ptr<DefWrite> def_write = std::make_shared<DefWrite>(_def_service, type);
   return def_write->writeDb(file.c_str());
 }
 
@@ -252,7 +272,7 @@ bool IdbBuilder::saveGDSII(string file)
     return false;
   }
 
-  std::shared_ptr<Def2GdsWrite> gds_write = std::make_shared<Def2GdsWrite>(_def_service.get());
+  std::shared_ptr<Def2GdsWrite> gds_write = std::make_shared<Def2GdsWrite>(_def_service);
   return gds_write->writeDb(file.c_str());
 }
 
@@ -262,7 +282,7 @@ bool IdbBuilder::saveGDSII(string file)
 //     std::cout << "Write layout failed..." << endl;
 //   }
 
-//   std::shared_ptr<LayoutWrite> layout_write = std::make_shared<LayoutWrite>(_data_service.get()->get_def_service()->get_layout());
+//   std::shared_ptr<LayoutWrite> layout_write = std::make_shared<LayoutWrite>(_data_service->get_def_service()->get_layout());
 
 //   layout_write->writeLayout(folder.c_str());
 // }

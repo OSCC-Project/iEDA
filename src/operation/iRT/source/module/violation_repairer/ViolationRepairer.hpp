@@ -17,6 +17,8 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCChecker.hpp"
+#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -48,21 +50,18 @@ class ViolationRepairer
   // function
   void repairNetList(std::vector<Net>& net_list);
 
-#if 1  // build vr_model
+#if 1  // init
+  VRModel init(std::vector<Net>& net_list);
   VRModel initVRModel(std::vector<Net>& net_list);
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
-  void updateNetBlockageMap(VRModel& vr_model);
-#endif
-
-#if 1  // check ra_model
-  void checkVRModel(VRModel& vr_model);
-#endif
-
-#if 1  // repair ra_model
-  void repairVRModel(VRModel& vr_model);
-  void repairVRNet(VRModel& vr_model, VRNet& vr_net);
+  void updateBlockageMap(VRModel& vr_model);
+  void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
+  void updateNetShapeMap(VRModel& vr_model);
+  void calcVRGCellSupply(VRModel& vr_model);
+  std::vector<PlanarRect> getWireList(VRGCell& vr_gcell, RoutingLayer& routing_layer);
+  void updateVRResultTree(VRModel& vr_model);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);
   void buildPHYNodeResult(VRNet& vr_net);
@@ -71,20 +70,37 @@ class ViolationRepairer
   TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
   TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
   TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
-  void repairMinArea(VRNet& vr_net);
-  void updateNetBlockageMap(VRModel& vr_model, VRNet& vr_net);
+  void checkVRModel(VRModel& vr_model);
 #endif
 
-#if 1  // update ra_model
-  void updateVRModel(VRModel& vr_model);
-  void updateOriginVRResultTree(VRModel& vr_model);
-#endif
-
-#if 1  // report ra_model
-  void reportVRModel(VRModel& vr_model);
+#if 1  // iterative
+  void iterative(VRModel& vr_model);
+  void repairVRModel(VRModel& vr_model);
+  void repairAntenna(VRModel& vr_model);
+  void repairMinStep(VRModel& vr_model);
+  void repairMinArea(VRModel& vr_model);
+  void repairMinArea(VRModel& vr_model, VRNet& vr_net);
+  void processVRModel(VRModel& vr_model);
+  void updateNetResultMap(VRModel& vr_model);
+  void calcVRGCellDemand(VRModel& vr_model);
   void countVRModel(VRModel& vr_model);
-  std::map<VRSourceType, std::vector<ids::DRCRect>> getSourceIDSRectMap(VRModel& vr_model);
-  void reportTable(VRModel& vr_model);
+  void reportVRModel(VRModel& vr_model);
+  bool stopVRModel(VRModel& vr_model);
+#endif
+
+#if 1  // update
+  void update(VRModel& vr_model);
+#endif
+
+#if 1  // valid drc
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const DRCRect& drc_rect);
+  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                    const std::vector<DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVRViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
+                                                                       const std::vector<DRCCheckType>& check_type_list,
+                                                                       const std::vector<DRCRect>& drc_rect_list);
+  void removeInvalidVRViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

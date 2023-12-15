@@ -16,38 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
-#include "RTAPI.hpp"
+#include "DRCChecker.hpp"
+#include "RegionQuery.hpp"
+#include "SpaceRegion.hpp"
+#include "VRGCellId.hpp"
 #include "VRSourceType.hpp"
 
 namespace irt {
 
-class VRGCell
+class VRGCell : public SpaceRegion
 {
  public:
   VRGCell() = default;
   ~VRGCell() = default;
   // getter
-  PlanarRect& get_real_rect() { return _real_rect; }
-  std::map<VRSourceType, std::map<irt_int, std::vector<LayerRect>>>& get_source_net_rect_map() { return _source_net_rect_map; }
-  std::map<VRSourceType, void*>& get_source_region_query_map() { return _source_region_query_map; }
+  VRGCellId& get_vr_gcell_id() { return _vr_gcell_id; }
+  std::map<VRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
+  std::map<irt_int, irt_int>& get_layer_resource_supply_map() { return _layer_resource_supply_map; }
+  std::map<irt_int, irt_int>& get_layer_resource_demand_map() { return _layer_resource_demand_map; }
   // setter
-  void set_real_rect(const PlanarRect& real_rect) { _real_rect = real_rect; }
+  void set_vr_gcell_id(const VRGCellId& vr_gcell_id) { _vr_gcell_id = vr_gcell_id; }
   // function
-  void addRect(VRSourceType vr_source_type, irt_int net_idx, const LayerRect& rect)
-  {
-    _source_net_rect_map[vr_source_type][net_idx].push_back(rect);
-    RTAPI_INST.addEnvRectList(_source_region_query_map[vr_source_type], rect);
-  }
+  RegionQuery& getRegionQuery(VRSourceType vr_source_type) { return _source_region_query_map[vr_source_type]; }
 
  private:
-  PlanarRect _real_rect;
-  /**
-   * VRSourceType::kBlockage 存储blockage
-   * VRSourceType::kPanelResult 存储net布线的结果
-   */
-  std::map<VRSourceType, std::map<irt_int, std::vector<LayerRect>>> _source_net_rect_map;
-  std::map<VRSourceType, void*> _source_region_query_map;
+  VRGCellId _vr_gcell_id;
+  std::map<VRSourceType, RegionQuery> _source_region_query_map;
+  std::map<irt_int, irt_int> _layer_resource_supply_map;
+  std::map<irt_int, irt_int> _layer_resource_demand_map;
 };
 
 }  // namespace irt

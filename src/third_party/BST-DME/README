@@ -1,0 +1,183 @@
+/****************************************************************************/
+/*
+  Released Software: Bounded-Skew Clock Tree Router 
+                     Version 1.0: May 2000
+		     Version 1.3: 2002
+
+   
+  Copyright (C) 1994-2018  Regents of the University of California
+
+  Computer Science Department, University of California, Los Angeles. 
+  CSE and ECE Departments, University of California, San Diego.
+  
+  Author:  Prof. Andrew B. Kahng         -- abk@cs.ucla.edu   (2018: abk@eng.ucsd.edu)
+  Author:  Dr. Chung-Wen (Albert) Tsao   -- tsao@cs.ucla.edu  (2018: albert999tsao@gmail.com)
+
+                        All Rights Reserved
+
+Description: 
+  The released software constructs a binary tree over a set of clock sink 
+  locations subject to a given global skew bound under Elmore or linear 
+  delay models. No buffers insertion is used.
+  For more details, plase see the following publication: 
+  J. Cong, A. B. Kahng,  C.-K. Koh and C.-W. A. Tsao,
+  ``Bounded-Skew Clock and Steiner Routing'',
+  ACM Trans. on Design Automation of Electronic Systems, Vol. 4, 
+     No. 1, January, 1999. 
+*/
+/****************************************************************************/
+
+/*
+04/07/00: wrap BST/DME in C++  
+
+
+*/
+
+
+This package consists of 
+
+*** bstdme.h  (wrap BST/DME in C++, users only need to include this header file  )
+*** main.cxx (a sample file that shows how to use this package)
+
+
+-- bst.cxx/bst.h    (main file) 
+-- bst_sub1.cxx/bst_sub1.h  (common subroutines)
+-- bst_sub2.cxx  (clustering, buffering, skew allocation)
+-- bst_sub3.cxx/bst_sub3.h  (obstacle routing)
+-- IME_code.cxx/IME_code.h  (For comparison between BME and IME )
+-- foundation/*.h  (For the future reconstruction/development) 
+-- Time.cxx/Time.h (Print out cpu time)
+
+-- bst_header.h    ( define data structures and constants )
+-- Global_var.h  ( Global variables shared among all files. )
+
+
+
+   
+  How to compile this program?
+
+** Compiled successuffly with the following version of g++
+   -- gcc version 2.95.1 19990816 (release)
+   -- gcc version 2.95.2 19991024 (release)
+   -- gcc version egcs-2.91.66 19990314 (egcs-1.1.2 release)
+   -- gcc version 2.95.3 20010315 (SuSE)
+
+   -- RedHat Linux 6.0 / Linux 2.2.12-6smp i686 unknown
+
+   on the following platform
+
+   -- SunOS 5.6 Generic_105181-05 sun4u sparc SUNW,Ultra-4
+   -- SunOS 5.7 Generic_106541-08 sun4u sparc SUNW,Ultra-2
+
+
+  How to run the regression test?
+
+** All the testcases are under ./BENCHMARKS
+
+** use script ./regression for regresison test and
+   comparison against the old regression result 
+
+** The regression result of version 1.x is in
+   ./BENCHMARKS/BST-1.x_regression_result*
+
+
+
+  How to run this program?
+
+
+** For the format of the input and outfile files, please read the 
+   REAME and examples files under directory DOC. 
+   
+** For variable topologies.
+
+    Example:  bst -i r1 -B  100  
+        where -i specify the input is the benchmark r1
+	      -B specify the allowed skew bound is 100 (pico-second)  
+	  
+    Outfile:
+       topology: r1.top_B100
+       xgraph files :
+                r1.xg_B100  (routing solution in xgraph format) 
+                r1_area.xg_B10 (tree of merging regions in xgraph format)
+       The xgraph package can be obtained from 
+        http://www.cs.toronto.edu/~radford/xgraph.html
+
+** For fixed topologies.
+
+    example:  bst -i r1 -G r1.top_B100   -B 100
+
+    where -G specifies that the topologies is given in file r1.top_B100
+
+** Generate random test cases
+   -N 99 will generate a file "n99" which has  99 points
+
+
+   (The following functionality are NOT complete yet, but I plan to
+   finish them in the future)
+
+
+**  For different wire delay model 
+    -D 0 (Linear delay model)
+    -D 1 (Elmore delay model) (default)
+
+** For non-uniform Layer parasitics
+   -RES 2 specifies that Res. of layer2 is 2 times larger than R. of layer 1
+   -CAP 2 specifies that Cap. of layer2 is 2 times larger than C. of layer 1
+
+** For obstruction  
+   -O   n99.block  read in the file n99.block which has obstacles information 
+
+** For buffer insertion: 
+
+   To set buffer linear model  
+      -BRES 50 set Buffer Resistance to be 50 ohm
+      -BCAP 50.0e-15 set Buffer Capacitance to be 50 ff.
+
+   To set the number of buffers at each level
+   -NCL  16 1  specifies that 
+               16 buffers at the bottom level
+               1  buffer  at the top level
+
+
+
+
+
+/****************************************************************************/
+/*  Revision log                                                            */
+/****************************************************************************/
+05-11-2002: (try to fix the regression crash on PC/Linux platform).
+
+* remove the following variables and the related codes.
+   N_Skew_Samples
+   Max_Delay_Skew
+   Min_Delay_Skew
+   Capac_Skew
+   WL_Skew
+   Niteration
+   B_Niteration
+
+* fix the crash in the fucntion print_merging_tree on PC/Linux, where 
+   the array bound of char* a[20] overflows. 
+  The solution is to use the C++ string to get around the array bound problem.
+
+
+05-18-2002: take prescribed delays at each sinks.
+
+"bst -N 99" will produce a file called n99, which can be used as 
+ a sample input file with prescribed delays for a testcase with 99 sinks,  
+
+
+05-31-2002: check if any errors in the input topology file.
+
+06-03-2002: correct the way to draw a buffer, which
+    cause a confusion to  Sherief Reda" <sreda@cs.ucsd.edu>
+   
+
+
+
+to-do list:
+* add static to local functions 
+* eliminate more un-used codes
+* root_id in update_Cluster
+* look into any potential problem on array bound problem.
+

@@ -1,0 +1,2401 @@
+# UCLA ISCAS clock benchmark 1.0
+# Created       : Wed May 17 10:47:57 PDT 2000
+# User          : tsao@cs.ucla.edu
+# PlatForm      : SunOS 5.7 sparc SUNW,Ultra-1
+# Source        : DAC96 paper by J.G. Xi et al.  
+# Note          : Coordinate unit can be micro-meter or anything
+
+NumPins : 597 
+
+PerUnitResistance : 0.004000 
+
+PerUnitCapacitance : 2.000000e-17 
+
+Sink : 0 
+    Coordinate : 10162 14112 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 1 
+    Coordinate : 13409 14112 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 2 
+    Coordinate : 1359 14112 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 3 
+    Coordinate : 11917 13940 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 4 
+    Coordinate : 9698 13940 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 5 
+    Coordinate : 3834 13940 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 6 
+    Coordinate : 2482 13792 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 7 
+    Coordinate : 1184 13792 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 8 
+    Coordinate : 920 13792 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 9 
+    Coordinate : 719 13792 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 10 
+    Coordinate : 347 13632 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 11 
+    Coordinate : 28 13632 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 12 
+    Coordinate : 14485 13459 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 13 
+    Coordinate : 5750 13459 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 14 
+    Coordinate : 2803 13459 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 15 
+    Coordinate : 2102 12957 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 16 
+    Coordinate : 912 12957 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 17 
+    Coordinate : 244 12957 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 18 
+    Coordinate : 9723 12802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 19 
+    Coordinate : 7735 12802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 20 
+    Coordinate : 6853 12802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 21 
+    Coordinate : 574 12802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 22 
+    Coordinate : 15084 12655 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 23 
+    Coordinate : 14060 12655 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 24 
+    Coordinate : 8652 12503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 25 
+    Coordinate : 6893 12503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 26 
+    Coordinate : 7502 12360 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 27 
+    Coordinate : 3505 12360 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 28 
+    Coordinate : 14786 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 29 
+    Coordinate : 13387 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 30 
+    Coordinate : 12417 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 31 
+    Coordinate : 12009 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 32 
+    Coordinate : 10187 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 33 
+    Coordinate : 6099 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 34 
+    Coordinate : 1203 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 35 
+    Coordinate : 832 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 36 
+    Coordinate : 504 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 37 
+    Coordinate : 58 12101 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 38 
+    Coordinate : 13456 11944 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 39 
+    Coordinate : 13097 11944 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 40 
+    Coordinate : 12428 11944 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 41 
+    Coordinate : 11938 11944 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 42 
+    Coordinate : 1318 11944 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 43 
+    Coordinate : 9593 11810 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 44 
+    Coordinate : 7239 11810 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 45 
+    Coordinate : 6375 11810 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 46 
+    Coordinate : 658 11648 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 47 
+    Coordinate : 79 11648 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 48 
+    Coordinate : 8714 11648 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 49 
+    Coordinate : 10514 11501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 50 
+    Coordinate : 9113 11501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 51 
+    Coordinate : 939 11501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 52 
+    Coordinate : 66 11501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 53 
+    Coordinate : 6374 11356 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 54 
+    Coordinate : 1939 11356 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 55 
+    Coordinate : 774 11356 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 56 
+    Coordinate : 157 11356 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 57 
+    Coordinate : 66 11356 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 58 
+    Coordinate : 13684 11205 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 59 
+    Coordinate : 12440 11205 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 60 
+    Coordinate : 8384 11205 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 61 
+    Coordinate : 3836 11205 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 62 
+    Coordinate : 504 11205 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 63 
+    Coordinate : 12328 10898 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 64 
+    Coordinate : 12171 10898 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 65 
+    Coordinate : 11407 10898 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 66 
+    Coordinate : 2156 10898 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 67 
+    Coordinate : 830 10898 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 68 
+    Coordinate : 10984 10743 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 69 
+    Coordinate : 9548 10743 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 70 
+    Coordinate : 7422 10743 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 71 
+    Coordinate : 11507 10590 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 72 
+    Coordinate : 8538 10590 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 73 
+    Coordinate : 365 10590 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 74 
+    Coordinate : 12445 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 75 
+    Coordinate : 11186 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 76 
+    Coordinate : 10181 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 77 
+    Coordinate : 11598 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 78 
+    Coordinate : 5689 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 79 
+    Coordinate : 5440 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 80 
+    Coordinate : 4512 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 81 
+    Coordinate : 3019 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 82 
+    Coordinate : 1988 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 83 
+    Coordinate : 849 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 84 
+    Coordinate : 716 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 85 
+    Coordinate : 295 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 86 
+    Coordinate : 66 10432 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 87 
+    Coordinate : 8651 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 88 
+    Coordinate : 8092 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 89 
+    Coordinate : 7553 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 90 
+    Coordinate : 2728 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 91 
+    Coordinate : 2269 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 92 
+    Coordinate : 1657 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 93 
+    Coordinate : 285 10295 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 94 
+    Coordinate : 6966 10148 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 95 
+    Coordinate : 3300 10148 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 96 
+    Coordinate : 1424 10148 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 97 
+    Coordinate : 441 10148 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 98 
+    Coordinate : 131 10148 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 99 
+    Coordinate : 11812 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 100 
+    Coordinate : 12657 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 101 
+    Coordinate : 11179 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 102 
+    Coordinate : 10520 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 103 
+    Coordinate : 10236 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 104 
+    Coordinate : 9628 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 105 
+    Coordinate : 9143 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 106 
+    Coordinate : 3577 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 107 
+    Coordinate : 2847 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 108 
+    Coordinate : 1350 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 109 
+    Coordinate : 1148 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 110 
+    Coordinate : 665 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 111 
+    Coordinate : 117 10002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 112 
+    Coordinate : 9650 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 113 
+    Coordinate : 7638 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 114 
+    Coordinate : 5565 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 115 
+    Coordinate : 3867 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 116 
+    Coordinate : 2037 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 117 
+    Coordinate : 431 9857 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 118 
+    Coordinate : 2651 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 119 
+    Coordinate : 1939 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 120 
+    Coordinate : 1403 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 121 
+    Coordinate : 774 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 122 
+    Coordinate : 473 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 123 
+    Coordinate : 367 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 124 
+    Coordinate : 108 9689 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 125 
+    Coordinate : 13054 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 126 
+    Coordinate : 11739 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 127 
+    Coordinate : 9168 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 128 
+    Coordinate : 4942 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 129 
+    Coordinate : 3268 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 130 
+    Coordinate : 2931 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 131 
+    Coordinate : 1512 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 132 
+    Coordinate : 1275 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 133 
+    Coordinate : 624 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 134 
+    Coordinate : 354 9554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 135 
+    Coordinate : 10266 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 136 
+    Coordinate : 8696 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 137 
+    Coordinate : 7091 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 138 
+    Coordinate : 5761 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 139 
+    Coordinate : 4863 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 140 
+    Coordinate : 3542 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 141 
+    Coordinate : 2500 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 142 
+    Coordinate : 2018 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 143 
+    Coordinate : 681 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 144 
+    Coordinate : 84 9302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 145 
+    Coordinate : 14275 9160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 146 
+    Coordinate : 12447 9160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 147 
+    Coordinate : 11443 9160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 148 
+    Coordinate : 9825 9160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 149 
+    Coordinate : 8973 9160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 150 
+    Coordinate : 14756 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 151 
+    Coordinate : 13002 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 152 
+    Coordinate : 12269 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 153 
+    Coordinate : 11056 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 154 
+    Coordinate : 10084 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 155 
+    Coordinate : 9359 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 156 
+    Coordinate : 8332 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 157 
+    Coordinate : 7915 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 158 
+    Coordinate : 3149 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 159 
+    Coordinate : 2587 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 160 
+    Coordinate : 1589 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 161 
+    Coordinate : 1188 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 162 
+    Coordinate : 901 8998 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 163 
+    Coordinate : 12774 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 164 
+    Coordinate : 11500 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 165 
+    Coordinate : 4475 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 166 
+    Coordinate : 3314 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 167 
+    Coordinate : 2892 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 168 
+    Coordinate : 1977 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 169 
+    Coordinate : 1613 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 170 
+    Coordinate : 828 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 171 
+    Coordinate : 632 8851 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 172 
+    Coordinate : 12192 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 173 
+    Coordinate : 11842 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 174 
+    Coordinate : 10908 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 175 
+    Coordinate : 10737 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 176 
+    Coordinate : 2287 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 177 
+    Coordinate : 1128 8704 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 178 
+    Coordinate : 12399 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 179 
+    Coordinate : 11097 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 180 
+    Coordinate : 7428 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 181 
+    Coordinate : 5938 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 182 
+    Coordinate : 4318 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 183 
+    Coordinate : 3593 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 184 
+    Coordinate : 3239 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 185 
+    Coordinate : 2375 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 186 
+    Coordinate : 658 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 187 
+    Coordinate : 79 8555 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 188 
+    Coordinate : 10714 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 189 
+    Coordinate : 9514 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 190 
+    Coordinate : 9113 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 191 
+    Coordinate : 8939 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 192 
+    Coordinate : 8246 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 193 
+    Coordinate : 6374 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 194 
+    Coordinate : 4939 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 195 
+    Coordinate : 1774 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 196 
+    Coordinate : 1135 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 197 
+    Coordinate : 157 8301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 198 
+    Coordinate : 13684 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 199 
+    Coordinate : 12440 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 200 
+    Coordinate : 8384 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 201 
+    Coordinate : 3836 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 202 
+    Coordinate : 3407 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 203 
+    Coordinate : 2504 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 204 
+    Coordinate : 1328 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 205 
+    Coordinate : 1171 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 206 
+    Coordinate : 1056 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 207 
+    Coordinate : 830 8152 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 208 
+    Coordinate : 14445 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 209 
+    Coordinate : 12186 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 210 
+    Coordinate : 11984 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 211 
+    Coordinate : 8548 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 212 
+    Coordinate : 7422 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 213 
+    Coordinate : 5507 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 214 
+    Coordinate : 1538 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 215 
+    Coordinate : 365 8002 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 216 
+    Coordinate : 11181 7859 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 217 
+    Coordinate : 10598 7859 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 218 
+    Coordinate : 6689 7859 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 219 
+    Coordinate : 5440 7859 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 220 
+    Coordinate : 4512 7859 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 221 
+    Coordinate : 13019 7788 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 222 
+    Coordinate : 11688 7788 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 223 
+    Coordinate : 4129 7788 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 224 
+    Coordinate : 1568 7788 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 225 
+    Coordinate : 1295 7788 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 226 
+    Coordinate : 12626 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 227 
+    Coordinate : 10451 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 228 
+    Coordinate : 8992 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 229 
+    Coordinate : 4553 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 230 
+    Coordinate : 3728 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 231 
+    Coordinate : 3269 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 232 
+    Coordinate : 2857 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 233 
+    Coordinate : 1725 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 234 
+    Coordinate : 1436 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 235 
+    Coordinate : 1330 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 236 
+    Coordinate : 744 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 237 
+    Coordinate : 441 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 238 
+    Coordinate : 131 7646 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 239 
+    Coordinate : 11717 7501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 240 
+    Coordinate : 8657 7501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 241 
+    Coordinate : 8179 7501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 242 
+    Coordinate : 1450 7501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 243 
+    Coordinate : 236 7501 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 244 
+    Coordinate : 10628 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 245 
+    Coordinate : 8143 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 246 
+    Coordinate : 4577 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 247 
+    Coordinate : 3847 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 248 
+    Coordinate : 2350 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 249 
+    Coordinate : 1148 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 250 
+    Coordinate : 765 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 251 
+    Coordinate : 117 7347 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 252 
+    Coordinate : 9650 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 253 
+    Coordinate : 5038 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 254 
+    Coordinate : 4565 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 255 
+    Coordinate : 4867 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 256 
+    Coordinate : 3651 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 257 
+    Coordinate : 2939 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 258 
+    Coordinate : 2403 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 259 
+    Coordinate : 2038 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 260 
+    Coordinate : 1431 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 261 
+    Coordinate : 1174 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 262 
+    Coordinate : 873 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 263 
+    Coordinate : 367 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 264 
+    Coordinate : 108 7197 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 265 
+    Coordinate : 12054 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 266 
+    Coordinate : 10739 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 267 
+    Coordinate : 9168 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 268 
+    Coordinate : 4942 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 269 
+    Coordinate : 3268 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 270 
+    Coordinate : 2931 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 271 
+    Coordinate : 2512 13301 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 272 
+    Coordinate : 1275 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 273 
+    Coordinate : 624 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 274 
+    Coordinate : 254 7052 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 275 
+    Coordinate : 8266 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 276 
+    Coordinate : 7696 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 277 
+    Coordinate : 6091 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 278 
+    Coordinate : 5761 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 279 
+    Coordinate : 4863 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 280 
+    Coordinate : 3842 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 281 
+    Coordinate : 2500 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 282 
+    Coordinate : 1018 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 283 
+    Coordinate : 681 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 284 
+    Coordinate : 84 6895 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 285 
+    Coordinate : 14047 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 286 
+    Coordinate : 13443 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 287 
+    Coordinate : 11825 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 288 
+    Coordinate : 9051 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 289 
+    Coordinate : 8873 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 290 
+    Coordinate : 8275 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 291 
+    Coordinate : 3589 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 292 
+    Coordinate : 2188 6760 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 293 
+    Coordinate : 14774 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 294 
+    Coordinate : 11500 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 295 
+    Coordinate : 4475 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 296 
+    Coordinate : 3314 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 297 
+    Coordinate : 2892 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 298 
+    Coordinate : 1777 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 299 
+    Coordinate : 1613 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 300 
+    Coordinate : 828 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 301 
+    Coordinate : 632 6604 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 302 
+    Coordinate : 12992 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 303 
+    Coordinate : 9842 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 304 
+    Coordinate : 9908 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 305 
+    Coordinate : 5128 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 306 
+    Coordinate : 2837 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 307 
+    Coordinate : 2287 6450 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 308 
+    Coordinate : 12519 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 309 
+    Coordinate : 11507 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 310 
+    Coordinate : 10311 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 311 
+    Coordinate : 8538 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 312 
+    Coordinate : 7422 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 313 
+    Coordinate : 365 6302 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 314 
+    Coordinate : 15445 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 315 
+    Coordinate : 14186 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 316 
+    Coordinate : 12181 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 317 
+    Coordinate : 11598 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 318 
+    Coordinate : 5689 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 319 
+    Coordinate : 5440 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 320 
+    Coordinate : 4512 6154 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 321 
+    Coordinate : 13019 6008 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 322 
+    Coordinate : 10988 6008 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 323 
+    Coordinate : 1429 6008 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 324 
+    Coordinate : 1256 6008 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 325 
+    Coordinate : 295 6008 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 326 
+    Coordinate : 12626 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 327 
+    Coordinate : 8451 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 328 
+    Coordinate : 8092 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 329 
+    Coordinate : 7553 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 330 
+    Coordinate : 2728 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 331 
+    Coordinate : 1269 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 332 
+    Coordinate : 657 5861 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 333 
+    Coordinate : 8285 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 334 
+    Coordinate : 6966 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 335 
+    Coordinate : 3300 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 336 
+    Coordinate : 1424 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 337 
+    Coordinate : 441 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 338 
+    Coordinate : 131 5702 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 339 
+    Coordinate : 14717 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 340 
+    Coordinate : 13657 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 341 
+    Coordinate : 11179 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 342 
+    Coordinate : 10520 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 343 
+    Coordinate : 10236 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 344 
+    Coordinate : 9628 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 345 
+    Coordinate : 8143 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 346 
+    Coordinate : 3577 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 347 
+    Coordinate : 2847 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 348 
+    Coordinate : 1350 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 349 
+    Coordinate : 1148 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 350 
+    Coordinate : 665 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 351 
+    Coordinate : 117 5548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 352 
+    Coordinate : 9650 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 353 
+    Coordinate : 7638 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 354 
+    Coordinate : 5565 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 355 
+    Coordinate : 3867 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 356 
+    Coordinate : 2037 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 357 
+    Coordinate : 431 5309 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 358 
+    Coordinate : 2651 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 359 
+    Coordinate : 1939 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 360 
+    Coordinate : 1403 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 361 
+    Coordinate : 774 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 362 
+    Coordinate : 473 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 363 
+    Coordinate : 367 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 364 
+    Coordinate : 108 5160 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 365 
+    Coordinate : 13054 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 366 
+    Coordinate : 10739 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 367 
+    Coordinate : 9168 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 368 
+    Coordinate : 5696 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 369 
+    Coordinate : 4942 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 370 
+    Coordinate : 3268 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 371 
+    Coordinate : 2931 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 372 
+    Coordinate : 1512 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 373 
+    Coordinate : 1275 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 374 
+    Coordinate : 624 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 375 
+    Coordinate : 354 5003 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 376 
+    Coordinate : 10409 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 377 
+    Coordinate : 8761 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 378 
+    Coordinate : 5863 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 379 
+    Coordinate : 3842 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 380 
+    Coordinate : 2500 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 381 
+    Coordinate : 2266 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 382 
+    Coordinate : 1018 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 383 
+    Coordinate : 681 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 384 
+    Coordinate : 84 4856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 385 
+    Coordinate : 15309 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 386 
+    Coordinate : 13053 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 387 
+    Coordinate : 12825 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 388 
+    Coordinate : 11973 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 389 
+    Coordinate : 10275 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 390 
+    Coordinate : 9051 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 391 
+    Coordinate : 3589 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 392 
+    Coordinate : 2188 4703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 393 
+    Coordinate : 12774 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 394 
+    Coordinate : 11500 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 395 
+    Coordinate : 4475 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 396 
+    Coordinate : 3314 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 397 
+    Coordinate : 2892 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 398 
+    Coordinate : 1777 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 399 
+    Coordinate : 1613 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 400 
+    Coordinate : 828 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 401 
+    Coordinate : 632 4554 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 402 
+    Coordinate : 12192 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 403 
+    Coordinate : 11842 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 404 
+    Coordinate : 10908 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 405 
+    Coordinate : 10537 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 406 
+    Coordinate : 8399 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 407 
+    Coordinate : 7328 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 408 
+    Coordinate : 5128 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 409 
+    Coordinate : 2287 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 410 
+    Coordinate : 665 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 411 
+    Coordinate : 117 4402 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 412 
+    Coordinate : 9650 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 413 
+    Coordinate : 7638 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 414 
+    Coordinate : 5565 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 415 
+    Coordinate : 3867 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 416 
+    Coordinate : 2037 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 417 
+    Coordinate : 431 4255 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 418 
+    Coordinate : 2651 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 419 
+    Coordinate : 1939 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 420 
+    Coordinate : 1403 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 421 
+    Coordinate : 774 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 422 
+    Coordinate : 473 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 423 
+    Coordinate : 367 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 424 
+    Coordinate : 108 4100 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 425 
+    Coordinate : 13054 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 426 
+    Coordinate : 10739 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 427 
+    Coordinate : 9168 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 428 
+    Coordinate : 5696 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 429 
+    Coordinate : 4091 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 430 
+    Coordinate : 3942 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 431 
+    Coordinate : 3268 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 432 
+    Coordinate : 2931 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 433 
+    Coordinate : 1512 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 434 
+    Coordinate : 1275 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 435 
+    Coordinate : 624 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 436 
+    Coordinate : 354 3948 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 437 
+    Coordinate : 9266 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 438 
+    Coordinate : 8761 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 439 
+    Coordinate : 5963 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 440 
+    Coordinate : 3842 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 441 
+    Coordinate : 2500 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 442 
+    Coordinate : 1018 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 443 
+    Coordinate : 681 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 444 
+    Coordinate : 84 3801 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 445 
+    Coordinate : 14447 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 446 
+    Coordinate : 12275 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 447 
+    Coordinate : 11825 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 448 
+    Coordinate : 10456 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 449 
+    Coordinate : 10002 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 450 
+    Coordinate : 9973 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 451 
+    Coordinate : 7443 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 452 
+    Coordinate : 269 3746 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 453 
+    Coordinate : 13656 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 454 
+    Coordinate : 11332 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 455 
+    Coordinate : 10915 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 456 
+    Coordinate : 9084 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 457 
+    Coordinate : 4589 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 458 
+    Coordinate : 3149 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 459 
+    Coordinate : 2188 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 460 
+    Coordinate : 1587 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 461 
+    Coordinate : 359 3602 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 462 
+    Coordinate : 14500 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 463 
+    Coordinate : 12774 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 464 
+    Coordinate : 10905 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 465 
+    Coordinate : 5475 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 466 
+    Coordinate : 4314 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 467 
+    Coordinate : 3192 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 468 
+    Coordinate : 2892 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 469 
+    Coordinate : 1777 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 470 
+    Coordinate : 1613 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 471 
+    Coordinate : 828 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 472 
+    Coordinate : 632 3454 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 473 
+    Coordinate : 12842 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 474 
+    Coordinate : 10908 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 475 
+    Coordinate : 8266 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 476 
+    Coordinate : 5128 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 477 
+    Coordinate : 3842 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 478 
+    Coordinate : 2500 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 479 
+    Coordinate : 2287 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 480 
+    Coordinate : 1018 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 481 
+    Coordinate : 837 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 482 
+    Coordinate : 681 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 483 
+    Coordinate : 399 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 484 
+    Coordinate : 84 3300 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 485 
+    Coordinate : 9871 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 486 
+    Coordinate : 9443 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 487 
+    Coordinate : 7825 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 488 
+    Coordinate : 2973 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 489 
+    Coordinate : 2188 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 490 
+    Coordinate : 1275 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 491 
+    Coordinate : 589 3151 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 492 
+    Coordinate : 10569 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 493 
+    Coordinate : 10400 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 494 
+    Coordinate : 9051 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 495 
+    Coordinate : 4475 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 496 
+    Coordinate : 3314 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 497 
+    Coordinate : 2892 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 498 
+    Coordinate : 1777 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 499 
+    Coordinate : 1613 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 500 
+    Coordinate : 828 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 501 
+    Coordinate : 632 2997 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 502 
+    Coordinate : 13842 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 503 
+    Coordinate : 12192 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 504 
+    Coordinate : 11908 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 505 
+    Coordinate : 10837 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 506 
+    Coordinate : 5128 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 507 
+    Coordinate : 2287 2856 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 508 
+    Coordinate : 14397 2705 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 509 
+    Coordinate : 12002 2705 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 510 
+    Coordinate : 665 2705 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 511 
+    Coordinate : 117 2705 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 512 
+    Coordinate : 9650 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 513 
+    Coordinate : 7638 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 514 
+    Coordinate : 5565 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 515 
+    Coordinate : 3867 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 516 
+    Coordinate : 2037 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 517 
+    Coordinate : 431 2552 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 518 
+    Coordinate : 6651 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 519 
+    Coordinate : 4939 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 520 
+    Coordinate : 3403 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 521 
+    Coordinate : 1874 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 522 
+    Coordinate : 1473 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 523 
+    Coordinate : 567 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 524 
+    Coordinate : 108 2305 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 525 
+    Coordinate : 11054 2242 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 526 
+    Coordinate : 9739 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 527 
+    Coordinate : 3942 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 528 
+    Coordinate : 2931 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 529 
+    Coordinate : 1275 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 530 
+    Coordinate : 624 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 531 
+    Coordinate : 354 2252 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 532 
+    Coordinate : 9168 2109 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 533 
+    Coordinate : 5696 2109 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 534 
+    Coordinate : 4091 2109 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 535 
+    Coordinate : 3268 2109 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 536 
+    Coordinate : 1512 2109 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 537 
+    Coordinate : 5761 1949 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 538 
+    Coordinate : 3863 1949 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 539 
+    Coordinate : 3342 1949 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 540 
+    Coordinate : 2500 1949 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 541 
+    Coordinate : 8266 1802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 542 
+    Coordinate : 1018 1802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 543 
+    Coordinate : 681 1802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 544 
+    Coordinate : 84 1802 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 545 
+    Coordinate : 12447 1651 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 546 
+    Coordinate : 11825 1651 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 547 
+    Coordinate : 9973 1651 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 548 
+    Coordinate : 9043 1651 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 549 
+    Coordinate : 12275 1503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 550 
+    Coordinate : 11756 1503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 551 
+    Coordinate : 10002 1503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 552 
+    Coordinate : 269 1503 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 553 
+    Coordinate : 13656 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 554 
+    Coordinate : 10332 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 555 
+    Coordinate : 9915 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 556 
+    Coordinate : 9084 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 557 
+    Coordinate : 3589 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 558 
+    Coordinate : 3149 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 559 
+    Coordinate : 2188 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 560 
+    Coordinate : 1587 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 561 
+    Coordinate : 359 1357 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 562 
+    Coordinate : 14774 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 563 
+    Coordinate : 12500 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 564 
+    Coordinate : 9051 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 565 
+    Coordinate : 4475 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 566 
+    Coordinate : 3314 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 567 
+    Coordinate : 3192 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 568 
+    Coordinate : 2892 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 569 
+    Coordinate : 1777 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 570 
+    Coordinate : 1613 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 571 
+    Coordinate : 828 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 572 
+    Coordinate : 632 1204 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 573 
+    Coordinate : 14142 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 574 
+    Coordinate : 14908 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 575 
+    Coordinate : 13399 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 576 
+    Coordinate : 5128 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 577 
+    Coordinate : 3842 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 578 
+    Coordinate : 2500 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 579 
+    Coordinate : 2287 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 580 
+    Coordinate : 837 1050 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 581 
+    Coordinate : 8266 907 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 582 
+    Coordinate : 1018 907 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 583 
+    Coordinate : 681 907 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 584 
+    Coordinate : 84 907 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 585 
+    Coordinate : 14881 854 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 586 
+    Coordinate : 13443 854 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 587 
+    Coordinate : 12825 854 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 588 
+    Coordinate : 11973 854 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 589 
+    Coordinate : 11275 703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 590 
+    Coordinate : 10756 703 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 591 
+    Coordinate : 10002 548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 592 
+    Coordinate : 2269 548 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 593 
+    Coordinate : 11656 407 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 594 
+    Coordinate : 2984 407 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 595 
+    Coordinate : 1059 407 
+    Capacitive Load :  5.000000e-14 
+
+Sink : 596 
+    Coordinate : 132 407 
+    Capacitive Load :  5.000000e-14 
+

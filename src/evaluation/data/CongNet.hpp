@@ -36,10 +36,12 @@ class CongNet
   int64_t get_uy();
   int64_t get_width() { return _ux - _lx; }
   int64_t get_height() { return _uy - _ly; }
+  NET_CONNECT_TYPE get_connect_type() const { return _connect_type; }
 
   // setter
   void set_name(const std::string& name) { _name = name; }
   void set_pin_list(const std::vector<CongPin*>& pin_list) { _pin_list = pin_list; }
+  void set_connect_type(const NET_CONNECT_TYPE& type) { _connect_type = type; }
 
   // adder
   void add_pin(const int64_t& x, const int64_t& y, const std::string& name);
@@ -47,6 +49,7 @@ class CongNet
 
  private:
   std::string _name;
+  NET_CONNECT_TYPE _connect_type;
   std::vector<CongPin*> _pin_list;
 
   int64_t _lx;

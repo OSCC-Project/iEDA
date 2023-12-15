@@ -45,8 +45,7 @@ TEST_F(PowerTest, example1) {
   timing_engine->set_design_work_space(design_work_space);
 
   std::vector<const char*> lib_files{
-      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
-      "example1_slow.lib"};
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib"};
   timing_engine->readLiberty(lib_files);
 
   timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
@@ -55,16 +54,13 @@ TEST_F(PowerTest, example1) {
   timing_engine->get_ista()->set_top_module_name("top");
 
   timing_engine->readDesign(
-      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
-      "example1.v");
+      "/home/taosimin/nangate45/design/example/example1.v");
 
   timing_engine->readSdc(
-      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
-      "example1.sdc");
+      "/home/taosimin/nangate45/design/example/example1.sdc");
 
   timing_engine->readSpef(
-      "/home/taosimin/iEDA/src/operation/iSTA/source/data/example1/"
-      "example1.spef");
+      "/home/taosimin/nangate45/design/example/example1.spef");
 
   timing_engine->buildGraph();
 
@@ -91,7 +87,9 @@ TEST_F(PowerTest, example1) {
   ipower.updatePower();
 
   // report power.
-  ipower.reportPower("report.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportSummaryPower("report.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportInstancePower("report_instance.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportInstancePowerCSV("report_instance.csv");
 }
 
 }  // namespace

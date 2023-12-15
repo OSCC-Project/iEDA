@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -42,7 +42,7 @@ double PwrCalcLeakagePower::calcLeakagePower(LibertyLeakagePower* leakage_power,
 
   if (!when.empty()) {
     /*Parse conditional statements of the leakage power*/
-    LibertyExprBuilder expr_builder(nullptr, when.c_str());
+    RustLibertyExprBuilder expr_builder(when.c_str());
     expr_builder.execute();
     auto* expr = expr_builder.get_result_expr();
 
@@ -54,6 +54,24 @@ double PwrCalcLeakagePower::calcLeakagePower(LibertyLeakagePower* leakage_power,
   }
 
   return leakage_power_value;
+}
+
+/**
+ * @brief print leakage power sorted by worst.
+ *
+ * @param out
+ */
+void PwrCalcLeakagePower::printLeakagePower(std::ostream& out) {
+  std::ranges::sort(_leakage_powers, [](auto& left, auto& right) {
+    return left->get_leakage_power() > right->get_leakage_power();
+  });
+
+  out << "leakage power :\n";
+  for (auto& elem : _leakage_powers) {
+    out << elem->get_design_obj()->get_name() << " : "
+        << elem->get_leakage_power() << " nW"
+        << "\n";
+  }
 }
 
 /**
@@ -81,13 +99,23 @@ unsigned PwrCalcLeakagePower::operator()(PwrGraph* the_graph) {
     }
 
     // add power analysis data.
-    addLeakagePower(
-        std::make_unique<PwrLeakageData>(design_inst, leakage_power_sum_data));
+    double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
+    auto leakage_data =
+        std::make_unique<PwrLeakageData>(design_inst, leakage_power_sum_data);
+    leakage_data->set_nom_voltage(nom_voltage);
+
+    addLeakagePower(std::move(leakage_data));
     VERBOSE_LOG(2) << "cell  " << design_inst->get_name()
-                   << "  leakage power: " << leakage_power_sum_data << "nW";
+                   << "  leakage power: " << leakage_power_sum_data << " nW";
 
     _leakage_power_result += leakage_power_sum_data;
   }
+
+  // debug leakage power
+  // std::ofstream out("leakage.txt");
+  // printLeakagePower(out);
+  // out.close();
+
   LOG_INFO << "calc leakage power result " << NW_TO_MW(_leakage_power_result)
            << "mw";
 

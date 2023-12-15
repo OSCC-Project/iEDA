@@ -24,17 +24,16 @@
 namespace python_interface {
 namespace py = pybind11;
 
-
-
 void register_idb(py::module& m)
 {
   m.def("idb_init", initIdb);
   m.def("tech_lef_init", initTechLef);
   m.def("lef_init", initLef, py::arg("lef_paths"));
   m.def("def_init", initDef, py::arg("def_path"));
-  m.def("verilog_init", initVerilog, py::arg("verilog_path"));
+  m.def("verilog_init", initVerilog, py::arg("verilog_path"), py::arg("top_module"));
   m.def("def_save", saveDef, py::arg("def_name"));
   m.def("netlist_save", saveNetList, py::arg("netlist_path"), py::arg("exclude_cell_names") = std::set<std::string>{});
+  m.def("gds_save", saveGDSII, py::arg("gds_name"));
 }
 
 void register_idb_op(pybind11::module& m)

@@ -60,6 +60,8 @@ class IdbTrack
   const uint32_t get_width() const { return _width; }
   bool is_track_direction_x() { return _direction == IdbTrackDirection::kDirectionX ? true : false; }
   bool is_track_direction_y() { return _direction == IdbTrackDirection::kDirectionY ? true : false; }
+  bool is_track_vertical() { return _direction == IdbTrackDirection::kDirectionX ? true : false; }
+  bool is_track_horizontal() { return _direction == IdbTrackDirection::kDirectionX ? true : false; }
 
   // IdbLayer* get_layer(){return _layer;}
 
@@ -93,6 +95,7 @@ class IdbTrackGrid
   IdbTrack* get_track() { return _track; }
   const uint32_t get_track_num() const { return _track_num; }
   vector<IdbLayer*> get_layer_list() { return _layer_list; }
+  IdbLayer* get_first_layer() { return _layer_list.size() > 0 ? _layer_list[0] : nullptr; }
   // setter
   void set_track(IdbTrack* track) { _track = track; }
   void set_track_number(uint32_t number) { _track_num = number; }

@@ -1,0 +1,25 @@
+[package]
+name = "liberty-parser"
+version = "0.1.0"
+edition = "2021"
+exclude = ["build"]
+rust-version = "1.72"
+authors = ["taosimin <taosm@pcl.ac.cn>"]
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[lib]
+name = "liberty_parser"
+# #crate-type = ["staticlib"]
+crate-type = ["cdylib"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+
+[profile.dev]
+debug = true

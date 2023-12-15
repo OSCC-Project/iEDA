@@ -53,7 +53,7 @@ static void freeWrapped(std::vector<T*>& obj_vec)
  */
 auto ReportEvaluator::CongStats(float threshold, float step, vector<float>& data)
 {
-  float ceiling = *std::max_element( data.begin(), data.end());
+  float ceiling = *std::max_element(data.begin(), data.end());
   vector<float> range;
   for (auto r = threshold; r < ceiling; r += step) {
     range.push_back(r);
@@ -70,7 +70,6 @@ auto ReportEvaluator::CongStats(float threshold, float step, vector<float>& data
   }
   return std::tuple(range, count);
 }
-
 
 std::shared_ptr<ieda::ReportTable> ReportEvaluator::createWireLengthReport()
 {
@@ -266,7 +265,7 @@ eval::CongInst* EvalWrapper::wrapCongInst(idb::IdbInstance* idb_inst)
   eval::CongInst* cong_inst = new eval::CongInst;
   cong_inst->set_name(idb_inst->get_name());
   auto* box = idb_inst->get_bounding_box();
-  cong_inst->set_type(computeInstType(idb_inst));
+  cong_inst->set_loc_type(computeInstType(idb_inst));
   cong_inst->set_shape(box->get_low_x(), box->get_low_y(), box->get_high_x(), box->get_high_y());
   for (auto* pin : idb_inst->get_pin_list()->get_pin_list()) {
     cong_inst->add_pin(wrapCongPin(pin));
@@ -309,7 +308,7 @@ eval::CongPin* EvalWrapper::wrapCongPin(idb::IdbPin* pin)
   return cong_pin;
 }
 
-eval::INSTANCE_TYPE EvalWrapper::computeInstType(idb::IdbInstance* idb_inst)
+eval::INSTANCE_LOC_TYPE EvalWrapper::computeInstType(idb::IdbInstance* idb_inst)
 {
   auto* core = dmInst->get_idb_layout()->get_core()->get_bounding_box();
   auto* die = dmInst->get_idb_layout()->get_die()->get_bounding_box();
@@ -319,9 +318,9 @@ eval::INSTANCE_TYPE EvalWrapper::computeInstType(idb::IdbInstance* idb_inst)
       || check(die->get_low_y(), inst->get_low_y(), inst->get_high_y(), core->get_low_y())
       || check(core->get_high_x(), inst->get_low_x(), inst->get_high_x(), die->get_high_x())
       || check(core->get_high_y(), inst->get_low_y(), inst->get_high_y(), die->get_high_y())) {
-    return eval::INSTANCE_TYPE::kOutside;
+    return eval::INSTANCE_LOC_TYPE::kOutside;
   }
-  return eval::INSTANCE_TYPE::kNormal;
+  return eval::INSTANCE_LOC_TYPE::kNormal;
 }
 
 }  // namespace iplf

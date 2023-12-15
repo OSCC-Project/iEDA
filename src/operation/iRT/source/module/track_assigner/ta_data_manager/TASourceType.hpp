@@ -26,8 +26,8 @@ enum class TASourceType
 {
   kNone,
   kBlockage,
-  kOtherPanelResult,
-  kSelfPanelResult
+  kNetShape,
+  kReservedVia
 };
 
 struct GetTASourceTypeName
@@ -42,11 +42,11 @@ struct GetTASourceTypeName
       case TASourceType::kBlockage:
         ta_source_type_name = "blockage";
         break;
-      case TASourceType::kOtherPanelResult:
-        ta_source_type_name = "other_panel_result";
+      case TASourceType::kNetShape:
+        ta_source_type_name = "net_shape";
         break;
-      case TASourceType::kSelfPanelResult:
-        ta_source_type_name = "self_panel_result";
+      case TASourceType::kReservedVia:
+        ta_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
