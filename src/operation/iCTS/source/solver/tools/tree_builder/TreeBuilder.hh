@@ -80,6 +80,9 @@ class TreeBuilder
   static Inst* tempTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
                         const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
+  static void iterativeFixSkew(Net* net, const std::optional<double>& skew_bound = std::nullopt,
+                               const std::optional<Point>& guide_loc = std::nullopt);
+
   static void convertToBinaryTree(Node* root);
   static void removeRedundant(Node* root);
   static std::string funcName(const SteinerTreeFunc& func);

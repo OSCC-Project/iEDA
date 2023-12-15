@@ -357,15 +357,14 @@ class TreeBuilderAux : public TestInterface
     for (size_t i = 0; i < case_num;) {
       auto load_pins = genRandomPins(env_info, ++seed);
 
-      auto* buf = TreeBuilder::boundSkewTree("BoundSkewTree", load_pins, skew_bound, std::nullopt, TopoType::kBiPartition);
+      auto* buf = TreeBuilder::cbsTree("CBS", load_pins, skew_bound, std::nullopt, TopoType::kBiPartition);
 
       auto* driver_pin = buf->get_driver_pin();
       buf->set_cell_master(TimingPropagator::getMinSizeCell());
-      auto* net = TimingPropagator::genNet("BoundSkewTree", driver_pin, load_pins);
+      auto* net = TimingPropagator::genNet("CBS", driver_pin, load_pins);
       TimingPropagator::update(net);
 
       auto est_skew = TimingPropagator::calcSkew(driver_pin);
-
       if (est_skew <= skew_bound) {
         std::ranges::for_each(load_pins, [](Pin* pin) { delete pin->get_inst(); });
         continue;
@@ -375,30 +374,13 @@ class TreeBuilderAux : public TestInterface
       }
       ++i;
       ofs << i << "," << load_pins.size() << "," << est_skew;
-      std::vector<double> insert_delay_list;
-      std::ranges::for_each(load_pins, [&](Pin* pin) { insert_delay_list.push_back(pin->get_inst()->get_insert_delay()); });
       size_t iter_num = std::numeric_limits<size_t>::max();
       for (size_t n = 0; n < 4; ++n) {
-        TimingPropagator::resetNet(net);
-        for (size_t j = 0; j < load_pins.size(); ++j) {
-          auto* pin = load_pins[j];
-          auto* inst = pin->get_inst();
-          inst->set_insert_delay(insert_delay_list[j]);
-        }
-        buf = TreeBuilder::noneEstBoundSkewTree("IterBoundSkewTree", load_pins, skew_bound, std::nullopt, TopoType::kBiPartition);
-        driver_pin = buf->get_driver_pin();
-        buf->set_cell_master(TimingPropagator::getMinSizeCell());
-        net = TimingPropagator::genNet("IterBoundSkewTree", driver_pin, load_pins);
-        TimingPropagator::update(net);
+        TreeBuilder::iterativeFixSkew(net, skew_bound);
         auto iter_skew = TimingPropagator::calcSkew(driver_pin);
         ofs << "," << iter_skew;
         if (iter_skew <= skew_bound + 1e-6) {
           iter_num = std::min(iter_num, n + 1);
-        }
-        for (size_t j = 0; j < load_pins.size(); ++j) {
-          auto* pin = load_pins[j];
-          auto* inst = pin->get_inst();
-          insert_delay_list[j] = inst->get_insert_delay();
         }
       }
       ofs << "," << iter_num << std::endl;

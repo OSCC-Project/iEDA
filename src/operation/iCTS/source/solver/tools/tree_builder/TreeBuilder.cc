@@ -719,6 +719,23 @@ Inst* TreeBuilder::tempTree(const std::string& net_name, const std::vector<Pin*>
   return buf;
 }
 /**
+ * @brief iterative fix skew
+ *
+ * @param net
+ * @param skew_bound
+ * @param guide_loc
+ */
+void TreeBuilder::iterativeFixSkew(Net* net, const std::optional<double>& skew_bound, const std::optional<Point>& guide_loc)
+{
+  TimingPropagator::update(net);
+  auto* driver_pin = net->get_driver_pin();
+  auto loads = net->get_load_pins();
+  auto solver = bst::BoundSkewTree("iterFix", driver_pin, skew_bound, false);
+  solver.set_root_guide(guide_loc.value_or(driver_pin->get_location()));
+  solver.run();
+  TimingPropagator::update(net);
+}
+/**
  * @brief convert to binary tree by add steiner node
  *
  * @param root
