@@ -810,15 +810,6 @@ double LibertyPort::driveResistance()
  *
  * @return true
  * @return false
- */
-bool LibertyPort::isClock()
-{
-  auto* liberty_cell = get_ower_cell();
-  for (auto& liberty_arc_set : liberty_cell->get_cell_arcs()) {
-    auto& lib_arc = liberty_arc_set->get_arcs().front();
-    if (lib_arc->isCheckArc()) {
-      if (Str::equal(lib_arc->get_src_port(), get_port_name())) {
-        return true;
       }
     }
   }
