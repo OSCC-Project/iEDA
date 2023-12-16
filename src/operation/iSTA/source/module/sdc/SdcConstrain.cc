@@ -173,7 +173,6 @@ std::vector<SdcCollectionObj> FindObjOfSdc(const std::string& pin_port_name,
         ieda::TclEncodeResult::decode(pin_port_name.c_str()));
     auto& obj_list = obj_collection->get_collection_objs();
     objs = obj_list;
-    delete obj_collection;
   } else {
     auto pin_ports = design_nl->findObj(pin_port_name.c_str(), false, false);
 

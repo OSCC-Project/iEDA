@@ -41,7 +41,6 @@
 #include "ops/propagate_toggle_sp/PwrPropagateClock.hh"
 #include "ops/propagate_toggle_sp/PwrPropagateConst.hh"
 #include "ops/propagate_toggle_sp/PwrPropagateToggleSP.hh"
-#include "ops/read_vcd/VCDParserWrapper.hh"
 
 namespace ipower {
 
@@ -100,30 +99,6 @@ unsigned Power::setupClock(PwrClock&& fastest_clock,
 }
 
 /**
- * @brief read a VCD file
- *
- * @param vcd_path
- * @param begin_end_time
- * @return unsigned
- */
-unsigned Power::readVCD(
-    std::string_view vcd_path, std::string top_instance_name,
-    std::optional<std::pair<int64_t, int64_t>> begin_end_time) {
-  LOG_INFO << "read vcd start";
-  _vcd_wrapper.readVCD(vcd_path, begin_end_time);
-  _vcd_wrapper.buildAnnotateDB(top_instance_name);
-  _vcd_wrapper.calcScopeToggleAndSp();
-
-  // TODO make a opt for out file
-  // std::ofstream out_file;
-  // out_file.open("vcd_out_file.txt", std::ios::out | std::ios::trunc);
-  // _vcd_wrapper.printAnnotateDB(out_file);
-  // out_file.close();
-  LOG_INFO << "read vcd end";
-  return 1;
-}
-
-/**
  * @brief read a VCD file by rust vcd parser
  *
  * @param vcd_path
@@ -151,7 +126,7 @@ unsigned Power::annotateToggleSP() {
   LOG_INFO << "annotate toggle sp start";
 
   AnnotateToggleSP annotate_toggle_SP;
-  annotate_toggle_SP.set_annotate_db(_vcd_wrapper.get_annotate_db());
+  annotate_toggle_SP.set_annotate_db(_rust_vcd_wrapper.get_annotate_db());
 
   unsigned is_ok = annotate_toggle_SP(&_power_graph);
   LOG_INFO << "annotate toggle sp end";
@@ -350,9 +325,10 @@ unsigned Power::analyzeGroupPower() {
       } else {
         group_data->set_switch_power(MW_TO_W(power_data_value));
       }
+      group_data->set_nom_voltage(power_data->get_nom_voltage());
     };
 
-    // find the degisn object of power data
+    // find the design object of power data
     auto* this_obj = power_data->get_design_obj();
     auto this_data = _obj_to_datas.find(this_obj);
     if (this_data != _obj_to_datas.end()) {
@@ -589,6 +565,8 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   std::ofstream csv_file(rpt_file_name);
   csv_file << "Instance Name"
            << ","
+           << "Nominal Voltage"
+           << ","
            << "Internal Power"
            << ","
            << "Switch Power"
@@ -605,7 +583,7 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
     }
 
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
-    csv_file << inst->get_name() << ","
+    csv_file << inst->get_name() << "," << group_data->get_nom_voltage() << ","
              << data_str(group_data->get_internal_power()) << ","
              << data_str(group_data->get_switch_power()) << ","
              << data_str(group_data->get_leakage_power()) << ","

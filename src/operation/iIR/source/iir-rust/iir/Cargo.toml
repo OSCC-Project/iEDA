@@ -6,3 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+spef-parser = "0.1.0"
+csv = "1.1.6"
+nalgebra = "0.32.3"
+serde = { version = "1.0.193", features = ["derive"] }

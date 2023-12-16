@@ -1,8 +1,14 @@
 [package]
 name = "spef-parser"
-version = "0.1.0"
+version = "0.2.4"
 edition = "2021"
 authors = ["caijianfeng <immelon@mail.ustc.edu.cn>"]
+include = ["**/*.rs", "*.toml", "*.pest", "LICENSE", "README.md"]
+git = "https://gitee.com/oscc-project/parser.git"
+
+description = "iEDA spef parser"
+license-file = "LICENSE"
+repository = "https://gitee.com/oscc-project/"
 
 [build-dependencies]
 cbindgen = "0.26"

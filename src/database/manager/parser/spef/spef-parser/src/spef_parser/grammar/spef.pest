@@ -32,14 +32,14 @@ header_keywords = {
   | "*R_UNIT"
   | "*L_UNIT"
 }
-header_value    = { !direction ~ header_char+ }
+header_value    = { header_char+ }
 
-name_map_entry =  { index_name ~ !direction ~ str_name }
+name_map_entry =  { index_name ~ str_name }
 str_name       = @{ (ASCII_ALPHA | "_") ~ char+ }
 index_name     = ${ "*" ~ index }
 
 ports_entry      =  { index_name ~ direction ~ (coordinate_param ~ xy_coordinates)? }
-direction        =  { "I" | "O" | "B" }
+direction        = @{ "I" | "O" | "B" }
 coordinate_param = _{ "*C" }
 xy_coordinates   =  { num{2} }
 

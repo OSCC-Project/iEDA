@@ -54,9 +54,6 @@ void Evaluator::transferData()
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   for (auto* clk_net : clk_nets) {
-    if (clk_net->get_driver_pin()->is_io()) {
-      continue;
-    }
     _eval_nets.emplace_back(EvalNet(clk_net));
   }
 }

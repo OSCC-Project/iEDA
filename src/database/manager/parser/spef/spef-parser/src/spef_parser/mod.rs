@@ -4,7 +4,7 @@ pub mod spef_data;
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
-use spef_data::SpefExchange;
+
 use std::fmt::Debug;
 use std::fs;
 
@@ -445,7 +445,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                 let parse_result = process_namemap_entry(entry);
                 match parse_result {
                     Ok(result) => {
-                        exchange_data.add_namemap_entry(result);
+                        exchange_data.add_name_map_entry(result);
                     }
                     Err(_) => panic!("process failed"),
                 }

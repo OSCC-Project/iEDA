@@ -19,14 +19,12 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "VCDFileParser.hpp"
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
 #include "include/PwrConfig.hh"
 #include "log/Log.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
-#include "ops/read_vcd/VCDParserWrapper.hh"
 #include "usage/usage.hh"
 
 using namespace ipower;
@@ -68,7 +66,7 @@ TEST_F(AnnotateToggleSPTest, calc_tc_sp) {
   Power ipower(&(timing_engine->get_ista()->get_graph()));
   ipower.buildGraph();
 
-  ipower.readVCD("/home/shaozheqing/benchmark/asic_top.vcd", "u0_asic_top");
+  ipower.readRustVCD("/home/shaozheqing/benchmark/asic_top.vcd", "u0_asic_top");
   ipower.annotateToggleSP();
 
   // timing_engine->updateTiming();
