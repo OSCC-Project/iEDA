@@ -180,4 +180,26 @@ TEST_F(TreeBuilderTest, LowBoundEstimationTest)
   });
 }
 
+TEST_F(TreeBuilderTest, IterativeFixSkewTest)
+{
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  // std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
+  std::vector<double> skew_bound_list = {0.005};
+  size_t case_num = 1000;
+  // design DB unit is 2000
+  std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
+    EnvInfo env_info{0, 150000, 0, 150000, 10, 40, 0.005, 0.01, skew_bound / 100, skew_bound / 10};
+    auto suffix = "skew_" + std::to_string(skew_bound);
+    // drop "0" in the suffix end
+    while (suffix.back() == '0') {
+      suffix.pop_back();
+    }
+
+    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+
+    tree_builder.runIterativeFixSkewTest(env_info, case_num, skew_bound, dir, suffix);
+  });
+}
+
 }  // namespace
