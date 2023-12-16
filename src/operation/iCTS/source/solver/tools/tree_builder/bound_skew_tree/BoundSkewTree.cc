@@ -82,8 +82,8 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
         auto* inst = pin->get_inst();
         if (!inst->isSink()) {
           auto* driver_pin = inst->get_driver_pin();
-          pin->set_min_delay(driver_pin->get_min_delay());
-          pin->set_max_delay(driver_pin->get_max_delay());
+          pin->set_min_delay(driver_pin->get_min_delay() + inst->get_insert_delay());
+          pin->set_max_delay(driver_pin->get_max_delay() + inst->get_insert_delay());
         }
       }
       Timing::updatePinCap(pin);

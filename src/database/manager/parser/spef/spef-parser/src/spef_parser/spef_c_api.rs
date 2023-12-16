@@ -4,8 +4,6 @@ use std::os::raw::c_char;
 
 use std::ffi::CString;
 
-
-
 use crate::spef_parser::parse_spef_file;
 use crate::spef_parser::spef_data;
 
@@ -254,7 +252,7 @@ pub extern "C" fn rust_free_spef_net_cap_res(c_spef_net_cap_res: *mut RustResCap
 #[no_mangle]
 pub extern "C" fn rust_expand_name(c_spef_data: *mut spef_data::SpefExchange, index: usize) -> *mut c_char {
     unsafe {
-        let name = (*c_spef_data).name_map.get(&index).unwrap();
+        let name = (*c_spef_data).index_to_name_map.get(&index).unwrap();
         string_to_c_char(name)
     }
 }
@@ -265,7 +263,7 @@ pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange
         let expand_name = |name: &str, spef_data: &mut spef_data::SpefExchange| -> String {
             let split_names = split_spef_index_str(&name);
             let index = split_names.0.parse::<usize>().unwrap();
-            let node1_map_name = spef_data.name_map.get(&index).unwrap();
+            let node1_map_name = spef_data.index_to_name_map.get(&index).unwrap();
             let remove_slash_name: String = node1_map_name.chars().filter(|&c| c != '\\').collect();
             if !split_names.1.is_empty() {
                 let expand_node1_name = remove_slash_name + ":" + split_names.1;
@@ -274,14 +272,14 @@ pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange
             remove_slash_name
         };
 
-        if (*c_spef_data).name_map.is_empty() {
+        if (*c_spef_data).index_to_name_map.is_empty() {
             return;
         }
 
         for spef_net in &mut (*c_spef_data).nets {
             let net_name = &spef_net.name;
             let index = net_name[1..].parse::<usize>().unwrap();
-            let expand_net_name = (*c_spef_data).name_map.get(&index).unwrap();
+            let expand_net_name = (*c_spef_data).index_to_name_map.get(&index).unwrap();
             let remove_slash_net_name = expand_net_name.chars().filter(|&c| c != '\\').collect();
             spef_net.name = remove_slash_net_name;
 

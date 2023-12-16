@@ -182,8 +182,6 @@ class CTSAPI
   ista::DesignObject* findStaPin(const std::string& pin_full_name) const;
   ista::Net* findStaNet(const icts::EvalNet& eval_net) const;
   ista::Net* findStaNet(const std::string& name) const;
-  double getUnitCap() const;
-  double getUnitRes() const;
   double getCapacitance(const double& wire_length, const int& level) const;
   double getResistance(const double& wire_length, const int& level) const;
   ista::TimingIDBAdapter* getStaDbAdapter() const;
