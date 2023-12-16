@@ -258,12 +258,12 @@ fn process_dnet_entry<'a>(
 }
 
 fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest::error::Error<Rule>> {
-    let _pair_span = pair.as_span();
+    let pair_span = pair.as_span();
     let line_no = pair.line_col().0;
 
     let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no);
 
-    let inner_rules = pair.into_inner();
+    let mut inner_rules = pair.into_inner();
     for inner_pair in inner_rules {
         match inner_pair.as_rule() {
             Rule::conn_type => {
@@ -445,7 +445,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
                 let parse_result = process_namemap_entry(entry);
                 match parse_result {
                     Ok(result) => {
-                        exchange_data.add_namemap_entry(result);
+                        exchange_data.add_name_map_entry(result);
                     }
                     Err(_) => panic!("process failed"),
                 }

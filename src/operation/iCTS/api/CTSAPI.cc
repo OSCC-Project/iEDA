@@ -201,44 +201,50 @@ void CTSAPI::dumpVertexData(const std::vector<std::string>& vertex_names) const
 
 double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
-  std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
   auto* db_adapter = getStaDbAdapter();
+  auto layer = _config->get_routing_layers().back();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return db_adapter->getCapacitance(_config->get_h_layer(), 1.0, width);
+      layer = _config->get_h_layer();
       break;
     case icts::LayerPattern::kV:
-      return db_adapter->getCapacitance(_config->get_v_layer(), 1.0, width);
+      layer = _config->get_v_layer();
       break;
     case icts::LayerPattern::kNone:
-      return db_adapter->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+      layer = _config->get_routing_layers().back();
+      break;
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
-  return 0.0;
+  std::optional<double> width = std::nullopt;
+  auto max_len = _config->get_max_length();
+  return db_adapter->getCapacitance(layer, max_len, width) / max_len;
 }
 
 double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
-  std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
   auto* db_adapter = getStaDbAdapter();
+  auto layer = _config->get_routing_layers().back();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      return db_adapter->getResistance(_config->get_h_layer(), 1.0, width);
+      layer = _config->get_h_layer();
       break;
     case icts::LayerPattern::kV:
-      return db_adapter->getResistance(_config->get_v_layer(), 1.0, width);
+      layer = _config->get_v_layer();
       break;
     case icts::LayerPattern::kNone:
-      return db_adapter->getResistance(_config->get_routing_layers().back(), 1.0, width);
+      layer = _config->get_routing_layers().back();
+      break;
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
-  return 0.0;
+  std::optional<double> width = std::nullopt;
+  auto max_len = _config->get_max_length();
+  return db_adapter->getResistance(layer, max_len, width) / max_len / 2;
 }
 
 double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
@@ -656,7 +662,7 @@ icts::Inst* CTSAPI::genBstSaltTree(const std::string& net_name, const std::vecto
 }
 
 icts::Inst* CTSAPI::genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
+                               const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
 {
   return TreeBuilder::cbsTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
@@ -880,18 +886,6 @@ ista::Net* CTSAPI::findStaNet(const std::string& name) const
   return _timing_engine->get_netlist()->findNet(name.c_str());
 }
 
-double CTSAPI::getUnitCap() const
-{
-  std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
-}
-
-double CTSAPI::getUnitRes() const
-{
-  std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
-}
-
 double CTSAPI::getCapacitance(const double& wire_length, const int& level) const
 {
   std::optional<double> width = std::nullopt;
@@ -901,7 +895,7 @@ double CTSAPI::getCapacitance(const double& wire_length, const int& level) const
 double CTSAPI::getResistance(const double& wire_length, const int& level) const
 {
   std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getResistance(level, wire_length, width);
+  return getStaDbAdapter()->getResistance(level, wire_length, width) / 2;
 }
 
 ista::TimingIDBAdapter* CTSAPI::getStaDbAdapter() const

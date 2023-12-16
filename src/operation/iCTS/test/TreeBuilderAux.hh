@@ -339,6 +339,58 @@ class TreeBuilderAux : public TestInterface
     LOG_INFO << "Run estimation test done";
   }
 
+  void runIterativeFixSkewTest(const EnvInfo& env_info, const size_t& case_num, const double& skew_bound, const std::string& dir,
+                               const std::string& suffix) const
+  {
+    LOG_INFO << std::endl;
+    LOG_INFO << "Run iterative fix skew test...";
+    LOG_INFO << "Skew bound: " << skew_bound;
+    LOG_INFO << "Case num: " << case_num;
+    // write to csv
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    auto path = dir + "/iter_bst_" + suffix + ".csv";
+    std::ofstream ofs(path);
+    ofs << "id,pin_num,init_skew,iter_1_skew,iter_2_skew,iter_3_skew,iter_4_skew,iter_num" << std::endl;
+    int seed = 0;
+    for (size_t i = 0; i < case_num;) {
+      auto load_pins = genRandomPins(env_info, ++seed);
+
+      auto* buf = TreeBuilder::cbsTree("CBS", load_pins, skew_bound, std::nullopt, TopoType::kBiPartition);
+
+      auto* driver_pin = buf->get_driver_pin();
+      buf->set_cell_master(TimingPropagator::getMinSizeCell());
+      auto* net = TimingPropagator::genNet("CBS", driver_pin, load_pins);
+      TimingPropagator::update(net);
+
+      auto est_skew = TimingPropagator::calcSkew(driver_pin);
+      if (est_skew <= skew_bound) {
+        std::ranges::for_each(load_pins, [](Pin* pin) { delete pin->get_inst(); });
+        continue;
+      }
+      if (case_num > 10 && (i + 1) % (case_num / 10) == 0) {
+        LOG_INFO << "Case num: " << i + 1 << "/" << case_num;
+      }
+      ++i;
+      ofs << i << "," << load_pins.size() << "," << est_skew;
+      size_t iter_num = std::numeric_limits<size_t>::max();
+      for (size_t n = 0; n < 4; ++n) {
+        TreeBuilder::iterativeFixSkew(net, skew_bound);
+        auto iter_skew = TimingPropagator::calcSkew(driver_pin);
+        ofs << "," << iter_skew;
+        if (iter_skew <= skew_bound + TimingPropagator::kEpsilon) {
+          iter_num = std::min(iter_num, n + 1);
+        }
+      }
+      ofs << "," << iter_num << std::endl;
+      // release
+      std::ranges::for_each(load_pins, [](Pin* pin) { delete pin->get_inst(); });
+    }
+    ofs.close();
+    LOG_INFO << "Run iterative fix skew test done";
+  }
+
  private:
   void topoTypeInfo(const std::initializer_list<TopoType>& vec, const std::string& split = ", ") const
   {
@@ -399,7 +451,7 @@ class TreeBuilderAux : public TestInterface
     auto* net = TimingPropagator::genNet(method_name, driver_pin, load_pins);
     TimingPropagator::update(net);
 
-    TreeBuilder::writePy(driver_pin, method_name + "_" + TopoTypeToString(topo_type));
+    // TreeBuilder::writePy(driver_pin, method_name + "_" + TopoTypeToString(topo_type));
     auto topo_type_str = TopoTypeToString(topo_type);
     TreeInfo info{driver_pin->get_sub_len(), driver_pin->get_cap_load(), driver_pin->get_max_delay() - driver_pin->get_min_delay(),
                   driver_pin->get_max_delay() - load_pins.front()->get_inst()->get_insert_delay(), driver_pin->get_max_delay()};

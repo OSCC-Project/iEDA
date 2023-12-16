@@ -25,7 +25,6 @@ include_directories(${HOME_UTILITY})
 include_directories(${HOME_DATABASE}/manager/parser)
 include_directories(SYSTEM ${HOME_THIRDPARTY})
 include(${HOME_CMAKE}/operation/ista.cmake)
-include_directories(${THIRD_PARTY_HOME}/verilog-vcd-parser/src)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW)
 include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source)
@@ -49,4 +48,4 @@ add_subdirectory(source/python-api)
 add_subdirectory(test)
 
 add_executable(iPower main.cc)
-target_link_libraries(iPower vcd_wrapper log power verilog-vcd-parser utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
+target_link_libraries(iPower vcd_wrapper log power utility usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)

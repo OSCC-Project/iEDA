@@ -49,8 +49,8 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, const std::vector<Pin*
       auto* inst = pin->get_inst();
       if (!inst->isSink()) {
         auto* driver_pin = inst->get_driver_pin();
-        pin->set_min_delay(driver_pin->get_min_delay());
-        pin->set_max_delay(driver_pin->get_max_delay());
+        pin->set_min_delay(driver_pin->get_min_delay() + inst->get_insert_delay());
+        pin->set_max_delay(driver_pin->get_max_delay() + inst->get_insert_delay());
       }
     }
     Timing::updatePinCap(pin);
@@ -82,8 +82,8 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
         auto* inst = pin->get_inst();
         if (!inst->isSink()) {
           auto* driver_pin = inst->get_driver_pin();
-          pin->set_min_delay(driver_pin->get_min_delay());
-          pin->set_max_delay(driver_pin->get_max_delay());
+          pin->set_min_delay(driver_pin->get_min_delay() + inst->get_insert_delay());
+          pin->set_max_delay(driver_pin->get_max_delay() + inst->get_insert_delay());
         }
       }
       Timing::updatePinCap(pin);
@@ -124,7 +124,6 @@ void BoundSkewTree::run()
   auto pins = _load_pins;
   pins.push_back(_root_buf->get_driver_pin());
   TreeBuilder::localPlace(pins);
-  TreeBuilder::removeRedundant(_root_buf->get_driver_pin());
 }
 void BoundSkewTree::convert()
 {
@@ -152,8 +151,8 @@ Match BoundSkewTree::getBestMatch(CostFunc cost_func) const
 double BoundSkewTree::mergeCost(Area* left, Area* right) const
 {
   auto min_dist = std::numeric_limits<double>::max();
-  auto left_mr = left->get_convex_hull();
-  auto right_mr = right->get_convex_hull();
+  auto left_mr = left->get_mr();
+  auto right_mr = right->get_mr();
   Pt l_pt, r_pt;
   for (auto left_pt : left_mr) {
     for (auto right_pt : right_mr) {
@@ -178,8 +177,8 @@ double BoundSkewTree::mergeCost(Area* left, Area* right) const
 double BoundSkewTree::distanceCost(Area* left, Area* right) const
 {
   auto min_dist = std::numeric_limits<double>::max();
-  auto left_mr = left->get_convex_hull();
-  auto right_mr = right->get_convex_hull();
+  auto left_mr = left->get_mr();
+  auto right_mr = right->get_mr();
   for (auto left_pt : left_mr) {
     for (auto right_pt : right_mr) {
       min_dist = std::min(min_dist, Geom::distance(left_pt, right_pt));
@@ -579,7 +578,7 @@ void BoundSkewTree::topDown()
 {
   // set root location
   Pt root_loc;
-  auto mr = _root->get_convex_hull();
+  auto mr = _root->get_mr();
   if (_root_guide.has_value()) {
     root_loc = Geom::closestPtOnRegion(_root_guide.value(), mr);
   } else {
@@ -1943,10 +1942,10 @@ void BoundSkewTree::checkPtDelay(Pt& pt) const
 {
   // LOG_ERROR_IF(pt.min <= -kEpsilon) << "pt min delay is negative";
   LOG_FATAL_IF(pt.max - pt.min <= -kEpsilon) << "pt skew is negative";
-  if (pt.min < 0) {
+  if (pt.min < -kEpsilon) {
     pt.min = 0;
   }
-  if (pt.max < pt.min) {
+  if (pt.max < pt.min + kEpsilon) {
     pt.max = pt.min;
   }
 }
@@ -1998,7 +1997,7 @@ void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file)
   }
   std::ofstream ofs(dir + "/" + file + ".py");
   ofs.setf(std::ios::fixed, std::ios::floatfield);
-  ofs.precision(16);
+  ofs.precision(4);
   ofs << "import matplotlib.pyplot as plt\n";
   ofs << "import numpy as np\n";
   ofs << "x = [";
@@ -2014,6 +2013,65 @@ void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file)
   ofs << "plt.plot(x, y)\n";
   ofs << "plt.show()\n";
   ofs << "plt.savefig('" + file + ".png')\n";
+  ofs.close();
+}
+
+void BoundSkewTree::writePy(Area* area, const std::string& file) const
+{
+  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
+  std::ofstream ofs(dir + "/" + file + ".py");
+  ofs.setf(std::ios::fixed, std::ios::floatfield);
+  ofs.precision(4);
+  ofs << "import matplotlib.pyplot as plt\n";
+  ofs << "import numpy as np\n";
+  std::stack<Area*> stack;
+  stack.push(area);
+  while (!stack.empty()) {
+    auto* cur = stack.top();
+    stack.pop();
+    if (cur->get_right()) {
+      stack.push(cur->get_right());
+    }
+    if (cur->get_left()) {
+      stack.push(cur->get_left());
+    }
+    if (cur->get_mr().empty()) {
+      continue;
+    }
+
+    ofs << "x = [";
+    for (auto pt : cur->get_convex_hull()) {
+      ofs << pt.x << ", ";
+    }
+    ofs << cur->get_convex_hull().front().x << "]\n";
+    ofs << "y = [";
+    for (auto pt : cur->get_convex_hull()) {
+      ofs << pt.y << ", ";
+    }
+    ofs << cur->get_convex_hull().front().y << "]\n";
+
+    ofs << "plt.plot(x, y, \"--b\", linewidth=1)\n";
+
+    ofs << "x = [";
+    for (auto pt : cur->get_mr()) {
+      ofs << pt.x << ", ";
+    }
+    ofs << cur->get_mr().front().x << "]\n";
+    ofs << "y = [";
+    for (auto pt : cur->get_mr()) {
+      ofs << pt.y << ", ";
+    }
+    ofs << cur->get_mr().front().y << "]\n";
+    ofs << "plt.plot(x, y, \"o\", color='red', markersize=1)\n";
+
+    auto center = Geom::centerPt(cur->get_convex_hull());
+    ofs << "plt.text(" << center.x << ", " << center.y << ", '" << cur->get_name() << "', fontsize=4)\n\n";
+  }
+  ofs << "plt.savefig('" + file + ".png', dpi=900)\n";
+  ofs << "plt.show()\n";
   ofs.close();
 }
 }  // namespace bst

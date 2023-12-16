@@ -55,7 +55,8 @@ class BoundSkewTree
  public:
   BoundSkewTree(const std::string& net_name, const std::vector<Pin*>& pins, const std::optional<double>& skew_bound = std::nullopt,
                 const TopoType& topo_type = TopoType::kGreedyDist, const bool& estimation = true);
-  BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound = std::nullopt, const bool& estimation = true);
+  BoundSkewTree(const std::string& net_name, Pin* driver_pin, const std::optional<double>& skew_bound = std::nullopt,
+                const bool& estimation = true);
   ~BoundSkewTree() = default;
 
   Inst* get_root_buf() const { return _root_buf; }
@@ -202,6 +203,7 @@ class BoundSkewTree
   void printPoint(const Pt& pt) const;
   void printArea(const Area* area) const;
   void writePy(const std::vector<Pt>& pts, const std::string& file = "debug") const;
+  void writePy(Area* area, const std::string& file = "debug") const;
   /**
    * @brief data
    *
