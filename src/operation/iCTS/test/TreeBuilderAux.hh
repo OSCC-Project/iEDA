@@ -379,7 +379,7 @@ class TreeBuilderAux : public TestInterface
         TreeBuilder::iterativeFixSkew(net, skew_bound);
         auto iter_skew = TimingPropagator::calcSkew(driver_pin);
         ofs << "," << iter_skew;
-        if (iter_skew <= skew_bound + 1e-6) {
+        if (iter_skew <= skew_bound + TimingPropagator::kEpsilon) {
           iter_num = std::min(iter_num, n + 1);
         }
       }
