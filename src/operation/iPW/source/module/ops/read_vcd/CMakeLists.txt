@@ -8,4 +8,4 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 aux_source_directory(./ SRC)
 add_library(vcd_wrapper ${SRC})
 
-target_link_libraries(vcd_wrapper verilog-vcd-parser annotate vcd)
+target_link_libraries(vcd_wrapper annotate vcd)
