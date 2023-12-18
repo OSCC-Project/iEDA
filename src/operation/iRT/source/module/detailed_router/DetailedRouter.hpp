@@ -119,13 +119,13 @@ class DetailedRouter
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment);
-  void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* patch);
+  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
+  void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch);
   void updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
-  void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation* violation);
+  void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
 #if 1  // plot dr_box

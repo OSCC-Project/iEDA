@@ -785,18 +785,18 @@ void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
       }
     }
   }
-  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      updateNetResultToGraph(dr_box, ChangeType::kAdd, net_idx, segment);
+
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
+      updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), routing_segment);
+    }
+    for (EXTLayerRect& patch : dr_task->get_patch_list()) {
+      updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), patch);
     }
   }
-  for (Violation* violation : DM_INST.getViolationSet(dr_box.get_box_rect())) {
+
+  for (Violation& violation : dr_box.get_violation_list()) {
     updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
-  }
-  for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(dr_box.get_box_rect())) {
-    for (EXTLayerRect* patch : patch_set) {
-      updatePatchToGraph(dr_box, ChangeType::kAdd, net_idx, patch);
-    }
   }
 }
 
@@ -1192,12 +1192,12 @@ void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask* dr_task)
 {
   // 原结果从graph删除
   for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-    updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_origin_net_idx(), new Segment<LayerCoord>(routing_segment));
+    updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_origin_net_idx(), routing_segment);
   }
   dr_task->set_routing_segment_list(dr_box.get_routing_segment_list());
   // 新结果添加到graph
   for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-    updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), new Segment<LayerCoord>(routing_segment));
+    updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), routing_segment);
   }
 }
 
@@ -1438,20 +1438,20 @@ void DetailedRouter::update(DRModel& dr_model)
 void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect,
                                             bool is_routing)
 {
-  NetShape net_shape(net_idx, fixed_rect->get_real_rect(), is_routing);
+  NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
   updateNetShapeToGraph(dr_box, change_type, net_shape);
 }
 
-void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment)
+void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)
 {
-  for (NetShape& net_shape : DM_INST.getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : DM_INST.getNetShapeList(net_idx, segment)) {
     updateNetShapeToGraph(dr_box, change_type, net_shape);
   }
 }
 
-void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* patch)
+void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch)
 {
-  NetShape net_shape(net_idx, patch->get_real_rect(), true);
+  NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
   updateNetShapeToGraph(dr_box, change_type, net_shape);
 }
 
@@ -1545,10 +1545,10 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   return node_orientation_map;
 }
 
-void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation* violation)
+void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation)
 {
   irt_int violation_cost = dr_box.get_curr_dr_parameter()->get_violation_cost();
-  NetShape net_shape(-1, violation->get_violation_shape().get_real_rect(), violation->get_is_routing());
+  NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
 
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
     for (Orientation orientation : orientation_set) {
