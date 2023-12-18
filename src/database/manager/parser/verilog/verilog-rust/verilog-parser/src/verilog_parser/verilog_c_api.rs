@@ -14,7 +14,7 @@ pub struct RustVec {
     type_size: usize,
 }
 
-fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
+pub fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
     RustVec {
         data: vec.as_ptr() as *mut c_void,
         len: vec.len(),

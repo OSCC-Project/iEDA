@@ -7,6 +7,11 @@ use pest_derive::Parser;
 
 use std::ffi::c_void;
 use std::os::raw::c_char;
+use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+
 
 #[derive(Parser)]
 #[grammar = "verilog_parser/grammar/verilog.pest"]
@@ -345,86 +350,22 @@ fn process_inst_declaration(pair: Pair<Rule>) -> Result<Box<dyn verilog_data::Ve
     }
 }
 
-pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::VerilogModule, pest::error::Error<Rule>> {
-    // Generate verilog.pest parser
-    let input_str = std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
-    let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
-
-    let file_name = "tbd";
-    let line_no = 0;
-    let mut module_name = " ";
-    let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
-    let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
-
-    match parse_result {
-        Ok(pairs) => {
-            // pairs:module_declaration+
-            for pair in pairs {
-                let inner_pairs = pair.into_inner();
-                for inner_pair in inner_pairs {
-                    match inner_pair.as_rule() {
-                        Rule::module_id => {
-                            module_name = process_module_id(inner_pair).unwrap();
-                        }
-                        Rule::port_list => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let  port_id = process_port_or_wire_id(inner_inner_pair).unwrap();
-                                port_list.push(port_id);
-                            }
-                        }
-                        Rule::port_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls =  process_port_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_dcls);
-                            }
-                        }
-                        Rule::wire_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls =  process_wire_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_dcls);
-                            }
-                        }
-                        Rule::inst_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_inst =  process_inst_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_inst);
-                            }
-                        }
-                        Rule::EOI => (),
-                        _ => unreachable!(),
-                    }
-                }
-            }
-        }
-        Err(err) => {
-            // Handle parsing error
-            println!("Error: {}", err);
-        }
-    }
-
-    // store the verilogModule.
-    let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
-    Ok(verilog_module)
-}
-
-// pub fn parse_verilog_file(verilog_file_path: &str) -> Result<Vec<verilog_data::VerilogModule>, pest::error::Error<Rule>> {
+// pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::VerilogModule, pest::error::Error<Rule>> {
 //     // Generate verilog.pest parser
 //     let input_str = std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
 //     let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
 
 //     let file_name = "tbd";
 //     let line_no = 0;
-//     let mut verilog_modules: Vec<verilog_data::VerilogModule> = Vec::new();
+//     let mut module_name = " ";
+//     let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
+//     let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
 
 //     match parse_result {
 //         Ok(pairs) => {
 //             // pairs:module_declaration+
-//             // println!("{:#?}", pairs);
 //             for pair in pairs {
 //                 let inner_pairs = pair.into_inner();
-//                 let mut module_name = " ";
-//                 let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
-//                 let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
 //                 for inner_pair in inner_pairs {
 //                     match inner_pair.as_rule() {
 //                         Rule::module_id => {
@@ -454,13 +395,11 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
 //                                 module_stmts.push(verilog_inst);
 //                             }
 //                         }
+//                         Rule::EOI => (),
 //                         _ => unreachable!(),
 //                     }
 //                 }
-//                 let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
-//                 verilog_modules.push(verilog_module);
 //             }
-            
 //         }
 //         Err(err) => {
 //             // Handle parsing error
@@ -468,27 +407,308 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> Result<verilog_data::Veril
 //         }
 //     }
 
-//     Ok(verilog_modules)
+//     // store the verilogModule.
+//     let verilog_module = verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts);
+//     Ok(verilog_module)
 // }
 
-#[no_mangle]
-pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void {
-    let c_str = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
-    let r_str = c_str.to_string_lossy().into_owned();
-    println!("r str {}", r_str);
+fn process_dcl(dcl_stmt: &Box<verilog_data::VerilogDcl>,cur_module: &Rc<RefCell<verilog_data::VerilogModule>>,parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,
+inst_stmt: &verilog_data::VerilogInst) {
+    let dcl_name = dcl_stmt.get_dcl_name();
+    let dcl_type = dcl_stmt.get_dcl_type();
+    if let verilog_data::DclType::KWire = dcl_type  {
+        if !verilog_data::VerilogModule::is_port(&cur_module.borrow(),dcl_name) {
+            let new_dcl_name = format!("{}/{}", inst_stmt.get_inst_name(), dcl_name);
+            let mut cloned_dcl_stmt: verilog_data::VerilogDcl = (**dcl_stmt).clone();
+            cloned_dcl_stmt.set_dcl_name(&new_dcl_name);
+            let new_dcl_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(cloned_dcl_stmt);
+            verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(),new_dcl_stmt);
+        }
+    }
+}
 
-    let verilog_result = parse_verilog_file(&r_str);
-    // let verilog_modules:Vec<verilog_data::VerilogModule> = verilog_result.unwrap(); 
-    let verilog_module:verilog_data::VerilogModule = verilog_result.unwrap(); 
+fn find_dcl_stmt_range(cur_module: &Rc<RefCell<verilog_data::VerilogModule>>, net_base_name:&str) -> Option<(i32, i32)> {
+    if let Some(dcls_stmt) = verilog_data::VerilogModule::find_dcls_stmt(cur_module,net_base_name) {
+        let mut range: Option<(i32, i32)> = None;
+
+        if dcls_stmt.is_verilog_dcls_stmt() {
+            if let Some(verilog_dcls_stmt) = dcls_stmt.as_verilog_dcls_stmt() {
+                for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
+                    if verilog_dcl.get_dcl_name().eq(net_base_name) {
+                        range = verilog_dcl.get_range();
+                        break;
+                    }
+                }
+            }
+        }
+
+        return range;
+    }
+
+    None
+}
+
+fn process_port_connect(net_expr: &Box<dyn verilog_data::VerilogVirtualBaseNetExpr>,cur_module: &Rc<RefCell<verilog_data::VerilogModule>>,parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,
+    inst_stmt: &verilog_data::VerilogInst) -> Option<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> {
+
+        let net_expr_id = net_expr.get_verilog_id();
+        let net_base_name = net_expr_id.get_base_name();
+        let range: Option<(i32, i32)>;
+
+        if !verilog_data::VerilogModule::is_port(&cur_module.borrow(),net_base_name) {
+            // for common name, should check whether bus, get range first.
+            if !net_base_name.contains("/") && !verilog_data::VerilogVirtualBaseID::is_bus_index_id(net_expr_id) && 
+            !verilog_data::VerilogVirtualBaseID::is_bus_slice_id(net_expr_id) {
+                range = find_dcl_stmt_range(cur_module, net_base_name);
+            }
+
+            // not port, change net name to inst name / net_name.
+            if range.is_none() {
+                let new_net_base_name = format!("{}/{}", inst_stmt.get_inst_name(), net_base_name);
+                net_expr_id.set_base_name(new_net_base_name);
+                return None;
+            } else {
+                let mut verilog_id_concat:Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> = Vec::new();
+                let is_first_greater = range.unwrap().0 > range.unwrap().1;
+                let mut index = range.unwrap().0;
+                while is_first_greater && index >= range.unwrap().1 || !is_first_greater && index <= range.unwrap().1 {
+                    let new_net_name = format!("{}/{}", inst_stmt.get_inst_name(), net_base_name);
+                    let index_id = verilog_data::VerilogIndexID::new(new_net_name, index);
+                    let new_index_net_id = Box::new(verilog_data::VerilogNetIDExpr::new(index_id, 0));
+                    let verilog_index_id = verilog_data::VerilogIndexID::new(new_net_name, index);
+                    let verilog_virtual_base_id:Box<dyn verilog_data::VerilogVirtualBaseID>  = Box::new(index_id);
+                    let verilog_net_id_expr = verilog_data::VerilogNetIDExpr::new(0,verilog_virtual_base_id);
+                    let verilog_virtual_base_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> = Box::new(verilog_net_id_expr);
+                    verilog_id_concat.push(verilog_virtual_base_net_expr);
+                    if is_first_greater {
+                        index -= 1;
+                    } else {
+                        index += 1;
+                    }
+                }
+                let new_verilog_net_concat_expr = verilog_data::VerilogNetConcatExpr::new(0,verilog_id_concat);
+                return Some(new_verilog_net_concat_expr);
+            } 
+        } else {
+                // is port, check the port whether port or port bus, then get
+                // the port or port bus connect parent net.
+                range = find_dcl_stmt_range(cur_module, net_base_name);
+                // get port connected parent module net.***************
+                let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(inst_stmt,cur_module, parent_module, net_expr_id, range);
+                return Some(port_connect_net);
+            }
+}
+    
+fn process_concat_net_expr(one_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr>,cur_module: &Rc<RefCell<verilog_data::VerilogModule>>,
+    parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,inst_stmt: &verilog_data::VerilogInst)
+    -> Option<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> {
+    let mut new_one_net_expr = one_net_expr;
+    if one_net_expr.is_id_expr() {
+        let port_connect_net = process_port_connect(one_net_expr,cur_module,parent_module,inst_stmt);
+        if port_connect_net.is_some() {
+            new_one_net_expr = port_connect_net
+        } 
+    } else {
+        if one_net_expr.is_concat_expr() {
+            let one_net_expr_concat = one_net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
+            for one_net_expr in one_net_expr_concat.get_verilog_id_concat() {
+                process_concat_net_expr(one_net_expr);
+            }
+        }
+    }
+}
+
+fn flatten_module(cur_module: &Rc<RefCell<verilog_data::VerilogModule>>, parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,
+inst_stmt: &verilog_data::VerilogInst, module_map: &HashMap<String, Rc<RefCell<verilog_data::VerilogModule>>>) {
+    let mut have_sub_module;
+    // flatten all sub module.
+    loop {
+        have_sub_module = false;
+
+        for stmt in cur_module.borrow().get_module_stmts() {
+            if stmt.is_module_inst_stmt() {
+                let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+                let sub_module = module_map.get(module_inst_stmt.get_cell_name());
+                if let Some(sub_module) = sub_module {
+                    have_sub_module = true;
+                    println!("flatten module {} inst {}", module_inst_stmt.get_cell_name(), module_inst_stmt.get_inst_name());
+
+                    flatten_module(sub_module, cur_module, module_inst_stmt, module_map);
+                    cur_module.borrow_mut().erase_stmt(stmt);
+                    break;
+                }    
+            }
+        }
+        if !have_sub_module {
+            break;
+        }
+    }
+
+    
+        // cur_module.borrow():获取cur_module的引用,是否需要获取不可变引用？
+    for stmt in cur_module.borrow().get_module_stmts() {
+        // for verilog dcl stmt, change the dcl name to inst name / dcl_name, then
+        // add stmt to parent.
+        if stmt.is_verilog_dcls_stmt() {
+            let dcls_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogDcls>().unwrap();
+            for dcl_stmt in dcls_stmt.get_verilog_dcls() {
+                process_dcl(dcl_stmt,cur_module, parent_module, inst_stmt);
+            }
+            } else if stmt.is_module_inst_stmt() { 
+                // for verilog module instant stmt, first copy the module inst stmt,
+                // then change the inst stmt connect net to net name / parent net
+                // name(for port), next change the inst name to parent inst name /
+                // current inst name.
+                let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+                let mut new_module_inst_stmt: verilog_data::VerilogInst = module_inst_stmt.clone();
+                for port_connect in new_module_inst_stmt.get_port_connections() {
+                    let mut net_expr_option = port_connect.get_net_expr();
+                    if let Some(net_expr) = net_expr_option {
+                       if net_expr.is_id_expr() {
+                          let port_connect_net = process_port_connect(net_expr,cur_module,parent_module,inst_stmt);
+                          if port_connect_net.is_some() {
+                             // is port connect net, set new net.
+                             port_connect.set_net_expr(port_connect_net);
+                          }
+                       } else if net_expr.is_concat_expr() {
+                         let concat_connect_net = net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
+                         for one_net_expr in concat_connect_net.get_verilog_id_concat() {
+                             process_concat_net_expr(one_net_expr,cur_module,parent_module,inst_stmt);
+                         }
+                       }
+                    }
+                }
+                let the_stmt_inst_name = module_inst_stmt.get_inst_name();
+                let new_inst_name = format!("{}/{}", inst_stmt.get_inst_name(), the_stmt_inst_name);
+                new_module_inst_stmt.set_inst_name(new_inst_name);
+                let new_dyn_module_inst_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(new_module_inst_stmt);
+                verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(),new_dyn_module_inst_stmt);
+            }
+    }
+}
+
+
+pub fn parse_verilog_file(verilog_file_path: &str,top_module_name:& str) -> verilog_data::VerilogFile {
+    // Generate verilog.pest parser
+    let input_str = std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
+    let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
+
+    let mut verilog_file = verilog_data::VerilogFile::new(top_module_name);
+
+
+    let file_name = "tbd";
+    let line_no = 0;
+
+    match parse_result {
+        Ok(pairs) => {
+            // pairs:module_declaration+
+            for pair in pairs {
+                if pair.as_rule() == Rule::EOI {
+                    continue;
+                }
+                let inner_pairs = pair.into_inner();
+                let mut module_name = " ";
+                let mut port_list: Vec<Box<dyn verilog_data::VerilogVirtualBaseID>> = Vec::new();
+                let mut module_stmts: Vec<Box <dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
+                for inner_pair in inner_pairs {
+                    match inner_pair.as_rule() {
+                        Rule::module_id => {
+                            module_name = process_module_id(inner_pair).unwrap();
+                        }
+                        Rule::port_list => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let  port_id = process_port_or_wire_id(inner_inner_pair).unwrap();
+                                port_list.push(port_id);
+                            }
+                        }
+                        Rule::port_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let verilog_dcls =  process_port_declaration(inner_inner_pair).unwrap();
+                                module_stmts.push(verilog_dcls);
+                            }
+                        }
+                        Rule::wire_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let verilog_dcls =  process_wire_declaration(inner_inner_pair).unwrap();
+                                module_stmts.push(verilog_dcls);
+                            }
+                        }
+                        Rule::inst_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let verilog_inst =  process_inst_declaration(inner_inner_pair).unwrap();
+                                module_stmts.push(verilog_inst);
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let verilog_module = Rc::new(RefCell::new(verilog_data::VerilogModule::new(1, module_name, port_list, module_stmts)));
+                verilog_file.add_module(verilog_module);
+            }
+            
+        }
+        Err(err) => {
+            // Handle parsing error
+            println!("Error: {}", err);
+        }
+    }
+
+
+    let module_map = verilog_file.get_module_map();
+    if module_map.len() > 1 {
+        let the_module = module_map.get(top_module_name).unwrap();
+        println!("flatten module {}  start", top_module_name);
+        let mut have_sub_module;
+        loop {
+            have_sub_module = false;
+
+            for stmt in the_module.borrow().get_module_stmts() {
+                if stmt.is_module_inst_stmt() {
+                    let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+                    let sub_module = module_map.get(module_inst_stmt.get_cell_name());
+                    if let Some(sub_module) = sub_module {
+                        have_sub_module = true;
+                        println!("flatten module {} inst {}", module_inst_stmt.get_cell_name(), module_inst_stmt.get_inst_name());
+
+                        flatten_module(sub_module, the_module, module_inst_stmt, module_map);
+                        the_module.borrow_mut().erase_stmt(stmt);
+                        break;
+                    }    
+                }
+            }
+            if !have_sub_module {
+                break;
+            }
+        }
+
+        println!("flatten module {} end", top_module_name);
+    }
+    verilog_file
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char, top_module_name:*const c_char) -> *mut c_void {
+    let c_str_verilog_path = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
+    let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
+    println!("r str {}", r_str_verilog_path);
+
+    let c_str_top_module_name = unsafe { std::ffi::CStr::from_ptr(top_module_name) };
+    let r_str_top_module_name = c_str_top_module_name.to_string_lossy().into_owned();
+
+    let mut verilog_file = parse_verilog_file(&r_str_verilog_path,&r_str_top_module_name); 
+    let verilog_module = verilog_file.get_top_module();
+    // directly convert is ok?
     let verilog_modules_pointer = Box::new(verilog_module);
 
     let raw_pointer = Box::into_raw(verilog_modules_pointer);
     raw_pointer as *mut c_void
 }
 
+
+// To do
 #[no_mangle]
-pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut Vec<verilog_data::VerilogModule>) {
-    let _: Box<Vec<verilog_data::VerilogModule>> = unsafe { Box::from_raw(c_verilog_module) };
+pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut verilog_data::VerilogModule) {
+    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
 }
 
 
