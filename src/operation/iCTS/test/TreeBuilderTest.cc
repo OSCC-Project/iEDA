@@ -186,7 +186,7 @@ TEST_F(TreeBuilderTest, IterativeFixSkewTest)
                               "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
   // std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
   std::vector<double> skew_bound_list = {0.005};
-  size_t case_num = 1000;
+  size_t case_num = 10000;
   // design DB unit is 2000
   std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
     EnvInfo env_info{0, 150000, 0, 150000, 10, 40, 0.005, 0.01, skew_bound / 100, skew_bound / 10};
