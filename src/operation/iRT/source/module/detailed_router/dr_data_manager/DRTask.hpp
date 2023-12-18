@@ -52,6 +52,7 @@ class DRTask
   }
   void set_patch_list(const std::vector<EXTLayerRect>& patch_list) { _patch_list = patch_list; }
   // function
+  void addRoutedTimes() { ++_routed_times; }
 
  private:
   irt_int _origin_net_idx = -1;

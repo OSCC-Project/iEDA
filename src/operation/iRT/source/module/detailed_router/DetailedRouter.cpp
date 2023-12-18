@@ -910,6 +910,7 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
     for (DRTask* dr_task : dr_task_list) {
       routeDRTask(dr_box, dr_task);
       processDRTask(dr_box, dr_task);
+      dr_task->addRoutedTimes();
     }
     updateViolationList(dr_box);
     dr_task_list = getTaskScheduleByViolation(dr_box);
