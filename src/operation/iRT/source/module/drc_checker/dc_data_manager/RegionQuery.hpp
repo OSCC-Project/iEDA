@@ -17,91 +17,60 @@
 #pragma once
 
 #include "LayerRect.hpp"
-#include "RQShape.hpp"
 #include "RTU.hpp"
 
 namespace irt {
 
-using StaticBox = std::pair<BGRectInt, RQShape*>;
-
 class RegionQuery
 {
  public:
-  RegionQuery()
-  {
-    // _idrc_region_query = RTAPI_INST.initRegionQuery();
-  }
+  RegionQuery() = default;
   ~RegionQuery()
   {
-    if (_idrc_region_query != nullptr) {
-      RTAPI_INST.destroyRegionQuery(_idrc_region_query);
-      _idrc_region_query = nullptr;
-    }
-
-    _routing_net_rect_map.clear();
-    _cut_net_rect_map.clear();
-
-    for (auto& [layer_idx, net_shape_map] : _routing_net_shape_map) {
-      for (auto& [net_idx, rect_shape_map] : net_shape_map) {
-        for (auto& [rect, shape_pt_list] : rect_shape_map) {
-          for (auto& shape_ptr : shape_pt_list) {
-            if (shape_ptr != nullptr) {
-              delete shape_ptr;
-              shape_ptr = nullptr;
-            }
-          }
-        }
-      }
-    }
-    for (auto& [layer_idx, net_shape_map] : _cut_net_shape_map) {
-      for (auto& [net_idx, rect_shape_map] : net_shape_map) {
-        for (auto& [rect, shape_ptr_list] : rect_shape_map) {
-          for (auto& shape_ptr : shape_ptr_list) {
-            if (shape_ptr != nullptr) {
-              delete shape_ptr;
-              shape_ptr = nullptr;
-            }
-          }
-        }
-      }
-    }
-    _routing_net_shape_map.clear();
-    _cut_net_shape_map.clear();
-
-    _routing_region_map.clear();
-    _cut_region_map.clear();
+    _routing_info_rect_map.clear();
+    _cut_info_rect_map.clear();
   }
   // getter
-  void* get_idrc_region_query() { return _idrc_region_query; }
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_routing_net_rect_map()
+  std::map<irt_int, std::map<BaseInfo, std::set<LayerRect, CmpLayerRectByXASC>, CmpBaseInfo>>& get_routing_info_rect_map()
   {
-    return _routing_net_rect_map;
+    return _routing_info_rect_map;
   }
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& get_cut_net_rect_map() { return _cut_net_rect_map; }
-  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<RQShape*>, CmpLayerRectByLayerASC>>>& get_routing_net_shape_map()
+  std::map<irt_int, std::map<BaseInfo, std::set<LayerRect, CmpLayerRectByXASC>, CmpBaseInfo>>& get_cut_info_rect_map()
+  {
+    return _cut_info_rect_map;
+  }
+  //////////////////////////////////////////////////////////////////////////
+  /////////////////////////////// drc-check ////////////////////////////////
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<BaseShape*>, CmpLayerRectByLayerASC>>>& get_routing_net_shape_map()
   {
     return _routing_net_shape_map;
   }
-  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<RQShape*>, CmpLayerRectByLayerASC>>>& get_cut_net_shape_map()
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<BaseShape*>, CmpLayerRectByLayerASC>>>& get_cut_net_shape_map()
   {
     return _cut_net_shape_map;
   }
-  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>>& get_routing_region_map() { return _routing_region_map; }
-  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>>& get_cut_region_map() { return _cut_region_map; }
-  // setters
-  void set_idrc_region_query(void* idrc_region_query) { _idrc_region_query = idrc_region_query; }
-  // function
+  BaseRegion& get_base_region() { return _base_region; }
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, BaseShape*>, bgi::quadratic<16>>>& get_routing_region_map()
+  {
+    return _base_region.get_routing_region_map();
+  }
+  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, BaseShape*>, bgi::quadratic<16>>>& get_cut_region_map()
+  {
+    return _base_region.get_cut_region_map();
+  }
+  /////////////////////////////// drc-check ////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
 
  private:
-  void* _idrc_region_query = nullptr;
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> _routing_net_rect_map;  // layer-net-rect
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>> _cut_net_rect_map;      // layer-net-rect
-  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<RQShape*>, CmpLayerRectByLayerASC>>>
-      _routing_net_shape_map;  // layer-net-rect
-  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<RQShape*>, CmpLayerRectByLayerASC>>>
-      _cut_net_shape_map;  // layer-net-rect
-  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>> _routing_region_map;
-  std::map<irt_int, bgi::rtree<std::pair<BGRectInt, RQShape*>, bgi::quadratic<16>>> _cut_region_map;
+  std::map<irt_int, std::map<BaseInfo, std::set<LayerRect, CmpLayerRectByXASC>, CmpBaseInfo>> _routing_info_rect_map;
+  std::map<irt_int, std::map<BaseInfo, std::set<LayerRect, CmpLayerRectByXASC>, CmpBaseInfo>> _cut_info_rect_map;
+  //////////////////////////////////////////////////////////////////////////
+  /////////////////////////////// drc-check ////////////////////////////////
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<BaseShape*>, CmpLayerRectByLayerASC>>> _routing_net_shape_map;
+  std::map<irt_int, std::map<irt_int, std::map<LayerRect, std::vector<BaseShape*>, CmpLayerRectByLayerASC>>> _cut_net_shape_map;
+  BaseRegion _base_region;
+  /////////////////////////////// drc-check ////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
 };
 
 }  // namespace irt

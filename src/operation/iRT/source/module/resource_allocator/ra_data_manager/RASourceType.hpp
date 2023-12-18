@@ -32,27 +32,27 @@ enum class RASourceType
 
 struct GetRASourceTypeName
 {
-  std::string operator()(const RASourceType& gr_source_type) const
+  std::string operator()(const RASourceType& ra_source_type) const
   {
-    std::string gr_source_type_name;
-    switch (gr_source_type) {
+    std::string ra_source_type_name;
+    switch (ra_source_type) {
       case RASourceType::kNone:
-        gr_source_type_name = "none";
+        ra_source_type_name = "none";
         break;
       case RASourceType::kBlockage:
-        gr_source_type_name = "blockage";
+        ra_source_type_name = "blockage";
         break;
       case RASourceType::kNetShape:
-        gr_source_type_name = "net_shape";
+        ra_source_type_name = "net_shape";
         break;
       case RASourceType::kReservedVia:
-        gr_source_type_name = "reserved_via";
+        ra_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return gr_source_type_name;
+    return ra_source_type_name;
   }
 };
 

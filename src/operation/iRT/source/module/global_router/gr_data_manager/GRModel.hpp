@@ -21,6 +21,7 @@
 #include "GRNode.hpp"
 #include "GRTask.hpp"
 #include "GridMap.hpp"
+#include "PriorityQueue.hpp"
 
 namespace irt {
 
@@ -33,26 +34,23 @@ class GRModel
   std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<GRNet>& get_gr_net_list() { return _gr_net_list; }
   std::vector<std::vector<irt_int>>& get_net_order_list_list() { return _net_order_list_list; }
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_visited_grid_access_orien_map()
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& get_history_grid_access_orien_map()
   {
-    return _visited_grid_access_orien_map;
+    return _history_grid_access_orien_map;
   }
-  std::set<LayerCoord, CmpLayerCoordByXASC>& get_visited_grid_resource_set() { return _visited_grid_resource_set; }
+  std::set<LayerCoord, CmpLayerCoordByXASC>& get_ripup_grid_set() { return _ripup_grid_set; }
   GRModelStat& get_gr_model_stat() { return _gr_model_stat; }
   irt_int get_curr_iter() { return _curr_iter; }
   // setter
   void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_gr_net_list(const std::vector<GRNet>& gr_net_list) { _gr_net_list = gr_net_list; }
   void set_net_order_list_list(const std::vector<std::vector<irt_int>>& net_order_list_list) { _net_order_list_list = net_order_list_list; }
-  void set_visited_grid_access_orien_map(
-      const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& visited_grid_access_orien_map)
+  void set_history_grid_access_orien_map(
+      const std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC>& history_grid_access_orien_map)
   {
-    _visited_grid_access_orien_map = visited_grid_access_orien_map;
+    _history_grid_access_orien_map = history_grid_access_orien_map;
   }
-  void set_visited_grid_resource_set(const std::set<LayerCoord, CmpLayerCoordByXASC>& visited_grid_resource_set)
-  {
-    _visited_grid_resource_set = visited_grid_resource_set;
-  }
+  void set_ripup_grid_set(const std::set<LayerCoord, CmpLayerCoordByXASC>& ripup_grid_set) { _ripup_grid_set = ripup_grid_set; }
   void set_gr_model_stat(const GRModelStat& gr_model_stat) { _gr_model_stat = gr_model_stat; }
   void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
 #if 1  // astar
@@ -75,11 +73,11 @@ class GRModel
   void set_end_group_list(const std::vector<GRGroup>& end_group_list) { _end_group_list = end_group_list; }
   void set_path_group(const GRGroup& path_group) { _path_group = path_group; }
   // single path
-  std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& get_open_queue() { return _open_queue; }
+  PriorityQueue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<GRNode*>& get_visited_node_list() { return _visited_node_list; }
   GRNode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_group_idx() const { return _end_group_idx; }
-  void set_open_queue(const std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& open_queue) { _open_queue = open_queue; }
+  void set_open_queue(const PriorityQueue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_visited_node_list(const std::vector<GRNode*>& visited_node_list) { _visited_node_list = visited_node_list; }
   void set_path_head_node(GRNode* path_head_node) { _path_head_node = path_head_node; }
   void set_end_group_idx(const irt_int end_group_idx) { _end_group_idx = end_group_idx; }
@@ -93,11 +91,13 @@ class GRModel
    */
   std::vector<std::vector<irt_int>> _net_order_list_list;
   /**
-   * _visited_grid_access_orien_map 访问过的grid的access方向
-   * _visited_grid_resource_set 访问过的grid的resource方向
+   * 对_history_grid_access_orien_map内的方向加history_cost
    */
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _visited_grid_access_orien_map;
-  std::set<LayerCoord, CmpLayerCoordByXASC> _visited_grid_resource_set;
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> _history_grid_access_orien_map;
+  /**
+   * 对_ripup_grid_access_orien_map内通过的线网进行拆线
+   */
+  std::set<LayerCoord, CmpLayerCoordByXASC> _ripup_grid_set;
   GRModelStat _gr_model_stat;
   irt_int _curr_iter = -1;
 #if 1  // astar
@@ -111,7 +111,7 @@ class GRModel
   std::vector<GRGroup> _end_group_list;
   GRGroup _path_group;
   // single path
-  std::priority_queue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost> _open_queue;
+  PriorityQueue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost> _open_queue;
   std::vector<GRNode*> _visited_node_list;
   GRNode* _path_head_node = nullptr;
   irt_int _end_group_idx = -1;

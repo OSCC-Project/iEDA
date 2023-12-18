@@ -198,12 +198,12 @@ void EGRDataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
   // Artificial
   idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
   if (!idb_blockage_list->get_blockage_list().empty()) {
-    LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+    LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
   }
 
   // std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
 
-  // LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+  // LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
 
   // // Artificial
   // idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
@@ -304,6 +304,7 @@ void EGRDataManager::wrapNetList(idb::IdbBuilder* idb_builder)
       EGRNet egr_net;
       egr_net.set_net_name(idb_net->get_net_name());
       wrapPinList(egr_net, idb_net);
+      processEmptyShapePin(egr_net);
       wrapDrivingPin(egr_net, idb_net);
       egr_net_list.push_back(std::move(egr_net));
     }
@@ -378,6 +379,36 @@ void EGRDataManager::wrapPinShapeList(EGRPin& egr_pin, idb::IdbPin* idb_pin)
         routing_shape_list.push_back(std::move(pin_shape));
       }
     }
+  }
+}
+
+void EGRDataManager::processEmptyShapePin(EGRNet& net)
+{
+  std::vector<EGRPin>& pin_list = net.get_pin_list();
+
+  std::vector<irt_int> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
+  }
+
+  irt_int legal_pin_idx = -1;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      legal_pin_idx = i;
+      break;
+    }
+  }
+
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", net.get_net_name());
+  }
+
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
   }
 }
 
@@ -640,41 +671,10 @@ void EGRDataManager::buildBlockageList()
   }
 }
 
-void processPinList(EGRNet& egr_net)
-{
-  std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
-
-  std::vector<irt_int> empty_pin_idx_list;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    EGRPin& pin = pin_list[i];
-    if (pin.get_routing_shape_list().empty()) {
-      empty_pin_idx_list.push_back(i);
-    }
-  }
-
-  irt_int legal_pin_idx = -1;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    EGRPin& pin = pin_list[i];
-    if (!pin.get_routing_shape_list().empty()) {
-      legal_pin_idx = i;
-      break;
-    }
-  }
-
-  if (legal_pin_idx == -1) {
-    LOG_INST.error(Loc::current(), "There is no legal pin for net ", egr_net.get_net_name());
-  }
-
-  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
-    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
-  }
-}
-
 void EGRDataManager::buildNetList()
 {
   std::vector<EGRNet>& egr_net_list = _egr_database.get_egr_net_list();
   for (EGRNet& egr_net : egr_net_list) {
-    processPinList(egr_net);
     buildPinList(egr_net);
     buildDrivingPin(egr_net);
   }
@@ -699,8 +699,8 @@ void EGRDataManager::buildPinList(EGRNet& egr_net)
       new_rect.set_rt_x(std::min(new_rect.get_rt_x(), die_rt_x));
       new_rect.set_rt_y(std::min(new_rect.get_rt_y(), die_rt_y));
       if (real_rect != new_rect) {
-        LOG_INST.warning(Loc::current(), "Pin:", egr_pin.get_pin_name(), "(", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
-                         real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")", " is out of die");
+        LOG_INST.warn(Loc::current(), "Pin:", egr_pin.get_pin_name(), "(", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
+                      real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")", " is out of die");
         real_rect = new_rect;
       }
 

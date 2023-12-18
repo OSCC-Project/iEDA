@@ -29,17 +29,21 @@ class CutLayer
   irt_int get_layer_idx() const { return _layer_idx; }
   irt_int get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
+  irt_int get_spacing() const { return _spacing; }
   // setter
   void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const irt_int layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
+  void set_spacing(const irt_int spacing) { _spacing = spacing; }
   // function
-  irt_int getMinSpacing() { return 0; }
+  irt_int getMinSpacing(const PlanarRect& rect) { return _spacing; }
+  irt_int getMaxSpacing(const PlanarRect& rect) { return _spacing; }
 
  private:
   irt_int _layer_idx = -1;
   irt_int _layer_order = -1;
   std::string _layer_name;
+  irt_int _spacing = -1;
 };
 
 }  // namespace irt

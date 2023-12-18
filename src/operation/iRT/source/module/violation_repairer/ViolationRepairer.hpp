@@ -18,7 +18,7 @@
 
 #include "Config.hpp"
 #include "DRCChecker.hpp"
-#include "DRCRect.hpp"
+#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -57,19 +57,18 @@ class ViolationRepairer
   VRNet convertToVRNet(Net& net);
   void buildVRModel(VRModel& vr_model);
   void updateBlockageMap(VRModel& vr_model);
-  void addRectToEnv(VRModel& vr_model, VRSourceType vr_source_type, DRCRect drc_rect);
   void updateNetShapeMap(VRModel& vr_model);
   void calcVRGCellSupply(VRModel& vr_model);
   std::vector<PlanarRect> getWireList(VRGCell& vr_gcell, RoutingLayer& routing_layer);
   void updateVRResultTree(VRModel& vr_model);
   void buildKeyCoordPinMap(VRNet& vr_net);
   void buildCoordTree(VRNet& vr_net);
-  void buildPHYNodeResult(VRNet& vr_net);
-  void updateConnectionList(TNode<LayerCoord>* coord_node, VRNet& vr_net, std::vector<TNode<PHYNode>*>& pre_connection_list,
-                            std::vector<TNode<PHYNode>*>& post_connection_list);
-  TNode<PHYNode>* makeWirePHYNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
-  TNode<PHYNode>* makeViaPHYNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
-  TNode<PHYNode>* makePinPHYNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
+  void buildPhysicalNodeResult(VRNet& vr_net);
+  void updateConnectionList(TNode<LayerCoord>* coord_node, VRNet& vr_net, std::vector<TNode<PhysicalNode>*>& pre_connection_list,
+                            std::vector<TNode<PhysicalNode>*>& post_connection_list);
+  TNode<PhysicalNode>* makeWirePhysicalNode(VRNet& vr_net, LayerCoord first_coord, LayerCoord second_coord);
+  TNode<PhysicalNode>* makeViaPhysicalNode(VRNet& vr_net, irt_int below_layer_idx, PlanarCoord coord);
+  TNode<PhysicalNode>* makePinPhysicalNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord);
   void checkVRModel(VRModel& vr_model);
 #endif
 
@@ -92,15 +91,30 @@ class ViolationRepairer
   void update(VRModel& vr_model);
 #endif
 
+#if 1  // update env
+  std::vector<DRCShape> getDRCShapeList(irt_int vr_net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<DRCShape> getDRCShapeList(irt_int vr_net_idx, MTree<PhysicalNode>& physical_node_tree);
+  void updateRectToUnit(VRModel& vr_model, ChangeType change_type, VRSourceType vr_source_type, DRCShape drc_shape);
+#endif
+
 #if 1  // valid drc
-  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const DRCRect& drc_rect);
-  bool hasViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getVRViolationInfo(VRGCell& vr_gcell, VRSourceType vr_source_type,
-                                                                       const std::vector<DRCCheckType>& check_type_list,
-                                                                       const std::vector<DRCRect>& drc_rect_list);
-  void removeInvalidVRViolationInfo(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  bool hasVREnvViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                         const DRCShape& drc_shape);
+  bool hasVREnvViolation(VRModel& vr_model, VRSourceType vr_source_type, const std::vector<DRCCheckType>& check_type_list,
+                         const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVREnvViolation(VRModel& vr_model, VRSourceType vr_source_type,
+                                                                      const std::vector<DRCCheckType>& check_type_list,
+                                                                      const DRCShape& drc_shape);
+  std::map<std::string, std::vector<ViolationInfo>> getVREnvViolation(VRModel& vr_model, VRSourceType vr_source_type,
+                                                                      const std::vector<DRCCheckType>& check_type_list,
+                                                                      const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getVREnvViolationBySingle(VRGCell& vr_gcell, VRSourceType vr_source_type,
+                                                                              const std::vector<DRCCheckType>& check_type_list,
+                                                                              const std::vector<DRCShape>& drc_shape_list);
+  void removeInvalidVREnvViolationBySingle(VRGCell& vr_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  std::map<std::string, std::vector<ViolationInfo>> getVRSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
+                                                                           const std::vector<DRCShape>& drc_shape_list);
+  void removeInvalidVRSelfViolationInfo(std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

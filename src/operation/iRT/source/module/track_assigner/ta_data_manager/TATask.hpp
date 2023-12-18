@@ -18,7 +18,7 @@
 
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "RTNode.hpp"
+#include "GuideSeg.hpp"
 #include "RoutingState.hpp"
 #include "TAGroup.hpp"
 
@@ -31,7 +31,7 @@ class TATask
   ~TATask() = default;
   // getter
   irt_int get_origin_net_idx() { return _origin_net_idx; }
-  TNode<RTNode>* get_origin_node() { return _origin_node; }
+  TNode<GuideSeg>* get_origin_node() { return _origin_node; }
   irt_int get_task_idx() { return _task_idx; }
   ConnectType get_connect_type() const { return _connect_type; }
   std::vector<TAGroup>& get_ta_group_list() { return _ta_group_list; }
@@ -41,7 +41,7 @@ class TATask
   MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
   // setter
   void set_origin_net_idx(const irt_int origin_net_idx) { _origin_net_idx = origin_net_idx; }
-  void set_origin_node(TNode<RTNode>* origin_node) { _origin_node = origin_node; }
+  void set_origin_node(TNode<GuideSeg>* origin_node) { _origin_node = origin_node; }
   void set_task_idx(const irt_int task_idx) { _task_idx = task_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_ta_group_list(const std::vector<TAGroup>& ta_group_list) { _ta_group_list = ta_group_list; }
@@ -53,7 +53,7 @@ class TATask
 
  private:
   irt_int _origin_net_idx = -1;
-  TNode<RTNode>* _origin_node = nullptr;
+  TNode<GuideSeg>* _origin_node = nullptr;
   irt_int _task_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<TAGroup> _ta_group_list;

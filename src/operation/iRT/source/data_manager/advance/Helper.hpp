@@ -47,7 +47,7 @@ class Helper
   inline irt_int getRoutingLayerIdxByName(const std::string& routing_layer_name);
   inline irt_int getCutLayerIdxByName(const std::string& cut_layer_name);
   inline ViaMasterIdx getRTViaMasterIdxByName(const std::string& via_name);
-  inline std::vector<irt_int> getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx);
+  inline std::vector<irt_int> getAdjacentRoutingLayerIdxList(const irt_int cut_layer_idx);
 
  private:
   std::string _design_name;
@@ -116,7 +116,7 @@ inline ViaMasterIdx Helper::getRTViaMasterIdxByName(const std::string& via_name)
   return via_master_idx;
 }
 
-inline std::vector<irt_int> Helper::getAdjacentRoutingLayerIdx(const irt_int cut_layer_idx)
+inline std::vector<irt_int> Helper::getAdjacentRoutingLayerIdxList(const irt_int cut_layer_idx)
 {
   std::vector<irt_int> adjacent_routing_layer_idx;
   if (RTUtil::exist(_cut_to_adjacent_routing_map, cut_layer_idx)) {

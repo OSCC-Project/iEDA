@@ -19,6 +19,7 @@
 #include "Blockage.hpp"
 #include "CutLayer.hpp"
 #include "Die.hpp"
+#include "GCell.hpp"
 #include "Helper.hpp"
 #include "Net.hpp"
 #include "RoutingLayer.hpp"
@@ -41,6 +42,7 @@ class Database
   std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
   std::vector<Blockage>& get_cut_blockage_list() { return _cut_blockage_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
+  GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   // setter
   void set_micron_dbu(const irt_int micron_dbu) { _micron_dbu = micron_dbu; }
   // function
@@ -55,6 +57,7 @@ class Database
   std::vector<Blockage> _routing_blockage_list;
   std::vector<Blockage> _cut_blockage_list;
   std::vector<Net> _net_list;
+  GridMap<GCell> _gcell_map;
 };
 
 }  // namespace irt

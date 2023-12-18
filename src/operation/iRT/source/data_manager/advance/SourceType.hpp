@@ -22,33 +22,45 @@
 
 namespace irt {
 
-enum class DRTaskType
+enum class SourceType
 {
   kNone,
-  kPanel,
-  kBox
+  kBlockAndPin,
+  kAccessPoint,
+  kRoutingResult,
+  kDRCShape,
+  kPatchShape
 };
 
-struct GetDRTaskTypeName
+struct GetSourceTypeName
 {
-  std::string operator()(const DRTaskType& dr_source_type) const
+  std::string operator()(const SourceType& source_type) const
   {
-    std::string dr_source_type_name;
-    switch (dr_source_type) {
-      case DRTaskType::kNone:
-        dr_source_type_name = "none";
+    std::string source_type_name;
+    switch (source_type) {
+      case SourceType::kNone:
+        source_type_name = "none";
         break;
-      case DRTaskType::kPanel:
-        dr_source_type_name = "panel";
+      case SourceType::kBlockAndPin:
+        source_type_name = "block_and_pin";
         break;
-      case DRTaskType::kBox:
-        dr_source_type_name = "box";
+      case SourceType::kAccessPoint:
+        source_type_name = "access_point";
+        break;
+      case SourceType::kRoutingResult:
+        source_type_name = "routing_result";
+        break;
+      case SourceType::kDRCShape:
+        source_type_name = "drc_shape";
+        break;
+      case SourceType::kPatchShape:
+        source_type_name = "patch_shape";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return dr_source_type_name;
+    return source_type_name;
   }
 };
 

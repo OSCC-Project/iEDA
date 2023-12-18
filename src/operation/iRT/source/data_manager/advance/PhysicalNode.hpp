@@ -24,21 +24,21 @@
 
 namespace irt {
 
-class PHYNode
+class PhysicalNode
 {
  public:
-  PHYNode() = default;
-  PHYNode(const PHYNode& other) { copy(other); }
-  PHYNode(PHYNode&& other) { move(std::forward<PHYNode>(other)); }
-  ~PHYNode() { free(); }
-  PHYNode& operator=(const PHYNode& other)
+  PhysicalNode() = default;
+  PhysicalNode(const PhysicalNode& other) { copy(other); }
+  PhysicalNode(PhysicalNode&& other) { move(std::forward<PhysicalNode>(other)); }
+  ~PhysicalNode() { free(); }
+  PhysicalNode& operator=(const PhysicalNode& other)
   {
     copy(other);
     return (*this);
   }
-  PHYNode& operator=(PHYNode&& other)
+  PhysicalNode& operator=(PhysicalNode&& other)
   {
-    move(std::forward<PHYNode>(other));
+    move(std::forward<PhysicalNode>(other));
     return (*this);
   }
   // function
@@ -48,7 +48,7 @@ class PHYNode
     if (std::holds_alternative<std::monostate>(_data_node)) {
       _data_node = new T();
     } else if (!std::holds_alternative<T*>(_data_node)) {
-      LOG_INST.error(Loc::current(), "The phy data_node is not the expected type!");
+      LOG_INST.error(Loc::current(), "The physical_node is not the expected type!");
       exit(1);
     }
     return *std::get<T*>(_data_node);
@@ -66,13 +66,13 @@ class PHYNode
   std::variant<std::monostate, PinNode*, WireNode*, ViaNode*, PatchNode*> _data_node;
 
   // function
-  void copy(const PHYNode& other)
+  void copy(const PhysicalNode& other)
   {
     freeDataNode();
     copyDataNode(other);
   }
 
-  void copyDataNode(const PHYNode& other)
+  void copyDataNode(const PhysicalNode& other)
   {
     std::visit(Overload{[&](std::monostate other_data_node) { _data_node = other_data_node; },
                         [&](PinNode* other_data_node) { _data_node = new PinNode(*other_data_node); },
@@ -82,7 +82,7 @@ class PHYNode
                other._data_node);
   }
 
-  void move(PHYNode&& other)
+  void move(PhysicalNode&& other)
   {
     _data_node = other._data_node;
     other._data_node = std::monostate();

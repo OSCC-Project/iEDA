@@ -16,39 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
+#include "Guide.hpp"
 #include "LayerRect.hpp"
-#include "RTU.hpp"
-#include "RTUtil.hpp"
+#include "MTree.hpp"
+#include "PhysicalNode.hpp"
+#include "Segment.hpp"
 
 namespace irt {
 
-class DRCRect
+class GuideSeg : public Segment<Guide>
 {
  public:
-  DRCRect() = default;
-  DRCRect(irt_int net_idx, const LayerRect& layer_rect, bool is_routing)
-  {
-    _net_idx = net_idx;
-    _layer_rect = layer_rect;
-    _is_routing = is_routing;
-  }
-  ~DRCRect() = default;
+  GuideSeg() = default;
+  ~GuideSeg() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  LayerRect& get_layer_rect() { return _layer_rect; }
-  const LayerRect& get_layer_rect() const { return _layer_rect; }
-  irt_int get_layer_idx() const { return _layer_rect.get_layer_idx(); }
-  bool get_is_routing() const { return _is_routing; }
+  std::set<irt_int>& get_pin_idx_set() { return _pin_idx_set; }
+  MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_layer_rect(const LayerRect& layer_rect) { _layer_rect = layer_rect; }
-  void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
+  void set_pin_idx_set(const std::set<irt_int>& pin_idx_set) { _pin_idx_set = pin_idx_set; }
+  void set_routing_tree(const MTree<LayerCoord>& routing_tree) { _routing_tree = routing_tree; }
   // function
+  bool toTA() { return get_first().get_grid_coord().get_planar_coord() != get_second().get_grid_coord().get_planar_coord(); }
+  bool toDR() { return !toTA(); }
 
  private:
-  irt_int _net_idx = -1;
-  LayerRect _layer_rect;
-  bool _is_routing = true;
+  std::set<irt_int> _pin_idx_set;
+  MTree<LayerCoord> _routing_tree;
 };
 
 }  // namespace irt

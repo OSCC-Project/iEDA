@@ -18,6 +18,7 @@
 
 #include "DRCChecker.hpp"
 #include "LayerRect.hpp"
+#include "PriorityQueue.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RegionQuery.hpp"
@@ -40,7 +41,6 @@ class TAPanel : public LayerRect
   ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
   std::map<TASourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   std::vector<TATask>& get_ta_task_list() { return _ta_task_list; }
-  std::map<irt_int, std::vector<irt_int>>& get_net_task_map() { return _net_task_map; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
   std::vector<std::vector<irt_int>>& get_task_order_list_list() { return _task_order_list_list; }
   TAPanelStat& get_ta_panel_stat() { return _ta_panel_stat; }
@@ -53,7 +53,6 @@ class TAPanel : public LayerRect
     _source_region_query_map = source_region_query_map;
   }
   void set_ta_task_list(const std::vector<TATask>& ta_task_list) { _ta_task_list = ta_task_list; }
-  void set_net_task_map(const std::map<irt_int, std::vector<irt_int>>& net_task_map) { _net_task_map = net_task_map; }
   void set_ta_node_map(const GridMap<TANode>& ta_node_map) { _ta_node_map = ta_node_map; }
   void set_task_order_list_list(const std::vector<std::vector<irt_int>>& task_order_list_list)
   {
@@ -94,11 +93,11 @@ class TAPanel : public LayerRect
     _routing_segment_list = routing_segment_list;
   }
   // single path
-  std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
+  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   TANode* get_path_head_node() { return _path_head_node; }
   irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
-  void set_open_queue(const std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
+  void set_open_queue(const PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<TANode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
@@ -112,7 +111,6 @@ class TAPanel : public LayerRect
   ScaleAxis _panel_track_axis;
   std::map<TASourceType, RegionQuery> _source_region_query_map;
   std::vector<TATask> _ta_task_list;
-  std::map<irt_int, std::vector<irt_int>> _net_task_map;
   GridMap<TANode> _ta_node_map;
   /**
    * _task_order_list_list.back()作为即将要跑的序
@@ -131,7 +129,7 @@ class TAPanel : public LayerRect
   std::vector<TANode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  std::priority_queue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
+  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
   std::vector<TANode*> _single_path_visited_node_list;
   TANode* _path_head_node = nullptr;
   irt_int _end_node_comb_idx = -1;

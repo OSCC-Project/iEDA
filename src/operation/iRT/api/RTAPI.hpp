@@ -22,6 +22,10 @@
 #include <string>
 #include <vector>
 
+#include "../../../database/interaction/RT_DRC/BaseRegion.hpp"
+#include "../../../database/interaction/RT_DRC/BaseShape.hpp"
+#include "../../../database/interaction/RT_DRC/BaseViolationInfo.hpp"
+#include "../../../database/interaction/RT_DRC/DRCCheckType.hpp"
 #include "../../../database/interaction/ids.hpp"
 
 namespace irt {
@@ -58,30 +62,34 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  void* initRegionQuery();
-  void destroyRegionQuery(void* region_query);
-  void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  void delEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  bool hasViolation(void* region_query, const ids::DRCRect& drc_rect);
-  bool hasViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  std::map<std::string, int> getViolation(void* region_query);
-  std::map<std::string, int> getViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
-  std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
-  LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
-  // void plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-
-  // CTS
-  std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
+  /**
+   * drc_shape_list在region_query的环境里产生的违例信息，如spacing
+   * 关注于非同net之间的违例
+   */
+  std::map<std::string, std::vector<BaseViolationInfo>> getEnvViolationInfo(BaseRegion& base_region,
+                                                                            const std::vector<DRCCheckType>& check_type_list,
+                                                                            const std::vector<BaseShape>& drc_shape_list)
+  {
+    std::map<std::string, std::vector<BaseViolationInfo>> result;
+    return result;
+  }
+  /**
+   * drc_shape_list组成的自身违例信息，如min_area,min_step
+   * 关注于net内的违例
+   */
+  std::map<std::string, std::vector<BaseViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
+                                                                             const std::vector<BaseShape>& drc_shape_list)
+  {
+    std::map<std::string, std::vector<BaseViolationInfo>> result;
+    return result;
+  }
 
   // STA
   void reportGRTiming();
   void reportDRTiming();
+
+  // other
+  void runOther();
 
  private:
   static RTAPI* _rt_api_instance;

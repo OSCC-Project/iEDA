@@ -1,0 +1,35 @@
+initDRModel:初始化dr_net
+addAccessPointToGCellMap:向GCellMap中添加ap（后续可放到pa阶段
+addTAResultToGCellMap:向GCellMap中添加ta结果（后续可放到ta阶段
+iterativeDRModel:迭代DRModel
+    initDRBoxMap:构建DRBox框架，里面主要数据为空
+    buildDRBoxMap:
+        buildBoxTrackAxis:构建Box的trackaxis，主要由于splitNetResult函数依赖此数据
+        splitNetResult:以Box为单位拆解布线结果（不包含patch
+    buildBoxSchedule:构建Box布线的调度表
+    routeDRBoxMap:
+        initDRTaskSet:构建DRTask
+        buildDRTaskSet:将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
+        buildViolationList:构建此Box的ViolationList，将GCellMap中的Violation（Violation完全在Box内）拷贝到DRBox内，并且在GCellMap中移除
+        initLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
+        buildNeighborMap:构建Node之间的邻居关系
+        buildOrienNetMap:构建Graph的cost，Fix_rect（与此Box覆盖）从GCellMap中得到，segment+patch从DRTask下得到，Violation从DRBox下得到
+        checkDRBox:检查之前构建的信息是否有问题
+        routeDRBox:
+            initTaskSchedule:初始化task布线调度表
+                routeDRTask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果
+                processDRTask:给task进行后处理，在此函数末尾，patch结果从graph中删除，再加入新的结果
+            updateViolationList:首先通过idrc得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
+            getTaskScheduleByViolation:通过Violation得到新的布线结果
+        updateDRTaskToGcellMap:将布线结果和patch加入gcell_map,不需要将之前的结果删除
+        updateViolationToGcellMap:将Violation和patch加入gcell_map,不需要将之前的结果删除
+        freeDRBox:析构
+
+
+
+
+
+
+
+
+

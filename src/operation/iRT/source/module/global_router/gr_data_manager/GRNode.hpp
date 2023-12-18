@@ -128,17 +128,15 @@ class GRNode : public LayerCoord
       if (RTUtil::exist(_orien_access_supply_map, orientation)) {
         node_access_supply = _orien_access_supply_map[orientation];
       }
-      // 放大，统一access和wire的cost
-      irt_int converted_demand = (net_access_demand + node_access_demand) * (_cross_wire_demand / 2);
-      irt_int converted_supply = node_access_supply * (_cross_wire_demand / 2);
-      cost += RTUtil::calcCost(converted_demand, converted_supply);
+      cost += calcCost(net_access_demand + node_access_demand, node_access_supply);
       if (RTUtil::exist(_history_orien_access_cost_map, orientation)) {
         cost += _history_orien_access_cost_map[orientation];
       }
     }
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
       // 在计算cost时，无法看到后续布线结果，所有demand都使用_cross_wire_demand
-      cost += RTUtil::calcCost(_cross_wire_demand + _resource_demand, _resource_supply);
+      // !需要分子分母除以（_cross_wire_demand），统一与access的单位
+      cost += calcCost((_cross_wire_demand + _resource_demand) / 1.0 / _cross_wire_demand, _resource_supply / 1.0 / _cross_wire_demand);
       cost += _history_resource_cost;
     } else {
       irt_int net_via_demand = _whole_via_demand;
@@ -146,8 +144,21 @@ class GRNode : public LayerCoord
       if (RTUtil::exist(_net_via_demand_map, net_idx)) {
         net_via_demand = _net_via_demand_map[net_idx];
       }
-      cost += RTUtil::calcCost(net_via_demand + _resource_demand, _resource_supply);
+      // !需要分子分母除以（_cross_wire_demand），统一与access的单位
+      cost += calcCost((net_via_demand + _resource_demand) / 1.0 / _cross_wire_demand, _resource_supply / 1.0 / _cross_wire_demand);
       cost += _history_resource_cost;
+    }
+    return cost;
+  }
+  double calcCost(double demand, double supply)
+  {
+    double cost = 0;
+    if (demand == supply) {
+      cost = 1;
+    } else if (demand > supply) {
+      cost = std::pow(demand - supply + 1, 2);
+    } else if (demand < supply) {
+      cost = std::pow(demand / supply, 2);
     }
     return cost;
   }

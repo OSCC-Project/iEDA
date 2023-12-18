@@ -47,7 +47,8 @@ namespace fort {
 /**
  * Alignment of cell content.
  */
-enum class text_align {
+enum class text_align
+{
   left = FT_ALIGNED_LEFT,
   center = FT_ALIGNED_CENTER,
   right = FT_ALIGNED_RIGHT
@@ -56,7 +57,11 @@ enum class text_align {
 /**
  * Type of table row. Determines appearance of row.
  */
-enum class row_type { common = FT_ROW_COMMON, header = FT_ROW_HEADER };
+enum class row_type
+{
+  common = FT_ROW_COMMON,
+  header = FT_ROW_HEADER
+};
 
 /**
  * Adding strategy.
@@ -64,7 +69,8 @@ enum class row_type { common = FT_ROW_COMMON, header = FT_ROW_HEADER };
  * Determines what happens with old content if current cell is not empty after
  * adding data to it. Default strategy is 'replace'.
  */
-enum class add_strategy {
+enum class add_strategy
+{
   replace = FT_STRATEGY_REPLACE,
   insert = FT_STRATEGY_INSERT
 };
@@ -72,7 +78,8 @@ enum class add_strategy {
 /**
  * Colors.
  */
-enum class color {
+enum class color
+{
   default_color = FT_COLOR_DEFAULT,
   black = FT_COLOR_BLACK,
   red = FT_COLOR_RED,
@@ -95,7 +102,8 @@ enum class color {
 /**
  * Text styles.
  */
-enum class text_style {
+enum class text_style
+{
   default_style = FT_TSTYLE_DEFAULT,
   bold = FT_TSTYLE_BOLD,
   dim = FT_TSTYLE_DIM,
@@ -106,7 +114,8 @@ enum class text_style {
   hidden = FT_TSTYLE_HIDDEN
 };
 
-enum class table_type {
+enum class table_type
+{
   character,
 #ifdef FT_HAVE_UTF8
   utf8
@@ -119,7 +128,8 @@ enum class table_type {
  * Table manipulators can be used to change current cell and change appearance
  * of cells.
  */
-class table_manipulator {
+class table_manipulator
+{
  public:
   explicit table_manipulator(int i) : value(i) {}
   template <table_type TT>
@@ -147,30 +157,21 @@ const table_manipulator separator(2);
 // Utility functions for internal library usage.
 namespace detail {
 template <typename T>
-constexpr bool is_stream_manipulator_impl() noexcept {
+constexpr bool is_stream_manipulator_impl() noexcept
+{
   using Tdec = typename std::decay<T>::type;
   // Manipulators for integral types
-  return std::is_same<Tdec,
-                      typename std::decay<decltype(std::dec)>::type>::value ||
-         std::is_same<Tdec,
-                      typename std::decay<decltype(std::hex)>::type>::value ||
-         std::is_same<Tdec,
-                      typename std::decay<decltype(std::oct)>::type>::value
+  return std::is_same<Tdec, typename std::decay<decltype(std::dec)>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::hex)>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::oct)>::type>::value
          // Floating-point manipulators
-         ||
-         std::is_same<Tdec,
-                      typename std::decay<decltype(std::fixed)>::type>::value ||
-         std::is_same<
-             Tdec, typename std::decay<decltype(std::scientific)>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::fixed)>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::scientific)>::type>::value
          // Misc
-         || std::is_same<Tdec, typename std::decay<decltype(
-                                   std::setbase(0))>::type>::value ||
-         std::is_same<Tdec, typename std::decay<decltype(
-                                std::setfill('\0'))>::type>::value ||
-         std::is_same<Tdec, typename std::decay<decltype(
-                                std::setprecision(0))>::type>::value ||
-         std::is_same<Tdec,
-                      typename std::decay<decltype(std::setw(0))>::type>::value;
+         || std::is_same<Tdec, typename std::decay<decltype(std::setbase(0))>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::setfill('\0'))>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::setprecision(0))>::type>::value
+         || std::is_same<Tdec, typename std::decay<decltype(std::setw(0))>::type>::value;
 }
 }  // namespace detail
 
@@ -180,7 +181,8 @@ constexpr bool is_stream_manipulator_impl() noexcept {
  * enough write custom specialization of this function.
  */
 template <typename T>
-constexpr bool is_stream_manipulator() noexcept {
+constexpr bool is_stream_manipulator() noexcept
+{
   return detail::is_stream_manipulator_impl<T>();
 }
 
@@ -191,14 +193,13 @@ constexpr bool is_stream_manipulator() noexcept {
  * which user can specify properties.
  */
 template <typename table>
-class property_owner {
+class property_owner
+{
  public:
-  property_owner(std::size_t row_idx, std::size_t coll_idx, table *tbl,
-                 bool def = false)
-      : ps_row_idx_(row_idx),
-        ps_coll_idx_(coll_idx),
-        ps_table_(tbl),
-        set_default_properties_(def) {}
+  property_owner(std::size_t row_idx, std::size_t coll_idx, table* tbl, bool def = false)
+      : ps_row_idx_(row_idx), ps_coll_idx_(coll_idx), ps_table_(tbl), set_default_properties_(def)
+  {
+  }
   virtual ~property_owner() = default;
 
   /**
@@ -210,9 +211,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error
    */
-  bool set_cell_min_width(unsigned value) {
-    return set_property(FT_CPROP_MIN_WIDTH, value);
-  }
+  bool set_cell_min_width(unsigned value) { return set_property(FT_CPROP_MIN_WIDTH, value); }
 
   /**
    * Set text alignment for the specified cell of the table.
@@ -223,9 +222,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error
    */
-  bool set_cell_text_align(fort::text_align value) {
-    return set_property(FT_CPROP_TEXT_ALIGN, static_cast<int>(value));
-  }
+  bool set_cell_text_align(fort::text_align value) { return set_property(FT_CPROP_TEXT_ALIGN, static_cast<int>(value)); }
 
   /**
    * Set top padding for the specified cell of the table.
@@ -236,9 +233,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_top_padding(unsigned value) {
-    return set_property(FT_CPROP_TOP_PADDING, value);
-  }
+  bool set_cell_top_padding(unsigned value) { return set_property(FT_CPROP_TOP_PADDING, value); }
 
   /**
    * Set bottom padding for the specified cell of the table.
@@ -249,9 +244,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_bottom_padding(unsigned value) {
-    return set_property(FT_CPROP_BOTTOM_PADDING, value);
-  }
+  bool set_cell_bottom_padding(unsigned value) { return set_property(FT_CPROP_BOTTOM_PADDING, value); }
 
   /**
    * Set left padding for the specified cell of the table.
@@ -262,9 +255,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_left_padding(unsigned value) {
-    return set_property(FT_CPROP_LEFT_PADDING, value);
-  }
+  bool set_cell_left_padding(unsigned value) { return set_property(FT_CPROP_LEFT_PADDING, value); }
 
   /**
    * Set right padding for the specified cell of the table.
@@ -275,9 +266,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_right_padding(unsigned value) {
-    return set_property(FT_CPROP_RIGHT_PADDING, value);
-  }
+  bool set_cell_right_padding(unsigned value) { return set_property(FT_CPROP_RIGHT_PADDING, value); }
 
   /**
    * Set row type for the specified cell of the table.
@@ -288,9 +277,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_row_type(fort::row_type value) {
-    return set_property(FT_CPROP_ROW_TYPE, static_cast<int>(value));
-  }
+  bool set_cell_row_type(fort::row_type value) { return set_property(FT_CPROP_ROW_TYPE, static_cast<int>(value)); }
 
   /**
    * Set empty string height for the specified cell of the table.
@@ -301,9 +288,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_empty_str_height(unsigned value) {
-    return set_property(FT_CPROP_EMPTY_STR_HEIGHT, value);
-  }
+  bool set_cell_empty_str_height(unsigned value) { return set_property(FT_CPROP_EMPTY_STR_HEIGHT, value); }
 
   /**
    * Set content foreground color for the specified cell of the table.
@@ -314,9 +299,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_content_fg_color(fort::color value) {
-    return set_property(FT_CPROP_CONT_FG_COLOR, static_cast<int>(value));
-  }
+  bool set_cell_content_fg_color(fort::color value) { return set_property(FT_CPROP_CONT_FG_COLOR, static_cast<int>(value)); }
 
   /**
    * Set cell background color for the specified cell of the table.
@@ -327,9 +310,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_bg_color(fort::color value) {
-    return set_property(FT_CPROP_CELL_BG_COLOR, static_cast<int>(value));
-  }
+  bool set_cell_bg_color(fort::color value) { return set_property(FT_CPROP_CELL_BG_COLOR, static_cast<int>(value)); }
 
   /**
    * Set content background color for the specified cell of the table.
@@ -340,9 +321,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_content_bg_color(fort::color value) {
-    return set_property(FT_CPROP_CONT_BG_COLOR, static_cast<int>(value));
-  }
+  bool set_cell_content_bg_color(fort::color value) { return set_property(FT_CPROP_CONT_BG_COLOR, static_cast<int>(value)); }
 
   /**
    * Set cell text style for the specified cell of the table.
@@ -353,9 +332,7 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_text_style(fort::text_style value) {
-    return set_property(FT_CPROP_CELL_TEXT_STYLE, static_cast<int>(value));
-  }
+  bool set_cell_text_style(fort::text_style value) { return set_property(FT_CPROP_CELL_TEXT_STYLE, static_cast<int>(value)); }
 
   /**
    * Set content text style for the specified cell of the table.
@@ -366,23 +343,21 @@ class property_owner {
    *   - true: Success; cell property was changed.
    *   - false: In case of error.
    */
-  bool set_cell_content_text_style(fort::text_style value) {
-    return set_property(FT_CPROP_CONT_TEXT_STYLE, static_cast<int>(value));
-  }
+  bool set_cell_content_text_style(fort::text_style value) { return set_property(FT_CPROP_CONT_TEXT_STYLE, static_cast<int>(value)); }
 
  protected:
   std::size_t ps_row_idx_;
   std::size_t ps_coll_idx_;
-  table *ps_table_;
+  table* ps_table_;
   bool set_default_properties_;
 
-  bool set_property(uint32_t property, int value) {
+  bool set_property(uint32_t property, int value)
+  {
     int status;
     if (set_default_properties_) {
       status = ft_set_default_cell_prop(property, value);
     } else {
-      status = ft_set_cell_prop(ps_table_->table_, ps_row_idx_, ps_coll_idx_,
-                                property, value);
+      status = ft_set_cell_prop(ps_table_->table_, ps_row_idx_, ps_coll_idx_, property, value);
     }
     return FT_IS_SUCCESS(status);
   }
@@ -396,7 +371,8 @@ class property_owner {
  * template class are {@link char_table} and {@link utf8_table}.
  */
 template <table_type TT = table_type::character>
-class table : public property_owner<table<TT>> {
+class table : public property_owner<table<TT>>
+{
   /**
    *  Utility types.
    */
@@ -407,10 +383,10 @@ class table : public property_owner<table<TT>> {
   /**
    * Default constructor.
    */
-  table()
-      : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this),
-        table_(ft_create_table()) {
-    if (table_ == NULL) throw std::bad_alloc();
+  table() : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this), table_(ft_create_table())
+  {
+    if (table_ == NULL)
+      throw std::bad_alloc();
   }
 
   /**
@@ -421,10 +397,10 @@ class table : public property_owner<table<TT>> {
   /**
    * Copy contstructor.
    */
-  table(const table &tbl)
-      : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this), table_(NULL) {
+  table(const table& tbl) : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this), table_(NULL)
+  {
     if (tbl.table_) {
-      ft_table_t *table_copy = ft_copy_table(tbl.table_);
+      ft_table_t* table_copy = ft_copy_table(tbl.table_);
       if (table_copy == NULL)
         throw std::runtime_error("Error during table copy");
 
@@ -439,8 +415,8 @@ class table : public property_owner<table<TT>> {
   /**
    * Move contstructor.
    */
-  table(table &&tbl)
-      : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this), table_(tbl.table_) {
+  table(table&& tbl) : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, this), table_(tbl.table_)
+  {
     if (tbl.stream_.tellp() >= 0) {
       stream_ << tbl.stream_.str();
       tbl.stream_.str(std::string());
@@ -451,11 +427,13 @@ class table : public property_owner<table<TT>> {
   /**
    * Copy assignment operator.
    */
-  table &operator=(const table &tbl) {
-    if (&tbl == this) return *this;
+  table& operator=(const table& tbl)
+  {
+    if (&tbl == this)
+      return *this;
 
     if (tbl.table_) {
-      ft_table_t *table_copy = ft_copy_table(tbl.table_);
+      ft_table_t* table_copy = ft_copy_table(tbl.table_);
       if (table_copy == NULL)
         throw std::runtime_error("Error during table copy");
 
@@ -472,8 +450,10 @@ class table : public property_owner<table<TT>> {
   /**
    * Move assignment operator.
    */
-  table &operator=(table &&tbl) {
-    if (&tbl == this) return *this;
+  table& operator=(table&& tbl)
+  {
+    if (&tbl == this)
+      return *this;
 
     if (tbl.table_) {
       stream_.str(std::string());
@@ -495,8 +475,9 @@ class table : public property_owner<table<TT>> {
    *   - String representation of formatted table, on success.
    *   - In case of error std::runtime_error is thrown.
    */
-  std::string to_string() const {
-    const char *str = c_str();
+  std::string to_string() const
+  {
+    const char* str = c_str();
     if (str == NULL)
       throw std::runtime_error("Error during table to string conversion");
     return str;
@@ -518,10 +499,10 @@ class table : public property_owner<table<TT>> {
    * success.
    *   - NULL on error.
    */
-  const char *c_str() const {
+  const char* c_str() const
+  {
 #ifdef FT_HAVE_UTF8
-    return (TT == table_type::character) ? ft_to_string(table_)
-                                         : (const char *)ft_to_u8string(table_);
+    return (TT == table_type::character) ? ft_to_string(table_) : (const char*) ft_to_u8string(table_);
 #else
     return ft_to_string(table_);
 #endif
@@ -539,16 +520,16 @@ class table : public property_owner<table<TT>> {
    *   - Reference to the current table.
    */
   template <typename T>
-  table &operator<<(const T &arg) {
-    constexpr bool is_manip =
-        fort::is_stream_manipulator<typename std::decay<T>::type>();
+  table& operator<<(const T& arg)
+  {
+    constexpr bool is_manip = fort::is_stream_manipulator<typename std::decay<T>::type>();
     stream_ << arg;
     if (stream_.tellp() >= 0 && !is_manip) {
 #ifdef FT_HAVE_UTF8
       if (TT == table_type::character) {
         ft_nwrite(table_, 1, stream_.str().c_str());
       } else {
-        ft_u8nwrite(table_, 1, (const void *)stream_.str().c_str());
+        ft_u8nwrite(table_, 1, (const void*) stream_.str().c_str());
       }
 #else
       ft_nwrite(table_, 1, stream_.str().c_str());
@@ -559,10 +540,10 @@ class table : public property_owner<table<TT>> {
     return *this;
   }
 
-  table &operator<<(const table_manipulator &arg) {
+  table& operator<<(const table_manipulator& arg)
+  {
     if (arg.value == header.value)
-      ft_set_cell_prop(table_, FT_CUR_ROW, FT_ANY_ROW, FT_CPROP_ROW_TYPE,
-                       FT_ROW_HEADER);
+      ft_set_cell_prop(table_, FT_CUR_ROW, FT_ANY_ROW, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
     else if (arg.value == endr.value)
       ft_ln(table_);
     else if (arg.value == separator.value)
@@ -581,12 +562,13 @@ class table : public property_owner<table<TT>> {
    *   - 0: Success; data were written
    *   - (<0): In case of error
    */
-  bool write(const char *str) {
+  bool write(const char* str)
+  {
 #ifdef FT_HAVE_UTF8
     if (TT == table_type::character) {
       return FT_IS_SUCCESS(ft_write(table_, str));
     } else {
-      return FT_IS_SUCCESS(ft_u8write(table_, (const void *)str));
+      return FT_IS_SUCCESS(ft_u8write(table_, (const void*) str));
     }
 #else
     return FT_IS_SUCCESS(ft_write(table_, str));
@@ -605,7 +587,8 @@ class table : public property_owner<table<TT>> {
    *   - 0: Success; data were written
    *   - (<0): In case of error
    */
-  bool write_ln(const char *str) {
+  bool write_ln(const char* str)
+  {
 #ifdef FT_HAVE_UTF8
     if (TT == table_type::character) {
       return FT_IS_SUCCESS(ft_write_ln(table_, str));
@@ -628,7 +611,7 @@ class table : public property_owner<table<TT>> {
    *   - 0: Success; data were written
    *   - (<0): In case of error
    */
-  bool write(const std::string &str) { return write(str.c_str()); }
+  bool write(const std::string& str) { return write(str.c_str()); }
 
   /**
    * Write string to the the table and go to the next line.
@@ -642,7 +625,7 @@ class table : public property_owner<table<TT>> {
    *   - 0: Success; data were written
    *   - (<0): In case of error
    */
-  bool write_ln(const std::string &str) { return write_ln(str.c_str()); }
+  bool write_ln(const std::string& str) { return write_ln(str.c_str()); }
 
 #ifdef __cpp_variadic_templates
   /**
@@ -660,7 +643,8 @@ class table : public property_owner<table<TT>> {
    *   - (<0): In case of error
    */
   template <typename T, typename... Ts>
-  bool write(const T &str, const Ts &... strings) {
+  bool write(const T& str, const Ts&... strings)
+  {
     return write(str) && write(strings...);
   }
 
@@ -680,103 +664,97 @@ class table : public property_owner<table<TT>> {
    *   - (<0): In case of error
    */
   template <typename T, typename... Ts>
-  bool write_ln(const T &str, const Ts &... strings) {
+  bool write_ln(const T& str, const Ts&... strings)
+  {
     return write(str) && write_ln(strings...);
   }
 #else /* __cpp_variadic_templates */
 
   template <typename T_0, typename T_1>
-  bool write(const T_0 &arg_0, const T_1 &arg_1) {
+  bool write(const T_0& arg_0, const T_1& arg_1)
+  {
     return write(arg_0) && write(arg_1);
   }
 
   template <typename T_0, typename T_1, typename T_2>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2) {
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2)
+  {
     return write(arg_0) && write(arg_1, arg_2);
   }
 
   template <typename T_0, typename T_1, typename T_2, typename T_3>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-             const T_3 &arg_3) {
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3)
+  {
     return write(arg_0) && write(arg_1, arg_2, arg_3);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-             const T_3 &arg_3, const T_4 &arg_4) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4>
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4)
+  {
     return write(arg_0) && write(arg_1, arg_2, arg_3, arg_4);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-             const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5>
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5)
+  {
     return write(arg_0) && write(arg_1, arg_2, arg_3, arg_4, arg_5);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5, typename T_6>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-             const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5,
-             const T_6 &arg_6) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5, typename T_6>
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5, const T_6& arg_6)
+  {
     return write(arg_0) && write(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5, typename T_6, typename T_7>
-  bool write(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-             const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5,
-             const T_6 &arg_6, const T_7 &arg_7) {
-    return write(arg_0) &&
-           write(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5, typename T_6, typename T_7>
+  bool write(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5, const T_6& arg_6,
+             const T_7& arg_7)
+  {
+    return write(arg_0) && write(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
   }
 
   template <typename T_0, typename T_1>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1) {
+  bool write_ln(const T_0& arg_0, const T_1& arg_1)
+  {
     return write(arg_0) && write_ln(arg_1);
   }
 
   template <typename T_0, typename T_1, typename T_2>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2) {
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2)
+  {
     return write(arg_0) && write_ln(arg_1, arg_2);
   }
 
   template <typename T_0, typename T_1, typename T_2, typename T_3>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-                const T_3 &arg_3) {
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3)
+  {
     return write(arg_0) && write_ln(arg_1, arg_2, arg_3);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-                const T_3 &arg_3, const T_4 &arg_4) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4>
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4)
+  {
     return write(arg_0) && write_ln(arg_1, arg_2, arg_3, arg_4);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-                const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5>
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5)
+  {
     return write(arg_0) && write_ln(arg_1, arg_2, arg_3, arg_4, arg_5);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5, typename T_6>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-                const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5,
-                const T_6 &arg_6) {
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5, typename T_6>
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5,
+                const T_6& arg_6)
+  {
     return write(arg_0) && write_ln(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
   }
 
-  template <typename T_0, typename T_1, typename T_2, typename T_3,
-            typename T_4, typename T_5, typename T_6, typename T_7>
-  bool write_ln(const T_0 &arg_0, const T_1 &arg_1, const T_2 &arg_2,
-                const T_3 &arg_3, const T_4 &arg_4, const T_5 &arg_5,
-                const T_6 &arg_6, const T_7 &arg_7) {
-    return write(arg_0) &&
-           write_ln(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
+  template <typename T_0, typename T_1, typename T_2, typename T_3, typename T_4, typename T_5, typename T_6, typename T_7>
+  bool write_ln(const T_0& arg_0, const T_1& arg_1, const T_2& arg_2, const T_3& arg_3, const T_4& arg_4, const T_5& arg_5,
+                const T_6& arg_6, const T_7& arg_7)
+  {
+    return write(arg_0) && write_ln(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
   }
 
 #endif /* __cpp_variadic_templates */
@@ -793,7 +771,8 @@ class table : public property_owner<table<TT>> {
    *   - (<0): In case of error
    */
   template <typename InputIt>
-  bool range_write(InputIt first, InputIt last) {
+  bool range_write(InputIt first, InputIt last)
+  {
     while (first != last) {
       *this << *first;
       ++first;
@@ -814,7 +793,8 @@ class table : public property_owner<table<TT>> {
    *   - (<0): In case of error
    */
   template <typename InputIt>
-  bool range_write_ln(InputIt first, InputIt last) {
+  bool range_write_ln(InputIt first, InputIt last)
+  {
     while (first != last) {
       *this << *first;
       ++first;
@@ -832,9 +812,7 @@ class table : public property_owner<table<TT>> {
    *   - True: Success; table border style was changed.
    *   - False: Error
    */
-  bool set_border_style(const struct ft_border_style *style) {
-    return FT_IS_SUCCESS(ft_set_border_style(table_, style));
-  }
+  bool set_border_style(const struct ft_border_style* style) { return FT_IS_SUCCESS(ft_set_border_style(table_, style)); }
 
   /**
    * Set current cell position.
@@ -846,9 +824,7 @@ class table : public property_owner<table<TT>> {
    * @param col_i
    *   New row number for the current cell.
    */
-  void set_cur_cell(size_t row_i, size_t col_i) {
-    ft_set_cur_cell(table_, row_i, col_i);
-  }
+  void set_cur_cell(size_t row_i, size_t col_i) { ft_set_cur_cell(table_, row_i, col_i); }
 
   /**
    * Set table left margin.
@@ -859,9 +835,7 @@ class table : public property_owner<table<TT>> {
    *   - true: Success; table property was changed.
    *   - false: In case of error.
    */
-  bool set_left_margin(unsigned value) {
-    return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_LEFT_MARGIN, value));
-  }
+  bool set_left_margin(unsigned value) { return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_LEFT_MARGIN, value)); }
 
   /**
    * Set table top margin.
@@ -872,9 +846,7 @@ class table : public property_owner<table<TT>> {
    *   - true: Success; table property was changed.
    *   - false: In case of error.
    */
-  bool set_top_margin(unsigned value) {
-    return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_TOP_MARGIN, value));
-  }
+  bool set_top_margin(unsigned value) { return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_TOP_MARGIN, value)); }
 
   /**
    * Set table right margin.
@@ -885,9 +857,7 @@ class table : public property_owner<table<TT>> {
    *   - true: Success; table property was changed.
    *   - false: In case of error.
    */
-  bool set_right_margin(unsigned value) {
-    return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_RIGHT_MARGIN, value));
-  }
+  bool set_right_margin(unsigned value) { return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_RIGHT_MARGIN, value)); }
 
   /**
    * Set table bottom margin.
@@ -898,10 +868,7 @@ class table : public property_owner<table<TT>> {
    *   - true: Success; table property was changed.
    *   - false: In case of error.
    */
-  bool set_bottom_margin(unsigned value) {
-    return FT_IS_SUCCESS(
-        ft_set_tbl_prop(table_, FT_TPROP_BOTTOM_MARGIN, value));
-  }
+  bool set_bottom_margin(unsigned value) { return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_BOTTOM_MARGIN, value)); }
 
   /**
    * Set table adding strategy.
@@ -912,13 +879,13 @@ class table : public property_owner<table<TT>> {
    *   - true: Success; table property was changed.
    *   - false: In case of error.
    */
-  bool set_adding_strategy(fort::add_strategy value) {
-    return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_ADDING_STRATEGY,
-                                         static_cast<int>(value)));
+  bool set_adding_strategy(fort::add_strategy value)
+  {
+    return FT_IS_SUCCESS(ft_set_tbl_prop(table_, FT_TPROP_ADDING_STRATEGY, static_cast<int>(value)));
   }
 
  private:
-  ft_table_t *table_;
+  ft_table_t* table_;
   mutable std::stringstream stream_;
   friend class property_owner<table>;
 
@@ -929,25 +896,24 @@ class table : public property_owner<table<TT>> {
   /**
    * Table cell.
    */
-  class table_cell : public property_owner_t {
+  class table_cell : public property_owner_t
+  {
     using property_owner_t::ps_coll_idx_;
     using property_owner_t::ps_row_idx_;
     using property_owner_t::ps_table_;
     using property_owner_t::set_default_properties_;
 
    public:
-    table_cell(std::size_t row_idx, std::size_t coll_idx, table &tbl)
-        : property_owner_t(row_idx, coll_idx, &tbl) {}
+    table_cell(std::size_t row_idx, std::size_t coll_idx, table& tbl) : property_owner_t(row_idx, coll_idx, &tbl) {}
 
-    table_cell &operator=(const char *str) {
+    table_cell& operator=(const char* str)
+    {
       ft_set_cur_cell(ps_table_->table_, ps_row_idx_, ps_coll_idx_);
       ps_table_->write(str);
       return *this;
     }
 
-    table_cell &operator=(const std::string &str) {
-      return operator=(str.c_str());
-    }
+    table_cell& operator=(const std::string& str) { return operator=(str.c_str()); }
 
     /**
      * Set column span for the specified cell of the table.
@@ -958,33 +924,32 @@ class table : public property_owner<table<TT>> {
      *   - true: Success; cell span was changed.
      *   - false: In case of error.
      */
-    bool set_cell_span(size_t hor_span) {
-      if (set_default_properties_) return false;
+    bool set_cell_span(size_t hor_span)
+    {
+      if (set_default_properties_)
+        return false;
 
-      return FT_IS_SUCCESS(ft_set_cell_span(ps_table_->table_, ps_row_idx_,
-                                            ps_coll_idx_, hor_span));
+      return FT_IS_SUCCESS(ft_set_cell_span(ps_table_->table_, ps_row_idx_, ps_coll_idx_, hor_span));
     }
   };
 
   /**
    * Table row.
    */
-  class table_row : public property_owner_t {
+  class table_row : public property_owner_t
+  {
     using property_owner_t::ps_row_idx_;
     using property_owner_t::ps_table_;
 
    public:
-    table_row(std::size_t row_idx, table &tbl)
-        : property_owner_t(row_idx, FT_ANY_COLUMN, &tbl) {}
+    table_row(std::size_t row_idx, table& tbl) : property_owner_t(row_idx, FT_ANY_COLUMN, &tbl) {}
 
-    class table_cell operator[](std::size_t coll_idx) {
-      return table_cell(ps_row_idx_, coll_idx, *ps_table_);
-    }
+    class table_cell operator[](std::size_t coll_idx) { return table_cell(ps_row_idx_, coll_idx, *ps_table_); }
 
-    void erase() {
-      if (FT_IS_ERROR(ft_erase_range(
-              ps_table_->table_, property_owner_t::ps_row_idx_, 0,
-              property_owner_t::ps_row_idx_, FT_MAX_COL_INDEX))) {
+    void erase()
+    {
+      if (FT_IS_ERROR(
+              ft_erase_range(ps_table_->table_, property_owner_t::ps_row_idx_, 0, property_owner_t::ps_row_idx_, FT_MAX_COL_INDEX))) {
         throw std::runtime_error("Failed to erase row");
       }
     }
@@ -993,17 +958,17 @@ class table : public property_owner<table<TT>> {
   /**
    * Table column.
    */
-  class table_column : public property_owner_t {
+  class table_column : public property_owner_t
+  {
     using property_owner_t::ps_coll_idx_;
     using property_owner_t::ps_table_;
 
    public:
-    table_column(std::size_t col_idx, table &tbl)
-        : property_owner_t(FT_ANY_ROW, col_idx, &tbl) {}
+    table_column(std::size_t col_idx, table& tbl) : property_owner_t(FT_ANY_ROW, col_idx, &tbl) {}
 
-    void erase() {
-      if (FT_IS_ERROR(ft_erase_range(ps_table_->table_, 0, ps_coll_idx_,
-                                     FT_MAX_ROW_INDEX, ps_coll_idx_))) {
+    void erase()
+    {
+      if (FT_IS_ERROR(ft_erase_range(ps_table_->table_, 0, ps_coll_idx_, FT_MAX_ROW_INDEX, ps_coll_idx_))) {
         throw std::runtime_error("Failed to erase column");
       }
     }
@@ -1016,22 +981,21 @@ class table : public property_owner<table<TT>> {
    * top left cell.
    * @todo: Implement their work on the whole range.
    */
-  class cell_range : public property_owner_t {
+  class cell_range : public property_owner_t
+  {
     using property_owner_t::ps_coll_idx_;
     using property_owner_t::ps_row_idx_;
     using property_owner_t::ps_table_;
 
    public:
-    cell_range(size_t top_left_row, size_t top_left_col,
-               size_t bottom_right_row, size_t bottom_right_col, table &tbl)
-        : property_owner_t(top_left_row, top_left_col, &tbl),
-          bottom_right_row_(bottom_right_row),
-          bottom_right_col_(bottom_right_col) {}
+    cell_range(size_t top_left_row, size_t top_left_col, size_t bottom_right_row, size_t bottom_right_col, table& tbl)
+        : property_owner_t(top_left_row, top_left_col, &tbl), bottom_right_row_(bottom_right_row), bottom_right_col_(bottom_right_col)
+    {
+    }
 
-    void erase() {
-      if (FT_IS_ERROR(ft_erase_range(ps_table_->table_, ps_row_idx_,
-                                     ps_coll_idx_, bottom_right_row_,
-                                     bottom_right_col_))) {
+    void erase()
+    {
+      if (FT_IS_ERROR(ft_erase_range(ps_table_->table_, ps_row_idx_, ps_coll_idx_, bottom_right_row_, bottom_right_col_))) {
         throw std::runtime_error("Failed to erase column");
       }
     }
@@ -1041,15 +1005,13 @@ class table : public property_owner<table<TT>> {
     std::size_t bottom_right_col_;
   };
 
-  class default_properties : public property_owner_t {
+  class default_properties : public property_owner_t
+  {
    public:
-    default_properties(table *tbl)
-        : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, tbl, true) {}
+    default_properties(table* tbl) : property_owner_t(FT_ANY_ROW, FT_ANY_COLUMN, tbl, true) {}
   };
 
-  class table_row operator[](std::size_t row_idx) {
-    return table_row(row_idx, *this);
-  }
+  class table_row operator[](std::size_t row_idx) { return table_row(row_idx, *this); }
 
   /**
    * Get cell.
@@ -1061,9 +1023,7 @@ class table : public property_owner<table<TT>> {
    * @return
    *   table_cell object.
    */
-  class table_cell cell(std::size_t row_idx, std::size_t col_idx) {
-    return (*this)[row_idx][col_idx];
-  }
+  class table_cell cell(std::size_t row_idx, std::size_t col_idx) { return (*this)[row_idx][col_idx]; }
 
   /**
    * Get column number of the current cell.
@@ -1112,9 +1072,7 @@ class table : public property_owner<table<TT>> {
    * @return
    *   Current cell.
    */
-  class table_cell cur_cell() {
-    return cell(cur_row(), cur_col());
-  }
+  class table_cell cur_cell() { return cell(cur_row(), cur_col()); }
 
   /**
    * Get row.
@@ -1124,9 +1082,7 @@ class table : public property_owner<table<TT>> {
    * @return
    *   table_row object.
    */
-  class table_row row(std::size_t row_idx) {
-    return table_row(row_idx, *this);
-  }
+  class table_row row(std::size_t row_idx) { return table_row(row_idx, *this); }
 
   /**
    * Get column.
@@ -1136,9 +1092,7 @@ class table : public property_owner<table<TT>> {
    * @return
    *   table_column object.
    */
-  class table_column column(std::size_t col_idx) {
-    return table_column(col_idx, *this);
-  }
+  class table_column column(std::size_t col_idx) { return table_column(col_idx, *this); }
 
   /**
    * Get range of cells.
@@ -1148,16 +1102,12 @@ class table : public property_owner<table<TT>> {
    * @return
    *   table_column object.
    */
-  class cell_range range(std::size_t top_left_row, std::size_t top_left_col,
-                         std::size_t bottom_right_row,
-                         std::size_t bottom_right_col) {
-    return cell_range(top_left_row, top_left_col, bottom_right_row,
-                      bottom_right_col, *this);
+  class cell_range range(std::size_t top_left_row, std::size_t top_left_col, std::size_t bottom_right_row, std::size_t bottom_right_col)
+  {
+    return cell_range(top_left_row, top_left_col, bottom_right_row, bottom_right_col, *this);
   }
 
-  static class default_properties default_props() {
-    return default_properties(NULL);
-  }
+  static class default_properties default_props() { return default_properties(NULL); }
 };
 
 /**
@@ -1185,7 +1135,8 @@ using utf8_table = table<table_type::utf8>;
  *   - True: Success; table border style was changed.
  *   - False: Error
  */
-inline bool set_default_border_style(struct ft_border_style *style) {
+inline bool set_default_border_style(struct ft_border_style* style)
+{
   return FT_IS_SUCCESS(ft_set_default_border_style(style));
 }
 

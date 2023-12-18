@@ -26,7 +26,8 @@ enum class GRSourceType
 {
   kNone,
   kBlockage,
-  kNetShape
+  kNetShape,
+  kReservedVia
 };
 
 struct GetGRSourceTypeName
@@ -43,6 +44,9 @@ struct GetGRSourceTypeName
         break;
       case GRSourceType::kNetShape:
         gr_source_type_name = "net_shape";
+        break;
+      case GRSourceType::kReservedVia:
+        gr_source_type_name = "reserved_via";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

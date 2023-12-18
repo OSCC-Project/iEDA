@@ -10,7 +10,7 @@
 #include "EXTPlanarRect.hpp"
 #include "MTree.hpp"
 #include "Net.hpp"
-#include "PHYNode.hpp"
+#include "PhysicalNode.hpp"
 #include "PinNode.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
@@ -31,7 +31,7 @@ void save(Archive& ar, irt::Net& net, const unsigned int version)
 
   auto& pin_list = net.get_pin_list();
   iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list, net.get_driving_pin(), net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_tree(), net.get_dr_result_tree(), net.get_vr_result_tree());
+  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list(), net.get_dr_result_tree(), net.get_vr_result_tree());
 }
 
 template <typename Archive>
@@ -41,7 +41,7 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
   irt::ConnectType connect_type = net.get_connect_type();
   std::string net_name;
   iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(), net.get_driving_pin(), net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_tree(), net.get_dr_result_tree(), net.get_vr_result_tree());
+  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list(), net.get_dr_result_tree(), net.get_vr_result_tree());
   net.set_connect_type(connect_type);
   net.set_net_idx(net_idx);
 }
@@ -52,15 +52,15 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
 template <typename Archive>
 void save(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_protected_access_point(),
-                pin.get_access_point_list());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
+                pin.get_protected_access_point());
 }
 
 template <typename Archive>
 void load(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_protected_access_point(),
-                pin.get_access_point_list());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
+                pin.get_protected_access_point());
 }
 
 // ----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ void serialize(Archive& ar, irt::AccessPoint& ap, const unsigned int version)
 {
   auto type = ap.get_type();
   int layer_idx = ap.get_layer_idx();
-  iplf::Archive(ar, type, layer_idx, ap.get_grid_coord(), ap.get_real_coord());
+  iplf::Archive(ar, type, layer_idx, ap.get_grid_coord(), ap.get_real_coord(), ap.get_access_orien_set());
   if constexpr (Archive::is_loading::value) {
     ap.set_type(type);
     ap.set_layer_idx(layer_idx);
@@ -251,12 +251,12 @@ void serialize(Archive& ar, irt::Segment<T>& segment, const unsigned int version
 }
 
 // ----------------------------------------------------------------------------
-// Serialize functions for irt::RTNode
+// Serialize functions for irt::GuideSegNode
 // ----------------------------------------------------------------------------
 template <typename Archive>
-void serialize(Archive& ar, irt::RTNode& rt, const unsigned int version)
+void serialize(Archive& ar, irt::GuideSegNode& guide_seg_node, const unsigned int version)
 {
-  iplf::Archive(ar, rt.get_first_guide(), rt.get_second_guide(), rt.get_pin_idx_set(), rt.get_routing_tree());
+  iplf::Archive(ar, guide_seg_node.get_first(), guide_seg_node.get_second(), guide_seg_node.get_pin_idx_set(), guide_seg_node.get_routing_tree());
 }
 
 enum class NodeType : int
@@ -267,21 +267,21 @@ enum class NodeType : int
   ViaNode,
   PatchNode
 };
-static NodeType PHYNodeType(irt::PHYNode& node)
+static NodeType PhysicalNodeType(irt::PhysicalNode& physical_node)
 {
-  if (node.isEmpty()) {
+  if (physical_node.isEmpty()) {
     return NodeType::monostate;
   }
-  if (node.isType<irt::PinNode>()) {
+  if (physical_node.isType<irt::PinNode>()) {
     return NodeType::PinNode;
   }
-  if (node.isType<irt::WireNode>()) {
+  if (physical_node.isType<irt::WireNode>()) {
     return NodeType::WireNode;
   }
-  if (node.isType<irt::ViaNode>()) {
+  if (physical_node.isType<irt::ViaNode>()) {
     return NodeType::ViaNode;
   }
-  if (node.isType<irt::PatchNode>()) {
+  if (physical_node.isType<irt::PatchNode>()) {
     return NodeType::PatchNode;
   }
   assert(false);
@@ -289,28 +289,28 @@ static NodeType PHYNodeType(irt::PHYNode& node)
 }
 
 template <typename Archive>
-void serialize(Archive& ar, irt::PHYNode& node, const unsigned int version)
+void serialize(Archive& ar, irt::PhysicalNode& physical_node, const unsigned int version)
 {
-  NodeType type = PHYNodeType(node);
+  NodeType type = PhysicalNodeType(physical_node);
   ar & type;
   switch (type) {
     case NodeType::monostate: {
       break;
     }
     case NodeType::PinNode: {
-      ar & node.getNode<irt::PinNode>();
+      ar & physical_node.getNode<irt::PinNode>();
       break;
     }
     case NodeType::WireNode: {
-      ar & node.getNode<irt::WireNode>();
+      ar & physical_node.getNode<irt::WireNode>();
       break;
     }
     case NodeType::ViaNode: {
-      ar & node.getNode<irt::ViaNode>();
+      ar & physical_node.getNode<irt::ViaNode>();
       break;
     }
     case NodeType::PatchNode: {
-      ar & node.getNode<irt::PatchNode>();
+      ar & physical_node.getNode<irt::PatchNode>();
       break;
     }
   }

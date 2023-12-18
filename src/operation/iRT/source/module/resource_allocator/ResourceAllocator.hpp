@@ -17,7 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
-#include "DRCRect.hpp"
+#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "GridMap.hpp"
@@ -60,9 +60,8 @@ class ResourceAllocator
   void initRANetDemand(RAModel& ra_model);
   void initRAGCellList(RAModel& ra_model);
   void updateBlockageMap(RAModel& ra_model);
-  void addRectToEnv(RAModel& ra_model, RASourceType ra_source_type, DRCRect drc_rect);
   void updateNetShapeMap(RAModel& ra_model);
-  void updateNetReservedViaMap(RAModel& ra_model);
+  void updateReservedViaMap(RAModel& ra_model);
   void calcRAGCellSupply(RAModel& ra_model);
   std::vector<PlanarRect> getWireList(RAGCell& ra_gcell, RoutingLayer& routing_layer);
   void buildRelation(RAModel& ra_model);
@@ -88,6 +87,11 @@ class ResourceAllocator
 
 #if 1  // update
   void update(RAModel& ra_model);
+#endif
+
+#if 1  // update env
+  std::vector<DRCShape> getDRCShapeList(irt_int ra_net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  void updateRectToUnit(RAModel& ra_model, ChangeType change_type, RASourceType ra_source_type, DRCShape drc_shape);
 #endif
 
 #if 1  // plot ra_model

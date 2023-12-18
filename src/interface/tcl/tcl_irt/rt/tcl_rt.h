@@ -38,21 +38,7 @@ class TclInitRT : public TclCmd
   ~TclInitRT() override = default;
 
   unsigned check() override { return 1; };
-
-  unsigned exec() override;
-
- private:
-  std::vector<std::pair<std::string, ValueType>> _config_list;
-};
-
-class TclReportTiming : public TclCmd
-{
- public:
-  explicit TclReportTiming(const char* cmd_name);
-  ~TclReportTiming() override = default;
-
-  unsigned check() override { return 1; };
-
+  
   unsigned exec() override;
 
  private:

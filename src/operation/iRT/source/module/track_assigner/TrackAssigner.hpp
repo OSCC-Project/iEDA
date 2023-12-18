@@ -19,7 +19,7 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRCChecker.hpp"
-#include "DRCRect.hpp"
+#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -58,22 +58,26 @@ class TrackAssigner
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void buildTAModel(TAModel& ta_model);
+  void buildGuideSegTree(TAModel& ta_model);
+  void buildGuideSegTree(TANet& ta_net);
+  GuideSeg convertToGuideSeg(Guide& guide, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
+  void buildGuideSegToDR(TNode<GuideSeg>* parent_node, TNode<GuideSeg>* child_node);
+  void buildGuideSegToTA(TNode<GuideSeg>* parent_node, TNode<GuideSeg>* child_node);
   void buildSchedule(TAModel& ta_model);
   void shrinkPanelRegion(TAModel& ta_model);
   void buildPanelTrackAxis(TAModel& ta_model);
   void updateBlockageMap(TAModel& ta_model);
-  void updateRectToEnv(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
   void updateNetShapeMap(TAModel& ta_model);
-  void updateNetReservedViaMap(TAModel& ta_model);
+  void updateReservedViaMap(TAModel& ta_model);
   void buildTATaskList(TAModel& ta_model);
   void buildTATask(TAModel& ta_model, TANet& ta_net);
-  std::map<TNode<RTNode>*, TATask> makeTANodeTaskMap(TAModel& ta_model, TANet& ta_net);
-  TAGroup makeTAGroup(TAModel& ta_model, TNode<RTNode>* dr_node_node, TNode<RTNode>* ta_node_node, std::vector<LayerCoord>& pin_coord_list);
-  std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<RTNode>* ta_node_node,
-                                                                  std::map<TNode<RTNode>*, TAGroup>& ta_group_map,
+  std::map<TNode<GuideSeg>*, TATask> makeTATaskMap(TAModel& ta_model, TANet& ta_net);
+  TAGroup makeTAGroup(TAModel& ta_model, TNode<GuideSeg>* dr_node_node, TNode<GuideSeg>* ta_node_node,
+                      std::vector<LayerCoord>& pin_coord_list);
+  std::map<LayerCoord, double, CmpLayerCoordByXASC> makeTACostMap(TNode<GuideSeg>* ta_node_node,
+                                                                  std::map<TNode<GuideSeg>*, TAGroup>& ta_group_map,
                                                                   std::vector<LayerCoord>& pin_coord_list);
   void buildBoundingBox(TATask& ta_task);
-  void buildNetTaskMap(TAModel& ta_model);
   void outputTADataset(TAModel& ta_model);
 #endif
 
@@ -85,10 +89,6 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildNeighborMap(TAPanel& ta_panel);
   void buildSourceOrienTaskMap(TAPanel& ta_panel);
-  void updateRectGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCRect drc_rect);
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCRect& drc_rect);
-  std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
-  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
   void checkTAPanel(TAPanel& ta_panel);
   void saveTAPanel(TAPanel& ta_panel);
   void resetTAPanel(TAModel& ta_model, TAPanel& ta_panel);
@@ -99,7 +99,6 @@ class TrackAssigner
   void resortTAPanel(TAPanel& ta_panel);
   std::vector<std::vector<irt_int>> getViolationTaskCombList(TAPanel& ta_panel);
   void addHistoryCost(TAPanel& ta_panel);
-  void updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCRect drc_rect);
   void ripupTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void assignTAPanel(TAModel& ta_model, TAPanel& ta_panel);
   void assignTATask(TAModel& ta_model, TAPanel& ta_panel, TATask& ta_task);
@@ -143,19 +142,38 @@ class TrackAssigner
   void update(TAModel& ta_model);
 #endif
 
+#if 1  // update env
+  std::vector<DRCShape> getDRCShapeList(irt_int ta_net_idx, irt_int ta_layer_idx, irt_int ta_panel_idx, irt_int ta_task_idx,
+                                        std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<DRCShape> getDRCShapeList(irt_int ta_net_idx, irt_int ta_layer_idx, irt_int ta_panel_idx, irt_int ta_task_idx,
+                                        MTree<LayerCoord>& coord_tree);
+  void updateRectToUnit(TAModel& ta_model, ChangeType change_type, TASourceType ta_source_type, DRCShape drc_shape);
+  void updateRectToGraph(TAPanel& ta_panel, ChangeType change_type, TASourceType ta_source_type, DRCShape drc_shape);
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> getGridOrientationMap(TAPanel& ta_panel, const DRCShape& drc_shape);
+  std::vector<Segment<LayerCoord>> getSegmentList(TAPanel& ta_panel, LayerRect min_scope_rect);
+  std::vector<LayerRect> getRealRectList(std::vector<Segment<LayerCoord>> segment_list);
+  void updateHistoryCostToGraph(TAPanel& ta_panel, ChangeType change_type, DRCShape drc_shape);
+#endif
+
 #if 1  // plot ta_panel
   void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx = -1);
 #endif
 
 #if 1  // valid drc
-  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const DRCRect& drc_rect);
-  bool hasViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getTAViolationInfo(TAPanel& ta_panel, TASourceType ta_source_type,
-                                                                       const std::vector<DRCCheckType>& check_type_list,
-                                                                       const std::vector<DRCRect>& drc_rect_list);
-  void removeInvalidTAViolationInfo(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+  bool hasTAEnvViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                         const DRCShape& drc_shape);
+  bool hasTAEnvViolation(TAModel& ta_model, TASourceType ta_source_type, const std::vector<DRCCheckType>& check_type_list,
+                         const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getTAEnvViolation(TAModel& ta_model, TASourceType ta_source_type,
+                                                                      const std::vector<DRCCheckType>& check_type_list,
+                                                                      const DRCShape& drc_shape);
+  std::map<std::string, std::vector<ViolationInfo>> getTAEnvViolation(TAModel& ta_model, TASourceType ta_source_type,
+                                                                      const std::vector<DRCCheckType>& check_type_list,
+                                                                      const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getTAEnvViolationBySingle(TAPanel& ta_panel, TASourceType ta_source_type,
+                                                                              const std::vector<DRCCheckType>& check_type_list,
+                                                                              const std::vector<DRCShape>& drc_shape_list);
+  void removeInvalidTAEnvViolationBySingle(TAPanel& ta_panel, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
 #endif
 };
 

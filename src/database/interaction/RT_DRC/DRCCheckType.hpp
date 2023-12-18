@@ -16,9 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include <iostream>
 #include <string>
-
-#include "Logger.hpp"
 
 namespace irt {
 /**
@@ -35,7 +34,7 @@ namespace irt {
  * ├──┼─────────┼─────────┼─────────┤
  * │VR│    Y    │    Y    │    Y    │
  * └──┴─────────┴─────────┴─────────┘
-*/
+ */
 enum class DRCCheckType
 {
   kNone,
@@ -63,7 +62,7 @@ struct GetDRCCheckTypeName
         check_type_name = "min_step";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        std::cout << "check_type is error!" << std::endl;
         break;
     }
     return check_type_name;

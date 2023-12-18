@@ -17,8 +17,7 @@
 #pragma once
 
 #include "ChangeType.hpp"
-#include "DRCCheckType.hpp"
-#include "DRCRect.hpp"
+#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "RTAPI.hpp"
 #include "RegionQuery.hpp"
@@ -36,43 +35,48 @@ class DRCChecker
   static void destroyInst();
   // function
   /**
-   * 获得DRCRectList
-   * 将多种类型的结果转换为DRCRectList
+   * 获得DRCShapeList
+   * 将多种类型的结果转换为DRCShapeList
    */
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, Segment<LayerCoord>& segment);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, MTree<PHYNode>& phy_node_tree);
-  std::vector<DRCRect> getDRCRectList(irt_int net_idx, PHYNode& phy_node);
+  std::vector<DRCShape> getDRCShapeList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<DRCShape> getDRCShapeList(irt_int net_idx, Segment<LayerCoord>& segment);
+  std::vector<DRCShape> getDRCShapeList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
+  std::vector<DRCShape> getDRCShapeList(irt_int net_idx, MTree<PhysicalNode>& physical_node_tree);
+  std::vector<DRCShape> getDRCShapeList(irt_int net_idx, PhysicalNode& physical_node);
   /**
    * 返回RegionQuery中的形状map
    */
-  std::map<irt_int, std::map<irt_int, std::set<LayerRect, CmpLayerRectByXASC>>>& getLayerNetRectMap(RegionQuery& region_query,
-                                                                                                    bool is_routing);
+  std::map<irt_int, std::map<BaseInfo, std::set<LayerRect, CmpLayerRectByXASC>, CmpBaseInfo>>& getLayerInfoRectMap(
+      RegionQuery& region_query, bool is_routing);
   /**
-   * 更新RegionQuery的DRCRectList
+   * 更新RegionQuery的DRCShapeList
    */
-  void updateRectList(RegionQuery& region_query, ChangeType change_type, const DRCRect& drc_rect);
-  void updateRectList(RegionQuery& region_query, ChangeType change_type, const std::vector<DRCRect>& drc_rect_list);
+  void updateRectList(RegionQuery& region_query, ChangeType change_type, const DRCShape& drc_shape);
+  void updateRectList(RegionQuery& region_query, ChangeType change_type, const std::vector<DRCShape>& drc_shape_list);
   /**
    * 碰撞一定会产生DRC的最小膨胀矩形
    * 注意：现在只能扩大spacing的最小范围，其他的由于在布线过程中可能有误差，比如在没连上的线进行eol规则的扩大可能会有问题
    */
-  std::vector<LayerRect> getMinScope(const DRCRect& drc_rect);
-  std::vector<LayerRect> getMinScope(const std::vector<DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMinScope(const DRCShape& drc_shape);
+  std::vector<LayerRect> getMinScope(const std::vector<DRCShape>& drc_shape_list);
   /**
    * 碰撞可能会产生DRC的最大膨胀矩形
    */
-  std::vector<LayerRect> getMaxScope(const DRCRect& drc_rect);
-  std::vector<LayerRect> getMaxScope(const std::vector<DRCRect>& drc_rect_list);
+  std::vector<LayerRect> getMaxScope(const DRCShape& drc_shape);
+  std::vector<LayerRect> getMaxScope(const std::vector<DRCShape>& drc_shape_list);
   /**
-   * 获得违例信息
-   * 暂时不进行线网自检
+   * drc_shape_list在region_query的环境里产生的违例信息，如spacing
+   * 关注于非同net之间的违例
    */
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query,
-                                                                     const std::vector<DRCCheckType>& check_type_list,
-                                                                     const std::vector<DRCRect>& drc_rect_list);
-  // std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
+  std::map<std::string, std::vector<ViolationInfo>> getEnvViolationInfo(RegionQuery& region_query,
+                                                                        const std::vector<DRCCheckType>& check_type_list,
+                                                                        const std::vector<DRCShape>& drc_shape_list);
+  /**
+   * drc_shape_list组成的自身违例信息，如min_area,min_step
+   * 关注于net内的违例
+   */
+  std::map<std::string, std::vector<ViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
+                                                                         const std::vector<DRCShape>& drc_shape_list);
 
  private:
   // self
@@ -85,16 +89,28 @@ class DRCChecker
   DRCChecker& operator=(const DRCChecker& other) = delete;
   DRCChecker& operator=(DRCChecker&& other) = delete;
   // function
-  std::vector<ids::DRCRect> convertToIDSRect(const std::vector<DRCRect>& drc_rect_list);
-  void addEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  void delEnvRectList(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list);
-  RQShape convertToRQShape(const DRCRect& drc_rect);
-  std::vector<LayerRect> getMinSpacingRect(const std::vector<ids::DRCRect>& drc_rect_list);
+  std::map<std::string, std::vector<ViolationInfo>> getEnvViolationInfoByRT(RegionQuery& region_query,
+                                                                            const std::vector<DRCCheckType>& check_type_list,
+                                                                            const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getEnvViolationInfoByiDRC(RegionQuery& region_query,
+                                                                              const std::vector<DRCCheckType>& check_type_list,
+                                                                              const std::vector<DRCShape>& drc_shape_list);
+  BaseShape convert(const DRCShape& drc_shape);
+  ViolationInfo convert(BaseViolationInfo& base_violation_info);
+  std::map<std::string, std::vector<ViolationInfo>> getSelfViolationInfoByRT(const std::vector<DRCCheckType>& check_type_list,
+                                                                             const std::vector<DRCShape>& drc_shape_list);
+  std::map<std::string, std::vector<ViolationInfo>> getSelfViolationInfoByiDRC(const std::vector<DRCCheckType>& check_type_list,
+                                                                               const std::vector<DRCShape>& drc_shape_list);
+  void addEnvRectList(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list);
+  void delEnvRectList(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list);
+  BaseShape convertToBaseShape(const DRCShape& drc_shape);
+  std::vector<LayerRect> getMinSpacingRect(const std::vector<DRCShape>& drc_shape_list);
+  std::vector<LayerRect> getMaxSpacingRect(const std::vector<DRCShape>& drc_shape_list);
 #if 1  // violation info
-  void checkMinSpacingByOther(RegionQuery* region_query, const DRCRect& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
-  void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
+  void checkMinSpacingByOther(RegionQuery* region_query, const DRCShape& drc_shape_list, std::vector<ViolationInfo>& violation_info_list);
+  void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list,
                               std::vector<ViolationInfo>& violation_info_list);
-  void checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
+  void checkMinArea(const std::vector<DRCShape>& drc_shape_list, std::vector<ViolationInfo>& violation_info_list);
   void uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list);
 #endif
 };

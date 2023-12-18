@@ -85,7 +85,7 @@ irt_int GDSPlotter::getGDSIdxByRouting(irt_int routing_layer_idx)
   if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
     gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
-    LOG_INST.warning(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
+    LOG_INST.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -96,7 +96,7 @@ irt_int GDSPlotter::getGDSIdxByCut(irt_int cut_layer_idx)
   if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
     gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
-    LOG_INST.warning(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
+    LOG_INST.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -300,18 +300,18 @@ void GDSPlotter::addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage sta
 
     switch (stage) {
       case Stage::kDetailedRouter:
-        addRTNodeTree(gp_gds, net_struct, net.get_dr_result_tree());
+        // addGuideSegNodeTree(gp_gds, net_struct, net.get_dr_result_tree());
         break;
       case Stage::kGlobalRouter:
-        addRTNodeTree(gp_gds, net_struct, net.get_gr_result_tree());
+        // addGuideSegNodeTree(gp_gds, net_struct, net.get_gr_result_tree());
         break;
       case Stage::kPinAccessor:
         break;
       case Stage::kTrackAssigner:
-        addRTNodeTree(gp_gds, net_struct, net.get_ta_result_tree());
+        // addGuideSegNodeTree(gp_gds, net_struct, net.get_ta_result_tree());
         break;
       case Stage::kViolationRepairer:
-        addPHYNodeTree(gp_gds, net_struct, net.get_vr_result_tree());
+        addPhysicalNodeTree(gp_gds, net_struct, net.get_vr_result_tree());
         break;
       default:
         LOG_INST.error(Loc::current(), "Unknown stage type!");
@@ -403,7 +403,7 @@ void GDSPlotter::addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox
   gp_gds.addStruct(bounding_box_struct);
 }
 
-void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode>& node_tree)
+void GDSPlotter::addGuideSegNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<GuideSegNode>& node_tree)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -412,12 +412,12 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
   GPStruct guide_list_struct(RTUtil::getString("guide_list@", net_struct.get_alias_name()));
   GPStruct routing_segment_list_struct(RTUtil::getString("routing_segment_list@", net_struct.get_alias_name()));
 
-  for (TNode<RTNode>* rt_node_node : RTUtil::getNodeList(node_tree)) {
-    RTNode& rt_node = rt_node_node->value();
+  for (TNode<GuideSegNode>* guide_seg_node_node : RTUtil::getNodeList(node_tree)) {
+    GuideSegNode& guide_seg_node = guide_seg_node_node->value();
 
     // guide_list
-    Guide& first_guide = rt_node.get_first_guide();
-    Guide& second_guide = rt_node.get_second_guide();
+    Guide& first_guide = guide_seg_node.get_first();
+    Guide& second_guide = guide_seg_node.get_second();
     irt_int first_layer_idx = first_guide.get_layer_idx();
     irt_int second_layer_idx = second_guide.get_layer_idx();
 
@@ -430,7 +430,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
       guide_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kGuide));
       guide_list_struct.push(guide_boundary);
     } else {
-      RTUtil::swapASC(first_layer_idx, second_layer_idx);
+      RTUtil::swapByASC(first_layer_idx, second_layer_idx);
       for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
         GPBoundary guide_boundary;
         guide_boundary.set_rect(real_rect);
@@ -441,7 +441,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
     }
 
     // routing_segment_list
-    for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(rt_node.get_routing_tree())) {
+    for (Segment<TNode<LayerCoord>*>& routing_segment : RTUtil::getSegListByTree(guide_seg_node.get_routing_tree())) {
       LayerCoord& first_coord = routing_segment.get_first()->value();
       LayerCoord& second_coord = routing_segment.get_second()->value();
 
@@ -458,7 +458,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
         wire_boundary.set_rect(wire_rect);
         routing_segment_list_struct.push(wire_boundary);
       } else {
-        RTUtil::swapASC(first_layer_idx, second_layer_idx);
+        RTUtil::swapByASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           ViaMaster& via_master = layer_via_master_list[layer_idx].front();
 
@@ -496,7 +496,7 @@ void GDSPlotter::addRTNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<RTNode
   gp_gds.addStruct(routing_segment_list_struct);
 }
 
-void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNode>& node_tree)
+void GDSPlotter::addPhysicalNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PhysicalNode>& node_tree)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
 
@@ -504,11 +504,11 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
   GPStruct via_list_struct(RTUtil::getString("via_list@", net_struct.get_alias_name()));
   GPStruct patch_list_struct(RTUtil::getString("patch_list@", net_struct.get_alias_name()));
 
-  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(node_tree)) {
-    PHYNode& phy_node = phy_node_node->value();
+  for (TNode<PhysicalNode>* physical_node_node : RTUtil::getNodeList(node_tree)) {
+    PhysicalNode& physical_node = physical_node_node->value();
 
-    if (phy_node.isType<WireNode>()) {
-      WireNode& wire_node = phy_node.getNode<WireNode>();
+    if (physical_node.isType<WireNode>()) {
+      WireNode& wire_node = physical_node.getNode<WireNode>();
       PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
 
       GPBoundary wire_boundary;
@@ -517,8 +517,8 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       wire_boundary.set_rect(wire_rect);
       wire_list_struct.push(wire_boundary);
 
-    } else if (phy_node.isType<ViaNode>()) {
-      ViaNode& via_node = phy_node.getNode<ViaNode>();
+    } else if (physical_node.isType<ViaNode>()) {
+      ViaNode& via_node = physical_node.getNode<ViaNode>();
       ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
       ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
 
@@ -544,8 +544,8 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
         cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node));
         via_list_struct.push(cut_boundary);
       }
-    } else if (phy_node.isType<PatchNode>()) {
-      PatchNode& patch_node = phy_node.getNode<PatchNode>();
+    } else if (physical_node.isType<PatchNode>()) {
+      PatchNode& patch_node = physical_node.getNode<PatchNode>();
 
       GPBoundary patch_boundary;
       patch_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(patch_node.get_layer_idx()));
@@ -553,10 +553,10 @@ void GDSPlotter::addPHYNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PHYNo
       patch_boundary.set_rect(patch_node);
       patch_list_struct.push(patch_boundary);
 
-    } else if (phy_node.isType<PinNode>()) {
+    } else if (physical_node.isType<PinNode>()) {
       continue;
     } else {
-      LOG_INST.error(Loc::current(), "Incorrect phy node type!");
+      LOG_INST.error(Loc::current(), "Incorrect physical_node type!");
     }
   }
   net_struct.push(wire_list_struct.get_name());
@@ -878,7 +878,7 @@ void GDSPlotter::checkSRefList(GPGDS& gp_gds)
 
   if (!nonexistent_sref_name_set.empty()) {
     for (const std::string& nonexistent_sref_name : nonexistent_sref_name_set) {
-      LOG_INST.warning(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
+      LOG_INST.warn(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
     }
     LOG_INST.error(Loc::current(), "There is a non-existent structure reference!");
   }

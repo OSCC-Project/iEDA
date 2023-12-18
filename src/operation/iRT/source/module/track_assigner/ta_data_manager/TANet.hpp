@@ -17,9 +17,9 @@
 #pragma once
 
 #include "Guide.hpp"
+#include "GuideSeg.hpp"
 #include "MTree.hpp"
 #include "Net.hpp"
-#include "RTNode.hpp"
 #include "TAPin.hpp"
 
 namespace irt {
@@ -34,20 +34,26 @@ class TANet
   irt_int get_net_idx() const { return _net_idx; }
   ConnectType get_connect_type() const { return _connect_type; }
   std::vector<TAPin>& get_ta_pin_list() { return _ta_pin_list; }
-  MTree<RTNode>& get_ta_result_tree() { return _ta_result_tree; }
+  MTree<Guide>& get_gr_result_tree() { return _gr_result_tree; }
+  MTree<GuideSeg>& get_guide_seg_tree() { return _guide_seg_tree; }
+  std::vector<Segment<LayerCoord>>& get_ta_result_list() { return _ta_result_list; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_ta_pin_list(std::vector<TAPin>& ta_pin_list) { _ta_pin_list = ta_pin_list; }
-  void set_ta_result_tree(MTree<RTNode>& ta_result_tree) { _ta_result_tree = ta_result_tree; }
+  void set_gr_result_tree(const MTree<Guide>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
+  void set_guide_seg_tree(const MTree<GuideSeg>& guide_seg_tree) { _guide_seg_tree = guide_seg_tree; }
+  void set_ta_result_list(std::vector<Segment<LayerCoord>>& ta_result_list) { _ta_result_list = ta_result_list; }
 
  private:
   Net* _origin_net = nullptr;
   irt_int _net_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<TAPin> _ta_pin_list;
-  MTree<RTNode> _ta_result_tree;
+  MTree<Guide> _gr_result_tree;
+  MTree<GuideSeg> _guide_seg_tree;
+  std::vector<Segment<LayerCoord>> _ta_result_list;
 };
 
 }  // namespace irt

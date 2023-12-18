@@ -50,12 +50,12 @@ class Logger
   }
 
   template <typename T, typename... Args>
-  void warning(Loc location, const T& value, const Args&... args)
+  void warn(Loc location, const T& value, const Args&... args)
   {
     if (_log_level > 1) {
       return;
     }
-    printLog(LogLevel::kWarning, location, value, args...);
+    printLog(LogLevel::kWarn, location, value, args...);
   }
 
   template <typename T, typename... Args>
@@ -94,9 +94,9 @@ class Logger
         log_color_start = "\033[1;34m";
         log_level_char = "Info";
         break;
-      case LogLevel::kWarning:
+      case LogLevel::kWarn:
         log_color_start = "\033[1;33m";
-        log_level_char = "Warning";
+        log_level_char = "Warn";
         break;
       case LogLevel::kError:
         log_color_start = "\033[1;31m";
@@ -104,7 +104,7 @@ class Logger
         break;
       default:
         log_color_start = "\033[1;32m";
-        log_level_char = "Info";
+        log_level_char = "None";
         break;
     }
     const char* log_color_end = "\033[0m";

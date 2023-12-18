@@ -167,29 +167,7 @@ void ResourceAllocator::updateBlockageMap(RAModel& ra_model)
 
   for (const Blockage& routing_blockage : routing_blockage_list) {
     LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    addRectToEnv(ra_model, RASourceType::kBlockage, DRCRect(-1, blockage_real_rect, true));
-  }
-}
-
-void ResourceAllocator::addRectToEnv(RAModel& ra_model, RASourceType ra_source_type, DRCRect drc_rect)
-{
-  if (drc_rect.get_is_routing() == false) {
-    return;
-  }
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
-
-  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_rect)) {
-    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-    for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), ChangeType::kAdd, drc_rect);
-      }
-    }
+    updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kBlockage, DRCShape(-1, blockage_real_rect, true));
   }
 }
 
@@ -197,33 +175,34 @@ void ResourceAllocator::updateNetShapeMap(RAModel& ra_model)
 {
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (const EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        addRectToEnv(ra_model, RASourceType::kNetShape, DRCRect(ra_net.get_net_idx(), shape_real_rect, true));
+      for (EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect = routing_shape.getRealLayerRect();
+        updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kNetShape, DRCShape(ra_net.get_net_idx(), shape_real_rect, true));
       }
     }
   }
 }
 
-void ResourceAllocator::updateNetReservedViaMap(RAModel& ra_model)
+void ResourceAllocator::updateReservedViaMap(RAModel& ra_model)
 {
   irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    std::set<LayerCoord, CmpLayerCoordByXASC> real_coord_set;
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      real_coord_set.insert(ra_pin.get_protected_access_point().getRealLayerCoord());
-    }
-    for (const LayerCoord& real_coord : real_coord_set) {
-      irt_int layer_idx = real_coord.get_layer_idx();
+      AccessPoint& protected_access_point = ra_pin.get_protected_access_point();
+      std::set<Orientation>& access_orien_set = protected_access_point.get_access_orien_set();
+      if (!RTUtil::exist(access_orien_set, Orientation::kUp) && !RTUtil::exist(access_orien_set, Orientation::kDown)) {
+        continue;
+      }
+      irt_int layer_idx = protected_access_point.get_layer_idx();
       for (irt_int via_below_layer_idx :
            RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
         std::vector<Segment<LayerCoord>> segment_list;
-        segment_list.emplace_back(LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx),
-                                  LayerCoord(real_coord.get_planar_coord(), via_below_layer_idx + 1));
-        for (DRCRect& drc_rect : DC_INST.getDRCRectList(ra_net.get_net_idx(), segment_list)) {
-          addRectToEnv(ra_model, RASourceType::kReservedVia, drc_rect);
+        segment_list.emplace_back(LayerCoord(protected_access_point.get_real_coord(), via_below_layer_idx),
+                                  LayerCoord(protected_access_point.get_real_coord(), via_below_layer_idx + 1));
+        for (DRCShape& drc_shape : getDRCShapeList(ra_net.get_net_idx(), segment_list)) {
+          updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kReservedVia, drc_shape);
         }
       }
     }
@@ -256,10 +235,10 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
         }
       }
       for (RASourceType ra_source_type : {RASourceType::kBlockage, RASourceType::kNetShape, RASourceType::kReservedVia}) {
-        for (const auto& [net_idx, rect_set] :
-             DC_INST.getLayerNetRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
+        for (auto& [info, rect_set] :
+             DC_INST.getLayerInfoRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
           for (const LayerRect& rect : rect_set) {
-            for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCRect(net_idx, rect, true))) {
+            for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCShape(info, rect, true))) {
               std::vector<PlanarRect> new_wire_list;
               for (PlanarRect& wire : wire_list) {
                 if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
@@ -433,7 +412,7 @@ void ResourceAllocator::iterative(RAModel& ra_model)
 
   for (irt_int outer_iter = 1; outer_iter <= ra_outer_max_iter_num; outer_iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Iteration(", outer_iter, "/", ra_outer_max_iter_num, ") ******");
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", outer_iter, "/", ra_outer_max_iter_num, ") ******");
     double penalty_para = (1 / (2 * ra_initial_penalty));
     ra_model.set_curr_outer_iter(outer_iter);
     allocateRAModel(ra_model, penalty_para);
@@ -442,10 +421,12 @@ void ResourceAllocator::iterative(RAModel& ra_model)
     reportRAModel(ra_model);
     // outputResourceMap(ra_model);
     ra_initial_penalty *= ra_penalty_drop_rate;
-    LOG_INST.info(Loc::current(), "****** End Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
+    LOG_INST.info(Loc::current(), "****** End Model Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
     if (stopOuterRAModel(ra_model)) {
-      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      if (outer_iter < ra_outer_max_iter_num) {
+        LOG_INST.info(Loc::current(), "****** Terminate the iteration by reaching the condition in advance! ******");
+      }
       ra_model.set_curr_outer_iter(-1);
       break;
     }
@@ -488,7 +469,9 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
     LOG_INST.info(Loc::current(), "Iter(", inner_iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
                   ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
     if (stopInnerRAModel(ra_model)) {
-      LOG_INST.info(Loc::current(), "****** Reached the stopping condition, ending the iteration prematurely! ******");
+      if (inner_iter < ra_inner_max_iter_num) {
+        LOG_INST.info(Loc::current(), "****** Terminate the iteration by reaching the condition in advance! ******");
+      }
       ra_model.set_curr_inner_iter(-1);
       break;
     }
@@ -842,6 +825,37 @@ void ResourceAllocator::update(RAModel& ra_model)
 {
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
+  }
+}
+
+#endif
+
+#if 1  // update env
+
+std::vector<DRCShape> ResourceAllocator::getDRCShapeList(irt_int ra_net_idx, std::vector<Segment<LayerCoord>>& segment_list)
+{
+  return DC_INST.getDRCShapeList(ra_net_idx, segment_list);
+}
+
+void ResourceAllocator::updateRectToUnit(RAModel& ra_model, ChangeType change_type, RASourceType ra_source_type, DRCShape drc_shape)
+{
+  if (drc_shape.get_is_routing() == false) {
+    return;
+  }
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
+
+  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
+
+  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
+    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
+      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
+        RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
+        DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), change_type, drc_shape);
+      }
+    }
   }
 }
 
