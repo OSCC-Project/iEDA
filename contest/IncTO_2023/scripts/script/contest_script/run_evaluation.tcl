@@ -41,7 +41,7 @@ init_sta -output ./result/sta/case1/case1_timing.log
 #===========================================================
 ##   run evaluation
 #===========================================================
-run_contest_evaluation -guide ./result/output/case1/case1_output.guide -report ./result/report/case1/case1_evaluation.rpt
+run_contest_evaluation -guide ./result/output/case1/case1_output.guide
 
 #===========================================================
 ##   Exit 
