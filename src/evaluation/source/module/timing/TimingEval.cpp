@@ -17,6 +17,8 @@
 #include "TimingEval.hpp"
 
 #include <float.h>
+
+#include <regex>
 #include <unordered_map>
 
 #include "EvalUtil.hpp"
@@ -45,17 +47,17 @@ void TimingEval::createNetPointPair(idb::IdbNet* idb_net, std::vector<std::pair<
 {
   std::vector<idb::IdbPin*> node_list;
   node_list.reserve(idb_net->get_load_pins().size() + 1);
-  if(idb_net->get_driving_pin()){
+  if (idb_net->get_driving_pin()) {
     node_list.push_back(idb_net->get_driving_pin());
   }
-  for(auto load_pin : idb_net->get_load_pins()){
+  for (auto load_pin : idb_net->get_load_pins()) {
     node_list.push_back(load_pin);
   }
-  
+
   size_t node_num = node_list.size();
-  if (node_num <= 1){
-    //TODO
-  }else if (node_num == 2){
+  if (node_num <= 1) {
+    // TODO
+  } else if (node_num == 2) {
     auto point_1 = *(node_list.at(0)->get_average_coordinate());
     auto point_2 = *(node_list.at(1)->get_average_coordinate());
     Point<int32_t> eval_point_1(point_1.get_x(), point_1.get_y());
@@ -68,7 +70,7 @@ void TimingEval::createNetPointPair(idb::IdbNet* idb_net, std::vector<std::pair<
     } else {
       point_pair.push_back(std::make_pair(eval_point_1, eval_point_2));
     }
-  }else {
+  } else {
     std::set<Point<int32_t>, PointCMP> coord_set;
     // deal with the repeating location's node.
     for (auto* node : node_list) {
@@ -82,19 +84,19 @@ void TimingEval::createNetPointPair(idb::IdbNet* idb_net, std::vector<std::pair<
   }
 }
 
-void TimingEval::createNetNodelist(idb::IdbNet* idb_net, std::vector<idb::IdbPin*>& node_list )
+void TimingEval::createNetNodelist(idb::IdbNet* idb_net, std::vector<idb::IdbPin*>& node_list)
 {
   node_list.reserve(idb_net->get_load_pins().size() + 1);
-  if(idb_net->get_driving_pin()){
+  if (idb_net->get_driving_pin()) {
     node_list.push_back(idb_net->get_driving_pin());
   }
-  for(auto load_pin : idb_net->get_load_pins()){
+  for (auto load_pin : idb_net->get_load_pins()) {
     node_list.push_back(load_pin);
   }
 }
 
-
-void TimingEval::obtainFlutePointPair(std::vector<Point<int32_t>>& point_vec, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair)
+void TimingEval::obtainFlutePointPair(std::vector<Point<int32_t>>& point_vec,
+                                      std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair)
 {
   Flute::Tree flute_tree;
   size_t coord_num = point_vec.size();
@@ -138,7 +140,6 @@ void TimingEval::obtainFlutePointPair(std::vector<Point<int32_t>>& point_vec, st
   }
 }
 
-
 void TimingEval::initTimingDataFromIDB()
 {
   Flute::readLUT();
@@ -164,21 +165,21 @@ void TimingEval::initTimingDataFromIDB()
     createNetNodelist(idb_net, node_list);
     std::map<Point<int32_t>, idb::IdbPin*, PointCMP> point_to_node;
     std::map<Point<int32_t>, TimingPin*, PointCMP> point_to_timing_pin;
-    for (auto* node : node_list){
+    for (auto* node : node_list) {
       auto& node_loc = *(node->get_average_coordinate());
       Point<int32_t> new_node_loc(node_loc.get_x(), node_loc.get_y());
       auto iter = point_to_node.find(new_node_loc);
-      if (iter != point_to_node.end()){
+      if (iter != point_to_node.end()) {
         auto* timing_pin_1 = wrapTimingTruePin(node);
         auto* timing_pin_2 = wrapTimingTruePin(iter->second);
         timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
-      }else{
+      } else {
         point_to_node.emplace(new_node_loc, node);
       }
     }
 
     auto iter = net_pinpair_map.find(idb_net);
-    if (iter == net_pinpair_map.end()){
+    if (iter == net_pinpair_map.end()) {
       LOG_ERROR << "ERROR because net has not been initialize";
       exit(1);
     }
@@ -229,19 +230,18 @@ void TimingEval::initTimingDataFromIDB()
       timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
     }
     _timing_net_list.push_back(timing_net);
-  }    
+  }
 }
 
-
-TimingPin* TimingEval::wrapTimingTruePin(idb::IdbPin* pin){
+TimingPin* TimingEval::wrapTimingTruePin(idb::IdbPin* pin)
+{
   TimingPin* timing_pin = new eval::TimingPin();
   timing_pin->set_name(pin->get_pin_name());
   timing_pin->set_coord(Point<int64_t>(pin->get_average_coordinate()->get_x(), pin->get_average_coordinate()->get_y()));
   timing_pin->set_is_real_pin(true);
 
-  return timing_pin;  
+  return timing_pin;
 }
-
 
 TimingPin* TimingEval::wrapTimingFakePin(int id, Point<int32_t> coordi)
 {
@@ -259,7 +259,6 @@ std::string TimingEval::fixSlash(std::string raw_str)
   std::regex re(R"(\\)");
   return std::regex_replace(raw_str, re, "");
 }
-
 
 TimingNet* TimingEval::add_timing_net(const std::string& name)
 {
