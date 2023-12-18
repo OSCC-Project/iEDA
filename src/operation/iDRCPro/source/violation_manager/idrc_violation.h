@@ -1,0 +1,83 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
+#pragma once
+
+#include <set>
+#include <vector>
+
+namespace idrc {
+
+enum class Type
+{
+  kNone,
+  kRect,
+  kPolygon,
+  kMax
+};
+
+class DrcViolation
+{
+ public:
+  DrcViolation(int layer_id, std::set<int> net_ids, Type type) : _layer_id(layer_id), _net_ids(net_ids), _type(type) {}
+  ~DrcViolation() {}
+  int get_layer_id() { return _layer_id; }
+  std::set<int>& get_net_ids() { return _net_ids; }
+  Type get_type() { return _type; }
+  bool is_rect() { return _type == Type::kRect; }
+  bool is_polygon() { return _type == Type::kPolygon; }
+
+ private:
+  int _layer_id;
+  std::set<int> _net_ids;
+  Type _type;
+};
+
+class DrcViolationRect : public DrcViolation
+{
+ public:
+  DrcViolationRect(int layer_id, std::set<int> net_ids, int llx, int lly, int urx, int ury)
+      : DrcViolation(layer_id, net_ids, Type::kRect), _llx(llx), _lly(lly), _urx(urx), _ury(ury)
+  {
+  }
+  ~DrcViolationRect() {}
+
+  int get_llx() { return _llx; }
+  int get_lly() { return _lly; }
+  int get_urx() { return _urx; }
+  int get_ury() { return _ury; }
+
+ private:
+  int _llx;
+  int _lly;
+  int _urx;
+  int _ury;
+};
+
+class DrcViolationPolygon : public DrcViolation
+{
+ public:
+  DrcViolationPolygon(int layer_id, std::set<int> net_ids) : DrcViolation(layer_id, net_ids, Type::kPolygon) {}
+  ~DrcViolationPolygon() {}
+
+  std::vector<std::pair<int, int>>& get_points() { return _points; }
+  void addPoints(int x, int y) { _points.emplace_back(std::make_pair(x, y)); }
+
+ private:
+  std::vector<std::pair<int, int>> _points;
+};
+
+}  // namespace idrc

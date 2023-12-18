@@ -799,6 +799,7 @@ class IdbLayers
   {
     return _routing_layers.size() > 0 ? dynamic_cast<IdbLayerRouting*>(_routing_layers[0]) : nullptr;
   }
+bool is_pr_layer(IdbLayer* layer) { return layer->get_order() >= get_bottom_routing_layer()->get_order(); }
   vector<IdbLayer*>& get_cut_layers() { return _cut_layers; }
   int32_t get_cut_layers_number() { return _cut_layers.size(); }
   const int32_t get_layers_num() { return _layers.size(); }
