@@ -57,6 +57,7 @@ class Str
   static bool equal(const char* lhs, const char* rhs);
   static bool noCaseEqual(const char* lhs, const char* rhs);
   static const char* trimmed(const char* str);
+  static const char* trimmedWithSquareBracket(const char* str);
   static std::pair<std::string, std::string> splitTwoPart(const char* orig, const char* delimiter);
   static std::vector<std::string> split(const char* orig, const char* delimiter);
   static std::vector<int> splitInt(const char* orig, const char* delimiter);

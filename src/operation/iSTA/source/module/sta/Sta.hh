@@ -42,9 +42,10 @@
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Liberty.hh"
+#include "liberty/LibertyClassifyCell.hh"
 #include "netlist/Netlist.hh"
-#include "parser/liberty/mLibertyEquivCells.hh"
 #include "sdc/SdcSetIODelay.hh"
+#include "verilog/VerilogParserRustC.hh"
 #include "verilog/VerilogReader.hh"
 
 namespace ista {
@@ -194,6 +195,7 @@ class Sta {
   SdcConstrain* getConstrain();
 
   unsigned readDesign(const char* verilog_file);
+  unsigned readDesignWithRustParser(const char* file_name);
   unsigned readLiberty(const char* lib_file);
   unsigned readLiberty(std::vector<std::string>& lib_files);
   unsigned readSdc(const char* sdc_file);
@@ -214,6 +216,8 @@ class Sta {
 
   void readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
+  void readVerilogWithRustParser(const char* verilog_file);
+  void linkDesignWithRustParser();
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
   }
@@ -257,8 +261,7 @@ class Sta {
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs,
-                      std::vector<LibertyLibrary*>& map_libs);
+  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs);
 
   Vector<LibertyCell*>* equivCells(LibertyCell* cell);
 
@@ -474,13 +477,18 @@ class Sta {
   void setCapUnit(CapacitiveUnit new_cap_unit) { _cap_unit = new_cap_unit; };
   double convertCapUnit(const double src_value);
 
-  std::optional<double> getInstSlack(AnalysisMode analysis_mode,
-                                     Instance* the_inst);
+  std::optional<double> getInstWorstSlack(AnalysisMode analysis_mode,
+                                          Instance* the_inst);
+  std::optional<double> getInstTotalNegativeSlack(AnalysisMode analysis_mode,
+                                                  Instance* the_inst);
   std::optional<double> getInstTransition(AnalysisMode analysis_mode,
                                           Instance* the_inst);
 
   std::map<Instance::Coordinate, double> displayTimingMap(
       AnalysisMode analysis_mode);
+  std::map<Instance::Coordinate, double> displayTimingTNSMap(
+      AnalysisMode analysis_mode);
+
   std::map<Instance::Coordinate, double> displayTransitionMap(
       AnalysisMode analysis_mode);
 
@@ -498,15 +506,20 @@ class Sta {
   std::optional<std::string> _path_group;     //!< The path group.
   std::unique_ptr<SdcConstrain> _constrains;  //!< The sdc constrain.
   VerilogReader _verilog_reader;
+  RustVerilogReader _rust_verilog_reader;
   std::string _top_module_name;
   std::vector<std::unique_ptr<VerilogModule>>
       _verilog_modules;  //!< The current design parsed from verilog file.
   VerilogModule* _top_module = nullptr;  //!< The design top module.
+  std::vector<std::unique_ptr<RustVerilogModule>>
+      _rust_verilog_modules;  //!< The current design parsed from verilog file.
+                              //!< whether need unique_ptr?
+  RustVerilogModule* _rust_top_module = nullptr;
   Netlist _netlist;  //!< The current top netlist for sta analysis.
   Vector<std::unique_ptr<LibertyLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::unique_ptr<LibertyEquivCells>
+  std::unique_ptr<LibertyClassifyCell>
       _equiv_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.

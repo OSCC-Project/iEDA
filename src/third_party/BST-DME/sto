@@ -1,0 +1,4 @@
+#\mv -f old/$1/*  /home/tsao/trashcan ;
+\rm -rf old/$1
+mkdir old/$1
+\cp -f Makefile *.cxx *.h old/$1

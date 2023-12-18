@@ -13,9 +13,7 @@ add_library(eval_wrapper
 target_link_libraries(eval_wrapper
     PUBLIC
         eval_config
-        eval_wirelength
-        eval_congestion
-        eval_gds_wrapper
+        eval_data
 )
 
 target_include_directories(eval_wrapper

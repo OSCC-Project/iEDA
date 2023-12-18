@@ -346,6 +346,7 @@ void CmdCreateGeneratedClock::set_generate_clock(
       }
     }
     _the_generate_clock->set_source_pins(std::move(objs));
+    _the_generate_clock->set_is_need_update_source_clock();
   } else {
     const char* source_name = _source_sdc_clock->get_clock_name();
     _the_generate_clock->set_source_name(source_name);

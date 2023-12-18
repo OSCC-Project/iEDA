@@ -70,7 +70,7 @@ TEST_F(StaTest, simple_design) {
         Str::printf("%s/%s", design_work_space, "osu018_stdcells.lib");
 
     Liberty lib;
-    auto load_lib = lib.loadLiberty(lib_name.c_str());
+    auto load_lib = lib.loadLibertyWithRustParser(lib_name.c_str());
 
     ista->addLib(std::move(load_lib));
 

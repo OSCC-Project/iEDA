@@ -50,47 +50,6 @@ class CtsPoint
     return *this;
   }
 
-  template <typename PointType>
-  CtsPoint& operator=(const PointType& that)
-  {
-    _coords[0] = static_cast<coord_t>(CtsPoint<PointType>::get(that, kX));
-    _coords[1] = static_cast<coord_t>(CtsPoint<PointType>::get(that, kX));
-    return *this;
-  }
-
-  template <typename PointType>
-  CtsPoint& operator+=(const PointType& that)
-  {
-    _coords[0] += CtsPoint<PointType>::get(that, kX);
-    _coords[1] += CtsPoint<PointType>::get(that, kY);
-    return *this;
-  }
-
-  template <typename PointType>
-  CtsPoint& operator-=(const PointType& that)
-  {
-    _coords[0] -= CtsPoint<PointType>::get(that, kX);
-    _coords[1] -= CtsPoint<PointType>::get(that, kY);
-    return *this;
-  }
-
-  CtsPoint& operator/=(const coordinate_type& times)
-  {
-    _coords[0] /= times;
-    _coords[1] /= times;
-    return *this;
-  }
-
-  coord_t get(const size_t& orient) const { return _coords[orient]; }
-
-  static coord_t get(const CtsPoint& point, const size_t& orient) { return point._coords[orient]; }
-
-  CtsPoint& set(const size_t& orient, const coord_t& value)
-  {
-    _coords[orient] = value;
-    return *this;
-  }
-
   coord_t x() const { return _coords[kX]; }
   coord_t y() const { return _coords[kY]; }
 
@@ -109,7 +68,7 @@ class CtsPoint
   bool operator!=(const CtsPoint& that) const { return !(*this == that); }
   bool operator<(const CtsPoint& rhs) const
   {
-    return _coords[kY] < rhs._coords[kY] || (_coords[kY] == rhs._coords[kY] && _coords[kX] < rhs._coords[kX]);
+    return _coords[kX] < rhs._coords[kX] || (_coords[kX] == rhs._coords[kX] && _coords[kY] < rhs._coords[kY]);
   }
   bool operator<=(const CtsPoint& that) const { return !(that < *this); }
   bool operator>(const CtsPoint& that) const { return that < *this; }
@@ -119,12 +78,12 @@ class CtsPoint
   template <typename TimeType>
   CtsPoint operator/(const TimeType& i) const
   {
-    return CtsPoint(static_cast<coord_t>(this->x() / i), static_cast<T>(this->y() / i));
+    return CtsPoint(static_cast<coord_t>(this->x() / i), static_cast<coord_t>(this->y() / i));
   }
   template <typename TimeType>
   CtsPoint operator*(const TimeType& i) const
   {
-    return CtsPoint(static_cast<coord_t>(this->x() * i), static_cast<T>(this->y() * i));
+    return CtsPoint(static_cast<coord_t>(this->x() * i), static_cast<coord_t>(this->y() * i));
   }
   CtsPoint operator+=(const CtsPoint& that)
   {

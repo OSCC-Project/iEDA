@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -51,6 +51,7 @@ class PwrGroupData {
   ~PwrGroupData() = default;
 
   auto get_group_type() { return _group_type; }
+  auto get_obj() { return _obj; }
 
   void set_internal_power(double internal_power) {
     _internal_power = internal_power;
@@ -64,6 +65,12 @@ class PwrGroupData {
     _leakage_power = leakage_power;
   }
   [[nodiscard]] double get_leakage_power() const { return _leakage_power; }
+  [[nodiscard]] double get_total_power() const {
+    return _internal_power + _switch_power + _leakage_power;
+  }
+
+  void set_nom_voltage(double nom_voltage) { _nom_voltage = nom_voltage; }
+  [[nodiscard]] double get_nom_voltage() const { return _nom_voltage; }
 
  private:
   PwrGroupType _group_type;  //!< The group type.
@@ -71,6 +78,8 @@ class PwrGroupData {
   double _internal_power = 0.0;
   double _switch_power = 0.0;
   double _leakage_power = 0.0;
+
+  double _nom_voltage = 0.0;
 
   DesignObject* _obj;
 };

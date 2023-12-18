@@ -144,4 +144,9 @@ std::pair<int, int> CongGrid::getMinMaxY(CongNet* net)
   return std::make_pair(lower_idx, upper_idx);
 }
 
+void CongBin::clear_net_list(){
+  _net_list.clear();
+}
+
+
 }  // namespace eval

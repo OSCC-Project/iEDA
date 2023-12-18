@@ -478,12 +478,11 @@ StaClock* StaVertex::getPropClock(AnalysisMode analysis_mode,
  * @param analysis_mode
  * @param trans_type
  * @param is_data_path
- * @return std::set<StaClock*>
+ * @return std::unordered_set<StaClock*>
  */
-std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
-                                                  TransType trans_type,
-                                                  bool is_data_path) {
-  std::set<StaClock*> prop_clocks;
+std::unordered_set<StaClock*> StaVertex::getPropagatedClock(
+    AnalysisMode analysis_mode, TransType trans_type, bool is_data_path) {
+  std::unordered_set<StaClock*> prop_clocks;
   auto get_data_clock = [&prop_clocks, analysis_mode, trans_type](auto* data) {
     if ((data->get_delay_type() == analysis_mode ||
          AnalysisMode::kMaxMin == analysis_mode) &&
@@ -494,12 +493,16 @@ std::set<StaClock*> StaVertex::getPropagatedClock(AnalysisMode analysis_mode,
         if (auto* prop_clock =
                 path_delay->get_launch_clock_data()->get_prop_clock();
             prop_clock) {
-          prop_clocks.insert(prop_clock);
+          if (!prop_clocks.contains(prop_clock)) {
+            prop_clocks.insert(prop_clock);
+          }
         }
       } else {
         auto* clock_data = dynamic_cast<StaClockData*>(data);
         auto* prop_clock = clock_data->get_prop_clock();
-        prop_clocks.insert(prop_clock);
+        if (!prop_clocks.contains(prop_clock)) {
+          prop_clocks.insert(prop_clock);
+        }
       }
     }
   };
@@ -693,6 +696,35 @@ std::optional<int64_t> StaVertex::getSlack(AnalysisMode analysis_mode,
   }
 
   return std::nullopt;
+}
+
+/**
+ * @brief get total negative slack in Ns.
+ *
+ * @param analysis_mode
+ * @return std::optional<double>
+ */
+std::optional<double> StaVertex::getTNSNs(AnalysisMode analysis_mode) {
+  std::optional<double> vertex_tns_ns;
+  StaData* data;
+  FOREACH_DELAY_DATA(this, data) {
+    if (data->get_delay_type() == analysis_mode) {
+      auto* path_delay = dynamic_cast<StaPathDelayData*>(data);
+      auto at_fs = path_delay->get_arrive_time();
+      auto rt_fs = path_delay->get_req_time();
+      if (!rt_fs) {
+        continue;
+      }
+
+      double slack_fs = (analysis_mode == AnalysisMode::kMax)
+                            ? (*rt_fs - at_fs)
+                            : (at_fs - *rt_fs);
+      double slack_ns = FS_TO_NS(slack_fs);
+      vertex_tns_ns ? (*vertex_tns_ns) += slack_ns : vertex_tns_ns = slack_ns;
+    }
+  }
+
+  return vertex_tns_ns;
 }
 
 /**

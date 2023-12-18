@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -120,8 +120,7 @@ TEST_F(TimingEngineTest, resizer) {
       equiv_libs.push_back(lib.get());
     }
 
-    std::vector<LibertyLibrary*> map_libs;
-    timing_engine->makeEquivCells(equiv_libs, map_libs);
+    timing_engine->makeEquivCells(equiv_libs);
     auto* liberty_cell = timing_engine->findLibertyCell("NAND2_X1");
     auto* equiv_cells = timing_engine->equivCells(liberty_cell);
     auto num_equiv_cells = equiv_cells->size();
@@ -253,6 +252,27 @@ TEST_F(TimingEngineTest, move_Instance) {
 
   timing_engine->incrUpdateTiming();
   timing_engine->reportTiming();
+}
+
+TEST_F(TimingEngineTest, equiv_lib) {
+  TimingEngine* timing_engine = TimingEngine::getOrCreateTimingEngine();
+  timing_engine->set_num_threads(1);
+
+  std::vector<const char*> lib_files = {
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib"};
+
+  timing_engine->readLiberty(lib_files);
+
+  std::vector<LibertyLibrary*> equiv_libs;
+  auto& all_libs = timing_engine->getAllLib();
+  for (auto& lib : all_libs) {
+    for (auto& cell : lib->get_cells()) {
+      equiv_libs.push_back(lib.get());
+      break;
+    }
+  }
+
+  timing_engine->makeEquivCells(equiv_libs);
 }
 
 }  // namespace

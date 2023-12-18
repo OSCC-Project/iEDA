@@ -47,6 +47,7 @@ int registerCmdDB()
   registerTclCmd(CmdSaveNetlist, "netlist_save");
   registerTclCmd(CmdSaveJSON, "json_save");
   registerTclCmd(CmdSaveGDS, "gds_save");
+  registerTclCmd(CmdGenerateMPScript, "aimp_random");
 
   /// idb operator
   registerTclCmd(CmdIdbSetNet, "set_net");

@@ -1,0 +1,33 @@
+
+The following two files are examples of the input to the BST/DME program.
+1. p1 contains the sink location and per-unit resistance/capacitance.
+2. p1.top_B10 contains a topology for the above sinks in p1.
+  (Actually, p1.top_B10 contains the resulting topology after running
+   "bst -i p1 -B 10"".
+
+  Note that the following two runs should produce the same results
+1. "bst -i p1 -B 10 "       
+2. "bst -i p1 -B 10 -G p1.top_B10" 
+  The first run generate a topology in file  p1.top_B10.
+The second run just do the embedding of the same topology in  p1.top_B10.
+
+
+  Users can create their own sink input file and topology files farily easily
+after reading the comments in the above two files.
+
+
+
+
+The following two files are the examples of the output files from BST/DME.
+Users can view  them by using the xgraph package, which is
+can be obtained from http://www.cs.toronto.edu/~radford/xgraph.html
+ 
+1. p1.xg_B10    
+2. p1_area.xg_B10
+
+  To view the resulting bounded-skew tree, simply type 
+      "xgraph -tk -P r1.xg_B10"
+
+  to view the corresponding tree of merging regions, simply type 
+      "xgraph -tk -P p1_area.xg_B10"
+

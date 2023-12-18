@@ -24,6 +24,7 @@
 #include "def_service.h"
 #include "lef_service.h"
 #include "netlist/Net.hh"
+#include "idm.h"
 
 namespace eval {
 
@@ -34,6 +35,8 @@ class TimingEval
   TimingEval(idb::IdbBuilder* idb_builder, const char* sta_workspace_path, std::vector<const char*> lib_file_path_list,
              const char* sdc_file_path);
   ~TimingEval() = default;
+
+  void initTimingDataFromIDB();
 
   // getter, called by iPL
   double getEarlySlack(const std::string& pin_name) const;
@@ -77,6 +80,15 @@ class TimingEval
   std::vector<TimingNet*> _timing_net_list;
   ista::TimingEngine* _timing_engine = nullptr;
   int32_t _unit = -1;
+
+  std::string fixSlash(std::string raw_str);
+  void createNetPointPair(idb::IdbNet* idb_net, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair);
+  void obtainFlutePointPair(std::vector<Point<int32_t>>& point_vec,
+                            std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair);
+  void createNetNodelist(idb::IdbNet* idb_net, std::vector<idb::IdbPin*>& node_list );
+  TimingPin* wrapTimingTruePin(idb::IdbPin* pin);
+  TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi);
+
 };
 }  // namespace eval
 

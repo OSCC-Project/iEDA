@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -36,11 +36,11 @@
 #include "BTreeMap.hh"
 #include "FlatMap.hh"
 #include "FlatSet.hh"
+#include "LibertyParserRustC.hh"
 #include "Vector.hh"
 #include "include/Config.hh"
 #include "include/Type.hh"
 #include "log/Log.hh"
-#include "mLibertyExpr.hh"
 #include "string/Str.hh"
 #include "string/StrMap.hh"
 
@@ -537,8 +537,8 @@ class LibertyPort : public LibertyObject
   void set_port_slew_limit(AnalysisMode mode, double slew_limit);
   std::optional<double> get_port_slew_limit(AnalysisMode mode);
 
-  void set_func_expr(LibertyExpr* lib_expr);
-  LibertyExpr* get_func_expr();
+  void set_func_expr(RustLibertyExpr* lib_expr) { _func_expr = lib_expr; }
+  RustLibertyExpr* get_func_expr() { return _func_expr; }
 
   void set_func_expr_str(const char* func_expr_str) { _func_expr_str = func_expr_str; }
   auto& get_func_expr_str() { return _func_expr_str; }
@@ -578,7 +578,7 @@ class LibertyPort : public LibertyObject
   LibertyPortType _port_type = LibertyPortType::kDefault;
   bool _clock_gate_clock_pin = false;   //!< The flag of gate clock pin.
   bool _clock_gate_enable_pin = false;  //!< The flag of gate enable pin.
-  std::unique_ptr<LibertyExpr> _func_expr;
+  RustLibertyExpr* _func_expr = nullptr;
   std::string _func_expr_str;                                        //!< store func expr string for debug.
   double _port_cap = 0.0;                                            //!< The input pin corresponding to the port has capacitance.
   std::array<std::optional<double>, MODE_TRANS_SPLIT> _port_caps{};  //!< May be port cap split max rise, max fall, min rise,
@@ -832,9 +832,8 @@ class LibertyArc : public LibertyObject
   void set_table_model(std::unique_ptr<LibertyTableModel>&& table_model) { _table_model = std::move(table_model); }
   LibertyTableModel* get_table_model() { return _table_model.get(); }
 
-  double getDelayOrConstrainCheck(TransType trans_type, double slew, double load_or_constrain_slew);
-
-  double getSlew(TransType trans_type, double slew, double load);
+  double getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew);
+  double getSlewNs(TransType trans_type, double slew, double load);
 
   std::unique_ptr<LibetyCurrentData> getOutputCurrent(TransType trans_type, double slew, double load);
 
@@ -1424,6 +1423,20 @@ class LibertyLibrary
   void set_resistance_unit(ResistanceUnit resistance_unit) { _resistance_unit = resistance_unit; }
   auto get_resistance_unit() { return _resistance_unit; }
 
+  void set_time_unit(TimeUnit time_unit) { _time_unit = time_unit; }
+  auto get_time_unit() { return _time_unit; }
+  double convert_time_unit_to_ns(double src_value)
+  {
+    if (get_time_unit() == TimeUnit::kNS) {
+      return src_value;
+    } else if (get_time_unit() == TimeUnit::kPS) {
+      return src_value * 1e-3;
+    } else if (get_time_unit() == TimeUnit::kFS) {
+      return src_value * 1e-6;
+    }
+    return 0.0;
+  }
+
   std::vector<std::unique_ptr<LibertyCell>>& get_cells() { return _cells; }
 
   void set_default_max_transition(double default_max_transition) { _default_max_transition = default_max_transition; }
@@ -1512,6 +1525,7 @@ class LibertyLibrary
 
   CapacitiveUnit _cap_unit = CapacitiveUnit::kFF;
   ResistanceUnit _resistance_unit = ResistanceUnit::kkOHM;
+  TimeUnit _time_unit = TimeUnit::kNS;
 
   std::optional<double> _default_max_transition;
   std::optional<double> _default_max_fanout;
@@ -1851,75 +1865,6 @@ class LibertyBuilder
 };
 
 /**
- * @brief The liberty reader is used to read the related keyword.
- *
- */
-class LibertyReader
-{
- public:
-  explicit LibertyReader(const char* file_name) : _file_name(file_name) {}
-  ~LibertyReader() = default;
-
-  LibertyReader(LibertyReader&& other) noexcept = default;
-  LibertyReader& operator=(LibertyReader&& rhs) noexcept = default;
-
-  void parseBegin(FILE* fp);
-  int parse();
-  void parseEnd(FILE* fp);
-
-  unsigned readLib();
-
-  const char* get_file_name() { return _file_name.c_str(); }
-  void incrLineNo() { ++_line_no; }
-  [[nodiscard]] int get_line_no() const { return _line_no; }
-
-  void clearRecordStr() { _string_buf.erase(); }
-  const char* get_record_str() { return _string_buf.c_str(); }
-  void recordStr(const char* str) { _string_buf += str; }
-
-  void set_library_group(LibertyGroupStmt* library_group) { _library_group.reset(library_group); }
-
-  char* stringCopy(const char* str);
-  void stringDelete(const char* str) { delete[] str; }
-
-  unsigned visitVector(LibertyStmt* group);
-  unsigned visitPowerTable(LibertyStmt* group);
-  unsigned visitCurrentTable(LibertyStmt* group);
-  unsigned visitTable(LibertyStmt* group);
-  unsigned visitInternalPower(LibertyStmt* group);
-  unsigned visitTiming(LibertyStmt* group);
-  unsigned visitPin(LibertyStmt* group);
-  unsigned visitBus(LibertyStmt* group);
-  unsigned visitLeakagePower(LibertyStmt* group);
-  unsigned visitCell(LibertyStmt* group);
-  unsigned visitWireLoad(LibertyStmt* group);
-  unsigned visitLuTableTemplate(LibertyStmt* group);
-  unsigned visitType(LibertyStmt* group);
-  unsigned visitOutputCurrentTemplate(LibertyStmt* group);
-  unsigned visitLibrary(LibertyStmt* group);
-  unsigned visitGroup(LibertyStmt* group);
-  unsigned visitSimpleAttri(LibertyStmt* attri);
-  unsigned visitAxisOrValues(LibertyStmt* attri);
-  unsigned visitComplexAttri(LibertyStmt* attri);
-
-  LibertyGroupStmt* get_library_group() { return _library_group.get(); }
-  auto takeLibraryGroup() { return std::move(_library_group); }
-  void set_library_builder(std::unique_ptr<LibertyBuilder>&& library_builder) { _library_builder = std::move(library_builder); }
-  LibertyBuilder* get_library_builder() { return _library_builder.get(); }
-
- private:
-  std::unique_ptr<LibertyGroupStmt> _library_group;
-  std::unique_ptr<LibertyBuilder> _library_builder;
-
-  std::string _file_name;    //!< The verilog file name.
-  int _line_no = 0;          //!< The verilog file line no.
-  std::string _string_buf;   //!< For flex record inner string.
-  void* _scanner = nullptr;  //!< The flex scanner.
-
-  FORBIDDEN_COPY(LibertyReader);
-};
-
-/**
  * @brief This is the top interface class for liberty module.
  *
  */
@@ -1929,7 +1874,7 @@ class Liberty
   Liberty() = default;
   ~Liberty() = default;
 
-  std::unique_ptr<LibertyLibrary> loadLiberty(const char* file_name);
+  std::unique_ptr<LibertyLibrary> loadLibertyWithRustParser(const char* file_name);
 
  private:
   FORBIDDEN_COPY(Liberty);

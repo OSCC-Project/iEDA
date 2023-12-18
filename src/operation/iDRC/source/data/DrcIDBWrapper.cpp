@@ -274,14 +274,6 @@ void DrcIDBWrapper::initPolyCornerMain(DrcNet* net, DrcPoly* poly)
       currCorner->setNextEdge(nextEdge);
       currCorner->x(prevEdge->high().x());
       currCorner->y(prevEdge->high().y());
-      // int orient = bp::orientation(*prevEdge, *nextEdge);
-      // if (orient == 1) {
-      //   currCorner->setType(frCornerTypeEnum::CONVEX);
-      // } else if (orient == -1) {
-      //   currCorner->setType(frCornerTypeEnum::CONCAVE);
-      // } else {
-      //   currCorner->setType(frCornerTypeEnum::UNKNOWN);
-      // }
 
       if ((prevEdge->get_edge_dir() == EdgeDirection::kNorth && nextEdge->get_edge_dir() == EdgeDirection::kWest)
           || (prevEdge->get_edge_dir() == EdgeDirection::kWest && nextEdge->get_edge_dir() == EdgeDirection::kNorth)) {
@@ -296,27 +288,6 @@ void DrcIDBWrapper::initPolyCornerMain(DrcNet* net, DrcPoly* poly)
                  || (prevEdge->get_edge_dir() == EdgeDirection::kNorth && nextEdge->get_edge_dir() == EdgeDirection::kEast)) {
         currCorner->setDir(CornerDirEnum::kSE);
       }
-
-      // set fixed / route status
-      // if (currCorner->getType() == frCornerTypeEnum::CONVEX) {
-      //   currCorner->setFixed(false);
-      //   for (auto& rect : net->getRectangles(true)[layerNum]) {
-      //     if (isCornerOverlap(currCorner, rect)) {
-      //       currCorner->setFixed(true);
-      //       break;
-      //     }
-      //   }
-      // } else if (currCorner->getType() == frCornerTypeEnum::CONCAVE) {
-      //   currCorner->setFixed(true);
-      //   auto cornerPt = currCorner->getNextEdge()->low();
-      //   for (auto& rect : net->getRectangles(false)[layerNum]) {
-      //     if (gtl::contains(rect, cornerPt, true) && !gtl::contains(rect, cornerPt, false)) {
-      //       currCorner->setFixed(false);
-      //       break;
-      //     }
-      //   }
-      // }
-      // currCorner->setFixed(prevEdge->isFixed() && nextEdge->isFixed());
 
       if (pre_corner) {
         pre_corner->setNextCorner(currCorner);
@@ -371,7 +342,7 @@ void DrcIDBWrapper::initPolyPolygon(DrcNet* net)
   for (int routing_layer_id = 0; routing_layer_id < routing_layer_num; routing_layer_id++) {
     polygons.clear();
     layer_routing_polys[routing_layer_id] = net->get_routing_polygon_set_by_id(routing_layer_id);
-    //输出到polys中；
+    // 输出到polys中；
     layer_routing_polys[routing_layer_id].get(polygons);
     for (auto& polygon : polygons) {
       net->addPoly(polygon, routing_layer_id);

@@ -29,7 +29,7 @@ namespace eval {
 WirelengthEval::WirelengthEval()
 {
   Flute::readLUT();
-  LOG_INFO << "FLUTE initialized";
+  LOG_INFO << "FLUTE initialized in Wirelength Eval";
 }
 
 void WirelengthEval::initWLNetList()
@@ -340,22 +340,6 @@ int64_t WirelengthEval::evalDriver2LoadWL(const std::string& net_name, const std
   wirelength_type = "driver2load";
   LOG_INFO << "net_name:" << net_name << "    wirelength_type:" << wirelength_type << " = " << net_WL << std::endl;
   return net_WL;
-}
-
-std::map<std::string, int64_t> WirelengthEval::getName2WLmap(const std::string& wl_type)
-{
-  std::map<std::string, int64_t> name_WL_map;
-
-  if (wl_type == "SteinerRUDY") {
-    for (size_t i = 0; i < _net_list.size(); i++) {
-      name_WL_map.emplace(_net_list[i]->get_name(), _net_list[i]->FluteWL());
-    }
-  } else if (wl_type == "TrueRUDY") {
-    for (size_t i = 0; i < _net_list.size(); i++) {
-      name_WL_map.emplace(_net_list[i]->get_name(), _net_list[i]->detailRouteWL());
-    }
-  }
-  return name_WL_map;
 }
 
 void WirelengthEval::add_net(const std::string& name, const std::vector<std::pair<int64_t, int64_t>>& pin_list)

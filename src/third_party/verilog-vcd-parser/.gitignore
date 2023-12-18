@@ -1,7 +1,0 @@
-*.swp
-*.vim
-*.o
-*.output
-build/
-vcdtool/vcdtool
-vcdtool/gitversion.h

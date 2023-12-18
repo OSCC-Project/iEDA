@@ -24,6 +24,8 @@
  */
 
 #include <string>
+#include <iostream>
+#include <cstdlib>
 
 #include "PLAPI.hh"
 #include "PlacerDB.hh"
@@ -35,7 +37,8 @@ class CongEvalAPITest : public testing::Test
 {
   void SetUp()
   {  // Read Def, Lef
-    std::string idb_json_file = "/home/yhqiu/iEDA/bin/db_default_config_ispd2019.json";
+    // std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_ispd19.json";
+    std::string idb_json_file = "/DREAMPlace/iEDA/bin/db_default_config_t28.json";
     dmInst->init(idb_json_file);
   }
   void TearDown() final {}
@@ -44,20 +47,35 @@ class CongEvalAPITest : public testing::Test
 TEST_F(CongEvalAPITest, run_cong_api)
 {
   // flow test : pass
-  std::string pl_json_file = "/home/yhqiu/iEDA/bin/pl_default_config_ispd2019.json";
+  // std::string pl_json_file = "/DREAMPlace/iEDA/bin/pl_default_config_ispd2019.json";
+  std::string pl_json_file = "/DREAMPlace/iEDA/bin/pl_default_config.json";
+
   auto* idb_builder = dmInst->get_idb_builder();
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
-  iPLAPIInst.runGP();
+  // iPLAPIInst.runGP();
+  iPLAPIInst.runRoutabilityGP();
+  // iPLAPIInst.writeBackSourceDataBase();
+  // std::cout << "GP:Final ACE: " << gr_congestion[0] << std::endl;
+  // std::cout << "GP:Final TOF: " << gr_congestion[1] << std::endl;
+  // std::cout << "GP:Final MOF: " << gr_congestion[2] << std::endl;
+  iPLAPIInst.runLG();
+  iPLAPIInst.runDP();
   iPLAPIInst.writeBackSourceDataBase();
-  // std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
-  // std::cout << "Final ACE: " << gr_congestion[0];
-  // std::cout << "Final TOF: " << gr_congestion[1];
-  // std::cout << "Final MOF: " << gr_congestion[2];
-  // iPLAPIInst.runDP();
-  // iPLAPIInst.runLG();
-  // std::string plot_path = "<local_path>";
-  // std::string output_file_name = "CongestionMap";
-  // iPLAPIInst.plotCongMap(plot_path, output_file_name);
+  std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
+  std::cout << "DP:Final ACE: " << gr_congestion[0] << std::endl;
+  std::cout << "DP:Final TOF: " << gr_congestion[1] << std::endl;
+  std::cout << "DP:Final MOF: " << gr_congestion[2] << std::endl;
+
+  // iPLAPIInst.plotCongMap("/DREAMPlace/iEDA/bin/","cmap_");
+  // std::string py_command = "python plot.py";
+  // int result = std::system(py_command.c_str());
+  // if (result == 0) {
+  //   std::cout << "success" << std::endl;
+  // } else {
+  //   std::cout << "failed" << std::endl;
+  // }
+  iPLAPIInst.writeDef("iPL_result_rgp.def");
+
   iPLAPIInst.destroyCongEval();
   iPLAPIInst.destoryInst();
 }

@@ -14,16 +14,14 @@
 #include <string>
 #include <vector>
 using std::vector;
-const std::string khmetis_binary_path = "../src/third_party/hmetis/hmetis2.0pre1";
 namespace imp {
 
 class Partitionner
 {
  public:
-  static bool hmetisSolve(int num_vertexs, int num_hedges, const vector<int>& eptr,
-                          const vector<int>& eind, vector<int>& parts, int nparts = 500,
-                          int ufactor = 5, const vector<int>& vwgt = {},
-                          const vector<int>& hewgt = {});
+  static vector<size_t> hmetisSolve(size_t num_vertexs, size_t num_hedges, const vector<size_t>& eptr, const vector<size_t>& eind,
+                                    size_t nparts, float ufactor, const vector<int64_t>& vwgt = {}, const vector<int64_t>& hewgt = {},
+                                    int n_runs = 5, int seed = 0);
 
  private:
   Partitionner() = delete;

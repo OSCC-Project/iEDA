@@ -42,7 +42,7 @@ double PwrCalcLeakagePower::calcLeakagePower(LibertyLeakagePower* leakage_power,
 
   if (!when.empty()) {
     /*Parse conditional statements of the leakage power*/
-    LibertyExprBuilder expr_builder(nullptr, when.c_str());
+    RustLibertyExprBuilder expr_builder(when.c_str());
     expr_builder.execute();
     auto* expr = expr_builder.get_result_expr();
 
@@ -99,8 +99,12 @@ unsigned PwrCalcLeakagePower::operator()(PwrGraph* the_graph) {
     }
 
     // add power analysis data.
-    addLeakagePower(
-        std::make_unique<PwrLeakageData>(design_inst, leakage_power_sum_data));
+    double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
+    auto leakage_data =
+        std::make_unique<PwrLeakageData>(design_inst, leakage_power_sum_data);
+    leakage_data->set_nom_voltage(nom_voltage);
+
+    addLeakagePower(std::move(leakage_data));
     VERBOSE_LOG(2) << "cell  " << design_inst->get_name()
                    << "  leakage power: " << leakage_power_sum_data << " nW";
 

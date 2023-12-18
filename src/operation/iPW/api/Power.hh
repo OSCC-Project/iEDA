@@ -29,7 +29,7 @@
 #include "core/PwrGroupData.hh"
 #include "core/PwrSeqGraph.hh"
 #include "include/PwrConfig.hh"
-#include "ops/read_vcd/VCDParserWrapper.hh"
+#include "ops/read_vcd/RustVCDParserWrapper.hh"
 
 namespace ipower {
 
@@ -59,9 +59,7 @@ class Power {
   auto& get_power_seq_graph() { return _power_seq_graph; }
 
   unsigned buildGraph();
-  unsigned readVCD(
-      std::string_view vcd_path, std::string top_instance_name,
-      std::optional<std::pair<int64_t, int64_t>> begin_end_time = std::nullopt);
+  unsigned readRustVCD(const char* vcd_path, const char* top_instance_name);
   unsigned dumpGraph();
   unsigned buildSeqGraph();
   unsigned dumpSeqGraphViz();
@@ -80,13 +78,17 @@ class Power {
   unsigned calcSwitchPower();
   unsigned analyzeGroupPower();
   unsigned updatePower();
-  unsigned reportPower(const char* rpt_file_name,
-                       PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportSummaryPower(const char* rpt_file_name,
+                              PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportInstancePower(const char* rpt_file_name,
+                               PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportInstancePowerCSV(const char* rpt_file_name);
   unsigned runCompleteFlow();
 
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }
   auto& get_switch_powers() { return _switch_powers; }
+  auto& get_obj_to_datas() { return _obj_to_datas; }
 
   auto& get_type_to_group_data() { return _type_to_group_data; }
 
@@ -96,13 +98,13 @@ class Power {
   void addGroupData(std::unique_ptr<PwrGroupData> group_data) {
     _type_to_group_data[group_data->get_group_type()].emplace_back(
         group_data.get());
-    _group_datas.emplace_back(std::move(group_data));
+    _obj_to_datas[group_data->get_obj()] = std::move(group_data);
   }
 
-  PwrGraph _power_graph;          //< The power graph, mapped to sta graph.
-  PwrSeqGraph _power_seq_graph;   //!< The power sequential graph, vertex is
-                                  //!< sequential inst.
-  VcdParserWrapper _vcd_wrapper;  //!< The vcd database.
+  PwrGraph _power_graph;         //< The power graph, mapped to sta graph.
+  PwrSeqGraph _power_seq_graph;  //!< The power sequential graph, vertex is
+                                 //!< sequential inst.
+  RustVcdParserWrapper _rust_vcd_wrapper;  //!< The rust vcd database.
 
   std::vector<std::unique_ptr<PwrLeakageData>>
       _leakage_powers;  //!< The leakage power.
@@ -111,13 +113,30 @@ class Power {
   std::vector<std::unique_ptr<PwrSwitchData>>
       _switch_powers;  //!< The switch power.
 
-  std::vector<std::unique_ptr<PwrGroupData>> _group_datas;  //!< The group data.
+  std::map<DesignObject*, std::unique_ptr<PwrGroupData>> _obj_to_datas;
+  // std::vector<std::unique_ptr<PwrGroupData>> _group_datas;  //!< The group
+  // data.
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);
 };
+
+/**
+ * @brief The macro of foreach group data, usage:
+ * Power* ipower;
+ * PwrGroupData* group_data;
+ * FOREACH_PWR_GROUP_DATA(ipower, group_data)
+ * {
+ *    do_something_for_group_data();
+ * }
+ */
+#define FOREACH_PWR_GROUP_DATA(ipower, group_data)                            \
+  if (auto& group_datas = (ipower)->get_obj_to_datas(); !group_datas.empty()) \
+    for (auto p = group_datas.begin();                                        \
+         p != group_datas.end() ? group_data = p->second.get(), true : false; \
+         ++p)
 
 /**
  * @brief The macro of foreach leakage power, usage:

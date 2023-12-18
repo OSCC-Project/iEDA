@@ -14,6 +14,7 @@ endif()
 add_subdirectory(tcl_ipl)
 add_subdirectory(tcl_ito)
 add_subdirectory(tcl_ista)
+add_subdirectory(tcl_ipw)
 add_subdirectory(tcl_report)
 add_subdirectory(tcl_ino)
 add_subdirectory(tcl_feature)
@@ -45,6 +46,7 @@ target_link_libraries(ieda_tcl
         tcl_ipl
         tcl_ito
         tcl_ista
+        tcl_ipw
         tcl_report
         tcl_ino
         tcl_feature

@@ -389,4 +389,53 @@ unsigned CmdSaveJSON::exec()
 
   return 1;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CmdGenerateMPScript::CmdGenerateMPScript(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* dir = new TclStringOption(TCL_DIRECTORY, 1);
+  auto* name = new TclStringOption(TCL_NAME, 1, nullptr);
+  auto* number = new TclIntOption("-number", 0);
+  addOption(dir);
+  addOption(name);
+  addOption(number);
+}
+
+unsigned CmdGenerateMPScript::check()
+{
+  TclOption* dir = getOptionOrArg(TCL_DIRECTORY);
+  LOG_FATAL_IF(!dir);
+
+  TclOption* name = getOptionOrArg(TCL_NAME);
+  LOG_FATAL_IF(!name);
+
+  auto* number = new TclIntOption("-number", 0);
+  LOG_FATAL_IF(!number);
+  return 1;
+}
+/*
+example script : aimp_random -dir ./result/mp -name ariane_macro_loc -number 100
+*/
+unsigned CmdGenerateMPScript::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* dir = getOptionOrArg(TCL_DIRECTORY);
+  TclOption* name = getOptionOrArg(TCL_NAME);
+  TclOption* number = getOptionOrArg("-number");
+  auto str_dir = dir->getStringVal();
+  auto str_name = name->getStringVal();
+  auto int_number = number->getIntVal();
+  if (str_dir != nullptr && str_name != nullptr) {
+    dmInst->place_macro_generate_tcl(str_dir, str_name, int_number);
+    return 1;
+  }
+
+  return 1;
+}
+
 }  // namespace tcl

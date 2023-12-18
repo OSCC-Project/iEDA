@@ -1,4 +1,8 @@
 SET(CMAKE_BUILD_TYPE "Release")
+
+include(rust-common/rust-common.cmake)
+
+include_directories(${HOME_DATABASE}/manager/parser)
 add_compile_options(-w)
 add_subdirectory(aocv)
 add_subdirectory(feature)
@@ -6,3 +10,5 @@ add_subdirectory(json)
 add_subdirectory(gdsii)
 add_subdirectory(verilog)
 add_subdirectory(liberty)
+add_subdirectory(vcd)
+add_subdirectory(spef)

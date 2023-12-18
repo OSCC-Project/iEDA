@@ -238,8 +238,9 @@ int Tree::UpdateId()
     if (node->pin) {
       assert(node->pin->id < net->pins.size());
       node->id = node->pin->id;
-    } else
+    } else {
       node->id = num_node++;
+    }
   });
   return num_node;
 }

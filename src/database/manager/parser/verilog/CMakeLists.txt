@@ -24,15 +24,31 @@ aux_source_directory(./ SRC)
 
 # add_library(verilog-parser ${SRC} ${FLEX_VerilogLex_OUTPUTS} ${BISON_VerilogParser_OUTPUTS})
 
-add_library(verilog-parser ${SRC} 
+add_library(verilog ${SRC} 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogParse.cc 
 ${HOME_THIRDPARTY}/parser/verilog/mVerilogLex.cc)
 
-target_link_libraries(verilog-parser str log ${ZLIB_LIBRARIES}) 
+set(RUST_PROJECT_NAME verilog_parser)
+set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/verilog-rust/verilog-parser)
 
-target_include_directories(verilog-parser 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/debug/lib${RUST_PROJECT_NAME}.so)
+    set(RUST_BUILD_CMD_OPTION "")
+else()
+    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/release/lib${RUST_PROJECT_NAME}.so)
+    set(RUST_BUILD_CMD_OPTION "--release")
+endif()
+
+
+message("verilog parser rust lib path ${RUST_LIB_PATH}")
+
+ADD_EXTERNAL_PROJ(verilog)
+
+target_link_libraries(verilog str log ${ZLIB_LIBRARIES} ${RUST_LIB_PATH}) 
+
+target_include_directories(verilog
     PUBLIC
-        ${HOME_OPERATION}/iSTA/include  
+        ${HOME_OPERATION}/iSTA/include   
         ${HOME_THIRDPARTY}/parser/verilog
         ${CMAKE_CURRENT_SOURCE_DIR}
 )

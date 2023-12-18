@@ -26,13 +26,11 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "VCDFileParser.hpp"
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "include/PwrConfig.hh"
 #include "log/Log.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
-#include "ops/read_vcd/VCDParserWrapper.hh"
 #include "shell-cmd/PowerShellCmd.hh"
 #include "shell-cmd/ShellCmd.hh"
 #include "tcl/UserShell.hh"

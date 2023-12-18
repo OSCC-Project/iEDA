@@ -18,9 +18,11 @@
 
 #include <float.h>
 
-#include <map>
+#include <regex>
+#include <unordered_map>
 
 #include "EvalUtil.hpp"
+#include "flute.h"
 
 namespace eval {
 
@@ -39,6 +41,223 @@ TimingEval::TimingEval(idb::IdbBuilder* idb_builder, const char* sta_workspace_p
   _timing_engine->initRcTree();
   _timing_engine->buildGraph();
   _timing_engine->updateTiming();
+}
+
+void TimingEval::createNetPointPair(idb::IdbNet* idb_net, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair)
+{
+  std::vector<idb::IdbPin*> node_list;
+  node_list.reserve(idb_net->get_load_pins().size() + 1);
+  if (idb_net->get_driving_pin()) {
+    node_list.push_back(idb_net->get_driving_pin());
+  }
+  for (auto load_pin : idb_net->get_load_pins()) {
+    node_list.push_back(load_pin);
+  }
+
+  size_t node_num = node_list.size();
+  if (node_num <= 1) {
+    // TODO
+  } else if (node_num == 2) {
+    auto point_1 = *(node_list.at(0)->get_average_coordinate());
+    auto point_2 = *(node_list.at(1)->get_average_coordinate());
+    Point<int32_t> eval_point_1(point_1.get_x(), point_1.get_y());
+    Point<int32_t> eval_point_2(point_2.get_x(), point_2.get_y());
+    // Deal with the oblique line.
+    if ((eval_point_1.get_x() != eval_point_2.get_x()) && (eval_point_1.get_y() != eval_point_2.get_y())) {
+      Point<int32_t> eval_point_3(eval_point_1.get_x(), eval_point_2.get_y());
+      point_pair.push_back(std::make_pair(eval_point_1, eval_point_3));
+      point_pair.push_back(std::make_pair(eval_point_2, eval_point_3));
+    } else {
+      point_pair.push_back(std::make_pair(eval_point_1, eval_point_2));
+    }
+  } else {
+    std::set<Point<int32_t>, PointCMP> coord_set;
+    // deal with the repeating location's node.
+    for (auto* node : node_list) {
+      auto point = *(node->get_average_coordinate());
+      Point<int32_t> node_loc(point.get_x(), point.get_y());
+      coord_set.emplace(node_loc);
+    }
+    std::vector<Point<int32_t>> point_vec;
+    point_vec.assign(coord_set.begin(), coord_set.end());
+    obtainFlutePointPair(point_vec, point_pair);
+  }
+}
+
+void TimingEval::createNetNodelist(idb::IdbNet* idb_net, std::vector<idb::IdbPin*>& node_list)
+{
+  node_list.reserve(idb_net->get_load_pins().size() + 1);
+  if (idb_net->get_driving_pin()) {
+    node_list.push_back(idb_net->get_driving_pin());
+  }
+  for (auto load_pin : idb_net->get_load_pins()) {
+    node_list.push_back(load_pin);
+  }
+}
+
+void TimingEval::obtainFlutePointPair(std::vector<Point<int32_t>>& point_vec,
+                                      std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& point_pair)
+{
+  Flute::Tree flute_tree;
+  size_t coord_num = point_vec.size();
+  Flute::DTYPE* x = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (coord_num));
+  Flute::DTYPE* y = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (coord_num));
+
+  for (size_t i = 0; i < point_vec.size(); ++i) {
+    x[i] = static_cast<Flute::DTYPE>(point_vec[i].get_x());
+    y[i] = static_cast<Flute::DTYPE>(point_vec[i].get_y());
+  }
+
+  flute_tree = Flute::flute(coord_num, x, y, FLUTE_ACCURACY);
+  free(x);
+  free(y);
+
+  int branch_num = 2 * flute_tree.deg - 2;
+  point_pair.reserve(branch_num);
+
+  for (int j = 0; j < branch_num; ++j) {
+    int n = flute_tree.branch[j].n;
+    if (j == n) {
+      continue;
+    }
+    Point<int32_t> point_1(flute_tree.branch[j].x, flute_tree.branch[j].y);
+    Point<int32_t> point_2(flute_tree.branch[n].x, flute_tree.branch[n].y);
+
+    // dual with the repetitive point pair.
+    if (point_1 == point_2) {
+      continue;
+    }
+
+    // dual with the oblique line.
+    if ((point_1.get_x() != point_2.get_x()) && (point_1.get_y() != point_2.get_y())) {
+      Point<int32_t> point_3(point_1.get_x(), point_2.get_y());
+      point_pair.push_back(std::make_pair(point_1, point_3));
+      point_pair.push_back(std::make_pair(point_2, point_3));
+      continue;
+    }
+
+    point_pair.push_back(std::make_pair(point_1, point_2));
+  }
+}
+
+void TimingEval::initTimingDataFromIDB()
+{
+  Flute::readLUT();
+  LOG_INFO << "FLUTE initialized in Timing Eval";
+
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+  auto idb_net_list = idb_design->get_net_list()->get_net_list();
+
+  std::unordered_map<idb::IdbNet*, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_pinpair_map;
+  for (auto* idb_net : idb_net_list) {
+    std::vector<std::pair<Point<int32_t>, Point<int32_t>>> point_pair;
+    createNetPointPair(idb_net, point_pair);
+    net_pinpair_map.emplace(idb_net, point_pair);
+  }
+
+  _timing_net_list.reserve(idb_net_list.size());
+  for (auto* idb_net : idb_net_list) {
+    TimingNet* timing_net = new TimingNet();
+    std::string net_name = fixSlash(idb_net->get_net_name());
+    timing_net->set_name(net_name);
+    std::vector<idb::IdbPin*> node_list;
+    createNetNodelist(idb_net, node_list);
+    std::map<Point<int32_t>, idb::IdbPin*, PointCMP> point_to_node;
+    std::map<Point<int32_t>, TimingPin*, PointCMP> point_to_timing_pin;
+    for (auto* node : node_list) {
+      auto& node_loc = *(node->get_average_coordinate());
+      Point<int32_t> new_node_loc(node_loc.get_x(), node_loc.get_y());
+      auto iter = point_to_node.find(new_node_loc);
+      if (iter != point_to_node.end()) {
+        auto* timing_pin_1 = wrapTimingTruePin(node);
+        auto* timing_pin_2 = wrapTimingTruePin(iter->second);
+        timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+      } else {
+        point_to_node.emplace(new_node_loc, node);
+      }
+    }
+
+    auto iter = net_pinpair_map.find(idb_net);
+    if (iter == net_pinpair_map.end()) {
+      LOG_ERROR << "ERROR because net has not been initialize";
+      exit(1);
+    }
+    const auto& point_pair_list = iter->second;
+    int fake_pin_id = 0;
+    for (auto point_pair : point_pair_list) {
+      if (point_pair.first == point_pair.second) {
+        continue;
+      }
+      TimingPin* timing_pin_1 = nullptr;
+      TimingPin* timing_pin_2 = nullptr;
+      auto iter_1 = point_to_node.find(point_pair.first);
+      if (iter_1 != point_to_node.end()) {
+        auto iter_1_1 = point_to_timing_pin.find(point_pair.first);
+        if (iter_1_1 != point_to_timing_pin.end()) {
+          timing_pin_1 = iter_1_1->second;
+        } else {
+          timing_pin_1 = wrapTimingTruePin(iter_1->second);
+          point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
+        }
+      } else {
+        auto iter_1_2 = point_to_timing_pin.find(point_pair.first);
+        if (iter_1_2 != point_to_timing_pin.end()) {
+          timing_pin_1 = iter_1_2->second;
+        } else {
+          timing_pin_1 = wrapTimingFakePin(fake_pin_id++, point_pair.first);
+          point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
+        }
+      }
+      auto iter_2 = point_to_node.find(point_pair.second);
+      if (iter_2 != point_to_node.end()) {
+        auto iter_2_1 = point_to_timing_pin.find(point_pair.second);
+        if (iter_2_1 != point_to_timing_pin.end()) {
+          timing_pin_2 = iter_2_1->second;
+        } else {
+          timing_pin_2 = wrapTimingTruePin(iter_2->second);
+          point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
+        }
+      } else {
+        auto iter_2_2 = point_to_timing_pin.find(point_pair.second);
+        if (iter_2_2 != point_to_timing_pin.end()) {
+          timing_pin_2 = iter_2_2->second;
+        } else {
+          timing_pin_2 = wrapTimingFakePin(fake_pin_id++, point_pair.second);
+          point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
+        }
+      }
+      timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+    }
+    _timing_net_list.push_back(timing_net);
+  }
+}
+
+TimingPin* TimingEval::wrapTimingTruePin(idb::IdbPin* pin)
+{
+  TimingPin* timing_pin = new eval::TimingPin();
+  timing_pin->set_name(pin->get_pin_name());
+  timing_pin->set_coord(Point<int64_t>(pin->get_average_coordinate()->get_x(), pin->get_average_coordinate()->get_y()));
+  timing_pin->set_is_real_pin(true);
+
+  return timing_pin;
+}
+
+TimingPin* TimingEval::wrapTimingFakePin(int id, Point<int32_t> coordi)
+{
+  TimingPin* timing_pin = new TimingPin();
+  timing_pin->set_name("fake_" + std::to_string(id));
+  timing_pin->set_id(id);
+  timing_pin->set_coord(Point<int64_t>(coordi.get_x(), coordi.get_y()));
+  timing_pin->set_is_real_pin(false);
+
+  return timing_pin;
+}
+
+std::string TimingEval::fixSlash(std::string raw_str)
+{
+  std::regex re(R"(\\)");
+  return std::regex_replace(raw_str, re, "");
 }
 
 TimingNet* TimingEval::add_timing_net(const std::string& name)

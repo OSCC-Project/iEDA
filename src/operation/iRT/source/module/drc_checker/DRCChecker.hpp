@@ -17,6 +17,7 @@
 #pragma once
 
 #include "ChangeType.hpp"
+#include "DRCCheckType.hpp"
 #include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "RTAPI.hpp"
@@ -68,9 +69,10 @@ class DRCChecker
    * 获得违例信息
    * 暂时不进行线网自检
    */
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const DRCRect& drc_rect);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query, const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
+  std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query,
+                                                                     const std::vector<DRCCheckType>& check_type_list,
+                                                                     const std::vector<DRCRect>& drc_rect_list);
+  // std::map<std::string, std::vector<ViolationInfo>> getViolationInfo(RegionQuery& region_query);
 
  private:
   // self
@@ -92,6 +94,7 @@ class DRCChecker
   void checkMinSpacingByOther(RegionQuery* region_query, const DRCRect& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void checkMinSpacingByOther(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list,
                               std::vector<ViolationInfo>& violation_info_list);
+  void checkMinArea(RegionQuery* region_query, const std::vector<DRCRect>& drc_rect_list, std::vector<ViolationInfo>& violation_info_list);
   void uniqueViolationInfoList(std::vector<ViolationInfo>& violation_info_list);
 #endif
 };

@@ -44,6 +44,7 @@
 #include "tcl_register_no.h"
 #include "tcl_register_pdn.h"
 #include "tcl_register_pl.h"
+#include "tcl_register_power.h"
 #include "tcl_register_report.h"
 #include "tcl_register_sta.h"
 #include "tcl_register_to.h"
@@ -95,6 +96,9 @@ int registerCommands()
 
   /// STA
   registerCmdSTA();
+
+  /// Power
+  registerCmdPower();
 
 #ifdef BUILD_GUI
   /// gui

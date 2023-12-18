@@ -37,6 +37,18 @@ class EvalUtil
     return (map.find(key) != map.end());
   }
 };
+
+struct PointCMP
+{
+  bool operator()(const Point<int32_t>& lhs, const Point<int32_t>& rhs) const
+  {
+    if (lhs.get_x() == rhs.get_x()) {
+      return lhs.get_y() < rhs.get_y();
+    }
+
+    return lhs.get_x() < rhs.get_x();
+  }
+};
 }  // namespace eval
 
 #endif  // SRC_EVALUATOR_SOURCE_UTIL_COMMON_EVALUTIL_HPP_

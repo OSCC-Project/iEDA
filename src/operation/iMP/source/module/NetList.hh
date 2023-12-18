@@ -11,6 +11,10 @@
 #ifndef IMP_NETLIST_H
 #define IMP_NETLIST_H
 #include <cstdint>
+#include <functional>
+#include <ranges>
+#include <string>
+#include <unordered_map>
 #include <vector>
 namespace imp {
 /**
@@ -23,77 +27,114 @@ class NetList
  public:
   enum VertexType
   {
-    kMacro,
     kStdCell,
     kCluster,
-    kFix
+    kMacro,
+    kFixInst,
+    kTerminal
   };
 
  public:
   // Constructor
-  NetList(size_t, size_t, size_t, size_t);
+  NetList() = default;
+  NetList(size_t num_vertexs, size_t num_nets) : num_vertexs(num_vertexs), num_nets(num_nets) {}
 
-  NetList(size_t, size_t, size_t, size_t, const std::vector<VertexType>&, const std::vector<int32_t>&, const std::vector<int32_t>&,
-          const std::vector<int32_t>&, const std::vector<int32_t>&, const std::vector<int32_t>&, const std::vector<int32_t>&,
-          const std::vector<size_t>&, const std::vector<size_t>&);
+  void set_region(int64_t lx, int64_t ly, int64_t dx, int64_t dy);
 
-  NetList(size_t, size_t, size_t, size_t, std::vector<VertexType>&&, std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<int32_t>&&,
-          std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<int32_t>&&, std::vector<size_t>&&, std::vector<size_t>&&);
+  void set_vertex_property(std::vector<VertexType>&& type, std::vector<int64_t>&& lx, std::vector<int64_t>&& ly, std::vector<int64_t>&& dx,
+                           std::vector<int64_t>&& dy, std::vector<int64_t>&& area, std::vector<size_t>&& id_map = {});
 
-  // Getter functions for vectors
+  void set_connectivity(std::vector<size_t>&& net_span, std::vector<size_t>&& pin2vertex, std::vector<int64_t>&& pin_x_off,
+                        std::vector<int64_t>&& pin_y_off);
+  void sortToFit();
 
-  const std::vector<int32_t>& get_lx() const { return _lx; }
+  std::vector<std::string> report();
 
-  const std::vector<int32_t>& get_ly() const { return _ly; }
+  std::vector<size_t> cellsPartition(size_t npart);
 
-  const std::vector<int32_t>& get_x_size() const { return _dx; }
+  NetList makeClusters(const std::vector<size_t>& parts);
 
-  const std::vector<int32_t>& get_y_size() const { return _dy; }
+  void autoCellsClustering();
 
-  const std::vector<int32_t>& get_pin_x_off() const { return _pin_x_off; }
+  void cellClustering(size_t npart) { clustering(cellsPartition(npart)); }
 
-  const std::vector<int32_t>& get_pin_y_off() const { return _pin_y_off; }
+  void clustering(const std::vector<size_t>& parts);
 
-  const std::vector<size_t>& get_net_span() const { return _net_span; }
+  int64_t totalInstArea();
 
-  const std::vector<size_t>& get_pin2vertex() const { return _pin2vertex; }
-
-  const std::vector<size_t>& get_vertex_span() const { return _vertex_span; }
-
-  const std::vector<size_t>& get_pin2net() const { return _pin2net; }
-
-  const std::vector<size_t>& get_row2col() const { return _row2col; }
-
-  NetList make_clusters(const std::vector<size_t> parts);
-
-  void clustering(const std::vector<size_t> parts);
+  void unFixMacro()
+  {
+    for (size_t i = num_moveable; i < num_moveable + num_fixinst; i++) {
+      type[i] = kMacro;
+    }
+    sortToFit();
+  }
 
  private:
-  void initVertexSpan();
+  void updateVertexSpan();
 
- private:
-  size_t _num_vertexs;
-  size_t _num_moveable;
-  size_t _num_fixed;
-  size_t _num_nets;
-  int32_t _canvas_lx;
-  int32_t _canvas_ly;
-  int32_t _canvas_dx;
-  int32_t _canvas_dy;
-  double _utilization;
-  std::vector<VertexType> _type;
-  std::vector<int32_t> _lx;
-  std::vector<int32_t> _ly;
-  std::vector<int32_t> _dx;
-  std::vector<int32_t> _dy;
-  std::vector<int32_t> _area;
-  std::vector<int32_t> _pin_x_off;   // A column-wise pin list, indicating the offset of each pin in the x-direction.
-  std::vector<int32_t> _pin_y_off;   // A column-wise pin list, indicating the offset of each pin in the y-direction.
-  std::vector<size_t> _net_span;     // A net list, indicating the span of each net in the column-wise pin list.
-  std::vector<size_t> _pin2vertex;   // A column-wise pin list, mapping the vertex corresponding to each pin.
-  std::vector<size_t> _vertex_span;  // A vertex list, indicating the span of each vertex in the row-wise pin list.
-  std::vector<size_t> _pin2net;      // A row-wise pin list, mapping the net corresponding to each pin.
-  std::vector<size_t> _row2col;  // A row-wise pin list, mapping each pin in the row-wise pin list to an index in the column-wise pin list.
+ public:
+  size_t num_vertexs;  // order by num_moveable(_num_cells, num_clusters, num_macros), _numfixinst, _numterm
+  size_t num_nets;
+
+  size_t num_moveable;  // num_cells, num_clusters, num_macros
+  size_t num_cells;
+  size_t num_clusters;
+  size_t num_macros;
+  size_t num_fixinst;
+  size_t num_term;
+
+  bool is_fit = false;
+
+  int64_t region_lx;
+  int64_t region_ly;
+  int64_t region_dx;
+  int64_t region_dy;
+  double region_aspect_ratio;
+  double utilization;
+
+  std::vector<size_t> id_map;
+
+  std::vector<VertexType> type;
+  std::vector<int64_t> lx;
+  std::vector<int64_t> ly;
+  std::vector<int64_t> dx;
+  std::vector<int64_t> dy;
+  std::vector<int64_t> area;
+
+  int64_t sum_vertex_area;
+  int64_t sum_cells_area;
+  int64_t sum_macro_area;
+  int64_t sum_cluster_area;
+  int64_t sum_fix_area;
+
+  std::vector<size_t> net_span;    // A net list, indicating the span of each net in the column-wise pin list.
+  std::vector<size_t> pin2vertex;  // A column-wise pin list, mapping the vertex corresponding to each pin.
+
+  std::vector<size_t> vertex_span;  // A vertex list, indicating the span of each vertex in the row-wise pin list.
+  std::vector<size_t> pin2net;      // A row-wise pin list, mapping the net corresponding to each pin.
+
+  std::vector<size_t> row2col;  // A row-wise pin list, mapping each pin in the row-wise pin list to an index in the column-wise pin list.
+  std::vector<int64_t> pin_x_off;  // A column-wise pin list, indicating the offset of each pin in the x-direction.
+  std::vector<int64_t> pin_y_off;  // A column-wise pin list, indicating the offset of each pin in the y-direction.
+};
+
+template <typename Numeric, typename Type, typename Transform>
+struct Block
+{
+  Numeric lx;
+  Numeric ly;
+  Numeric dx;
+  Numeric dy;
+  Type type;
+  Transform tf;
+};
+
+template <typename Numeric>
+struct Pin2
+{
+  Numeric x_off;
+  Numeric y_off;
 };
 
 }  // namespace imp

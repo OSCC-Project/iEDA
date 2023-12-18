@@ -43,6 +43,9 @@ class CongBin
   int get_pin_num() const { return _pin_num; }
   double get_inst_density() const { return _inst_density; }
   double get_net_cong() const { return _net_cong; }
+  double get_h_net_cong() const { return _h_net_cong; }
+  double get_v_net_cong() const { return _v_net_cong; }
+
 
   int get_average_wire_width() const { return _average_wire_width; }
   int get_horizontal_capacity() const { return _horizontal_capacity; }
@@ -55,6 +58,9 @@ class CongBin
   void set_pin_num(const int& pin_num) { _pin_num = pin_num; }
   void set_inst_density(const double& density) { _inst_density = density; }
   void set_net_cong(const double& bbox_cong) { _net_cong = bbox_cong; }
+  void set_h_net_cong(const double& bbox_cong) { _h_net_cong = bbox_cong; }
+  void set_v_net_cong(const double& bbox_cong) { _v_net_cong = bbox_cong; }
+
 
   void set_average_wire_width(const int& average_wire_width) { _average_wire_width = average_wire_width; }
   void set_horizontal_capacity(const int& horizontal_capacity) { _horizontal_capacity = horizontal_capacity; }
@@ -65,6 +71,7 @@ class CongBin
   void increPinNum() { _pin_num++; }
   void increNetCong(const double& net_cong) { _net_cong += net_cong; }
   void reset();
+  void clear_net_list();
 
  private:
   int _x;
@@ -77,6 +84,8 @@ class CongBin
   int _pin_num;
   double _inst_density;
   double _net_cong;
+  double _h_net_cong;
+  double _v_net_cong;
 
   int _average_wire_width;
   int _horizontal_capacity;
@@ -91,6 +100,8 @@ inline void CongBin::reset()
   _pin_num = 0;
   _inst_density = 0.0;
   _net_cong = 0.0;
+  _h_net_cong = 0.0;
+  _v_net_cong = 0.0;
 }
 
 class CongGrid

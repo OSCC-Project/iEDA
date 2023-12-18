@@ -37,10 +37,10 @@
 #include "ops/levelize_seq_graph/PwrCheckPipelineLoop.hh"
 #include "ops/levelize_seq_graph/PwrLevelizeSeqGraph.hh"
 #include "ops/plot_power/PwrReport.hh"
+#include "ops/plot_power/PwrReportInstance.hh"
 #include "ops/propagate_toggle_sp/PwrPropagateClock.hh"
 #include "ops/propagate_toggle_sp/PwrPropagateConst.hh"
 #include "ops/propagate_toggle_sp/PwrPropagateToggleSP.hh"
-#include "ops/read_vcd/VCDParserWrapper.hh"
 
 namespace ipower {
 
@@ -99,26 +99,20 @@ unsigned Power::setupClock(PwrClock&& fastest_clock,
 }
 
 /**
- * @brief read a VCD file
+ * @brief read a VCD file by rust vcd parser
  *
  * @param vcd_path
- * @param begin_end_time
+ * @param top_instance_name
  * @return unsigned
  */
-unsigned Power::readVCD(
-    std::string_view vcd_path, std::string top_instance_name,
-    std::optional<std::pair<int64_t, int64_t>> begin_end_time) {
+unsigned Power::readRustVCD(const char* vcd_path,
+                            const char* top_instance_name) {
   LOG_INFO << "read vcd start";
-  _vcd_wrapper.readVCD(vcd_path, begin_end_time);
-  _vcd_wrapper.buildAnnotateDB(top_instance_name);
-  _vcd_wrapper.calcScopeToggleAndSp();
-
-  // TODO make a opt for out file
-  // std::ofstream out_file;
-  // out_file.open("vcd_out_file.txt", std::ios::out | std::ios::trunc);
-  // _vcd_wrapper.printAnnotateDB(out_file);
-  // out_file.close();
+  _rust_vcd_wrapper.readVcdFile(vcd_path);
+  _rust_vcd_wrapper.buildAnnotateDB(top_instance_name);
+  _rust_vcd_wrapper.calcScopeToggleAndSp(top_instance_name);
   LOG_INFO << "read vcd end";
+
   return 1;
 }
 
@@ -132,7 +126,7 @@ unsigned Power::annotateToggleSP() {
   LOG_INFO << "annotate toggle sp start";
 
   AnnotateToggleSP annotate_toggle_SP;
-  annotate_toggle_SP.set_annotate_db(_vcd_wrapper.get_annotate_db());
+  annotate_toggle_SP.set_annotate_db(_rust_vcd_wrapper.get_annotate_db());
 
   unsigned is_ok = annotate_toggle_SP(&_power_graph);
   LOG_INFO << "annotate toggle sp end";
@@ -319,20 +313,32 @@ unsigned Power::updatePower() {
  * @return unsigned
  */
 unsigned Power::analyzeGroupPower() {
-  auto add_group_data_from_analysi_data = [this](auto group_type,
-                                                 PwrAnalysisData* power_data) {
-    auto group_data = std::make_unique<PwrGroupData>(
-        group_type, power_data->get_design_obj());
-    double power_data_value = power_data->getPowerDataValue();
-    if (power_data->isLeakageData()) {
-      group_data->set_leakage_power(NW_TO_W(power_data_value));
-    } else if (power_data->isInternalData()) {
-      group_data->set_internal_power(MW_TO_W(power_data_value));
-    } else {
-      group_data->set_switch_power(MW_TO_W(power_data_value));
-    }
+  auto add_group_data_from_analysis_data = [this](auto group_type,
+                                                  PwrAnalysisData* power_data) {
+    /*the lambda of set power data*/
+    auto set_power_data = [this, &power_data](PwrGroupData* group_data) {
+      double power_data_value = power_data->getPowerDataValue();
+      if (power_data->isLeakageData()) {
+        group_data->set_leakage_power(NW_TO_W(power_data_value));
+      } else if (power_data->isInternalData()) {
+        group_data->set_internal_power(MW_TO_W(power_data_value));
+      } else {
+        group_data->set_switch_power(MW_TO_W(power_data_value));
+      }
+      group_data->set_nom_voltage(power_data->get_nom_voltage());
+    };
 
-    addGroupData(std::move(group_data));
+    // find the design object of power data
+    auto* this_obj = power_data->get_design_obj();
+    auto this_data = _obj_to_datas.find(this_obj);
+    if (this_data != _obj_to_datas.end()) {
+      set_power_data(this_data->second.get());
+    } else {
+      auto group_data = std::make_unique<PwrGroupData>(
+          group_type, power_data->get_design_obj());
+      set_power_data(group_data.get());
+      addGroupData(std::move(group_data));
+    }
   };
 
   PwrLeakageData* leakage_power_data;
@@ -341,7 +347,7 @@ unsigned Power::analyzeGroupPower() {
     LOG_FATAL_IF(!inst) << "leakage power instance is not exist.";
     auto group_type = getInstPowerGroup(inst);
     if (group_type) {
-      add_group_data_from_analysi_data(group_type.value(), leakage_power_data);
+      add_group_data_from_analysis_data(group_type.value(), leakage_power_data);
     } else {
       LOG_INFO << "can not find group type for" << inst->get_name();
     }
@@ -353,7 +359,8 @@ unsigned Power::analyzeGroupPower() {
     LOG_FATAL_IF(!inst) << "internal power instance is not exist.";
     auto group_type = getInstPowerGroup(inst);
     if (group_type) {
-      add_group_data_from_analysi_data(group_type.value(), internal_power_data);
+      add_group_data_from_analysis_data(group_type.value(),
+                                        internal_power_data);
     } else {
       LOG_INFO << "can not find group type for" << inst->get_name();
     }
@@ -386,7 +393,7 @@ unsigned Power::analyzeGroupPower() {
 
     auto group_type = getInstPowerGroup(driver_inst);
     if (group_type) {
-      add_group_data_from_analysi_data(group_type.value(), switch_power_data);
+      add_group_data_from_analysis_data(group_type.value(), switch_power_data);
     } else {
       LOG_INFO << "can not find group type for" << driver_inst->get_name();
     }
@@ -400,8 +407,8 @@ unsigned Power::analyzeGroupPower() {
  * @param rpt_file_name
  * @return unsigned
  */
-unsigned Power::reportPower(const char* rpt_file_name,
-                            PwrAnalysisMode pwr_analysis_mode) {
+unsigned Power::reportSummaryPower(const char* rpt_file_name,
+                                   PwrAnalysisMode pwr_analysis_mode) {
   PwrReportPowerSummary report_power(rpt_file_name, pwr_analysis_mode);
   report_power(this);
   auto& report_summary_data = report_power.get_report_summary_data();
@@ -496,6 +503,96 @@ unsigned Power::reportPower(const char* rpt_file_name,
 };
 
 /**
+ * @brief report instance power
+ *
+ * @param rpt_file_name
+ * @param pwr_analysis_mode
+ * @return unsigned
+ */
+unsigned Power::reportInstancePower(const char* rpt_file_name,
+                                    PwrAnalysisMode pwr_analysis_mode) {
+  PwrReportInstance report_instance_power(rpt_file_name, pwr_analysis_mode);
+  auto report_tbl =
+      report_instance_power.createReportTable("Power Analysis Instance Report");
+
+  // lambda for print power data float to string.
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    // TODO net
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    (*report_tbl) << inst->get_name()
+                  << data_str(group_data->get_internal_power())
+                  << data_str(group_data->get_switch_power())
+                  << data_str(group_data->get_leakage_power())
+                  << data_str(group_data->get_total_power()) << TABLE_ENDLINE;
+  };
+
+  LOG_INFO << "\n" << report_tbl->c_str();
+
+  auto close_file = [](std::FILE* fp) { std::fclose(fp); };
+
+  std::unique_ptr<std::FILE, decltype(close_file)> f(
+      std::fopen(rpt_file_name, "w"), close_file);
+
+  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+
+  std::map<PwrAnalysisMode, std::string> analysis_mode_to_string = {
+      {PwrAnalysisMode::kAveraged, "Averaged"},
+      {PwrAnalysisMode::kTimeBase, "TimeBase"},
+      {PwrAnalysisMode::kClockCycle, "ClockCycle"}};
+
+  std::fprintf(f.get(), "Report : %s Power\n ",
+               analysis_mode_to_string[pwr_analysis_mode].c_str());
+
+  std::fprintf(f.get(), "%s", report_tbl->c_str());
+
+  return 1;
+}
+
+/**
+ * @brief report csv file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
+  std::ofstream csv_file(rpt_file_name);
+  csv_file << "Instance Name"
+           << ","
+           << "Nominal Voltage"
+           << ","
+           << "Internal Power"
+           << ","
+           << "Switch Power"
+           << ","
+           << "Leakage Power"
+           << ","
+           << "Total Power"
+           << "\n";
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    csv_file << inst->get_name() << "," << group_data->get_nom_voltage() << ","
+             << data_str(group_data->get_internal_power()) << ","
+             << data_str(group_data->get_switch_power()) << ","
+             << data_str(group_data->get_leakage_power()) << ","
+             << data_str(group_data->get_total_power()) << "\n";
+  }
+  csv_file.close();
+  return 1;
+}
+/**
  * @brief run report ipower
  *
  * @return unsigned
@@ -557,7 +654,7 @@ unsigned Power::runCompleteFlow() {
 
     std::string output_path = ista->get_design_work_space();
     output_path += Str::printf("/%s.pwr", ista->get_design_name().c_str());
-    reportPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
+    reportSummaryPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
 
     LOG_INFO << "power report end";
     double memory_delta = stats.memoryDelta();

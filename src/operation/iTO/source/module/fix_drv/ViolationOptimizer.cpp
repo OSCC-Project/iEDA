@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "ViolationOptimizer.h"
 
-#include "api/TimingIDBAdapter.hh"
 #include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
 
 using namespace std;
 
@@ -42,9 +42,9 @@ void ViolationOptimizer::initBuffer() {
   }
 
   float low_drive = -kInf;
-  auto bufs = _db_interface->get_drv_insert_buffers();
+  auto  bufs = _db_interface->get_drv_insert_buffers();
   for (auto buf : bufs) {
-    auto buffer = _timing_engine->findLibertyCell(buf.c_str());
+    auto         buffer = _timing_engine->findLibertyCell(buf.c_str());
     LibertyPort *in_port;
     LibertyPort *out_port;
     buffer->bufferPorts(in_port, out_port);
@@ -78,14 +78,15 @@ void ViolationOptimizer::fixViolations() {
   _timing_engine->updateTiming();
   // _timing_engine->reportTiming();
 
-StaSeqPathData *worst_path_rise =
-    _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);
-StaSeqPathData *worst_path_fall =
-    _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kFall);
+  StaSeqPathData *worst_path_rise =
+      _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);
+  StaSeqPathData *worst_path_fall =
+      _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kFall);
 
-Slack worst_slack_rise = worst_path_rise->getSlackNs();
-Slack worst_slack_fall = worst_path_fall->getSlackNs();
-cout << "worst_slack_rise  " << worst_slack_rise << "  worst_slack_fall  " << worst_slack_fall << endl;
+  Slack worst_slack_rise = worst_path_rise->getSlackNs();
+  Slack worst_slack_fall = worst_path_fall->getSlackNs();
+  cout << "worst_slack_rise  " << worst_slack_rise << "  worst_slack_fall  "
+       << worst_slack_fall << endl;
 
   StaSeqPathData *worst_path =
       _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);
@@ -96,7 +97,7 @@ cout << "worst_slack_rise  " << worst_slack_rise << "  worst_slack_fall  " << wo
   int       number_drvr_vertices = _db_interface->get_drvr_vertices().size();
   VertexSeq _level_drvr_vertices = _db_interface->get_drvr_vertices();
 
-  int                net_connect_port = 0;
+  int net_connect_port = 0;
 
   for (int i = number_drvr_vertices - 1; i >= 0; --i) {
     StaVertex *drvr = _level_drvr_vertices[i];
@@ -133,7 +134,7 @@ cout << "worst_slack_rise  " << worst_slack_rise << "  worst_slack_fall  " << wo
     // If there are still a violation nets, the secondary fix is performed.
     for (auto net : _still_violation_net) {
       DesignObject *driver = net->getDriver();
-      StaVertex    *drvr = _timing_engine->findVertex(driver->getFullName().c_str());
+      StaVertex *   drvr = _timing_engine->findVertex(driver->getFullName().c_str());
 
       repairViolations(net, drvr, _check_slew, _check_cap, repair_count, slew_violations,
                        cap_violations, length_violations);
@@ -183,10 +184,10 @@ void ViolationOptimizer::fixViolations(const char *net_name) {
   DesignObject *driver = net->getDriver();
 
   if (driver) {
-    int repair_count = 0;
-    int slew_violations = 0;
-    int length_violations = 0;
-    int cap_violations = 0;
+    int        repair_count = 0;
+    int        slew_violations = 0;
+    int        length_violations = 0;
+    int        cap_violations = 0;
     StaVertex *drvr_vertex = _timing_engine->findVertex(driver->getFullName().c_str());
     repairViolations(net, drvr_vertex, _check_slew, _check_cap, repair_count,
                      slew_violations, cap_violations, length_violations);
@@ -206,7 +207,7 @@ void ViolationOptimizer::checkViolations() {
   int cap_violations_after = 0;
 
   Netlist *design_nl = _timing_engine->get_netlist();
-  Net     *net;
+  Net *    net;
   // VertexSeq drvr_vertices;
   FOREACH_NET(design_nl, net) {
     if (net->isClockNet() || netConnectToPort(net)) {
@@ -283,7 +284,7 @@ void ViolationOptimizer::repairViolations(Net *net, StaVertex *drvr, bool check_
         max_cap = buf_cap_limit;
       }
 
-      TimingIDBAdapter       *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
+      TimingIDBAdapter *      idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
       IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(drvr_pin_port);
       Point                   drvr_pt = Point(loc->get_x(), loc->get_y());
 
@@ -318,7 +319,7 @@ void ViolationOptimizer::fixViolations(RoutingTree *tree, int curr_pt, int prev_
                                        Net *net, float max_cap, int level,
                                        // Return values.
                                        // Remaining parasiics after repeater insertion.
-                                       int   &wire_length, // dbu
+                                       int &  wire_length, // dbu
                                        float &pin_cap, DesignObjSeq &load_pins) {
   int   left_branch = tree->left(curr_pt);
   int   left_wire_length = 0;
@@ -467,8 +468,8 @@ void ViolationOptimizer::fixViolations(RoutingTree *tree, int curr_pt, int prev_
 
       std::optional<double> width = std::nullopt;
       int                   cap_length = dynamic_cast<TimingIDBAdapter *>(_db_adapter)
-                            ->capToLength(1, abs(max_cap - pin_cap), width) *
-                        _dbu;
+                           ->capToLength(1, abs(max_cap - pin_cap), width) *
+                       _dbu;
       buf_dist = length - (wire_length - cap_length * (1.0 - length_margin));
 
       buf_dist = max(0.0, buf_dist);
@@ -565,8 +566,8 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
     // Move load pins to out_net.
     for (auto *pin_port : load_pins) {
       if (pin_port->isPin()) {
-        Pin         *pin = dynamic_cast<Pin *>(pin_port);
-        Instance    *inst = pin->get_own_instance();
+        Pin *     pin = dynamic_cast<Pin *>(pin_port);
+        Instance *inst = pin->get_own_instance();
 
         db_adapter->disconnectPin(pin);
         auto debug = db_adapter->connect(inst, pin->get_name(), out_net);
@@ -576,15 +577,17 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
     Instance *buffer = db_adapter->makeInstance(insert_buf_cell, buffer_name.c_str());
 
     idb::IdbCellMaster *idb_master = db_adapter->staToDb(insert_buf_cell);
-    Master             *master = new Master(idb_master);
+    Master *            master = new Master(idb_master);
 
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     increDesignArea(area);
 
     _inserted_buffer_count++;
 
-    auto debug_buf_in = db_adapter->connect(buffer, buffer_input_port->get_port_name(), in_net);
-    auto debug_buf_out = db_adapter->connect(buffer, buffer_output_port->get_port_name(), out_net);
+    auto debug_buf_in =
+        db_adapter->connect(buffer, buffer_input_port->get_port_name(), in_net);
+    auto debug_buf_out =
+        db_adapter->connect(buffer, buffer_output_port->get_port_name(), out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 
@@ -661,7 +664,7 @@ void ViolationOptimizer::setLocation(Instance *inst, int x, int y) {
 }
 
 bool ViolationOptimizer::repowerInstance(Pin *drvr_pin) {
-  Instance    *inst = drvr_pin->get_own_instance();
+  Instance *   inst = drvr_pin->get_own_instance();
   LibertyCell *cell = inst->get_inst_cell();
   if (cell) {
     Vector<LibertyCell *> *equiv_cells = _timing_engine->equivCells(cell);
@@ -728,14 +731,14 @@ bool ViolationOptimizer::repowerInstance(Pin *drvr_pin) {
 bool ViolationOptimizer::repowerInstance(Instance *inst, LibertyCell *replace) {
   const char *replacement_name = replace->get_cell_name();
 
-  TimingIDBAdapter   *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
-  idb::IdbLayout     *layout = idb_adapter->get_idb()->get_def_service()->get_layout();
+  TimingIDBAdapter *  idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
+  idb::IdbLayout *    layout = idb_adapter->get_idb()->get_def_service()->get_layout();
   idb::IdbCellMaster *replacement_master =
       layout->get_cell_master_list()->find_cell_master(replacement_name);
   if (replacement_master) {
-    idb::IdbInstance   *dinst = idb_adapter->staToDb(inst);
+    idb::IdbInstance *  dinst = idb_adapter->staToDb(inst);
     idb::IdbCellMaster *idb_master = dinst->get_cell_master();
-    Master             *master = new Master(idb_master);
+    Master *            master = new Master(idb_master);
     float               area_master = DesignCalculator::calcMasterArea(master, _dbu);
 
     if (replacement_master->get_name() == idb_master->get_name()) {
@@ -784,8 +787,8 @@ double ViolationOptimizer::calcBufferDelay(LibertyCell *buffer_cell, float load)
 void ViolationOptimizer::checkCapacitanceViolation(DesignObject *drvr_pin,
                                                    // return values
                                                    double &max_drvr_cap,
-                                                   int    &cap_violations,
-                                                   bool   &repair_cap) {
+                                                   int &   cap_violations,
+                                                   bool &  repair_cap) {
   double                cap1;
   std::optional<double> max_cap1;
   double                cap_slack1;
@@ -809,7 +812,7 @@ void ViolationOptimizer::checkSlewViolation(DesignObject *drvr_pin,
   float slew_slack1 = kInf;
   float max_slew1 = kInf;
 
-  Net          *net = drvr_pin->get_net();
+  Net *         net = drvr_pin->get_net();
   DesignObject *pin;
   FOREACH_NET_PIN(net, pin) {
     // Slew slew_tmp;
@@ -946,8 +949,8 @@ void ViolationOptimizer::gateRiseFallDelay(TransType rf, LibertyArc *arc, float 
   float in_slew = _db_interface->get_target_slews()[rise_fall];
   Delay gate_delay;
   Slew  drvr_slew;
-  gate_delay = arc->getDelayOrConstrainCheck(rf, in_slew, load_cap);
-  drvr_slew = arc->getSlew(rf, in_slew, load_cap);
+  gate_delay = arc->getDelayOrConstrainCheckNs(rf, in_slew, load_cap);
+  drvr_slew = arc->getSlewNs(rf, in_slew, load_cap);
   delays[rise_fall] = max(delays[rise_fall], gate_delay);
   slews[rise_fall] = max(slews[rise_fall], drvr_slew);
 }
@@ -972,7 +975,7 @@ bool ViolationOptimizer::netConnectToPort(Net *net) {
 int ViolationOptimizer::portFanoutLoadNum(LibertyPort *port) {
   auto &fanout_load = port->get_fanout_load();
   if (!fanout_load.has_value()) {
-    LibertyCell    *cell = port->get_ower_cell();
+    LibertyCell *   cell = port->get_ower_cell();
     LibertyLibrary *lib = cell->get_owner_lib();
     fanout_load = lib->get_default_fanout_load();
   }

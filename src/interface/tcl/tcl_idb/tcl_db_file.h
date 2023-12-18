@@ -30,6 +30,7 @@
 #include "tcl_definition.h"
 
 using ieda::TclCmd;
+using ieda::TclIntOption;
 using ieda::TclOption;
 using ieda::TclStringListOption;
 using ieda::TclStringOption;
@@ -139,6 +140,20 @@ class CmdSaveGDS : public TclCmd
  public:
   explicit CmdSaveGDS(const char* cmd_name);
   ~CmdSaveGDS() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdGenerateMPScript : public TclCmd
+{
+ public:
+  explicit CmdGenerateMPScript(const char* cmd_name);
+  ~CmdGenerateMPScript() override = default;
 
   unsigned check() override;
   unsigned exec() override;
