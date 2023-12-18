@@ -16,50 +16,58 @@
 // ***************************************************************************************
 /*
  * @Author: S.J Chen
- * @Date: 2022-02-16 20:03:35
- * @LastEditTime: 2022-12-11 20:15:52
+ * @Date: 2022-10-27 14:50:40
  * @LastEditors: sjchanson 13560469332@163.com
+ * @LastEditTime: 2022-12-14 18:51:00
+ * @FilePath: /irefactor/src/operation/iPL/api/ids.hh
  * @Description:
- * @FilePath: /iEDA/src/iPL/src/wrapper/DBWrapper.hh
- * Contact : https://github.com/sjchanson
  */
 
-#ifndef IPL_DB_WRAPPER_H
-#define IPL_DB_WRAPPER_H
+#ifndef IPL_IDS_H
+#define IPL_IDS_H
 
+#include <any>
+#include <map>
 #include <string>
+#include <vector>
 
-#include "data/Design.hh"
-#include "data/Layout.hh"
+namespace ids {
+
+}
+
+namespace idb {
+
+class IdbBuilder;
+
+enum class IdbConnectType : uint8_t;
+}  // namespace idb
 
 namespace ipl {
+class NetWork;
 
-class DBWrapper
-{
- public:
-  DBWrapper() = default;
-  DBWrapper(const DBWrapper&) = delete;
-  DBWrapper(DBWrapper&&) = delete;
-  virtual ~DBWrapper() = default;
+template <typename T>
+class Rectangle;
 
-  DBWrapper& operator=(const DBWrapper&) = delete;
-  DBWrapper& operator=(DBWrapper&&) = delete;
+template <typename T>
+class Point;
 
-  // Layout.
-  virtual const Layout* get_layout() const = 0;
-
-  // Design.
-  virtual Design* get_design() const = 0;
-
-  // Function.
-  virtual void writeDef(std::string file_name) = 0;
-  virtual void updateFromSourceDataBase() = 0;
-  virtual void updateFromSourceDataBase(std::vector<std::string> inst_list) = 0;
-  virtual void writeBackSourceDatabase() = 0;
-  virtual void initInstancesForFragmentedRow() = 0;
-  virtual void saveVerilogForDebug(std::string path) = 0;
-};
+class TopologyManager;
 
 }  // namespace ipl
 
-#endif
+namespace eval {
+class EvalAPI;
+class TimingPin;
+class CongGrid;
+class CongInst;
+class TimingNet;
+
+}  // namespace eval
+
+namespace ista {
+
+enum class AnalysisMode;
+
+}
+
+#endif  // SRC_OPERATION_IPL_API_IDS_HH_

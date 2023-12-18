@@ -20,4 +20,4 @@ target_link_libraries(ipl-electrostatic_placer
         tool_manager
 )
 
-target_include_directories(ipl-electrostatic_placer PUBLIC ${iPL_electrostatic_placer})
+target_include_directories(ipl-electrostatic_placer PUBLIC ${iPL_ELECTROSTATIC_PLACER})

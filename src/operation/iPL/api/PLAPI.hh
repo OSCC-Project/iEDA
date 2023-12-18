@@ -42,10 +42,10 @@ class PLAPI
   void runFlow();
   void runIncrementalFlow();
   void insertLayoutFiller();
-  void writeDef(std::string file_name);
 
   void runGP();
   void runMP();
+
   bool runLG();
   bool runIncrLG();
   bool runIncrLG(std::vector<std::string> inst_name_list);
@@ -110,10 +110,14 @@ class PLAPI
   double obtainPinLateRequiredTime(std::string pin_name);
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
-  void updateTiming();
-  void updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
+  void updateTiming(TopologyManager* topo_manager);
+  void updateTimingInstMovement(TopologyManager* topo_manager,
+                                std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                 std::vector<std::string> moved_inst_list);
+  eval::TimingNet* generateTimingNet(NetWork* network,
+                                     const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list);
   void destroyTimingEval();
+
   /*****************************Timing-driven Placement: END*****************************/
 
   /*****************************Congestion-driven Placement: START*****************************/

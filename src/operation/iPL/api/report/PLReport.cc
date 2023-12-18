@@ -859,7 +859,7 @@ void PLAPI::reportTimingInfo(std::ofstream& feed)
 {
   if (this->isSTAStarted()) {
     iPLAPIInst.initTimingEval();
-    iPLAPIInst.updateTiming();
+    iPLAPIInst.updateTiming(PlacerDBInst.get_topo_manager());
 
     auto report_tbl = _external_api.generateTable("table");
     (*report_tbl) << TABLE_HEAD;

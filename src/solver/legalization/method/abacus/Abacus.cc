@@ -84,7 +84,7 @@ bool Abacus::runLegalization()
     int32_t best_row = INT32_MAX;
     int32_t best_cost = INT32_MAX;
     for (int32_t row_idx = 0; row_idx < _database->get_lg_layout()->get_row_num(); row_idx++) {
-      int32_t cost = placeRow(inst, row_idx, true);
+      int32_t cost = placeRow(inst, row_idx, true, false);
 
       if (cost < best_cost) {
         best_cost = cost;
@@ -97,7 +97,7 @@ bool Abacus::runLegalization()
       return false;
     }
 
-    placeRow(inst, best_row, false);
+    placeRow(inst, best_row, false, false);
 
     inst_id++;
     if (inst_id % 100000 == 0) {
@@ -113,6 +113,11 @@ bool Abacus::runIncrLegalization()
   int32_t row_range_num = 5;
   int32_t row_num = _database->get_lg_layout()->get_row_num();
 
+  // spilt new inst from the cluster.
+  for (auto* inst : _target_inst_list) {
+    splitTargetInst(inst);
+  }
+
   for (auto* inst : _target_inst_list) {
     int32_t row_idx = inst->get_coordi().get_y() / _row_height;
     int32_t max_row_idx = (row_idx + row_range_num > row_num) ? row_num : row_idx + row_range_num;
@@ -121,13 +126,13 @@ bool Abacus::runIncrLegalization()
     int32_t best_row = INT32_MAX;
     int32_t best_cost = INT32_MAX;
     for (int32_t row_idx = min_row_idx; row_idx < max_row_idx; row_idx++) {
-      int32_t cost = placeRow(inst, row_idx, true);
+      int32_t cost = placeRow(inst, row_idx, true, false);
       if (cost < best_cost) {
         best_cost = cost;
         best_row = row_idx;
       }
     }
-    placeRow(inst, best_row, false);
+    placeRow(inst, best_row, false, true);
   }
 
   return true;
@@ -146,7 +151,7 @@ void Abacus::pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_i
             [](ipl::LGInstance* l_inst, ipl::LGInstance* r_inst) { return (l_inst->get_coordi().get_x() < r_inst->get_coordi().get_x()); });
 }
 
-int32_t Abacus::placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial)
+int32_t Abacus::placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial, bool is_record_cluster)
 {
   ipl::Rectangle<int32_t> inst_shape = std::move(inst->get_shape());
 
@@ -199,7 +204,7 @@ int32_t Abacus::placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial)
 
   // Replace cluster
   if (!is_trial) {
-    replaceClusterInfo(target_cluster);
+    replaceClusterInfo(target_cluster, is_record_cluster);
     this->updateRemainLength(target_interval, -(inst->get_shape().get_width()));
   }
 
@@ -299,7 +304,7 @@ AbacusCluster Abacus::arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl:
         is_collapse = true;
         break;
       }
-      auto* back_cluster = cur_cluster->get_back_cluster();
+      auto* back_cluster = findCluster(cur_cluster->get_back_cluster());
       if (back_cluster) {
         // tmp fix bug.
         if (inst_shape.get_ll_x() >= cur_cluster->get_max_x() && inst_shape.get_ur_x() <= back_cluster->get_min_x()) {
@@ -320,9 +325,9 @@ AbacusCluster Abacus::arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl:
     // Create new cluster
     record_cluster = AbacusCluster(inst->get_name());
     record_cluster.add_inst(inst);
-    record_cluster.updateAbacusInfo(inst);
+    record_cluster.appendInst(inst);
     record_cluster.set_belong_interval(interval);
-    record_cluster.set_front_cluster(last_cluster);
+    record_cluster.set_front_cluster(last_cluster->get_name());
     legalizeCluster(record_cluster);
   }
 
@@ -336,7 +341,7 @@ void Abacus::legalizeCluster(AbacusCluster& cluster)
   cur_min_x = cluster.get_min_x();
   front_max_x = obtainFrontMaxX(cluster);
   while (cur_min_x < front_max_x) {
-    AbacusCluster front_cluster = *(cluster.get_front_cluster());
+    AbacusCluster front_cluster = *(this->findCluster(cluster.get_front_cluster()));
     front_cluster.appendCluster(cluster);
     front_cluster.set_back_cluster(cluster.get_back_cluster());
     arrangeClusterMinXCoordi(front_cluster);
@@ -348,7 +353,7 @@ void Abacus::legalizeCluster(AbacusCluster& cluster)
   cur_min_x = cluster.get_min_x();
   back_min_x = obtainBackMinX(cluster);
   while (cur_min_x + cluster.get_total_width() > back_min_x) {
-    auto* back_cluster = cluster.get_back_cluster();
+    auto* back_cluster = this->findCluster(cluster.get_back_cluster());
     cluster.appendCluster(*back_cluster);
     cluster.set_back_cluster(back_cluster->get_back_cluster());
     arrangeClusterMinXCoordi(cluster);
@@ -377,8 +382,9 @@ void Abacus::arrangeClusterMinXCoordi(AbacusCluster& cluster)
 int32_t Abacus::obtainFrontMaxX(AbacusCluster& cluster)
 {
   int32_t front_max_x = cluster.get_belong_interval()->get_min_x();
-  if (cluster.get_front_cluster()) {
-    front_max_x = cluster.get_front_cluster()->get_max_x();
+  auto* front_cluster = this->findCluster(cluster.get_front_cluster());
+  if (front_cluster) {
+    front_max_x = front_cluster->get_max_x();
   }
   return front_max_x;
 }
@@ -386,8 +392,9 @@ int32_t Abacus::obtainFrontMaxX(AbacusCluster& cluster)
 int32_t Abacus::obtainBackMinX(AbacusCluster& cluster)
 {
   int32_t back_min_x = cluster.get_belong_interval()->get_max_x();
-  if (cluster.get_back_cluster()) {
-    back_min_x = cluster.get_back_cluster()->get_min_x();
+  auto* back_cluster = this->findCluster(cluster.get_back_cluster());
+  if (back_cluster) {
+    back_min_x = back_cluster->get_min_x();
   }
   return back_min_x;
 }
@@ -401,7 +408,7 @@ bool Abacus::checkOverlapWithBox(int32_t min_x, int32_t max_x, int32_t box_min_x
   }
 }
 
-void Abacus::replaceClusterInfo(AbacusCluster& modify_cluster)
+void Abacus::replaceClusterInfo(AbacusCluster& modify_cluster, bool is_record_cluster)
 {
   auto* origin_interval = modify_cluster.get_belong_interval();
   int32_t coordi_y = origin_interval->get_belong_row()->get_coordinate().get_y();
@@ -424,8 +431,13 @@ void Abacus::replaceClusterInfo(AbacusCluster& modify_cluster)
       _interval_cluster_root[origin_interval->get_index()] = new_cluster;
     }
 
-    if (new_cluster->get_front_cluster()) {
-      new_cluster->get_front_cluster()->set_back_cluster(new_cluster);
+    auto* front_cluster = this->findCluster(new_cluster->get_front_cluster());
+    if (front_cluster) {
+      front_cluster->set_back_cluster(new_cluster->get_name());
+    }
+
+    if (is_record_cluster) {
+      _rollback_info.addition_clusters.push_back(*new_cluster);
     }
     return;
   }
@@ -434,29 +446,37 @@ void Abacus::replaceClusterInfo(AbacusCluster& modify_cluster)
   auto* origin_root = _interval_cluster_root[origin_interval->get_index()];
 
   // may be collapsing with front or back cluster
-  AbacusCluster* front_origin = origin_cluster.get_front_cluster();
-  AbacusCluster* front_modify = modify_cluster.get_front_cluster();
+  AbacusCluster* front_origin = this->findCluster(origin_cluster.get_front_cluster());
+  AbacusCluster* front_modify = this->findCluster(modify_cluster.get_front_cluster());
   while (front_origin != front_modify) {
+    if (is_record_cluster) {
+      _rollback_info.origin_clusters.push_back(*front_origin);
+    }
+
     if (front_origin == origin_root) {
       _interval_cluster_root[origin_interval->get_index()] = &origin_cluster;
     }
 
     std::string delete_cluster = front_origin->get_name();
-    front_origin = front_origin->get_front_cluster();
+    front_origin = this->findCluster(front_origin->get_front_cluster());
     if (front_origin) {
-      front_origin->set_back_cluster(&origin_cluster);
+      front_origin->set_back_cluster(origin_cluster.get_name());
     }
     this->deleteCluster(delete_cluster);
   }
 
-  AbacusCluster* back_origin = origin_cluster.get_back_cluster();
-  AbacusCluster* back_modify = modify_cluster.get_back_cluster();
+  AbacusCluster* back_origin = this->findCluster(origin_cluster.get_back_cluster());
+  AbacusCluster* back_modify = this->findCluster(modify_cluster.get_back_cluster());
   while (back_origin != back_modify) {
+    if (is_record_cluster) {
+      _rollback_info.origin_clusters.push_back(*back_origin);
+    }
+
     std::string delete_cluster = back_origin->get_name();
 
-    back_origin = back_origin->get_back_cluster();
+    back_origin = this->findCluster(back_origin->get_back_cluster());
     if (back_origin) {
-      back_origin->set_front_cluster(&origin_cluster);
+      back_origin->set_front_cluster(origin_cluster.get_name());
     }
     this->deleteCluster(delete_cluster);
   }
@@ -505,6 +525,55 @@ void Abacus::updateRemainLength(ipl::LGInterval* interval, int32_t delta)
 {
   int32_t cur_value = _interval_remain_length[interval->get_index()];
   _interval_remain_length[interval->get_index()] = cur_value + delta;
+}
+
+void Abacus::splitTargetInst(ipl::LGInstance* inst)
+{
+  int32_t inst_width = inst->get_shape().get_width();
+  auto* target_cluster = _inst_belong_cluster[inst->get_index()];
+  ipl::LGInterval* target_interval = target_cluster->get_belong_interval();
+  int32_t target_size = target_cluster->get_inst_list().size();
+
+  if (target_size == 1) {
+    _rollback_info.origin_clusters.push_back(*target_cluster);
+    deleteCluster(target_cluster->get_name());
+  } else {
+    int32_t inst_idx = target_cluster->obtainInstIdx(inst);
+    if (inst_idx == -1) {
+      LOG_WARNING << "Inst is not in target cluster!!!";
+      return;
+    }
+
+    _rollback_info.origin_clusters.push_back(*target_cluster);
+    if ((inst_idx == 0) || (inst_idx == target_size - 1)) {
+      target_cluster->eraseTargetInstByIdx(inst_idx);
+      target_cluster->updateAbacusInfo();
+    } else if ((inst_idx > 0) && (inst_idx < target_size)) {
+      // split cluster
+      std::vector<ipl::LGInstance*> origin_inst_list = target_cluster->get_inst_list();
+      std::vector<ipl::LGInstance*> new_inst_list(origin_inst_list.begin() + inst_idx + 1, origin_inst_list.end());
+      target_cluster->eraseTargetInstByIdxPair(inst_idx + 1, target_size - 1);
+
+      // add new cluster
+      ipl::LGInstance* flag_inst = new_inst_list[0];
+      AbacusCluster* new_cluster = new AbacusCluster(flag_inst->get_name());
+
+      new_cluster->appendInstList(new_inst_list);
+      new_cluster->set_min_x(flag_inst->get_coordi().get_x());
+      new_cluster->set_belong_interval(target_interval);
+      new_cluster->set_front_cluster(target_cluster->get_name());
+      std::string back_cluster_name = target_cluster->get_back_cluster();
+      if (back_cluster_name != "") {
+        new_cluster->set_back_cluster(back_cluster_name);
+      }
+      target_cluster->set_back_cluster(new_cluster->get_name());
+
+      this->insertCluster(new_cluster->get_name(), new_cluster);
+      _rollback_info.addition_clusters.push_back(*new_cluster);
+    }
+  }
+
+  _interval_remain_length[target_interval->get_index()] -= inst_width;
 }
 
 }  // namespace ieda_solver

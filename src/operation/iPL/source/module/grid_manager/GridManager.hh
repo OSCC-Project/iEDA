@@ -31,7 +31,7 @@ struct Grid
 {
   Grid() = default;
   Grid(int32_t r_id, int32_t g_id, int32_t w, int32_t h)
-      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0), h_cong(0.0), v_cong(0.0)
+      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0)
   {
     grid_area = static_cast<int64_t>(w) * static_cast<int64_t>(h);
   }
@@ -47,8 +47,6 @@ struct Grid
     available_ratio = other.available_ratio;
     occupied_area = other.occupied_area;
     fixed_area = other.fixed_area;
-    h_cong = other.h_cong;
-    v_cong = other.v_cong;
   }
 
   ~Grid() = default;
@@ -66,8 +64,6 @@ struct Grid
       available_ratio = other.available_ratio;
       occupied_area = other.occupied_area;
       fixed_area = other.fixed_area;
-      h_cong = other.h_cong;
-      v_cong = other.v_cong;
     }
     return (*this);
   }
@@ -88,13 +84,6 @@ struct Grid
   float available_ratio;
   int64_t occupied_area;
   int64_t fixed_area;
-
-  float h_cong;
-  float v_cong;
-  int32_t h_cap;
-  int32_t v_cap;
-  float h_util;
-  float v_util;
 };
 
 class GridManager
@@ -117,11 +106,6 @@ class GridManager
   int32_t get_grid_size_x() const { return _grid_size_x; }
   int32_t get_grid_size_y() const { return _grid_size_y; }
   std::vector<std::vector<Grid>>& get_grid_2d_list() { return _grid_2d_list; }
-  Utility get_utility() const {return _utility;}
-  float get_h_util_max() const {return _h_util_max;}
-  float get_v_util_max() const {return _v_util_max;}
-  float get_h_util_sum() const {return _h_util_sum;}
-  float get_v_util_sum() const {return _v_util_sum;}
 
   // function.
   void obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle<int32_t>& rect);
@@ -130,15 +114,6 @@ class GridManager
 
   void obtainOverflowIllegalGridList(std::vector<Grid*>& gird_list);
   void clearAllOccupiedArea();
-
-  void clearRUDY();
-  void initRouteCap(int32_t h_cap, int32_t v_cap);
-  void evalRouteUtil();
-  void plotRouteCap();
-  void plotRouteDem();
-  void plotRouteUtil(int32_t iter_num);
-  void fastGaussianBlur(std::vector<std::vector<float>>& image, float sigma, int kernelSize);
-  void blurRouteDemand();
 
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
   int64_t obtainTotalOverflowArea();
@@ -153,10 +128,6 @@ class GridManager
   float _available_ratio;
   int32_t _grid_size_x;
   int32_t _grid_size_y;
-  float _h_util_max = 0.f;
-  float _v_util_max = 0.f;
-  float _h_util_sum = 0.f;
-  float _v_util_sum = 0.f;
 
   std::vector<std::vector<Grid>> _grid_2d_list;
 

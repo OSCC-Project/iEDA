@@ -26,7 +26,15 @@
 
 #include "TopologyManager.hh"
 
+#include <cmath>
+#include <queue>
+#include <tuple>
+
+#include "Log.hh"
+
 namespace ipl {
+#define TOPO_SMALL_GAP 10
+#define TOPO_LARGE_GAP 1000
 
 std::vector<Node*> NetWork::get_node_list() const
 {
@@ -61,6 +69,28 @@ Rectangle<int32_t> NetWork::obtainNetWorkShape()
   }
 
   return Rectangle<int32_t>(lower_x, lower_y, upper_x, upper_y);
+}
+
+std::vector<Node*> Group::obtainInputNodes()
+{
+  std::vector<Node*> inputs;
+  for (auto* node : _node_list) {
+    if (node->get_node_type() == NODE_TYPE::kInput) {
+      inputs.push_back(node);
+    }
+  }
+  return inputs;
+}
+
+std::vector<Node*> Group::obtainOutputNodes()
+{
+  std::vector<Node*> outputs;
+  for (auto* node : _node_list) {
+    if (node->get_node_type() == NODE_TYPE::kOutput) {
+      outputs.push_back(node);
+    }
+  }
+  return outputs;
 }
 
 void TopologyManager::add_node(Node* node)
@@ -108,6 +138,94 @@ Group* TopologyManager::findGroupById(int32_t group_id)
     return nullptr;
   } else {
     return _group_list[group_id];
+  }
+}
+
+void TopologyManager::updateTopoId(Node* node)
+{
+  int32_t lower = -std::numeric_limits<int32_t>::infinity();
+  bool has_lower = false;
+  for (auto* predecessor_arc : node->get_input_arc_list()) {
+    auto* predecessor = predecessor_arc->get_from_node();
+    lower = std::max(lower, predecessor->get_topo_id());
+    has_lower = true;
+  }
+
+  int32_t upper = +std::numeric_limits<int32_t>::infinity();
+  bool has_upper = false;
+  for (auto* successor_arc : node->get_output_arc_list()) {
+    auto* successor = successor_arc->get_to_node();
+    upper = std::min(upper, successor->get_topo_id());
+    has_upper = true;
+  }
+
+  if (!has_lower && !has_upper) {
+    node->set_topo_id(0);
+  } else if (has_lower && !has_upper) {
+    node->set_topo_id(lower + TOPO_SMALL_GAP);
+  } else if (!has_lower && has_upper) {
+    node->set_topo_id(upper - TOPO_SMALL_GAP);
+  } else {
+    if (lower < upper && (upper - lower >= 2)) {
+      node->set_topo_id((lower + upper) / 2);
+    } else {
+      int32_t small_gap = TOPO_SMALL_GAP;
+      int32_t large_gap = TOPO_LARGE_GAP;
+
+      int32_t left_0 = upper;
+      int32_t left_1 = lower + small_gap + 1;
+      int32_t right = left_1 + large_gap;
+      int32_t w_0 = (right - left_0);
+      int32_t w_1 = (right - left_1);
+
+      node->set_topo_id((lower + left_1) / 2);
+
+      std::queue<std::tuple<Node*, int32_t>> open;
+      for (auto* successor_arc : node->get_output_arc_list()) {
+        auto* successor = successor_arc->get_to_node();
+        if (successor->get_topo_id() < right) {
+          open.push(std::make_tuple(successor, successor->get_topo_id()));
+        }
+      }
+
+      while (!open.empty()) {
+        auto* current = std::get<0>(open.front());
+        int32_t generator_order = std::get<1>(open.front());
+        open.pop();
+
+        if (current == node) {
+          // loop detected.
+          LOG_WARNING << "Loop detected.";
+          continue;
+        }
+
+        if (current->get_topo_id() > generator_order) {
+          // no need to continue propagating...
+          continue;
+        }
+
+        int32_t order = static_cast<int32_t>(std::floor(float((current->get_topo_id() - upper) * w_1) / float(w_0)) + left_1);
+        if (order <= generator_order) {
+          order = generator_order + small_gap;
+        }
+
+        current->set_topo_id(order);
+
+        for (auto* successor_arc : node->get_output_arc_list()) {
+          auto* successor = successor_arc->get_to_node();
+          if (successor->get_topo_id() <= order) {
+            open.push(std::make_tuple(successor, order));
+          }
+        }
+      }
+    }
+  }
+}
+
+void TopologyManager::updateALLNodeTopoId()
+{
+  for (auto* node : _node_list) {
+    updateTopoId(node);
   }
 }
 

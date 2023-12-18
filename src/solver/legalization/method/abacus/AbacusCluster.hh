@@ -94,22 +94,27 @@ class AbacusCluster
   double get_weight_e() const { return _weight_e; }
   double get_weight_q() const { return _weight_q; }
   int32_t get_total_width() const { return _total_width; }
-  AbacusCluster* get_front_cluster() const { return _front_cluster; }
-  AbacusCluster* get_back_cluster() const { return _back_cluster; }
+  std::string get_front_cluster() const { return _front_cluster; }
+  std::string get_back_cluster() const { return _back_cluster; }
 
   // setter
   void set_name(std::string name) { _name = name; }
   void add_inst(ipl::LGInstance* inst) { _inst_list.push_back(inst); }
   void set_belong_interval(ipl::LGInterval* seg) { _belong_segment = seg; }
   void set_min_x(int32_t min_x) { _min_x = min_x; }
-  void set_front_cluster(AbacusCluster* cluster) { _front_cluster = cluster; }
-  void set_back_cluster(AbacusCluster* cluster) { _back_cluster = cluster; }
+  void set_front_cluster(std::string cluster) { _front_cluster = cluster; }
+  void set_back_cluster(std::string cluster) { _back_cluster = cluster; }
 
   // function
   void clearAbacusInfo();
+  void updateAbacusInfo();
   void insertInstance(ipl::LGInstance* inst);
   void appendCluster(AbacusCluster& cluster);
-  void updateAbacusInfo(ipl::LGInstance* inst);
+  void appendInst(ipl::LGInstance* inst);
+  void appendInstList(std::vector<ipl::LGInstance*> inst_list);
+  int32_t obtainInstIdx(ipl::LGInstance* inst);
+  void eraseTargetInstByIdx(int32_t idx);                             // TODO
+  void eraseTargetInstByIdxPair(int32_t begin_idx, int32_t end_idx);  // TODO
 
  private:
   std::string _name;
@@ -121,7 +126,7 @@ class AbacusCluster
   double _weight_q;
   int32_t _total_width;
 
-  AbacusCluster* _front_cluster;
-  AbacusCluster* _back_cluster;
+  std::string _front_cluster;
+  std::string _back_cluster;
 };
 }  // namespace ieda_solver

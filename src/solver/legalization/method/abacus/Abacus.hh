@@ -18,6 +18,7 @@
 #pragma once
 
 #include <map>
+#include <unordered_map>
 
 #include "AbacusCluster.hh"
 #include "LGMethodInterface.hh"
@@ -31,10 +32,21 @@ class Rectangle;
 
 namespace ieda_solver {
 
+struct RollbackInfo
+{
+  RollbackInfo() : is_dirty(false) {}
+  ~RollbackInfo() = default;
+
+  bool is_dirty;
+  // for incremental legalization rollback
+  std::vector<AbacusCluster> origin_clusters;
+  std::vector<AbacusCluster> addition_clusters;
+};
+
 class Abacus : public LGMethodInterface
 {
  public:
-  Abacus() {}
+  Abacus() : _rollback_info(RollbackInfo()) {}
   Abacus(const Abacus&) = delete;
   Abacus(Abacus&&) = delete;
   ~Abacus();
@@ -49,7 +61,7 @@ class Abacus : public LGMethodInterface
   bool runIncrLegalization() override;
 
  private:
-  std::map<std::string, AbacusCluster*> _cluster_map;
+  std::unordered_map<std::string, AbacusCluster*> _cluster_map;
   std::vector<AbacusCluster*> _inst_belong_cluster;
   std::vector<AbacusCluster*> _interval_cluster_root;
   std::vector<int32_t> _interval_remain_length;
@@ -57,12 +69,14 @@ class Abacus : public LGMethodInterface
   int32_t _row_height = -1;
   int32_t _site_width = -1;
 
+  RollbackInfo _rollback_info;
+
   void pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_inst_list);
-  int32_t placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial);
+  int32_t placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial, bool is_record_cluster);
   int32_t searchNearestIntervalIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape);
   int32_t searchRemainSpaceSegIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape, int32_t origin_index);
   AbacusCluster arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl::LGInterval* interval);
-  void replaceClusterInfo(AbacusCluster& cluster);
+  void replaceClusterInfo(AbacusCluster& cluster, bool is_record_cluster);
   void arrangeClusterMinXCoordi(AbacusCluster& cluster);
   void legalizeCluster(AbacusCluster& cluster);
   int32_t obtainFrontMaxX(AbacusCluster& cluster);
@@ -76,6 +90,7 @@ class Abacus : public LGMethodInterface
   void deleteCluster(std::string name);
 
   void updateRemainLength(ipl::LGInterval* interval, int32_t delta);
+  void splitTargetInst(ipl::LGInstance* inst);
 };
 
 }  // namespace ieda_solver

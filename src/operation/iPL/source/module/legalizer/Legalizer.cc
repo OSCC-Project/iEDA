@@ -162,19 +162,8 @@ void Legalizer::updateInstanceList(std::vector<Instance*> inst_list)
 
   int32_t changed_cnt = 0;
   for (auto* pl_inst : inst_list) {
-    auto* lg_inst = findLGInstance(pl_inst);
-    if (!lg_inst) {
-      lg_inst = new LGInstance(pl_inst->get_name());
-      updateInstanceInfo(pl_inst, lg_inst);
-      updateInstanceMapping(pl_inst, lg_inst);
-      _target_inst_list.push_back(lg_inst);
+    if (updateInstance(pl_inst)) {
       changed_cnt++;
-    } else {
-      if (checkInstChanged(pl_inst, lg_inst)) {
-        updateInstanceInfo(pl_inst, lg_inst);
-        _target_inst_list.push_back(lg_inst);
-        changed_cnt++;
-      }
     }
   }
 
@@ -192,6 +181,33 @@ void Legalizer::updateInstanceList(std::vector<Instance*> inst_list)
   } else {
     _mode = LG_MODE::kComplete;
   }
+}
+
+bool Legalizer::updateInstance(Instance* pl_inst)
+{
+  auto* lg_inst = findLGInstance(pl_inst);
+  if (!lg_inst) {
+    lg_inst = new LGInstance(pl_inst->get_name());
+    updateInstanceInfo(pl_inst, lg_inst);
+    updateInstanceMapping(pl_inst, lg_inst);
+    _target_inst_list.push_back(lg_inst);
+    return true;
+  } else {
+    if (checkInstChanged(pl_inst, lg_inst)) {
+      updateInstanceInfo(pl_inst, lg_inst);
+      _target_inst_list.push_back(lg_inst);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool Legalizer::updateInstance(std::string pl_inst_name)
+{
+  Design* design = _database._placer_db->get_design();
+  auto* pl_inst = design->find_instance(pl_inst_name);
+  return updateInstance(pl_inst);
 }
 
 bool Legalizer::checkMapping()
@@ -441,7 +457,7 @@ bool Legalizer::runLegalize()
   return is_succeed;
 }
 
-bool Legalizer::runIncrLegalize()
+bool Legalizer::runIncrLegalize(bool is_trial)
 {
   LOG_INFO << "-----------------Start Incrmental Legalization-----------------";
   ieda::Stats incr_lg_status;
@@ -464,8 +480,12 @@ bool Legalizer::runIncrLegalize()
   if (is_succeed) {
     alignInstanceOrient();
     LOG_INFO << "Total Movement: " << calTotalMovement();
-    writebackPlacerDB();
-    _target_inst_list.clear();
+    if (!is_trial) {
+      writebackPlacerDB();
+      _target_inst_list.clear();
+    } else {
+      // TODO recover origin cluster.
+    }
   }
 
   PlacerDBInst.updateTopoManager();

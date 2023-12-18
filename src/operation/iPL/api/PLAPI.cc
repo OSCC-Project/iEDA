@@ -172,80 +172,102 @@ double PLAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
   return _external_api.obtainTNS(clock_name, mode);
 }
 
-void PLAPI::updateTiming()
+void PLAPI::updateTiming(TopologyManager* topo_manager)
 {
-  auto* topo_manager = PlacerDBInst.get_topo_manager();
   SteinerWirelength steiner_wl(topo_manager);
   steiner_wl.updateAllNetWorkPointPair();
 
   std::vector<eval::TimingNet*> timing_net_list;
   timing_net_list.reserve(topo_manager->get_network_list().size());
   for (auto* network : topo_manager->get_network_list()) {
-    eval::TimingNet* timing_net = new eval::TimingNet();
-    timing_net->set_name(network->get_name());
-    std::map<Point<int32_t>, Node*, PointCMP> point_to_node;
-    std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
-    for (auto* node : network->get_node_list()) {
-      const auto& node_loc = node->get_location();
-      auto iter = point_to_node.find(node_loc);
-      if (iter != point_to_node.end()) {
-        auto* timing_pin_1 = wrapTimingTruePin(node);
-        auto* timing_pin_2 = wrapTimingTruePin(iter->second);
-        timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
-      } else {
-        point_to_node.emplace(node_loc, node);
-      }
-    }
-
     const auto& point_pair_list = steiner_wl.obtainPointPairList(network);
-    int fake_pin_id = 0;
-    for (auto point_pair : point_pair_list) {
-      if (point_pair.first == point_pair.second) {
-        continue;
-      }
-      eval::TimingPin* timing_pin_1 = nullptr;
-      eval::TimingPin* timing_pin_2 = nullptr;
-      auto iter_1 = point_to_node.find(point_pair.first);
-      if (iter_1 != point_to_node.end()) {
-        auto iter_1_1 = point_to_timing_pin.find(point_pair.first);
-        if (iter_1_1 != point_to_timing_pin.end()) {
-          timing_pin_1 = iter_1_1->second;
-        } else {
-          timing_pin_1 = wrapTimingTruePin(iter_1->second);
-          point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
-        }
-      } else {
-        auto iter_1_2 = point_to_timing_pin.find(point_pair.first);
-        if (iter_1_2 != point_to_timing_pin.end()) {
-          timing_pin_1 = iter_1_2->second;
-        } else {
-          timing_pin_1 = wrapTimingFakePin(fake_pin_id++, point_pair.first);
-          point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
-        }
-      }
-      auto iter_2 = point_to_node.find(point_pair.second);
-      if (iter_2 != point_to_node.end()) {
-        auto iter_2_1 = point_to_timing_pin.find(point_pair.second);
-        if (iter_2_1 != point_to_timing_pin.end()) {
-          timing_pin_2 = iter_2_1->second;
-        } else {
-          timing_pin_2 = wrapTimingTruePin(iter_2->second);
-          point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
-        }
-      } else {
-        auto iter_2_2 = point_to_timing_pin.find(point_pair.second);
-        if (iter_2_2 != point_to_timing_pin.end()) {
-          timing_pin_2 = iter_2_2->second;
-        } else {
-          timing_pin_2 = wrapTimingFakePin(fake_pin_id++, point_pair.second);
-          point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
-        }
-      }
-      timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
-    }
+    eval::TimingNet* timing_net = generateTimingNet(network, point_pair_list);
     timing_net_list.push_back(timing_net);
   }
-  _external_api.updateEvalTiming(timing_net_list);
+  EvalInst.updateTiming(timing_net_list);
+}
+
+void PLAPI::updateTimingInstMovement(TopologyManager* topo_manager,
+                                     std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
+                                     std::vector<std::string> moved_inst_list)
+{
+  std::vector<eval::TimingNet*> timing_net_list;
+  timing_net_list.resize(net_id_to_points_map.size());
+
+  for (auto net_pair : net_id_to_points_map) {
+    NetWork* network = topo_manager->findNetworkById(net_pair.first);
+    eval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
+    timing_net_list.push_back(timing_net);
+  }
+
+  EvalInst.updateTiming(timing_net_list, moved_inst_list, 2);
+}
+
+eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
+                                          const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list)
+{
+  eval::TimingNet* timing_net = new eval::TimingNet();
+  timing_net->set_name(network->get_name());
+  std::map<Point<int32_t>, Node*, PointCMP> point_to_node;
+  std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
+  for (auto* node : network->get_node_list()) {
+    const auto& node_loc = node->get_location();
+    auto iter = point_to_node.find(node_loc);
+    if (iter != point_to_node.end()) {
+      auto* timing_pin_1 = wrapTimingTruePin(node);
+      auto* timing_pin_2 = wrapTimingTruePin(iter->second);
+      timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+    } else {
+      point_to_node.emplace(node_loc, node);
+    }
+  }
+
+  int fake_pin_id = 0;
+  for (auto point_pair : point_pair_list) {
+    if (point_pair.first == point_pair.second) {
+      continue;
+    }
+    eval::TimingPin* timing_pin_1 = nullptr;
+    eval::TimingPin* timing_pin_2 = nullptr;
+    auto iter_1 = point_to_node.find(point_pair.first);
+    if (iter_1 != point_to_node.end()) {
+      auto iter_1_1 = point_to_timing_pin.find(point_pair.first);
+      if (iter_1_1 != point_to_timing_pin.end()) {
+        timing_pin_1 = iter_1_1->second;
+      } else {
+        timing_pin_1 = wrapTimingTruePin(iter_1->second);
+        point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
+      }
+    } else {
+      auto iter_1_2 = point_to_timing_pin.find(point_pair.first);
+      if (iter_1_2 != point_to_timing_pin.end()) {
+        timing_pin_1 = iter_1_2->second;
+      } else {
+        timing_pin_1 = wrapTimingFakePin(fake_pin_id++, point_pair.first);
+        point_to_timing_pin.emplace(point_pair.first, timing_pin_1);
+      }
+    }
+    auto iter_2 = point_to_node.find(point_pair.second);
+    if (iter_2 != point_to_node.end()) {
+      auto iter_2_1 = point_to_timing_pin.find(point_pair.second);
+      if (iter_2_1 != point_to_timing_pin.end()) {
+        timing_pin_2 = iter_2_1->second;
+      } else {
+        timing_pin_2 = wrapTimingTruePin(iter_2->second);
+        point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
+      }
+    } else {
+      auto iter_2_2 = point_to_timing_pin.find(point_pair.second);
+      if (iter_2_2 != point_to_timing_pin.end()) {
+        timing_pin_2 = iter_2_2->second;
+      } else {
+        timing_pin_2 = wrapTimingFakePin(fake_pin_id++, point_pair.second);
+        point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
+      }
+    }
+    timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+  }
+  return timing_net;
 }
 
 void PLAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
@@ -481,11 +503,6 @@ void PLAPI::writeBackSourceDataBase()
   PlacerDBInst.writeBackSourceDataBase();
 }
 
-void PLAPI::writeDef(std::string file_name)
-{
-  PlacerDBInst.writeDef(file_name);
-}
-
 std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
                                                                      std::pair<int32_t, int32_t> site_range)
 {
@@ -543,7 +560,6 @@ bool PLAPI::isAbucasLGStarted()
 /*****************************Congestion-driven Placement: START*****************************/
 void PLAPI::runRoutabilityGP()
 {
-  // RandomPlace(&PlacerDBInst).runRandomPlace();
   CenterPlace(&PlacerDBInst).runCenterPlace();
   NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   nesterov_place.printNesterovDatabase();

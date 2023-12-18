@@ -66,6 +66,8 @@ class Config
   FillerConfig& get_filler_config() { return _filler_config; }
   // MacroPlacer config
   MacroPlacerConfig& get_mp_config() { return _mp_config; }
+  // PostGP config
+  PostGPConfig& get_post_gp_config() { return _post_gp_config; }
 
   int32_t get_ignore_net_degree() const { return _ignore_net_degree; }
   bool isTimingAwareMode() const { return _is_timing_aware_mode; }
@@ -83,7 +85,7 @@ class Config
   FillerConfig _filler_config;
   // MacroPlacer config
   MacroPlacerConfig _mp_config;
-
+  PostGPConfig _post_gp_config;
   int32_t _ignore_net_degree;
   bool _is_timing_aware_mode;
 
