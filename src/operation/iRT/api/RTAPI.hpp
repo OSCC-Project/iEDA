@@ -68,26 +68,17 @@ class RTAPI
    */
   std::map<std::string, std::vector<BaseViolationInfo>> getEnvViolationInfo(BaseRegion& base_region,
                                                                             const std::vector<DRCCheckType>& check_type_list,
-                                                                            const std::vector<BaseShape>& drc_shape_list)
-  {
-    std::map<std::string, std::vector<BaseViolationInfo>> result;
-    return result;
-  }
+                                                                            std::vector<BaseShape>& drc_shape_list);
   /**
    * drc_shape_list组成的自身违例信息，如min_area,min_step
    * 关注于net内的违例
    */
   std::map<std::string, std::vector<BaseViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
-                                                                             const std::vector<BaseShape>& drc_shape_list)
-  {
-    std::map<std::string, std::vector<BaseViolationInfo>> result;
-    return result;
-  }
+                                                                             std::vector<BaseShape>& drc_shape_list);
 
   // STA
   void reportGRTiming();
   void reportDRTiming();
-
   // other
   void runOther();
 
