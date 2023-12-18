@@ -51,6 +51,6 @@ TEST_F(LibertyTest, rust_reader) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "LibertyTest.rust_*";
+  testing::GTEST_FLAG(filter) = "TimingEngineTest.my_*";
   return RUN_ALL_TESTS();
 }

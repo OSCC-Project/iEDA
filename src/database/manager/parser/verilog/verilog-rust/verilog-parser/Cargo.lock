@@ -458,6 +458,7 @@ name = "verilog-parser"
 version = "0.1.0"
 dependencies = [
  "cbindgen",
+ "log",
  "pest",
  "pest_derive",
 ]
