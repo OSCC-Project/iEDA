@@ -57,7 +57,7 @@ class PowerIO
   PowerIO() {}
   ~PowerIO() = default;
 
-  bool reportSummaryPower();
+  bool reportPower();
 };
 
 }  // namespace iplf

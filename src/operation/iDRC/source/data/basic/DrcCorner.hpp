@@ -31,6 +31,7 @@ class DrcCorner : public BoostPoint
   DrcEdge* getPrevEdge() const { return _pre_edge; }
   DrcEdge* getNextEdge() const { return _next_edge; }
   // BoostPoint getPoint() const { return _point; }
+  // frCornerTypeEnum getType() const { return cornerType; }
   CornerDirEnum getDir() const { return _corner_dir; }
   bool isFixed() const { return _fixed; }
 
@@ -39,6 +40,7 @@ class DrcCorner : public BoostPoint
   void setNextCorner(DrcCorner* in) { _next_corner = in; }
   void setPrevEdge(DrcEdge* in) { _pre_edge = in; }
   void setNextEdge(DrcEdge* in) { _next_edge = in; }
+  // void setType(frCornerTypeEnum in) { cornerType = in; }
   void setDir(CornerDirEnum in) { _corner_dir = in; }
   void setFixed(bool in) { _fixed = in; }
 

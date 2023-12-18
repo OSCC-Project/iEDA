@@ -26,7 +26,6 @@
 
 #include <memory>
 
-#include "VerilogParserRustC.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
 

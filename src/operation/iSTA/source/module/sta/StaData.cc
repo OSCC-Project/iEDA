@@ -476,8 +476,15 @@ void StaDataBucket::addData(StaData* data, int track_stack_deep) {
       }
 
       if (!is_insert) {
-        _data_list.emplace_after(q, data);
-        ++_count;
+        if (data->isSlewData() || data->isPathDelayData()) {
+          if (_count < _n_worst) {
+            _data_list.emplace_after(q, data);
+            ++_count;
+          }
+        } else {
+          _data_list.emplace_after(q, data);
+          ++_count;
+        }
       }
 
       // erase the beyond limit data.

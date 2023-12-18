@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <fstream>
 
+#include "VCDFileParser.hpp"
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
@@ -136,7 +137,7 @@ TEST_F(PropagationTest, seq_graph) {
 
   ipower.analyzeGroupPower();
 
-  ipower.reportSummaryPower("report.txt", PwrAnalysisMode::kAveraged);
+  ipower.reportPower("report.txt", PwrAnalysisMode::kAveraged);
 
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "memory usage " << memory_delta << "MB";

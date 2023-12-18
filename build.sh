@@ -20,7 +20,7 @@ set -e
 
 # variables
 IEDA_WORKSPACE=$(cd "$(dirname "$0")";pwd)
-BINARY_TARGET="iEDA"
+BINARY_TARGET="IncTO_2023"
 BINARY_DIR="${IEDA_WORKSPACE}/bin"
 BUILD_DIR="${IEDA_WORKSPACE}/build"
 CPP_COMPILER_PATH="g++-10"

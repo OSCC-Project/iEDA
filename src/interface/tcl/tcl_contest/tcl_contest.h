@@ -30,10 +30,25 @@
 #include "ScriptEngine.hh"
 
 using ieda::TclCmd;
+using ieda::TclDoubleOption;
 using ieda::TclOption;
 using ieda::TclStringOption;
 
 namespace tcl {
+
+class CmdRunContestPreprocess : public TclCmd
+{
+ public:
+  explicit CmdRunContestPreprocess(const char* cmd_name);
+  ~CmdRunContestPreprocess() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
 
 class CmdRunContest : public TclCmd
 {

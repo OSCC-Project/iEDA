@@ -1,12 +1,11 @@
+add_library(imp-module 
+            ${IMP_MODULE}/SA.cc
+            ${IMP_MODULE}/Evaluator.cc
+            ${IMP_MODULE}/NetList.cc)
 
-add_library(imp-netlist ${IMP_MODULE}/NetList.cc ${IMP_MODULE}/Evaluator.cc)
-target_link_libraries(imp-netlist
-                      PRIVATE
+target_link_libraries(imp-module
+                      PUBLIC
                       imp-solver)
-target_include_directories(imp-netlist
+target_include_directories(imp-module
                            PUBLIC
                            ${IMP_MODULE})
-set(IMP_REPRESENTATION ${IMP_MODULE}/representation)
-set(IMP_HEURISTIC ${IMP_MODULE}/heuristic)
-add_subdirectory(${IMP_REPRESENTATION})
-add_subdirectory(${IMP_HEURISTIC})

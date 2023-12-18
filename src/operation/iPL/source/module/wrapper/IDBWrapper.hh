@@ -74,7 +74,6 @@ class IDBWrapper : public DBWrapper
   void wrapIDBData();
   void wrapLayout(IdbLayout* idb_layout);
   void wrapRows(IdbLayout* idb_layout);
-  void wrapRoutingInfo(IdbLayout* idb_layout);
   void wrapCells(IdbLayout* idb_layout);
   void wrapDesign(IdbDesign* idb_design);
   void wrapIdbInstance(IdbInstance* idb_inst);

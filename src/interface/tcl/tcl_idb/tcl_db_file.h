@@ -163,18 +163,4 @@ class CmdGenerateMPScript : public TclCmd
   // private data
 };
 
-class CmdSaveJSON : public TclCmd
-{
- public:
-  explicit CmdSaveJSON(const char* cmd_name);
-  ~CmdSaveJSON() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
 }  // namespace tcl

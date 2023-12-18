@@ -95,7 +95,8 @@ void DbInterface::makeEquivCells() {
     }
   }
 
-  _timing_engine->makeEquivCells(equiv_libs);
+  vector<LibertyLibrary *> map_libs;
+  _timing_engine->makeEquivCells(equiv_libs, map_libs);
 }
 
 bool DbInterface::isLinkCell(LibertyCell *cell) {

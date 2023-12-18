@@ -90,7 +90,6 @@ class CTSAPI
   icts::CtsCellLib* getCellLib(const std::string& cell_masterconst, const std::string& from_port = "", const std::string& to_port = "",
                                const bool& use_work_value = true);
   std::vector<icts::CtsCellLib*> getAllBufferLibs();
-  icts::CtsCellLib* getRootBufferLib();
   std::vector<std::string> getMasterClocks(icts::CtsNet* net) const;
   double getClockAT(const std::string& pin_name, const std::string& belong_clock_name) const;
   std::string getCellType(const std::string& cell_master) const;
@@ -117,7 +116,7 @@ class CTSAPI
                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
-  icts::Inst* genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+  icts::Inst* genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                           const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
@@ -148,7 +147,7 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
-
+  
   // function
   std::vector<std::string> splitString(std::string str, const char split);
 
@@ -177,11 +176,13 @@ class CTSAPI
   // private STA
   void readSTAFile();
   ista::RctNode* makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name);
-  ista::RctNode* makePinRCTreeNode(icts::CtsPin* pin);
+  ista::RctNode* makeLogicRCTreeNode(icts::CtsPin* pin);
   ista::DesignObject* findStaPin(icts::CtsPin* pin) const;
   ista::DesignObject* findStaPin(const std::string& pin_full_name) const;
   ista::Net* findStaNet(const icts::EvalNet& eval_net) const;
   ista::Net* findStaNet(const std::string& name) const;
+  double getUnitCap() const;
+  double getUnitRes() const;
   double getCapacitance(const double& wire_length, const int& level) const;
   double getResistance(const double& wire_length, const int& level) const;
   ista::TimingIDBAdapter* getStaDbAdapter() const;

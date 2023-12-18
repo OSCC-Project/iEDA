@@ -20,6 +20,48 @@
 
 namespace tcl {
 
+CmdRunContestPreprocess::CmdRunContestPreprocess(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* gcell_x = new TclDoubleOption("-gcell_x", 1, 1);
+  auto* gcell_y = new TclDoubleOption("-gcell_y", 1, 1);
+  auto* guide_output = new TclStringOption("-guide_output", 1, nullptr);
+  addOption(gcell_x);
+  addOption(gcell_y);
+  addOption(guide_output);
+}
+
+unsigned CmdRunContestPreprocess::check()
+{
+  TclOption* gcell_x = getOptionOrArg("-gcell_x");
+  TclOption* gcell_y = getOptionOrArg("-gcell_y");
+  TclOption* guide_output = getOptionOrArg("-guide_output");
+  LOG_FATAL_IF(!gcell_x);
+  LOG_FATAL_IF(!gcell_y);
+  LOG_FATAL_IF(!guide_output);
+  return 1;
+}
+
+unsigned CmdRunContestPreprocess::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option_gcell_x = getOptionOrArg("-gcell_x");
+  double gcell_x = option_gcell_x->getDoubleVal();
+
+  TclOption* option_gcell_y = getOptionOrArg("-gcell_y");
+  double gcell_y = option_gcell_y->getDoubleVal();
+
+  TclOption* option_guide_output = getOptionOrArg("-guide_output");
+  std::string guide_output = option_guide_output->getStringVal();
+
+  ieda_contest::ContestFlow contest_flow;
+  contest_flow.run_preprocess(gcell_x, gcell_y, guide_output);
+
+  return 1;
+}
+
 CmdRunContest::CmdRunContest(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* guide_input = new TclStringOption("-guide_input", 1, nullptr);
@@ -60,17 +102,13 @@ unsigned CmdRunContest::exec()
 CmdRunContestEvaluation::CmdRunContestEvaluation(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* guide = new TclStringOption("-guide", 1, nullptr);
-  auto* report = new TclStringOption("-report", 1, nullptr);
   addOption(guide);
-  addOption(report);
 }
 
 unsigned CmdRunContestEvaluation::check()
 {
   TclOption* guide = getOptionOrArg("-guide");
-  TclOption* report = getOptionOrArg("-report");
   LOG_FATAL_IF(!guide);
-  LOG_FATAL_IF(!report);
   return 1;
 }
 
@@ -87,14 +125,8 @@ unsigned CmdRunContestEvaluation::exec()
     guide_str = option_guide->getStringVal();
   }
 
-  std::string report_str = "";
-  TclOption* option_report = getOptionOrArg("-report");
-  if (option_report != nullptr) {
-    report_str = option_report->getStringVal();
-  }
-
   ieda_contest::ContestFlow contest_flow;
-  contest_flow.run_evaluation(guide_str, report_str);
+  contest_flow.run_evaluation(guide_str);
 
   return 1;
 }

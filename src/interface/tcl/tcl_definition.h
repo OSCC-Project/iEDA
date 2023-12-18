@@ -22,7 +22,6 @@
 namespace tcl {
 
 #define TCL_HELP "-help"
-#define TCL_JSON_OPTION "-discard"
 #define TCL_CONFIG "-config"
 #define TCL_PATH "-path"
 #define TCL_DIRECTORY "-dir"

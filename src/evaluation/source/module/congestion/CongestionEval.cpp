@@ -21,8 +21,6 @@
 #include <cmath>
 #include <fstream>
 #include <regex>
-#include <omp.h>
-#include <mutex>
 
 #include "../manager.hpp"
 #include "EvalLog.hpp"
@@ -108,16 +106,10 @@ void CongestionEval::initCongInst()
 
 void CongestionEval::initCongNetList()
 {
-  //清空
-  if (_cong_net_list.size() != 0){
-    _cong_net_list.clear();
-  }
-
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
 
-  for (int i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
-    auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
+  for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
     std::string net_name = fixSlash(idb_net->get_net_name());
     CongNet* net_ptr = new CongNet();
     net_ptr->set_name(net_name);
@@ -146,6 +138,7 @@ void CongestionEval::initCongNetList()
       pin_ptr->set_two_pin_net_num(std::min(idb_net->get_pin_number() - 1, 50));
       net_ptr->add_pin(pin_ptr);
     }
+
     _cong_net_list.emplace_back(net_ptr);
   }
 }
@@ -181,13 +174,7 @@ void CongestionEval::mapInst2Bin()
 
 void CongestionEval::mapNetCoord2Grid()
 {
-  // 清空bin 内的net, 否则 每次调用会不断增加
-  for (auto& bin: _cong_grid->get_bin_list()){
-    bin->clear_net_list();
-  }
-
-  for (int k = 0; k < _cong_net_list.size(); k++) {
-    auto& net = _cong_net_list[k];
+  for (auto& net : _cong_net_list) {
     if (net->get_pin_list().size() == 1) {
       continue;
     }
@@ -513,37 +500,30 @@ vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalNetSize()
 
 void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
 {
-  for (int i = 0; i < _cong_grid->get_bin_list().size(); i++) {
-    auto& bin = _cong_grid->get_bin_list()[i];
+  for (auto& bin : _cong_grid->get_bin_list()) {
     bin->set_net_cong(0.0);
-    bin->set_h_net_cong(0.0);
-    bin->set_v_net_cong(0.0);
   }
-
-  for (int i = 0; i < _cong_grid->get_bin_list().size(); i++) {
-    auto& bin = _cong_grid->get_bin_list()[i];
+  for (auto& bin : _cong_grid->get_bin_list()) {
     int32_t overlap_area = 0;
     double congestion = 0.0;
-    double h_net_cong = 0.0;
-    double v_net_cong = 0.0;
     for (auto& net : bin->get_net_list()) {
       overlap_area = getOverlapArea(bin, net);
       if (rudy_type == RUDY_TYPE::kRUDY) {
         congestion += overlap_area * getRudy(bin, net, direction);
-        h_net_cong += overlap_area * getRudy(bin, net, DIRECTION::kH);
-        v_net_cong += overlap_area * getRudy(bin, net, DIRECTION::kV);
       } else if (rudy_type == RUDY_TYPE::kPinRUDY) {
         congestion += overlap_area * getPinRudy(bin, net, direction);
       } else if (rudy_type == RUDY_TYPE::kLUTRUDY) {
         int32_t pin_num = net->get_pin_list().size();
         int64_t net_width = net->get_width();
         int64_t net_height = net->get_height();
-        int32_t aspect_ratio = 1;
+        int32_t aspect_ratio = 0;
         if (net_width >= net_height && net_height != 0) {
           aspect_ratio = std::round(net_width / net_height);
         } else if (net_width < net_height && net_width != 0) {
           aspect_ratio = std::round(net_height / net_width);
-        } 
+        } else {
+          aspect_ratio = 1;
+        }
         float l_ness = 0.0;
         if (pin_num <= 3) {
           l_ness = 1.0;
@@ -562,8 +542,6 @@ void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
       }
     }
     bin->set_net_cong(congestion);
-    bin->set_h_net_cong(h_net_cong);
-    bin->set_v_net_cong(v_net_cong);
   }
 }
 
@@ -1692,10 +1670,10 @@ CongPin* CongestionEval::wrapCongPin(idb::IdbPin* idb_pin)
     // set instance
     auto inst_iter = _name_to_inst_map.find(idb_inst->get_name());
     if (inst_iter != _name_to_inst_map.end()) {
-    CongInst* inst = (*inst_iter).second;
-    inst->add_pin(pin_ptr);
+      CongInst* inst = (*inst_iter).second;
+      inst->add_pin(pin_ptr);
     } else {
-    LOG_ERROR << idb_inst->get_name() << "is not found in cong_inst_map";
+      LOG_ERROR << idb_inst->get_name() << "is not found in cong_inst_map";
     }
   }
 

@@ -26,7 +26,7 @@
 #include <ranges>
 #include <unordered_map>
 
-#include "CBS.hh"
+#include "BEAT.hh"
 #include "CtsCellLib.hh"
 #include "CtsConfig.hh"
 #include "CtsDBWrapper.hh"
@@ -91,10 +91,9 @@ void CTSAPI::writeDB()
 
 void CTSAPI::writeGDS()
 {
-  GDSPloter::plotDesign();
-  GDSPloter::plotFlyLine();
-  GDSPloter::writePyDesign();
-  GDSPloter::writePyFlyLine();
+  GDSPloter plotter;
+  plotter.plotDesign();
+  plotter.plotFlyLine();
 }
 
 void CTSAPI::report(const std::string& save_dir)
@@ -201,50 +200,44 @@ void CTSAPI::dumpVertexData(const std::vector<std::string>& vertex_names) const
 
 double CTSAPI::getClockUnitCap(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
+  std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
   auto* db_adapter = getStaDbAdapter();
-  auto layer = _config->get_routing_layers().back();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      layer = _config->get_h_layer();
+      return db_adapter->getCapacitance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      layer = _config->get_v_layer();
+      return db_adapter->getCapacitance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      layer = _config->get_routing_layers().back();
-      break;
+      return db_adapter->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
-  std::optional<double> width = std::nullopt;
-  auto max_len = _config->get_max_length();
-  return db_adapter->getCapacitance(layer, max_len, width) / max_len;
+  return 0.0;
 }
 
 double CTSAPI::getClockUnitRes(const std::optional<icts::LayerPattern>& layer_pattern) const
 {
+  std::optional<double> width = std::nullopt;
   auto pattern = layer_pattern.value_or(icts::LayerPattern::kNone);
   auto* db_adapter = getStaDbAdapter();
-  auto layer = _config->get_routing_layers().back();
   switch (pattern) {
     case icts::LayerPattern::kH:
-      layer = _config->get_h_layer();
+      return db_adapter->getResistance(_config->get_h_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kV:
-      layer = _config->get_v_layer();
+      return db_adapter->getResistance(_config->get_v_layer(), 1.0, width);
       break;
     case icts::LayerPattern::kNone:
-      layer = _config->get_routing_layers().back();
-      break;
+      return db_adapter->getResistance(_config->get_routing_layers().back(), 1.0, width);
     default:
       LOG_ERROR << "Unknown layer pattern";
       break;
   }
-  std::optional<double> width = std::nullopt;
-  auto max_len = _config->get_max_length();
-  return db_adapter->getResistance(layer, max_len, width) / max_len / 2;
+  return 0.0;
 }
 
 double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
@@ -513,13 +506,6 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
   return all_buf_libs;
 }
 
-icts::CtsCellLib* CTSAPI::getRootBufferLib()
-{
-  auto root_buffer_type = _config->get_root_buffer_type();
-  auto* buf_lib = getCellLib(root_buffer_type);
-  return buf_lib;
-}
-
 std::vector<std::string> CTSAPI::getMasterClocks(icts::CtsNet* net) const
 {
   auto* sta_net = findStaNet(net->get_net_name());
@@ -661,10 +647,10 @@ icts::Inst* CTSAPI::genBstSaltTree(const std::string& net_name, const std::vecto
   return TreeBuilder::bstSaltTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
-icts::Inst* CTSAPI::genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                               const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
+icts::Inst* CTSAPI::genBeatTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
+                                const std::optional<icts::Point>& guide_loc, const TopoType& topo_type)
 {
-  return TreeBuilder::cbsTree(net_name, loads, skew_bound, guide_loc, topo_type);
+  return TreeBuilder::beatTree(net_name, loads, skew_bound, guide_loc, topo_type);
 }
 
 // evaluate
@@ -853,14 +839,14 @@ ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::
   } else {
     for (auto pin : eval_net.get_pins()) {
       if (pin->get_instance() == inst) {
-        return makePinRCTreeNode(pin);
+        return makeLogicRCTreeNode(pin);
       }
     }
   }
   return nullptr;
 }
 
-ista::RctNode* CTSAPI::makePinRCTreeNode(icts::CtsPin* pin)
+ista::RctNode* CTSAPI::makeLogicRCTreeNode(icts::CtsPin* pin)
 {
   auto* pin_port = findStaPin(pin->is_io() ? pin->get_pin_name() : pin->get_full_name());
   return _timing_engine->makeOrFindRCTreeNode(pin_port);
@@ -886,6 +872,18 @@ ista::Net* CTSAPI::findStaNet(const std::string& name) const
   return _timing_engine->get_netlist()->findNet(name.c_str());
 }
 
+double CTSAPI::getUnitCap() const
+{
+  std::optional<double> width = std::nullopt;
+  return getStaDbAdapter()->getCapacitance(_config->get_routing_layers().back(), 1.0, width);
+}
+
+double CTSAPI::getUnitRes() const
+{
+  std::optional<double> width = std::nullopt;
+  return getStaDbAdapter()->getResistance(_config->get_routing_layers().back(), 1.0, width);
+}
+
 double CTSAPI::getCapacitance(const double& wire_length, const int& level) const
 {
   std::optional<double> width = std::nullopt;
@@ -895,7 +893,7 @@ double CTSAPI::getCapacitance(const double& wire_length, const int& level) const
 double CTSAPI::getResistance(const double& wire_length, const int& level) const
 {
   std::optional<double> width = std::nullopt;
-  return getStaDbAdapter()->getResistance(level, wire_length, width) / 2;
+  return getStaDbAdapter()->getResistance(level, wire_length, width);
 }
 
 ista::TimingIDBAdapter* CTSAPI::getStaDbAdapter() const
