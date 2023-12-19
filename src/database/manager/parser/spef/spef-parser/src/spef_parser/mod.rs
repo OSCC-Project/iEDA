@@ -258,7 +258,6 @@ fn process_dnet_entry<'a>(
 }
 
 fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest::error::Error<Rule>> {
-    let pair_span = pair.as_span();
     let line_no = pair.line_col().0;
 
     let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no);
