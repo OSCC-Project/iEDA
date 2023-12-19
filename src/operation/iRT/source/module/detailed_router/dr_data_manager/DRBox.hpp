@@ -38,6 +38,7 @@ class DRBox
   ~DRBox() = default;
   // getter
   EXTPlanarRect& get_box_rect() { return _box_rect; }
+  PlanarRect& get_graph_rect() { return _graph_rect; }
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
   DRParameter* get_curr_dr_parameter() { return _curr_dr_parameter; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
@@ -45,12 +46,14 @@ class DRBox
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   // setter
-  void set_box_rect(const EXTPlanarRect& origin_rect) { _box_rect = origin_rect; }
+  void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
+  void set_graph_rect(const PlanarRect& graph_rect) { _graph_rect = graph_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
   void set_curr_dr_parameter(DRParameter* curr_dr_parameter) { _curr_dr_parameter = curr_dr_parameter; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   // function
 #if 1  // astar
   // single task
@@ -91,6 +94,7 @@ class DRBox
 
  private:
   EXTPlanarRect _box_rect;
+  PlanarRect _graph_rect;
   DRBoxId _dr_box_id;
   DRParameter* _curr_dr_parameter = nullptr;
   ScaleAxis _box_track_axis;
