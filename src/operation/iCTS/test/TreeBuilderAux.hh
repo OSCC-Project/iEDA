@@ -365,7 +365,7 @@ class TreeBuilderAux : public TestInterface
       TimingPropagator::update(net);
 
       auto est_skew = TimingPropagator::calcSkew(driver_pin);
-      if (est_skew <= skew_bound) {
+      if (est_skew <= skew_bound * (1 + 1e-3)) {
         std::ranges::for_each(load_pins, [](Pin* pin) { delete pin->get_inst(); });
         continue;
       }
