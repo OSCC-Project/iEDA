@@ -41,36 +41,36 @@ MacroPlacer::~MacroPlacer()
 
 void MacroPlacer::runMP()
 {
-  auto netlist = plToNetlist();
-  netlist.unFixMacro();
-  netlist.cellClustering(std::clamp(netlist.num_macros * 10, 100 - netlist.num_macros, size_t(500)));
-  for (auto report = netlist.report(); auto&& i : report) {
-    INFO(i);
-  }
-  auto sp = makeRandomSeqPair(netlist.num_moveable);
-  // SpEvaluate eval(netlist);
-  auto eval = makeSeqPairEvalFn(netlist);
-  // std::function<double(SeqPair&)> evalf = eval;
-  std::function<void(SeqPair&)> action = SpAction(netlist.num_moveable);
+  //   auto netlist = plToNetlist();
+  //   netlist.unFixMacro();
+  //   netlist.cellClustering(std::clamp(netlist.num_macros * 10, 100 - netlist.num_macros, size_t(500)));
+  //   for (auto report = netlist.report(); auto&& i : report) {
+  //     INFO(i);
+  //   }
+  //   auto sp = makeRandomSeqPair(netlist.num_moveable);
+  //   // SpEvaluate eval(netlist);
+  //   auto eval = makeSeqPairEvalFn(netlist);
+  //   // std::function<double(SeqPair&)> evalf = eval;
+  //   std::function<void(SeqPair&)> action = SpAction(netlist.num_moveable);
 
-  auto history = SASolve(sp, eval, action, 1000, 1.5 * netlist.num_moveable, 0.98, 30000);
+  //   auto history = SASolve(sp, eval, action, 1000, 1.5 * netlist.num_moveable, 0.98, 30000);
 
-  auto plot = SpPlot(netlist, netlist.region_dx * 1.5, netlist.region_dx * 1.5);
+  //   auto plot = SpPlot(netlist, netlist.region_dx * 1.5, netlist.region_dx * 1.5);
 
-  std::vector<std::string> images;
-#pragma omp parallel for num_threads(16)
-  for (size_t i = 0; i < history.size(); i++) {
-    plot(history[i], "Sp_SA_result_" + std::to_string(i) + ".jpg");
-  }
+  //   std::vector<std::string> images;
+  // #pragma omp parallel for num_threads(16)
+  //   for (size_t i = 0; i < history.size(); i++) {
+  //     plot(history[i], "Sp_SA_result_" + std::to_string(i) + ".jpg");
+  //   }
 
-  for (size_t i = 0; i < history.size(); i++) {
-    images.push_back("Sp_SA_result_" + std::to_string(i) + ".jpg");
-  }
-  images.resize(images.size() + 10, images.back());
-  makeGif(images, "Sp_SA_result.gif", 3);
-  for (size_t i = 0; i < history.size() - 1; i++) {
-    std::remove(images[i].c_str());
-  }
+  //   for (size_t i = 0; i < history.size(); i++) {
+  //     images.push_back("Sp_SA_result_" + std::to_string(i) + ".jpg");
+  //   }
+  //   images.resize(images.size() + 10, images.back());
+  //   makeGif(images, "Sp_SA_result.gif", 3);
+  //   for (size_t i = 0; i < history.size() - 1; i++) {
+  //     std::remove(images[i].c_str());
+  //   }
 
   // for (size_t i = 0; i < 500; i++) {
   //   double cost = eval(sp);

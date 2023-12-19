@@ -49,7 +49,6 @@ vector<size_t> Partitionner::hmetisSolve(size_t num_vertexs, size_t num_hedges, 
   std::string rtype = "moderate";
   std::string otype = "cut";
   int dbglvl = 0;
-  int seed = 0;
   bool reconst = false;
 
   cmd += " -ptype=" + ptype;

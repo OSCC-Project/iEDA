@@ -352,7 +352,7 @@ class TreeBuilderAux : public TestInterface
     }
     auto path = dir + "/iter_bst_" + suffix + ".csv";
     std::ofstream ofs(path);
-    ofs << "id,pin_num,init_skew,iter_1_skew,iter_2_skew,iter_3_skew,iter_4_skew,iter_num" << std::endl;
+    ofs << "id,pin_num,init_skew,iter_1_skew,iter_2_skew,iter_3_skew,iter_4_skew,iter_5_skew,iter_num" << std::endl;
     int seed = 0;
     for (size_t i = 0; i < case_num;) {
       auto load_pins = genRandomPins(env_info, ++seed);
@@ -375,13 +375,16 @@ class TreeBuilderAux : public TestInterface
       ++i;
       ofs << i << "," << load_pins.size() << "," << est_skew;
       size_t iter_num = std::numeric_limits<size_t>::max();
-      for (size_t n = 0; n < 4; ++n) {
-        TreeBuilder::iterativeFixSkew(net, skew_bound);
-        auto iter_skew = TimingPropagator::calcSkew(driver_pin);
-        ofs << "," << iter_skew;
-        if (iter_skew <= skew_bound + TimingPropagator::kEpsilon) {
-          iter_num = std::min(iter_num, n + 1);
+      double iter_skew = std::numeric_limits<double>::max();
+      for (size_t n = 0; n < 5; ++n) {
+        if (iter_skew > skew_bound * (1 + 1e-3)) {
+          TreeBuilder::iterativeFixSkew(net, skew_bound);
+          iter_skew = TimingPropagator::calcSkew(driver_pin);
+          if (iter_skew <= skew_bound * (1 + 1e-3)) {
+            iter_num = std::min(iter_num, n + 1);
+          }
         }
+        ofs << "," << iter_skew;
       }
       ofs << "," << iter_num << std::endl;
       // release
