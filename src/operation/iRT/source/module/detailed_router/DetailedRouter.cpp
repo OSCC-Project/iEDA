@@ -1394,18 +1394,6 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
   dr_box.get_layer_node_map().clear();
 }
 
-#if 1  // update
-
-void DetailedRouter::update(DRModel& dr_model)
-{
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    Net* origin_net = dr_net.get_origin_net();
-    // origin_net->set_dr_result_tree(dr_net.get_dr_result_tree());
-  }
-}
-
-#endif
-
 #if 1  // update env
 
 void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect,

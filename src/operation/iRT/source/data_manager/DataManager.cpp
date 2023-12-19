@@ -2120,26 +2120,96 @@ void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
 
 void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
 {
-  std::vector<Net>& net_list = _database.get_net_list();
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  std::map<irt_int, std::vector<PhysicalNode>> net_phy_node_map;
+  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          if (segment->get_first().get_layer_idx() == segment->get_second().get_layer_idx()) {
+            net_phy_node_map[net_idx].push_back(makeWirePhysicalNode(net_idx, segment));
+          } else {
+            net_phy_node_map[net_idx].push_back(makeViaPhysicalNode(net_idx, segment));
+          }
+        }
+      }
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        for (EXTLayerRect* patch : patch_set) {
+          net_phy_node_map[net_idx].push_back(makePatchPhysicalNode(net_idx, patch));
+        }
+      }
+    }
+  }
 
   idb::IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
     LOG_INST.error(Loc::current(), "The idb net list is empty!");
   }
-
-  for (size_t i = 0; i < net_list.size(); i++) {
-    Net& net = net_list[i];
-    std::string net_name = net.get_net_name();
+  for (auto& [net_idx, phy_node_list] : net_phy_node_map) {
+    std::string net_name = _database.get_net_list()[net_idx].get_net_name();
     idb::IdbNet* idb_net = idb_net_list->find_net(net_name);
     if (idb_net == nullptr) {
       LOG_INST.info(Loc::current(), "The idb net named ", net_name, " cannot be found!");
       continue;
     }
-    convertToIDBNet(idb_builder, net, idb_net);
+    convertToIDBNet(idb_builder, phy_node_list, idb_net);
   }
 }
 
-void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net)
+PhysicalNode DataManager::makeWirePhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  LayerCoord& first_coord = segment->get_first();
+  LayerCoord& second_coord = segment->get_second();
+  irt_int layer_idx = first_coord.get_layer_idx();
+
+  if (RTUtil::isOblique(first_coord, second_coord)) {
+    LOG_INST.error(Loc::current(), "The wire physical_node is oblique!");
+  }
+  if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
+    LOG_INST.error(Loc::current(), "The wire layer_idx is illegal!");
+  }
+  PhysicalNode physical_node;
+  WireNode& wire_node = physical_node.getNode<WireNode>();
+  wire_node.set_net_idx(net_idx);
+  wire_node.set_layer_idx(layer_idx);
+  wire_node.set_first(first_coord);
+  wire_node.set_second(second_coord);
+  wire_node.set_wire_width(routing_layer_list[layer_idx].get_min_width());
+  return physical_node;
+}
+
+PhysicalNode DataManager::makeViaPhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+
+  LayerCoord& first_coord = segment->get_first();
+  LayerCoord& second_coord = segment->get_second();
+  irt_int below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
+
+  if (below_layer_idx < 0 || below_layer_idx >= static_cast<irt_int>(layer_via_master_list.size())) {
+    LOG_INST.error(Loc::current(), "The via below_layer_idx is illegal!");
+  }
+  PhysicalNode physical_node;
+  ViaNode& via_node = physical_node.getNode<ViaNode>();
+  via_node.set_net_idx(net_idx);
+  via_node.set_coord(first_coord);
+  via_node.set_via_master_idx(layer_via_master_list[below_layer_idx].front().get_via_master_idx());
+  return physical_node;
+}
+
+PhysicalNode DataManager::makePatchPhysicalNode(irt_int net_idx, EXTLayerRect* patch)
+{
+  PhysicalNode physical_node;
+  PatchNode& patch_node = physical_node.getNode<PatchNode>();
+  patch_node.set_net_idx(net_idx);
+  patch_node.set_rect(patch->get_real_rect());
+  patch_node.set_layer_idx(patch->get_layer_idx());
+  return physical_node;
+}
+
+void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, std::vector<PhysicalNode>& phy_node_list, idb::IdbNet* idb_net)
 {
   idb::IdbLayers* idb_layer_list = idb_builder->get_def_service()->get_layout()->get_layers();
 
@@ -2155,11 +2225,7 @@ void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::I
   idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
 
   irt_int print_new = false;
-  for (TNode<PhysicalNode>* physical_node_node : RTUtil::getNodeList(net.get_vr_result_tree())) {
-    PhysicalNode& physical_node = physical_node_node->value();
-    if (physical_node.isType<PinNode>()) {
-      continue;
-    }
+  for (PhysicalNode& physical_node : phy_node_list) {
     idb::IdbRegularWireSegment* idb_segment = idb_wire->add_segment();
     if (physical_node.isType<WireNode>()) {
       convertToIDBWire(idb_layer_list, physical_node.getNode<WireNode>(), idb_segment);

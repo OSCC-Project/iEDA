@@ -11,7 +11,6 @@
 #include "MTree.hpp"
 #include "Net.hpp"
 #include "PhysicalNode.hpp"
-#include "PinNode.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
 #include "TNode.hpp"
@@ -262,7 +261,6 @@ void serialize(Archive& ar, irt::GuideSegNode& guide_seg_node, const unsigned in
 enum class NodeType : int
 {
   monostate = 0,
-  PinNode,
   WireNode,
   ViaNode,
   PatchNode
@@ -271,9 +269,6 @@ static NodeType PhysicalNodeType(irt::PhysicalNode& physical_node)
 {
   if (physical_node.isEmpty()) {
     return NodeType::monostate;
-  }
-  if (physical_node.isType<irt::PinNode>()) {
-    return NodeType::PinNode;
   }
   if (physical_node.isType<irt::WireNode>()) {
     return NodeType::WireNode;
@@ -297,10 +292,6 @@ void serialize(Archive& ar, irt::PhysicalNode& physical_node, const unsigned int
     case NodeType::monostate: {
       break;
     }
-    case NodeType::PinNode: {
-      ar & physical_node.getNode<irt::PinNode>();
-      break;
-    }
     case NodeType::WireNode: {
       ar & physical_node.getNode<irt::WireNode>();
       break;
@@ -313,22 +304,6 @@ void serialize(Archive& ar, irt::PhysicalNode& physical_node, const unsigned int
       ar & physical_node.getNode<irt::PatchNode>();
       break;
     }
-  }
-}
-
-template <typename Archive>
-void serialize(Archive& ar, irt::PinNode& node, const unsigned int version)
-{
-  int net_idx = node.get_net_idx();
-  int pin_idx = node.get_pin_idx();
-  int layer_idx = node.get_layer_idx();
-
-  iplf::Archive(ar, net_idx, pin_idx, layer_idx);
-  iplf::Archive(ar, node.get_planar_coord());
-  if constexpr (Archive::is_loading::value) {
-    node.set_net_idx(net_idx);
-    node.set_pin_idx(pin_idx);
-    node.set_layer_idx(layer_idx);
   }
 }
 
