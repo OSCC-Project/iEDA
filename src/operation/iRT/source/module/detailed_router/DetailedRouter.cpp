@@ -245,26 +245,29 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
 
 void DetailedRouter::buildGraphRect(DRBox& dr_box)
 {
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+  std::vector<ScaleGrid>& x_grid_list = box_track_axis.get_x_grid_list();
+  std::vector<ScaleGrid>& y_grid_list = box_track_axis.get_y_grid_list();
+  if (x_grid_list.empty() || y_grid_list.empty()) {
+    LOG_INST.error(Loc::current(), "The track scale list is empty in box : (", dr_box.get_dr_box_id().get_x(), ",",
+                   dr_box.get_dr_box_id().get_y(), ")!");
+  }
+  irt_int graph_lb_x = x_grid_list.front().get_start_line();
+  irt_int graph_lb_y = y_grid_list.front().get_start_line();
+  irt_int graph_rt_x = x_grid_list.back().get_end_line();
+  irt_int graph_rt_y = y_grid_list.back().get_end_line();
+  dr_box.set_graph_rect(PlanarRect(graph_lb_x, graph_lb_y, graph_rt_x, graph_rt_y));
 }
 
 void DetailedRouter::splitNetResult(DRBox& dr_box)
 {
-  EXTPlanarRect& box_rect = dr_box.get_box_rect();
-  PlanarCoord& real_lb = box_rect.get_real_lb();
-  PlanarCoord& real_rt = box_rect.get_real_rt();
-  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), box_track_axis.get_x_grid_list());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), box_track_axis.get_y_grid_list());
-  if (x_list.empty() || y_list.empty()) {
-    LOG_INST.error(Loc::current(), "The track scale list is empty in box : (", dr_box.get_dr_box_id().get_x(), ",",
-                   dr_box.get_dr_box_id().get_y(), ")!");
-  }
-  irt_int x_begin_scale = x_list.front();
-  irt_int x_end_scale = x_list.back();
-  irt_int y_begin_scale = y_list.front();
-  irt_int y_end_scale = y_list.back();
+  PlanarRect& graph_rect = dr_box.get_graph_rect();
+  irt_int x_begin_scale = graph_rect.get_lb_x();
+  irt_int y_begin_scale = graph_rect.get_lb_y();
+  irt_int x_end_scale = graph_rect.get_rt_x();
+  irt_int y_end_scale = graph_rect.get_rt_y();
 
-  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(box_rect)) {
+  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
     for (const auto segment : segment_list) {
       LayerCoord first = segment->get_first();
       irt_int first_x = first.get_x();
@@ -423,22 +426,13 @@ std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getBoundaryPointMap(D
 {
   std::map<irt_int, std::vector<LayerCoord>> boundary_point_map;
 
-  EXTPlanarRect& box_rect = dr_box.get_box_rect();
-  PlanarCoord& real_lb = box_rect.get_real_lb();
-  PlanarCoord& real_rt = box_rect.get_real_rt();
-  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), box_track_axis.get_x_grid_list());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), box_track_axis.get_y_grid_list());
-  if (x_list.empty() || y_list.empty()) {
-    LOG_INST.error(Loc::current(), "The track scale list is empty in box : (", dr_box.get_dr_box_id().get_x(), ",",
-                   dr_box.get_dr_box_id().get_y(), ")!");
-  }
-  irt_int x_begin_scale = x_list.front();
-  irt_int x_end_scale = x_list.back();
-  irt_int y_begin_scale = y_list.front();
-  irt_int y_end_scale = y_list.back();
+  PlanarRect& graph_rect = dr_box.get_graph_rect();
+  irt_int x_begin_scale = graph_rect.get_lb_x();
+  irt_int y_begin_scale = graph_rect.get_lb_y();
+  irt_int x_end_scale = graph_rect.get_rt_x();
+  irt_int y_end_scale = graph_rect.get_rt_y();
 
-  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(box_rect)) {
+  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
     std::vector<LayerCoord>& boundary_point_list = boundary_point_map[net_idx];
     for (const auto segment : segment_list) {
       LayerCoord first = segment->get_first();
@@ -494,16 +488,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
 {
   // 将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
   EXTPlanarRect& box_rect = dr_box.get_box_rect();
-  PlanarCoord& real_lb = box_rect.get_real_lb();
-  PlanarCoord& real_rt = box_rect.get_real_rt();
-  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), box_track_axis.get_x_grid_list());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), box_track_axis.get_y_grid_list());
-  if (x_list.empty() || y_list.empty()) {
-    LOG_INST.error(Loc::current(), "The track scale list is empty in box : (", dr_box.get_dr_box_id().get_x(), ",",
-                   dr_box.get_dr_box_id().get_y(), ")!");
-  }
-  PlanarRect track_bounding_box(x_list.front(), y_list.front(), x_list.back(), y_list.back());
+  PlanarRect& graph_rect = dr_box.get_graph_rect();
 
   std::map<irt_int, DRTask*> net_task_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
@@ -514,7 +499,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
       LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
-      if (RTUtil::isInside(track_bounding_box, segment->get_first()) && RTUtil::isInside(track_bounding_box, segment->get_second())) {
+      if (RTUtil::isInside(graph_rect, segment->get_first()) && RTUtil::isInside(graph_rect, segment->get_second())) {
         net_task_map[net_idx]->get_routing_segment_list().push_back(*segment);
         DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       }
@@ -525,7 +510,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
       LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
     }
     for (EXTLayerRect* patch : patch_set) {
-      if (RTUtil::isInside(track_bounding_box, patch->get_real_rect())) {
+      if (RTUtil::isInside(graph_rect, patch->get_real_rect())) {
         net_task_map[net_idx]->get_patch_list().push_back(*patch);
         DM_INST.updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
       }
