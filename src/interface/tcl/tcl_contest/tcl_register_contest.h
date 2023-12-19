@@ -32,6 +32,7 @@ namespace tcl {
 
 int registerCmdContest()
 {
+  registerTclCmd(CmdRunContestPreprocess, "run_preprocess");
   registerTclCmd(CmdRunContest, "run_contest");
   registerTclCmd(CmdRunContestEvaluation, "run_contest_evaluation");
 

@@ -43,10 +43,10 @@ bool initDef(const std::string& def_path)
   return dmInst->readDef(def_path);
 }
 
-bool initVerilog(const std::string& verilog_path, const std::string& top_module)
+bool initVerilog(const std::string& verilog_path)
 {
   dmInst->get_config().set_verilog_path(verilog_path);
-  return dmInst->readVerilog(verilog_path, top_module);
+  return dmInst->readVerilog(verilog_path);
 }
 
 bool saveDef(const std::string& def_name)

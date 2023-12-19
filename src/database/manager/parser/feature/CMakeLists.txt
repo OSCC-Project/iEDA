@@ -15,9 +15,4 @@ target_include_directories(feature_parser
         ${HOME_UTILITY}/json
 )
 
-target_link_libraries(feature_parser 
-    PRIVATE 
-        idb
-        flow_config
-        idm
-)
+target_link_libraries(feature_parser PRIVATE idb)

@@ -55,7 +55,7 @@ double PwrCalcInternalPower::getToggleData(Pin* pin) {
  */
 double PwrCalcInternalPower::calcSPByWhen(const char* when, Instance* inst) {
   /*Parse conditional statements of the leakage power*/
-  RustLibertyExprBuilder expr_builder(when);
+  LibertyExprBuilder expr_builder(nullptr, when);
   expr_builder.execute();
   auto* expr = expr_builder.get_result_expr();
 
@@ -560,13 +560,9 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
       inst_internal_power = calcCombInternalPower(design_inst);
     }
 
-    double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
     // add power analysis data.
-    auto internal_data =
-        std::make_unique<PwrInternalData>(design_inst, inst_internal_power);
-    internal_data->set_nom_voltage(nom_voltage);
-
-    addInternalPower(std::move(internal_data));
+    addInternalPower(
+        std::make_unique<PwrInternalData>(design_inst, inst_internal_power));
     VERBOSE_LOG(1) << "cell  " << design_inst->get_name()
                    << "  internal power: " << inst_internal_power << "mW";
     _internal_power_result += inst_internal_power;

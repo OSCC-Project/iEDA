@@ -18,12 +18,7 @@ target_link_libraries(imp_source
     PRIVATE
         imp-datamanager
         imp-structure
-        imp-representation
-        imp-netlist
-        imp-logger
-        imp-solver
-        imp-plot
-        imp-heuristic
+        imp-module
         # imp_utility
 )
 

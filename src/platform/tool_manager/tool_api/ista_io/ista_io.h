@@ -78,7 +78,6 @@ class StaIO
   bool runLiberty(std::vector<std::string> paths);
   bool runSpef(std::string path = "");
   bool reportTiming();
-  void buildNetGraph();
 
  private:
   static StaIO* _instance;

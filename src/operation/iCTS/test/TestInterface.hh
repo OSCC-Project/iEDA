@@ -43,10 +43,6 @@ struct EnvInfo
   int max_y;
   size_t min_num;
   size_t max_num;
-  double min_cap;
-  double max_cap;
-  double min_delay;
-  double max_delay;
 };
 
 class TestInterface
@@ -54,9 +50,6 @@ class TestInterface
  public:
   TestInterface(const std::string& db_config_path, const std::string& cts_config_path)
   {
-    if (db_config_path.empty() && cts_config_path.empty()) {
-      return;
-    }
     dmInst->init(db_config_path);
     CTSAPIInst.init(cts_config_path);
     LocalLegalization::setIgnoreCore(true);
@@ -79,32 +72,13 @@ class TestInterface
     size_t i = 0;
     for (auto loc : locs) {
       auto* buf = TreeBuilder::genBufInst(CTSAPIInst.toString("buf_", i++), loc);
-      buf->set_cell_master(TimingPropagator::getMinSizeCell());
+      buf->set_cell_master(TimingPropagator::getMinSizeLib()->get_cell_master());
       load_bufs.push_back(buf);
       auto* load_pin = buf->get_load_pin();
       auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
       load_pin->set_pattern(pattern);
       TimingPropagator::updatePinCap(load_pin);
       TimingPropagator::initLoadPinDelay(load_pin);
-    }
-    if (env_info.min_delay > 0 && env_info.max_delay > 0 && env_info.max_delay >= env_info.min_delay) {
-      std::ranges::for_each(load_bufs, [&](Inst* buf) {
-        auto* driver_pin = buf->get_driver_pin();
-        auto delay = std::uniform_real_distribution<>(env_info.min_delay, env_info.max_delay)(gen);
-        driver_pin->set_min_delay(delay);
-        driver_pin->set_max_delay(delay);
-      });
-    }
-    if (env_info.min_cap > 0 && env_info.max_cap > 0 && env_info.max_cap >= env_info.min_cap) {
-      std::ranges::for_each(load_bufs, [&](Inst* buf) {
-        auto* driver_pin = buf->get_driver_pin();
-        auto cap = std::uniform_real_distribution<>(env_info.min_cap, env_info.max_cap)(gen);
-        auto* temp_inst = TreeBuilder::genBufInst("temp", buf->get_location());
-        driver_pin->add_child(temp_inst->get_load_pin());
-        driver_pin->set_cap_load(cap);
-        auto* load_pin = buf->get_load_pin();
-        TimingPropagator::initLoadPinDelay(load_pin);
-      });
     }
     return load_bufs;
   }

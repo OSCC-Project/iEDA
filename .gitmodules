@@ -1,0 +1,3 @@
+[submodule "contest/IncTO_2023/scripts/result/input"]
+	path = contest/IncTO_2023/scripts/result/input
+	url = https://gitee.com/imelon/inc-to_case.git

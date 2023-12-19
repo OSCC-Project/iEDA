@@ -1,3 +1,0 @@
-namespace imp {
-
-}  // namespace imp

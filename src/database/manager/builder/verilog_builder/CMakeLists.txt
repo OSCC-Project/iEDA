@@ -17,7 +17,7 @@ target_include_directories(verilog_builder
 
 target_link_libraries(verilog_builder 
     PRIVATE
-        verilog 
+        verilog-parser 
         utility 
         def_service 
         idb

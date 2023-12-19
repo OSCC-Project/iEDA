@@ -182,9 +182,9 @@ class CtsLibs
   }
 #endif
  private:
-  std::unordered_map<std::string, CtsCellLib*> _lib_maps;
+  std::map<std::string, CtsCellLib*> _lib_maps;
 #if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  std::unordered_map<std::string, ModelBase*> _model_maps;
+  std::map<std::string, ModelBase*> _model_maps;
 #endif
 };
 }  // namespace icts

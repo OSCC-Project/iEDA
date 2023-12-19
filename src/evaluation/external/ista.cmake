@@ -6,7 +6,7 @@ target_link_libraries(eval_ista_libs
     INTERFACE
         liberty
         graph
-        verilog
+        verilog-parser
         sta
         delay
         ista-engine

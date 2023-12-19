@@ -20,7 +20,7 @@ set -e
 
 # variables
 IEDA_WORKSPACE=$(cd "$(dirname "$0")";pwd)
-BINARY_TARGET="iEDA"
+BINARY_TARGET="IncTO_2023"
 BINARY_DIR="${IEDA_WORKSPACE}/bin"
 BUILD_DIR="${IEDA_WORKSPACE}/build"
 CPP_COMPILER_PATH="g++-10"
@@ -123,7 +123,7 @@ install_dependencies_apt()
     apt-get update && apt-get install -y \
       g++-10 cmake ninja-build \
       tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev flex\
-      libeigen3-dev libyaml-cpp-dev libunwind-dev libmetis-dev libgmp-dev bison rustc cargo
+      libeigen3-dev libyaml-cpp-dev libunwind-dev libmetis-dev libgmp-dev bison
   else
     echo -e "${red}apt-get not found, pleas make sure you were running on Debian-Based Linux distribution${clear}"
     exit 1

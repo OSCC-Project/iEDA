@@ -8,7 +8,6 @@ add_library(ipl_module_evaluator_wirelength
 target_link_libraries(ipl_module_evaluator_wirelength
     PUBLIC
         ipl-module-topology_manager
-        ipl-module-grid_manager 
     PRIVATE
         ipl-module-logger
         ipl-configurator
