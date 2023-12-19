@@ -75,6 +75,9 @@ class DetailedRouter
   void buildViolationList(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
+  void buildAllConnect(DRBox& dr_box);
+  void initDRNodeValid(DRBox& dr_box);
+  void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrienNetMap(DRBox& dr_box);
   void checkDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
