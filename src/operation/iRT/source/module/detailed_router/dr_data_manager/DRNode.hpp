@@ -40,10 +40,12 @@ class DRNode : public LayerCoord
   DRNode() = default;
   ~DRNode() = default;
   // getter
+  bool get_is_valid() const { return _is_valid; }
   std::map<Orientation, DRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, std::set<irt_int>>& get_orien_net_map() { return _orien_net_map; }
   std::map<Orientation, double>& get_orien_violation_cost_map() { return _orien_violation_cost_map; }
   // setter
+  void set_is_valid(const bool is_valid) { _is_valid = is_valid; }
   void set_neighbor_node_map(const std::map<Orientation, DRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orien_net_map(const std::map<Orientation, std::set<irt_int>>& orien_net_map) { _orien_net_map = orien_net_map; }
   void set_orien_violation_cost_map(const std::map<Orientation, double>& orien_violation_cost_map)
@@ -74,7 +76,7 @@ class DRNode : public LayerCoord
     }
     return overlap_shape_num;
   }
-  double getViolationCost( Orientation orientation)
+  double getViolationCost(Orientation orientation)
   {
     double cost = 0;
     if (RTUtil::exist(_orien_violation_cost_map, orientation)) {
@@ -103,6 +105,7 @@ class DRNode : public LayerCoord
 #endif
 
  private:
+  bool _is_valid = false;
   std::map<Orientation, DRNode*> _neighbor_node_map;
   std::map<Orientation, std::set<irt_int>> _orien_net_map;
   std::map<Orientation, double> _orien_violation_cost_map;
