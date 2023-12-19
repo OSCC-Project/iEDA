@@ -553,8 +553,6 @@ void GDSPlotter::addPhysicalNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<
       patch_boundary.set_rect(patch_node);
       patch_list_struct.push(patch_boundary);
 
-    } else if (physical_node.isType<PinNode>()) {
-      continue;
     } else {
       LOG_INST.error(Loc::current(), "Incorrect physical_node type!");
     }

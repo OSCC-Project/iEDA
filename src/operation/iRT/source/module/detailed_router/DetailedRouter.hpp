@@ -63,6 +63,7 @@ class DetailedRouter
   void initDRBoxMap(DRModel& dr_model);
   void buildDRBoxMap(DRModel& dr_model);
   void buildBoxTrackAxis(DRBox& dr_box);
+  void buildGraphRect(DRBox& dr_box);
   void splitNetResult(DRBox& dr_box);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
@@ -107,15 +108,12 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  void processDRTask(DRBox& dr_box, DRTask* dr_task);
+  void applyPatch(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-#if 1  // update
 
-  void update(DRModel& dr_model);
-#endif
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);

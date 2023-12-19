@@ -118,7 +118,7 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
   }
   vr_net.set_vr_driving_pin(VRPin(net.get_driving_pin()));
   vr_net.set_bounding_box(net.get_bounding_box());
-  vr_net.set_vr_result_tree(net.get_dr_result_tree());
+  // vr_net.set_vr_result_tree(net.get_dr_result_tree());
   return vr_net;
 }
 
@@ -379,19 +379,19 @@ TNode<PhysicalNode>* ViolationRepairer::makeViaPhysicalNode(VRNet& vr_net, irt_i
 
 TNode<PhysicalNode>* ViolationRepairer::makePinPhysicalNode(VRNet& vr_net, irt_int pin_idx, LayerCoord coord)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  // std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  irt_int layer_idx = coord.get_layer_idx();
-  if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
-    LOG_INST.error(Loc::current(), "The pin layer_idx is illegal!");
-  }
-  PhysicalNode physical_node;
-  PinNode& pin_node = physical_node.getNode<PinNode>();
-  pin_node.set_net_idx(vr_net.get_net_idx());
-  pin_node.set_pin_idx(pin_idx);
-  pin_node.set_coord(coord);
-  pin_node.set_layer_idx(layer_idx);
-  return (new TNode<PhysicalNode>(physical_node));
+  // irt_int layer_idx = coord.get_layer_idx();
+  // if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
+  //   LOG_INST.error(Loc::current(), "The pin layer_idx is illegal!");
+  // }
+  // PhysicalNode physical_node;
+  // PinNode& pin_node = physical_node.getNode<PinNode>();
+  // pin_node.set_net_idx(vr_net.get_net_idx());
+  // pin_node.set_pin_idx(pin_idx);
+  // pin_node.set_coord(coord);
+  // pin_node.set_layer_idx(layer_idx);
+  // return (new TNode<PhysicalNode>(physical_node));
 }
 
 void ViolationRepairer::checkVRModel(VRModel& vr_model)
