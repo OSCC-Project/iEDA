@@ -36,6 +36,14 @@ class BaseViolationInfo
   // setter
   void set_rule_name(const std::string& rule_name) { _rule_name = rule_name; }
   void set_violation_region(const BGRectInt& violation_region) { _violation_region = violation_region; }
+  void set_violation_region(int llx, int lly, int urx, int ury)
+  {
+    bg::set<bg::min_corner, 0>(_violation_region, llx);
+    bg::set<bg::min_corner, 1>(_violation_region, lly);
+    bg::set<bg::max_corner, 0>(_violation_region, urx);
+    bg::set<bg::max_corner, 1>(_violation_region, ury);
+  }
+
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
   void set_base_info_set(const std::set<BaseInfo, CmpBaseInfo>& base_info_set) { _base_info_set = base_info_set; }

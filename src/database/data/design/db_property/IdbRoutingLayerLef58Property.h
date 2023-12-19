@@ -395,6 +395,7 @@ class Lef58SpacingEol
 // LEF58_SPACINGTABLE "SPACINGTABLE JOGTOJOGSPACING ..."
 class Lef58SpacingTableJogToJog
 {
+ public:
   class Width
   {
    public:
@@ -419,7 +420,6 @@ class Lef58SpacingTableJogToJog
     int32_t _long_jog_spacing;
   };
 
- public:
   Lef58SpacingTableJogToJog() = default;
   Lef58SpacingTableJogToJog(int32_t jog_to_jog_spacing, int32_t jog_width, int32_t short_jog_spacing)
       : _jog_to_jog_spacing(jog_to_jog_spacing), _jog_width(jog_width), _short_jog_spacing(short_jog_spacing)

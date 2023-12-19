@@ -54,6 +54,7 @@ class DrcIO
   static DrcIO* _instance;
 
   std::map<std::string, std::vector<idrc::DrcViolationSpot*>> _detail_drc;
+  void get_def_drc();
 
   DrcIO() {}
   ~DrcIO() = default;

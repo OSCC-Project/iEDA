@@ -229,7 +229,6 @@ int32_t IdbNet::wireLength()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 IdbNetList::IdbNetList()
 {
-  _num = 0;
 }
 
 IdbNetList::~IdbNetList()
@@ -242,7 +241,6 @@ IdbNetList::~IdbNetList()
   }
 
   _net_list.clear();
-  _num = 0;
 }
 
 IdbNet* IdbNetList::find_net(string name)
@@ -264,7 +262,7 @@ IdbNet* IdbNetList::find_net(string name)
 
 IdbNet* IdbNetList::find_net(size_t index)
 {
-  if (_num > index) {
+  if (_net_list.size() > index) {
     return _net_list.at(index);
   }
 
@@ -277,9 +275,10 @@ IdbNet* IdbNetList::add_net(IdbNet* net)
   if (pNet == nullptr) {
     pNet = new IdbNet();
   }
+  pNet->set_id(_mutex_index++);
   _net_list.emplace_back(pNet);
   _net_map.insert(make_pair(pNet->get_net_name(), pNet));
-  _num++;
+  _mutex_index++;
 
   return pNet;
 }
@@ -287,11 +286,11 @@ IdbNet* IdbNetList::add_net(IdbNet* net)
 IdbNet* IdbNetList::add_net(string name, IdbConnectType type)
 {
   IdbNet* pNet = new IdbNet();
+  pNet->set_id(_mutex_index++);
   pNet->set_net_name(name);
   pNet->set_connect_type(type);
   _net_map.insert(make_pair(name, pNet));
   _net_list.emplace_back(pNet);
-  _num++;
 
   return pNet;
 }
@@ -320,7 +319,6 @@ bool IdbNetList::remove_net(string name)
   delete *it;
   *it = nullptr;
   _net_list.erase(it);
-  _num--;
 
   return true;
 }

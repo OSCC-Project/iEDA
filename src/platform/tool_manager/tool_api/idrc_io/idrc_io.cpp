@@ -20,6 +20,8 @@
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
+#include "idrc_api.h"
+#include "idrc_violation_enum.h"
 #include "report_manager.h"
 
 namespace iplf {
@@ -58,13 +60,48 @@ std::map<std::string, std::vector<idrc::DrcViolationSpot*>> DrcIO::getDetailChec
   _detail_drc.clear();
 
   if (path.empty()) {
-    _detail_drc = idrc::DrcAPIInst.getDetailCheckResult();
+    // _detail_drc = idrc::DrcAPIInst.getDetailCheckResult();
+    get_def_drc();
   } else {
     /// get drc detail data from file
     readDrcFromFile(path);
   }
 
   return _detail_drc;
+}
+
+void DrcIO::get_def_drc()
+{
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto* idb_layers = idb_layout->get_layers();
+  idrc::DrcApi drc_api;
+  drc_api.init();
+  auto violations = drc_api.checkDef();
+  for (auto [type, violation_list] : violations) {
+    std::string name = DrcViolationTypeInst->get_type_name(type);
+
+    std::vector<idrc::DrcViolationSpot*> spot_list;
+    spot_list.reserve(violation_list.size());
+
+    for (auto* violation : violation_list) {
+      idrc::DrcViolationSpot* spot = new idrc::DrcViolationSpot();
+      auto* layer = idb_layers->find_routing_layer(violation->get_layer_id());
+      if (layer != nullptr) {
+        spot->set_layer_name(layer->get_name());
+      }
+      spot->set_layer_id(violation->get_layer_id());
+      auto net_list = violation->get_net_ids();
+      spot->set_net_id(*net_list.begin());
+      auto vio_type = type == idrc::ViolationEnumType::kViolationShort ? idrc::ViolationType::kShort : idrc::ViolationType::kRoutingSpacing;
+      spot->set_vio_type(vio_type);
+      auto* rect = static_cast<idrc::DrcViolationRect*>(violation);
+      spot->setCoordinate(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
+
+      spot_list.emplace_back(spot);
+    }
+
+    _detail_drc.insert(std::make_pair(name, spot_list));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

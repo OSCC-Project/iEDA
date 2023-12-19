@@ -12,6 +12,7 @@ init_rt -temp_directory_path "<temp_directory_path>" \
         -bottom_routing_layer "" \
         -top_routing_layer "" \
         -gcell_pitch_size 15 \
+        -enable_idrc_interface 0 \
         -enable_output_gds_files 0 \
         -supply_utilization_rate 1 \
         -pa_max_iter_num 1 \

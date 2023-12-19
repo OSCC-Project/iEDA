@@ -20,7 +20,6 @@
 #include "DRCChecker.hpp"
 #include "DataManager.hpp"
 #include "DetailedRouter.hpp"
-#include "DrcAPI.hpp"
 #include "DrcRect.h"
 #include "EarlyGlobalRouter.hpp"
 #include "GDSPlotter.hpp"
@@ -38,6 +37,7 @@
 #include "icts_fm/file_cts.h"
 #include "icts_io.h"
 #include "idm.h"
+#include "idrc_api.h"
 
 namespace irt {
 
@@ -411,8 +411,9 @@ void RTAPI::reportDRTiming()
   //     irt_int distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
   //     int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
   //     std::optional<double> width = std::nullopt;
-  //     double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit, width);
-  //     double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 / unit, width);
+  //     double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit,
+  //     width); double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 /
+  //     unit, width);
 
   //     ista::RctNode* first_node = getRctNode(first_rc_pin);
   //     ista::RctNode* second_node = getRctNode(second_rc_pin);
@@ -513,6 +514,20 @@ void RTAPI::runOther()
 }
 
 #endif
+std::map<std::string, std::vector<BaseViolationInfo>> RTAPI::getEnvViolationInfo(BaseRegion& base_region,
+                                                                                 const std::vector<DRCCheckType>& check_type_list,
+                                                                                 std::vector<BaseShape>& drc_shape_list)
+{
+  idrc::DrcApi drc_api;
+  return drc_api.getEnvViolationInfo(base_region, check_type_list, drc_shape_list);
+}
+
+std::map<std::string, std::vector<BaseViolationInfo>> RTAPI::getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
+                                                                                  std::vector<BaseShape>& drc_shape_list)
+{
+  idrc::DrcApi drc_api;
+  return drc_api.getSelfViolationInfo(check_type_list, drc_shape_list);
+}
 
 // private
 
