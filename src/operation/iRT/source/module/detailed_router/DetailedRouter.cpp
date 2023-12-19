@@ -129,7 +129,8 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
+  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
   for (DRParameter& dr_parameter : dr_parameter_list) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
@@ -1474,7 +1475,7 @@ void DetailedRouter::update(DRModel& dr_model)
 {
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
     Net* origin_net = dr_net.get_origin_net();
-    origin_net->set_dr_result_tree(dr_net.get_dr_result_tree());
+    // origin_net->set_dr_result_tree(dr_net.get_dr_result_tree());
   }
 }
 
@@ -1505,6 +1506,9 @@ void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, i
 void DetailedRouter::updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape)
 {
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+    if (!dr_node->get_is_valid()) {
+      continue;
+    }
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         dr_node->get_orien_net_map()[orientation].insert(net_shape.get_net_idx());
@@ -1598,6 +1602,9 @@ void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_typ
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
 
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+    if (!dr_node->get_is_valid()) {
+      continue;
+    }
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         dr_node->get_orien_violation_cost_map()[orientation] += violation_cost;

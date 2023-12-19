@@ -118,7 +118,7 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
   }
   vr_net.set_vr_driving_pin(VRPin(net.get_driving_pin()));
   vr_net.set_bounding_box(net.get_bounding_box());
-  vr_net.set_vr_result_tree(net.get_dr_result_tree());
+  // vr_net.set_vr_result_tree(net.get_dr_result_tree());
   return vr_net;
 }
 

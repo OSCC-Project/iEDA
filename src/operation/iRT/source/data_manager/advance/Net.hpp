@@ -47,7 +47,7 @@ class Net
   // TrackAssigner
   std::vector<Segment<LayerCoord>>& get_ta_result_list() { return _ta_result_list; }
   // DetailedRouter
-  MTree<PhysicalNode>& get_dr_result_tree() { return _dr_result_tree; }
+  std::vector<PhysicalNode>& get_dr_result_list() { return _dr_result_list; }
   // ViolationRepairer
   MTree<PhysicalNode>& get_vr_result_tree() { return _vr_result_tree; }
 
@@ -66,7 +66,7 @@ class Net
   // TrackAssigner
   void set_ta_result_list(const std::vector<Segment<LayerCoord>>& ta_result_list) { _ta_result_list = ta_result_list; }
   // DetailedRouter
-  void set_dr_result_tree(const MTree<PhysicalNode>& dr_result_tree) { _dr_result_tree = dr_result_tree; }
+  void set_dr_result_list(const std::vector<PhysicalNode>& dr_result_list) { _dr_result_list = dr_result_list; }
   // ViolationRepairer
   void set_vr_result_tree(const MTree<PhysicalNode>& vr_result_tree) { _vr_result_tree = vr_result_tree; }
 
@@ -85,7 +85,7 @@ class Net
   // TrackAssigner
   std::vector<Segment<LayerCoord>> _ta_result_list;
   // DetailedRouter
-  MTree<PhysicalNode> _dr_result_tree;
+  std::vector<PhysicalNode> _dr_result_list;
   // ViolationRepairer
   MTree<PhysicalNode> _vr_result_tree;
 };
