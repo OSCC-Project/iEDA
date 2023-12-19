@@ -18,7 +18,6 @@
 
 #include "Logger.hpp"
 #include "PatchNode.hpp"
-#include "PinNode.hpp"
 #include "ViaNode.hpp"
 #include "WireNode.hpp"
 
@@ -63,7 +62,7 @@ class PhysicalNode
   }
 
  private:
-  std::variant<std::monostate, PinNode*, WireNode*, ViaNode*, PatchNode*> _data_node;
+  std::variant<std::monostate, WireNode*, ViaNode*, PatchNode*> _data_node;
 
   // function
   void copy(const PhysicalNode& other)
@@ -75,7 +74,6 @@ class PhysicalNode
   void copyDataNode(const PhysicalNode& other)
   {
     std::visit(Overload{[&](std::monostate other_data_node) { _data_node = other_data_node; },
-                        [&](PinNode* other_data_node) { _data_node = new PinNode(*other_data_node); },
                         [&](WireNode* other_data_node) { _data_node = new WireNode(*other_data_node); },
                         [&](ViaNode* other_data_node) { _data_node = new ViaNode(*other_data_node); },
                         [&](PatchNode* other_data_node) { _data_node = new PatchNode(*other_data_node); }},
@@ -94,7 +92,6 @@ class PhysicalNode
   {
     std::visit(Overload{
                    [](std::monostate data_node) { return; },
-                   [](PinNode* data_node) { delete data_node; },
                    [](WireNode* data_node) { delete data_node; },
                    [](ViaNode* data_node) { delete data_node; },
                    [](PatchNode* data_node) { delete data_node; },
