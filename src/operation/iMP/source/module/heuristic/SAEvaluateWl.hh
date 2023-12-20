@@ -15,6 +15,7 @@
 
 #include "SAEvaluate.hh"
 #include "SAPlacement.hh"
+#include "../Evaluator.hh"
 namespace imp {
 
 template <typename CoordType, typename RepresentType>

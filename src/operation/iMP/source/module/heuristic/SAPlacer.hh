@@ -12,7 +12,7 @@
 #define IMP_SAPlacer_H
 #include <limits>
 
-#include "../solver/Annealer.hh"
+#include "../../solver/Annealer.hh"
 #include "SAAction.hh"
 #include "SAEvaluateWl.hh"
 #include "SAPlacement.hh"

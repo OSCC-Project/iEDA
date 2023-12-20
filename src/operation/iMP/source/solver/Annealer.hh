@@ -16,7 +16,7 @@
 #include <random>
 #include <vector>
 
-#include "Logger.hpp"
+#include "../utility/logger/Logger.hpp"
 namespace imp {
 struct SAOption
 {
