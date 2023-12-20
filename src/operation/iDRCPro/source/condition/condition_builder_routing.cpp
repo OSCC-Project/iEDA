@@ -151,7 +151,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
   /// if overlap, save violation as short
   auto* neighbour = point->get_neighbour(direction);
   if (neighbour->is_overlap()) {
-    if (false == point->is_overlap_checked() && point->get_id() != neighbour->get_point()->get_id()) {
+    if (false == point->is_overlap_checked()) {
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
