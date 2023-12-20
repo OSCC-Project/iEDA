@@ -229,25 +229,13 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getEnvViolationInf
                                                                                   const std::vector<DRCCheckType>& check_type_list,
                                                                                   const std::vector<DRCShape>& drc_shape_list)
 {
-  irt_int enable_idrc_interface = DM_INST.getConfig().enable_idrc_interface;
-
-  if (enable_idrc_interface == 0) {
-    return getEnvViolationInfoByRT(region_query, check_type_list, drc_shape_list);
-  } else {
-    return getEnvViolationInfoByiDRC(region_query, check_type_list, drc_shape_list);
-  }
+  return getEnvViolationInfoByRT(region_query, check_type_list, drc_shape_list);
 }
 
 std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
                                                                                    const std::vector<DRCShape>& drc_shape_list)
 {
-  irt_int enable_idrc_interface = DM_INST.getConfig().enable_idrc_interface;
-
-  if (enable_idrc_interface == 0) {
-    return getSelfViolationInfoByRT(check_type_list, drc_shape_list);
-  } else {
-    return getSelfViolationInfoByiDRC(check_type_list, drc_shape_list);
-  }
+  return getSelfViolationInfoByRT(check_type_list, drc_shape_list);
 }
 
 #endif
@@ -282,28 +270,6 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getEnvViolationInf
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
   }
   return drc_violation_map;
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getEnvViolationInfoByiDRC(RegionQuery& region_query,
-                                                                                        const std::vector<DRCCheckType>& check_type_list,
-                                                                                        const std::vector<DRCShape>& drc_shape_list)
-{
-  std::vector<BaseShape> base_shape_list;
-  for (const DRCShape& drc_shape : drc_shape_list) {
-    base_shape_list.push_back(convert(drc_shape));
-  }
-
-  std::map<std::string, std::vector<BaseViolationInfo>> base_violation_info_map
-      = RTAPI_INST.getEnvViolationInfo(region_query.get_base_region(), check_type_list, base_shape_list);
-
-  std::map<std::string, std::vector<ViolationInfo>> violation_info_map;
-  for (auto& [rule_name, base_violation_info_list] : base_violation_info_map) {
-    for (BaseViolationInfo& base_violation_info : base_violation_info_list) {
-      violation_info_map[rule_name].push_back(convert(base_violation_info));
-    }
-  }
-
-  return violation_info_map;
 }
 
 BaseShape DRCChecker::convert(const DRCShape& drc_shape)
@@ -357,27 +323,6 @@ std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getSelfViolationIn
     drc_violation_map[violation_info.get_rule_name()].push_back(violation_info);
   }
   return drc_violation_map;
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DRCChecker::getSelfViolationInfoByiDRC(const std::vector<DRCCheckType>& check_type_list,
-                                                                                         const std::vector<DRCShape>& drc_shape_list)
-{
-  std::vector<BaseShape> base_shape_list;
-  for (const DRCShape& drc_shape : drc_shape_list) {
-    base_shape_list.push_back(convert(drc_shape));
-  }
-
-  std::map<std::string, std::vector<BaseViolationInfo>> base_violation_info_map
-      = RTAPI_INST.getSelfViolationInfo(check_type_list, base_shape_list);
-
-  std::map<std::string, std::vector<ViolationInfo>> violation_info_map;
-  for (auto& [rule_name, base_violation_info_list] : base_violation_info_map) {
-    for (BaseViolationInfo& base_violation_info : base_violation_info_list) {
-      violation_info_map[rule_name].push_back(convert(base_violation_info));
-    }
-  }
-
-  return violation_info_map;
 }
 
 void DRCChecker::addEnvRectList(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list)

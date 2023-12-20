@@ -24,9 +24,6 @@
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
 #include "SourceType.hpp"
-#include "builder.h"
-#include "def_service.h"
-#include "lef_service.h"
 
 namespace irt {
 
@@ -64,6 +61,11 @@ class DataManager
   std::vector<NetShape> getNetShapeList(irt_int net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
   std::vector<NetShape> getNetShapeList(irt_int net_idx, MTree<PhysicalNode>& physical_node_tree);
   std::vector<NetShape> getNetShapeList(irt_int net_idx, PhysicalNode& physical_node);
+#endif
+
+#if 1  // 获得IdbWireSegment
+  idb::IdbRegularWireSegment* getIDBSegment(irt_int net_idx, Segment<LayerCoord>* segment);
+idb::IdbRegularWireSegment* getIDBSegment(irt_int net_idx, EXTLayerRect* ext_layer_rect);
 #endif
 
   Config& getConfig() { return _config; }
@@ -155,13 +157,13 @@ class DataManager
 #if 1  // output
   void outputGCellGrid(idb::IdbBuilder* idb_builder);
   void outputNetList(idb::IdbBuilder* idb_builder);
-  PhysicalNode makeWirePhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
-  PhysicalNode makeViaPhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
-  PhysicalNode makePatchPhysicalNode(irt_int net_idx, EXTLayerRect* patch);
-  void convertToIDBNet(idb::IdbBuilder* idb_builder, std::vector<PhysicalNode>& phy_node_list, idb::IdbNet* idb_net);
-  void convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
-  void convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
-  void convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment);
+  // PhysicalNode makeWirePhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
+  // PhysicalNode makeViaPhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
+  // PhysicalNode makePatchPhysicalNode(irt_int net_idx, EXTLayerRect* patch);
+  // void convertToIDBNet(idb::IdbBuilder* idb_builder, std::vector<PhysicalNode>& phy_node_list, idb::IdbNet* idb_net);
+  // void getIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
+  // void getIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
+  // void convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment);
 #endif
 
 #if 1  // save & load
@@ -169,6 +171,10 @@ class DataManager
   std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
   void loadStageResult(Stage stage);
 #endif
+
+  idb::IdbRegularWireSegment* getIDBWire(irt_int net_idx, Segment<LayerCoord>* segment);
+  idb::IdbRegularWireSegment* getIDBVia(irt_int net_idx, Segment<LayerCoord>* segment);
+
 };
 
 }  // namespace irt

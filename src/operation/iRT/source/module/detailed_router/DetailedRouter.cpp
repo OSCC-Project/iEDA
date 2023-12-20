@@ -386,7 +386,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
       dr_group_list.push_back(dr_group);
     }
     DRTask* dr_task = new DRTask();
-    dr_task->set_origin_net_idx(net_idx);
+    dr_task->set_net_idx(net_idx);
     dr_task->set_connect_type(dr_net_list[net_idx].get_connect_type());
     dr_task->set_dr_group_list(dr_group_list);
     buildBoundingBox(dr_box, dr_task);
@@ -508,7 +508,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
 
   std::map<irt_int, DRTask*> net_task_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    net_task_map[dr_task->get_origin_net_idx()] = dr_task;
+    net_task_map[dr_task->get_net_idx()] = dr_task;
   }
   for (auto [net_idx, segment_set] : DM_INST.getNetResultMap(box_rect)) {
     if (!RTUtil::exist(net_task_map, net_idx)) {
@@ -799,10 +799,10 @@ void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
 
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), routing_segment);
+      updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), patch);
+      updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), patch);
     }
   }
 
@@ -893,7 +893,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
   }
 
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    if (dr_task->get_origin_net_idx() < 0) {
+    if (dr_task->get_net_idx() < 0) {
       LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
     }
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
@@ -953,7 +953,7 @@ std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
   }
   std::vector<DRTask*> dr_task_list;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    if (!RTUtil::exist(violation_net_set, dr_task->get_origin_net_idx())) {
+    if (!RTUtil::exist(violation_net_set, dr_task->get_net_idx())) {
       continue;
     }
     if (dr_task->get_routed_times() > 1) {
@@ -984,7 +984,7 @@ void DetailedRouter::initSingleTask(DRBox& dr_box, DRTask* dr_task)
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
   // single task
-  dr_box.set_curr_net_idx(dr_task->get_origin_net_idx());
+  dr_box.set_curr_net_idx(dr_task->get_net_idx());
   {
     std::vector<std::vector<DRNode*>> node_list_list;
     std::vector<DRGroup>& dr_group_list = dr_task->get_dr_group_list();
@@ -1206,12 +1206,12 @@ void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask* dr_task)
 
   // 原结果从graph删除
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-    updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_origin_net_idx(), routing_segment);
+    updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_net_idx(), routing_segment);
   }
   routing_segment_list = dr_box.get_routing_segment_list();
   // 新结果添加到graph
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-    updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), routing_segment);
+    updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
   }
 }
 
@@ -1415,14 +1415,383 @@ void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
 
   // 原结果从graph删除
   for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-    updatePatchToGraph(dr_box, ChangeType::kDel, dr_task->get_origin_net_idx(), patch);
+    updatePatchToGraph(dr_box, ChangeType::kDel, dr_task->get_net_idx(), patch);
   }
   dr_task->set_patch_list(new_patch_list);
   // 新结果添加到graph
   for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-    updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_origin_net_idx(), patch);
+    updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), patch);
   }
 }
+
+#if 0 
+
+void ViolationRepairer::repairNotch(VRModel& vr_model, VRNet& vr_net)
+{
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
+  {
+    // pin_shape
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
+      }
+    }
+    // vr_result_tree
+    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      if (!drc_shape.get_is_routing()) {
+        continue;
+      }
+      LayerRect& layer_rect = drc_shape.get_layer_rect();
+      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
+    }
+  }
+  std::vector<LayerRect> candidate_patch_list;
+  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
+    std::vector<GTLPolyInt> polygon_list;
+    polygon_set.get_polygons(polygon_list);
+    for (GTLPolyInt& polygon : polygon_list) {
+      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
+      // 构建点集
+      std::vector<PlanarCoord> origin_point_list;
+      for (GTLPointInt& gtl_point : gtl_point_list) {
+        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
+      }
+      // 构建任务
+      std::vector<std::vector<PlanarCoord>> task_point_list_list;
+      for (size_t i = 0; i < origin_point_list.size(); i++) {
+        std::vector<PlanarCoord> task_point_list;
+        for (size_t j = 0; j < 4; j++) {
+          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
+        }
+        task_point_list_list.push_back(task_point_list);
+      }
+      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
+        for (LayerRect& patch : getNotchPatchList(layer_idx, task_point_list)) {
+          candidate_patch_list.push_back(patch);
+        }
+      }
+    }
+  }
+  std::vector<LayerRect> patch_list;
+  for (LayerRect& candidate_patch : candidate_patch_list) {
+    DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
+    if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
+        && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
+      patch_list.push_back(candidate_patch);
+    }
+  }
+  for (LayerRect& patch : patch_list) {
+    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
+
+    PhysicalNode physical_node;
+    PatchNode& patch_node = physical_node.getNode<PatchNode>();
+    patch_node.set_net_idx(vr_net.get_net_idx());
+    patch_node.set_rect(patch);
+    patch_node.set_layer_idx(patch.get_layer_idx());
+
+    root_node->addChild(new TNode<PhysicalNode>(physical_node));
+
+    for (DRCShape& drc_shape : DC_INST.getDRCShapeList(vr_net.get_net_idx(), physical_node)) {
+      updateRectToUnit(vr_model, ChangeType::kAdd, VRSourceType::kNetShape, drc_shape);
+    }
+  }
+}
+
+std::vector<LayerRect> ViolationRepairer::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
+{
+  /**
+   * task_point_list 顺时针
+   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
+   */
+
+  if (task_point_list.size() < 4) {
+    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
+    return {};
+  }
+
+  std::vector<LayerRect> patch_list;
+
+  double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
+  double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
+
+  std::array<irt_int, 3> length_list;
+  for (irt_int i = 0; i < 3; i++) {
+    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
+  }
+
+  if (length_list[0] < notch_length || length_list[2] < notch_length) {
+    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
+      if (length_list[1] <= notch_space) {
+        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
+            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
+          irt_int offset = 0;
+          if (length_list[0] > length_list[2]) {
+            // use point 123
+            offset = 1;
+          }
+          irt_int lb_x
+              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int lb_y
+              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+          irt_int rt_x
+              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int rt_y
+              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+
+          PlanarCoord lb_coord(lb_x, lb_y);
+          PlanarCoord rt_coord(rt_x, rt_y);
+
+          patch_list.emplace_back(lb_coord, rt_coord, layer_idx);
+        }
+      }
+    }
+  }
+
+  return patch_list;
+}
+
+void ViolationRepairer::repairNotch(VRModel& vr_model, VRNet& vr_net)
+{
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
+  {
+    // pin_shape
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
+      }
+    }
+    // vr_result_tree
+    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      if (!drc_shape.get_is_routing()) {
+        continue;
+      }
+      LayerRect& layer_rect = drc_shape.get_layer_rect();
+      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
+    }
+  }
+  std::vector<LayerRect> candidate_patch_list;
+  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
+    std::vector<GTLPolyInt> polygon_list;
+    polygon_set.get_polygons(polygon_list);
+    for (GTLPolyInt& polygon : polygon_list) {
+      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
+      // 构建点集
+      std::vector<PlanarCoord> origin_point_list;
+      for (GTLPointInt& gtl_point : gtl_point_list) {
+        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
+      }
+      // 构建任务
+      std::vector<std::vector<PlanarCoord>> task_point_list_list;
+      for (size_t i = 0; i < origin_point_list.size(); i++) {
+        std::vector<PlanarCoord> task_point_list;
+        for (size_t j = 0; j < 4; j++) {
+          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
+        }
+        task_point_list_list.push_back(task_point_list);
+      }
+      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
+        for (LayerRect& patch : getNotchPatchList(layer_idx, task_point_list)) {
+          candidate_patch_list.push_back(patch);
+        }
+      }
+    }
+  }
+  std::vector<LayerRect> patch_list;
+  for (LayerRect& candidate_patch : candidate_patch_list) {
+    DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
+    if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
+        && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
+      patch_list.push_back(candidate_patch);
+    }
+  }
+  for (LayerRect& patch : patch_list) {
+    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
+
+    PhysicalNode physical_node;
+    PatchNode& patch_node = physical_node.getNode<PatchNode>();
+    patch_node.set_net_idx(vr_net.get_net_idx());
+    patch_node.set_rect(patch);
+    patch_node.set_layer_idx(patch.get_layer_idx());
+
+    root_node->addChild(new TNode<PhysicalNode>(physical_node));
+
+    for (DRCShape& drc_shape : DC_INST.getDRCShapeList(vr_net.get_net_idx(), physical_node)) {
+      updateRectToUnit(vr_model, ChangeType::kAdd, VRSourceType::kNetShape, drc_shape);
+    }
+  }
+}
+
+std::vector<LayerRect> ViolationRepairer::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
+{
+  /**
+   * task_point_list 顺时针
+   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
+   */
+
+  if (task_point_list.size() < 4) {
+    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
+    return {};
+  }
+
+  std::vector<LayerRect> patch_list;
+
+  double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
+  double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
+
+  std::array<irt_int, 3> length_list;
+  for (irt_int i = 0; i < 3; i++) {
+    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
+  }
+
+  if (length_list[0] < notch_length || length_list[2] < notch_length) {
+    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
+      if (length_list[1] <= notch_space) {
+        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
+            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
+          irt_int offset = 0;
+          if (length_list[0] > length_list[2]) {
+            // use point 123
+            offset = 1;
+          }
+          irt_int lb_x
+              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int lb_y
+              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+          irt_int rt_x
+              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int rt_y
+              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+
+          PlanarCoord lb_coord(lb_x, lb_y);
+          PlanarCoord rt_coord(rt_x, rt_y);
+
+          patch_list.emplace_back(lb_coord, rt_coord, layer_idx);
+        }
+      }
+    }
+  }
+
+  return patch_list;
+}
+
+void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
+{
+  Die& die = DM_INST.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
+  {
+    // pin_shape
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect = routing_shape.getRealLayerRect();
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
+      }
+    }
+    // vr_result_tree
+    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      if (!drc_shape.get_is_routing()) {
+        continue;
+      }
+      LayerRect& layer_rect = drc_shape.get_layer_rect();
+      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
+    }
+  }
+  std::map<LayerRect, irt_int, CmpLayerRectByXASC> violation_rect_added_area_map;
+  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
+    irt_int layer_min_area = routing_layer_list[layer_idx].get_min_area();
+    std::vector<GTLPolyInt> polygon_list;
+    polygon_set.get_polygons(polygon_list);
+    for (GTLPolyInt& polygon : polygon_list) {
+      if (gtl::area(polygon) >= layer_min_area) {
+        continue;
+      }
+      // 取polygon中最大的矩形进行膨胀
+      PlanarRect max_violation_rect;
+      std::vector<GTLRectInt> gtl_rect_list;
+      gtl::get_max_rectangles(gtl_rect_list, polygon);
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        if (max_violation_rect.getArea() < gtl::area(gtl_rect)) {
+          max_violation_rect = RTUtil::convertToPlanarRect(gtl_rect);
+        }
+      }
+      irt_int added_area = layer_min_area - gtl::area(polygon);
+      violation_rect_added_area_map[LayerRect(max_violation_rect, layer_idx)] = added_area;
+    }
+  }
+  std::vector<LayerRect> patch_list;
+  for (auto& [violation_rect, added_area] : violation_rect_added_area_map) {
+    irt_int layer_idx = violation_rect.get_layer_idx();
+    std::vector<LayerRect> h_candidate_patch_list;
+    {
+      irt_int h_enlarged_offset = static_cast<irt_int>(std::ceil(added_area / 1.0 / violation_rect.getYSpan()));
+      for (irt_int lb_offset = 0; lb_offset <= h_enlarged_offset; lb_offset++) {
+        PlanarRect enlarged_rect
+            = RTUtil::getEnlargedRect(violation_rect, lb_offset, 0, h_enlarged_offset - lb_offset, 0, die.get_real_rect());
+        if (lb_offset == 0 || lb_offset == h_enlarged_offset) {
+          std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(enlarged_rect, violation_rect, Direction::kHorizontal);
+          if (split_rect_list.size() != 1) {
+            LOG_INST.error(Loc::current(), "The size of split_rect_list is not equal 1!");
+          }
+          enlarged_rect = split_rect_list.front();
+        }
+        h_candidate_patch_list.emplace_back(enlarged_rect, layer_idx);
+      }
+    }
+    std::vector<LayerRect> v_candidate_patch_list;
+    {
+      irt_int v_enlarged_offset = static_cast<irt_int>(std::ceil(added_area / 1.0 / violation_rect.getXSpan()));
+      for (irt_int lb_offset = 0; lb_offset <= v_enlarged_offset; lb_offset++) {
+        PlanarRect enlarged_rect
+            = RTUtil::getEnlargedRect(violation_rect, 0, lb_offset, 0, v_enlarged_offset - lb_offset, die.get_real_rect());
+        if (lb_offset == 0 || lb_offset == v_enlarged_offset) {
+          std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(enlarged_rect, violation_rect, Direction::kVertical);
+          if (split_rect_list.size() != 1) {
+            LOG_INST.error(Loc::current(), "The size of split_rect_list is not equal 1!");
+          }
+          enlarged_rect = split_rect_list.front();
+        }
+        v_candidate_patch_list.emplace_back(enlarged_rect, layer_idx);
+      }
+    }
+    std::vector<LayerRect> candidate_patch_list;
+    if (routing_layer_list[layer_idx].isPreferH()) {
+      candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
+      candidate_patch_list.insert(candidate_patch_list.end(), v_candidate_patch_list.begin(), v_candidate_patch_list.end());
+    } else {
+      candidate_patch_list.insert(candidate_patch_list.end(), v_candidate_patch_list.begin(), v_candidate_patch_list.end());
+      candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
+    }
+    bool has_patch = false;
+    for (LayerRect& candidate_patch : candidate_patch_list) {
+      DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
+      if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
+          && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
+        patch_list.push_back(candidate_patch);
+        has_patch = true;
+        break;
+      }
+    }
+    if (!has_patch) {
+      LOG_INST.warn(Loc::current(), "There is no legal patch for min area violation!");
+    }
+  }
+  for (LayerRect& patch : patch_list) {
+    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
+
+    PhysicalNode physical_node;
+    PatchNode& patch_node = physical_node.getNode<PatchNode>();
+    patch_node.set_net_idx(vr_net.get_net_idx());
+    patch_node.set_rect(patch);
+    patch_node.set_layer_idx(patch.get_layer_idx());
+
+    root_node->addChild(new TNode<PhysicalNode>(physical_node));
+  }
+}
+
+#endif
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
@@ -1440,14 +1809,38 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
   }
 }
 
+std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
+{
+  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+
+  for (bool is_routing : {true, false}) {
+    for (auto& [layer_idx, net_fixed_rect_map] : DM_INST.getLayerNetFixedRectMap(dr_box.get_box_rect(), is_routing)) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
+          net_idb_segment_map[net_idx].push_back(DM_INST.getIDBSegment(net_idx, fixed_rect));
+        }
+      }
+    }
+  }
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
+      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegment(dr_task->get_net_idx(), &routing_segment));
+    }
+    for (EXTLayerRect& patch : dr_task->get_patch_list()) {
+      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegment(dr_task->get_net_idx(), &patch));
+    }
+  }
+  return RTAPI_INST.getViolationList(net_idb_segment_map);
+}
+
 void DetailedRouter::updateDRTaskToGcellMap(DRBox& dr_box)
 {
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, dr_task->get_origin_net_idx(), new Segment<LayerCoord>(routing_segment));
+      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, dr_task->get_net_idx(), new Segment<LayerCoord>(routing_segment));
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      DM_INST.updatePatchToGCellMap(ChangeType::kAdd, dr_task->get_origin_net_idx(), new EXTLayerRect(patch));
+      DM_INST.updatePatchToGCellMap(ChangeType::kAdd, dr_task->get_net_idx(), new EXTLayerRect(patch));
     }
   }
 }
@@ -1845,7 +2238,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 
   // task
   for (DRTask& dr_task : dr_box.get_dr_task_list()) {
-    GPStruct task_struct(RTUtil::getString("task_", dr_task.get_task_idx(), "(net_", dr_task.get_origin_net_idx(), ")"));
+    GPStruct task_struct(RTUtil::getString("task_", dr_task.get_task_idx(), "(net_", dr_task.get_net_idx(), ")"));
 
     if (curr_task_idx == -1 || dr_task.get_task_idx() == curr_task_idx) {
       for (DRGroup& dr_group : dr_task.get_dr_group_list()) {

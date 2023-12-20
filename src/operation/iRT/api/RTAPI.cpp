@@ -275,8 +275,11 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 // DRC
 
-
-
+std::vector<Violation> RTAPI::getViolationList(std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map)
+{
+  std::vector<Violation> violation_list;
+  return violation_list;
+}
 
 // STA
 
@@ -517,20 +520,6 @@ void RTAPI::runOther()
 }
 
 #endif
-std::map<std::string, std::vector<BaseViolationInfo>> RTAPI::getEnvViolationInfo(BaseRegion& base_region,
-                                                                                 const std::vector<DRCCheckType>& check_type_list,
-                                                                                 std::vector<BaseShape>& drc_shape_list)
-{
-  idrc::DrcApi drc_api;
-  return drc_api.getEnvViolationInfo(base_region, check_type_list, drc_shape_list);
-}
-
-std::map<std::string, std::vector<BaseViolationInfo>> RTAPI::getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
-                                                                                  std::vector<BaseShape>& drc_shape_list)
-{
-  idrc::DrcApi drc_api;
-  return drc_api.getSelfViolationInfo(check_type_list, drc_shape_list);
-}
 
 // private
 
