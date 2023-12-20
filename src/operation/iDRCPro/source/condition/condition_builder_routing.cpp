@@ -151,7 +151,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
   /// if overlap, save violation as short
   auto* neighbour = point->get_neighbour(direction);
   if (neighbour->is_overlap()) {
-    if (false == point->is_overlap_checked() && point->get_id() != neighbour->get_point()->get_id()) {
+    if (false == point->is_overlap_checked()) {
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
@@ -184,6 +184,11 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
     int spacing = b_vertical ? std::abs(neighbour->get_point()->get_y() - point->get_y())
                              : std::abs(neighbour->get_point()->get_x() - point->get_x());
     if (spacing == 0) {
+      auto gtl_pts_1 = get_boost_point(point);
+      auto gtl_pts_2 = get_boost_point(neighbour->get_point());
+      auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+      auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+      int a = 0;
       return;
     } else if (spacing > max_spacing) {
       /// no violation
@@ -274,66 +279,66 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
   net_ids.insert(start_point_1->get_id());
   net_ids.insert(start_point_2->get_id());
 
-  auto check_polygon_violation
-      = [&isChecked](int& llx, int& lly, int& urx, int& ury, std::set<int>& net_ids, bool b_vertical, DrcBasicPoint* start_point_1,
-                     DrcBasicPoint* start_point_2, bool b_next, int min_spacing = -1) {
-          auto iterate_direction
-              = b_vertical ? (b_next ? DrcDirection::kRight : DrcDirection::kLeft) : (b_next ? DrcDirection::kUp : DrcDirection::kDown);
-          auto iterate_function = [=](DrcBasicPoint* point) -> DrcBasicPoint* {
-            if (min_spacing == -1) {
-              if (point->get_neighbour(iterate_direction)) {
-                if (!point->get_neighbour(iterate_direction)->is_overlap()) {
-                  return nullptr;
-                }
-                return point->get_neighbour(iterate_direction)->get_point();
-              }
-              return nullptr;
-            } else {
-              return b_next ? point->get_next() : point->get_prev();
-            }
+  auto check_polygon_violation = [&isChecked](int& llx, int& lly, int& urx, int& ury, std::set<int>& net_ids, bool b_vertical,
+                                              DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, bool b_next,
+                                              int min_spacing = -1) {
+    auto iterate_direction
+        = b_vertical ? (b_next ? DrcDirection::kRight : DrcDirection::kLeft) : (b_next ? DrcDirection::kUp : DrcDirection::kDown);
+    auto iterate_function = [=](DrcBasicPoint* point) -> DrcBasicPoint* {
+      if (min_spacing == -1) {
+        if (point->get_neighbour(iterate_direction)) {
+          if (!point->get_neighbour(iterate_direction)->is_overlap()) {
             return nullptr;
-          };
-          auto* iter_point = iterate_function(start_point_1);
-          while (iter_point && iter_point->direction(start_point_1) == iterate_direction) {
-            auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
-            if (neighbour == nullptr) {
-              break;
-            }
-            if (min_spacing == -1) {
-              if (!neighbour->is_overlap()) {
-                break;
-              }
-            } else {
-              if (!neighbour->is_spacing()) {
-                break;
-              }
-              if (neighbour->get_point()->get_id() != start_point_2->get_id()) {
-                break;
-              }
-            }
-
-            /// is checked
-            if (isChecked(iter_point, min_spacing, b_vertical)) {
-              break;
-            }
-
-            /// build violation rect
-            llx = std::min(llx, iter_point->get_x());
-            lly = std::min(lly, iter_point->get_y());
-            llx = std::min(llx, neighbour->get_point()->get_x());
-            lly = std::min(lly, neighbour->get_point()->get_y());
-
-            urx = std::max(urx, iter_point->get_x());
-            ury = std::max(ury, iter_point->get_y());
-            urx = std::max(urx, neighbour->get_point()->get_x());
-            ury = std::max(ury, neighbour->get_point()->get_y());
-
-            net_ids.insert(iter_point->get_id());
-            net_ids.insert(neighbour->get_point()->get_id());
-
-            iter_point = iterate_function(iter_point);
           }
-        };
+          return point->get_neighbour(iterate_direction)->get_point();
+        }
+        return nullptr;
+      } else {
+        return b_next ? point->get_next() : point->get_prev();
+      }
+      return nullptr;
+    };
+    auto* iter_point = iterate_function(start_point_1);
+    while (iter_point && iter_point->direction(start_point_1) == iterate_direction) {
+      auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
+      if (neighbour == nullptr) {
+        break;
+      }
+      if (min_spacing == -1) {
+        if (!neighbour->is_overlap()) {
+          break;
+        }
+      } else {
+        if (!neighbour->is_spacing()) {
+          break;
+        }
+        if (neighbour->get_point()->get_id() != start_point_2->get_id() || iter_point->distance(neighbour->get_point()) >= min_spacing) {
+          break;
+        }
+      }
+
+      /// is checked
+      if (isChecked(iter_point, min_spacing, b_vertical)) {
+        break;
+      }
+
+      /// build violation rect
+      llx = std::min(llx, iter_point->get_x());
+      lly = std::min(lly, iter_point->get_y());
+      llx = std::min(llx, neighbour->get_point()->get_x());
+      lly = std::min(lly, neighbour->get_point()->get_y());
+
+      urx = std::max(urx, iter_point->get_x());
+      ury = std::max(ury, iter_point->get_y());
+      urx = std::max(urx, neighbour->get_point()->get_x());
+      ury = std::max(ury, neighbour->get_point()->get_y());
+
+      net_ids.insert(iter_point->get_id());
+      net_ids.insert(neighbour->get_point()->get_id());
+
+      iter_point = iterate_function(iter_point);
+    }
+  };
 
   auto check_violation = [&isChecked](int& llx, int& lly, int& urx, int& ury, std::set<int>& net_ids, bool b_vertical,
                                       DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, bool b_next, int min_spacing = -1) {
