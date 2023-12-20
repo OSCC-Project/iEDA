@@ -458,13 +458,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_nonprefer_wire_unit", 2);
   _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_via_unit", 1);
   _config.dr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-dr_corner_unit", 1);
-  _config.dr_blockage_unit = RTUtil::getConfigValue<double>(config_map, "-dr_blockage_unit", 2048);
-  _config.dr_net_shape_unit = RTUtil::getConfigValue<double>(config_map, "-dr_net_shape_unit", 128);
-  _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_reserved_via_unit", 32);
-  _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 4);
-  _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
-  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 1);
-  _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
   /////////////////////////////////////////////
 }
 
@@ -985,10 +978,6 @@ void DataManager::buildConfig()
   _config.ra_temp_directory_path = _config.temp_directory_path + "resource_allocator/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
-  // **********  UniversalRouter  ********** //
-  _config.ur_temp_directory_path = _config.temp_directory_path + "universal_router/";
-  // ********** ViolationRepairer ********** //
-  _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
   RTUtil::createDir(_config.temp_directory_path);
@@ -1007,10 +996,6 @@ void DataManager::buildConfig()
   RTUtil::createDir(_config.ra_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUtil::createDir(_config.ta_temp_directory_path);
-  // **********  UniversalRouter  ********** //
-  RTUtil::createDir(_config.ur_temp_directory_path);
-  // ********** ViolationRepairer ********** //
-  RTUtil::createDir(_config.vr_temp_directory_path);
   /////////////////////////////////////////////
 }
 
@@ -1951,20 +1936,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_via_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_corner_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_blockage_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_blockage_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_net_shape_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_net_shape_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_reserved_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_reserved_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_model_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_model_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_box_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_box_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "vr_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.vr_max_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
@@ -2001,14 +1972,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
-  // **********  UniversalRouter  ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "UniversalRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ur_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ur_temp_directory_path);
-  // ********** ViolationRepairer ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ViolationRepairer");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "vr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.vr_temp_directory_path);
   /////////////////////////////////////////////
   sleep(2);
 }

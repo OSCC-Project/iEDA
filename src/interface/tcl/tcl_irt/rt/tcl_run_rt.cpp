@@ -48,7 +48,6 @@ unsigned TclRunRT::exec()
     tool_list.push_back(irt::Tool::kGlobalRouter);
     tool_list.push_back(irt::Tool::kTrackAssigner);
     tool_list.push_back(irt::Tool::kDetailedRouter);
-    tool_list.push_back(irt::Tool::kViolationRepairer);
   } else {
     for (std::string tool_name : std::any_cast<std::vector<std::string>>(config_map["-flow"])) {
       if (tool_name == "pa") {
@@ -61,8 +60,6 @@ unsigned TclRunRT::exec()
         tool_list.push_back(irt::Tool::kTrackAssigner);
       } else if (tool_name == "dr") {
         tool_list.push_back(irt::Tool::kDetailedRouter);
-      } else if (tool_name == "vr") {
-        tool_list.push_back(irt::Tool::kViolationRepairer);
       }
     }
   }

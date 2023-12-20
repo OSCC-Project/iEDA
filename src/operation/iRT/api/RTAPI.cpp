@@ -31,7 +31,6 @@
 #include "Stage.hpp"
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
-#include "ViolationRepairer.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
@@ -89,7 +88,7 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     stage_set.insert(convertToStage(tool));
   }
   std::vector<Stage> stage_list = {Stage::kNone,          Stage::kPinAccessor,    Stage::kResourceAllocator, Stage::kGlobalRouter,
-                                   Stage::kTrackAssigner, Stage::kDetailedRouter, Stage::kViolationRepairer, Stage::kNone};
+                                   Stage::kTrackAssigner, Stage::kDetailedRouter,  Stage::kNone};
   irt_int stage_idx = 1;
   while (!RTUtil::exist(stage_set, stage_list[stage_idx])) {
     stage_idx++;
@@ -127,11 +126,6 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
         DR_INST.route(net_list);
         DetailedRouter::destroyInst();
         break;
-      case Stage::kViolationRepairer:
-        ViolationRepairer::initInst();
-        VR_INST.repair(net_list);
-        ViolationRepairer::destroyInst();
-        break;
       default:
         break;
     }
@@ -163,9 +157,6 @@ Stage RTAPI::convertToStage(Tool tool)
       break;
     case Tool::kDetailedRouter:
       stage = Stage::kDetailedRouter;
-      break;
-    case Tool::kViolationRepairer:
-      stage = Stage::kViolationRepairer;
       break;
   }
   return stage;

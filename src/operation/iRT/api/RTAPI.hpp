@@ -38,8 +38,7 @@ enum class Tool
   kGlobalRouter,
   kPinAccessor,
   kResourceAllocator,
-  kTrackAssigner,
-  kViolationRepairer
+  kTrackAssigner
 };
 
 class RTAPI
