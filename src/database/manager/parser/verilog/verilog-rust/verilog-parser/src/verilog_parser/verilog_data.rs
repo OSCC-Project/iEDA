@@ -225,7 +225,7 @@ pub trait VerilogVirtualBaseNetExpr: Debug + VerilogVirtualBaseNetExprClone {
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
-trait VerilogVirtualBaseNetExprClone {
+pub trait VerilogVirtualBaseNetExprClone {
     fn clone_box(&self) -> Box<dyn VerilogVirtualBaseNetExpr>;
 }
 
@@ -396,7 +396,7 @@ impl VerilogPortRefPortConnect {
     }
 }
 
-pub trait VerilogVirtualBaseStmt: Debug {
+pub trait VerilogVirtualBaseStmt: Debug + VerilogVirtualBaseStmtClone {
     fn is_module_inst_stmt(&self) -> bool {
         false
     }
@@ -416,6 +416,25 @@ pub trait VerilogVirtualBaseStmt: Debug {
         panic!("This is unknown value.");
     }
     fn as_any(&self) -> &dyn std::any::Any;
+}
+
+trait VerilogVirtualBaseStmtClone {
+    fn clone_box(&self) -> Box<dyn VerilogVirtualBaseStmt>;
+}
+
+impl<T> VerilogVirtualBaseStmtClone for T
+where
+    T: 'static + VerilogVirtualBaseStmt + Clone,
+{
+    fn clone_box(&self) -> Box<dyn VerilogVirtualBaseStmt> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn VerilogVirtualBaseStmt> {
+    fn clone(&self) -> Box<dyn VerilogVirtualBaseStmt> {
+        self.clone_box()
+    }
 }
 
 /// The base class for verilog stmt,include module dcl, module instance, module assign.
@@ -764,7 +783,7 @@ impl VerilogVirtualBaseStmt for VerilogInst {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VerilogAssign {
     stmt: VerilogStmt, //stmt denote line_no
     left_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
@@ -914,7 +933,7 @@ pub enum PortDclType {
     KOutputReg = 7,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VerilogModule {
     stmt: VerilogStmt, //stmt denote line_no
     module_name: String,

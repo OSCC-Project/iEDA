@@ -589,7 +589,6 @@ fn flatten_module(
         }
     }
 
-    // cur_module.borrow():获取cur_module的引用,是否需要获取不可变引用？
     for stmt in cur_module.borrow().get_module_stmts() {
         // for verilog dcl stmt, change the dcl name to inst name / dcl_name, then
         // add stmt to parent.
@@ -747,9 +746,8 @@ pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char, top_module_nam
     let r_str_top_module_name = c_str_top_module_name.to_string_lossy().into_owned();
 
     let mut verilog_file = parse_verilog_file(&r_str_verilog_path, &r_str_top_module_name);
-    let verilog_module = verilog_file.get_top_module();
-    // directly convert is ok?
-    let verilog_modules_pointer = Box::new(verilog_module);
+    let verilog_module_clone = (*verilog_file.get_top_module().borrow()).clone();
+    let verilog_modules_pointer = Box::new(verilog_module_clone);
 
     let raw_pointer = Box::into_raw(verilog_modules_pointer);
     raw_pointer as *mut c_void
