@@ -62,13 +62,6 @@ class Config
   double dr_nonprefer_wire_unit;     // optional
   double dr_via_unit;                // optional
   double dr_corner_unit;             // optional
-  double dr_blockage_unit;           // optional
-  double dr_net_shape_unit;          // optional
-  double dr_reserved_via_unit;       // optional
-  double dr_history_cost_unit;       // optional
-  irt_int dr_model_max_iter_num;     // optional
-  irt_int dr_box_max_iter_num;       // optional
-  irt_int vr_max_iter_num;           // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
@@ -88,10 +81,6 @@ class Config
   std::string ra_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //
   std::string ta_temp_directory_path;  // building
-  // **********  UniversalRouter  ********** //
-  std::string ur_temp_directory_path;  // building
-  // ********** ViolationRepairer ********** //
-  std::string vr_temp_directory_path;  // building
   /////////////////////////////////////////////
 };
 

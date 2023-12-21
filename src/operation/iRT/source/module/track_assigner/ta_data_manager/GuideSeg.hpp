@@ -19,7 +19,6 @@
 #include "Guide.hpp"
 #include "LayerRect.hpp"
 #include "MTree.hpp"
-#include "PhysicalNode.hpp"
 #include "Segment.hpp"
 
 namespace irt {

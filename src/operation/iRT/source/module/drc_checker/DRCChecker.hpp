@@ -92,15 +92,10 @@ class DRCChecker
   std::map<std::string, std::vector<ViolationInfo>> getEnvViolationInfoByRT(RegionQuery& region_query,
                                                                             const std::vector<DRCCheckType>& check_type_list,
                                                                             const std::vector<DRCShape>& drc_shape_list);
-  std::map<std::string, std::vector<ViolationInfo>> getEnvViolationInfoByiDRC(RegionQuery& region_query,
-                                                                              const std::vector<DRCCheckType>& check_type_list,
-                                                                              const std::vector<DRCShape>& drc_shape_list);
   BaseShape convert(const DRCShape& drc_shape);
   ViolationInfo convert(BaseViolationInfo& base_violation_info);
   std::map<std::string, std::vector<ViolationInfo>> getSelfViolationInfoByRT(const std::vector<DRCCheckType>& check_type_list,
                                                                              const std::vector<DRCShape>& drc_shape_list);
-  std::map<std::string, std::vector<ViolationInfo>> getSelfViolationInfoByiDRC(const std::vector<DRCCheckType>& check_type_list,
-                                                                               const std::vector<DRCShape>& drc_shape_list);
   void addEnvRectList(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list);
   void delEnvRectList(RegionQuery* region_query, const std::vector<DRCShape>& drc_shape_list);
   BaseShape convertToBaseShape(const DRCShape& drc_shape);

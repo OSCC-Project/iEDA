@@ -30,7 +30,7 @@ class DRTask
   DRTask() = default;
   ~DRTask() = default;
   // getter
-  irt_int get_origin_net_idx() { return _origin_net_idx; }
+  irt_int get_net_idx() { return _net_idx; }
   ConnectType get_connect_type() const { return _connect_type; }
   std::vector<DRGroup>& get_dr_group_list() { return _dr_group_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
@@ -41,7 +41,7 @@ class DRTask
   const std::vector<DRGroup>& get_dr_group_list() const { return _dr_group_list; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
   // setter
-  void set_origin_net_idx(const irt_int origin_net_idx) { _origin_net_idx = origin_net_idx; }
+  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_dr_group_list(const std::vector<DRGroup>& dr_group_list) { _dr_group_list = dr_group_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
@@ -55,7 +55,7 @@ class DRTask
   void addRoutedTimes() { ++_routed_times; }
 
  private:
-  irt_int _origin_net_idx = -1;
+  irt_int _net_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<DRGroup> _dr_group_list;
   PlanarRect _bounding_box;
