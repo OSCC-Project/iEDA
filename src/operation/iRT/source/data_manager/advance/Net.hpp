@@ -46,8 +46,6 @@ class Net
   MTree<Guide>& get_gr_result_tree() { return _gr_result_tree; }
   // TrackAssigner
   std::vector<Segment<LayerCoord>>& get_ta_result_list() { return _ta_result_list; }
-  // DetailedRouter
-  std::vector<PhysicalNode>& get_dr_result_list() { return _dr_result_list; }
 
   // setter
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
@@ -63,8 +61,6 @@ class Net
   void set_gr_result_tree(const MTree<Guide>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
   // TrackAssigner
   void set_ta_result_list(const std::vector<Segment<LayerCoord>>& ta_result_list) { _ta_result_list = ta_result_list; }
-  // DetailedRouter
-  void set_dr_result_list(const std::vector<PhysicalNode>& dr_result_list) { _dr_result_list = dr_result_list; }
 
  private:
   irt_int _net_idx = -1;
@@ -80,8 +76,6 @@ class Net
   MTree<Guide> _gr_result_tree;
   // TrackAssigner
   std::vector<Segment<LayerCoord>> _ta_result_list;
-  // DetailedRouter
-  std::vector<PhysicalNode> _dr_result_list;
 };
 
 }  // namespace irt

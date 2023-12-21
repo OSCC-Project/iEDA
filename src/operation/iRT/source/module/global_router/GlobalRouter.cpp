@@ -102,7 +102,7 @@ GRModel GlobalRouter::initGRModel(std::vector<Net>& net_list)
         gr_node_id.set_y(y);
         gr_node_id.set_layer_idx(layer_idx);
         gr_node.set_gr_node_id(gr_node_id);
-        gr_node.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
+        gr_node.set_base_region(RTUtil::getRealRectByGCell(x, y, gcell_axis));
       }
     }
   }
@@ -1653,7 +1653,7 @@ void GlobalRouter::buildRoutingResult(GRNet& gr_net)
   }
   std::function<Guide(LayerCoord&)> convertToGuide = [](LayerCoord& coord) {
     ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-    return Guide(LayerRect(RTUtil::getRealRect(coord, gcell_axis), coord.get_layer_idx()), coord);
+    return Guide(LayerRect(RTUtil::getRealRectByGCell(coord, gcell_axis), coord.get_layer_idx()), coord);
   };
   gr_net.set_gr_result_tree(RTUtil::convertTree(gr_net.get_routing_tree(), convertToGuide));
 }
@@ -1880,7 +1880,7 @@ void GlobalRouter::updateRectToUnit(GRModel& gr_model, ChangeType change_type, G
 
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         GRNode& gr_node = layer_node_map[drc_shape.get_layer_rect().get_layer_idx()][x][y];
@@ -1981,7 +1981,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     for (irt_int grid_x = 0; grid_x < gr_node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < gr_node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = gr_node_map[grid_x][grid_y];
-        PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
+        PlanarRect real_rect = RTUtil::getRealRectByGCell(gr_node.get_planar_coord(), gcell_axis);
         irt_int y_reduced_span = real_rect.getYSpan() / 25;
         irt_int y = real_rect.get_rt_y();
 
@@ -2224,7 +2224,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     for (irt_int grid_x = 0; grid_x < gr_node_map.get_x_size(); grid_x++) {
       for (irt_int grid_y = 0; grid_y < gr_node_map.get_y_size(); grid_y++) {
         GRNode& gr_node = gr_node_map[grid_x][grid_y];
-        PlanarRect real_rect = RTUtil::getRealRect(gr_node.get_planar_coord(), gcell_axis);
+        PlanarRect real_rect = RTUtil::getRealRectByGCell(gr_node.get_planar_coord(), gcell_axis);
         irt_int lb_x = real_rect.get_lb_x();
         irt_int lb_y = real_rect.get_lb_y();
         irt_int rt_x = real_rect.get_rt_x();
@@ -2304,7 +2304,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     if (curr_net_idx == -1 || gr_net.get_net_idx() == curr_net_idx) {
       for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
         LayerCoord coord = gr_pin.get_protected_access_point().getGridLayerCoord();
-        PlanarRect real_rect = RTUtil::getRealRect(coord.get_planar_coord(), gcell_axis);
+        PlanarRect real_rect = RTUtil::getRealRectByGCell(coord.get_planar_coord(), gcell_axis);
 
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
@@ -2330,7 +2330,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
       if (first_layer_idx == second_layer_idx) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-        gp_boundary.set_rect(RTUtil::getRealRect(first_coord, second_coord, gcell_axis));
+        gp_boundary.set_rect(RTUtil::getRealRectByGCell(first_coord, second_coord, gcell_axis));
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         net_struct.push(gp_boundary);
       } else {
@@ -2338,7 +2338,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-          gp_boundary.set_rect(RTUtil::getRealRect(first_coord, gcell_axis));
+          gp_boundary.set_rect(RTUtil::getRealRectByGCell(first_coord, gcell_axis));
           gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
           net_struct.push(gp_boundary);
         }

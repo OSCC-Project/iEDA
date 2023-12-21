@@ -173,8 +173,8 @@ void DetailedRouter::initDRBoxMap(DRModel& dr_model)
       irt_int grid_rt_x = std::min(offset + (x + 1) * size - 1, x_gcell_num - 1);
       irt_int grid_rt_y = std::min(offset + (y + 1) * size - 1, y_gcell_num - 1);
 
-      PlanarRect lb_gcell_rect = RTUtil::getRealRect(PlanarCoord(grid_lb_x, grid_lb_y), gcell_axis);
-      PlanarRect rt_gcell_rect = RTUtil::getRealRect(PlanarCoord(grid_rt_x, grid_rt_y), gcell_axis);
+      PlanarRect lb_gcell_rect = RTUtil::getRealRectByGCell(PlanarCoord(grid_lb_x, grid_lb_y), gcell_axis);
+      PlanarRect rt_gcell_rect = RTUtil::getRealRectByGCell(PlanarCoord(grid_rt_x, grid_rt_y), gcell_axis);
       PlanarRect box_real_rect(lb_gcell_rect.get_lb(), rt_gcell_rect.get_rt());
       PlanarRect box_grid_rect(grid_lb_x, grid_lb_y, grid_rt_x, grid_rt_y);
 
@@ -618,7 +618,7 @@ void DetailedRouter::initDRNodeValid(DRBox& dr_box)
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
       for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-        access_grid_coord_set.insert(RTUtil::getGridCoord(coord, dr_box.get_box_track_axis(), dr_box.get_box_rect()));
+        access_grid_coord_set.insert(RTUtil::getGCellGridCoord(coord, dr_box.get_box_track_axis(), dr_box.get_box_rect()));
       }
     }
   }
@@ -2274,7 +2274,7 @@ std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDREnvViolat
   for (const DRCShape& drc_shape : drc_shape_list) {
     for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
       PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
           box_rect_map[DRBoxId(x, y)].push_back(drc_shape);

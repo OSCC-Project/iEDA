@@ -2013,7 +2013,7 @@ void TrackAssigner::updateRectToUnit(TAModel& ta_model, ChangeType change_type, 
   irt_int routing_layer_idx = drc_shape.get_layer_rect().get_layer_idx();
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
     if (routing_layer_list[routing_layer_idx].isPreferH()) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         DC_INST.updateRectList(layer_panel_list[routing_layer_idx][y].getRegionQuery(ta_source_type), change_type, drc_shape);
@@ -2508,7 +2508,7 @@ std::map<std::string, std::vector<ViolationInfo>> TrackAssigner::getTAEnvViolati
     irt_int routing_layer_idx = drc_shape.get_layer_rect().get_layer_idx();
     for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
       PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
       if (routing_layer_list[routing_layer_idx].isPreferH()) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
           panel_rect_map[TAPanelId(routing_layer_idx, y)].push_back(drc_shape);

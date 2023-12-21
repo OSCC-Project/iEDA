@@ -418,7 +418,7 @@ void GDSPlotter::addGuideSegNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<
     irt_int first_layer_idx = first_guide.get_layer_idx();
     irt_int second_layer_idx = second_guide.get_layer_idx();
 
-    PlanarRect real_rect = RTUtil::getRealRect(first_guide.get_grid_coord(), second_guide.get_grid_coord(), gcell_axis);
+    PlanarRect real_rect = RTUtil::getRealRectByGCell(first_guide.get_grid_coord(), second_guide.get_grid_coord(), gcell_axis);
 
     if (first_layer_idx == second_layer_idx) {
       GPBoundary guide_boundary;
@@ -528,7 +528,7 @@ void GDSPlotter::addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bo
       gp_boundary.set_layer_idx(static_cast<irt_int>(cost_map[x][y] * 100));
       gp_boundary.set_data_type(0);
       gp_boundary.set_rect(
-          RTUtil::getRealRect(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
+          RTUtil::getRealRectByGCell(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
       cost_map_struct.push(gp_boundary);
     }
   }
@@ -664,7 +664,7 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
           gp_text.set_text_type(static_cast<irt_int>(GPLayoutType::kText));
           gp_text.set_presentation(GPTextPresentation::kLeftBottom);
           gp_text.set_coord(x, y);
-          gp_text.set_message(RTUtil::getString("grid(", RTUtil::getGridLB(x, x_grid_list), " , ", RTUtil::getGridLB(y, y_grid_list),
+          gp_text.set_message(RTUtil::getString("grid(", RTUtil::getGCellGridLB(x, x_grid_list), " , ", RTUtil::getGCellGridLB(y, y_grid_list),
                                                 ") real(", x, " , ", y, ")"));
           gcell_axis_struct.push(gp_text);
         }
