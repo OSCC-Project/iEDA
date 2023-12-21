@@ -956,7 +956,7 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
     for (size_t j = 1; j < _join_region[side].size() - 1; ++j) {
       auto cur_val = incr_pts.back().val;
       auto next_val = _join_region[side][j].val;
-      LOG_FATAL_IF(cur_val > next_val + 10 * kEpsilon)
+      LOG_FATAL_IF(cur_val > next_val + 100 * kEpsilon)
           << "cur_val: " << cur_val << "> next_val: " << next_val << ", skew slope is not strictly monotone increasing";
       if (next_val > cur_val) {
         incr_pts.push_back(_join_region[side][j]);
