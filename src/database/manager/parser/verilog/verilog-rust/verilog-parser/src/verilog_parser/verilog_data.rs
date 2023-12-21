@@ -1,10 +1,9 @@
-use std::fmt::Debug;
-use std::collections::HashMap;
-use std::rc::Rc;
 use std::cell::RefCell;
-use log::{info, Level};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::rc::Rc;
 
-pub trait VerilogVirtualBaseID : Debug + VerilogVirtualBaseIDClone {
+pub trait VerilogVirtualBaseID: Debug + VerilogVirtualBaseIDClone {
     fn is_id(&self) -> bool {
         false
     }
@@ -26,6 +25,8 @@ pub trait VerilogVirtualBaseID : Debug + VerilogVirtualBaseIDClone {
     }
 
     fn set_base_name(&mut self, new_base_name: &str);
+
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 trait VerilogVirtualBaseIDClone {
@@ -47,9 +48,8 @@ impl Clone for Box<dyn VerilogVirtualBaseID> {
     }
 }
 
-
 /// verilog id.
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct VerilogID {
     id: String,
 }
@@ -80,6 +80,10 @@ impl VerilogVirtualBaseID for VerilogID {
     fn set_base_name(&mut self, id: &str) {
         self.id = id.to_string();
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl Default for VerilogID {
@@ -88,21 +92,17 @@ impl Default for VerilogID {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct VerilogIndexID {
- id: VerilogID,
- index: i32,
- formatted_index_id: String,
+    id: VerilogID,
+    index: i32,
+    formatted_index_id: String,
 }
 
 impl VerilogIndexID {
     pub fn new(id: &str, index: i32) -> VerilogIndexID {
         let formatted_index_id = format!("{}[{}]", id, index);
-        VerilogIndexID {
-            id: VerilogID::new(id),
-            index:index,
-            formatted_index_id:formatted_index_id,
-        }
+        VerilogIndexID { id: VerilogID::new(id), index: index, formatted_index_id: formatted_index_id }
     }
 
     pub fn get_id(&self) -> &VerilogID {
@@ -128,27 +128,30 @@ impl VerilogVirtualBaseID for VerilogIndexID {
     }
 
     fn set_base_name(&mut self, id: &str) {
-        self.id.get_base_name() = id.to_string();
+        self.id.set_base_name(id);
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct VerilogSliceID {
- id: VerilogID,
- range_from: i32, 
- range_to: i32,
- formatted_slice_id: String,
+    id: VerilogID,
+    range_from: i32,
+    range_to: i32,
+    formatted_slice_id: String,
 }
-
 
 impl VerilogSliceID {
     pub fn new(id: &str, range_from: i32, range_to: i32) -> VerilogSliceID {
         let formatted_slice_id = format!("{}[{}:{}]", id, range_from, range_to);
         VerilogSliceID {
             id: VerilogID::new(id),
-            range_from:range_from,
-            range_to:range_to,
-            formatted_slice_id:formatted_slice_id,
+            range_from: range_from,
+            range_to: range_to,
+            formatted_slice_id: formatted_slice_id,
         }
     }
 
@@ -164,25 +167,23 @@ impl VerilogSliceID {
         self.range_to
     }
 
-    pub  fn get_name_with_index(&self, index: i32) -> String {
+    pub fn get_name_with_index(&self, index: i32) -> String {
         format!("{}[{}]", &self.id.get_base_name(), index)
     }
 
-    
-   pub fn set_range_from(&mut self, new_range_from: i32) {
-       self.range_from = new_range_from;
-       self.update_formatted_slice_id();
-   }
+    pub fn set_range_from(&mut self, new_range_from: i32) {
+        self.range_from = new_range_from;
+        self.update_formatted_slice_id();
+    }
 
-   pub fn set_range_to(&mut self, new_range_to: i32) {
-       self.range_to = new_range_to;
-       self.update_formatted_slice_id();
-   }
+    pub fn set_range_to(&mut self, new_range_to: i32) {
+        self.range_to = new_range_to;
+        self.update_formatted_slice_id();
+    }
 
-   fn update_formatted_slice_id(&mut self) {
-      self.formatted_slice_id = format!("{}[{}:{}]", self.id.get_base_name(), self.range_from, self.range_to);
-   }
-
+    fn update_formatted_slice_id(&mut self) {
+        self.formatted_slice_id = format!("{}[{}:{}]", self.id.get_base_name(), self.range_from, self.range_to);
+    }
 }
 
 impl VerilogVirtualBaseID for VerilogSliceID {
@@ -199,12 +200,15 @@ impl VerilogVirtualBaseID for VerilogSliceID {
     }
 
     fn set_base_name(&mut self, id: &str) {
-        self.id.get_base_name() = id.to_string();
+        self.id.set_base_name(id);
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
-
-pub trait VerilogVirtualBaseNetExpr : Debug + VerilogVirtualBaseNetExprClone {
+pub trait VerilogVirtualBaseNetExpr: Debug + VerilogVirtualBaseNetExprClone {
     fn is_id_expr(&self) -> bool {
         false
     }
@@ -214,10 +218,10 @@ pub trait VerilogVirtualBaseNetExpr : Debug + VerilogVirtualBaseNetExprClone {
     fn is_constant(&self) -> bool {
         false
     }
-    fn get_verilog_id(&self) ->&Box<dyn VerilogVirtualBaseID> {
+    fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         panic!("This is unknown value.");
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
@@ -240,14 +244,14 @@ impl Clone for Box<dyn VerilogVirtualBaseNetExpr> {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct VerilogNetExpr {
     line_no: usize,
 }
 
 impl VerilogNetExpr {
     fn new(line_no: usize) -> VerilogNetExpr {
-        VerilogNetExpr{ line_no: line_no }
+        VerilogNetExpr { line_no: line_no }
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -255,21 +259,15 @@ impl VerilogNetExpr {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct VerilogNetIDExpr {
     net_expr: VerilogNetExpr,
     verilog_id: Box<dyn VerilogVirtualBaseID>,
 }
 
 impl VerilogNetIDExpr {
-    pub fn new(
-        line_no: usize,
-        verilog_id: Box<dyn VerilogVirtualBaseID>
-    ) -> VerilogNetIDExpr {
-        VerilogNetIDExpr {
-            net_expr: VerilogNetExpr::new(line_no),
-            verilog_id:verilog_id,
-        }
+    pub fn new(line_no: usize, verilog_id: Box<dyn VerilogVirtualBaseID>) -> VerilogNetIDExpr {
+        VerilogNetIDExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id: verilog_id }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -282,7 +280,6 @@ impl VerilogNetIDExpr {
     pub fn set_verilog_id(&mut self, new_verilog_id: Box<dyn VerilogVirtualBaseID>) {
         self.verilog_id = new_verilog_id;
     }
-
 }
 
 impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
@@ -297,7 +294,7 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 /// such as { 2'b00, _0_ }
 pub struct VerilogNetConcatExpr {
     net_expr: VerilogNetExpr,
@@ -305,14 +302,8 @@ pub struct VerilogNetConcatExpr {
 }
 
 impl VerilogNetConcatExpr {
-    pub fn new(
-        line_no: usize,
-        verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>
-    ) -> VerilogNetConcatExpr {
-        VerilogNetConcatExpr {
-            net_expr: VerilogNetExpr::new(line_no),
-            verilog_id_concat: verilog_id_concat,
-        }
+    pub fn new(line_no: usize, verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>) -> VerilogNetConcatExpr {
+        VerilogNetConcatExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id_concat: verilog_id_concat }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -328,7 +319,7 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
     fn is_concat_expr(&self) -> bool {
         true
     }
-   
+
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id_concat.first().unwrap().get_verilog_id()
     }
@@ -338,7 +329,7 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 /// 1'b0 or 1'b1.
 pub struct VerilogConstantExpr {
     net_expr: VerilogNetExpr,
@@ -346,14 +337,8 @@ pub struct VerilogConstantExpr {
 }
 
 impl VerilogConstantExpr {
-    pub fn new(
-        line_no: usize,
-        verilog_id: Box<dyn VerilogVirtualBaseID>
-    ) -> VerilogConstantExpr {
-        VerilogConstantExpr {
-            net_expr: VerilogNetExpr::new(line_no),
-            verilog_id:verilog_id,
-        }
+    pub fn new(line_no: usize, verilog_id: Box<dyn VerilogVirtualBaseID>) -> VerilogConstantExpr {
+        VerilogConstantExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id: verilog_id }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -376,11 +361,11 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
 }
 
-pub enum NetExprType {
-    VerilogNetIDExpr,
-    VerilogNetConcatExpr,
-    VerilogConstantExpr
-}
+// pub enum NetExprType {
+//     VerilogNetIDExpr,
+//     VerilogNetConcatExpr,
+//     VerilogConstantExpr
+// }
 
 /// The port connection such as .port_id(net_id).
 #[derive(Debug)]
@@ -395,10 +380,7 @@ impl VerilogPortRefPortConnect {
         port_id: Box<dyn VerilogVirtualBaseID>,
         net_expr: Option<Box<dyn VerilogVirtualBaseNetExpr>>,
     ) -> VerilogPortRefPortConnect {
-        VerilogPortRefPortConnect {
-            port_id: port_id,
-            net_expr: net_expr,
-        }
+        VerilogPortRefPortConnect { port_id: port_id, net_expr: net_expr }
     }
 
     pub fn get_port_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
@@ -446,7 +428,7 @@ pub struct VerilogStmt {
 
 impl VerilogStmt {
     fn new(line_no: usize) -> VerilogStmt {
-        VerilogStmt{ line_no: line_no }
+        VerilogStmt { line_no: line_no }
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -457,7 +439,7 @@ impl VerilogStmt {
 #[derive(Debug)]
 #[derive(Clone)]
 pub struct VerilogInst {
-    stmt: VerilogStmt,  //stmt denote line_no 
+    stmt: VerilogStmt, //stmt denote line_no
     inst_name: String,
     cell_name: String,
     port_connections: Vec<Box<VerilogPortRefPortConnect>>,
@@ -465,14 +447,14 @@ pub struct VerilogInst {
 
 impl VerilogInst {
     pub fn new(
-        line_no: usize,  
+        line_no: usize,
         inst_name: &str,
         cell_name: &str,
-        port_connections: Vec<Box<VerilogPortRefPortConnect>>, 
+        port_connections: Vec<Box<VerilogPortRefPortConnect>>,
     ) -> VerilogInst {
         VerilogInst {
-            stmt: VerilogStmt::new(line_no),  
-            inst_name: inst_name.to_string(),          // add for other to do 
+            stmt: VerilogStmt::new(line_no),
+            inst_name: inst_name.to_string(), // add for other to do
             cell_name: cell_name.to_string(),
             port_connections: port_connections,
         }
@@ -497,14 +479,19 @@ impl VerilogInst {
     pub fn set_inst_name(&mut self, new_inst_name: &str) {
         self.inst_name = new_inst_name.to_string();
     }
-   
-    fn get_concat_connect_net(&self, parent_module: &Rc<RefCell<VerilogModule>>, port_bus_wide_range: Option<(i32, i32)>,
-    port_concat_connect_net:&mut VerilogNetConcatExpr, port_index: i32)-> Box<dyn VerilogVirtualBaseNetExpr> {
+
+    fn get_concat_connect_net(
+        &self,
+        parent_module: &Rc<RefCell<VerilogModule>>,
+        port_bus_wide_range: Option<(i32, i32)>,
+        port_concat_connect_net: &VerilogNetConcatExpr,
+        port_index: i32,
+    ) -> Box<dyn VerilogVirtualBaseNetExpr> {
         let concat_expr_nets = port_concat_connect_net.get_verilog_id_concat();
         assert!(port_bus_wide_range.is_some(), "Fatal error: port_bus_wide_range is None");
 
         let bus_range_min = std::cmp::min(port_bus_wide_range.unwrap().0, port_bus_wide_range.unwrap().1);
-         // bus_range_max is the bus max beyond range.
+        // bus_range_max is the bus max beyond range.
         let mut bus_range_max = std::cmp::max(port_bus_wide_range.unwrap().0, port_bus_wide_range.unwrap().1) + 1;
 
         let mut net_index: Option<i32> = None;
@@ -521,198 +508,242 @@ impl VerilogInst {
                 while (from > to && j >= to) || (from <= to && j <= to) {
                     bus_range_max -= 1;
                     if bus_range_max == port_index {
-                       net_index = j;
-                       break;
+                        net_index = Some(j);
+                        break;
                     }
                     if from > to {
-                      j -= 1;
+                        j -= 1;
                     } else {
-                      j += 1;
+                        j += 1;
                     }
                 }
             } else {
-                let stmt = VerilogModule::find_dcls_stmt(parent_module, expr_net.get_verilog_id().getBaseName());
+                let borrowed_parent_module = parent_module.borrow();
+                let stmt = borrowed_parent_module.find_dcls_stmt(expr_net.get_verilog_id().get_base_name());
                 if !stmt.is_some() {
                     println!("not found dcl stmt {}", expr_net.get_verilog_id().get_base_name());
                 }
                 if stmt.is_some() {
-                    if stmt.is_verilog_dcls_stmt() {
-                        let verilog_dcls_stmt = stmt.as_any().downcast_ref::<VerilogDcls>().unwrap();
+                    if stmt.unwrap().is_verilog_dcls_stmt() {
+                        let verilog_dcls_stmt = stmt.unwrap().as_any().downcast_ref::<VerilogDcls>().unwrap();
                         for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
-                            if Str::equal(verilog_dcl.get_dcl_name(), net_base_name) {
-                               let range = verilog_dcl.get_range();
-                               if let Some(range) = range {
-                                let mut j = range.0;
-                                while (range.0 > range.1 && j >= range.1) || (range.0 <= range.1 && j <= range.1) {
+                            if verilog_dcl.get_dcl_name().eq(expr_net.get_verilog_id().get_base_name()) {
+                                let range = verilog_dcl.get_range();
+                                if let Some(range) = range {
+                                    let mut j = range.0;
+                                    while (range.0 > range.1 && j >= range.1) || (range.0 <= range.1 && j <= range.1) {
+                                        bus_range_max -= 1;
+                                        if bus_range_max == port_index {
+                                            net_index = Some(j);
+                                            break;
+                                        }
+                                        if range.0 > range.1 {
+                                            j -= 1;
+                                        } else {
+                                            j += 1;
+                                        }
+                                    }
+                                } else {
                                     bus_range_max -= 1;
-                                    if bus_range_max == port_index {
-                                        net_index = j;
-                                        break;
-                                    }
-                                    if range.0 > range.1 {
-                                        j -= 1;
-                                    } else {
-                                        j += 1;
-                                    }
                                 }
-                               } else {
-                                 bus_range_max -= 1;
-                               }
-                               break;
+                                break;
                             }
-                        } 
+                        }
                     } else {
                         bus_range_max -= 1;
                     }
                 } else {
                     bus_range_max -= 1;
-                }     
+                }
             }
 
             if bus_range_max == port_index {
-                connect_net_expr = Some(expr_net);
-                return;
+                connect_net_expr = Some(expr_net.clone());
+                break;
             } else if bus_range_max < bus_range_min {
                 // should not beyond bus range min.
-                return;
+                break;
             }
         }
-                    
+
         if connect_net_expr.is_none() {
             panic!("not found connect net.");
         }
 
         if let Some(net_index) = net_index {
             let connect_net_id = connect_net_expr.as_ref().unwrap().get_verilog_id();
-            let index_verilog_id = verilog_data::VerilogIndexID::new(connect_net_id.get_base_name(), net_index);
-            let dyn_index_verilog_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(index_verilog_id);
-            let net_id_expr = verilog_data::VerilogNetIDExpr::new(0, dyn_index_verilog_id);
-            let dyn_net_id_expr:Box<dyn verilog_data::VerilogVirtualBaseNetExpr> = Box::new(net_id_expr);
-            return Some(dyn_net_id_expr);
+            let index_verilog_id = VerilogIndexID::new(connect_net_id.get_base_name(), net_index);
+            let dyn_index_verilog_id: Box<dyn VerilogVirtualBaseID> = Box::new(index_verilog_id);
+            let net_id_expr = VerilogNetIDExpr::new(0, dyn_index_verilog_id);
+            let dyn_net_id_expr: Box<dyn VerilogVirtualBaseNetExpr> = Box::new(net_id_expr);
+            dyn_net_id_expr
         } else {
-            return Some(connect_net_expr.as_ref().unwrap().clone());
+            connect_net_expr.as_ref().unwrap().clone()
         }
     }
 
-    fn get_dcl_range(&self,dcls_stmt: Box<dyn VerilogVirtualBaseStmt>,dcl_name: &str) -> Option<(i32, i32)> {
-       let mut range: Option<(i32, i32)> = None;
-       
-       if dcls_stmt.is_verilog_dcls_stmt() {
-          if let Some(verilog_dcls_stmt) = dcls_stmt.as_any().downcast_ref::<verilog_data::VerilogDcls>() {
-            for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
-                if Str::equal(verilog_dcl.get_dcl_name(), net_base_name) {
-                     range = verilog_dcl.get_range();
-                     break;
+    fn get_dcl_range(&self, dcls_stmt: &Box<dyn VerilogVirtualBaseStmt>, dcl_name: &str) -> Option<(i32, i32)> {
+        let mut range: Option<(i32, i32)> = None;
+
+        if dcls_stmt.is_verilog_dcls_stmt() {
+            if let Some(verilog_dcls_stmt) = dcls_stmt.as_any().downcast_ref::<VerilogDcls>() {
+                for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
+                    if verilog_dcl.get_dcl_name().eq(dcl_name) {
+                        range = *verilog_dcl.get_range();
+                        break;
+                    }
                 }
             }
-           }
         }
         return range;
     }
 
-    pub fn get_port_connect_net(&self,cur_module: &Rc<RefCell<verilog_data::VerilogModule>>, 
-        parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,port_id: Box<dyn verilog_data::VerilogVirtualBaseID>,
-        port_bus_wide_range: Option<(i32, i32)>,) -> Box<dyn verilog_data::VerilogVirtualBaseNetExpr> {
-
+    pub fn get_port_connect_net(
+        &self,
+        cur_module: &Rc<RefCell<VerilogModule>>,
+        parent_module: &Rc<RefCell<VerilogModule>>,
+        port_id: Box<dyn VerilogVirtualBaseID>,
+        port_bus_wide_range: Option<(i32, i32)>,
+    ) -> Box<dyn VerilogVirtualBaseNetExpr> {
         // process the inst connection below.
-        let port_connect_net: Box<dyn verilog_data::VerilogVirtualBaseNetExpr>;
+        let port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
+        let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = port_connect_net_option.unwrap();
         for port_connection in &self.port_connections {
             if port_connection.get_port_id().get_name() == port_id.get_base_name() {
                 if let Some(net_expr) = port_connection.get_net_expr().clone() {
                     port_connect_net = net_expr;
-                    if VerilogVirtualBaseNetExpr::is_id_expr(port_connect_net) {
+                    if port_connect_net.is_id_expr() {
                         // is not concat expr.
-                        // port_id.is_bus_index_id() the call way is correct?????????? should change to the call way.
-                        if VerilogVirtualBaseID::is_bus_index_id(port_id) || 
-                           VerilogVirtualBaseID::is_bus_slice_id(port_id) {
-                             // find port range first
-                             let port_dcls_stmt = VerilogModule::find_dcls_stmt(cur_module, port_id.get_base_name()).unwrap();
-                             let port_range = get_dcl_range(&self, port_dcls_stmt, port_id.get_base_name());
-                             port_range.expect("port_range is None");
+                        if port_id.is_bus_index_id() || port_id.is_bus_slice_id() {
+                            // find port range first
+                            let borrowed_cur_module = cur_module.borrow();
+                            let port_dcls_stmt = borrowed_cur_module.find_dcls_stmt(port_id.get_base_name()).unwrap();
+                            let port_range = self.get_dcl_range(port_dcls_stmt, port_id.get_base_name());
+                            port_range.expect("port_range is None");
 
-                             if VerilogVirtualBaseID::is_bus_index_id(port_id) {
-                                if VerilogVirtualBaseID::is_bus_slice_id(port_connect_net.get_verilog_id()) {
-                                   let port_connect_net_slice_id = port_connect_net.get_verilog_id().as_any().downcast_ref::<verilog_data::VerilogSliceID>().unwrap();
-                                   let mut index_gap = (port_id.as_any().downcast_ref::<verilog_data::VerilogIndexID>().unwrap().get_index() - port_range.unwrap().0).abs();
-                                   if port_connect_net_slice_id.get_range_from() > port_connect_net_slice_id.get_range_to() {
-                                       index_gap = -index_gap;
-                                   }
-                                   let new_port_connect_port_id = verilog_data::VerilogIndexID::new(ort_connect_net_slice_id.get_base_name(), 
-                                   port_connect_net_slice_id.get_range_from()+index_gap);
-                                   let dyn_new_port_connect_port_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(new_port_connect_port_id);
-                                   let port_connect_net_struct = port_connect_net.as_any().downcast_ref::<verilog_data::VerilogNetIDExpr>().unwrap();
-                                   port_connect_net_struct.set_verilog_id(dyn_new_port_connect_port_id);
-                                   port_connect_net = Box::new(port_connect_net_struct);
-                                } else if !VerilogVirtualBaseID::is_bus_index_id(port_connect_net.get_verilog_id()) {
-                                   let port_connect_name = port_connect_net.get_verilog_id().get_base_name();
-                                   let port_connect_net_dcl_stmt = VerilogModule::find_dcls_stmt(parent_module, port_connect_name).unwrap();
-                                   let port_connect_net_range = get_dcl_range(&self, port_connect_net_dcl_stmt, port_connect_name);
-                                   let port_index = port_id.as_any().downcast_ref::<verilog_data::VerilogIndexID>().unwrap().get_index();
-                                   let mut index_gap = (port_index - port_range.first).abs();
-                                   if port_connect_net_range.unwrap().0 > port_connect_net_range.unwrap().1  {
-                                      index_gap = -index_gap;
-                                   }
-                                   let dyn_port_connect_port_id : Box<dyn verilog_data::VerilogVirtualBaseID> = if let Some(range) = port_connect_net_range {
-                                       Box::new(verilog_data::VerilogIndexID::new(port_connect_name, range.unwrap().0 + index_gap))
-                                   } else {
-                                       Box::new(verilog_data::VerilogID::new(port_connect_name))
-                                   };
-                                   let port_connect_net_struct = port_connect_net.as_any().downcast_ref::<verilog_data::VerilogNetIDExpr>().unwrap();
-                                   port_connect_net_struct.set_verilog_id(dyn_port_connect_port_id);
-                                   port_connect_net = Box::new(port_connect_net_struct);
-                                }  
-                              } else if VerilogVirtualBaseID::is_bus_slice_id(port_id) {
-                                  if VerilogVirtualBaseID::is_bus_slice_id(port_connect_net.get_verilog_id()) {
-                                       let port_connect_net_slice_id = port_connect_net.get_verilog_id().as_any().downcast_ref::<verilog_data::VerilogSliceID>()
-                                       .expect("port connect is not bus.");
-                                       let port_slice_id = port_id.as_any().downcast_ref::<verilog_data::VerilogSliceID>().unwrap();
-                                       port_connect_net_slice_id.set_range_from(port_slice_id.get_range_from());
-                                       port_connect_net_slice_id.set_range_to(port_slice_id.get_range_to());
-                                  } else if !VerilogVirtualBaseID::is_bus_index_id(port_connect_net.get_verilog_id()) {
-                                       let port_slice_id = port_id.as_any().downcast_ref::<verilog_data::VerilogSliceID>().unwrap();
-                                       let new_port_connect_port_id = verilog_data::VerilogSliceID::new(port_connect_net.get_verilog_id().get_base_name(), 
-                                       port_slice_id.get_range_from(), port_slice_id.get_range_to());
-                                       let port_connect_net_struct = port_connect_net.as_any().downcast_ref::<verilog_data::VerilogNetIDExpr>().unwrap();
-                                       port_connect_net_struct.set_verilog_id(new_port_connect_port_id);
-                                       port_connect_net = Box::new(port_connect_net_struct);
-                                  }
-                              }
-
-                           } else {
-                            if port_bus_wide_range.is_some() {
-
+                            if port_id.is_bus_index_id() {
+                                if port_connect_net.get_verilog_id().is_bus_slice_id() {
+                                    let port_connect_net_slice_id = port_connect_net
+                                        .get_verilog_id()
+                                        .as_any()
+                                        .downcast_ref::<VerilogSliceID>()
+                                        .unwrap();
+                                    let mut index_gap =
+                                        (port_id.as_any().downcast_ref::<VerilogIndexID>().unwrap().get_index()
+                                            - port_range.unwrap().0)
+                                            .abs();
+                                    if port_connect_net_slice_id.get_range_from()
+                                        > port_connect_net_slice_id.get_range_to()
+                                    {
+                                        index_gap = -index_gap;
+                                    }
+                                    let new_port_connect_port_id = VerilogIndexID::new(
+                                        port_connect_net_slice_id.get_base_name(),
+                                        port_connect_net_slice_id.get_range_from() + index_gap,
+                                    );
+                                    let dyn_new_port_connect_port_id: Box<dyn VerilogVirtualBaseID> =
+                                        Box::new(new_port_connect_port_id);
+                                    let port_connect_net_struct =
+                                        port_connect_net.as_any().downcast_ref::<VerilogNetIDExpr>().unwrap();
+                                    let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
+                                    port_connect_net_struct_clone.set_verilog_id(dyn_new_port_connect_port_id);
+                                    port_connect_net = Box::new(port_connect_net_struct_clone);
+                                } else if !port_connect_net.get_verilog_id().is_bus_index_id() {
+                                    let port_connect_name = port_connect_net.get_verilog_id().get_base_name();
+                                    let borrowed_parent_module = parent_module.borrow();
+                                    let port_connect_net_dcl_stmt =
+                                        borrowed_parent_module.find_dcls_stmt(port_connect_name).unwrap();
+                                    let port_connect_net_range =
+                                        self.get_dcl_range(port_connect_net_dcl_stmt, port_connect_name);
+                                    let port_index =
+                                        port_id.as_any().downcast_ref::<VerilogIndexID>().unwrap().get_index();
+                                    let mut index_gap = (port_index - port_range.unwrap().0).abs();
+                                    if port_connect_net_range.unwrap().0 > port_connect_net_range.unwrap().1 {
+                                        index_gap = -index_gap;
+                                    }
+                                    let dyn_port_connect_port_id: Box<dyn VerilogVirtualBaseID> =
+                                        if let Some(range) = port_connect_net_range {
+                                            Box::new(VerilogIndexID::new(port_connect_name, range.0 + index_gap))
+                                        } else {
+                                            Box::new(VerilogID::new(port_connect_name))
+                                        };
+                                    let port_connect_net_struct =
+                                        port_connect_net.as_any().downcast_ref::<VerilogNetIDExpr>().unwrap();
+                                    let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
+                                    port_connect_net_struct_clone.set_verilog_id(dyn_port_connect_port_id);
+                                    port_connect_net = Box::new(port_connect_net_struct_clone);
+                                }
+                            } else if port_id.is_bus_slice_id() {
+                                if port_connect_net.get_verilog_id().is_bus_slice_id() {
+                                    let mut port_connect_net_slice_id = port_connect_net
+                                        .get_verilog_id()
+                                        .as_any()
+                                        .downcast_ref::<VerilogSliceID>()
+                                        .expect("port connect is not bus.");
+                                    let port_slice_id = port_id.as_any().downcast_ref::<VerilogSliceID>().unwrap();
+                                    let mut port_connect_net_slice_id_clone = port_connect_net_slice_id.clone();
+                                    port_connect_net_slice_id_clone.set_range_from(port_slice_id.get_range_from());
+                                    port_connect_net_slice_id_clone.set_range_to(port_slice_id.get_range_to());
+                                    port_connect_net_slice_id = &port_connect_net_slice_id_clone;
+                                } else if !port_connect_net.get_verilog_id().is_bus_index_id() {
+                                    let port_slice_id = port_id.as_any().downcast_ref::<VerilogSliceID>().unwrap();
+                                    let new_port_connect_port_id = VerilogSliceID::new(
+                                        port_connect_net.get_verilog_id().get_base_name(),
+                                        port_slice_id.get_range_from(),
+                                        port_slice_id.get_range_to(),
+                                    );
+                                    let new_dyn_port_connect_port_id = Box::new(new_port_connect_port_id);
+                                    let port_connect_net_struct =
+                                        port_connect_net.as_any().downcast_ref::<VerilogNetIDExpr>().unwrap();
+                                    let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
+                                    port_connect_net_struct_clone.set_verilog_id(new_dyn_port_connect_port_id);
+                                    port_connect_net = Box::new(port_connect_net_struct_clone);
+                                }
                             }
-                           } 
-                     } else if VerilogVirtualBaseNetExpr::is_concat_expr(port_connect_net) {
-                       // should be concat expr.
-                       let port_concat_connect_net = port_connect_net.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
-                       if VerilogVirtualBaseID::is_bus_index_id(port_id) {
-                          let index = port_id.as_any().downcast_ref::<verilog_data::VerilogIndexID>().unwrap().get_index();
-                          let index_port_connect = get_concat_connect_net(&self,parent_module,port_bus_wide_range, port_concat_connect_net, index);
-                          port_connect_net = index_port_connect;
-                       } else if port_id.is_bus_slice_id() {
-                          let port_slice_id = port_id.as_any().downcast_ref::<verilog_data::VerilogSliceID>().unwrap();
-                          let from = port_slice_id.get_range_from();
-                          let to = port_slice_id.get_range_to();
-                          let mut slice_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>> = Vec::new();
-                          let mut index = from;
-                          while (from > to && index >= to) || (from <= to && index <= to) {
-                              let index_port_connect = get_concat_connect_net(&self,parent_module,port_bus_wide_range, port_concat_connect_net, index);
-                              slice_concat.push(index_port_connect);
-                              if from > to {
-                                  index -= 1;
-                              } else {
-                                  index += 1;
-                              }
-                          }
-                          let verilog_net_concat_expr = verilog_data::VerilogNetConcatExpr::new(0,verilog_id_concat);
-                          port_connect_net = Box::new(verilog_net_concat_expr);
-                       }
-                     } else if port_connect_net.is_constant() {
+                        } else {
+                            if port_bus_wide_range.is_some() {}
+                        }
+                    } else if port_connect_net.is_concat_expr() {
+                        // should be concat expr.
+                        let port_concat_connect_net =
+                            port_connect_net.as_any().downcast_ref::<VerilogNetConcatExpr>().unwrap();
+                        if port_id.is_bus_index_id() {
+                            let index = port_id.as_any().downcast_ref::<VerilogIndexID>().unwrap().get_index();
+                            let index_port_connect = self.get_concat_connect_net(
+                                parent_module,
+                                port_bus_wide_range,
+                                port_concat_connect_net,
+                                index,
+                            );
+                            port_connect_net = index_port_connect;
+                        } else if port_id.is_bus_slice_id() {
+                            let port_slice_id = port_id.as_any().downcast_ref::<VerilogSliceID>().unwrap();
+                            let from = port_slice_id.get_range_from();
+                            let to = port_slice_id.get_range_to();
+                            let mut slice_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>> = Vec::new();
+                            let mut index = from;
+                            while (from > to && index >= to) || (from <= to && index <= to) {
+                                let index_port_connect = self.get_concat_connect_net(
+                                    parent_module,
+                                    port_bus_wide_range,
+                                    port_concat_connect_net,
+                                    index,
+                                );
+                                slice_concat.push(index_port_connect);
+                                if from > to {
+                                    index -= 1;
+                                } else {
+                                    index += 1;
+                                }
+                            }
+                            let slice_concat_connect_net = VerilogNetConcatExpr::new(0, slice_concat);
+                            port_connect_net = Box::new(slice_concat_connect_net);
+                        }
+                    } else if port_connect_net.is_constant() {
                         println!("port {} connect net is constant", port_connection.get_port_id().get_name());
-                     } else {
+                    } else {
                         panic!("not support.");
-                     }
+                    }
                 }
                 break;
             }
@@ -732,25 +763,21 @@ impl VerilogVirtualBaseStmt for VerilogInst {
         self
     }
 }
-/// #define FOREACH_VERILOG_PORT_CONNECT(inst, port_connect) for (auto& port_connect : inst->get_port_connections())
+
 #[derive(Debug)]
 pub struct VerilogAssign {
-    stmt: VerilogStmt,  //stmt denote line_no 
+    stmt: VerilogStmt, //stmt denote line_no
     left_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
-    right_net_expr: Box<dyn VerilogVirtualBaseNetExpr>, 
+    right_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
 }
 
 impl VerilogAssign {
     pub fn new(
-        line_no: usize,  
+        line_no: usize,
         left_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
         right_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
     ) -> VerilogAssign {
-        VerilogAssign {
-            stmt: VerilogStmt::new(line_no),  
-            left_net_expr: left_net_expr,
-            right_net_expr: right_net_expr,
-        }
+        VerilogAssign { stmt: VerilogStmt::new(line_no), left_net_expr: left_net_expr, right_net_expr: right_net_expr }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -786,8 +813,8 @@ pub enum DclType {
     KInput = 0,
     KInout = 1,
     KOutput = 2,
-    KSupply0 =3,
-    KSupply1 =4,
+    KSupply0 = 3,
+    KSupply1 = 4,
     KTri = 5,
     KWand = 6,
     KWire = 7,
@@ -798,25 +825,15 @@ pub enum DclType {
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct VerilogDcl {
-    stmt: VerilogStmt,  //stmt denote line_no 
+    stmt: VerilogStmt, //stmt denote line_no
     dcl_type: DclType,
     dcl_name: String,
     range: Option<(i32, i32)>,
 }
 
 impl VerilogDcl {
-    pub fn new(
-        line_no: usize,  
-        dcl_type: DclType,
-        dcl_name: &str,
-        range: Option<(i32, i32)>
-    ) -> VerilogDcl {
-        VerilogDcl {
-            stmt: VerilogStmt::new(line_no),  
-            dcl_type: dcl_type,
-            dcl_name: dcl_name.to_string(),
-            range: range, 
-        }
+    pub fn new(line_no: usize, dcl_type: DclType, dcl_name: &str, range: Option<(i32, i32)>) -> VerilogDcl {
+        VerilogDcl { stmt: VerilogStmt::new(line_no), dcl_type: dcl_type, dcl_name: dcl_name.to_string(), range: range }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -852,19 +869,13 @@ impl VerilogVirtualBaseStmt for VerilogDcl {
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct VerilogDcls {
-    stmt: VerilogStmt,  //stmt denote line_no 
+    stmt: VerilogStmt, //stmt denote line_no
     verilog_dcls: Vec<Box<VerilogDcl>>,
 }
 
 impl VerilogDcls {
-    pub fn new(
-        line_no: usize,  
-        verilog_dcls: Vec<Box<VerilogDcl>>
-    ) -> VerilogDcls {
-        VerilogDcls {
-            stmt: VerilogStmt::new(line_no),  
-            verilog_dcls: verilog_dcls,
-        }
+    pub fn new(line_no: usize, verilog_dcls: Vec<Box<VerilogDcl>>) -> VerilogDcls {
+        VerilogDcls { stmt: VerilogStmt::new(line_no), verilog_dcls: verilog_dcls }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -905,7 +916,7 @@ pub enum PortDclType {
 
 #[derive(Debug)]
 pub struct VerilogModule {
-    stmt: VerilogStmt,  //stmt denote line_no 
+    stmt: VerilogStmt, //stmt denote line_no
     module_name: String,
     port_list: Vec<Box<dyn VerilogVirtualBaseID>>,
     module_stmts: Vec<Box<dyn VerilogVirtualBaseStmt>>,
@@ -914,13 +925,13 @@ pub struct VerilogModule {
 ///The verilog module class.
 impl VerilogModule {
     pub fn new(
-        line_no: usize,  
+        line_no: usize,
         module_name: &str,
         port_list: Vec<Box<dyn VerilogVirtualBaseID>>,
         module_stmts: Vec<Box<dyn VerilogVirtualBaseStmt>>,
     ) -> VerilogModule {
         VerilogModule {
-            stmt: VerilogStmt::new(line_no),  
+            stmt: VerilogStmt::new(line_no),
             module_name: module_name.to_string(),
             port_list: port_list,
             module_stmts: module_stmts,
@@ -949,24 +960,20 @@ impl VerilogModule {
     pub fn add_stmt(&mut self, module_stmt: Box<dyn VerilogVirtualBaseStmt>) {
         self.module_stmts.push(module_stmt);
     }
-    // need check
+
     pub fn find_dcls_stmt(&self, name: &str) -> Option<&Box<dyn VerilogVirtualBaseStmt>> {
-        for stmt in &self.module_stmts {
-            match stmt.as_ref() {
-                Some(verilog_dcls_stmt) if verilog_dcls_stmt.is_verilog_dcls_stmt() => {
-                    let dcls_stmt = verilog_dcls_stmt.as_verilog_dcls_stmt().unwrap();
-                    for verilog_dcl in dcls_stmt.get_verilog_dcls() {
-                        if Str::equal(verilog_dcl.get_dcl_name(), name) {
-                            return Some(stmt);
-                        }
+        for module_stmt in &self.module_stmts {
+            if module_stmt.is_verilog_dcls_stmt() {
+                let dcls_stmt = module_stmt.as_any().downcast_ref::<VerilogDcls>().unwrap();
+                for verilog_dcl in dcls_stmt.get_verilog_dcls() {
+                    if verilog_dcl.get_dcl_name().eq(name) {
+                        return Some(module_stmt);
                     }
                 }
-                _ => {}
             }
         }
         None
     }
-    
 }
 
 impl VerilogVirtualBaseStmt for VerilogModule {
@@ -984,20 +991,19 @@ impl VerilogVirtualBaseStmt for VerilogModule {
 pub struct VerilogFile {
     verilog_modules: Vec<Rc<RefCell<VerilogModule>>>,
     module_map: HashMap<String, Rc<RefCell<VerilogModule>>>,
-    top_module_name: String
+    top_module_name: String,
 }
-
 
 impl VerilogFile {
     pub fn new(top_module_name: &str) -> VerilogFile {
         VerilogFile {
             verilog_modules: Vec::new(),
             module_map: HashMap::new(),
-            top_module_name: String::from(top_module_name)
+            top_module_name: String::from(top_module_name),
         }
     }
 
-    pub fn add_module(&mut self, verilog_module : Rc<RefCell<VerilogModule>>) {
+    pub fn add_module(&mut self, verilog_module: Rc<RefCell<VerilogModule>>) {
         let module_name = String::from(verilog_module.borrow().get_module_name());
         self.verilog_modules.push(verilog_module.clone());
         self.module_map.insert(module_name, verilog_module.clone());
@@ -1011,15 +1017,11 @@ impl VerilogFile {
         &mut self.module_map
     }
 
-    pub fn get_module(&mut self, module_name:&str) -> Option<&mut Rc<RefCell<VerilogModule>>> {
+    pub fn get_module(&mut self, module_name: &str) -> Option<&mut Rc<RefCell<VerilogModule>>> {
         self.module_map.get_mut(module_name)
     }
 
     pub fn get_top_module(&mut self) -> &Rc<RefCell<VerilogModule>> {
         self.module_map.get(&self.top_module_name).unwrap()
     }
-
-    
 }
-
-
