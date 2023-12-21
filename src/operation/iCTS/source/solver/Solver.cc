@@ -107,10 +107,12 @@ void Solver::resolveSinks()
   }
   // if (TimingPropagator::calcLen(_driver, root_driver_pin) + root_driver_pin->get_sub_len() <= TimingPropagator::getMaxLength()) {
   auto load_pins = root_net->get_load_pins();
-  std::ranges::for_each(load_pins, [](Pin* pin) {
-    auto* inst = pin->get_inst();
-    inst->set_cell_master(TimingPropagator::getRootSizeCell());
-  });
+  if (!_root_buffer_required && _inherit_root) {
+    std::ranges::for_each(load_pins, [](Pin* pin) {
+      auto* inst = pin->get_inst();
+      inst->set_cell_master(TimingPropagator::getRootSizeCell());
+    });
+  }
   auto net_name = root_net->get_name();
   _nets.erase(std::remove_if(_nets.begin(), _nets.end(), [&](Net* net) { return net == root_net; }), _nets.end());
   TimingPropagator::resetNet(root_net);
@@ -346,6 +348,8 @@ Inst* Solver::netAssign(const std::vector<Inst*>& insts, const Assign& assign, c
   auto* driver_pin = buffer->get_driver_pin();
   auto* cbs_net = TimingPropagator::genNet(net_name, driver_pin, cluster_load_pins);
   buffer->set_cell_master(TimingPropagator::getMinSizeCell());
+  TreeBuilder::iterativeFixSkew(cbs_net, skew_bound, guide_loc);
+  TreeBuilder::iterativeFixSkew(cbs_net, skew_bound, guide_loc);
   TimingPropagator::update(cbs_net);
   _nets.push_back(cbs_net);
   return buffer;

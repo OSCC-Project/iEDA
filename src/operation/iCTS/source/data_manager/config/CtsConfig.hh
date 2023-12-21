@@ -78,6 +78,7 @@ class CtsConfig
   std::vector<std::string> get_buffer_types() const { return _buffer_types; }
   std::string get_root_buffer_type() const { return _root_buffer_type; }
   bool is_root_buffer_required() const { return _root_buffer_required; }
+  bool is_inherit_root() const { return _inherit_root; }
   bool is_break_long_wire() const { return _break_long_wire; }
   // level constraint
   std::vector<double> get_level_max_length() const { return _level_max_length; }
@@ -118,6 +119,7 @@ class CtsConfig
   void set_buffer_types(const std::vector<std::string>& types) { _buffer_types = types; }
   void set_root_buffer_type(const std::string& type) { _root_buffer_type = type; }
   void set_root_buffer_required(const bool& required) { _root_buffer_required = required; }
+  void set_inherit_root(const bool& inherit_root) { _inherit_root = inherit_root; }
   void set_break_long_wire(const bool& break_long_wire) { _break_long_wire = break_long_wire; }
   // level constraint
   void set_level_max_length(const std::vector<double>& level_max_length) { _level_max_length = level_max_length; }
@@ -229,6 +231,7 @@ class CtsConfig
   std::vector<std::string> _buffer_types;
   std::string _root_buffer_type;
   bool _root_buffer_required = false;
+  bool _inherit_root = false;
   bool _break_long_wire = false;
   // level constraint
   std::vector<double> _level_max_length;
