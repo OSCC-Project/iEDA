@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#include "IdbLayer.h"
 #include "condition.h"
 #include "condition_connectivity.h"
 #include "idrc_data.h"
@@ -32,7 +33,7 @@ bool DrcRuleConditionConnectivity::checkOverlap()
   auto& engine_layouts = get_engine()->get_engine_manager()->get_engine_layouts(LayoutType::kRouting);
   // layer id : indicate layer
   // engine_layout : all nets shapes in the indicate layer
-  for (auto& [layer_id, engine_layout] : engine_layouts) {
+  for (auto& [layer, engine_layout] : engine_layouts) {
     /// sub_layouts : indicate shapes for all nets in one layer
     auto& sub_layouts = engine_layout->get_sub_layouts();
     /// no overlap in this layer
@@ -50,7 +51,7 @@ bool DrcRuleConditionConnectivity::checkOverlap()
         auto* engine_2 = iter_2->second->get_engine();
         bool b_result_sub = engine_1->checkOverlap(engine_2);
         if (b_result_sub == false) {
-          std::cout << "Check overlap layer_id = " << layer_id << " net id 1= " << iter_1->first << " net id 2= " << iter_2->first
+          std::cout << "Check overlap layer_id = " << layer->get_id() << " net id 1= " << iter_1->first << " net id 2= " << iter_2->first
                     << std::endl;
         }
 

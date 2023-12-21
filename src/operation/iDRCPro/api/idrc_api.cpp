@@ -48,29 +48,30 @@ std::map<std::string, std::vector<BaseViolationInfo>> DrcApi::getEnvViolationInf
                                                                                   const std::vector<DRCCheckType>& check_type_list,
                                                                                   std::vector<BaseShape>& drc_shape_list)
 {
-  DrcManager drc_manager;
-  drc_manager.init();
+  // DrcManager drc_manager;
+  // drc_manager.init();
 
-  auto* data_manager = drc_manager.get_data_manager();
-  auto* rule_manager = drc_manager.get_rule_manager();
-  auto* violation_manager = drc_manager.get_violation_manager();
-  if (data_manager == nullptr || rule_manager == nullptr || violation_manager == nullptr) {
-    return {};
-  }
+  // auto* data_manager = drc_manager.get_data_manager();
+  // auto* rule_manager = drc_manager.get_rule_manager();
+  // auto* violation_manager = drc_manager.get_violation_manager();
+  // if (data_manager == nullptr || rule_manager == nullptr || violation_manager == nullptr) {
+  //   return {};
+  // }
 
-  data_manager->set_region(&base_region);
-  data_manager->set_target_shapes(&drc_shape_list);
-  /// set drc rule stratagy by rt paramter
-  /// tbd
-  rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
+  // data_manager->set_region(&base_region);
+  // data_manager->set_target_shapes(&drc_shape_list);
+  // /// set drc rule stratagy by rt paramter
+  // /// tbd
+  // rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
-  drc_manager.engineStart(DrcCheckerType::kRT);
+  // drc_manager.engineStart(DrcCheckerType::kRT);
 
-  drc_manager.buildCondition();
+  // drc_manager.buildCondition();
 
-  drc_manager.check();
+  // drc_manager.check();
 
-  return violation_manager->get_rt_violation_map();
+  // return violation_manager->get_rt_violation_map();
+  return {};
 }
 /**
  * drc_shape_list组成的自身违例信息，如min_area,min_step
@@ -79,34 +80,35 @@ std::map<std::string, std::vector<BaseViolationInfo>> DrcApi::getEnvViolationInf
 std::map<std::string, std::vector<BaseViolationInfo>> DrcApi::getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
                                                                                    std::vector<BaseShape>& drc_shape_list)
 {
-  DrcManager drc_manager;
-  drc_manager.init();
+  // DrcManager drc_manager;
+  // drc_manager.init();
 
-  auto* data_manager = drc_manager.get_data_manager();
-  auto* rule_manager = drc_manager.get_rule_manager();
-  auto* violation_manager = drc_manager.get_violation_manager();
-  if (data_manager == nullptr || rule_manager == nullptr || violation_manager == nullptr) {
-    return {};
-  }
+  // auto* data_manager = drc_manager.get_data_manager();
+  // auto* rule_manager = drc_manager.get_rule_manager();
+  // auto* violation_manager = drc_manager.get_violation_manager();
+  // if (data_manager == nullptr || rule_manager == nullptr || violation_manager == nullptr) {
+  //   return {};
+  // }
 
-  data_manager->set_target_shapes(&drc_shape_list);
-  /// set drc rule stratagy by rt paramter
-  /// tbd
-  rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
+  // data_manager->set_target_shapes(&drc_shape_list);
+  // /// set drc rule stratagy by rt paramter
+  // /// tbd
+  // rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
-  drc_manager.engineStart(DrcCheckerType::kRT);
+  // drc_manager.engineStart(DrcCheckerType::kRT);
 
-  drc_manager.buildCondition();
+  // drc_manager.buildCondition();
 
-  drc_manager.check();
+  // drc_manager.check();
 
-  return violation_manager->get_rt_violation_map();
+  // return violation_manager->get_rt_violation_map();
+  return {};
 }
 /**
  * check DRC violation for DEF file
  * initialize data from idb
  */
-std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef(std::map<int, std::vector<idb::IdbRegularWireSegment*>>&& idb_data)
 {
   DrcManager drc_manager;
 
@@ -121,7 +123,9 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
   /// tbd
   rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
-  drc_manager.engineStart(DrcCheckerType::kDef);
+  data_manager->set_idb_data(&idb_data);
+
+  drc_manager.engineStart(idb_data.size() > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
 
   drc_manager.buildCondition();
 

@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include <map>
 #include <vector>
 
 namespace irt {
@@ -23,22 +24,32 @@ class BaseRegion;
 class BaseShape;
 }  // namespace irt
 
+namespace idb {
+class IdbRegularWireSegment;
+}  // namespace idb
+
 namespace idrc {
+
 class DrcDataManager
 {
  public:
   DrcDataManager();
   ~DrcDataManager();
 
-  irt::BaseRegion* get_region() { return _region; }
-  void set_region(irt::BaseRegion* region) { _region = region; }
+  // irt::BaseRegion* get_region() { return _region; }
+  // void set_region(irt::BaseRegion* region) { _region = region; }
 
-  std::vector<irt::BaseShape>* get_target_shapes() { return _shapes; }
-  void set_target_shapes(std::vector<irt::BaseShape>* shapes) { _shapes = shapes; }
+  // std::vector<irt::BaseShape>* get_target_shapes() { return _shapes; }
+  // void set_target_shapes(std::vector<irt::BaseShape>* shapes) { _shapes = shapes; }
+
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* get_idb_data() { return _idb_data; }
+  void set_idb_data(std::map<int, std::vector<idb::IdbRegularWireSegment*>>* idb_data) { _idb_data = idb_data; }
+
  private:
   // data from rt
-  irt::BaseRegion* _region = nullptr;
-  std::vector<irt::BaseShape>* _shapes = nullptr;
+  // irt::BaseRegion* _region = nullptr;
+  // std::vector<irt::BaseShape>* _shapes = nullptr;
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* _idb_data;
 };
 
 }  // namespace idrc

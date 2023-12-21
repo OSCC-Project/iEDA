@@ -50,7 +50,7 @@ void DrcRuleBuilder::initRoutingLayerRules()
 
     /// create rule layer
     ConditionRuleLayer* rule_layer = new ConditionRuleLayer();
-    rule_routing_layers[idb_routing_layer->get_id()] = rule_layer;
+    rule_routing_layers[idb_routing_layer] = rule_layer;
 
     buildRoutingLayerArea(rule_layer, idb_routing_layer);
     buildRoutingLayerSpacing(rule_layer, idb_routing_layer);
@@ -199,8 +199,6 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
 
   /// set rule map to layer
   rule_layer->set_condition(RuleType::kSpacing, static_cast<RulesConditionMap*>(rule_map));
-
-  int a = 0;
 }
 
 /**

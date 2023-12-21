@@ -17,6 +17,7 @@
 
 #include "condition_spacing.h"
 
+#include "IdbLayer.h"
 #include "condition.h"
 #include "omp.h"
 #include "rule_enum.h"
@@ -38,8 +39,8 @@ bool DrcRuleConditionSpacing::checkFastMode()
   std::vector<std::pair<int, int>> vio_min_spacings;
   //   for (auto& [type, scanline_map] : engine_manager->get_scanline_matrix()) {
   auto& scanline_map = engine_manager->get_engine_scanlines(LayoutType::kRouting);
-  for (auto& [layer_id, scanline_engine] : scanline_map) {
-    if (layer_id == 0) {
+  for (auto& [layer, scanline_engine] : scanline_map) {
+    if (layer->get_id() == 0) {
       continue;
     }
     auto* scanline_dm = scanline_engine->get_data_manager();

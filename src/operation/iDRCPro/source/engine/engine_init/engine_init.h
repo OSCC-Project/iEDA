@@ -18,8 +18,6 @@
 
 #include <stdint.h>
 
-#include "engine_init.h"
-
 /**
  * check geometry overlap method
  */
@@ -30,33 +28,40 @@ class IdbPin;
 class IdbVia;
 class IdbRect;
 class IdbNet;
+class IdbLayer;
+class IdbRegularWireSegment;
 template <typename T>
 class IdbCoordinate;
 }  // namespace idb
 
 namespace idrc {
 
-#define NET_ID_ENVIRONMENT -1
-#define NET_ID_OBS -2
-// #define NET_ID_POWER -3
-// #define NET_ID_GROUND -4
-
 class DrcEngineManager;
+class DrcDataManager;
 enum class LayoutType;
 
-class DrcEngineInitDef : DrcEngineInit
+class DrcEngineInit
 {
  public:
-  DrcEngineInitDef(DrcEngineManager* engine_manager) : DrcEngineInit(engine_manager) {}
-  ~DrcEngineInitDef() {}
+  DrcEngineInit(DrcEngineManager* engine_manager = nullptr, DrcDataManager* data_manager = nullptr)
+      : _engine_manager(engine_manager), _data_manager(data_manager)
+  {
+  }
+  ~DrcEngineInit() {}
 
-  void init();
+  virtual void init() = 0;
 
- private:
-  void initDataFromIOPins();
-  void initDataFromInstances();
-  void initDataFromPDN();
-  void initDataFromNets();
+ protected:
+  DrcEngineManager* _engine_manager = nullptr;
+  DrcDataManager* _data_manager = nullptr;
+
+  void initDataFromShape(idb::IdbLayerShape* idb_shape, int net_id = -1);
+  void initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::IdbCoordinate<int>* point_2, int routing_width, idb::IdbLayer* layer,
+                          int net_id = -1, bool b_pdn = false);
+  void initDataFromRect(idb::IdbRect* rect, LayoutType type, idb::IdbLayer* layer, int net_id = -1);
+  void initDataFromPin(idb::IdbPin* idb_pin, int default_id = -1);
+  void initDataFromVia(idb::IdbVia* idb_via, int net_id = -1);
+  void initDataFromNet(idb::IdbNet* idb_net);
 };
 
 }  // namespace idrc
