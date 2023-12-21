@@ -19,9 +19,9 @@
 
 namespace idrc {
 
-DrcEngineScanline::DrcEngineScanline(int layer_id)
+DrcEngineScanline::DrcEngineScanline(idb::IdbLayer* layer)
 {
-  _data_manager = new ScanlineDataManager(layer_id);
+  _data_manager = new ScanlineDataManager(layer);
 }
 
 DrcEngineScanline::~DrcEngineScanline()

@@ -76,7 +76,6 @@ class GDSPlotter
   void addAccessPointList(GPStruct& pin_struct, Pin& pin);
   void addBoundingBox(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box);
   void addGuideSegNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<GuideSegNode>& node_tree);
-  void addPhysicalNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PhysicalNode>& node_tree);
   void addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list);
   void addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bounding_box, GridMap<double>& cost_map);
   void plotGDS(GPGDS& gp_gds, std::string gds_file_path, bool add_layout, bool need_clipping);

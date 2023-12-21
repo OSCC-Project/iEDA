@@ -113,6 +113,7 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void applyPatch(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
+  std::vector<Violation> getViolationListByIDRC(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);

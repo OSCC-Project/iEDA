@@ -47,8 +47,8 @@ bool DrcRuleConditionArea::checkMinArea()
 
   /// check routing layer
   auto& engine_layouts = get_engine()->get_engine_manager()->get_engine_layouts(LayoutType::kRouting);
-  for (auto [layer_id, engine_layout] : engine_layouts) {
-    auto* rule_layer = DrcTechRuleInst->get_rule_routing_layer(layer_id);
+  for (auto [layer, engine_layout] : engine_layouts) {
+    auto* rule_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
     auto* area_rule_map = rule_layer->get_condition_map(RuleType::kArea);
 
     int64_t min_area = area_rule_map->get_default();

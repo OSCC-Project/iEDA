@@ -6,7 +6,6 @@ add_subdirectory(${IRT_MODULE}/global_router)
 add_subdirectory(${IRT_MODULE}/pin_accessor)
 add_subdirectory(${IRT_MODULE}/resource_allocator)
 add_subdirectory(${IRT_MODULE}/track_assigner)
-add_subdirectory(${IRT_MODULE}/violation_repairer)
 
 add_library(irt_module INTERFACE)
 

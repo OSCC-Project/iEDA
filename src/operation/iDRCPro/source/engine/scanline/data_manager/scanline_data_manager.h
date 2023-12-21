@@ -27,15 +27,19 @@ enum class ScanlineTravelDirection
   kHorizontal
 };
 
+namespace idb {
+class IdbLayer;
+}  // namespace idb
+
 namespace idrc {
 
 class ScanlineDataManager
 {
  public:
-  ScanlineDataManager(int layer_id) : _layer_id(layer_id) {}
+  ScanlineDataManager(idb::IdbLayer* layer) : _layer(layer) {}
   ~ScanlineDataManager();
 
-  int get_layer_id() { return _layer_id; }
+  idb::IdbLayer* get_layer() { return _layer; }
 
   void addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id);
   void addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id);
@@ -91,7 +95,7 @@ class ScanlineDataManager
   void addBasicPoint(DrcBasicPoint* point) { _basic_points.push_back(point); };
 
  private:
-  int _layer_id = -1;
+  idb::IdbLayer* _layer = nullptr;
 
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;

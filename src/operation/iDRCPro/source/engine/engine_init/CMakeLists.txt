@@ -1,4 +1,5 @@
 add_library(idrc_engine_init
+engine_init.cpp
 engine_init_def.cpp
 engine_init_rt.cpp
 engine_init_scanline.cpp

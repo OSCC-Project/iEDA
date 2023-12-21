@@ -29,6 +29,10 @@
 
 using namespace irt;
 
+namespace idb {
+class IdbRegularWireSegment;
+}  // namespace idb
+
 namespace idrc {
 class DrcManager;
 
@@ -46,7 +50,7 @@ class DrcApi
   std::map<std::string, std::vector<BaseViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
                                                                              std::vector<BaseShape>& drc_shape_list);
 
-  std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef();
+  std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef(std::map<int, std::vector<idb::IdbRegularWireSegment*>>&& idb_data = {});
 
  private:
 };

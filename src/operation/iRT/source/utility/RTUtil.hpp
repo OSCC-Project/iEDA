@@ -1052,19 +1052,19 @@ class RTUtil
 #if 1  // 与GCell有关的计算
 
   // 如果与边缘相交，则取内的，不取边缘上
-  static PlanarRect getOpenGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
+  static PlanarRect getOpenGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
     std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
 
     irt_int real_lb_x = real_rect.get_lb_x();
     irt_int real_rt_x = real_rect.get_rt_x();
 
-    irt_int grid_lb_x = getGridLB(real_lb_x, x_grid_list);
+    irt_int grid_lb_x = getGCellGridLB(real_lb_x, x_grid_list);
     irt_int grid_rt_x = 0;
     if (real_lb_x == real_rt_x) {
       grid_rt_x = grid_lb_x;
     } else {
-      grid_rt_x = getGridRT(real_rt_x, x_grid_list);
+      grid_rt_x = getGCellGridRT(real_rt_x, x_grid_list);
     }
 
     std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
@@ -1072,12 +1072,12 @@ class RTUtil
     irt_int real_lb_y = real_rect.get_lb_y();
     irt_int real_rt_y = real_rect.get_rt_y();
 
-    irt_int grid_lb_y = getGridLB(real_lb_y, y_grid_list);
+    irt_int grid_lb_y = getGCellGridLB(real_lb_y, y_grid_list);
     irt_int grid_rt_y = 0;
     if (real_lb_y == real_rt_y) {
       grid_rt_y = grid_lb_y;
     } else {
-      grid_rt_y = getGridRT(real_rt_y, y_grid_list);
+      grid_rt_y = getGCellGridRT(real_rt_y, y_grid_list);
     }
 
     PlanarRect grid_rect;
@@ -1087,18 +1087,18 @@ class RTUtil
   }
 
   // 能取到边缘上
-  static PlanarRect getClosedGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
+  static PlanarRect getClosedGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
     irt_int min_x = gcell_axis.get_x_grid_list().front().get_start_line();
     irt_int max_x = gcell_axis.get_x_grid_list().back().get_end_line();
     irt_int min_y = gcell_axis.get_y_grid_list().front().get_start_line();
     irt_int max_y = gcell_axis.get_y_grid_list().back().get_end_line();
     PlanarRect new_rect = getEnlargedRect(real_rect, 1, PlanarRect(min_x, min_y, max_x, max_y));
-    return getOpenGridRect(new_rect, gcell_axis);
+    return getOpenGCellGridRect(new_rect, gcell_axis);
   }
 
   // 能取到边缘上
-  static PlanarRect getClosedGridRect(const Segment<LayerCoord>& real_segment, ScaleAxis& gcell_axis)
+  static PlanarRect getClosedGCellGridRect(const Segment<LayerCoord>& real_segment, ScaleAxis& gcell_axis)
   {
     irt_int lb_x = real_segment.get_first().get_x();
     irt_int lb_y = real_segment.get_first().get_y();
@@ -1108,19 +1108,20 @@ class RTUtil
     swapByASC(lb_x, rt_x);
     swapByASC(lb_y, rt_y);
     PlanarRect real_rect(lb_x, lb_y, rt_x, rt_y);
-    return getClosedGridRect(real_rect, gcell_axis);
+    return getClosedGCellGridRect(real_rect, gcell_axis);
   }
 
-  static PlanarCoord getGridCoord(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
+  static PlanarCoord getGCellGridCoord(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
   {
-    return PlanarCoord((real_coord.get_x() == bounding_box.get_real_rt_x() ? bounding_box.get_grid_rt_x()
-                                                                           : getGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
-                       (real_coord.get_y() == bounding_box.get_real_rt_y() ? bounding_box.get_grid_rt_y()
-                                                                           : getGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
+    return PlanarCoord(
+        (real_coord.get_x() == bounding_box.get_real_rt_x() ? bounding_box.get_grid_rt_x()
+                                                            : getGCellGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
+        (real_coord.get_y() == bounding_box.get_real_rt_y() ? bounding_box.get_grid_rt_y()
+                                                            : getGCellGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
   }
 
   // [lb , rt)
-  static irt_int getGridLB(const irt_int real_coord, std::vector<ScaleGrid>& gcell_grid_list)
+  static irt_int getGCellGridLB(const irt_int real_coord, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
       LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
@@ -1151,7 +1152,7 @@ class RTUtil
   }
 
   // (lb , rt]
-  static irt_int getGridRT(const irt_int real_coord, std::vector<ScaleGrid>& gcell_grid_list)
+  static irt_int getGCellGridRT(const irt_int real_coord, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
       LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
@@ -1184,15 +1185,15 @@ class RTUtil
     return 0;
   }
 
-  static PlanarRect getRealRect(PlanarRect grid_rect, ScaleAxis& gcell_axis)
+  static PlanarRect getRealRectByGCell(PlanarRect grid_rect, ScaleAxis& gcell_axis)
   {
-    return getRealRect(grid_rect.get_lb(), grid_rect.get_rt(), gcell_axis);
+    return getRealRectByGCell(grid_rect.get_lb(), grid_rect.get_rt(), gcell_axis);
   }
 
-  static PlanarRect getRealRect(PlanarCoord first_coord, PlanarCoord second_coord, ScaleAxis& gcell_axis)
+  static PlanarRect getRealRectByGCell(PlanarCoord first_coord, PlanarCoord second_coord, ScaleAxis& gcell_axis)
   {
     if (first_coord == second_coord) {
-      return getRealRect(first_coord, gcell_axis);
+      return getRealRectByGCell(first_coord, gcell_axis);
     }
 
     std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
@@ -1206,24 +1207,25 @@ class RTUtil
     swapByASC(first_x, second_x);
     swapByASC(first_y, second_y);
 
-    return PlanarRect(getRealLB(first_x, x_grid_list), getRealLB(first_y, y_grid_list), getRealRT(second_x, x_grid_list),
-                      getRealRT(second_y, y_grid_list));
+    return PlanarRect(getRealLBByGCell(first_x, x_grid_list), getRealLBByGCell(first_y, y_grid_list),
+                      getRealRTByGCell(second_x, x_grid_list), getRealRTByGCell(second_y, y_grid_list));
   }
 
-  static PlanarRect getRealRect(PlanarCoord grid_coord, ScaleAxis& gcell_axis)
+  static PlanarRect getRealRectByGCell(PlanarCoord grid_coord, ScaleAxis& gcell_axis)
   {
-    return getRealRect(grid_coord.get_x(), grid_coord.get_y(), gcell_axis);
+    return getRealRectByGCell(grid_coord.get_x(), grid_coord.get_y(), gcell_axis);
   }
 
-  static PlanarRect getRealRect(irt_int x, irt_int y, ScaleAxis& gcell_axis)
+  static PlanarRect getRealRectByGCell(irt_int x, irt_int y, ScaleAxis& gcell_axis)
   {
     std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
     std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
 
-    return PlanarRect(getRealLB(x, x_grid_list), getRealLB(y, y_grid_list), getRealRT(x, x_grid_list), getRealRT(y, y_grid_list));
+    return PlanarRect(getRealLBByGCell(x, x_grid_list), getRealLBByGCell(y, y_grid_list), getRealRTByGCell(x, x_grid_list),
+                      getRealRTByGCell(y, y_grid_list));
   }
 
-  static irt_int getRealLB(irt_int grid, std::vector<ScaleGrid>& gcell_grid_list)
+  static irt_int getRealLBByGCell(irt_int grid, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
       LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
@@ -1242,7 +1244,7 @@ class RTUtil
     return 0;
   }
 
-  static irt_int getRealRT(irt_int grid, std::vector<ScaleGrid>& gcell_grid_list)
+  static irt_int getRealRTByGCell(irt_int grid, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
       LOG_INST.error(Loc::current(), "The gcell grid list is empty!");

@@ -40,11 +40,11 @@ void DrcEngineInitScanline::initGeometryData()
   /// init scanline engine for routing layer
   auto& layouts = _engine_manager->get_engine_layouts(LayoutType::kRouting);
 
-  for (auto& [layer_id, engine_layout] : layouts) {
+  for (auto& [layer, engine_layout] : layouts) {
     uint64_t point_number = 0;
 
     /// scanline engine for one layer
-    auto* scanline_engine = _engine_manager->get_engine_scanline(layer_id, LayoutType::kRouting);
+    auto* scanline_engine = _engine_manager->get_engine_scanline(layer, LayoutType::kRouting);
     auto* scanline_dm = scanline_engine->get_data_manager();
 
     for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
@@ -61,7 +61,7 @@ void DrcEngineInitScanline::initGeometryData()
     /// sort point list in scanline data manager
     scanline_dm->sortEndpoints();
 
-    // std::cout << "idrc : layer id = " << layer_id << " polygon points total number = " << point_number << std::endl;
+    // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
   }
 
   //   std::cout << "idrc : end init scanline database, "
@@ -77,9 +77,9 @@ void DrcEngineInitScanline::initScanlineResult()
   //   std::cout << "idrc : begin scanline" << std::endl;
   /// run scanline method for all routing layers
   auto& layouts = _engine_manager->get_engine_layouts(LayoutType::kRouting);
-  for (auto& [layer_id, engine_layout] : layouts) {
+  for (auto& [layer, engine_layout] : layouts) {
     /// scanline engine for each layer
-    auto* scanline_engine = _engine_manager->get_engine_scanline(layer_id, LayoutType::kRouting);
+    auto* scanline_engine = _engine_manager->get_engine_scanline(layer, LayoutType::kRouting);
     scanline_engine->doScanline();
   }
 

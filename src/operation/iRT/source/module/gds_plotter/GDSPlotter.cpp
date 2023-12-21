@@ -310,9 +310,6 @@ void GDSPlotter::addNetList(GPGDS& gp_gds, std::vector<Net>& net_list, Stage sta
       case Stage::kTrackAssigner:
         // addGuideSegNodeTree(gp_gds, net_struct, net.get_ta_result_tree());
         break;
-      case Stage::kViolationRepairer:
-        addPhysicalNodeTree(gp_gds, net_struct, net.get_vr_result_tree());
-        break;
       default:
         LOG_INST.error(Loc::current(), "Unknown stage type!");
         break;
@@ -421,7 +418,7 @@ void GDSPlotter::addGuideSegNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<
     irt_int first_layer_idx = first_guide.get_layer_idx();
     irt_int second_layer_idx = second_guide.get_layer_idx();
 
-    PlanarRect real_rect = RTUtil::getRealRect(first_guide.get_grid_coord(), second_guide.get_grid_coord(), gcell_axis);
+    PlanarRect real_rect = RTUtil::getRealRectByGCell(first_guide.get_grid_coord(), second_guide.get_grid_coord(), gcell_axis);
 
     if (first_layer_idx == second_layer_idx) {
       GPBoundary guide_boundary;
@@ -496,75 +493,6 @@ void GDSPlotter::addGuideSegNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<
   gp_gds.addStruct(routing_segment_list_struct);
 }
 
-void GDSPlotter::addPhysicalNodeTree(GPGDS& gp_gds, GPStruct& net_struct, MTree<PhysicalNode>& node_tree)
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-  GPStruct wire_list_struct(RTUtil::getString("wire_list@", net_struct.get_alias_name()));
-  GPStruct via_list_struct(RTUtil::getString("via_list@", net_struct.get_alias_name()));
-  GPStruct patch_list_struct(RTUtil::getString("patch_list@", net_struct.get_alias_name()));
-
-  for (TNode<PhysicalNode>* physical_node_node : RTUtil::getNodeList(node_tree)) {
-    PhysicalNode& physical_node = physical_node_node->value();
-
-    if (physical_node.isType<WireNode>()) {
-      WireNode& wire_node = physical_node.getNode<WireNode>();
-      PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
-
-      GPBoundary wire_boundary;
-      wire_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(wire_node.get_layer_idx()));
-      wire_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kWire));
-      wire_boundary.set_rect(wire_rect);
-      wire_list_struct.push(wire_boundary);
-
-    } else if (physical_node.isType<ViaNode>()) {
-      ViaNode& via_node = physical_node.getNode<ViaNode>();
-      ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-      ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
-
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      GPBoundary above_boundary;
-      above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
-      above_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
-      above_boundary.set_rect(RTUtil::getOffsetRect(above_enclosure, via_node));
-      via_list_struct.push(above_boundary);
-
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      GPBoundary below_boundary;
-      below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
-      below_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kEnclosure));
-      below_boundary.set_rect(RTUtil::getOffsetRect(below_enclosure, via_node));
-      via_list_struct.push(below_boundary);
-
-      std::vector<PlanarRect>& cut_shape_list = via_master.get_cut_shape_list();
-      for (PlanarRect& cut_shape : cut_shape_list) {
-        GPBoundary cut_boundary;
-        cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
-        cut_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kCut));
-        cut_boundary.set_rect(RTUtil::getOffsetRect(cut_shape, via_node));
-        via_list_struct.push(cut_boundary);
-      }
-    } else if (physical_node.isType<PatchNode>()) {
-      PatchNode& patch_node = physical_node.getNode<PatchNode>();
-
-      GPBoundary patch_boundary;
-      patch_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(patch_node.get_layer_idx()));
-      patch_boundary.set_data_type(static_cast<irt_int>(GPLayoutType::kPatch));
-      patch_boundary.set_rect(patch_node);
-      patch_list_struct.push(patch_boundary);
-
-    } else {
-      LOG_INST.error(Loc::current(), "Incorrect physical_node type!");
-    }
-  }
-  net_struct.push(wire_list_struct.get_name());
-  net_struct.push(via_list_struct.get_name());
-  net_struct.push(patch_list_struct.get_name());
-  gp_gds.addStruct(wire_list_struct);
-  gp_gds.addStruct(via_list_struct);
-  gp_gds.addStruct(patch_list_struct);
-}
-
 void GDSPlotter::addCostMap(GPGDS& gp_gds, std::vector<Net>& net_list)
 {
   Monitor monitor;
@@ -600,7 +528,7 @@ void GDSPlotter::addCostMap(GPGDS& gp_gds, GPStruct& net_struct, BoundingBox& bo
       gp_boundary.set_layer_idx(static_cast<irt_int>(cost_map[x][y] * 100));
       gp_boundary.set_data_type(0);
       gp_boundary.set_rect(
-          RTUtil::getRealRect(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
+          RTUtil::getRealRectByGCell(PlanarCoord(x + bounding_box.get_grid_lb_x(), y + bounding_box.get_grid_lb_y()), gcell_axis));
       cost_map_struct.push(gp_boundary);
     }
   }
@@ -736,7 +664,7 @@ void GDSPlotter::addGCellAxis(GPGDS& gp_gds, PlanarRect& clipping_window)
           gp_text.set_text_type(static_cast<irt_int>(GPLayoutType::kText));
           gp_text.set_presentation(GPTextPresentation::kLeftBottom);
           gp_text.set_coord(x, y);
-          gp_text.set_message(RTUtil::getString("grid(", RTUtil::getGridLB(x, x_grid_list), " , ", RTUtil::getGridLB(y, y_grid_list),
+          gp_text.set_message(RTUtil::getString("grid(", RTUtil::getGCellGridLB(x, x_grid_list), " , ", RTUtil::getGCellGridLB(y, y_grid_list),
                                                 ") real(", x, " , ", y, ")"));
           gcell_axis_struct.push(gp_text);
         }

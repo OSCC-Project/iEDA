@@ -64,6 +64,7 @@ namespace idb {
 class IdbPin;
 class IdbInstance;
 class IdbNet;
+class IdbRegularWireSegment;
 }  // namespace idb
 
 namespace ito {
@@ -91,6 +92,7 @@ class MTree;
 class Net;
 class AccessPoint;
 class GRNode;
+class Violation;
 
 }  // namespace irt
 

@@ -19,6 +19,10 @@
 #include <set>
 #include <vector>
 
+namespace idb {
+class IdbLayer;
+}
+
 namespace idrc {
 
 enum class Type
@@ -32,16 +36,16 @@ enum class Type
 class DrcViolation
 {
  public:
-  DrcViolation(int layer_id, std::set<int> net_ids, Type type) : _layer_id(layer_id), _net_ids(net_ids), _type(type) {}
+  DrcViolation(idb::IdbLayer* layer, std::set<int> net_ids, Type type) : _layer(layer), _net_ids(net_ids), _type(type) {}
   ~DrcViolation() {}
-  int get_layer_id() { return _layer_id; }
+  idb::IdbLayer* get_layer() { return _layer; }
   std::set<int>& get_net_ids() { return _net_ids; }
   Type get_type() { return _type; }
   bool is_rect() { return _type == Type::kRect; }
   bool is_polygon() { return _type == Type::kPolygon; }
 
  private:
-  int _layer_id;
+  idb::IdbLayer* _layer;
   std::set<int> _net_ids;
   Type _type;
 };
@@ -49,8 +53,8 @@ class DrcViolation
 class DrcViolationRect : public DrcViolation
 {
  public:
-  DrcViolationRect(int layer_id, std::set<int> net_ids, int llx, int lly, int urx, int ury)
-      : DrcViolation(layer_id, net_ids, Type::kRect), _llx(llx), _lly(lly), _urx(urx), _ury(ury)
+  DrcViolationRect(idb::IdbLayer* layer, std::set<int> net_ids, int llx, int lly, int urx, int ury)
+      : DrcViolation(layer, net_ids, Type::kRect), _llx(llx), _lly(lly), _urx(urx), _ury(ury)
   {
   }
   ~DrcViolationRect() {}
@@ -70,7 +74,7 @@ class DrcViolationRect : public DrcViolation
 class DrcViolationPolygon : public DrcViolation
 {
  public:
-  DrcViolationPolygon(int layer_id, std::set<int> net_ids) : DrcViolation(layer_id, net_ids, Type::kPolygon) {}
+  DrcViolationPolygon(idb::IdbLayer* layer, std::set<int> net_ids) : DrcViolation(layer, net_ids, Type::kPolygon) {}
   ~DrcViolationPolygon() {}
 
   std::vector<std::pair<int, int>>& get_points() { return _points; }

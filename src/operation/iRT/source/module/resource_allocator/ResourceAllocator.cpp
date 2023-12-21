@@ -157,7 +157,7 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
     RAGCell& ra_gcell = ra_gcell_list[i];
     irt_int grid_x = static_cast<irt_int>(i) / die.getYSize();
     irt_int grid_y = static_cast<irt_int>(i) % die.getYSize();
-    ra_gcell.set_base_region(RTUtil::getRealRect(grid_x, grid_y, gcell_axis));
+    ra_gcell.set_base_region(RTUtil::getRealRectByGCell(grid_x, grid_y, gcell_axis));
   }
 }
 
@@ -849,7 +849,7 @@ void ResourceAllocator::updateRectToUnit(RAModel& ra_model, ChangeType change_ty
 
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];

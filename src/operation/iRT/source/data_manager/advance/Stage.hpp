@@ -27,8 +27,7 @@ enum class Stage
   kGlobalRouter,
   kPinAccessor,
   kResourceAllocator,
-  kTrackAssigner,
-  kViolationRepairer
+  kTrackAssigner
 };
 
 struct GetStageName
@@ -54,9 +53,6 @@ struct GetStageName
         break;
       case Stage::kTrackAssigner:
         stage_name = "track_assigner";
-        break;
-      case Stage::kViolationRepairer:
-        stage_name = "violation_repairer";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

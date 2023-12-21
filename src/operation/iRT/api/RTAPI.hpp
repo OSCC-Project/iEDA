@@ -38,8 +38,7 @@ enum class Tool
   kGlobalRouter,
   kPinAccessor,
   kResourceAllocator,
-  kTrackAssigner,
-  kViolationRepairer
+  kTrackAssigner
 };
 
 class RTAPI
@@ -62,23 +61,12 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  /**
-   * drc_shape_list在region_query的环境里产生的违例信息，如spacing
-   * 关注于非同net之间的违例
-   */
-  std::map<std::string, std::vector<BaseViolationInfo>> getEnvViolationInfo(BaseRegion& base_region,
-                                                                            const std::vector<DRCCheckType>& check_type_list,
-                                                                            std::vector<BaseShape>& drc_shape_list);
-  /**
-   * drc_shape_list组成的自身违例信息，如min_area,min_step
-   * 关注于net内的违例
-   */
-  std::map<std::string, std::vector<BaseViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
-                                                                             std::vector<BaseShape>& drc_shape_list);
+  std::vector<Violation> getViolationList(std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map);
 
   // STA
   void reportGRTiming();
   void reportDRTiming();
+
   // other
   void runOther();
 

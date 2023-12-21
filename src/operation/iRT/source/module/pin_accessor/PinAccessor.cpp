@@ -94,7 +94,7 @@ PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
   for (irt_int x = 0; x < die.getXSize(); x++) {
     for (irt_int y = 0; y < die.getYSize(); y++) {
       PAGCell& pa_gcell = pa_gcell_map[x][y];
-      pa_gcell.set_base_region(RTUtil::getRealRect(x, y, gcell_axis));
+      pa_gcell.set_base_region(RTUtil::getRealRectByGCell(x, y, gcell_axis));
       pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
       pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
     }
@@ -598,7 +598,7 @@ void PinAccessor::updateBoundingBox(PANet& pa_net)
   }
   BoundingBox& bounding_box = pa_net.get_bounding_box();
   bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
-  bounding_box.set_grid_rect(RTUtil::getOpenGridRect(bounding_box.get_real_rect(), gcell_axis));
+  bounding_box.set_grid_rect(RTUtil::getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
 }
 
 void PinAccessor::updateAccessGrid(PANet& pa_net)
@@ -608,7 +608,7 @@ void PinAccessor::updateAccessGrid(PANet& pa_net)
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      access_point.set_grid_coord(RTUtil::getGridCoord(access_point.get_real_coord(), gcell_axis, bounding_box));
+      access_point.set_grid_coord(RTUtil::getGCellGridCoord(access_point.get_real_coord(), gcell_axis, bounding_box));
     }
   }
 }
@@ -664,7 +664,7 @@ void PinAccessor::addWireAccessByDRC(PAModel& pa_model, PANet& pa_net)
     for (auto& [layer_idx, access_grid_list] : layer_access_grid_map) {
       PlanarRect grid_bbox = RTUtil::getBoundingBox(access_grid_list);
       PlanarRect enlarged_grid_bbox = RTUtil::getEnlargedRect(grid_bbox, 1, die.get_grid_rect());
-      PlanarRect enlarged_real_bbox = RTUtil::getRealRect(enlarged_grid_bbox, gcell_axis);
+      PlanarRect enlarged_real_bbox = RTUtil::getRealRectByGCell(enlarged_grid_bbox, gcell_axis);
       layer_base_region_map[layer_idx] = enlarged_real_bbox;
     }
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
@@ -1393,7 +1393,7 @@ void PinAccessor::updateRectToUnit(PAModel& pa_model, ChangeType change_type, PA
 
   for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
     LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+    PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
     for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
       for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
         PAGCell& pa_gcell = pa_gcell_map[x][y];
@@ -1440,7 +1440,7 @@ std::map<std::string, std::vector<ViolationInfo>> PinAccessor::getPAEnvViolation
   for (const DRCShape& drc_shape : drc_shape_list) {
     for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
       PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
+      PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
       for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
         for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
           box_rect_map[PAGCellId(x, y)].push_back(drc_shape);

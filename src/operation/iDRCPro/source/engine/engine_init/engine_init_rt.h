@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include "engine_init.h"
+
 /**
  * check geometry overlap method
  */
@@ -27,20 +29,15 @@ namespace idrc {
 class DrcEngineManager;
 class DrcDataManager;
 
-class DrcEngineInitRT
+class DrcEngineInitRT : DrcEngineInit
 {
  public:
-  DrcEngineInitRT(DrcEngineManager* engine_manager, DrcDataManager* data_manager)
-      : _engine_manager(engine_manager), _data_manager(data_manager)
-  {
-  }
+  DrcEngineInitRT(DrcEngineManager* engine_manager, DrcDataManager* data_manager) : DrcEngineInit(engine_manager, data_manager) {}
   ~DrcEngineInitRT() {}
 
   void init();
 
  private:
-  DrcEngineManager* _engine_manager = nullptr;
-  DrcDataManager* _data_manager = nullptr;
 };
 
 }  // namespace idrc

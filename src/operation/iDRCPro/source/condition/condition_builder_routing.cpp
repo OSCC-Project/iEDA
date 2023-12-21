@@ -43,9 +43,9 @@ void DrcConditionBuilder::filterSpacing()
 
   /// get routing layer scanline data map
   auto& scanline_map = engine_manager->get_engine_scanlines(LayoutType::kRouting);
-  for (auto& [layer_id, scanline_engine] : scanline_map) {
+  for (auto& [layer, scanline_engine] : scanline_map) {
     /// get min spacing & max spacing
-    auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer_id);
+    auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
     if (rule_routing_layer == nullptr) {
       continue;
     }
@@ -60,14 +60,14 @@ void DrcConditionBuilder::filterSpacing()
     for (int i = 0; i < (int) basic_pts.size(); ++i) {
       auto& basic_point = basic_pts[i];
       if (basic_point->is_start()) {
-        filterSpacingForPolygon(basic_point, layer_id, min_spacing, max_spacing);
+        filterSpacingForPolygon(basic_point, layer, min_spacing, max_spacing);
         polygon_number++;
       }
     }
 
     // std::cout << "polygon_number = " << polygon_number << std::endl;
 
-    auto boost_rects = _condition_manager->get_violation_manager()->get_boost_rects(layer_id);
+    auto boost_rects = _condition_manager->get_violation_manager()->get_boost_rects(layer);
     if (boost_rects.size() > 0) {
       auto basic_polygons = scanline_dm->get_boost_polygons();
       int a = 0;
@@ -83,12 +83,12 @@ void DrcConditionBuilder::filterSpacing()
 /**
  * filter spacing for a polygon, begin checking from start_point
  */
-void DrcConditionBuilder::filterSpacingForPolygon(DrcBasicPoint* start_point, int layer_id, int min_spacing, int max_spacing)
+void DrcConditionBuilder::filterSpacingForPolygon(DrcBasicPoint* start_point, idb::IdbLayer* layer, int min_spacing, int max_spacing)
 {
   DrcBasicPoint* iter_point = start_point;
   while (iter_point != nullptr) {
-    checkSpacing(iter_point, layer_id, min_spacing, max_spacing, DrcDirection::kUp);
-    checkSpacing(iter_point, layer_id, min_spacing, max_spacing, DrcDirection::kRight);
+    checkSpacing(iter_point, layer, min_spacing, max_spacing, DrcDirection::kUp);
+    checkSpacing(iter_point, layer, min_spacing, max_spacing, DrcDirection::kRight);
 
     /// turn to next point
     iter_point = iter_point->get_next();
@@ -117,7 +117,7 @@ std::vector<ieda_solver::GtlPoint> DrcConditionBuilder::get_boost_point(DrcBasic
   return point_list;
 };
 
-void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int min_spacing, int max_spacing, DrcDirection direction)
+void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction)
 {
   auto check_id = [](DrcBasicPoint* point, DrcDirection direction) -> bool {
     auto* neighbour = point->get_neighbour(direction);
@@ -151,7 +151,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
   /// if overlap, save violation as short
   auto* neighbour = point->get_neighbour(direction);
   if (neighbour->is_overlap()) {
-    if (false == point->is_overlap_checked() && point->get_id() != neighbour->get_point()->get_id()) {
+    if (false == point->is_overlap_checked()) {
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
@@ -161,7 +161,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
       int list_size = violation_list.size();
       std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
 
-      saveViolationSpacing(point, neighbour->get_point(), layer_id, b_vertical, -1);
+      saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, -1);
 
       if (violation_list.size() > list_size) {
         auto vio = violation_list.at(violation_list.size() - 1);
@@ -204,7 +204,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
       std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
 
       /// has violation
-      saveViolationSpacing(point, neighbour->get_point(), layer_id, b_vertical, min_spacing);
+      saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, min_spacing);
 
       if (violation_list.size() > list_size) {
         auto vio = violation_list.at(violation_list.size() - 1);
@@ -215,7 +215,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
       return;
     } else {
       /// need to check rule
-      auto* check_list = _condition_manager->get_check_list_routing_layer(layer_id);
+      auto* check_list = _condition_manager->get_check_list_routing_layer(layer);
       check_list->addCheckList(point, neighbour->get_point());
     }
 
@@ -228,8 +228,8 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, int layer_id, int m
  * b_vertical : true : start_point_bottom & start_point_top are vertical direction, false : horizontal direction
  * min_spacing == -1 : violation is overlap, min > 0 : min spacing violation occurs
  */
-void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, int layer_id, bool b_vertical,
-                                               int min_spacing)
+void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, idb::IdbLayer* layer,
+                                               bool b_vertical, int min_spacing)
 {
   /// need to save
   auto isChecked = [](DrcBasicPoint* start_point, int min_spacing, bool b_vertical) -> bool {
@@ -407,7 +407,7 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
   if (llx == urx || lly == ury) {
     return;
   }
-  DrcViolationRect* violation_rect = new DrcViolationRect(layer_id, net_ids, llx, lly, urx, ury);
+  DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
   auto violation_type = min_spacing == -1 ? ViolationEnumType::kViolationShort : ViolationEnumType::kViolationMinSpacing;
   auto& violation_list = violation_manager->get_violation_list(violation_type);
   violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
@@ -426,8 +426,8 @@ void DrcConditionBuilder::buildWidth()
   std::vector<std::pair<int, int>> vio_min_spacings;
   //   for (auto& [type, scanline_map] : engine_manager->get_scanline_matrix()) {
   auto& scanline_map = engine_manager->get_engine_scanlines(LayoutType::kRouting);
-  for (auto& [layer_id, scanline_engine] : scanline_map) {
-    if (layer_id == 0) {
+  for (auto& [layer, scanline_engine] : scanline_map) {
+    if (layer->get_id() == 0) {
       continue;
     }
     auto* scanline_dm = scanline_engine->get_data_manager();

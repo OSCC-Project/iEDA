@@ -49,13 +49,13 @@ class DrcViolationManager
   }
 
   /// debug
-  std::vector<ieda_solver::GtlRect> get_boost_rects(int layer_id)
+  std::vector<ieda_solver::GtlRect> get_boost_rects(idb::IdbLayer* layer)
   {
     std::vector<ieda_solver::GtlRect> boost_rects;
 
     for (auto& violation : _violation_list) {
       for (auto& violation_shape : violation.second) {
-        if (violation_shape->get_layer_id() == layer_id) {
+        if (violation_shape->get_layer() == layer) {
           if (violation_shape->is_rect()) {
             auto* rect = static_cast<DrcViolationRect*>(violation_shape);
             ieda_solver::GtlRect boost_rect(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
