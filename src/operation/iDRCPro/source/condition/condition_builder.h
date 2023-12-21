@@ -40,14 +40,14 @@ class DrcConditionBuilder
   /// condition builder
   void buildConditionRoutingLayer();
   void filterSpacing();
-  void filterSpacingForPolygon(DrcBasicPoint* start_point, int layer_id, int min_spacing, int max_spacing);
-  void checkSpacingUp(DrcBasicPoint* point, int layer_id, int min_spacing, int max_spacing);
-  void checkSpacingRight(DrcBasicPoint* point, int layer_id, int min_spacing, int max_spacing);
-  void checkSpacing(DrcBasicPoint* point, int layer_id, int min_spacing, int max_spacing, DrcDirection direction);
+  void filterSpacingForPolygon(DrcBasicPoint* start_point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
+  void checkSpacingUp(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
+  void checkSpacingRight(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
+  void checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction);
   void buildWidth();
 
   /// violation process
-  void saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, int layer_id, bool b_vertical = false,
+  void saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, idb::IdbLayer* layer, bool b_vertical = false,
                             int min_spacing = -1);
 
   /// utility

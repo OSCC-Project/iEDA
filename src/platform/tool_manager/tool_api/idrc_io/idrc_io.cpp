@@ -85,11 +85,11 @@ void DrcIO::get_def_drc()
 
     for (auto* violation : violation_list) {
       idrc::DrcViolationSpot* spot = new idrc::DrcViolationSpot();
-      auto* layer = idb_layers->find_routing_layer(violation->get_layer_id());
+      auto* layer = idb_layers->find_routing_layer(violation->get_layer()->get_id());
       if (layer != nullptr) {
         spot->set_layer_name(layer->get_name());
       }
-      spot->set_layer_id(violation->get_layer_id());
+      spot->set_layer_id(violation->get_layer()->get_id());
       auto net_list = violation->get_net_ids();
       spot->set_net_id(*net_list.begin());
       auto vio_type = type == idrc::ViolationEnumType::kViolationShort ? idrc::ViolationType::kShort : idrc::ViolationType::kRoutingSpacing;

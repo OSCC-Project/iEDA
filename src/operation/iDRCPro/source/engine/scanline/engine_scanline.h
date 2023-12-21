@@ -73,7 +73,7 @@ struct ScanlineStatus
 class DrcEngineScanline
 {
  public:
-  DrcEngineScanline(int layer_id);
+  DrcEngineScanline(idb::IdbLayer* layer);
   ~DrcEngineScanline();
 
   ScanlineDataManager* get_data_manager() { return _data_manager; }

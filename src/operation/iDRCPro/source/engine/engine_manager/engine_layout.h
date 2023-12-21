@@ -22,6 +22,10 @@
 #include "engine_geometry.h"
 #include "engine_sublayout.h"
 
+namespace idb {
+class IdbLayer;
+}  // namespace idb
+
 namespace idrc {
 /**
  *  DrcEngineLayout definition : describe all shapes for all nets in one layer
@@ -29,7 +33,7 @@ namespace idrc {
 class DrcEngineLayout
 {
  public:
-  DrcEngineLayout(int id) { _id = id; }
+  DrcEngineLayout(idb::IdbLayer* id) { _id = id; }
   ~DrcEngineLayout();
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
@@ -42,7 +46,7 @@ class DrcEngineLayout
   /**
    * _id : layer id
    */
-  int _id = -1;
+  idb::IdbLayer* _id = nullptr;
   /**
    * int : net id, if equal to -1, sub layout is a kind of blockage
    * DrcEngineSubLayout* : sub layout ptr describe the net shapes

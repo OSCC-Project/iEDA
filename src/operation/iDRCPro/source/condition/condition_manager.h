@@ -34,13 +34,13 @@ class DrcConditionManager
   class LayerCheckList
   {
    public:
-    LayerCheckList(int layer_id) : _layer_id(layer_id) {}
+    LayerCheckList(idb::IdbLayer* layer) : _layer(layer) {}
     ~LayerCheckList() {}
 
     void addCheckList(DrcBasicPoint* pt1, DrcBasicPoint* pt2) { _points.emplace_back(std::make_pair(pt1, pt2)); }
 
    private:
-    int _layer_id = -1;
+    idb::IdbLayer* _layer = nullptr;
     std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> _points;
   };
 
@@ -53,25 +53,25 @@ class DrcConditionManager
   DrcEngine* get_engine() { return _engine; }
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
-  std::map<LayoutType, std::map<int, LayerCheckList*>> get_check_maps() { return _check_maps; }
-  std::map<int, LayerCheckList*> get_check_map(LayoutType type) { return _check_maps[type]; }
-  LayerCheckList* get_check_list_routing_layer(int layer_id) { return get_check_list(LayoutType::kRouting, layer_id); }
-  LayerCheckList* get_check_list_cut_layer(int layer_id) { return get_check_list(LayoutType::kCut, layer_id); }
-  LayerCheckList* get_check_list(LayoutType type, int layer_id)
+  std::map<LayoutType, std::map<idb::IdbLayer*, LayerCheckList*>> get_check_maps() { return _check_maps; }
+  std::map<idb::IdbLayer*, LayerCheckList*> get_check_map(LayoutType type) { return _check_maps[type]; }
+  LayerCheckList* get_check_list_routing_layer(idb::IdbLayer* layer) { return get_check_list(LayoutType::kRouting, layer); }
+  LayerCheckList* get_check_list_cut_layer(idb::IdbLayer* layer) { return get_check_list(LayoutType::kCut, layer); }
+  LayerCheckList* get_check_list(LayoutType type, idb::IdbLayer* layer)
   {
     auto& layer_map = _check_maps[type];
-    if (false == layer_map.contains(layer_id)) {
-      layer_map[layer_id] = new LayerCheckList(layer_id);
+    if (false == layer_map.contains(layer)) {
+      layer_map[layer] = new LayerCheckList(layer);
     }
 
-    return layer_map[layer_id];
+    return layer_map[layer];
   }
 
  private:
   DrcEngine* _engine = nullptr;
   DrcViolationManager* _violation_manager;
 
-  std::map<LayoutType, std::map<int, LayerCheckList*>> _check_maps = {{LayoutType::kRouting, {}}, {LayoutType::kCut, {}}};
+  std::map<LayoutType, std::map<idb::IdbLayer*, LayerCheckList*>> _check_maps = {{LayoutType::kRouting, {}}, {LayoutType::kCut, {}}};
 
   /// condition builder
   bool buildConditonConnectivity();

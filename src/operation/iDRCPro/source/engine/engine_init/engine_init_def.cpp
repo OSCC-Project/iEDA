@@ -39,91 +39,6 @@ void DrcEngineInitDef::init()
   initDataFromNets();
 }
 
-/**
- * build geometry data from rect
- */
-void DrcEngineInitDef::initDataFromRect(idb::IdbRect* rect, LayoutType type, int layer_id, int net_id)
-{
-  _engine_manager->addRect(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), layer_id, net_id, type);
-}
-
-/**
- * build geometry data from idb layer shape, including layer id, net id, rectangles
- */
-void DrcEngineInitDef::initDataFromShape(idb::IdbLayerShape* idb_shape, int net_id)
-{
-  if (idb_shape == nullptr) {
-    return;
-  }
-
-  auto* idb_layout = dmInst->get_idb_layout();
-  auto* idb_layers = idb_layout->get_layers();
-
-  /// shape must be on the above of bottom routing layer
-  if (false == idb_layers->is_pr_layer(idb_shape->get_layer())) {
-    return;
-  }
-
-  int layer_id = idb_shape->get_layer()->get_id();
-  LayoutType type = idb_shape->get_layer()->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
-  for (idb::IdbRect* rect : idb_shape->get_rect_list()) {
-    initDataFromRect(rect, type, layer_id, net_id);
-  }
-}
-/**
- * build geometry data from two points
- */
-void DrcEngineInitDef::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::IdbCoordinate<int>* point_2, int routing_width,
-                                          int layer_id, int net_id, bool b_pdn)
-{
-  /// calculate rectangle by two points
-  int llx, lly, urx, ury;
-  int extend_size = b_pdn ? 0 : routing_width / 2;
-  if (point_1->get_y() == point_2->get_y()) {
-    // horizontal
-    llx = std::min(point_1->get_x(), point_2->get_x()) - extend_size;
-    lly = point_1->get_y() - routing_width / 2;
-    urx = std::max(point_1->get_x(), point_2->get_x()) + extend_size;
-    ury = lly + routing_width;
-  } else if (point_1->get_x() == point_2->get_x()) {
-    // vertical
-    llx = point_1->get_x() - routing_width / 2;
-    lly = std::min(point_1->get_y(), point_2->get_y()) - extend_size;
-    urx = llx + routing_width;
-    ury = std::max(point_1->get_y(), point_2->get_y()) + extend_size;
-  }
-
-  _engine_manager->addRect(llx, lly, urx, ury, layer_id, net_id, LayoutType::kRouting);
-}
-
-/**
- * build geometry data from pin
- */
-void DrcEngineInitDef::initDataFromPin(idb::IdbPin* idb_pin)
-{
-  int net_id = idb_pin->get_net() == nullptr ? NET_ID_ENVIRONMENT : idb_pin->get_net()->get_id();
-  for (IdbLayerShape* layer_shape : idb_pin->get_port_box_list()) {
-    initDataFromShape(layer_shape, net_id);
-  }
-}
-/**
- * build geometry data from via
- */
-void DrcEngineInitDef::initDataFromVia(idb::IdbVia* idb_via, int net_id)
-{
-  /// cut
-  auto cut_layer_shape = idb_via->get_cut_layer_shape();
-  initDataFromShape(&cut_layer_shape, net_id);
-
-  /// bottom
-  auto bottom_layer_shape = idb_via->get_bottom_layer_shape();
-  initDataFromShape(&bottom_layer_shape, net_id);
-
-  /// top
-  auto top_layer_shape = idb_via->get_top_layer_shape();
-  initDataFromShape(&top_layer_shape, net_id);
-}
-
 void DrcEngineInitDef::initDataFromIOPins()
 {
   auto* idb_design = dmInst->get_idb_design();
@@ -186,7 +101,7 @@ void DrcEngineInitDef::initDataFromPDN()
           auto* point_1 = idb_segment->get_point_start();
           auto* point_2 = idb_segment->get_point_second();
 
-          initDataFromPoints(point_1, point_2, routing_width, routing_layer->get_id(), NET_ID_ENVIRONMENT, true);
+          initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), NET_ID_ENVIRONMENT, true);
         }
 
         /// vias
@@ -203,47 +118,7 @@ void DrcEngineInitDef::initDataFromPDN()
   std::cout << "idrc : end init data from pdn, segment number = " << number << " runtime = " << stats.elapsedRunTime()
             << " memory = " << stats.memoryDelta() << std::endl;
 }
-/**
- * init
- */
-void DrcEngineInitDef::initDataFromNet(idb::IdbNet* idb_net)
-{
-  for (auto* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
-    for (auto* idb_segment : idb_wire->get_segment_list()) {
-      if (idb_segment->get_point_number() >= 2) {
-        /// get routing width
-        auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer());
-        int32_t routing_width = routing_layer->get_width();
 
-        /// calculate rectangle by two points
-        auto* point_1 = idb_segment->get_point_start();
-        auto* point_2 = idb_segment->get_point_second();
-
-        initDataFromPoints(point_1, point_2, routing_width, routing_layer->get_id(), idb_net->get_id());
-      } else {
-        /// via
-        if (idb_segment->is_via()) {
-          for (auto* idb_via : idb_segment->get_via_list()) {
-            initDataFromVia(idb_via, idb_net->get_id());
-          }
-        }
-        /// patch
-        if (idb_segment->is_rect()) {
-          IdbCoordinate<int32_t>* coordinate = idb_segment->get_point_start();
-          IdbRect* rect_delta = idb_segment->get_delta_rect();
-          IdbRect* rect = new IdbRect(rect_delta);
-          rect->moveByStep(coordinate->get_x(), coordinate->get_y());
-
-          auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer());
-
-          initDataFromRect(rect, LayoutType::kRouting, routing_layer->get_id(), idb_net->get_id());
-
-          delete rect;
-        }
-      }
-    }
-  }
-}
 /**
  * the basic geometry unit is construct independently by layer id and net id,
  * so it enable to read net parallelly

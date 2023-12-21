@@ -29,44 +29,32 @@ void TechRules::destroyInst()
   }
 }
 
-idb::IdbLayerRouting* TechRules::getRoutingLayer(int layer_index)
+int TechRules::getMinArea(idb::IdbLayer* layer)
 {
-  // TODO: pointer is null
-  IdbBuilder* builder = dmInst->get_idb_builder();
-  idb::IdbLayout* layout = builder->get_lef_service()->get_layout();
-  idb::IdbLayers* idb_layers = layout->get_layers();
-  idb::IdbLayer* idb_layer = idb_layers->find_routing_layer(layer_index);  // ! layer index equals to layer order???
-
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
-  return idb_routing_layer;
-}
-
-int TechRules::getMinArea(int layer_index)
-{
-  idb::IdbLayerRouting* idb_routing_layer = getRoutingLayer(layer_index);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
 
   return idb_routing_layer->get_area();
 }
 
-std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>>& TechRules::getLef58AreaList(int layer_index)
+std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>>& TechRules::getLef58AreaList(idb::IdbLayer* layer)
 {
-  idb::IdbLayerRouting* idb_routing_layer = getRoutingLayer(layer_index);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
 
   return idb_routing_layer->get_lef58_area();
 }
 
-int TechRules::getMinEnclosedArea(int layer_index)
+int TechRules::getMinEnclosedArea(idb::IdbLayer* layer)
 {
-  idb::IdbLayerRouting* idb_routing_layer = getRoutingLayer(layer_index);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
 
   vector<IdbMinEncloseArea>& min_area_list = idb_routing_layer->get_min_enclose_area_list()->get_min_area_list();
 
   return min_area_list.size() > 0 ? min_area_list[0]._area : 0;
 }
 
-int TechRules::getMinSpacing(int layer_index, int width)
+int TechRules::getMinSpacing(idb::IdbLayer* layer, int width)
 {
-  idb::IdbLayerRouting* idb_routing_layer = getRoutingLayer(layer_index);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
 
   return idb_routing_layer->get_spacing(width);
 }
