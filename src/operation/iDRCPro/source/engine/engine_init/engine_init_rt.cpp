@@ -35,7 +35,7 @@ namespace idrc {
  */
 void DrcEngineInitRT::init()
 {
-  for (auto& [net_id, idb_segments] : *(_data_manager->get_idb_data())) {
+  for (auto& [net_id, idb_segments] : *(_data_manager->get_routing_data())) {
     for (auto& idb_segment : idb_segments) {
       /// add wire
       if (idb_segment->get_point_list().size() >= 2) {
@@ -63,6 +63,11 @@ void DrcEngineInitRT::init()
         // add rect
         initDataFromRect(idb_segment->get_delta_rect(), LayoutType::kRouting, idb_segment->get_layer(), net_id);
       }
+    }
+  }
+  for (auto& env_shape : *(_data_manager->get_env_shapes())) {
+    for (auto& rect : env_shape->get_rect_list()) {
+      initDataFromRect(rect, LayoutType::kRouting, env_shape->get_layer());
     }
   }
 }
