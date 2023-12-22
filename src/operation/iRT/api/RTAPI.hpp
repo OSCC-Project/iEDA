@@ -61,7 +61,10 @@ class RTAPI
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC
-  std::vector<Violation> getViolationList(std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map);
+  // env_shape_list : blockage obs pin_shape
+  // net_idb_segment_map : wire via patch
+  std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map);
 
   // STA
   void reportGRTiming();

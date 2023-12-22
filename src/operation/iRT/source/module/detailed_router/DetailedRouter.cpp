@@ -356,6 +356,7 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 #pragma omp parallel for
     for (DRBoxId& dr_box_id : dr_box_id_list) {
       DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
+      buildFixedRectList(dr_box);
       initDRTaskList(dr_model, dr_box);
       buildDRTaskList(dr_box);
       buildViolationList(dr_box);
@@ -372,6 +373,21 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     LOG_INST.info(Loc::current(), "Routed ", dr_box_id_list.size(), " boxes", stage_monitor.getStatsInfo());
   }
   LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes", monitor.getStatsInfo());
+}
+
+void DetailedRouter::buildFixedRectList(DRBox& dr_box)
+{
+  std::vector<NetShape>& fixed_rect_list = dr_box.get_fixed_rect_list();
+
+  for (bool is_routing : {true, false}) {
+    for (auto& [layer_idx, net_fixed_rect_map] : DM_INST.getLayerNetFixedRectMap(dr_box.get_box_rect(), is_routing)) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
+          fixed_rect_list.emplace_back(net_idx, fixed_rect->getRealLayerRect(), is_routing);
+        }
+      }
+    }
+  }
 }
 
 void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
@@ -712,16 +728,9 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 
 void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
 {
-  for (bool is_routing : {true, false}) {
-    for (auto& [layer_idx, net_fixed_rect_map] : DM_INST.getLayerNetFixedRectMap(dr_box.get_box_rect(), is_routing)) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-          updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, fixed_rect, is_routing);
-        }
-      }
-    }
+  for (NetShape& fixed_rect : dr_box.get_fixed_rect_list()) {
+    updateFixedRectToGraph(dr_box, ChangeType::kAdd, fixed_rect);
   }
-
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
       updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
@@ -730,7 +739,6 @@ void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
       updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), patch);
     }
   }
-
   for (Violation& violation : dr_box.get_violation_list()) {
     updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
   }
@@ -871,8 +879,8 @@ std::vector<DRTask*> DetailedRouter::initTaskSchedule(DRBox& dr_box)
 std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
 {
   std::set<irt_int> violation_net_set;
-  for (Violation* violation : DM_INST.getViolationSet(dr_box.get_box_rect())) {
-    for (irt_int violation_net : violation->get_violation_net_set()) {
+  for (Violation& violation : dr_box.get_violation_list()) {
+    for (irt_int violation_net : violation.get_violation_net_set()) {
       violation_net_set.insert(violation_net);
     }
   }
@@ -1335,8 +1343,7 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 
 void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
 {
-  std::vector<EXTLayerRect> new_patch_list;
-  // std::vector<EXTLayerRect> new_patch_list = getPatch();
+  std::vector<EXTLayerRect> new_patch_list = getPatchList(dr_box, dr_task);
 
   // 原结果从graph删除
   for (EXTLayerRect& patch : dr_task->get_patch_list()) {
@@ -1349,134 +1356,16 @@ void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
   }
 }
 
-#if 0 
-
-void ViolationRepairer::repairNotch(VRModel& vr_model, VRNet& vr_net)
+std::vector<EXTLayerRect> DetailedRouter::getPatchList(DRBox& dr_box, DRTask* dr_task)
 {
-  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
-  {
-    // pin_shape
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
-      }
-    }
-    // vr_result_tree
-    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      if (!drc_shape.get_is_routing()) {
-        continue;
-      }
-      LayerRect& layer_rect = drc_shape.get_layer_rect();
-      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
-    }
-  }
-  std::vector<LayerRect> candidate_patch_list;
-  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
-    std::vector<GTLPolyInt> polygon_list;
-    polygon_set.get_polygons(polygon_list);
-    for (GTLPolyInt& polygon : polygon_list) {
-      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
-      // 构建点集
-      std::vector<PlanarCoord> origin_point_list;
-      for (GTLPointInt& gtl_point : gtl_point_list) {
-        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
-      }
-      // 构建任务
-      std::vector<std::vector<PlanarCoord>> task_point_list_list;
-      for (size_t i = 0; i < origin_point_list.size(); i++) {
-        std::vector<PlanarCoord> task_point_list;
-        for (size_t j = 0; j < 4; j++) {
-          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
-        }
-        task_point_list_list.push_back(task_point_list);
-      }
-      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
-        for (LayerRect& patch : getNotchPatchList(layer_idx, task_point_list)) {
-          candidate_patch_list.push_back(patch);
-        }
-      }
-    }
-  }
-  std::vector<LayerRect> patch_list;
-  for (LayerRect& candidate_patch : candidate_patch_list) {
-    DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
-    if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
-        && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
-      patch_list.push_back(candidate_patch);
-    }
-  }
-  for (LayerRect& patch : patch_list) {
-    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
-
-    PhysicalNode physical_node;
-    PatchNode& patch_node = physical_node.getNode<PatchNode>();
-    patch_node.set_net_idx(vr_net.get_net_idx());
-    patch_node.set_rect(patch);
-    patch_node.set_layer_idx(patch.get_layer_idx());
-
-    root_node->addChild(new TNode<PhysicalNode>(physical_node));
-
-    for (DRCShape& drc_shape : DC_INST.getDRCShapeList(vr_net.get_net_idx(), physical_node)) {
-      updateRectToUnit(vr_model, ChangeType::kAdd, VRSourceType::kNetShape, drc_shape);
-    }
-  }
-}
-
-std::vector<LayerRect> ViolationRepairer::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
-{
-  /**
-   * task_point_list 顺时针
-   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
-   */
-
-  if (task_point_list.size() < 4) {
-    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
-    return {};
-  }
-
-  std::vector<LayerRect> patch_list;
-
-  double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
-  double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
-
-  std::array<irt_int, 3> length_list;
-  for (irt_int i = 0; i < 3; i++) {
-    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
-  }
-
-  if (length_list[0] < notch_length || length_list[2] < notch_length) {
-    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
-      if (length_list[1] <= notch_space) {
-        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
-            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
-          irt_int offset = 0;
-          if (length_list[0] > length_list[2]) {
-            // use point 123
-            offset = 1;
-          }
-          irt_int lb_x
-              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int lb_y
-              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-          irt_int rt_x
-              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int rt_y
-              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-
-          PlanarCoord lb_coord(lb_x, lb_y);
-          PlanarCoord rt_coord(rt_x, rt_y);
-
-          patch_list.emplace_back(lb_coord, rt_coord, layer_idx);
-        }
-      }
-    }
-  }
+  std::vector<EXTLayerRect> patch_list;
 
   return patch_list;
 }
 
-void ViolationRepairer::repairNotch(VRModel& vr_model, VRNet& vr_net)
+#if 0 
+
+void DetailedRouter::repairNotch(VRModel& vr_model, VRNet& vr_net)
 {
   std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
   {
@@ -1548,7 +1437,7 @@ void ViolationRepairer::repairNotch(VRModel& vr_model, VRNet& vr_net)
   }
 }
 
-std::vector<LayerRect> ViolationRepairer::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
+std::vector<LayerRect> DetailedRouter::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
 {
   /**
    * task_point_list 顺时针
@@ -1720,8 +1609,7 @@ void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
-  std::vector<Violation> new_violation_list;
-  // std::vector<Violation> new_violation_list = getViolationByDRC();
+  std::vector<Violation> new_violation_list = getViolationListByIDRC(dr_box);
 
   // 原结果从graph删除
   for (Violation& violation : dr_box.get_violation_list()) {
@@ -1736,26 +1624,21 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 
 std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
 {
-  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
-
-  for (bool is_routing : {true, false}) {
-    for (auto& [layer_idx, net_fixed_rect_map] : DM_INST.getLayerNetFixedRectMap(dr_box.get_box_rect(), is_routing)) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-          net_idb_segment_map[net_idx].push_back(DM_INST.getIDBSegment(net_idx, fixed_rect));
-        }
-      }
-    }
+  std::vector<idb::IdbLayerShape*> env_shape_list;
+  for (NetShape& fixed_rect : dr_box.get_fixed_rect_list()) {
+    env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect));
   }
+
+  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegment(dr_task->get_net_idx(), &routing_segment));
+      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegment(dr_task->get_net_idx(), &patch));
+      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
     }
   }
-  return RTAPI_INST.getViolationList(net_idb_segment_map);
+  return RTAPI_INST.getViolationList(env_shape_list, net_idb_segment_map);
 }
 
 void DetailedRouter::updateDRTaskToGcellMap(DRBox& dr_box)
@@ -1789,11 +1672,9 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
 
 #if 1  // update env
 
-void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect,
-                                            bool is_routing)
+void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect)
 {
-  NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  updateNetShapeToGraph(dr_box, change_type, net_shape);
+  updateNetShapeToGraph(dr_box, change_type, fixed_rect);
 }
 
 void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)

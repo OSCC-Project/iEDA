@@ -384,26 +384,51 @@ std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, PhysicalNode
 
 #if 1  // 获得IdbSegment
 
-idb::IdbRegularWireSegment* DataManager::getIDBSegment(irt_int net_idx, Segment<LayerCoord>* segment)
+idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixRect(NetShape& fixed_rect)
 {
-  if (segment->get_first().get_layer_idx() == segment->get_second().get_layer_idx()) {
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+  idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
+
+  std::string layer_name;
+  if (fixed_rect.get_is_routing()) {
+    layer_name = routing_layer_list[fixed_rect.get_layer_idx()].get_layer_name();
+  } else {
+    layer_name = cut_layer_list[fixed_rect.get_layer_idx()].get_layer_name();
+  }
+  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
+  if (idb_layer == nullptr) {
+    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+  }
+  PlanarRect& real_rect = fixed_rect.get_rect();
+
+  idb::IdbLayerShape* idb_shape = new idb::IdbLayerShape();
+  idb_shape->set_type_rect();
+  idb_shape->add_rect(real_rect.get_lb_x(), real_rect.get_lb_y(), real_rect.get_rt_x(), real_rect.get_rt_y());
+  idb_shape->set_layer(idb_layer);
+  return idb_shape;
+}
+
+idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment)
+{
+  if (segment.get_first().get_layer_idx() == segment.get_second().get_layer_idx()) {
     return getIDBWire(net_idx, segment);
   } else {
     return getIDBVia(net_idx, segment);
   }
 }
 
-idb::IdbRegularWireSegment* DataManager::getIDBSegment(irt_int net_idx, EXTLayerRect* ext_layer_rect)
+idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
 
-  std::string layer_name = routing_layer_list[ext_layer_rect->get_layer_idx()].get_layer_name();
+  std::string layer_name = routing_layer_list[ext_layer_rect.get_layer_idx()].get_layer_name();
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
-  PlanarRect& real_rect = ext_layer_rect->get_real_rect();
+  PlanarRect& real_rect = ext_layer_rect.get_real_rect();
 
   idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
   idb_segment->set_layer(idb_layer);
@@ -2125,12 +2150,12 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
     for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegment(net_idx, segment));
+          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
         }
       }
       for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
         for (EXTLayerRect* patch : patch_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegment(net_idx, patch));
+          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
         }
       }
     }
@@ -2354,13 +2379,13 @@ void DataManager::loadStageResult(Stage stage)
 
 #endif
 
-idb::IdbRegularWireSegment* DataManager::getIDBWire(irt_int net_idx, Segment<LayerCoord>* segment)
+idb::IdbRegularWireSegment* DataManager::getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
 
-  LayerCoord& first_coord = segment->get_first();
-  LayerCoord& second_coord = segment->get_second();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
   irt_int layer_idx = first_coord.get_layer_idx();
 
   if (RTUtil::isOblique(first_coord, second_coord)) {
@@ -2378,14 +2403,14 @@ idb::IdbRegularWireSegment* DataManager::getIDBWire(irt_int net_idx, Segment<Lay
   return idb_segment;
 }
 
-idb::IdbRegularWireSegment* DataManager::getIDBVia(irt_int net_idx, Segment<LayerCoord>* segment)
+idb::IdbRegularWireSegment* DataManager::getIDBVia(irt_int net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
   idb::IdbVias* lef_via_list = _helper.get_idb_builder()->get_lef_service()->get_layout()->get_via_list();
   idb::IdbVias* def_via_list = _helper.get_idb_builder()->get_def_service()->get_design()->get_via_list();
 
-  LayerCoord& first_coord = segment->get_first();
-  LayerCoord& second_coord = segment->get_second();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
   irt_int below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
 
   if (below_layer_idx < 0 || below_layer_idx >= static_cast<irt_int>(layer_via_master_list.size())) {

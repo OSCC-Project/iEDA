@@ -71,6 +71,7 @@ class DetailedRouter
   std::map<irt_int, std::vector<LayerCoord>> getNetConnectPointMap(DRBox& dr_box);
   std::map<irt_int, std::vector<LayerCoord>> getBoundaryPointMap(DRBox& dr_box);
   void buildBoundingBox(DRBox& dr_box, DRTask* dr_task);
+  void buildFixedRectList(DRBox& dr_box);
   void buildDRTaskList(DRBox& dr_box);
   void buildViolationList(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
@@ -112,15 +113,15 @@ class DetailedRouter
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void applyPatch(DRBox& dr_box, DRTask* dr_task);
+  std::vector<EXTLayerRect> getPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationListByIDRC(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
 
-
 #if 1  // update env
-  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
   void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch);
   void updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape);
@@ -135,7 +136,6 @@ class DetailedRouter
 #endif
 
 #if 1  // valid drc
-
   bool hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
                          const DRCShape& drc_shape);
   bool hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,

@@ -65,6 +65,7 @@ class IdbPin;
 class IdbInstance;
 class IdbNet;
 class IdbRegularWireSegment;
+class IdbLayerShape;
 }  // namespace idb
 
 namespace ito {

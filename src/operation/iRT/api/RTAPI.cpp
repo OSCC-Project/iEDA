@@ -87,8 +87,9 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
   for (Tool tool : tool_list) {
     stage_set.insert(convertToStage(tool));
   }
-  std::vector<Stage> stage_list = {Stage::kNone,          Stage::kPinAccessor,    Stage::kResourceAllocator, Stage::kGlobalRouter,
-                                   Stage::kTrackAssigner, Stage::kDetailedRouter,  Stage::kNone};
+  std::vector<Stage> stage_list
+      = {Stage::kNone,           Stage::kPinAccessor, Stage::kResourceAllocator, Stage::kGlobalRouter, Stage::kTrackAssigner,
+         Stage::kDetailedRouter, Stage::kNone};
   irt_int stage_idx = 1;
   while (!RTUtil::exist(stage_set, stage_list[stage_idx])) {
     stage_idx++;
@@ -266,7 +267,8 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 // DRC
 
-std::vector<Violation> RTAPI::getViolationList(std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map)
+std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map)
 {
   std::vector<Violation> violation_list;
   return violation_list;

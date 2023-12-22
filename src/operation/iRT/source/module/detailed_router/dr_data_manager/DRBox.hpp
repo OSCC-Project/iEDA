@@ -44,6 +44,7 @@ class DRBox
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::vector<NetShape>& get_fixed_rect_list() { return _fixed_rect_list; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
@@ -53,6 +54,7 @@ class DRBox
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_fixed_rect_list(const std::vector<NetShape>& fixed_rect_list) { _fixed_rect_list = fixed_rect_list; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   // function
 #if 1  // astar
@@ -100,6 +102,7 @@ class DRBox
   ScaleAxis _box_track_axis;
   std::vector<DRTask*> _dr_task_list;
   std::vector<GridMap<DRNode>> _layer_node_map;
+  std::vector<NetShape> _fixed_rect_list;
   std::vector<Violation> _violation_list;
 #if 1  // astar
   // single task

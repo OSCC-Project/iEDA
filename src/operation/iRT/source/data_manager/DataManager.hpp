@@ -64,8 +64,9 @@ class DataManager
 #endif
 
 #if 1  // 获得IdbWireSegment
-  idb::IdbRegularWireSegment* getIDBSegment(irt_int net_idx, Segment<LayerCoord>* segment);
-idb::IdbRegularWireSegment* getIDBSegment(irt_int net_idx, EXTLayerRect* ext_layer_rect);
+  idb::IdbLayerShape* getIDBLayerShapeByFixRect(NetShape& fixed_rect);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect);
 #endif
 
   Config& getConfig() { return _config; }
@@ -172,9 +173,8 @@ idb::IdbRegularWireSegment* getIDBSegment(irt_int net_idx, EXTLayerRect* ext_lay
   void loadStageResult(Stage stage);
 #endif
 
-  idb::IdbRegularWireSegment* getIDBWire(irt_int net_idx, Segment<LayerCoord>* segment);
-  idb::IdbRegularWireSegment* getIDBVia(irt_int net_idx, Segment<LayerCoord>* segment);
-
+  idb::IdbRegularWireSegment* getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBVia(irt_int net_idx, Segment<LayerCoord>& segment);
 };
 
 }  // namespace irt
