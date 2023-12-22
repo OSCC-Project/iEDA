@@ -1286,29 +1286,30 @@ class RTUtil
     return (grid_rect.get_lb_x() != -1 && grid_rect.get_lb_y() != -1 && grid_rect.get_rt_x() != -1 && grid_rect.get_rt_y() != -1);
   }
 
+  /**
+   * 生成real_rect覆盖到的track grid rect
+   */
   static PlanarRect getTrackGridRect(const PlanarRect& real_rect, ScaleAxis& track_axis)
   {
-    std::vector<irt_int> x_idx_list;
-    std::vector<irt_int> x_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-    for (irt_int x_idx = 0; x_idx < static_cast<irt_int>(x_scale_list.size()); x_idx++) {
-      irt_int x_scale = x_scale_list[x_idx];
-      if (real_rect.get_lb_x() <= x_scale && x_scale <= real_rect.get_rt_x()) {
-        x_idx_list.push_back(x_idx);
-      }
-    }
-    std::vector<irt_int> y_idx_list;
-    std::vector<irt_int> y_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-    for (irt_int y_idx = 0; y_idx < static_cast<irt_int>(y_scale_list.size()); y_idx++) {
-      irt_int y_scale = y_scale_list[y_idx];
-      if (real_rect.get_lb_y() <= y_scale && y_scale <= real_rect.get_rt_y()) {
-        y_idx_list.push_back(y_idx);
-      }
-    }
-
+    std::vector<irt_int> x_idx_list = getTrackIdxList(real_rect.get_lb_x(), real_rect.get_rt_x(), track_axis.get_x_grid_list());
+    std::vector<irt_int> y_idx_list = getTrackIdxList(real_rect.get_lb_y(), real_rect.get_rt_y(), track_axis.get_y_grid_list());
     if (x_idx_list.empty() || y_idx_list.empty()) {
       return PlanarRect(-1, -1, -1, -1);
     }
     return PlanarRect(x_idx_list.front(), y_idx_list.front(), x_idx_list.back(), y_idx_list.back());
+  }
+
+  static std::vector<irt_int> getTrackIdxList(irt_int begin_line, irt_int end_line, std::vector<ScaleGrid>& scale_grid_list)
+  {
+    std::vector<irt_int> track_idx_list;
+    std::vector<irt_int> track_scale_list = getTrackScaleList(scale_grid_list);
+    for (size_t track_idx = 0; track_idx < track_scale_list.size(); track_idx++) {
+      irt_int track_scale = track_scale_list[track_idx];
+      if (begin_line <= track_scale && track_scale <= end_line) {
+        track_idx_list.push_back(track_idx);
+      }
+    }
+    return track_idx_list;
   }
 
   static std::vector<irt_int> getTrackScaleList(std::vector<ScaleGrid>& scale_grid_list)
@@ -1325,75 +1326,63 @@ class RTUtil
   }
 
   /**
-   * 若rect包含trackgrid则不处理
-   * 否则将其扩大到周围最近的track上
+   * 1、rect覆盖track grid，则返回grid_rect
+   * 2、rect只覆盖h/v的track时，延伸到相邻的track上
    */
-  static PlanarRect getTrackGridRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  static bool existNodeGrid(PlanarRect& real_rect, ScaleAxis& track_axis)
   {
-    if (existTrackGrid(getOverlap(rect, border), track_axis)) {
-      return rect;
-    }
-    return getNearestTrackRect(rect, track_axis, border);
+    PlanarRect grid_rect = getNodeGridRect(real_rect, track_axis);
+    return (grid_rect.get_lb_x() != -1 && grid_rect.get_lb_y() != -1 && grid_rect.get_rt_x() != -1 && grid_rect.get_rt_y() != -1);
   }
 
-  /**
-   * 将矩形扩大到周围最近的track上
-   */
-  static PlanarRect getNearestTrackRect(PlanarRect& rect, ScaleAxis& track_axis, PlanarRect& border)
+  static PlanarRect getNodeGridRect(PlanarRect& real_rect, ScaleAxis& track_axis)
   {
-    irt_int lb_x = rect.get_lb_x();
-    irt_int rt_x = rect.get_rt_x();
-    irt_int lb_y = rect.get_lb_y();
-    irt_int rt_y = rect.get_rt_y();
-    {
-      std::vector<irt_int> x_scale_list = getTrackScaleList(track_axis.get_x_grid_list());
-      irt_int x_scale_size = static_cast<irt_int>(x_scale_list.size()) - 1;
-      // 将lb_x扩展到左侧最近的x_track上
-      int x_index = 0;
-      for (; x_index <= x_scale_size; x_index++) {
-        if (x_scale_list[x_index] >= lb_x) {
-          if (x_index > 0) {
-            lb_x = x_scale_list[x_index - 1];
-          }
+    PlanarRect grid_rect(-1, -1, -1, -1);
+    std::vector<irt_int> x_track_list = getTrackScaleList(track_axis.get_x_grid_list());
+    std::vector<irt_int> y_track_list = getTrackScaleList(track_axis.get_y_grid_list());
+    PlanarRect track_rect(x_track_list.front(), y_track_list.front(), x_track_list.back(), y_track_list.back());
+    if (!isClosedOverlap(track_rect, real_rect)) {
+      return grid_rect;
+    }
+    PlanarRect check_rect = getOverlap(track_rect, real_rect);
+
+    std::vector<irt_int> x_track_idx_list = getTrackIdxList(check_rect.get_lb_x(), check_rect.get_rt_x(), track_axis.get_x_grid_list());
+    std::vector<irt_int> y_track_idx_list = getTrackIdxList(check_rect.get_lb_y(), check_rect.get_rt_y(), track_axis.get_y_grid_list());
+    if (!x_track_idx_list.empty() && !y_track_idx_list.empty()) {
+      grid_rect.set_lb(x_track_idx_list.front(), y_track_idx_list.front());
+      grid_rect.set_rt(x_track_idx_list.back(), y_track_idx_list.back());
+    } else if (!x_track_idx_list.empty()) {
+      grid_rect.set_lb_x(x_track_idx_list.front());
+      grid_rect.set_rt_x(x_track_idx_list.back());
+
+      bool found_low_boundary = false;
+      for (size_t y_idx = 0; y_idx < y_track_list.size(); y_idx++) {
+        if (y_track_list[y_idx] > check_rect.get_lb_y() && !found_low_boundary) {
+          grid_rect.set_lb_y(y_idx - 1);
+          found_low_boundary = true;
+        }
+        if (y_track_list[y_idx] > check_rect.get_rt_y()) {
+          grid_rect.set_rt_y(y_idx);
           break;
         }
       }
-      if (x_index > x_scale_size) {
-        lb_x = x_scale_list.back();
-      }
-      // 将rt_x扩展到右侧最近的x_track上
-      for (; x_index <= x_scale_size; x_index++) {
-        if (x_scale_list[x_index] > rt_x) {
-          rt_x = x_scale_list[x_index];
+    } else if (!y_track_idx_list.empty()) {
+      grid_rect.set_lb_y(y_track_idx_list.front());
+      grid_rect.set_rt_y(y_track_idx_list.back());
+
+      bool found_left_boundary = false;
+      for (size_t x_idx = 0; x_idx < x_track_list.size(); x_idx++) {
+        if (x_track_list[x_idx] > check_rect.get_lb_x() && !found_left_boundary) {
+          grid_rect.set_lb_x(x_idx - 1);
+          found_left_boundary = true;
+        }
+        if (x_track_list[x_idx] > check_rect.get_rt_x()) {
+          grid_rect.set_rt_x(x_idx);
           break;
         }
       }
     }
-    {
-      std::vector<irt_int> y_scale_list = getTrackScaleList(track_axis.get_y_grid_list());
-      irt_int y_scale_size = static_cast<irt_int>(y_scale_list.size()) - 1;
-      // 将lb_y扩展到左侧最近的y_track上
-      int y_index = 0;
-      for (; y_index <= y_scale_size; y_index++) {
-        if (y_scale_list[y_index] >= lb_y) {
-          if (y_index > 0) {
-            lb_y = y_scale_list[y_index - 1];
-          }
-          break;
-        }
-      }
-      if (y_index > y_scale_size) {
-        lb_y = y_scale_list.back();
-      }
-      // 将rt_y扩展到右侧最近的y_track上
-      for (; y_index <= y_scale_size; y_index++) {
-        if (y_scale_list[y_index] > rt_y) {
-          rt_y = y_scale_list[y_index];
-          break;
-        }
-      }
-    }
-    return getOverlap(PlanarRect(lb_x, lb_y, rt_x, rt_y), border);
+    return grid_rect;
   }
 
   // 计算刻度，包含边界

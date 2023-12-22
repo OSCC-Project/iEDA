@@ -1854,8 +1854,8 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existTrackGrid(searched_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getTrackGridRect(searched_rect, dr_box.get_box_track_axis());
+  if (RTUtil::existNodeGrid(searched_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(searched_rect, dr_box.get_box_track_axis());
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         DRNode& node = dr_box.get_layer_node_map()[net_shape.get_layer_idx()][grid_x][grid_y];
@@ -1894,8 +1894,8 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existTrackGrid(searched_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getTrackGridRect(searched_rect, dr_box.get_box_track_axis());
+  if (RTUtil::existNodeGrid(searched_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(searched_rect, dr_box.get_box_track_axis());
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         node_orientation_map[&dr_box.get_layer_node_map()[bottom_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kUp);
@@ -1934,7 +1934,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 #if 1
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  // std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
   PlanarRect box_rect = dr_box.get_box_rect().get_real_rect();

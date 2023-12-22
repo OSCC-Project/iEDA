@@ -504,7 +504,7 @@ TAGroup TrackAssigner::makeTAGroup(TAModel& ta_model, TNode<GuideSeg>* dr_guide_
   if (!pin_coord_list.empty()) {
     routing_region = RTUtil::getBoundingBox(pin_coord_list);
     if (!RTUtil::existTrackGrid(routing_region, panel_track_axis)) {
-      routing_region = RTUtil::getTrackGridRect(routing_region, panel_track_axis, die.get_real_rect());
+      routing_region = RTUtil::getTrackGridRect(routing_region, panel_track_axis);
     }
     routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
   }
@@ -1131,7 +1131,7 @@ void TrackAssigner::addHistoryCost(TAPanel& ta_panel)
         for (auto& [drc, violation_info_list] : drc_violation_map) {
           for (ViolationInfo& violation_info : violation_info_list) {
             LayerRect& violation_region = violation_info.get_violation_region();
-            PlanarRect enlarge_rect = RTUtil::getNearestTrackRect(violation_region, ta_panel.get_panel_track_axis(), ta_panel);
+            PlanarRect enlarge_rect = RTUtil::getNodeGridRect(violation_region, ta_panel.get_panel_track_axis());
             LayerRect enlarge_real_rect(enlarge_rect, violation_region.get_layer_idx());
             updateHistoryCostToGraph(ta_panel, ChangeType::kAdd, DRCShape(-1, enlarge_real_rect, violation_info.get_is_routing()));
           }
@@ -2095,8 +2095,8 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getSegmentList(TAPanel& ta_panel
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
 
-  if (RTUtil::existTrackGrid(check_rect, panel_track_axis)) {
-    PlanarRect grid_rect = RTUtil::getTrackGridRect(check_rect, panel_track_axis);
+  if (RTUtil::existNodeGrid(check_rect, panel_track_axis)) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(check_rect, panel_track_axis);
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         TANode& node = ta_node_map[grid_x][grid_y];
