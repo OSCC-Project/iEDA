@@ -104,11 +104,9 @@ std::map<std::string, std::vector<BaseViolationInfo>> DrcApi::getSelfViolationIn
   // return violation_manager->get_rt_violation_map();
   return {};
 }
-/**
- * check DRC violation for DEF file
- * initialize data from idb
- */
-std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef(std::map<int, std::vector<idb::IdbRegularWireSegment*>>&& idb_data)
+
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                                                      std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data)
 {
   DrcManager drc_manager;
 
@@ -123,15 +121,26 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef(std::ma
   /// tbd
   rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
-  data_manager->set_idb_data(&idb_data);
+  data_manager->set_env_shapes(&env_shape_list);
+  data_manager->set_routing_data(&routing_data);
 
-  drc_manager.engineStart(idb_data.size() > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
+  drc_manager.engineStart((env_shape_list.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
 
   drc_manager.buildCondition();
 
   drc_manager.check();
 
   return violation_manager->get_violation_map();
+}
+/**
+ * check DRC violation for DEF file
+ * initialize data from idb
+ */
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
+{
+  std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
+  return check(env_shape_list, routing_data);
 }
 
 }  // namespace idrc

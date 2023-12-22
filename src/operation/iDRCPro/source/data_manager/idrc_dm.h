@@ -26,6 +26,7 @@ class BaseShape;
 
 namespace idb {
 class IdbRegularWireSegment;
+class IdbLayerShape;
 }  // namespace idb
 
 namespace idrc {
@@ -42,14 +43,18 @@ class DrcDataManager
   // std::vector<irt::BaseShape>* get_target_shapes() { return _shapes; }
   // void set_target_shapes(std::vector<irt::BaseShape>* shapes) { _shapes = shapes; }
 
-  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* get_idb_data() { return _idb_data; }
-  void set_idb_data(std::map<int, std::vector<idb::IdbRegularWireSegment*>>* idb_data) { _idb_data = idb_data; }
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* get_routing_data() { return _routing_data; }
+  void set_routing_data(std::map<int, std::vector<idb::IdbRegularWireSegment*>>* routing_data) { _routing_data = routing_data; }
+
+  std::vector<idb::IdbLayerShape*>* get_env_shapes() { return _env_shapes; }
+  void set_env_shapes(std::vector<idb::IdbLayerShape*>* env_shapes) { _env_shapes = env_shapes; }
 
  private:
   // data from rt
   // irt::BaseRegion* _region = nullptr;
   // std::vector<irt::BaseShape>* _shapes = nullptr;
-  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* _idb_data;
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>>* _routing_data;
+  std::vector<idb::IdbLayerShape*>* _env_shapes;
 };
 
 }  // namespace idrc
