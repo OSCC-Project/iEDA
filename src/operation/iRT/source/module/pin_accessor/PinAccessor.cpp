@@ -608,7 +608,7 @@ void PinAccessor::updateAccessGrid(PANet& pa_net)
 
   for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
     for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      access_point.set_grid_coord(RTUtil::getGCellGridCoord(access_point.get_real_coord(), gcell_axis, bounding_box));
+      access_point.set_grid_coord(RTUtil::getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
     }
   }
 }

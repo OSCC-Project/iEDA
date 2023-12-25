@@ -129,8 +129,8 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}};
-  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}};
+  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
   for (DRParameter& dr_parameter : dr_parameter_list) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
@@ -346,8 +346,6 @@ void DetailedRouter::buildBoxSchedule(DRModel& dr_model)
 
 void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 {
-  Monitor monitor;
-
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
   size_t total_box_num = 0;
@@ -370,9 +368,10 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       freeDRBox(dr_box);
     }
     total_box_num += dr_box_id_list.size();
-    LOG_INST.info(Loc::current(), "Routed ", dr_box_id_list.size(), " boxes", stage_monitor.getStatsInfo());
+
+    LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes with ", getViolationNum(), " violations.",
+                  stage_monitor.getStatsInfo());
   }
-  LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes", monitor.getStatsInfo());
 }
 
 void DetailedRouter::buildFixedRectList(DRBox& dr_box)
@@ -1363,11 +1362,131 @@ void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
 std::vector<EXTLayerRect> DetailedRouter::getPatchList(DRBox& dr_box, DRTask* dr_task)
 {
   std::vector<EXTLayerRect> patch_list;
-
+  // for (EXTLayerRect& notch_patch : getNotchPatchList(dr_box, dr_task)) {
+  //   patch_list.push_back(notch_patch);
+  // }
+  // for (EXTLayerRect& min_area_patch : getMinAreaPatchList(dr_box, dr_task)) {
+  //   patch_list.push_back(min_area_patch);
+  // }
   return patch_list;
 }
 
-#if 0 
+#if 0
+
+std::vector<EXTLayerRect> DetailedRouter::getNotchPatchList(DRBox& dr_box, DRTask* dr_task)
+{
+  std::vector<EXTLayerRect> notch_patch_list;
+
+  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
+  {
+    // pin_shape
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
+        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
+        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
+      }
+    }
+    // vr_result_tree
+    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
+      if (!drc_shape.get_is_routing()) {
+        continue;
+      }
+      LayerRect& layer_rect = drc_shape.get_layer_rect();
+      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
+    }
+  }
+  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
+    std::vector<GTLPolyInt> polygon_list;
+    polygon_set.get_polygons(polygon_list);
+    for (GTLPolyInt& polygon : polygon_list) {
+      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
+      // 构建点集
+      std::vector<PlanarCoord> origin_point_list;
+      for (GTLPointInt& gtl_point : gtl_point_list) {
+        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
+      }
+      // 构建任务
+      std::vector<std::vector<PlanarCoord>> task_point_list_list;
+      for (size_t i = 0; i < origin_point_list.size(); i++) {
+        std::vector<PlanarCoord> task_point_list;
+        for (size_t j = 0; j < 4; j++) {
+          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
+        }
+        task_point_list_list.push_back(task_point_list);
+      }
+      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
+        LayerRect getNotchPatch(layer_idx, task_point_list);
+
+        EXTLayerRect notch_patch;
+        notch_patch.set_real_rect(getNotchPatch(layer_idx, task_point_list));
+        notch_patch for (LayerRect& patch : getNotchPatch(layer_idx, task_point_list))
+        {
+          candidate_patch_list.push_back(patch);
+        }
+      }
+    }
+  }
+  return notch_patch_list;
+}
+
+LayerRect DetailedRouter::getNotchPatch(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
+{
+  /**
+   * task_point_list 顺时针
+   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
+   */
+
+  if (task_point_list.size() < 4) {
+    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
+    return {};
+  }
+
+  double notch_length;
+  double notch_space;
+
+  //   double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
+  // double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
+
+  std::array<irt_int, 3> length_list;
+  for (irt_int i = 0; i < 3; i++) {
+    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
+  }
+
+  if (length_list[0] < notch_length || length_list[2] < notch_length) {
+    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
+      if (length_list[1] <= notch_space) {
+        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
+            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
+          irt_int offset = 0;
+          if (length_list[0] > length_list[2]) {
+            // use point 123
+            offset = 1;
+          }
+          irt_int lb_x
+              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int lb_y
+              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+          irt_int rt_x
+              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
+          irt_int rt_y
+              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
+
+          PlanarCoord lb_coord(lb_x, lb_y);
+          PlanarCoord rt_coord(rt_x, rt_y);
+
+          return LayerRect(lb_coord, rt_coord, layer_idx);
+        }
+      }
+    }
+  }
+}
+
+std::vector<EXTLayerRect> DetailedRouter::getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task)
+{
+  std::vector<EXTLayerRect> min_area_patch_list;
+
+  return min_area_patch_list;
+}
 
 void DetailedRouter::repairNotch(VRModel& vr_model, VRNet& vr_net)
 {
@@ -1674,6 +1793,20 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
   dr_box.get_layer_node_map().clear();
 }
 
+irt_int DetailedRouter::getViolationNum()
+{
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+
+  std::set<Violation*> violation_set;
+  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      violation_set.insert(gcell.get_violation_set().begin(), gcell.get_violation_set().end());
+    }
+  }
+  return static_cast<irt_int>(violation_set.size());
+}
+
 #if 1  // update env
 
 void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect)
@@ -1815,7 +1948,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 #if 1
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  // std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
   PlanarRect box_rect = dr_box.get_box_rect().get_real_rect();

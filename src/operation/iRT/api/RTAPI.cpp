@@ -270,7 +270,39 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map)
 {
+  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+  Helper& helper = DM_INST.getHelper();
+
   std::vector<Violation> violation_list;
+  idrc::DrcApi drc_api;
+  drc_api.init();
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_idb_segment_map)) {
+    for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
+      if (idrc_violation->get_net_ids().size() < 2) {
+        continue;
+      }
+
+      idb::IdbLayer* idb_layer = idrc_violation->get_layer();
+
+      EXTLayerRect ext_layer_rect;
+      if (idrc_violation->is_rect()) {
+        idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
+        ext_layer_rect.set_real_lb(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
+        ext_layer_rect.set_real_rt(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
+      } else {
+        LOG_INST.error(Loc::current(), "Type not supported!");
+      }
+      ext_layer_rect.set_grid_rect(RTUtil::getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? helper.getRoutingLayerIdxByName(idb_layer->get_name())
+                                                           : helper.getCutLayerIdxByName(idb_layer->get_name()));
+
+      Violation violation;
+      violation.set_violation_shape(ext_layer_rect);
+      violation.set_is_routing(idb_layer->is_routing());
+      violation.set_violation_net_set(idrc_violation->get_net_ids());
+      violation_list.push_back(violation);
+    }
+  }
   return violation_list;
 }
 

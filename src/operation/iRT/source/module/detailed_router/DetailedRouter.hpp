@@ -114,11 +114,15 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void applyPatch(DRBox& dr_box, DRTask* dr_task);
   std::vector<EXTLayerRect> getPatchList(DRBox& dr_box, DRTask* dr_task);
+  std::vector<EXTLayerRect> getNotchPatchList(DRBox& dr_box, DRTask* dr_task);
+  LayerRect getNotchPatch(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list);
+  std::vector<EXTLayerRect> getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationListByIDRC(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
+  irt_int getViolationNum();
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect);

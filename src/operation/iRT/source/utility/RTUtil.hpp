@@ -110,6 +110,33 @@ class RTUtil
     }
   }
 
+  // 叉乘
+  static irt_int crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return (second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
+           - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x());
+  }
+
+  // 是否是凸角
+  static bool isConvexCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) < 0;
+  }
+
+  // 是否是凹角
+  static bool isConcaveCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) > 0;
+  }
+
   static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
                                                      Orientation point_orientation = Orientation::kNone)
   {
@@ -1111,7 +1138,7 @@ class RTUtil
     return getClosedGCellGridRect(real_rect, gcell_axis);
   }
 
-  static PlanarCoord getGCellGridCoord(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
+  static PlanarCoord getGCellGridCoordByBBox(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
   {
     return PlanarCoord(
         (real_coord.get_x() == bounding_box.get_real_rt_x() ? bounding_box.get_grid_rt_x()

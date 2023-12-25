@@ -904,19 +904,19 @@ void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
   _helper.set_lef_file_path_list(idb_builder->get_lef_service()->get_lef_files());
   _helper.set_def_file_path(idb_builder->get_def_service()->get_def_file());
 
-  std::map<irt_int, irt_int>& routing_layer_idx_db_to_rt_map = _helper.get_routing_layer_idx_db_to_rt_map();
-  std::map<irt_int, irt_int>& cut_layer_idx_db_to_rt_map = _helper.get_cut_layer_idx_db_to_rt_map();
+  std::map<irt_int, irt_int>& routing_idb_layer_id_to_idx_map = _helper.get_routing_idb_layer_id_to_idx_map();
+  std::map<irt_int, irt_int>& cut_idb_layer_id_to_idx_map = _helper.get_cut_idb_layer_id_to_idx_map();
   std::map<std::string, irt_int>& routing_layer_name_to_idx_map = _helper.get_routing_layer_name_to_idx_map();
   std::map<std::string, irt_int>& cut_layer_name_to_idx_map = _helper.get_cut_layer_name_to_idx_map();
 
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   for (size_t i = 0; i < routing_layer_list.size(); i++) {
-    routing_layer_idx_db_to_rt_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    routing_idb_layer_id_to_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
     routing_layer_name_to_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   for (size_t i = 0; i < cut_layer_list.size(); i++) {
-    cut_layer_idx_db_to_rt_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    cut_idb_layer_id_to_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
     cut_layer_name_to_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
 }
@@ -1247,10 +1247,10 @@ void DataManager::buildLayerList()
 void DataManager::transLayerList()
 {
   for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
-    routing_layer.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(routing_layer.get_layer_idx()));
+    routing_layer.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(routing_layer.get_layer_idx()));
   }
   for (CutLayer& cut_layer_list : _database.get_cut_layer_list()) {
-    cut_layer_list.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(cut_layer_list.get_layer_idx()));
+    cut_layer_list.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(cut_layer_list.get_layer_idx()));
   }
 }
 
@@ -1336,12 +1336,12 @@ void DataManager::transLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      above_enclosure.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(above_enclosure.get_layer_idx()));
+      above_enclosure.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(above_enclosure.get_layer_idx()));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      below_enclosure.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(below_enclosure.get_layer_idx()));
+      below_enclosure.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(below_enclosure.get_layer_idx()));
       // cut
-      via_master.set_cut_layer_idx(_helper.wrapIDBCutLayerIdxToRT(via_master.get_cut_layer_idx()));
+      via_master.set_cut_layer_idx(_helper.getCutLayerIdxByIDBLayerId(via_master.get_cut_layer_idx()));
     }
   }
 }
@@ -1523,10 +1523,10 @@ void DataManager::transBlockageList()
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
   for (Blockage& blockage : routing_blockage_list) {
-    blockage.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(blockage.get_layer_idx()));
+    blockage.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
   for (Blockage& blockage : cut_blockage_list) {
-    blockage.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(blockage.get_layer_idx()));
+    blockage.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
 }
 
@@ -1617,10 +1617,10 @@ void DataManager::transPinList(Net& net)
 {
   for (Pin& pin : net.get_pin_list()) {
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-      routing_shape.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(routing_shape.get_layer_idx()));
+      routing_shape.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(routing_shape.get_layer_idx()));
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      cut_shape.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(cut_shape.get_layer_idx()));
+      cut_shape.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(cut_shape.get_layer_idx()));
     }
   }
 }
