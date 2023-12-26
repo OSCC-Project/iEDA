@@ -40,21 +40,18 @@ class DRBox
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
   DRParameter* get_curr_dr_parameter() { return _curr_dr_parameter; }
-  ScaleAxis& get_box_track_axis() { return _box_track_axis; }
-  PlanarRect& get_graph_rect() { return _graph_rect; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
   std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
   {
     return _type_layer_net_fixed_rect_map;
   }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
+  ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
   void set_curr_dr_parameter(DRParameter* curr_dr_parameter) { _curr_dr_parameter = curr_dr_parameter; }
-  void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
-  void set_graph_rect(const PlanarRect& graph_rect) { _graph_rect = graph_rect; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_type_layer_net_fixed_rect_map(
       const std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
@@ -62,6 +59,7 @@ class DRBox
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
+  void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
 #if 1  // astar
@@ -105,11 +103,10 @@ class DRBox
   EXTPlanarRect _box_rect;
   DRBoxId _dr_box_id;
   DRParameter* _curr_dr_parameter = nullptr;
-  ScaleAxis _box_track_axis;
-  PlanarRect _graph_rect;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::vector<Violation> _violation_list;
+  ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
 #if 1  // astar
   // single task
