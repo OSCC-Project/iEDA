@@ -101,11 +101,14 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, irt_int net_
 
   for (irt_int x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
     for (irt_int y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
-      GCell& gcell = gcell_map[x][y];
+      auto& net_fixed_rect_map = gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()];
       if (change_type == ChangeType::kAdd) {
-        gcell.get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
+        net_fixed_rect_map[net_idx].insert(ext_layer_rect);
       } else {
-        gcell.get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].erase(ext_layer_rect);
+        net_fixed_rect_map[net_idx].erase(ext_layer_rect);
+        if (net_fixed_rect_map[net_idx].empty()) {
+          net_fixed_rect_map.erase(net_idx);
+        }
       }
     }
   }
@@ -115,11 +118,14 @@ void DataManager::updateAccessPointToGCellMap(ChangeType change_type, irt_int ne
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  GCell& gcell = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()];
+  auto& net_access_point_map = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()].get_net_access_point_map();
   if (change_type == ChangeType::kAdd) {
-    gcell.get_net_access_point_map()[net_idx].insert(access_point);
+    net_access_point_map[net_idx].insert(access_point);
   } else {
-    gcell.get_net_access_point_map()[net_idx].erase(access_point);
+    net_access_point_map[net_idx].erase(access_point);
+    if (net_access_point_map[net_idx].empty()) {
+      net_access_point_map.erase(net_idx);
+    }
   }
 }
 
@@ -132,11 +138,14 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, irt_int net_
 
   for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
     for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
-      GCell& gcell = gcell_map[x][y];
+      auto& net_result_map = gcell_map[x][y].get_net_result_map();
       if (change_type == ChangeType::kAdd) {
-        gcell.get_net_result_map()[net_idx].insert(segment);
+        net_result_map[net_idx].insert(segment);
       } else {
-        gcell.get_net_result_map()[net_idx].erase(segment);
+        net_result_map[net_idx].erase(segment);
+        if (net_result_map[net_idx].empty()) {
+          net_result_map.erase(net_idx);
+        }
       }
     }
   }
@@ -166,11 +175,14 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, irt_int net_idx,
 
   for (irt_int x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
     for (irt_int y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
-      GCell& gcell = gcell_map[x][y];
+      auto& net_patch_map = gcell_map[x][y].get_net_patch_map();
       if (change_type == ChangeType::kAdd) {
-        gcell.get_net_patch_map()[net_idx].insert(ext_layer_rect);
+        net_patch_map[net_idx].insert(ext_layer_rect);
       } else {
-        gcell.get_net_patch_map()[net_idx].erase(ext_layer_rect);
+        net_patch_map[net_idx].erase(ext_layer_rect);
+        if (net_patch_map[net_idx].empty()) {
+          net_patch_map.erase(net_idx);
+        }
       }
     }
   }
