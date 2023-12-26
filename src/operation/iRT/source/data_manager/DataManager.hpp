@@ -47,7 +47,7 @@ class DataManager
   void updateNetResultToGCellMap(ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   void updatePatchToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect);
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>> getLayerNetFixedRectMap(EXTPlanarRect& region, bool is_routing);
+  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<irt_int, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
   std::map<irt_int, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
@@ -64,7 +64,7 @@ class DataManager
 #endif
 
 #if 1  // 获得IdbWireSegment
-  idb::IdbLayerShape* getIDBLayerShapeByFixRect(NetShape& fixed_rect);
+  idb::IdbLayerShape* getIDBLayerShapeByFixRect(EXTLayerRect* fixed_rect, bool is_routing);
   idb::IdbRegularWireSegment* getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment);
   idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect);
 #endif

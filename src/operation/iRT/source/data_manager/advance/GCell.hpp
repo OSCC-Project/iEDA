@@ -44,8 +44,10 @@ class GCell
   ~GCell() = default;
   // getter
   GCellId& get_gcell_id() { return _gcell_id; }
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>& get_routing_net_fixed_rect_map() { return _routing_net_fixed_rect_map; }
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>& get_cut_net_fixed_rect_map() { return _cut_net_fixed_rect_map; }
+  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
+  {
+    return _type_layer_net_fixed_rect_map;
+  }
   std::map<irt_int, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
   std::map<irt_int, GlobalSupply*>& get_routing_global_supply_map() { return _routing_global_supply_map; }
   std::map<irt_int, std::set<Segment<LayerCoord>*>>& get_net_result_map() { return _net_result_map; }
@@ -57,9 +59,8 @@ class GCell
 
  private:
   GCellId _gcell_id;
-  // blockage & pin_shape
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>> _routing_net_fixed_rect_map;
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>> _cut_net_fixed_rect_map;
+  // blockage & pin_shape 如果是routing则true，cut则false
+  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   // access point 只有routing层有
   std::map<irt_int, std::set<AccessPoint*>> _net_access_point_map;
   // global supply 只有routing层有

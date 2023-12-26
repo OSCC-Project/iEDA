@@ -354,9 +354,12 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 #pragma omp parallel for
     for (DRBoxId& dr_box_id : dr_box_id_list) {
       DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-      buildFixedRectList(dr_box);
       initDRTaskList(dr_model, dr_box);
+      if (dr_box.get_dr_task_list().empty()) {
+        continue;
+      }
       buildDRTaskList(dr_box);
+      buildFixedRectList(dr_box);
       buildViolationList(dr_box);
       initLayerNodeMap(dr_box);
       buildNeighborMap(dr_box);
@@ -371,21 +374,6 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 
     LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes with ", getViolationNum(), " violations.",
                   stage_monitor.getStatsInfo());
-  }
-}
-
-void DetailedRouter::buildFixedRectList(DRBox& dr_box)
-{
-  std::vector<NetShape>& fixed_rect_list = dr_box.get_fixed_rect_list();
-
-  for (bool is_routing : {true, false}) {
-    for (auto& [layer_idx, net_fixed_rect_map] : DM_INST.getLayerNetFixedRectMap(dr_box.get_box_rect(), is_routing)) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-          fixed_rect_list.emplace_back(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-        }
-      }
-    }
   }
 }
 
@@ -532,6 +520,11 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
       }
     }
   }
+}
+
+void DetailedRouter::buildFixedRectList(DRBox& dr_box)
+{
+  dr_box.set_type_layer_net_fixed_rect_map(DM_INST.getTypeLayerNetFixedRectMap(dr_box.get_box_rect()));
 }
 
 void DetailedRouter::buildViolationList(DRBox& dr_box)
@@ -768,8 +761,14 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 
 void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
 {
-  for (NetShape& fixed_rect : dr_box.get_fixed_rect_list()) {
-    updateFixedRectToGraph(dr_box, ChangeType::kAdd, fixed_rect);
+  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (auto& fixed_rect : fixed_rect_set) {
+          updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, fixed_rect, is_routing);
+        }
+      }
+    }
   }
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
@@ -1748,10 +1747,15 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
 {
   std::vector<idb::IdbLayerShape*> env_shape_list;
-  for (NetShape& fixed_rect : dr_box.get_fixed_rect_list()) {
-    env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect));
+  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (auto& fixed_rect : fixed_rect_set) {
+          env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+        }
+      }
+    }
   }
-
   std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
@@ -1809,9 +1813,11 @@ irt_int DetailedRouter::getViolationNum()
 
 #if 1  // update env
 
-void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect)
+void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect,
+                                            bool is_routing)
 {
-  updateNetShapeToGraph(dr_box, change_type, fixed_rect);
+  NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
+  updateNetShapeToGraph(dr_box, change_type, net_shape);
 }
 
 void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)
