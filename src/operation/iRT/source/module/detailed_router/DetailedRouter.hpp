@@ -62,8 +62,6 @@ class DetailedRouter
   void iterativeDRModel(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildDRBoxMap(DRModel& dr_model);
-  void buildBoxTrackAxis(DRBox& dr_box);
-  void buildGraphRect(DRBox& dr_box);
   void splitNetResult(DRBox& dr_box);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
@@ -74,6 +72,7 @@ class DetailedRouter
   void buildDRTaskList(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
   void buildViolationList(DRBox& dr_box);
+  void buildBoxTrackAxis(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
   void buildAllConnect(DRBox& dr_box);
