@@ -471,8 +471,6 @@ std::map<TNode<GuideSeg>*, TATask> TrackAssigner::makeTATaskMap(TAModel& ta_mode
 TAGroup TrackAssigner::makeTAGroup(TAModel& ta_model, TNode<GuideSeg>* dr_guide_seg_node, TNode<GuideSeg>* ta_guide_seg_node,
                                    std::vector<LayerCoord>& pin_coord_list)
 {
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   // dr info

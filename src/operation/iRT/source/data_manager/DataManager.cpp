@@ -103,17 +103,9 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, irt_int net_
     for (irt_int y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
       GCell& gcell = gcell_map[x][y];
       if (change_type == ChangeType::kAdd) {
-        if (is_routing) {
-          gcell.get_routing_net_fixed_rect_map()[ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
-        } else {
-          gcell.get_cut_net_fixed_rect_map()[ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
-        }
+        gcell.get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
       } else {
-        if (is_routing) {
-          gcell.get_routing_net_fixed_rect_map()[ext_layer_rect->get_layer_idx()][net_idx].erase(ext_layer_rect);
-        } else {
-          gcell.get_cut_net_fixed_rect_map()[ext_layer_rect->get_layer_idx()][net_idx].erase(ext_layer_rect);
-        }
+        gcell.get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].erase(ext_layer_rect);
       }
     }
   }
@@ -184,29 +176,24 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, irt_int net_idx,
   }
 }
 
-std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>> DataManager::getLayerNetFixedRectMap(EXTPlanarRect& region, bool is_routing)
+std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> DataManager::getTypeLayerNetFixedRectMap(
+    EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>> layer_net_fixed_rect_map;
+  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> type_layer_net_fixed_rect_map;
   for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
     for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
-      if (is_routing) {
-        for (auto& [layer_idx, net_fixed_rect_map] : gcell_map[x][y].get_routing_net_fixed_rect_map()) {
+      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell_map[x][y].get_type_layer_net_fixed_rect_map()) {
+        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
           for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-            layer_net_fixed_rect_map[layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
-          }
-        }
-      } else {
-        for (auto& [layer_idx, net_fixed_rect_map] : gcell_map[x][y].get_cut_net_fixed_rect_map()) {
-          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-            layer_net_fixed_rect_map[layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
+            type_layer_net_fixed_rect_map[is_routing][layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
           }
         }
       }
     }
   }
-  return layer_net_fixed_rect_map;
+  return type_layer_net_fixed_rect_map;
 }
 
 std::map<irt_int, std::set<AccessPoint*>> DataManager::getNetAccessPointMap(EXTPlanarRect& region)
@@ -384,23 +371,23 @@ std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, PhysicalNode
 
 #if 1  // 获得IdbSegment
 
-idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixRect(NetShape& fixed_rect)
+idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixRect(EXTLayerRect* fixed_rect, bool is_routing)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
 
   std::string layer_name;
-  if (fixed_rect.get_is_routing()) {
-    layer_name = routing_layer_list[fixed_rect.get_layer_idx()].get_layer_name();
+  if (is_routing) {
+    layer_name = routing_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
   } else {
-    layer_name = cut_layer_list[fixed_rect.get_layer_idx()].get_layer_name();
+    layer_name = cut_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
   }
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
-  PlanarRect& real_rect = fixed_rect.get_rect();
+  PlanarRect& real_rect = fixed_rect->get_real_rect();
 
   idb::IdbLayerShape* idb_shape = new idb::IdbLayerShape();
   idb_shape->set_type_rect();

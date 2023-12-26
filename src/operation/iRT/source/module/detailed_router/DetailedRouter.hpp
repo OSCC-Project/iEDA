@@ -71,8 +71,8 @@ class DetailedRouter
   std::map<irt_int, std::vector<LayerCoord>> getNetConnectPointMap(DRBox& dr_box);
   std::map<irt_int, std::vector<LayerCoord>> getBoundaryPointMap(DRBox& dr_box);
   void buildBoundingBox(DRBox& dr_box, DRTask* dr_task);
-  void buildFixedRectList(DRBox& dr_box);
   void buildDRTaskList(DRBox& dr_box);
+  void buildFixedRectList(DRBox& dr_box);
   void buildViolationList(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void buildNeighborMap(DRBox& dr_box);
@@ -125,7 +125,7 @@ class DetailedRouter
   irt_int getViolationNum();
 
 #if 1  // update env
-  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, NetShape& fixed_rect);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
   void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch);
   void updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape);
