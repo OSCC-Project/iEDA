@@ -510,7 +510,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     net_task_map[dr_task->get_net_idx()] = dr_task;
   }
-  for (auto [net_idx, segment_set] : DM_INST.getNetResultMap(box_rect)) {
+  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(box_rect)) {
     if (!RTUtil::exist(net_task_map, net_idx)) {
       LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
     }
@@ -578,8 +578,6 @@ void DetailedRouter::buildNeighborMap(DRBox& dr_box)
   initDRNodeValid(dr_box);
   buildDRNodeNeighbor(dr_box);
 #endif
-  // plotDRBox(dr_box, -1);
-  // irt_int a = 1;
 }
 
 void DetailedRouter::buildAllConnect(DRBox& dr_box)
@@ -638,9 +636,9 @@ void DetailedRouter::initDRNodeValid(DRBox& dr_box)
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
       for (auto& [real_coord, direction_set] : dr_group.get_coord_direction_map()) {
-        PlanarCoord grid_coord = RTUtil::getTrackGridCoord(real_coord, box_track_axis);
         if (!RTUtil::existTrackGrid(real_coord, dr_box.get_box_track_axis())) {
-          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", real_coord.get_x(), ",", real_coord.get_y(), ")!");
+          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", real_coord.get_x(), ",", real_coord.get_y(), ") in box(",
+                         dr_box.get_dr_box_id().get_x(), ",", dr_box.get_dr_box_id().get_y(), ")!");
         }
         access_grid_coord_set.insert(RTUtil::getTrackGridCoord(real_coord, box_track_axis));
       }
@@ -1948,7 +1946,7 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
 #if 1
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  // std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
   std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
   PlanarRect box_rect = dr_box.get_box_rect().get_real_rect();
@@ -2180,75 +2178,75 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx)
   // }
 
   // task
-  // for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-  //   GPStruct task_struct(RTUtil::getString("task_", dr_task->get_task_idx(), "(net_", dr_task->get_origin_net_idx(), ")"));
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    GPStruct task_struct(RTUtil::getString("(net_", dr_task->get_net_idx(), ")"));
 
-  //   if (curr_task_idx == -1 || dr_task.get_task_idx() == curr_task_idx) {
-  //     for (DRGroup& dr_group : dr_task.get_dr_group_list()) {
-  //       for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-  //         GPBoundary gp_boundary;
-  //         gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
-  //         gp_boundary.set_rect(RTUtil::getEnlargedRect(coord, width));
-  //         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
-  //         task_struct.push(gp_boundary);
-  //       }
-  //     }
-  //   }
-  //   {
-  //     // bounding_box
-  //     GPBoundary gp_boundary;
-  //     gp_boundary.set_layer_idx(0);
-  //     gp_boundary.set_data_type(2);
-  //     gp_boundary.set_rect(dr_task.get_bounding_box().get_base_region());
-  //     task_struct.push(gp_boundary);
-  //   }
-  //   for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(dr_task.get_routing_tree())) {
-  //     LayerCoord first_coord = segment.get_first()->value();
-  //     LayerCoord second_coord = segment.get_second()->value();
-  //     irt_int first_layer_idx = first_coord.get_layer_idx();
-  //     irt_int second_layer_idx = second_coord.get_layer_idx();
-  //     irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+    if (curr_task_idx == -1 || dr_task->get_net_idx() == curr_task_idx) {
+      for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
+        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
+          gp_boundary.set_rect(RTUtil::getEnlargedRect(coord, width));
+          gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
+          task_struct.push(gp_boundary);
+        }
+      }
+    }
+    // {
+    //   // bounding_box
+    //   GPBoundary gp_boundary;
+    //   gp_boundary.set_layer_idx(0);
+    //   gp_boundary.set_data_type(2);
+    //   gp_boundary.set_rect(dr_task.get_bounding_box().get_base_region());
+    //   task_struct.push(gp_boundary);
+    // }
+    for (Segment<LayerCoord>& segment : dr_task->get_routing_segment_list()) {
+      LayerCoord first_coord = segment.get_first();
+      LayerCoord second_coord = segment.get_second();
+      irt_int first_layer_idx = first_coord.get_layer_idx();
+      irt_int second_layer_idx = second_coord.get_layer_idx();
+      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
 
-  //     if (first_layer_idx == second_layer_idx) {
-  //       GPBoundary gp_boundary;
-  //       gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-  //       gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width));
-  //       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
-  //       task_struct.push(gp_boundary);
-  //     } else {
-  //       RTUtil::swapByASC(first_layer_idx, second_layer_idx);
-  //       for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-  //         ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+      if (first_layer_idx == second_layer_idx) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+        gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width));
+        gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
+        task_struct.push(gp_boundary);
+      } else {
+        RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          ViaMaster& via_master = layer_via_master_list[layer_idx].front();
 
-  //         LayerRect& above_enclosure = via_master.get_above_enclosure();
-  //         LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
-  //         GPBoundary above_boundary;
-  //         above_boundary.set_rect(offset_above_enclosure);
-  //         above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
-  //         above_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-  //         task_struct.push(above_boundary);
+          LayerRect& above_enclosure = via_master.get_above_enclosure();
+          LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+          GPBoundary above_boundary;
+          above_boundary.set_rect(offset_above_enclosure);
+          above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
+          above_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(above_boundary);
 
-  //         LayerRect& below_enclosure = via_master.get_below_enclosure();
-  //         LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
-  //         GPBoundary below_boundary;
-  //         below_boundary.set_rect(offset_below_enclosure);
-  //         below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
-  //         below_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-  //         task_struct.push(below_boundary);
+          LayerRect& below_enclosure = via_master.get_below_enclosure();
+          LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+          GPBoundary below_boundary;
+          below_boundary.set_rect(offset_below_enclosure);
+          below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
+          below_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          task_struct.push(below_boundary);
 
-  //         for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
-  //           LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
-  //           GPBoundary cut_boundary;
-  //           cut_boundary.set_rect(offset_cut_shape);
-  //           cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
-  //           cut_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
-  //           task_struct.push(cut_boundary);
-  //         }
-  //       }
-  //     }
-  //   }
-  //   gp_gds.addStruct(task_struct);
-  // }
+          for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+            LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+            GPBoundary cut_boundary;
+            cut_boundary.set_rect(offset_cut_shape);
+            cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
+            cut_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+            task_struct.push(cut_boundary);
+          }
+        }
+      }
+    }
+    gp_gds.addStruct(task_struct);
+  }
   std::string gds_file_path
       = RTUtil::getString(dr_temp_directory_path, "dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y(), ".gds");
   GP_INST.plot(gp_gds, gds_file_path, false, false);
