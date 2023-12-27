@@ -129,8 +129,8 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}};
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
+  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 0, 0, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 32, 0, true}, {2, 7, -3, 32, 32, true}, {3, 7, -5, 32, 32, true}};
   for (DRParameter& dr_parameter : dr_parameter_list) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
@@ -1734,10 +1734,12 @@ std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
   for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
     for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
       for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        for (auto& fixed_rect : fixed_rect_set) {
-          if (net_idx == -1) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
             env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
-          } else {
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
             net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
           }
         }
