@@ -499,13 +499,6 @@ TAGroup TrackAssigner::makeTAGroup(TAModel& ta_model, TNode<GuideSeg>* dr_guide_
     orientation = RTUtil::getOrientation(dr_grid_coord, first_grid_coord);
   }
   PlanarRect routing_region = dr_guide;
-  if (!pin_coord_list.empty()) {
-    routing_region = RTUtil::getBoundingBox(pin_coord_list);
-    if (!RTUtil::existTrackGrid(routing_region, panel_track_axis)) {
-      routing_region = RTUtil::getTrackGridRect(routing_region, panel_track_axis);
-    }
-    routing_region = RTUtil::getEnlargedRect(routing_region, 0, dr_guide);
-  }
   std::vector<irt_int> x_list;
   std::vector<irt_int> y_list;
   if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
