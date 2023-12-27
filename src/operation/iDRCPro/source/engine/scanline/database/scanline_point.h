@@ -77,6 +77,9 @@ struct CompareScanlinePointByX
   {
     if (p1->get_point()->get_x() == p2->get_point()->get_x()) {
       if (p1->get_point()->get_y() == p2->get_point()->get_y()) {
+        if (p1->get_is_forward() == p2->get_is_forward()) {
+          return p1->get_id() < p2->get_id();
+        }
         return p1->get_is_forward() > p2->get_is_forward();
       }
       return p1->get_point()->get_y() < p2->get_point()->get_y();
@@ -91,6 +94,9 @@ struct CompareScanlinePointByY
   {
     if (p1->get_point()->get_y() == p2->get_point()->get_y()) {
       if (p1->get_point()->get_x() == p2->get_point()->get_x()) {
+        if (p1->get_is_forward() == p2->get_is_forward()) {
+          return p1->get_id() < p2->get_id();
+        }
         return p1->get_is_forward() > p2->get_is_forward();
       }
       return p1->get_point()->get_x() < p2->get_point()->get_x();

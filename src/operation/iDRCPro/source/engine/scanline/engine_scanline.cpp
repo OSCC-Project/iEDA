@@ -87,6 +87,12 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
              && (*scanline_status_it)->get_is_forward() > current_point->get_is_forward()) {
         ++scanline_status_it;
       }
+      while (scanline_status_it != status.status_points.end()
+             && status.get_orthogonal_coord((*scanline_status_it)->get_point()) == current_point_coord
+             && (*scanline_status_it)->get_is_forward() == current_point->get_is_forward()
+             && (*scanline_status_it)->get_id() < current_point->get_id()) {
+        ++scanline_status_it;
+      }
       status.status_points.insert(scanline_status_it, current_point);
     } else {
       // change point to ending endpoint in scanline status
