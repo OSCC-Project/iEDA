@@ -52,6 +52,7 @@ class DrcApi
                                                                              std::vector<BaseShape>& drc_shape_list);
 
   std::map<ViolationEnumType, std::vector<DrcViolation*>> check(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                                                std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
                                                                 std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data);
 
   std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef();

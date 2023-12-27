@@ -27,4 +27,4 @@ target_include_directories(idrc_pro_src
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+# set(CMAKE_BUILD_TYPE "debug")

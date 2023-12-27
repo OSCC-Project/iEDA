@@ -277,7 +277,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_result_map)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;
