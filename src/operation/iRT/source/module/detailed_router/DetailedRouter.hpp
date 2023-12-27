@@ -135,7 +135,7 @@ class DetailedRouter
 #endif
 
 #if 1  // plot dr_box
-  void plotDRBox(DRBox& dr_box, irt_int curr_task_idx);
+  void plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string flag);
 #endif
 
 #if 1  // valid drc
