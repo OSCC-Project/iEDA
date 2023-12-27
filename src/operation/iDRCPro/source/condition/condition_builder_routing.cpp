@@ -313,11 +313,11 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
     auto* iter_point = iterate_function(start_point_1);
     while (iter_point && iter_point->direction(start_point_1) == iterate_direction) {
       auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
-      while (neighbour && neighbour->get_point()->get_x() == iter_point->get_x()
-             && neighbour->get_point()->get_y() == iter_point->get_y()) {
-        neighbour = b_vertical ? neighbour->get_point()->get_neighbour(DrcDirection::kUp)
-                               : neighbour->get_point()->get_neighbour(DrcDirection::kRight);
-      }
+      // while (neighbour && neighbour->get_point()->get_x() == iter_point->get_x()
+      //        && neighbour->get_point()->get_y() == iter_point->get_y()) {
+      //   neighbour = b_vertical ? neighbour->get_point()->get_neighbour(DrcDirection::kUp)
+      //                          : neighbour->get_point()->get_neighbour(DrcDirection::kRight);
+      // }
       if (neighbour == nullptr) {
         break;
       }
