@@ -46,6 +46,9 @@ class DrcDataManager
   std::map<int, std::vector<idb::IdbRegularWireSegment*>>* get_routing_data() { return _routing_data; }
   void set_routing_data(std::map<int, std::vector<idb::IdbRegularWireSegment*>>* routing_data) { _routing_data = routing_data; }
 
+  std::map<int, std::vector<idb::IdbLayerShape*>>* get_pin_data() { return _pin_data; }
+  void set_pin_data(std::map<int, std::vector<idb::IdbLayerShape*>>* pin_data) { _pin_data = pin_data; }
+
   std::vector<idb::IdbLayerShape*>* get_env_shapes() { return _env_shapes; }
   void set_env_shapes(std::vector<idb::IdbLayerShape*>* env_shapes) { _env_shapes = env_shapes; }
 
@@ -54,6 +57,7 @@ class DrcDataManager
   // irt::BaseRegion* _region = nullptr;
   // std::vector<irt::BaseShape>* _shapes = nullptr;
   std::map<int, std::vector<idb::IdbRegularWireSegment*>>* _routing_data;
+  std::map<int, std::vector<idb::IdbLayerShape*>>* _pin_data;
   std::vector<idb::IdbLayerShape*>* _env_shapes;
 };
 

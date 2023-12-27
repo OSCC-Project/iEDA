@@ -26,6 +26,8 @@
 
 namespace idrc {
 
+#define DEBUG 0
+
 /**
  * build condition for routing layers
  */
@@ -152,6 +154,7 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
   auto* neighbour = point->get_neighbour(direction);
   if (neighbour->is_overlap()) {
     if (false == point->is_overlap_checked()) {
+#if DEBUG
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
@@ -160,15 +163,18 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
       auto& violation_list = violation_manager->get_violation_list(ViolationEnumType::kViolationShort);
       int list_size = violation_list.size();
       std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
+#endif
 
       saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, -1);
 
+#if DEBUG
       if (violation_list.size() > list_size) {
         auto vio = violation_list.at(violation_list.size() - 1);
         auto vio_rect = static_cast<idrc::DrcViolationRect*>(vio);
         ieda_solver::GtlRect boost_rect(vio_rect->get_llx(), vio_rect->get_lly(), vio_rect->get_urx(), vio_rect->get_ury());
         int a = 0;
       }
+#endif
     }
     return;
   }
@@ -184,16 +190,19 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
     int spacing = b_vertical ? std::abs(neighbour->get_point()->get_y() - point->get_y())
                              : std::abs(neighbour->get_point()->get_x() - point->get_x());
     if (spacing == 0) {
+#if DEBUG
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
       auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
       int a = 0;
+#endif
       return;
     } else if (spacing > max_spacing) {
       /// no violation
       return;
     } else if (spacing < min_spacing) {
+#if DEBUG
       auto gtl_pts_1 = get_boost_point(point);
       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
@@ -202,16 +211,19 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
       auto& violation_list = violation_manager->get_violation_list(ViolationEnumType::kViolationMinSpacing);
       int list_size = violation_list.size();
       std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
+#endif
 
       /// has violation
       saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, min_spacing);
 
+#if DEBUG
       if (violation_list.size() > list_size) {
         auto vio = violation_list.at(violation_list.size() - 1);
         auto vio_rect = static_cast<idrc::DrcViolationRect*>(vio);
         ieda_solver::GtlRect boost_rect(vio_rect->get_llx(), vio_rect->get_lly(), vio_rect->get_urx(), vio_rect->get_ury());
         int a = 0;
       }
+#endif
       return;
     } else {
       /// need to check rule
@@ -301,6 +313,11 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
     auto* iter_point = iterate_function(start_point_1);
     while (iter_point && iter_point->direction(start_point_1) == iterate_direction) {
       auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
+      // while (neighbour && neighbour->get_point()->get_x() == iter_point->get_x()
+      //        && neighbour->get_point()->get_y() == iter_point->get_y()) {
+      //   neighbour = b_vertical ? neighbour->get_point()->get_neighbour(DrcDirection::kUp)
+      //                          : neighbour->get_point()->get_neighbour(DrcDirection::kRight);
+      // }
       if (neighbour == nullptr) {
         break;
       }

@@ -129,8 +129,8 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}};
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 8, 0, true}, {2, 7, -3, 8, 8, true}, {3, 7, -5, 8, 8, true}};
+  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 0, 0, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 32, 0, true}, {2, 7, -3, 32, 32, true}, {3, 7, -5, 32, 32, true}};
   for (DRParameter& dr_parameter : dr_parameter_list) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
@@ -550,7 +550,7 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
 
 void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 {
-#if 0  // all connect
+#if 1  // all connect
   buildAllConnect(dr_box);
 #else
   initDRNodeValid(dr_box);
@@ -1726,25 +1726,32 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
 {
   std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
   for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
     for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
       for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        for (auto& fixed_rect : fixed_rect_set) {
-          env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+          }
         }
       }
     }
   }
-  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
+      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      net_idb_segment_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
+      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
     }
   }
-  return RTAPI_INST.getViolationList(env_shape_list, net_idb_segment_map);
+  return RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
 }
 
 void DetailedRouter::updateDRTaskToGcellMap(DRBox& dr_box)

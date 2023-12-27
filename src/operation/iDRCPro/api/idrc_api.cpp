@@ -106,6 +106,7 @@ std::map<std::string, std::vector<BaseViolationInfo>> DrcApi::getSelfViolationIn
 }
 
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                                                      std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
                                                                       std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data)
 {
   DrcManager drc_manager;
@@ -122,6 +123,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
   data_manager->set_env_shapes(&env_shape_list);
+  data_manager->set_pin_data(&pin_data);
   data_manager->set_routing_data(&routing_data);
 
   drc_manager.engineStart((env_shape_list.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
@@ -139,8 +141,9 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
 {
   std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int, std::vector<idb::IdbLayerShape*>> pin_data;
   std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
-  return check(env_shape_list, routing_data);
+  return check(env_shape_list, pin_data, routing_data);
 }
 
 }  // namespace idrc

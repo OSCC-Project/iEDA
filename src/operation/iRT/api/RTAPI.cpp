@@ -268,7 +268,8 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 // DRC
 
 std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
-                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_idb_segment_map)
+                                               std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
+                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Helper& helper = DM_INST.getHelper();
@@ -276,7 +277,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_idb_segment_map)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;

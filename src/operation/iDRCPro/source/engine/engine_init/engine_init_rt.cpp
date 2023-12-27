@@ -47,7 +47,7 @@ void DrcEngineInitRT::init()
         auto* point_1 = idb_segment->get_point_start();
         auto* point_2 = idb_segment->get_point_second();
 
-        initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), net_id, true);
+        initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), net_id);
       }
 
       /// vias
@@ -62,6 +62,13 @@ void DrcEngineInitRT::init()
       if (idb_segment->is_rect()) {
         // add rect
         initDataFromRect(idb_segment->get_delta_rect(), LayoutType::kRouting, idb_segment->get_layer(), net_id);
+      }
+    }
+  }
+  for (auto& [net_id, pin_shape_list] : *(_data_manager->get_pin_data())) {
+    for (auto& pin_shape : pin_shape_list) {
+      for (auto& rect : pin_shape->get_rect_list()) {
+        initDataFromRect(rect, LayoutType::kRouting, pin_shape->get_layer(), net_id);
       }
     }
   }
