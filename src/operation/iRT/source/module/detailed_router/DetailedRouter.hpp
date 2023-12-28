@@ -67,7 +67,7 @@ class DetailedRouter
   void routeDRBoxMap(DRModel& dr_model);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
   std::map<irt_int, std::vector<LayerCoord>> getNetConnectPointMap(DRBox& dr_box);
-  std::map<irt_int, std::vector<LayerCoord>> getBoundaryPointMap(DRBox& dr_box);
+  std::map<irt_int, std::vector<LayerCoord>> getNetBoundaryPointMap(DRBox& dr_box);
   void buildBoundingBox(DRBox& dr_box, DRTask* dr_task);
   void buildDRTaskList(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
@@ -98,6 +98,7 @@ class DetailedRouter
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box, DRTask* dr_task);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box, DRTask* dr_task);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);

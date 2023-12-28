@@ -350,12 +350,15 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
 std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetConnectPointMap(DRBox& dr_box)
 {
   std::map<irt_int, std::vector<LayerCoord>> net_connect_point_map;
-  for (auto& [net_idx, access_point_set] : DM_INST.getNetAccessPointMap(dr_box.get_box_rect())) {
+
+  auto net_ap_map = DM_INST.getNetAccessPointMap(dr_box.get_box_rect());
+  for (auto& [net_idx, access_point_set] : net_ap_map) {
     for (AccessPoint* access_point : access_point_set) {
       net_connect_point_map[net_idx].push_back(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
     }
   }
-  for (auto [net_idx, boundary_point_list] : getBoundaryPointMap(dr_box)) {
+  auto net_bp_map = getNetBoundaryPointMap(dr_box);
+  for (auto [net_idx, boundary_point_list] : net_bp_map) {
     std::sort(boundary_point_list.begin(), boundary_point_list.end(), CmpLayerCoordByLayerASC());
     boundary_point_list.erase(std::unique(boundary_point_list.begin(), boundary_point_list.end()), boundary_point_list.end());
     for (LayerCoord& boundary_point : boundary_point_list) {
@@ -371,7 +374,7 @@ std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetConnectPointMap
   return net_connect_point_map;
 }
 
-std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getBoundaryPointMap(DRBox& dr_box)
+std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetBoundaryPointMap(DRBox& dr_box)
 {
   PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
   irt_int x_begin_scale = real_rect.get_lb_x();
@@ -1118,17 +1121,38 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 
 void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask* dr_task)
 {
-  std::vector<Segment<LayerCoord>>& routing_segment_list = dr_task->get_routing_segment_list();
+  std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box, dr_task);
 
   // 原结果从graph删除
-  for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+  for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
     updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_net_idx(), routing_segment);
   }
-  routing_segment_list = dr_box.get_routing_segment_list();
+  dr_task->set_routing_segment_list(new_routing_segment_list);
   // 新结果添加到graph
-  for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+  for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
     updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
   }
+}
+
+std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr_box, DRTask* dr_task)
+{
+  std::vector<LayerCoord> driving_grid_coord_list;
+  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  std::vector<DRGroup>& dr_group_list = dr_task->get_dr_group_list();
+  for (size_t i = 0; i < dr_group_list.size(); i++) {
+    for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
+      driving_grid_coord_list.push_back(coord);
+      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
+    }
+  }
+  // 构建 优化 检查 routing_segment_list
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
+
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+  for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {
+    routing_segment_list.emplace_back(segment.get_first()->value(), segment.get_second()->value());
+  }
+  return routing_segment_list;
 }
 
 void DetailedRouter::resetSingleTask(DRBox& dr_box)
