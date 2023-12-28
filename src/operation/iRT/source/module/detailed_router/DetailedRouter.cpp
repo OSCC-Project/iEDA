@@ -129,8 +129,8 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 0, 0, true}};
-  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 32, 0, true}, {2, 7, -3, 32, 32, true}, {3, 7, -5, 32, 32, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 0, 0, true}};
+  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 32, 0, true}, {2, 7, -3, 32, 32, true}, {3, 7, -5, 32, 32, true}};
   for (DRParameter& dr_parameter : dr_parameter_list) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
@@ -550,7 +550,7 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
 
 void DetailedRouter::buildNeighborMap(DRBox& dr_box)
 {
-#if 1  // all connect
+#if 0  // all connect
   buildAllConnect(dr_box);
 #else
   initDRNodeValid(dr_box);
