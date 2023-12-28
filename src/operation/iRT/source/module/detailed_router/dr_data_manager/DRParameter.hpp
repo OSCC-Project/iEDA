@@ -33,9 +33,8 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(irt_int curr_iter, irt_int size, irt_int offset, irt_int shape_cost, irt_int violation_cost, bool complete_ripup)
+  DRParameter(irt_int size, irt_int offset, irt_int shape_cost, irt_int violation_cost, bool complete_ripup)
   {
-    _curr_iter = curr_iter;
     _size = size;
     _offset = offset;
     _shape_cost = shape_cost;
@@ -44,14 +43,12 @@ class DRParameter
   }
   ~DRParameter() = default;
   // getter
-  irt_int get_curr_iter() const { return _curr_iter; }
   irt_int get_size() const { return _size; }
   irt_int get_offset() const { return _offset; }
   irt_int get_shape_cost() const { return _shape_cost; }
   irt_int get_violation_cost() const { return _violation_cost; }
   irt_int get_complete_ripup() const { return _complete_ripup; }
   // setter
-  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
   void set_size(const irt_int size) { _size = size; }
   void set_offset(const irt_int offset) { _offset = offset; }
   void set_shape_cost(const irt_int shape_cost) { _shape_cost = shape_cost; }
@@ -59,7 +56,6 @@ class DRParameter
   void set_complete_ripup(const irt_int complete_ripup) { _complete_ripup = complete_ripup; }
 
  private:
-  irt_int _curr_iter = -1;
   irt_int _size = -1;
   irt_int _offset = -1;
   irt_int _shape_cost = 0;

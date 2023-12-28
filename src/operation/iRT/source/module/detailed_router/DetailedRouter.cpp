@@ -129,18 +129,84 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  // std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 0, 0, true}};
-  std::vector<DRParameter> dr_parameter_list = {{1, 7, 0, 32, 0, true}, {2, 7, -3, 32, 32, true}, {3, 7, -5, 32, 32, true}};
-  for (DRParameter& dr_parameter : dr_parameter_list) {
+  irt_int shape_cost = 8;
+  irt_int violation_cost = 8;
+  std::vector<DRParameter> dr_parameter_list = {{7, 0, shape_cost, 0, true}};
+  // std::vector<DRParameter> dr_parameter_list = {{7, 0, shape_cost, 0, true},
+  //                                               {7, -2, shape_cost, shape_cost, true},
+  //                                               {7, -5, shape_cost, shape_cost, true},
+  //                                               {7, 0, shape_cost, violation_cost, false},
+  //                                               {7, -1, shape_cost, violation_cost, false},
+  //                                               {7, -2, shape_cost, violation_cost, false},
+  //                                               {7, -3, shape_cost, violation_cost, false},
+  //                                               {7, -4, shape_cost, violation_cost, false},
+  //                                               {7, -5, shape_cost, violation_cost, false},
+  //                                               {7, -6, shape_cost, violation_cost, false},
+  //                                               {7, 0, shape_cost * 2, violation_cost, false},
+  //                                               {7, -1, shape_cost * 2, violation_cost, false},
+  //                                               {7, -2, shape_cost * 2, violation_cost, false},
+  //                                               {7, -3, shape_cost * 2, violation_cost, false},
+  //                                               {7, -4, shape_cost * 2, violation_cost, false},
+  //                                               {7, -5, shape_cost * 2, violation_cost, false},
+  //                                               {7, -6, shape_cost * 2, violation_cost, false},
+  //                                               {7, -3, shape_cost, violation_cost, true},
+  //                                               {7, 0, shape_cost * 4, violation_cost, false},
+  //                                               {7, -1, shape_cost * 4, violation_cost, false},
+  //                                               {7, -2, shape_cost * 4, violation_cost, false},
+  //                                               {7, -3, shape_cost * 4, violation_cost, false},
+  //                                               {7, -4, shape_cost * 4, violation_cost, false},
+  //                                               {7, -5, shape_cost * 4, violation_cost, false},
+  //                                               {7, -6, shape_cost * 4, violation_cost, false},
+  //                                               {5, -2, shape_cost, violation_cost, true},
+  //                                               {7, 0, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -1, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -2, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -3, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -4, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -5, shape_cost * 8, violation_cost * 2, false},
+  //                                               {7, -6, shape_cost * 8, violation_cost * 2, false},
+  //                                               {3, -1, shape_cost, shape_cost, true},
+  //                                               {7, 0, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -1, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -2, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -3, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -4, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -5, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -6, shape_cost * 16, violation_cost * 4, false},
+  //                                               {3, -2, shape_cost, violation_cost, true},
+  //                                               {7, 0, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -1, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -2, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -3, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -4, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -5, shape_cost * 16, violation_cost * 4, false},
+  //                                               {7, -6, shape_cost * 16, violation_cost * 4, false},
+  //                                               {3, -0, shape_cost, violation_cost, true},
+  //                                               {7, 0, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -1, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -2, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -3, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -4, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -5, shape_cost * 32, violation_cost * 8, false},
+  //                                               {7, -6, shape_cost * 32, violation_cost * 8, false},
+  //                                               {3, -1, shape_cost, violation_cost, true},
+  //                                               {7, 0, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -1, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -2, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -3, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -4, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -5, shape_cost * 64, violation_cost * 16, false},
+  //                                               {7, -6, shape_cost * 64, violation_cost * 16, false}};
+  for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ") ******");
-    dr_model.set_curr_dr_parameter(dr_parameter);
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
+    dr_model.set_curr_dr_parameter(dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     buildDRBoxMap(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
-    LOG_INST.info(Loc::current(), "****** End Model Iteration(", dr_parameter.get_curr_iter(), "/", dr_parameter_list.size(), ")",
-                  iter_monitor.getStatsInfo(), " ******");
+    LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
+                  " ******");
   }
 }
 
@@ -207,10 +273,10 @@ void DetailedRouter::buildDRBoxMap(DRModel& dr_model)
 void DetailedRouter::splitNetResult(DRBox& dr_box)
 {
   PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
-  irt_int x_begin_scale = real_rect.get_lb_x();
-  irt_int y_begin_scale = real_rect.get_lb_y();
-  irt_int x_end_scale = real_rect.get_rt_x();
-  irt_int y_end_scale = real_rect.get_rt_y();
+  irt_int box_lb_x = real_rect.get_lb_x();
+  irt_int box_lb_y = real_rect.get_lb_y();
+  irt_int box_rt_x = real_rect.get_rt_x();
+  irt_int box_rt_y = real_rect.get_rt_y();
 
   for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
     for (auto& segment : segment_set) {
@@ -234,18 +300,18 @@ void DetailedRouter::splitNetResult(DRBox& dr_box)
       }
       std::vector<LayerCoord> end_point_list = {first, second};
       if (RTUtil::isHorizontal(first, second)) {
-        if (first_x <= x_begin_scale && x_begin_scale <= second_x) {
-          end_point_list.emplace_back(x_begin_scale, first_y, first_layer_idx);
+        if (first_x <= box_lb_x && box_lb_x <= second_x) {
+          end_point_list.emplace_back(box_lb_x, first_y, first_layer_idx);
         }
-        if (first_x <= x_end_scale && x_end_scale <= second_x) {
-          end_point_list.emplace_back(x_end_scale, first_y, first_layer_idx);
+        if (first_x <= box_rt_x && box_rt_x <= second_x) {
+          end_point_list.emplace_back(box_rt_x, first_y, first_layer_idx);
         }
       } else if (RTUtil::isVertical(first, second)) {
-        if (first_y <= y_begin_scale && y_begin_scale <= second_y) {
-          end_point_list.emplace_back(first_x, y_begin_scale, first_layer_idx);
+        if (first_y <= box_lb_y && box_lb_y <= second_y) {
+          end_point_list.emplace_back(first_x, box_lb_y, first_layer_idx);
         }
-        if (first_y <= y_end_scale && y_end_scale <= second_y) {
-          end_point_list.emplace_back(first_x, y_end_scale, first_layer_idx);
+        if (first_y <= box_rt_y && box_rt_y <= second_y) {
+          end_point_list.emplace_back(first_x, box_rt_y, first_layer_idx);
         }
       } else {
         LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
@@ -326,12 +392,12 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
 {
   std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
   std::vector<DRTask*>& dr_task_list = dr_box.get_dr_task_list();
-  for (auto [net_idx, connect_point_list] : getNetConnectPointMap(dr_box)) {
-    if (connect_point_list.size() < 2) {
-      LOG_INST.error(Loc::current(), "The size of connect points is illegal for net : ", net_idx, "!");
+  for (auto [net_idx, connect_point_set] : getNetConnectPointMap(dr_box)) {
+    if (connect_point_set.size() < 2) {
+      continue;
     }
     std::vector<DRGroup> dr_group_list;
-    for (const LayerCoord& connect_point : connect_point_list) {
+    for (const LayerCoord& connect_point : connect_point_set) {
       DRGroup dr_group;
       dr_group.get_coord_direction_map()[connect_point].insert({});
       dr_group_list.push_back(dr_group);
@@ -347,44 +413,33 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
   std::sort(dr_task_list.begin(), dr_task_list.end(), CmpDRTask());
 }
 
-std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetConnectPointMap(DRBox& dr_box)
+std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter::getNetConnectPointMap(DRBox& dr_box)
 {
-  std::map<irt_int, std::vector<LayerCoord>> net_connect_point_map;
-
-  auto net_ap_map = DM_INST.getNetAccessPointMap(dr_box.get_box_rect());
-  for (auto& [net_idx, access_point_set] : net_ap_map) {
+  std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> net_connect_point_map;
+  for (auto& [net_idx, access_point_set] : DM_INST.getNetAccessPointMap(dr_box.get_box_rect())) {
     for (AccessPoint* access_point : access_point_set) {
-      net_connect_point_map[net_idx].push_back(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
+      net_connect_point_map[net_idx].insert(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
     }
   }
-  auto net_bp_map = getNetBoundaryPointMap(dr_box);
-  for (auto [net_idx, boundary_point_list] : net_bp_map) {
-    std::sort(boundary_point_list.begin(), boundary_point_list.end(), CmpLayerCoordByLayerASC());
-    boundary_point_list.erase(std::unique(boundary_point_list.begin(), boundary_point_list.end()), boundary_point_list.end());
-    for (LayerCoord& boundary_point : boundary_point_list) {
-      net_connect_point_map[net_idx].push_back(boundary_point);
-    }
-  }
-  for (auto& [net_idx, connect_point_list] : net_connect_point_map) {
-    if (connect_point_list.size() < 2) {
-      LOG_INST.error(Loc::current(), "The connect point size is illegal for net:", net_idx, " in DRBox (", dr_box.get_dr_box_id().get_x(),
-                     ",", dr_box.get_dr_box_id().get_y(), ")!");
+  for (auto [net_idx, boundary_point_set] : getNetBoundaryPointMap(dr_box)) {
+    for (const LayerCoord& boundary_point : boundary_point_set) {
+      net_connect_point_map[net_idx].insert(boundary_point);
     }
   }
   return net_connect_point_map;
 }
 
-std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetBoundaryPointMap(DRBox& dr_box)
+std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter::getNetBoundaryPointMap(DRBox& dr_box)
 {
   PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
-  irt_int x_begin_scale = real_rect.get_lb_x();
-  irt_int y_begin_scale = real_rect.get_lb_y();
-  irt_int x_end_scale = real_rect.get_rt_x();
-  irt_int y_end_scale = real_rect.get_rt_y();
+  irt_int box_lb_x = real_rect.get_lb_x();
+  irt_int box_lb_y = real_rect.get_lb_y();
+  irt_int box_rt_x = real_rect.get_rt_x();
+  irt_int box_rt_y = real_rect.get_rt_y();
 
-  std::map<irt_int, std::vector<LayerCoord>> boundary_point_map;
+  std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> boundary_point_map;
   for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    std::vector<LayerCoord> boundary_point_list;
+    std::set<LayerCoord, CmpLayerCoordByLayerASC> boundary_point_set;
     for (auto& segment : segment_set) {
       LayerCoord first = segment->get_first();
       irt_int first_x = first.get_x();
@@ -401,27 +456,26 @@ std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetBoundaryPointMa
       if (first_layer_idx != second_layer_idx) {
         continue;
       }
-
       if (RTUtil::isHorizontal(first, second)) {
-        if (first_x <= x_begin_scale && x_begin_scale <= second_x) {
-          boundary_point_list.emplace_back(x_begin_scale, first_y, first_layer_idx);
+        if (first_x <= box_lb_x && box_lb_x <= second_x) {
+          boundary_point_set.insert(LayerCoord(box_lb_x, first_y, first_layer_idx));
         }
-        if (first_x <= x_end_scale && x_end_scale <= second_x) {
-          boundary_point_list.emplace_back(x_end_scale, first_y, first_layer_idx);
+        if (first_x <= box_rt_x && box_rt_x <= second_x) {
+          boundary_point_set.insert(LayerCoord(box_rt_x, first_y, first_layer_idx));
         }
       } else if (RTUtil::isVertical(first, second)) {
-        if (first_y <= y_begin_scale && y_begin_scale <= second_y) {
-          boundary_point_list.emplace_back(first_x, y_begin_scale, first_layer_idx);
+        if (first_y <= box_lb_y && box_lb_y <= second_y) {
+          boundary_point_set.insert(LayerCoord(first_x, box_lb_y, first_layer_idx));
         }
-        if (first_y <= y_end_scale && y_end_scale <= second_y) {
-          boundary_point_list.emplace_back(first_x, y_end_scale, first_layer_idx);
+        if (first_y <= box_rt_y && box_rt_y <= second_y) {
+          boundary_point_set.insert(LayerCoord(first_x, box_rt_y, first_layer_idx));
         }
       } else {
         LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
       }
     }
-    if (!boundary_point_list.empty()) {
-      boundary_point_map.insert(std::make_pair(net_idx, boundary_point_list));
+    if (!boundary_point_set.empty()) {
+      boundary_point_map.insert(std::make_pair(net_idx, boundary_point_set));
     }
   }
   return boundary_point_map;
@@ -450,7 +504,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
   }
   for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(box_rect)) {
     if (!RTUtil::exist(net_task_map, net_idx)) {
-      LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
+      continue;
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       if (RTUtil::isInside(real_rect, segment->get_first()) && RTUtil::isInside(real_rect, segment->get_second())) {
@@ -461,7 +515,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
   }
   for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(box_rect)) {
     if (!RTUtil::exist(net_task_map, net_idx)) {
-      LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
+      continue;
     }
     for (EXTLayerRect* patch : patch_set) {
       if (RTUtil::isInside(real_rect, patch->get_real_rect())) {
