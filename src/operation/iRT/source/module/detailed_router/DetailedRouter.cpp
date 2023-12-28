@@ -212,8 +212,8 @@ void DetailedRouter::splitNetResult(DRBox& dr_box)
   irt_int x_end_scale = real_rect.get_rt_x();
   irt_int y_end_scale = real_rect.get_rt_y();
 
-  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    for (const auto segment : segment_list) {
+  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
+    for (auto& segment : segment_set) {
       LayerCoord first = segment->get_first();
       irt_int first_x = first.get_x();
       irt_int first_y = first.get_y();
@@ -350,8 +350,8 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
 std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetConnectPointMap(DRBox& dr_box)
 {
   std::map<irt_int, std::vector<LayerCoord>> net_connect_point_map;
-  for (auto [net_idx, access_point_list] : DM_INST.getNetAccessPointMap(dr_box.get_box_rect())) {
-    for (AccessPoint* access_point : access_point_list) {
+  for (auto& [net_idx, access_point_set] : DM_INST.getNetAccessPointMap(dr_box.get_box_rect())) {
+    for (AccessPoint* access_point : access_point_set) {
       net_connect_point_map[net_idx].push_back(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
     }
   }
@@ -373,17 +373,16 @@ std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getNetConnectPointMap
 
 std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getBoundaryPointMap(DRBox& dr_box)
 {
-  std::map<irt_int, std::vector<LayerCoord>> boundary_point_map;
-
   PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
   irt_int x_begin_scale = real_rect.get_lb_x();
   irt_int y_begin_scale = real_rect.get_lb_y();
   irt_int x_end_scale = real_rect.get_rt_x();
   irt_int y_end_scale = real_rect.get_rt_y();
 
-  for (auto [net_idx, segment_list] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    std::vector<LayerCoord>& boundary_point_list = boundary_point_map[net_idx];
-    for (const auto segment : segment_list) {
+  std::map<irt_int, std::vector<LayerCoord>> boundary_point_map;
+  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
+    std::vector<LayerCoord> boundary_point_list;
+    for (auto& segment : segment_set) {
       LayerCoord first = segment->get_first();
       irt_int first_x = first.get_x();
       irt_int first_y = first.get_y();
@@ -417,6 +416,9 @@ std::map<irt_int, std::vector<LayerCoord>> DetailedRouter::getBoundaryPointMap(D
       } else {
         LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
       }
+    }
+    if (!boundary_point_list.empty()) {
+      boundary_point_map.insert(std::make_pair(net_idx, boundary_point_list));
     }
   }
   return boundary_point_map;
@@ -454,7 +456,7 @@ void DetailedRouter::buildDRTaskList(DRBox& dr_box)
       }
     }
   }
-  for (auto [net_idx, patch_set] : DM_INST.getNetPatchMap(box_rect)) {
+  for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(box_rect)) {
     if (!RTUtil::exist(net_task_map, net_idx)) {
       LOG_INST.error(Loc::current(), "Can not find DRTask by net : ", net_idx, "!");
     }
