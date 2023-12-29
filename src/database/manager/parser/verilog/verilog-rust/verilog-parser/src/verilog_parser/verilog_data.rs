@@ -625,7 +625,10 @@ impl VerilogInst {
         port_bus_wide_range: Option<(i32, i32)>,
     ) -> Box<dyn VerilogVirtualBaseNetExpr> {
         // process the inst connection below.
-        let port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
+        let verilog_id = VerilogID::default();
+        let verilog_virtual_base_id = Box::new(verilog_id);
+        let port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> =
+            Some(Box::new(VerilogNetIDExpr::new(0, verilog_virtual_base_id)));
         let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = port_connect_net_option.unwrap();
         for port_connection in &self.port_connections {
             if port_connection.get_port_id().get_name() == port_id.get_base_name() {
@@ -969,9 +972,20 @@ impl VerilogModule {
     pub fn get_module_stmts(&self) -> &Vec<Box<dyn VerilogVirtualBaseStmt>> {
         &self.module_stmts
     }
+    pub fn get_clone_module_stms(&self) -> Vec<Box<dyn VerilogVirtualBaseStmt>> {
+        self.module_stmts.iter().map(|module_stmt| module_stmt.clone()).collect()
+    }
     pub fn erase_stmt(&mut self, the_stmt: &Box<dyn VerilogVirtualBaseStmt>) {
-        self.module_stmts.retain(|stmt| !std::ptr::eq(&**stmt, &**the_stmt));
-        assert!(self.module_stmts.len() < self.module_stmts.len() + 1);
+        let old_len = self.module_stmts.len();
+        self.module_stmts.retain(|stmt| {
+            let line_no_to_remove = the_stmt.get_line_no();
+            let line_no = stmt.get_line_no();
+            if line_no == line_no_to_remove {
+                return false;
+            }
+            true
+        });
+        let new_len = self.module_stmts.len();
     }
     pub fn is_port(&self, name: &str) -> bool {
         self.port_list.iter().any(|port| port.get_base_name() == name)
