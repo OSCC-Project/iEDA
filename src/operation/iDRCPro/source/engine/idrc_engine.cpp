@@ -40,8 +40,11 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
 {
   switch (checker_type) {
     case DrcCheckerType::kDef:
+      std::cout << "idrc : start init engine def" << std::endl;
       initEngineDef();
+      std::cout << "idrc : start init scanline database" << std::endl;
       initEngineScanline();
+      std::cout << "idrc : engine init finished" << std::endl;
 
       break;
     case DrcCheckerType::kRT:

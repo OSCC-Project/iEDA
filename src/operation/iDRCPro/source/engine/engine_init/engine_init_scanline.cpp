@@ -47,6 +47,17 @@ void DrcEngineInitScanline::initGeometryData()
     auto* scanline_engine = _engine_manager->get_engine_scanline(layer, LayoutType::kRouting);
     auto* scanline_dm = scanline_engine->get_data_manager();
 
+    // reserve capacity for basic points
+    for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
+      /// build engine data
+      auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(sub_layout->get_engine());
+      auto boost_pt_list_pair = boost_engine->get_boost_polygons_points();
+
+      point_number += boost_pt_list_pair.first;  /// boost_pt_list_pair : first value is points number
+    }
+    scanline_dm->get_basic_points().reserve(scanline_dm->get_basic_points().size() + point_number);
+
+    // create scanline points
     for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
       /// build engine data
       auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(sub_layout->get_engine());
@@ -54,8 +65,6 @@ void DrcEngineInitScanline::initGeometryData()
 
       /// add data to scanline engine
       scanline_dm->addData(boost_pt_list_pair.second, net_id);  /// boost_pt_list_pair : second value is polygon points
-
-      point_number += boost_pt_list_pair.first;  /// boost_pt_list_pair : first value is points number
     }
 
     /// sort point list in scanline data manager
