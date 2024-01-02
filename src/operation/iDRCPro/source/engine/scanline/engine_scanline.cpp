@@ -132,7 +132,9 @@ ScanlineDataType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, std
                                                      ScanlinePoint* point_forward, ScanlinePoint* point_backward)
 {
   ScanlineDataType result_type = ScanlineDataType::kNone;
-  if (activate_polygons.size() >= 2) {
+  if (activate_polygons.size() >= 2
+      || (!activate_polygons.empty() && point_forward->get_id() != point_backward->get_id()
+          && status.get_orthogonal_coord(point_forward->get_point()) == status.get_orthogonal_coord(point_backward->get_point()))) {
     result_type += ScanlineDataType::kOverlap;
   }
   for (auto& activate_polygon : activate_polygons) {
