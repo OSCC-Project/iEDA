@@ -479,6 +479,10 @@ impl VerilogInst {
         }
     }
 
+    pub fn get_line_no(&self) -> usize {
+        self.stmt.get_line_no()
+    }
+
     pub fn get_stmt(&self) -> &VerilogStmt {
         &self.stmt
     }
