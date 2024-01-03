@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <ranges>
 
-#include "Logger.hpp"
+#include "../../utility/logger/Logger.hpp"
 #include "SeqPair.hh"
 namespace imp {
 template <typename CoordType>

@@ -14,28 +14,16 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <string>
+#include "py_register_imp.h"
 
-#include "api/Power.hh"
-#include "sta/Sta.hh"
+#include <pybind11/cast.h>
 
+#include "../../../operation/iMP/api/MPAPI.hh"
 namespace python_interface {
-bool readVcd(std::string vcd_file, std::string top_instance_name)
+namespace py = pybind11;
+
+void register_imp(py::module& m)
 {
-  ista::Sta* ista = ista::Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  return ipower->readRustVCD(vcd_file.c_str(), top_instance_name.c_str());
+  m.def("SAPlaceSeqPairInt64", imp::SAPlaceSeqPairInt64);
 }
-
-unsigned reportPower()
-{
-  Sta* ista = Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  ipower->runCompleteFlow();
-
-  return 1;
-}
-
 }  // namespace python_interface

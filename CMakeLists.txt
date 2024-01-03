@@ -28,6 +28,7 @@ endif()
 
 option(BUILD_PYTHON "If ON, build python interface." OFF)
 if(BUILD_PYTHON)
+    set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)

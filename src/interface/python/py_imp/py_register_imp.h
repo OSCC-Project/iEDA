@@ -14,28 +14,13 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <string>
+#pragma once
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#include "api/Power.hh"
-#include "sta/Sta.hh"
+#include <iostream>
 
 namespace python_interface {
-bool readVcd(std::string vcd_file, std::string top_instance_name)
-{
-  ista::Sta* ista = ista::Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
-  return ipower->readRustVCD(vcd_file.c_str(), top_instance_name.c_str());
-}
-
-unsigned reportPower()
-{
-  Sta* ista = Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  ipower->runCompleteFlow();
-
-  return 1;
-}
-
+void register_imp(pybind11::module& m);
 }  // namespace python_interface

@@ -28,6 +28,7 @@
     ],
     "root_buffer_type": "sky130_fd_sc_hs__buf_1",
     "root_buffer_required": "OFF",
+    "inherit_root": "OFF",
     "break_long_wire": "OFF",
     "level_max_length": [
         "300",

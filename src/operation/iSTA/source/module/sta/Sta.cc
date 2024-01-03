@@ -167,7 +167,7 @@ unsigned Sta::readDesign(const char *verilog_file) {
   return 1;
 }
 
-unsigned Sta::readDesignWithRustParser(const char *file_name) {}
+unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
 
 /**
  * @brief read the sdc file.

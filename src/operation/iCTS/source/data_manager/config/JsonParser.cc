@@ -149,6 +149,15 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
         config->set_root_buffer_required(false);
       }
     }
+    if (COMUtil::getData(json, {"inherit_root"}) != nullptr) {
+      std::string inherit_root = COMUtil::getData(json, {"inherit_root"});
+      if (inherit_root == "true" || inherit_root == "True" || inherit_root == "TRUE" || inherit_root == "On" || inherit_root == "ON"
+          || inherit_root == "on") {
+        config->set_inherit_root(true);
+      } else {
+        config->set_inherit_root(false);
+      }
+    }
     if (COMUtil::getData(json, {"break_long_wire"}) != nullptr) {
       std::string break_long_wire = COMUtil::getData(json, {"break_long_wire"});
       if (break_long_wire == "true" || break_long_wire == "True" || break_long_wire == "TRUE" || break_long_wire == "On"
