@@ -637,9 +637,9 @@ fn flatten_module(
             // name(for port), next change the inst name to parent inst name /
             // current inst name.
             let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
-            let mut new_module_inst_stmt: verilog_data::VerilogInst = module_inst_stmt.clone();
-            for mut port_connect in new_module_inst_stmt.get_port_connections() {
-                let mut net_expr_option = port_connect.get_net_expr();
+            let mut new_module_inst_connection: Vec<Box<verilog_data::VerilogPortRefPortConnect>> = Vec::new();
+            for port_connect in module_inst_stmt.get_port_connections() {
+                let net_expr_option = port_connect.get_net_expr();
                 if let Some(net_expr) = net_expr_option {
                     if net_expr.is_id_expr() {
                         let port_connect_net =
@@ -648,7 +648,7 @@ fn flatten_module(
                             // is port connect net, set new net.
                             let mut port_connect_clone = port_connect.clone();
                             port_connect_clone.set_net_expr(port_connect_net);
-                            port_connect = &port_connect_clone;
+                            new_module_inst_connection.push(port_connect_clone);
                         }
                     } else if net_expr.is_concat_expr() {
                         let concat_connect_net =
@@ -661,6 +661,13 @@ fn flatten_module(
             }
             let the_stmt_inst_name = module_inst_stmt.get_inst_name();
             let new_inst_name = format!("{}/{}", inst_stmt.get_inst_name(), the_stmt_inst_name);
+            let mut new_module_inst_stmt: verilog_data::VerilogInst = verilog_data::VerilogInst::new(
+                module_inst_stmt.get_line_no(),
+                module_inst_stmt.get_inst_name(),
+                module_inst_stmt.get_cell_name(),
+                new_module_inst_connection,
+            );
+
             new_module_inst_stmt.set_inst_name(&new_inst_name);
             let new_dyn_module_inst_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> =
                 Box::new(new_module_inst_stmt);
