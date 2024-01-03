@@ -422,6 +422,7 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
 
   /// save violation as rect
   if (llx == urx || lly == ury) {
+    // skip area 0
     return;
   }
   DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
