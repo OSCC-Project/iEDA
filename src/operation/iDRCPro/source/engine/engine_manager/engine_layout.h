@@ -40,6 +40,8 @@ class DrcEngineLayout
   DrcEngineSubLayout* get_sub_layout(int net_id);
   ieda_solver::EngineGeometry* get_net_engine(int net_id);
 
+  uint64_t pointCount();
+
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
  private:

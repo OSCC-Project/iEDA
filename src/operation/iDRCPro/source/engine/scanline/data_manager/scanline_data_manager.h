@@ -51,6 +51,13 @@ class ScanlineDataManager
 
   std::vector<DrcBasicPoint*>& get_basic_points() { return _basic_points; }
 
+  void reserveSpace(int n)
+  {
+    _basic_points.reserve(_basic_points.size() + n);
+    _scanline_points_horizontal.reserve(_scanline_points_horizontal.size() + n);
+    _scanline_points_vertical.reserve(_scanline_points_vertical.size() + n);
+  }
+
   /// @brief  debug
   /// @return
   std::vector<ieda_solver::BgPoint> get_boost_points()

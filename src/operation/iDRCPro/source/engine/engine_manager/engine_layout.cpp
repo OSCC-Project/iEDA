@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "engine_layout.h"
 
+#include "geometry_boost.h"
+
 namespace idrc {
 DrcEngineLayout::~DrcEngineLayout()
 {
@@ -57,6 +59,19 @@ ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
   auto* sub_layout = get_sub_layout(net_id);
 
   return sub_layout == nullptr ? nullptr : sub_layout->get_engine();
+}
+
+uint64_t DrcEngineLayout::pointCount()
+{
+  uint64_t point_number = 0;
+  for (auto [net_id, sub_layout] : _sub_layouts) {
+    /// build engine data
+    auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(sub_layout->get_engine());
+    auto boost_pt_list_pair = boost_engine->get_boost_polygons_points();
+
+    point_number += boost_pt_list_pair.first;  /// boost_pt_list_pair : first value is points number
+  }
+  return point_number;
 }
 
 }  // namespace idrc
