@@ -45,13 +45,6 @@ ScanlineDataManager::~ScanlineDataManager()
  */
 void ScanlineDataManager::addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id)
 {
-  /// resize basic points capacity
-  int points_number = 0;
-  for (auto& polygon_points : polygons_points) {
-    points_number += polygon_points.size();
-  }
-  _basic_points.reserve(_basic_points.size() + points_number);
-
   for (auto& polygon_points : polygons_points) {
     addPolygon(polygon_points, net_id);
   }
@@ -101,15 +94,15 @@ void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon
       bool is_forward_edge = (*endpoint1)->get_y() > (*endpoint2)->get_y();
       starting_point = new ScanlinePoint(*endpoint1, is_forward_edge, !is_forward_edge);
       ending_point = new ScanlinePoint(*endpoint2, is_forward_edge, is_forward_edge);
-      _scanline_points_vertical.push_back(starting_point);
-      _scanline_points_vertical.push_back(ending_point);
+      _scanline_points_vertical.emplace_back(starting_point);
+      _scanline_points_vertical.emplace_back(ending_point);
     } else if ((*endpoint1)->get_y() == (*endpoint2)->get_y()) {
       // horizontal
       bool is_forward_edge = (*endpoint1)->get_x() < (*endpoint2)->get_x();
       starting_point = new ScanlinePoint(*endpoint1, is_forward_edge, is_forward_edge);
       ending_point = new ScanlinePoint(*endpoint2, is_forward_edge, !is_forward_edge);
-      _scanline_points_horizontal.push_back(starting_point);
-      _scanline_points_horizontal.push_back(ending_point);
+      _scanline_points_horizontal.emplace_back(starting_point);
+      _scanline_points_horizontal.emplace_back(ending_point);
     } else {
       std::cout << "scanline error: polygon is not horizontal or vertical" << std::endl;
     }

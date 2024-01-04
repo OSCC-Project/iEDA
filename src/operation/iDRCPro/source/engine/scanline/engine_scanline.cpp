@@ -34,17 +34,17 @@ DrcEngineScanline::~DrcEngineScanline()
 
 /// @brief process scanline in both of the directions
 /// @param min_spacing minimum spacing for value filter TODO: implement this
-void DrcEngineScanline::doScanline(int min_spacing)
+void DrcEngineScanline::doScanline(int min_spacing, int max_spacing)
 {
-  scan(ScanlineTravelDirection::kHorizontal);
-  scan(ScanlineTravelDirection::kVertical);
+  scan(ScanlineTravelDirection::kHorizontal, min_spacing, max_spacing);
+  scan(ScanlineTravelDirection::kVertical, min_spacing, max_spacing);
 }
 
 /// @brief process scanline in one direction
 /// @param direction scanline travel direction
-void DrcEngineScanline::scan(ScanlineTravelDirection direction)
+void DrcEngineScanline::scan(ScanlineTravelDirection direction, int min_spacing, int max_spacing)
 {
-  ScanlineStatus scanline_status(direction, _data_manager);
+  ScanlineStatus scanline_status(direction, _data_manager, min_spacing, max_spacing);
 
   while (scanline_status.endpoints_it != scanline_status.endpoints_end) {
     // add all endpoints in current bucket to scanline status
@@ -132,7 +132,9 @@ ScanlineDataType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, std
                                                      ScanlinePoint* point_forward, ScanlinePoint* point_backward)
 {
   ScanlineDataType result_type = ScanlineDataType::kNone;
-  if (activate_polygons.size() >= 2) {
+  if (activate_polygons.size() >= 2
+      || (!activate_polygons.empty() && point_forward->get_id() != point_backward->get_id()
+          && status.get_orthogonal_coord(point_forward->get_point()) == status.get_orthogonal_coord(point_backward->get_point()))) {
     result_type += ScanlineDataType::kOverlap;
   }
   for (auto& activate_polygon : activate_polygons) {

@@ -126,7 +126,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   data_manager->set_pin_data(&pin_data);
   data_manager->set_routing_data(&routing_data);
 
-  drc_manager.engineStart((env_shape_list.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
+  drc_manager.engineStart((env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
 
   drc_manager.buildCondition();
 
