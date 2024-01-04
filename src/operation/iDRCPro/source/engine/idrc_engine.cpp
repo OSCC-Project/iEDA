@@ -19,6 +19,7 @@
 #include "engine_init_def.h"
 #include "engine_init_rt.h"
 #include "engine_init_scanline.h"
+#include "idm.h"
 
 namespace idrc {
 
@@ -39,14 +40,21 @@ DrcEngine::~DrcEngine()
 void DrcEngine::initEngine(DrcCheckerType checker_type)
 {
   switch (checker_type) {
-    case DrcCheckerType::kDef:
+    case DrcCheckerType::kDef: {
       std::cout << "idrc : start init engine def" << std::endl;
+      ieda::Stats stats_def;
       initEngineDef();
+      std::cout << "idrc : init engine def time = " << stats_def.elapsedRunTime() << " memory = " << stats_def.memoryDelta() << std::endl;
+
       std::cout << "idrc : start init scanline database" << std::endl;
+      ieda::Stats stats_scanline;
       initEngineScanline();
+      std::cout << "idrc : init scanline database time = " << stats_scanline.elapsedRunTime()
+                << " memory = " << stats_scanline.memoryDelta() << std::endl;
       std::cout << "idrc : engine init finished" << std::endl;
 
       break;
+    }
     case DrcCheckerType::kRT:
       initEngineGeometryData();
       initEngineScanline();

@@ -34,17 +34,17 @@ DrcEngineScanline::~DrcEngineScanline()
 
 /// @brief process scanline in both of the directions
 /// @param min_spacing minimum spacing for value filter TODO: implement this
-void DrcEngineScanline::doScanline(int min_spacing)
+void DrcEngineScanline::doScanline(int min_spacing, int max_spacing)
 {
-  scan(ScanlineTravelDirection::kHorizontal);
-  scan(ScanlineTravelDirection::kVertical);
+  scan(ScanlineTravelDirection::kHorizontal, min_spacing, max_spacing);
+  scan(ScanlineTravelDirection::kVertical, min_spacing, max_spacing);
 }
 
 /// @brief process scanline in one direction
 /// @param direction scanline travel direction
-void DrcEngineScanline::scan(ScanlineTravelDirection direction)
+void DrcEngineScanline::scan(ScanlineTravelDirection direction, int min_spacing, int max_spacing)
 {
-  ScanlineStatus scanline_status(direction, _data_manager);
+  ScanlineStatus scanline_status(direction, _data_manager, min_spacing, max_spacing);
 
   while (scanline_status.endpoints_it != scanline_status.endpoints_end) {
     // add all endpoints in current bucket to scanline status

@@ -22,6 +22,7 @@
 #include "geometry_boost.h"
 #include "idrc_engine_manager.h"
 // #include "usage.hh"
+#include "tech_rules.h"
 
 namespace idrc {
 
@@ -79,9 +80,17 @@ void DrcEngineInitScanline::initScanlineResult()
   /// run scanline method for all routing layers
   auto& layouts = _engine_manager->get_engine_layouts(LayoutType::kRouting);
   for (auto& [layer, engine_layout] : layouts) {
+    auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
+    if (rule_routing_layer == nullptr) {
+      continue;
+    }
+    auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
+    int min_spacing = rule_map->get_min();
+    int max_spacing = rule_map->get_max();
+
     /// scanline engine for each layer
     auto* scanline_engine = _engine_manager->get_engine_scanline(layer, LayoutType::kRouting);
-    scanline_engine->doScanline();
+    scanline_engine->doScanline(min_spacing, max_spacing);
   }
 
   //   std::cout << "idrc : end scanline, "
