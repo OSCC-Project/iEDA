@@ -46,18 +46,25 @@ class DrcConditionManager
 
  public:
   DrcConditionManager(DrcEngine* engine, DrcViolationManager* violation_manager) : _engine(engine), _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
+  ~DrcConditionManager()
+  {
+    for (auto& [type, layer_map] : _check_maps) {
+      for (auto& [layer, check_list] : layer_map) {
+        delete check_list;
+      }
+    }
+  }
 
   bool buildCondition();
 
   DrcEngine* get_engine() { return _engine; }
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
-  std::map<LayoutType, std::map<idb::IdbLayer*, LayerCheckList*>> get_check_maps() { return _check_maps; }
-  std::map<idb::IdbLayer*, LayerCheckList*> get_check_map(LayoutType type) { return _check_maps[type]; }
-  LayerCheckList* get_check_list_routing_layer(idb::IdbLayer* layer) { return get_check_list(LayoutType::kRouting, layer); }
-  LayerCheckList* get_check_list_cut_layer(idb::IdbLayer* layer) { return get_check_list(LayoutType::kCut, layer); }
-  LayerCheckList* get_check_list(LayoutType type, idb::IdbLayer* layer)
+  std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>>& get_check_maps() { return _check_maps; }
+  std::map<idb::IdbLayer*, LayerCheckList*>& get_check_map(RuleType type) { return _check_maps[type]; }
+  // LayerCheckList* get_check_list_routing_layer(idb::IdbLayer* layer) { return get_check_list(RuleType::kRouting, layer); }
+  // LayerCheckList* get_check_list_cut_layer(idb::IdbLayer* layer) { return get_check_list(RuleType::kCut, layer); }
+  LayerCheckList* get_check_list(RuleType type, idb::IdbLayer* layer)
   {
     auto& layer_map = _check_maps[type];
     if (false == layer_map.contains(layer)) {
@@ -71,7 +78,7 @@ class DrcConditionManager
   DrcEngine* _engine = nullptr;
   DrcViolationManager* _violation_manager;
 
-  std::map<LayoutType, std::map<idb::IdbLayer*, LayerCheckList*>> _check_maps = {{LayoutType::kRouting, {}}, {LayoutType::kCut, {}}};
+  std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>> _check_maps;
 
   /// condition builder
   bool buildConditonConnectivity();
