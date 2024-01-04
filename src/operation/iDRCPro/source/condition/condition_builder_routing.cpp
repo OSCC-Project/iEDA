@@ -227,8 +227,8 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
       return;
     } else {
       /// need to check rule
-      auto* check_list = _condition_manager->get_check_list_routing_layer(layer);
-      check_list->addCheckList(point, neighbour->get_point());
+      // auto* check_list = _condition_manager->get_check_list_routing_layer(layer);
+      // check_list->addCheckList(point, neighbour->get_point());
     }
 
     return;
