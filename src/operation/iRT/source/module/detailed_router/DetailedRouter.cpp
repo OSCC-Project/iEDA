@@ -383,7 +383,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       buildViolationList(dr_box);
       buildBoxTrackAxis(dr_box);
       initLayerNodeMap(dr_box);
-      buildNeighborMap(dr_box);
+      initDRNodeValid(dr_box);
+      buildDRNodeNeighbor(dr_box);
       buildOrienNetMap(dr_box);
       checkDRBox(dr_box);
       routeDRBox(dr_box);
@@ -612,58 +613,6 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
         dr_node.set_x(x_list[x]);
         dr_node.set_y(y_list[y]);
         dr_node.set_layer_idx(layer_idx);
-      }
-    }
-  }
-}
-
-void DetailedRouter::buildNeighborMap(DRBox& dr_box)
-{
-#if 0  // all connect
-  buildAllConnect(dr_box);
-#else
-  initDRNodeValid(dr_box);
-  buildDRNodeNeighbor(dr_box);
-#endif
-}
-
-void DetailedRouter::buildAllConnect(DRBox& dr_box)
-{
-  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
-
-  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
-    bool routing_hv = true;
-    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      routing_hv = false;
-    }
-    GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < dr_node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < dr_node_map.get_y_size(); y++) {
-        DRNode& dr_node = dr_node_map[x][y];
-        dr_node.set_is_valid(true);
-        std::map<Orientation, DRNode*>& neighbor_node_map = dr_node.get_neighbor_node_map();
-        if (routing_hv) {
-          if (x != 0) {
-            neighbor_node_map[Orientation::kWest] = &dr_node_map[x - 1][y];
-          }
-          if (x != (dr_node_map.get_x_size() - 1)) {
-            neighbor_node_map[Orientation::kEast] = &dr_node_map[x + 1][y];
-          }
-          if (y != 0) {
-            neighbor_node_map[Orientation::kSouth] = &dr_node_map[x][y - 1];
-          }
-          if (y != (dr_node_map.get_y_size() - 1)) {
-            neighbor_node_map[Orientation::kNorth] = &dr_node_map[x][y + 1];
-          }
-        }
-        if (layer_idx != 0) {
-          neighbor_node_map[Orientation::kDown] = &layer_node_map[layer_idx - 1][x][y];
-        }
-        if (layer_idx != static_cast<irt_int>(layer_node_map.size()) - 1) {
-          neighbor_node_map[Orientation::kUp] = &layer_node_map[layer_idx + 1][x][y];
-        }
       }
     }
   }

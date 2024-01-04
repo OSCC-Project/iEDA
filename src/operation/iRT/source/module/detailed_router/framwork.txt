@@ -14,7 +14,8 @@ iterativeDRModel:迭代DRModel
         buildDRTaskList:将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
         buildViolationList:从顶层GCellMap中读取Violation，将GCellMap中的Violation（Violation完全在Box内）拷贝到DRBox内，并且在GCellMap中移除
         initLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
-        buildNeighborMap:构建Node之间的邻居关系
+        initDRNodeValid:初始化节点有效性
+        buildDRNodeNeighbor:将有效节点连接
         buildOrienNetMap:构建Graph的cost，Fix_rect（与此Box覆盖）从GCellMap中得到，segment+patch从DRTask下得到，Violation从DRBox下得到
         checkDRBox:检查之前构建的信息是否有问题
         routeDRBox:
