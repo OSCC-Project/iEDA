@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRSourceType.hpp"
 #include "Direction.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
@@ -42,15 +41,23 @@ class DRNode : public LayerCoord
   // getter
   bool get_is_valid() const { return _is_valid; }
   std::map<Orientation, DRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
-  std::map<Orientation, std::set<irt_int>>& get_orien_net_map() { return _orien_net_map; }
-  std::map<Orientation, double>& get_orien_violation_cost_map() { return _orien_violation_cost_map; }
+  std::map<Orientation, std::set<irt_int>>& get_orien_fixed_rect_map() { return _orien_fixed_rect_map; }
+  std::map<Orientation, std::set<irt_int>>& get_orien_routed_rect_map() { return _orien_routed_rect_map; }
+  std::map<Orientation, irt_int>& get_orien_violation_number_map() { return _orien_violation_number_map; }
   // setter
   void set_is_valid(const bool is_valid) { _is_valid = is_valid; }
   void set_neighbor_node_map(const std::map<Orientation, DRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
-  void set_orien_net_map(const std::map<Orientation, std::set<irt_int>>& orien_net_map) { _orien_net_map = orien_net_map; }
-  void set_orien_violation_cost_map(const std::map<Orientation, double>& orien_violation_cost_map)
+  void set_orien_fixed_rect_map(const std::map<Orientation, std::set<irt_int>>& orien_fixed_rect_map)
   {
-    _orien_violation_cost_map = orien_violation_cost_map;
+    _orien_fixed_rect_map = orien_fixed_rect_map;
+  }
+  void set_orien_routed_rect_map(const std::map<Orientation, std::set<irt_int>>& orien_routed_rect_map)
+  {
+    _orien_routed_rect_map = orien_routed_rect_map;
+  }
+  void set_orien_violation_number_map(const std::map<Orientation, irt_int>& orien_violation_number_map)
+  {
+    _orien_violation_number_map = orien_violation_number_map;
   }
   // function
   DRNode* getNeighborNode(Orientation orientation)
@@ -61,27 +68,48 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getOverlapShapeNum(irt_int net_idx, Orientation orientation)
+  double getFixedRectCost(irt_int net_idx, Orientation orientation, irt_int fixed_rect_cost)
   {
-    irt_int overlap_shape_num = 0;
-    if (RTUtil::exist(_orien_net_map, orientation)) {
-      std::set<irt_int>& net_set = _orien_net_map[orientation];
-      overlap_shape_num = static_cast<irt_int>(net_set.size());
+    irt_int fixed_rect_num = 0;
+    if (RTUtil::exist(_orien_fixed_rect_map, orientation)) {
+      std::set<irt_int>& net_set = _orien_fixed_rect_map[orientation];
+      fixed_rect_num = static_cast<irt_int>(net_set.size());
       if (RTUtil::exist(net_set, net_idx)) {
-        overlap_shape_num--;
+        fixed_rect_num--;
       }
-      if (overlap_shape_num < 0) {
-        LOG_INST.error(Loc::current(), "The overlap_shape_num < 0!");
+      if (fixed_rect_num < 0) {
+        LOG_INST.error(Loc::current(), "The fixed_rect_num < 0!");
       }
     }
-    return overlap_shape_num;
-  }
-  double getViolationCost(Orientation orientation)
-  {
     double cost = 0;
-    if (RTUtil::exist(_orien_violation_cost_map, orientation)) {
-      cost += _orien_violation_cost_map[orientation];
+    cost = (fixed_rect_num * fixed_rect_cost);
+    return cost;
+  }
+  double getRoutedRectCost(irt_int net_idx, Orientation orientation, irt_int routed_rect_cost)
+  {
+    irt_int routed_rect_num = 0;
+    if (RTUtil::exist(_orien_routed_rect_map, orientation)) {
+      std::set<irt_int>& net_set = _orien_routed_rect_map[orientation];
+      routed_rect_num = static_cast<irt_int>(net_set.size());
+      if (RTUtil::exist(net_set, net_idx)) {
+        routed_rect_num--;
+      }
+      if (routed_rect_num < 0) {
+        LOG_INST.error(Loc::current(), "The routed_rect_num < 0!");
+      }
     }
+    double cost = 0;
+    cost = (routed_rect_num * routed_rect_cost);
+    return cost;
+  }
+  double getViolationCost(Orientation orientation, irt_int violation_cost)
+  {
+    irt_int violation_num = 0;
+    if (RTUtil::exist(_orien_violation_number_map, orientation)) {
+      violation_num = _orien_violation_number_map[orientation];
+    }
+    double cost = 0;
+    cost = (violation_num * violation_cost);
     return cost;
   }
 #if 1  // astar
@@ -107,8 +135,12 @@ class DRNode : public LayerCoord
  private:
   bool _is_valid = false;
   std::map<Orientation, DRNode*> _neighbor_node_map;
-  std::map<Orientation, std::set<irt_int>> _orien_net_map;
-  std::map<Orientation, double> _orien_violation_cost_map;
+  // blockage & pin_shape
+  std::map<Orientation, std::set<irt_int>> _orien_fixed_rect_map;
+  // net_result & patch
+  std::map<Orientation, std::set<irt_int>> _orien_routed_rect_map;
+  // violation
+  std::map<Orientation, irt_int> _orien_violation_number_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

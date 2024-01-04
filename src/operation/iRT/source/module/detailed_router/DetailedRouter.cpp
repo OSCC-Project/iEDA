@@ -129,77 +129,78 @@ void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  irt_int shape_cost = 8;
-  irt_int violation_cost = 8;
-  std::vector<DRParameter> dr_parameter_list = {{7, 0, shape_cost, 0, true}};
-  // std::vector<DRParameter> dr_parameter_list = {{7, 0, shape_cost, 0, true},
-  //                                               {7, -2, shape_cost, shape_cost, true},
-  //                                               {7, -5, shape_cost, shape_cost, true},
-  //                                               {7, 0, shape_cost, violation_cost, false},
-  //                                               {7, -1, shape_cost, violation_cost, false},
-  //                                               {7, -2, shape_cost, violation_cost, false},
-  //                                               {7, -3, shape_cost, violation_cost, false},
-  //                                               {7, -4, shape_cost, violation_cost, false},
-  //                                               {7, -5, shape_cost, violation_cost, false},
-  //                                               {7, -6, shape_cost, violation_cost, false},
-  //                                               {7, 0, shape_cost * 2, violation_cost, false},
-  //                                               {7, -1, shape_cost * 2, violation_cost, false},
-  //                                               {7, -2, shape_cost * 2, violation_cost, false},
-  //                                               {7, -3, shape_cost * 2, violation_cost, false},
-  //                                               {7, -4, shape_cost * 2, violation_cost, false},
-  //                                               {7, -5, shape_cost * 2, violation_cost, false},
-  //                                               {7, -6, shape_cost * 2, violation_cost, false},
-  //                                               {7, -3, shape_cost, violation_cost, true},
-  //                                               {7, 0, shape_cost * 4, violation_cost, false},
-  //                                               {7, -1, shape_cost * 4, violation_cost, false},
-  //                                               {7, -2, shape_cost * 4, violation_cost, false},
-  //                                               {7, -3, shape_cost * 4, violation_cost, false},
-  //                                               {7, -4, shape_cost * 4, violation_cost, false},
-  //                                               {7, -5, shape_cost * 4, violation_cost, false},
-  //                                               {7, -6, shape_cost * 4, violation_cost, false},
-  //                                               {5, -2, shape_cost, violation_cost, true},
-  //                                               {7, 0, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -1, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -2, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -3, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -4, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -5, shape_cost * 8, violation_cost * 2, false},
-  //                                               {7, -6, shape_cost * 8, violation_cost * 2, false},
-  //                                               {3, -1, shape_cost, shape_cost, true},
-  //                                               {7, 0, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -1, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -2, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -3, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -4, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -5, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -6, shape_cost * 16, violation_cost * 4, false},
-  //                                               {3, -2, shape_cost, violation_cost, true},
-  //                                               {7, 0, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -1, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -2, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -3, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -4, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -5, shape_cost * 16, violation_cost * 4, false},
-  //                                               {7, -6, shape_cost * 16, violation_cost * 4, false},
-  //                                               {3, -0, shape_cost, violation_cost, true},
-  //                                               {7, 0, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -1, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -2, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -3, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -4, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -5, shape_cost * 32, violation_cost * 8, false},
-  //                                               {7, -6, shape_cost * 32, violation_cost * 8, false},
-  //                                               {3, -1, shape_cost, violation_cost, true},
-  //                                               {7, 0, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -1, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -2, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -3, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -4, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -5, shape_cost * 64, violation_cost * 16, false},
-  //                                               {7, -6, shape_cost * 64, violation_cost * 16, false}};
+  irt_int cost_unit = 128;
+
+  std::vector<DRParameter> dr_parameter_list = {// init
+                                                /* 1 */ {6, 0, cost_unit, cost_unit, cost_unit, true},
+                                                /* 2 */ {6, -2, cost_unit, cost_unit, cost_unit, true},
+                                                /* 3 */ {6, -4, cost_unit, cost_unit, cost_unit, true},
+                                                /* 4 */ {6, 0, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
+                                                /* 5 */ {6, -2, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
+                                                /* 6 */ {6, -4, 2 * cost_unit, cost_unit, 2 * cost_unit, false}};
+
+  // std::vector<DRParameter> dr_parameter_list = {// init
+  //                                               {6, 0, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, -4, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, 0, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
+  //                                               {6, -2, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
+  //                                               {6, -4, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
+  //                                               // init
+  //                                               {4, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, 0, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -2, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -4, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               // init
+  //                                               {2, -1, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, 0, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -2, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -4, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false}};
+
+  // std::vector<DRParameter> dr_parameter_list = {// init
+  //                                               {6, 0, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, -4, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
+  //                                               {6, 0, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -1, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -2, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -3, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -4, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -5, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, 0, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -1, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -2, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -3, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -4, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -5, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               // init
+  //                                               {6, -4, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
+  //                                               {6, 0, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -1, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -2, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -3, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -4, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               {6, -5, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
+  //                                               // init
+  //                                               {4, -2, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
+  //                                               {6, 0, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -1, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -2, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -3, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -4, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               {6, -5, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
+  //                                               // init
+  //                                               {2, -1, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
+  //                                               {6, 0, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
+  //                                               {6, -1, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
+  //                                               {6, -2, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
+  //                                               {6, -3, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
+  //                                               {6, -4, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
+  //                                               {6, -5, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false}};
   for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
+    printParameter(dr_parameter_list[i]);
     dr_model.set_curr_dr_parameter(dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     buildDRBoxMap(dr_model);
@@ -208,6 +209,16 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
                   " ******");
   }
+}
+
+void DetailedRouter::printParameter(DRParameter& dr_parameter)
+{
+  LOG_INST.info(Loc::current(), "size : ", dr_parameter.get_size());
+  LOG_INST.info(Loc::current(), "offset : ", dr_parameter.get_offset());
+  LOG_INST.info(Loc::current(), "fixed_rect_cost : ", dr_parameter.get_fixed_rect_cost());
+  LOG_INST.info(Loc::current(), "routed_rect_cost : ", dr_parameter.get_routed_rect_cost());
+  LOG_INST.info(Loc::current(), "violation_cost : ", dr_parameter.get_violation_cost());
+  LOG_INST.info(Loc::current(), "complete_ripup : ", dr_parameter.get_complete_ripup());
 }
 
 void DetailedRouter::initDRBoxMap(DRModel& dr_model)
@@ -336,8 +347,7 @@ void DetailedRouter::buildBoxSchedule(DRModel& dr_model)
 {
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  irt_int box_size = dr_box_map.get_x_size() * dr_box_map.get_y_size();
-  irt_int range = std::max(3, static_cast<irt_int>(std::sqrt(box_size / RTUtil::getBatchSize(box_size))));
+  irt_int range = 2;
 
   std::vector<std::vector<DRBoxId>> dr_box_id_list_list;
   for (irt_int start_x = 0; start_x < range; start_x++) {
@@ -1279,11 +1289,14 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  irt_int shape_cost = dr_box.get_curr_dr_parameter()->get_shape_cost();
+  irt_int fixed_rect_cost = dr_box.get_curr_dr_parameter()->get_fixed_rect_cost();
+  irt_int routed_rect_cost = dr_box.get_curr_dr_parameter()->get_routed_rect_cost();
+  irt_int violation_cost = dr_box.get_curr_dr_parameter()->get_violation_cost();
 
   double cost = 0;
-  cost += (shape_cost * curr_node->getOverlapShapeNum(dr_box.get_curr_net_idx(), orientation));
-  cost += curr_node->getViolationCost(orientation);
+  cost += curr_node->getFixedRectCost(dr_box.get_curr_net_idx(), orientation, fixed_rect_cost);
+  cost += curr_node->getRoutedRectCost(dr_box.get_curr_net_idx(), orientation, routed_rect_cost);
+  cost += curr_node->getViolationCost(orientation, violation_cost);
   return cost;
 }
 
@@ -1812,11 +1825,11 @@ std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
       for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
         if (net_idx == -1) {
           for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+            env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
           }
         } else {
           for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixRect(fixed_rect, is_routing));
+            net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
           }
         }
       }
@@ -1883,33 +1896,67 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
                                             bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  updateNetShapeToGraph(dr_box, change_type, net_shape);
-}
-
-void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)
-{
-  for (NetShape& net_shape : DM_INST.getNetShapeList(net_idx, segment)) {
-    updateNetShapeToGraph(dr_box, change_type, net_shape);
-  }
-}
-
-void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch)
-{
-  NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
-  updateNetShapeToGraph(dr_box, change_type, net_shape);
-}
-
-void DetailedRouter::updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape)
-{
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
     if (!dr_node->get_is_valid()) {
       continue;
     }
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
-        dr_node->get_orien_net_map()[orientation].insert(net_shape.get_net_idx());
+        dr_node->get_orien_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
       } else if (change_type == ChangeType::kDel) {
-        dr_node->get_orien_net_map()[orientation].erase(net_shape.get_net_idx());
+        dr_node->get_orien_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
+void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)
+{
+  for (NetShape& net_shape : DM_INST.getNetShapeList(net_idx, segment)) {
+    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+      if (!dr_node->get_is_valid()) {
+        continue;
+      }
+      for (Orientation orientation : orientation_set) {
+        if (change_type == ChangeType::kAdd) {
+          dr_node->get_orien_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        } else if (change_type == ChangeType::kDel) {
+          dr_node->get_orien_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        }
+      }
+    }
+  }
+}
+
+void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch)
+{
+  NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
+  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+    if (!dr_node->get_is_valid()) {
+      continue;
+    }
+    for (Orientation orientation : orientation_set) {
+      if (change_type == ChangeType::kAdd) {
+        dr_node->get_orien_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        dr_node->get_orien_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
+void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation)
+{
+  NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
+  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+    if (!dr_node->get_is_valid()) {
+      continue;
+    }
+    for (Orientation orientation : orientation_set) {
+      if (change_type == ChangeType::kAdd) {
+        dr_node->get_orien_violation_number_map()[orientation]++;
+      } else if (change_type == ChangeType::kDel) {
+        dr_node->get_orien_violation_number_map()[orientation]--;
       }
     }
   }
@@ -1990,25 +2037,6 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
     }
   }
   return node_orientation_map;
-}
-
-void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation)
-{
-  irt_int violation_cost = dr_box.get_curr_dr_parameter()->get_violation_cost();
-  NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
-
-  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
-    if (!dr_node->get_is_valid()) {
-      continue;
-    }
-    for (Orientation orientation : orientation_set) {
-      if (change_type == ChangeType::kAdd) {
-        dr_node->get_orien_violation_cost_map()[orientation] += violation_cost;
-      } else if (change_type == ChangeType::kDel) {
-        dr_node->get_orien_violation_cost_map()[orientation] -= violation_cost;
-      }
-    }
-  }
 }
 
 #endif
@@ -2335,102 +2363,6 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string
                                                 dr_box.get_dr_box_id().get_y(), ".gds");
   GP_INST.plot(gp_gds, gds_file_path, false, false);
 #endif
-}
-
-#endif
-
-#if 1  // valid drc
-
-bool DetailedRouter::hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                                       const DRCShape& drc_shape)
-{
-  return !getDREnvViolation(dr_model, dr_source_type, check_type_list, drc_shape).empty();
-}
-
-bool DetailedRouter::hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                                       const std::vector<DRCShape>& drc_shape_list)
-{
-  return !getDREnvViolation(dr_model, dr_source_type, check_type_list, drc_shape_list).empty();
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type,
-                                                                                    const std::vector<DRCCheckType>& check_type_list,
-                                                                                    const DRCShape& drc_shape)
-{
-  std::vector<DRCShape> drc_shape_list = {drc_shape};
-  return getDREnvViolation(dr_model, dr_source_type, check_type_list, drc_shape_list);
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type,
-                                                                                    const std::vector<DRCCheckType>& check_type_list,
-                                                                                    const std::vector<DRCShape>& drc_shape_list)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-
-  std::map<DRBoxId, std::vector<DRCShape>, CmpDRBoxId> box_rect_map;
-  for (const DRCShape& drc_shape : drc_shape_list) {
-    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
-      PlanarRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          box_rect_map[DRBoxId(x, y)].push_back(drc_shape);
-        }
-      }
-    }
-  }
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  for (const auto& [dr_box_id, drc_shape_list] : box_rect_map) {
-    DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
-    for (auto& [drc, violation_list] : getDREnvViolationBySingle(dr_box, dr_source_type, check_type_list, drc_shape_list)) {
-      for (auto& violation : violation_list) {
-        drc_violation_map[drc].push_back(violation);
-      }
-    }
-  }
-  return drc_violation_map;
-}
-
-std::map<std::string, std::vector<ViolationInfo>> DetailedRouter::getDREnvViolationBySingle(
-    DRBox& dr_box, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
-    const std::vector<DRCShape>& drc_shape_list)
-{
-  std::map<std::string, std::vector<ViolationInfo>> drc_violation_map;
-  // drc_violation_map = DC_INST.getEnvViolationInfo(dr_box.getRegionQuery(dr_source_type), check_type_list, drc_shape_list);
-  // removeInvalidDREnvViolationBySingle(dr_box, drc_violation_map);
-  return drc_violation_map;
-}
-
-void DetailedRouter::removeInvalidDREnvViolationBySingle(DRBox& dr_box,
-                                                         std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map)
-{
-  // 移除dr阶段无法解决的drc
-  for (auto& [drc, violation_list] : drc_violation_map) {
-    std::vector<ViolationInfo> valid_violation_list;
-    for (ViolationInfo& violation_info : violation_list) {
-      bool is_valid = false;
-      for (const BaseInfo& base_info : violation_info.get_base_info_set()) {
-        if (base_info.get_dr_task_idx() != -1) {
-          is_valid = true;
-          break;
-        }
-      }
-      if (is_valid) {
-        valid_violation_list.push_back(violation_info);
-      }
-    }
-    drc_violation_map[drc] = valid_violation_list;
-  }
-  for (auto iter = drc_violation_map.begin(); iter != drc_violation_map.end();) {
-    if (iter->second.empty()) {
-      iter = drc_violation_map.erase(iter);
-    } else {
-      iter++;
-    }
-  }
 }
 
 #endif

@@ -60,6 +60,7 @@ class DetailedRouter
   void addAccessPointToGCellMap(DRModel& dr_model);
   void addTAResultToGCellMap(DRModel& dr_model);
   void iterativeDRModel(DRModel& dr_model);
+  void printParameter(DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
   void buildDRBoxMap(DRModel& dr_model);
   void splitNetResult(DRBox& dr_box);
@@ -128,7 +129,6 @@ class DetailedRouter
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
   void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch);
-  void updateNetShapeToGraph(DRBox& dr_box, ChangeType change_type, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
@@ -139,22 +139,6 @@ class DetailedRouter
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string flag);
 #endif
 
-#if 1  // valid drc
-  bool hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                         const DRCShape& drc_shape);
-  bool hasDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                         const std::vector<DRCShape>& drc_shape_list);
-  std::map<std::string, std::vector<ViolationInfo>> getDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type,
-                                                                      const std::vector<DRCCheckType>& check_type_list,
-                                                                      const DRCShape& drc_shape);
-  std::map<std::string, std::vector<ViolationInfo>> getDREnvViolation(DRModel& dr_model, DRSourceType dr_source_type,
-                                                                      const std::vector<DRCCheckType>& check_type_list,
-                                                                      const std::vector<DRCShape>& drc_shape_list);
-  std::map<std::string, std::vector<ViolationInfo>> getDREnvViolationBySingle(DRBox& dr_box, DRSourceType dr_source_type,
-                                                                              const std::vector<DRCCheckType>& check_type_list,
-                                                                              const std::vector<DRCShape>& drc_shape_list);
-  void removeInvalidDREnvViolationBySingle(DRBox& dr_box, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
-#endif
 };
 
 }  // namespace irt

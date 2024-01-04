@@ -20,7 +20,6 @@
 #include "DRCChecker.hpp"
 #include "DRNode.hpp"
 #include "DRParameter.hpp"
-#include "DRSourceType.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"

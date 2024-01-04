@@ -64,7 +64,7 @@ class DataManager
 #endif
 
 #if 1  // 获得IdbWireSegment
-  idb::IdbLayerShape* getIDBLayerShapeByFixRect(EXTLayerRect* fixed_rect, bool is_routing);
+  idb::IdbLayerShape* getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing);
   idb::IdbRegularWireSegment* getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment);
   idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect);
 #endif

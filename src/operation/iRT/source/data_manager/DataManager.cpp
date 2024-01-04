@@ -383,7 +383,7 @@ std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, PhysicalNode
 
 #if 1  // 获得IdbSegment
 
-idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixRect(EXTLayerRect* fixed_rect, bool is_routing)
+idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();

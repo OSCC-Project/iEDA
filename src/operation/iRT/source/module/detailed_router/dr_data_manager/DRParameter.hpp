@@ -33,11 +33,12 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(irt_int size, irt_int offset, irt_int shape_cost, irt_int violation_cost, bool complete_ripup)
+  DRParameter(irt_int size, irt_int offset, irt_int fixed_rect_cost, irt_int routed_rect_cost, irt_int violation_cost, bool complete_ripup)
   {
     _size = size;
     _offset = offset;
-    _shape_cost = shape_cost;
+    _fixed_rect_cost = fixed_rect_cost;
+    _routed_rect_cost = routed_rect_cost;
     _violation_cost = violation_cost;
     _complete_ripup = complete_ripup;
   }
@@ -45,20 +46,23 @@ class DRParameter
   // getter
   irt_int get_size() const { return _size; }
   irt_int get_offset() const { return _offset; }
-  irt_int get_shape_cost() const { return _shape_cost; }
+  irt_int get_fixed_rect_cost() const { return _fixed_rect_cost; }
+  irt_int get_routed_rect_cost() const { return _routed_rect_cost; }
   irt_int get_violation_cost() const { return _violation_cost; }
   irt_int get_complete_ripup() const { return _complete_ripup; }
   // setter
   void set_size(const irt_int size) { _size = size; }
   void set_offset(const irt_int offset) { _offset = offset; }
-  void set_shape_cost(const irt_int shape_cost) { _shape_cost = shape_cost; }
+  void set_fixed_rect_cost(const irt_int fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
+  void set_routed_rect_cost(const irt_int routed_rect_cost) { _routed_rect_cost = routed_rect_cost; }
   void set_violation_cost(const irt_int violation_cost) { _violation_cost = violation_cost; }
   void set_complete_ripup(const irt_int complete_ripup) { _complete_ripup = complete_ripup; }
 
  private:
   irt_int _size = -1;
   irt_int _offset = -1;
-  irt_int _shape_cost = 0;
+  irt_int _fixed_rect_cost = 0;
+  irt_int _routed_rect_cost = 0;
   irt_int _violation_cost = 0;
   bool _complete_ripup = true;
 };
