@@ -40,10 +40,13 @@ class DrcConditionBuilder
   /// condition builder
   void buildConditionRoutingLayer();
   void filterSpacing();
+  void filterEdge();
   void filterSpacingForPolygon(DrcBasicPoint* start_point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
+  void filterEdgeForPolygon(DrcBasicPoint* start_point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer);
   void checkSpacingUp(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
   void checkSpacingRight(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
   void checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction);
+  void checkEdge(DrcBasicPoint* point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer, DrcDirection direction);
   void buildWidth();
 
   /// violation process
