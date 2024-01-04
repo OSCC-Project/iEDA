@@ -172,16 +172,6 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
     rule_map->set_condition_rule(RuleType::kSpacingJogToJog, idb_rule_jog->get_jog_to_jog_spacing(), static_cast<ConditionRule*>(rule_jog));
   };
 
-  /// end of line
-  auto build_spacing_eol = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapSpacing* rule_map) {
-    auto idb_rule_eol_list = idb_routing_layer->get_lef58_spacing_eol_list();
-    for (auto idb_rule_eol : idb_rule_eol_list) {
-      ConditionRuleEOL* rule_eol = new ConditionRuleEOL(RuleType::kSpacingEOL, idb_rule_eol->get_eol_space(), idb_rule_eol.get());
-
-      rule_map->set_condition_rule(RuleType::kSpacingEOL, idb_rule_eol->get_eol_space(), static_cast<ConditionRule*>(rule_eol));
-    }
-  };
-
   /// build rule map
   auto* rule_map = new RulesMapSpacing(RuleType::kSpacing);
 
@@ -193,9 +183,6 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
 
   /// jog to jog
   build_spacing_jogtojog(idb_routing_layer, rule_map);
-
-  /// end of line
-  build_spacing_eol(idb_routing_layer, rule_map);
 
   /// set rule map to layer
   rule_layer->set_condition(RuleType::kSpacing, static_cast<RulesConditionMap*>(rule_map));
@@ -266,6 +253,16 @@ void DrcRuleBuilder::buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::
     rule_map->set_condition_rule(RuleType::kEdgeNotch, idb_rule_notch->get_min_spacing(), static_cast<ConditionRule*>(rule_notch));
   };
 
+  /// end of line
+  auto build_spacing_eol = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapEdge* rule_map) {
+    auto idb_rule_eol_list = idb_routing_layer->get_lef58_spacing_eol_list();
+    for (auto idb_rule_eol : idb_rule_eol_list) {
+      ConditionRuleEOL* rule_eol = new ConditionRuleEOL(RuleType::kSpacingEOL, idb_rule_eol->get_eol_width(), idb_rule_eol.get());
+
+      rule_map->set_condition_rule(RuleType::kSpacingEOL, idb_rule_eol->get_eol_width(), static_cast<ConditionRule*>(rule_eol));
+    }
+  };
+
   auto* rule_map = new RulesMapEdge(RuleType::kEdge);
 
   /// default min step
@@ -276,6 +273,9 @@ void DrcRuleBuilder::buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::
 
   /// notch
   build_spacing_notch(idb_routing_layer, rule_map);
+
+  /// end of line
+  build_spacing_eol(idb_routing_layer, rule_map);
 
   /// set rule map to layer
   rule_layer->set_condition(RuleType::kEdge, static_cast<RulesConditionMap*>(rule_map));

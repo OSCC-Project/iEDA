@@ -67,6 +67,18 @@ class ConditionRuleNotch : public ConditionRule
   idb::routinglayer::Lef58SpacingNotchlength* _notch;
 };
 
+class ConditionRuleEOL : public ConditionRule
+{
+ public:
+  ConditionRuleEOL(RuleType type, int spacing, idb::routinglayer::Lef58SpacingEol* eol) : ConditionRule(type, spacing), _eol(eol) {}
+  ~ConditionRuleEOL() {}
+
+  idb::routinglayer::Lef58SpacingEol* get_eol() { return _eol; }
+
+ private:
+  idb::routinglayer::Lef58SpacingEol* _eol;
+};
+
 class RulesMapEdge : public RulesConditionMap
 {
  public:

@@ -72,18 +72,6 @@ class ConditionRuleJogToJog : public ConditionRule
   std::map<int, idb::routinglayer::Lef58SpacingTableJogToJog::Width*, std::greater<int>> _width_map;  // int : width
 };
 
-class ConditionRuleEOL : public ConditionRule
-{
- public:
-  ConditionRuleEOL(RuleType type, int spacing, idb::routinglayer::Lef58SpacingEol* eol) : ConditionRule(type, spacing), _eol(eol) {}
-  ~ConditionRuleEOL() {}
-
-  idb::routinglayer::Lef58SpacingEol* get_eol() { return _eol; }
-
- private:
-  idb::routinglayer::Lef58SpacingEol* _eol;
-};
-
 class RulesMapSpacing : public RulesConditionMap
 {
  public:
