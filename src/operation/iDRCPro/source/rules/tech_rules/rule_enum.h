@@ -30,12 +30,12 @@ enum class RuleType
   kSpacingRange,
   kSpacintPRLTable,
   kSpacingJogToJog,
-  kSpacingEOL,
   kWidth,
   kEdge,
   kEdgeMinStep,
   kEdgeMinStepLef58,
   kEdgeNotch,
+  kEdgeEOL,
   kMax
 };
 

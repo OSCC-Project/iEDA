@@ -257,9 +257,9 @@ void DrcRuleBuilder::buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::
   auto build_spacing_eol = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapEdge* rule_map) {
     auto idb_rule_eol_list = idb_routing_layer->get_lef58_spacing_eol_list();
     for (auto idb_rule_eol : idb_rule_eol_list) {
-      ConditionRuleEOL* rule_eol = new ConditionRuleEOL(RuleType::kSpacingEOL, idb_rule_eol->get_eol_width(), idb_rule_eol.get());
+      ConditionRuleEOL* rule_eol = new ConditionRuleEOL(RuleType::kEdgeEOL, idb_rule_eol->get_eol_width(), idb_rule_eol.get());
 
-      rule_map->set_condition_rule(RuleType::kSpacingEOL, idb_rule_eol->get_eol_width(), static_cast<ConditionRule*>(rule_eol));
+      rule_map->set_condition_rule(RuleType::kEdgeEOL, idb_rule_eol->get_eol_width(), static_cast<ConditionRule*>(rule_eol));
     }
   };
 
