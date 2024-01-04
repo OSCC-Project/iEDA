@@ -55,8 +55,8 @@ class ConditionRuleMinStepLef58 : public ConditionRule
 class ConditionRuleNotch : public ConditionRule
 {
  public:
-  ConditionRuleNotch(RuleType type, int spacing, idb::routinglayer::Lef58SpacingNotchlength* notch)
-      : ConditionRule(type, spacing), _notch(notch)
+  ConditionRuleNotch(RuleType type, int width, idb::routinglayer::Lef58SpacingNotchlength* notch)
+      : ConditionRule(type, width), _notch(notch)
   {
   }
   ~ConditionRuleNotch() {}
@@ -70,7 +70,7 @@ class ConditionRuleNotch : public ConditionRule
 class ConditionRuleEOL : public ConditionRule
 {
  public:
-  ConditionRuleEOL(RuleType type, int spacing, idb::routinglayer::Lef58SpacingEol* eol) : ConditionRule(type, spacing), _eol(eol) {}
+  ConditionRuleEOL(RuleType type, int width, idb::routinglayer::Lef58SpacingEol* eol) : ConditionRule(type, width), _eol(eol) {}
   ~ConditionRuleEOL() {}
 
   idb::routinglayer::Lef58SpacingEol* get_eol() { return _eol; }
