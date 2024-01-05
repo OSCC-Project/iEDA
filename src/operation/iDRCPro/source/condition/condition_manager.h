@@ -18,6 +18,7 @@
 #include "idrc_data.h"
 #include "idrc_engine.h"
 #include "idrc_rule_stratagy.h"
+#include "tech_rules.h"
 
 namespace idrc {
 

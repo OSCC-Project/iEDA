@@ -33,6 +33,13 @@ enum class DrcDirection
   kRight
 };
 
+enum class DrcCornerType
+{
+  kNone,
+  kConvex,
+  kConcave
+};
+
 class DrcBasicPoint
 {
   enum PointState : uint64_t
@@ -152,6 +159,32 @@ class DrcBasicPoint
     }
     return _x == p->get_x() ? (_y > p->get_y() ? DrcDirection::kUp : DrcDirection::kDown)
                             : (_x > p->get_x() ? DrcDirection::kRight : DrcDirection::kLeft);
+  }
+
+  DrcCornerType getCornerType()
+  {
+    if (!is_endpoint()) {
+      return DrcCornerType::kNone;
+    }
+
+    unsigned around = 0;
+    for (auto& direction : {DrcDirection::kUp, DrcDirection::kRight, DrcDirection::kDown, DrcDirection::kLeft}) {
+      auto* neighbour = get_neighbour(direction);
+      if (!neighbour || neighbour->is_spacing()) {
+        around <<= 1;
+        around |= 1;
+      } else if (neighbour && neighbour->get_type().hasType(ScanlineDataType::kWidth)) {
+        around <<= 1;
+      }
+    }
+    bool is_convex = around == 0b0011 || around == 0b0110 || around == 0b1100 || around == 0b1001;
+    bool is_concave = around == 0b0000;
+
+    if (is_concave ^ is_convex) {
+      return is_concave ? DrcCornerType::kConcave : DrcCornerType::kConvex;
+    } else {
+      return DrcCornerType::kNone;
+    }
   }
 
  private:

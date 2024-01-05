@@ -6,7 +6,7 @@ add_subdirectory(engine)
 add_subdirectory(region_query)
 add_subdirectory(rules)
 add_subdirectory(condition)
-# add_subdirectory(util)
+add_subdirectory(util)
 
 add_library(idrc_pro_src
     idrc.cpp
@@ -19,7 +19,7 @@ target_link_libraries(idrc_pro_src
         idrc_pro_dm
         idrc_pro_engine
         idrc_pro_rule_manager
-        # idrc_pro_util
+        idrc_pro_util
 )
 
 target_include_directories(idrc_pro_src
