@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include <stdint.h>
+
 #include <cmath>
 #include <map>
 #include <vector>
@@ -49,6 +51,7 @@ class DrcBasicPoint
     kCheckedOverlap = 4,
     kCheckedHorizontal = 8,
     kCheckedVertical = 16,
+    kCheckedMinStep = 32,
     kMax
   };
 
@@ -131,6 +134,9 @@ class DrcBasicPoint
   void set_checked_horizontal() { set_states(true, PointState::kCheckedHorizontal); }
   /// true = has been checked in horizontal direction
   bool is_horizontal_checked() { return get_states(PointState::kCheckedHorizontal); }
+  void set_checked_min_step() { set_states(true, PointState::kCheckedMinStep); }
+  /// true = has been checked min step
+  bool is_min_step_checked() { return get_states(PointState::kCheckedMinStep); }
 
   DrcBasicPoint* nextEndpoint()
   {

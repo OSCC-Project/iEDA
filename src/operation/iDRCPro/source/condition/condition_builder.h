@@ -45,6 +45,9 @@ class DrcConditionBuilder
   void checkSpacingRight(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
   void checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction);
   void buildWidth();
+  void checkStep();
+  void checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                    std::map<int, idrc::ConditionRule*> rule_step_map);
 
   /// violation process
   void saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, idb::IdbLayer* layer, bool b_vertical = false,

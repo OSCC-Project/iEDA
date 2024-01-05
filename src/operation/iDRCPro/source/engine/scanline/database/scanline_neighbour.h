@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "drc_basic_point.h"
+#include <stdint.h>
 
 namespace idrc {
 
