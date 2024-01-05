@@ -34,7 +34,8 @@ namespace idrc {
  */
 void DrcConditionBuilder::buildConditionRoutingLayer()
 {
-  filterSpacing();
+  // filterSpacing();
+  filterEdge();
 }
 /**
  *  filter data by min spacing and max spacing
@@ -83,6 +84,58 @@ void DrcConditionBuilder::filterSpacing()
   //             << _condition_manager->get_violation_manager()->get_violation_list(ViolationEnumType::kViolationMinSpacing).size() <<
   //             std::endl;
 }
+
+/// @brief filter shape by Edge and Value
+void DrcConditionBuilder::filterEdge()
+{
+  auto* engine = _condition_manager->get_engine();
+  auto* engine_manager = engine->get_engine_manager();
+
+  /// get routing layer scanline data map
+  auto& scanline_map = engine_manager->get_engine_scanlines(LayoutType::kRouting);
+  for (auto& [layer, scanline_engine] : scanline_map) {
+    auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
+    if (rule_routing_layer == nullptr) {
+      continue;
+    }
+    auto* rule_map_edge = rule_routing_layer->get_condition_map(RuleType::kEdge);
+    auto& rule_eol_conditionrule = rule_map_edge->get_rule_map(RuleType::kEdgeEOL);
+    int max_eol_width = rule_eol_conditionrule.empty() ? -1 : (--rule_eol_conditionrule.end())->first;
+    // avoid null rule ： map first max
+
+    auto& rule_step58_conditionrule = rule_map_edge->get_rule_map(RuleType::kEdgeMinStepLef58);
+    auto& rule_step_conditionrule = rule_map_edge->get_rule_map(RuleType::kEdgeMinStep);
+    int max_step_width = rule_step_conditionrule.empty()
+                             ? -1
+                             : std::max((--rule_step_conditionrule.end())->first, (--rule_step58_conditionrule.end())->first);
+
+    auto& rule_notch_conditionrule = rule_map_edge->get_rule_map(RuleType::kEdgeNotch);
+    int max_notch_width = rule_notch_conditionrule.empty() ? -1 : (--rule_notch_conditionrule.end())->first;
+
+    auto* rule_map_spacing = rule_routing_layer->get_condition_map(RuleType::kSpacing);
+    auto& rule_jog_conditionrule = rule_map_spacing->get_rule_map(RuleType::kSpacingJogToJog);
+    int max_jog_spacing = rule_jog_conditionrule.empty() ? -1 : (--rule_jog_conditionrule.end())->first;
+
+    auto& rule_prl_conditionrule = rule_map_spacing->get_rule_map(RuleType::kSpacintPRLTable);
+    int max_prl_spacing = rule_prl_conditionrule.empty() ? -1 : (--rule_prl_conditionrule.end())->first;
+
+    std::map<RuleType, int> max_value_map{{RuleType::kEdgeEOL, max_eol_width},
+                                          {RuleType::kEdgeMinStep, max_step_width},
+                                          {RuleType::kEdgeNotch, max_notch_width},
+                                          {RuleType::kSpacingJogToJog, max_jog_spacing},
+                                          {RuleType::kSpacintPRLTable, max_prl_spacing}};
+
+    auto* scanline_dm = scanline_engine->get_data_manager();
+    auto& basic_pts = scanline_dm->get_basic_points();
+    for (int i = 0; i < (int) basic_pts.size(); ++i) {
+      auto& basic_point = basic_pts[i];
+      if (basic_point->is_start()) {
+        filterEdgeForPolygon(basic_point, max_value_map, layer);
+      }
+    }
+  }
+}
+
 /**
  * filter spacing for a polygon, begin checking from start_point
  */
@@ -92,6 +145,23 @@ void DrcConditionBuilder::filterSpacingForPolygon(DrcBasicPoint* start_point, id
   while (iter_point != nullptr) {
     checkSpacing(iter_point, layer, min_spacing, max_spacing, DrcDirection::kUp);
     checkSpacing(iter_point, layer, min_spacing, max_spacing, DrcDirection::kRight);
+
+    /// turn to next point
+    iter_point = iter_point->get_next();
+
+    /// if turn to start point, break loop
+    if (iter_point == start_point) {
+      break;
+    }
+  }
+}
+
+void DrcConditionBuilder::filterEdgeForPolygon(DrcBasicPoint* start_point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer)
+{
+  DrcBasicPoint* iter_point = start_point;
+  while (iter_point != nullptr) {
+    checkEdge(iter_point, max_value_map, layer, DrcDirection::kUp);
+    checkEdge(iter_point, max_value_map, layer, DrcDirection::kRight);
 
     /// turn to next point
     iter_point = iter_point->get_next();
@@ -233,6 +303,78 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
     }
 
     return;
+  }
+}
+
+void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer,
+                                    DrcDirection direction)
+{
+  auto check_id = [](DrcBasicPoint* point, DrcDirection direction) -> bool {
+    auto* neighbour = point->get_neighbour(direction);
+    if (neighbour == nullptr) {
+      /// no need to check
+      return false;
+    }
+
+    /// need to check
+    return true;
+  };
+
+  /// compare id between point and neighbour if need to check
+  if (check_id(point, direction) == false) {
+    return;
+  }
+
+  auto* violation_manager = _condition_manager->get_violation_manager();
+
+  /// vertical or horizontal
+  bool b_vertical = direction == DrcDirection::kUp ? true : false;
+
+  /// if overlap, save violation as short
+  auto* neighbour = point->get_neighbour(direction);
+  if (neighbour->is_edge()) {
+    auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
+    if (rule_routing_layer == nullptr) {
+      return;
+    }
+
+    // get environment type
+    auto* neighbour_prev = b_vertical ? point->get_neighbour(DrcDirection::kDown) : point->get_neighbour(DrcDirection::kLeft);
+    auto* neighbour_next = b_vertical ? neighbour->get_point()->get_neighbour(DrcDirection::kUp)
+                                      : neighbour->get_point()->get_neighbour(DrcDirection::kRight);
+    // define none_or_spacing function
+    auto neighbour_none_or_spacing = [](ScanlineNeighbour* neighbour) { return !neighbour || neighbour->is_spacing(); };
+
+    int edge_length = b_vertical ? std::abs(neighbour->get_point()->get_y() - point->get_y())
+                                 : std::abs(neighbour->get_point()->get_x() - point->get_x());
+
+    if (neighbour_none_or_spacing(neighbour_prev) && neighbour_none_or_spacing(neighbour_next)) {
+      // TODO: EOL
+      if (edge_length <= max_value_map[RuleType::kEdgeEOL]) {
+        // TODO: add edge to bucket
+        // auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeEOL, layer);
+        // check_list->addCheckList(point, neighbour->get_point());
+        // checkEOL(point, neighbour, b_vertical);
+      }
+    }
+    if ((neighbour_none_or_spacing(neighbour_prev) && neighbour_next && neighbour_next->is_width())
+        || (neighbour_none_or_spacing(neighbour_next) && neighbour_prev && neighbour_prev->is_width())) {
+      // TODO: Step and Jog
+      /*
+      if step
+      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kEdge);
+      if jog
+      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
+      */
+    }
+    if ((neighbour_next && neighbour_next->is_width()) && (neighbour_prev && neighbour_prev->is_width())) {
+      // TODO: Notch
+      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kEdge);
+    }
+    if ((neighbour_next && neighbour_next->is_spacing()) || (neighbour_prev && neighbour_prev->is_spacing())) {
+      // TODO: PRL
+      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
+    }
   }
 }
 
@@ -629,5 +771,71 @@ void DrcConditionBuilder::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint*
     break;
   }
 }
+
+// void DrcConditionBuilder::checkEOL(DrcBasicPoint* point, ScanlineNeighbour* neighbour, bool is_vertical)
+// {
+//   DrcDirection check_direciton = DrcDirection::kNone;
+//   if (is_vertical) {
+//     if (point->get_neighbour(DrcDirection::kUp)->is_spacing()) {
+//       check_direciton = DrcDirection::kUp;
+//     } else if (true) {
+//       check_direciton = DrcDirection::kDown;
+//     }
+//   } else {
+//     if (true) {
+//       // todo
+//     } else if (true) {
+//       // todo
+//     }
+//   }
+
+//   auto* point_next = point->get_neighbour(check_direciton)->get_point();
+//   auto* neighbour_next = neighbour->get_point()->get_neighbour(check_direciton)->get_point();
+
+//   int point_length = point_next->distance(point);
+//   // int point_length = std::abs(point_next->get_y() - point->get_y());
+//   int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_point()->get_y());
+
+//   // ------------------------
+//   if ((is_vertical == false) && point->get_neighbour(DrcDirection::kUp)->is_spacing()) {
+//     auto* point_next = point->get_neighbour(DrcDirection::kUp)->get_point();
+//     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kUp)->get_point();
+
+//     int point_length = std::abs(point_next->get_y() - point->get_y());
+//     int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_y());
+//   }
+
+//   if ((is_vertical == false) && point->get_neighbour(DrcDirection::kDown)->is_spacing()) {
+//     auto* point_next = point->get_neighbour(DrcDirection::kDown)->get_point();
+//     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kDown)->get_point();
+
+//     int point_length = std::abs(point_next->get_y() - point->get_y());
+//     int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_y());
+//   }
+
+//   if ((is_vertical == true) || (point->get_neighbour(DrcDirection::kRight)->is_spacing)) {
+//     auto* point_next = point->get_neighbour(DrcDirection::kRight)->get_point();
+//     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kRight)->get_point();
+
+//     int point_length = std::abs(point_next->get_x() - point->get_x());
+//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_x());
+//   }
+
+//   if ((is_vertical == true) || (point->get_neighbour(DrcDirection::kLeft)->is_spacing)) {
+//     auto* point_next = point->get_neighbour(DrcDirection::kLeft)->get_point();
+//     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kLeft)->get_point();
+
+//     int point_length = std::abs(point_next->get_x() - point->get_x());
+//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_x());
+//   }
+
+//   if (point_length <= max_value_map[RuleType::kEdgeEOL] || neighbour_next <= max_value_map[RuleType::kEdgeEOL]) {
+//     // TODO: add edge to bucket
+
+//     auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeEOL, layer);
+//     check_list->addCheckList(point, neighbour->get_point());
+//     checkEOL(point, neighbour);
+//   }
+// }
 
 }  // namespace idrc
