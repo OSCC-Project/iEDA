@@ -677,11 +677,13 @@ void DrcConditionBuilder::buildWidth()
 //   if (is_vertical) {
 //     if (point->get_neighbour(DrcDirection::kUp)->is_spacing()) {
 //       check_direciton = DrcDirection::kUp;
-//     } else if (true) {
+//     } else if (point->get_neighbour(DrcDirection::kDown)->is_spacing()) {
 //       check_direciton = DrcDirection::kDown;
 //     }
-//   } else {
-//     if (true) {
+//   }
+
+//   else if (is_vertical == false) {
+//     if (point->get_neighbour(DrcDirection::kUp)->is_spacing()) {
 //       // todo
 //     } else if (true) {
 //       // todo
@@ -691,9 +693,9 @@ void DrcConditionBuilder::buildWidth()
 //   auto* point_next = point->get_neighbour(check_direciton)->get_point();
 //   auto* neighbour_next = neighbour->get_point()->get_neighbour(check_direciton)->get_point();
 
-//   int point_length = point_next->distance(point);
-//   // int point_length = std::abs(point_next->get_y() - point->get_y());
-//   int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_point()->get_y());
+//   // int point_length = point_next->distance(point);
+//   // auto* point_length = std::abs(point_next->get_y() - point->get_y());
+//   // int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_point()->get_y());
 
 //   // ------------------------
 //   if ((is_vertical == false) && point->get_neighbour(DrcDirection::kUp)->is_spacing()) {
@@ -709,7 +711,7 @@ void DrcConditionBuilder::buildWidth()
 //     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kDown)->get_point();
 
 //     int point_length = std::abs(point_next->get_y() - point->get_y());
-//     int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_y());
+//     int neighbour_length = std::abs(neighbour_next->get_y() - neighbour->get_point()->get_y());
 //   }
 
 //   if ((is_vertical == true) || (point->get_neighbour(DrcDirection::kRight)->is_spacing)) {
@@ -717,7 +719,7 @@ void DrcConditionBuilder::buildWidth()
 //     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kRight)->get_point();
 
 //     int point_length = std::abs(point_next->get_x() - point->get_x());
-//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_x());
+//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_point()->get_x());
 //   }
 
 //   if ((is_vertical == true) || (point->get_neighbour(DrcDirection::kLeft)->is_spacing)) {
@@ -725,7 +727,7 @@ void DrcConditionBuilder::buildWidth()
 //     auto* neighbour_next = neighbour->get_point()->get_neighbour(DrcDirection::kLeft)->get_point();
 
 //     int point_length = std::abs(point_next->get_x() - point->get_x());
-//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_x());
+//     int neighbour_length = std::abs(neighbour_next->get_x() - neighbour->get_point()->get_x());
 //   }
 
 //   if (point_length <= max_value_map[RuleType::kEdgeEOL] || neighbour_next <= max_value_map[RuleType::kEdgeEOL]) {

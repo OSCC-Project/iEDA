@@ -48,6 +48,7 @@ class DrcConditionBuilder
   void checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction);
   void checkEdge(DrcBasicPoint* point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer, DrcDirection direction);
   void buildWidth();
+  void checkEOL(DrcBasicPoint* point, ScanlineNeighbour* neighbour, bool is_vertical);
 
   /// violation process
   void saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, idb::IdbLayer* layer, bool b_vertical = false,
