@@ -39,6 +39,7 @@ class DrcConditionManager
     ~LayerCheckList() {}
 
     void addCheckList(DrcBasicPoint* pt1, DrcBasicPoint* pt2) { _points.emplace_back(std::make_pair(pt1, pt2)); }
+    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>>& get_points() { return _points; }
 
    private:
     idb::IdbLayer* _layer = nullptr;
