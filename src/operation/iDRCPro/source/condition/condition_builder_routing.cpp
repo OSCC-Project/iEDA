@@ -36,6 +36,8 @@ void DrcConditionBuilder::buildConditionRoutingLayer()
 {
   // filterSpacing();
   filterEdge();
+
+  checkStep();
 }
 /**
  *  filter data by min spacing and max spacing
@@ -366,6 +368,10 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
       if jog
       auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
       */
+      if (edge_length <= max_value_map[RuleType::kEdgeMinStep]) {  // TODO: 区分是 Jog 还是 Step
+        auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeMinStep, layer);
+        check_list->addCheckList(point, neighbour->get_point());
+      }
     }
     if ((neighbour_next && neighbour_next->is_width()) && (neighbour_prev && neighbour_prev->is_width())) {
       // TODO: Notch
@@ -719,7 +725,7 @@ void DrcConditionBuilder::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint*
   int step_edge_length = point_prev->distance(point_next);
   // find rule and check
   for (auto& [value, rule_step] : rule_step_map) {
-    if (value < step_edge_length) {
+    if (value <= step_edge_length) {
       continue;
     }
 
@@ -736,22 +742,25 @@ void DrcConditionBuilder::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint*
       point->set_checked_min_step();
       auto* current_point = point;
       auto* iter_point = iterate_func(current_point);
-      while (!is_violation && !iter_point->is_min_step_checked() && current_point->distance(iter_point) <= min_step_length
+      while (!is_violation && !iter_point->is_min_step_checked() && current_point->distance(iter_point) < min_step_length
              && iter_point != point) {
         current_point = iter_point;
         iter_point = iterate_func(current_point);
         edge_cnt++;
 
-        llx = std::min(llx, iter_point->get_x());
-        lly = std::min(lly, iter_point->get_y());
-        urx = std::max(urx, iter_point->get_x());
-        ury = std::max(ury, iter_point->get_y());
+        llx = std::min(llx, current_point->get_x());
+        lly = std::min(lly, current_point->get_y());
+        urx = std::max(urx, current_point->get_x());
+        ury = std::max(ury, current_point->get_y());
 
-        net_ids.insert(iter_point->get_id());
+        net_ids.insert(current_point->get_id());
 
         if (edge_cnt > max_edges) {
           is_violation = true;
-
+#if 0
+          auto gtl_pts_1 = get_boost_point(point);
+          auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+#endif
           // create violation
           DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
           auto violation_type = ViolationEnumType::kViolationMinStep;
