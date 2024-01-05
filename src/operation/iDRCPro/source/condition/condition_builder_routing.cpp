@@ -34,8 +34,8 @@ namespace idrc {
  */
 void DrcConditionBuilder::buildConditionRoutingLayer()
 {
-  // filterSpacing();
   filterEdge();
+  filterSpacing();
 
   checkStep();
 }
