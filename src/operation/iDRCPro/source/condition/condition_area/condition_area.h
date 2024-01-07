@@ -29,7 +29,10 @@ namespace idrc {
 class DrcRuleConditionArea : public DrcRuleConditionMatrix
 {
  public:
-  DrcRuleConditionArea(DrcEngine* engine) : DrcRuleConditionMatrix(engine, RuleType::kArea) {}
+  DrcRuleConditionArea(DrcConditionManager* condition_manager, DrcEngine* engine)
+      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kArea)
+  {
+  }
   ~DrcRuleConditionArea() {}
 
   bool checkFastMode() override;

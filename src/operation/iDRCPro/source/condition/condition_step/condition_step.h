@@ -22,26 +22,29 @@
 namespace idrc {
 
 /**
- * check net rules, such as connectivity, shortage
+ * check step conditions
  *
  */
 
-class DrcRuleConditionConnectivity : public DrcRuleConditionMatrix
+class DrcRuleConditionStep : public DrcRuleConditionMatrix
 {
  public:
-  DrcRuleConditionConnectivity(DrcConditionManager* condition_manager, DrcEngine* engine)
-      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kConnectivity)
+  DrcRuleConditionStep(DrcConditionManager* condition_manager, DrcEngine* engine)
+      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kEdgeMinStep)
   {
   }
-  ~DrcRuleConditionConnectivity() {}
+  ~DrcRuleConditionStep() {}
 
   bool checkFastMode() override;
   bool checkCompleteMode() override;
 
  private:
-  const int MAX_CMP_NUM = 2;
+  /// check minimun step
+  bool checkMinStep();
+  bool checkMinStepLef58();
 
-  bool checkOverlap();
+  bool checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                    std::map<int, idrc::ConditionRule*> rule_step_map);
 };
 
 }  // namespace idrc

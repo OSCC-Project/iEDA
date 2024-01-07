@@ -27,7 +27,10 @@ namespace idrc {
 class DrcRuleConditionSpacing : public DrcRuleConditionMatrix
 {
  public:
-  DrcRuleConditionSpacing(DrcEngine* engine) : DrcRuleConditionMatrix(engine, RuleType::kSpacing) {}
+  DrcRuleConditionSpacing(DrcConditionManager* condition_manager, DrcEngine* engine)
+      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kSpacing)
+  {
+  }
   ~DrcRuleConditionSpacing() {}
 
   bool checkFastMode() override;

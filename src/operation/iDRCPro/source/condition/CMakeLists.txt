@@ -2,6 +2,7 @@ add_subdirectory(condition_matrix)
 add_subdirectory(condition_area)
 add_subdirectory(condition_spacing)
 add_subdirectory(condition_connectivity)
+add_subdirectory(condition_step)
 
 add_library(idrc_condition_manager
     condition_manager.cpp
@@ -17,6 +18,7 @@ target_link_libraries(idrc_condition_manager
     idrc_rule_condition_area
     idrc_rule_condition_connectivity
     idrc_rule_condition_spacing
+    idrc_rule_condition_step
     idrc_pro_tech_rules
     idrc_pro_violation
 )

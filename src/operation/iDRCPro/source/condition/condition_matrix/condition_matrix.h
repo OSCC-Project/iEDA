@@ -15,9 +15,10 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include "rule_enum.h"
+#include "condition_manager.h"
 #include "idrc_engine.h"
 #include "idrc_rule_stratagy.h"
+#include "rule_enum.h"
 
 namespace idrc {
 
@@ -32,7 +33,10 @@ class DrcRuleCondition;
 class DrcRuleConditionMatrix
 {
  public:
-  DrcRuleConditionMatrix(DrcEngine* engine, RuleType type) : _engine(engine), _type(type) {}
+  DrcRuleConditionMatrix(DrcConditionManager* condition_manager, DrcEngine* engine, RuleType type)
+      : _condition_manager(condition_manager), _engine(engine), _type(type)
+  {
+  }
   ~DrcRuleConditionMatrix() {}
 
   DrcEngine* get_engine() { return _engine; }
@@ -41,6 +45,9 @@ class DrcRuleConditionMatrix
   bool check(DrcStratagyType type = DrcStratagyType::kCheckComplete);
   virtual bool checkFastMode() = 0;
   virtual bool checkCompleteMode() = 0;
+
+ protected:
+  DrcConditionManager* _condition_manager = nullptr;
 
  private:
   DrcEngine* _engine = nullptr;

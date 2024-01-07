@@ -20,6 +20,7 @@ target_link_libraries(idrc_pro_src
         idrc_pro_engine
         idrc_pro_rule_manager
         idrc_pro_util
+        idrc_rule_condition_step
 )
 
 target_include_directories(idrc_pro_src

@@ -63,7 +63,7 @@ bool DrcConditionManager::buildConditonConnectivity()
 {
   bool b_result = true;
 
-  DrcRuleConditionConnectivity condition_connectivity(_engine);
+  DrcRuleConditionConnectivity condition_connectivity(this, _engine);
   b_result = condition_connectivity.check();
 
   return b_result;
@@ -75,7 +75,7 @@ bool DrcConditionManager::buildConditonArea()
 {
   bool b_result = true;
 
-  DrcRuleConditionArea condition_area(_engine);
+  DrcRuleConditionArea condition_area(this, _engine);
   b_result = condition_area.check();
 
   return b_result;
@@ -87,7 +87,7 @@ bool DrcConditionManager::buildConditonSpacing()
 {
   bool b_result = true;
 
-  DrcRuleConditionSpacing condition_spacing(_engine);
+  DrcRuleConditionSpacing condition_spacing(this, _engine);
   b_result = condition_spacing.check();
 
   return b_result;

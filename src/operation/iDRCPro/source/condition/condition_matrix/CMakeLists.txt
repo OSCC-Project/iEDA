@@ -8,6 +8,7 @@ target_link_libraries(idrc_rule_condition_matrix
     idrc_pro_data
     idrc_pro_engine
     idrc_pro_rule_stratagy
+    idrc_condition_manager
 )
 
 target_include_directories(idrc_rule_condition_matrix
