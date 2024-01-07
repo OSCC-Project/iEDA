@@ -112,21 +112,21 @@ bool DrcRuleConditionStep::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint
 {
   bool b_result = true;
 
-  // violation rect data
-  int llx = std::min(point_prev->get_x(), point_next->get_x());
-  int lly = std::min(point_prev->get_y(), point_next->get_y());
-  int urx = std::max(point_prev->get_x(), point_next->get_x());
-  int ury = std::max(point_prev->get_y(), point_next->get_y());
-  std::set<int> net_ids;
-  net_ids.insert(point_prev->get_id());
-  net_ids.insert(point_next->get_id());
-
   int step_edge_length = point_prev->distance(point_next);
   // find rule and check
   for (auto& [value, rule_step] : rule_step_map) {
     if (value <= step_edge_length) {
       continue;
     }
+
+    // violation rect data
+    int llx = std::min(point_prev->get_x(), point_next->get_x());
+    int lly = std::min(point_prev->get_y(), point_next->get_y());
+    int urx = std::max(point_prev->get_x(), point_next->get_x());
+    int ury = std::max(point_prev->get_y(), point_next->get_y());
+    std::set<int> net_ids;
+    net_ids.insert(point_prev->get_id());
+    net_ids.insert(point_next->get_id());
 
     // get rule data
     auto* condition_rule_step = static_cast<ConditionRuleMinStep*>(rule_step);

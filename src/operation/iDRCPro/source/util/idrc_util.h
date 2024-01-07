@@ -62,6 +62,41 @@ class DrcUtil
     return point_list;
   }
 
+  // 方向取反
+  static DrcDirection oppositeDirection(DrcDirection direction)
+  {
+    switch (direction) {
+      case DrcDirection::kUp:
+        return DrcDirection::kDown;
+      case DrcDirection::kDown:
+        return DrcDirection::kUp;
+      case DrcDirection::kLeft:
+        return DrcDirection::kRight;
+      case DrcDirection::kRight:
+        return DrcDirection::kLeft;
+      default:
+        return DrcDirection::kNone;
+    }
+  }
+
+  // 线段左边为多边形外部
+  static DrcDirection outsidePolygonDirection(DrcBasicPoint* point_prev, DrcBasicPoint* point_next)
+  {
+    DrcDirection direction = point_prev->direction(point_next);
+    switch (direction) {
+      case DrcDirection::kUp:
+        return DrcDirection::kLeft;
+      case DrcDirection::kDown:
+        return DrcDirection::kRight;
+      case DrcDirection::kLeft:
+        return DrcDirection::kDown;
+      case DrcDirection::kRight:
+        return DrcDirection::kUp;
+      default:
+        return DrcDirection::kNone;
+    }
+  }
+
   // 使用扫描线结果判断角的类型
   // static DrcCornerType cornerType(DrcBasicPoint* point)
   // {
@@ -257,22 +292,6 @@ class DrcUtil
   //   std::sort(intervals.begin(), intervals.end());
 
   //   return intervals[2] - intervals[1];
-  // }
-
-  // static DrcDirection oppositeDirection(DrcDirection direction)
-  // {
-  //   switch (direction) {
-  //     case DrcDirection::kUp:
-  //       return DrcDirection::kDown;
-  //     case DrcDirection::kDown:
-  //       return DrcDirection::kUp;
-  //     case DrcDirection::kLeft:
-  //       return DrcDirection::kRight;
-  //     case DrcDirection::kRight:
-  //       return DrcDirection::kLeft;
-  //     default:
-  //       return DrcDirection::kNone;
-  //   }
   // }
 
   // static bool isSameSide(DrcBasicPoint* point, DrcDirection direction, int target_id, int within = -1)

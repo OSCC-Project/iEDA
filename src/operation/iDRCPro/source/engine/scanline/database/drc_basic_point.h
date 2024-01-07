@@ -52,6 +52,7 @@ class DrcBasicPoint
     kCheckedHorizontal = 8,
     kCheckedVertical = 16,
     kCheckedMinStep = 32,
+    kCheckedEOLSpacing = 64,
     kMax
   };
 
@@ -93,13 +94,9 @@ class DrcBasicPoint
   DrcBasicPoint* get_prev() { return _prev; }
   DrcBasicPoint* get_next() { return _next; }
 
-  ScanlineNeighbour* get_neighbour(DrcDirection direction)
-  {
-    if (_neighbours.find(direction) != _neighbours.end()) {
-      return _neighbours[direction];
-    }
-    return nullptr;
-  }
+  ScanlineNeighbour* get_neighbour(DrcDirection direction) { return has_neighbour(direction) ? _neighbours[direction] : nullptr; }
+
+  bool has_neighbour(DrcDirection direction) { return _neighbours.find(direction) != _neighbours.end(); }
 
   // setter
   void set_x(int x) { _x = x; }
@@ -137,6 +134,9 @@ class DrcBasicPoint
   void set_checked_min_step() { set_states(true, PointState::kCheckedMinStep); }
   /// true = has been checked min step
   bool is_min_step_checked() { return get_states(PointState::kCheckedMinStep); }
+  void set_checked_eol_spacing() { set_states(true, PointState::kCheckedEOLSpacing); }
+  /// true = has been checked min step
+  bool is_eol_spacing_checked() { return get_states(PointState::kCheckedEOLSpacing); }
 
   DrcBasicPoint* nextEndpoint()
   {
@@ -158,13 +158,14 @@ class DrcBasicPoint
 
   int distance(DrcBasicPoint* p) { return std::abs(_x - p->get_x()) + std::abs(_y - p->get_y()); }
 
+  // p in witch direction of this point
   DrcDirection direction(DrcBasicPoint* p)
   {
     if (_x == p->get_x() && _y == p->get_y()) {
       return DrcDirection::kNone;
     }
-    return _x == p->get_x() ? (_y > p->get_y() ? DrcDirection::kUp : DrcDirection::kDown)
-                            : (_x > p->get_x() ? DrcDirection::kRight : DrcDirection::kLeft);
+    return _x == p->get_x() ? (_y > p->get_y() ? DrcDirection::kDown : DrcDirection::kUp)
+                            : (_x > p->get_x() ? DrcDirection::kLeft : DrcDirection::kRight);
   }
 
   DrcCornerType getCornerType()

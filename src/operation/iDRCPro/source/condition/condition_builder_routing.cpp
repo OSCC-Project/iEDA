@@ -324,14 +324,15 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
     return;
   }
 
-  auto* violation_manager = _condition_manager->get_violation_manager();
-
   /// vertical or horizontal
   bool b_vertical = direction == DrcDirection::kUp ? true : false;
 
   /// if overlap, save violation as short
   auto* neighbour = point->get_neighbour(direction);
-  if (neighbour->is_edge()) {
+  if (neighbour->is_overlap()) {
+    auto* check_list = _condition_manager->get_check_list(RuleType::kConnectivity, layer);
+    check_list->addCheckList(point, neighbour->get_point());
+  } else if (neighbour->is_edge()) {
     auto* rule_routing_layer = DrcTechRuleInst->get_rule_routing_layer(layer);
     if (rule_routing_layer == nullptr) {
       return;
@@ -456,7 +457,7 @@ void DrcConditionBuilder::saveViolationSpacing(DrcBasicPoint* start_point_1, Drc
       return nullptr;
     };
     auto* iter_point = iterate_function(start_point_1);
-    while (iter_point && iter_point->direction(start_point_1) == iterate_direction) {
+    while (iter_point && start_point_1->direction(iter_point) == iterate_direction) {
       auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
       // while (neighbour && neighbour->get_point()->get_x() == iter_point->get_x()
       //        && neighbour->get_point()->get_y() == iter_point->get_y()) {
