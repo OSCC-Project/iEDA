@@ -87,7 +87,6 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
 {
   bool b_result = true;
 
-  bool is_vertical = point_prev->get_x() == point_next->get_x();
   DrcDirection spacing_direction = DrcUtil::outsidePolygonDirection(point_prev, point_next);
 
   int step_edge_length = point_prev->distance(point_next);
@@ -112,8 +111,12 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
     int eol_within
         = condition_rule_eol->get_eol()->get_eol_within().has_value() ? condition_rule_eol->get_eol()->get_eol_within().value() : 0;
 
+    if (point_prev->get_x() == 533820 && point_prev->get_y() == 41950 && point_next->get_x() == 533820 && point_next->get_y() == 42050) {
+      int a = 0;
+    }
     // check eol spacing
     bool is_violation = false;
+    bool is_begin = false;
     auto* iter_point = point_prev;
     while (iter_point) {
       if (iter_point->is_eol_spacing_checked()) {
@@ -124,6 +127,7 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
       auto* check_neighbour = iter_point->get_neighbour(spacing_direction);
       if (check_neighbour && check_neighbour->is_spacing() && iter_point->distance(check_neighbour->get_point()) < eol_spacing) {
         check_neighbour->get_point()->set_checked_eol_spacing();
+        is_begin = true;
 
         llx = std::min(llx, iter_point->get_x());
         lly = std::min(lly, iter_point->get_y());
@@ -139,7 +143,7 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
         net_ids.insert(check_neighbour->get_point()->get_id());
 
         is_violation = true;
-      } else {
+      } else if (is_begin && check_neighbour) {
         break;
       }
 
@@ -155,10 +159,12 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
     if (is_violation) {
       b_result = false;
 
-#if 1
+#if 0
       auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-      auto gtl_pts_2 = DrcUtil::getPolygonPoints(point_prev->get_neighbour(spacing_direction)->get_point());
+      auto* neighbour_point = point_prev->get_neighbour(spacing_direction) ? point_prev->get_neighbour(spacing_direction)->get_point()
+                                                                           : point_next->get_neighbour(spacing_direction)->get_point();
+      auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour_point);
       auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
 #endif
 
