@@ -18,6 +18,7 @@
 #include "condition_step.h"
 
 #include "condition.h"
+#include "idrc_util.h"
 #include "idrc_violation.h"
 #include "idrc_violation_enum.h"
 #include "idrc_violation_manager.h"
@@ -106,27 +107,6 @@ bool DrcRuleConditionStep::checkMinStep()
   return b_result;
 }
 
-#define DEBUG 1
-
-#if DEBUG
-std::vector<ieda_solver::GtlPoint> get_boost_point(DrcBasicPoint* point)
-{
-  std::vector<ieda_solver::GtlPoint> point_list;
-  auto* iter_pt = point;
-  while (nullptr != iter_pt) {
-    ieda_solver::GtlPoint gtl_pt(iter_pt->get_x(), iter_pt->get_y());
-    point_list.emplace_back(gtl_pt);
-
-    iter_pt = iter_pt->get_next();
-    if (iter_pt == point) {
-      break;
-    }
-  }
-
-  return point_list;
-}
-#endif
-
 bool DrcRuleConditionStep::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
                                         std::map<int, idrc::ConditionRule*> rule_step_map)
 {
@@ -176,8 +156,8 @@ bool DrcRuleConditionStep::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint
 
         if (edge_cnt > max_edges) {
           is_violation = true;
-#if DEBUG
-          auto gtl_pts_1 = get_boost_point(point);
+#if 0
+          auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
           auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
           // create violation

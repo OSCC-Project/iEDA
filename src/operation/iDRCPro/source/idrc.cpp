@@ -17,6 +17,7 @@
 #include "idrc.h"
 
 #include "condition_builder.h"
+#include "condition_eol.h"
 #include "condition_step.h"
 
 namespace idrc {
@@ -82,6 +83,10 @@ void DrcManager::check()
   DrcRuleConditionStep condition_step(_condition_manager, _engine);
 
   condition_step.checkFastMode();  // TODO: sratagy
+
+  DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
+
+  condition_eol.checkFastMode();  // TODO: sratagy
 }
 
 }  // namespace idrc

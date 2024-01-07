@@ -16,7 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
-// #include "drc_basic_point.h"
+#include <vector>
+
+#include "drc_basic_point.h"
+#include "idrc_engine.h"
 
 namespace idrc {
 
@@ -43,6 +46,20 @@ class DrcUtil
   static bool isConcaveCorner(T& first_coord, T& second_coord, T& third_coord)
   {
     return crossProduct(first_coord, second_coord, third_coord) > 0;
+  }
+
+  // 获得 polygon 的所有点，按顺时针组织
+  static std::vector<ieda_solver::GtlPoint> getPolygonPoints(DrcBasicPoint* point)
+  {
+    std::vector<ieda_solver::GtlPoint> point_list{{point->get_x(), point->get_y()}};
+    auto* iter_pt = point->get_next();
+    while (nullptr != iter_pt && iter_pt != point) {
+      point_list.emplace_back(iter_pt->get_x(), iter_pt->get_y());
+
+      iter_pt = iter_pt->get_next();
+    }
+
+    return point_list;
   }
 
   // 使用扫描线结果判断角的类型
