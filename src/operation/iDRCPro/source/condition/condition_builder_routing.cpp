@@ -222,32 +222,32 @@ void DrcConditionBuilder::checkSpacing(DrcBasicPoint* point, idb::IdbLayer* laye
 
   /// if overlap, save violation as short
   auto* neighbour = point->get_neighbour(direction);
-  if (neighbour->is_overlap()) {
-    if (false == point->is_overlap_checked()) {
-#if DEBUG
-      auto gtl_pts_1 = get_boost_point(point);
-      auto gtl_pts_2 = get_boost_point(neighbour->get_point());
-      auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-      auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
-      /// has violation
-      auto& violation_list = violation_manager->get_violation_list(ViolationEnumType::kViolationShort);
-      int list_size = violation_list.size();
-      std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
-#endif
+  //   if (neighbour->is_overlap()) {
+  //     if (false == point->is_overlap_checked()) {
+  // #if DEBUG
+  //       auto gtl_pts_1 = get_boost_point(point);
+  //       auto gtl_pts_2 = get_boost_point(neighbour->get_point());
+  //       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+  //       auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+  //       /// has violation
+  //       auto& violation_list = violation_manager->get_violation_list(ViolationEnumType::kViolationShort);
+  //       int list_size = violation_list.size();
+  //       std::vector<DrcBasicPoint*> seg{point, neighbour->get_point()};
+  // #endif
 
-      saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, -1);
+  //       saveViolationSpacing(point, neighbour->get_point(), layer, b_vertical, -1);
 
-#if DEBUG
-      if (violation_list.size() > list_size) {
-        auto vio = violation_list.at(violation_list.size() - 1);
-        auto vio_rect = static_cast<idrc::DrcViolationRect*>(vio);
-        ieda_solver::GtlRect boost_rect(vio_rect->get_llx(), vio_rect->get_lly(), vio_rect->get_urx(), vio_rect->get_ury());
-        int a = 0;
-      }
-#endif
-    }
-    return;
-  }
+  // #if DEBUG
+  //       if (violation_list.size() > list_size) {
+  //         auto vio = violation_list.at(violation_list.size() - 1);
+  //         auto vio_rect = static_cast<idrc::DrcViolationRect*>(vio);
+  //         ieda_solver::GtlRect boost_rect(vio_rect->get_llx(), vio_rect->get_lly(), vio_rect->get_urx(), vio_rect->get_ury());
+  //         int a = 0;
+  //       }
+  // #endif
+  //     }
+  //     return;
+  //   }
 
   /// if spacing
   if (neighbour->is_spacing()) {

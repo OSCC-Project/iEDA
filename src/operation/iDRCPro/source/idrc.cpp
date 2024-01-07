@@ -17,6 +17,7 @@
 #include "idrc.h"
 
 #include "condition_builder.h"
+#include "condition_connectivity.h"
 #include "condition_eol.h"
 #include "condition_step.h"
 
@@ -80,6 +81,10 @@ bool DrcManager::buildCondition()
 
 void DrcManager::check()
 {
+  DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
+
+  connectivity.checkFastMode();  // TODO: sratagy
+
   DrcRuleConditionStep condition_step(_condition_manager, _engine);
 
   condition_step.checkFastMode();  // TODO: sratagy

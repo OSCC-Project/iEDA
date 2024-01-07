@@ -111,9 +111,6 @@ bool DrcRuleConditionEOL::checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoi
     int eol_within
         = condition_rule_eol->get_eol()->get_eol_within().has_value() ? condition_rule_eol->get_eol()->get_eol_within().value() : 0;
 
-    if (point_prev->get_x() == 533820 && point_prev->get_y() == 41950 && point_next->get_x() == 533820 && point_next->get_y() == 42050) {
-      int a = 0;
-    }
     // check eol spacing
     bool is_violation = false;
     bool is_begin = false;

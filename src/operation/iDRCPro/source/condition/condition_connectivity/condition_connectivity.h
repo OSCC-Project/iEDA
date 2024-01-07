@@ -42,6 +42,8 @@ class DrcRuleConditionConnectivity : public DrcRuleConditionMatrix
   const int MAX_CMP_NUM = 2;
 
   bool checkOverlap();
+
+  bool findOverlapRegion(DrcBasicPoint* point, DrcBasicPoint* neighbour, idb::IdbLayer* layer);
 };
 
 }  // namespace idrc
