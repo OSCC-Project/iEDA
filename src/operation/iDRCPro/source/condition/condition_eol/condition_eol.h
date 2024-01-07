@@ -22,7 +22,7 @@
 namespace idrc {
 
 /**
- * check step conditions
+ * check eol conditions
  *
  */
 
@@ -30,7 +30,7 @@ class DrcRuleConditionEOL : public DrcRuleConditionMatrix
 {
  public:
   DrcRuleConditionEOL(DrcConditionManager* condition_manager, DrcEngine* engine)
-      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kEdgeMinStep)
+      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kEdgeEOL)
   {
   }
   ~DrcRuleConditionEOL() {}
