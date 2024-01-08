@@ -361,10 +361,14 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
       // S/E/W or W/E/S : Jog
       // S/E/W or N/E/W or W/E/S or W/E/N : Step
 
-      if (neighbour_prev && neighbour_next && edge_length <= max_value_map[RuleType::kSpacingJogToJog]) {
-        // add edge to Jog bucket
-        auto* check_list = _condition_manager->get_check_list(RuleType::kSpacingJogToJog, layer);
-        check_list->addCheckList(point, neighbour->get_point());
+      if (neighbour_prev && neighbour_next) {
+        int within_value = edge_length + neighbour_next->is_spacing() ? neighbour_next->get_point()->distance(neighbour->get_point())
+                                                                      : neighbour_prev->get_point()->distance(point);
+        if (within_value <= max_value_map[RuleType::kSpacingJogToJog]) {
+          // add edge to Jog bucket
+          auto* check_list = _condition_manager->get_check_list(RuleType::kSpacingJogToJog, layer);
+          check_list->addCheckList(point, neighbour->get_point());
+        }
       }
 
       if (edge_length <= max_value_map[RuleType::kEdgeMinStep]) {

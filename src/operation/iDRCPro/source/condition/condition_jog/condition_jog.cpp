@@ -72,7 +72,7 @@ bool DrcRuleConditionJog::checkSpacingJog()
         std::swap(point_pair.first, point_pair.second);
       }
 
-      // match rule EOL spacing
+      // match rule jog spacing
       if (!checkSpacingJogSegment(point_pair.first, point_pair.second, layer, rule_eol_map)) {
         b_result = false;
       }

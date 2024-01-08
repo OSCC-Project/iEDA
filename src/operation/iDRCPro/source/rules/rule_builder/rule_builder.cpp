@@ -155,18 +155,17 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
       return;
     }
 
-    int max_within = -1;
     for (auto& row : idb_rule_jog->get_width_list()) {
-      max_within = std::max(max_within, row.get_par_within());
+      int within = row.get_par_within();
+
+      ConditionRuleJogToJog* rule_jog = new ConditionRuleJogToJog(RuleType::kSpacingJogToJog, within, idb_rule_jog.get());
+
+      for (auto& idb_width : idb_rule_jog->get_width_list()) {
+        rule_jog->addWidth(idb_width.get_width(), &idb_width);
+      }
+
+      rule_map->set_condition_rule(RuleType::kSpacingJogToJog, within, static_cast<ConditionRule*>(rule_jog));
     }
-
-    ConditionRuleJogToJog* rule_jog = new ConditionRuleJogToJog(RuleType::kSpacingJogToJog, max_within, idb_rule_jog.get());
-
-    for (auto& idb_width : idb_rule_jog->get_width_list()) {
-      rule_jog->addWidth(idb_width.get_width(), &idb_width);
-    }
-
-    rule_map->set_condition_rule(RuleType::kSpacingJogToJog, max_within, static_cast<ConditionRule*>(rule_jog));
   };
 
   /// build rule map
