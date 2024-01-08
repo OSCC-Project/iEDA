@@ -6,6 +6,7 @@ target_link_libraries(ipl-module-post_gp
     PUBLIC
         ipl-configurator
         ipl-module-evaluator
+        ipl-module-legalizer
         ipl-bridge
 )
 

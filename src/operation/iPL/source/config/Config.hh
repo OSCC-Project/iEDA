@@ -35,6 +35,7 @@
 #include "LegalizerConfig.hh"
 #include "MacroPlacerConfig.hh"
 #include "NesterovPlaceConfig.hh"
+#include "PostGPConfig.hh"
 #include "json/json.hpp"
 
 namespace ipl {

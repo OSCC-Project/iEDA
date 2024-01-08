@@ -44,10 +44,10 @@ class TimingAnnotation
   float get_early_tns();
   float get_late_tns();
 
-  float getOutNodeRes(Node* out_node);   // TODO
-  float getAvgWireResPerUnitLength();    // TODO
-  float getAvgWireCapPerUnitLength();    // TODO
-  float getNodeInputCap(Node* in_node);  // TODO
+  float getOutNodeRes(Node* out_node);
+  float getAvgWireResPerUnitLength();
+  float getAvgWireCapPerUnitLength();
+  float getNodeInputCap(Node* in_node);
 
   float get_node_early_slack(int32_t node_id);
   float get_node_late_slack(int32_t node_id);
@@ -60,6 +60,10 @@ class TimingAnnotation
   float get_group_criticality(Group* group);
   float get_network_criticality(NetWork* network);
 
+  float get_node_importance(Node* node); 
+
+  SteinerWirelength* get_stwl_ptr() const {return _steiner_wirelength;}
+
   // only for fliplfop.
   Node* get_clock_node(Group* flipflop);
   Node* get_data_node(Group* fliplfop);
@@ -70,8 +74,11 @@ class TimingAnnotation
 
   // function.
   void updateSTATimingFull();
-  void updateSTATimingIncremental();
+  void updateSTATimingIncremental(NetWork* network);
+  void updateSTATimingIncremental(std::vector<NetWork*>& network_list);
   void reportCurrentTiming();
+
+  void printALLTimingInfoForDebug();
 
   void updateCriticalityAndCentralityFull();
   void updateCriticalityAndCentralityIncremental(const std::vector<NetWork*>& network_list);
@@ -85,6 +92,8 @@ class TimingAnnotation
 
   float _max_centrality;
 
+  std::string _clock_name;
+
   // Topology order
   std::vector<Node*> _topo_order_node_list;
   std::vector<NetWork*> _topo_order_net_list;
@@ -92,8 +101,9 @@ class TimingAnnotation
 
   void init();
   void updateCriticalityAndCentrality(NetWork* network);
+  std::string extractLastName(std::string input);
 };
-inline TimingAnnotation::TimingAnnotation(TopologyManager* topology_manager) : _topology_manager(topology_manager), _max_centrality(0.0f)
+inline TimingAnnotation::TimingAnnotation(TopologyManager* topology_manager) : _topology_manager(topology_manager), _steiner_wirelength(nullptr), _max_centrality(0.0f)
 {
   init();
 }

@@ -11,7 +11,7 @@ db_init -config ./iEDA_config/db_default_config.json
 #===========================================================
 ##   reset data path
 #===========================================================
-source ./script/DB_script/db_path_setting.tcl
+source ./script/DB_script/db_path_setting_simple.tcl
 
 #===========================================================
 ##   reset lib
@@ -31,7 +31,7 @@ source ./script/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path ./result/iTO_fix_fanout_result.def
+def_init -path /home/chenshijian/result/iccad15/simple/simple.input.def
 
 #===========================================================
 ##   run Placer

@@ -10,3 +10,4 @@ add_executable(iEDA
 )
 
 target_link_libraries(iEDA flow)
+#target_link_libraries(iEDA -fsanitize=address)

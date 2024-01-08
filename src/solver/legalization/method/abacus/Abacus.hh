@@ -59,6 +59,7 @@ class Abacus : public LGMethodInterface
   void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) override;
   bool runLegalization() override;
   bool runIncrLegalization() override;
+  bool runRollback() override;
 
  private:
   std::unordered_map<std::string, AbacusCluster*> _cluster_map;
@@ -91,6 +92,9 @@ class Abacus : public LGMethodInterface
 
   void updateRemainLength(ipl::LGInterval* interval, int32_t delta);
   void splitTargetInst(ipl::LGInstance* inst);
+  void deleteTargetIntervalClusters(ipl::LGInterval* interval, std::vector<AbacusCluster>& cluster_list);
+  void insertTargetIntervalClusters(ipl::LGInterval* interval, std::vector<AbacusCluster>& cluster_list);
+  void reCalIntervalRemainLength(ipl::LGInterval* interval);
 };
 
 }  // namespace ieda_solver

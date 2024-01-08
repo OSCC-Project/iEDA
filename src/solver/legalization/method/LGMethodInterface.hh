@@ -39,6 +39,7 @@ class LGMethodInterface
 
   virtual void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) = 0;
   virtual bool runIncrLegalization() = 0;
+  virtual bool runRollback() = 0;
 
  protected:
   ipl::LGDatabase* _database = nullptr;

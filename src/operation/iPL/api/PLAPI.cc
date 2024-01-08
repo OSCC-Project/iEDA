@@ -40,6 +40,7 @@
 #include "RandomPlace.hh"
 #include "SteinerWirelength.hh"
 #include "src/MapFiller.h"
+#include "PostGP.hh"
 
 namespace ipl {
 
@@ -109,6 +110,9 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
       // apply to start sta
       this->initSTA();
       this->updateSTATiming();
+      
+      // initalize outer eval tool
+      this->initTimingEval();
     }
 
     updateSequentialProperty();
@@ -172,6 +176,22 @@ double PLAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
   return _external_api.obtainTNS(clock_name, mode);
 }
 
+double PLAPI::obtainEarlyWNS(const char* clock_name){
+  return _external_api.obtainWNS(clock_name,ista::AnalysisMode::kMin);
+}
+
+double PLAPI::obtainEarlyTNS(const char* clock_name){
+  return _external_api.obtainTNS(clock_name, ista::AnalysisMode::kMin);
+}
+
+double PLAPI::obtainLateWNS(const char* clock_name){
+  return _external_api.obtainWNS(clock_name, ista::AnalysisMode::kMax);
+}
+
+double PLAPI::obtainLateTNS(const char* clock_name){
+  return _external_api.obtainTNS(clock_name, ista::AnalysisMode::kMax);
+}
+
 void PLAPI::updateTiming(TopologyManager* topo_manager)
 {
   SteinerWirelength steiner_wl(topo_manager);
@@ -184,7 +204,21 @@ void PLAPI::updateTiming(TopologyManager* topo_manager)
     eval::TimingNet* timing_net = generateTimingNet(network, point_pair_list);
     timing_net_list.push_back(timing_net);
   }
-  EvalInst.updateTiming(timing_net_list);
+  _external_api.updateEvalTiming(timing_net_list);
+}
+
+void PLAPI::updatePartOfTiming(TopologyManager* topo_manager, std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map)
+{
+  std::vector<eval::TimingNet*> timing_net_list;
+  timing_net_list.reserve(net_id_to_points_map.size());
+
+  for (auto net_pair : net_id_to_points_map) {
+    NetWork* network = topo_manager->findNetworkById(net_pair.first);
+    eval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
+    timing_net_list.push_back(timing_net);
+  }
+
+  _external_api.updateEvalTiming(timing_net_list);
 }
 
 void PLAPI::updateTimingInstMovement(TopologyManager* topo_manager,
@@ -200,8 +234,25 @@ void PLAPI::updateTimingInstMovement(TopologyManager* topo_manager,
     timing_net_list.push_back(timing_net);
   }
 
-  EvalInst.updateTiming(timing_net_list, moved_inst_list, 2);
+  _external_api.updateEvalTiming(timing_net_list, moved_inst_list, 2);
 }
+
+float PLAPI::obtainInstPinCap(std::string inst_pin_name){
+  return _external_api.obtainInstPinCap(inst_pin_name);
+}
+
+float PLAPI::obtainAvgWireResUnitLengthUm(){
+  return _external_api.obtainAvgWireResUnitLengthUm();
+}
+
+float PLAPI::obtainAvgWireCapUnitLengthUm(){
+  return _external_api.obtainAvgWireCapUnitLengthUm();
+}
+
+float PLAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name){
+  return _external_api.obtainInstOutPinRes(cell_name,port_name);
+}
+
 
 eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
                                           const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list)
@@ -270,12 +321,6 @@ eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
   return timing_net;
 }
 
-void PLAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
-                                     std::vector<std::string> moved_inst_list)
-{
-  _external_api.updateTimingInstMovement(influenced_net_map, moved_inst_list);
-}
-
 void PLAPI::destroyTimingEval()
 {
   _external_api.destroyTimingEval();
@@ -285,6 +330,11 @@ void PLAPI::destroyTimingEval()
 void PLAPI::runFlow()
 {
   // runMP();
+  
+  // test
+  runPostGP();
+  exit(1);
+
   runGP();
   printHPWLInfo();
 
@@ -374,6 +424,12 @@ bool PLAPI::runIncrLG(std::vector<std::string> inst_name_list)
   return flag;
 }
 
+void PLAPI::runPostGP(){
+  //
+  PostGP post_gp(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+  post_gp.runIncrTimingPlace();
+}
+
 void PLAPI::runDP()
 {
   bool legal_flag = checkLegality();
@@ -394,6 +450,12 @@ void PLAPI::initSTA()
 {
   _external_api.initSTA();
 }
+
+void PLAPI::initEval()
+{
+  _external_api.initEval();
+}
+
 void PLAPI::updateSTATiming()
 {
   _external_api.updateSTATiming();

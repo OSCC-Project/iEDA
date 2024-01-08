@@ -18,6 +18,7 @@
 #include <deque>
 #include <tuple>
 
+#include "Legalizer.hh"
 #include "log/Log.hh"
 #include "utility/Utility.hh"
 
@@ -39,6 +40,23 @@ PostGP::PostGP(Config* pl_config, PlacerDB* placer_db)
   _database._group_list = topo_manager->get_group_copy_list();
   _database._network_list = topo_manager->get_network_copy_list();
   _database._node_list = topo_manager->get_node_copy_list();
+  _database._topo_manager = topo_manager;
+  
+  // initialize timing annotation and steiner wl
+  _timing_annotation = new TimingAnnotation(topo_manager);
+  _steiner_wl = _timing_annotation->get_stwl_ptr();
+}
+
+PostGP::~PostGP(){
+  delete _timing_annotation;
+}
+
+void PostGP::runIncrTimingPlace(){
+  _timing_annotation->printALLTimingInfoForDebug();
+  // TODO: Record incremental improvement and set loop
+  runBufferBalancing();
+  runCellBalancing();
+  runLoadReduction();
 }
 
 void PostGP::runBufferBalancing()
@@ -93,6 +111,41 @@ void PostGP::runBufferBalancing()
   }
 
   LOG_INFO << "End buffer balancing...";
+}
+
+void PostGP::runCellBalancing()
+{
+  LOG_INFO << "Start cell balancing...";
+
+  // find single buffer chains
+  std::deque<std::tuple<float, Instance*>> cells;
+
+  for (auto* inst : _database._inst_list) {
+    auto* group = _database._group_list[inst->get_inst_id()];
+
+    float criticality = _timing_annotation->get_group_criticality(group);
+    if (!Utility().isFloatApproximatelyZero(criticality)) {
+      cells.push_back(std::make_tuple(criticality, inst));
+    }
+  }
+
+  // sort buffer by criticality
+  std::sort(cells.begin(), cells.end());
+
+  int32_t moved_cells = 0;
+  int32_t failed = 0;
+
+  int num_cells = cells.size();
+
+  for (int32_t i = num_cells - 1; i >= 0; i--) {
+    auto* cell = std::get<1>(cells[i]);
+    if (!doCellBalancing(cell)) {
+      failed++;
+    }
+    moved_cells++;
+  }
+
+  LOG_INFO << "End cell balancing...";
 }
 
 bool PostGP::doBufferBalancing(Instance* buffer)
@@ -151,7 +204,272 @@ bool PostGP::doBufferBalancing(Instance* buffer)
   float px = scaling * dx + driver_pos.get_x();
   float py = scaling * dy + driver_pos.get_y();
 
-  // TODO calculate the cost and legal the inst.
+  // calculate the cost and legal the inst.
+  float old_cost = this->calCurrentCost(buffer);
+  this->runIncrLGAndUpdateTiming(buffer, px, py);
+  float new_cost = this->calCurrentCost(buffer);
+
+  if (new_cost > old_cost) {
+    // rollback
+    bool rollback_flag = this->runRollback(buffer);
+    if (!rollback_flag) {
+      LOG_INFO << "Cannot rollback to legalized position!!!";
+      exit(1);
+    }
+    return false;
+  } else {
+    return true;
+  }
+}
+
+bool PostGP::doCellBalancing(Instance* inst)
+{
+  if (inst->isFixed()) {
+    return false;
+  }
+
+  //   auto* group = _database._group_list[buffer->get_inst_id()];
+  auto inpins = std::move(inst->get_inpins());
+  auto outpins = std::move(inst->get_outpins());
+
+  float avg_px = 0;
+  float avg_py = 0;
+  float total_weight = 0;
+  int32_t num_pos = 0;
+
+  for (auto* outpin : outpins) {
+    Net* out_net = outpin->get_net();
+    for (auto* inpin : inpins) {
+      Net* in_net = inpin->get_net();
+
+      Pin* driver = in_net->get_driver_pin();
+      if (driver->isIOPort()) {
+        return false;
+      }
+
+      float C_w = _timing_annotation->getAvgWireCapPerUnitLength();
+      float R_w = _timing_annotation->getAvgWireResPerUnitLength();
+
+      Node* driver_node = _database._node_list[driver->get_pin_id()];
+      Node* out_node = _database._node_list[outpin->get_pin_id()];
+      Node* in_node = _database._node_list[inpin->get_pin_id()];
+
+      float R_0 = _timing_annotation->getOutNodeRes(driver_node);
+      float R_1 = _timing_annotation->getOutNodeRes(out_node);
+
+      for (auto* sink : out_net->get_sink_pins()) {
+        Node* sink_node = _database._node_list[sink->get_pin_id()];
+        float C_1 = _timing_annotation->getNodeInputCap(in_node);
+        float C_2 = _timing_annotation->getNodeInputCap(sink_node);
+
+        const Point<int32_t> driver_pos = driver_node->get_location();
+        const Point<int32_t> sink_pos = sink_node->get_location();
+        const float d = Utility().calManhattanDistance(driver_pos, sink_pos);
+        const float a = 0;  // Utility().calManhattanDistance(in_pin_pos, out_pin_pos);
+
+        if (Utility().isFloatApproximatelyZero(d)) {
+          continue;
+        }
+
+        float w_0 = _timing_annotation->get_node_importance(driver_node);
+        float w_1 = _timing_annotation->get_node_importance(sink_node);
+
+        if (Utility().isFloatApproximatelyZero(w_0 + w_1)) {
+          continue;
+        }
+
+        float actual_D = (C_w * w_1 * R_1 - C_w * w_0 * R_0 + R_w * w_1 * C_2 - R_w * w_0 * C_1 + (C_w * d - a * C_w) * R_w * w_1)
+                         / (C_w * R_w * w_1 + C_w * R_w * w_0);
+
+        float d_0 = std::min(d - a, std::max(0.0f, actual_D));
+
+        float dx = sink_pos.get_x() - driver_pos.get_x();
+        float dy = sink_pos.get_y() - driver_pos.get_y();
+        float scaling = d_0 / d;
+
+        float weight = w_0 + w_1;
+
+        avg_px += weight * (scaling * dx + driver_pos.get_x());
+        avg_py += weight * (scaling * dy + driver_pos.get_y());
+        total_weight += weight;
+        num_pos++;
+      }
+    }
+  }
+
+  if (num_pos > 0 && total_weight > 0) {
+    avg_px /= total_weight;
+    avg_py /= total_weight;
+
+    // calculate the cost and legal the inst.
+    float old_cost = this->calCurrentCost(inst);
+    this->runIncrLGAndUpdateTiming(inst, avg_px, avg_py);
+    float new_cost = this->calCurrentCost(inst);
+
+    if (new_cost > old_cost) {
+      // rollback
+      bool rollback_flag = this->runRollback(inst);
+      if (!rollback_flag) {
+        LOG_INFO << "Cannot rollback to legalized position!!!";
+        exit(1);
+      }
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    return false;
+  }
+}
+
+float PostGP::calCurrentCost(Instance* inst)
+{
+  float cost = 0;
+  for (auto* pin : inst->get_pins()) {
+    auto* pin_net = pin->get_net();
+    if (pin_net) {
+      for (auto* net_sink_pin : pin_net->get_sink_pins()) {
+        if (net_sink_pin->get_instance() == inst) {
+          continue;
+        }
+
+        auto* node = _database._node_list[net_sink_pin->get_pin_id()];
+        cost += _timing_annotation->get_node_importance(node) * _timing_annotation->get_node_late_arrival_time(node->get_node_id());
+      }
+    }
+  }
+}
+
+bool PostGP::runIncrLGAndUpdateTiming(Instance* inst, int32_t x, int32_t y)
+{
+  inst->update_coordi(x, y);
+  LegalizerInst.updateInstance(inst);
+  LegalizerInst.runIncrLegalize();  // Need to compute cost, so not rollback before calCost.
+
+  std::vector<NetWork*> influenced_networks;
+  for (auto* pin : inst->get_pins()) {
+    Node* node = _database._node_list[pin->get_pin_id()];
+    influenced_networks.push_back(node->get_network());
+  }
+
+  _steiner_wl->updatePartOfNetWorkPointPair(influenced_networks);
+  std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map;
+  for (auto* network : influenced_networks) {
+    const auto& point_pair_list = _steiner_wl->obtainPointPairList(network);
+    net_id_to_points_map.emplace(network->get_network_id(), point_pair_list);
+  }
+
+  iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
+}
+
+bool PostGP::runRollback(Instance* inst)
+{
+  bool flag = LegalizerInst.runRollback();
+
+  std::vector<NetWork*> influenced_networks;
+  for (auto* pin : inst->get_pins()) {
+    Node* node = _database._node_list[pin->get_pin_id()];
+    influenced_networks.push_back(node->get_network());
+  }
+
+  _steiner_wl->updatePartOfNetWorkPointPair(influenced_networks);
+  std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map;
+  for (auto* network : influenced_networks) {
+    const auto& point_pair_list = _steiner_wl->obtainPointPairList(network);
+    net_id_to_points_map.emplace(network->get_network_id(), point_pair_list);
+  }
+
+  iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
+
+  return flag;
+}
+
+void PostGP::runLoadReduction()
+{
+  LOG_INFO << "Start load optimization";
+
+  std::map<Instance*, bool> visited;
+  for (auto* inst : _database._inst_list) {
+    visited.emplace(inst, false);
+  }
+
+  float late_threshold = 0.0f;
+  int32_t counter_moved = 0;
+  int32_t couter_failed = 0;
+
+  std::deque<std::tuple<float, Net*>> ordered_nets;
+  for (auto* net : _database._net_list) {
+    auto* network = _database._network_list[net->get_net_id()];
+
+    float criticality = _timing_annotation->get_network_criticality(network);
+    ordered_nets.push_back(std::make_tuple(criticality, net));
+  }
+  std::sort(ordered_nets.begin(), ordered_nets.end());
+
+  int32_t num_nets = ordered_nets.size();
+
+  for (int32_t i = num_nets - 1; i >= 0; i--) {
+    auto* net = std::get<1>(ordered_nets[i]);
+
+    auto* driver = net->get_driver_pin();
+    auto* driver_node = _database._node_list[driver->get_pin_id()];
+
+    if (!driver || _timing_annotation->get_node_late_slack(driver_node->get_node_id()) >= 0) {
+      continue;
+    }
+
+    for (auto* sink : net->get_sink_pins()) {
+      auto* sink_inst = sink->get_instance();
+
+      if (sink->isIOPort() || !sink_inst) {
+        continue;
+      }
+
+      if (visited[sink_inst]) {
+        continue;
+      } else {
+        visited[sink_inst] = true;
+      }
+
+      auto* sink_cell = sink_inst->get_cell_master();
+      if (sink_inst->isFixed() || sink_cell->isFlipflop() || sink_cell->isClockBuffer()) {
+        continue;
+      }
+
+      bool is_critical = false;
+      auto inst_pos = sink_inst->get_coordi();
+      for (auto* out_pin : sink_inst->get_outpins()) {
+        if (_timing_annotation->get_node_late_slack(out_pin->get_pin_id()) < late_threshold) {
+          is_critical = true;
+          break;
+        }
+      }
+
+      if (!is_critical) {
+        auto driver_pos = driver->get_center_coordi();
+
+        float dx = driver_pos.get_x() - inst_pos.get_x();
+        float dy = driver_pos.get_y() - inst_pos.get_y();
+
+        // calculate the cost and legal the inst.
+        float old_cost = this->calCurrentCost(sink_inst);
+        this->runIncrLGAndUpdateTiming(sink_inst, dx, dy);
+        float new_cost = this->calCurrentCost(sink_inst);
+
+        if (new_cost > old_cost) {
+          // rollback
+          bool rollback_flag = this->runRollback(sink_inst);
+          if (!rollback_flag) {
+            LOG_INFO << "Cannot rollback to legalized position!!!";
+            exit(1);
+          }
+          couter_failed++;
+        } else {
+          counter_moved++;
+        }
+      }
+    }
+  }
 }
 
 }  // namespace ipl

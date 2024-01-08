@@ -107,6 +107,12 @@ void AbacusCluster::appendInst(ipl::LGInstance* inst)
   _total_width += inst->get_shape().get_width();
 }
 
+void AbacusCluster::appendInstList(std::vector<ipl::LGInstance*> inst_list){
+  for(auto* inst : inst_list){
+    this->appendInst(inst);
+  }
+}
+
 void AbacusCluster::updateAbacusInfo()
 {
   clearAbacusInfo();
@@ -125,6 +131,14 @@ int32_t AbacusCluster::obtainInstIdx(ipl::LGInstance* inst)
     }
   }
   return inst_idx;
+}
+
+void AbacusCluster::eraseTargetInstByIdx(int32_t idx){
+  _inst_list.erase(_inst_list.begin() + idx);
+}
+
+void AbacusCluster::eraseTargetInstByIdxPair(int32_t begin_idx, int32_t end_idx){
+  _inst_list.erase(_inst_list.begin()+begin_idx, _inst_list.begin() + end_idx + 1);
 }
 
 }  // namespace ieda_solver

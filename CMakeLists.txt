@@ -42,7 +42,7 @@ set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and exam
 # SET(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-set(CMAKE_BUILD_TYPE "Release")
+# set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_BUILD_TYPE "Debug")
 #set(BUILD_SHARED_LIBS ON)
 
@@ -51,9 +51,11 @@ if(NOT DEFINED CMD_BUILD)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 endif()
 
+set(SANITIZER OFF)
 if(SANITIZER)
     add_compile_options("-fsanitize=address")
     link_libraries("-fsanitize=address")
+    message("address sanitizer load")
 endif()
 
 include(cmake/setting.cmake)

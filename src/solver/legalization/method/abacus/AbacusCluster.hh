@@ -113,8 +113,8 @@ class AbacusCluster
   void appendInst(ipl::LGInstance* inst);
   void appendInstList(std::vector<ipl::LGInstance*> inst_list);
   int32_t obtainInstIdx(ipl::LGInstance* inst);
-  void eraseTargetInstByIdx(int32_t idx);                             // TODO
-  void eraseTargetInstByIdxPair(int32_t begin_idx, int32_t end_idx);  // TODO
+  void eraseTargetInstByIdx(int32_t idx);                             
+  void eraseTargetInstByIdxPair(int32_t begin_idx, int32_t end_idx);
 
  private:
   std::string _name;

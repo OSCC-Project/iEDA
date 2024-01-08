@@ -91,6 +91,7 @@ class Node
   NODE_TYPE get_node_type() const { return _node_type; }
   std::string get_name() const { return _name; }
   Point<int32_t> get_location() const { return _location; }
+  bool is_io_node() const { return _io_flag; }
 
   NetWork* get_network() const { return _network; }
   Group* get_group() const { return _group; }
@@ -103,6 +104,7 @@ class Node
   // setter.
   void set_node_id(int32_t id) { _node_id = id; }
   void set_node_type(NODE_TYPE node_type) { _node_type = node_type; }
+  void set_is_io() {_io_flag = true;}
   void set_location(Point<int32_t> location) { _location = std::move(location); }
 
   void set_network(NetWork* network) { _network = network; }
@@ -116,6 +118,7 @@ class Node
  private:
   int32_t _node_id;
   NODE_TYPE _node_type;
+  bool _io_flag;
   std::string _name;
   Point<int32_t> _location;
 
@@ -133,6 +136,7 @@ class Node
 inline Node::Node(std::string name)
     : _node_id(-1),
       _node_type(NODE_TYPE::kNone),
+      _io_flag(false),
       _name(name),
       _network(nullptr),
       _group(nullptr),
@@ -173,6 +177,7 @@ class NetWork
 
   // function.
   Rectangle<int32_t> obtainNetWorkShape();
+  int32_t obtainTopoIndex();
 
  private:
   int32_t _network_id;
@@ -207,12 +212,13 @@ class Group
 
   // setter.
   void set_group_id(int32_t id) { _group_id = id; }
-  void set_group_tyep(GROUP_TYPE type) { _group_type = type; }
+  void set_group_type(GROUP_TYPE type) { _group_type = type; }
   void add_node(Node* node) { _node_list.push_back(node); }
 
   // function.
   std::vector<Node*> obtainInputNodes();
   std::vector<Node*> obtainOutputNodes();
+  int32_t obtainTopoIndex();
 
  private:
   int32_t _group_id;
@@ -283,7 +289,7 @@ class TopologyManager
 
   std::vector<Node*> get_node_copy_list() const { return _node_list; }
   std::vector<NetWork*> get_network_copy_list() const { return _network_list; }
-  std::vector<Group*>& get_group_copy_list() const { return _group_list; }
+  std::vector<Group*> get_group_copy_list() const { return _group_list; }
   // setter.
   void add_node(Node* node);
   void add_network(NetWork* network);

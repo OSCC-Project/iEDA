@@ -49,6 +49,7 @@ class PLAPI
   bool runLG();
   bool runIncrLG();
   bool runIncrLG(std::vector<std::string> inst_name_list);
+  void runPostGP();
   void runDP();
   void runBufferInsertion();
   void writeBackSourceDataBase();
@@ -90,6 +91,7 @@ class PLAPI
   void plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path);
 
   void initSTA();
+  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -110,10 +112,19 @@ class PLAPI
   double obtainPinLateRequiredTime(std::string pin_name);
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
+  double obtainEarlyWNS(const char* clock_name);
+  double obtainEarlyTNS(const char* clock_name);
+  double obtainLateWNS(const char* clock_name);
+  double obtainLateTNS(const char* clock_name);
   void updateTiming(TopologyManager* topo_manager);
+  void updatePartOfTiming(TopologyManager* topo_manager, std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map);
   void updateTimingInstMovement(TopologyManager* topo_manager,
                                 std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                 std::vector<std::string> moved_inst_list);
+  float obtainInstPinCap(std::string inst_pin_name);
+  float obtainAvgWireResUnitLengthUm();
+  float obtainAvgWireCapUnitLengthUm();
+  float obtainInstOutPinRes(std::string cell_name, std::string port_name);
   eval::TimingNet* generateTimingNet(NetWork* network,
                                      const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list);
   void destroyTimingEval();

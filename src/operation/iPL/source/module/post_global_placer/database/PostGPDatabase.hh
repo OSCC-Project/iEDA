@@ -25,16 +25,17 @@ namespace ipl {
 class PostGPDatabase
 {
  public:
-  PostGPDatabase();
+  PostGPDatabase(): _placer_db(nullptr), _topo_manager(nullptr) {}
   PostGPDatabase(const PostGPDatabase&) = delete;
   PostGPDatabase(PostGPDatabase&&) = delete;
-  ~PostGPDatabase();
+  ~PostGPDatabase() = default;
 
   PostGPDatabase& operator=(const PostGPDatabase&) = default;
   PostGPDatabase& operator=(PostGPDatabase&&) = default;
 
  private:
   PlacerDB* _placer_db;
+  TopologyManager* _topo_manager;
 
   std::vector<Instance*> _inst_list;
   std::vector<Net*> _net_list;

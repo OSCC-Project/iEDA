@@ -1069,11 +1069,15 @@ double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew,
   }
 
   // pass converted slew into `gateDelay()` and return conveted Delay
+  double found_delay_or_constrain;
   if (isDelayArc()) {
-    return _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew) * liberty_to_output_convert;
+    found_delay_or_constrain = _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   } else {
-    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
+    found_delay_or_constrain = _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   }
+
+  double ret_value = found_delay_or_constrain * liberty_to_output_convert;
+  return ret_value;
 }
 
 /**

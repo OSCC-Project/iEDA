@@ -54,4 +54,9 @@ bool LGCustomization::runIncrLegalization()
   return true;
 }
 
+bool LGCustomization::runRollback()
+{
+  return true;
+}
+
 }  // namespace ieda_solver

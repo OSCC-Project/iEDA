@@ -51,7 +51,8 @@ class Legalizer
 
   LG_MODE get_mode() const { return _mode; }
   bool runLegalize();
-  bool runIncrLegalize(bool is_trial);
+  bool runIncrLegalize();
+  bool runRollback();
 
   bool isInitialized() { return _mode != LG_MODE::kNone; }
 

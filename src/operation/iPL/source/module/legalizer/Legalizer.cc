@@ -457,7 +457,7 @@ bool Legalizer::runLegalize()
   return is_succeed;
 }
 
-bool Legalizer::runIncrLegalize(bool is_trial)
+bool Legalizer::runIncrLegalize()
 {
   LOG_INFO << "-----------------Start Incrmental Legalization-----------------";
   ieda::Stats incr_lg_status;
@@ -480,12 +480,8 @@ bool Legalizer::runIncrLegalize(bool is_trial)
   if (is_succeed) {
     alignInstanceOrient();
     LOG_INFO << "Total Movement: " << calTotalMovement();
-    if (!is_trial) {
-      writebackPlacerDB();
-      _target_inst_list.clear();
-    } else {
-      // TODO recover origin cluster.
-    }
+    writebackPlacerDB();
+    _target_inst_list.clear();
   }
 
   PlacerDBInst.updateTopoManager();
@@ -496,6 +492,14 @@ bool Legalizer::runIncrLegalize(bool is_trial)
   LOG_INFO << "-----------------Finish Incrmental Legalization-----------------";
 
   return is_succeed;
+}
+
+bool Legalizer::runRollback(){
+  bool is_succeed = _method->runRollback();
+  if(is_succeed){
+    alignInstanceOrient();
+    writebackPlacerDB();
+  }
 }
 
 void Legalizer::alignInstanceOrient()

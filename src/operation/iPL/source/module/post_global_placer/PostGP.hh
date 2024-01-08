@@ -23,6 +23,8 @@
 #include "config/PostGPConfig.hh"
 #include "database/PostGPDatabase.hh"
 #include "timing/TimingAnnotation.hh"
+#include "wirelength/SteinerWirelength.hh"
+#include "PLAPI.hh"
 
 namespace ipl {
 
@@ -38,6 +40,7 @@ class PostGP
   PostGP& operator=(const PostGP&) = delete;
   PostGP& operator=(PostGP&&) = delete;
 
+  void runIncrTimingPlace();
   void runBufferBalancing();
   void runCellBalancing();
   void runLoadReduction();
@@ -51,7 +54,10 @@ class PostGP
   // timing opt
   TimingAnnotation* _timing_annotation;
 
+  SteinerWirelength* _steiner_wl;
+
   bool doBufferBalancing(Instance* buffer);
+  bool doCellBalancing(Instance* inst);
 
   void updateTargetLogicInstances();
   void updateTargetFlipflopInstances();
@@ -61,8 +67,12 @@ class PostGP
   std::pair<Point<int32_t>, Point<int32_t>> buildDynamicSearchWindow(Instance* inst);
   std::vector<Point<int32_t>> obtainCandidateLocations(Instance* inst, Point<int32_t> anchor_point);
 
-  bool runIncrementalLegalization(std::vector<Instance*> target_inst_list);  // Mode: NEAREST, EXACT
-  bool rollBackToBestLocation(Instance* inst);
+  bool runIncrLGAndUpdateTiming(Instance* inst, int32_t x, int32_t y);
+  bool runRollback(Instance* inst);
+
+  // bool runIncrLG(std::vector<Instance*> target_inst_list);
+  // bool rollBackToBestLocation(Instance* inst);
+  float calCurrentCost(Instance* inst);
 };
 
 }  // namespace ipl
