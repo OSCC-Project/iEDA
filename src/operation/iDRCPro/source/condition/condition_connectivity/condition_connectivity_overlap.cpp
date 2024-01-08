@@ -74,6 +74,11 @@ bool DrcRuleConditionConnectivity::checkOverlap()
   for (auto& [layer, check_list] : check_map) {
     // handle overlap data
     for (auto& point_pair : check_list->get_points()) {
+      auto* segment = point_pair.first->get_neighbour(point_pair.first->direction(point_pair.second));
+      if (!segment || !segment->get_type().hasType(ScanlineDataType::kEdge)) {
+        continue;
+      }
+
       // handle overlap segment
       if (!findOverlapRegion(point_pair.first, point_pair.second, layer)) {
         b_result = false;
@@ -84,26 +89,26 @@ bool DrcRuleConditionConnectivity::checkOverlap()
   return b_result;
 }
 
-bool DrcRuleConditionConnectivity::findOverlapRegion(DrcBasicPoint* point, DrcBasicPoint* neighbour, idb::IdbLayer* layer)
+bool DrcRuleConditionConnectivity::findOverlapRegion(DrcBasicPoint* point1, DrcBasicPoint* point2, idb::IdbLayer* layer)
 {
   bool b_result = true;
 
-  if (point->is_overlap_checked()) {
+  if (point1->is_overlap_checked()) {
     return b_result;
   }
 
-  bool b_vertical = point->get_x() == neighbour->get_x();
+  bool b_vertical = point1->get_x() == point2->get_x();
 
-  int llx = std::min(point->get_x(), neighbour->get_x());
-  int lly = std::min(point->get_y(), neighbour->get_y());
-  int urx = std::max(point->get_x(), neighbour->get_x());
-  int ury = std::max(point->get_y(), neighbour->get_y());
+  int llx = std::min(point1->get_x(), point2->get_x());
+  int lly = std::min(point1->get_y(), point2->get_y());
+  int urx = std::max(point1->get_x(), point2->get_x());
+  int ury = std::max(point1->get_y(), point2->get_y());
 
   std::set<int> net_ids;
-  net_ids.insert(point->get_id());
-  net_ids.insert(neighbour->get_id());
+  net_ids.insert(point1->get_id());
+  net_ids.insert(point2->get_id());
 
-  auto walk_check = [&](DrcBasicPoint* p, bool b_next) {
+  auto walk_check = [&](DrcBasicPoint* point, bool b_next) {
     auto iterate_direction
         = b_vertical ? (b_next ? DrcDirection::kRight : DrcDirection::kLeft) : (b_next ? DrcDirection::kUp : DrcDirection::kDown);
     auto iterate_function = [=](DrcBasicPoint* point) -> DrcBasicPoint* {
@@ -118,18 +123,16 @@ bool DrcRuleConditionConnectivity::findOverlapRegion(DrcBasicPoint* point, DrcBa
 
     auto* iter_point = iterate_function(point);
     while (iter_point && !iter_point->is_overlap_checked() && point->direction(iter_point) == iterate_direction) {
+      iter_point->set_checked_overlap();
       auto neighbour = b_vertical ? iter_point->get_neighbour(DrcDirection::kUp) : iter_point->get_neighbour(DrcDirection::kRight);
-      if (neighbour == nullptr) {
-        break;
-      }
-      if (!neighbour->is_overlap()) {
+      if (neighbour == nullptr || !neighbour->is_overlap()) {
         break;
       }
 
-      if (iter_point->is_overlap_checked()) {
-        break;
-      } else {
-        iter_point->set_checked_overlap();
+      if (iter_point->get_id() != point1->get_id()) {
+        point2 = iter_point;
+      } else if (neighbour->get_point()->get_id() != point1->get_id()) {
+        point2 = neighbour->get_point();
       }
 
       /// build violation rect
@@ -150,13 +153,19 @@ bool DrcRuleConditionConnectivity::findOverlapRegion(DrcBasicPoint* point, DrcBa
     }
   };
 
-  walk_check(point, true);
-  walk_check(point, false);
+  walk_check(point1, true);
+  walk_check(point1, false);
+
+  /// save violation as rect
+  if (llx == urx || lly == ury) {
+    // skip area 0
+    return b_result;
+  }
 
 #if 0
-  auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
+  auto gtl_pts_1 = DrcUtil::getPolygonPoints(point1);
   auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-  auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour);
+  auto gtl_pts_2 = DrcUtil::getPolygonPoints(point2);
   auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
 #endif
 

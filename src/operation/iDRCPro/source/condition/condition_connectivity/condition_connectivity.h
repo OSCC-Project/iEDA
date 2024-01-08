@@ -43,7 +43,7 @@ class DrcRuleConditionConnectivity : public DrcRuleConditionMatrix
 
   bool checkOverlap();
 
-  bool findOverlapRegion(DrcBasicPoint* point, DrcBasicPoint* neighbour, idb::IdbLayer* layer);
+  bool findOverlapRegion(DrcBasicPoint* point1, DrcBasicPoint* point2, idb::IdbLayer* layer);
 };
 
 }  // namespace idrc
