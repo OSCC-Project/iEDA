@@ -43,7 +43,7 @@ class DrcRuleConditionNotch : public DrcRuleConditionMatrix
   bool checkNotch();  // Mode
 
   bool checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
-                  std::map<int, idrc::ConditionRule*> rule_notch_map);
+                  std::map<int, std::vector<ConditionRule*>> rule_notch_map);
 };
 
 }  // namespace idrc

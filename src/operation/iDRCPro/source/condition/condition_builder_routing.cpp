@@ -377,7 +377,7 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
       // W/E/W : Notch
       if (edge_length <= max_value_map[RuleType::kEdgeNotch]) {
         // add edge to Notch bucket
-        auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeEOL, layer);
+        auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeNotch, layer);
         check_list->addCheckList(point, neighbour->get_point());
       }
     }
