@@ -349,34 +349,45 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
                                  : std::abs(neighbour->get_point()->get_x() - point->get_x());
 
     if (neighbour_none_or_spacing(neighbour_prev) && neighbour_none_or_spacing(neighbour_next)) {
-      // TODO: EOL
+      // S/E/S or N/E/N or N/E/S or S/E/N : EOL
       if (edge_length <= max_value_map[RuleType::kEdgeEOL]) {
-        // TODO: add edge to bucket
+        // add edge to EOL bucket
         auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeEOL, layer);
         check_list->addCheckList(point, neighbour->get_point());
       }
     }
     if ((neighbour_none_or_spacing(neighbour_prev) && neighbour_next && neighbour_next->is_width())
         || (neighbour_none_or_spacing(neighbour_next) && neighbour_prev && neighbour_prev->is_width())) {
-      // TODO: Step and Jog
-      /*
-      if step
-      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kEdge);
-      if jog
-      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
-      */
-      if (edge_length <= max_value_map[RuleType::kEdgeMinStep]) {  // TODO: 区分是 Jog 还是 Step
+      // S/E/W or W/E/S : Jog
+      // S/E/W or N/E/W or W/E/S or W/E/N : Step
+
+      if (neighbour_prev && neighbour_next && edge_length <= max_value_map[RuleType::kSpacingJogToJog]) {
+        // add edge to Jog bucket
+        auto* check_list = _condition_manager->get_check_list(RuleType::kSpacingJogToJog, layer);
+        check_list->addCheckList(point, neighbour->get_point());
+      }
+
+      if (edge_length <= max_value_map[RuleType::kEdgeMinStep]) {
+        // add edge to Step bucket
         auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeMinStep, layer);
         check_list->addCheckList(point, neighbour->get_point());
       }
     }
     if ((neighbour_next && neighbour_next->is_width()) && (neighbour_prev && neighbour_prev->is_width())) {
-      // TODO: Notch
-      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kEdge);
+      // W/E/W : Notch
+      if (edge_length <= max_value_map[RuleType::kEdgeNotch]) {
+        // add edge to Notch bucket
+        auto* check_list = _condition_manager->get_check_list(RuleType::kEdgeEOL, layer);
+        check_list->addCheckList(point, neighbour->get_point());
+      }
     }
     if ((neighbour_next && neighbour_next->is_spacing()) || (neighbour_prev && neighbour_prev->is_spacing())) {
-      // TODO: PRL
-      auto* rule_map = rule_routing_layer->get_condition_map(RuleType::kSpacing);
+      // S/E or E/S : PRL
+      if (edge_length <= max_value_map[RuleType::kSpacintPRLTable]) {
+        // add edge to PRL bucket
+        auto* check_list = _condition_manager->get_check_list(RuleType::kSpacintPRLTable, layer);
+        check_list->addCheckList(point, neighbour->get_point());
+      }
     }
   }
 }
