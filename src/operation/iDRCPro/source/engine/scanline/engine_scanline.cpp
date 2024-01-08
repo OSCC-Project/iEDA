@@ -277,20 +277,20 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
         activate_id_set.erase(point_backward->get_point()->get_id());
       }
 
-      bool is_near_new_points = false;
-      auto near_prev_it = std::prev(scanline_status_it);
-      auto near_next_it = scanline_status_it;
-      if (near_prev_it != status.status_points.begin() && --near_prev_it != status.status_points.begin()) {
-        is_near_new_points = (*near_prev_it)->get_is_new();
-      }
-      if (++near_next_it != status.status_points.end()) {
-        is_near_new_points = (*near_next_it)->get_is_new();
-      }
+      // bool is_near_new_points = false;
+      // auto near_prev_it = std::prev(scanline_status_it);
+      // auto near_next_it = scanline_status_it;
+      // if (near_prev_it != status.status_points.begin() && --near_prev_it != status.status_points.begin()) {
+      //   is_near_new_points = (*near_prev_it)->get_is_new();
+      // }
+      // if (++near_next_it != status.status_points.end()) {
+      //   is_near_new_points = (*near_next_it)->get_is_new();
+      // }
 
       bool at_least_one_new = point_forward->get_is_new() || point_backward->get_is_new();
       ScanlineDataType segment_type = judgeSegmentType(status, activate_id_set, point_forward, point_backward);
 
-      if (segment_type.hasType(ScanlineDataType::kEdge) || is_near_new_points || at_least_one_new) {
+      if (segment_type.hasType(ScanlineDataType::kEdge) /*|| is_near_new_points*/ || at_least_one_new) {
         tryCreateNonEndpoint(status, point_forward);
         tryCreateNonEndpoint(status, point_backward);
         fillResultToBasicPoint(status, point_forward->get_point(), point_backward->get_point(), segment_type);
