@@ -28,20 +28,7 @@ namespace idrc {
 /// @return true : match condition == has violation; false == no violation
 bool ConditionRuleSpacingPRL::isMatchCondition(int width, int prl_length)
 {
-  for (auto& width_set : _spacing_items) {
-    /// find the first larger witdh in width set
-    if (width > width_set.first) {
-      for (auto& prl_item : width_set.second) {
-        if (prl_length > prl_item) {
-          /// find condition that prl_length larger than prl rule
-          return true;
-        }
-      }
-    }
-  }
-
-  /// if not match
-  return false;
+  return width > _width && prl_length > _prl_length;
 }
 /// @brief check jot to jog rules contains condition
 /// @param value

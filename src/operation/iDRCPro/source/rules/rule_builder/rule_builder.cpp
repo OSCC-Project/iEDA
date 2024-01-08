@@ -123,7 +123,6 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
     }
 
     if (idb_table->is_parallel()) {
-      auto& prl_map = rule_map->get_rule_map(RuleType::kSpacintPRLTable);
       /// get prl table
       auto idb_table_prl = idb_table->get_parallel();
 
@@ -142,14 +141,8 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
           int spacing = idb_spacing_array[i][j];
 
           ConditionRuleSpacingPRL* spacing_prl = nullptr;
-          if (prl_map.find(spacing) == prl_map.end()) {
-            spacing_prl = new ConditionRuleSpacingPRL(RuleType::kSpacintPRLTable, spacing);
-            rule_map->set_condition_rule(RuleType::kSpacintPRLTable, spacing, static_cast<ConditionRule*>(spacing_prl));
-
-          } else {
-            spacing_prl = static_cast<ConditionRuleSpacingPRL*>(prl_map[spacing]);
-          }
-          spacing_prl->addSpacingItem(width, prl_length);
+          spacing_prl = new ConditionRuleSpacingPRL(RuleType::kSpacintPRLTable, spacing, width, prl_length);
+          rule_map->set_condition_rule(RuleType::kSpacintPRLTable, spacing, static_cast<ConditionRule*>(spacing_prl));
         }
       }
     }

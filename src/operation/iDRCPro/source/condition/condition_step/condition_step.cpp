@@ -74,7 +74,7 @@ bool DrcRuleConditionStep::checkMinStep()
       }
 
       // match rule min step
-      if (!checkMinStep(point_pair.first, point_pair.second, layer, rule_step_map)) {
+      if (!checkMinStepSegment(point_pair.first, point_pair.second, layer, rule_step_map)) {
         b_result = false;
       }
 
@@ -107,74 +107,76 @@ bool DrcRuleConditionStep::checkMinStep()
   return b_result;
 }
 
-bool DrcRuleConditionStep::checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
-                                        std::map<int, idrc::ConditionRule*> rule_step_map)
+bool DrcRuleConditionStep::checkMinStepSegment(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                                               std::map<int, std::vector<ConditionRule*>> rule_step_map)
 {
   bool b_result = true;
 
   int step_edge_length = point_prev->distance(point_next);
   // find rule and check
-  for (auto& [value, rule_step] : rule_step_map) {
+  for (auto& [value, rule_step_list] : rule_step_map) {
     if (value <= step_edge_length) {
       continue;
     }
 
-    // violation rect data
-    int llx = std::min(point_prev->get_x(), point_next->get_x());
-    int lly = std::min(point_prev->get_y(), point_next->get_y());
-    int urx = std::max(point_prev->get_x(), point_next->get_x());
-    int ury = std::max(point_prev->get_y(), point_next->get_y());
-    std::set<int> net_ids;
-    net_ids.insert(point_prev->get_id());
-    net_ids.insert(point_next->get_id());
+    for (auto& rule_step : rule_step_list) {
+      // violation rect data
+      int llx = std::min(point_prev->get_x(), point_next->get_x());
+      int lly = std::min(point_prev->get_y(), point_next->get_y());
+      int urx = std::max(point_prev->get_x(), point_next->get_x());
+      int ury = std::max(point_prev->get_y(), point_next->get_y());
+      std::set<int> net_ids;
+      net_ids.insert(point_prev->get_id());
+      net_ids.insert(point_next->get_id());
 
-    // get rule data
-    auto* condition_rule_step = static_cast<ConditionRuleMinStep*>(rule_step);
-    int min_step_length = condition_rule_step->get_min_step()->get_min_step_length();
-    int max_edges = condition_rule_step->get_min_step()->has_max_edges() ? condition_rule_step->get_min_step()->get_max_edges() : 1;
+      // get rule data
+      auto* condition_rule_step = static_cast<ConditionRuleMinStep*>(rule_step);
+      int min_step_length = condition_rule_step->get_min_step()->get_min_step_length();
+      int max_edges = condition_rule_step->get_min_step()->has_max_edges() ? condition_rule_step->get_min_step()->get_max_edges() : 1;
 
-    int edge_cnt = 1;
-    bool is_violation = false;
+      int edge_cnt = 1;
+      bool is_violation = false;
 
-    // find continuous small edges
-    auto walk_check = [&](DrcBasicPoint* point, std::function<DrcBasicPoint*(DrcBasicPoint*)> iterate_func) {
-      point->set_checked_min_step();
-      auto* current_point = point;
-      auto* iter_point = iterate_func(current_point);
-      while (!is_violation && !iter_point->is_min_step_checked() && current_point->distance(iter_point) < min_step_length
-             && iter_point != point) {
-        current_point = iter_point;
-        iter_point = iterate_func(current_point);
-        edge_cnt++;
+      // find continuous small edges
+      auto walk_check = [&](DrcBasicPoint* point, std::function<DrcBasicPoint*(DrcBasicPoint*)> iterate_func) {
+        point->set_checked_min_step();
+        auto* current_point = point;
+        auto* iter_point = iterate_func(current_point);
+        while (!is_violation && !iter_point->is_min_step_checked() && current_point->distance(iter_point) < min_step_length
+               && iter_point != point) {
+          current_point = iter_point;
+          iter_point = iterate_func(current_point);
+          edge_cnt++;
 
-        llx = std::min(llx, current_point->get_x());
-        lly = std::min(lly, current_point->get_y());
-        urx = std::max(urx, current_point->get_x());
-        ury = std::max(ury, current_point->get_y());
+          llx = std::min(llx, current_point->get_x());
+          lly = std::min(lly, current_point->get_y());
+          urx = std::max(urx, current_point->get_x());
+          ury = std::max(ury, current_point->get_y());
 
-        net_ids.insert(current_point->get_id());
+          net_ids.insert(current_point->get_id());
 
-        if (edge_cnt > max_edges) {
-          is_violation = true;
+          if (edge_cnt > max_edges) {
+            is_violation = true;
 #if 0
           auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
           auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
-          // create violation
-          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-          auto violation_type = ViolationEnumType::kViolationMinStep;
-          auto* violation_manager = _condition_manager->get_violation_manager();
-          auto& violation_list = violation_manager->get_violation_list(violation_type);
-          violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+            // create violation
+            DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
+            auto violation_type = ViolationEnumType::kViolationMinStep;
+            auto* violation_manager = _condition_manager->get_violation_manager();
+            auto& violation_list = violation_manager->get_violation_list(violation_type);
+            violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+          }
+
+          iter_point->set_checked_min_step();
         }
+      };
 
-        iter_point->set_checked_min_step();
-      }
-    };
-
-    // check both prev and next
-    walk_check(point_prev, [&](DrcBasicPoint* point) { return point->prevEndpoint(); });
-    walk_check(point_next, [&](DrcBasicPoint* point) { return point->nextEndpoint(); });
+      // check both prev and next
+      walk_check(point_prev, [&](DrcBasicPoint* point) { return point->prevEndpoint(); });
+      walk_check(point_next, [&](DrcBasicPoint* point) { return point->nextEndpoint(); });
+    }
   }
 
   return b_result;

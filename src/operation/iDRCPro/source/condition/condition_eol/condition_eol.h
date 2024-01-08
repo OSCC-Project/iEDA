@@ -42,8 +42,8 @@ class DrcRuleConditionEOL : public DrcRuleConditionMatrix
   /// check EOL spacing
   bool checkSpacingEOL();
 
-  bool checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
-                       std::map<int, idrc::ConditionRule*> rule_eol_map);
+  bool checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                              std::map<int, std::vector<ConditionRule*>> rule_eol_map);
 };
 
 }  // namespace idrc

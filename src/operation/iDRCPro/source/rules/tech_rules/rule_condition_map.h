@@ -18,6 +18,7 @@
 
 #include <limits>
 #include <map>
+#include <vector>
 
 #include "rule_basic.h"
 
@@ -29,9 +30,9 @@ class RulesConditionMap
   RulesConditionMap(RuleType type) : _type(type) {}
   virtual ~RulesConditionMap() {}
 
-  std::map<RuleType, std::map<int, ConditionRule*, std::less<int>>>& get_conditon_rules() { return _conditon_rules; }
-  std::map<int, ConditionRule*, std::less<int>>& get_rule_map(RuleType type) { return _conditon_rules[type]; }
-  ConditionRule* get_condition_rule(RuleType type, int value) { return _conditon_rules[type][value]; }
+  std::map<RuleType, std::map<int, std::vector<ConditionRule*>, std::less<int>>>& get_conditon_rules() { return _conditon_rules; }
+  std::map<int, std::vector<ConditionRule*>, std::less<int>>& get_rule_map(RuleType type) { return _conditon_rules[type]; }
+  std::vector<ConditionRule*> get_condition_rule(RuleType type, int value) { return _conditon_rules[type][value]; }
   int get_min() { return _min; }
   int get_max() { return _max; }
   int get_default() { return _default_rule.first; }
@@ -39,7 +40,7 @@ class RulesConditionMap
 
   void set_condition_rule(RuleType type, int value, ConditionRule* rule)
   {
-    _conditon_rules[type][value] = rule;
+    _conditon_rules[type][value].emplace_back(rule);
     _min = std::min(_min, value);
     _max = std::max(_max, value);
   }
@@ -57,9 +58,9 @@ class RulesConditionMap
    *     ....
    * all rules must at least compare with the value one time
    */
-  std::map<int, ConditionRule*> selectRuleGreater(RuleType type, int value)
+  std::map<int, std::vector<ConditionRule*>> selectRuleGreater(RuleType type, int value)
   {
-    std::map<int, ConditionRule*> rule_list;
+    std::map<int, std::vector<ConditionRule*>> rule_list;
 
     auto& rule_map = get_rule_map(type);
     for (auto& rule : rule_map) {
@@ -83,12 +84,13 @@ class RulesConditionMap
    *     ....
    * all rules must at least compare with the value one time
    */
-  std::map<int, ConditionRule*> selectRuleLess(RuleType type, int value)
+  std::map<int, std::vector<ConditionRule*>> selectRuleLess(RuleType type, int value)
   {
-    std::map<int, ConditionRule*> rule_list;
+    std::map<int, std::vector<ConditionRule*>> rule_list;
     auto& rule_map = get_rule_map(type);
     /// reverse iterate
-    for (std::map<int, ConditionRule*, std::less<int>>::reverse_iterator rule = rule_map.rbegin(); rule != rule_map.rend(); ++rule) {
+    for (std::map<int, std::vector<ConditionRule*>, std::less<int>>::reverse_iterator rule = rule_map.rbegin(); rule != rule_map.rend();
+         ++rule) {
       /// value must be greater than rule's value
       if (value >= rule->first) {
         rule_list[rule->first] = rule->second;
@@ -102,7 +104,7 @@ class RulesConditionMap
 
  private:
   RuleType _type;
-  std::map<RuleType, std::map<int, ConditionRule*, std::less<int>>>
+  std::map<RuleType, std::map<int, std::vector<ConditionRule*>, std::less<int>>>
       _conditon_rules;  /// int : value, ConditionRule* : condition rule for each layer
 
   std::pair<int, ConditionRule*> _default_rule{0, nullptr};  /// indicate the default rule
