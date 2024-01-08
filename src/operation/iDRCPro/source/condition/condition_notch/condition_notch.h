@@ -22,28 +22,28 @@
 namespace idrc {
 
 /**
- * check step conditions
+ * check notch conditions
  *
  */
 
-class DrcRuleConditionEOL : public DrcRuleConditionMatrix
+class DrcRuleConditionNotch : public DrcRuleConditionMatrix
 {
  public:
-  DrcRuleConditionEOL(DrcConditionManager* condition_manager, DrcEngine* engine)
-      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kEdgeEOL)
+  DrcRuleConditionNotch(DrcConditionManager* condition_manager, DrcEngine* engine)
+      : DrcRuleConditionMatrix(condition_manager, engine, RuleType::kEdgeNotch)
   {
   }
-  ~DrcRuleConditionEOL() {}
+  ~DrcRuleConditionNotch() {}
 
   bool checkFastMode() override;
   bool checkCompleteMode() override;
 
  private:
-  /// check EOL spacing
-  bool checkSpacingEOL();
+  /// check
+  bool checkNotch();  // Mode
 
-  bool checkSpacingEOL(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
-                       std::map<int, idrc::ConditionRule*> rule_eol_map);
+  bool checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                  std::map<int, idrc::ConditionRule*> rule_notch_map);
 };
 
 }  // namespace idrc

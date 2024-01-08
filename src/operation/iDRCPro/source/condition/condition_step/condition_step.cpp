@@ -63,10 +63,9 @@ bool DrcRuleConditionStep::checkMinStep()
 
     // handle all small step edges
     for (auto& point_pair : check_list->get_points()) {
+      // swap edge points order
       auto* point_1_next = point_pair.first->nextEndpoint();
       auto* point_2_next = point_pair.second->nextEndpoint();
-
-      // skip edge without two endpoints
       if (point_1_next != point_pair.second && point_2_next != point_pair.first) {
         continue;
       } else if (point_2_next == point_pair.first) {

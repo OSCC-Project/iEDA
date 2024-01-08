@@ -167,7 +167,7 @@ class DrcBasicPoint
     return _x == p->get_x() ? (_y > p->get_y() ? DrcDirection::kDown : DrcDirection::kUp)
                             : (_x > p->get_x() ? DrcDirection::kLeft : DrcDirection::kRight);
   }
-
+  // conner
   DrcCornerType getCornerType()
   {
     if (!is_endpoint()) {
