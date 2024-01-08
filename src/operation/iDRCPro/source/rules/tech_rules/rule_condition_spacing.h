@@ -43,15 +43,19 @@ class ConditionRuleSpacingRange : public ConditionRule
 class ConditionRuleSpacingPRL : public ConditionRule
 {
  public:
-  ConditionRuleSpacingPRL(RuleType type, int spacing) : ConditionRule(type, spacing) {}
+  ConditionRuleSpacingPRL(RuleType type, int spacing, int width, int prl_length)
+      : ConditionRule(type, spacing), _width(width), _prl_length(prl_length)
+  {
+  }
   ~ConditionRuleSpacingPRL() {}
 
-  void addSpacingItem(int width, int prl_length) { _spacing_items[width].insert(prl_length); }
+  // void addSpacingItem(int width, int prl_length) { _spacing_items[width].insert(prl_length); }
 
   bool isMatchCondition(int width, int prl_length);
 
  private:
-  std::map<int, std::set<int, std::greater<int>>, std::greater<int>> _spacing_items;  // map int : witdh; set int : parallel run length
+  int _width;
+  int _prl_length;
 };
 
 class ConditionRuleJogToJog : public ConditionRule

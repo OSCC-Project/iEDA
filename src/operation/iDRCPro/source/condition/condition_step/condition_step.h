@@ -43,8 +43,8 @@ class DrcRuleConditionStep : public DrcRuleConditionMatrix
   bool checkMinStep();
   bool checkMinStepLef58();
 
-  bool checkMinStep(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
-                    std::map<int, idrc::ConditionRule*> rule_step_map);
+  bool checkMinStepSegment(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+                           std::map<int, std::vector<ConditionRule*>> rule_step_map);
 };
 
 }  // namespace idrc
