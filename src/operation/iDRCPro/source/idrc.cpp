@@ -20,6 +20,7 @@
 #include "condition_connectivity.h"
 #include "condition_eol.h"
 #include "condition_notch.h"
+#include "condition_spacing_table.h"
 #include "condition_step.h"
 
 namespace idrc {
@@ -82,13 +83,19 @@ bool DrcManager::buildCondition()
 
 void DrcManager::check()
 {
+  // TODO: sratagy and multi-thread
+
+  DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
+
+  spacing_table.checkFastMode();
+
   DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
 
-  connectivity.checkFastMode();  // TODO: sratagy
+  connectivity.checkFastMode();
 
   DrcRuleConditionStep condition_step(_condition_manager, _engine);
 
-  condition_step.checkFastMode();  // TODO: sratagy
+  condition_step.checkFastMode();
 
   DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
 
@@ -97,6 +104,7 @@ void DrcManager::check()
   DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
 
   condition_notch.checkFastMode();  // TODO: sratagy
+  condition_eol.checkFastMode();
 }
 
 }  // namespace idrc

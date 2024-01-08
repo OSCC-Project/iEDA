@@ -54,6 +54,7 @@ class DrcBasicPoint
     kCheckedMinStep = 32,
     kCheckedEOLSpacing = 64,
     kCheckedNotch = 128,
+    kCheckedSpacingTable = 256,
     kMax
   };
 
@@ -141,6 +142,9 @@ class DrcBasicPoint
   void set_checked_notch() { set_states(true, PointState::kCheckedNotch); }
   /// true = has been checked min step
   bool is_notch_checked() { return get_states(PointState::kCheckedNotch); }
+  void set_checked_spacing_table() { set_states(true, PointState::kCheckedSpacingTable); }
+  /// true = has been checked spacing table
+  bool is_spacing_table_checked() { return get_states(PointState::kCheckedSpacingTable); }
 
   DrcBasicPoint* nextEndpoint()
   {
