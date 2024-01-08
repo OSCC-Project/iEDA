@@ -19,6 +19,7 @@
 #include "condition_builder.h"
 #include "condition_connectivity.h"
 #include "condition_eol.h"
+#include "condition_jog.h"
 #include "condition_notch.h"
 #include "condition_spacing_table.h"
 #include "condition_step.h"
@@ -93,10 +94,6 @@ void DrcManager::check()
 
   connectivity.checkFastMode();
 
-  DrcRuleConditionStep condition_step(_condition_manager, _engine);
-
-  condition_step.checkFastMode();
-
   DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
 
   condition_eol.checkFastMode();  // TODO: sratagy
@@ -105,6 +102,14 @@ void DrcManager::check()
 
   condition_notch.checkFastMode();  // TODO: sratagy
   condition_eol.checkFastMode();
+
+  DrcRuleConditionJog condition_jog(_condition_manager, _engine);
+
+  condition_jog.checkFastMode();
+
+  DrcRuleConditionStep condition_step(_condition_manager, _engine);
+
+  condition_step.checkFastMode();
 }
 
 }  // namespace idrc
