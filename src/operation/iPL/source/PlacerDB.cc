@@ -44,6 +44,7 @@ void PlacerDB::destoryInst()
 {
   if (_s_placer_db_instance) {
     delete _s_placer_db_instance;
+    _s_placer_db_instance = nullptr;
   }
 }
 

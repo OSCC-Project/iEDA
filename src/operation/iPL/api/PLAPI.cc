@@ -70,6 +70,7 @@ void PLAPI::destoryInst()
 
   if (_s_ipl_api_instance) {
     delete _s_ipl_api_instance;
+    _s_ipl_api_instance = nullptr;
   }
 }
 
