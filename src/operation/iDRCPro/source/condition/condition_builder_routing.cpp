@@ -34,7 +34,7 @@ namespace idrc {
 void DrcConditionBuilder::buildConditionRoutingLayer()
 {
   filterEdge();
-  filterSpacing();
+  // filterSpacing();
 }
 /**
  *  filter data by min spacing and max spacing
@@ -381,14 +381,22 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
         check_list->addCheckList(point, neighbour->get_point());
       }
     }
-    if ((neighbour_next && neighbour_next->is_spacing()) || (neighbour_prev && neighbour_prev->is_spacing())) {
-      // S/E or E/S : PRL
-      if (edge_length <= max_value_map[RuleType::kSpacintPRLTable]) {
-        // add edge to PRL bucket
-        auto* check_list = _condition_manager->get_check_list(RuleType::kSpacintPRLTable, layer);
-        check_list->addCheckList(point, neighbour->get_point());
+    auto filter_prl_spacing = [&](DrcBasicPoint* point, ScanlineNeighbour* neighbour) {
+      // S/E : PRL
+      if (neighbour && neighbour->is_spacing()) {
+        int spacing_value = point->distance(neighbour->get_point());
+        if (spacing_value == 0) {
+          auto* check_list = _condition_manager->get_check_list(RuleType::kConnectivity, layer);
+          check_list->addCheckList(point, neighbour->get_point());
+        } else if (point->get_id() != neighbour->get_point()->get_id() && spacing_value <= max_value_map[RuleType::kSpacintPRLTable]) {
+          // add edge to PRL bucket
+          auto* check_list = _condition_manager->get_check_list(RuleType::kSpacintPRLTable, layer);
+          check_list->addCheckList(point, neighbour->get_point());
+        }
       }
-    }
+    };
+    filter_prl_spacing(neighbour->get_point(), neighbour_next);
+    filter_prl_spacing(point, neighbour_prev);
   }
 }
 

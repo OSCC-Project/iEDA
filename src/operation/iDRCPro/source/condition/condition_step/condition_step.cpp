@@ -176,6 +176,10 @@ bool DrcRuleConditionStep::checkMinStepSegment(DrcBasicPoint* point_prev, DrcBas
       // check both prev and next
       walk_check(point_prev, [&](DrcBasicPoint* point) { return point->prevEndpoint(); });
       walk_check(point_next, [&](DrcBasicPoint* point) { return point->nextEndpoint(); });
+
+      if (is_violation) {
+        b_result = false;
+      }
     }
   }
 

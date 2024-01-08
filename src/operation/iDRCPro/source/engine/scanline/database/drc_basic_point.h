@@ -53,6 +53,7 @@ class DrcBasicPoint
     kCheckedVertical = 16,
     kCheckedMinStep = 32,
     kCheckedEOLSpacing = 64,
+    kCheckedSpacingTable = 256,
     kMax
   };
 
@@ -137,6 +138,9 @@ class DrcBasicPoint
   void set_checked_eol_spacing() { set_states(true, PointState::kCheckedEOLSpacing); }
   /// true = has been checked min step
   bool is_eol_spacing_checked() { return get_states(PointState::kCheckedEOLSpacing); }
+  void set_checked_spacing_table() { set_states(true, PointState::kCheckedSpacingTable); }
+  /// true = has been checked spacing table
+  bool is_spacing_table_checked() { return get_states(PointState::kCheckedSpacingTable); }
 
   DrcBasicPoint* nextEndpoint()
   {

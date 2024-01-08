@@ -53,6 +53,9 @@ class ConditionRuleSpacingPRL : public ConditionRule
 
   bool isMatchCondition(int width, int prl_length);
 
+  int get_width() { return _width; }
+  int get_prl_length() { return _prl_length; }
+
  private:
   int _width;
   int _prl_length;
