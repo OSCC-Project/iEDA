@@ -15,4 +15,4 @@ target_include_directories(idrc_pro_violation
     ${HOME_DATABASE}/interaction/RT_DRC
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+# set(CMAKE_BUILD_TYPE "debug")

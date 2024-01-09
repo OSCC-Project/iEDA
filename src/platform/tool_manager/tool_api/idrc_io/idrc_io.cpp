@@ -72,8 +72,6 @@ std::map<std::string, std::vector<idrc::DrcViolationSpot*>> DrcIO::getDetailChec
 
 void DrcIO::get_def_drc()
 {
-  auto* idb_layout = dmInst->get_idb_layout();
-  auto* idb_layers = idb_layout->get_layers();
   idrc::DrcApi drc_api;
   drc_api.init();
   auto violations = drc_api.checkDef();
@@ -82,17 +80,42 @@ void DrcIO::get_def_drc()
 
     std::vector<idrc::DrcViolationSpot*> spot_list;
     spot_list.reserve(violation_list.size());
+    std::cout << "idrc : " << name << " size=" << violation_list.size() << std::endl;
 
     for (auto* violation : violation_list) {
       idrc::DrcViolationSpot* spot = new idrc::DrcViolationSpot();
-      auto* layer = idb_layers->find_routing_layer(violation->get_layer()->get_id());
+      auto* layer = violation->get_layer();
       if (layer != nullptr) {
         spot->set_layer_name(layer->get_name());
       }
-      spot->set_layer_id(violation->get_layer()->get_id());
+      spot->set_layer_id(layer->get_id());
       auto net_list = violation->get_net_ids();
       spot->set_net_id(*net_list.begin());
-      auto vio_type = type == idrc::ViolationEnumType::kViolationShort ? idrc::ViolationType::kShort : idrc::ViolationType::kRoutingSpacing;
+      auto vio_type = idrc::ViolationType::kCutEOLSpacing;
+      switch (type) {
+        case idrc::ViolationEnumType::kViolationShort:
+          vio_type = idrc::ViolationType::kShort;
+          break;
+        case idrc::ViolationEnumType::kViolationMinSpacing:
+        case idrc::ViolationEnumType::kViolationPRL:
+          vio_type = idrc::ViolationType::kNotchSpacing;
+          break;
+        case idrc::ViolationEnumType::kViolationMinStep:
+          vio_type = idrc::ViolationType::kMinStep;
+          break;
+        case idrc::ViolationEnumType::kViolationJogToJog:
+          vio_type = idrc::ViolationType::kJogSpacing;
+          break;
+        case idrc::ViolationEnumType::kViolationEOL:
+          vio_type = idrc::ViolationType::kEOLSpacing;
+          break;
+        case idrc::ViolationEnumType::kViolationNotch:
+          vio_type = idrc::ViolationType::kNotchSpacing;
+          break;
+        case idrc::ViolationEnumType::kViolationArea:
+          vio_type = idrc::ViolationType::kRoutingArea;
+          break;
+      }
       spot->set_vio_type(vio_type);
       auto* rect = static_cast<idrc::DrcViolationRect*>(violation);
       spot->setCoordinate(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
