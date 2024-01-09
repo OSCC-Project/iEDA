@@ -140,13 +140,13 @@ vector<IdbPin*> IdbNet::get_load_pins()
 
   for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
     // case 2
-    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
+    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
       pin_list.emplace_back(io_pin);
     }
   }
 
   for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
+    if (pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
       pin_list.emplace_back(pin);
     }
   }
