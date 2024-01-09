@@ -190,7 +190,6 @@ void CTSAPI::evaluate()
   _evaluator->evaluate();
   // _evaluator->plotPath("u0_soc_top/u0_sdram_axi/u_core/sample_data0_q_reg_0_");
 
-  // _timing_engine->destroyTimingEngine();
   LOG_INFO << "Evaluate memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Evaluate elapsed time " << stats.elapsedRunTime() << "s";
 }
