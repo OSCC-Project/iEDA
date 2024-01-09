@@ -216,7 +216,8 @@ class Sta {
 
   void readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
-  void readVerilogWithRustParser(const char* verilog_file);
+  void readVerilogWithRustParser(const char* verilog_file,
+                                 const char* top_module_name);
   void linkDesignWithRustParser();
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);

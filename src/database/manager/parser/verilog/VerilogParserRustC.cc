@@ -34,12 +34,12 @@ namespace ista {
  * @return unsigned
  */
 
-unsigned RustVerilogReader::readVerilog(const char* verilog_file)
+unsigned RustVerilogReader::readVerilog(const char* verilog_file, const char* top_module_name)
 {
   unsigned is_ok = 1;
   LOG_INFO << "load verilog file " << verilog_file;
   // generate1
-  auto* verilog_result = rust_parse_verilog(verilog_file);
+  auto* verilog_result = rust_parse_verilog(verilog_file, top_module_name);
 
   RustVerilogModule* verilog_module = nullptr;
   if (verilog_result) {

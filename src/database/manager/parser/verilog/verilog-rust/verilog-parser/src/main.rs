@@ -11,10 +11,11 @@ fn main() {
     let top_module_name = "asic_top";
     let mut verilog_file = verilog_parser::parse_verilog_file(verilog_file_str, top_module_name);
     let verilog_modules = verilog_file.get_verilog_modules();
-    for module_ref in verilog_modules.iter() {
-        let module = module_ref.borrow();
-        println!("{:#?}", module);
-    }
+    // let top_verilog_module_option = verilog_file.get_module(top_module_name);
+
+    // let top_module = top_verilog_module_option.unwrap().borrow();
+    // println!("{:#?}", top_module);
+
     println!("Number of verilog modules: {}", verilog_modules.len());
     let end_time = Instant::now();
     let elapsed_time = end_time.duration_since(start_time);

@@ -304,9 +304,10 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
-void Sta::readVerilogWithRustParser(const char *verilog_file) {
+void Sta::readVerilogWithRustParser(const char *verilog_file,
+                                    const char *top_module_name) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
-  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
+  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file, top_module_name);
   _rust_top_module = _rust_verilog_reader.get_top_module();
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
