@@ -133,7 +133,7 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
         auto* prev_endpoint = point_current->is_endpoint() ? point_current : nullptr;
         DrcCornerType prev_corner_type = prev_endpoint ? prev_endpoint->getCornerType() : DrcCornerType::kNone;
 
-        while (point_current->direction(point_next) != avoid_direction) {
+        while (point_next_neighbour && point_current->direction(point_next) != avoid_direction) {
           // TODO: set point is checked
           // TODO: refresh violation rect data
 
