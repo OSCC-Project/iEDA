@@ -97,6 +97,21 @@ class DrcUtil
     }
   }
 
+  // 获得正交方向
+  static std::pair<DrcDirection, DrcDirection> getOrthogonalDirection(DrcDirection direction)
+  {
+    switch (direction) {
+      case DrcDirection::kUp:
+      case DrcDirection::kDown:
+        return std::make_pair(DrcDirection::kLeft, DrcDirection::kRight);
+      case DrcDirection::kLeft:
+      case DrcDirection::kRight:
+        return std::make_pair(DrcDirection::kUp, DrcDirection::kDown);
+      default:
+        return std::make_pair(DrcDirection::kNone, DrcDirection::kNone);
+    }
+  }
+
   // 使用扫描线结果判断角的类型
   // static DrcCornerType cornerType(DrcBasicPoint* point)
   // {

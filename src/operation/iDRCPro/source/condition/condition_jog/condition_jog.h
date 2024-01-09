@@ -42,7 +42,7 @@ class DrcRuleConditionJog : public DrcRuleConditionMatrix
   /// check jog spacing
   bool checkSpacingJog();
 
-  bool checkSpacingJogSegment(DrcBasicPoint* point_prev, DrcBasicPoint* point_next, idb::IdbLayer* layer,
+  bool checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasicPoint* point2, idb::IdbLayer* layer,
                               std::map<int, std::vector<ConditionRule*>> rule_jog_map);
 };
 
