@@ -47,8 +47,9 @@ void IdbBuilder::buildNetFeatureCoord(IdbNet* net)
 {
   std::vector<IdbCoordinate<int32_t>*> coord_list;
 
-  if (net->get_io_pin()) {
-    coord_list.push_back(net->get_io_pin()->get_average_coordinate());
+  auto* io_pins = net->get_io_pins();
+  for (auto* io_pin : io_pins->get_pin_list()) {
+    coord_list.push_back(io_pin->get_average_coordinate());
   }
 
   std::vector<IdbPin*>& pin_list = net->get_instance_pin_list()->get_pin_list();

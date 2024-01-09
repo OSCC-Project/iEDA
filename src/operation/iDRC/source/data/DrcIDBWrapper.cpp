@@ -950,7 +950,7 @@ bool DrcIDBWrapper::addNetToDrcDesign(idb::IdbNet* idb_net, DrcDesign* design)
   if (idb_net == nullptr) {
     return false;
   }
-  if (nullptr != idb_net->get_io_pin()) {
+  if (idb_net->has_io_pins()) {
     return false;
   }
   if (idb_net->get_pin_number() < 2) {

@@ -257,7 +257,7 @@ int32_t VerilogRead::build_nets()
     idb_net->set_connect_type(IdbConnectType::kSignal);
     auto* io_pin = idb_io_pin_list->find_pin(net_name);
     if (io_pin) {
-      idb_net->set_io_pin(io_pin);
+      idb_net->add_io_pin(io_pin);
       io_pin->set_net(idb_net);
       io_pin->set_net_name(idb_net->get_net_name());
     }
@@ -432,8 +432,8 @@ int32_t VerilogRead::build_components()
     }
 
     auto* io_pin = idb_io_pin_list->find_pin(net_name);
-    if (io_pin && !idb_net->get_io_pin()) {
-      idb_net->set_io_pin(io_pin);
+    if (io_pin) {
+      idb_net->add_io_pin(io_pin);
       io_pin->set_net(idb_net);
       io_pin->set_net_name(idb_net->get_net_name());
     }

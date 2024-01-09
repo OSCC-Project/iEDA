@@ -322,7 +322,7 @@ bool IdbInstance::is_io_instance()
     if (net == nullptr) {
       continue;
     }
-    if (net->get_io_pin() != nullptr) {
+    if (net->has_io_pins()) {
       return true;
     }
   }

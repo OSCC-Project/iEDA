@@ -1068,7 +1068,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
       if (pin == nullptr) {
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
-        net->set_io_pin(pin);
+        net->add_io_pin(pin);
         pin->set_net(net);
       }
     } else {

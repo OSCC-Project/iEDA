@@ -687,8 +687,9 @@ int32_t DefWrite::write_net()
     // std::string net_name_new = ieda::Str::addBackslash(net_name);
     fprintf(file_write, "- %s", net->get_net_name().c_str());
 
-    if (net->get_io_pin() != nullptr) {
-      fprintf(file_write, " ( PIN %s )", net->get_io_pin()->get_pin_name().c_str());
+    auto* io_pins = net->get_io_pins();
+    for (auto* io_pin : io_pins->get_pin_list()) {
+      fprintf(file_write, " ( PIN %s )", io_pin->get_pin_name().c_str());
     }
 
     for (IdbPin* instance : net->get_instance_pin_list()->get_pin_list()) {
