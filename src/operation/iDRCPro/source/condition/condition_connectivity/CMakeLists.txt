@@ -15,4 +15,10 @@ target_include_directories(idrc_rule_condition_connectivity
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_CONDITION_CONNECTIVITY)
+  message(STATUS "iDRC: DEBUG_IDRC_CONDITION_CONNECTIVITY")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_CONDITION_CONNECTIVITY")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

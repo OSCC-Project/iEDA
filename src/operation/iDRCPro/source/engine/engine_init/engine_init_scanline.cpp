@@ -22,6 +22,7 @@
 #include "geometry_boost.h"
 #include "idrc_engine_manager.h"
 // #include "usage.hh"
+#include "idm.h"
 #include "tech_rules.h"
 
 namespace idrc {
@@ -36,8 +37,10 @@ void DrcEngineInitScanline::init()
  */
 void DrcEngineInitScanline::initGeometryData()
 {
-  //   ieda::Stats stats;
-  //   std::cout << "idrc : begin init scanline database" << std::endl;
+#ifdef DEBUG_IDRC_ENGINE_INIT
+  ieda::Stats stats;
+  std::cout << "idrc : begin init scanline database" << std::endl;
+#endif
   /// init scanline engine for routing layer
   auto& layouts = _engine_manager->get_engine_layouts(LayoutType::kRouting);
 
@@ -66,17 +69,21 @@ void DrcEngineInitScanline::initGeometryData()
     // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
   }
 
-  //   std::cout << "idrc : end init scanline database, "
-  //             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+#ifdef DEBUG_IDRC_ENGINE_INIT
+  std::cout << "idrc : end init scanline database, "
+            << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+#endif
 }
 /**
  * build scanline result data as the basic data
  */
 void DrcEngineInitScanline::initScanlineResult()
 {
-  //   ieda::Stats stats;
+#ifdef DEBUG_IDRC_ENGINE_INIT
+  ieda::Stats stats;
 
-  //   std::cout << "idrc : begin scanline" << std::endl;
+  std::cout << "idrc : begin scanline" << std::endl;
+#endif
   /// run scanline method for all routing layers
   auto& layouts = _engine_manager->get_engine_layouts(LayoutType::kRouting);
   for (auto& [layer, engine_layout] : layouts) {
@@ -93,8 +100,10 @@ void DrcEngineInitScanline::initScanlineResult()
     scanline_engine->doScanline(min_spacing, max_spacing);
   }
 
-  //   std::cout << "idrc : end scanline, "
-  //             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+#ifdef DEBUG_IDRC_ENGINE_INIT
+  std::cout << "idrc : end scanline, "
+            << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+#endif
 }
 
 }  // namespace idrc

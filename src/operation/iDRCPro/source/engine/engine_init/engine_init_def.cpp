@@ -53,8 +53,10 @@ void DrcEngineInitDef::initDataFromIOPins()
 
 void DrcEngineInitDef::initDataFromInstances()
 {
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : begin init data from instances" << std::endl;
   ieda::Stats stats;
+#endif
 
   auto* idb_design = dmInst->get_idb_design();
 
@@ -76,14 +78,18 @@ void DrcEngineInitDef::initDataFromInstances()
     number++;
   }
 
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : end init data from instances, instance number = " << number << " runtime = " << stats.elapsedRunTime()
             << " memory = " << stats.memoryDelta() << std::endl;
+#endif
 }
 
 void DrcEngineInitDef::initDataFromPDN()
 {
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : begin init data from pdn" << std::endl;
   ieda::Stats stats;
+#endif
 
   auto* idb_design = dmInst->get_idb_design();
 
@@ -115,8 +121,10 @@ void DrcEngineInitDef::initDataFromPDN()
     }
   }
 
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : end init data from pdn, segment number = " << number << " runtime = " << stats.elapsedRunTime()
             << " memory = " << stats.memoryDelta() << std::endl;
+#endif
 }
 
 /**
@@ -125,9 +133,11 @@ void DrcEngineInitDef::initDataFromPDN()
  */
 void DrcEngineInitDef::initDataFromNets()
 {
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : begin init data from nets" << std::endl;
 
   ieda::Stats stats;
+#endif
 
   auto* idb_design = dmInst->get_idb_design();
 
@@ -135,8 +145,10 @@ void DrcEngineInitDef::initDataFromNets()
     initDataFromNet(idb_net);
   }
 
+#ifdef DEBUG_IDRC_ENGINE_INIT
   std::cout << "idrc : end init data from nets, net number = " << idb_design->get_net_list()->get_num()
             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+#endif
 }
 
 }  // namespace idrc

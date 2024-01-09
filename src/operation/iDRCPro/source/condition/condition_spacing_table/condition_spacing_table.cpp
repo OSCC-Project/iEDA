@@ -76,8 +76,6 @@ bool DrcRuleConditionSpacingTable::checkSpacingTable()
   return b_result;
 }
 
-#define DEBUG 0
-
 bool DrcRuleConditionSpacingTable::checkSpacingTableSegment(DrcBasicPoint* point, DrcBasicPoint* neighbour, idb::IdbLayer* layer,
                                                             std::map<int, std::vector<ConditionRule*>> rule_spacing_table_map)
 {
@@ -144,7 +142,7 @@ bool DrcRuleConditionSpacingTable::checkSpacingTableSegment(DrcBasicPoint* point
   int min_spacing = (*rule_spacing_table_map.begin()).first;
   if (spacing_value < min_spacing) {
     b_result = false;
-#if DEBUG
+#ifdef DEBUG_IDRC_CONDITION_SPACING_TABLE
     auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
     auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
     auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour);
@@ -175,7 +173,7 @@ bool DrcRuleConditionSpacingTable::checkSpacingTableSegment(DrcBasicPoint* point
 
       if (condition_rule_prl->isMatchCondition(width, prl)) {
         b_result = false;
-#if DEBUG
+#ifdef DEBUG_IDRC_CONDITION_SPACING_TABLE
         auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
         auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour);

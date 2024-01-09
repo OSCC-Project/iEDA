@@ -21,4 +21,10 @@ target_include_directories(idrc_engine_init
     ${HOME_DATABASE}/interaction/RT_DRC
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_ENGINE_INIT)
+  message(STATUS "iDRC: DEBUG_IDRC_ENGINE_INIT")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_ENGINE_INIT")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

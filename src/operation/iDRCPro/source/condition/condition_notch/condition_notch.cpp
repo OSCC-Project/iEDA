@@ -134,7 +134,7 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
         net_ids.insert(point_prev->get_id());
 
         is_violation = true;
-#if 1
+#ifdef DEBUG_IDRC_CONDITION_NOTCH
         auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
@@ -158,7 +158,7 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
         net_ids.insert(point_prev->get_id());
 
         is_violation = true;
-#if 1
+#ifdef DEBUG_IDRC_CONDITION_NOTCH
         auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif

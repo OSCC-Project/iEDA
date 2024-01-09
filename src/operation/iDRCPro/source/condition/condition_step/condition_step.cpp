@@ -156,9 +156,9 @@ bool DrcRuleConditionStep::checkMinStepSegment(DrcBasicPoint* point_prev, DrcBas
 
           if (edge_cnt > max_edges) {
             is_violation = true;
-#if 0
-          auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
-          auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+#ifdef DEBUG_IDRC_CONDITION_STEP
+            auto gtl_pts_1 = DrcUtil::getPolygonPoints(point);
+            auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
             // create violation
             DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);

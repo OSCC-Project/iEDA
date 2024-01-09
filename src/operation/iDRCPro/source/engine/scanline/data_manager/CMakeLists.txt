@@ -13,4 +13,8 @@ target_include_directories(idrc_engine_scanline_dm
     ${CMAKE_CURRENT_SOURCE_DIR}/../database
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_ENGINE_SCANLINE)
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

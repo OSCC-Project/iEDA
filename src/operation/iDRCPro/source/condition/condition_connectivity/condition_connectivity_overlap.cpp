@@ -130,7 +130,7 @@ bool DrcRuleConditionConnectivity::findOverlapRegion(DrcBasicPoint* point1, DrcB
   find_connected_overlaps(point1);
   find_connected_overlaps(point2);
 
-#if 1
+#ifdef DEBUG_IDRC_CONDITION_CONNECTIVITY
   auto gtl_pts_1 = DrcUtil::getPolygonPoints(point1);
   auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
   auto gtl_pts_2 = DrcUtil::getPolygonPoints(point2);

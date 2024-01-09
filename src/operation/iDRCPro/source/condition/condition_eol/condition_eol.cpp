@@ -157,13 +157,13 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
       if (is_violation) {
         b_result = false;
 
-#if 0
-      auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
-      auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-      auto* neighbour_point = point_prev->get_neighbour(spacing_direction) ? point_prev->get_neighbour(spacing_direction)->get_point()
-                                                                           : point_next->get_neighbour(spacing_direction)->get_point();
-      auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour_point);
-      auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+#ifdef DEBUG_IDRC_CONDITION_EOL
+        auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
+        auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+        auto* neighbour_point = point_prev->get_neighbour(spacing_direction) ? point_prev->get_neighbour(spacing_direction)->get_point()
+                                                                             : point_next->get_neighbour(spacing_direction)->get_point();
+        auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour_point);
+        auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
 #endif
 
         // create violation

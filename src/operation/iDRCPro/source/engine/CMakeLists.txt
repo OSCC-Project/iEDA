@@ -19,4 +19,10 @@ target_include_directories(idrc_pro_engine
     ${HOME_DATABASE}/interaction/RT_DRC
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_ENGINE)
+  message(STATUS "iDRC: DEBUG_IDRC_ENGINE")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_ENGINE")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
