@@ -168,7 +168,7 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
 
         // create violation
         DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-        auto violation_type = ViolationEnumType::kViolationMinStep;
+        auto violation_type = ViolationEnumType::kViolationEOL;
         auto* violation_manager = _condition_manager->get_violation_manager();
         auto& violation_list = violation_manager->get_violation_list(violation_type);
         violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));

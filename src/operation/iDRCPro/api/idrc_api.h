@@ -45,12 +45,6 @@ class DrcApi
   void init(std::string config = "");
   void exit();
 
-  std::map<std::string, std::vector<BaseViolationInfo>> getEnvViolationInfo(BaseRegion& base_region,
-                                                                            const std::vector<DRCCheckType>& check_type_list,
-                                                                            std::vector<BaseShape>& drc_shape_list);
-  std::map<std::string, std::vector<BaseViolationInfo>> getSelfViolationInfo(const std::vector<DRCCheckType>& check_type_list,
-                                                                             std::vector<BaseShape>& drc_shape_list);
-
   std::map<ViolationEnumType, std::vector<DrcViolation*>> check(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                                 std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
                                                                 std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data);

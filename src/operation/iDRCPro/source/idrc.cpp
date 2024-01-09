@@ -96,12 +96,11 @@ void DrcManager::check()
 
   DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
 
-  condition_eol.checkFastMode();  // TODO: sratagy
+  condition_eol.checkFastMode();
 
   DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
 
-  condition_notch.checkFastMode();  // TODO: sratagy
-  condition_eol.checkFastMode();
+  condition_notch.checkFastMode();
 
   DrcRuleConditionJog condition_jog(_condition_manager, _engine);
 
