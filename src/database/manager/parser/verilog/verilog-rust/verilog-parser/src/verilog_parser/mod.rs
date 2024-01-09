@@ -514,8 +514,9 @@ fn process_port_connect(
             let new_net_base_name = format!("{}/{}", inst_stmt.get_inst_name(), net_base_name);
 
             net_expr_id_clone.set_base_name(&new_net_base_name);
-            net_expr_id = &net_expr_id_clone;
-            return None;
+            let new_expr = Box::new(verilog_data::VerilogNetIDExpr::new(0, net_expr_id_clone));
+            let dyn_new_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> = Box::new(*new_expr);
+            Some(dyn_new_expr)
         } else {
             let mut verilog_id_concat: Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> = Vec::new();
             let is_first_greater = range.unwrap().0 > range.unwrap().1;
@@ -637,9 +638,23 @@ fn flatten_module(
             // name(for port), next change the inst name to parent inst name /
             // current inst name.
             let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+            let inst_name = module_inst_stmt.get_inst_name();
+            let cell_name = module_inst_stmt.get_cell_name();
+            if inst_name.contains("u0_ysyx_210720/coretop/ysyx_210720_ICache/dataArrayWay0")
+                && cell_name == "TS5N28HPCPLVTA64X128M2FW"
+            {
+                println!("Debug");
+            }
+            if cell_name == "?" {
+                println!("Debug");
+            }
             let mut new_module_inst_connection: Vec<Box<verilog_data::VerilogPortRefPortConnect>> = Vec::new();
             for port_connect in module_inst_stmt.get_port_connections() {
                 let net_expr_option = port_connect.get_net_expr();
+                let port_id = port_connect.get_port_id().get_base_name();
+                if port_id == "A" {
+                    println!("Debug");
+                }
                 if let Some(net_expr) = net_expr_option {
                     if net_expr.is_id_expr() {
                         let port_connect_net =
@@ -653,10 +668,27 @@ fn flatten_module(
                     } else if net_expr.is_concat_expr() {
                         let concat_connect_net =
                             net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
+                        let mut new_verilog_id_concat: Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> =
+                            Vec::new();
                         for one_net_expr in concat_connect_net.get_verilog_id_concat() {
-                            process_concat_net_expr(one_net_expr.clone(), cur_module, parent_module, inst_stmt);
+                            let new_one_net_expr =
+                                process_concat_net_expr(one_net_expr.clone(), cur_module, parent_module, inst_stmt);
+                            new_verilog_id_concat.push(new_one_net_expr);
                         }
+                        let new_concat_connect_net: verilog_data::VerilogNetConcatExpr =
+                            verilog_data::VerilogNetConcatExpr::new(
+                                concat_connect_net.get_net_expr().get_line_no(),
+                                new_verilog_id_concat,
+                            );
+
+                        let mut port_connect_clone = port_connect.clone();
+                        let dyn_new_concat_connect_net = Box::new(new_concat_connect_net);
+                        port_connect_clone.set_net_expr(Some(dyn_new_concat_connect_net));
+                        new_module_inst_connection.push(port_connect_clone);
                     }
+                } else {
+                    let port_connect_clone = port_connect.clone();
+                    new_module_inst_connection.push(port_connect_clone);
                 }
             }
             let the_stmt_inst_name = module_inst_stmt.get_inst_name();
@@ -683,9 +715,6 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
     let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
 
     let mut verilog_file = verilog_data::VerilogFile::new(top_module_name);
-
-    let file_name = "tbd";
-    let line_no = 0;
 
     match parse_result {
         Ok(pairs) => {

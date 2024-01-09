@@ -567,7 +567,16 @@ void VerilogModule::flattenModule(VerilogModule* parent_module, VerilogInst* ins
 
         FOREACH_VERILOG_PORT_CONNECT(new_module_inst_stmt, port_connect)
         {
+          const char* the_stmt_inst_name = module_inst_stmt->get_inst_name();
+          if (std::string(the_stmt_inst_name).find("u0_ysyx_210720/coretop/ysyx_210720_ICache/dataArrayWay0") != std::string::npos
+              && module_inst_stmt->get_cell_name() == "TS5N28HPCPLVTA64X128M2FW") {
+            LOG_INFO << "Debug";
+          }
           auto* net_expr = port_connect->get_net_expr();
+          auto port_id = port_connect->get_port_id()->getBaseName();
+          if (strcmp(port_id, "A") == 0) {
+            LOG_INFO << "Debug";
+          }
           if (net_expr) {
             if (net_expr->isIDExpr()) {
               auto port_connect_net = process_port_connect(net_expr);
@@ -586,7 +595,6 @@ void VerilogModule::flattenModule(VerilogModule* parent_module, VerilogInst* ins
             }
           }
         }
-
         const char* the_stmt_inst_name = module_inst_stmt->get_inst_name();
         std::string new_inst_name = std::string(inst_stmt->get_inst_name()) + "/" + the_stmt_inst_name;
         new_module_inst_stmt->set_inst_name(std::move(new_inst_name));

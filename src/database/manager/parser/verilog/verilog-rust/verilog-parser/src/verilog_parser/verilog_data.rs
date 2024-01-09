@@ -129,6 +129,7 @@ impl VerilogVirtualBaseID for VerilogIndexID {
 
     fn set_base_name(&mut self, id: &str) {
         self.id.set_base_name(id);
+        self.formatted_index_id = format!("{}[{}]", self.id.get_base_name(), self.index);
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -312,6 +313,10 @@ impl VerilogNetConcatExpr {
 
     pub fn get_verilog_id_concat(&self) -> &Vec<Box<dyn VerilogVirtualBaseNetExpr>> {
         &self.verilog_id_concat
+    }
+
+    pub fn update_verilog_id_concat(&mut self, new_verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>) {
+        self.verilog_id_concat = new_verilog_id_concat;
     }
 }
 
@@ -679,16 +684,19 @@ impl VerilogInst {
                                     let borrowed_parent_module = parent_module.borrow();
                                     let port_connect_net_dcl_stmt =
                                         borrowed_parent_module.find_dcls_stmt(port_connect_name).unwrap();
-                                    let port_connect_net_range =
+                                    let port_connect_net_range_option =
                                         self.get_dcl_range(port_connect_net_dcl_stmt, port_connect_name);
                                     let port_index =
                                         port_id.as_any().downcast_ref::<VerilogIndexID>().unwrap().get_index();
                                     let mut index_gap = (port_index - port_range.unwrap().0).abs();
-                                    if port_connect_net_range.unwrap().0 > port_connect_net_range.unwrap().1 {
-                                        index_gap = -index_gap;
+                                    if let Some(port_connect_net_range) = port_connect_net_range_option {
+                                        if port_connect_net_range.0 > port_connect_net_range.1 {
+                                            index_gap = -index_gap;
+                                        }
                                     }
+
                                     let dyn_port_connect_port_id: Box<dyn VerilogVirtualBaseID> =
-                                        if let Some(range) = port_connect_net_range {
+                                        if let Some(range) = port_connect_net_range_option {
                                             Box::new(VerilogIndexID::new(port_connect_name, range.0 + index_gap))
                                         } else {
                                             Box::new(VerilogID::new(port_connect_name))

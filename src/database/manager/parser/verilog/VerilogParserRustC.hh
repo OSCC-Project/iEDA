@@ -38,16 +38,17 @@ extern "C" {
 /**
  * The wire or port declaration.
  */
-typedef enum DclType {
-    KInput = 0,
-    KInout = 1,
-    KOutput = 2,
-    KSupply0 = 3,
-    KSupply1 = 4,
-    KTri = 5,
-    KWand = 6,
-    KWire = 7,
-    KWor = 8,
+typedef enum DclType
+{
+  KInput = 0,
+  KInout = 1,
+  KOutput = 2,
+  KSupply0 = 3,
+  KSupply1 = 4,
+  KTri = 5,
+  KWand = 6,
+  KWire = 7,
+  KWor = 8,
 } DclType;
 
 typedef struct VerilogModule VerilogModule;
@@ -116,18 +117,19 @@ typedef struct RustVerilogModule
   struct RustVec module_stmts;
 } RustVerilogModule;
 
-
-typedef struct CRange {
-    bool has_value;
-    int32_t start;
-    int32_t end;
+typedef struct CRange
+{
+  bool has_value;
+  int32_t start;
+  int32_t end;
 } CRange;
 
-typedef struct RustVerilogDcl {
-    uintptr_t line_no;
-    enum DclType dcl_type;
-    char *dcl_name;
-    struct CRange range;
+typedef struct RustVerilogDcl
+{
+  uintptr_t line_no;
+  enum DclType dcl_type;
+  char* dcl_name;
+  struct CRange range;
 } RustVerilogDcl;
 
 /**
@@ -168,7 +170,7 @@ typedef struct RustVerilogPortRefPortConnect
  * @param verilog_path
  * @return void*
  */
-void* rust_parse_verilog(const char* verilog_path);
+void* rust_parse_verilog(const char* verilog_path, const char* top_module_name);
 
 /**
  * @brief rust free verilog_module memory after build data of verilog.
@@ -220,7 +222,7 @@ bool rust_is_constant(void* c_verilog_virtual_base_net_expr);
  */
 struct RustVerilogModule* rust_convert_raw_verilog_module(void* verilog_module);
 
-struct RustVerilogDcl *rust_convert_verilog_dcl(void *c_verilog_dcl_struct);
+struct RustVerilogDcl* rust_convert_verilog_dcl(void* c_verilog_dcl_struct);
 
 /**
  * @brief Rust convert verilog_dcls_struct to C struct.
@@ -305,7 +307,7 @@ class RustVerilogReader
 
   auto* get_top_module() { return _top_module; }
 
-  unsigned readVerilog(const char* verilog_file);
+  unsigned readVerilog(const char* verilog_file, const char* top_module_name);
 
  private:
   std::vector<RustVerilogModule*> _verilog_modules;  //!< The current design parsed from verilog file. whether need unique_ptr?
