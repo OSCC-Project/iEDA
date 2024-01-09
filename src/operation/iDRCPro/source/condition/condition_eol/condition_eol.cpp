@@ -117,7 +117,7 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
       bool is_begin = false;
       auto* iter_point = point_prev;
       while (iter_point) {
-        if (iter_point->is_eol_spacing_checked()) {
+        if (iter_point->is_eol_spacing_checked()) {  // TODO: 多条规则时候可能会漏检
           break;
         }
 
