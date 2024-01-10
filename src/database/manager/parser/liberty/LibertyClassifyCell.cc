@@ -296,7 +296,9 @@ void LibertyClassifyCell::classifyOneLibCell(
       if (compareCellFunction(the_cell, cell)) {
         auto& the_cell_class = _func_same_cells[the_cell];
         the_cell_class.push_back(cell);
-        break;
+
+        auto& cell_class = _func_same_cells[cell];
+        cell_class.push_back(the_cell);
       }
     }
     the_hash_cells.push_back(cell);
