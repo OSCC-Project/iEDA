@@ -59,6 +59,7 @@ class NesterovPlaceConfig
   float   get_min_precondition() const { return _min_precondition; }
   float   get_init_density_penalty() const { return _init_density_penalty; }
   bool isOptMaxWirelength() const { return _is_opt_max_wirelength;}
+  bool isOptTiming() const { return _is_opt_timing;}
   int32_t get_max_net_wirelength() const { return _max_net_wirelength;}
   const std::vector<float>& get_opt_overflow_list() {return _opt_overflow_list;} 
 
@@ -79,6 +80,7 @@ class NesterovPlaceConfig
   void set_initial_prev_coordi_update_coef(float coef) { _initial_prev_coordi_update_coef = coef; }
   void set_min_precondition(float precondition) { _min_precondition = precondition; }
   void set_is_opt_max_wirelength(bool flag) { _is_opt_max_wirelength = flag;}
+  void set_is_opt_timing(bool flag) { _is_opt_timing = flag; }
   void set_max_net_wirelength(int32_t max_wirelength) { _max_net_wirelength = max_wirelength;}
   void add_opt_target_overflow(float overflow) { _opt_overflow_list.push_back(overflow);}
 
@@ -108,6 +110,9 @@ class NesterovPlaceConfig
   // about maxlength constraint
   bool _is_opt_max_wirelength;
   int32_t _max_net_wirelength;
+
+  // about timing.
+  bool _is_opt_timing;
 
   // about opt target overflow list
   std::vector<float> _opt_overflow_list;

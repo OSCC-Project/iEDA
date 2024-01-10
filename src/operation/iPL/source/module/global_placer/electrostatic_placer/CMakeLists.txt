@@ -4,6 +4,7 @@ target_link_libraries(ipl-electrostatic_placer
     PRIVATE
         ipl_module_evaluator_wirelength
         ipl_module_evaluator_density
+        ipl_module_evaluator_timing
         ipl-module-topology_manager
         ipl-module-grid_manager
         ipl-configurator

@@ -102,6 +102,12 @@ class NesterovPlace
   void initGridFixedArea();
 
   void initTopologyManager();
+  void initNodes();
+  void initNetWorks();
+  void initGroups();
+  void initArcs();
+  void generateNetArc(Node* node);
+  void generateGroupArc(Node* node);
   void updateTopologyManager();
 
   void initBaseWirelengthCoef();
@@ -121,7 +127,8 @@ class NesterovPlace
 
   void writeBackPlacerDB();
 
-  void updateNetWeight();
+  void updateMaxLengthNetWeight();
+  void updateTimingNetWeight();
 
   // DEBUG.
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);
