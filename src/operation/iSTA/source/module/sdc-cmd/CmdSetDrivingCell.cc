@@ -83,44 +83,69 @@ unsigned CmdSetDrivingCell::exec() {
   auto* lib_cell_option = getOptionOrArg("-lib_cell");
   auto* lib_cell_name = lib_cell_option->getStringVal();
   auto* lib_cell = ista->findLibertyCell(lib_cell_name);
-  // auto* pin_option = getOptionOrArg("-pin");
-  // auto* outpin_name = pin_option->getStringVal();
+  auto* pin_option = getOptionOrArg("-pin");
+  auto* outpin_name = pin_option->getStringVal();
   auto* input_transition_rise_option = getOptionOrArg("-input_transition_rise");
   auto* input_transition_fall_option = getOptionOrArg("-input_transition_fall");
   // as the lib cell is buffer, only one cell arc set. if problem, fix me.
   LibertyArc* cell_arc = nullptr;
   for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
-    cell_arc = cell_arc_set->front();
+    for (auto& arc : cell_arc_set.get()->get_arcs()) {
+      if (strcmp(arc.get()->get_snk_port(), outpin_name) == 0) {
+        cell_arc = cell_arc_set->front();
+      }
+    }
   }
+  LibertyArc::TimingSense timing_sense = cell_arc->get_timing_sense();
 
-  double transition_value_rise = cell_arc->getSlewNs(
+  double delay_value_rise = cell_arc->getDelayOrConstrainCheckNs(
       TransType::kRise,
       ista->convertTimeUnit(input_transition_rise_option->getDoubleVal()), 0);
-  double transition_value_fall = cell_arc->getSlewNs(
+  double delay_value_fall = cell_arc->getDelayOrConstrainCheckNs(
       TransType::kFall,
       ista->convertTimeUnit(input_transition_fall_option->getDoubleVal()), 0);
 
-  auto* set_input_transiton_rise =
-      new SdcSetInputTransition("set_input_transition", transition_value_rise);
-  set_input_transiton_rise->set_fall(false);
-  auto* set_input_transiton_fall =
-      new SdcSetInputTransition("set_input_transition", transition_value_fall);
-  set_input_transiton_fall->set_rise(false);
+  SdcConstrain* the_constrain = ista->getConstrain();
+  Netlist* design_nl = ista->get_netlist();
+
+  SdcIOConstrain* the_existed_constrain = nullptr;
+  auto& sdc_io_constraints = the_constrain->get_sdc_io_constraints();
+  for (auto& sdc_io_constraint : sdc_io_constraints) {
+    auto& objs =
+        dynamic_cast<SdcSetIODelay*>(sdc_io_constraint.get())->get_objs();
+    for (auto& obj : objs) {
+      if (strcmp(obj->get_name(), outpin_name) == 0) {
+        the_existed_constrain = sdc_io_constraint.get();
+      }
+    }
+  }
+  LOG_FATAL_IF(!the_existed_constrain);
+
+  const char* clock_name =
+      dynamic_cast<SdcSetIODelay*>(the_existed_constrain)->get_clock_name();
+  auto* set_input_delay_rise =
+      new SdcSetInputDelay("set_input_delay", clock_name, delay_value_rise);
+  set_input_delay_rise->set_fall(false);
+  auto* set_input_delay_fall =
+      new SdcSetInputDelay("set_input_delay", clock_name, delay_value_fall);
+  set_input_delay_fall->set_rise(false);
+
+  if (timing_sense == LibertyArc::TimingSense::kNegativeUnate) {
+    set_input_delay_rise->set_clock_fall();
+    set_input_delay_fall->set_clock_fall();
+  }
 
   auto* max_option = getOptionOrArg("-max");
   auto* min_option = getOptionOrArg("-min");
   if (max_option->is_set_val() && !min_option->is_set_val()) {
-    set_input_transiton_rise->set_min(false);
-    set_input_transiton_fall->set_min(false);
+    set_input_delay_rise->set_min(false);
+    set_input_delay_fall->set_min(false);
   }
 
   if (min_option->is_set_val() && !max_option->is_set_val()) {
-    set_input_transiton_rise->set_max(false);
-    set_input_transiton_fall->set_max(false);
+    set_input_delay_rise->set_max(false);
+    set_input_delay_fall->set_max(false);
   }
-
-  SdcConstrain* the_constrain = ista->getConstrain();
-  Netlist* design_nl = ista->get_netlist();
 
   TclOption* pin_port_list_option = getOptionOrArg("pin_port_list");
   std::string pin_port_name = pin_port_list_option->getStringVal();
@@ -143,10 +168,10 @@ unsigned CmdSetDrivingCell::exec() {
   }
 
   LOG_FATAL_IF(pin_ports.empty()) << "pin_port_list is empty.";
-  set_input_transiton_rise->set_objs(std::move(pin_ports));
-  the_constrain->addIOConstrain(set_input_transiton_rise);
-  set_input_transiton_fall->set_objs(std::move(pin_ports));
-  the_constrain->addIOConstrain(set_input_transiton_fall);
+  set_input_delay_rise->set_objs(std::move(pin_ports));
+  the_constrain->addIOConstrain(set_input_delay_rise);
+  set_input_delay_fall->set_objs(std::move(pin_ports));
+  the_constrain->addIOConstrain(set_input_delay_fall);
 
   return 1;
 }
