@@ -223,7 +223,7 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
         }
       };
 
-      auto [avoid_dir_1, avoid_dir_2] = DrcUtil::getOrthogonalDirection(spacing_direction);
+      auto [avoid_dir_1, avoid_dir_2] = DrcUtil::orthogonalDirections(spacing_direction);
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_1, [&](DrcBasicPoint* point) { return point->get_next(); });
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_2, [&](DrcBasicPoint* point) { return point->get_next(); });
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_1, [&](DrcBasicPoint* point) { return point->get_prev(); });

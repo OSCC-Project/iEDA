@@ -7,6 +7,7 @@ target_link_libraries(idrc_rule_condition_area
     idrc_rule_condition_matrix
     idrc_pro_engine
     idrc_pro_rule_stratagy
+    solver_geometry_boost
 )
 
 target_include_directories(idrc_rule_condition_area
@@ -14,4 +15,10 @@ target_include_directories(idrc_rule_condition_area
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_CONDITION_AREA)
+  message(STATUS "iDRC: DEBUG_IDRC_CONDITION_AREA")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_CONDITION_AREA")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

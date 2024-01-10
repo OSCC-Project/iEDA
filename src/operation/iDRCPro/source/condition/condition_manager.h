@@ -46,6 +46,20 @@ class DrcConditionManager
     std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> _points;
   };
 
+  class LayerExceptList
+  {
+   public:
+    LayerExceptList(idb::IdbLayer* layer) : _layer(layer) {}
+    ~LayerExceptList() {}
+
+    void addExceptList(int id) { _except_ids.insert(id); }
+    bool hasId(int id) { return _except_ids.find(id) != _except_ids.end(); }
+
+   private:
+    idb::IdbLayer* _layer = nullptr;
+    std::set<int> _except_ids;
+  };
+
  public:
   DrcConditionManager(DrcEngine* engine, DrcViolationManager* violation_manager) : _engine(engine), _violation_manager(violation_manager) {}
   ~DrcConditionManager()
@@ -64,8 +78,6 @@ class DrcConditionManager
 
   std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>>& get_check_maps() { return _check_maps; }
   std::map<idb::IdbLayer*, LayerCheckList*>& get_check_map(RuleType type) { return _check_maps[type]; }
-  // LayerCheckList* get_check_list_routing_layer(idb::IdbLayer* layer) { return get_check_list(RuleType::kRouting, layer); }
-  // LayerCheckList* get_check_list_cut_layer(idb::IdbLayer* layer) { return get_check_list(RuleType::kCut, layer); }
   LayerCheckList* get_check_list(RuleType type, idb::IdbLayer* layer)
   {
     auto& layer_map = _check_maps[type];
@@ -76,11 +88,24 @@ class DrcConditionManager
     return layer_map[layer];
   }
 
+  std::map<RuleType, std::map<idb::IdbLayer*, LayerExceptList*>>& get_except_maps() { return _except_maps; }
+  std::map<idb::IdbLayer*, LayerExceptList*>& get_except_map(RuleType type) { return _except_maps[type]; }
+  LayerExceptList* get_except_list(RuleType type, idb::IdbLayer* layer)
+  {
+    auto& layer_map = _except_maps[type];
+    if (false == layer_map.contains(layer)) {
+      layer_map[layer] = new LayerExceptList(layer);
+    }
+
+    return layer_map[layer];
+  }
+
  private:
   DrcEngine* _engine = nullptr;
   DrcViolationManager* _violation_manager;
 
   std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>> _check_maps;
+  std::map<RuleType, std::map<idb::IdbLayer*, LayerExceptList*>> _except_maps;
 
   /// condition builder
   bool buildConditonConnectivity();

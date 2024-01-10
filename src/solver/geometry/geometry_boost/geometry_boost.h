@@ -42,6 +42,14 @@ class GeometryBoost : public EngineGeometry
   std::pair<uint64_t, std::vector<std::vector<GtlPoint>>> get_boost_polygons_points();
   std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
 
+  int area(GtlPolygon polygon) { return gtl::area(polygon); }
+  std::vector<int> envelope(GtlPolygon polygon)
+  {
+    GtlRect rect;
+    gtl::extents(rect, polygon);
+    return {gtl::xl(rect), gtl::yl(rect), gtl::xh(rect), gtl::yh(rect)};
+  }
+
   bool checkMinArea(int64_t min_area) override;
 
   bool checkOverlap(EngineGeometry* geometry_cmp) override;

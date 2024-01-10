@@ -39,23 +39,9 @@ class DrcConditionBuilder
 
   /// condition builder
   void buildConditionRoutingLayer();
-  void filterSpacing();
   void filterEdge();
-  void filterSpacingForPolygon(DrcBasicPoint* start_point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
   void filterEdgeForPolygon(DrcBasicPoint* start_point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer);
-  void checkSpacingUp(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
-  void checkSpacingRight(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing);
-  void checkSpacing(DrcBasicPoint* point, idb::IdbLayer* layer, int min_spacing, int max_spacing, DrcDirection direction);
   void checkEdge(DrcBasicPoint* point, std::map<RuleType, int>& max_value_map, idb::IdbLayer* layer, DrcDirection direction);
-  void buildWidth();
-  void checkEOL(DrcBasicPoint* point, ScanlineNeighbour* neighbour, bool is_vertical);
-
-  /// violation process
-  void saveViolationSpacing(DrcBasicPoint* start_point_1, DrcBasicPoint* start_point_2, idb::IdbLayer* layer, bool b_vertical = false,
-                            int min_spacing = -1);
-
-  /// utility
-  std::vector<ieda_solver::GtlPoint> get_boost_point(DrcBasicPoint* point);
 };
 
 }  // namespace idrc

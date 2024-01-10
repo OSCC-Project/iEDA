@@ -66,19 +66,20 @@ void DrcRuleBuilder::buildRoutingLayerArea(ConditionRuleLayer* rule_layer, idb::
 {
   /// default min area
   auto build_min_area = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapArea* rule_map) {
-    ConditionRuleArea* rule_min_area = new ConditionRuleArea(RuleType::kArea, idb_routing_layer->get_area());
-    rule_map->set_condition_rule(RuleType::kAreaMin, idb_routing_layer->get_area(), static_cast<ConditionRule*>(rule_min_area));
-    rule_map->set_default_rule(idb_routing_layer->get_area(), rule_min_area);
+    int except_edge_length = idb_routing_layer->get_area() / idb_routing_layer->get_min_width();
+    ConditionRuleArea* rule_min_area = new ConditionRuleArea(RuleType::kArea, except_edge_length);
+    rule_map->set_condition_rule(RuleType::kAreaMin, except_edge_length, static_cast<ConditionRule*>(rule_min_area));
+    rule_map->set_default_rule(except_edge_length, rule_min_area);
   };
 
   /// lef58 rule, optional
   auto build_min_area_lef58 = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapArea* rule_map) {
     auto& area_rule_lef58 = idb_routing_layer->get_lef58_area();
     for (auto& rule_lef58 : area_rule_lef58) {
-      ConditionRuleAreaLef58* condition_rule
-          = new ConditionRuleAreaLef58(RuleType::kAreaLef58, rule_lef58.get()->get_min_area(), rule_lef58.get());
+      int except_edge_length = rule_lef58.get()->get_except_edge_length().get()->get_max_edge_length();
+      ConditionRuleAreaLef58* condition_rule = new ConditionRuleAreaLef58(RuleType::kAreaLef58, except_edge_length, rule_lef58.get());
 
-      rule_map->set_condition_rule(RuleType::kAreaLef58, rule_lef58.get()->get_min_area(), static_cast<ConditionRule*>(condition_rule));
+      rule_map->set_condition_rule(RuleType::kAreaLef58, except_edge_length, static_cast<ConditionRule*>(condition_rule));
     }
   };
 

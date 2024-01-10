@@ -67,7 +67,7 @@ void DrcEngineInit::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::Id
                                        idb::IdbLayer* layer, int net_id, bool b_pdn)
 {
   /// calculate rectangle by two points
-  int llx, lly, urx, ury;
+  int llx = 0, lly = 0, urx = 0, ury = 0;
   int extend_size = b_pdn ? 0 : routing_width / 2;
   if (point_1->get_y() == point_2->get_y()) {
     // horizontal

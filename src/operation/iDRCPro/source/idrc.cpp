@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "idrc.h"
 
+#include "condition_area.h"
 #include "condition_builder.h"
 #include "condition_connectivity.h"
 #include "condition_eol.h"
@@ -98,13 +99,20 @@ void DrcManager::check()
 
   condition_eol.checkFastMode();
 
+  // DrcRuleConditionJog condition_jog(_condition_manager, _engine);
+
+  // condition_jog.checkFastMode();
+}
+
+void DrcManager::checkSelf()
+{
+  // DrcRuleConditionArea condition_area(_condition_manager, _engine);
+
+  // condition_area.checkFastMode();
+
   DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
 
   condition_notch.checkFastMode();
-
-  DrcRuleConditionJog condition_jog(_condition_manager, _engine);
-
-  condition_jog.checkFastMode();
 
   DrcRuleConditionStep condition_step(_condition_manager, _engine);
 

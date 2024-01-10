@@ -18,13 +18,13 @@
 
 #include <string>
 
-#include "idrc_config.h"
-#include "idrc_dm.h"
-#include "idrc_violation_manager.h"
-#include "idrc_engine.h"
-#include "idrc_data.h"
-#include "idrc_rule_manager.h"
 #include "condition_manager.h"
+#include "idrc_config.h"
+#include "idrc_data.h"
+#include "idrc_dm.h"
+#include "idrc_engine.h"
+#include "idrc_rule_manager.h"
+#include "idrc_violation_manager.h"
 
 namespace idrc {
 
@@ -36,7 +36,7 @@ class DrcManager
 
   DrcDataManager* get_data_manager() { return _data_manager; }
   DrcRuleManager* get_rule_manager() { return _rule_manager; }
-   DrcConditionManager* get_condition_manager() { return _condition_manager; }
+  DrcConditionManager* get_condition_manager() { return _condition_manager; }
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
   DrcEngine* get_engine() { return _engine; }
 
@@ -44,6 +44,7 @@ class DrcManager
   void engineStart(DrcCheckerType checker_type = DrcCheckerType::kRT);
   bool buildCondition();
   void check();
+  void checkSelf();
 
  private:
   DrcDataManager* _data_manager;
