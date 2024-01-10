@@ -98,13 +98,16 @@ void DrcManager::check()
 
   condition_eol.checkFastMode();
 
-  DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
-
-  condition_notch.checkFastMode();
-
   DrcRuleConditionJog condition_jog(_condition_manager, _engine);
 
   condition_jog.checkFastMode();
+}
+
+void DrcManager::checkSelf()
+{
+  DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
+
+  condition_notch.checkFastMode();
 
   DrcRuleConditionStep condition_step(_condition_manager, _engine);
 

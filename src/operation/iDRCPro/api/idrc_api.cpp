@@ -61,11 +61,16 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   data_manager->set_pin_data(&pin_data);
   data_manager->set_routing_data(&routing_data);
 
-  drc_manager.engineStart((env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef);
+  auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
+  drc_manager.engineStart(check_type);
 
   drc_manager.buildCondition();
 
   drc_manager.check();
+
+  if (check_type == DrcCheckerType::kDef) {
+    drc_manager.checkSelf();
+  }
 
   return violation_manager->get_violation_map();
 }
