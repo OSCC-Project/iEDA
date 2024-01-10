@@ -534,6 +534,7 @@ void Legalizer::destoryInst()
 {
   if (_s_lg_instance) {
     delete _s_lg_instance;
+    _s_lg_instance = nullptr;
   }
 }
 

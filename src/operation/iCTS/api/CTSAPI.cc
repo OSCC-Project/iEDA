@@ -189,6 +189,7 @@ void CTSAPI::evaluate()
   // _evaluator->plotNet("sdram_clk_o", "sdram_clk_o.gds");
   _evaluator->evaluate();
   // _evaluator->plotPath("u0_soc_top/u0_sdram_axi/u_core/sample_data0_q_reg_0_");
+
   LOG_INFO << "Evaluate memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Evaluate elapsed time " << stats.elapsedRunTime() << "s";
 }
@@ -255,12 +256,18 @@ double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
 
 double CTSAPI::getSinkCap(const std::string& load_pin_full_name) const
 {
-  return _timing_engine->reportInstPinCapacitance(load_pin_full_name.c_str());
+  // remove all "\" in inst_name
+  auto name = load_pin_full_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->reportInstPinCapacitance(name.c_str());
 }
 
 bool CTSAPI::isFlipFlop(const std::string& inst_name) const
 {
-  return _timing_engine->isSequentialCell(inst_name.c_str());
+  // remove all "\" in inst_name
+  auto name = inst_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->isSequentialCell(name.c_str());
 }
 
 bool CTSAPI::isClockNet(const std::string& net_name) const
@@ -873,7 +880,10 @@ ista::DesignObject* CTSAPI::findStaPin(icts::CtsPin* pin) const
 
 ista::DesignObject* CTSAPI::findStaPin(const std::string& pin_full_name) const
 {
-  return _timing_engine->get_netlist()->findObj(pin_full_name.c_str(), false, false).front();
+  // remove all "\" in inst_name
+  auto name = pin_full_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->get_netlist()->findObj(name.c_str(), false, false).front();
 }
 
 ista::Net* CTSAPI::findStaNet(const icts::EvalNet& eval_net) const

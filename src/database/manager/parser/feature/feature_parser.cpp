@@ -42,10 +42,10 @@
 #include "IdbNet.h"
 #include "IdbRow.h"
 #include "IdbTrackGrid.h"
-#include "iomanip"
-#include "json_parser.h"
 #include "flow_config.h"
 #include "idm.h"
+#include "iomanip"
+#include "json_parser.h"
 
 namespace idb {
 
@@ -201,8 +201,8 @@ bool FeatureParser::buildNets(std::string json_path)
 
       auto array_pins = json::array();
       /// io pin
-      auto* io_pin = net->get_io_pin();
-      if (io_pin != nullptr) {
+      auto* io_pins = net->get_io_pins();
+      for (auto* io_pin : io_pins->get_pin_list()) {
         nlohmann::json json_io_pin;
         json_io_pin["name"] = io_pin->get_term()->get_name();
         json_io_pin["c_x"] = io_pin->get_average_coordinate()->get_x();
@@ -249,7 +249,6 @@ bool FeatureParser::buildNets(std::string json_path)
 
 bool FeatureParser::buildReportSummary(std::string json_path)
 {
-  
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
 
@@ -266,12 +265,11 @@ bool FeatureParser::buildReportSummary(std::string json_path)
 
   // step2: summary
   json summary;
-  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu()
-                                                          : _design->get_units()->get_micron_dbu();
+  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
   auto* idb_die = _layout->get_die();
   auto die_width = ((double) idb_die->get_width()) / dbu;
   auto die_height = ((double) idb_die->get_height()) / dbu;
-  summary["DIE Area ( um^2 )"] = ieda::Str::printf("%f = %03f * %03f", die_width * die_height, die_width, die_height) ;
+  summary["DIE Area ( um^2 )"] = ieda::Str::printf("%f = %03f * %03f", die_width * die_height, die_width, die_height);
   summary["DIE Usage"] = dmInst->dieUtilization();
   auto idb_core_box = _layout->get_core()->get_bounding_box();
   auto core_width = ((double) idb_core_box->get_width()) / dbu;
@@ -287,8 +285,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
   summary["Number - GCell Grid"] = _design->get_layout()->get_gcell_grid_list()->get_gcell_grid_num();
   summary["Number - Cell Master"] = _design->get_layout()->get_cell_master_list()->get_cell_master_num();
   summary["Number - Via Rule"] = _design->get_layout()->get_via_rule_list()->get_num_via_rule_generate()
-                                 + _design->get_layout()->get_via_list()->get_num_via()
-                                 + _design->get_via_list()->get_num_via();
+                                 + _design->get_layout()->get_via_list()->get_num_via() + _design->get_via_list()->get_num_via();
   summary["Number - IO Pin"] = _design->get_io_pin_list()->get_pin_num();
   summary["Number - Instance"] = _design->get_instance_list()->get_num();
   summary["Number - Blockage"] = _design->get_blockage_list()->get_num();
@@ -307,19 +304,22 @@ bool FeatureParser::buildReportSummary(std::string json_path)
   summary_instance["All Instances"] = all_instance;
   json netlist;
   netlist["Number"] = _design->get_instance_list()->get_num(IdbInstanceType::kNetlist);
-  netlist["Number Ratio"] = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kNetlist)) / _design->get_instance_list()->get_num();
+  netlist["Number Ratio"]
+      = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kNetlist)) / _design->get_instance_list()->get_num();
   netlist["Area"] = dmInst->netlistInstArea();
   netlist["Area Ratio"] = ((double) dmInst->netlistInstArea()) / dmInst->instanceArea(IdbInstanceType::kMax);
   summary_instance["Netlist"] = netlist;
   json physical;
   physical["Number"] = _design->get_instance_list()->get_num(IdbInstanceType::kDist);
-  physical["Number Ratio"] = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kDist)) / _design->get_instance_list()->get_num();
+  physical["Number Ratio"]
+      = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kDist)) / _design->get_instance_list()->get_num();
   physical["Area"] = dmInst->distInstArea();
   physical["Area Ratio"] = ((double) dmInst->distInstArea()) / dmInst->instanceArea(IdbInstanceType::kMax);
   summary_instance["Physical"] = physical;
   json timing;
   timing["Number"] = _design->get_instance_list()->get_num(IdbInstanceType::kTiming);
-  timing["Number Ratio"] = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kTiming)) / _design->get_instance_list()->get_num();
+  timing["Number Ratio"]
+      = ((double) _design->get_instance_list()->get_num(IdbInstanceType::kTiming)) / _design->get_instance_list()->get_num();
   timing["Area"] = dmInst->timingInstArea();
   timing["Area Ratio"] = ((double) dmInst->timingInstArea()) / dmInst->instanceArea(IdbInstanceType::kMax);
   summary_instance["Timing"] = timing;
@@ -407,7 +407,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
     uint64_t via_num;
     uint64_t patch_num;
   };
-  
+
   const int max_num = 34;
   const int max_fanout = 32;
 
@@ -426,7 +426,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
     layer_net_value_list.push_back(layer_value);
     layer_specialnet_value_list.push_back(layer_value);
   }
-  
+
   for (auto net : _design->get_net_list()->get_net_list()) {
     for (auto wire : net->get_wire_list()->get_wire_list()) {
       for (auto segment : wire->get_segment_list()) {
@@ -524,7 +524,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
       inst_array[max_num - 1] += 1;
     }
   }
-  for(int i = 0; i <= max_fanout; i++){
+  for (int i = 0; i <= max_fanout; i++) {
     summary_pin[i]["Pin Number"] = i;
     summary_pin[i]["Net Number"] = net_array[i];
     summary_pin[i]["Net Ratio"] = ((double) net_array[i]) / net_total;
@@ -537,7 +537,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
   summary_pin[max_fanout + 1]["Instance Number"] = inst_array[max_num - 1];
   summary_pin[max_fanout + 1]["Instance Ratio"] = ((double) inst_array[max_num - 1]) / instance_total;
   root["Summary - Pin Distribution"] = summary_pin;
-  
+
   file_stream << std::setw(4) << root;
 
   ieda::closeFileStream(file_stream);

@@ -175,10 +175,11 @@ void ToolManager::estimateDelay(std::vector<eval::TimingNet*> timing_net_list, c
 /// iPL
 bool ToolManager::autoRunPlacer(std::string config)
 {
-  plInst->initPlacer(config);
-  bool flag = plInst->runPlacement();
-  plInst->destroyPlacer();
-  return flag;
+  //   plInst->initPlacer(config);
+  //   bool flag = plInst->runPlacement(config);
+  //   plInst->destroyPlacer();
+  return plInst->runPlacement(config);
+  ;
 }
 bool ToolManager::runPlacerFiller(std::string config)
 {
@@ -191,7 +192,7 @@ bool ToolManager::runPlacerIncrementalFlow(std::string config)
 bool ToolManager::runPlacerIncrementalLegalization()
 {
   bool flag = plInst->runIncrementalLegalization();
-  plInst->destroyPlacer();
+  //   plInst->destroyPlacer();
   return flag;
 }
 
