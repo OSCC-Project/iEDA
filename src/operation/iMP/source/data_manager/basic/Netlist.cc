@@ -14,34 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/*
- * @Author: S.J Chen
- * @Date: 2022-01-21 13:37:48
- * @LastEditTime: 2022-01-27 17:26:16
- * @LastEditors: S.J Chen
- * @Description:
- * @FilePath: /iEDA/src/imp/src/database/Orient.hh
- * Contact : https://github.com/sjchanson
- */
-
-#ifndef IMP_ORIENT_H
-#define IMP_ORIENT_H
-
+#include "Netlist.hh"
+#include "Layout.hh"
+#include "Net.hh"
+#include "Object.hh"
+#include "Pin.hh"
 namespace imp {
-
-enum class Orient
+std::shared_ptr<Layout> get_layout(Netlist& netlist)
 {
-  kNone,
-  kN_R0,    /* Rotate object 0 degrees */
-  kW_R90,   /* Rotate object 90 degrees */
-  kS_R180,  /* Rotate object 180 degrees */
-  kE_R270,  /* Rotate object 270 degrees */
-  kFN_MY,   /* Mirror ablout the "Y" axis*/
-  kFE_MY90, /* Mirror ablout the "Y" axis and rotate 90 degrees */
-  kFS_MX,   /* Mirror ablout the "X" axis*/
-  kFW_MX90  /* Mirror ablout the "X" axis and rotate 90 degrees */
-};
+  return netlist.property();
+}
+size_t add_object(Netlist& netlist, std::shared_ptr<Object> obj)
+{
+  return netlist.add_vertex(obj);
+}
+size_t add_net(Netlist& netlist, const std::vector<size_t>& inst_pos, const std::vector<std::shared_ptr<Pin>>& pins,
+               std::shared_ptr<Net> net)
+{
+  return netlist.add_hyper_edge(inst_pos, pins, net);
+}
 
 }  // namespace imp
-
-#endif

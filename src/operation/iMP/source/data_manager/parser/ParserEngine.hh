@@ -14,25 +14,45 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#ifndef IMP_MACROPLACER_H
-#define IMP_MACROPLACER_H
-#include "Block.hh"
-#include "ParserEngine.hh"
-namespace imp {
+#ifndef IMP_DBPARSER_H
+#define IMP_DBPARSER_H
 
-class MP
+#include <memory>
+#include <string>
+#include <unordered_map>
+namespace imp {
+class Instance;
+class Block;
+class Row;
+class Cell;
+
+class ParserEngine
 {
  public:
-  MP(ParserEngine* parser) : _parser(parser) { _root = _parser->get_design_ptr(); }
-  ~MP() = default;
-  Block& root() { return *_root; }
-  const Block& root() const { return *_root; }
-  std::shared_ptr<Block> root_ptr() { return _root; }
-  void runMP();
+  ParserEngine() = default;
+  ParserEngine(const ParserEngine&) = delete;
+  ParserEngine(ParserEngine&&) = delete;
+  virtual ~ParserEngine() = default;
+
+  ParserEngine& operator=(const ParserEngine&) = delete;
+  ParserEngine& operator=(ParserEngine&&) = delete;
+
+  virtual bool read() = 0;
+  virtual bool write() = 0;
+
+  Block& get_design() { return *_design; }
+  const Block& get_design() const { return *_design; }
+
+  std::shared_ptr<Block> get_design_ptr() { return _design; }
 
  private:
-  std::shared_ptr<Block> _root;
-  std::unique_ptr<ParserEngine> _parser;
+  friend class IDBParser;
+  std::shared_ptr<Block> _design;
+  std::unordered_map<std::string, std::shared_ptr<Cell>> _cells;
+  std::unordered_map<std::string, std::shared_ptr<Row>> _rows;
+  std::unordered_map<std::string, std::shared_ptr<Instance>> _instances;
 };
+
 }  // namespace imp
+
 #endif

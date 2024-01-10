@@ -10,8 +10,9 @@
  */
 #ifndef IMP_MPAPI_H
 #define IMP_MPAPI_H
-#include "../source/module/heuristic/SAPlacer.hh"
-#include "../source/module/representation/SeqPair.hh"
+// #include "../source/module/heuristic/SAPlacer.hh"
+// #include "../source/module/representation/SeqPair.hh"
+#include <vector>
 namespace imp {
 
 std::vector<std::pair<int64_t, int64_t>> SAPlaceSeqPairInt64(int max_iters, int num_actions, double cool_rate,
