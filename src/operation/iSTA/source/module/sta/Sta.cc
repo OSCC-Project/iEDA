@@ -1816,7 +1816,7 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       break;
     }
   }
-  return WNS < 0 ? WNS : 0;
+  return WNS;
 }
 
 /**
