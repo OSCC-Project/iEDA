@@ -55,6 +55,7 @@ class DrcBasicPoint
     kCheckedEOLSpacing = 64,
     kCheckedNotch = 128,
     kCheckedSpacingTable = 256,
+    kCheckedjog = 512,
     kMax
   };
 
@@ -145,6 +146,9 @@ class DrcBasicPoint
   void set_checked_spacing_table() { set_states(true, PointState::kCheckedSpacingTable); }
   /// true = has been checked spacing table
   bool is_spacing_table_checked() { return get_states(PointState::kCheckedSpacingTable); }
+  void set_checked_jog() { set_states(true, PointState::kCheckedjog); }
+  /// true = has been checked spacing table
+  bool is_jog_checked() { return get_states(PointState::kCheckedjog); }
 
   DrcBasicPoint* nextEndpoint()
   {
