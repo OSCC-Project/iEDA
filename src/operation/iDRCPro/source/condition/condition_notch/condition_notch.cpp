@@ -107,7 +107,7 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
 
   // find rule and check
   for (auto& [value, rule_notch_list] : rule_notch_map) {
-    if (value <= notch_edge_length) {
+    if (value <= notch_edge_length) {  // different rule
       continue;
     }
 
@@ -147,7 +147,7 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
       }
 
       else if ((notch_side_width < 0
-                || (is_prev_concave && notch_prev_side_width <= notch_side_width && notch_next_side_width <= notch_side_width))
+                || (is_next_concave && notch_next_side_width <= notch_side_width && notch_prev_side_width <= notch_side_width))
                && notch_next_side_length < notch_side_length && notch_prev_side_length > notch_side_length) {
         // violation rect
         int llx = point_prev->get_x();
