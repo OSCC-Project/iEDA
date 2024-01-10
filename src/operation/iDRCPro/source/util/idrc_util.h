@@ -98,7 +98,7 @@ class DrcUtil
   }
 
   // 获得正交方向
-  static std::pair<DrcDirection, DrcDirection> getOrthogonalDirection(DrcDirection direction)
+  static std::pair<DrcDirection, DrcDirection> orthogonalDirections(DrcDirection direction)
   {
     switch (direction) {
       case DrcDirection::kUp:
