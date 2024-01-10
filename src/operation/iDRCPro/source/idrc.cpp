@@ -98,9 +98,9 @@ void DrcManager::check()
 
   condition_eol.checkFastMode();
 
-  DrcRuleConditionJog condition_jog(_condition_manager, _engine);
+  // DrcRuleConditionJog condition_jog(_condition_manager, _engine);
 
-  condition_jog.checkFastMode();
+  // condition_jog.checkFastMode();
 }
 
 void DrcManager::checkSelf()
