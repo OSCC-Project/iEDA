@@ -210,6 +210,7 @@ void DrcConditionBuilder::checkEdge(DrcBasicPoint* point, std::map<RuleType, int
 
     if (edge_length >= max_value_map[RuleType::kArea] && point->is_endpoint() && neighbour->get_point()->is_endpoint()
         && point->get_id() == neighbour->get_point()->get_id()) {
+      // TODO: use polygon id, not net id
       auto* except_list = _condition_manager->get_except_list(RuleType::kArea, layer);
       except_list->addExceptList(point->get_id());
     }

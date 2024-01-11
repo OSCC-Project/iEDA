@@ -159,7 +159,15 @@ bool DrcRuleConditionSpacingTable::checkSpacingTableSegment(DrcBasicPoint* point
   }
 
   // TODO: calc width
+  auto spacing_direction = point->direction(neighbour);
+  auto* neighbour_prev = point->get_neighbour(DrcUtil::oppositeDirection(spacing_direction));
+  auto* neighbour_next = neighbour->get_neighbour(spacing_direction);
   int width = 0;
+  if (neighbour_prev && neighbour_prev->is_edge()) {
+    width = neighbour_prev->get_point()->distance(point);
+  } else if (neighbour_next && neighbour_next->is_edge()) {
+    width = neighbour_next->get_point()->distance(neighbour);
+  }
 
   // find rule and check
   for (auto& [value, rule_prl_list] : rule_spacing_table_map) {

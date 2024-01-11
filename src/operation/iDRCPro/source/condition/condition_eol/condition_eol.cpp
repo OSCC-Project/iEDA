@@ -62,6 +62,13 @@ bool DrcRuleConditionEOL::checkSpacingEOL()
 
     // handle eol edges
     for (auto& point_pair : check_list->get_points()) {
+      if (point_pair.first->is_eol_spacing_checked() || point_pair.second->is_eol_spacing_checked()) {
+        continue;
+      }
+      if (point_pair.first->get_id() < 0 && point_pair.second->get_id() < 0) {
+        continue;
+      }
+
       auto* point_1_next = point_pair.first->nextEndpoint();
       auto* point_2_next = point_pair.second->nextEndpoint();
 
@@ -87,7 +94,8 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
 {
   bool b_result = true;
 
-  DrcDirection spacing_direction = DrcUtil::outsidePolygonDirection(point_prev, point_next);
+  auto spacing_direction = DrcUtil::outsidePolygonDirection(point_prev, point_next);
+  auto eol_direction = point_prev->direction(point_next);
 
   int step_edge_length = point_prev->distance(point_next);
   // find rule and check
@@ -97,82 +105,133 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
     }
 
     for (auto& rule_eol : rule_eol_list) {
-      // violation rect data
-      int llx = std::numeric_limits<int>::max();
-      int lly = std::numeric_limits<int>::max();
-      int urx = std::numeric_limits<int>::min();
-      int ury = std::numeric_limits<int>::min();
-      std::set<int> net_ids;
-      net_ids.insert(point_prev->get_id());
-      net_ids.insert(point_next->get_id());
-
       // get rule data
       auto* condition_rule_eol = static_cast<ConditionRuleEOL*>(rule_eol);
       int eol_spacing = condition_rule_eol->get_eol()->get_eol_space();
       int eol_within
           = condition_rule_eol->get_eol()->get_eol_within().has_value() ? condition_rule_eol->get_eol()->get_eol_within().value() : 0;
 
-      // check eol spacing
-      bool is_violation = false;
-      bool is_begin = false;
-      auto* iter_point = point_prev;
-      while (iter_point) {
-        if (iter_point->is_eol_spacing_checked()) {  // TODO: 多条规则时候可能会漏检
-          break;
-        }
+      auto* scanline_dm = _engine->get_engine_manager()->get_engine_scanline(layer)->get_data_manager();
 
-        iter_point->set_checked_eol_spacing();
-        auto* check_neighbour = iter_point->get_neighbour(spacing_direction);
-        if (check_neighbour && check_neighbour->is_spacing() && iter_point->distance(check_neighbour->get_point()) < eol_spacing) {
-          check_neighbour->get_point()->set_checked_eol_spacing();
-          is_begin = true;
+      auto [neighbour_x, neighbour_y] = DrcUtil::transformPoint(point_prev->get_x(), point_prev->get_y(), spacing_direction, eol_spacing);
+      auto [corner_1_x, corner_1_y]
+          = DrcUtil::transformPoint(neighbour_x, neighbour_y, DrcUtil::oppositeDirection(eol_direction), eol_within);
+      auto [corner_2_x, corner_2_y] = DrcUtil::transformPoint(point_next->get_x(), point_next->get_y(), eol_direction, eol_within);
 
-          llx = std::min(llx, iter_point->get_x());
-          lly = std::min(lly, iter_point->get_y());
-          urx = std::max(urx, iter_point->get_x());
-          ury = std::max(ury, iter_point->get_y());
+      int llx_query = std::min(corner_1_x, corner_2_x);
+      int lly_query = std::min(corner_1_y, corner_2_y);
+      int urx_query = std::max(corner_1_x, corner_2_x);
+      int ury_query = std::max(corner_1_y, corner_2_y);
+      ieda_solver::BgRect rect(ieda_solver::BgPoint(llx_query, lly_query), ieda_solver::BgPoint(urx_query, ury_query));
 
-          llx = std::min(llx, check_neighbour->get_point()->get_x());
-          lly = std::min(lly, check_neighbour->get_point()->get_y());
-          urx = std::max(urx, check_neighbour->get_point()->get_x());
-          ury = std::max(ury, check_neighbour->get_point()->get_y());
-
-          net_ids.insert(iter_point->get_id());
-          net_ids.insert(check_neighbour->get_point()->get_id());
-
-          is_violation = true;
-        } else if (is_begin && check_neighbour) {
-          break;
-        }
-
-        if (iter_point == point_next) {
-          break;
-        }
-
-        iter_point = iter_point->get_next();
-      }
-
-      // TODO: check eol within
-
-      if (is_violation) {
-        b_result = false;
+      auto points = scanline_dm->getBasicPointsInRect(llx_query, lly_query, urx_query, ury_query);
+      if (points.size() > 2) {
+        // violation rect data
+        int llx = std::numeric_limits<int>::max();
+        int lly = std::numeric_limits<int>::max();
+        int urx = std::numeric_limits<int>::min();
+        int ury = std::numeric_limits<int>::min();
+        std::set<int> net_ids;
 
 #ifdef DEBUG_IDRC_CONDITION_EOL
-        auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
-        auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-        auto* neighbour_point = point_prev->get_neighbour(spacing_direction) ? point_prev->get_neighbour(spacing_direction)->get_point()
-                                                                             : point_next->get_neighbour(spacing_direction)->get_point();
-        auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour_point);
-        auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+        DrcBasicPoint* point_other = nullptr;
 #endif
+        for (auto* p : points) {
+          llx = std::min(llx, p->get_x());
+          lly = std::min(lly, p->get_y());
+          urx = std::max(urx, p->get_x());
+          ury = std::max(ury, p->get_y());
 
-        // create violation
-        DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-        auto violation_type = ViolationEnumType::kViolationEOL;
-        auto* violation_manager = _condition_manager->get_violation_manager();
-        auto& violation_list = violation_manager->get_violation_list(violation_type);
-        violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+          net_ids.insert(p->get_id());
+
+          p->set_checked_eol_spacing();
+
+#ifdef DEBUG_IDRC_CONDITION_EOL
+          if (p->get_id() != point_prev->get_id()) {
+            point_other = p;
+          }
+#endif
+        }
+
+        if (llx != urx && lly != ury) {
+#ifdef DEBUG_IDRC_CONDITION_EOL
+          auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
+          auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+          auto gtl_pts_2 = point_other ? DrcUtil::getPolygonPoints(point_other) : std::vector<ieda_solver::GtlPoint>();
+          auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+#endif
+          // create violation
+          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
+          auto violation_type = ViolationEnumType::kViolationEOL;
+          auto* violation_manager = _condition_manager->get_violation_manager();
+          auto& violation_list = violation_manager->get_violation_list(violation_type);
+          violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+        }
       }
+
+      //       // check eol spacing
+      //       bool is_violation = false;
+      //       bool is_begin = false;
+      //       auto* iter_point = point_prev;
+      //       while (iter_point) {
+      //         if (iter_point->is_eol_spacing_checked()) {  // TODO: 多条规则时候可能会漏检
+      //           break;
+      //         }
+
+      //         iter_point->set_checked_eol_spacing();
+      //         auto* check_neighbour = iter_point->get_neighbour(spacing_direction);
+      //         if (check_neighbour && check_neighbour->is_spacing() && iter_point->distance(check_neighbour->get_point()) < eol_spacing) {
+      //           check_neighbour->get_point()->set_checked_eol_spacing();
+      //           is_begin = true;
+
+      //           llx = std::min(llx, iter_point->get_x());
+      //           lly = std::min(lly, iter_point->get_y());
+      //           urx = std::max(urx, iter_point->get_x());
+      //           ury = std::max(ury, iter_point->get_y());
+
+      //           llx = std::min(llx, check_neighbour->get_point()->get_x());
+      //           lly = std::min(lly, check_neighbour->get_point()->get_y());
+      //           urx = std::max(urx, check_neighbour->get_point()->get_x());
+      //           ury = std::max(ury, check_neighbour->get_point()->get_y());
+
+      //           net_ids.insert(iter_point->get_id());
+      //           net_ids.insert(check_neighbour->get_point()->get_id());
+
+      //           is_violation = true;
+      //         } else if (is_begin && check_neighbour) {
+      //           break;
+      //         }
+
+      //         if (iter_point == point_next) {
+      //           break;
+      //         }
+
+      //         iter_point = iter_point->get_next();
+      //       }
+
+      //       // TODO: check eol within
+
+      //       if (is_violation) {
+      //         b_result = false;
+
+      // #ifdef DEBUG_IDRC_CONDITION_EOL
+      //         auto gtl_pts_1 = DrcUtil::getPolygonPoints(point_prev);
+      //         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
+      //         auto* neighbour_point = point_prev->get_neighbour(spacing_direction) ?
+      //         point_prev->get_neighbour(spacing_direction)->get_point()
+      //                                                                              :
+      //                                                                              point_next->get_neighbour(spacing_direction)->get_point();
+      //         auto gtl_pts_2 = DrcUtil::getPolygonPoints(neighbour_point);
+      //         auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+      // #endif
+
+      //         // create violation
+      //         DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
+      //         auto violation_type = ViolationEnumType::kViolationEOL;
+      //         auto* violation_manager = _condition_manager->get_violation_manager();
+      //         auto& violation_list = violation_manager->get_violation_list(violation_type);
+      //         violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+      //       }
     }
   }
 

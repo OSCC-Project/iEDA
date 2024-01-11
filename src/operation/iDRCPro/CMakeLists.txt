@@ -28,6 +28,9 @@ set(DEBUG_IDRC_ENGINE_SCANLINE OFF)
 set(DEBUG_IDRC_RULE OFF)
 set(DEBUG_IDRC_RULE_BUILDER OFF)
 
+# debug api
+set(DEBUG_IDRC_API OFF)
+
 if(DEBUG_IDRC_CONDITION_AREA)
   add_compile_definitions(DEBUG_IDRC_CONDITION_AREA)
 endif()
@@ -66,6 +69,9 @@ if(DEBUG_IDRC_RULE)
 endif()
 if(DEBUG_IDRC_RULE_BUILDER)
   add_compile_definitions(DEBUG_IDRC_RULE_BUILDER)
+endif()
+if(DEBUG_IDRC_API)
+  add_compile_definitions(DEBUG_IDRC_API)
 endif()
 
 add_subdirectory(api)
