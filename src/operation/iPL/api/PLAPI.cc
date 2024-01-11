@@ -276,7 +276,9 @@ void PLAPI::runFlow()
   runGP();
   printHPWLInfo();
   notifyPLWLInfo(0);
-  notifyPLTimingInfo(0);
+  if(isSTAStarted()){
+    notifyPLTimingInfo(0);
+  }
 
   if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
     std::cout << std::endl;
@@ -288,13 +290,17 @@ void PLAPI::runFlow()
   runLG();
   printHPWLInfo();
   notifyPLWLInfo(1);
-  notifyPLTimingInfo(1);
+  if(isSTAStarted()){
+    notifyPLTimingInfo(1);
+  }
 
   std::cout << std::endl;
   runDP();
   printHPWLInfo();
   notifyPLWLInfo(2);
-  notifyPLTimingInfo(2);
+  if(isSTAStarted()){
+    notifyPLTimingInfo(2);
+  }
 
   std::cout << std::endl;
 
@@ -309,8 +315,10 @@ void PLAPI::runFlow()
   std::cout << std::endl;
   LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
 
-  notifySTAUpdateTimingRuntime();
-  _reporter->reportEDAEvaluation();
+  if(isSTAStarted()){
+    notifySTAUpdateTimingRuntime();
+    _reporter->reportEDAEvaluation();
+  }
 
   if(isSTAStarted()){
     _external_api->destroyTimingEval();
