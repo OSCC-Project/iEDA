@@ -193,7 +193,7 @@ bool IdbNet::checkConnection()
   return b_result;
 }
 
-int32_t IdbNet::wireLength()
+uint64_t IdbNet::wireLength()
 {
   return _wire_list->wireLength();
 }
