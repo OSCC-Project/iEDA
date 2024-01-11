@@ -41,10 +41,12 @@ using ieda::Time;
 using SkewConstraintsMap = std::map<std::pair<std::string, std::string>, std::pair<double, double>>;
 
 template <typename T>
-concept StringAble = requires(const T& t) {
+concept StringAble = requires(const T& t)
+{
   {
     std::to_string(t)
-  } -> std::convertible_to<std::string>;
+  }
+  ->std::convertible_to<std::string>;
 };
 
 class CTSAPI
@@ -118,14 +120,16 @@ class CTSAPI
   icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                          const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+                         const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);
   void buildRCTree(const icts::EvalNet& eval_net);
   void buildPinPortsRCTree(const icts::EvalNet& eval_net);
   void resetRCTree(const std::string& net_name);
-
+  void utilizationLog() const;
+  void latencySkewLog() const;
+  void slackLog() const;
   // log
   void checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix = ".rpt") const;
 
