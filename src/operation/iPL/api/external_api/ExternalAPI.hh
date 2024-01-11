@@ -55,6 +55,7 @@ class ExternalAPI
   double obtainPinLateRequiredTime(std::string pin_name);
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
+  double obtainTargetClockPeriodNS(std::string clock_name);
   void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
   void updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
                                 std::vector<std::string> moved_inst_list);

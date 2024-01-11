@@ -1,24 +1,5 @@
-// ***************************************************************************************
-// Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
-//
-// iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-// http://license.coscl.org.cn/MulanPSL2
-//
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-//
-// See the Mulan PSL v2 for more details.
-// ***************************************************************************************
-#include <fstream>
-#include <iostream>
-#include <set>
+#include "PLReporter.hh"
 
-#include "PLAPI.hh"
 #include "TimingEval.hpp"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
@@ -30,7 +11,17 @@
 
 namespace ipl {
 
-void PLAPI::reportPLInfo()
+PLReporter::PLReporter(ExternalAPI* external_api)
+{
+  _external_api = external_api;
+}
+
+PLReporter::~PLReporter()
+{
+    //
+}
+
+void PLReporter::reportPLInfo()
 {
   LOG_INFO << "-----------------Start iPL Report Generation-----------------";
 
@@ -74,7 +65,11 @@ void PLAPI::reportPLInfo()
   LOG_INFO << "-----------------Finish Report Generation-----------------";
 }
 
-void PLAPI::reportViolationInfo(std::ofstream& feed)
+void PLReporter::reportTopoInfo(){
+    //
+}
+
+void PLReporter::reportViolationInfo(std::ofstream& feed)
 {
   std::string output_dir = "./result/pl/report/";
   std::string violation_detail_file = "violation_detail_report.txt";
@@ -163,7 +158,7 @@ void PLAPI::reportViolationInfo(std::ofstream& feed)
            << "'" << output_dir << "'";
 }
 
-void PLAPI::reportLayoutWhiteInfo()
+void PLReporter::reportLayoutWhiteInfo()
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -194,7 +189,7 @@ void PLAPI::reportLayoutWhiteInfo()
   delete checker;
 }
 
-void PLAPI::reportBinDensity(std::ofstream& feed)
+void PLReporter::reportBinDensity(std::ofstream& feed)
 {
   auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
@@ -259,7 +254,7 @@ void plotPinName(std::stringstream& feed, std::string net_name, TreeNode* tree_n
   feed << "ENDEL" << std::endl;
 }
 
-void PLAPI::plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path)
+void PLReporter::plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -344,7 +339,7 @@ void PLAPI::plotConnectionForDebug(std::vector<std::string> net_name_list, std::
   file_stream.close();
 }
 
-void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path)
+void PLReporter::plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -463,7 +458,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
     int64_t relative_wl = 0;
     for (auto* network : relative_nets) {
       // skip the clock net.
-      if (this->isClockNet(network->get_name())) {
+      if (_external_api->isClockNet(network->get_name())) {
         continue;
       }
 
@@ -503,7 +498,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
     int64_t unrelative_wl = 0;
     for (auto* network : unrelative_nets) {
       // skip the clock net.
-      if (this->isClockNet(network->get_name())) {
+      if (_external_api->isClockNet(network->get_name())) {
         continue;
       }
 
@@ -553,7 +548,7 @@ void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, 
   file_stream.close();
 }
 
-void PLAPI::plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path)
+void PLReporter::plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -625,7 +620,7 @@ void PLAPI::plotModuleStateForDebug(std::vector<std::string> special_inst_list, 
   file_stream.close();
 }
 
-void PLAPI::saveNetPinInfoForDebug(std::string path)
+void PLReporter::saveNetPinInfoForDebug(std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -651,7 +646,7 @@ void PLAPI::saveNetPinInfoForDebug(std::string path)
   file_stream.close();
 }
 
-void PLAPI::savePinListInfoForDebug(std::string path)
+void PLReporter::savePinListInfoForDebug(std::string path)
 {
   std::ofstream file_stream;
   file_stream.open(path);
@@ -675,7 +670,7 @@ void PLAPI::savePinListInfoForDebug(std::string path)
   file_stream.close();
 }
 
-void PLAPI::reportWLInfo(std::ofstream& feed)
+void PLReporter::reportWLInfo(std::ofstream& feed)
 {
   std::string output_dir = "./result/pl/report/";
   std::string wl_detail_file = "wl_detail_report.txt";
@@ -737,7 +732,7 @@ void PLAPI::reportWLInfo(std::ofstream& feed)
            << "'" << output_dir << "'";
 }
 
-void PLAPI::reportSTWLInfo(std::ofstream& feed)
+void PLReporter::reportSTWLInfo(std::ofstream& feed)
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   SteinerWirelength stwl_eval(topo_manager);
@@ -757,14 +752,14 @@ void PLAPI::reportSTWLInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void PLAPI::printHPWLInfo()
+void PLReporter::printHPWLInfo()
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   HPWirelength hpwl_eval(topo_manager);
   LOG_INFO << "Current Stage Total HPWL: " << hpwl_eval.obtainTotalWirelength();
 }
 
-void PLAPI::reportHPWLInfo(std::ofstream& feed)
+void PLReporter::reportHPWLInfo(std::ofstream& feed)
 {
   auto* topo_manager = PlacerDBInst.get_topo_manager();
   HPWirelength hpwl_eval(topo_manager);
@@ -772,7 +767,7 @@ void PLAPI::reportHPWLInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-void PLAPI::reportLongNetInfo(std::ofstream& feed)
+void PLReporter::reportLongNetInfo(std::ofstream& feed)
 {
   auto* pl_config = PlacerDBInst.get_placer_config();
   int32_t max_wirelength_constraint = pl_config->get_buffer_config().get_max_wirelength_constraint();
@@ -791,7 +786,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
       continue;
     }
     if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
-      if (this->isClockNet(network->get_name())) {
+      if (_external_api->isClockNet(network->get_name())) {
         continue;
       }
     }
@@ -819,7 +814,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
   feed << std::endl;
 }
 
-int32_t PLAPI::reportOverlapInfo(std::ofstream& feed)
+int32_t PLReporter::reportOverlapInfo(std::ofstream& feed)
 {
   LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -855,39 +850,34 @@ int32_t PLAPI::reportOverlapInfo(std::ofstream& feed)
   return static_cast<int32_t>(clique_list.size());
 }
 
-void PLAPI::reportTimingInfo(std::ofstream& feed)
+void PLReporter::reportTimingInfo(std::ofstream& feed)
 {
-  if (this->isSTAStarted()) {
-    iPLAPIInst.initTimingEval();
-    iPLAPIInst.updateTiming();
+  auto report_tbl = _external_api->generateTable("table");
+  (*report_tbl) << TABLE_HEAD;
+  (*report_tbl)[0][0] = "Clock Timing Info";
+  (*report_tbl)[0][1] = "Early WNS";
+  (*report_tbl)[0][2] = "Early TNS";
+  (*report_tbl)[0][3] = "Late WNS";
+  (*report_tbl)[0][4] = "Late TNS";
+  (*report_tbl) << TABLE_ENDLINE;
 
-    auto report_tbl = _external_api->generateTable("table");
-    (*report_tbl) << TABLE_HEAD;
-    (*report_tbl)[0][0] = "Clock Timing Info";
-    (*report_tbl)[0][1] = "Early WNS";
-    (*report_tbl)[0][2] = "Early TNS";
-    (*report_tbl)[0][3] = "Late WNS";
-    (*report_tbl)[0][4] = "Late TNS";
-    (*report_tbl) << TABLE_ENDLINE;
-
-    for (std::string clock_name : iPLAPIInst.obtainClockNameList()) {
-      double early_wns = iPLAPIInst.obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMin);
-      double early_tns = iPLAPIInst.obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMin);
-      double late_wns = iPLAPIInst.obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMax);
-      double late_tns = iPLAPIInst.obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMax);
-      (*report_tbl) << clock_name << std::to_string(early_wns) << std::to_string(early_tns) << std::to_string(late_wns)
-                    << std::to_string(late_tns) << TABLE_ENDLINE;
-    }
-    (*report_tbl) << TABLE_ENDLINE;
-    feed << (*report_tbl).to_string() << std::endl;
-
-    iPLAPIInst.destroyTimingEval();
+  for (std::string clock_name : _external_api->obtainClockNameList()) {
+    double early_wns = _external_api->obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMin);
+    double early_tns = _external_api->obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMin);
+    double late_wns = _external_api->obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+    double late_tns = _external_api->obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+    (*report_tbl) << clock_name << std::to_string(early_wns) << std::to_string(early_tns) << std::to_string(late_wns)
+                  << std::to_string(late_tns) << TABLE_ENDLINE;
   }
+  (*report_tbl) << TABLE_ENDLINE;
+  feed << (*report_tbl).to_string() << std::endl;
+
+  // _external_api->destroyTimingEval();
 }
 
-void PLAPI::reportCongestionInfo(std::ofstream& feed)
+void PLReporter::reportCongestionInfo(std::ofstream& feed)
 {
-  std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
+  std::vector<float> gr_congestion = _external_api->evalGRCong();
 
   auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
@@ -906,10 +896,10 @@ void PLAPI::reportCongestionInfo(std::ofstream& feed)
   // std::string output_file_name = "CongMap";
   // iPLAPIInst.plotCongMap(plot_path, output_file_name);
 
-  iPLAPIInst.destroyCongEval();
+  _external_api->destroyCongEval();
 }
 
-void PLAPI::reportPLBaseInfo(std::ofstream& feed)
+void PLReporter::reportPLBaseInfo(std::ofstream& feed)
 {
   auto* pl_layout = PlacerDBInst.get_layout();
   auto* pl_design = PlacerDBInst.get_design();
@@ -997,6 +987,83 @@ void PLAPI::reportPLBaseInfo(std::ofstream& feed)
   (*report_tbl)[14][1] = std::to_string(other_cnt);
   (*report_tbl) << TABLE_ENDLINE;
   feed << (*report_tbl).to_string() << std::endl;
+}
+
+void PLReporter::reportEDAEvaluation(){
+   int inst_cnt, fix_inst_cnt, net_cnt, pin_cnt;
+   std::string core_area;
+   float place_density[3], pin_density[3];
+   int64_t bin_number;
+   std::string bin_size;
+   int overflow_number;
+   float overflow;
+   int64_t HPWL[3],STWL[3],GRWL[3]; // for gp,lg,dp
+   float congestion[3];
+   float tns[3], wns[3];
+   float suggest_freq[3];
+   int64_t total_movement, max_movement;
+
+   auto* pl_design = PlacerDBInst.get_design();
+   auto* pl_layout = PlacerDBInst.get_layout();
+   auto& gp_config = PlacerDBInst.get_placer_config()->get_nes_config();
+
+   inst_cnt = pl_design->get_instances_range();
+   fix_inst_cnt = 0;
+   for(auto* inst : pl_design->get_instance_list()){
+    if(inst->isFixed()){
+      fix_inst_cnt++;
+    }
+   }
+   net_cnt = pl_design->get_nets_range();
+   pin_cnt = pl_design->get_pins_range();
+
+   core_area = std::to_string(pl_layout->get_core_shape().get_width())
+            + " * "
+            + std::to_string(pl_layout->get_core_shape().get_height());
+
+   bin_number = gp_config.get_bin_cnt_x() * gp_config.get_bin_cnt_y();
+   bin_size = std::to_string(PlacerDBInst.bin_size_x) + " * " + std::to_string(PlacerDBInst.bin_size_y);
+   overflow_number = PlacerDBInst.gp_overflow_number;
+   overflow = PlacerDBInst.gp_overflow;
+   for(int i=0; i<3; i++){
+     place_density[i] = PlacerDBInst.place_density[i];
+     pin_density[i] = PlacerDBInst.pin_density[i];
+     HPWL[i] = PlacerDBInst.PL_HPWL[i];
+     STWL[i] = PlacerDBInst.PL_STWL[i];
+     GRWL[i] = PlacerDBInst.PL_GRWL[i];  // TODO
+     congestion[i] = PlacerDBInst.congestion[i];  // TODO
+     tns[i] = PlacerDBInst.tns[i];
+     wns[i] = PlacerDBInst.wns[i];
+     suggest_freq[i] = PlacerDBInst.suggest_freq[i];
+   }
+
+   total_movement = PlacerDBInst.lg_total_movement;
+   max_movement = PlacerDBInst.lg_max_movement;
+
+   // print the target csv file
+   std::string output_dir = "./";
+   std::string report_file = "evaluation_report.csv";
+   std::ofstream report_stream;
+   report_stream.open(output_dir + report_file);
+   if(!report_stream.good()){
+    LOG_WARNING << "Cannot open file for evaluation report ! ";
+   }
+
+   std::string design_name = PlacerDBInst.get_design()->get_design_name();
+   double sta_update_runtime = PlacerDBInst.sta_update_time;
+
+   report_stream << design_name << "," << inst_cnt << "," << fix_inst_cnt << "," << net_cnt << "," << pin_cnt << ","
+                 << core_area << "," << place_density[0] << "," << pin_density[0] << "," << bin_number << ","
+                 << bin_size << "," << overflow_number << "," << overflow << "," << HPWL[0] << ","
+                 << STWL[0] << "," << GRWL[0] << "," << congestion[0] << "," << tns[0] << "," << wns[0] << ","
+                 << suggest_freq[0] << "," << total_movement << "," << max_movement << "," << pin_density[1] << ","
+                 << HPWL[1] << "," << STWL[1] << "," << GRWL[1] << "," << congestion[1] << "," << tns[1] << ","
+                 << wns[1] << "," << suggest_freq[1] << "," << inst_cnt << "," << fix_inst_cnt << "," << net_cnt << ","
+                 << pin_cnt << "," << core_area << "," << place_density[2] << "," << pin_density[2] << "," << HPWL[2] << ","
+                 << STWL[2] << "," << GRWL[2] << "," << congestion[2] << "," << tns[2] << "," << wns[2] << "," 
+                 << suggest_freq[2] << "," << sta_update_runtime << std::endl;
+  
+  report_stream.close();
 }
 
 }  // namespace ipl

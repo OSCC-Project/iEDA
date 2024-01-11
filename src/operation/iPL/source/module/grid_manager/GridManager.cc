@@ -434,6 +434,20 @@ float GridManager::obtainPeakGridDensity()
   return peak_density;
 }
 
+float GridManager::obtainAvgGridDensity(){
+  float sum_density = 0.0f;
+
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      float density = _grid_2d_list[i][j].obtainGridDensity();
+      sum_density += density;
+    }
+  }
+
+  int64_t grid_cnt = _grid_cnt_x * _grid_cnt_y;
+  return (sum_density / grid_cnt);
+}
+
 void GridManager::init()
 {
   _grid_size_x = std::ceil(static_cast<float>(_shape.get_width()) / _grid_cnt_x);

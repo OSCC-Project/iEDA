@@ -333,6 +333,13 @@ std::vector<std::string> StaIO::getClockNameList()
   return clock_name_list;
 }
 
+double StaIO::getPeriodNS(std::string clock_name){
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  // tmp fix
+  auto* clock = timing_engine->getClockList().at(0);
+  return clock->getPeriodNs();
+}
+
 /**
  * @brief get the cell type of the cell.
  *

@@ -115,6 +115,10 @@ double ExternalAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
   return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
 }
 
+double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name){
+  return staInst->getPeriodNS(clock_name);
+}
+
 void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list)
 {
   EvalInst.updateTiming(timing_net_list);

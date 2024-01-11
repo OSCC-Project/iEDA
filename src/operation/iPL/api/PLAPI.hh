@@ -27,6 +27,7 @@
 #define IPL_API_H
 
 #include "external_api/ExternalAPI.hh"
+#include "report/PLReporter.hh"
 
 namespace ipl {
 
@@ -60,6 +61,8 @@ class PLAPI
                                                                 std::pair<int32_t, int32_t> site_range);
   bool checkLegality();
 
+  PLReporter* get_reporter() { return _reporter;}
+
   void reportPLInfo();
   void reportTopoInfo();
   void reportWLInfo(std::ofstream& feed);
@@ -73,6 +76,10 @@ class PLAPI
   void reportTimingInfo(std::ofstream& feed);
   void reportCongestionInfo(std::ofstream& feed);
   void reportPLBaseInfo(std::ofstream& feed);
+
+  void notifyPLWLInfo(int stage); // for indicator record: 0-GP, 1-LG, 2-DP
+  void notifyPLTimingInfo(int stage);
+  void notifySTAUpdateTimingRuntime();
 
   bool isSTAStarted();
   bool isPlacerDBStarted();
@@ -128,7 +135,8 @@ class PLAPI
 
  private:
   static PLAPI* _s_ipl_api_instance;
-  ExternalAPI _external_api;
+  ExternalAPI* _external_api;
+  PLReporter* _reporter;
 
   PLAPI() = default;
   PLAPI(const PLAPI&) = delete;

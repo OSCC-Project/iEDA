@@ -84,7 +84,11 @@ class Legalizer
   void updateInstanceMapping(Instance* pl_inst, LGInstance* lg_inst);
 
   void alignInstanceOrient();
+
   int64_t calTotalMovement();
+  int64_t calMaxMovement();
+  void notifyPLMovementInfo();
+
   void writebackPlacerDB();
 };
 
