@@ -48,9 +48,9 @@ class DrcRuleConditionMatrix
 
  protected:
   DrcConditionManager* _condition_manager = nullptr;
+  DrcEngine* _engine = nullptr;
 
  private:
-  DrcEngine* _engine = nullptr;
   RuleType _type;  // check conditon type
   //   DrcRuleCondition* _condition = nullptr;  /// transfer condition data from stage 1 to stage n...
 };

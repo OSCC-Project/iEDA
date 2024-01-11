@@ -11,6 +11,7 @@ target_link_libraries(idrc_pro_api
         idrc_pro_violation
         idrc_pro_rule_stratagy
         idrc_pro_rule_builder
+        idm
 )
 
 target_include_directories(idrc_pro_api
@@ -19,4 +20,10 @@ target_include_directories(idrc_pro_api
     ${HOME_DATABASE}/interaction/RT_DRC
 )
 
-set(CMAKE_BUILD_TYPE "debug")
+if(DEBUG_IDRC_API)
+  message(STATUS "iDRC: DEBUG_IDRC_API")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_API")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

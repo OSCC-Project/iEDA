@@ -60,50 +60,67 @@ class ScanlineDataManager
 
   /// @brief  debug
   /// @return
-  std::vector<ieda_solver::BgPoint> get_boost_points()
-  {
-    std::vector<ieda_solver::BgPoint> boost_pts;
-    boost_pts.reserve(_basic_points.size());
-    for (auto& pt : _basic_points) {
-      ieda_solver::BgPoint boost_pt(pt->get_x(), pt->get_y());
-      boost_pts.emplace_back(boost_pt);
-    }
+  // std::vector<ieda_solver::BgPoint> get_boost_points()
+  // {
+  //   std::vector<ieda_solver::BgPoint> boost_pts;
+  //   boost_pts.reserve(_basic_points.size());
+  //   for (auto& pt : _basic_points) {
+  //     ieda_solver::BgPoint boost_pt(pt->get_x(), pt->get_y());
+  //     boost_pts.emplace_back(boost_pt);
+  //   }
 
-    return boost_pts;
-  }
+  //   return boost_pts;
+  // }
 
-  std::vector<ieda_solver::BgPolygon> get_boost_polygons()
-  {
-    std::vector<ieda_solver::BgPolygon> boost_polygons;
-    for (auto& pt : _basic_points) {
-      if (pt->is_start()) {
-        std::vector<ieda_solver::BgPoint> boost_pts;
-        auto* iter_pt = pt;
-        while (iter_pt != nullptr) {
-          ieda_solver::BgPoint boost_pt(iter_pt->get_x(), iter_pt->get_y());
-          boost_pts.emplace_back(boost_pt);
+  // std::vector<ieda_solver::BgPolygon> get_boost_polygons()
+  // {
+  //   std::vector<ieda_solver::BgPolygon> boost_polygons;
+  //   for (auto& pt : _basic_points) {
+  //     if (pt->is_start()) {
+  //       std::vector<ieda_solver::BgPoint> boost_pts;
+  //       auto* iter_pt = pt;
+  //       while (iter_pt != nullptr) {
+  //         ieda_solver::BgPoint boost_pt(iter_pt->get_x(), iter_pt->get_y());
+  //         boost_pts.emplace_back(boost_pt);
 
-          iter_pt = iter_pt->get_next();
+  //         iter_pt = iter_pt->get_next();
 
-          if (iter_pt == pt) {
-            break;
-          }
-        }
-        ieda_solver::BgPolygon boost_polygon;
-        boost::geometry::assign_points(boost_polygon, boost_pts);
-        boost_polygons.emplace_back(boost_polygon);
-      }
-    }
+  //         if (iter_pt == pt) {
+  //           break;
+  //         }
+  //       }
+  //       ieda_solver::BgPolygon boost_polygon;
+  //       boost::geometry::assign_points(boost_polygon, boost_pts);
+  //       boost_polygons.emplace_back(boost_polygon);
+  //     }
+  //   }
 
-    return boost_polygons;
-  }
+  //   return boost_polygons;
+  // }
 
   // setter
-  void addBasicPoint(DrcBasicPoint* point) { _basic_points.push_back(point); };
+  void addBasicPoint(DrcBasicPoint* point)
+  {
+    _basic_points.push_back(point);
+    _basic_points_rtree.insert(std::make_pair(ieda_solver::BgPoint(point->get_x(), point->get_y()), point));
+  };
+
+  std::vector<DrcBasicPoint*> getBasicPointsInRect(int llx, int lly, int urx, int ury)
+  {
+    std::vector<DrcBasicPoint*> points;
+    std::vector<std::pair<ieda_solver::BgPoint, DrcBasicPoint*>> result;
+    ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
+    _basic_points_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
+    for (auto& pair : result) {
+      points.emplace_back(pair.second);
+    }
+    return points;
+  }
 
  private:
   idb::IdbLayer* _layer = nullptr;
 
+  bg::index::rtree<std::pair<ieda_solver::BgPoint, DrcBasicPoint*>, bg::index::quadratic<16>> _basic_points_rtree;
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;
   std::vector<ScanlinePoint*> _scanline_points_horizontal;

@@ -112,6 +112,23 @@ class DrcUtil
     }
   }
 
+  // 获得向某方向行走特定距离的坐标
+  static std::pair<int, int> transformPoint(int x, int y, DrcDirection direction, int distance)
+  {
+    switch (direction) {
+      case DrcDirection::kUp:
+        return std::make_pair(x, y + distance);
+      case DrcDirection::kDown:
+        return std::make_pair(x, y - distance);
+      case DrcDirection::kLeft:
+        return std::make_pair(x - distance, y);
+      case DrcDirection::kRight:
+        return std::make_pair(x + distance, y);
+      default:
+        return std::make_pair(x, y);
+    }
+  }
+
   // 使用扫描线结果判断角的类型
   // static DrcCornerType cornerType(DrcBasicPoint* point)
   // {
