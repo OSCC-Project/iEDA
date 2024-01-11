@@ -107,7 +107,7 @@ class IdbRegularWireSegment
   bool is_virtual(IdbCoordinate<int32_t>* point) { return _virtual_points.contains(point); }
   // operator
   void clear();
-  int32_t length();
+  uint64_t length();
   bool isIntersection(IdbLayerShape* layer_shape);
   bool isIntersection(IdbRegularWireSegment* segment);
 
@@ -160,7 +160,7 @@ class IdbRegularWire
   // operator
   void init(int32_t size) { _segment_list.reserve(size); }
   void clear_segment();
-  int32_t wireLength();
+  uint64_t wireLength();
 
  private:
   IdbWiringStatement _wire_state;
@@ -186,7 +186,7 @@ class IdbRegularWireList
   // operator
   void init(int32_t size) { _wire_list.reserve(size); }
   void clear();
-  int32_t wireLength();
+  uint64_t wireLength();
 
  private:
   vector<IdbRegularWire*> _wire_list;
