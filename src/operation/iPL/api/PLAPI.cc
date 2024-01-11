@@ -276,6 +276,7 @@ void PLAPI::runFlow()
   runGP();
   printHPWLInfo();
   notifyPLWLInfo(0);
+  notifyPLCongestionInfo(0);
   if(isSTAStarted()){
     notifyPLTimingInfo(0);
   }
@@ -290,6 +291,7 @@ void PLAPI::runFlow()
   runLG();
   printHPWLInfo();
   notifyPLWLInfo(1);
+  notifyPLCongestionInfo(1);
   if(isSTAStarted()){
     notifyPLTimingInfo(1);
   }
@@ -298,6 +300,7 @@ void PLAPI::runFlow()
   runDP();
   printHPWLInfo();
   notifyPLWLInfo(2);
+  notifyPLCongestionInfo(2);
   if(isSTAStarted()){
     notifyPLTimingInfo(2);
   }
@@ -407,6 +410,18 @@ void PLAPI::notifyPLWLInfo(int stage)
 
   PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
   PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
+}
+
+void PLAPI::notifyPLCongestionInfo(int stage)
+{
+  this->writeBackSourceDataBase();
+  
+  std::vector<float> gr_congestion = this->evalGRCong(); // return <ACE, TOF, MOF, egr-Wirelength>
+  PlacerDBInst.congestion[stage] = gr_congestion[1];
+  PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
+
+  std::vector<float> pin_dens = this->obtainPinDens(); // return <average, peak> , average = sum / bin_cnt, peak = max / average
+  PlacerDBInst.pin_density[stage] = pin_dens[1];
 }
 
 void PLAPI::notifyPLTimingInfo(int stage)

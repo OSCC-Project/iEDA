@@ -72,6 +72,7 @@ class CongBin
   void increNetCong(const double& net_cong) { _net_cong += net_cong; }
   void reset();
   void clear_net_list();
+  void clear_inst_list();
 
  private:
   int _x;

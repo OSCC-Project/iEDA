@@ -80,6 +80,7 @@ class PLAPI
   void notifyPLWLInfo(int stage); // for indicator record: 0-GP, 1-LG, 2-DP
   void notifyPLTimingInfo(int stage);
   void notifySTAUpdateTimingRuntime();
+  void notifyPLCongestionInfo(int stage);
 
   bool isSTAStarted();
   bool isPlacerDBStarted();

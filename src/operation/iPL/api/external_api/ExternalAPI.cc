@@ -145,8 +145,22 @@ std::vector<float> ExternalAPI::evalGRCong()
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
+  eval::EvalAPI::destroyInst();
+
   return gr_congestion;
 }
+
+int64_t ExternalAPI::evalEGRWL()
+{
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+
+  int64_t egr_wl = static_cast<int64_t>(eval_api.evalEGRWL());
+
+  eval::EvalAPI::destroyInst();
+
+  return egr_wl;
+}
+
 
 /**
  * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
@@ -179,7 +193,25 @@ void ExternalAPI::destroyCongEval()
 
 std::vector<float> ExternalAPI::obtainPinDens()
 {
-  return eval::EvalAPI::getInst().evalPinDens();
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  int32_t bin_cnt_x = 512;
+  int32_t bin_cnt_y = 512;
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+
+  std::vector<float> pin_num_list = eval_api.evalPinDens();
+
+  std::vector<float> result;
+
+  float sum = std::accumulate(pin_num_list.begin(), pin_num_list.end(), 0.0);
+  float average = sum / pin_num_list.size();
+  result.push_back(average);
+
+  auto max_element_ptr = std::max_element(pin_num_list.begin(), pin_num_list.end());
+
+  result.push_back((*max_element_ptr) / average );
+
+  eval::EvalAPI::destroyInst();
+  return result;
 }
 
 std::vector<float> ExternalAPI::obtainNetCong(std::string rudy_type)
