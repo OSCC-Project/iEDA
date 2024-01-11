@@ -1,36 +1,38 @@
-#ifndef IMP_MACROPLACER
-#define IMP_MACROPLACER
-#include <string>
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
+#ifndef IMP_MACROPLACER_H
+#define IMP_MACROPLACER_H
+#include "Block.hh"
+#include "ParserEngine.hh"
 namespace imp {
 
-class Option;
-class DataManager;
-class Summary;
-class NetList;
-class Design;
-
-class MacroPlacer
+class MP
 {
  public:
-  MacroPlacer(DataManager* dm, Option* opt);
-  MacroPlacer(const std::string& idb_json, const std::string& opt_json);
-  MacroPlacer();
-  ~MacroPlacer();
-
+  MP(ParserEngine* parser) : _parser(parser) { _root = _parser->get_design_ptr(); }
+  ~MP() = default;
+  Block& root() { return *_root; }
+  const Block& root() const { return *_root; }
+  std::shared_ptr<Block> root_ptr() { return _root; }
   void runMP();
 
-  NetList plToNetlist();
-
-  void setDataManager(DataManager* dm);
-  void setDataManager(const std::string& idb_json);
-
  private:
-  //   void setConfig(Option* opt);
-  void plot();
-
- private:
-  DataManager* _dm;
-  Option* _opt;
+  std::shared_ptr<Block> _root;
+  std::unique_ptr<ParserEngine> _parser;
 };
 }  // namespace imp
 #endif

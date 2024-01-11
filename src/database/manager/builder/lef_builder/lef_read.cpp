@@ -472,7 +472,7 @@ int LefRead::parse_layer_routing(lefiLayer* lef_layer, IdbLayerRouting* layer_ro
   // Type: Float, specified in microns
   if (lef_layer->hasMinwidth()) {
     layer_routing->set_min_width(transUnitDB(lef_layer->minwidth()));
-  }else{
+  } else {
     // Default value
     layer_routing->set_min_width(layer_routing->get_width());
   }
@@ -901,7 +901,7 @@ int LefRead::parse_pin(lefiPin* lef_pin)
   int32_t ur_x = INT_MIN;
   int32_t ur_y = INT_MIN;
 
-  int layer_num = 0;
+  int point_num = 0;
 
   int port_num = lef_pin->numPorts();
   for (int i = 0; i < port_num; i++) {
@@ -955,7 +955,7 @@ int LefRead::parse_pin(lefiPin* lef_pin)
 
             coordinate_x = coordinate_x + rect_ll_x + rect_ur_x;
             coordinate_y = coordinate_y + rect_ll_y + rect_ur_y;
-            layer_num += 2;
+            point_num += 2;
           }
           break;
         }
@@ -972,6 +972,22 @@ int LefRead::parse_pin(lefiPin* lef_pin)
           break;
         }
         case lefiGeomPolygonE: {
+          if (shape != nullptr) {
+            shape->set_type_rect();
+            lefiGeomPolygon* polygon = lef_geometry->getPolygon(j);
+            for (auto rect : polygonToRects(polygon)) {
+              shape->add_rect(gtl::xl(rect), gtl::yl(rect), gtl::xh(rect), gtl::yh(rect));
+              // calculate bounding box
+              ll_x = std::min(ll_x, gtl::xl(rect));
+              ll_y = std::min(ll_y, gtl::yl(rect));
+              ur_x = std::max(ur_x, gtl::xh(rect));
+              ur_y = std::max(ur_y, gtl::yh(rect));
+
+              coordinate_x = coordinate_x + gtl::xl(rect) + gtl::xh(rect);
+              coordinate_y = coordinate_y + gtl::yl(rect) + gtl::yh(rect);
+              point_num += 2;
+            }
+          }
           break;
         }
         case lefiGeomViaE: {
@@ -1004,9 +1020,9 @@ int LefRead::parse_pin(lefiPin* lef_pin)
     }
   }
 
-  if (layer_num > 0) {
+  if (point_num > 0) {
     term->set_has_port(true);
-    term->set_average_position(coordinate_x / layer_num, coordinate_y / layer_num);
+    term->set_average_position(coordinate_x / point_num, coordinate_y / point_num);
     term->set_bounding_box(ll_x, ll_y, ur_x, ur_y);
   } else {
     term->set_has_port(false);
@@ -1016,6 +1032,25 @@ int LefRead::parse_pin(lefiPin* lef_pin)
   // std::cout << "Parse lef pin success...Pin name = " << lef_pin->name() << std::endl;
 
   return kDbSuccess;
+}
+
+std::vector<GtlRect> LefRead::polygonToRects(lefiGeomPolygon* polygon)
+{
+  std::vector<GtlRect> rects;
+
+  std::vector<GtlPoint> points;
+  points.reserve(polygon->numPoints);
+  for (int j = 0; j < polygon->numPoints; ++j) {
+    GtlPoint pt(transUnitDB(polygon->x[j]), transUnitDB(polygon->y[j]));
+    points.push_back(pt);
+  }
+
+  GtlPolygon90 boost_polygon;
+
+  gtl::set_points(boost_polygon, points.begin(), points.end());
+  gtl::get_rectangles(rects, boost_polygon);
+
+  return rects;
 }
 
 int LefRead::obstructionCB(lefrCallbackType_e c, lefiObstruction* lef_obs, lefiUserData data)

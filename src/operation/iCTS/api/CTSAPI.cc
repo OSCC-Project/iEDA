@@ -78,9 +78,13 @@ void CTSAPI::runCTS()
   readData();
   routing();
   evaluate();
+  writeGDS();
   LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
-  writeGDS();
+
+  CTSAPIInst.saveToLog("\n\n##iCTS Run Time Log##");
+  CTSAPIInst.saveToLog("Flow memory usage: ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("Flow elapsed time: ", stats.elapsedRunTime(), "s");
   // writeDB();
 }
 
@@ -108,6 +112,7 @@ void CTSAPI::report(const std::string& save_dir)
     _evaluator->evaluate();
   }
   _evaluator->statistics(save_dir);
+  _timing_engine->destroyTimingEngine();
 }
 
 // flow API
@@ -190,7 +195,6 @@ void CTSAPI::evaluate()
   _evaluator->evaluate();
   // _evaluator->plotPath("u0_soc_top/u0_sdram_axi/u_core/sample_data0_q_reg_0_");
 
-  _timing_engine->destroyTimingEngine();
   LOG_INFO << "Evaluate memory usage " << stats.memoryDelta() << "MB";
   LOG_INFO << "Evaluate elapsed time " << stats.elapsedRunTime() << "s";
 }
@@ -257,12 +261,18 @@ double CTSAPI::getSinkCap(icts::CtsInstance* sink) const
 
 double CTSAPI::getSinkCap(const std::string& load_pin_full_name) const
 {
-  return _timing_engine->reportInstPinCapacitance(load_pin_full_name.c_str());
+  // remove all "\" in inst_name
+  auto name = load_pin_full_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->reportInstPinCapacitance(name.c_str());
 }
 
 bool CTSAPI::isFlipFlop(const std::string& inst_name) const
 {
-  return _timing_engine->isSequentialCell(inst_name.c_str());
+  // remove all "\" in inst_name
+  auto name = inst_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->isSequentialCell(name.c_str());
 }
 
 bool CTSAPI::isClockNet(const std::string& net_name) const
@@ -324,7 +334,10 @@ void CTSAPI::convertDBToTimingEngine()
 
 void CTSAPI::reportTiming() const
 {
+  ieda::Stats stats;
   _timing_engine->updateTiming();
+  CTSAPIInst.saveToLog("\n\n##iSTA Run Time Log##");
+  CTSAPIInst.saveToLog("update timing elapsed time: ", stats.elapsedRunTime(), "s");
   _timing_engine->reportTiming({}, true, true);
 }
 
@@ -760,6 +773,94 @@ void CTSAPI::resetRCTree(const std::string& net_name)
   _timing_engine->resetRcTree(sta_net);
 }
 
+void CTSAPI::utilizationLog() const
+{
+  CTSAPIInst.saveToLog("\n\n##Utilization Log##");
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = dmInst->get_idb_layout();
+  int dbu = idb_design->get_units()->get_micron_dbu() < 0 ? idb_layout->get_units()->get_micron_dbu()
+                                                          : idb_design->get_units()->get_micron_dbu();
+  auto* idb_die = idb_layout->get_die();
+  auto die_width = ((double) idb_die->get_width()) / dbu;
+  auto die_height = ((double) idb_die->get_height()) / dbu;
+
+  auto idb_core_box = idb_layout->get_core()->get_bounding_box();
+  auto core_width = ((double) idb_core_box->get_width()) / dbu;
+  auto core_height = ((double) idb_core_box->get_height()) / dbu;
+  CTSAPIInst.saveToLog("\nDIE Area ( um^2 ): ", ieda::Str::printf("%f = %03f * %03f", die_width * die_height, die_width, die_height));
+  CTSAPIInst.saveToLog("DIE Usage: ", dmInst->dieUtilization());
+  CTSAPIInst.saveToLog("CORE Area ( um^2 ): ", ieda::Str::printf("%f = %03f * %03f", core_width * core_height, core_width, core_height));
+  CTSAPIInst.saveToLog("CORE Usage: ", dmInst->coreUtilization());
+}
+
+void CTSAPI::latencySkewLog() const
+{
+  CTSAPIInst.saveToLog("\n\n##Latency Skew Log##");
+
+  auto fix_point_str = [](double data) { return ieda::Str::printf("%.3f", data); };
+  auto cmp = [](ista::StaPathData* left, ista::StaPathData* right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+  std::vector<std::pair<std::string, ista::AnalysisMode>> mode_list
+      = {{"Setup", ista::AnalysisMode::kMax}, {"Hold", ista::AnalysisMode::kMin}};
+  for (const auto& [clk, seq_path_group] : _timing_engine->get_ista()->get_clock_groups()) {
+    CTSAPIInst.saveToLog("\nClock: ", clk->get_clock_name());
+    for (const auto& [mode_str, mode] : mode_list) {
+      CTSAPIInst.saveToLog("\n[", mode_str, " Mode]");
+      std::priority_queue<ista::StaPathData*, std::vector<ista::StaPathData*>, decltype(cmp)> seq_data_queue(cmp);
+
+      ista::StaPathEnd* path_end;
+      ista::StaPathData* path_data;
+      FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      auto* worst_seq_data = seq_data_queue.top();
+      auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
+      auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
+
+      auto* launch_clock_vertex = launch_clock_data->get_own_vertex();
+      auto* capture_clock_vertex = capture_clock_data->get_own_vertex();
+
+      CTSAPIInst.saveToLog("Launch Latency: ", fix_point_str(FS_TO_NS(launch_clock_data->get_arrive_time())), " From ",
+                           launch_clock_vertex->getNameWithCellName());
+      CTSAPIInst.saveToLog("Capture Latency: ", fix_point_str(FS_TO_NS(capture_clock_data->get_arrive_time())), " From ",
+                           capture_clock_vertex->getNameWithCellName());
+      CTSAPIInst.saveToLog("Skew: ", fix_point_str(FS_TO_NS(worst_seq_data->getSkew())));
+      // calc avg skew
+      double total_skew = 0.0;
+      int path_count = 0;
+      FOREACH_PATH_END_DATA(path_end, mode, path_data)
+      {
+        total_skew += path_data->getSkew();
+        ++path_count;
+      }
+      CTSAPIInst.saveToLog("Avg Skew = ", fix_point_str(FS_TO_NS(total_skew)), " / ", path_count, " = ",
+                           fix_point_str(FS_TO_NS(total_skew / path_count)));
+    }
+  }
+}
+
+void CTSAPI::slackLog() const
+{
+  CTSAPIInst.saveToLog("\n\n##Slack Log##");
+  auto clk_list = _timing_engine->getClockList();
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+    auto clk_name = clk->get_clock_name();
+    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    CTSAPIInst.saveToLog("\nClk name: ", clk_name);
+    CTSAPIInst.saveToLog("Setup (Max) WNS: ", setup_wns);
+    CTSAPIInst.saveToLog("Setup (Max) TNS: ", setup_tns);
+    CTSAPIInst.saveToLog("Hold (Min) WNS: ", hold_wns);
+    CTSAPIInst.saveToLog("Hold (Min) TNS: ", hold_tns);
+    CTSAPIInst.saveToLog("Suggest Freq: ", suggest_freq);
+  });
+}
+
 // log
 void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix) const
 {
@@ -875,7 +976,10 @@ ista::DesignObject* CTSAPI::findStaPin(icts::CtsPin* pin) const
 
 ista::DesignObject* CTSAPI::findStaPin(const std::string& pin_full_name) const
 {
-  return _timing_engine->get_netlist()->findObj(pin_full_name.c_str(), false, false).front();
+  // remove all "\" in inst_name
+  auto name = pin_full_name;
+  name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
+  return _timing_engine->get_netlist()->findObj(name.c_str(), false, false).front();
 }
 
 ista::Net* CTSAPI::findStaNet(const icts::EvalNet& eval_net) const

@@ -30,10 +30,10 @@ void Router::init()
   CTSAPIInst.saveToLog("\n\n##Router Log##");
   auto* design = CTSAPIInst.get_design();
   // report unit res & cap
-  CTSAPIInst.saveToLog("\nRouter unit res (H): ", CTSAPIInst.getClockUnitRes(LayerPattern::kH));
-  CTSAPIInst.saveToLog("Router unit cap (H): ", CTSAPIInst.getClockUnitCap(LayerPattern::kH));
-  CTSAPIInst.saveToLog("Router unit res (V): ", CTSAPIInst.getClockUnitRes(LayerPattern::kV));
-  CTSAPIInst.saveToLog("Router unit cap (V): ", CTSAPIInst.getClockUnitCap(LayerPattern::kV));
+  CTSAPIInst.saveToLog("\nRouter unit res (H): ", CTSAPIInst.getClockUnitRes(LayerPattern::kH), " ohm");
+  CTSAPIInst.saveToLog("Router unit cap (H): ", CTSAPIInst.getClockUnitCap(LayerPattern::kH), " pF");
+  CTSAPIInst.saveToLog("Router unit res (V): ", CTSAPIInst.getClockUnitRes(LayerPattern::kV), " ohm");
+  CTSAPIInst.saveToLog("Router unit cap (V): ", CTSAPIInst.getClockUnitCap(LayerPattern::kV), " pF");
   printLog();
   auto& clocks = design->get_clocks();
   for (auto& clock : clocks) {
@@ -53,11 +53,10 @@ void Router::init()
 void Router::build()
 {
   ieda::Stats stats;
-  CTSAPIInst.saveToLog("\n\n##Router Build Log##");
+  CTSAPIInst.saveToLog("\n\n##Router Build Log##\n");
   for (auto* clock : _clocks) {
     auto* design = CTSAPIInst.get_design();
     auto& clock_nets = clock->get_clock_nets();
-    CTSAPIInst.saveToLog("\n");
     for (auto* clk_net : clock_nets) {
       CTSAPIInst.saveToLog("\n####################");
       CTSAPIInst.saveToLog("clock net: ", clk_net->get_net_name());

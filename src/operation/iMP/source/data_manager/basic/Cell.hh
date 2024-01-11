@@ -14,15 +14,6 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/*
- * @Author: S.J Chen
- * @Date: 2022-02-23 20:43:10
- * @LastEditTime: 2022-03-04 11:06:01
- * @LastEditors: S.J Chen
- * @Description:
- * @FilePath: /iEDA/src/imp/src/database/Cell.hh
- * Contact : https://github.com/sjchanson
- */
 
 #ifndef IMP_CELL_H
 #define IMP_CELL_H
@@ -31,10 +22,9 @@
 #include <string>
 #include <vector>
 
-#include "Rectangle.hh"
+#include "Geometry.hh"
 
 namespace imp {
-
 enum class CELL_TYPE
 {
   kNone,
@@ -46,12 +36,15 @@ enum class CELL_TYPE
   kIOCell,
   kPhysicalFiller
 };
-
 class Cell
 {
  public:
   Cell() = delete;
-  explicit Cell(std::string cell_name) : _cell_name(std::move(cell_name)), _cell_type(CELL_TYPE::kNone) {}
+
+  explicit Cell(std::string name, CELL_TYPE type = CELL_TYPE::kNone, geo::box<int32_t> box = geo::make_box(0, 0, 0, 0))
+      : _name(name), _cell_type(type), _shape(box)
+  {
+  }
   Cell(const Cell& other) = delete;
   Cell(Cell&& other) = delete;
   ~Cell() = default;
@@ -60,12 +53,14 @@ class Cell
   Cell& operator=(Cell&&) = delete;
 
   // getter.
-  std::string get_name() const { return _cell_name; }
-  int32_t get_width() const { return _width; }
-  int32_t get_height() const { return _height; }
+  int32_t get_width() const { return geo::width(_shape); }
+  int32_t get_height() const { return geo::height(_shape); }
+  std::string get_name() const { return _name; }
+
+  const geo::box<int32_t>& get_shape() const { return _shape; }
+  geo::box<int32_t>& get_shape() { return _shape; }
+
   CELL_TYPE get_cell_type() const { return _cell_type; }
-  std::vector<std::string> get_inpin_name_list() const { return _inpin_name_list; }
-  std::vector<std::string> get_outpin_name_list() const { return _outpin_name_list; }
 
   bool isLogic() { return _cell_type == CELL_TYPE::kLogic; }
   bool isFlipflop() { return _cell_type == CELL_TYPE::kFlipflop; }
@@ -77,20 +72,13 @@ class Cell
 
   // setter.
   void set_type(CELL_TYPE cell_type) { _cell_type = cell_type; }
-  void set_width(int32_t width) { _width = width; }
-  void set_height(int32_t height) { _height = height; }
-  void add_inpin_name(std::string inpin_name) { _inpin_name_list.push_back(inpin_name); }
-  void add_outpin_name(std::string outpin_name) { _outpin_name_list.push_back(outpin_name); }
+  void set_shape(const geo::box<int32_t>& shape) { _shape = shape; }
 
  private:
-  std::string _cell_name;
+  std::string _name;
   CELL_TYPE _cell_type;
 
-  std::vector<std::string> _inpin_name_list;
-  std::vector<std::string> _outpin_name_list;
-
-  int32_t _width;
-  int32_t _height;
+  geo::box<int32_t> _shape;
 };
 
 }  // namespace imp

@@ -27,11 +27,9 @@
 #ifndef IMP_ORIENT_H
 #define IMP_ORIENT_H
 
-#include "Rectangle.hh"
-
 namespace imp {
 
-enum class Orient : int8_t
+enum class Orient
 {
   kNone,
   kN_R0,    /* Rotate object 0 degrees */
