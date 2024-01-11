@@ -258,6 +258,39 @@ void Evaluator::statistics(const std::string& save_dir) const
   std::ofstream net_level_save_file(net_level_save_path);
   net_level_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
   net_level_save_file << net_level_rpt->c_str();
+
+  // evaluate design
+  CTSAPIInst.saveToLog("\n\n############Evaluate design INFO############");
+
+  CTSAPIInst.latencySkewLog();
+  CTSAPIInst.utilizationLog();
+
+  CTSAPIInst.saveToLog("\n\n##Buffering (net) Log##\n");
+  for (auto [type, cell_property] : cell_property_map) {
+    CTSAPIInst.saveToLog("Cell type: ", type, ", Count: ", cell_property.total_num, ", Area: ", cell_property.total_area,
+                         ", Capacitance: ", cell_property.total_cap);
+  }
+  if (cell_property_map.empty()) {
+    CTSAPIInst.saveToLog("[No buffer is used]");
+  }
+  int min_level = std::numeric_limits<int>::max();
+  int max_level = 0;
+  std::ranges::for_each(_eval_nets, [&](const EvalNet& eval_net) {
+    auto net_type = eval_net.netType();
+    if (net_type == NetType::kLeaf) {
+      auto level = eval_net.get_driver()->get_level();
+      min_level = std::min(level, min_level);
+      max_level = std::max(level, max_level);
+    }
+  });
+  CTSAPIInst.saveToLog("Clock Path Min num of Buffers: ", max_level == 0 ? 0 : min_level);
+  CTSAPIInst.saveToLog("Clock Path Max num of Buffers: ", max_level);
+  CTSAPIInst.saveToLog("Max Clock Wirelength: ", max_net_len);
+  CTSAPIInst.saveToLog("Total Clock Wirelength: ", total_wire_len);
+
+  CTSAPIInst.slackLog();
+
+  CTSAPIInst.saveToLog("\n############Evaluate design Done############");
 }
 
 void Evaluator::plotPath(const string& inst_name, const string& file) const

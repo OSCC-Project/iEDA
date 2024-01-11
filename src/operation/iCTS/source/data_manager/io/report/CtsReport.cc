@@ -30,21 +30,21 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
     case CtsReportType::kWireLength:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Type";
-      (*report_tbl)[0][1] = "Wire Length";
+      (*report_tbl)[0][1] = "Wire Length (um)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kHpWireLength:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Type";
-      (*report_tbl)[0][1] = "HP Wire Length";
+      (*report_tbl)[0][1] = "HP Wire Length (um)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kCellStatus:
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Cell type";
       (*report_tbl)[0][1] = "Count";
-      (*report_tbl)[0][2] = "Area";
-      (*report_tbl)[0][3] = "Capacitance";
+      (*report_tbl)[0][2] = "Area (um^2)";
+      (*report_tbl)[0][3] = "Capacitance (pF)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kLibCellDist:
@@ -67,9 +67,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
       (*report_tbl)[0][2] = "Avg Fanout";
-      (*report_tbl)[0][3] = "Max Delay";
-      (*report_tbl)[0][4] = "Max Skew";
-      (*report_tbl)[0][5] = "Max Insert Delay";
+      (*report_tbl)[0][3] = "Max Delay (ns)";
+      (*report_tbl)[0][4] = "Max Skew (ns)";
+      (*report_tbl)[0][5] = "Max Insert Delay (ns)";
       (*report_tbl) << TABLE_ENDLINE;
       break;
     case CtsReportType::kLevelFanout:
@@ -86,9 +86,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Net Length";
-      (*report_tbl)[0][3] = "Max Net Length";
-      (*report_tbl)[0][4] = "Avg Net Length";
+      (*report_tbl)[0][2] = "Min Net Length (um)";
+      (*report_tbl)[0][3] = "Max Net Length (um)";
+      (*report_tbl)[0][4] = "Avg Net Length (um)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
@@ -96,9 +96,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Cap";
-      (*report_tbl)[0][3] = "Max Cap";
-      (*report_tbl)[0][4] = "Avg Cap";
+      (*report_tbl)[0][2] = "Min Cap (pF)";
+      (*report_tbl)[0][3] = "Max Cap (pF)";
+      (*report_tbl)[0][4] = "Avg Cap (pF)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
@@ -106,9 +106,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Slew";
-      (*report_tbl)[0][3] = "Max Slew";
-      (*report_tbl)[0][4] = "Avg Slew";
+      (*report_tbl)[0][2] = "Min Slew (ns)";
+      (*report_tbl)[0][3] = "Max Slew (ns)";
+      (*report_tbl)[0][4] = "Avg Slew (ns)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
@@ -116,9 +116,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Delay";
-      (*report_tbl)[0][3] = "Max Delay";
-      (*report_tbl)[0][4] = "Avg Delay";
+      (*report_tbl)[0][2] = "Min Delay (ns)";
+      (*report_tbl)[0][3] = "Max Delay (ns)";
+      (*report_tbl)[0][4] = "Avg Delay (ns)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
@@ -126,9 +126,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Insert Delay";
-      (*report_tbl)[0][3] = "Max Insert Delay";
-      (*report_tbl)[0][4] = "Avg Insert Delay";
+      (*report_tbl)[0][2] = "Min Insert Delay (ns)";
+      (*report_tbl)[0][3] = "Max Insert Delay (ns)";
+      (*report_tbl)[0][4] = "Avg Insert Delay (ns)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
@@ -136,9 +136,9 @@ std::unique_ptr<CtsReportTable> CtsReportTable::createReportTable(const std::str
       (*report_tbl) << TABLE_HEAD;
       (*report_tbl)[0][0] = "Level";
       (*report_tbl)[0][1] = "Inst Num";
-      (*report_tbl)[0][2] = "Min Skew";
-      (*report_tbl)[0][3] = "Max Skew";
-      (*report_tbl)[0][4] = "Avg Skew";
+      (*report_tbl)[0][2] = "Min Skew (ns)";
+      (*report_tbl)[0][3] = "Max Skew (ns)";
+      (*report_tbl)[0][4] = "Avg Skew (ns)";
       (*report_tbl)[0][5] = "Violation";
       (*report_tbl) << TABLE_ENDLINE;
       break;
