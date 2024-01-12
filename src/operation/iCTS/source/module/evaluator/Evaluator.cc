@@ -99,6 +99,70 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
   driver->set_level(max_level + 1);
 }
 
+std::pair<size_t, size_t> Evaluator::getPathLevel() const
+{
+  struct TreeNode
+  {
+    std::string name;
+    int depth;
+    TreeNode* parent;
+    std::vector<TreeNode*> children;
+  };
+
+  std::unordered_map<std::string, TreeNode*> name_to_node;
+  auto gen_node = [&](CtsInstance* inst) {
+    if (name_to_node.count(inst->get_name()) == 0) {
+      name_to_node[inst->get_name()] = new TreeNode{inst->get_name(), 0, {}};
+    }
+    return name_to_node[inst->get_name()];
+  };
+
+  auto* design = CTSAPIInst.get_design();
+  auto& clk_nets = design->get_nets();
+  for (auto clk_net : clk_nets) {
+    auto* driver = clk_net->get_driver_inst();
+    auto* driver_node = gen_node(driver);
+    auto loads = clk_net->get_load_insts();
+    for (auto load : loads) {
+      auto* load_node = gen_node(load);
+      driver_node->children.emplace_back(load_node);
+      load_node->parent = driver_node;
+    }
+  }
+  // find root
+  TreeNode* root = nullptr;
+  for (auto [_, node] : name_to_node) {
+    if (node->parent == nullptr) {
+      root = node;
+      break;
+    }
+  }
+  // set depth
+  root->depth = 0;
+  std::function<void(TreeNode*)> set_depth = [&](TreeNode* node) {
+    for (auto child : node->children) {
+      child->depth = node->depth + 1;
+      set_depth(child);
+    }
+  };
+  set_depth(root);
+  // find min and max depth of leaf
+  int min_depth = std::numeric_limits<int>::max();
+  int max_depth = 0;
+  std::function<void(TreeNode*)> find_depth = [&](TreeNode* node) {
+    if (node->children.empty()) {
+      min_depth = std::min(min_depth, node->depth);
+      max_depth = std::max(max_depth, node->depth);
+    } else {
+      for (auto child : node->children) {
+        find_depth(child);
+      }
+    }
+  };
+  find_depth(root);
+  return {min_depth, max_depth};
+}
+
 void Evaluator::evaluate()
 {
   CTSAPIInst.refresh();
@@ -273,16 +337,7 @@ void Evaluator::statistics(const std::string& save_dir) const
   if (cell_property_map.empty()) {
     CTSAPIInst.saveToLog("[No buffer is used]");
   }
-  int min_level = std::numeric_limits<int>::max();
-  int max_level = 0;
-  std::ranges::for_each(_eval_nets, [&](const EvalNet& eval_net) {
-    auto net_type = eval_net.netType();
-    if (net_type == NetType::kLeaf) {
-      auto level = eval_net.get_driver()->get_level();
-      min_level = std::min(level, min_level);
-      max_level = std::max(level, max_level);
-    }
-  });
+  auto [min_level, max_level] = getPathLevel();
   CTSAPIInst.saveToLog("Clock Path Min num of Buffers: ", max_level == 0 ? 0 : min_level);
   CTSAPIInst.saveToLog("Clock Path Max num of Buffers: ", max_level);
   CTSAPIInst.saveToLog("Max Clock Wirelength: ", max_net_len);

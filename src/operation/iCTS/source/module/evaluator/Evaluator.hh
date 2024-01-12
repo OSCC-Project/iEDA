@@ -51,8 +51,9 @@ class Evaluator
   void transferData();
   void initLevel() const;
   void recursiveSetLevel(CtsNet* net) const;
+  std::pair<size_t, size_t> getPathLevel() const;
 
-  vector<EvalNet> _eval_nets;
+  std::vector<EvalNet> _eval_nets;
   const int _default_size = 100;
 };
 
