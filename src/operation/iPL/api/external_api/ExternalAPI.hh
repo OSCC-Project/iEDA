@@ -64,7 +64,7 @@ class ExternalAPI
 
   /*****************************Routing Interface: START*****************************/
   void runRoutabilityGP();
-  std::vector<float> obtainPinDens();
+  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
   int64_t evalEGRWL();
