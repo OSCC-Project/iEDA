@@ -81,6 +81,9 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
 {
   bool b_result = true;
 
+  point1->set_checked_jog();
+  point2->set_checked_jog();
+
   auto direction = point1->direction(point2);
   auto spacing_direction = DrcDirection::kNone;
   DrcBasicPoint* point_jog_top = nullptr;     //
@@ -89,9 +92,6 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
   int jog_within_value = 0;  //
 
   if (point2->get_neighbour(direction)->is_spacing()) {
-    if (point2->get_neighbour(direction)->get_point()->get_id() < 0 && point2->get_id() < 0) {
-      return b_result;
-    }
     spacing_direction = direction;
     point_jog_top = point2;
     point_jog_bottom = point1;
@@ -100,15 +100,15 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
   }
 
   else if (point1->get_neighbour(DrcUtil::oppositeDirection(direction))->is_spacing()) {
-    if (point1->get_neighbour(DrcUtil::oppositeDirection(direction))->get_point()->get_id() < 0 && point1->get_id() < 0) {
-      return b_result;
-    }
     spacing_direction = direction;  //
     point_jog_top = point1;
     point_jog_bottom = point2;
     point_other_polygon = point1->get_neighbour(spacing_direction)->get_point();
     jog_within_value = point1->distance(point2) + point1->get_neighbour(spacing_direction)->get_point()->distance(point1);  //
   } else {
+    return b_result;
+  }
+  if (point_jog_top->get_id() < 0 && point_other_polygon->get_id() < 0) {
     return b_result;
   }
 
@@ -162,10 +162,14 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
         auto* prev_endpoint = point_current->is_endpoint() ? point_current : nullptr;
         DrcCornerType prev_corner_type = prev_endpoint ? prev_endpoint->getCornerType() : DrcCornerType::kNone;
 
-        while (point_next_neighbour && point_current->direction(point_next) != avoid_direction) {
-          // set point is checked
-          point_current->set_checked_jog();
-          point_next->set_checked_jog();
+        while (point_current->direction(point_next) != avoid_direction) {
+          if (!point_next_neighbour && !point_next->is_endpoint()) {
+            point_current = point_next;
+            point_current_neighbour = point_next_neighbour;
+            point_next = iter_func(point_current);
+            point_next_neighbour = point_next->get_neighbour(direction);
+            continue;
+          }
 
           if (point_next_neighbour->is_edge()) {
             if (!point_next_neighbour->get_point()->get_neighbour(direction)) {
@@ -198,6 +202,9 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
               jog_to_jog_spacing = point_next->distance(prev_endpoint);
 
             } else if (corner_type == DrcCornerType::kConvex && prev_corner_type == DrcCornerType::kConvex) {
+              if (point_next_neighbour->is_spacing()) {
+                break;
+              }
               //  jog jog width
               jog_jog_width = point_next->distance(prev_endpoint);
             }
@@ -228,11 +235,11 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
             }
           }
           // refresh violation rect data
-          llx = std::min(llx, point_current->get_x());
-          lly = std::min(lly, point_current->get_y());
-          urx = std::max(urx, point_current->get_x());
-          ury = std::max(ury, point_current->get_y());
-          net_ids.insert(point_current->get_id());
+          llx = std::min(llx, point_next->get_x());
+          lly = std::min(lly, point_next->get_y());
+          urx = std::max(urx, point_next->get_x());
+          ury = std::max(ury, point_next->get_y());
+          net_ids.insert(point_next->get_id());
 
           // llx = std::min(llx, point_current_neighbour->get_point()->get_x());
           // lly = std::min(lly, point_current_neighbour->get_point()->get_y());
@@ -252,15 +259,12 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
       auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
       auto gtl_pts_2 = DrcUtil::getPolygonPoints(point_other_polygon);
       auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
-
 #endif
 
       auto [avoid_dir_1, avoid_dir_2] = DrcUtil::orthogonalDirections(spacing_direction);
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_1, [&](DrcBasicPoint* point) { return point->get_next(); });
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_2, [&](DrcBasicPoint* point) { return point->get_next(); });
-
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_1, [&](DrcBasicPoint* point) { return point->get_prev(); });
-
       walk_to_cliff(point_jog_top, spacing_direction, avoid_dir_2, [&](DrcBasicPoint* point) { return point->get_prev(); });
 
       auto spacing_direction_opposite = DrcUtil::oppositeDirection(spacing_direction);
@@ -268,7 +272,9 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
       walk_to_cliff(point_other_polygon, spacing_direction_opposite, avoid_dir_2, [&](DrcBasicPoint* point) { return point->get_next(); });
       walk_to_cliff(point_other_polygon, spacing_direction_opposite, avoid_dir_1, [&](DrcBasicPoint* point) { return point->get_prev(); });
       walk_to_cliff(point_other_polygon, spacing_direction_opposite, avoid_dir_2, [&](DrcBasicPoint* point) { return point->get_prev(); });
-
+#ifdef DEBUG_IDRC_CONDITION_JOG
+      auto vio_rect = DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
+#endif
       if (is_violation) {
         // create violation
         DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
@@ -276,6 +282,7 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
         auto* violation_manager = _condition_manager->get_violation_manager();
         auto& violation_list = violation_manager->get_violation_list(violation_type);
         violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+        break;
       }
     }
   }
