@@ -110,6 +110,13 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
       int eol_spacing = condition_rule_eol->get_eol()->get_eol_space();
       int eol_within
           = condition_rule_eol->get_eol()->get_eol_within().has_value() ? condition_rule_eol->get_eol()->get_eol_within().value() : 0;
+      bool is_two_edges = condition_rule_eol->get_eol()->get_adj_edge_length().has_value()
+                              ? condition_rule_eol->get_eol()->get_adj_edge_length().value().is_two_sides()
+                              : false;
+      bool parallel_edge = condition_rule_eol->get_eol()->get_parallel_edge().has_value();
+      if (parallel_edge) {
+        continue;  // TODO: lef58 eol rule
+      }
 
       auto* scanline_dm = _engine->get_engine_manager()->get_engine_scanline(layer)->get_data_manager();
 
