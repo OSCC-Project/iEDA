@@ -64,7 +64,8 @@ void Solver::init()
     } else {
       // inst->set_cell_master(TimingPropagator::getMinSizeCell());
       // _top_pins.push_back(load_pin);
-      inst->set_cell_master(cts_inst->get_cell_master());
+      auto cell_exist = CTSAPIInst.cellLibExist(cts_inst->get_cell_master());
+      inst->set_cell_master(cell_exist ? cts_inst->get_cell_master() : TimingPropagator::getMinSizeCell());
       _sink_pins.push_back(load_pin);  // TBD for mux pin
     }
   });
