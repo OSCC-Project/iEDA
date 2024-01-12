@@ -797,17 +797,18 @@ void CTSAPI::latencySkewLog() const
 {
   CTSAPIInst.saveToLog("\n\n##Latency Skew Log##");
 
-  auto fix_point_str = [](double data) { return ieda::Str::printf("%.3f", data); };
-  auto cmp = [](ista::StaPathData* left, ista::StaPathData* right) -> bool {
-    int left_slack = left->getSlack();
-    int right_slack = right->getSlack();
-    return left_slack > right_slack;
-  };
+  auto fix_point_str = [](double data) { return std::string(ieda::Str::printf("%.3f", data)); };
   std::vector<std::pair<std::string, ista::AnalysisMode>> mode_list
       = {{"Setup", ista::AnalysisMode::kMax}, {"Hold", ista::AnalysisMode::kMin}};
   for (const auto& [clk, seq_path_group] : _timing_engine->get_ista()->get_clock_groups()) {
     CTSAPIInst.saveToLog("\nClock: ", clk->get_clock_name());
-    for (const auto& [mode_str, mode] : mode_list) {
+    for (auto& [mode_str, mode] : mode_list) {
+      auto cmp_mode = mode;
+      auto cmp = [&](ista::StaPathData* left, ista::StaPathData* right) -> bool {
+        int left_skew = left->getSkew();
+        int right_skew = right->getSkew();
+        return cmp_mode == ista::AnalysisMode::kMax ? (left_skew > right_skew) : (left_skew < right_skew);
+      };
       CTSAPIInst.saveToLog("\n[", mode_str, " Mode]");
       std::priority_queue<ista::StaPathData*, std::vector<ista::StaPathData*>, decltype(cmp)> seq_data_queue(cmp);
 
@@ -826,23 +827,27 @@ void CTSAPI::latencySkewLog() const
                            launch_clock_vertex->getNameWithCellName());
       CTSAPIInst.saveToLog("Capture Latency: ", fix_point_str(FS_TO_NS(capture_clock_data->get_arrive_time())), " From ",
                            capture_clock_vertex->getNameWithCellName());
-      CTSAPIInst.saveToLog("Skew: ", fix_point_str(FS_TO_NS(worst_seq_data->getSkew())));
+      CTSAPIInst.saveToLog("Max Skew: ", fix_point_str(FS_TO_NS(worst_seq_data->getSkew())));
       // calc avg skew
-      double total_skew = 0.0;
-      int path_count = 0;
-      FOREACH_PATH_END_DATA(path_end, mode, path_data)
-      {
-        total_skew += path_data->getSkew();
-        ++path_count;
+      int total_skew = 0;
+      unsigned n_worst = 10;
+      unsigned i = 0;
+      while (!seq_data_queue.empty() && i < n_worst) {
+        auto* seq_path_data = dynamic_cast<ista::StaSeqPathData*>(seq_data_queue.top());
+        total_skew += seq_path_data->getSkew();
+        seq_data_queue.pop();
+        i++;
       }
-      CTSAPIInst.saveToLog("Avg Skew = ", fix_point_str(FS_TO_NS(total_skew)), " / ", path_count, " = ",
-                           fix_point_str(FS_TO_NS(total_skew / path_count)));
+      auto total_skew_ns = FS_TO_NS(total_skew);
+      auto avg_skew = total_skew_ns / (double) n_worst;
+      CTSAPIInst.saveToLog("Avg Skew: ", avg_skew, " (worst 10)");
     }
   }
 }
 
 void CTSAPI::slackLog() const
 {
+  auto fix_point_str = [](double data) { return std::string(ieda::Str::printf("%.3f", data)); };
   CTSAPIInst.saveToLog("\n\n##Slack Log##");
   auto clk_list = _timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
@@ -853,11 +858,11 @@ void CTSAPI::slackLog() const
     auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
     CTSAPIInst.saveToLog("\nClk name: ", clk_name);
-    CTSAPIInst.saveToLog("Setup (Max) WNS: ", setup_wns);
-    CTSAPIInst.saveToLog("Setup (Max) TNS: ", setup_tns);
-    CTSAPIInst.saveToLog("Hold (Min) WNS: ", hold_wns);
-    CTSAPIInst.saveToLog("Hold (Min) TNS: ", hold_tns);
-    CTSAPIInst.saveToLog("Suggest Freq: ", suggest_freq);
+    CTSAPIInst.saveToLog("Setup (Max) WNS: ", fix_point_str(setup_wns));
+    CTSAPIInst.saveToLog("Setup (Max) TNS: ", fix_point_str(setup_tns));
+    CTSAPIInst.saveToLog("Hold (Min) WNS: ", fix_point_str(hold_wns));
+    CTSAPIInst.saveToLog("Hold (Min) TNS: ", fix_point_str(hold_tns));
+    CTSAPIInst.saveToLog("Suggest Freq: ", fix_point_str(suggest_freq));
   });
 }
 
