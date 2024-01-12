@@ -100,7 +100,7 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
   }
 
   else if (point1->get_neighbour(DrcUtil::oppositeDirection(direction))->is_spacing()) {
-    spacing_direction = direction;  //
+    spacing_direction = DrcUtil::oppositeDirection(direction);  //
     point_jog_top = point1;
     point_jog_bottom = point2;
     point_other_polygon = point1->get_neighbour(spacing_direction)->get_point();
@@ -120,13 +120,13 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
 
     for (auto& rule_jog : rule_jog_list) {
       // violation rect data
-      int llx = std::min(point1->get_x(), point2->get_x());
-      int lly = std::min(point1->get_y(), point2->get_y());
-      int urx = std::max(point1->get_x(), point2->get_x());
-      int ury = std::max(point1->get_y(), point2->get_y());
+      int llx = std::min(point_jog_bottom->get_x(), point_other_polygon->get_x());
+      int lly = std::min(point_jog_bottom->get_y(), point_other_polygon->get_y());
+      int urx = std::max(point_jog_bottom->get_x(), point_other_polygon->get_x());
+      int ury = std::max(point_jog_bottom->get_y(), point_other_polygon->get_y());
       std::set<int> net_ids;
-      net_ids.insert(point1->get_id());
-      net_ids.insert(point2->get_id());
+      net_ids.insert(point_jog_bottom->get_id());
+      net_ids.insert(point_other_polygon->get_id());
       // get rule data
       auto* condition_rule_jog = static_cast<ConditionRuleJogToJog*>(rule_jog);
       int jog_rule_within = value;
@@ -163,12 +163,16 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
         DrcCornerType prev_corner_type = prev_endpoint ? prev_endpoint->getCornerType() : DrcCornerType::kNone;
 
         while (point_current->direction(point_next) != avoid_direction) {
-          if (!point_next_neighbour && !point_next->is_endpoint()) {
-            point_current = point_next;
-            point_current_neighbour = point_next_neighbour;
-            point_next = iter_func(point_current);
-            point_next_neighbour = point_next->get_neighbour(direction);
-            continue;
+          if (!point_next_neighbour) {
+            if (!point_next->is_endpoint()) {
+              point_current = point_next;
+              point_current_neighbour = point_next_neighbour;
+              point_next = iter_func(point_current);
+              point_next_neighbour = point_next->get_neighbour(direction);
+              continue;
+            } else {
+              break;
+            }
           }
 
           if (point_next_neighbour->is_edge()) {
@@ -202,7 +206,7 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
               jog_to_jog_spacing = point_next->distance(prev_endpoint);
 
             } else if (corner_type == DrcCornerType::kConvex && prev_corner_type == DrcCornerType::kConvex) {
-              if (point_next_neighbour->is_spacing()) {
+              if (point_next_neighbour->is_edge()) {
                 break;
               }
               //  jog jog width
@@ -219,6 +223,19 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
             jog_prl += point_current->distance(point_next);
           }
 
+          // refresh violation rect data
+          llx = std::min(llx, point_next->get_x());
+          lly = std::min(lly, point_next->get_y());
+          urx = std::max(urx, point_next->get_x());
+          ury = std::max(ury, point_next->get_y());
+          net_ids.insert(point_next->get_id());
+
+          // llx = std::min(llx, point_current_neighbour->get_point()->get_x());
+          // lly = std::min(lly, point_current_neighbour->get_point()->get_y());
+          // urx = std::max(urx, point_current_neighbour->get_point()->get_x());
+          // ury = std::max(ury, point_current_neighbour->get_point()->get_y());
+          // net_ids.insert(point_current_neighbour->get_point()->get_id());
+
           if (jog_width > jog_rule_width && jog_prl > jog_rule_prl && jog_jog_width <= jog_rule_jog_width) {
             // calculate jog spacing
             if (jog_rule_short_spacing > point_next->get_neighbour(direction)->get_point()->distance(point_next)
@@ -234,18 +251,6 @@ bool DrcRuleConditionJog::checkSpacingJogSegment(DrcBasicPoint* point1, DrcBasic
               }
             }
           }
-          // refresh violation rect data
-          llx = std::min(llx, point_next->get_x());
-          lly = std::min(lly, point_next->get_y());
-          urx = std::max(urx, point_next->get_x());
-          ury = std::max(ury, point_next->get_y());
-          net_ids.insert(point_next->get_id());
-
-          // llx = std::min(llx, point_current_neighbour->get_point()->get_x());
-          // lly = std::min(lly, point_current_neighbour->get_point()->get_y());
-          // urx = std::max(urx, point_current_neighbour->get_point()->get_x());
-          // ury = std::max(ury, point_current_neighbour->get_point()->get_y());
-          // net_ids.insert(point_current_neighbour->get_point()->get_id());
 
           point_current = point_next;
           point_current_neighbour = point_next_neighbour;
