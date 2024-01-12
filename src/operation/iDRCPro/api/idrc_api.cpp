@@ -65,12 +65,20 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
 
 #ifdef DEBUG_IDRC_API
+  if (check_type == DrcCheckerType::kDef) {
+    std::cout << "idrc : check def" << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
   ieda::Stats stats_engine;
 #endif
   drc_manager.engineStart(check_type);
 #ifdef DEBUG_IDRC_API
-  std::cout << "idrc : engine start"
-            << " runtime = " << stats_engine.elapsedRunTime() << " memory = " << stats_engine.memoryDelta() << std::endl;
+  if (check_type == DrcCheckerType::kDef) {
+    std::cout << "idrc : engine start"
+              << " runtime = " << stats_engine.elapsedRunTime() << " memory = " << stats_engine.memoryDelta() << std::endl;
+  }
 #endif
 
 #ifdef DEBUG_IDRC_API
@@ -78,8 +86,11 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #endif
   drc_manager.buildCondition();
 #ifdef DEBUG_IDRC_API
-  std::cout << "idrc : build condition"
-            << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta() << std::endl;
+  if (check_type == DrcCheckerType::kDef) {
+    std::cout << "idrc : build condition"
+              << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta()
+              << std::endl;
+  }
 #endif
 
 #ifdef DEBUG_IDRC_API
@@ -91,8 +102,10 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
     drc_manager.checkSelf();
   }
 #ifdef DEBUG_IDRC_API
-  std::cout << "idrc : check"
-            << " runtime = " << stats_check.elapsedRunTime() << " memory = " << stats_check.memoryDelta() << std::endl;
+  if (check_type == DrcCheckerType::kDef) {
+    std::cout << "idrc : check"
+              << " runtime = " << stats_check.elapsedRunTime() << " memory = " << stats_check.memoryDelta() << std::endl;
+  }
 #endif
 
   return violation_manager->get_violation_map();
