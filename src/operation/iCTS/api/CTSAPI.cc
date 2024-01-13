@@ -377,6 +377,31 @@ std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
   return delay_map;
 }
 
+bool CTSAPI::cellLibExist(const std::string& cell_master, const std::string& query_field, const std::string& from_port,
+                          const std::string& to_port)
+{
+  std::vector<std::vector<double>> index_list;
+  ista::LibertyTable::TableType table_type;
+  if (query_field == "cell_rise") {
+    table_type = ista::LibertyTable::TableType::kCellRise;
+  } else if (query_field == "cell_fall") {
+    table_type = ista::LibertyTable::TableType::kCellFall;
+  } else if (query_field == "rise_transition") {
+    table_type = ista::LibertyTable::TableType::kRiseTransition;
+  } else if (query_field == "fall_transition") {
+    table_type = ista::LibertyTable::TableType::kFallTransition;
+  } else {
+    LOG_FATAL << "buffer lib query field not supported";
+  }
+  ista::LibertyTable* table = nullptr;
+  if (from_port.empty() && to_port.empty()) {
+    table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
+  } else {
+    table = _timing_engine->getCellLibertyTable(cell_master.c_str(), from_port.c_str(), to_port.c_str(), table_type);
+  }
+  return table != nullptr;
+}
+
 std::vector<std::vector<double>> CTSAPI::queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
                                                            const std::string& from_port, const std::string& to_port)
 {

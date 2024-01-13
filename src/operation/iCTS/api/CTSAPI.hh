@@ -85,6 +85,8 @@ class CTSAPI
   void refresh();
   icts::CtsPin* findDriverPin(icts::CtsNet* net);
   std::map<std::string, double> elmoreDelay(const icts::EvalNet& eval_net);
+  bool cellLibExist(const std::string& cell_master, const std::string& query_field = "cell_rise", const std::string& from_port = "",
+                    const std::string& to_port = "");
   std::vector<std::vector<double>> queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
                                                      const std::string& from_port = "", const std::string& to_port = "");
   std::vector<double> queryCellLibValue(const std::string& cell_master, const std::string& query_field, const std::string& from_port = "",
