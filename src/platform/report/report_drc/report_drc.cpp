@@ -50,7 +50,7 @@ std::shared_ptr<ieda::ReportTable> ReportDRC::createConnectivityTable(
   auto net_max = std::get<3>(connectivity_result);
 
   if (b_result) {
-    *tbl << "Nets are all coonected!" << TABLE_SKIP << TABLE_ENDLINE;
+    *tbl << "Nets are all connected!" << TABLE_SKIP << TABLE_ENDLINE;
   } else {
     *tbl << "Disconneted nets [pin number >= 2]" << ieda::Str::printf("%d / %d", disconnect_net_list.size(), net_max) << TABLE_ENDLINE;
     *tbl << "Disconneted nets [pin number < 2]" << ieda::Str::printf("%d / %d", one_pin_list.size(), net_max) << TABLE_ENDLINE;
@@ -72,7 +72,7 @@ std::shared_ptr<ieda::ReportTable> ReportDRC::createConnectivityDetailTable(
       = std::make_shared<ieda::ReportTable>("DRC - Disconnected Net", header_list, static_cast<int>(ReportDrcType::kConnectivityDetail));
 
   if (b_result) {
-    *tbl << "Nets are all coonected!" << TABLE_SKIP << TABLE_ENDLINE;
+    *tbl << "Nets are all connected!" << TABLE_SKIP << TABLE_ENDLINE;
   } else {
     for (auto& net : disconnected_pin_list) {
       *tbl << net << TABLE_ENDLINE;
