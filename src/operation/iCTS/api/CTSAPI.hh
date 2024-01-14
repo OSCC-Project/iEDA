@@ -61,7 +61,7 @@ class CTSAPI
   void report(const std::string& save_dir);
   // flow API
   void resetAPI();
-  void init(const std::string& config_file);
+  void init(const std::string& config_file, const std::string& work_dir);
   void readData();
   void routing();
   void evaluate();
@@ -154,6 +154,14 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
+  
+  void logTime() const;
+
+  void logLine() const;
+
+  void logTitle(const std::string& title) const;
+  
+  void logEnd() const;
 
   // function
   std::vector<std::string> splitString(std::string str, const char split);

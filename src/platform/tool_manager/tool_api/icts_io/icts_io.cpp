@@ -30,7 +30,7 @@ CtsIO* CtsIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CtsIO::runCTS(std::string config)
+bool CtsIO::runCTS(std::string config, std::string work_dir)
 {
   if (config.empty()) {
     /// set config path
@@ -41,7 +41,7 @@ bool CtsIO::runCTS(std::string config)
 
   ieda::Stats stats;
 
-  CTSAPIInst.init(config);
+  CTSAPIInst.init(config, work_dir);
   CTSAPIInst.runCTS();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());

@@ -1067,7 +1067,7 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
   LOG_INFO << "Writing clusters to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace() + "/file";
+  auto path = config->get_work_dir() + "/file";
   if (!std::filesystem::exists(path)) {
     std::filesystem::create_directories(path);
   }
