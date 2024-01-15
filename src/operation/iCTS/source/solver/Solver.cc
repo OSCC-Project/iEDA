@@ -215,7 +215,8 @@ Assign Solver::get_level_assign(const int& level) const
 }
 std::vector<Inst*> Solver::assignApply(const std::vector<Inst*>& insts, const Assign& assign)
 {
-  LOG_INFO << "Level: " << _level << " Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << std::endl;
+  LOG_INFO << "| Level: " << _level << " | Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << " um | Inst Num: " << insts.size()
+           << " |";
   // pre-processing
   auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
