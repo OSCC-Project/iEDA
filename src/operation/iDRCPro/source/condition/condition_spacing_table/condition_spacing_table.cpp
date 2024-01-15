@@ -157,6 +157,9 @@ bool DrcRuleConditionSpacingTable::checkSpacingTableSegment(DrcBasicPoint* point
 
     return b_result;
   }
+#if 0  // zzs
+  return b_result;
+#endif
 
   // TODO: calc width
   auto spacing_direction = point->direction(neighbour);
