@@ -421,7 +421,7 @@ class Sta {
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
 
-  StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
+  std::vector<StaSeqPathData *> getSeqData(StaVertex* vertex, StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
   double getTNS(const char* clock_name, AnalysisMode mode);
   double getLocalSkew(const char* clock_name, AnalysisMode mode,

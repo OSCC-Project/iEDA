@@ -275,9 +275,9 @@ void PLAPI::runFlow()
   // runMP();
   runGP();
   printHPWLInfo();
-  notifyPLWLInfo(0);
-  notifyPLCongestionInfo(0);
   if(isSTAStarted()){
+    notifyPLWLInfo(0);
+    notifyPLCongestionInfo(0);
     notifyPLTimingInfo(0);
   }
 
@@ -290,18 +290,18 @@ void PLAPI::runFlow()
   std::cout << std::endl;
   runLG();
   printHPWLInfo();
-  notifyPLWLInfo(1);
-  notifyPLCongestionInfo(1);
   if(isSTAStarted()){
+    notifyPLWLInfo(1);
+    notifyPLCongestionInfo(1);
     notifyPLTimingInfo(1);
   }
 
   std::cout << std::endl;
   runDP();
   printHPWLInfo();
-  notifyPLWLInfo(2);
-  notifyPLCongestionInfo(2);
   if(isSTAStarted()){
+    notifyPLWLInfo(2);
+    notifyPLCongestionInfo(2);
     notifyPLTimingInfo(2);
   }
 
@@ -420,7 +420,9 @@ void PLAPI::notifyPLCongestionInfo(int stage)
   PlacerDBInst.congestion[stage] = gr_congestion[1];
   PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
 
-  std::vector<float> pin_dens = this->obtainPinDens(); // return <average, peak> , average = sum / bin_cnt, peak = max / average
+  int32_t grid_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
+  int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
+  std::vector<float> pin_dens = this->obtainPinDens(grid_cnt_x, grid_cnt_y); // return <average, peak> , average = sum / bin_cnt, peak = max / average
   PlacerDBInst.pin_density[stage] = pin_dens[1];
 }
 
@@ -782,9 +784,9 @@ void PLAPI::destroyCongEval()
   _external_api->destroyCongEval();
 }
 
-std::vector<float> PLAPI::obtainPinDens()
+std::vector<float> PLAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
 {
-  return _external_api->obtainPinDens();
+  return _external_api->obtainPinDens(grid_cnt_x, grid_cnt_y);
 }
 
 std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)

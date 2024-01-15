@@ -437,14 +437,18 @@ void CmdCreateGeneratedClock::set_edges_shift_and_invert(
   // edges invert
   TclOption* invert_option = getOptionOrArg("-invert");
   if (invert_option->is_set_val()) {
-    size_t i = 0;
-    double time_after_rising = the_generate_edges[1] - the_generate_edges[0];
-    // invert by shift backward
-    for (; i < the_generate_edges.size() - 1; ++i) {
-      the_generate_edges[i] = the_generate_edges[1 + i];
+    if (!the_generate_edges.empty()) {
+      size_t i = 0;
+      double time_after_rising = the_generate_edges[1] - the_generate_edges[0];
+      // invert by shift backward
+      for (; i < the_generate_edges.size() - 1; ++i) {
+        the_generate_edges[i] = the_generate_edges[1 + i];
+      }
+      // add first time (time_after_rising) to last
+      the_generate_edges[i] += time_after_rising;
+    } else {
+      _the_generate_clock->set_is_waveform_inv();
     }
-    // add first time (time_after_rising) to last
-    the_generate_edges[i] += time_after_rising;
   }
 
   _the_generate_clock->set_edges(std::move(the_generate_edges));
