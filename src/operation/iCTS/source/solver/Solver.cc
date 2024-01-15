@@ -527,7 +527,7 @@ void Solver::writeNetPy(Pin* root, const std::string& save_name) const
   LOG_INFO << "Writing net to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace();
+  auto path = config->get_work_dir();
   std::ofstream ofs(path + "/" + save_name + ".py");
   ofs << "import matplotlib.pyplot as plt" << std::endl;
   ofs << "fig = plt.figure(figsize=(8,6), dpi=300)" << std::endl;
@@ -564,7 +564,7 @@ void Solver::levelReport() const
   using Inst_Func = std::function<double(const Inst*)>;
   auto gen_level_rpt = [&](const CtsReportType& rpt_type, const std::string& rpt_tittle, const std::string& file_name,
                            Inst_Func get_val_func, Inst_Func vio_func = nullptr) {
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/level_log";
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/level_log";
     if (!std::filesystem::exists(dir)) {
       std::filesystem::create_directories(dir);
     }

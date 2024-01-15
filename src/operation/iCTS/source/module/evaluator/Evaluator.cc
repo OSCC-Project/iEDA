@@ -101,7 +101,7 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
 
 void Evaluator::pathLevelLog() const
 {
-  CTSAPIInst.saveToLog("\n\n##Path Level Log##");
+  CTSAPIInst.logTitle("Summary of Path Level");
   struct TreeNode
   {
     std::string name;
@@ -161,10 +161,11 @@ void Evaluator::pathLevelLog() const
       }
     };
     find_depth(root);
-    CTSAPIInst.saveToLog("\nRoot: ", root->name);
-    CTSAPIInst.saveToLog("Clock Path Min num of Buffers: ", max_depth == 0 ? 0 : min_depth);
-    CTSAPIInst.saveToLog("Clock Path Max num of Buffers: ", max_depth);
+    CTSAPIInst.saveToLog("Root: ", root->name);
+    CTSAPIInst.saveToLog("\tClock Path Min num of Buffers: ", max_depth == 0 ? 0 : min_depth);
+    CTSAPIInst.saveToLog("\tClock Path Max num of Buffers: ", max_depth);
   });
+  CTSAPIInst.logEnd();
 }
 
 void Evaluator::evaluate()
@@ -179,7 +180,7 @@ void Evaluator::evaluate()
 void Evaluator::statistics(const std::string& save_dir) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
+  auto dir = (save_dir == "" ? config->get_work_dir() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
   auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWireLength);
@@ -328,34 +329,29 @@ void Evaluator::statistics(const std::string& save_dir) const
   net_level_save_file << net_level_rpt->c_str();
 
   // evaluate design
-  CTSAPIInst.saveToLog("\n\n############Evaluate design INFO############");
-
   CTSAPIInst.latencySkewLog();
   CTSAPIInst.utilizationLog();
 
-  CTSAPIInst.saveToLog("\n\n##Buffering (net) Log##\n");
-  for (auto [type, cell_property] : cell_property_map) {
-    CTSAPIInst.saveToLog("Cell type: ", type, ", Count: ", cell_property.total_num, ", Area: ", cell_property.total_area,
-                         ", Capacitance: ", cell_property.total_cap);
-  }
+  CTSAPIInst.logTitle("Summary of Buffering (net)");
+  CTSAPIInst.saveToLog("--Cell Stats--");
+  CTSAPIInst.saveToLog(cell_stats_rpt->c_str());
   if (cell_property_map.empty()) {
-    CTSAPIInst.saveToLog("[No buffer is used]");
+    CTSAPIInst.saveToLog("#No buffer is used#");
   }
-  CTSAPIInst.saveToLog("Max Clock Wirelength: ", max_net_len);
-  CTSAPIInst.saveToLog("Total Clock Wirelength: ", total_wire_len);
+  CTSAPIInst.saveToLog("--Wirelength Stats--");
+  CTSAPIInst.saveToLog(wl_rpt->c_str());
+  CTSAPIInst.logEnd();
 
   pathLevelLog();
 
   CTSAPIInst.slackLog();
-
-  CTSAPIInst.saveToLog("\n############Evaluate design Done############");
 }
 
 void Evaluator::plotPath(const string& inst_name, const string& file) const
 {
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   CtsInstance* path_inst = nullptr;
@@ -424,7 +420,7 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
 
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   GDSPloter::head(ofs);

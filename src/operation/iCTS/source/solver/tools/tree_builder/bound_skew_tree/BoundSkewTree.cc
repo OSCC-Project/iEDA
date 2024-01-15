@@ -1991,7 +1991,7 @@ void BoundSkewTree::printArea(const Area* area) const
 }
 void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file) const
 {
-  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
@@ -2018,7 +2018,7 @@ void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file)
 
 void BoundSkewTree::writePy(Area* area, const std::string& file) const
 {
-  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
