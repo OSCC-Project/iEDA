@@ -96,15 +96,18 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
 
   auto spacing_direction = DrcUtil::outsidePolygonDirection(point_prev, point_next);
   auto eol_direction = point_prev->direction(point_next);
+  bool is_vertical = point_prev->get_x() == point_next->get_x();
 
-  int step_edge_length = point_prev->distance(point_next);
+  int eol_edge_length = point_prev->distance(point_next);
   // find rule and check
   for (auto& [value, rule_eol_list] : rule_eol_map) {
-    if (value <= step_edge_length) {
+    if (value <= eol_edge_length) {
       continue;
     }
 
     for (auto& rule_eol : rule_eol_list) {
+      auto* scanline_dm = _engine->get_engine_manager()->get_engine_scanline(layer)->get_data_manager();
+
       // get rule data
       auto* condition_rule_eol = static_cast<ConditionRuleEOL*>(rule_eol);
       int eol_spacing = condition_rule_eol->get_eol()->get_eol_space();
@@ -113,12 +116,77 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
       bool is_two_edges = condition_rule_eol->get_eol()->get_adj_edge_length().has_value()
                               ? condition_rule_eol->get_eol()->get_adj_edge_length().value().is_two_sides()
                               : false;
+      bool has_min_length = condition_rule_eol->get_eol()->get_adj_edge_length().has_value();
       bool parallel_edge = condition_rule_eol->get_eol()->get_parallel_edge().has_value();
+      bool is_same_metal = parallel_edge ? condition_rule_eol->get_eol()->get_parallel_edge().value().is_same_metal() : false;
+      // TODO: is same metal: 当出现一条边贯穿旁边区域时，发生豁免。也要检查是否同一金属
+
       if (parallel_edge) {
-        continue;  // TODO: lef58 eol rule
+        bool is_on = false;
+        auto parallel_edge_value = condition_rule_eol->get_eol()->get_parallel_edge().value();
+        bool is_subtract_eol_width = parallel_edge_value.is_subtract_eol_width();
+        int par_space = parallel_edge_value.get_par_space();
+        int par_within = parallel_edge_value.get_par_within();
+        if (is_subtract_eol_width) {
+          par_space -= eol_edge_length;
+        }
+        auto create_query_region = [&](DrcBasicPoint* p, DrcDirection direction) {
+          auto [neighbour_x, neighbour_y] = DrcUtil::transformPoint(p->get_x(), p->get_y(), direction, par_space);
+          auto [corner_1_x, corner_1_y] = DrcUtil::transformPoint(neighbour_x, neighbour_y, spacing_direction, eol_within);
+          auto [corner_2_x, corner_2_y]
+              = DrcUtil::transformPoint(p->get_x(), p->get_y(), DrcUtil::oppositeDirection(spacing_direction), par_within);
+          int llx_query = std::min(corner_1_x, corner_2_x);
+          int lly_query = std::min(corner_1_y, corner_2_y);
+          int urx_query = std::max(corner_1_x, corner_2_x);
+          int ury_query = std::max(corner_1_y, corner_2_y);
+          return std::vector<int>{llx_query, lly_query, urx_query, ury_query};
+        };
+        auto query_1 = create_query_region(point_prev, DrcUtil::oppositeDirection(eol_direction));
+        auto query_2 = create_query_region(point_next, eol_direction);
+        auto points_1 = scanline_dm->getBasicPointsInRect(query_1[0], query_1[1], query_1[2], query_1[3]);
+        auto points_2 = scanline_dm->getBasicPointsInRect(query_2[0], query_2[1], query_2[2], query_2[3]);
+        auto eol_coord_same = [&](DrcBasicPoint* p, DrcBasicPoint* cmp_p) {
+          return is_vertical ? p->get_x() == cmp_p->get_x() : p->get_y() == cmp_p->get_y();
+        };
+        std::set<int> net_ids;
+        auto check_points = [&](std::vector<DrcBasicPoint*> points, DrcBasicPoint* cmp_p) {
+          bool result = false;
+          for (auto* p : points) {
+            if (!eol_coord_same(p, cmp_p)) {
+              result = true;
+              net_ids.insert(p->get_id());
+            }
+          }
+          return result;
+        };
+        bool check_one_side = check_points(points_1, point_prev);
+        bool check_other_side = check_points(points_2, point_next);
+        if (is_two_edges) {
+          if (check_one_side && check_other_side) {
+            is_on = true;
+          }
+        } else {
+          if (check_one_side || check_other_side) {
+            is_on = true;
+          }
+        }
+        if (!is_on || (is_same_metal && net_ids.size() > 1)) {
+          continue;
+        }
       }
 
-      auto* scanline_dm = _engine->get_engine_manager()->get_engine_scanline(layer)->get_data_manager();
+      if (has_min_length) {
+        auto adj_edge_length_value = condition_rule_eol->get_eol()->get_adj_edge_length().value();
+        if (adj_edge_length_value.get_min_length().has_value()) {
+          int min_length = adj_edge_length_value.get_min_length().value();
+
+          int side_min_len = std::min(point_prev->distance(point_prev->prevEndpoint()), point_next->distance(point_next->nextEndpoint()));
+
+          if (side_min_len < min_length) {
+            continue;
+          }
+        }
+      }
 
       auto [neighbour_x, neighbour_y] = DrcUtil::transformPoint(point_prev->get_x(), point_prev->get_y(), spacing_direction, eol_spacing);
       auto [corner_1_x, corner_1_y]
@@ -129,7 +197,9 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
       int lly_query = std::min(corner_1_y, corner_2_y);
       int urx_query = std::max(corner_1_x, corner_2_x);
       int ury_query = std::max(corner_1_y, corner_2_y);
-      ieda_solver::BgRect rect(ieda_solver::BgPoint(llx_query, lly_query), ieda_solver::BgPoint(urx_query, ury_query));
+#ifdef DEBUG_IDRC_CONDITION_EOL
+      ieda_solver::BgRect rect_query(ieda_solver::BgPoint(llx_query, lly_query), ieda_solver::BgPoint(urx_query, ury_query));
+#endif
 
       auto points = scanline_dm->getBasicPointsInRect(llx_query, lly_query, urx_query, ury_query);
       if (points.size() > 2) {
@@ -158,6 +228,10 @@ bool DrcRuleConditionEOL::checkSpacingEOLSegment(DrcBasicPoint* point_prev, DrcB
             point_other = p;
           }
 #endif
+        }
+
+        if (is_same_metal && net_ids.size() > 1) {
+          continue;
         }
 
         if (llx != urx && lly != ury) {
