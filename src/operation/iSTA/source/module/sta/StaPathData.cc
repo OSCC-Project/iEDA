@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -25,6 +25,7 @@
 
 #include <utility>
 
+#include "StaArc.hh"
 #include "StaReport.hh"
 
 namespace ista {
@@ -117,6 +118,53 @@ int64_t StaSeqPathData::getArriveTime() {
   int64_t arrive_time = path_arrive_time + clock_arrive_time + launch_edge;
 
   return arrive_time;
+}
+
+/**
+ * @brief Get the seq path cell delay and net delay of arrive time.
+ *
+ * @return int64_t
+ */
+std::pair<int64_t, int64_t> StaSeqPathData::getCellAndNetDelayOfArriveTime() {
+  int64_t cell_delay = 0;
+  int64_t net_delay = 0;
+  auto accumulate_cell_and_net_delay =
+      [&cell_delay, &net_delay]<typename T>(std::stack<T>& data_stack) {
+        auto* path_start_point = data_stack.top();
+        int64_t last_arrive_time = path_start_point->get_arrive_time();
+        StaVertex* last_vertex = path_start_point->get_own_vertex();
+        data_stack.pop();
+
+        while (!data_stack.empty()) {
+          auto* path_data = data_stack.top();
+          int64_t arrive_time = path_data->get_arrive_time();
+          int64_t incr_time = arrive_time - last_arrive_time;
+
+          auto* own_vertex = path_data->get_own_vertex();
+          auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+          auto* snk_arc = snk_arcs.front();
+
+          if (snk_arc->isInstArc()) {
+            cell_delay += incr_time;
+          } else {
+            net_delay += incr_time;
+          }
+
+          last_arrive_time = arrive_time;
+          last_vertex = own_vertex;
+
+          data_stack.pop();
+        }
+      };
+
+  std::stack<StaPathDelayData*> data_path_stack = getPathDelayData();
+  auto* path_start_point = data_path_stack.top();
+  auto* launch_clock_data = path_start_point->get_launch_clock_data();
+  auto launch_clock_path_data_stack = launch_clock_data->getPathData();
+  accumulate_cell_and_net_delay(launch_clock_path_data_stack);
+  accumulate_cell_and_net_delay(data_path_stack);
+
+  return std::make_pair(cell_delay, net_delay);  // unit is fs.
 }
 
 /**
