@@ -320,7 +320,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
   std::vector<std::vector<Inst*>> slack_clusters;
   std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
     auto est_net_length = estimateNetLength(cluster);
-    if (est_net_length < max_net_length) {
+    auto hpwl = calcHPWL(cluster);
+    if (hpwl < TimingPropagator::getMinLength() || est_net_length < max_net_length) {
       slack_clusters.push_back(cluster);
     } else {
       // reclustering
