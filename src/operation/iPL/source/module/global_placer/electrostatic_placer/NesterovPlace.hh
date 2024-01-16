@@ -106,8 +106,12 @@ class NesterovPlace
   void initNetWorks();
   void initGroups();
   void initArcs();
+  void generatePortOutNetArc(Node* node);
   void generateNetArc(Node* node);
   void generateGroupArc(Node* node);
+  void initHPWLEvaluator();
+  void initWAWLGradientEvaluator();
+  void initTimingAnnotation();
   void updateTopologyManager();
 
   void initBaseWirelengthCoef();

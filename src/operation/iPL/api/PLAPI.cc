@@ -331,12 +331,13 @@ void PLAPI::runFlow()
 {
   // runMP();
   
-  // test
-  runPostGP();
-  exit(1);
+  // // test
+  // runPostGP();
+  // exit(1);
 
   runGP();
   printHPWLInfo();
+  
 
   if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
     std::cout << std::endl;

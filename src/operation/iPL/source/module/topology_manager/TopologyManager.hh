@@ -264,7 +264,7 @@ class Arc
   double _flow_value;
 };
 inline Arc::Arc(Node* from_node, Node* to_node)
-    : _arc_id(-1), _arc_type(ARC_TYPE::kNone), _from_node(nullptr), _to_node(nullptr), _flow_value(0.0)
+    : _arc_id(-1), _arc_type(ARC_TYPE::kNone), _from_node(from_node), _to_node(to_node), _flow_value(0.0)
 {
 }
 
@@ -303,6 +303,12 @@ class TopologyManager
 
   void updateTopoId(Node* node);
   void updateALLNodeTopoId();
+
+  // sort vec by their index
+  void sortNodeList();
+  void sortNetworkList();
+  void sortGroupList();
+  void sortArcList();
 
  private:
   std::vector<Node*> _node_list;

@@ -334,7 +334,9 @@ namespace ieda_solver {
       record_cluster.add_inst(inst);
       record_cluster.appendInst(inst);
       record_cluster.set_belong_interval(interval);
+      if(last_cluster){
       record_cluster.set_front_cluster(last_cluster->get_name());
+      }
       legalizeCluster(record_cluster);
     }
 

@@ -39,6 +39,9 @@ class TimingAnnotation
   TimingAnnotation& operator=(TimingAnnotation&&) = delete;
 
   // getter.
+ 
+  float get_max_centrality() const { return _max_centrality;}
+
   float get_early_wns();
   float get_late_wns();
   float get_early_tns();
@@ -59,6 +62,7 @@ class TimingAnnotation
   float get_node_criticality(Node* node);
   float get_group_criticality(Group* group);
   float get_network_criticality(NetWork* network);
+  float get_network_centrality(NetWork* network);
 
   float get_node_importance(Node* node); 
 

@@ -57,7 +57,7 @@ namespace ipl {
   {
     _nes_config = config->get_nes_config();
 
-    if (_nes_config.isOptMaxWirelength()) {
+    if (_nes_config.isOptMaxWirelength() || _nes_config.isOptTiming()) {
       _nes_config.add_opt_target_overflow(0.15);
       _nes_config.add_opt_target_overflow(0.20);
       _nes_config.add_opt_target_overflow(0.25);
@@ -77,6 +77,11 @@ namespace ipl {
 
     initGridManager();
     initTopologyManager();
+    initHPWLEvaluator();
+    initWAWLGradientEvaluator();
+    if(_nes_config.isOptTiming()){
+      initTimingAnnotation();
+    }
   }
 
   void NesterovPlace::wrapNesInstanceList()
@@ -271,8 +276,7 @@ namespace ipl {
     this->initGroups();
     this->initArcs();
 
-    _nes_database->_wirelength = new HPWirelength(topo_manager);
-    _nes_database->_wirelength_gradient = new WAWirelengthGradient(topo_manager);
+    topo_manager->updateALLNodeTopoId();
   }
 
   void NesterovPlace::initNodes()
@@ -282,14 +286,13 @@ namespace ipl {
       auto* n_pin = pair.first;
       Node* node = new Node(n_pin->get_name());
       node->set_location(std::move(n_pin->get_center_coordi()));
-
       auto* pl_pin = pair.second;
 
       // set node type.
-      if (pl_pin->isInstanceInput() || pl_pin->isIOOutput()) {
+      if (pl_pin->isInstanceInput() || pl_pin->isIOInput()) {
         node->set_node_type(NODE_TYPE::kInput);
       }
-      else if (pl_pin->isInstanceOutput() || pl_pin->isIOInput()) {
+      else if (pl_pin->isInstanceOutput() || pl_pin->isIOOutput()) {
         node->set_node_type(NODE_TYPE::kOutput);
       }
       else if (pl_pin->isInstanceInputOutput() || pl_pin->isIOInputOutput()) {
@@ -304,7 +307,9 @@ namespace ipl {
         node->set_is_io();
       }
       topo_manager->add_node(node);
+      node->set_node_id(n_pin->get_pin_id()); // not match in origin order
     }
+    topo_manager->sortNodeList();
   }
 
   void NesterovPlace::initNetWorks()
@@ -346,16 +351,18 @@ namespace ipl {
       }
 
       topo_manager->add_network(network);
+      network->set_network_id(n_net->get_net_id());  // not match in origin order.
     }
+    topo_manager->sortNetworkList();
   }
 
   void NesterovPlace::initGroups()
   {
     auto* topo_manager = _nes_database->_topology_manager;
-    for (auto pair : _nes_database->_instance_map){
+    for (auto pair : _nes_database->_instance_map) {
       auto* n_inst = pair.first;
       Group* group = new Group(n_inst->get_name());
-      
+
       auto* pl_inst = pair.second;
       // set group type.
       auto* cell_master = pl_inst->get_cell_master();
@@ -387,10 +394,12 @@ namespace ipl {
         group->add_node(node);
       }
       topo_manager->add_group(group);
+      group->set_group_id(pl_inst->get_inst_id());  // not match in origin order.
     }
+    topo_manager->sortGroupList();
   }
 
-  void NesterovPlace::initArcs(){
+  void NesterovPlace::initArcs() {
     auto* topo_manager = _nes_database->_topology_manager;
     for (auto* node : topo_manager->get_node_list()) {
       // TODO: Consider the INPUT & OUTPUT Case.
@@ -398,18 +407,35 @@ namespace ipl {
         if (node->get_node_type() == NODE_TYPE::kOutput) {
           this->generateNetArc(node);
         }
+
       }
       else {
-        if(node->get_node_type() == NODE_TYPE::kInput){
+        if (node->get_node_type() == NODE_TYPE::kInput) {
           this->generateNetArc(node);
-        }else if(node->get_node_type() == NODE_TYPE::kOutput){
+        }
+        else if (node->get_node_type() == NODE_TYPE::kOutput) {
           this->generateGroupArc(node);
         }
       }
     }
+    topo_manager->sortArcList();
   }
 
-  void NesterovPlace::generateNetArc(Node* node){
+  void NesterovPlace::generatePortOutNetArc(Node* node){
+    auto* topo_manager = _nes_database->_topology_manager;
+    auto* network = node->get_network();
+    if(network){
+      for(auto* sink_node : network->get_receiver_list()){
+        Arc* net_arc = new Arc(node, sink_node);
+        net_arc->set_arc_type(ARC_TYPE::kNetArc);
+        node->add_output_arc(net_arc);
+        sink_node->add_input_arc(net_arc);
+        topo_manager->add_arc(net_arc);
+      }
+    }
+  }
+
+  void NesterovPlace::generateNetArc(Node* node) {
     auto* topo_manager = _nes_database->_topology_manager;
     auto* network = node->get_network();
     if (network) {
@@ -417,22 +443,43 @@ namespace ipl {
       if (driver_node) {
         Arc* net_arc = new Arc(driver_node, node);
         net_arc->set_arc_type(ARC_TYPE::kNetArc);
+        driver_node->add_output_arc(net_arc);
+        node->add_input_arc(net_arc);
         topo_manager->add_arc(net_arc);
       }
     }
   }
 
-  void NesterovPlace::generateGroupArc(Node* node){
+  void NesterovPlace::generateGroupArc(Node* node) {
     auto* topo_manager = _nes_database->_topology_manager;
     auto* group = node->get_group();
-    if(group){
+    if (group) {
       auto input_list = group->obtainInputNodes();
-      for(auto* input_node : input_list){
-        Arc* group_arc = new Arc(input_node,node);
+      for (auto* input_node : input_list) {
+        NetWork* input_net = input_node->get_network();
+        if(input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop){
+          continue;
+        }
+
+        Arc* group_arc = new Arc(input_node, node);
         group_arc->set_arc_type(ARC_TYPE::kGroupArc);
+        input_node->add_output_arc(group_arc);
+        node->add_input_arc(group_arc);
         topo_manager->add_arc(group_arc);
       }
     }
+  }
+
+  void NesterovPlace::initHPWLEvaluator(){
+    _nes_database->_wirelength = new HPWirelength(_nes_database->_topology_manager);
+  }
+
+  void NesterovPlace::initWAWLGradientEvaluator(){
+    _nes_database->_wirelength_gradient = new WAWirelengthGradient(_nes_database->_topology_manager);
+  }
+
+  void NesterovPlace::initTimingAnnotation(){
+    _nes_database->_timing_annotation = new TimingAnnotation(_nes_database->_topology_manager);
   }
 
   void NesterovPlace::initFillerNesInstance()
@@ -1348,9 +1395,9 @@ namespace ipl {
           // update net weight.
           updateTimingNetWeight();
           --cur_opt_overflow_step;
-          LOG_INFO << "[NesterovSolve] Begin update netweight for timing improvement.";
+          LOG_INFO << "[NesterovSolve] update netweight for timing improvement.";
         }
-      }
+              }
 
       updateWirelengthCoef(sum_overflow);
       // dynamic adjustment for better convergence with large designs
@@ -2067,21 +2114,49 @@ namespace ipl {
   }
 
   void NesterovPlace::updateTimingNetWeight()
-  {
-    auto* timing_annotation = _nes_database->_timing_annotation;
-    timing_annotation->updateSTATimingFull();
-    timing_annotation->updateCriticalityAndCentralityFull();
-    auto* topo_manager = _nes_database->_topology_manager;
+  { 
+    float cita = 0.2;
 
-    for (auto* n_net : _nes_database->_nNet_list) {
-      if (n_net->isDontCare()) {
+    auto* topo_manager = _nes_database->_topology_manager;
+    auto* timing_annotation = _nes_database->_timing_annotation;
+    auto& nNet_list = _nes_database->_nNet_list;
+    std::vector<float> prev_miu_list;
+    prev_miu_list.resize(nNet_list.size());
+    float prev_max_centrality = timing_annotation->get_max_centrality();
+    for(size_t i=0; i< nNet_list.size(); i++){
+      if(Utility().isFloatApproximatelyZero(prev_max_centrality)){
+        prev_miu_list[i] = 0.0f;
         continue;
       }
+
+      auto* n_net = nNet_list[i];
       auto* network = topo_manager->findNetworkById(n_net->get_net_id());
-      float cur_timing_weight = timing_annotation->get_network_criticality(network);
-      float prev_timing_weight = n_net->get_weight();
-      float timing_weight = 0.8 * cur_timing_weight + 0.2 * prev_timing_weight;
-      n_net->set_weight(timing_weight);
+      if(n_net->isDontCare()){
+         prev_miu_list[i] = 0.0f;
+      }else{
+        prev_miu_list[i] = timing_annotation->get_network_centrality(network) / prev_max_centrality;
+      }
+    }
+
+    timing_annotation->updateSTATimingFull();
+    timing_annotation->updateCriticalityAndCentralityFull();
+
+    float cur_max_centrality = timing_annotation->get_max_centrality();
+    for(size_t i=0; i< nNet_list.size(); i++){
+      if(Utility().isFloatApproximatelyZero(cur_max_centrality)){
+        break;
+      }
+
+      auto* n_net = nNet_list[i];
+      auto* network = topo_manager->findNetworkById(n_net->get_net_id());
+      if(n_net->isDontCare()){
+        //
+      }else{
+       float cur_miu = timing_annotation->get_network_centrality(network) / cur_max_centrality; 
+       float delta_weight = cita * prev_miu_list[i] + (1 - cita) * cur_miu;
+       float cur_netweight = n_net->get_weight() + delta_weight;
+       n_net->set_weight(cur_netweight);
+      }
     }
   }
 

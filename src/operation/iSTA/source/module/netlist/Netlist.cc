@@ -81,7 +81,7 @@ std::vector<DesignObject*> Netlist::findPin(const char* pattern, bool regexp,
   if (!regexp && !nocase) {
     auto [instance_name, pin_name] = Str::splitTwoPart(pattern, sep);
     if (pin_name.empty()) {
-      LOG_INFO << pattern << " pin name is empty.";
+      // LOG_INFO << pattern << " pin name is empty.";
       return match_pins;
     }
 

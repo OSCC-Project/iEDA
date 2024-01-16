@@ -28,6 +28,7 @@
 #define IPL_OPERATOR_GP_NESTEROV_PLACE_CONFIG_H
 
 #include <string>
+#include <vector>
 
 namespace ipl {
 
@@ -112,7 +113,7 @@ class NesterovPlaceConfig
   int32_t _max_net_wirelength;
 
   // about timing.
-  bool _is_opt_timing;
+  bool _is_opt_timing = 0;
 
   // about opt target overflow list
   std::vector<float> _opt_overflow_list;

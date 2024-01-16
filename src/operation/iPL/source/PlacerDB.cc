@@ -71,7 +71,7 @@ namespace ipl {
   {
     _db_wrapper = db_wrapper;
     updatePlacerConfig(pl_json_path);
-    sortDataForParallel();
+    // sortDataForParallel();
     initTopoManager();
     initGridManager();
     updateTopoManager();
@@ -98,12 +98,11 @@ namespace ipl {
     _topo_manager = new TopologyManager();
     auto* pl_design = this->get_design();
     this->initNodes(pl_design);
-
     this->initNetworks(pl_design);
-
     this->initGroups(pl_design);
-
     this->initArcs();
+
+    // _topo_manager->updateALLNodeTopoId();
   }
 
   void PlacerDB::initNodes(Design* pl_design) {
@@ -112,10 +111,10 @@ namespace ipl {
       node->set_location(std::move(pin->get_center_coordi()));
 
       // set node type.
-      if (pin->isInstanceInput() || pin->isIOOutput()) {
+      if (pin->isInstanceInput() || pin->isIOInput()) {
         node->set_node_type(NODE_TYPE::kInput);
       }
-      else if (pin->isInstanceOutput() || pin->isIOInput()) {
+      else if (pin->isInstanceOutput() || pin->isIOOutput()) {
         node->set_node_type(NODE_TYPE::kOutput);
       }
       else if (pin->isInstanceInputOutput() || pin->isIOInputOutput()) {
@@ -233,6 +232,8 @@ namespace ipl {
       if (driver_node) {
         Arc* net_arc = new Arc(driver_node, node);
         net_arc->set_arc_type(ARC_TYPE::kNetArc);
+        driver_node->add_output_arc(net_arc);
+        node->add_input_arc(net_arc);
         _topo_manager->add_arc(net_arc);
       }
     }
@@ -243,8 +244,15 @@ namespace ipl {
     if(group){
       auto input_list = group->obtainInputNodes();
       for(auto* input_node : input_list){
+        NetWork* input_net = input_node->get_network();
+        if(input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop){
+          continue;
+        }
+
         Arc* group_arc = new Arc(input_node,node);
         group_arc->set_arc_type(ARC_TYPE::kGroupArc);
+        input_node->add_output_arc(group_arc);
+        node->add_input_arc(group_arc);
         _topo_manager->add_arc(group_arc);
       }
     }

@@ -215,6 +215,16 @@ float TimingAnnotation::get_network_criticality(NetWork* network){
   return criticality;
 }
 
+float TimingAnnotation::get_network_centrality(NetWork* network){
+  float centrality = 0.0f;
+  auto* driver_node = network->get_transmitter();
+  if(driver_node){
+    centrality = driver_node->get_centrality();
+  }
+  
+  return centrality;
+}
+
 float TimingAnnotation::get_node_importance(Node* node){
   return (2* node->get_centrality() + node->get_criticality() / 3);
 }

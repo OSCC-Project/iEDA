@@ -31,8 +31,8 @@ AbacusCluster::AbacusCluster(std::string name)
       _weight_e(0.0),
       _weight_q(0.0),
       _total_width(0),
-      _front_cluster(nullptr),
-      _back_cluster(nullptr)
+      _front_cluster(""),
+      _back_cluster("")
 {
 }
 

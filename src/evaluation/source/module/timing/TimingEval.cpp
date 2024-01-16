@@ -446,14 +446,14 @@ void TimingEval::updateEstimateDelay(const std::vector<TimingNet*>& timing_net_l
         std::cout << "Setting the default unit as 1000" << std::endl;
       }
 
-      // double cap
-      //     = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getCapacitance(1, wire_length / 1.0 / _unit, width);
-      // double res
-      //     = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getResistance(1, wire_length / 1.0 / _unit, width);
+      double cap
+          = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getCapacitance(1, wire_length / 1.0 / _unit, width);
+      double res
+          = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getResistance(1, wire_length / 1.0 / _unit, width);
      
-      // tmp for test
-      double cap = (wire_length / 1.0 / _unit) * 1.6e-16;
-      double res = (wire_length / 1.0 / _unit) * 2.535;
+      // // tmp for test
+      // double cap = (wire_length / 1.0 / _unit) * 1.6e-16;
+      // double res = (wire_length / 1.0 / _unit) * 2.535;
 
       _timing_engine->makeResistor(ista_net, first_node, second_node, res);
       _timing_engine->incrCap(first_node, cap / 2);

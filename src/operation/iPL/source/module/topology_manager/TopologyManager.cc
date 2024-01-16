@@ -187,7 +187,7 @@ Group* TopologyManager::findGroupById(int32_t group_id)
 
 void TopologyManager::updateTopoId(Node* node)
 {
-  int32_t lower = -std::numeric_limits<int32_t>::infinity();
+  int32_t lower = INT32_MIN;
   bool has_lower = false;
   for (auto* predecessor_arc : node->get_input_arc_list()) {
     auto* predecessor = predecessor_arc->get_from_node();
@@ -195,7 +195,7 @@ void TopologyManager::updateTopoId(Node* node)
     has_lower = true;
   }
 
-  int32_t upper = +std::numeric_limits<int32_t>::infinity();
+  int32_t upper = INT32_MAX;
   bool has_upper = false;
   for (auto* successor_arc : node->get_output_arc_list()) {
     auto* successor = successor_arc->get_to_node();
@@ -255,7 +255,7 @@ void TopologyManager::updateTopoId(Node* node)
 
         current->set_topo_id(order);
 
-        for (auto* successor_arc : node->get_output_arc_list()) {
+        for (auto* successor_arc : current->get_output_arc_list()) {
           auto* successor = successor_arc->get_to_node();
           if (successor->get_topo_id() <= order) {
             open.push(std::make_tuple(successor, order));
@@ -271,6 +271,30 @@ void TopologyManager::updateALLNodeTopoId()
   for (auto* node : _node_list) {
     updateTopoId(node);
   }
+}
+
+void TopologyManager::sortNodeList(){
+  std::sort(_node_list.begin(), _node_list.end(), [](Node* a, Node* b){
+    return (a->get_node_id() < b->get_node_id());
+  });
+}
+
+void TopologyManager::sortNetworkList(){
+  std::sort(_network_list.begin(), _network_list.end(), [](NetWork* a, NetWork* b){
+    return (a->get_network_id() < b->get_network_id());
+  });
+}
+
+void TopologyManager::sortGroupList(){
+  std::sort(_group_list.begin(), _group_list.end(), [](Group* a, Group* b){
+    return (a->get_group_id() < b->get_group_id());
+  });
+}
+
+void TopologyManager::sortArcList(){
+  std::sort(_arc_list.begin(), _arc_list.end(), [](Arc* a, Arc* b){
+    return (a->get_arc_id() < b->get_arc_id());
+  });
 }
 
 }  // namespace ipl
