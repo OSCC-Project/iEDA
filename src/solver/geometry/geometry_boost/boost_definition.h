@@ -43,6 +43,7 @@ typedef gtl::polygon_with_holes_data<int32_t> PolygonWithHoles;
 
 namespace bg = boost::geometry;
 typedef boost::geometry::model::d2::point_xy<int32_t> BgPoint;
+typedef boost::geometry::model::segment<BgPoint> BgSegment;
 typedef boost::geometry::model::box<BgPoint> BgRect;
 typedef boost::geometry::model::polygon<BgPoint> BgPolygon;
 typedef boost::geometry::model::multi_polygon<BgPolygon> BgMultiPolygon;

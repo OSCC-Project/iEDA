@@ -98,7 +98,7 @@ void DrcIO::get_def_drc()
           break;
         case idrc::ViolationEnumType::kViolationMinSpacing:
         case idrc::ViolationEnumType::kViolationPRL:
-          vio_type = idrc::ViolationType::kNotchSpacing;
+          vio_type = idrc::ViolationType::kRoutingSpacing;
           break;
         case idrc::ViolationEnumType::kViolationMinStep:
           vio_type = idrc::ViolationType::kMinStep;

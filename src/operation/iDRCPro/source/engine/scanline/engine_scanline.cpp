@@ -261,7 +261,7 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
   // while (scanline_status_it != status.insert_end) {
   //   ScanlinePoint* point_backward = *scanline_status_it;
   //   if (++scanline_status_it != status.insert_end) {
-  // TODO: 像上面注释一样局部处理扫描线状态，目前局部处理会出现激活条件太远导致 overlap 不出发
+  // TODO: 像上面注释一样局部处理扫描线状态，目前局部处理会出现激活条件太远导致 overlap 不触发
   auto scanline_status_it = status.status_points.begin();
   while (scanline_status_it != status.status_points.end()) {
     ScanlinePoint* point_backward = *scanline_status_it;
