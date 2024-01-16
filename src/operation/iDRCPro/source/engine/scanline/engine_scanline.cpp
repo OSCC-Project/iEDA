@@ -238,7 +238,8 @@ bool DrcEngineScanline::tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoi
         break;
     }
 
-    DrcBasicPoint* new_point = new DrcBasicPoint(x, y, point->get_id(), false, first_point, second_point);
+    DrcBasicPoint* new_point
+        = new DrcBasicPoint(x, y, point->get_id(), point->get_point()->get_polygon_id(), false, first_point, second_point);
     first_point->set_next(new_point);
     second_point->set_prev(new_point);
 

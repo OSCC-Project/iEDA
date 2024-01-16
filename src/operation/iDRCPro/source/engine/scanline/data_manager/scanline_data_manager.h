@@ -122,6 +122,8 @@ class ScanlineDataManager
   std::vector<ScanlinePoint*> _scanline_points_vertical;
   std::vector<ScanlinePoint*> _scanline_points_horizontal;
 
+  int _polygon_count = 0;
+
   template <typename T>
   void deleteVectorElements(T& v);
 };
