@@ -42,7 +42,7 @@ class Log
   };
 
  public:
-  static void init(char* argv[]);
+  static void init(char* argv[], std::string home_path);
   static void end();
   static void makeSureDirectoryExist(std::string directory_path);
 };
