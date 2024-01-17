@@ -44,6 +44,7 @@ void PlacerDB::destoryInst()
 {
   if (_s_placer_db_instance) {
     delete _s_placer_db_instance;
+    _s_placer_db_instance = nullptr;
   }
 }
 
@@ -55,15 +56,19 @@ PlacerDB::~PlacerDB()
 {
   if (_config) {
     delete _config;
+    _config = nullptr;
   }
   if (_db_wrapper) {
     delete _db_wrapper;
+    _db_wrapper = nullptr;
   }
   if (_topo_manager) {
     delete _topo_manager;
+    _topo_manager = nullptr;
   }
   if (_grid_manager) {
     delete _grid_manager;
+    _grid_manager = nullptr;
   }
 }
 

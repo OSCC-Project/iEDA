@@ -447,13 +447,17 @@ LibertyDelayTableModel& LibertyDelayTableModel::operator=(LibertyDelayTableModel
  * @param load The constrain_slew_or_load.
  * @return double The delay.
  */
-double LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
+std::optional<double> LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellRise));
   } else {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellFall));
+  }
+
+  if (!table) {
+    return std::nullopt;
   }
 
   return table->findValue(slew, load);
@@ -465,15 +469,19 @@ double LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, doub
  * @param trans_type Rise/Fall.
  * @param slew The slew.
  * @param load The constrain_slew_or_load.
- * @return double The slew.
+ * @return std::optional<double> The slew.
  */
-double LibertyDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
+std::optional<double> LibertyDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kRiseTransition));
   } else {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kFallTransition));
+  }
+
+  if (!table) {
+    return std::nullopt;
   }
 
   return table->findValue(slew, load);
@@ -588,7 +596,7 @@ double LibertyDelayTableModel::driveResistance()
  * @param constrain_slew The constrain_slew.
  * @return double The slew.
  */
-double LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
+std::optional<double> LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
@@ -598,7 +606,7 @@ double LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double s
   }
 
   if (!table) {
-    return 0.0;
+    return std::nullopt;
   }
 
   return table->findValue(slew, constrain_slew);
@@ -1069,11 +1077,19 @@ double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew,
   }
 
   // pass converted slew into `gateDelay()` and return conveted Delay
+  std::optional<double> found_delay;
   if (isDelayArc()) {
-    return _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew) * liberty_to_output_convert;
+    found_delay = _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   } else {
-    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
+    found_delay = _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   }
+
+  if (found_delay) {
+    double ret_value = (*found_delay) * liberty_to_output_convert;
+    return ret_value;
+  }
+
+  return 0.0;
 }
 
 /**
@@ -1107,10 +1123,14 @@ double LibertyArc::getSlewNs(TransType trans_type, double slew, double load)
   }
 
   // pass converted slew into `gateSlew()` and return in ns
-  double found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
-  double ret_value = found_slew * liberty_to_output_convert * slew_derate_from_library;
+  auto found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
 
-  return ret_value;
+  if (found_slew) {
+    double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
+    return ret_value;
+  }
+
+  return 0.0;
 }
 
 /**

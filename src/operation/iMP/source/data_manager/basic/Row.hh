@@ -31,7 +31,8 @@
 #include <vector>
 
 #include "Orient.hh"
-#include "Rectangle.hh"
+// #include "geo::box.hh"
+#include "Geometry.hh"
 
 namespace imp {
 
@@ -76,7 +77,6 @@ class Row
   explicit Row(std::string name);
   Row(const Row&) = delete;
   Row(Row&&) = delete;
-  ~Row();
 
   Row& operator=(const Row&) = delete;
   Row& operator=(Row&&) = delete;
@@ -85,32 +85,27 @@ class Row
   std::string get_name() const { return _name; }
   Orient get_orient() const { return _site->get_orient(); }
 
-  Rectangle<int32_t> get_shape() const { return _shape; }
-  Point<int32_t> get_coordi() const { return _shape.get_lower_left(); }
+  geo::box<int32_t> get_shape() const { return _shape; }
+  geo::point<int32_t> get_coordi() const { return _shape.min_corner(); }
 
-  Site* get_site() const { return _site; }
+  std::shared_ptr<Site> get_site() const { return _site; }
   int32_t get_site_num() const { return _site_num; }
   int32_t get_site_width() const { return _site->get_site_width(); }
   int32_t get_site_height() const { return _site->get_site_height(); }
 
   // setter.
-  void set_shape(Rectangle<int32_t> shape) { _shape = std::move(shape); }
-  void set_site(Site* site) { _site = site; }
+  void set_shape(geo::box<int32_t> shape) { _shape = std::move(shape); }
+  void set_site(std::shared_ptr<Site> site) { _site = site; }
   void set_site_num(int32_t site_num) { _site_num = site_num; }
 
  private:
   std::string _name;
-  Rectangle<int32_t> _shape;
-  Site* _site;
+  geo::box<int32_t> _shape;
+  std::shared_ptr<Site> _site;
   int32_t _site_num;
 };
 inline Row::Row(std::string name) : _name(std::move(name)), _site(nullptr)
 {
-}
-
-inline Row::~Row()
-{
-  delete _site;
 }
 
 }  // namespace imp

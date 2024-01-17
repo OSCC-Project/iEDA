@@ -85,7 +85,7 @@ void PLAPI::reportViolationInfo(std::ofstream& feed)
   }
   violation_detail_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
 
-  auto report_tbl = _external_api.generateTable("table");
+  auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Violation Info";
   (*report_tbl)[0][1] = "Value";
@@ -196,7 +196,7 @@ void PLAPI::reportLayoutWhiteInfo()
 
 void PLAPI::reportBinDensity(std::ofstream& feed)
 {
-  auto report_tbl = _external_api.generateTable("table");
+  auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Bin Density Info";
   (*report_tbl)[0][1] = "Value";
@@ -686,7 +686,7 @@ void PLAPI::reportWLInfo(std::ofstream& feed)
   }
   wl_detail_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
 
-  auto report_tbl = _external_api.generateTable("table");
+  auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Wirelength Info";
   (*report_tbl)[0][1] = "Value";
@@ -861,7 +861,7 @@ void PLAPI::reportTimingInfo(std::ofstream& feed)
     iPLAPIInst.initTimingEval();
     iPLAPIInst.updateTiming();
 
-    auto report_tbl = _external_api.generateTable("table");
+    auto report_tbl = _external_api->generateTable("table");
     (*report_tbl) << TABLE_HEAD;
     (*report_tbl)[0][0] = "Clock Timing Info";
     (*report_tbl)[0][1] = "Early WNS";
@@ -889,7 +889,7 @@ void PLAPI::reportCongestionInfo(std::ofstream& feed)
 {
   std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
 
-  auto report_tbl = _external_api.generateTable("table");
+  auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Congestion Info";
   (*report_tbl)[1][0] = "Average Congestion of Edges";
@@ -914,7 +914,7 @@ void PLAPI::reportPLBaseInfo(std::ofstream& feed)
   auto* pl_layout = PlacerDBInst.get_layout();
   auto* pl_design = PlacerDBInst.get_design();
 
-  auto report_tbl = _external_api.generateTable("table");
+  auto report_tbl = _external_api->generateTable("table");
   (*report_tbl) << TABLE_HEAD;
   (*report_tbl)[0][0] = "Base Info";
   (*report_tbl)[0][1] = "Value";

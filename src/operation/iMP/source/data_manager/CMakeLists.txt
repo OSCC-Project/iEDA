@@ -1,16 +1,29 @@
-add_library(imp-datamanager
-    ${IMP_DATAMANAGER}/DataManager.cc
+set(IMP_PARSER ${IMP_DATAMANAGER}/parser)
+set(IMP_BASIC ${IMP_DATAMANAGER}/basic)
+add_subdirectory(${IMP_BASIC})
+add_subdirectory(${IMP_PARSER})
+
+add_library(imp-datamanager INTERFACE
 )
 
 target_link_libraries(imp-datamanager
-    PRIVATE
-    imp-wrapper
-    imp-logger
+    INTERFACE
+    imp-parser
+    imp-basic
 )
 target_include_directories(imp-datamanager
-    PUBLIC
-        ${IMP_DATAMANAGER}
-        ${IMP_DATAMANAGER}/basic
+    INTERFACE
+        ${IMP_BASIC}
+        ${IMP_PARSER}
 )
-set(IMP_WRAPPER ${IMP_DATAMANAGER}/wrapper)
-add_subdirectory(${IMP_WRAPPER})
+# add_library(imp-datamanager
+#     ${IMP_DATAMANAGER}/FloorplanDB.cc
+# )
+
+# target_link_libraries(imp-datamanager
+#     PUBLIC
+#     imp-parser
+#     # imp-basic
+#     # imp-structure
+#     # imp-logger
+# )

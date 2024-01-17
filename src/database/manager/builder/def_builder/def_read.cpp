@@ -68,184 +68,188 @@ bool DefRead::check_type(defrCallbackType_e type)
 
 bool DefRead::createDb(const char* file)
 {
-  FILE* f = fopen(file, "r");
+  if (ieda::Str::contain(file, ".gz")) {
+    return createDbGzip(file);
+  } else {
+    FILE* f = fopen(file, "r");
 
-  if (f == NULL) {
-    std::cout << "Open def file failed..." << std::endl;
-    return false;
+    if (f == NULL) {
+      std::cout << "Open def file failed..." << std::endl;
+      return false;
+    }
+
+    defrInit();
+    defrReset();
+
+    defrInitSession();
+    defrSetVersionStrCbk(versionCallback);
+    defrSetDesignCbk(designCallback);
+    defrSetBusBitCbk(busBitCharsCallBack);
+    //   defrSetPropCbk(propCallback);
+    //   defrSetPropDefEndCbk(propEndCallback);
+    //   defrSetPropDefStartCbk(propStartCallback);
+    //  defrSetBlockageStartCbk(blockageBeginCallback);
+    defrSetBlockageCbk(blockageCallback);
+    //  defrSetBlockageEndCbk(blockageEndCallback);
+    defrSetComponentCbk(componentsCallback);
+    defrSetComponentStartCbk(componentNumberCallback);
+    defrSetComponentEndCbk(componentEndCallback);
+    //   defrSetComponentMaskShiftLayerCbk(componentMaskShiftCallback);
+    //   defrSetExtensionCbk(extensionCallback);
+    defrSetFillStartCbk(fillsCallback);
+    defrSetFillCbk(fillCallback);
+    defrSetGcellGridCbk(gcellGridCallback);
+    defrSetGroupCbk(groupCallback);
+    //   defrSetGroupMemberCbk(groupMemberCallback);
+    //   defrSetGroupNameCbk(groupNameCallback);
+    //   defrSetHistoryCbk(historyCallback);
+    defrSetNetStartCbk(netBeginCallback);
+    defrSetNetCbk(netCallback);
+    defrSetNetEndCbk(netEndCallback);
+    //   defrSetNonDefaultCbk(nonDefaultRuleCallback);
+    defrSetPinCbk(pinCallback);
+    defrSetPinEndCbk(pinsEndCallback);
+    defrSetStartPinsCbk(pinsBeginCallback);
+    //   defrSetPinPropCbk(pinPropCallback);
+    defrSetRegionCbk(regionCallback);
+    defrSetRowCbk(rowCallback);
+    //   defrSetScanchainsStartCbk(scanchainsCallback);
+    defrSetSlotCbk(slotsCallback);
+    defrSetSNetStartCbk(specialNetBeginCallback);
+    defrSetSNetCbk(specialNetCallback);
+    defrSetSNetEndCbk(specialNetEndCallback);
+    // defrSetStartPinsCbk(pinsStartCallback);
+    //   defrSetStylesStartCbk(stylesCallback);
+    //   defrSetTechnologyCbk(technologyCallback);
+    defrSetUnitsCbk(unitsCallback);
+    defrSetViaCbk(viaCallback);
+    defrSetViaStartCbk(viaBeginCallback);
+
+    defrSetAddPathToNet();
+    defrSetDieAreaCbk(dieAreaCallback);
+    defrSetTrackCbk(trackGridCallback);
+    // void* userData = (void*) 0x01020304;
+
+    int res = defrRead(f, file, (defiUserData) this, /* case sensitive */ 1);
+
+    if (res != 0) {
+      return false;
+    }
+
+    (void) defrUnsetCallbacks();
+
+    // Unset all the callbacks
+    defrUnsetArrayNameCbk();
+    defrUnsetAssertionCbk();
+    defrUnsetAssertionsStartCbk();
+    defrUnsetAssertionsEndCbk();
+    defrUnsetBlockageCbk();
+    defrUnsetBlockageStartCbk();
+    defrUnsetBlockageEndCbk();
+    defrUnsetBusBitCbk();
+    defrUnsetCannotOccupyCbk();
+    defrUnsetCanplaceCbk();
+    defrUnsetCaseSensitiveCbk();
+    defrUnsetComponentCbk();
+    defrUnsetComponentExtCbk();
+    defrUnsetComponentStartCbk();
+    defrUnsetComponentEndCbk();
+    defrUnsetConstraintCbk();
+    defrUnsetConstraintsStartCbk();
+    defrUnsetConstraintsEndCbk();
+    defrUnsetDefaultCapCbk();
+    defrUnsetDesignCbk();
+    defrUnsetDesignEndCbk();
+    defrUnsetDieAreaCbk();
+    defrUnsetDividerCbk();
+    defrUnsetExtensionCbk();
+    defrUnsetFillCbk();
+    defrUnsetFillStartCbk();
+    defrUnsetFillEndCbk();
+    defrUnsetFPCCbk();
+    defrUnsetFPCStartCbk();
+    defrUnsetFPCEndCbk();
+    defrUnsetFloorPlanNameCbk();
+    defrUnsetGcellGridCbk();
+    defrUnsetGroupCbk();
+    defrUnsetGroupExtCbk();
+    defrUnsetGroupMemberCbk();
+    defrUnsetComponentMaskShiftLayerCbk();
+    defrUnsetGroupNameCbk();
+    defrUnsetGroupsStartCbk();
+    defrUnsetGroupsEndCbk();
+    defrUnsetHistoryCbk();
+    defrUnsetIOTimingCbk();
+    defrUnsetIOTimingsStartCbk();
+    defrUnsetIOTimingsEndCbk();
+    defrUnsetIOTimingsExtCbk();
+    defrUnsetNetCbk();
+    defrUnsetNetNameCbk();
+    defrUnsetNetNonDefaultRuleCbk();
+    defrUnsetNetConnectionExtCbk();
+    defrUnsetNetExtCbk();
+    defrUnsetNetPartialPathCbk();
+    defrUnsetNetSubnetNameCbk();
+    defrUnsetNetStartCbk();
+    defrUnsetNetEndCbk();
+    defrUnsetNonDefaultCbk();
+    defrUnsetNonDefaultStartCbk();
+    defrUnsetNonDefaultEndCbk();
+    defrUnsetPartitionCbk();
+    defrUnsetPartitionsExtCbk();
+    defrUnsetPartitionsStartCbk();
+    defrUnsetPartitionsEndCbk();
+    defrUnsetPathCbk();
+    defrUnsetPinCapCbk();
+    defrUnsetPinCbk();
+    defrUnsetPinEndCbk();
+    defrUnsetPinExtCbk();
+    defrUnsetPinPropCbk();
+    defrUnsetPinPropStartCbk();
+    defrUnsetPinPropEndCbk();
+    defrUnsetPropCbk();
+    defrUnsetPropDefEndCbk();
+    defrUnsetPropDefStartCbk();
+    defrUnsetRegionCbk();
+    defrUnsetRegionStartCbk();
+    defrUnsetRegionEndCbk();
+    defrUnsetRowCbk();
+    defrUnsetScanChainExtCbk();
+    defrUnsetScanchainCbk();
+    defrUnsetScanchainsStartCbk();
+    defrUnsetScanchainsEndCbk();
+    defrUnsetSiteCbk();
+    defrUnsetSlotCbk();
+    defrUnsetSlotStartCbk();
+    defrUnsetSlotEndCbk();
+    defrUnsetSNetWireCbk();
+    defrUnsetSNetCbk();
+    defrUnsetSNetStartCbk();
+    defrUnsetSNetEndCbk();
+    defrUnsetSNetPartialPathCbk();
+    defrUnsetStartPinsCbk();
+    defrUnsetStylesCbk();
+    defrUnsetStylesStartCbk();
+    defrUnsetStylesEndCbk();
+    defrUnsetTechnologyCbk();
+    defrUnsetTimingDisableCbk();
+    defrUnsetTimingDisablesStartCbk();
+    defrUnsetTimingDisablesEndCbk();
+    defrUnsetTrackCbk();
+    defrUnsetUnitsCbk();
+    defrUnsetVersionCbk();
+    defrUnsetVersionStrCbk();
+    defrUnsetViaCbk();
+    defrUnsetViaExtCbk();
+    defrUnsetViaStartCbk();
+    defrUnsetViaEndCbk();
+
+    defrClear();
+
+    fclose(f);
+
+    return true;
   }
-
-  defrInit();
-  defrReset();
-
-  defrInitSession();
-  defrSetVersionStrCbk(versionCallback);
-  defrSetDesignCbk(designCallback);
-  defrSetBusBitCbk(busBitCharsCallBack);
-  //   defrSetPropCbk(propCallback);
-  //   defrSetPropDefEndCbk(propEndCallback);
-  //   defrSetPropDefStartCbk(propStartCallback);
-  //  defrSetBlockageStartCbk(blockageBeginCallback);
-  defrSetBlockageCbk(blockageCallback);
-  //  defrSetBlockageEndCbk(blockageEndCallback);
-  defrSetComponentCbk(componentsCallback);
-  defrSetComponentStartCbk(componentNumberCallback);
-  defrSetComponentEndCbk(componentEndCallback);
-  //   defrSetComponentMaskShiftLayerCbk(componentMaskShiftCallback);
-  //   defrSetExtensionCbk(extensionCallback);
-  defrSetFillStartCbk(fillsCallback);
-  defrSetFillCbk(fillCallback);
-  defrSetGcellGridCbk(gcellGridCallback);
-  defrSetGroupCbk(groupCallback);
-  //   defrSetGroupMemberCbk(groupMemberCallback);
-  //   defrSetGroupNameCbk(groupNameCallback);
-  //   defrSetHistoryCbk(historyCallback);
-  defrSetNetStartCbk(netBeginCallback);
-  defrSetNetCbk(netCallback);
-  defrSetNetEndCbk(netEndCallback);
-  //   defrSetNonDefaultCbk(nonDefaultRuleCallback);
-  defrSetPinCbk(pinCallback);
-  defrSetPinEndCbk(pinsEndCallback);
-  defrSetStartPinsCbk(pinsBeginCallback);
-  //   defrSetPinPropCbk(pinPropCallback);
-  defrSetRegionCbk(regionCallback);
-  defrSetRowCbk(rowCallback);
-  //   defrSetScanchainsStartCbk(scanchainsCallback);
-  defrSetSlotCbk(slotsCallback);
-  defrSetSNetStartCbk(specialNetBeginCallback);
-  defrSetSNetCbk(specialNetCallback);
-  defrSetSNetEndCbk(specialNetEndCallback);
-  // defrSetStartPinsCbk(pinsStartCallback);
-  //   defrSetStylesStartCbk(stylesCallback);
-  //   defrSetTechnologyCbk(technologyCallback);
-  defrSetUnitsCbk(unitsCallback);
-  defrSetViaCbk(viaCallback);
-  defrSetViaStartCbk(viaBeginCallback);
-
-  defrSetAddPathToNet();
-  defrSetDieAreaCbk(dieAreaCallback);
-  defrSetTrackCbk(trackGridCallback);
-  // void* userData = (void*) 0x01020304;
-
-  int res = defrRead(f, file, (defiUserData) this, /* case sensitive */ 1);
-
-  if (res != 0) {
-    return false;
-  }
-
-  (void) defrUnsetCallbacks();
-
-  // Unset all the callbacks
-  defrUnsetArrayNameCbk();
-  defrUnsetAssertionCbk();
-  defrUnsetAssertionsStartCbk();
-  defrUnsetAssertionsEndCbk();
-  defrUnsetBlockageCbk();
-  defrUnsetBlockageStartCbk();
-  defrUnsetBlockageEndCbk();
-  defrUnsetBusBitCbk();
-  defrUnsetCannotOccupyCbk();
-  defrUnsetCanplaceCbk();
-  defrUnsetCaseSensitiveCbk();
-  defrUnsetComponentCbk();
-  defrUnsetComponentExtCbk();
-  defrUnsetComponentStartCbk();
-  defrUnsetComponentEndCbk();
-  defrUnsetConstraintCbk();
-  defrUnsetConstraintsStartCbk();
-  defrUnsetConstraintsEndCbk();
-  defrUnsetDefaultCapCbk();
-  defrUnsetDesignCbk();
-  defrUnsetDesignEndCbk();
-  defrUnsetDieAreaCbk();
-  defrUnsetDividerCbk();
-  defrUnsetExtensionCbk();
-  defrUnsetFillCbk();
-  defrUnsetFillStartCbk();
-  defrUnsetFillEndCbk();
-  defrUnsetFPCCbk();
-  defrUnsetFPCStartCbk();
-  defrUnsetFPCEndCbk();
-  defrUnsetFloorPlanNameCbk();
-  defrUnsetGcellGridCbk();
-  defrUnsetGroupCbk();
-  defrUnsetGroupExtCbk();
-  defrUnsetGroupMemberCbk();
-  defrUnsetComponentMaskShiftLayerCbk();
-  defrUnsetGroupNameCbk();
-  defrUnsetGroupsStartCbk();
-  defrUnsetGroupsEndCbk();
-  defrUnsetHistoryCbk();
-  defrUnsetIOTimingCbk();
-  defrUnsetIOTimingsStartCbk();
-  defrUnsetIOTimingsEndCbk();
-  defrUnsetIOTimingsExtCbk();
-  defrUnsetNetCbk();
-  defrUnsetNetNameCbk();
-  defrUnsetNetNonDefaultRuleCbk();
-  defrUnsetNetConnectionExtCbk();
-  defrUnsetNetExtCbk();
-  defrUnsetNetPartialPathCbk();
-  defrUnsetNetSubnetNameCbk();
-  defrUnsetNetStartCbk();
-  defrUnsetNetEndCbk();
-  defrUnsetNonDefaultCbk();
-  defrUnsetNonDefaultStartCbk();
-  defrUnsetNonDefaultEndCbk();
-  defrUnsetPartitionCbk();
-  defrUnsetPartitionsExtCbk();
-  defrUnsetPartitionsStartCbk();
-  defrUnsetPartitionsEndCbk();
-  defrUnsetPathCbk();
-  defrUnsetPinCapCbk();
-  defrUnsetPinCbk();
-  defrUnsetPinEndCbk();
-  defrUnsetPinExtCbk();
-  defrUnsetPinPropCbk();
-  defrUnsetPinPropStartCbk();
-  defrUnsetPinPropEndCbk();
-  defrUnsetPropCbk();
-  defrUnsetPropDefEndCbk();
-  defrUnsetPropDefStartCbk();
-  defrUnsetRegionCbk();
-  defrUnsetRegionStartCbk();
-  defrUnsetRegionEndCbk();
-  defrUnsetRowCbk();
-  defrUnsetScanChainExtCbk();
-  defrUnsetScanchainCbk();
-  defrUnsetScanchainsStartCbk();
-  defrUnsetScanchainsEndCbk();
-  defrUnsetSiteCbk();
-  defrUnsetSlotCbk();
-  defrUnsetSlotStartCbk();
-  defrUnsetSlotEndCbk();
-  defrUnsetSNetWireCbk();
-  defrUnsetSNetCbk();
-  defrUnsetSNetStartCbk();
-  defrUnsetSNetEndCbk();
-  defrUnsetSNetPartialPathCbk();
-  defrUnsetStartPinsCbk();
-  defrUnsetStylesCbk();
-  defrUnsetStylesStartCbk();
-  defrUnsetStylesEndCbk();
-  defrUnsetTechnologyCbk();
-  defrUnsetTimingDisableCbk();
-  defrUnsetTimingDisablesStartCbk();
-  defrUnsetTimingDisablesEndCbk();
-  defrUnsetTrackCbk();
-  defrUnsetUnitsCbk();
-  defrUnsetVersionCbk();
-  defrUnsetVersionStrCbk();
-  defrUnsetViaCbk();
-  defrUnsetViaExtCbk();
-  defrUnsetViaStartCbk();
-  defrUnsetViaEndCbk();
-
-  defrClear();
-
-  fclose(f);
-
-  return true;
 }
 
 bool DefRead::createDbGzip(const char* gzip_file)
@@ -1068,7 +1072,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
       if (pin == nullptr) {
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
-        net->set_io_pin(pin);
+        net->add_io_pin(pin);
         pin->set_net(net);
       }
     } else {

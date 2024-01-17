@@ -25,12 +25,16 @@ CmdCTSAutoRun::CmdCTSAutoRun(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
   addOption(file_name_option);
+  auto* dir_name_option = new TclStringOption(TCL_WORK_DIR, 1, nullptr);
+  addOption(dir_name_option);
 }
 
 unsigned CmdCTSAutoRun::check()
 {
   TclOption* file_name_option = getOptionOrArg(TCL_CONFIG);
   LOG_FATAL_IF(!file_name_option);
+  TclOption* dir_name_option = getOptionOrArg(TCL_WORK_DIR);
+  LOG_FATAL_IF(!dir_name_option);
   return 1;
 }
 
@@ -40,10 +44,13 @@ unsigned CmdCTSAutoRun::exec()
     return 0;
   }
 
-  TclOption* option = getOptionOrArg(TCL_CONFIG);
-  auto data_config = option->getStringVal();
+  TclOption* config_option = getOptionOrArg(TCL_CONFIG);
+  auto config_path = config_option->getStringVal();
 
-  if (iplf::tmInst->autoRunCTS(data_config)) {
+  TclOption* dir_option = getOptionOrArg(TCL_WORK_DIR);
+  auto dir_path = dir_option->getStringVal();
+
+  if (iplf::tmInst->autoRunCTS(config_path, dir_path)) {
     std::cout << "iCTS run successfully." << std::endl;
   }
 

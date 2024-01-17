@@ -35,7 +35,7 @@ namespace idm {
  * @Brief :
  * @return int64_t
  */
-uint64_t DataManager::instanceArea(IdbInstanceType type)
+double DataManager::instanceArea(IdbInstanceType type)
 {
   uint64_t inst_area = 0;
   IdbInstanceList* inst_list = _design->get_instance_list();
@@ -57,20 +57,21 @@ uint64_t DataManager::instanceArea(IdbInstanceType type)
     }
   }
 
-  return inst_area;
+  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
+  return ((double) inst_area) / (dbu * dbu);
 }
 
-uint64_t DataManager::distInstArea()
+double DataManager::distInstArea()
 {
   return instanceArea(IdbInstanceType::kDist);
 }
 
-uint64_t DataManager::netlistInstArea()
+double DataManager::netlistInstArea()
 {
   return instanceArea(IdbInstanceType::kNetlist);
 }
 
-uint64_t DataManager::timingInstArea()
+double DataManager::timingInstArea()
 {
   return instanceArea(IdbInstanceType::kTiming);
 }

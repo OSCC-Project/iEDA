@@ -143,6 +143,7 @@ class GridManager
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
   int64_t obtainTotalOverflowArea();
   float obtainPeakGridDensity();
+  float obtainAvgGridDensity();
 
  private:
   Utility _utility;

@@ -608,6 +608,38 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
 
     (*report_tbl) << TABLE_ENDLINE;
 
+    auto [cell_delay, net_delay] =
+        seq_path_data->getCellAndNetDelayOfArriveTime();
+    int64_t path_arrive_time = seq_path_data->getArriveTime();
+    auto calc_percent = [path_arrive_time, &fix_point_str](auto delay) {
+      std::string delay_percent = Str::join(
+          {fix_point_str(FS_TO_NS(delay)), "(",
+           fix_point_str(static_cast<double>(delay) * 100 / path_arrive_time),
+           "%)"},
+          "");
+      return delay_percent;
+    };
+
+    if (is_derate) {
+      (*report_tbl) << "path cell delay" << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << calc_percent(cell_delay) << TABLE_ENDLINE;
+      (*report_tbl) << "path net delay" << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << calc_percent(net_delay) << TABLE_ENDLINE;
+
+    } else {
+      (*report_tbl) << "path cell delay" << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+                    << calc_percent(cell_delay) << TABLE_ENDLINE;
+
+      (*report_tbl) << "path net delay" << TABLE_SKIP << TABLE_SKIP
+                    << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+                    << calc_percent(net_delay) << TABLE_ENDLINE;
+    }
+
+    (*report_tbl) << TABLE_ENDLINE;
+
     /*The slack summary*/
     if (is_derate) {
       (*report_tbl) << "data require time" << TABLE_SKIP << TABLE_SKIP
@@ -625,13 +657,13 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
     if (is_derate) {
       (*report_tbl) << "data arrival time" << TABLE_SKIP << TABLE_SKIP
                     << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
-                    << TABLE_SKIP
-                    << fix_point_str(FS_TO_NS(seq_path_data->getArriveTime()))
+                    << TABLE_SKIP << fix_point_str(FS_TO_NS(path_arrive_time))
                     << TABLE_ENDLINE;
+
     } else {
       (*report_tbl) << "data arrival time" << TABLE_SKIP << TABLE_SKIP
                     << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
-                    << fix_point_str(FS_TO_NS(seq_path_data->getArriveTime()))
+                    << fix_point_str(FS_TO_NS(path_arrive_time))
                     << TABLE_ENDLINE;
     }
 

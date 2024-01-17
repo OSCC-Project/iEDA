@@ -97,7 +97,7 @@ class ToolManager
   bool RunTOSetup(std::string config = "");
 
   /// iCTS
-  bool autoRunCTS(std::string config = "");
+  bool autoRunCTS(std::string config = "", std::string work_dir="");
   bool reportCTS(std::string path = "");
   /// iRT
   bool autoRunRouter(std::string config_file_path = "");

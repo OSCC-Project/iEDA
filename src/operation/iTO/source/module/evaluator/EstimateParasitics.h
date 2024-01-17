@@ -51,6 +51,10 @@ class EstimateParasitics {
   void excuteWireParasitic(DesignObject *drvr_pin_port, Net *curr_net,
                            TimingDBAdapter *db_adapter);
 
+  std::unordered_set<ista::Net *> get_parasitics_invalid_net() {
+    return _parasitics_invalid;
+  }
+
  private:
   void RctNodeConnectPin(Net *net, int index, RctNode *rcnode, RoutingTree *tree);
 

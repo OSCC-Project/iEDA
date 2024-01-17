@@ -20,6 +20,8 @@
  */
 #include "GDSPloter.hh"
 
+#include <filesystem>
+
 #include "CTSAPI.hh"
 #include "CtsDBWrapper.hh"
 
@@ -31,7 +33,14 @@ void GDSPloter::plotDesign(const std::string& path)
   auto& clk_nets = design->get_nets();
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto file_path = path.empty() ? config->get_sta_workspace() + "/cts_design.gds" : path;
+  auto file_path = path;
+  if (file_path.empty()) {
+    auto dir = std::filesystem::path(config->get_work_dir()).append("output").string();
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    file_path = std::filesystem::path(dir).append("cts_design.gds").string();
+  }
   auto ofs = std::fstream(file_path, std::ios::out | std::ios::trunc);
 
   head(ofs);
@@ -107,7 +116,14 @@ void GDSPloter::plotFlyLine(const std::string& path)
   auto& clk_nets = design->get_nets();
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto file_path = path.empty() ? config->get_sta_workspace() + "/cts_flyline.gds" : path;
+  auto file_path = path;
+  if (file_path.empty()) {
+    auto dir = std::filesystem::path(config->get_work_dir()).append("output").string();
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    file_path = std::filesystem::path(dir).append("cts_flyline.gds").string();
+  }
   auto ofs = std::fstream(file_path, std::ios::out | std::ios::trunc);
 
   head(ofs);
@@ -180,7 +196,14 @@ void GDSPloter::writePyDesign(const std::string& path)
 
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto file_path = path.empty() ? config->get_sta_workspace() + "/cts_design.py" : path;
+  auto file_path = path;
+  if (file_path.empty()) {
+    auto dir = std::filesystem::path(config->get_work_dir()).append("output").string();
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    file_path = std::filesystem::path(dir).append("cts_design.py").string();
+  }
   int max_level = 0;
   auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();
@@ -267,7 +290,14 @@ void GDSPloter::writePyFlyLine(const std::string& path)
 
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto file_path = path.empty() ? config->get_sta_workspace() + "/cts_flyline.py" : path;
+  auto file_path = path;
+  if (file_path.empty()) {
+    auto dir = std::filesystem::path(config->get_work_dir()).append("output").string();
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    file_path = std::filesystem::path(dir).append("cts_flyline.py").string();
+  }
   int max_level = 0;
   auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
   auto idb_insts = idb_design->get_instance_list()->get_instance_list();

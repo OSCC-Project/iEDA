@@ -1,0 +1,11 @@
+add_library(imp-randomsearch 
+           ${IMP_RANDOMSEARCH}/SA.cc)
+target_link_libraries(imp-randomsearch
+                      PRIVATE
+                      imp-netlist
+                      imp-representation
+                      imp-solver
+                      )
+target_include_directories(imp-randomsearch
+                          PUBLIC 
+                           ${IMP_RANDOMSEARCH})

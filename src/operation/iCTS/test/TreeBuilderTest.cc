@@ -141,7 +141,7 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
     auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
                         TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
                         TreeBuilder::funcName(TreeBuilder::cbsTree)};
@@ -174,7 +174,7 @@ TEST_F(TreeBuilderTest, LowBoundEstimationTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
 
     tree_builder.runEstimationTest(env_info, case_num, skew_bound, dir, suffix);
   });
@@ -196,7 +196,7 @@ TEST_F(TreeBuilderTest, IterativeFixSkewTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
 
     tree_builder.runIterativeFixSkewTest(env_info, case_num, skew_bound, dir, suffix);
   });

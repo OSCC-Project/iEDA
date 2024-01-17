@@ -99,6 +99,75 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
   driver->set_level(max_level + 1);
 }
 
+void Evaluator::pathLevelLog() const
+{
+  CTSAPIInst.logTitle("Summary of Path Level");
+  struct TreeNode
+  {
+    std::string name;
+    int depth;
+    TreeNode* parent;
+    std::vector<TreeNode*> children;
+  };
+
+  std::unordered_map<std::string, TreeNode*> name_to_node;
+  auto gen_node = [&](CtsInstance* inst) {
+    if (name_to_node.count(inst->get_name()) == 0) {
+      name_to_node[inst->get_name()] = new TreeNode{inst->get_name(), 0, {}};
+    }
+    return name_to_node[inst->get_name()];
+  };
+
+  auto* design = CTSAPIInst.get_design();
+  auto& clk_nets = design->get_nets();
+  for (auto clk_net : clk_nets) {
+    auto* driver = clk_net->get_driver_inst();
+    auto* driver_node = gen_node(driver);
+    auto loads = clk_net->get_load_insts();
+    for (auto load : loads) {
+      auto* load_node = gen_node(load);
+      driver_node->children.emplace_back(load_node);
+      load_node->parent = driver_node;
+    }
+  }
+  // find root
+  std::vector<TreeNode*> roots;
+  for (auto [_, node] : name_to_node) {
+    if (node->parent == nullptr) {
+      node->depth = 0;
+      roots.emplace_back(node);
+    }
+  }
+  // set depth
+  std::function<void(TreeNode*)> set_depth = [&](TreeNode* node) {
+    for (auto child : node->children) {
+      child->depth = node->depth + 1;
+      set_depth(child);
+    }
+  };
+  std::ranges::for_each(roots, set_depth);
+  std::ranges::for_each(roots, [](TreeNode* root) {
+    // find min and max depth of leaf
+    int min_depth = std::numeric_limits<int>::max();
+    int max_depth = 0;
+    std::function<void(TreeNode*)> find_depth = [&](TreeNode* node) {
+      if (node->children.empty()) {
+        min_depth = std::min(min_depth, node->depth);
+        max_depth = std::max(max_depth, node->depth);
+      } else {
+        for (auto child : node->children) {
+          find_depth(child);
+        }
+      }
+    };
+    find_depth(root);
+    CTSAPIInst.saveToLog("Root: ", root->name);
+    CTSAPIInst.saveToLog("\tClock Path Min num of Buffers: ", max_depth == 0 ? 0 : min_depth);
+    CTSAPIInst.saveToLog("\tClock Path Max num of Buffers: ", max_depth);
+  });
+  CTSAPIInst.logEnd();
+}
+
 void Evaluator::evaluate()
 {
   CTSAPIInst.refresh();
@@ -111,7 +180,7 @@ void Evaluator::evaluate()
 void Evaluator::statistics(const std::string& save_dir) const
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
+  auto dir = (save_dir == "" ? config->get_work_dir() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
   auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWireLength);
@@ -258,13 +327,31 @@ void Evaluator::statistics(const std::string& save_dir) const
   std::ofstream net_level_save_file(net_level_save_path);
   net_level_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
   net_level_save_file << net_level_rpt->c_str();
+
+  // evaluate design
+  CTSAPIInst.latencySkewLog();
+  CTSAPIInst.utilizationLog();
+
+  CTSAPIInst.logTitle("Summary of Buffering (net)");
+  CTSAPIInst.saveToLog("--Cell Stats--");
+  CTSAPIInst.saveToLog(cell_stats_rpt->c_str());
+  if (cell_property_map.empty()) {
+    CTSAPIInst.saveToLog("#No buffer is used#");
+  }
+  CTSAPIInst.saveToLog("--Wirelength Stats--");
+  CTSAPIInst.saveToLog(wl_rpt->c_str());
+  CTSAPIInst.logEnd();
+
+  pathLevelLog();
+
+  CTSAPIInst.slackLog();
 }
 
 void Evaluator::plotPath(const string& inst_name, const string& file) const
 {
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   CtsInstance* path_inst = nullptr;
@@ -333,7 +420,7 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
 
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   GDSPloter::head(ofs);

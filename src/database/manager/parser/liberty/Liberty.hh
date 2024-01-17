@@ -299,17 +299,17 @@ class LibertyTableModel : public LibertyObject
   virtual unsigned isPowerModel() { return 0; }
   virtual unsigned addTable(std::unique_ptr<LibertyTable>&& table) = 0;
   virtual LibertyTable* getTable(int index) = 0;
-  virtual double gateDelay(TransType trans_type, double slew, double load)
+  virtual std::optional<double> gateDelay(TransType trans_type, double slew, double load)
   {
     LOG_FATAL << "not support";
     return 0.0;
   }
-  virtual double gateSlew(TransType trans_type, double slew, double load)
+  virtual std::optional<double> gateSlew(TransType trans_type, double slew, double load)
   {
     LOG_FATAL << "not support";
     return 0.0;
   }
-  virtual double gateCheckConstrain(TransType trans_type, double slew, double load)
+  virtual std::optional<double> gateCheckConstrain(TransType trans_type, double slew, double load)
   {
     LOG_FATAL << "not support";
     return 0.0;
@@ -371,8 +371,8 @@ class LibertyDelayTableModel final : public LibertyTableModel
     return 1;
   }
 
-  double gateDelay(TransType trans_type, double slew, double load) override;
-  double gateSlew(TransType trans_type, double slew, double load) override;
+  std::optional<double> gateDelay(TransType trans_type, double slew, double load) override;
+  std::optional<double> gateSlew(TransType trans_type, double slew, double load) override;
   std::unique_ptr<LibetyCurrentData> gateOutputCurrent(TransType trans_type, double slew, double load) override;
 
   double driveResistance() override;
@@ -412,7 +412,7 @@ class LibertyCheckTableModel final : public LibertyTableModel
   }
 
   LibertyTable* getTable(int index) override { return _tables[index].get(); }
-  double gateCheckConstrain(TransType trans_type, double slew, double constrain_slew) override;
+  std::optional<double> gateCheckConstrain(TransType trans_type, double slew, double constrain_slew) override;
 
  private:
   std::array<std::unique_ptr<LibertyTable>, kTableNum> _tables;
