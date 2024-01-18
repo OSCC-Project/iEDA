@@ -140,8 +140,8 @@ void ExternalAPI::destroyTimingEval()
  */
 std::vector<float> ExternalAPI::evalGRCong()
 {
-  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval::EvalAPI& eval_api = EvalInst;
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // eval::EvalAPI& eval_api = EvalInst;
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
