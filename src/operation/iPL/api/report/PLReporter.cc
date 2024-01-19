@@ -27,6 +27,8 @@ void PLReporter::reportPLInfo()
 
   ieda::Stats report_status;
 
+  // std::string design_name = PlacerDBInst.get_design()->get_design_name();
+  // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
   std::string output_dir = "./result/pl/report/";
 
   std::string summary_file = "summary_report.txt";
@@ -990,6 +992,8 @@ void PLReporter::reportPLBaseInfo(std::ofstream& feed)
 }
 
 void PLReporter::reportEDAEvaluation(){
+   int dbu = PlacerDBInst.get_layout()->get_database_unit();
+
    int inst_cnt, fix_inst_cnt, net_cnt, pin_cnt;
    std::string core_area;
    float place_density[3], pin_density[3];
@@ -997,11 +1001,11 @@ void PLReporter::reportEDAEvaluation(){
    std::string bin_size;
    int overflow_number;
    float overflow;
-   int64_t HPWL[3],STWL[3],GRWL[3]; // for gp,lg,dp
+   float HPWL[3],STWL[3],GRWL[3]; // for gp,lg,dp
    float congestion[3];
    float tns[3], wns[3];
    float suggest_freq[3];
-   int64_t total_movement, max_movement;
+   float total_movement, max_movement;
 
    auto* pl_design = PlacerDBInst.get_design();
    auto* pl_layout = PlacerDBInst.get_layout();
@@ -1017,37 +1021,48 @@ void PLReporter::reportEDAEvaluation(){
    net_cnt = pl_design->get_nets_range();
    pin_cnt = pl_design->get_pins_range();
 
-   core_area = std::to_string(pl_layout->get_core_shape().get_width())
-            + " * "
-            + std::to_string(pl_layout->get_core_shape().get_height());
+   std::ostringstream core_area_ss;
+   core_area_ss << std::fixed << std::setprecision(3);
+   core_area_ss << pl_layout->get_core_shape().get_width() / 1.0 / dbu;
+   core_area_ss << " * ";
+   core_area_ss << pl_layout->get_core_shape().get_height() / 1.0 / dbu;
+   core_area = core_area_ss.str();
 
    bin_number = gp_config.get_bin_cnt_x() * gp_config.get_bin_cnt_y();
-   bin_size = std::to_string(PlacerDBInst.bin_size_x) + " * " + std::to_string(PlacerDBInst.bin_size_y);
+
+   std::ostringstream bin_size_ss;
+   bin_size_ss << std::fixed << std::setprecision(3);
+   bin_size_ss << PlacerDBInst.bin_size_x / 1.0 / dbu;
+   bin_size_ss << " * ";
+   bin_size_ss << PlacerDBInst.bin_size_y / 1.0 /dbu;
+   bin_size = bin_size_ss.str();
+   
    overflow_number = PlacerDBInst.gp_overflow_number;
    overflow = PlacerDBInst.gp_overflow;
    for(int i=0; i<3; i++){
      place_density[i] = PlacerDBInst.place_density[i];
      pin_density[i] = PlacerDBInst.pin_density[i];
-     HPWL[i] = PlacerDBInst.PL_HPWL[i];
-     STWL[i] = PlacerDBInst.PL_STWL[i];
-     GRWL[i] = PlacerDBInst.PL_GRWL[i];  // TODO
-     congestion[i] = PlacerDBInst.congestion[i];  // TODO
+     HPWL[i] = PlacerDBInst.PL_HPWL[i] / 1.0 / dbu;
+     STWL[i] = PlacerDBInst.PL_STWL[i] / 1.0 / dbu;
+     GRWL[i] = PlacerDBInst.PL_GRWL[i];
+     congestion[i] = PlacerDBInst.congestion[i];
      tns[i] = PlacerDBInst.tns[i];
      wns[i] = PlacerDBInst.wns[i];
      suggest_freq[i] = PlacerDBInst.suggest_freq[i];
    }
 
-   total_movement = PlacerDBInst.lg_total_movement;
-   max_movement = PlacerDBInst.lg_max_movement;
+   total_movement = PlacerDBInst.lg_total_movement / 1.0 / dbu;
+   max_movement = PlacerDBInst.lg_max_movement / 1.0 / dbu;
 
    // print the target csv file
-   std::string output_dir = "./";
+   std::string output_dir = "./evaluation_task/";
    std::string report_file = "evaluation_report.csv";
    std::ofstream report_stream;
-   report_stream.open(output_dir + report_file);
+   report_stream.open(output_dir + report_file, std::ios::app);
    if(!report_stream.good()){
     LOG_WARNING << "Cannot open file for evaluation report ! ";
    }
+   report_stream << std::fixed << std::setprecision(3);
 
    std::string design_name = PlacerDBInst.get_design()->get_design_name();
    double sta_update_runtime = PlacerDBInst.sta_update_time;
@@ -1064,6 +1079,33 @@ void PLReporter::reportEDAEvaluation(){
                  << suggest_freq[2] << "," << sta_update_runtime << std::endl;
   
   report_stream.close();
+}
+
+void PLReporter::reportEDAFillerEvaluation(){
+  int fix_inst_cnt, net_cnt, inst_cnt, filler_cnt;
+
+  fix_inst_cnt=0;
+  for(auto* inst : PlacerDBInst.get_design()->get_instance_list()){
+    if(inst->isFixed()){
+      fix_inst_cnt++;
+    }
+  }
+  inst_cnt = PlacerDBInst.get_design()->get_instance_list().size();
+  filler_cnt = inst_cnt - PlacerDBInst.init_inst_cnt;
+
+   // print the target csv file
+   std::string output_dir = "./evaluation_task/";
+   std::string report_file = "evaluation_filler_report.csv";
+   std::ofstream report_stream;
+   report_stream.open(output_dir + report_file, std::ios::app);
+   if(!report_stream.good()){
+    LOG_WARNING << "Cannot open file for evaluation report ! ";
+   }
+
+   std::string design_name = PlacerDBInst.get_design()->get_design_name();
+   report_stream << design_name << "," << fix_inst_cnt << "," << net_cnt << "," << inst_cnt << "," << filler_cnt << std::endl;
+  
+  report_stream.close(); 
 }
 
 }  // namespace ipl

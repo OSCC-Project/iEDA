@@ -37,6 +37,7 @@ class PLReporter
 
   // tmp for iEDA Evaluation.
   void reportEDAEvaluation();
+  void reportEDAFillerEvaluation();
  
   ExternalAPI* _external_api;
 };

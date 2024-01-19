@@ -551,7 +551,7 @@ void DetailPlacer::runDetailPlace()
     ++shift_iter;
   } while (improve_ratio > threshold && shift_iter < 10);
 
-  
+  notifyPLPlaceDensity();
 
   _database._design->writeBackToPL(_database._shift_x, _database._shift_y);
   _database._placer_db->updateTopoManager();
