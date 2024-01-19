@@ -59,6 +59,14 @@ class CTSAPI
   void writeDB();
   void writeGDS();
   void report(const std::string& save_dir);
+  void report();
+
+  void initEvalInfo();
+  size_t getInsertCellNum() const;
+  double getInsertCellArea() const;
+  std::vector<PathInfo> getPathInfos() const;
+  double getMaxClockNetWL() const;
+  double getTotalClockNetWL() const;
   // flow API
   void resetAPI();
   void init(const std::string& config_file, const std::string& work_dir);
@@ -154,13 +162,13 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
-  
+
   void logTime() const;
 
   void logLine() const;
 
   void logTitle(const std::string& title) const;
-  
+
   void logEnd() const;
 
   // function
