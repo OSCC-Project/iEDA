@@ -17,7 +17,7 @@
 #include "idrc_violation_manager.h"
 
 // #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
+#include "DRCViolationType.h"
 
 namespace idrc {
 DrcViolationManager::DrcViolationManager()
@@ -38,45 +38,6 @@ DrcViolationManager::~DrcViolationManager()
     std::vector<DrcViolation*>().swap(violations);
   }
   _violation_list.clear();
-}
-
-std::map<std::string, std::vector<irt::BaseViolationInfo>> DrcViolationManager::get_rt_violation_map()
-{
-  // std::map<std::string, std::vector<irt::BaseViolationInfo>> rt_violation_map;
-
-  // for (auto& [type, violations] : _violation_list) {
-  //   if (violations.size() <= 0) {
-  //     continue;
-  //   }
-
-  //   std::string type_name = DrcViolationTypeInst->get_type_name(type);
-  //   std::vector<irt::BaseViolationInfo> rt_violations;
-  //   rt_violations.reserve(violations.size());
-  //   for (auto* violation : violations) {
-  //     if (violation->is_rect()) {
-  //       auto* rect = static_cast<DrcViolationRect*>(violation);
-  //       irt::BaseViolationInfo violation;
-  //       violation.set_rule_name(type_name);
-  //       violation.set_violation_region(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
-  //       violation.set_layer(rect->get_layer());
-
-  //       std::set<irt::BaseInfo, irt::CmpBaseInfo> base_info_set;
-  //       for (auto net_id : rect->get_net_ids()) {
-  //         irt::BaseInfo info;
-  //         info.set_net_idx(net_id);
-  //         base_info_set.emplace(info);
-  //       }
-
-  //       violation.set_base_info_set(base_info_set);
-  //       rt_violations.emplace_back(violation);
-  //     }
-  //   }
-
-  //   rt_violation_map[type_name] = rt_violations;
-  // }
-
-  // return rt_violation_map;
-  return {};
 }
 
 }  // namespace idrc

@@ -17,10 +17,10 @@
 
 #include "condition_step.h"
 
+#include "DRCViolationType.h"
 #include "condition.h"
 #include "idrc_util.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
 #include "idrc_violation_manager.h"
 #include "rule_condition_edge.h"
 #include "rule_enum.h"
@@ -146,8 +146,8 @@ bool DrcRuleConditionStep::checkMinStepSegment(DrcBasicPoint* point_prev, DrcBas
             auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
             // create violation
-            DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-            auto violation_type = ViolationEnumType::kViolationMinStep;
+            auto violation_type = ViolationEnumType::kMinStep;
+            DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
             auto* violation_manager = _condition_manager->get_violation_manager();
             auto& violation_list = violation_manager->get_violation_list(violation_type);
             violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
@@ -224,8 +224,8 @@ bool DrcRuleConditionStep::checkMinStepLef58Segment(DrcBasicPoint* point_prev, D
           auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
           // create violation
-          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-          auto violation_type = ViolationEnumType::kViolationMinStep;
+          auto violation_type = ViolationEnumType::kMinStep;
+          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
           auto* violation_manager = _condition_manager->get_violation_manager();
           auto& violation_list = violation_manager->get_violation_list(violation_type);
           violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
@@ -253,8 +253,8 @@ bool DrcRuleConditionStep::checkMinStepLef58Segment(DrcBasicPoint* point_prev, D
           auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
           // create violation
-          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-          auto violation_type = ViolationEnumType::kViolationMinStep;
+          auto violation_type = ViolationEnumType::kMinStep;
+          DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
           auto* violation_manager = _condition_manager->get_violation_manager();
           auto& violation_list = violation_manager->get_violation_list(violation_type);
           violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));

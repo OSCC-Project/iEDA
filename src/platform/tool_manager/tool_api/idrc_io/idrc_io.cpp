@@ -16,12 +16,12 @@
 // ***************************************************************************************
 #include "idrc_io.h"
 
+#include "DRCViolationType.h"
 #include "DrcAPI.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "idrc_api.h"
-#include "idrc_violation_enum.h"
 #include "report_manager.h"
 
 namespace iplf {
@@ -55,7 +55,7 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DrcIO:
   return dmInst->isAllNetConnected();
 }
 
-std::map<std::string, std::vector<idrc::DrcViolationSpot*>> DrcIO::getDetailCheckResult(std::string path)
+std::map<std::string, std::vector<idrc::DrcViolation*>> DrcIO::getDetailCheckResult(std::string path)
 {
   _detail_drc.clear();
 
@@ -76,54 +76,10 @@ void DrcIO::get_def_drc()
   drc_api.init();
   auto violations = drc_api.checkDef();
   for (auto [type, violation_list] : violations) {
-    std::string name = DrcViolationTypeInst->get_type_name(type);
-
-    std::vector<idrc::DrcViolationSpot*> spot_list;
-    spot_list.reserve(violation_list.size());
+    std::string name = idrc::GetViolationTypeName()(type);
     std::cout << "idrc : " << name << " size=" << violation_list.size() << std::endl;
 
-    for (auto* violation : violation_list) {
-      idrc::DrcViolationSpot* spot = new idrc::DrcViolationSpot();
-      auto* layer = violation->get_layer();
-      if (layer != nullptr) {
-        spot->set_layer_name(layer->get_name());
-      }
-      spot->set_layer_id(layer->get_id());
-      auto net_list = violation->get_net_ids();
-      spot->set_net_id(*net_list.begin());
-      auto vio_type = idrc::ViolationType::kCutEOLSpacing;
-      switch (type) {
-        case idrc::ViolationEnumType::kViolationShort:
-          vio_type = idrc::ViolationType::kShort;
-          break;
-        case idrc::ViolationEnumType::kViolationMinSpacing:
-        case idrc::ViolationEnumType::kViolationPRL:
-          vio_type = idrc::ViolationType::kRoutingSpacing;
-          break;
-        case idrc::ViolationEnumType::kViolationMinStep:
-          vio_type = idrc::ViolationType::kMinStep;
-          break;
-        case idrc::ViolationEnumType::kViolationJogToJog:
-          vio_type = idrc::ViolationType::kJogSpacing;
-          break;
-        case idrc::ViolationEnumType::kViolationEOL:
-          vio_type = idrc::ViolationType::kEOLSpacing;
-          break;
-        case idrc::ViolationEnumType::kViolationNotch:
-          vio_type = idrc::ViolationType::kNotchSpacing;
-          break;
-        case idrc::ViolationEnumType::kViolationArea:
-          vio_type = idrc::ViolationType::kRoutingArea;
-          break;
-      }
-      spot->set_vio_type(vio_type);
-      auto* rect = static_cast<idrc::DrcViolationRect*>(violation);
-      spot->setCoordinate(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
-
-      spot_list.emplace_back(spot);
-    }
-
-    _detail_drc.insert(std::make_pair(name, spot_list));
+    _detail_drc.insert(std::make_pair(name, violation_list));
   }
 }
 
