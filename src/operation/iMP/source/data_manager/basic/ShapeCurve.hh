@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <random>
 #include <vector>
 
 #include "Geometry.hh"
@@ -94,7 +95,57 @@ class ShapeCurve
   const std::vector<std::pair<T, T>>& get_width_list() const { return _width_list; }
   const std::vector<std::pair<T, T>>& get_height_list() const { return _height_list; }
 
-  void setShapesDiscrete(const std::vector<std::pair<T, T>>& discrete_shapes, bool force_flag)
+  void setShapes(const std::vector<std::pair<T, T>>& discrete_shapes, float continuous_shapes_area, bool use_clip = true)
+  {
+    // discrete_shapes does not concern continuous_shape_area
+
+    // pure continuous shape
+    if (discrete_shapes.empty()) {
+      setShapesContinous(continuous_shapes_area);
+      return;
+    }
+    // pure discrete shape
+    if (continuous_shapes_area <= 0) {
+      setShapesDiscrete(discrete_shapes, use_clip);
+      return;
+    }
+    // mixed shapes
+    setShapesMixed(discrete_shapes, continuous_shapes_area, use_clip);
+  }
+
+  bool resizeRandomly(std::uniform_real_distribution<float>& distribution, std::mt19937& generator)
+  {
+    if (_width_list.empty() || (_width_list.size() == 1 && _width_list[0].first == _width_list[0].second)) {
+      return false;  // no other shapes to change
+    }
+    size_t idx = static_cast<int>(std::floor(distribution(generator) * _width_list.size()));
+    auto min_width = _width_list[idx].first;
+    auto max_width = _width_list[idx].second;
+    _width = min_width + distribution(generator) * (max_width - min_width);
+    _area = _width_list[idx].first * _height_list[idx].first;
+    _height = _area / _width;
+    return true;
+  }
+
+ private:
+  double _min_ar;  // w / h
+  double _max_ar;  // w / h
+  T _width;
+  T _height;
+  T _area;  // uses (largest area of discrete_shapes) + (continous_shape_area)
+  std::vector<std::pair<T, T>> _width_list;
+  std::vector<std::pair<T, T>> _height_list;
+
+  // double _x_inflate;
+  // double _y_inflate;
+  bool checkShapeAr(const T& width, const T& height) const
+  {
+    double ar = calAr(width, height);
+    return ar >= _min_ar && ar <= _max_ar;
+  }
+  double calAr(const T& width, const T& height) const { return double(width) / height; }
+  T calWidthByAr(T area, double Ar) { return std::sqrt(area * Ar); }
+  void setShapesDiscrete(const std::vector<std::pair<T, T>>& discrete_shapes, bool use_clip)
   {
     // discrete_shapes is in ascending order by area
     // force_flag is used by macros, if force_flag == true, not use arr clip
@@ -105,51 +156,56 @@ class ShapeCurve
       exit(1);
     }
     // not sorted..
+
     for (auto& shape : discrete_shapes) {
       // discard odd shapes
-      if (force_flag || checkShapeAr(shape.first, shape.second)) {
+      if (use_clip || checkShapeAr(shape.first, shape.second)) {
         _width_list.emplace_back(shape.first, shape.first);
         _height_list.emplace_back(shape.second, shape.second);
       }
     }
+
+    // if no valid shapes left, not use clipping..
+    if (_width_list.empty()) {
+      for (auto& shape : discrete_shapes) {
+        _width_list.emplace_back(shape.first, shape.first);
+        _height_list.emplace_back(shape.second, shape.second);
+      }
+    }
+
     _width = discrete_shapes[0].first;
     _height = discrete_shapes[0].second;
     _area = discrete_shapes[0].first * discrete_shapes[0].second;
   }
 
-  void setShapes(float soft_shapes_area, const std::vector<std::pair<T, T>>& discrete_shapes = std::vector<std::pair<T, T>>())
+  void setShapesContinous(float continuous_shapes_area)
   {
-    // discrete_shapes is in ascending order by area
-    // discrete_shapes does not concern soft_shape_area
+    if (continuous_shapes_area <= 0) {
+      std::cerr << "setting wrong shapes with no discreate shapes and continous_shape_area!" << std::endl;
+      exit(1);
+    } else {  // pure continuous shape, calculate min_width && max_width based on ar
+      _area = continuous_shapes_area;
+      T min_width = calWidthByAr(_area, _min_ar);
+      T max_width = calWidthByAr(_area, _max_ar);
+      _width_list.emplace_back(min_width, max_width);
+      _height_list.emplace_back(_area / min_width, _area / max_width);
+      // set default shape;
+      _width = _width_list[0].first;
+      _height = _height_list[0].first;
+      return;
+    }
+  }
 
+  void setShapesMixed(const std::vector<std::pair<T, T>>& discrete_shapes, float continuous_shapes_area, bool use_clip = true)
+  {
     T min_width, max_width;
     _width_list.clear();
     _height_list.clear();
-
-    // no discrete shapes
-
-    if (discrete_shapes.empty()) {
-      if (soft_shapes_area <= 0) {
-        std::cerr << "setting wrong shapes with no discreate shapes and soft_shape_area!" << std::endl;
-        exit(1);
-      } else {  // pure soft shape, calculate min_width && max_width based on ar
-        _area = soft_shapes_area;
-        min_width = calWidthByAr(_area, _min_ar);
-        max_width = calWidthByAr(_area, _max_ar);
-        _width_list.emplace_back(min_width, max_width);
-        _height_list.emplace_back(_area / min_width, _area / max_width);
-        // set default shape;
-        _width = _width_list[0].first;
-        _height = _height_list[0].first;
-        return;
-      }
-    }
-    // mixed shapes
-    // use the largest area of discrete_shapes
     auto iter = std::max_element(
         discrete_shapes.begin(), discrete_shapes.end(),
         [](const std::pair<T, T>& p1, const std::pair<T, T>& p2) -> bool { return p1.first * p1.second < p2.first * p2.second; });
-    _area = iter->first * iter->second + soft_shapes_area;  // discrete-shape-area + soft-shape-area
+    // use the largest area of discrete_shapes
+    _area = iter->first * iter->second + continuous_shapes_area;  // discrete-shape-area + continuous-shape-area
 
     std::vector<std::pair<T, T>> temp_width_list, temp_height_list;
     for (auto& shape : discrete_shapes) {
@@ -176,41 +232,50 @@ class ShapeCurve
       temp_height_list.emplace_back(_area / shape.first, _area / shape.second);
     }
 
-    // clip shape curves to discard odd shapes
-    T new_height, new_width;
-    for (size_t i = 0; i < temp_width_list.size(); ++i) {
-      // 5 possible conditions
-      if (calAr(temp_width_list[i].first, temp_height_list[i].first) < _min_ar) {
-        if (calAr(temp_width_list[i].second, temp_height_list[i].second) <= _min_ar) {
-          continue;
-        } else {  // clip width-interval by _min_ar
-          new_width = calWidthByAr(_area, _min_ar);
-          new_height = _area / new_width;
-          _width_list.emplace_back(new_width, temp_width_list[i].second);
-          _height_list.emplace_back(new_height, temp_height_list[i].second);
-          // clip width-interval by _min_ar
-          if (calAr(temp_width_list[i].second, temp_height_list[i].second) > _max_ar) {
+    if (!use_clip) {
+      _width_list = temp_width_list;
+      _height_list = temp_height_list;
+    } else {  // if use_clip, clip odd shapes based on ar
+      T new_height, new_width;
+      for (size_t i = 0; i < temp_width_list.size(); ++i) {
+        // 6 possible situations
+        if (calAr(temp_width_list[i].first, temp_height_list[i].first) < _min_ar) {
+          if (calAr(temp_width_list[i].second, temp_height_list[i].second) <= _min_ar) {
+            continue;
+          } else {  // clip width-interval by _min_ar
+            new_width = calWidthByAr(_area, _min_ar);
+            new_height = _area / new_width;
+            _width_list.emplace_back(new_width, temp_width_list[i].second);
+            _height_list.emplace_back(new_height, temp_height_list[i].second);
+            // clip width-interval by _min_ar
+            if (calAr(temp_width_list[i].second, temp_height_list[i].second) > _max_ar) {
+              auto new_width = calWidthByAr(_area, _max_ar);
+              auto new_height = _area / new_width;
+              _width_list.back().second = new_width;
+              _height_list.back().second = new_height;
+              break;  // no valid shapes left
+            }
+            continue;
+          }
+        } else if (calAr(temp_width_list[i].second, temp_height_list[i].second) > _max_ar) {
+          if (calAr(temp_width_list[i].first, temp_height_list[i].first) >= _max_ar) {
+            break;  // no valid shapes left
+          } else {
             auto new_width = calWidthByAr(_area, _max_ar);
             auto new_height = _area / new_width;
-            _width_list.back().second = new_width;
-            _height_list.back().second = new_height;
-            break;  // no valid shapes left
+            _width_list.emplace_back(temp_width_list[i].first, new_width);
+            _height_list.emplace_back(temp_height_list[i].first, new_height);
+            break;
           }
-          continue;
+        } else {  // needn't clip
+          _width_list.emplace_back(temp_width_list[i].first, temp_width_list[i].second);
+          _height_list.emplace_back(temp_height_list[i].first, temp_height_list[i].second);
         }
-      } else if (calAr(temp_width_list[i].second, temp_height_list[i].second) > _max_ar) {
-        if (calAr(temp_width_list[i].first, temp_height_list[i].first) >= _max_ar) {
-          break;  // no valid shapes left
-        } else {
-          auto new_width = calWidthByAr(_area, _max_ar);
-          auto new_height = _area / new_width;
-          _width_list.emplace_back(temp_width_list[i].first, new_width);
-          _height_list.emplace_back(temp_height_list[i].first, new_height);
-          break;
-        }
-      } else {  // needn't clip
-        _width_list.emplace_back(temp_width_list[i].first, temp_width_list[i].second);
-        _height_list.emplace_back(temp_height_list[i].first, temp_height_list[i].second);
+      }
+      // if no valid shapes after clipping, rollback
+      if (_width_list.empty()) {
+        _width_list = temp_width_list;
+        _height_list = temp_height_list;
       }
     }
 
@@ -218,25 +283,6 @@ class ShapeCurve
     _width = _width_list[0].first;
     _height = _height_list[0].first;
   }
-
- private:
-  double _min_ar;  // w / h
-  double _max_ar;  // w / h
-  T _width;
-  T _height;
-  T _area;
-  std::vector<std::pair<T, T>> _width_list;
-  std::vector<std::pair<T, T>> _height_list;
-
-  // double _x_inflate;
-  // double _y_inflate;
-  bool checkShapeAr(const T& width, const T& height) const
-  {
-    double ar = calAr(width, height);
-    return ar >= _min_ar && ar <= _max_ar;
-  }
-  double calAr(const T& width, const T& height) const { return double(width) / height; }
-  T calWidthByAr(T area, double Ar) { return std::sqrt(area * Ar); }
 };
 
 }  // namespace imp

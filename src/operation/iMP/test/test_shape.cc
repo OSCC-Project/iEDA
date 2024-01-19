@@ -1,8 +1,11 @@
 #include <cassert>
+#include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
 #include "../source/data_manager/basic/ShapeCurve.hh"
+
 void p(int64_t num1, int64_t num2)
 {
   std::cout << num1 << " " << num2 << std::endl;
@@ -34,31 +37,48 @@ void print_shapes(const imp::ShapeCurve<int64_t>& curve)
 
 int main(int argc, char* argv[])
 {
+  // random
+  std::uniform_real_distribution<float> distribution = std::uniform_real_distribution<float>(0, 1);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+
   // macro
   typedef int64_t T;
-  imp::ShapeCurve<T> s1(0.7, 1.5);
+  imp::ShapeCurve<T> s1(0.3, 1.5);
   std::vector<std::pair<T, T>> discrete_shapes;
   discrete_shapes.emplace_back(100, 200);
-  s1.setShapesDiscrete(discrete_shapes, true);
+  s1.setShapes(discrete_shapes, 0, true);
+  print_shapes(s1);
+  std::cout << "resize:----------------------------" << std::endl;
+  s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
 
-  // macro cluster
+  // macro cluster, not clipping
   discrete_shapes.clear();
   discrete_shapes.emplace_back(100, 200);
   discrete_shapes.emplace_back(100, 300);
   discrete_shapes.emplace_back(300, 100);
-  s1.setShapesDiscrete(discrete_shapes, true);
+  s1.setShapes(discrete_shapes, 0, true);
+  print_shapes(s1);
+  std::cout << "resize:----------------------------  " << std::endl;
+  s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
 
-  s1.setShapesDiscrete(discrete_shapes, false);
+  s1.setShapes(discrete_shapes, 0, false);
+  print_shapes(s1);
+  std::cout << "resize:----------------------------  " << std::endl;
+  s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
 
   // pure soft cluster
   discrete_shapes.clear();
-  s1.setShapes(10000, discrete_shapes);
+  s1.setShapes(discrete_shapes, 10000);
+  print_shapes(s1);
+  std::cout << "resize:----------------------------  " << std::endl;
+  s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
 
-  // mixed cluster
+  // mixed cluster, use clip
   discrete_shapes.clear();
   discrete_shapes.clear();
   discrete_shapes.emplace_back(60, 160);
@@ -68,11 +88,16 @@ int main(int argc, char* argv[])
   discrete_shapes.emplace_back(111, 90);
   discrete_shapes.emplace_back(125, 80);
   discrete_shapes.emplace_back(160, 60);
-  s1.setShapes(10000, discrete_shapes);
+  s1.setShapes(discrete_shapes, 10000, true);
+  print_shapes(s1);
+  std::cout << "resize:----------------------------  " << std::endl;
+  s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
 
-  s1.setShapes(1000, discrete_shapes);
+  s1.setShapes(discrete_shapes, 1000, true);
   print_shapes(s1);
-
+  std::cout << "resize:----------------------------  " << std::endl;
+  s1.resizeRandomly(distribution, gen);
+  print_shapes(s1);
   return 0;
 }
