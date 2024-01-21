@@ -1107,6 +1107,17 @@ int LefRead::parse_obs(lefiObstruction* lef_obs)
         layer_shape->add_rect(transUnitDB(rect->xl), transUnitDB(rect->yl), transUnitDB(rect->xh), transUnitDB(rect->yh));
         break;
       }
+      case lefiGeomPolygonE: {
+        IdbLayerShape* layer_shape = obs_layer->get_shape();
+        if (layer_shape != nullptr) {
+          layer_shape->set_type_rect();
+          lefiGeomPolygon* polygon = lef_geometry->getPolygon(j);
+          for (auto rect : polygonToRects(polygon)) {
+            layer_shape->add_rect(gtl::xl(rect), gtl::yl(rect), gtl::xh(rect), gtl::yh(rect));
+          }
+        }
+        break;
+      }
       //-----------------tbd---------------------
       default:
         break;
