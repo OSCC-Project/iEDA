@@ -27,6 +27,14 @@ void print_shapes(const imp::ShapeCurve<int64_t>& curve)
   }
   std::cout << std::endl;
   std::cout << "-----------------------------------------------" << std::endl;
+  std::string type;
+  if (curve.is_discrete())
+    type = "discrete";
+  else if (curve.is_continous())
+    type = "continous";
+  else
+    type = "mixed";
+  std::cout << "type: " << type << std::endl;
   std::cout << "width: " << curve.get_width() << std::endl;
   std::cout << "height: " << curve.get_height() << std::endl;
   std::cout << "area: " << curve.get_area() << std::endl;
