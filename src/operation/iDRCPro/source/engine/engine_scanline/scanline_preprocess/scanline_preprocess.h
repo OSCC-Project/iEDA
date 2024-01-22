@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "boost_definition.h"
+#include "idrc_dm.h"
 #include "scanline_point.h"
 
 enum class ScanlineTravelDirection
@@ -33,11 +34,11 @@ class IdbLayer;
 
 namespace idrc {
 
-class ScanlineDataManager
+class ScanlinePreprocess
 {
  public:
-  ScanlineDataManager(idb::IdbLayer* layer) : _layer(layer) {}
-  ~ScanlineDataManager();
+  ScanlinePreprocess(idb::IdbLayer* layer, DrcDataManager* data_manager) : _layer(layer), _data_manager(data_manager) {}
+  ~ScanlinePreprocess();
 
   idb::IdbLayer* get_layer() { return _layer; }
 
@@ -58,66 +59,13 @@ class ScanlineDataManager
     _scanline_points_vertical.reserve(_scanline_points_vertical.size() + n);
   }
 
-  /// @brief  debug
-  /// @return
-  // std::vector<ieda_solver::BgPoint> get_boost_points()
-  // {
-  //   std::vector<ieda_solver::BgPoint> boost_pts;
-  //   boost_pts.reserve(_basic_points.size());
-  //   for (auto& pt : _basic_points) {
-  //     ieda_solver::BgPoint boost_pt(pt->get_x(), pt->get_y());
-  //     boost_pts.emplace_back(boost_pt);
-  //   }
-
-  //   return boost_pts;
-  // }
-
-  // std::vector<ieda_solver::BgPolygon> get_boost_polygons()
-  // {
-  //   std::vector<ieda_solver::BgPolygon> boost_polygons;
-  //   for (auto& pt : _basic_points) {
-  //     if (pt->is_start()) {
-  //       std::vector<ieda_solver::BgPoint> boost_pts;
-  //       auto* iter_pt = pt;
-  //       while (iter_pt != nullptr) {
-  //         ieda_solver::BgPoint boost_pt(iter_pt->get_x(), iter_pt->get_y());
-  //         boost_pts.emplace_back(boost_pt);
-
-  //         iter_pt = iter_pt->get_next();
-
-  //         if (iter_pt == pt) {
-  //           break;
-  //         }
-  //       }
-  //       ieda_solver::BgPolygon boost_polygon;
-  //       boost::geometry::assign_points(boost_polygon, boost_pts);
-  //       boost_polygons.emplace_back(boost_polygon);
-  //     }
-  //   }
-
-  //   return boost_polygons;
-  // }
-
   // setter
   void addBasicPoint(DrcBasicPoint* point) { _basic_points.push_back(point); };
 
-  std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> getEdgesInRect(int llx, int lly, int urx, int ury)
-  {
-    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> segments;
-    std::vector<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>> result;
-    ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
-    _polygon_edge_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
-    for (auto& pair : result) {
-      segments.emplace_back(pair.second);
-    }
-    return segments;
-  }
-
  private:
   idb::IdbLayer* _layer = nullptr;
+  DrcDataManager* _data_manager = nullptr;
 
-  bg::index::rtree<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>, bg::index::quadratic<16>>
-      _polygon_edge_rtree;
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;
   std::vector<ScanlinePoint*> _scanline_points_horizontal;

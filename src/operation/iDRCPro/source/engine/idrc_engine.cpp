@@ -26,7 +26,7 @@ namespace idrc {
 DrcEngine::DrcEngine(DrcDataManager* data_manager)
 {
   _data_manager = data_manager;
-  _engine_manager = new DrcEngineManager();
+  _engine_manager = new DrcEngineManager(data_manager);
 }
 
 DrcEngine::~DrcEngine()
@@ -50,17 +50,15 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
       std::cout << "idrc : init engine def time = " << stats_def.elapsedRunTime() << " memory = " << stats_def.memoryDelta() << std::endl;
 #endif
 
-      initEngineScanline();
-
       break;
     }
     case DrcCheckerType::kRT:
       initEngineGeometryData();
-      initEngineScanline();
 
     default:
       break;
   }
+  initEngineScanline();
 }
 /**
  * init engine data from RT data

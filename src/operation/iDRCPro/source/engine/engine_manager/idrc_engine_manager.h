@@ -33,7 +33,7 @@ namespace idrc {
 class DrcEngineManager
 {
  public:
-  DrcEngineManager();
+  DrcEngineManager(DrcDataManager* data_manager);
   ~DrcEngineManager();
 
   /// data manager
@@ -52,6 +52,7 @@ class DrcEngineManager
   bool addRect(int llx, int lly, int urx, int ury, idb::IdbLayer* layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
 
  private:
+  DrcDataManager* _data_manager;
   /**
    * @definition
    *  _layouts : describe all shapes for all nets in all layers

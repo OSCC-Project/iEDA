@@ -79,44 +79,4 @@ void DrcEngineInitRT::init()
   }
 }
 
-// void DrcEngineInitRT::init()
-// {
-//   auto init_data_shape = [](irt::BaseShape* shape, DrcEngineManager* engine_manager) {
-//     int llx = shape->get_shape().min_corner().x();
-//     int lly = shape->get_shape().min_corner().y();
-//     int urx = shape->get_shape().max_corner().x();
-//     int ury = shape->get_shape().max_corner().y();
-//     int layer_id = shape->get_layer_idx();
-//     int net_id = shape->get_base_info().get_net_idx();
-//     LayoutType type = shape->get_is_routing() ? LayoutType::kRouting : LayoutType::kCut;
-//     engine_manager->addRect(llx, lly, urx, ury, layer_id, net_id, type);
-//   };
-
-//   // init environment data
-//   auto* region = _data_manager->get_region();
-//   if (region != nullptr) {
-//     // routing layers
-//     for (auto& [layer_id, bgi_rtree] : region->get_routing_region_map()) {
-//       for (auto& [rect, base_shape] : bgi_rtree) {
-//         init_data_shape(base_shape, _engine_manager);
-//       }
-//     }
-
-//     // cut layers
-//     for (auto& [layer_id, bgi_rtree] : region->get_cut_region_map()) {
-//       for (auto& [rect, base_shape] : bgi_rtree) {
-//         init_data_shape(base_shape, _engine_manager);
-//       }
-//     }
-//   }
-
-//   // init target shapes
-//   auto* target_shapes = _data_manager->get_target_shapes();
-//   if (target_shapes != nullptr) {
-//     for (auto& shape : *target_shapes) {
-//       init_data_shape(&shape, _engine_manager);
-//     }
-//   }
-// }
-
 }  // namespace idrc

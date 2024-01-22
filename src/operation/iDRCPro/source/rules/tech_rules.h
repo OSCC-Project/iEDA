@@ -14,9 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
 
-#include "condition_manager.h"
+#include "idm.h"
+
+#define DrcTechRuleInst idrc::TechRules::getInst()
 
 namespace idrc {
+class TechRules
+{
+ public:
+  static TechRules* getInst()
+  {
+    if (_instance == nullptr) {
+      _instance = new TechRules();
+    }
+    return _instance;
+  }
+
+  static void destroyInst();
+  void set_inited() { _b_inited = true; }
+  bool hasInited() { return _b_inited; }
+
+  void init();
+
+ private:
+  static TechRules* _instance;
+  bool _b_inited = false;
+
+  TechRules() {}
+  ~TechRules() = default;
+};
 
 }  // namespace idrc

@@ -14,9 +14,17 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-
-#include "condition_manager.h"
+#pragma once
 
 namespace idrc {
+
+class CheckItem
+{
+ public:
+  CheckItem() {}
+  virtual ~CheckItem() = default;
+
+ private:
+};
 
 }  // namespace idrc

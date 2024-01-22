@@ -23,7 +23,7 @@
 
 namespace idrc {
 
-DrcEngineManager::DrcEngineManager()
+DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager) : _data_manager(data_manager)
 {
   _layouts = {{LayoutType::kRouting, std::map<idb::IdbLayer*, DrcEngineLayout*>{}},
               {LayoutType::kCut, std::map<idb::IdbLayer*, DrcEngineLayout*>{}}};
@@ -89,7 +89,7 @@ DrcEngineScanline* DrcEngineManager::get_engine_scanline(idb::IdbLayer* layer, L
 
   auto* scanline_engine = scanline_engines[layer];
   if (scanline_engine == nullptr) {
-    scanline_engine = new DrcEngineScanline(layer);
+    scanline_engine = new DrcEngineScanline(layer, _data_manager);
     scanline_engines[layer] = scanline_engine;
   }
 

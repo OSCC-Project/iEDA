@@ -14,9 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
 
-#include "condition_manager.h"
+#include <vector>
+
+#include "check_item.h"
+#include "condition_detail.h"
+#include "drc_basic_point.h"
 
 namespace idrc {
+
+class ConditionJogCheckItem : CheckItem
+{
+ public:
+  ConditionJogCheckItem() {}
+  ~ConditionJogCheckItem() override {}
+
+ private:
+  std::vector<DrcBasicPoint*> _condition_region;
+  int _wire_width;
+};
+
+class ConditionDetailJog : ConditionDetail
+{
+ public:
+  ConditionDetailJog() {}
+  ~ConditionDetailJog() override {}
+
+  bool apply() override { return true; }  // TODO: jog check
+
+ private:
+};
 
 }  // namespace idrc

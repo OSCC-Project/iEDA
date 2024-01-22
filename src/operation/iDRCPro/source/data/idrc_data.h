@@ -42,4 +42,13 @@ enum class LayoutType
   kMax
 };
 
+enum class DrcDirection
+{
+  kNone,
+  kUp,
+  kDown,
+  kLeft,
+  kRight
+};
+
 }  // namespace idrc

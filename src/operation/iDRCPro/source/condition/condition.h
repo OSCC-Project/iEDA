@@ -14,9 +14,29 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
 
-#include "condition_manager.h"
+#include "condition_detail.h"
+#include "condition_sequence.h"
+#include "condition_value.h"
 
 namespace idrc {
+
+class Condition
+{
+ public:
+  Condition() {}
+  ~Condition()
+  {
+    delete _sequence;
+    delete _value;
+    delete _detail;
+  }
+
+ private:
+  ConditionSequence* _sequence;
+  ConditionValue* _value;
+  ConditionDetail* _detail;
+};
 
 }  // namespace idrc

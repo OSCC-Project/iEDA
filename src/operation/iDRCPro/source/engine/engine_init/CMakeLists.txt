@@ -10,9 +10,9 @@ target_link_libraries(idrc_engine_init
     idm
     idb
     idrc_pro_dm
+    idrc_pro_tech_rules
     idrc_engine_manager    
     solver_geometry_boost
-    usage
 )
 
 target_include_directories(idrc_engine_init

@@ -15,12 +15,12 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#include "scanline_data_manager.h"
+#include "scanline_preprocess.h"
 
 namespace idrc {
 
 template <typename T>
-void ScanlineDataManager::deleteVectorElements(T& v)
+void ScanlinePreprocess::deleteVectorElements(T& v)
 {
   for (auto& element : v) {
     delete element;
@@ -28,7 +28,7 @@ void ScanlineDataManager::deleteVectorElements(T& v)
   }
 }
 
-ScanlineDataManager::~ScanlineDataManager()
+ScanlinePreprocess::~ScanlinePreprocess()
 {
   deleteVectorElements(_basic_points);
   deleteVectorElements(_scanline_points_vertical);
@@ -43,7 +43,7 @@ ScanlineDataManager::~ScanlineDataManager()
  * std::vector<std::vector<GtlPoint>> : define all point list in the polygon list
  * net_id : indicate id
  */
-void ScanlineDataManager::addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id)
+void ScanlinePreprocess::addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id)
 {
   for (auto& polygon_points : polygons_points) {
     addPolygon(polygon_points, net_id);
@@ -53,27 +53,15 @@ void ScanlineDataManager::addData(std::vector<std::vector<ieda_solver::GtlPoint>
 /// @brief add boost polygon to scanline data manager
 /// @param polygon_points polygon endpoints clockwise
 /// @param net_id polygon net_id
-void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id)
+void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id)
 {
-  /// find left bottom point
-  DrcBasicPoint* left_bottom_pt = nullptr;
-
   std::vector<DrcBasicPoint*> endpoints;
   endpoints.reserve(polygon_points.size());
   int current_polygon_id = ++_polygon_count;
   for (auto& vertex : polygon_points) {
     DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, current_polygon_id);
     endpoints.emplace_back(new_basic_pt);
-    if (left_bottom_pt == nullptr) {
-      left_bottom_pt = new_basic_pt;
-    } else {
-      if ((*new_basic_pt) < (*left_bottom_pt)) {
-        left_bottom_pt = new_basic_pt;
-      }
-    }
   }
-
-  left_bottom_pt->set_as_start();
 
   auto endpoint1 = endpoints.begin();
   auto endpoint2 = endpoints.begin() + 1;
@@ -87,9 +75,7 @@ void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon
     (*endpoint1)->set_next(*endpoint2);
     (*endpoint2)->set_prev(*endpoint1);
 
-    _polygon_edge_rtree.insert(std::make_pair(ieda_solver::BgSegment(ieda_solver::BgPoint((*endpoint1)->get_x(), (*endpoint1)->get_y()),
-                                                                     ieda_solver::BgPoint((*endpoint2)->get_x(), (*endpoint2)->get_y())),
-                                              std::make_pair((*endpoint1), (*endpoint2))));
+    _data_manager->get_region_query()->addEdge(std::make_pair((*endpoint1), (*endpoint2)));
 
     // create scanline points
     ScanlinePoint* starting_point = nullptr;
@@ -135,7 +121,7 @@ void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon
 }
 
 /// @brief sort scanline points in both horizontal and vertical direction
-void ScanlineDataManager::sortEndpoints()
+void ScanlinePreprocess::sortEndpoints()
 {
   std::sort(_scanline_points_horizontal.begin(), _scanline_points_horizontal.end(), CompareScanlinePointByX());
   std::sort(_scanline_points_vertical.begin(), _scanline_points_vertical.end(), CompareScanlinePointByY());

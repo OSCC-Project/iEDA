@@ -16,6 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "boost_definition.h"
+#include "drc_basic_point.h"
+
 namespace idrc {
 class DrcDataManager;
 
@@ -25,8 +28,30 @@ class DrcRegionQuery
   DrcRegionQuery(DrcDataManager* data_manager) : _data_manager(data_manager) {}
   ~DrcRegionQuery() { _data_manager = nullptr; }
 
+  std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> getEdgesInRect(int llx, int lly, int urx, int ury)
+  {
+    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> segments;
+    std::vector<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>> result;
+    ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
+    _polygon_edge_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
+    for (auto& pair : result) {
+      segments.emplace_back(pair.second);
+    }
+    return segments;
+  }
+
+  void addEdge(std::pair<DrcBasicPoint*, DrcBasicPoint*> edge)
+  {
+    _polygon_edge_rtree.insert(std::make_pair(ieda_solver::BgSegment(ieda_solver::BgPoint(edge.first->get_x(), edge.first->get_y()),
+                                                                     ieda_solver::BgPoint(edge.second->get_x(), edge.second->get_y())),
+                                              edge));
+  }
+
  private:
   DrcDataManager* _data_manager = nullptr;
+
+  bg::index::rtree<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>, bg::index::quadratic<16>>
+      _polygon_edge_rtree;
 };
 
 }  // namespace idrc

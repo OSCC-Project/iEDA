@@ -14,9 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
 
-#include "condition_manager.h"
+#include <vector>
+
+#include "check_item.h"
+#include "condition.h"
 
 namespace idrc {
+
+class CheckList
+{
+ public:
+  CheckList() {}
+  ~CheckList() = default;
+
+ private:
+  Condition _condition;
+
+  std::vector<CheckItem*> _check_list;
+};
 
 }  // namespace idrc

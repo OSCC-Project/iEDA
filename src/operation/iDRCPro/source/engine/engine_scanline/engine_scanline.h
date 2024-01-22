@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include "scanline_data_manager.h"
+#include "scanline_preprocess.h"
 
 namespace idrc {
 
@@ -38,21 +38,21 @@ struct ScanlineStatus
   int min_spacing;
   int max_spacing;
 
-  ScanlineStatus(ScanlineTravelDirection travel_direction, ScanlineDataManager* data_manager, int min_spacing, int max_spacing)
+  ScanlineStatus(ScanlineTravelDirection travel_direction, ScanlinePreprocess* preprocess, int min_spacing, int max_spacing)
       : direction(travel_direction), min_spacing(min_spacing), max_spacing(max_spacing)
   {
     switch (direction) {
       case ScanlineTravelDirection::kHorizontal:
         get_travel_direction_coord = []<typename T>(T* point) { return point->get_x(); };
         get_orthogonal_coord = []<typename T>(T* point) { return point->get_y(); };
-        endpoints_it = data_manager->get_scanline_points_horizontal().begin();
-        endpoints_end = data_manager->get_scanline_points_horizontal().end();
+        endpoints_it = preprocess->get_scanline_points_horizontal().begin();
+        endpoints_end = preprocess->get_scanline_points_horizontal().end();
         break;
       case ScanlineTravelDirection::kVertical:
         get_travel_direction_coord = []<typename T>(T* point) { return point->get_y(); };
         get_orthogonal_coord = []<typename T>(T* point) { return point->get_x(); };
-        endpoints_it = data_manager->get_scanline_points_vertical().begin();
-        endpoints_end = data_manager->get_scanline_points_vertical().end();
+        endpoints_it = preprocess->get_scanline_points_vertical().begin();
+        endpoints_end = preprocess->get_scanline_points_vertical().end();
         break;
       default:
         //   std::cout << "scanline error: direction" << std::endl;
@@ -77,22 +77,27 @@ struct ScanlineStatus
 class DrcEngineScanline
 {
  public:
-  DrcEngineScanline(idb::IdbLayer* layer);
+  DrcEngineScanline(idb::IdbLayer* layer, DrcDataManager* data_manager) : _data_manager(data_manager)
+  {
+    _preprocess = new ScanlinePreprocess(layer, data_manager);
+  }
   ~DrcEngineScanline();
 
-  ScanlineDataManager* get_data_manager() { return _data_manager; }
+  ScanlinePreprocess* get_preprocess() { return _preprocess; }
 
   void doScanline(int min_spacing = -1, int max_spacing = -1);
 
  private:
-  ScanlineDataManager* _data_manager;
+  ScanlinePreprocess* _preprocess;
+  DrcDataManager* _data_manager;
 
   void scan(ScanlineTravelDirection direction, int min_spacing, int max_spacing);
   void addCurrentBucketToScanline(ScanlineStatus& status);
-  ScanlineDataType judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons, ScanlinePoint* point_forward,
-                                    ScanlinePoint* point_backward);
-  void fillResultToBasicPoint(ScanlineStatus& status, DrcBasicPoint* basepoint_forward, DrcBasicPoint* basepoint_backward,
-                              ScanlineDataType result_type);
+  // ScanlineDataType judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons, ScanlinePoint*
+  // point_forward,
+  //                                   ScanlinePoint* point_backward);
+  // void fillResultToBasicPoint(ScanlineStatus& status, DrcBasicPoint* basepoint_forward, DrcBasicPoint* basepoint_backward,
+  //                             ScanlineDataType result_type);
   bool tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoint* point);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);

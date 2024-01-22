@@ -16,32 +16,23 @@
 // ***************************************************************************************
 #include "idrc.h"
 
-#include "condition_area.h"
-#include "condition_builder.h"
-#include "condition_connectivity.h"
-#include "condition_eol.h"
-#include "condition_jog.h"
-#include "condition_notch.h"
-#include "condition_spacing_table.h"
-#include "condition_step.h"
-
 namespace idrc {
 
 DrcManager::DrcManager()
 {
   _data_manager = new DrcDataManager();
   _engine = new DrcEngine(_data_manager);
-  _rule_manager = new DrcRuleManager(_engine);
+  // _rule_manager = new DrcRuleManager(_engine);
   _violation_manager = new DrcViolationManager();
-  _condition_manager = new DrcConditionManager(_engine, _violation_manager);
+  // _condition_manager = new DrcConditionManager(_engine, _violation_manager);
 }
 
 DrcManager::~DrcManager()
 {
-  if (_rule_manager != nullptr) {
-    delete _rule_manager;
-    _rule_manager = nullptr;
-  }
+  // if (_rule_manager != nullptr) {
+  //   delete _rule_manager;
+  //   _rule_manager = nullptr;
+  // }
 
   if (_condition_manager != nullptr) {
     delete _condition_manager;
@@ -78,22 +69,23 @@ void DrcManager::engineStart(DrcCheckerType checker_type)
  */
 bool DrcManager::buildCondition()
 {
-  DrcConditionBuilder builder(_condition_manager);
+  // DrcConditionBuilder builder(_condition_manager);
 
-  return builder.buildCondition();
+  // return builder.buildCondition();
+  return true;
 }
 
 void DrcManager::check()
 {
   // TODO: sratagy and multi-thread
 
-  DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
+  // DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
 
-  spacing_table.checkFastMode();
+  // spacing_table.checkFastMode();
 
-  DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
+  // DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
 
-  connectivity.checkFastMode();
+  // connectivity.checkFastMode();
 
   // DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
 
@@ -110,13 +102,13 @@ void DrcManager::checkSelf()
 
   // condition_area.checkFastMode();
 
-  DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
+  // DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
 
-  condition_notch.checkFastMode();
+  // condition_notch.checkFastMode();
 
-  DrcRuleConditionStep condition_step(_condition_manager, _engine);
+  // DrcRuleConditionStep condition_step(_condition_manager, _engine);
 
-  condition_step.checkFastMode();
+  // condition_step.checkFastMode();
 }
 
 }  // namespace idrc

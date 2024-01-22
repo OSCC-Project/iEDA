@@ -1,4 +1,4 @@
-add_subdirectory(data_manager)
+add_subdirectory(scanline_preprocess)
 
 add_library(idrc_engine_scanline 
 engine_scanline.cpp
@@ -6,13 +6,13 @@ engine_scanline.cpp
 
 target_link_libraries(idrc_engine_scanline
     PUBLIC
-    idrc_engine_scanline_dm    
+    idrc_engine_scanline_preprocess
+    idrc_pro_data
 )
 
 target_include_directories(idrc_engine_scanline
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/database
 )
 
 if(DEBUG_IDRC_ENGINE_SCANLINE)

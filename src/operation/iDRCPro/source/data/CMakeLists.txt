@@ -4,7 +4,7 @@ add_library(idrc_pro_data ${DRC_DB})
 
 target_link_libraries(idrc_pro_data
     PUBLIC
-        
+    idrc_engine_scanline
 )
 
 target_include_directories(idrc_pro_data

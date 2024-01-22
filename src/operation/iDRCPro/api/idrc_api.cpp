@@ -22,8 +22,7 @@
 #include "idrc_config.h"
 #include "idrc_data.h"
 #include "idrc_dm.h"
-#include "idrc_rule_stratagy.h"
-#include "rule_builder.h"
+#include "tech_rules.h"
 
 namespace idrc {
 
@@ -32,8 +31,9 @@ void DrcApi::init(std::string config)
   DrcConfigInst->init(config);
 
   /// tech rule is a singleton pattern, so it must be inited if drc starts
-  DrcRuleBuilder builder;
-  builder.build();
+  // DrcRuleBuilder builder;
+  // builder.build();
+  DrcTechRuleInst->init();
 }
 
 void DrcApi::exit()
@@ -48,15 +48,15 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   DrcManager drc_manager;
 
   auto* data_manager = drc_manager.get_data_manager();
-  auto* rule_manager = drc_manager.get_rule_manager();
+  // auto* rule_manager = drc_manager.get_rule_manager();
   auto* violation_manager = drc_manager.get_violation_manager();
-  if (data_manager == nullptr || rule_manager == nullptr || violation_manager == nullptr) {
+  if (data_manager == nullptr /*|| rule_manager == nullptr */ || violation_manager == nullptr) {
     return {};
   }
 
   /// set drc rule stratagy by rt paramter
   /// tbd
-  rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
+  // rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
 
   data_manager->set_env_shapes(&env_shape_list);
   data_manager->set_pin_data(&pin_data);

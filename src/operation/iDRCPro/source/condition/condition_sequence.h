@@ -14,9 +14,17 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-
-#include "condition_manager.h"
+#pragma once
 
 namespace idrc {
+
+class ConditionSequence
+{
+ public:
+  ConditionSequence() {}
+  ~ConditionSequence() {}
+
+ private:
+};
 
 }  // namespace idrc

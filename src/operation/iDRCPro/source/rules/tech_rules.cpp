@@ -15,8 +15,22 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#include "condition_manager.h"
+#include "tech_rules.h"
 
 namespace idrc {
+
+TechRules* TechRules::_instance = nullptr;
+
+void TechRules::destroyInst()
+{
+  if (_instance != nullptr) {
+    delete _instance;
+    _instance = nullptr;
+  }
+}
+
+void TechRules::init()
+{
+}
 
 }  // namespace idrc
