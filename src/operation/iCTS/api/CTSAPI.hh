@@ -70,7 +70,7 @@ class CTSAPI
 
   // flow API
   void resetAPI();
-  void init(const std::string& config_file, const std::string& work_dir);
+  void init(const std::string& config_file, const std::string& work_dir="");
   void readData();
   void routing();
   void evaluate();
