@@ -18,7 +18,6 @@
 
 #include "engine_init_def.h"
 #include "engine_init_rt.h"
-#include "engine_init_scanline.h"
 #include "idm.h"
 
 namespace idrc {
@@ -58,7 +57,6 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
     default:
       break;
   }
-  initEngineScanline();
 }
 /**
  * init engine data from RT data
@@ -75,15 +73,6 @@ void DrcEngine::initEngineDef()
 {
   DrcEngineInitDef init_def(_engine_manager);
   init_def.init();
-}
-
-/**
- * init scanline engine data from geometry data
- */
-void DrcEngine::initEngineScanline()
-{
-  DrcEngineInitScanline init_scanline(_engine_manager);
-  init_scanline.init();
 }
 
 }  // namespace idrc

@@ -16,29 +16,24 @@
 // ***************************************************************************************
 #pragma once
 
-#include <stdint.h>
-
-/**
- * check geometry overlap method
- */
+#include "tech_rules.h"
 
 namespace idrc {
 
-class DrcEngineManager;
+/**
+ * rule conditions are concepts built from tech lef drc rules, it contains a condition matrix to guide condition check orders, the rule
+ * matrix index indicates the checking order,
+ *
+ */
 
-class DrcEngineInitScanline
+class DrcConditionManager
 {
  public:
-  DrcEngineInitScanline(DrcEngineManager* engine_manager) : _engine_manager(engine_manager) {}
-  ~DrcEngineInitScanline() {}
-
-  void init();
+  DrcConditionManager() {}  // TODO: copy condition from tech rules
+  ~DrcConditionManager() {}
 
  private:
-  DrcEngineManager* _engine_manager = nullptr;
-
-  void initGeometryData();
-  void initScanlineResult();
+  std::map<idb::IdbLayer*, std::map<std::set<int>, std::vector<Condition*>>> _condition_list;  // std::set<int> : polygon id set
 };
 
 }  // namespace idrc

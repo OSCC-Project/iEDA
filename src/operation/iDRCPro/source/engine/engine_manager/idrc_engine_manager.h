@@ -18,6 +18,7 @@
 
 #include <map>
 
+#include "engine_check.h"
 #include "engine_layout.h"
 #include "engine_scanline.h"
 #include "idrc_data.h"
@@ -48,8 +49,12 @@ class DrcEngineManager
   }
   DrcEngineScanline* get_engine_scanline(idb::IdbLayer* layer, LayoutType type = LayoutType::kRouting);
 
+  DrcEngineCheck* get_engine_check() { return _engine_check; }
+
   /// operator
   bool addRect(int llx, int lly, int urx, int ury, idb::IdbLayer* layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
+
+  void filterData();
 
  private:
   DrcDataManager* _data_manager;
@@ -66,6 +71,9 @@ class DrcEngineManager
    *  _scanline : scanline matrix
    */
   std::map<LayoutType, std::map<idb::IdbLayer*, DrcEngineScanline*>> _scanline_matrix;
+  DrcEngineCheck* _engine_check;
+
+  void dataPreprocess();
 };
 
 }  // namespace idrc

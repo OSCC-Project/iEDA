@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "idrc_data.h"
 #include "idrc_dm.h"
 #include "idrc_engine_manager.h"
-#include "idrc_data.h"
 
 namespace idrc {
 class DrcEngine

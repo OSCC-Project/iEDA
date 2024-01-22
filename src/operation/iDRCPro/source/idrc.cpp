@@ -69,14 +69,13 @@ void DrcManager::engineStart(DrcCheckerType checker_type)
  */
 bool DrcManager::buildCondition()
 {
-  // DrcConditionBuilder builder(_condition_manager);
-
-  // return builder.buildCondition();
+  _engine->get_engine_manager()->filterData();
   return true;
 }
 
 void DrcManager::check()
 {
+  _engine->get_engine_manager()->get_engine_check()->apply_condition_detail();
   // TODO: sratagy and multi-thread
 
   // DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);

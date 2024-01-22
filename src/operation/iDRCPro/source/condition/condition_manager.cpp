@@ -14,40 +14,8 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 
-#include <vector>
-
-#include "check_item.h"
-#include "condition.h"
+#include "condition_manager.h"
 
 namespace idrc {
-
-class CheckList
-{
- public:
-  CheckList(Condition* condition) : _condition(condition) {}
-  ~CheckList()
-  {
-    for (auto& check_item : _check_list) {
-      delete check_item;
-    }
-  }
-
-  std::vector<CheckItem*>& get_check_list() { return _check_list; }
-
-  void add_check_item(CheckItem* check_item) { _check_list.push_back(check_item); }
-
-  void apply_condition_detail()  // TODO: parallel
-  {
-    for (auto& check_item : _check_list) {
-      _condition->get_detail()->apply(check_item);
-    }
-  }
-
- private:
-  Condition* _condition;
-  std::vector<CheckItem*> _check_list;
-};
-
 }  // namespace idrc

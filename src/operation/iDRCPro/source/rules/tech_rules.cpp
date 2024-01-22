@@ -31,6 +31,15 @@ void TechRules::destroyInst()
   }
 }
 
+TechRules::~TechRules()
+{
+  for (auto& [layer, condition_list] : _condition_routing_layers) {
+    for (auto& condition : condition_list) {
+      delete condition;
+    }
+  }
+}
+
 void TechRules::init()
 {
   DrcRuleBuilder builder;

@@ -25,8 +25,8 @@ namespace idrc {
 class Condition
 {
  public:
-  Condition(ConditionSequence* sequence, ConditionValue* value, ConditionDetail* detail)
-      : _sequence(sequence), _value(value), _detail(detail)
+  Condition(Condition* base_condition, ConditionSequence* sequence, ConditionValue* value, ConditionDetail* detail)
+      : _base_condition(base_condition), _sequence(sequence), _value(value), _detail(detail)
   {
   }
   ~Condition()
@@ -36,17 +36,23 @@ class Condition
     delete _detail;
   }
 
-  // setter
-  void set_sequence(ConditionSequence* sequence) { _sequence = sequence; }
-  void set_value(ConditionValue* value) { _value = value; }
-  void set_detail(ConditionDetail* detail) { _detail = detail; }
-
   // getter
+  Condition* get_base_condition() { return _base_condition; }
   ConditionSequence* get_sequence() { return _sequence; }
   ConditionValue* get_value() { return _value; }
   ConditionDetail* get_detail() { return _detail; }
 
+  // prototype pattern
+  Condition* clone()
+  {
+    Condition* base = _base_condition ? _base_condition : this;
+    Condition* condition = new Condition(base, _sequence->clone(), _value->clone(), _detail->clone());
+    return condition;
+  }
+
  private:
+  Condition* _base_condition;
+
   ConditionSequence* _sequence;
   ConditionValue* _value;
   ConditionDetail* _detail;

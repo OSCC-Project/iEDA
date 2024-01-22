@@ -41,11 +41,23 @@ class ConditionSequence
     kESE = 128
   };
 
-  ConditionSequence(uint64_t sequence_pattern) : _sequence_pattern(sequence_pattern) {}
-  ~ConditionSequence() {}
+  enum class State
+  {
+    kNone,
+    kTrigger,
+    kRecording,
+    kStop
+  };
+
+  ConditionSequence() {}
+  virtual ~ConditionSequence() {}
+
+  // prototype pattern
+  virtual ConditionSequence* clone() = 0;
+
+  virtual State apply(ConditionSequenceEnum condition_sequence_enum) = 0;
 
  private:
-  uint64_t _sequence_pattern;
 };
 
 }  // namespace idrc

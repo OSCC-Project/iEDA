@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include "check_item.h"
+
 namespace idrc {
 
 class ConditionDetail
@@ -24,7 +26,10 @@ class ConditionDetail
   ConditionDetail() {}
   virtual ~ConditionDetail() {}
 
-  virtual bool apply() = 0;
+  virtual bool apply(CheckItem* item) = 0;
+
+  // prototype pattern
+  virtual ConditionDetail* clone() = 0;
 
  private:
 };

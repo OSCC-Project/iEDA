@@ -24,6 +24,12 @@ class ConditionValue
   ConditionValue(int value) : _value(value) {}
   ~ConditionValue() {}
 
+  // prototype pattern
+  ConditionValue* clone() { return new ConditionValue(_value); }
+
+  // getter
+  int get_value() { return _value; }
+
  private:
   int _value;
 };

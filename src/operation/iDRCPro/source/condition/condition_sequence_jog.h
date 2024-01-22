@@ -16,38 +16,40 @@
 // ***************************************************************************************
 #pragma once
 
+#include <stdint.h>
+
 #include <vector>
 
-#include "check_item.h"
-#include "condition.h"
+#include "condition_sequence.h"
+#include "drc_basic_point.h"
 
 namespace idrc {
 
-class CheckList
+class ConditionSequenceJog : public ConditionSequence
 {
  public:
-  CheckList(Condition* condition) : _condition(condition) {}
-  ~CheckList()
+  ConditionSequenceJog(uint64_t start_sequence, uint64_t middle_sequence, uint64_t end_sequence)
+      : _start_sequence(start_sequence), _middle_sequence(middle_sequence), _end_sequence(end_sequence)
   {
-    for (auto& check_item : _check_list) {
-      delete check_item;
-    }
   }
+  ~ConditionSequenceJog() override {}
 
-  std::vector<CheckItem*>& get_check_list() { return _check_list; }
+  // prototype pattern
+  ConditionSequence* clone() override { return new ConditionSequenceJog(_start_sequence, _middle_sequence, _end_sequence); }
 
-  void add_check_item(CheckItem* check_item) { _check_list.push_back(check_item); }
-
-  void apply_condition_detail()  // TODO: parallel
+  ConditionSequence::State apply(ConditionSequenceEnum sequence) override
   {
-    for (auto& check_item : _check_list) {
-      _condition->get_detail()->apply(check_item);
-    }
+    // TODO: use sequence to create state machine
+    // TODO: if state turns to stop, create check item and push to check list
+    return ConditionSequence::State::kNone;
   }
 
  private:
-  Condition* _condition;
-  std::vector<CheckItem*> _check_list;
-};
+  uint64_t _start_sequence;
+  uint64_t _middle_sequence;
+  uint64_t _end_sequence;
 
+  std::vector<std::pair<ConditionSequenceEnum, std::vector<DrcBasicPoint*>>> _region_record;
+};
+// condition manager
 }  // namespace idrc

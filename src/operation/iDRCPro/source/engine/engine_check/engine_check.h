@@ -16,15 +16,42 @@
 // ***************************************************************************************
 #pragma once
 
+#include <map>
+
+#include "check_list.h"
+#include "condition.h"
+
 namespace idrc {
 
-class EngineCheck
+class DrcEngineCheck
 {
  public:
-  EngineCheck() {}
-  ~EngineCheck() = default;
+  DrcEngineCheck() {}
+  ~DrcEngineCheck()
+  {
+    for (auto& check_list : _check_list_map) {
+      delete check_list.second;
+    }
+  }
+
+  CheckList* get_check_list(Condition* condition)
+  {
+    Condition* base_condition = condition->get_base_condition() ? condition->get_base_condition() : condition;
+    if (_check_list_map.find(base_condition) == _check_list_map.end()) {
+      _check_list_map[base_condition] = new CheckList(base_condition);
+    }
+    return _check_list_map[base_condition];
+  }
+
+  void apply_condition_detail()  // TODO: parallel
+  {
+    for (auto& check_list : _check_list_map) {
+      check_list.second->apply_condition_detail();
+    }
+  }
 
  private:
+  std::map<Condition*, CheckList*> _check_list_map;
 };
 
 }  // namespace idrc

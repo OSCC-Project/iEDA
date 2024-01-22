@@ -19,6 +19,7 @@
 
 #include "condition.h"
 #include "condition_detail_jog.h"
+#include "condition_sequence_jog.h"
 #include "tech_rules.h"
 
 namespace idrc {
@@ -66,11 +67,15 @@ void DrcRuleBuilder::buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouti
   }
 
   // create condition
-  ConditionSequence* sequence = new ConditionSequence(ConditionSequence::kSEW_WES | ConditionSequence::kESW_WSE | ConditionSequence::kESE);
+  ConditionSequenceJog* sequence
+      = new ConditionSequenceJog(ConditionSequence::kESE | ConditionSequence::kESW_WSE, ConditionSequence::kSEW_WES,
+                                 ConditionSequence::kESE | ConditionSequence::kESW_WSE);
   ConditionValue* value = new ConditionValue(within);
   ConditionDetailJog* detail = new ConditionDetailJog(idb_rule_jog.get());
 
-  DrcTechRuleInst->get_condition_routing_layers(layer).emplace_back(sequence, value, detail);
+  Condition* condition = new Condition(nullptr, sequence, value, detail);
+
+  DrcTechRuleInst->get_condition_routing_layers(layer).emplace_back(condition);
 }
 
 void DrcRuleBuilder::initCutLayerRules()
