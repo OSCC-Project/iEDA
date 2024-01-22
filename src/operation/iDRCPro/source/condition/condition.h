@@ -25,13 +25,26 @@ namespace idrc {
 class Condition
 {
  public:
-  Condition() {}
+  Condition(ConditionSequence* sequence, ConditionValue* value, ConditionDetail* detail)
+      : _sequence(sequence), _value(value), _detail(detail)
+  {
+  }
   ~Condition()
   {
     delete _sequence;
     delete _value;
     delete _detail;
   }
+
+  // setter
+  void set_sequence(ConditionSequence* sequence) { _sequence = sequence; }
+  void set_value(ConditionValue* value) { _value = value; }
+  void set_detail(ConditionDetail* detail) { _detail = detail; }
+
+  // getter
+  ConditionSequence* get_sequence() { return _sequence; }
+  ConditionValue* get_value() { return _value; }
+  ConditionDetail* get_detail() { return _detail; }
 
  private:
   ConditionSequence* _sequence;

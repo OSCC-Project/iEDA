@@ -21,6 +21,7 @@
 #include "check_item.h"
 #include "condition_detail.h"
 #include "drc_basic_point.h"
+#include "idm.h"
 
 namespace idrc {
 
@@ -35,15 +36,16 @@ class ConditionJogCheckItem : CheckItem
   int _wire_width;
 };
 
-class ConditionDetailJog : ConditionDetail
+class ConditionDetailJog : public ConditionDetail
 {
  public:
-  ConditionDetailJog() {}
+  ConditionDetailJog(idb::routinglayer::Lef58SpacingTableJogToJog* rule) : _jog_to_jog(rule) {}
   ~ConditionDetailJog() override {}
 
   bool apply() override { return true; }  // TODO: jog check
 
  private:
+  idb::routinglayer::Lef58SpacingTableJogToJog* _jog_to_jog;
 };
 
 }  // namespace idrc

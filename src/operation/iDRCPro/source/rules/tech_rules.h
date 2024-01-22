@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "condition.h"
 #include "idm.h"
 
 #define DrcTechRuleInst idrc::TechRules::getInst()
@@ -38,9 +39,14 @@ class TechRules
 
   void init();
 
+  // getter
+  std::vector<Condition>& get_condition_routing_layers(idb::IdbLayer* layer) { return _condition_routing_layers[layer]; }
+
  private:
   static TechRules* _instance;
   bool _b_inited = false;
+
+  std::map<idb::IdbLayer*, std::vector<Condition>> _condition_routing_layers;
 
   TechRules() {}
   ~TechRules() = default;

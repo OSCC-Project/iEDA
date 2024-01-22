@@ -17,6 +17,8 @@
 
 #include "tech_rules.h"
 
+#include "rule_builder.h"
+
 namespace idrc {
 
 TechRules* TechRules::_instance = nullptr;
@@ -31,6 +33,8 @@ void TechRules::destroyInst()
 
 void TechRules::init()
 {
+  DrcRuleBuilder builder;
+  builder.build();
 }
 
 }  // namespace idrc

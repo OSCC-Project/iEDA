@@ -34,10 +34,10 @@ DrcManager::~DrcManager()
   //   _rule_manager = nullptr;
   // }
 
-  if (_condition_manager != nullptr) {
-    delete _condition_manager;
-    _condition_manager = nullptr;
-  }
+  // if (_condition_manager != nullptr) {
+  //   delete _condition_manager;
+  //   _condition_manager = nullptr;
+  // }
 
   if (_engine != nullptr) {
     delete _engine;

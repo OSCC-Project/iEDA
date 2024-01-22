@@ -16,15 +16,36 @@
 // ***************************************************************************************
 #pragma once
 
+#include <stdint.h>
+
 namespace idrc {
 
 class ConditionSequence
 {
  public:
-  ConditionSequence() {}
+  /*
+    W - Width
+    E - Edge
+    N - None
+    S - Spacing
+  */
+  enum ConditionSequenceEnum : uint64_t
+  {
+    kWEW = 1,
+    kNEW_WEN = 2,
+    kSEW_WES = 4,
+    kSES = 8,
+    kNES_SEN = 16,
+    kNEN = 32,
+    kESW_WSE = 64,
+    kESE = 128
+  };
+
+  ConditionSequence(uint64_t sequence_pattern) : _sequence_pattern(sequence_pattern) {}
   ~ConditionSequence() {}
 
  private:
+  uint64_t _sequence_pattern;
 };
 
 }  // namespace idrc

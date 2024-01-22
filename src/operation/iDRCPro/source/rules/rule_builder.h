@@ -14,9 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
 
-#include "condition_manager.h"
+#include "idm.h"
 
 namespace idrc {
+
+class DrcRuleBuilder
+{
+ public:
+  DrcRuleBuilder() {}
+  ~DrcRuleBuilder() {}
+
+  void build();
+
+ private:
+  void initRoutingLayerRules();
+  void buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouting* idb_routing_layer);
+  void initCutLayerRules();
+};
 
 }  // namespace idrc

@@ -14,23 +14,8 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "condition_detail_jog.h"
 
 namespace idrc {
-
-/**
- * rule conditions are concepts built from tech lef drc rules, it contains a condition matrix to guide condition check orders, the rule
- * matrix index indicates the checking order,
- *
- */
-
-class DrcConditionManager
-{
- public:
-  DrcConditionManager() {}
-  ~DrcConditionManager() {}
-
- private:
-};
 
 }  // namespace idrc

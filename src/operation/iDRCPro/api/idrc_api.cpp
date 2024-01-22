@@ -31,8 +31,6 @@ void DrcApi::init(std::string config)
   DrcConfigInst->init(config);
 
   /// tech rule is a singleton pattern, so it must be inited if drc starts
-  // DrcRuleBuilder builder;
-  // builder.build();
   DrcTechRuleInst->init();
 }
 

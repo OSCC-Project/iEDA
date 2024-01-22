@@ -21,10 +21,11 @@ namespace idrc {
 class ConditionValue
 {
  public:
-  ConditionValue() {}
+  ConditionValue(int value) : _value(value) {}
   ~ConditionValue() {}
 
  private:
+  int _value;
 };
 
 }  // namespace idrc

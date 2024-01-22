@@ -1,9 +1,11 @@
 add_library(idrc_condition_manager
-  condition_manager.cpp
+  condition_detail_jog.cpp
 )
 
 target_link_libraries(idrc_condition_manager
     PUBLIC
+    idm
+    idb
     idrc_engine_check
 )
 

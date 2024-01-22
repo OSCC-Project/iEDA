@@ -27,7 +27,6 @@ set(DEBUG_IDRC_ENGINE_CHECK OFF)
 
 # debug tech rules
 set(DEBUG_IDRC_RULE OFF)
-set(DEBUG_IDRC_RULE_BUILDER OFF)
 
 # debug api
 set(DEBUG_IDRC_API OFF)
@@ -70,9 +69,6 @@ if(DEBUG_IDRC_ENGINE_CHECK)
 endif()
 if(DEBUG_IDRC_RULE)
   add_compile_definitions(DEBUG_IDRC_RULE)
-endif()
-if(DEBUG_IDRC_RULE_BUILDER)
-  add_compile_definitions(DEBUG_IDRC_RULE_BUILDER)
 endif()
 if(DEBUG_IDRC_API)
   add_compile_definitions(DEBUG_IDRC_API)
