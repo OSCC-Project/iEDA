@@ -20,9 +20,11 @@
 #include <future>
 #include <ranges>
 
+#include "Instance.hh"
 #include "Netlist.hh"
 #include "Object.hh"
-// #include "ShapeCurve.hh"
+#include "ShapeCurve.hh"
+
 namespace imp {
 class Block;
 
@@ -37,25 +39,74 @@ class Block : public Object, public std::enable_shared_from_this<Block>
   ~Block() = default;
 
   virtual OBJ_TYPE object_type() const override { return OBJ_TYPE::kBlock; }
-  virtual geo::box<int32_t> boundingbox() const override { return Object::transform(_shape); }
+  virtual geo::box<int32_t> boundingbox() const override { return Object::transform(get_curr_shape()); }
+  // void set_shape(const geo::box<int32_t>& box)
+  // {
+  //   set_min_corner(geo::lx(box), geo::ly(box));
+  //   _shape = geo::make_box(0, 0, geo::width(box), geo::height(box));
+  // }
   void set_shape(const geo::box<int32_t>& box)
   {
-    set_min_corner(geo::lx(box), geo::ly(box));
-    _shape = geo::make_box(0, 0, geo::width(box), geo::height(box));
+    // only set a box shape (no changeable shape curve)
+    set_shape(geo::lx(box), geo::ly(box), {{geo::width(box), geo::height(box)}}, 0, false);
   }
+  void set_shape(int32_t lx, int32_t ly, const std::vector<std::pair<int32_t, int32_t>>& discrete_shapes, float continuous_shapes_area,
+                 bool use_clip = true)
+  {
+    // set shape with shapeCurve
+    _shape_curve.setShapes(discrete_shapes, continuous_shapes_area, use_clip);
+  }
+
   size_t level() const;
-  bool is_leaf();
+  bool is_leaf() const;
   Netlist& netlist();
   const Netlist& netlist() const;
   void set_netlist(std::shared_ptr<Netlist> netlist);
+
+  void init_cell_area()
+  {
+    auto area_op = [](imp::Block& obj) -> void {
+      obj.set_macro_area(0.);
+      obj.set_stdcell_area(0.);
+
+      double macro_area = 0, stdcell_area = 0;
+      for (auto&& i : obj.netlist().vRange()) {
+        auto sub_obj = i.property();
+        if (sub_obj->isInstance()) {  // add direct instance child area
+          auto& inst = dynamic_cast<Instance&>(*sub_obj);
+          if (inst.get_cell_master().isMacro()) {
+            macro_area += inst.get_area();
+          }
+          // } else if (inst.get_cell_master().isLogic() || inst.get_cell_master().isFlipflop()) {
+          //   stdcell_area += inst.get_area();
+          // }
+          else {
+            stdcell_area += inst.get_area();
+          }
+        } else {  // add block children's instance area
+          macro_area += sub_obj->get_macro_area();
+          stdcell_area += sub_obj->get_stdcell_area();
+        }
+      }
+      obj.set_macro_area(macro_area);
+      obj.set_stdcell_area(stdcell_area);
+      std::cout << "node macro_area: " << macro_area << " stdcell area: " << stdcell_area << std::endl;
+      return;
+    };
+    std::cout << "start initilize block area: " << std::endl;
+    postorder_op(area_op);
+    std::cout << "total macro area: " << _macro_area << std::endl;
+    std::cout << "total stdcell area" << _stdcell_area << std::endl;
+  }
+
   template <BlockOperator Operator>
   void preorder_op(Operator op);
-/**
- * @brief Parallel preorder 
- * 
- * @tparam Operator 
- * @param op 
- */
+  /**
+   * @brief Parallel preorder
+   *
+   * @tparam Operator
+   * @param op
+   */
   template <BlockOperator Operator>
   void parallel_preorder_op(Operator op);
 
@@ -67,8 +118,9 @@ class Block : public Object, public std::enable_shared_from_this<Block>
   using std::enable_shared_from_this<Block>::shared_from_this;
 
  private:
-  geo::box<int32_t> _shape;
-
+  // geo::box<int32_t> _shape;
+  geo::box<int32_t> get_curr_shape() const { return geo::make_box(0, 0, _shape_curve.get_width(), _shape_curve.get_height()); }
+  ShapeCurve<int32_t> _shape_curve;  // containing stdcell area
   std::shared_ptr<Netlist> _netlist;
 };
 
@@ -93,7 +145,7 @@ inline void Block::postorder_op(Operator op)
     if (!obj->isBlock())
       continue;
     auto sub_block = std::static_pointer_cast<Block, Object>(obj);
-    sub_block->preorder_op(op);
+    sub_block->postorder_op(op);
   }
   op(*this);
 }

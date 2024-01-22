@@ -15,13 +15,15 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "MP.hh"
+
 #include "BlkClustering.hh"
 namespace imp {
 
 void MP::runMP()
 {
-  BlkClustering clustering{5,20};
+  BlkClustering clustering{5, 20};
   root().parallel_preorder_op(clustering);
+  root().init_cell_area();
 }
 
 }  // namespace imp

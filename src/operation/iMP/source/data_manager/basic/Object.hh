@@ -37,6 +37,7 @@ class Object
   virtual geo::box<int32_t> boundingbox() const = 0;
   bool isBlock() { return object_type() == OBJ_TYPE::kBlock; }
   bool isInstance() { return object_type() == OBJ_TYPE::kInstance; }
+  bool isRoot() { return _parent.lock() ? false : true; }
   // virtual Polygon<int32_t> shape() const = 0
   template <typename Geometry>
   Geometry transform(const Geometry& shape) const
@@ -58,9 +59,16 @@ class Object
   const Object& parent() const;
   void set_parent(std::shared_ptr<Object> parent);
 
+  void set_macro_area(double macro_area) { _macro_area = macro_area; }
+  void set_stdcell_area(double stdcell_area) { _stdcell_area = stdcell_area; }
+  double get_macro_area() const { return _macro_area; }
+  double get_stdcell_area() const { return _stdcell_area; }
+
  private:
   friend class Block;
   friend class Instance;
+  double _macro_area = 0;
+  double _stdcell_area = 0;
   geo::point<int32_t> _min_corner;
   Orient _orient;
   std::string _name;
