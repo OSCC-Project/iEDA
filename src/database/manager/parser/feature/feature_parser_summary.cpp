@@ -42,6 +42,8 @@
 #include "IdbTrackGrid.h"
 #include "PlacerDB.hh"
 #include "PLAPI.hh"
+#include "CTSAPI.hh"
+#include "TimingEngine.hh"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
@@ -567,6 +569,35 @@ json FeatureParser::buildSummaryPL(std::string json_path)
   // std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
 
   return summary_pl;
+}
+
+json FeatureParser::buildSummaryCTS()
+{
+  // get CTS data
+
+  auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+
+
+  // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
+  std::map<std::string, vector<double>> clk_sta_eval;
+  auto clk_list = _timing_engine->getClockList();
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk){
+    auto clk_name = clk->get_clock_name();
+    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    
+  });
+
+  auto design_area = dmInst->dieAreaUm();
+  auto design_utilization = dmInst->dieUtilization();
+  auto clock_nets = _design->get_net_list()->get_num_clock();
+  
+  // auto setup_tns = _timing_engine->reportTNS();
+
+  return json();
 }
 
 }  // namespace idb

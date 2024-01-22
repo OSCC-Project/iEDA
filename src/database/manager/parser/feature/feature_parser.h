@@ -80,5 +80,7 @@ class FeatureParser
   json buildSummaryPdn();
   json buildSummaryPins();
   json buildSummaryPL(std::string json_path);
+  json buildSummaryCTS();
+
 };
 }  // namespace idb

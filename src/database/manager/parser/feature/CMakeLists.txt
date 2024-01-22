@@ -23,4 +23,6 @@ target_link_libraries(feature_parser
         idm
         ipl-source
         ipl-api
+        icts_api
+        ista-engine
 )
