@@ -41,7 +41,6 @@ class DRModel
 
  private:
   std::vector<DRNet> _dr_net_list;
-  // iter
   DRParameter _curr_dr_parameter;
   GridMap<DRBox> _dr_box_map;
   std::vector<std::vector<DRBoxId>> _dr_box_id_list_list;

@@ -30,8 +30,6 @@
 
 - detailed_router: 详细布线器，以DRC驱动的，基于三维track网格的详细布线器
 
-- violation_repairer: 违例修复器，在已有的布线结果上，通过patch等方式进行违例修复
-
 ### solver：布线时可以使用的求解器
 
 - flute: 以查找表的形式进行快速斯坦纳树生成

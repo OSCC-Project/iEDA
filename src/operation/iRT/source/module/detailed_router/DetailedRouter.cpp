@@ -70,7 +70,6 @@ DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 void DetailedRouter::routeNetList(std::vector<Net>& net_list)
 {
   DRModel dr_model = initDRModel(net_list);
-  addAccessPointToGCellMap(dr_model);
   addTAResultToGCellMap(dr_model);
   iterativeDRModel(dr_model);
 }
@@ -103,17 +102,6 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
   }
   dr_net.set_ta_result_list(net.get_ta_result_list());
   return dr_net;
-}
-
-void DetailedRouter::addAccessPointToGCellMap(DRModel& dr_model)
-{
-  std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
-
-  for (DRNet& dr_net : dr_net_list) {
-    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      DM_INST.updateAccessPointToGCellMap(ChangeType::kAdd, dr_net.get_net_idx(), &dr_pin.get_protected_access_point());
-    }
-  }
 }
 
 void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
@@ -203,7 +191,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     printParameter(dr_parameter_list[i]);
     dr_model.set_curr_dr_parameter(dr_parameter_list[i]);
     initDRBoxMap(dr_model);
-    buildDRBoxMap(dr_model);
+    splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
@@ -270,7 +258,7 @@ void DetailedRouter::initDRBoxMap(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::buildDRBoxMap(DRModel& dr_model)
+void DetailedRouter::splitNetResult(DRModel& dr_model)
 {
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   for (irt_int x = 0; x < dr_box_map.get_x_size(); x++) {
@@ -417,7 +405,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     dr_task->set_net_idx(net_idx);
     dr_task->set_connect_type(dr_net_list[net_idx].get_connect_type());
     dr_task->set_dr_group_list(dr_group_list);
-    buildBoundingBox(dr_box, dr_task);
+    buildBoundingBox(dr_task);
     dr_task->set_routed_times(0);
     dr_task_list.push_back(dr_task);
   }
@@ -492,7 +480,7 @@ std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter:
   return boundary_point_map;
 }
 
-void DetailedRouter::buildBoundingBox(DRBox& dr_box, DRTask* dr_task)
+void DetailedRouter::buildBoundingBox(DRTask* dr_task)
 {
   std::vector<PlanarCoord> coord_list;
   for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
@@ -835,7 +823,7 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
         if (dr_node.get_neighbor_node_map().empty()) {
           plotDRBox(dr_box, -1, "pre");
           LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                         ") is empty in Box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
+                         ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
         }
         if (RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), coord)) {
           continue;
@@ -1928,11 +1916,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     LOG_INST.error(Loc::current(), "The type of net_shape is cut!");
   }
   RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[net_shape.get_layer_idx()];
-  ViaMaster& via_master = DM_INST.getDatabase().get_layer_via_master_list()[net_shape.get_layer_idx()].front();
 
-  // 膨胀size为 min_spacing + std::max(1/2*width, 1/2*below_enclosure_length)
-  irt_int enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect())
-                          + std::max(routing_layer.get_min_width() / 2, via_master.get_below_enclosure().getLength() / 2);
+  // 膨胀size为 min_spacing + 1/2 * width
+  irt_int enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
   PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;

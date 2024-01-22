@@ -31,13 +31,14 @@ class DRTask
   ~DRTask() = default;
   // getter
   irt_int get_net_idx() { return _net_idx; }
-  ConnectType get_connect_type() const { return _connect_type; }
+  ConnectType& get_connect_type() { return _connect_type; }
   std::vector<DRGroup>& get_dr_group_list() { return _dr_group_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
   irt_int get_routed_times() { return _routed_times; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   std::vector<EXTLayerRect>& get_patch_list() { return _patch_list; }
   // const getter
+  const ConnectType& get_connect_type() const { return _connect_type; }
   const std::vector<DRGroup>& get_dr_group_list() const { return _dr_group_list; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
   // setter

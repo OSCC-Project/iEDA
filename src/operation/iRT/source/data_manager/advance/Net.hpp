@@ -76,6 +76,8 @@ class Net
   MTree<Guide> _gr_result_tree;
   // TrackAssigner
   std::vector<Segment<LayerCoord>> _ta_result_list;
+  // DetailedRouter
+  
 };
 
 }  // namespace irt
