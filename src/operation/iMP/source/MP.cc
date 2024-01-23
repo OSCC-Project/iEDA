@@ -16,14 +16,29 @@
 // ***************************************************************************************
 #include "MP.hh"
 
+#include <functional>
+
 #include "BlkClustering.hh"
 namespace imp {
+
+std::vector<std::pair<int32_t, int32_t>> get_packing_shapes(std::vector<ShapeCurve<int32_t>>& sub_shape_curves)
+{
+  // packing vertically
+  int32_t total_width = 0;
+  int32_t max_height = 0;
+  for (const auto& shape_curve : sub_shape_curves) {
+    total_width += shape_curve.get_width();
+    max_height = std::max(max_height, shape_curve.get_height());
+  }
+  return {{total_width, max_height}};
+}
 
 void MP::runMP()
 {
   BlkClustering clustering{5, 20};
   root().parallel_preorder_op(clustering);
   root().init_cell_area();
+  root().coarse_shaping(get_packing_shapes);
 }
 
 }  // namespace imp

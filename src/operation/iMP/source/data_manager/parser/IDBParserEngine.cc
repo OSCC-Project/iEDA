@@ -108,7 +108,7 @@ void IDBParser::initNetlist()
   _idb_layout = idb_def_service->get_layout();
   _idb_design = idb_def_service->get_design();
   _design = std::make_shared<Block>(_idb_design->get_design_name(), std::make_shared<Netlist>(transform(_idb_layout)));
-  _design->set_shape(_design->netlist().property()->get_die_shape());
+  _design->set_shape_curve(_design->netlist().property()->get_die_shape());
   initRows();
   initCells();
 

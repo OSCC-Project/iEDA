@@ -17,6 +17,7 @@
 
 #ifndef IMP_BLOCK_H
 #define IMP_BLOCK_H
+#include <functional>
 #include <future>
 #include <ranges>
 
@@ -45,17 +46,6 @@ class Block : public Object, public std::enable_shared_from_this<Block>
   //   set_min_corner(geo::lx(box), geo::ly(box));
   //   _shape = geo::make_box(0, 0, geo::width(box), geo::height(box));
   // }
-  void set_shape(const geo::box<int32_t>& box)
-  {
-    // only set a box shape (no changeable shape curve)
-    set_shape(geo::lx(box), geo::ly(box), {{geo::width(box), geo::height(box)}}, 0, false);
-  }
-  void set_shape(int32_t lx, int32_t ly, const std::vector<std::pair<int32_t, int32_t>>& discrete_shapes, float continuous_shapes_area,
-                 bool use_clip = true)
-  {
-    // set shape with shapeCurve
-    _shape_curve.setShapes(discrete_shapes, continuous_shapes_area, use_clip);
-  }
 
   size_t level() const;
   bool is_leaf() const;
@@ -65,38 +55,72 @@ class Block : public Object, public std::enable_shared_from_this<Block>
 
   void init_cell_area()
   {
+    // only called on root node
+    if (!isRoot()) {
+      std::cerr << "init_cell_area only called on root node!" << std::endl;
+      exit(-1);
+    }
     auto area_op = [](imp::Block& obj) -> void {
       obj.set_macro_area(0.);
       obj.set_stdcell_area(0.);
 
       double macro_area = 0, stdcell_area = 0;
       for (auto&& i : obj.netlist().vRange()) {
+        // add subobject areas, cell_area has been initlized at instance level
         auto sub_obj = i.property();
-        if (sub_obj->isInstance()) {  // add direct instance child area
-          auto& inst = dynamic_cast<Instance&>(*sub_obj);
-          if (inst.get_cell_master().isMacro()) {
-            macro_area += inst.get_area();
-          }
-          // } else if (inst.get_cell_master().isLogic() || inst.get_cell_master().isFlipflop()) {
-          //   stdcell_area += inst.get_area();
-          // }
-          else {
-            stdcell_area += inst.get_area();
-          }
-        } else {  // add block children's instance area
-          macro_area += sub_obj->get_macro_area();
-          stdcell_area += sub_obj->get_stdcell_area();
-        }
+        // if (sub_obj->isInstance()) {  // add direct instance child area
+        //   auto& inst = dynamic_cast<Instance&>(*sub_obj);
+        //   if (inst.get_cell_master().isMacro()) {
+        //     macro_area += inst.get_area();
+        //   }
+        //   // } else if (inst.get_cell_master().isLogic() || inst.get_cell_master().isFlipflop()) {
+        //   //   stdcell_area += inst.get_area();
+        //   // }
+        //   else {
+        //     stdcell_area += inst.get_area();
+        //   }
+        // } else {  // add block children's instance area
+        //   macro_area += sub_obj->get_macro_area();
+        //   stdcell_area += sub_obj->get_stdcell_area();
+        // }
+        macro_area += sub_obj->get_macro_area();
+        stdcell_area += sub_obj->get_stdcell_area();
       }
       obj.set_macro_area(macro_area);
       obj.set_stdcell_area(stdcell_area);
       std::cout << "node macro_area: " << macro_area << " stdcell area: " << stdcell_area << std::endl;
       return;
     };
-    std::cout << "start initilize block area: " << std::endl;
     postorder_op(area_op);
     std::cout << "total macro area: " << _macro_area << std::endl;
     std::cout << "total stdcell area" << _stdcell_area << std::endl;
+  }
+
+  void coarse_shaping(std::function<std::vector<std::pair<int32_t, int32_t>>(std::vector<ShapeCurve<int32_t>>&)> get_packing_shapes)
+  {
+    // only called on root node
+    if (!isRoot()) {
+      std::cerr << "init_cell_area only called on root node!" << std::endl;
+      exit(-1);
+    }
+    auto coarse_shape_op = [get_packing_shapes](imp::Block& obj) -> void {
+      // calculate current node's discrete_shape_curve based on children node's discrete shapes, only concerns macros
+      // assume children node's shape has been calculated..
+      if (obj.isRoot() || !(obj.is_macro_cluster() || obj.is_mixed_cluster())) {  // root cluster's shape is core-size
+        return;
+      }
+      std::vector<ShapeCurve<int32_t>> sub_shape_curves;
+      for (auto&& i : obj.netlist().vRange()) {
+        auto sub_obj = i.property();
+        if (sub_obj->is_macro_cluster() || sub_obj->is_mixed_cluster()) {
+          sub_shape_curves.push_back(sub_obj->get_shape_curve());
+        }
+      }
+      // update discrete-shape curve
+      obj.set_shape_curve(get_packing_shapes(sub_shape_curves), 0, true);
+      std::cout << "shape width: " << obj.get_shape_curve().get_width() << " height: " << obj.get_shape_curve().get_height() << std::endl;
+    };
+    postorder_op(coarse_shape_op);
   }
 
   template <BlockOperator Operator>
@@ -119,8 +143,6 @@ class Block : public Object, public std::enable_shared_from_this<Block>
 
  private:
   // geo::box<int32_t> _shape;
-  geo::box<int32_t> get_curr_shape() const { return geo::make_box(0, 0, _shape_curve.get_width(), _shape_curve.get_height()); }
-  ShapeCurve<int32_t> _shape_curve;  // containing stdcell area
   std::shared_ptr<Netlist> _netlist;
 };
 
