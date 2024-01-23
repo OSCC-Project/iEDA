@@ -18,36 +18,19 @@
 
 #include <vector>
 
-#include "check_item.h"
 #include "condition.h"
 
 namespace idrc {
 
-class CheckList
+class ConditionRecord
 {
  public:
-  CheckList(Condition* condition) : _condition(condition) {}
-  ~CheckList()
-  {
-    for (auto& check_item : _check_list) {
-      delete check_item;
-    }
-  }
-
-  std::vector<CheckItem*>& get_check_list() { return _check_list; }
-
-  void add_check_item(CheckItem* check_item) { _check_list.push_back(check_item); }
-
-  void apply_condition_detail()  // TODO: parallel
-  {
-    for (auto& check_item : _check_list) {
-      _condition->get_detail()->apply(check_item);
-    }
-  }
+  ConditionRecord(Condition* condition) : _condition(condition) {}
+  ~ConditionRecord() = default;
 
  private:
   Condition* _condition;
-  std::vector<CheckItem*> _check_list;
-};
 
+  std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>> _region_record;
+};
 }  // namespace idrc

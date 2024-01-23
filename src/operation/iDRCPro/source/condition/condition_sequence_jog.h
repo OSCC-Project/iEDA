@@ -28,28 +28,22 @@ namespace idrc {
 class ConditionSequenceJog : public ConditionSequence
 {
  public:
-  ConditionSequenceJog(uint64_t start_sequence, uint64_t middle_sequence, uint64_t end_sequence)
-      : _start_sequence(start_sequence), _middle_sequence(middle_sequence), _end_sequence(end_sequence)
+  ConditionSequenceJog(int filter_value, uint64_t trigger_sequence, uint64_t middle_sequence, uint64_t success_sequence)
+      : ConditionSequence(filter_value, trigger_sequence), _middle_sequence(middle_sequence), _success_sequence(success_sequence)
   {
   }
   ~ConditionSequenceJog() override {}
 
-  // prototype pattern
-  ConditionSequence* clone() override { return new ConditionSequenceJog(_start_sequence, _middle_sequence, _end_sequence); }
-
-  ConditionSequence::State apply(ConditionSequenceEnum sequence) override
+  ConditionSequence::State apply(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points, State state) override
   {
-    // TODO: use sequence to create state machine
-    // TODO: if state turns to stop, create check item and push to check list
+    // TODO: use sequence and filter value to create state machine
+    // TODO: if state turns to success, create check item and push to check list
     return ConditionSequence::State::kNone;
   }
 
  private:
-  uint64_t _start_sequence;
   uint64_t _middle_sequence;
-  uint64_t _end_sequence;
-
-  std::vector<std::pair<ConditionSequenceEnum, std::vector<DrcBasicPoint*>>> _region_record;
+  uint64_t _success_sequence;
 };
-// condition manager
+
 }  // namespace idrc

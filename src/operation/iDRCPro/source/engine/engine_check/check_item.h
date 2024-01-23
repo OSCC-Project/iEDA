@@ -16,13 +16,15 @@
 // ***************************************************************************************
 #pragma once
 
+#include "condition.h"
+
 namespace idrc {
 
 class CheckItem
 {
  public:
   CheckItem() {}
-  virtual ~CheckItem() = default;
+  virtual ~CheckItem() = 0;
 
  private:
 };

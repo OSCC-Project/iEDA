@@ -7,6 +7,7 @@ target_link_libraries(idrc_condition_manager
     idm
     idb
     idrc_engine_check
+    idrc_pro_violation
 )
 
 target_include_directories(idrc_condition_manager

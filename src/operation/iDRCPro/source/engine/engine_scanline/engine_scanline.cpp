@@ -30,18 +30,17 @@ DrcEngineScanline::~DrcEngineScanline()
 }
 
 /// @brief process scanline in both of the directions
-/// @param min_spacing minimum spacing for value filter TODO: implement this
-void DrcEngineScanline::doScanline(int min_spacing, int max_spacing)
+void DrcEngineScanline::doScanline()
 {
-  scan(ScanlineTravelDirection::kHorizontal, min_spacing, max_spacing);
-  scan(ScanlineTravelDirection::kVertical, min_spacing, max_spacing);
+  scan(ScanlineTravelDirection::kHorizontal);
+  scan(ScanlineTravelDirection::kVertical);
 }
 
 /// @brief process scanline in one direction
 /// @param direction scanline travel direction
-void DrcEngineScanline::scan(ScanlineTravelDirection direction, int min_spacing, int max_spacing)
+void DrcEngineScanline::scan(ScanlineTravelDirection direction)
 {
-  ScanlineStatus scanline_status(direction, _preprocess, min_spacing, max_spacing);
+  ScanlineStatus scanline_status(direction, _preprocess);
 
   while (scanline_status.endpoints_it != scanline_status.endpoints_end) {
     // add all endpoints in current bucket to scanline status
@@ -57,7 +56,7 @@ void DrcEngineScanline::scan(ScanlineTravelDirection direction, int min_spacing,
 
 /// @brief add all points with same travel direction coordinate to scanline status
 /// @param status scanline status
-void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
+void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // TODO: deal with overlap
 {
   // mark old points in scanline status
   for (auto* point : status.status_points) {
@@ -106,7 +105,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
     if (is_first_insert) {
       status.insert_begin = scanline_status_it;
       is_first_insert = false;
-      for (int i = 0; i < 2 && status.insert_begin != status.status_points.begin(); ++i) {
+      for (int i = 0; i < 1 && status.insert_begin != status.status_points.begin(); ++i) {
         --status.insert_begin;
       }
     }
@@ -114,7 +113,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 
   // mark range end
   status.insert_end = scanline_status_it;
-  for (int i = 0; i < 2 && status.insert_end != status.status_points.end(); ++i) {
+  for (int i = 0; i < 1 && status.insert_end != status.status_points.end(); ++i) {
     ++status.insert_end;
   }
 }
@@ -254,6 +253,16 @@ bool DrcEngineScanline::tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoi
 /// @param status scanline status
 void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 {
+  std::deque<ScanlinePoint*> activate_points;
+  auto scanline_status_it = status.insert_begin;
+  while (scanline_status_it != status.insert_end) {
+    ScanlinePoint* point_backward = *scanline_status_it;
+    if (++scanline_status_it != status.insert_end) {
+      // TODO: judge segment type
+      // TODO: use type history to make sequence
+      // TODO: put sequence to condition manager
+    }
+  }
   // std::map<int, ScanlinePoint*> activate_id_set;
 
   // // auto scanline_status_it = status.insert_begin;

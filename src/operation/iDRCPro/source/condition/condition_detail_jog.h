@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "check_item.h"
 #include "condition_detail.h"
 #include "drc_basic_point.h"
 #include "idm.h"
@@ -41,10 +42,15 @@ class ConditionDetailJog : public ConditionDetail
   ConditionDetailJog(idb::routinglayer::Lef58SpacingTableJogToJog* rule) : _jog_to_jog(rule) {}
   ~ConditionDetailJog() override {}
 
-  bool apply(CheckItem* item) override { return true; }  // TODO: jog check
-
-  // prototype pattern
-  ConditionDetail* clone() override { return new ConditionDetailJog(_jog_to_jog); }
+  bool apply(CheckItem* item) override
+  {
+    auto* jog_item = dynamic_cast<ConditionJogCheckItem*>(item);
+    if (jog_item == nullptr) {
+      return false;
+    }
+    // TODO: jog check
+    return true;
+  }
 
  private:
   idb::routinglayer::Lef58SpacingTableJogToJog* _jog_to_jog;

@@ -35,11 +35,7 @@ struct ScanlineStatus
   std::function<int(DrcBasicPoint*)> get_travel_direction_coord;  // TODO: 模板 lambda
   std::function<int(DrcBasicPoint*)> get_orthogonal_coord;
 
-  int min_spacing;
-  int max_spacing;
-
-  ScanlineStatus(ScanlineTravelDirection travel_direction, ScanlinePreprocess* preprocess, int min_spacing, int max_spacing)
-      : direction(travel_direction), min_spacing(min_spacing), max_spacing(max_spacing)
+  ScanlineStatus(ScanlineTravelDirection travel_direction, ScanlinePreprocess* preprocess) : direction(travel_direction)
   {
     switch (direction) {
       case ScanlineTravelDirection::kHorizontal:
@@ -85,13 +81,13 @@ class DrcEngineScanline
 
   ScanlinePreprocess* get_preprocess() { return _preprocess; }
 
-  void doScanline(int min_spacing = -1, int max_spacing = -1);
+  void doScanline();
 
  private:
   ScanlinePreprocess* _preprocess;
   DrcDataManager* _data_manager;
 
-  void scan(ScanlineTravelDirection direction, int min_spacing, int max_spacing);
+  void scan(ScanlineTravelDirection direction);
   void addCurrentBucketToScanline(ScanlineStatus& status);
   // ScanlineDataType judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons, ScanlinePoint*
   // point_forward,

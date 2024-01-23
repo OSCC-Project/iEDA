@@ -33,9 +33,11 @@ void TechRules::destroyInst()
 
 TechRules::~TechRules()
 {
-  for (auto& [layer, condition_list] : _condition_routing_layers) {
-    for (auto& condition : condition_list) {
-      delete condition;
+  for (auto& [layer, condition_map] : _condition_routing_layers) {
+    for (auto& condition_list : condition_map) {
+      for (auto& condition : condition_list.second) {
+        delete condition;
+      }
     }
   }
 }

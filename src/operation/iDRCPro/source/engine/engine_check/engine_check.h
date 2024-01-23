@@ -17,8 +17,10 @@
 #pragma once
 
 #include <map>
+#include <queue>
+#include <vector>
 
-#include "check_list.h"
+#include "check_item.h"
 #include "condition.h"
 
 namespace idrc {
@@ -27,31 +29,26 @@ class DrcEngineCheck
 {
  public:
   DrcEngineCheck() {}
-  ~DrcEngineCheck()
-  {
-    for (auto& check_list : _check_list_map) {
-      delete check_list.second;
-    }
-  }
+  ~DrcEngineCheck() {}
 
-  CheckList* get_check_list(Condition* condition)
-  {
-    Condition* base_condition = condition->get_base_condition() ? condition->get_base_condition() : condition;
-    if (_check_list_map.find(base_condition) == _check_list_map.end()) {
-      _check_list_map[base_condition] = new CheckList(base_condition);
-    }
-    return _check_list_map[base_condition];
-  }
+  void addCheckItem(Condition* condition, CheckItem* check_item) { _check_list[condition].push_back(check_item); }
 
-  void apply_condition_detail()  // TODO: parallel
-  {
-    for (auto& check_list : _check_list_map) {
-      check_list.second->apply_condition_detail();
-    }
-  }
+  void check() { applyCondition(); }
 
  private:
-  std::map<Condition*, CheckList*> _check_list_map;
+  std::map<Condition*, std::deque<CheckItem*>> _check_list;
+
+  void applyCondition()
+  {
+    for (auto& [condition, queue] : _check_list) {  // TODO: while(1), thread pool
+      while (!queue.empty()) {
+        auto* item = queue.front();
+        queue.pop_front();
+        condition->get_detail()->apply(item);
+        delete item;
+      }
+    }
+  }
 };
 
 }  // namespace idrc

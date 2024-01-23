@@ -24,7 +24,7 @@ DrcManager::DrcManager()
   _engine = new DrcEngine(_data_manager);
   // _rule_manager = new DrcRuleManager(_engine);
   _violation_manager = new DrcViolationManager();
-  // _condition_manager = new DrcConditionManager(_engine, _violation_manager);
+  _condition_manager = new DrcConditionManager(_violation_manager);
 }
 
 DrcManager::~DrcManager()
@@ -34,10 +34,10 @@ DrcManager::~DrcManager()
   //   _rule_manager = nullptr;
   // }
 
-  // if (_condition_manager != nullptr) {
-  //   delete _condition_manager;
-  //   _condition_manager = nullptr;
-  // }
+  if (_condition_manager != nullptr) {
+    delete _condition_manager;
+    _condition_manager = nullptr;
+  }
 
   if (_engine != nullptr) {
     delete _engine;
@@ -75,7 +75,7 @@ bool DrcManager::buildCondition()
 
 void DrcManager::check()
 {
-  _engine->get_engine_manager()->get_engine_check()->apply_condition_detail();
+  _engine->get_engine_manager()->get_engine_check()->check();
   // TODO: sratagy and multi-thread
 
   // DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);

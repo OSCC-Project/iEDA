@@ -18,7 +18,11 @@
 
 #include <stdint.h>
 
+#include <vector>
+
 namespace idrc {
+
+class DrcBasicPoint;
 
 class ConditionSequence
 {
@@ -29,7 +33,7 @@ class ConditionSequence
     N - None
     S - Spacing
   */
-  enum ConditionSequenceEnum : uint64_t
+  enum SequenceType : uint64_t
   {
     kWEW = 1,
     kNEW_WEN = 2,
@@ -46,16 +50,20 @@ class ConditionSequence
     kNone,
     kTrigger,
     kRecording,
-    kStop
+    kSuccess,
+    kFail
   };
 
-  ConditionSequence() {}
+  ConditionSequence(int filter_value, uint64_t trigger_sequence) : _filter_value(filter_value), _trigger_sequence(trigger_sequence) {}
   virtual ~ConditionSequence() {}
 
-  // prototype pattern
-  virtual ConditionSequence* clone() = 0;
+  virtual State apply(SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points, State state) = 0;
 
-  virtual State apply(ConditionSequenceEnum condition_sequence_enum) = 0;
+  bool match(SequenceType condition_sequence) { return _trigger_sequence & condition_sequence; }
+
+ protected:
+  int _filter_value;
+  uint64_t _trigger_sequence;
 
  private:
 };
