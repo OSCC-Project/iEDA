@@ -8,6 +8,7 @@ target_link_libraries(idrc_engine_scanline
     PUBLIC
     idrc_engine_scanline_preprocess
     idrc_pro_data
+    idrc_condition_manager
 )
 
 target_include_directories(idrc_engine_scanline

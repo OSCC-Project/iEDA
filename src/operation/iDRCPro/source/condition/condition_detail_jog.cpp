@@ -18,4 +18,20 @@
 
 namespace idrc {
 
+bool ConditionDetailJog::apply(std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>>& check_region)
+{
+  // TODO: jog check
+  return false;
+}
+
+// bool ConditionDetailJog::apply(CheckItem* item)
+// {
+//   auto* jog_item = dynamic_cast<ConditionJogCheckItem*>(item);
+//   if (jog_item == nullptr) {
+//     return false;
+//   }
+//   // TODO: jog check
+//   return true;
+// }
+
 }  // namespace idrc

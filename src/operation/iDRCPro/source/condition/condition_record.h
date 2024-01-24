@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "condition.h"
+#include "idrc_engine.h"
 
 namespace idrc {
 
@@ -32,13 +33,16 @@ class ConditionRecord
   {
     _region_record.push_back(std::make_pair(sequence, points));
     _state = _condition->get_sequence()->apply(sequence, points, _state);
+    if (_state == ConditionSequence::State::kSuccess) {
+      _condition->get_detail()->apply(_region_record);  // TODO: use thread pool
+    }
     return _state;
   }
 
  private:
   Condition* _condition;
 
-  ConditionSequence::State _state;
+  ConditionSequence::State _state = ConditionSequence::State::kNone;
 
   std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>> _region_record;
 };

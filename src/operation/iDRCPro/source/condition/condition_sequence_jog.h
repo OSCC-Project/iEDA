@@ -36,14 +36,37 @@ class ConditionSequenceJog : public ConditionSequence
 
   ConditionSequence::State apply(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points, State state) override
   {
-    // TODO: use sequence and filter value to create state machine
-    // TODO: if state machine is kNone and sequence is ESW or ESE (_trigger_sequence), then return kTrigger
-    // TODO: if state machine is kTrigger and sequence is WES (_middle_sequence), then return kRecording
-    // TODO: is state machine is kRecording and sequence is ESW or ESE (_success_sequence), then return kSuccess
-    // TODO: if state machine is kRecording and sequence is _middle_sequence, if within > _filter_value, then return kFail
-    // TODO: if state machine is kTrigger and sequence is not _middle_sequence, then return kFail
-    // TODO: if state machine is kRecording and sequence is not _success_sequence, then return kFail
-    return ConditionSequence::State::kNone;
+    switch (state) {
+      case ConditionSequence::State::kNone:
+        if (sequence & _trigger_sequence) {
+          return ConditionSequence::State::kTrigger;
+        }
+        break;
+      case ConditionSequence::State::kTrigger:
+        if (sequence & _middle_sequence) {
+          // TODO: check within
+          return ConditionSequence::State::kRecording;
+        }
+        break;
+      case ConditionSequence::State::kRecording:
+        if (sequence & _success_sequence) {
+          return ConditionSequence::State::kSuccess;
+        } else if (sequence & _middle_sequence) {
+          // TODO: check within
+          return ConditionSequence::State::kRecording;
+        } else {
+          return ConditionSequence::State::kFail;
+        }
+        break;
+      case ConditionSequence::State::kSuccess:
+        break;
+      case ConditionSequence::State::kFail:
+        break;
+      default:
+        break;
+    }
+
+    return state;
   }
 
  private:

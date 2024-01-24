@@ -60,13 +60,11 @@ class DrcConditionManager
     // create new condition records
     auto& condition_list = DrcTechRuleInst->get_condition_routing_layers(layer)[sequence];
     for (auto* condition : condition_list) {
-      if (condition->get_sequence()->match(sequence)) {
-        auto record = new ConditionRecord(condition);
-        if (refreshConditionRecord(record, sequence, points)) {
-          delete record;
-        } else {
-          record_list.push_back(record);
-        }
+      auto record = new ConditionRecord(condition);
+      if (refreshConditionRecord(record, sequence, points)) {
+        delete record;
+      } else {
+        record_list.push_back(record);
       }
     }
   }

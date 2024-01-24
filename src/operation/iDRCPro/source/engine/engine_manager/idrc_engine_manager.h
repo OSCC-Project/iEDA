@@ -28,13 +28,15 @@ class IdbLayer;
 }  // namespace idb
 
 namespace idrc {
+
+class DrcConditionManager;
 /**
  *  DrcEngineManager definition : manage all shapes for all nets in all layers
  */
 class DrcEngineManager
 {
  public:
-  DrcEngineManager(DrcDataManager* data_manager);
+  DrcEngineManager(DrcDataManager* data_manager, DrcConditionManager* condition_manager);
   ~DrcEngineManager();
 
   /// data manager
@@ -58,6 +60,7 @@ class DrcEngineManager
 
  private:
   DrcDataManager* _data_manager;
+  DrcConditionManager* _condition_manager;
   /**
    * @definition
    *  _layouts : describe all shapes for all nets in all layers

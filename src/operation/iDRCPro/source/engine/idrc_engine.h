@@ -21,20 +21,21 @@
 #include "idrc_engine_manager.h"
 
 namespace idrc {
+
+class DrcConditionManager;
+
 class DrcEngine
 {
  public:
-  DrcEngine(DrcDataManager* data_manager);
+  DrcEngine(DrcDataManager* data_manager, DrcConditionManager* condition_manager);
   ~DrcEngine();
 
   DrcEngineManager* get_engine_manager() { return _engine_manager; }
   void initEngine(DrcCheckerType checker_type = DrcCheckerType::kRT);
 
-  /// scanline operator
-  void initEngineScanline();
-
  private:
   DrcDataManager* _data_manager = nullptr;
+  DrcConditionManager* _condition_manager = nullptr;
   DrcEngineManager* _engine_manager = nullptr;
 
   void initEngineGeometryData();

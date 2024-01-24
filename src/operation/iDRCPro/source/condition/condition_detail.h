@@ -16,6 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include <vector>
+
+#include "condition_sequence.h"
+#include "drc_basic_point.h"
+
 namespace idrc {
 
 class CheckItem;
@@ -26,7 +31,11 @@ class ConditionDetail
   ConditionDetail() {}
   virtual ~ConditionDetail() {}
 
-  virtual bool apply(CheckItem* item) = 0;
+  // virtual CheckItem* createCheckItem() = 0;  // TODO: param
+
+  virtual bool apply(std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>>& check_region) = 0;
+
+  // virtual bool apply(CheckItem* item) = 0;
 
  private:
 };

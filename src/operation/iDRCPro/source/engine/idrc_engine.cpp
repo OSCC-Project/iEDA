@@ -22,10 +22,11 @@
 
 namespace idrc {
 
-DrcEngine::DrcEngine(DrcDataManager* data_manager)
+DrcEngine::DrcEngine(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
 {
   _data_manager = data_manager;
-  _engine_manager = new DrcEngineManager(data_manager);
+  _condition_manager = condition_manager;
+  _engine_manager = new DrcEngineManager(data_manager, condition_manager);
 }
 
 DrcEngine::~DrcEngine()
