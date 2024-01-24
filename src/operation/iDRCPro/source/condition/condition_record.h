@@ -28,8 +28,17 @@ class ConditionRecord
   ConditionRecord(Condition* condition) : _condition(condition) {}
   ~ConditionRecord() = default;
 
+  ConditionSequence::State record(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points)
+  {
+    _region_record.push_back(std::make_pair(sequence, points));
+    _state = _condition->get_sequence()->apply(sequence, points, _state);
+    return _state;
+  }
+
  private:
   Condition* _condition;
+
+  ConditionSequence::State _state;
 
   std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>> _region_record;
 };

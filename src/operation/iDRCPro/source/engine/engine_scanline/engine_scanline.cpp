@@ -160,6 +160,13 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // T
 //   return result_type;
 // }
 
+ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward)
+{
+  ScanlineSegmentType result_type = ScanlineSegmentType::kNone;
+  // TODO: judge segment type
+  return result_type;
+}
+
 /// @brief create neighbour for two basic points and fill result to basic point
 /// @param status scanline status
 /// @param basepoint_forward basepoint with bigger orthogonal coordinate
@@ -258,6 +265,7 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
   while (scanline_status_it != status.insert_end) {
     ScanlinePoint* point_backward = *scanline_status_it;
     if (++scanline_status_it != status.insert_end) {
+      ScanlinePoint* point_forward = *scanline_status_it;
       // TODO: judge segment type
       // TODO: use type history to make sequence
       // TODO: put sequence to condition manager

@@ -67,14 +67,20 @@ void DrcRuleBuilder::buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouti
   }
 
   // create condition
-  uint64_t trigger_sequence = ConditionSequence::kESE | ConditionSequence::kESW_WSE;
+  std::vector<ConditionSequence::SequenceType> trigger_sequence_list{ConditionSequence::kESE, ConditionSequence::kESW_WSE};
+  uint64_t trigger_sequence = 0;
+  for (auto& sequence : trigger_sequence_list) {
+    trigger_sequence |= sequence;
+  }
   ConditionSequenceJog* sequence = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kSEW_WES,
                                                             ConditionSequence::kESE | ConditionSequence::kESW_WSE);
   ConditionDetailJog* detail = new ConditionDetailJog(idb_rule_jog.get());
 
   Condition* condition = new Condition(sequence, detail);
 
-  DrcTechRuleInst->get_condition_routing_layers(layer)[trigger_sequence].emplace_back(condition);
+  for (auto& sequence : trigger_sequence_list) {
+    DrcTechRuleInst->get_condition_routing_layers(layer)[sequence].emplace_back(condition);
+  }
 }
 
 void DrcRuleBuilder::initCutLayerRules()

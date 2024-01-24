@@ -40,7 +40,7 @@ class TechRules
   void init();
 
   // getter
-  std::map<uint64_t, std::vector<Condition*>>& get_condition_routing_layers(idb::IdbLayer* layer)
+  std::map<ConditionSequence::SequenceType, std::vector<Condition*>>& get_condition_routing_layers(idb::IdbLayer* layer)
   {
     return _condition_routing_layers[layer];
   }
@@ -49,7 +49,7 @@ class TechRules
   static TechRules* _instance;
   bool _b_inited = false;
 
-  std::map<idb::IdbLayer*, std::map<uint64_t, std::vector<Condition*>>> _condition_routing_layers;
+  std::map<idb::IdbLayer*, std::map<ConditionSequence::SequenceType, std::vector<Condition*>>> _condition_routing_layers;
 
   TechRules() {}
   ~TechRules();

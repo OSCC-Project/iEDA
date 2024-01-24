@@ -44,40 +44,48 @@ class DrcConditionManager
   DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
   ~DrcConditionManager() {}
 
-  void deliverSequence(idb::IdbLayer* layer, ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points)
+  void deliverSequence(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
+                       std::vector<DrcBasicPoint*>& points)
   {
-    // TODO: find record in condition running, put data to record object
-    // TODO: if condition sequence returns fail or success, put record object to object pool
+    // refresh condition record
+    auto record_list = _condition_recording_map[layer][recognize_code];
+    for (auto record_it = record_list.begin(); record_it != record_list.end(); ++record_it) {
+      auto record = *record_it;
+      if (refreshConditionRecord(record, sequence, points)) {
+        record_list.erase(record_it);
+        delete record;
+      }
+    }
 
-    // TODO: find condition in tech rules
-    // TODO: iterate all conditions match sequence, find if there is a record in condition pool, move it to condition running
-    // TODO: otherwize create a new record and put it to condition running
-    // TODO: put data to record object
-    // TODO: if fail ..., if success ...
+    // create new condition records
+    auto& condition_list = DrcTechRuleInst->get_condition_routing_layers(layer)[sequence];
+    for (auto* condition : condition_list) {
+      if (condition->get_sequence()->match(sequence)) {
+        auto record = new ConditionRecord(condition);
+        if (refreshConditionRecord(record, sequence, points)) {
+          delete record;
+        } else {
+          record_list.push_back(record);
+        }
+      }
+    }
   }
 
  private:
   DrcViolationManager* _violation_manager;
 
-  std::map<idb::IdbLayer*, std::map<std::string, ConditionRecord*>> _condition_running_map;
-  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_pool_map;
+  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_recording_map;  // TODO: use object pool
 
-  uint64_t sequenceToIndex(idb::IdbLayer* layer, ConditionSequence::SequenceType sequence)
+  bool refreshConditionRecord(ConditionRecord* record, ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*>& points)
   {
-    auto condition_routing_layers = DrcTechRuleInst->get_condition_routing_layers(layer);
-    for (auto& [trigger_sequence, condition_list] : condition_routing_layers) {
-      if (trigger_sequence & sequence) {
-        return trigger_sequence;
-      }
+    auto state = record->record(sequence, points);
+    switch (state) {
+      case ConditionSequence::State::kFail:
+      case ConditionSequence::State::kSuccess:
+        return true;
+      default:
+        return false;
     }
-    return 0;
-  }
-
-  std::string recordingIndex(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points)
-  {
-    // TODO: use forward/backward and polygon id map to get index
-    // TODO: index type
-    return "none";
   }
 };
 

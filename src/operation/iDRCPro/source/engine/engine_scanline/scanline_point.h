@@ -60,6 +60,7 @@ class ScanlinePoint
 
  private:
   DrcBasicPoint* _point;
+  // TODO: 边沿 id
 
   bool _is_forward;
   bool _is_new;

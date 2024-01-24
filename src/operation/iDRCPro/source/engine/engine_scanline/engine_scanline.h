@@ -19,6 +19,16 @@
 
 namespace idrc {
 
+enum class ScanlineSegmentType
+{
+  kNone,
+  kOverlap,
+  kEdge,
+  kSpacing,
+  kInterSpacing,
+  kWidth
+};
+
 struct ScanlineStatus
 {
   ScanlineTravelDirection direction;
@@ -89,6 +99,7 @@ class DrcEngineScanline
 
   void scan(ScanlineTravelDirection direction);
   void addCurrentBucketToScanline(ScanlineStatus& status);
+  ScanlineSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
   // ScanlineDataType judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons, ScanlinePoint*
   // point_forward,
   //                                   ScanlinePoint* point_backward);
