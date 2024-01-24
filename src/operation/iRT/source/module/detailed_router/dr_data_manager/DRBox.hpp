@@ -17,7 +17,6 @@
 #pragma once
 
 #include "DRBoxId.hpp"
-#include "DRCChecker.hpp"
 #include "DRNode.hpp"
 #include "DRParameter.hpp"
 #include "DRTask.hpp"
@@ -25,7 +24,6 @@
 #include "LayerRect.hpp"
 #include "PriorityQueue.hpp"
 #include "RTAPI.hpp"
-#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 
 namespace irt {

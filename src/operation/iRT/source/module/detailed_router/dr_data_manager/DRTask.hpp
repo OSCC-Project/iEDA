@@ -21,6 +21,7 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "RoutingState.hpp"
+#include "SortStatus.hpp"
 
 namespace irt {
 

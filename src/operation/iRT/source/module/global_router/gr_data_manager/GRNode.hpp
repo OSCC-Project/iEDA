@@ -16,11 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRCChecker.hpp"
 #include "GRNodeId.hpp"
-#include "GRSourceType.hpp"
 #include "LayerCoord.hpp"
-#include "RegionQuery.hpp"
 
 namespace irt {
 
@@ -42,7 +39,6 @@ class GRNode : public LayerCoord
   GRNodeId& get_gr_node_id() { return _gr_node_id; }
   PlanarRect& get_base_region() { return _base_region; }
   std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<GRSourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   // gcell 布线消耗
   irt_int get_cross_wire_demand() const { return _cross_wire_demand; }
   irt_int get_local_wire_demand() const { return _local_wire_demand; }
@@ -65,10 +61,6 @@ class GRNode : public LayerCoord
   void set_gr_node_id(const GRNodeId& gr_node_id) { _gr_node_id = gr_node_id; }
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
   void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_region_query_map(const std::map<GRSourceType, RegionQuery>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
-  }
   // gcell 布线消耗
   void set_cross_wire_demand(const irt_int cross_wire_demand) { _cross_wire_demand = cross_wire_demand; }
   void set_local_wire_demand(const irt_int local_wire_demand) { _local_wire_demand = local_wire_demand; }
@@ -108,7 +100,6 @@ class GRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  RegionQuery& getRegionQuery(GRSourceType gr_source_type) { return _source_region_query_map[gr_source_type]; }
   double getCost(irt_int net_idx, Orientation orientation)
   {
     double cost = 0;
@@ -239,7 +230,6 @@ class GRNode : public LayerCoord
   GRNodeId _gr_node_id;
   PlanarRect _base_region;
   std::map<Orientation, GRNode*> _neighbor_ptr_map;
-  std::map<GRSourceType, RegionQuery> _source_region_query_map;
   /**
    * gcell 布线消耗
    *

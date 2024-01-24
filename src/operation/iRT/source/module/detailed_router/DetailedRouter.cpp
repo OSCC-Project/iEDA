@@ -18,7 +18,6 @@
 
 #include "DRBox.hpp"
 #include "DRBoxId.hpp"
-#include "DRCChecker.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
 #include "DRParameter.hpp"
@@ -574,7 +573,6 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
   std::sort(x_scale_list.begin(), x_scale_list.end());
   x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
   box_track_axis.set_x_grid_list(RTUtil::makeScaleGridList(x_scale_list));
-
   std::sort(y_scale_list.begin(), y_scale_list.end());
   y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
   box_track_axis.set_y_grid_list(RTUtil::makeScaleGridList(y_scale_list));
@@ -1013,32 +1011,6 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
   }
 }
 
-std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRNode* node)
-{
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-
-  DRNode* curr_node = node;
-  DRNode* pre_node = curr_node->get_parent_node();
-
-  if (pre_node == nullptr) {
-    // 起点和终点重合
-    return routing_segment_list;
-  }
-  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
-  while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
-    if (curr_orientation != pre_orientation) {
-      routing_segment_list.emplace_back(*curr_node, *pre_node);
-      curr_orientation = pre_orientation;
-      curr_node = pre_node;
-    }
-    pre_node = pre_node->get_parent_node();
-  }
-  routing_segment_list.emplace_back(*curr_node, *pre_node);
-
-  return routing_segment_list;
-}
-
 void DetailedRouter::resetPathHead(DRBox& dr_box)
 {
   dr_box.set_path_head_node(popFromOpenList(dr_box));
@@ -1072,6 +1044,32 @@ void DetailedRouter::updatePathResult(DRBox& dr_box)
   for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(dr_box.get_path_head_node())) {
     dr_box.get_routing_segment_list().push_back(routing_segment);
   }
+}
+
+std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRNode* node)
+{
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+
+  DRNode* curr_node = node;
+  DRNode* pre_node = curr_node->get_parent_node();
+
+  if (pre_node == nullptr) {
+    // 起点和终点重合
+    return routing_segment_list;
+  }
+  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
+  while (pre_node->get_parent_node() != nullptr) {
+    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
+    if (curr_orientation != pre_orientation) {
+      routing_segment_list.emplace_back(*curr_node, *pre_node);
+      curr_orientation = pre_orientation;
+      curr_node = pre_node;
+    }
+    pre_node = pre_node->get_parent_node();
+  }
+  routing_segment_list.emplace_back(*curr_node, *pre_node);
+
+  return routing_segment_list;
 }
 
 void DetailedRouter::updateDirectionSet(DRBox& dr_box)

@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #include "ResourceAllocator.hpp"
 
-#include "DRCChecker.hpp"
 #include "GDSPlotter.hpp"
 #include "RTUtil.hpp"
 
@@ -64,20 +63,60 @@ ResourceAllocator* ResourceAllocator::_ra_instance = nullptr;
 
 void ResourceAllocator::allocateNetList(std::vector<Net>& net_list)
 {
-  RAModel ra_model = init(net_list);
-  iterative(ra_model);
+  writePYScript();
+  RAModel ra_model = initRAModel(net_list);
+  initRANetDemand(ra_model);
+  initRAGCellList(ra_model);
+  calcRAGCellSupply(ra_model);
+  buildRelation(ra_model);
+  initTempObject(ra_model);
+  checkRAModel(ra_model);
+  iterativeRAModel(ra_model);
   update(ra_model);
 }
 
-#if 1  // init
-
-RAModel ResourceAllocator::init(std::vector<Net>& net_list)
+void ResourceAllocator::writePYScript()
 {
-  RAModel ra_model = initRAModel(net_list);
-  buildRAModel(ra_model);
-  checkRAModel(ra_model);
-  writePYScript();
-  return ra_model;
+  std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
+  irt_int ra_outer_max_iter_num = DM_INST.getConfig().ra_outer_max_iter_num;
+
+  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "plot.py"));
+
+  RTUtil::pushStream(python_file, "from concurrent.futures import process", "\n");
+  RTUtil::pushStream(python_file, "import numpy as np", "\n");
+  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+  RTUtil::pushStream(python_file, "from PIL import Image", "\n");
+  RTUtil::pushStream(python_file, "import glob", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "for i in range(1,", ra_outer_max_iter_num + 1, "):", "\n");
+  RTUtil::pushStream(python_file, "    csv_data = pd.read_csv('ra_model_'+ str(i) +'.csv')", "\n");
+  RTUtil::pushStream(python_file, "    array_data = np.array(csv_data)", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
+  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
+  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data, vmin=0, vmax=1.1, cmap='hot_r')", "\n");
+  RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
+  RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
+  RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");
+  RTUtil::pushStream(python_file, "    # plt.show()", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "images = glob.glob('ra_model_*.png')", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "# 提取文件名中的id数字部分,并转换为整数", "\n");
+  RTUtil::pushStream(python_file, "sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file, "frames = []", "\n");
+  RTUtil::pushStream(python_file, "for image in sorted_images:", "\n");
+  RTUtil::pushStream(python_file, "    img = Image.open(image)", "\n");
+  RTUtil::pushStream(python_file, "    img = img.resize((800, 600))", "\n");
+  RTUtil::pushStream(python_file, "    frames.append(img)", "\n");
+  RTUtil::pushStream(python_file, "", "\n");
+  RTUtil::pushStream(python_file,
+                     "frames[0].save('output.gif', format='GIF', append_images=frames[1:], save_all=True, duration=300, loop=0)", "\n");
+  RTUtil::closeFileStream(python_file);
 }
 
 RAModel ResourceAllocator::initRAModel(std::vector<Net>& net_list)
@@ -108,17 +147,6 @@ RANet ResourceAllocator::convertToRANet(Net& net)
   }
   ra_net.set_bounding_box(net.get_bounding_box());
   return ra_net;
-}
-
-void ResourceAllocator::buildRAModel(RAModel& ra_model)
-{
-  initRANetDemand(ra_model);
-  initRAGCellList(ra_model);
-  updateBlockageMap(ra_model);
-  updateNetShapeMap(ra_model);
-  calcRAGCellSupply(ra_model);
-  buildRelation(ra_model);
-  initTempObject(ra_model);
 }
 
 void ResourceAllocator::initRANetDemand(RAModel& ra_model)
@@ -161,54 +189,6 @@ void ResourceAllocator::initRAGCellList(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::updateBlockageMap(RAModel& ra_model)
-{
-  std::vector<Blockage>& routing_blockage_list = DM_INST.getDatabase().get_routing_blockage_list();
-
-  for (const Blockage& routing_blockage : routing_blockage_list) {
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kBlockage, DRCShape(-1, blockage_real_rect, true));
-  }
-}
-
-void ResourceAllocator::updateNetShapeMap(RAModel& ra_model)
-{
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      for (EXTLayerRect& routing_shape : ra_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect = routing_shape.getRealLayerRect();
-        updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kNetShape, DRCShape(ra_net.get_net_idx(), shape_real_rect, true));
-      }
-    }
-  }
-}
-
-void ResourceAllocator::updateReservedViaMap(RAModel& ra_model)
-{
-  irt_int bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
-
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      AccessPoint& protected_access_point = ra_pin.get_protected_access_point();
-      std::set<Orientation>& access_orien_set = protected_access_point.get_access_orien_set();
-      if (!RTUtil::exist(access_orien_set, Orientation::kUp) && !RTUtil::exist(access_orien_set, Orientation::kDown)) {
-        continue;
-      }
-      irt_int layer_idx = protected_access_point.get_layer_idx();
-      for (irt_int via_below_layer_idx :
-           RTUtil::getReservedViaBelowLayerIdxList(layer_idx, bottom_routing_layer_idx, top_routing_layer_idx)) {
-        std::vector<Segment<LayerCoord>> segment_list;
-        segment_list.emplace_back(LayerCoord(protected_access_point.get_real_coord(), via_below_layer_idx),
-                                  LayerCoord(protected_access_point.get_real_coord(), via_below_layer_idx + 1));
-        for (DRCShape& drc_shape : getDRCShapeList(ra_net.get_net_idx(), segment_list)) {
-          updateRectToUnit(ra_model, ChangeType::kAdd, RASourceType::kReservedVia, drc_shape);
-        }
-      }
-    }
-  }
-}
-
 void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -234,28 +214,26 @@ void ResourceAllocator::calcRAGCellSupply(RAModel& ra_model)
           LOG_INST.error(Loc::current(), "The real_whole_wire_demand and gcell_whole_wire_demand are not equal!");
         }
       }
-      for (RASourceType ra_source_type : {RASourceType::kBlockage, RASourceType::kNetShape, RASourceType::kReservedVia}) {
-        for (auto& [info, rect_set] :
-             DC_INST.getLayerInfoRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
-          for (const LayerRect& rect : rect_set) {
-            for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCShape(info, rect, true))) {
-              std::vector<PlanarRect> new_wire_list;
-              for (PlanarRect& wire : wire_list) {
-                if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
-                  // 要切
-                  std::vector<PlanarRect> split_rect_list
-                      = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
-                  new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
-                } else {
-                  // 不切
-                  new_wire_list.push_back(wire);
-                }
-              }
-              wire_list = new_wire_list;
-            }
-          }
-        }
-      }
+      // for (auto& [info, rect_set] :
+      //      DC_INST.getLayerInfoRectMap(ra_gcell.getRegionQuery(ra_source_type), true)[routing_layer.get_layer_idx()]) {
+      //   for (const LayerRect& rect : rect_set) {
+      //     for (const LayerRect& min_scope_real_rect : DC_INST.getMinScope(DRCShape(info, rect, true))) {
+      //       std::vector<PlanarRect> new_wire_list;
+      //       for (PlanarRect& wire : wire_list) {
+      //         if (RTUtil::isOpenOverlap(min_scope_real_rect, wire)) {
+      //           // 要切
+      //           std::vector<PlanarRect> split_rect_list
+      //               = RTUtil::getSplitRectList(wire, min_scope_real_rect, routing_layer.get_prefer_direction());
+      //           new_wire_list.insert(new_wire_list.end(), split_rect_list.begin(), split_rect_list.end());
+      //         } else {
+      //           // 不切
+      //           new_wire_list.push_back(wire);
+      //         }
+      //       }
+      //       wire_list = new_wire_list;
+      //     }
+      //   }
+      // }
       for (PlanarRect& wire : wire_list) {
         irt_int supply = wire.getArea() / routing_layer.get_min_width();
         if (supply < whole_via_demand) {
@@ -355,56 +333,7 @@ void ResourceAllocator::checkRAModel(RAModel& ra_model)
   }
 }
 
-void ResourceAllocator::writePYScript()
-{
-  std::string ra_temp_directory_path = DM_INST.getConfig().ra_temp_directory_path;
-  irt_int ra_outer_max_iter_num = DM_INST.getConfig().ra_outer_max_iter_num;
-
-  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(ra_temp_directory_path, "plot.py"));
-
-  RTUtil::pushStream(python_file, "## 导入绘图需要用到的python库", "\n");
-  RTUtil::pushStream(python_file, "from concurrent.futures import process", "\n");
-  RTUtil::pushStream(python_file, "import numpy as np", "\n");
-  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
-  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
-  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
-  RTUtil::pushStream(python_file, "from PIL import Image", "\n");
-  RTUtil::pushStream(python_file, "import glob", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "for i in range(1,", ra_outer_max_iter_num + 1, "):", "\n");
-  RTUtil::pushStream(python_file, "    csv_data = pd.read_csv('ra_model_'+ str(i) +'.csv')", "\n");
-  RTUtil::pushStream(python_file, "    array_data = np.array(csv_data)", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "    # 输出热力图", "\n");
-  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    hm=sns.heatmap(array_data, vmin=0, vmax=1.1, cmap='hot_r')", "\n");
-  RTUtil::pushStream(python_file, "    hm.set_title('ra_model_'+ str(i))", "\n");
-  RTUtil::pushStream(python_file, "    s1 = hm.get_figure()", "\n");
-  RTUtil::pushStream(python_file, "    s1.savefig('ra_model_'+ str(i) +'.png',dpi=1000)", "\n");
-  RTUtil::pushStream(python_file, "    # plt.show()", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "images = glob.glob('ra_model_*.png')", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "# 提取文件名中的id数字部分,并转换为整数", "\n");
-  RTUtil::pushStream(python_file, "sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file, "frames = []", "\n");
-  RTUtil::pushStream(python_file, "for image in sorted_images:", "\n");
-  RTUtil::pushStream(python_file, "    img = Image.open(image)", "\n");
-  RTUtil::pushStream(python_file, "    img = img.resize((800, 600))", "\n");
-  RTUtil::pushStream(python_file, "    frames.append(img)", "\n");
-  RTUtil::pushStream(python_file, "", "\n");
-  RTUtil::pushStream(python_file,
-                     "frames[0].save('output.gif', format='GIF', append_images=frames[1:], save_all=True, duration=300, loop=0)", "\n");
-  RTUtil::closeFileStream(python_file);
-}
-
-#endif
-
-#if 1  // iterative
-
-void ResourceAllocator::iterative(RAModel& ra_model)
+void ResourceAllocator::iterativeRAModel(RAModel& ra_model)
 {
   double ra_initial_penalty = DM_INST.getConfig().ra_initial_penalty;         //!< 罚函数的参数
   double ra_penalty_drop_rate = DM_INST.getConfig().ra_penalty_drop_rate;     //!< 罚函数的参数下降系数
@@ -413,23 +342,14 @@ void ResourceAllocator::iterative(RAModel& ra_model)
   for (irt_int outer_iter = 1; outer_iter <= ra_outer_max_iter_num; outer_iter++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", outer_iter, "/", ra_outer_max_iter_num, ") ******");
-    double penalty_para = (1 / (2 * ra_initial_penalty));
     ra_model.set_curr_outer_iter(outer_iter);
+    double penalty_para = (1 / (2 * ra_initial_penalty));
     allocateRAModel(ra_model, penalty_para);
     processRAModel(ra_model);
-    countRAModel(ra_model);
-    reportRAModel(ra_model);
     // outputResourceMap(ra_model);
     ra_initial_penalty *= ra_penalty_drop_rate;
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", outer_iter, "/", ra_outer_max_iter_num, ")", iter_monitor.getStatsInfo(),
                   " ******");
-    if (stopOuterRAModel(ra_model)) {
-      if (outer_iter < ra_outer_max_iter_num) {
-        LOG_INST.info(Loc::current(), "****** Terminate the iteration by reaching the condition in advance! ******");
-      }
-      ra_model.set_curr_outer_iter(-1);
-      break;
-    }
   }
 }
 
@@ -468,13 +388,6 @@ void ResourceAllocator::allocateRAModel(RAModel& ra_model, double penalty_para)
     double norm_square_step = updateResult(ra_model);
     LOG_INST.info(Loc::current(), "Iter(", inner_iter, "/", ra_inner_max_iter_num, "), norm_nabla_f=", norm_nabla_f,
                   ", norm_square_step=", norm_square_step, iter_monitor.getStatsInfo());
-    if (stopInnerRAModel(ra_model)) {
-      if (inner_iter < ra_inner_max_iter_num) {
-        LOG_INST.info(Loc::current(), "****** Terminate the iteration by reaching the condition in advance! ******");
-      }
-      ra_model.set_curr_inner_iter(-1);
-      break;
-    }
   }
 }
 
@@ -647,11 +560,6 @@ double ResourceAllocator::updateResult(RAModel& ra_model)
   return norm_square_step;
 }
 
-bool ResourceAllocator::stopInnerRAModel(RAModel& ra_model)
-{
-  return false;
-}
-
 void ResourceAllocator::processRAModel(RAModel& ra_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
@@ -741,125 +649,12 @@ void ResourceAllocator::normalizeCostMap(GridMap<double>& cost_map, double lower
   }
 }
 
-void ResourceAllocator::countRAModel(RAModel& ra_model)
-{
-  RAModelStat ra_model_stat;
-
-  Die& die = DM_INST.getDatabase().get_die();
-
-  GridMap<double> global_cost_map;
-  global_cost_map.init(die.getXSize(), die.getYSize());
-
-  for (RANet& ra_net : ra_model.get_ra_net_list()) {
-    irt_int grid_lb_x = ra_net.get_bounding_box().get_grid_lb_x();
-    irt_int grid_lb_y = ra_net.get_bounding_box().get_grid_lb_y();
-
-    GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
-    for (irt_int x = 0; x < ra_cost_map.get_x_size(); ++x) {
-      for (irt_int y = 0; y < ra_cost_map.get_y_size(); ++y) {
-        global_cost_map[grid_lb_x + x][grid_lb_y + y] += ra_cost_map[x][y];
-      }
-    }
-  }
-  double max_global_cost = DBL_MIN;
-  for (int x = 0; x < global_cost_map.get_x_size(); x++) {
-    for (int y = 0; y < global_cost_map.get_y_size(); y++) {
-      max_global_cost = std::max(max_global_cost, global_cost_map[x][y]);
-    }
-  }
-  ra_model_stat.set_max_global_cost(max_global_cost);
-
-  std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-  double max_avg_cost = -DBL_MAX;
-  std::vector<RANet>& ra_net_list = ra_model.get_ra_net_list();
-  for (RANet& ra_net : ra_net_list) {
-    double total_cost = 0;
-    GridMap<double>& ra_cost_map = ra_net.get_ra_cost_map();
-    for (irt_int x = 0; x < ra_cost_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < ra_cost_map.get_y_size(); y++) {
-        total_cost += ra_cost_map[x][y];
-      }
-    }
-    double cost_value = total_cost / (ra_cost_map.get_x_size() * ra_cost_map.get_y_size());
-    max_avg_cost = std::max(max_avg_cost, cost_value);
-    avg_cost_list.push_back(cost_value);
-  }
-  ra_model_stat.set_max_avg_cost(max_avg_cost);
-
-  ra_model.set_ra_model_stat(ra_model_stat);
-}
-
-void ResourceAllocator::reportRAModel(RAModel& ra_model)
-{
-  RAModelStat& ra_model_stat = ra_model.get_ra_model_stat();
-
-  std::vector<double>& avg_cost_list = ra_model_stat.get_avg_cost_list();
-
-  fort::char_table avg_cost_table;
-  avg_cost_table << fort::header << "Avg Cost"
-                 << "Net Number" << fort::endr;
-  GridMap<std::string> avg_cost_map = RTUtil::getRangeRatioMap(avg_cost_list, {1.0});
-  for (irt_int y = 0; y < avg_cost_map.get_y_size(); y++) {
-    avg_cost_table << avg_cost_map[0][y] << avg_cost_map[1][y] << fort::endr;
-  }
-  avg_cost_table << fort::header << "Total" << avg_cost_list.size() << fort::endr;
-
-  fort::char_table global_cost_table;
-  global_cost_table << fort::header << "Max Global Cost" << fort::endr;
-  global_cost_table << ra_model_stat.get_max_global_cost() << fort::endr;
-
-  // print
-  RTUtil::printTableList({avg_cost_table, global_cost_table});
-}
-
-bool ResourceAllocator::stopOuterRAModel(RAModel& ra_model)
-{
-  return false;
-}
-
-#endif
-
-#if 1  // update
-
 void ResourceAllocator::update(RAModel& ra_model)
 {
   for (RANet& ra_net : ra_model.get_ra_net_list()) {
     ra_net.get_origin_net()->set_ra_cost_map(ra_net.get_ra_cost_map());
   }
 }
-
-#endif
-
-#if 1  // update env
-
-std::vector<DRCShape> ResourceAllocator::getDRCShapeList(irt_int ra_net_idx, std::vector<Segment<LayerCoord>>& segment_list)
-{
-  return DC_INST.getDRCShapeList(ra_net_idx, segment_list);
-}
-
-void ResourceAllocator::updateRectToUnit(RAModel& ra_model, ChangeType change_type, RASourceType ra_source_type, DRCShape drc_shape)
-{
-  if (drc_shape.get_is_routing() == false) {
-    return;
-  }
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  EXTPlanarRect& die = DM_INST.getDatabase().get_die();
-
-  std::vector<RAGCell>& ra_gcell_list = ra_model.get_ra_gcell_list();
-
-  for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(drc_shape)) {
-    LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-    PlanarRect max_scope_grid_rect = RTUtil::getClosedGCellGridRect(max_scope_regular_rect, gcell_axis);
-    for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-      for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-        RAGCell& ra_gcell = ra_gcell_list[x * die.getYSize() + y];
-        DC_INST.updateRectList(ra_gcell.getRegionQuery(ra_source_type), change_type, drc_shape);
-      }
-    }
-  }
-}
-
-#endif
 
 #if 1  // plot ra_model
 

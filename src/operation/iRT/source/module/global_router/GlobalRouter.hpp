@@ -18,8 +18,6 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
-#include "DRCChecker.hpp"
-#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "GRModel.hpp"
@@ -59,9 +57,6 @@ class GlobalRouter
   GRNet convertToGRNet(Net& net);
   void buildGRModel(GRModel& gr_model);
   void buildNeighborMap(GRModel& gr_model);
-  void updateBlockageMap(GRModel& gr_model);
-  void updateNetShapeMap(GRModel& gr_model);
-  void updateReservedViaMap(GRModel& gr_model);
   void updateWholeDemand(GRModel& gr_model);
   void updateNetDemandMap(GRModel& gr_model);
   void updateNodeResourceSupply(GRModel& gr_model);
@@ -124,19 +119,12 @@ class GlobalRouter
   GuideSegNode convertToGuideSegNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
   void buildDRGuideNode(TNode<GuideSegNode>* parent_node, TNode<GuideSegNode>* child_node);
   void buildTAGuideNode(TNode<GuideSegNode>* parent_node, TNode<GuideSegNode>* child_node);
-  void countGRModel(GRModel& gr_model);
-  void reportGRModel(GRModel& gr_model);
   bool stopGRModel(GRModel& gr_model);
 #endif
 
 #if 1  // update
   void update(GRModel& gr_model);
   void outputGuide(GRModel& gr_model);
-#endif
-
-#if 1  // update env
-  std::vector<DRCShape> getDRCShapeList(irt_int gr_net_idx, std::vector<Segment<LayerCoord>>& segment_list);
-  void updateRectToUnit(GRModel& gr_model, ChangeType change_type, GRSourceType gr_source_type, DRCShape drc_shape);
 #endif
 
 #if 1  // plot gr_model

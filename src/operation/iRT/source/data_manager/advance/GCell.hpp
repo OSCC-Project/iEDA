@@ -18,24 +18,10 @@
 
 #include "AccessPoint.hpp"
 #include "GCellId.hpp"
+#include "GlobalSupply.hpp"
 #include "Violation.hpp"
 
 namespace irt {
-
-class GlobalSupply
-{
- public:
-  GlobalSupply() = default;
-  ~GlobalSupply() = default;
-  // getter
-
-  // setter
-
-  // function
-
- private:
-  LayerCoord _grid_coord;
-};
 
 class GCell
 {

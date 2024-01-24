@@ -16,10 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRCChecker.hpp"
 #include "PAGCellId.hpp"
-#include "PASourceType.hpp"
-#include "RegionQuery.hpp"
 #include "SpaceRegion.hpp"
 
 namespace irt {
@@ -31,19 +28,12 @@ class PAGCell : public SpaceRegion
   ~PAGCell() = default;
   // getter
   PAGCellId& get_pa_gcell_id() { return _pa_gcell_id; }
-  std::map<PASourceType, RegionQuery>& get_source_region_query_map() { return _source_region_query_map; }
   // setter
   void set_pa_gcell_id(const PAGCellId& pa_gcell_id) { _pa_gcell_id = pa_gcell_id; }
-  void set_source_region_query_map(const std::map<PASourceType, RegionQuery>& source_region_query_map)
-  {
-    _source_region_query_map = source_region_query_map;
-  }
   // function
-  RegionQuery& getRegionQuery(PASourceType pa_source_type) { return _source_region_query_map[pa_source_type]; }
 
  private:
   PAGCellId _pa_gcell_id;
-  std::map<PASourceType, RegionQuery> _source_region_query_map;
 };
 
 }  // namespace irt

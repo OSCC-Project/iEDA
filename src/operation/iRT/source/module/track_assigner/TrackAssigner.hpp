@@ -18,8 +18,6 @@
 
 #include "ChangeType.hpp"
 #include "Config.hpp"
-#include "DRCChecker.hpp"
-#include "DRCShape.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -55,6 +53,8 @@ class TrackAssigner
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void addAccessPointToGCellMap(TAModel& ta_model);
+  void iterativeTAModel(TAModel& ta_model);
+  void printParameter(TAParameter& ta_parameter);
   void initTAPanelMap(TAModel& ta_model);
   void initTATaskList(TAModel& ta_model);
   std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> getPanelTaskMap(TANet& ta_net);
@@ -76,11 +76,11 @@ class TrackAssigner
   void initPathHead(TAPanel& ta_panel);
   bool searchEnded(TAPanel& ta_panel);
   void expandSearching(TAPanel& ta_panel);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void resetPathHead(TAPanel& ta_panel);
   bool isRoutingFailed(TAPanel& ta_panel);
   void resetSinglePath(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateTaskResult(TAPanel& ta_panel, TATask* ta_task);

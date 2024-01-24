@@ -19,7 +19,6 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRBoxId.hpp"
-#include "DRCShape.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
@@ -88,11 +87,11 @@ class DetailedRouter
   void initPathHead(DRBox& dr_box);
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void resetPathHead(DRBox& dr_box);
   bool isRoutingFailed(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box, DRTask* dr_task);

@@ -20,7 +20,6 @@
 #include "PriorityQueue.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
-#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
@@ -59,16 +58,12 @@ class TAPanel
 #if 1  // astar
   // single task
   const irt_int get_curr_net_idx() const { return _curr_net_idx; }
-  PlanarRect& get_routing_region() { return _routing_region; }
-  std::set<Orientation>& get_routing_offset_set() { return _routing_offset_set; }
   std::vector<std::vector<TANode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<TANode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<TANode*>& get_path_node_list() { return _path_node_list; }
   std::vector<TANode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_curr_net_idx(const irt_int curr_net_idx) { _curr_net_idx = curr_net_idx; }
-  void set_routing_region(const PlanarRect& routing_region) { _routing_region = routing_region; }
-  void set_routing_offset_set(const std::set<Orientation>& routing_offset_set) { _routing_offset_set = routing_offset_set; }
   void set_start_node_list_list(const std::vector<std::vector<TANode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
@@ -109,8 +104,6 @@ class TAPanel
 #if 1  // astar
   // single task
   irt_int _curr_net_idx = -1;
-  PlanarRect _routing_region;
-  std::set<Orientation> _routing_offset_set;
   std::vector<std::vector<TANode*>> _start_node_list_list;
   std::vector<std::vector<TANode*>> _end_node_list_list;
   std::vector<TANode*> _path_node_list;
