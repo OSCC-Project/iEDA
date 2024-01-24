@@ -15,9 +15,12 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+
 #include "scanline_preprocess.h"
 
 namespace idrc {
+
+class DrcConditionManager;
 
 enum class ScanlineSegmentType
 {
@@ -83,7 +86,8 @@ struct ScanlineStatus
 class DrcEngineScanline
 {
  public:
-  DrcEngineScanline(idb::IdbLayer* layer, DrcDataManager* data_manager) : _data_manager(data_manager)
+  DrcEngineScanline(idb::IdbLayer* layer, DrcDataManager* data_manager, DrcConditionManager* condition_manager)
+      : _data_manager(data_manager), _condition_manager(condition_manager)
   {
     _preprocess = new ScanlinePreprocess(layer, data_manager);
   }
@@ -96,6 +100,7 @@ class DrcEngineScanline
  private:
   ScanlinePreprocess* _preprocess;
   DrcDataManager* _data_manager;
+  DrcConditionManager* _condition_manager;
 
   void scan(ScanlineTravelDirection direction);
   void addCurrentBucketToScanline(ScanlineStatus& status);

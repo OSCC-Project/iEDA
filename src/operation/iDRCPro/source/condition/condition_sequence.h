@@ -35,6 +35,7 @@ class ConditionSequence
   */
   enum SequenceType : uint64_t
   {
+    kNone = 0,
     kWEW = 1,
     kNEW_WEN = 2,
     kSEW_WES = 4,

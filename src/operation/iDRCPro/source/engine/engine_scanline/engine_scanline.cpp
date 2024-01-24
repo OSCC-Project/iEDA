@@ -17,6 +17,7 @@
 
 #include "engine_scanline.h"
 
+#include "condition_manager.h"
 #include "idrc_data.h"
 
 namespace idrc {
@@ -105,7 +106,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // T
     if (is_first_insert) {
       status.insert_begin = scanline_status_it;
       is_first_insert = false;
-      for (int i = 0; i < 1 && status.insert_begin != status.status_points.begin(); ++i) {
+      for (int i = 0; i < 2 && status.insert_begin != status.status_points.begin(); ++i) {
         --status.insert_begin;
       }
     }
@@ -113,7 +114,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // T
 
   // mark range end
   status.insert_end = scanline_status_it;
-  for (int i = 0; i < 1 && status.insert_end != status.status_points.end(); ++i) {
+  for (int i = 0; i < 2 && status.insert_end != status.status_points.end(); ++i) {
     ++status.insert_end;
   }
 }
@@ -260,17 +261,49 @@ bool DrcEngineScanline::tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoi
 /// @param status scanline status
 void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 {
-  std::deque<ScanlinePoint*> activate_points;
+  std::deque<DrcBasicPoint*> activate_points{nullptr, nullptr, nullptr};
+  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone};
   auto scanline_status_it = status.insert_begin;
   while (scanline_status_it != status.insert_end) {
     ScanlinePoint* point_backward = *scanline_status_it;
+    activate_points.push_back(point_backward->get_point());
     if (++scanline_status_it != status.insert_end) {
       ScanlinePoint* point_forward = *scanline_status_it;
-      // TODO: judge segment type
-      // TODO: use type history to make sequence
-      // TODO: put sequence to condition manager
+
+      // get current segment type
+      auto type = judgeSegmentType(status, point_forward, point_backward);
+
+      // refresh active segments
+      activate_points.pop_front();
+      activate_types.pop_front();
+      activate_points.push_back(point_forward->get_point());
+      activate_types.push_back(type);
+
+      // skip both old points
+      if (!point_forward->get_is_new() && !point_backward->get_is_new()) {
+        continue;
+      }
+
+      // make sequence, make edge ids hash
+      ConditionSequence::SequenceType sequence = ConditionSequence::SequenceType::kNone;
+      bool has_spacing = false;
+      // TODO: use activate types to determine sequence
+      // TODO: use activate types to determine if there is a spacing
+
+      uint64_t recognize_code = 0;
+      if (has_spacing) {
+        // TODO: get edge ids in both side point of spacing
+        // TODO: use two edge ids to calculate hash, witch is recognize code
+      }
+
+      auto point_list = std::vector<DrcBasicPoint*>{activate_points.begin(), activate_points.end()};
+
+      // put sequence to condition manager
+      _condition_manager->deliverSequence(_preprocess->get_layer(), recognize_code, sequence, point_list);
     }
   }
+  // TODO: 处理边缘情况，即插入点在最边缘时应多处理一段，保证处理到边缘的 NEN 或者其他情况
+
   // std::map<int, ScanlinePoint*> activate_id_set;
 
   // // auto scanline_status_it = status.insert_begin;

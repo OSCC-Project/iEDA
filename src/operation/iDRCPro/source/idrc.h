@@ -43,7 +43,6 @@ class DrcManager
   void engineStart(DrcCheckerType checker_type = DrcCheckerType::kRT);
   bool buildCondition();
   void check();
-  void checkSelf();
 
  private:
   DrcDataManager* _data_manager;

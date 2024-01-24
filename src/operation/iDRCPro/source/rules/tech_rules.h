@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include <stdint.h>
+
 #include "condition.h"
 #include "idm.h"
 
@@ -32,6 +34,12 @@ class TechRules
     }
     return _instance;
   }
+
+  enum TechType : uint64_t {
+    kNone = 0,
+    kIntersection = 1,
+    kSelf = 2
+  };
 
   static void destroyInst();
   void set_inited() { _b_inited = true; }

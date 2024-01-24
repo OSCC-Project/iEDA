@@ -40,14 +40,14 @@ class DrcEngineCheck
 
   void applyCondition()
   {
-    for (auto& [condition, queue] : _check_list) {  // TODO: while(1), thread pool
-      while (!queue.empty()) {
-        auto* item = queue.front();
-        queue.pop_front();
-        condition->get_detail()->apply(item);
-        delete item;
-      }
-    }
+    // for (auto& [condition, queue] : _check_list) {  // TODO: while(1), thread pool
+    //   while (!queue.empty()) {
+    //     auto* item = queue.front();
+    //     queue.pop_front();
+    //     condition->get_detail()->apply(item);
+    //     delete item;
+    //   }
+    // }
   }
 };
 

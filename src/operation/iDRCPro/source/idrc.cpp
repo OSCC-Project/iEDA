@@ -21,10 +21,10 @@ namespace idrc {
 DrcManager::DrcManager()
 {
   _data_manager = new DrcDataManager();
-  _engine = new DrcEngine(_data_manager);
   // _rule_manager = new DrcRuleManager(_engine);
   _violation_manager = new DrcViolationManager();
   _condition_manager = new DrcConditionManager(_violation_manager);
+  _engine = new DrcEngine(_data_manager, _condition_manager);
 }
 
 DrcManager::~DrcManager()
@@ -76,38 +76,6 @@ bool DrcManager::buildCondition()
 void DrcManager::check()
 {
   _engine->get_engine_manager()->get_engine_check()->check();
-  // TODO: sratagy and multi-thread
-
-  // DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
-
-  // spacing_table.checkFastMode();
-
-  // DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
-
-  // connectivity.checkFastMode();
-
-  // DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
-
-  // condition_eol.checkFastMode();
-
-  // DrcRuleConditionJog condition_jog(_condition_manager, _engine);
-
-  // condition_jog.checkFastMode();
-}
-
-void DrcManager::checkSelf()
-{
-  // DrcRuleConditionArea condition_area(_condition_manager, _engine);
-
-  // condition_area.checkFastMode();
-
-  // DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
-
-  // condition_notch.checkFastMode();
-
-  // DrcRuleConditionStep condition_step(_condition_manager, _engine);
-
-  // condition_step.checkFastMode();
 }
 
 }  // namespace idrc
